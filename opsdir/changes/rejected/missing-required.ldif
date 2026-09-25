@@ -1,0 +1,9 @@
+# Expected: REJECTED. A firewall rule without a source range violates the schema (MUST ciamSourceCidr).
+dn: cn=fw-incomplete,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-incomplete
+ciamBindingRole: fw-consumer-legacy-rptuser
+ciamPort: 1636
+ciamTargetRole: ds

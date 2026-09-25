@@ -1,0 +1,3 @@
+# Expected: REJECTED. The certificate is still used by an integration (referential integrity).
+dn: cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops
+changetype: delete

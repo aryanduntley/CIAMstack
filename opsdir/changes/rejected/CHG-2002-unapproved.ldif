@@ -1,0 +1,6 @@
+# Expected: REJECTED. CHG-2002 is only "proposed"; the directory refuses writes under it.
+dn: cn=aci-legacy-all,ou=acis,dc=ciam-ops
+changetype: modify
+add: ciamAciRight
+ciamAciRight: write
+-

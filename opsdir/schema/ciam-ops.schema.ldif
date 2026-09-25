@@ -1,0 +1,623 @@
+# Operations Directory schema (opsdir) — LDAP schema extended for platform configuration.
+# Standard RFC 4512 definitions. Extensions (legal per RFC 4512 §4.2):
+#   X-PORTABILITY  intent | contract | binding | secret-ref | observed | meta
+#   X-VALUE-TYPE   stricter value type enforced by the store (string, int, bool, time, dn, extdn,
+#                  cidr, ip, fqdn, url, port, ref-uri, json, enum:a|b|c)
+# OIDs use the RFC 5612 documentation arc 1.3.6.1.4.1.32473 as a placeholder.
+dn: cn=schema
+objectClass: top
+objectClass: ldapSubentry
+objectClass: subschema
+cn: schema
+attributeTypes: ( 2.5.4.0 NAME 'objectClass' DESC 'LDAP object classes' EQUA
+ LITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'me
+ ta' X-VALUE-TYPE 'string' X-ORIGIN 'RFC 4519' )
+attributeTypes: ( 2.5.4.3 NAME 'cn' DESC 'Common name / RDN' EQUALITY caseIg
+ noreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta' X-VALUE
+ -TYPE 'string' X-ORIGIN 'RFC 4519' )
+attributeTypes: ( 2.5.4.11 NAME 'ou' DESC 'Organizational unit / RDN' EQUALI
+ TY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta
+ ' X-VALUE-TYPE 'string' X-ORIGIN 'RFC 4519' )
+attributeTypes: ( 0.9.2342.19200300.100.1.25 NAME 'dc' DESC 'Domain componen
+ t / RDN' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SING
+ LE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'RFC 4519' )
+attributeTypes: ( 2.5.4.13 NAME 'description' DESC 'Free text' EQUALITY case
+ IgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta' X-VAL
+ UE-TYPE 'string' X-ORIGIN 'RFC 4519' )
+attributeTypes: ( 0.9.2342.19200300.100.1.3 NAME 'mail' DESC 'Contact email'
+  EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILIT
+ Y 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'RFC 4519' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.1 NAME 'cloud' DESC 'RDN of a cloud 
+ hosting environment' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.1
+ 21.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'o
+ psdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.2 NAME 'env' DESC 'RDN of a deployme
+ nt stage within a cloud (prod/stage)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6
+ .1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'st
+ ring' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.3 NAME 'snap' DESC 'RDN of an observ
+ ed configuration snapshot' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466
+ .115.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X
+ -ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.4 NAME 'ciamOwner' DESC 'Owning part
+ y (team, partner, vendor)' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4
+ .1.1466.115.121.1.12 X-PORTABILITY 'meta' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdi
+ r' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.5 NAME 'ciamLastChanged' DESC 'Last 
+ change before this directory tracked history' EQUALITY generalizedTimeMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'meta' X-V
+ ALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.6 NAME 'ciamChangeRef' DESC 'Change 
+ record(s) that justify this entry' EQUALITY distinguishedNameMatch SYNTAX 1
+ .3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'meta' X-VALUE-TYPE 'dn' X-ORIGI
+ N 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.7 NAME 'ciamCloudProvider' DESC 'Clo
+ ud provider; selects the renderer' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.
+ 4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'en
+ um:aws|azure|onprem' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.8 NAME 'ciamRegion' DESC 'Provider r
+ egion' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE
+ -VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.9 NAME 'ciamCloudEnvironment' DESC '
+ Provider cloud (commercial vs government)' EQUALITY caseIgnoreMatch SYNTAX 
+ 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-
+ TYPE 'enum:public|usgovernment' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.10 NAME 'ciamLifecycle' DESC 'Lifecy
+ cle state' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SI
+ NGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'enum:active|building|retiring
+ |retired' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.11 NAME 'ciamPlannedCutover' DESC 'P
+ lanned cutover date for an environment being built' EQUALITY generalizedTim
+ eMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'met
+ a' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.12 NAME 'ciamJoinsDeploymentOf' DESC
+  'DS replicas here join the replication deployment of that environment' EQU
+ ALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VA
+ LUE X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.13 NAME 'ciamServerRole' DESC 'What 
+ the server runs' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1
+ .15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:ds|pf-engine|pf-
+ admin' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.14 NAME 'ciamProductVersion' DESC 'P
+ roduct and version' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.12
+ 1.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN '
+ opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.15 NAME 'ciamHostname' DESC 'Server 
+ hostname (never used by consumers)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1
+ .4.1.1466.115.121.1.26 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'f
+ qdn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.16 NAME 'ciamPrivateIp' DESC 'Privat
+ e IP address' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'ip' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.17 NAME 'ciamZone' DESC 'Availabilit
+ y zone' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGL
+ E-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.18 NAME 'ciamInstanceSize' DESC 'Ins
+ tance / VM size' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1
+ .15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'op
+ sdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.19 NAME 'ciamImageRef' DESC 'Machine
+  image reference' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.
+ 1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'o
+ psdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.20 NAME 'ciamSubnet' DESC 'Subnet bi
+ nding the server is placed in' EQUALITY distinguishedNameMatch SYNTAX 1.3.6
+ .1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 
+ 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.21 NAME 'ciamBindingRole' DESC 'Abst
+ ract role this binding fulfils; migrations match roles across environments'
+  EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE
+  X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.22 NAME 'ciamProviderRef' DESC 'Prov
+ ider resource identifier (VPC id, vnet/subnet name, zone id, DES id)' EQUAL
+ ITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-POR
+ TABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.23 NAME 'ciamResourceGroup' DESC 'Az
+ ure resource group' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.12
+ 1.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 
+ 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.24 NAME 'ciamCidr' DESC 'Address ran
+ ge' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABI
+ LITY 'binding' X-VALUE-TYPE 'cidr' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.25 NAME 'ciamFqdn' DESC 'Service DNS
+  name consumers and partners use. Must stay stable across migrations' EQUAL
+ ITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE X-POR
+ TABILITY 'contract' X-VALUE-TYPE 'fqdn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.26 NAME 'ciamDnsZone' DESC 'DNS zone
+  the service name is published in' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.
+ 4.1.1466.115.121.1.26 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'fq
+ dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.27 NAME 'ciamDnsZoneRef' DESC 'Provi
+ der id of the DNS zone' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.11
+ 5.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORI
+ GIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.28 NAME 'ciamTargetRole' DESC 'Serve
+ r role a service or rule targets' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4
+ .1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum
+ :ds|pf-engine|pf-admin' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.29 NAME 'ciamPort' DESC 'TCP/UDP por
+ t' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 X-PORTABILITY
+  'intent' X-VALUE-TYPE 'port' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.30 NAME 'ciamFrontendIp' DESC 'Load 
+ balancer frontend IP' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.
+ 121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'ip' X-ORIGIN 'o
+ psdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.31 NAME 'ciamSourceCidr' DESC 'Allow
+ ed source range' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1
+ .15 X-PORTABILITY 'binding' X-VALUE-TYPE 'cidr' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.32 NAME 'ciamProtocol' DESC 'Transpo
+ rt protocol' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 
+ SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:tcp|udp' X-ORIGIN 'o
+ psdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.33 NAME 'ciamAllowsConsumer' DESC 'C
+ onsumer this firewall rule exists for' EQUALITY distinguishedNameMatch SYNT
+ AX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'binding' X-VALUE-TYPE 'dn' 
+ X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.34 NAME 'ciamRulePriority' DESC 'Pro
+ vider rule priority (e.g. Azure NSG). Pinned so adding a rule never renumbe
+ rs others' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGL
+ E-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'int' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.35 NAME 'ciamRefUri' DESC 'Reference
+  to a secret or key in the environment\27s store. Never the value' EQUALITY
+  caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE X-PORTAB
+ ILITY 'secret-ref' X-VALUE-TYPE 'ref-uri' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.36 NAME 'ciamInterconnectKind' DESC 
+ 'Cross-environment link type (VPN, ExpressRoute, peering)' EQUALITY caseIgn
+ oreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'b
+ inding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.37 NAME 'ciamPeerEnvironment' DESC '
+ Environment at the other end of an interconnect' EQUALITY distinguishedName
+ Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'bind
+ ing' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.38 NAME 'ciamStorageRef' DESC 'Backu
+ p storage location' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.12
+ 1.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 
+ 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.39 NAME 'ciamRetentionDays' DESC 'Re
+ tention period in days' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.1
+ 21.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int' X-ORIGIN 'op
+ sdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.40 NAME 'ciamManagedBy' DESC 'Party 
+ that operates the external allowlist' EQUALITY distinguishedNameMatch SYNTA
+ X 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-T
+ YPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.41 NAME 'ciamExternalSystem' DESC 'W
+ here the allowlist lives (partner firewall, app egress policy, SaaS IP list
+ )' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VAL
+ UE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.42 NAME 'ciamAllowlistDirection' DES
+ C 'consumer-egress: their outbound rule to our service; partner-ingress: th
+ ey allow our egress in; partner-egress: they send to us' EQUALITY caseIgnor
+ eMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'met
+ a' X-VALUE-TYPE 'enum:consumer-egress|partner-ingress|partner-egress' X-ORI
+ GIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.43 NAME 'ciamRefersToRole' DESC 'Bin
+ ding role of OUR address this allowlist contains (resolved per environment)
+ ' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALU
+ E X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.44 NAME 'ciamRecordedCidr' DESC 'Add
+ resses the external allowlist contains today' EQUALITY caseIgnoreMatch SYNT
+ AX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'observed' X-VALUE-TYPE 'cid
+ r' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.45 NAME 'ciamLeadTimeDays' DESC 'Typ
+ ical lead time for the owner to change it' EQUALITY integerMatch SYNTAX 1.3
+ .6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE '
+ int' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.46 NAME 'ciamRequestStatus' DESC 'St
+ atus of the change request to the owner' EQUALITY caseIgnoreMatch SYNTAX 1.
+ 3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 
+ 'enum:not-needed|to-request|requested|done' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.47 NAME 'ciamBackendType' DESC 'DS b
+ ackend type' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 
+ SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir'
+  )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.48 NAME 'ciamBaseDn' DESC 'Base DN i
+ n the user directory' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.14
+ 66.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'extdn' X-
+ ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.49 NAME 'ciamIndexedAttribute' DESC 
+ 'User-directory attribute record being indexed' EQUALITY distinguishedNameM
+ atch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'inten
+ t' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.50 NAME 'ciamIndexType' DESC 'DS ind
+ ex type' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PO
+ RTABILITY 'intent' X-VALUE-TYPE 'enum:equality|presence|substring|ordering|
+ approximate' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.51 NAME 'ciamStorageScheme' DESC 'Pa
+ ssword storage scheme' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115
+ .121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGI
+ N 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.52 NAME 'ciamLockoutFailureCount' DE
+ SC 'Failed binds before lockout' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1
+ 466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int' X-O
+ RIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.53 NAME 'ciamLockoutDuration' DESC '
+ Lockout duration (DS duration syntax)' EQUALITY caseIgnoreMatch SYNTAX 1.3.
+ 6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 
+ 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.54 NAME 'ciamPasswordHistoryCount' D
+ ESC 'Passwords remembered' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.11
+ 5.121.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int' X-ORIGIN 
+ 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.55 NAME 'ciamMaxPasswordAge' DESC 'M
+ aximum password age (DS duration syntax)' EQUALITY caseIgnoreMatch SYNTAX 1
+ .3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TY
+ PE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.56 NAME 'ciamEnabled' DESC 'Enabled 
+ flag' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALU
+ E X-PORTABILITY 'intent' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.57 NAME 'ciamListenPort' DESC 'Liste
+ ner port' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE
+ -VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'port' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.58 NAME 'ciamReplicaCount' DESC 'DS 
+ replicas per environment' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115
+ .121.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int' X-ORIGIN '
+ opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.59 NAME 'ciamReplicationPurgeDelay' 
+ DESC 'Replication changelog purge delay' EQUALITY caseIgnoreMatch SYNTAX 1.
+ 3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYP
+ E 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.60 NAME 'ciamServerRef' DESC 'Server
+  a snapshot was captured from' EQUALITY distinguishedNameMatch SYNTAX 1.3.6
+ .1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE
+  'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.61 NAME 'ciamCapturedAt' DESC 'Snaps
+ hot capture time' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115
+ .121.1.24 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'time' X-ORIGI
+ N 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.62 NAME 'ciamLdapName' DESC 'Attribu
+ te name in the user directory' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.
+ 1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string'
+  X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.63 NAME 'ciamPiiClass' DESC 'Privacy
+  classification' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1
+ .15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:none|low|moderat
+ e|high' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.64 NAME 'ciamExportControlled' DESC 
+ 'Export-control relevant' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115
+ .121.1.7 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'bool' X-ORIGIN '
+ opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.65 NAME 'ciamPurpose' DESC 'Why the 
+ attribute is stored' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.1
+ 21.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 
+ 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.66 NAME 'ciamRetentionRule' DESC 'Re
+ tention rule' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir
+ ' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.67 NAME 'ciamBindDn' DESC 'Bind DN i
+ n the user directory' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.14
+ 66.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'extdn' X-
+ ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.68 NAME 'ciamObservedSource' DESC 'S
+ ource addresses seen in access logs' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.
+ 1.4.1.1466.115.121.1.15 X-PORTABILITY 'observed' X-VALUE-TYPE 'cidr' X-ORIG
+ IN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.69 NAME 'ciamOperationMix' DESC 'Ope
+ ration mix seen in access logs' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1
+ .1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'stri
+ ng' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.70 NAME 'ciamSubtreeRead' DESC 'Subt
+ rees searched' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.
+ 121.1.12 X-PORTABILITY 'observed' X-VALUE-TYPE 'extdn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.71 NAME 'ciamAttrRead' DESC 'User-di
+ rectory attribute records read' EQUALITY distinguishedNameMatch SYNTAX 1.3.
+ 6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'observed' X-VALUE-TYPE 'dn' X-ORIG
+ IN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.72 NAME 'ciamUnindexedSearchesPerDay
+ ' DESC 'Unindexed searches per day' EQUALITY integerMatch SYNTAX 1.3.6.1.4.
+ 1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'int
+ ' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.73 NAME 'ciamTlsOnly' DESC 'Only TLS
+  connections seen' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.
+ 7 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdi
+ r' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.74 NAME 'ciamPeakOpsPerSec' DESC 'Pe
+ ak operations per second' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115
+ .121.1.27 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'int' X-ORIGIN
+  'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.75 NAME 'ciamFirstSeen' DESC 'First 
+ seen in logs' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121
+ .1.24 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'time' X-ORIGIN 'o
+ psdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.76 NAME 'ciamLastSeen' DESC 'Last se
+ en in logs' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1
+ .24 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'time' X-ORIGIN 'ops
+ dir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.77 NAME 'ciamCriticality' DESC 'Busi
+ ness criticality' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.
+ 1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'enum:critical|high|med
+ ium|low' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.78 NAME 'ciamMigrationStatus' DESC '
+ Migration readiness of a consumer' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.
+ 4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'enum:
+ unknown|identified|contacted|tested|cutover' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.79 NAME 'ciamAciTargetDn' DESC 'Subt
+ ree the ACI is placed on' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.
+ 1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'extdn
+ ' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.80 NAME 'ciamAciTargetAttr' DESC 'Us
+ er-directory attribute records the ACI covers' EQUALITY distinguishedNameMa
+ tch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'intent' X-VALUE-TYP
+ E 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.81 NAME 'ciamAciAllAttributes' DESC 
+ 'ACI covers all attributes (targetattr=*)' EQUALITY booleanMatch SYNTAX 1.3
+ .6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 
+ 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.82 NAME 'ciamAciRight' DESC 'Granted
+  rights' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PO
+ RTABILITY 'intent' X-VALUE-TYPE 'enum:read|search|compare|write|add|delete|
+ selfwrite|all' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.83 NAME 'ciamAciGrantee' DESC 'Consu
+ mer(s) the ACI grants to' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.
+ 1.1466.115.121.1.12 X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X-ORIGIN 'opsd
+ ir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.84 NAME 'ciamJustification' DESC 'Wh
+ y the access exists' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.1
+ 21.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'o
+ psdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.85 NAME 'ciamReviewedOn' DESC 'Last 
+ access review' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.12
+ 1.1.24 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsd
+ ir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.86 NAME 'ciamProtocolType' DESC 'Int
+ egration type' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.1
+ 5 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:saml2-sp|oidc-clie
+ nt|saml2-idp|ldap' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.87 NAME 'ciamEntityId' DESC 'SAML en
+ tity ID' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SING
+ LE-VALUE X-PORTABILITY 'contract' X-VALUE-TYPE 'url' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.88 NAME 'ciamAcsUrl' DESC 'SAML asse
+ rtion consumer service URL' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.146
+ 6.115.121.1.26 SINGLE-VALUE X-PORTABILITY 'contract' X-VALUE-TYPE 'url' X-O
+ RIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.89 NAME 'ciamRedirectUri' DESC 'OIDC
+  redirect URI' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.2
+ 6 X-PORTABILITY 'contract' X-VALUE-TYPE 'url' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.90 NAME 'ciamClientId' DESC 'OIDC cl
+ ient id' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SING
+ LE-VALUE X-PORTABILITY 'contract' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.91 NAME 'ciamGrantType' DESC 'OIDC g
+ rant types' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X
+ -PORTABILITY 'intent' X-VALUE-TYPE 'enum:authorization_code|client_credenti
+ als|refresh_token' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.92 NAME 'ciamPkceRequired' DESC 'PKC
+ E required' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGL
+ E-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.93 NAME 'ciamPopulation' DESC 'Ident
+ ity populations served' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.11
+ 5.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:customers|suppliers|pa
+ rtners|individuals' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.94 NAME 'ciamMfaRequired' DESC 'MFA 
+ required' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-
+ VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.95 NAME 'ciamUsesCertificate' DESC '
+ Certificates this integration depends on' EQUALITY distinguishedNameMatch S
+ YNTAX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'intent' X-VALUE-TYPE 'dn
+ ' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.96 NAME 'ciamJitBaseDn' DESC 'Where 
+ just-in-time provisioned partner users are created' EQUALITY distinguishedN
+ ameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'i
+ ntent' X-VALUE-TYPE 'extdn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.97 NAME 'ciamClaimName' DESC 'Claim 
+ / SAML attribute name the application receives' EQUALITY caseIgnoreMatch SY
+ NTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'contract' X-
+ VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.98 NAME 'ciamSourceAttribute' DESC '
+ User-directory attribute record the claim comes from' EQUALITY distinguishe
+ dNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 
+ 'intent' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.99 NAME 'ciamTransform' DESC 'Transf
+ ormation applied to the value' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.
+ 1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string'
+  X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.100 NAME 'ciamFingerprint' DESC 'SHA
+ -256 fingerprint' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.
+ 1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsd
+ ir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.101 NAME 'ciamSubject' DESC 'Certifi
+ cate subject' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' 
+ )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.102 NAME 'ciamIssuer' DESC 'Certific
+ ate issuer' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 S
+ INGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.103 NAME 'ciamNotBefore' DESC 'Valid
+  from' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 S
+ INGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.104 NAME 'ciamNotAfter' DESC 'Expire
+ s' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGL
+ E-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.105 NAME 'ciamCertPurpose' DESC 'Wha
+ t the certificate is for' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.
+ 115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:tls-ser
+ ver|saml-signing|saml-encryption|jwt-signing|partner-signing' X-ORIGIN 'ops
+ dir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.106 NAME 'ciamSubjectAltName' DESC '
+ DNS names the certificate is valid for' EQUALITY caseIgnoreMatch SYNTAX 1.3
+ .6.1.4.1.1466.115.121.1.26 X-PORTABILITY 'contract' X-VALUE-TYPE 'fqdn' X-O
+ RIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.107 NAME 'ciamKeyRole' DESC 'Binding
+  role of the secret holding the private key (per environment)' EQUALITY cas
+ eIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILIT
+ Y 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.108 NAME 'ciamPartnerContact' DESC '
+ Partner to coordinate rotation with' EQUALITY distinguishedNameMatch SYNTAX
+  1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TY
+ PE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.109 NAME 'ciamRotationRunbook' DESC 
+ 'Work instruction for rotation' EQUALITY distinguishedNameMatch SYNTAX 1.3.
+ 6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'd
+ n' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.110 NAME 'ciamTitle' DESC 'Title' EQ
+ UALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-
+ PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.111 NAME 'ciamVersion' DESC 'Documen
+ t version' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SI
+ NGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.112 NAME 'ciamAppliesTo' DESC 'Entri
+ es this work instruction depends on' EQUALITY distinguishedNameMatch SYNTAX
+  1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'meta' X-VALUE-TYPE 'dn' X-ORI
+ GIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.113 NAME 'ciamLastValidated' DESC 'W
+ hen the work instruction was last validated against config' EQUALITY genera
+ lizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE X-PORTABIL
+ ITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.114 NAME 'ciamDocUrl' DESC 'Document
+  location' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SI
+ NGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'url' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.115 NAME 'ciamChangeStatus' DESC 'Ch
+ ange record status' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.12
+ 1.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'enum:proposed|approv
+ ed|applied|rejected' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.116 NAME 'ciamApprovedBy' DESC 'Appr
+ over (CAB)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 S
+ INGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.117 NAME 'ciamPlannedAt' DESC 'Plann
+ ed implementation time' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.14
+ 66.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORI
+ GIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.118 NAME 'ciamOpenedAt' DESC 'Incide
+ nt opened' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.
+ 24 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' 
+ )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.119 NAME 'ciamSeverity' DESC 'Incide
+ nt severity' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 
+ SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'enum:sev1|sev2|sev3|sev4' X
+ -ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.120 NAME 'ciamInvolved' DESC 'Entrie
+ s involved in the incident' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.
+ 4.1.1466.115.121.1.12 X-PORTABILITY 'meta' X-VALUE-TYPE 'dn' X-ORIGIN 'opsd
+ ir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.121 NAME 'ciamRootCause' DESC 'Root 
+ cause' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE
+ -VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.122 NAME 'ciamOwnerKind' DESC 'Kind 
+ of party' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SIN
+ GLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'enum:team|partner|vendor' X-OR
+ IGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.123 NAME 'ciamContactUrl' DESC 'Cont
+ act / escalation link' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115
+ .121.1.26 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'url' X-ORIGIN 'op
+ sdir' )
+objectClasses: ( 2.5.6.0 NAME 'top' DESC 'Top of the class hierarchy' ABSTRA
+ CT MUST objectClass X-ORIGIN 'RFC 4519' )
+objectClasses: ( 2.5.6.5 NAME 'organizationalUnit' DESC 'Organizational unit
+ ' SUP top STRUCTURAL MUST ou MAY description X-ORIGIN 'RFC 4519' )
+objectClasses: ( 0.9.2342.19200300.100.4.13 NAME 'domain' DESC 'Domain' SUP 
+ top STRUCTURAL MUST dc MAY description X-ORIGIN 'RFC 4519' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
+ ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
+ er $ ciamLastChanged $ ciamChangeRef ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.2 NAME 'ciamCloud' DESC 'A cloud host
+ ing environment' SUP ciamObject STRUCTURAL MUST ( cloud $ ciamCloudProvider
+  $ ciamRegion ) MAY ( ciamCloudEnvironment $ ciamLifecycle ) X-ORIGIN 'opsd
+ ir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.3 NAME 'ciamEnvironment' DESC 'A depl
+ oyment stage within a cloud' SUP ciamObject STRUCTURAL MUST env MAY ( ciamL
+ ifecycle $ ciamPlannedCutover $ ciamJoinsDeploymentOf ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.4 NAME 'ciamServer' DESC 'A server in
+ stance' SUP ciamObject STRUCTURAL MUST ( cn $ ciamServerRole $ ciamHostname
+  $ ciamSubnet ) MAY ( ciamProductVersion $ ciamPrivateIp $ ciamZone $ ciamI
+ nstanceSize $ ciamImageRef ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.5 NAME 'ciamBinding' DESC 'Environmen
+ t-specific binding of an abstract role' SUP ciamObject ABSTRACT MUST ( cn $
+  ciamBindingRole ) MAY ciamProviderRef X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.6 NAME 'ciamNetwork' DESC 'Network (V
+ PC / VNet)' SUP ciamBinding STRUCTURAL MUST ciamCidr MAY ciamResourceGroup 
+ X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.7 NAME 'ciamSubnetBinding' DESC 'Subn
+ et' SUP ciamBinding STRUCTURAL MUST ciamCidr MAY ciamZone X-ORIGIN 'opsdir'
+  )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.8 NAME 'ciamServiceName' DESC 'Stable
+  service name + load balancer' SUP ciamBinding STRUCTURAL MUST ( ciamFqdn $
+  ciamTargetRole $ ciamPort ) MAY ( ciamDnsZone $ ciamDnsZoneRef $ ciamFront
+ endIp ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.9 NAME 'ciamFirewallRule' DESC 'Inbou
+ nd allow rule' SUP ciamBinding STRUCTURAL MUST ( ciamSourceCidr $ ciamPort 
+ $ ciamTargetRole ) MAY ( ciamProtocol $ ciamAllowsConsumer $ ciamRulePriori
+ ty ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.10 NAME 'ciamSecretRef' DESC 'Referen
+ ce to a secret' SUP ciamBinding STRUCTURAL MUST ciamRefUri X-ORIGIN 'opsdir
+ ' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.11 NAME 'ciamKeyRef' DESC 'Reference 
+ to an encryption key' SUP ciamBinding STRUCTURAL MUST ciamRefUri X-ORIGIN '
+ opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.12 NAME 'ciamEgress' DESC 'Outbound (
+ NAT) addresses our services send from' SUP ciamBinding STRUCTURAL MUST ciam
+ Cidr X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.13 NAME 'ciamExternalAllowlist' DESC 
+ 'An allowlist in someone else\27s system that contains our addresses' SUP c
+ iamObject STRUCTURAL MUST ( cn $ ciamManagedBy $ ciamRefersToRole $ ciamRec
+ ordedCidr $ ciamAllowlistDirection ) MAY ( ciamExternalSystem $ ciamLeadTim
+ eDays $ ciamRequestStatus $ ciamAllowsConsumer ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.14 NAME 'ciamBackupTarget' DESC 'Back
+ up destination' SUP ciamBinding STRUCTURAL MUST ciamStorageRef MAY ciamRete
+ ntionDays X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.15 NAME 'ciamInterconnect' DESC 'Link
+  to another environment' SUP ciamBinding STRUCTURAL MUST ( ciamInterconnect
+ Kind $ ciamPeerEnvironment $ ciamSourceCidr ) MAY ciamPort X-ORIGIN 'opsdir
+ ' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.16 NAME 'ciamBackend' DESC 'DS backen
+ d' SUP ciamObject STRUCTURAL MUST ( cn $ ciamBackendType $ ciamBaseDn ) X-O
+ RIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.17 NAME 'ciamIndex' DESC 'DS backend 
+ index' SUP ciamObject STRUCTURAL MUST ( cn $ ciamIndexedAttribute $ ciamInd
+ exType ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.18 NAME 'ciamPasswordPolicy' DESC 'Pa
+ ssword policy' SUP ciamObject STRUCTURAL MUST ( cn $ ciamStorageScheme ) MA
+ Y ( ciamLockoutFailureCount $ ciamLockoutDuration $ ciamPasswordHistoryCoun
+ t $ ciamMaxPasswordAge $ ciamPopulation ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.19 NAME 'ciamConnectionHandler' DESC 
+ 'DS connection handler' SUP ciamObject STRUCTURAL MUST ( cn $ ciamEnabled )
+  MAY ciamListenPort X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.20 NAME 'ciamLogPublisher' DESC 'DS l
+ og publisher' SUP ciamObject STRUCTURAL MUST ( cn $ ciamEnabled ) X-ORIGIN 
+ 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.21 NAME 'ciamReplicationTopology' DES
+ C 'Replication topology shape' SUP ciamObject STRUCTURAL MUST ( cn $ ciamRe
+ plicaCount ) MAY ciamReplicationPurgeDelay X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.22 NAME 'ciamSnapshot' DESC 'Observed
+  config snapshot of one server' SUP ciamObject STRUCTURAL MUST ( snap $ cia
+ mServerRef $ ciamCapturedAt ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.23 NAME 'ciamUserAttribute' DESC 'Rec
+ ord describing a user-directory attribute' SUP ciamObject STRUCTURAL MUST (
+  cn $ ciamLdapName $ ciamPiiClass ) MAY ( ciamExportControlled $ ciamPurpos
+ e $ ciamRetentionRule ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.24 NAME 'ciamConsumer' DESC 'A client
+  of the user directory' SUP ciamObject STRUCTURAL MUST ( cn $ ciamBindDn ) 
+ MAY ( ciamObservedSource $ ciamOperationMix $ ciamSubtreeRead $ ciamAttrRea
+ d $ ciamUnindexedSearchesPerDay $ ciamTlsOnly $ ciamPeakOpsPerSec $ ciamFir
+ stSeen $ ciamLastSeen $ ciamCriticality $ ciamMigrationStatus ) X-ORIGIN 'o
+ psdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.25 NAME 'ciamAci' DESC 'Access contro
+ l instruction' SUP ciamObject STRUCTURAL MUST ( cn $ ciamAciTargetDn $ ciam
+ AciRight $ ciamAciGrantee ) MAY ( ciamAciTargetAttr $ ciamAciAllAttributes 
+ $ ciamJustification $ ciamReviewedOn ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.26 NAME 'ciamIntegration' DESC 'Appli
+ cation or partner integration' SUP ciamObject STRUCTURAL MUST ( cn $ ciamPr
+ otocolType ) MAY ( ciamEntityId $ ciamAcsUrl $ ciamRedirectUri $ ciamClient
+ Id $ ciamGrantType $ ciamPkceRequired $ ciamPopulation $ ciamMfaRequired $ 
+ ciamUsesCertificate $ ciamJitBaseDn $ ciamCriticality ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.27 NAME 'ciamClaimMap' DESC 'One clai
+ m / SAML attribute mapping' SUP ciamObject STRUCTURAL MUST ( cn $ ciamClaim
+ Name $ ciamSourceAttribute ) MAY ciamTransform X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.28 NAME 'ciamCertificate' DESC 'Certi
+ ficate (public facts only)' SUP ciamObject STRUCTURAL MUST ( cn $ ciamFinge
+ rprint $ ciamNotAfter $ ciamCertPurpose ) MAY ( ciamSubject $ ciamIssuer $ 
+ ciamNotBefore $ ciamSubjectAltName $ ciamKeyRole $ ciamPartnerContact $ cia
+ mRotationRunbook ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.29 NAME 'ciamRunbook' DESC 'Work inst
+ ruction' SUP ciamObject STRUCTURAL MUST ( cn $ ciamTitle $ ciamLastValidate
+ d ) MAY ( ciamVersion $ ciamAppliesTo $ ciamDocUrl ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.30 NAME 'ciamChange' DESC 'Change rec
+ ord (mirrored from ITSM)' SUP ciamObject STRUCTURAL MUST ( cn $ ciamTitle $
+  ciamChangeStatus ) MAY ( ciamApprovedBy $ ciamPlannedAt ) X-ORIGIN 'opsdir
+ ' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.31 NAME 'ciamIncident' DESC 'Incident
+  / postmortem' SUP ciamObject STRUCTURAL MUST ( cn $ ciamTitle $ ciamOpened
+ At ) MAY ( ciamSeverity $ ciamInvolved $ ciamRootCause ) X-ORIGIN 'opsdir' 
+ )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.32 NAME 'ciamParty' DESC 'Team, partn
+ er or vendor' SUP ciamObject STRUCTURAL MUST ( cn $ ciamOwnerKind ) MAY ( m
+ ail $ ciamContactUrl ) X-ORIGIN 'opsdir' )
