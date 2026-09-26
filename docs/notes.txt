@@ -1,3 +1,22 @@
+Customer Identity and Access Management (CIAM)
+OpenID Connect (OIDC) is a modern authentication protocol built on top of the OAuth 2.0 framework
+Security Assertion Markup Language (SAML) is an open, XML-based standard used for exchanging authentication and authorization data between an Identity Provider (IdP) and a Service Provider (SP) to enable Single Sign-On (SSO).
+PingDS (Directory Services) and PingIDM (Identity Management) are distinct components of the Ping Identity platform with different core functions. PingDS serves as the backend directory and repository, storing identity data and handling LDAP operations, whereas PingIDM manages the full identity lifecycle, including workflow-driven provisioning, synchronization, and access management.
+
+Health checks
+Certificate-expiration checks
+Backup verification
+Replication checks
+Configuration drift detection
+Infrastructure provisioning
+Deployment pipelines
+Account lifecycle jobs
+Inactive-account reports
+Application onboarding
+Migration validation
+Audit evidence collection
+Incident/log correlation
+
 What it is
   - The standard (SPEC.md): LDAP's own schema format (RFC 4512), extended through
     LDAP's official X- mechanism. Every attribute declares whether it moves as-is,
