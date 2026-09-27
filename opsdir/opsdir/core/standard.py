@@ -11,7 +11,8 @@ from .interchange.rfc4512 import attribute_type_definition, object_class_definit
 
 ARC = "1.3.6.1.4.1.32473.1"   # RFC 5612 documentation PEN; replace with a registered arc (SPEC 1.0)
 SYNTAX = {"string": ".15", "int": ".27", "bool": ".7", "time": ".24", "dn": ".12", "extdn": ".12",
-          "cidr": ".15", "ip": ".15", "fqdn": ".26", "url": ".26", "port": ".27", "ref-uri": ".26", "json": ".15"}
+          "cidr": ".15", "ip": ".15", "fqdn": ".26", "url": ".26", "port": ".27", "ref-uri": ".26", "json": ".15",
+          "vocab": ".15"}
 EQUALITY = {"int": "integerMatch", "port": "integerMatch", "bool": "booleanMatch", "time": "generalizedTimeMatch",
             "dn": "distinguishedNameMatch", "extdn": "distinguishedNameMatch"}
 
@@ -41,7 +42,8 @@ HEADER = ("# Operations Directory schema (opsdir) — LDAP schema extended for p
           "# Standard RFC 4512 definitions. Extensions (legal per RFC 4512 §4.2):",
           "#   X-PORTABILITY  intent | contract | binding | secret-ref | observed | meta",
           "#   X-VALUE-TYPE   stricter value type enforced by the store (string, int, bool, time, dn, extdn,",
-          "#                  cidr, ip, fqdn, url, port, ref-uri, json, enum:a|b|c)",
+          "#                  cidr, ip, fqdn, url, port, ref-uri, json, enum:a|b|c, vocab = values the",
+          "#                  installed domains and adapters register)",
           "# OIDs use the RFC 5612 documentation arc 1.3.6.1.4.1.32473 as a placeholder.",
           "dn: cn=schema", "objectClass: top", "objectClass: ldapSubentry", "objectClass: subschema", "cn: schema")
 

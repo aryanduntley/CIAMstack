@@ -3,7 +3,7 @@ import datetime as dt
 
 from ...core.directory import children, follow, gtime_date, one, rdn_value, referrers
 from ...core.findings import findings, owner_label
-from .domain import CERTIFICATES
+from .naming import CERTIFICATES
 
 # attributes through which an entry depends on a certificate (integrations; service names presenting it)
 CERTIFICATE_USE = ("ciamUsesCertificate", "ciamTlsCertificate")

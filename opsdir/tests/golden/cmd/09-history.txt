@@ -1,5 +1,5 @@
 at                   change    op      dn                                                                    
 -------------------  --------  ------  ----------------------------------------------------------------------
-<TIMESTAMP>          CHG-2001  insert  cn=fw-mro-batch,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc
-<TIMESTAMP>          CHG-2003  update  cn=svc-ldaps,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ci
+<TIMESTAMP>          CHG-2001  insert  cn=fw-mro-batch,ou=bindings,env=prod,cloud=target,ou=environments,dc=c
+<TIMESTAMP>          CHG-2003  update  cn=svc-ldaps,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam
 (2 rows)

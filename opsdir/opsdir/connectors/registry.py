@@ -1,35 +1,79 @@
-"""The parts of the stack and which of them apply to an environment. The only module that lists them.
+"""The parts of the stack and which of them apply to an environment.
 
-Adding a product, cloud provider or secret store = writing its adapter package and adding it here.
-Which adapters apply to an environment is decided by each adapter from directory data (provider of the
-cloud, products on the servers), never by a default.
+Domains and adapters are discovered, never imported by name: every installed distribution registers them under the
+entry-point groups `opsdir.domains` and `opsdir.adapters` (the core registers its built-in domains the same way).
+Installing an adapter package is all it takes to add a product, cloud provider or secret store. Which adapters apply
+to an environment is decided by each adapter from directory data (provider of the cloud, products on the servers),
+never by a default.
 """
+from importlib.metadata import entry_points
 from pathlib import Path
 
-from ..adapters.aws.adapter import ADAPTER as AWS
-from ..adapters.azure.adapter import ADAPTER as AZURE
-from ..adapters.hashicorp_vault.adapter import ADAPTER as HASHICORP_VAULT
-from ..adapters.pingds.adapter import ADAPTER as PINGDS
-from ..adapters.pingfederate.adapter import ADAPTER as PINGFEDERATE
-from ..core.contract import Services
+from ..core.contract import Adapter, Domain, Services
+from ..core.directory import get, rdn_value, subtree
 from ..core.environment import env_model, with_required_roles
-from ..core.standard import CORE
-from ..domains.directory.domain import DOMAIN as DIRECTORY
-from ..domains.federation.domain import DOMAIN as FEDERATION
-from ..domains.governance.domain import DOMAIN as GOVERNANCE
-from ..domains.infrastructure.domain import DOMAIN as INFRASTRUCTURE
-from ..domains.pki.domain import DOMAIN as PKI
+from ..core.naming import branch
+from ..core.standard import CORE, schema_ldif
+from ..store.migrations import DEFINITIONS as STORE_DEFINITIONS, read_migrations
+from .stack import declared_adapters, missing_adapters
 
-DOMAINS = (INFRASTRUCTURE, DIRECTORY, FEDERATION, PKI, GOVERNANCE)
-ADAPTERS = (AWS, AZURE, PINGDS, PINGFEDERATE, HASHICORP_VAULT)    # providers first: their files lead a render
-
-STORE_SQL = Path(__file__).resolve().parent.parent / "store" / "sql"
+DOMAIN_GROUP = "opsdir.domains"
+ADAPTER_GROUP = "opsdir.adapters"
+KIND_ORDER = ("provider", "product", "secret-store")     # providers first: their files lead a render
+ENVIRONMENTS = branch("environments")
 CONNECTOR_SQL = (Path(__file__).resolve().parent / "sql" / "connectors.sql",)
 
 
-def sql_files():
-    """Every SQL file, in load order: the store, each domain's views, then cross-domain views."""
-    return (*sorted(STORE_SQL.glob("*.sql")), *(f for domain in DOMAINS for f in domain.sql), *CONNECTOR_SQL)
+# ------------------------------------------------------------------ discovery
+def registered(group, record, loaded):
+    """The records registered in an entry-point group, from its (entry-point name, object, version) triples;
+    refused unless each object is a `record` and every record name is unique."""
+    wrong = [name for name, obj, _ in loaded if not isinstance(obj, record)]
+    if wrong:
+        raise SystemExit(f"{group}: not a {record.__name__} record: {', '.join(wrong)}")
+    names = [obj.name for _, obj, _ in loaded]
+    repeated = sorted({n for n in names if names.count(n) > 1})
+    if repeated:
+        raise SystemExit(f"{group}: registered more than once: {', '.join(repeated)}")
+    return tuple(obj for _, obj, _ in loaded)
+
+
+def versions(loaded):
+    """{record name: version of the distribution that registered it}."""
+    return {obj.name: version for _, obj, version in loaded}
+
+
+def ordered_domains(domains):
+    """Domains in the order they run and report (Domain.order, then name)."""
+    return tuple(sorted(domains, key=lambda d: (d.order, d.name)))
+
+
+def ordered_adapters(adapters):
+    """Adapters by kind (providers, products, secret stores), then name."""
+    unknown = [a.name for a in adapters if a.kind not in KIND_ORDER]
+    if unknown:
+        raise SystemExit(f"adapters of unknown kind: {', '.join(unknown)} (kinds: {', '.join(KIND_ORDER)})")
+    return tuple(sorted(adapters, key=lambda a: (KIND_ORDER.index(a.kind), a.name)))
+
+
+def discover(group):
+    """Effect: (entry-point name, loaded object, distribution version) for every registration in a group."""
+    return tuple((ep.name, ep.load(), ep.dist.version if ep.dist else None) for ep in entry_points(group=group))
+
+
+DOMAINS = ordered_domains(registered(DOMAIN_GROUP, Domain, discover(DOMAIN_GROUP)))
+_ADAPTERS_FOUND = discover(ADAPTER_GROUP)
+ADAPTERS = ordered_adapters(registered(ADAPTER_GROUP, Adapter, _ADAPTERS_FOUND))
+ADAPTER_VERSIONS = versions(_ADAPTERS_FOUND)
+if not DOMAINS:
+    raise SystemExit("no opsdir domains are registered: install the package (pip install -e opsdir)")
+
+
+# ------------------------------------------------------------------ what the registered parts add up to
+def definition_files():
+    """Every SQL definition (views, report functions), in apply order: the store's, each domain's, then the
+    cross-domain views. Migrations (tables, rules) are the store's own."""
+    return (*sorted(STORE_DEFINITIONS.glob("*.sql")), *(f for domain in DOMAINS for f in domain.sql), *CONNECTOR_SQL)
 
 
 def schema_fragments():
@@ -37,13 +81,37 @@ def schema_fragments():
     return (CORE, *(domain.schema for domain in DOMAINS))
 
 
+def vocabulary(domains=DOMAINS, adapters=ADAPTERS):
+    """(attribute, value, owner) for every `vocab` value a registered domain or adapter defines."""
+    return tuple(dict.fromkeys((attr, value, part.name) for part in (*domains, *adapters)
+                               for attr, values in part.vocabulary.items() for value in values))
+
+
+def store_parts():
+    """Effect (reads the migration files): what `init` and `upgrade` build the store from: (migrations, definition
+    files, schema text composed from the registered fragments, reference schemes, vocabulary)."""
+    return read_migrations(), definition_files(), schema_ldif(schema_fragments()), ref_schemes(), vocabulary()
+
+
 def applicable(m):
-    return tuple(a for a in ADAPTERS if a.applies(m))
+    """The installed adapters that render an environment: its declared stack's, else inferred from its data.
+    Refuses an environment whose stack declares adapters that are not installed."""
+    missing = missing_adapters(m, ADAPTERS)
+    if missing:
+        raise SystemExit(f"{m.label} declares adapters that are not installed: "
+                         f"{', '.join(c.adapter for c in missing)} (run `opsdir check`)")
+    return declared_adapters(m, ADAPTERS)
 
 
 def required_roles(adapters):
     """Roles an environment must bind: every domain's, then each applicable adapter's (first mention wins)."""
     return tuple(dict.fromkeys(r for part in (*DOMAINS, *adapters) for r in part.required_roles))
+
+
+def environment_specs(d):
+    """Every environment in the directory as a cloud/env spec, in DN order."""
+    return tuple(f"{rdn_value(get(d, e.dn.split(',', 1)[1]))}/{rdn_value(e)}"
+                 for e in subtree(d, ENVIRONMENTS, "ciamEnvironment"))
 
 
 def environment(d, spec):

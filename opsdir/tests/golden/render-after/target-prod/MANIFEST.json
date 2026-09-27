@@ -1,0 +1,49 @@
+{
+  "environment": "env=prod,cloud=target,ou=environments,dc=ciam-ops",
+  "provider": "azure",
+  "unbound_roles": [
+    "backup-target"
+  ],
+  "files": {
+    "ds/acis.ldif": {
+      "scope": "environment-neutral",
+      "sha256": "48d21fe0ad6ed3587aa7a6c9dc64cf4dd32e27e975a7f01c04b2806e5d884b82"
+    },
+    "ds/dsconfig.batch": {
+      "scope": "environment-neutral",
+      "sha256": "cb9ce47572ec0b2692847e6a57ccacb5d8655d0be52e4058c1bb663403a58a2b"
+    },
+    "ds/setup-ds-1.sh": {
+      "scope": "environment-specific",
+      "sha256": "918f8135ce3974e977816b8612a857597933633bf17cd922785e17732ccf525d"
+    },
+    "ds/setup-ds-2.sh": {
+      "scope": "environment-specific",
+      "sha256": "36c69e7c060f5fbba6ab4bfa2cc0ffef57c8508304a64c45d0121823c3740be5"
+    },
+    "ds/setup-ds-3.sh": {
+      "scope": "environment-specific",
+      "sha256": "ba87b48ad646f8d2376abcba24d4a73684ef8a86472688d65472452f6ef8cb84"
+    },
+    "pingfederate/idp-connections.json": {
+      "scope": "environment-neutral",
+      "sha256": "23f5a0a78e550a31fe3724e180f479e965295fa0b7c8f743cca973e59657a214"
+    },
+    "pingfederate/oidc-clients.json": {
+      "scope": "environment-neutral",
+      "sha256": "f85922ece1ef2fe935126b7af8c623aa40cb9affd0e6557fdff7363625497de7"
+    },
+    "pingfederate/sp-connections.json": {
+      "scope": "environment-neutral",
+      "sha256": "dbb151dfcbf0d748796110c370accdea19c6d06f15ef5e5bcf5105c61198c2d5"
+    },
+    "terraform/main.tf": {
+      "scope": "environment-specific",
+      "sha256": "5f35047b37065de1fab34f4e1bc0e5cc6bffca525194e418cfeb7d6e3af96b63"
+    },
+    "terraform/providers.tf": {
+      "scope": "environment-specific",
+      "sha256": "4da1f8f515b78421aa73281b8234948140dc76752668e42984b05664bd78c652"
+    }
+  }
+}

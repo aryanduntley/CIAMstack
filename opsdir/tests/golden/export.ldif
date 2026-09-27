@@ -79,26 +79,25 @@ objectClass: organizationalUnit
 ou: user-schema
 description: Records describing attributes of the user directory
 
-dn: cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamCloud
-cloud: aws-current
+cloud: source
 ciamCloudEnvironment: public
 ciamCloudProvider: aws
 ciamLifecycle: active
 ciamRegion: us-east-1
-description: Existing cloud hosting environment
+description: Current cloud hosting environment (AWS)
 
-dn: cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamCloud
-cloud: rtx-next
+cloud: target
 ciamCloudEnvironment: usgovernment
 ciamCloudProvider: azure
 ciamLifecycle: building
 ciamRegion: usgovvirginia
-description: Next-gen cloud landing zone (ASSUMED Azure Government for the dem
- o; the real target is unconfirmed)
+description: New cloud landing zone being built (Azure Government)
 
 dn: cn=aci-idm-write,ou=acis,dc=ciam-ops
 objectClass: top
@@ -241,7 +240,7 @@ cn: CHG-2001
 ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
-ciamTitle: Add NSG rule for the MRO batch export in rtx-next
+ciamTitle: Add NSG rule for the MRO batch export in the target environment
 
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
@@ -257,7 +256,7 @@ cn: CHG-2003
 ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
-ciamTitle: Restore the stable LDAPS service name in rtx-next
+ciamTitle: Restore the stable LDAPS service name in the target environment
 
 dn: cn=CHG-2040,ou=changes,dc=ciam-ops
 objectClass: top
@@ -266,7 +265,7 @@ cn: CHG-2040
 ciamApprovedBy: CAB 2026-09-04
 ciamChangeStatus: applied
 ciamPlannedAt: 20260906000000Z
-ciamTitle: Allow rtx-next DS subnet on the replication port
+ciamTitle: Allow target DS subnet on the replication port
 
 dn: cn=ciam-platform,ou=owners,dc=ciam-ops
 objectClass: top
@@ -484,7 +483,7 @@ dn: cn=INC-2231,ou=incidents,dc=ciam-ops
 objectClass: top
 objectClass: ciamIncident
 cn: INC-2231
-ciamInvolved: cn=ds-2,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+ciamInvolved: cn=ds-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamInvolved: cn=mail,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-op
  s
 ciamOpenedAt: 20260914141200Z
@@ -923,18 +922,18 @@ objectClass: organizationalUnit
 ou: observed
 description: Read-only snapshots captured from live servers
 
-dn: env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamEnvironment
 env: prod
 ciamLifecycle: active
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 
-dn: env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamEnvironment
 env: prod
-ciamJoinsDeploymentOf: env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+ciamJoinsDeploymentOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamLifecycle: building
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPlannedCutover: 20270115000000Z
@@ -989,21 +988,21 @@ objectClass: top
 objectClass: ciamSnapshot
 snap: ds-1-20260920
 ciamCapturedAt: 20260920030000Z
-ciamServerRef: cn=ds-1,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+ciamServerRef: cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
 
 dn: snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamSnapshot
 snap: ds-2-20260920
 ciamCapturedAt: 20260920030000Z
-ciamServerRef: cn=ds-2,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+ciamServerRef: cn=ds-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
 
 dn: snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamSnapshot
 snap: ds-3-20260920
 ciamCapturedAt: 20260920030000Z
-ciamServerRef: cn=ds-3,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+ciamServerRef: cn=ds-3,env=prod,cloud=source,ou=environments,dc=ciam-ops
 
 dn: cn=company,ou=claims,cn=customer-portal,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -1029,7 +1028,7 @@ ciamPasswordHistoryCount: 5
 ciamPopulation: customers
 ciamStorageScheme: PBKDF2-HMAC-SHA256
 
-dn: cn=ds-1,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
 cn: ds-1
@@ -1040,11 +1039,11 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.20.1.11
 ciamProductVersion: PingDS 7.5.1
 ciamServerRole: ds
-ciamSubnet: cn=subnet-ds-a,ou=bindings,env=prod,cloud=aws-current,ou=environme
- nts,dc=ciam-ops
+ciamSubnet: cn=subnet-ds-a,ou=bindings,env=prod,cloud=source,ou=environments,d
+ c=ciam-ops
 ciamZone: us-east-1a
 
-dn: cn=ds-1,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=ds-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
 cn: ds-1
@@ -1056,11 +1055,11 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.60.1.11
 ciamProductVersion: PingDS 7.5.1
 ciamServerRole: ds
-ciamSubnet: cn=snet-ds,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=
- ciam-ops
+ciamSubnet: cn=snet-ds,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
+ am-ops
 ciamZone: 1
 
-dn: cn=ds-2,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=ds-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
 cn: ds-2
@@ -1071,11 +1070,11 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.20.2.11
 ciamProductVersion: PingDS 7.5.1
 ciamServerRole: ds
-ciamSubnet: cn=subnet-ds-b,ou=bindings,env=prod,cloud=aws-current,ou=environme
- nts,dc=ciam-ops
+ciamSubnet: cn=subnet-ds-b,ou=bindings,env=prod,cloud=source,ou=environments,d
+ c=ciam-ops
 ciamZone: us-east-1b
 
-dn: cn=ds-2,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=ds-2,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
 cn: ds-2
@@ -1087,11 +1086,11 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.60.1.12
 ciamProductVersion: PingDS 7.5.1
 ciamServerRole: ds
-ciamSubnet: cn=snet-ds,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=
- ciam-ops
+ciamSubnet: cn=snet-ds,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
+ am-ops
 ciamZone: 2
 
-dn: cn=ds-3,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=ds-3,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
 cn: ds-3
@@ -1102,11 +1101,11 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.20.3.11
 ciamProductVersion: PingDS 7.5.1
 ciamServerRole: ds
-ciamSubnet: cn=subnet-ds-c,ou=bindings,env=prod,cloud=aws-current,ou=environme
- nts,dc=ciam-ops
+ciamSubnet: cn=subnet-ds-c,ou=bindings,env=prod,cloud=source,ou=environments,d
+ c=ciam-ops
 ciamZone: us-east-1c
 
-dn: cn=ds-3,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=ds-3,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
 cn: ds-3
@@ -1118,8 +1117,8 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.60.1.13
 ciamProductVersion: PingDS 7.5.1
 ciamServerRole: ds
-ciamSubnet: cn=snet-ds,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=
- ciam-ops
+ciamSubnet: cn=snet-ds,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
+ am-ops
 ciamZone: 3
 
 dn: cn=email,ou=claims,cn=customer-portal,ou=integrations,dc=ciam-ops
@@ -1219,7 +1218,7 @@ cn: org
 ciamClaimName: org
 ciamSourceAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
 
-dn: cn=pf-admin-1,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=pf-admin-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
 cn: pf-admin-1
@@ -1230,11 +1229,11 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.20.4.10
 ciamProductVersion: PingFederate 12.1.4
 ciamServerRole: pf-admin
-ciamSubnet: cn=subnet-pf-a,ou=bindings,env=prod,cloud=aws-current,ou=environme
- nts,dc=ciam-ops
+ciamSubnet: cn=subnet-pf-a,ou=bindings,env=prod,cloud=source,ou=environments,d
+ c=ciam-ops
 ciamZone: us-east-1a
 
-dn: cn=pf-admin-1,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=pf-admin-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
 cn: pf-admin-1
@@ -1247,11 +1246,11 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.60.2.10
 ciamProductVersion: PingFederate 12.1.4
 ciamServerRole: pf-admin
-ciamSubnet: cn=snet-pf,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=
- ciam-ops
+ciamSubnet: cn=snet-pf,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
+ am-ops
 ciamZone: 1
 
-dn: cn=pf-engine-1,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=pf-engine-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
 cn: pf-engine-1
@@ -1262,11 +1261,11 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.20.4.21
 ciamProductVersion: PingFederate 12.1.4
 ciamServerRole: pf-engine
-ciamSubnet: cn=subnet-pf-a,ou=bindings,env=prod,cloud=aws-current,ou=environme
- nts,dc=ciam-ops
+ciamSubnet: cn=subnet-pf-a,ou=bindings,env=prod,cloud=source,ou=environments,d
+ c=ciam-ops
 ciamZone: us-east-1a
 
-dn: cn=pf-engine-1,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=pf-engine-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
 cn: pf-engine-1
@@ -1279,11 +1278,11 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.60.2.21
 ciamProductVersion: PingFederate 12.1.4
 ciamServerRole: pf-engine
-ciamSubnet: cn=snet-pf,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=
- ciam-ops
+ciamSubnet: cn=snet-pf,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
+ am-ops
 ciamZone: 1
 
-dn: cn=pf-engine-2,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=pf-engine-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
 cn: pf-engine-2
@@ -1294,11 +1293,11 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.20.5.21
 ciamProductVersion: PingFederate 12.1.4
 ciamServerRole: pf-engine
-ciamSubnet: cn=subnet-pf-b,ou=bindings,env=prod,cloud=aws-current,ou=environme
- nts,dc=ciam-ops
+ciamSubnet: cn=subnet-pf-b,ou=bindings,env=prod,cloud=source,ou=environments,d
+ c=ciam-ops
 ciamZone: us-east-1b
 
-dn: cn=pf-engine-2,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=pf-engine-2,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
 cn: pf-engine-2
@@ -1311,8 +1310,8 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.60.2.22
 ciamProductVersion: PingFederate 12.1.4
 ciamServerRole: pf-engine
-ciamSubnet: cn=snet-pf,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=
- ciam-ops
+ciamSubnet: cn=snet-pf,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
+ am-ops
 ciamZone: 2
 
 dn: cn=roles,ou=claims,cn=customer-portal,ou=integrations,dc=ciam-ops
@@ -1394,12 +1393,12 @@ objectClass: top
 objectClass: organizationalUnit
 ou: backends
 
-dn: ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: bindings
 
-dn: ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: bindings
@@ -1419,6 +1418,16 @@ objectClass: top
 objectClass: organizationalUnit
 ou: password-policies
 
+dn: ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: stack
+
+dn: ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: stack
+
 dn: cn=appEntitlement,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
@@ -1426,7 +1435,7 @@ cn: appEntitlement
 ciamIndexType: equality
 ciamIndexedAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
 
-dn: cn=backup,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=backup,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamBackupTarget
 cn: backup
@@ -1471,7 +1480,27 @@ ciamPasswordHistoryCount: 5
 ciamPopulation: customers
 ciamStorageScheme: PBKDF2-HMAC-SHA256
 
-dn: cn=egress-pf,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=directory,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: directory
+ciamAdapter: pingds
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-pingds
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: directory
+
+dn: cn=directory,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: directory
+ciamAdapter: pingds
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-pingds
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: directory
+
+dn: cn=egress-pf,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamEgress
 cn: egress-pf
@@ -1479,7 +1508,7 @@ ciamBindingRole: pf-egress
 ciamCidr: 203.0.113.10/32
 ciamProviderRef: nat-0123456789abcdef0
 
-dn: cn=egress-pf,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=egress-pf,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamEgress
 cn: egress-pf
@@ -1487,7 +1516,27 @@ ciamBindingRole: pf-egress
 ciamCidr: 203.0.113.200/32
 ciamProviderRef: natgw-ciam-prod
 
-dn: cn=fw-admin,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=federation,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: federation
+ciamAdapter: pingfederate
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-pingfederate
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: federation
+
+dn: cn=federation,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: federation
+ciamAdapter: pingfederate
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-pingfederate
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: federation
+
+dn: cn=fw-admin,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-admin
@@ -1497,7 +1546,7 @@ ciamProtocol: tcp
 ciamSourceCidr: 10.20.9.0/28
 ciamTargetRole: ds
 
-dn: cn=fw-admin,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=fw-admin,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-admin
@@ -1508,7 +1557,7 @@ ciamRulePriority: 150
 ciamSourceCidr: 10.60.9.0/28
 ciamTargetRole: ds
 
-dn: cn=fw-customer-portal,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=fw-customer-portal,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-customer-portal
@@ -1519,7 +1568,7 @@ ciamProtocol: tcp
 ciamSourceCidr: 10.30.8.0/24
 ciamTargetRole: ds
 
-dn: cn=fw-customer-portal,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=fw-customer-portal,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-customer-portal
@@ -1531,7 +1580,7 @@ ciamRulePriority: 110
 ciamSourceCidr: 10.30.8.0/24
 ciamTargetRole: ds
 
-dn: cn=fw-idm-sync,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=fw-idm-sync,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-idm-sync
@@ -1542,7 +1591,7 @@ ciamProtocol: tcp
 ciamSourceCidr: 10.20.6.0/24
 ciamTargetRole: ds
 
-dn: cn=fw-idm-sync,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=fw-idm-sync,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-idm-sync
@@ -1554,7 +1603,7 @@ ciamRulePriority: 130
 ciamSourceCidr: 10.60.6.0/24
 ciamTargetRole: ds
 
-dn: cn=fw-legacy-rptuser,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=fw-legacy-rptuser,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-legacy-rptuser
@@ -1565,7 +1614,7 @@ ciamProtocol: tcp
 ciamSourceCidr: 10.40.7.22/32
 ciamTargetRole: ds
 
-dn: cn=fw-mro-batch,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=fw-mro-batch,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-mro-batch
@@ -1576,7 +1625,7 @@ ciamProtocol: tcp
 ciamSourceCidr: 10.40.12.0/24
 ciamTargetRole: ds
 
-dn: cn=fw-mro-batch,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=fw-mro-batch,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-mro-batch
@@ -1589,7 +1638,7 @@ ciamRulePriority: 170
 ciamSourceCidr: 10.40.12.0/24
 ciamTargetRole: ds
 
-dn: cn=fw-pf-ds-svc,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=fw-pf-ds-svc,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-pf-ds-svc
@@ -1602,7 +1651,7 @@ ciamSourceCidr: 10.20.4.0/24
 ciamSourceCidr: 10.20.5.0/24
 ciamTargetRole: ds
 
-dn: cn=fw-pf-ds-svc,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=fw-pf-ds-svc,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-pf-ds-svc
@@ -1614,7 +1663,7 @@ ciamRulePriority: 100
 ciamSourceCidr: 10.60.2.0/24
 ciamTargetRole: ds
 
-dn: cn=fw-replication,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=fw-replication,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-replication
@@ -1628,7 +1677,7 @@ ciamSourceCidr: 10.20.3.0/24
 ciamSourceCidr: 10.60.1.0/24
 ciamTargetRole: ds
 
-dn: cn=fw-replication,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=fw-replication,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-replication
@@ -1640,7 +1689,7 @@ ciamSourceCidr: 10.60.1.0/24
 ciamSourceCidr: 10.20.0.0/16
 ciamTargetRole: ds
 
-dn: cn=fw-sso-public,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=fw-sso-public,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-sso-public
@@ -1650,7 +1699,7 @@ ciamProtocol: tcp
 ciamSourceCidr: 0.0.0.0/0
 ciamTargetRole: pf-engine
 
-dn: cn=fw-sso-public,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=fw-sso-public,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-sso-public
@@ -1661,7 +1710,7 @@ ciamRulePriority: 160
 ciamSourceCidr: 0.0.0.0/0
 ciamTargetRole: pf-engine
 
-dn: cn=fw-supplier-portal,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=fw-supplier-portal,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-supplier-portal
@@ -1672,7 +1721,7 @@ ciamProtocol: tcp
 ciamSourceCidr: 10.31.2.0/24
 ciamTargetRole: ds
 
-dn: cn=fw-supplier-portal,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=fw-supplier-portal,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-supplier-portal
@@ -1684,7 +1733,7 @@ ciamRulePriority: 120
 ciamSourceCidr: 10.31.2.0/24
 ciamTargetRole: ds
 
-dn: cn=key-disk,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=key-disk,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamKeyRef
 cn: key-disk
@@ -1692,7 +1741,7 @@ ciamBindingRole: disk-encryption
 ciamRefUri: aws-kms://arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34c
  d-56ef-1234567890ab
 
-dn: cn=key-disk,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=key-disk,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamKeyRef
 cn: key-disk
@@ -1709,14 +1758,14 @@ cn: lastLoginTime
 ciamIndexType: ordering
 ciamIndexedAttribute: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
 
-dn: cn=link-aws-current,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=link-source,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamInterconnect
-cn: link-aws-current
+cn: link-source
 ciamBindingRole: cross-cloud-replication
 ciamInterconnectKind: site-to-site VPN (landing-zone managed)
 ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
-ciamPeerEnvironment: env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+ciamPeerEnvironment: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamPort: 8989
 ciamSourceCidr: 10.20.0.0/16
 
@@ -1729,6 +1778,26 @@ ciamIndexType: equality
 ciamIndexedAttribute: cn=mail,ou=user-schema,dc=ciam-ops
 ciamLastChanged: 20260614000000Z
 
+dn: cn=provider,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: provider
+ciamAdapter: aws
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-aws
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: provider
+
+dn: cn=provider,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: provider
+ciamAdapter: azure
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-azure
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: provider
+
 dn: cn=registrationStatus,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
@@ -1736,7 +1805,7 @@ cn: registrationStatus
 ciamIndexType: equality
 ciamIndexedAttribute: cn=registrationStatus,ou=user-schema,dc=ciam-ops
 
-dn: cn=secret-ds-deployment-id,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=secret-ds-deployment-id,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
 cn: secret-ds-deployment-id
@@ -1744,14 +1813,14 @@ ciamBindingRole: ds-deployment-id
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/ds-deployment-id
 
-dn: cn=secret-ds-deployment-id,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=secret-ds-deployment-id,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
 cn: secret-ds-deployment-id
 ciamBindingRole: ds-deployment-id
 ciamRefUri: azkv://kv-ciam-prod/ds-deployment-id
 
-dn: cn=secret-ds-deployment-password,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=secret-ds-deployment-password,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
 cn: secret-ds-deployment-password
@@ -1759,14 +1828,14 @@ ciamBindingRole: ds-deployment-password
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/ds-deployment-password
 
-dn: cn=secret-ds-deployment-password,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=secret-ds-deployment-password,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
 cn: secret-ds-deployment-password
 ciamBindingRole: ds-deployment-password
 ciamRefUri: azkv://kv-ciam-prod/ds-deployment-password
 
-dn: cn=secret-ds-root-password,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=secret-ds-root-password,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
 cn: secret-ds-root-password
@@ -1774,14 +1843,14 @@ ciamBindingRole: ds-root-password
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/ds-root-password
 
-dn: cn=secret-ds-root-password,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=secret-ds-root-password,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
 cn: secret-ds-root-password
 ciamBindingRole: ds-root-password
 ciamRefUri: azkv://kv-ciam-prod/ds-root-password
 
-dn: cn=secret-ds-tls-keystore,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=secret-ds-tls-keystore,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
 cn: secret-ds-tls-keystore
@@ -1789,14 +1858,14 @@ ciamBindingRole: ds-tls-keystore
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/ds-tls-keystore
 
-dn: cn=secret-ds-tls-keystore,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=secret-ds-tls-keystore,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
 cn: secret-ds-tls-keystore
 ciamBindingRole: ds-tls-keystore
 ciamRefUri: azkv://kv-ciam-prod/ds-tls-keystore
 
-dn: cn=secret-pf-admin-password,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=secret-pf-admin-password,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
 cn: secret-pf-admin-password
@@ -1804,14 +1873,14 @@ ciamBindingRole: pf-admin-password
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/pf-admin-password
 
-dn: cn=secret-pf-admin-password,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=secret-pf-admin-password,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
 cn: secret-pf-admin-password
 ciamBindingRole: pf-admin-password
 ciamRefUri: azkv://kv-ciam-prod/pf-admin-password
 
-dn: cn=secret-pf-signing-key,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=secret-pf-signing-key,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
 cn: secret-pf-signing-key
@@ -1819,14 +1888,14 @@ ciamBindingRole: pf-signing-key
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/pf-signing-key
 
-dn: cn=secret-pf-signing-key,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=secret-pf-signing-key,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
 cn: secret-pf-signing-key
 ciamBindingRole: pf-signing-key
 ciamRefUri: azkv://kv-ciam-prod/pf-signing-key
 
-dn: cn=secret-sso-tls-keystore,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=secret-sso-tls-keystore,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
 cn: secret-sso-tls-keystore
@@ -1834,7 +1903,7 @@ ciamBindingRole: sso-tls-keystore
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/sso-tls-keystore
 
-dn: cn=secret-sso-tls-keystore,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=secret-sso-tls-keystore,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
 cn: secret-sso-tls-keystore
@@ -1865,7 +1934,7 @@ ciamLockoutFailureCount: 0
 ciamPasswordHistoryCount: 0
 ciamStorageScheme: PBKDF2-HMAC-SHA512
 
-dn: cn=snet-ds,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=snet-ds,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSubnetBinding
 cn: snet-ds
@@ -1873,7 +1942,7 @@ ciamBindingRole: subnet-ds
 ciamCidr: 10.60.1.0/24
 ciamProviderRef: vnet-ciam-prod/snet-ds
 
-dn: cn=snet-pf,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=snet-pf,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSubnetBinding
 cn: snet-pf
@@ -1888,7 +1957,7 @@ cn: soldToAccount
 ciamIndexType: equality
 ciamIndexedAttribute: cn=soldToAccount,ou=user-schema,dc=ciam-ops
 
-dn: cn=subnet-ds-a,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=subnet-ds-a,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSubnetBinding
 cn: subnet-ds-a
@@ -1897,7 +1966,7 @@ ciamCidr: 10.20.1.0/24
 ciamProviderRef: subnet-0a11b22c33d44e55a
 ciamZone: us-east-1a
 
-dn: cn=subnet-ds-b,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=subnet-ds-b,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSubnetBinding
 cn: subnet-ds-b
@@ -1906,7 +1975,7 @@ ciamCidr: 10.20.2.0/24
 ciamProviderRef: subnet-0a11b22c33d44e55b
 ciamZone: us-east-1b
 
-dn: cn=subnet-ds-c,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=subnet-ds-c,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSubnetBinding
 cn: subnet-ds-c
@@ -1915,7 +1984,7 @@ ciamCidr: 10.20.3.0/24
 ciamProviderRef: subnet-0a11b22c33d44e55c
 ciamZone: us-east-1c
 
-dn: cn=subnet-pf-a,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=subnet-pf-a,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSubnetBinding
 cn: subnet-pf-a
@@ -1924,7 +1993,7 @@ ciamCidr: 10.20.4.0/24
 ciamProviderRef: subnet-0f66e77d88c99b00a
 ciamZone: us-east-1a
 
-dn: cn=subnet-pf-b,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=subnet-pf-b,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSubnetBinding
 cn: subnet-pf-b
@@ -1966,7 +2035,7 @@ ciamPasswordHistoryCount: 8
 ciamPopulation: suppliers
 ciamStorageScheme: PBKDF2-HMAC-SHA256
 
-dn: cn=svc-ldaps,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=svc-ldaps,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServiceName
 cn: svc-ldaps
@@ -1979,7 +2048,7 @@ ciamPort: 1636
 ciamTargetRole: ds
 ciamTlsCertificate: cn=ds-ldaps-2026,ou=certificates,dc=ciam-ops
 
-dn: cn=svc-ldaps,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=svc-ldaps,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServiceName
 cn: svc-ldaps
@@ -1991,7 +2060,7 @@ ciamFrontendIp: 10.60.1.100
 ciamPort: 1636
 ciamTargetRole: ds
 
-dn: cn=svc-sso,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=svc-sso,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServiceName
 cn: svc-sso
@@ -2005,7 +2074,7 @@ ciamProviderRef: eipalloc-0a1b2c3d4e5f60001
 ciamTargetRole: pf-engine
 ciamTlsCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 
-dn: cn=svc-sso,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=svc-sso,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServiceName
 cn: svc-sso
@@ -2047,7 +2116,7 @@ cn: userData
 ciamBackendType: je
 ciamBaseDn: dc=partners,dc=example-aero,dc=test
 
-dn: cn=vnet,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+dn: cn=vnet,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamNetwork
 cn: vnet
@@ -2057,7 +2126,7 @@ ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
 ciamProviderRef: vnet-ciam-prod
 ciamResourceGroup: rg-ciam-prod
 
-dn: cn=vpc,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+dn: cn=vpc,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamNetwork
 cn: vpc

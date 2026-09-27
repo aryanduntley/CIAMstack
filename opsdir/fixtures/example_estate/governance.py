@@ -17,9 +17,9 @@ PARTIES = (      # cn, kind, mail, contact url, display name
 CHANGES = (
     ("CHG-0877", "Grant PingFederate read access to profile attributes", "applied", "CAB 2024-01-02", "2024-01-03"),
     ("CHG-0931", "Reconfigure mail index (equality only)", "applied", "CAB 2026-06-11", "2026-06-14"),
-    ("CHG-2040", "Allow rtx-next DS subnet on the replication port", "applied", "CAB 2026-09-04", "2026-09-06"),
-    ("CHG-2001", "Add NSG rule for the MRO batch export in rtx-next", "approved", "CAB 2026-09-18", "2026-09-24"),
-    ("CHG-2003", "Restore the stable LDAPS service name in rtx-next", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2040", "Allow target DS subnet on the replication port", "applied", "CAB 2026-09-04", "2026-09-06"),
+    ("CHG-2001", "Add NSG rule for the MRO batch export in the target environment", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2003", "Restore the stable LDAPS service name in the target environment", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

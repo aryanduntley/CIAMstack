@@ -1,4 +1,5 @@
-"""The Postgres store: init, load, modify, and reading the directory snapshot.
+"""The Postgres store: connecting, loading and modifying entries, and reading the directory snapshot.
+(Creating and upgrading the SQL schema is store/migrations.py.)
 
 Pure functions prepare everything (schema rows, entry rows, modified entries); the few functions
 that take a connection only execute what was prepared. Nothing here knows any product or cloud.
@@ -12,25 +13,16 @@ import psycopg
 
 from ..core.directory import make_directory, norm_dn
 from ..core.interchange import ldif, rfc4512
-from ..core.naming import SUFFIX
-from ..core.paths import ROOT
 
-INSERT_ATTRIBUTE_TYPE = (
-    "insert into attribute_type (name, oid, syntax_oid, equality, value_type, portability, single_value,"
-    " description, origin) values (%(name)s, %(oid)s, %(syntax_oid)s, %(equality)s, %(value_type)s,"
-    " %(portability)s, %(single_value)s, %(description)s, %(origin)s)")
-INSERT_OBJECT_CLASS = (
-    "insert into object_class (name, oid, sup, kind, must, may, description, origin)"
-    " values (%(name)s, %(oid)s, %(sup)s, %(kind)s, %(must)s, %(may)s, %(description)s, %(origin)s)")
 INSERT_ENTRY = "insert into entry (dn, object_classes, attrs, change_id) values (%s, %s, %s, %s)"
 UPDATE_ENTRY = "update entry set object_classes = %s, attrs = %s where dn_norm = %s"
 
 
-def connect():
-    """Effect: connection to OPSDIR_DSN (autocommit; writes use explicit transactions)."""
-    dsn = os.environ.get("OPSDIR_DSN")
+def connect(dsn=None):
+    """Effect: connection to dsn, else OPSDIR_DSN (autocommit; writes use explicit transactions)."""
+    dsn = dsn or os.environ.get("OPSDIR_DSN")
     if not dsn:
-        raise SystemExit("OPSDIR_DSN is not set (eval \"$(scripts/pg-local.sh start)\")")
+        raise SystemExit("OPSDIR_DSN is not set (./opsdir.sh sets the local dev database; see README, Database)")
     conn = psycopg.connect(dsn, autocommit=True)
     conn.execute("set search_path = opsdir")
     return conn
@@ -115,29 +107,6 @@ def apply_mods(canon, classes, attrs, mods):
 
 
 # ------------------------------------------------------------------ effects: execute prepared work
-def init(conn, sql_files, ref_schemes):
-    """Effect: drop and recreate the opsdir SQL schema from sql_files (in order), load the LDAP schema,
-    register the suffix and the reference schemes the adapters own."""
-    ats, ocs = schema_rows((ROOT / "schema" / "ciam-ops.schema.ldif").read_text())
-    with conn.transaction():
-        conn.execute("drop schema if exists opsdir cascade")
-        for f in sql_files:
-            conn.execute(f.read_text())
-        conn.execute("set search_path = opsdir")
-        load_schema(conn, ats, ocs)
-        conn.execute("insert into suffix values (%s)", (SUFFIX,))
-        for scheme in ref_schemes:
-            conn.execute("insert into ref_scheme values (%s)", (scheme,))
-
-
-def load_schema(conn, ats, ocs):
-    """Effect: insert prepared registry rows."""
-    for a in ats:
-        conn.execute(INSERT_ATTRIBUTE_TYPE, a)
-    for o in ocs:
-        conn.execute(INSERT_OBJECT_CLASS, o)
-
-
 def registry_counts(conn):
     """Effect: (attribute types, object classes) in the registry."""
     return conn.execute("select (select count(*) from attribute_type), (select count(*) from object_class)").fetchone()
@@ -167,8 +136,13 @@ def read_ldif_files(paths):
 
 
 def load_ldif(conn, paths, change_id="BOOTSTRAP"):
-    """Effect: load content records in one transaction under a change id."""
-    rows = entry_rows(_canon(conn), read_ldif_files(paths))
+    """Effect: load the content records of LDIF files in one transaction under a change id."""
+    return load_records(conn, read_ldif_files(paths), change_id)
+
+
+def load_records(conn, records, change_id="BOOTSTRAP"):
+    """Effect: load content records in one transaction under a change id; returns how many."""
+    rows = entry_rows(_canon(conn), records)
     with conn.transaction():
         _begin_change(conn, change_id)
         for row in rows:
@@ -194,13 +168,17 @@ def _apply_record(conn, canon, change_id, r):
     return f"{r.changetype} {r.dn}"
 
 
-def apply_changes(conn, path, change_id):
-    """Effect: apply LDIF change records (add / modify / delete) under one change id, atomically."""
+def apply_records(conn, records, change_id):
+    """Effect: apply change records (add / modify / delete) under one change id, atomically."""
     canon = _canon(conn)
-    records = read_ldif_files([path])
     with conn.transaction():
         _begin_change(conn, change_id)
         return [_apply_record(conn, canon, change_id, r) for r in records]
+
+
+def apply_changes(conn, path, change_id):
+    """Effect: apply an LDIF file of change records under one change id, atomically."""
+    return apply_records(conn, read_ldif_files([path]), change_id)
 
 
 # ------------------------------------------------------------------ reads

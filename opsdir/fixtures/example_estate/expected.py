@@ -4,10 +4,10 @@ The demo checks the planner against this list, so "NOT READY" reads as "found wh
 
 EXPECTED = {
     "blockers": [
-        ("B1", "Contract", "`ds-ldaps-service` changes name", "rtx-next binds a new LDAPS name (landing-zone DNS default)", "CHG-2003"),
-        ("B2", "Binding", "Role `backup-target`", "rtx-next has no backup target", None),
-        ("B3", "Binding", "Consumer `legacy-rptuser`", "no rtx-next firewall rule for the unowned legacy account", None),
-        ("B4", "Binding", "Consumer `mro-batch-export`", "no rtx-next firewall rule for the MRO export", "CHG-2001"),
+        ("B1", "Contract", "`ds-ldaps-service` changes name", "the target environment binds a new LDAPS name (landing-zone DNS default)", "CHG-2003"),
+        ("B2", "Binding", "Role `backup-target`", "the target environment has no backup target", None),
+        ("B3", "Binding", "Consumer `legacy-rptuser`", "no target firewall rule for the unowned legacy account", None),
+        ("B4", "Binding", "Consumer `mro-batch-export`", "no target firewall rule for the MRO export", "CHG-2001"),
         ("B5", "Consumer", "Consumer `legacy-rptuser`", "legacy account: unknown status, no owner, no TLS", None),
         ("B6", "Consumer", "Consumer `mro-batch-export`", "MRO export only 'identified', not tested", None),
         ("B7", "Consumer", "Consumer `supplier-portal-svc`", "supplier portal only 'contacted', not tested", None),

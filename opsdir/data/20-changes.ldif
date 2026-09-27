@@ -25,7 +25,7 @@ cn: CHG-2040
 ciamApprovedBy: CAB 2026-09-04
 ciamChangeStatus: applied
 ciamPlannedAt: 20260906000000Z
-ciamTitle: Allow rtx-next DS subnet on the replication port
+ciamTitle: Allow target DS subnet on the replication port
 
 dn: cn=CHG-2001,ou=changes,dc=ciam-ops
 objectClass: top
@@ -34,7 +34,7 @@ cn: CHG-2001
 ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
-ciamTitle: Add NSG rule for the MRO batch export in rtx-next
+ciamTitle: Add NSG rule for the MRO batch export in the target environment
 
 dn: cn=CHG-2003,ou=changes,dc=ciam-ops
 objectClass: top
@@ -43,7 +43,7 @@ cn: CHG-2003
 ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
-ciamTitle: Restore the stable LDAPS service name in rtx-next
+ciamTitle: Restore the stable LDAPS service name in the target environment
 
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top

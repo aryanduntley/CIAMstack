@@ -2,7 +2,8 @@
 # Standard RFC 4512 definitions. Extensions (legal per RFC 4512 §4.2):
 #   X-PORTABILITY  intent | contract | binding | secret-ref | observed | meta
 #   X-VALUE-TYPE   stricter value type enforced by the store (string, int, bool, time, dn, extdn,
-#                  cidr, ip, fqdn, url, port, ref-uri, json, enum:a|b|c)
+#                  cidr, ip, fqdn, url, port, ref-uri, json, enum:a|b|c, vocab = values the
+#                  installed domains and adapters register)
 # OIDs use the RFC 5612 documentation arc 1.3.6.1.4.1.32473 as a placeholder.
 dn: cn=schema
 objectClass: top
@@ -52,16 +53,16 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.6 NAME 'ciamChangeRef' DESC 'Change
  .3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'meta' X-VALUE-TYPE 'dn' X-ORIGI
  N 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.7 NAME 'ciamCloudProvider' DESC 'Clo
- ud provider; selects the renderer' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.
- 4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'en
- um:aws|azure|onprem' X-ORIGIN 'opsdir' )
+ ud or hosting provider; the adapters that apply are chosen from it' EQUALIT
+ Y caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTA
+ BILITY 'binding' X-VALUE-TYPE 'vocab' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.8 NAME 'ciamRegion' DESC 'Provider r
  egion' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE
  -VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.9 NAME 'ciamCloudEnvironment' DESC '
- Provider cloud (commercial vs government)' EQUALITY caseIgnoreMatch SYNTAX 
- 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-
- TYPE 'enum:public|usgovernment' X-ORIGIN 'opsdir' )
+ Partition of the provider (e.g. commercial vs government cloud)' EQUALITY c
+ aseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABIL
+ ITY 'binding' X-VALUE-TYPE 'vocab' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.10 NAME 'ciamLifecycle' DESC 'Lifecy
  cle state' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SI
  NGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'enum:active|building|retiring
@@ -75,9 +76,9 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.12 NAME 'ciamJoinsDeploymentOf' DESC
  ALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VA
  LUE X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.13 NAME 'ciamServerRole' DESC 'What 
- the server runs' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1
- .15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:ds|pf-engine|pf-
- admin' X-ORIGIN 'opsdir' )
+ the server runs (a role the product adapters define)' EQUALITY caseIgnoreMa
+ tch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent
+ ' X-VALUE-TYPE 'vocab' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.14 NAME 'ciamProductVersion' DESC 'P
  roduct and version' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.12
  1.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN '
@@ -109,13 +110,13 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.21 NAME 'ciamBindingRole' DESC 'Abst
   EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE
   X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.22 NAME 'ciamProviderRef' DESC 'Prov
- ider resource identifier (VPC id, vnet/subnet name, zone id, DES id)' EQUAL
- ITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-POR
- TABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
-attributeTypes: ( 1.3.6.1.4.1.32473.1.1.23 NAME 'ciamResourceGroup' DESC 'Az
- ure resource group' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.12
- 1.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 
- 'opsdir' )
+ ider identifier of the resource (network, subnet, DNS zone, encryption key 
+ set)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-
+ VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.23 NAME 'ciamResourceGroup' DESC 'Pr
+ ovider resource group or container the resources are placed in' EQUALITY ca
+ seIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILI
+ TY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.24 NAME 'ciamCidr' DESC 'Address ran
  ge' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABI
  LITY 'binding' X-VALUE-TYPE 'cidr' X-ORIGIN 'opsdir' )
@@ -133,8 +134,8 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.27 NAME 'ciamDnsZoneRef' DESC 'Provi
  GIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.28 NAME 'ciamTargetRole' DESC 'Serve
  r role a service or rule targets' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4
- .1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum
- :ds|pf-engine|pf-admin' X-ORIGIN 'opsdir' )
+ .1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'voca
+ b' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.29 NAME 'ciamPort' DESC 'TCP/UDP por
  t' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 X-PORTABILITY
   'intent' X-VALUE-TYPE 'port' X-ORIGIN 'opsdir' )
@@ -154,17 +155,17 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.33 NAME 'ciamAllowsConsumer' DESC 'C
  AX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'binding' X-VALUE-TYPE 'dn' 
  X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.34 NAME 'ciamRulePriority' DESC 'Pro
- vider rule priority (e.g. Azure NSG). Pinned so adding a rule never renumbe
- rs others' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGL
- E-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'int' X-ORIGIN 'opsdir' )
+ vider firewall rule priority. Pinned so adding a rule never renumbers other
+ s' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE 
+ X-PORTABILITY 'binding' X-VALUE-TYPE 'int' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.35 NAME 'ciamRefUri' DESC 'Reference
   to a secret or key in the environment\27s store. Never the value' EQUALITY
   caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE X-PORTAB
  ILITY 'secret-ref' X-VALUE-TYPE 'ref-uri' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.36 NAME 'ciamInterconnectKind' DESC 
- 'Cross-environment link type (VPN, ExpressRoute, peering)' EQUALITY caseIgn
- oreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'b
- inding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+ 'Cross-environment link type (VPN, dedicated circuit, peering)' EQUALITY ca
+ seIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILI
+ TY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.37 NAME 'ciamPeerEnvironment' DESC '
  Environment at the other end of an interconnect' EQUALITY distinguishedName
  Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'bind
@@ -508,6 +509,22 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.125 NAME 'ciamTlsCertificate' DESC '
  Certificate this service name presents in this environment' EQUALITY distin
  guishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTAB
  ILITY 'binding' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.126 NAME 'ciamStackRole' DESC 'Role 
+ a stack component fills in its environment (e.g. provider, directory, feder
+ ation)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGL
+ E-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.127 NAME 'ciamAdapter' DESC 'Name of
+  the adapter that fills the role, as its package registers it' EQUALITY cas
+ eIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILIT
+ Y 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.128 NAME 'ciamAdapterVersion' DESC '
+ Adapter versions the environment accepts (a PEP 440 range, e.g. >=0.1,<1)' 
+ EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE 
+ X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.129 NAME 'ciamAdapterSource' DESC 'W
+ here to get the adapter package (URL or package name)' EQUALITY caseIgnoreM
+ atch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'bindi
+ ng' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 objectClasses: ( 2.5.6.0 NAME 'top' DESC 'Top of the class hierarchy' ABSTRA
  CT MUST objectClass X-ORIGIN 'RFC 4519' )
 objectClasses: ( 2.5.6.5 NAME 'organizationalUnit' DESC 'Organizational unit
@@ -531,9 +548,9 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.4 NAME 'ciamServer' DESC 'A server in
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.5 NAME 'ciamBinding' DESC 'Environmen
  t-specific binding of an abstract role' SUP ciamObject ABSTRACT MUST ( cn $
   ciamBindingRole ) MAY ciamProviderRef X-ORIGIN 'opsdir' )
-objectClasses: ( 1.3.6.1.4.1.32473.1.2.6 NAME 'ciamNetwork' DESC 'Network (V
- PC / VNet)' SUP ciamBinding STRUCTURAL MUST ciamCidr MAY ciamResourceGroup 
- X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.6 NAME 'ciamNetwork' DESC 'Virtual ne
+ twork' SUP ciamBinding STRUCTURAL MUST ciamCidr MAY ciamResourceGroup X-ORI
+ GIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.7 NAME 'ciamSubnetBinding' DESC 'Subn
  et' SUP ciamBinding STRUCTURAL MUST ciamCidr MAY ciamZone X-ORIGIN 'opsdir'
   )
@@ -630,3 +647,7 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.32 NAME 'ciamParty' DESC 'Team, partn
  er, vendor, or the operator of the platform' SUP ciamObject STRUCTURAL MUST
   ( cn $ ciamOwnerKind ) MAY ( mail $ ciamContactUrl $ ciamDisplayName ) X-O
  RIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.33 NAME 'ciamStackComponent' DESC 'On
+ e component of an environment stack: the adapter that fills a role' SUP cia
+ mObject STRUCTURAL MUST ( cn $ ciamStackRole $ ciamAdapter ) MAY ( ciamAdap
+ terVersion $ ciamAdapterSource ) X-ORIGIN 'opsdir' )

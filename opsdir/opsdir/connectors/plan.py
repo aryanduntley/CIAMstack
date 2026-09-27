@@ -5,24 +5,20 @@ a migration is "render the target from the same databases". Anything that makes 
 here as a blocker with an owner.
 
 A connector: the checks here span domains (service names vs the consumers and certificates that depend
-on them, firewall bindings vs consumers, allowlists vs our addresses). Domain and adapter checks are
-composed in a fixed order; every check is a pure function of a PlanContext returning Findings.
+on them, firewall bindings vs consumers). They run first, then every applicable adapter's checks, then
+every domain's, in registration order; every check is a pure function of a PlanContext returning Findings.
 """
 import datetime as dt
 from typing import NamedTuple, Optional
 
 from ..core.contract import PlanContext
-from ..core.directory import children, follow, get, gtime_date, is_a, one, rdn_value, values
+from ..core.directory import children, follow, get, gtime_date, one, rdn_value, values
 from ..core.environment import EnvModel, one_role, of_class
 from ..core.findings import findings, merge_findings, owner_label, responsible
-from ..core.network import covers
-from ..domains.directory.checks import check_consumers, check_hygiene
 from ..domains.directory.domain import consumers_of_role
 from ..domains.governance.domain import display_name, operator
-from ..domains.infrastructure.checks import check_versions
-from ..domains.infrastructure.domain import EXTERNAL_ALLOWLISTS
-from ..domains.pki.checks import check_certificates
-from ..domains.pki.domain import CERTIFICATES
+from ..domains.pki.naming import CERTIFICATES
+from .registry import DOMAINS
 from .render import assemble, render_parts
 
 Plan = NamedTuple("Plan", [("src", EnvModel), ("dst", EnvModel), ("cutover", Optional[dt.date]),
@@ -30,16 +26,6 @@ Plan = NamedTuple("Plan", [("src", EnvModel), ("dst", EnvModel), ("cutover", Opt
                            ("requests", tuple),          # ((party entry, ((allowlist, new, role, by), …)), …)
                            ("target_files", dict),
                            ("target_summary", str)])     # what the target renders to, in words (from its adapters)
-
-
-def _role_address(m, role):
-    """The address of one of OUR roles in an environment, as external parties would allowlist it."""
-    b = one_role(m, role)
-    if not b:
-        return None
-    if is_a(b, "ciamServiceName"):
-        return one(b, "ciamFrontendIp") + "/32"
-    return one(b, "ciamCidr")
 
 
 # ------------------------------------------------------------------ cross-domain checks
@@ -96,35 +82,13 @@ def _check_roles(ctx):
                     ok=[f"New in {ctx.dst.label}: `{r}`." for r in sorted(dst_roles - src_roles)])
 
 
-def _allowlist(ctx, xa):
-    role = one(xa, "ciamRefersToRole")
-    new = _role_address(ctx.dst, role)
-    mgr = follow(ctx.d, xa, "ciamManagedBy")
-    lead = int(one(xa, "ciamLeadTimeDays", "0"))
-    if new is None:
-        return findings(blockers=[("Allowlist", f"`{rdn_value(xa)}` refers to role `{role}`, which {ctx.dst.label} "
-                                   "doesn't bind.", rdn_value(mgr))])
-    if covers(values(xa, "ciamRecordedCidr"), new):
-        return findings(ok=[f"External allowlist `{rdn_value(xa)}` ({rdn_value(mgr)}) already covers "
-                            f"{ctx.dst.label}'s `{role}` ({new})."])
-    by = (ctx.cutover - dt.timedelta(days=lead + 14)) if ctx.cutover else None
-    late = " (**already late**)" if by is not None and by < ctx.as_of else ""
-    text = (f"`{rdn_value(xa)}`: {rdn_value(mgr)} must add `{new}` ({role} in {ctx.dst.label}) to "
-            f"\"{one(xa, 'ciamExternalSystem')}\". Lead time {lead} days → request by **{by}**{late}.")
-    return findings(actions=[("Allowlist", text, rdn_value(mgr), by)], requests=[(mgr, xa, new, role, by)])
-
-
-def _check_allowlists(ctx):
-    """External allowlists: other people's firewalls that contain our addresses."""
-    return merge_findings([_allowlist(ctx, xa)
-                           for xa in children(ctx.d, EXTERNAL_ALLOWLISTS, "ciamExternalAllowlist")])
-
-
 # ------------------------------------------------------------------ composition
-def checks(adapters):
-    """Every planner check, in report order: cross-domain, then adapter-specific, then domain checks."""
-    return (_check_neutral, _check_contracts, _check_roles, *(c for a in adapters for c in a.checks),
-            check_versions, check_consumers, _check_allowlists, check_certificates, check_hygiene)
+CROSS_DOMAIN_CHECKS = (_check_neutral, _check_contracts, _check_roles)
+
+
+def checks(adapters, domains=DOMAINS):
+    """Every planner check, in report order: cross-domain, then each adapter's, then each domain's."""
+    return (*CROSS_DOMAIN_CHECKS, *(c for a in adapters for c in a.checks), *(c for d in domains for c in d.checks))
 
 
 def _group_requests(requests):

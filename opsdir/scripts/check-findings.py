@@ -64,7 +64,7 @@ def passed(r):
 def main(phase):
     exp = json.loads((ROOT / "data" / "expected-findings.json").read_text())
     conn = db.connect()
-    p = plan.plan(db.load_directory(conn), "aws-current/prod", "rtx-next/prod", AS_OF)
+    p = plan.plan(db.load_directory(conn), "source/prod", "target/prod", AS_OF)
     results = check(exp, p, applied_changes(conn) if phase == "after" else set())
     ok = all(passed(r) for r in results)
     print("\n".join((f"Expected findings check ({phase} changes)", *(line for r in results for line in result_lines(r)),

@@ -1,6 +1,6 @@
 import pytest
 
-from opsdir.formats.terraform_hcl import Block, block, hcl, ref, tf_name
+from opsdir_format_terraform.hcl import Block, block, hcl, ref, tf_name
 
 
 @pytest.mark.parametrize("name, expected", [("ds-1", "ds_1"), ("Svc.LDAPS", "svc_ldaps"), ("1st", "r_1st")])

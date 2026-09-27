@@ -13,7 +13,7 @@ Consequences:
 - **A migration is a read.** The same databases are rendered for a different environment. Only that environment's *bindings* are new.
 - **Questions become queries:** blast radius, expiry, drift, who can read what, which external allowlists hold our addresses.
 
-The first domain is a CIAM platform (PingDS + PingFederate), but nothing in the model is specific to it.
+The first domain is a CIAM platform (directory, federation, PKI and the infrastructure they run on), but nothing in the model is specific to it or to any product.
 
 ## 2. Information model (inherited from LDAP)
 
@@ -48,9 +48,11 @@ Every attribute type declares two extensions.
 
 ### 3.2 `X-VALUE-TYPE`: stricter types than LDAP syntaxes
 
-`string · int · bool · time (GeneralizedTime) · dn (internal reference) · extdn (DN in another directory) · cidr · ip · fqdn · url · port · ref-uri · json · enum:a|b|c`
+`string · int · bool · time (GeneralizedTime) · dn (internal reference) · extdn (DN in another directory) · cidr · ip · fqdn · url · port · ref-uri · json · enum:a|b|c · vocab`
 
-`ref-uri` accepts only reference schemes that some adapter declares it owns. The store loads them into its `ref_scheme` table at init. Today these are `aws-sm:// aws-kms:// s3://` (AWS), `azkv:// azkv-key:// azblob://` (Azure) and `vault://` (HashiCorp Vault). Adding a secret store adds its schemes, and the store's validation doesn't change.
+`vocab` values are owned by the installed domains and adapters: each declares the values it defines (a provider adapter its provider name and partitions, a product adapter its server roles), the store syncs them on every upgrade and accepts only registered values.
+
+`ref-uri` accepts only reference schemes that some adapter declares it owns. The store syncs them into its `ref_scheme` table on every upgrade. Which schemes exist depends only on the installed adapters: a secret store or cloud adapter declares the schemes it can resolve. Adding one adds its schemes, and the store's validation doesn't change.
 
 ## 4. Normative rules
 

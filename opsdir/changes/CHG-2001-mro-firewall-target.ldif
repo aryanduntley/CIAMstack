@@ -1,0 +1,15 @@
+# CHG-2001 (approved): allow the MRO nightly export to reach LDAPS in the target environment.
+# One directory entry. The Azure NSG rule is rendered from it; nobody edits Terraform.
+dn: cn=fw-mro-batch,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-mro-batch
+ciamBindingRole: fw-consumer-mro-batch-export
+ciamSourceCidr: 10.40.12.0/24
+ciamPort: 1636
+ciamTargetRole: ds
+ciamProtocol: tcp
+ciamRulePriority: 170
+ciamAllowsConsumer: cn=mro-batch-export,ou=consumers,dc=ciam-ops
+ciamChangeRef: cn=CHG-2001,ou=changes,dc=ciam-ops

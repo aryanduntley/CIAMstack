@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir"
+version = "0.1.0"
+description = "Database-first management of an identity platform: governed, typed, cross-referenced directory entries; adapters render and import the working configuration."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["psycopg[binary]>=3.1", "packaging>=23"]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+opsdir = "opsdir.cli:run"
+
+# The core registers its built-in, vendor-neutral domains through the same entry points any package can use.
+[project.entry-points."opsdir.domains"]
+infrastructure = "opsdir.domains.infrastructure.domain:DOMAIN"
+directory = "opsdir.domains.directory.domain:DOMAIN"
+federation = "opsdir.domains.federation.domain:DOMAIN"
+pki = "opsdir.domains.pki.domain:DOMAIN"
+governance = "opsdir.domains.governance.domain:DOMAIN"
+
+[tool.setuptools.packages.find]
+include = ["opsdir*"]
+
+[tool.setuptools.package-data]
+"*" = ["sql/*.sql", "sql/migrations/*.sql", "sql/definitions/*.sql"]

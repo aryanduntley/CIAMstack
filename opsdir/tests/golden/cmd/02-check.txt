@@ -1,0 +1,11 @@
+environment  role        adapter       status              
+-----------  ----------  ------------  --------------------
+source/prod  directory   pingds        ok (installed 0.1.0)
+source/prod  federation  pingfederate  ok (installed 0.1.0)
+source/prod  provider    aws           ok (installed 0.1.0)
+target/prod  directory   pingds        ok (installed 0.1.0)
+target/prod  federation  pingfederate  ok (installed 0.1.0)
+target/prod  provider    azure         ok (installed 0.1.0)
+(6 rows)
+0 problem(s)
+exit 0

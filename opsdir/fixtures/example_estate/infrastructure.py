@@ -1,5 +1,5 @@
-"""Infrastructure fixture data: the current AWS environment (40-env-aws-current), the target environment
-being built (45-env-rtx-next, with planted gaps), and external allowlists that hold our addresses
+"""Infrastructure fixture data: the current AWS environment (40-env-source), the target environment
+being built (45-env-target, with planted gaps), and external allowlists that hold our addresses
 (80-external-allowlists)."""
 from .common import AWS, AZ, CON, ENVS, XA, cert, chg, owner, spec, t
 
@@ -8,7 +8,8 @@ SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password"
 DS_V, PF_V = "PingDS 7.5.1", "PingFederate 12.1.4"
 IMG = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/"
 
-AWS_CURRENT = {
+SOURCE = {
+    "stack": (("provider", "aws"), ("directory", "pingds"), ("federation", "pingfederate")),
     "net": ("vpc", "vpc-0a1b2c3d4e5f67890", "10.20.0.0/16"),
     "subnets": [("subnet-ds-a", "subnet-ds", "subnet-0a11b22c33d44e55a", "10.20.1.0/24", "us-east-1a"),
                 ("subnet-ds-b", "subnet-ds", "subnet-0a11b22c33d44e55b", "10.20.2.0/24", "us-east-1b"),
@@ -40,7 +41,8 @@ AWS_CURRENT = {
                 ("pf-engine-2", "pf-engine", "pf-engine-2.aws.internal.example-aero.test", "10.20.5.21", "us-east-1b", "m6i.large", "ami-0fedcba9876543210", "subnet-pf-b", PF_V),
                 ("pf-admin-1", "pf-admin", "pf-admin-1.aws.internal.example-aero.test", "10.20.4.10", "us-east-1a", "m6i.large", "ami-0fedcba9876543210", "subnet-pf-a", PF_V)],
 }
-RTX_NEXT = {
+TARGET = {
+    "stack": (("provider", "azure"), ("directory", "pingds"), ("federation", "pingfederate")),
     "net": ("vnet", "vnet-ciam-prod", "10.60.0.0/16"), "rg": "rg-ciam-prod", "pinned_priorities": True,
     "subnets": [("snet-ds", "subnet-ds", "vnet-ciam-prod/snet-ds", "10.60.1.0/24", None),
                 ("snet-pf", "subnet-pf", "vnet-ciam-prod/snet-pf", "10.60.2.0/24", None)],
@@ -60,7 +62,7 @@ RTX_NEXT = {
     "key": ("azkv-key://kv-ciam-prod/keys/disk-cmk",
             "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"),
     "backup": None,   # deliberately missing: the demo's migration plan should catch it
-    "interconnect": ("link-aws-current", "site-to-site VPN (landing-zone managed)", AWS, ["10.20.0.0/16"]),
+    "interconnect": ("link-source", "site-to-site VPN (landing-zone managed)", AWS, ["10.20.0.0/16"]),
     "servers": [("ds-1", "ds", "ds-1.az.internal.example-aero.test", "10.60.1.11", "1", "Standard_D4s_v5", IMG + "pingds-7.5.1-rhel9", "snet-ds", DS_V),
                 ("ds-2", "ds", "ds-2.az.internal.example-aero.test", "10.60.1.12", "2", "Standard_D4s_v5", IMG + "pingds-7.5.1-rhel9", "snet-ds", DS_V),
                 ("ds-3", "ds", "ds-3.az.internal.example-aero.test", "10.60.1.13", "3", "Standard_D4s_v5", IMG + "pingds-7.5.1-rhel9", "snet-ds", DS_V),
@@ -119,10 +121,22 @@ def _interconnect(file, b, cn, kind, peer, cidr):
                 ciamOwner=owner("network-security"))
 
 
+ADAPTER_SOURCE = "https://github.com/aryanduntley/CIAMstack/tree/main/packages/opsdir-adapter-{}"
+
+
+def _stack(file, env, p):
+    """The environment's declared stack: which adapter fills each role."""
+    S = f"ou=stack,{env}"
+    return (spec(file, S, ["top", "organizationalUnit"], ou="stack"),
+            *(spec(file, f"cn={role},{S}", ["top", "ciamStackComponent"], cn=role, ciamStackRole=role,
+                   ciamAdapter=adapter, ciamAdapterVersion=">=0.1,<1", ciamAdapterSource=ADAPTER_SOURCE.format(adapter))
+              for role, adapter in p["stack"]))
+
+
 def environment(file, env, p):
-    """An environment's bindings, then its servers (placed in bindings by role)."""
+    """An environment's bindings, its declared stack, then its servers (placed in bindings by role)."""
     b = lambda cn: f"cn={cn},ou=bindings,{env}"  # noqa: E731
-    return (*_bindings(file, env, p),
+    return (*_bindings(file, env, p), *_stack(file, env, p),
             *(spec(file, f"cn={cn},{env}", ["top", "ciamServer"], cn=cn, ciamServerRole=role, ciamHostname=host,
                    ciamPrivateIp=ip, ciamZone=zone, ciamInstanceSize=size, ciamImageRef=image, ciamSubnet=b(subnet),
                    ciamProductVersion=version, ciamOwner=owner("ciam-platform"))
@@ -130,20 +144,19 @@ def environment(file, env, p):
 
 
 def environments():
-    aws, az = "40-env-aws-current", "45-env-rtx-next"
-    return (spec(aws, f"cloud=aws-current,{ENVS}", ["top", "ciamCloud"], cloud="aws-current",
+    aws, az = "40-env-source", "45-env-target"
+    return (spec(aws, f"cloud=source,{ENVS}", ["top", "ciamCloud"], cloud="source",
                  ciamCloudProvider="aws", ciamRegion="us-east-1", ciamCloudEnvironment="public", ciamLifecycle="active",
-                 description="Existing cloud hosting environment"),
+                 description="Current cloud hosting environment (AWS)"),
             spec(aws, AWS, ["top", "ciamEnvironment"], env="prod", ciamLifecycle="active", ciamOwner=owner("ciam-platform")),
-            *environment(aws, AWS, AWS_CURRENT),
-            spec(az, f"cloud=rtx-next,{ENVS}", ["top", "ciamCloud"], cloud="rtx-next",
+            *environment(aws, AWS, SOURCE),
+            spec(az, f"cloud=target,{ENVS}", ["top", "ciamCloud"], cloud="target",
                  ciamCloudProvider="azure", ciamRegion="usgovvirginia", ciamCloudEnvironment="usgovernment",
                  ciamLifecycle="building",
-                 description="Next-gen cloud landing zone (ASSUMED Azure Government for the demo; the real target is "
-                             "unconfirmed)"),
+                 description="New cloud landing zone being built (Azure Government)"),
             spec(az, AZ, ["top", "ciamEnvironment"], env="prod", ciamLifecycle="building",
                  ciamPlannedCutover=t("2027-01-15"), ciamJoinsDeploymentOf=AWS, ciamOwner=owner("ciam-platform")),
-            *environment(az, AZ, RTX_NEXT))
+            *environment(az, AZ, TARGET))
 
 
 def external_allowlists():

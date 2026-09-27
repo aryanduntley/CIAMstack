@@ -2,13 +2,12 @@
 firewall rules, egress, interconnects, secret and key references, backup targets), plus the external
 allowlists that hold our addresses. Vendor-neutral: provider adapters realize it."""
 from ...core.contract import Domain
-from ...core.naming import branch
+from .checks import check_allowlists, check_versions
 from .schema import FRAGMENT
-
-ENVIRONMENTS = branch("environments")
-EXTERNAL_ALLOWLISTS = branch("external-allowlists")
 
 # Every environment needs a network and encrypted disks, whatever runs in it.
 REQUIRED_ROLES = ("network", "disk-encryption")
 
-DOMAIN = Domain(name="infrastructure", schema=FRAGMENT, required_roles=REQUIRED_ROLES, sql=(), reports={})
+DOMAIN = Domain(name="infrastructure", schema=FRAGMENT, required_roles=REQUIRED_ROLES, sql=(), reports={},
+                checks=(check_versions, check_allowlists), order=10,
+                vocabulary={})

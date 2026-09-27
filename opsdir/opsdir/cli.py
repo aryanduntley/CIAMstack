@@ -1,35 +1,47 @@
 """opsdir command line.
 
-  opsdir init                          create the database schema and load the LDAP schema
+  opsdir init                          DROP the opsdir schema and create it from nothing (all migrations)
+  opsdir upgrade                       upgrade the schema in place (pending migrations), keeping data and history
   opsdir load [files...]               load LDIF content (default: data/*.ldif) under change BOOTSTRAP
+  opsdir check [ENV...]                each environment's declared stack against the installed adapters
   opsdir search [-b base] [-s scope] FILTER [attr...]
   opsdir report expiring|pii|stale|unowned|drift|portability|blast-radius DN
-  opsdir render ENV [-o dir]           e.g. aws-current/prod, rtx-next/prod
+  opsdir render ENV [-o dir]           e.g. source/prod, target/prod
   opsdir plan FROM TO [-o dir]         migration plan + change-request drafts for external parties
   opsdir modify --change CHG-… FILE    apply LDIF change records under an approved change
   opsdir export [-b base]              dump entries as LDIF (for Git review)
   opsdir history [DN]                  change history
+  opsdir workspace create [--replace]  copy the live record (OPSDIR_DSN) into the migration workspace
+  opsdir workspace status|diff         what the workspace changed since its copy (diff: as LDIF change records)
+  opsdir workspace cutover --change CHG-…   apply the workspace's changes to the live record, then re-copy
+  opsdir --workspace COMMAND …         run any command against the workspace (OPSDIR_WORKSPACE_DSN)
 """
 import argparse
 import datetime as dt
+import os
 import pathlib
 import sys
 
-from .connectors import plan as planmod, reports
-from .connectors.registry import ref_schemes, sql_files
+from .connectors import plan as planmod, reports, workspace
+from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, store_parts
+from .connectors.stack import STATUS_HEADERS, stack_rows
+from .core.environment import env_model
 from .connectors.render import render_env
 from .core import search as ldap_search
 from .core.directory import subtree, values
 from .core.interchange import ldif
+from .core.interchange.export import export_text
 from .core.naming import SUFFIX
 from .core.paths import ROOT
-from .store import postgres as db
+from .store import migrations, postgres as db
 from .store.queries import fetch_history
 
 # subcommand → ((argument flags, argparse options), …)
 SUBCOMMANDS = (
     ("init", ()),
+    ("upgrade", ()),
     ("load", ((("files",), {"nargs": "*"}),)),
+    ("check", ((("envs",), {"nargs": "*"}),)),
     ("search", ((("-b", "--base"), {"default": SUFFIX}),
                 (("-s", "--scope"), {"default": "sub", "choices": ["base", "one", "sub"]}),
                 (("filter",), {}), (("attrs",), {"nargs": "*"}))),
@@ -39,6 +51,8 @@ SUBCOMMANDS = (
     ("modify", ((("--change",), {"required": True}), (("file",), {}))),
     ("export", ((("-b", "--base"), {"default": SUFFIX}),)),
     ("history", ((("dn",), {"nargs": "?"}),)),
+    ("workspace", ((("action",), {"choices": ["create", "status", "diff", "cutover"]}),
+                   (("--change",), {}), (("--replace",), {"action": "store_true"}))),
 )
 
 
@@ -71,23 +85,38 @@ def search_text(d, base, filt, scope="sub", attrs=()):
     return "\n".join((*(ldif.write_entry(e.dn, e.classes, e.attrs) for e in hits), f"# {len(hits)} entries"))
 
 
-def export_text(d, base):
-    """Every entry under base as LDIF, parents before children (for Git review)."""
-    entries = sorted(subtree(d, base), key=lambda e: (e.norm.count(","), e.norm))
-    return "\n".join(ldif.write_entry(e.dn, e.classes, e.attrs) for e in entries)
-
-
 # ------------------------------------------------------------------ commands: each returns the text to print
 def _cmd_init(conn, a, as_of):
-    db.init(conn, sql_files(), ref_schemes())
+    migrations.init(conn, *store_parts())
     n = db.registry_counts(conn)
     return f"initialized: {n[0]} attribute types, {n[1]} object classes"
+
+
+def _cmd_upgrade(conn, a, as_of):
+    applied = migrations.upgrade(conn, *store_parts())
+    n = db.registry_counts(conn)
+    return "\n".join((*(f"applied migration {migrations.label(m)}" for m in applied),
+                      f"schema at migration {migrations.current_version(conn):04d}"
+                      f"{'' if applied else ' (up to date)'}: {n[0]} attribute types, {n[1]} object classes"))
 
 
 def _cmd_load(conn, a, as_of):
     files = a.files or sorted(str(p) for p in (ROOT / "data").glob("*.ldif"))
     n = db.load_ldif(conn, files)
     return f"loaded {n} entries from {len(files)} files; {db.reference_count(conn)} DN references verified"
+
+
+def check_text(d, specs):
+    """(text, exit status): every environment's declared stack against the installed adapters."""
+    results = [stack_rows(env_model(d, spec), ADAPTERS, ADAPTER_VERSIONS) for spec in specs]
+    problems = sum(n for _, n in results)
+    table = format_table([row for rows, _ in results for row in rows], STATUS_HEADERS)
+    return f"{table}\n{problems} problem(s)", (1 if problems else 0)
+
+
+def _cmd_check(conn, a, as_of):
+    d = db.load_directory(conn)
+    return check_text(d, a.envs or environment_specs(d))
 
 
 def _cmd_search(conn, a, as_of):
@@ -126,14 +155,36 @@ def _cmd_history(conn, a, as_of):
     return format_table(fetch_history(conn, a.dn), reports.HISTORY_HEADERS)
 
 
-COMMANDS = {"init": _cmd_init, "load": _cmd_load, "search": _cmd_search, "report": _cmd_report,
+def _cmd_workspace(conn, a, as_of):
+    if a.workspace:
+        raise SystemExit("workspace commands run against the live record (OPSDIR_DSN); drop --workspace")
+    ws_dsn = workspace.workspace_dsn()
+    ws, source = db.connect(ws_dsn), os.environ["OPSDIR_DSN"]
+    if a.action == "create":
+        n = workspace.create(conn, ws, store_parts(), source, a.replace)
+        return f"workspace created: {n} entries copied from {workspace.safe_source(source)}"
+    if a.action == "status":
+        return workspace.status(conn, ws)
+    if a.action == "diff":
+        return workspace.diff_text(conn, ws) or "# no changes"
+    if not a.change:
+        raise SystemExit("usage: opsdir workspace cutover --change CHG-… (an approved change in the live record)")
+    applied = workspace.cutover(conn, ws, store_parts(), source, a.change)
+    return "\n".join((*(f"{a.change}: {line}" for line in applied),
+                      f"cutover: {len(applied)} change(s) applied to the live record; workspace re-copied"))
+
+
+COMMANDS = {"init": _cmd_init, "upgrade": _cmd_upgrade, "load": _cmd_load, "check": _cmd_check, "search": _cmd_search, "report": _cmd_report,
             "render": _cmd_render, "plan": _cmd_plan, "modify": _cmd_modify, "export": _cmd_export,
-            "history": _cmd_history}
+            "history": _cmd_history,
+            "workspace": _cmd_workspace}
 
 
 def parser():
     ap = argparse.ArgumentParser(prog="opsdir", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--as-of", help="evaluate dates as of YYYY-MM-DD (default: today)")
+    ap.add_argument("--workspace", action="store_true",
+                    help="run against the migration workspace (OPSDIR_WORKSPACE_DSN) instead of the live record")
     sub = ap.add_subparsers(dest="cmd", required=True)
     for name, arguments in SUBCOMMANDS:
         command = sub.add_parser(name)
@@ -145,11 +196,14 @@ def parser():
 def main(argv=None):
     a = parser().parse_args(argv)
     as_of = dt.date.fromisoformat(a.as_of) if a.as_of else dt.date.today()
-    conn = db.connect()
+    conn = db.connect(workspace.workspace_dsn() if a.workspace else None)
     db.set_as_of(conn, as_of)
-    text = COMMANDS[a.cmd](conn, a, as_of)
+    result = COMMANDS[a.cmd](conn, a, as_of)          # text, or (text, exit status)
+    text, status = result if isinstance(result, tuple) else (result, 0)
     if text:
         print(text)
+    if status:
+        sys.exit(status)
 
 
 def run():

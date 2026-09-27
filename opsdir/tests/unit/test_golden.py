@@ -10,10 +10,10 @@ from opsdir.core.naming import SUFFIX
 from opsdir.domains.directory.drift import DRIFT_HEADERS, drift
 from support import APPROVED, DATA, GOLDEN, cmd_output, read_tree
 
-SRC, DST = "aws-current/prod", "rtx-next/prod"
+SRC, DST = "source/prod", "target/prod"
 # (fixture state, environment spec) -> golden render directory
-RENDERS = (("before", SRC, "render-before/aws-current-prod"), ("before", DST, "render-before/rtx-next-prod"),
-           ("after", DST, "render-after/rtx-next-prod"))
+RENDERS = (("before", SRC, "render-before/source-prod"), ("before", DST, "render-before/target-prod"),
+           ("after", DST, "render-after/target-prod"))
 
 
 @pytest.mark.parametrize("state, spec, golden", RENDERS)

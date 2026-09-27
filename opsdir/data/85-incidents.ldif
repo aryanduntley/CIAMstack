@@ -4,7 +4,7 @@ dn: cn=INC-2231,ou=incidents,dc=ciam-ops
 objectClass: top
 objectClass: ciamIncident
 cn: INC-2231
-ciamInvolved: cn=ds-2,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+ciamInvolved: cn=ds-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamInvolved: cn=mail,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-op
  s
 ciamOpenedAt: 20260914141200Z

@@ -1,2 +1,2 @@
-REJECTED by the directory: opsdir: "cn=fw-incomplete,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops" is missing required attribute(s) {ciamSourceCidr}
+REJECTED by the directory: opsdir: "cn=fw-incomplete,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops" is missing required attribute(s) {ciamSourceCidr}
 exit 1

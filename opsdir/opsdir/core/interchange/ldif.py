@@ -81,9 +81,38 @@ def _attr_line(name, v):
     return f"{name}:: {base64.b64encode(v.encode()).decode()}" if _needs_b64(v) else f"{name}: {v}"
 
 
+def _naming_first(names):
+    return sorted(names, key=lambda n: (n.lower() not in ("cn", "ou", "dc", "env", "cloud", "snap"), n))
+
+
+def _value_lines(name, values, width):
+    return tuple(physical for v in values for physical in fold(_attr_line(name, v), width))
+
+
+def _entry_lines(object_classes, attrs, width):
+    return (*(f"objectClass: {oc}" for oc in object_classes),
+            *(line for name in _naming_first(attrs) for line in _value_lines(name, attrs[name], width)))
+
+
 def write_entry(dn, object_classes, attrs, width=78):
     """One entry as LDIF: naming attributes first, base64 where needed, folded at `width` columns."""
-    naming_first = sorted(attrs, key=lambda n: (n.lower() not in ("cn", "ou", "dc", "env", "cloud", "snap"), n))
-    lines = (f"dn: {dn}", *(f"objectClass: {oc}" for oc in object_classes),
-             *(physical for name in naming_first for v in attrs[name] for physical in fold(_attr_line(name, v), width)))
-    return "\n".join(lines) + "\n"
+    return "\n".join((f"dn: {dn}", *_entry_lines(object_classes, attrs, width))) + "\n"
+
+
+def _record_body(r, width):
+    if r.changetype == "add":
+        return _entry_lines(r.attrs.get("objectClass", ()),
+                            {k: v for k, v in r.attrs.items() if k != "objectClass"}, width)
+    if r.changetype == "modify":
+        return tuple(line for op, attr, vals in r.mods for line in (f"{op}: {attr}", *_value_lines(attr, vals, width), "-"))
+    return ()
+
+
+def write_record(r, width=78):
+    """One change record (add / modify / delete) as LDIF, the form `parse` reads back."""
+    return "\n".join((f"dn: {r.dn}", f"changetype: {r.changetype}", *_record_body(r, width))) + "\n"
+
+
+def write_records(records, width=78):
+    """Change records as one LDIF text, blank-line separated."""
+    return "\n".join(write_record(r, width) for r in records)

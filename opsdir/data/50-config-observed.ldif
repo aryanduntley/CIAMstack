@@ -5,7 +5,7 @@ objectClass: top
 objectClass: ciamSnapshot
 snap: ds-1-20260920
 ciamCapturedAt: 20260920030000Z
-ciamServerRef: cn=ds-1,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+ciamServerRef: cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
 
 dn: ou=backends,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
@@ -108,7 +108,7 @@ objectClass: top
 objectClass: ciamSnapshot
 snap: ds-2-20260920
 ciamCapturedAt: 20260920030000Z
-ciamServerRef: cn=ds-2,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+ciamServerRef: cn=ds-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
 
 dn: ou=backends,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
@@ -204,7 +204,7 @@ objectClass: top
 objectClass: ciamSnapshot
 snap: ds-3-20260920
 ciamCapturedAt: 20260920030000Z
-ciamServerRef: cn=ds-3,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+ciamServerRef: cn=ds-3,env=prod,cloud=source,ou=environments,dc=ciam-ops
 
 dn: ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
 objectClass: top

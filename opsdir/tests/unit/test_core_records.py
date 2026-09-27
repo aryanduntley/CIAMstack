@@ -5,7 +5,7 @@ import json
 import pytest
 
 from opsdir.connectors.plan import render_summary
-from opsdir.connectors.registry import ADAPTERS, ref_schemes, schema_fragments, secret_command, sql_files
+from opsdir.connectors.registry import ADAPTERS, definition_files, ref_schemes, schema_fragments, secret_command
 from opsdir.core.contract import Adapter
 from opsdir.core.directory import get
 from opsdir.core.environment import env_model
@@ -26,7 +26,7 @@ def test_findings_merge_concatenates_each_column_in_order():
 
 def test_owners_come_from_the_directory(estate):
     d = estate["before"]
-    owned = get(d, "env=prod,cloud=aws-current,ou=environments,dc=ciam-ops")
+    owned = get(d, "env=prod,cloud=source,ou=environments,dc=ciam-ops")
     unowned = get(d, "cn=legacy-rptuser,ou=consumers,dc=ciam-ops")
     assert owner_label(d, owned) == "ciam-platform"
     assert owner_label(d, unowned) == "**NO OWNER**"
@@ -54,7 +54,7 @@ def test_is_private():
 
 
 def test_manifest_lists_scope_and_hash_of_every_file(estate):
-    m = env_model(estate["before"], "rtx-next/prod", ("backup-target",))
+    m = env_model(estate["before"], "target/prod", ("backup-target",))
     doc = json.loads(manifest(m, {"b.txt": "neutral"}, {"a.txt": "specific"}))
     assert doc["environment"] == m.dn and doc["provider"] == "azure" and doc["unbound_roles"] == ["backup-target"]
     assert list(doc["files"]) == ["a.txt", "b.txt"]
@@ -71,8 +71,8 @@ def test_branch_names():
 
 def test_registry_composition():
     assert schema_fragments()[0] is CORE
-    files = sql_files()
-    assert [f.name for f in files[:2]] == ["001_core.sql", "002_graph.sql"] and files[-1].name == "connectors.sql"
+    files = definition_files()
+    assert files[0].name == "graph.sql" and files[-1].name == "connectors.sql"
     assert all(f.is_file() for f in files)
     schemes = ref_schemes()
     assert len(schemes) == len(set(schemes)) and {"aws-sm", "vault"} <= set(schemes)
@@ -93,7 +93,7 @@ def test_unknown_secret_scheme_exits():
 
 
 def _adapter(renders, neutral_label):
-    return Adapter("x", "product", None, (), None, None, (), (), {}, renders, neutral_label)
+    return Adapter("x", "product", None, (), None, None, (), (), {}, renders, neutral_label, {})
 
 
 def test_render_summary_reads_like_a_sentence():

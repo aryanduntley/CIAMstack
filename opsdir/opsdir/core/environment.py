@@ -4,22 +4,31 @@ Nothing is looked up by hostname or file path. Callers ask for *roles* ("network
 and the environment's bindings answer (SPEC R7). Which roles an environment must bind is supplied by
 the caller (the adapters that apply), never hardcoded here.
 """
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 from .directory import Directory, Entry, children, follow, get, is_a, one, rdn_value
 from .naming import branch
 
+# One declared component of an environment's stack: the adapter (by registered name) that fills a role.
+StackComponent = NamedTuple("StackComponent", [("role", str), ("adapter", str), ("versions", Optional[str]),
+                                               ("source", Optional[str])])
 EnvModel = NamedTuple("EnvModel", [("d", Directory), ("dn", str), ("env", Entry), ("cloud", Entry),
                                    ("provider", str), ("label", str), ("servers", tuple),
-                                   ("bindings", tuple), ("unbound", tuple)])
+                                   ("bindings", tuple), ("unbound", tuple),
+                                   ("stack", tuple)])       # StackComponents, empty when none is declared
 
 
 def env_dn(spec):
-    """'aws-current/prod' → env=prod,cloud=aws-current,ou=environments,dc=ciam-ops (full DNs pass through)."""
+    """'source/prod' → env=prod,cloud=source,ou=environments,dc=ciam-ops (full DNs pass through)."""
     if "=" in spec:
         return spec
     cloud, env = spec.split("/")
     return f"env={env},cloud={cloud},{branch('environments')}"
+
+
+def stack_component(e):
+    return StackComponent(one(e, "ciamStackRole"), one(e, "ciamAdapter"), one(e, "ciamAdapterVersion"),
+                          one(e, "ciamAdapterSource"))
 
 
 def _with_role(bindings, role):
@@ -36,7 +45,8 @@ def env_model(d, spec, required_roles=()):
     bindings = children(d, f"ou=bindings,{dn}")
     return EnvModel(d=d, dn=dn, env=env, cloud=cloud, provider=one(cloud, "ciamCloudProvider"),
                     label=f"{rdn_value(cloud)}/{rdn_value(env)}", servers=children(d, dn, "ciamServer"),
-                    bindings=bindings, unbound=tuple(r for r in required_roles if not _with_role(bindings, r)))
+                    bindings=bindings, unbound=tuple(r for r in required_roles if not _with_role(bindings, r)),
+                    stack=tuple(stack_component(c) for c in children(d, f"ou=stack,{dn}", "ciamStackComponent")))
 
 
 def with_required_roles(m, required_roles):

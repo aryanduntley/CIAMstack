@@ -1,13 +1,12 @@
 """Directory domain: a vendor-neutral LDAP user directory. Its declared and observed server configuration
 (backends, indexes, password policies, connection handlers, log publishers, replication), the records
 describing user attributes, the consumers that bind to it, and the ACIs that grant them access.
-Product adapters (e.g. PingDS) render and import it."""
+Product adapters render and import it."""
 from pathlib import Path
 
-from ...core.contract import Domain, Report
+from ...core.contract import Domain, directory_report, sql_report
 from ...core.directory import children, rdn_value
-from ...store.postgres import load_directory
-from ...store.queries import fetch_rows
+from .checks import check_consumers, check_hygiene
 from .drift import DRIFT_HEADERS, drift
 from .naming import CONSUMERS, DIRECTORY_SERVER_ROLE
 from .schema import FRAGMENT
@@ -24,14 +23,12 @@ def consumers_of_role(d, target_role):
     return [rdn_value(c) for c in children(d, CONSUMERS, "ciamConsumer")]
 
 
-def _pii_rows(conn, dn):
-    return fetch_rows(conn, PII_SQL)
-
-
-def _drift_rows(conn, dn):
-    return drift(load_directory(conn))
+def _drift_rows(d, dn):
+    return drift(d)
 
 
 DOMAIN = Domain(name="directory", schema=FRAGMENT, required_roles=(),
                 sql=(Path(__file__).parent / "sql" / "directory.sql",),
-                reports={"pii": Report(PII_HEADERS, _pii_rows), "drift": Report(DRIFT_HEADERS, _drift_rows)})
+                reports={"pii": sql_report(PII_HEADERS, PII_SQL), "drift": directory_report(DRIFT_HEADERS, _drift_rows)},
+                checks=(check_consumers, check_hygiene), order=20,
+                vocabulary={"ciamServerRole": (DIRECTORY_SERVER_ROLE,), "ciamTargetRole": (DIRECTORY_SERVER_ROLE,)})

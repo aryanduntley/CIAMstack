@@ -11,8 +11,8 @@ USERS = "dc=partners,dc=example-aero,dc=test"          # base DN of the (fiction
 PEOPLE = f"ou=people,{USERS}"
 
 ENVS = f"ou=environments,{R}"
-AWS = f"env=prod,cloud=aws-current,{ENVS}"
-AZ = f"env=prod,cloud=rtx-next,{ENVS}"
+AWS = f"env=prod,cloud=source,{ENVS}"
+AZ = f"env=prod,cloud=target,{ENVS}"
 DECL = f"ou=declared,ou=config,{R}"
 OBS = f"ou=observed,ou=config,{R}"
 OWN = f"ou=owners,{R}"

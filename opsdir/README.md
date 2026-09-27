@@ -7,29 +7,76 @@ The whole identity platform (servers, bindings, directory config, consumers, ACI
 
 The standard is in [`SPEC.md`](SPEC.md). The reasoning behind it is in [`../documentation/ops-directory-model.md`](../documentation/ops-directory-model.md).
 
-> **All data is synthetic and fictional:** "Example Aero", partners "Skyline Air" / "Harbor MRO", RFC 5737 documentation IPs, the AWS documentation account `111122223333`, made-up resource IDs. The "rtx-next" environment is *assumed* to be Azure Government for the demo; the real target is unconfirmed.
+> **All data is synthetic and fictional:** "Example Aero", partners "Skyline Air" / "Harbor MRO", RFC 5737 documentation IPs, the AWS documentation account `111122223333`, made-up resource IDs. The migration runs between two environments named for their role: `source` (AWS, in service) and `target` (Azure Government, being built).
 
 ## Run it
 
 ```bash
-python3 -m venv .venv && PIP_USER=0 .venv/bin/pip install --no-cache-dir "psycopg[binary]" pytest   # once
+scripts/dev-install.sh   # once (and after changing any pyproject.toml): venv + core + every package, editable
 ./demo.sh                                                           # the whole story, output in out/
 TERRAFORM=/path/to/terraform ./demo.sh                              # plus terraform fmt + validate
 ```
 
-`./opsdir.sh` runs the CLI against a **private throwaway Postgres cluster** in `.pgdata/` (unix socket only, port 54329), started by `scripts/pg-local.sh`. `scripts/pg-local.sh destroy` removes the cluster. To use another database, run `.venv/bin/python -m opsdir …` with `OPSDIR_DSN` set, for example the local dev database: `OPSDIR_DSN="host=localhost port=5432 user=opsdir password=testpass dbname=opsdir"`.
+`./opsdir.sh` runs the CLI against `OPSDIR_DSN`, by default the local dev database (`scripts/dev-env.sh`; see [Database](#database)). Any other database works the same way: `OPSDIR_DSN=... .venv/bin/python -m opsdir …`.
 
 ```bash
-./opsdir.sh init                  # tables, rules, LDAP schema
+./opsdir.sh init                  # DROPS the opsdir schema, then creates it: tables, rules, views, LDAP schema
+./opsdir.sh upgrade               # upgrades it in place instead: pending migrations, keeping data and history
 ./opsdir.sh load                  # data/*.ldif under change BOOTSTRAP
+./opsdir.sh check                 # each environment's declared stack vs the installed adapters (non-zero exit on problems)
 ./opsdir.sh report expiring|pii|drift|stale|unowned|portability
 ./opsdir.sh report blast-radius "cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops"
 ./opsdir.sh search -b ou=consumers,dc=ciam-ops '(&(objectClass=ciamConsumer)(!(ciamMigrationStatus=tested)))' ciamOwner
-./opsdir.sh render rtx-next/prod  # → out/rtx-next-prod/{terraform,ds,pingfederate}
-./opsdir.sh plan aws-current/prod rtx-next/prod    # → PLAN.md + change-request drafts for external parties
-./opsdir.sh modify --change CHG-2001 changes/CHG-2001-mro-firewall-rtx-next.ldif
+./opsdir.sh render target/prod  # → out/target-prod/{terraform,ds,pingfederate}
+./opsdir.sh plan source/prod target/prod    # → PLAN.md + change-request drafts for external parties
+./opsdir.sh modify --change CHG-2001 changes/CHG-2001-mro-firewall-target.ldif
 ./opsdir.sh export > snapshot.ldif
 ```
+
+## Database
+
+One PostgreSQL server and one role, `opsdir`, with two databases:
+
+| Database | Used by | Its `opsdir` schema |
+|---|---|---|
+| `opsdir` | `./opsdir.sh`, `demo.sh` (via `OPSDIR_DSN`, default in `scripts/dev-env.sh`) | upgraded in place by `upgrade`; `init` and `demo.sh` rebuild it |
+| `opsdir_workspace` | a migration workspace for the dev record (via `OPSDIR_WORKSPACE_DSN`, default in `scripts/dev-env.sh`) | rebuilt by `workspace create` and after every cutover |
+| `opsdir_test` | the integration tests (via `OPSDIR_TEST_DSN`, default in `tests/support.py`) | dropped and rebuilt by every test run |
+| `opsdir_test_workspace` | the workspace integration tests (via `OPSDIR_TEST_WORKSPACE_DSN`) | dropped and rebuilt by every test run |
+
+The tests never use `OPSDIR_DSN`. One-time setup on a new machine (the role needs no special privileges; the password is for local dev and tests only):
+
+```bash
+sudo -u postgres psql -c "create role opsdir login password 'testpass'"
+sudo -u postgres createdb -O opsdir -T template0 opsdir
+sudo -u postgres createdb -O opsdir -T template0 opsdir_test
+sudo -u postgres createdb -O opsdir -T template0 opsdir_workspace
+sudo -u postgres createdb -O opsdir -T template0 opsdir_test_workspace
+```
+
+### Migration workspaces
+
+The live record is what you operate from. To prepare a move without touching it, copy it into a workspace database and declare the target there (its stack and bindings); every command runs against the workspace with `--workspace`:
+
+```bash
+./opsdir.sh workspace create                          # copy the live record (OPSDIR_DSN) into the workspace
+./opsdir.sh --workspace modify --change CHG-… file.ldif   # declare the target, as governed changes
+./opsdir.sh --workspace plan source/prod target/prod  # plan and render from the workspace
+./opsdir.sh workspace status                          # what the workspace changed; did the live record move on?
+./opsdir.sh workspace diff                            # the workspace's changes as LDIF change records
+./opsdir.sh workspace cutover --change CHG-…          # apply them to the live record (one approved change), re-copy
+```
+
+The workspace remembers the live snapshot it was copied from. At cutover, if the live record changed other entries meanwhile, the workspace's changes still apply; if both changed the same entry, the cutover is refused and names it. Everything is applied in one transaction under the approved change, through the store's rules.
+
+### Schema upgrades
+
+The store's SQL comes in two kinds (`opsdir/store/migrations.py`):
+
+- **Migrations** (`opsdir/store/sql/migrations/NNNN_name.sql`) create and change what holds data: tables, the rule functions and their triggers. Each is applied once, in order, and recorded with its checksum in `opsdir.schema_migration`. **Never edit an applied migration**; add the next number. `upgrade` refuses a database whose applied migrations were edited, that has migrations this code doesn't know, or that was created before versioning (`init` rebuilds those).
+- **Definitions** (`opsdir/store/sql/definitions/`, and every domain's and connector's `sql/`) hold no data: views and report functions. Every `upgrade` drops the views and re-applies all definitions, so they are edited in place. A function whose signature changes is dropped by a migration.
+
+Every `upgrade` also syncs the LDAP schema registry from the registered schema fragments (new and changed definitions; removing a published definition is refused) and the reference schemes the adapters own, and replaces the **vocabulary**: the values of `vocab` attributes (cloud provider, provider partition, server and target roles) that the installed domains and adapters define. The store rejects any other value, and `upgrade` refuses to drop values that entries still use (an adapter was uninstalled). Everything runs in one transaction, one migrator at a time.
 
 ## What the demo shows
 
@@ -53,7 +100,7 @@ The synthetic estate is **deliberately broken**. The problems are planted by the
 
 ## Layout
 
-Each part of the stack is self-contained, and only `connectors/` combines them. Dependencies point one way: `connectors → adapters → domains → store → core`, and `formats` is used by adapters only.
+Each part of the stack is self-contained, and only `connectors/` combines them. Dependencies point one way: adapter packages (`../packages/`) depend on the core, never the reverse; the registry discovers them through entry points. Inside the core, `connectors → domains → core` and `connectors → store → core`; domains never import the store.
 
 ```
 opsdir/                      the Python package
@@ -66,20 +113,15 @@ opsdir/                      the Python package
     findings.py              Findings records, merge, owner labels (responsible)
     manifest.py network.py naming.py paths.py
     interchange/             ldif.py (RFC 2849 read/write), rfc4512.py (schema definitions read/write)
-  store/                     Postgres: postgres.py (init, load, governed changes, snapshot read),
-                             queries.py, sql/ (entries, schema registry, rules R1–R6, graph functions)
+  store/                     Postgres: postgres.py (connect, load, governed changes, snapshot read),
+                             migrations.py (init, upgrade), queries.py, sql/migrations/ (entries, schema
+                             registry, rules R1–R6), sql/definitions/ (graph functions, portability view)
   domains/                   vendor-neutral parts of the stack, each with its schema fragment, SQL views,
     infrastructure/          checks and reports: clouds, environments, servers, bindings, allowlists
     directory/               LDAP user directory: declared/observed config and drift, consumers, ACIs, PII view
     federation/              SAML/OIDC integrations and claim maps
     pki/                     certificates and their expiry
     governance/              owners (including the operator), changes, incidents, runbooks
-  adapters/                  one package per product, cloud provider or secret store
-    pingds/                  dsconfig batch, ACI LDIF, setup scripts; replication checks
-    pingfederate/            Admin API-shaped SP connections, OIDC clients, IdP connections
-    aws/ azure/              Terraform per provider; secret resolvers (aws-sm, azkv)
-    hashicorp_vault/         vault:// secret resolver
-  formats/terraform_hcl.py   HCL formatting (no cloud knowledge)
   connectors/                the only code that joins parts: registry.py (what exists and applies),
                              render.py, plan.py (migration planner), reports.py, sql/ (cross-domain views)
   cli.py                     thin orchestrator
@@ -88,26 +130,31 @@ data/*.ldif                  the synthetic estate, 230 entries, written by scrip
 data/expected-findings.json  the planted problems the planner must report
 fixtures/example_estate/     the synthetic estate as pure builders, one module per part of the stack
 changes/                     approved change records to apply; changes/rejected/ = writes that must fail
-scripts/                     gen-schema.py, gen-synthetic.py, check-findings.py, pg-local.sh, snapshot-outputs.sh
+scripts/                     gen-schema.py, gen-synthetic.py, check-findings.py, snapshot-outputs.sh, test.sh,
+                             dev-env.sh (local dev defaults: OPSDIR_DSN)
 tests/unit/ tests/support.py pytest unit suite (no database); pytest.ini configures it
+tests/integration/           pytest integration suite (Postgres); scripts/test.sh runs both
 tests/golden/                accepted snapshot of every output (see "Checking a change")
-demo.sh opsdir.sh            end-to-end walk-through; CLI wrapper for the private cluster
+demo.sh opsdir.sh            end-to-end walk-through; CLI wrapper for the local dev database
 ```
 
 ## Adding a product, cloud provider or secret store
 
-1. Create `opsdir/adapters/<name>/` with an `adapter.py` that defines `ADAPTER = Adapter(...)`. It declares `applies(m)` (decided from directory data only, such as the cloud's `ciamCloudProvider` or the servers' `ciamProductVersion`), the roles it requires, its renderers, its planner checks, the reference schemes it owns and their resolvers, and how its outputs are described.
-2. Add one line to `ADAPTERS` in `connectors/registry.py`.
+1. Create a package (see `../packages/` for the existing ones) with a module that defines `ADAPTER = Adapter(...)`. It declares `applies(m)` (decided from directory data only, such as the cloud's `ciamCloudProvider` or the servers' `ciamProductVersion`), the roles it requires, its renderers, its planner checks, the reference schemes it owns and their resolvers, and how its outputs are described.
+2. Register it in its package's `pyproject.toml` under `[project.entry-points."opsdir.adapters"]` and install the package. The registry discovers it; nothing in the core changes.
 
-Core, store, domains and the other adapters don't change. A new vendor-neutral part of the stack is added the same way as a `Domain`: a schema fragment (with new, never-reused OID numbers), SQL views, checks and reports, plus one line in `DOMAINS`.
+Core, store, domains and the other adapters don't change. A new vendor-neutral part of the stack is added the same way as a `Domain`: a schema fragment (with new, never-reused OID numbers), SQL views, checks and reports, and an `order`, registered under `[project.entry-points."opsdir.domains"]`.
 
 ## Checking a change
 
 ```bash
-.venv/bin/python -m pytest       # unit suite, no database needed (well under a second)
-OPSDIR_DSN=... scripts/snapshot-outputs.sh /tmp/snap && diff -r tests/golden /tmp/snap
+scripts/test.sh                              # everything: unit + integration (~4 s, database required)
+.venv/bin/python -m pytest                   # unit suite only, no database (well under a second)
+.venv/bin/python -m pytest -m integration    # integration suite only (skipped if the database is unreachable)
 ```
 
 The unit suite tests the pure modules (LDIF, RFC 4512, filters, directory, environment, schema fragments, store preparation, HCL) and builds the synthetic estate in memory with the store's own preparation functions. Its renders, plans, findings, drift, searches and export must equal `tests/golden/` byte for byte, before and after the approved changes. It does not run the store's rules (R1-R10), which live in Postgres triggers.
 
-The snapshot regenerates the schema and data (they must reproduce the files on disk), then runs every command on a fresh load: init, reports, searches, renders of both clouds, plans with request drafts, the rejected writes, the approved changes, history, export and the findings checks. A refactor must leave the diff empty. An intended change of output is reviewed, and then the snapshot replaces `tests/golden/`. The script drops and reloads the `opsdir` schema in the target database.
+The integration suite runs `scripts/snapshot-outputs.sh` once against Postgres and checks every captured output against `tests/golden/`, one test per file. It also checks the guardrails directly (each rejected write fails with its reason, each approved change applies and appears in history), independent of the baseline, and that the database ends up exactly where the in-memory estate does. It also tests migrations: a fresh database gets every migration, an upgrade keeps entries, references and history, and edited, unknown or pre-versioning databases are refused. It uses `OPSDIR_TEST_DSN`, else `opsdir_test` (see [Database](#database)), and **drops and rebuilds the `opsdir` schema there**. It never uses `OPSDIR_DSN`.
+
+To run the snapshot by hand: `OPSDIR_DSN=... scripts/snapshot-outputs.sh /tmp/snap && diff -r tests/golden /tmp/snap`. It regenerates the schema and data (they must reproduce the files on disk), then runs every command on a fresh load: init, reports, searches, renders of both clouds, plans with request drafts, the rejected writes, the approved changes, history, export and the findings checks. A refactor must leave the diff empty. An intended change of output is reviewed, and then the snapshot replaces `tests/golden/`. The script drops and reloads the `opsdir` schema in the target database.

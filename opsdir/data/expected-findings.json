@@ -5,28 +5,28 @@
       "id": "B1",
       "area": "Contract",
       "match": "`ds-ldaps-service` changes name",
-      "planted": "rtx-next binds a new LDAPS name (landing-zone DNS default)",
+      "planted": "the target environment binds a new LDAPS name (landing-zone DNS default)",
       "cleared_by": "CHG-2003"
     },
     {
       "id": "B2",
       "area": "Binding",
       "match": "Role `backup-target`",
-      "planted": "rtx-next has no backup target",
+      "planted": "the target environment has no backup target",
       "cleared_by": null
     },
     {
       "id": "B3",
       "area": "Binding",
       "match": "Consumer `legacy-rptuser`",
-      "planted": "no rtx-next firewall rule for the unowned legacy account",
+      "planted": "no target firewall rule for the unowned legacy account",
       "cleared_by": null
     },
     {
       "id": "B4",
       "area": "Binding",
       "match": "Consumer `mro-batch-export`",
-      "planted": "no rtx-next firewall rule for the MRO export",
+      "planted": "no target firewall rule for the MRO export",
       "cleared_by": "CHG-2001"
     },
     {

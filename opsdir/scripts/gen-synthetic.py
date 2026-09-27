@@ -6,7 +6,7 @@ it. Everything is fictional. The estate is seeded with realistic problems for th
   - ds-2 is missing the `mail` index (unrecorded change → incident INC-2231); ds-3 has an extra,
     unrecorded `description` substring index and a different lockout threshold
   - a legacy consumer binds with a person account, reads every attribute, has no owner
-  - the rtx-next (Azure) environment is missing firewall rules and a backup target, and its
+  - the target (Azure) environment is missing firewall rules and a backup target, and its
     LDAPS service name breaks the stable-name contract
   - partner and consumer allowlists pin our old IP addresses
   - certificates expire before the planned cutover; one work instruction is stale
