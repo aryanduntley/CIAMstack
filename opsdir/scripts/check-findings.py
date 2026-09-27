@@ -42,6 +42,12 @@ def compare(kind, rows, found, applied):
     return Result(kind, rows, should, missed, unexpected, cleared, still)
 
 
+def check(expected, p, applied):
+    """Blocker and action Results of a plan against the expected-findings document, given the applied changes."""
+    found = {"blockers": [(a, t) for a, t, _ in p.blockers], "actions": [(a, t) for a, t, _, _ in p.actions]}
+    return [compare(kind, expected[kind], found[kind], applied) for kind in ("blockers", "actions")]
+
+
 def result_lines(r):
     return (f"  {r.kind:8} planted {len(r.rows):2}   expected now {len(r.should):2}   "
             f"detected {len(r.should) - len(r.missed):2}   missed {len(r.missed)}   unexpected {len(r.unexpected)}",
@@ -59,9 +65,7 @@ def main(phase):
     exp = json.loads((ROOT / "data" / "expected-findings.json").read_text())
     conn = db.connect()
     p = plan.plan(db.load_directory(conn), "aws-current/prod", "rtx-next/prod", AS_OF)
-    applied = applied_changes(conn) if phase == "after" else set()
-    found = {"blockers": [(a, t) for a, t, _ in p.blockers], "actions": [(a, t) for a, t, _, _ in p.actions]}
-    results = [compare(kind, exp[kind], found[kind], applied) for kind in ("blockers", "actions")]
+    results = check(exp, p, applied_changes(conn) if phase == "after" else set())
     ok = all(passed(r) for r in results)
     print("\n".join((f"Expected findings check ({phase} changes)", *(line for r in results for line in result_lines(r)),
                      "  RESULT: PASS. The planner found every planted problem and nothing else. 'NOT READY' is the "

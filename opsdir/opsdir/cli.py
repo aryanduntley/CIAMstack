@@ -63,6 +63,20 @@ def write_tree(outdir, files):
     return outdir
 
 
+def search_text(d, base, filt, scope="sub", attrs=()):
+    """Search hits as a table of the requested attributes, or as LDIF with an entry count when none are given."""
+    hits = ldap_search.search(d, base, filt, scope)
+    if attrs:
+        return format_table([[e.dn] + ["|".join(values(e, x)) for x in attrs] for e in hits], ["dn", *attrs])
+    return "\n".join((*(ldif.write_entry(e.dn, e.classes, e.attrs) for e in hits), f"# {len(hits)} entries"))
+
+
+def export_text(d, base):
+    """Every entry under base as LDIF, parents before children (for Git review)."""
+    entries = sorted(subtree(d, base), key=lambda e: (e.norm.count(","), e.norm))
+    return "\n".join(ldif.write_entry(e.dn, e.classes, e.attrs) for e in entries)
+
+
 # ------------------------------------------------------------------ commands: each returns the text to print
 def _cmd_init(conn, a, as_of):
     db.init(conn, sql_files(), ref_schemes())
@@ -77,10 +91,7 @@ def _cmd_load(conn, a, as_of):
 
 
 def _cmd_search(conn, a, as_of):
-    hits = ldap_search.search(db.load_directory(conn), a.base, a.filter, a.scope)
-    if a.attrs:
-        return format_table([[e.dn] + ["|".join(values(e, x)) for x in a.attrs] for e in hits], ["dn"] + a.attrs)
-    return "\n".join((*(ldif.write_entry(e.dn, e.classes, e.attrs) for e in hits), f"# {len(hits)} entries"))
+    return search_text(db.load_directory(conn), a.base, a.filter, a.scope, a.attrs)
 
 
 def _cmd_report(conn, a, as_of):
@@ -108,8 +119,7 @@ def _cmd_modify(conn, a, as_of):
 
 
 def _cmd_export(conn, a, as_of):
-    entries = sorted(subtree(db.load_directory(conn), a.base), key=lambda e: (e.norm.count(","), e.norm))
-    return "\n".join(ldif.write_entry(e.dn, e.classes, e.attrs) for e in entries)
+    return export_text(db.load_directory(conn), a.base)
 
 
 def _cmd_history(conn, a, as_of):

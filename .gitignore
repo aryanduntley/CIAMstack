@@ -1,19 +1,78 @@
-# AIMFP-specific (project.db and ProjectBlueprint.md ARE tracked)
+# CIAMstack — the one .gitignore for the whole repository.
+
+# ------------------------------------------------------------------ local dev notes
+# docs/ holds personal working notes and is never committed; project documentation
+# lives in documentation/ (root) and opsdir/ (README.md, SPEC.md).
+docs/
+
+# ------------------------------------------------------------------ AIMFP / agent tooling
+# project.db and ProjectBlueprint.md ARE tracked; everything else is per-machine state.
 .aimfp-project/user_preferences.db
+.aimfp-project/user_directives.db
 .aimfp-project/backups/
 .aimfp-project/logs/
 .aimfp-project/temp/
+.aimfp-project/watchdog/
+.aimfp-project/.state/
 .aimfp-project/.mcp-session-*
+.intercomm-aimfp/
+.claude/settings.local.json
+.claude/worktrees/
 
-# SQLite runtime files
+# ------------------------------------------------------------------ opsdir runtime state and output
+opsdir/.venv/
+opsdir/.pgdata/
+opsdir/.pgsock/
+opsdir/out/
+
+# ------------------------------------------------------------------ Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.ipynb_checkpoints/
+
+# ------------------------------------------------------------------ Terraform (when validating rendered output)
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+
+# ------------------------------------------------------------------ databases and logs
 *.db-wal
 *.db-shm
-
-# Standard ignores
-__pycache__/
-*.pyc
-*.pyo
-.pytest_cache/
-.env
+*.db-journal
 *.log
+
+# ------------------------------------------------------------------ secrets (never stored; only referenced)
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# ------------------------------------------------------------------ editors and OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
 .DS_Store
+Thumbs.db

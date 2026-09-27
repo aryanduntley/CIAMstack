@@ -14,16 +14,17 @@ The code is Modular, Functional and Procedural: immutable records, pure function
 
 ```
 README.md                 this file
-STACK.md                  the full stack inventory: every subsystem, file and store, what can be
+documentation/            project-level documentation
+  STACK.md                the full stack inventory: every subsystem, file and store, what can be
                           datified, and what opsdir covers today vs the gaps (build order in §21)
-ops-directory-model.md    design rationale: portable intent vs bindings, prior art, objections
-docs/notes.txt            working notes (demo summary, environment/cleanup notes)
+  ops-directory-model.md  design rationale: portable intent vs bindings, prior art, objections
 opsdir/                   the reference implementation (Python + Postgres)
   SPEC.md                 the standard: LDAP schema + X-PORTABILITY / X-VALUE-TYPE, rules R1–R10
   README.md               how to run it, the package layout, what's verified and what isn't
   opsdir/                 the package: core/ store/ domains/ adapters/ formats/ connectors/ cli.py
   schema/ data/ changes/ fixtures/ scripts/ tests/   (see opsdir/README.md)
 .aimfp-project/           AIMFP project tracking (blueprint, roadmap, tracked files and functions)
+docs/                     local dev notes; git-ignored, never part of the project
 ```
 
 ## Quick start
@@ -32,9 +33,10 @@ Everything is self-contained in `opsdir/`. Nothing is installed system-wide.
 
 ```bash
 cd opsdir
-python3 -m venv .venv && PIP_USER=0 .venv/bin/pip install --no-cache-dir "psycopg[binary]"   # once
+python3 -m venv .venv && PIP_USER=0 .venv/bin/pip install --no-cache-dir "psycopg[binary]" pytest   # once
 ./demo.sh          # full walk-through; outputs in opsdir/out/
 ./opsdir.sh --help # the CLI (starts the private Postgres cluster if needed)
+.venv/bin/python -m pytest   # unit suite (no database)
 ```
 
 `PIP_USER=0` is needed because this machine's global pip config sets `user = true`, which pip refuses inside a venv. `--no-cache-dir` keeps pip from writing to `~/.cache/pip`.
@@ -51,20 +53,20 @@ Terraform is optional (`TERRAFORM=/path/to/terraform ./demo.sh` adds `fmt` + `va
 
 | Thing | Path | Remove with |
 |---|---|---|
-| Python venv (only `psycopg`) | `opsdir/.venv/` | `rm -rf opsdir/.venv` |
+| Python venv (`psycopg`, `pytest`) | `opsdir/.venv/` | `rm -rf opsdir/.venv` |
 | Private Postgres cluster | `opsdir/.pgdata/`, socket in `opsdir/.pgsock/` (port 54329, unix socket only) | `opsdir/scripts/pg-local.sh destroy` |
 | Rendered output | `opsdir/out/` | `rm -rf opsdir/out` |
 | Python bytecode | `__pycache__/` under `opsdir/` | `find opsdir -name __pycache__ -exec rm -rf {} +` |
 | Local dev database (optional) | role and database `opsdir` in the system PostgreSQL (localhost:5432) | `sudo -u postgres dropdb opsdir && sudo -u postgres dropuser opsdir` |
 
-Deleting the `CIAMstack/` folder removes all of it. Stop the cluster first (`opsdir/scripts/pg-local.sh stop`) if it's running. Anything else outside this folder is listed in `docs/notes.txt`.
+Deleting the `CIAMstack/` folder removes all of it. Stop the cluster first (`opsdir/scripts/pg-local.sh stop`) if it's running. Outside this folder, running `terraform` to validate rendered output leaves checkpoint files in `~/.terraform.d/`.
 
 ## Status
 
 A working foundation, rewritten into Modular/Functional/Procedural form and split into self-contained parts (milestones 1.1 and 1.2), running on **synthetic data** (230 fictional entries, "Example Aero"). `opsdir/scripts/snapshot-outputs.sh` captures every output, and `opsdir/tests/golden/` holds the accepted baseline. The demo passes its own checks: the planner finds all 7 planted blockers, and 5 remain after two approved changes. The rendered Terraform passes `terraform validate` against the real AWS and Azure provider schemas. **Not verified:** `dsconfig`/`setup` flags have not been run against a real PingDS, the PingFederate JSON is an illustrative subset of the Admin API, and the schema hasn't been loaded into a real LDAP server. See `opsdir/README.md` for the full table.
 
-The roadmap (7 stages) is tracked in AIMFP (`.aimfp-project/`). Next are the test harness (pytest plus the snapshot as an integration test), database setup with versioned SQL migrations, and the rest of the documentation. After that come the platform-agnostic core (adapter contract, versioned schema, keys/secrets model) and the `STACK.md` §21 gaps, starting with the observed-state importers.
+The roadmap (7 stages) is tracked in AIMFP (`.aimfp-project/`). Next are the test harness (pytest plus the snapshot as an integration test), database setup with versioned SQL migrations, and the rest of the documentation. After that come the platform-agnostic core (adapter contract, versioned schema, keys/secrets model) and the `documentation/STACK.md` §21 gaps, starting with the observed-state importers.
 
 ## Note on inherited docs
 
-`ops-directory-model.md` was written in another workspace. Its relative links to `../systems-and-workflows.md`, `../automation-path.md` and the codex discussion log don't resolve here. `STACK.md` covers the stack content those links pointed to.
+`documentation/ops-directory-model.md` was written in another workspace. Its relative links to `../systems-and-workflows.md`, `../automation-path.md` and the codex discussion log don't resolve here. `STACK.md` covers the stack content those links pointed to.

@@ -1,6 +1,0 @@
-.venv/
-.pgdata/
-.pgsock/
-out/
-__pycache__/
-*.pyc

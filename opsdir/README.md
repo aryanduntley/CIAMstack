@@ -5,14 +5,14 @@ The whole identity platform (servers, bindings, directory config, consumers, ACI
 - **A change is a directory entry,** not a file edit.
 - **A migration is a read** of the same databases with a different environment's bindings.
 
-The standard is in [`SPEC.md`](SPEC.md). The reasoning behind it is in [`../ops-directory-model.md`](../ops-directory-model.md).
+The standard is in [`SPEC.md`](SPEC.md). The reasoning behind it is in [`../documentation/ops-directory-model.md`](../documentation/ops-directory-model.md).
 
 > **All data is synthetic and fictional:** "Example Aero", partners "Skyline Air" / "Harbor MRO", RFC 5737 documentation IPs, the AWS documentation account `111122223333`, made-up resource IDs. The "rtx-next" environment is *assumed* to be Azure Government for the demo; the real target is unconfirmed.
 
 ## Run it
 
 ```bash
-python3 -m venv .venv && PIP_USER=0 .venv/bin/pip install --no-cache-dir "psycopg[binary]"   # once
+python3 -m venv .venv && PIP_USER=0 .venv/bin/pip install --no-cache-dir "psycopg[binary]" pytest   # once
 ./demo.sh                                                           # the whole story, output in out/
 TERRAFORM=/path/to/terraform ./demo.sh                              # plus terraform fmt + validate
 ```
@@ -89,6 +89,7 @@ data/expected-findings.json  the planted problems the planner must report
 fixtures/example_estate/     the synthetic estate as pure builders, one module per part of the stack
 changes/                     approved change records to apply; changes/rejected/ = writes that must fail
 scripts/                     gen-schema.py, gen-synthetic.py, check-findings.py, pg-local.sh, snapshot-outputs.sh
+tests/unit/ tests/support.py pytest unit suite (no database); pytest.ini configures it
 tests/golden/                accepted snapshot of every output (see "Checking a change")
 demo.sh opsdir.sh            end-to-end walk-through; CLI wrapper for the private cluster
 ```
@@ -103,7 +104,10 @@ Core, store, domains and the other adapters don't change. A new vendor-neutral p
 ## Checking a change
 
 ```bash
+.venv/bin/python -m pytest       # unit suite, no database needed (well under a second)
 OPSDIR_DSN=... scripts/snapshot-outputs.sh /tmp/snap && diff -r tests/golden /tmp/snap
 ```
 
-This regenerates the schema and data (they must reproduce the files on disk), then runs every command on a fresh load: init, reports, searches, renders of both clouds, plans with request drafts, the rejected writes, the approved changes, history, export and the findings checks. A refactor must leave the diff empty. An intended change of output is reviewed, and then the snapshot replaces `tests/golden/`. The script drops and reloads the `opsdir` schema in the target database.
+The unit suite tests the pure modules (LDIF, RFC 4512, filters, directory, environment, schema fragments, store preparation, HCL) and builds the synthetic estate in memory with the store's own preparation functions. Its renders, plans, findings, drift, searches and export must equal `tests/golden/` byte for byte, before and after the approved changes. It does not run the store's rules (R1-R10), which live in Postgres triggers.
+
+The snapshot regenerates the schema and data (they must reproduce the files on disk), then runs every command on a fresh load: init, reports, searches, renders of both clouds, plans with request drafts, the rejected writes, the approved changes, history, export and the findings checks. A refactor must leave the diff empty. An intended change of output is reviewed, and then the snapshot replaces `tests/golden/`. The script drops and reloads the `opsdir` schema in the target database.
