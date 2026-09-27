@@ -1,0 +1,5 @@
+runbook      title                           validated   dep_changed  dependency                                                       
+-----------  ------------------------------  ----------  -----------  -----------------------------------------------------------------
+WI-CIAM-004  Add or rebuild a backend index  2026-02-01  2026-06-14   cn=mail,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
+(1 rows)
+exit 0

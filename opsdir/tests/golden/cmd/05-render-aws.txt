@@ -1,0 +1,2 @@
+rendered 11 files for env=prod,cloud=aws-current,ou=environments,dc=ciam-ops (aws) → <OUT>/render-before/aws-current-prod
+exit 0

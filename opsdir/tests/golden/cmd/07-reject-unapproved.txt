@@ -1,0 +1,2 @@
+REJECTED by the directory: opsdir: change CHG-2002 is not an approved change record under ou=changes
+exit 1

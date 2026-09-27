@@ -15,6 +15,7 @@ objectClass: top
 objectClass: ciamEnvironment
 env: prod
 ciamLifecycle: active
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 
 dn: ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
 objectClass: top
@@ -27,6 +28,7 @@ objectClass: ciamNetwork
 cn: vpc
 ciamBindingRole: network
 ciamCidr: 10.20.0.0/16
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
 ciamProviderRef: vpc-0a1b2c3d4e5f67890
 
 dn: cn=subnet-ds-a,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
@@ -85,6 +87,7 @@ ciamFqdn: ldap.id.example-aero.test
 ciamFrontendIp: 10.20.1.100
 ciamPort: 1636
 ciamTargetRole: ds
+ciamTlsCertificate: cn=ds-ldaps-2026,ou=certificates,dc=ciam-ops
 
 dn: cn=svc-sso,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
 objectClass: top
@@ -98,6 +101,7 @@ ciamFrontendIp: 198.51.100.20
 ciamPort: 443
 ciamProviderRef: eipalloc-0a1b2c3d4e5f60001
 ciamTargetRole: pf-engine
+ciamTlsCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 
 dn: cn=fw-pf-ds-svc,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
 objectClass: top

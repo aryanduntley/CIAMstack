@@ -1,0 +1,2218 @@
+dn: dc=ciam-ops
+objectClass: top
+objectClass: domain
+dc: ciam-ops
+description: Operations directory for the external identity (CIAM) platform. S
+ ynthetic demo data.
+
+dn: ou=acis,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: acis
+description: Access control instructions on the user directory
+
+dn: ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: certificates
+description:: Q2VydGlmaWNhdGVzIChwdWJsaWMgZmFjdHMgb25seSDigJQgbmV2ZXIga2V5cyk=
+
+dn: ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: changes
+description: Change records mirrored from ITSM
+
+dn: ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: config
+description: Directory server configuration: declared (desired) and observed (
+ snapshots)
+
+dn: ou=consumers,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: consumers
+description: Clients of the user directory, discovered from access logs
+
+dn: ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: environments
+description: Clouds, environments, servers and bindings
+
+dn: ou=external-allowlists,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: external-allowlists
+description: Allowlists in consumer and partner systems that contain our addre
+ sses
+
+dn: ou=incidents,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: incidents
+description: Incidents and postmortems
+
+dn: ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: integrations
+description: Federation integrations (SAML / OIDC) and their claim maps
+
+dn: ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: owners
+description: Teams, partners and vendors
+
+dn: ou=runbooks,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: runbooks
+description: Work instructions
+
+dn: ou=user-schema,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: user-schema
+description: Records describing attributes of the user directory
+
+dn: cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloud
+cloud: aws-current
+ciamCloudEnvironment: public
+ciamCloudProvider: aws
+ciamLifecycle: active
+ciamRegion: us-east-1
+description: Existing cloud hosting environment
+
+dn: cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloud
+cloud: rtx-next
+ciamCloudEnvironment: usgovernment
+ciamCloudProvider: azure
+ciamLifecycle: building
+ciamRegion: usgovvirginia
+description: Next-gen cloud landing zone (ASSUMED Azure Government for the dem
+ o; the real target is unconfirmed)
+
+dn: cn=aci-idm-write,ou=acis,dc=ciam-ops
+objectClass: top
+objectClass: ciamAci
+cn: aci-idm-write
+ciamAciGrantee: cn=idm-sync,ou=consumers,dc=ciam-ops
+ciamAciRight: read
+ciamAciRight: search
+ciamAciRight: write
+ciamAciTargetAttr: cn=uid,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=mail,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=companyId,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=appEntitlement,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=registrationStatus,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
+ciamAciTargetDn: ou=people,dc=partners,dc=example-aero,dc=test
+ciamJustification: Identity sync from the registration workflow
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamReviewedOn: 20260302000000Z
+
+dn: cn=aci-legacy-all,ou=acis,dc=ciam-ops
+objectClass: top
+objectClass: ciamAci
+cn: aci-legacy-all
+ciamAciAllAttributes: TRUE
+ciamAciGrantee: cn=legacy-rptuser,ou=consumers,dc=ciam-ops
+ciamAciRight: read
+ciamAciRight: search
+ciamAciTargetDn: ou=people,dc=partners,dc=example-aero,dc=test
+
+dn: cn=aci-mro-read,ou=acis,dc=ciam-ops
+objectClass: top
+objectClass: ciamAci
+cn: aci-mro-read
+ciamAciGrantee: cn=mro-batch-export,ou=consumers,dc=ciam-ops
+ciamAciRight: read
+ciamAciRight: search
+ciamAciTargetAttr: cn=mail,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=companyId,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=soldToAccount,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=exportScreeningStatus,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=description,ou=user-schema,dc=ciam-ops
+ciamAciTargetDn: ou=people,dc=partners,dc=example-aero,dc=test
+ciamJustification: Nightly aftermarket entitlement reconciliation
+ciamOwner: cn=mro-analytics-team,ou=owners,dc=ciam-ops
+ciamReviewedOn: 20250911000000Z
+
+dn: cn=aci-pf-read,ou=acis,dc=ciam-ops
+objectClass: top
+objectClass: ciamAci
+cn: aci-pf-read
+ciamAciGrantee: cn=pf-ds-svc,ou=consumers,dc=ciam-ops
+ciamAciRight: read
+ciamAciRight: search
+ciamAciRight: compare
+ciamAciTargetAttr: cn=uid,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=mail,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=givenName,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=sn,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=companyId,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=appEntitlement,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=registrationStatus,ou=user-schema,dc=ciam-ops
+ciamAciTargetDn: ou=people,dc=partners,dc=example-aero,dc=test
+ciamChangeRef: cn=CHG-0877,ou=changes,dc=ciam-ops
+ciamJustification: PingFederate reads profile attributes to build assertions a
+ nd tokens
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamReviewedOn: 20260302000000Z
+
+dn: cn=aci-portal-write,ou=acis,dc=ciam-ops
+objectClass: top
+objectClass: ciamAci
+cn: aci-portal-write
+ciamAciGrantee: cn=customer-portal-svc,ou=consumers,dc=ciam-ops
+ciamAciRight: read
+ciamAciRight: search
+ciamAciRight: write
+ciamAciTargetAttr: cn=mail,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=registrationStatus,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=telephoneNumber,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=challengeAnswer,ou=user-schema,dc=ciam-ops
+ciamAciTargetDn: ou=people,dc=partners,dc=example-aero,dc=test
+ciamJustification: Customer portal registration and profile management
+ciamOwner: cn=customer-portal-team,ou=owners,dc=ciam-ops
+ciamReviewedOn: 20260302000000Z
+
+dn: cn=aci-supplier-read,ou=acis,dc=ciam-ops
+objectClass: top
+objectClass: ciamAci
+cn: aci-supplier-read
+ciamAciGrantee: cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
+ciamAciRight: read
+ciamAciRight: search
+ciamAciTargetAttr: cn=mail,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=companyId,ou=user-schema,dc=ciam-ops
+ciamAciTargetAttr: cn=soldToAccount,ou=user-schema,dc=ciam-ops
+ciamAciTargetDn: ou=people,dc=partners,dc=example-aero,dc=test
+ciamJustification: Supplier portal account lookup
+ciamOwner: cn=supplier-portal-team,ou=owners,dc=ciam-ops
+ciamReviewedOn: 20260302000000Z
+
+dn: cn=appEntitlement,ou=user-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamUserAttribute
+cn: appEntitlement
+ciamLdapName: appEntitlement
+ciamPiiClass: low
+ciamPurpose: Application entitlements (app:role)
+
+dn: cn=challengeAnswer,ou=user-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamUserAttribute
+cn: challengeAnswer
+ciamLdapName: challengeAnswer
+ciamPiiClass: high
+ciamPurpose: Legacy knowledge-based recovery answers; candidate for retirement
+
+dn: cn=CHG-0877,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-0877
+ciamApprovedBy: CAB 2024-01-02
+ciamChangeStatus: applied
+ciamPlannedAt: 20240103000000Z
+ciamTitle: Grant PingFederate read access to profile attributes
+
+dn: cn=CHG-0931,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-0931
+ciamApprovedBy: CAB 2026-06-11
+ciamChangeStatus: applied
+ciamPlannedAt: 20260614000000Z
+ciamTitle: Reconfigure mail index (equality only)
+
+dn: cn=CHG-2001,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2001
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Add NSG rule for the MRO batch export in rtx-next
+
+dn: cn=CHG-2002,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2002
+ciamChangeStatus: proposed
+ciamTitle: Grant legacy report account write access
+
+dn: cn=CHG-2003,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2003
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Restore the stable LDAPS service name in rtx-next
+
+dn: cn=CHG-2040,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2040
+ciamApprovedBy: CAB 2026-09-04
+ciamChangeStatus: applied
+ciamPlannedAt: 20260906000000Z
+ciamTitle: Allow rtx-next DS subnet on the replication port
+
+dn: cn=ciam-platform,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: ciam-platform
+ciamDisplayName: CIAM platform team
+ciamOwnerKind: team
+mail: ciam-platform@example-aero.test
+
+dn: cn=companyId,ou=user-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamUserAttribute
+cn: companyId
+ciamLdapName: companyId
+ciamPiiClass: none
+ciamPurpose: Link to the customer / supplier organization record
+
+dn: cn=customer-portal,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamIntegration
+cn: customer-portal
+ciamAcsUrl: https://portal.example-aero.test/saml/acs
+ciamCriticality: critical
+ciamEntityId: https://portal.example-aero.test/saml/sp
+ciamMfaRequired: TRUE
+ciamOwner: cn=customer-portal-team,ou=owners,dc=ciam-ops
+ciamPopulation: customers
+ciamProtocolType: saml2-sp
+ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
+ciamUsesCertificate: cn=customer-portal-sp-signing,ou=certificates,dc=ciam-ops
+ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+
+dn: cn=customer-portal-egress,ou=external-allowlists,dc=ciam-ops
+objectClass: top
+objectClass: ciamExternalAllowlist
+cn: customer-portal-egress
+ciamAllowlistDirection: consumer-egress
+ciamAllowsConsumer: cn=customer-portal-svc,ou=consumers,dc=ciam-ops
+ciamExternalSystem: Customer portal egress policy
+ciamLeadTimeDays: 5
+ciamManagedBy: cn=customer-portal-team,ou=owners,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRecordedCidr: 10.0.0.0/8
+ciamRefersToRole: ds-ldaps-service
+ciamRequestStatus: not-needed
+
+dn: cn=customer-portal-sp-signing,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: customer-portal-sp-signing
+ciamCertPurpose: saml-signing
+ciamFingerprint: 6D:AE:AB:5C:F2:5D:9F:EE:BA:68:75:93:B0:DD:85:49:E5:C1:1C:A7:6
+ 7:67:78:E5:1E:4C:E6:9B:90:37:C5:15
+ciamIssuer: self-signed
+ciamNotAfter: 20270301000000Z
+ciamNotBefore: 20240301000000Z
+ciamOwner: cn=customer-portal-team,ou=owners,dc=ciam-ops
+ciamSubject: CN=portal.example-aero.test SP
+
+dn: cn=customer-portal-svc,ou=consumers,dc=ciam-ops
+objectClass: top
+objectClass: ciamConsumer
+cn: customer-portal-svc
+ciamAttrRead: cn=mail,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=registrationStatus,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=telephoneNumber,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=companyId,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=challengeAnswer,ou=user-schema,dc=ciam-ops
+ciamBindDn: uid=portal-svc,ou=service-accounts,dc=partners,dc=example-aero,dc=
+ test
+ciamCriticality: critical
+ciamFirstSeen: 20230517000000Z
+ciamLastSeen: 20260922000000Z
+ciamMigrationStatus: tested
+ciamObservedSource: 10.30.8.0/24
+ciamOperationMix: search 70%, modify 25%, add 5%
+ciamOwner: cn=customer-portal-team,ou=owners,dc=ciam-ops
+ciamPeakOpsPerSec: 120
+ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
+ciamTlsOnly: TRUE
+ciamUnindexedSearchesPerDay: 0
+
+dn: cn=customer-portal-team,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: customer-portal-team
+ciamOwnerKind: team
+mail: customer-portal@example-aero.test
+
+dn: cn=description,ou=user-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamUserAttribute
+cn: description
+ciamLdapName: description
+ciamPiiClass: low
+ciamPurpose: Free text; used by a legacy export for account notes
+
+dn: cn=ds-ldaps-2026,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: ds-ldaps-2026
+ciamCertPurpose: tls-server
+ciamFingerprint: 8D:76:2E:86:EE:A1:F8:54:86:9E:8E:48:3E:9A:7A:0E:F2:48:91:B3:F
+ 4:F2:4A:B4:E4:E9:FD:21:11:0A:7E:C8
+ciamIssuer: CN=Example Aero Issuing CA 2
+ciamKeyRole: ds-tls-keystore
+ciamNotAfter: 20261220000000Z
+ciamNotBefore: 20251220000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRotationRunbook: cn=WI-CIAM-002,ou=runbooks,dc=ciam-ops
+ciamSubject: CN=ldap.id.example-aero.test
+ciamSubjectAltName: ldap.id.example-aero.test
+
+dn: cn=example-aero,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: example-aero
+ciamDisplayName: Example Aero
+ciamOwnerKind: operator
+
+dn: cn=exportScreeningStatus,ou=user-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamUserAttribute
+cn: exportScreeningStatus
+ciamExportControlled: TRUE
+ciamLdapName: exportScreeningStatus
+ciamPiiClass: high
+ciamPurpose: Result of restricted-party / export screening from the authoritat
+ ive system
+
+dn: cn=givenName,ou=user-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamUserAttribute
+cn: givenName
+ciamLdapName: givenName
+ciamPiiClass: low
+ciamPurpose: Display name
+
+dn: cn=harbor-mro,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: harbor-mro
+ciamContactUrl: https://portal.harbor-mro.example/support
+ciamOwnerKind: partner
+mail: it-security@harbor-mro.example
+
+dn: cn=harbor-mro-federation,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamIntegration
+cn: harbor-mro-federation
+ciamCriticality: medium
+ciamEntityId: https://sso.harbor-mro.example/idp
+ciamJitBaseDn: ou=partners,ou=people,dc=partners,dc=example-aero,dc=test
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamOwner: cn=harbor-mro,ou=owners,dc=ciam-ops
+ciamPopulation: partners
+ciamProtocolType: saml2-idp
+ciamUsesCertificate: cn=harbor-mro-idp-signing,ou=certificates,dc=ciam-ops
+ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+
+dn: cn=harbor-mro-idp-signing,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: harbor-mro-idp-signing
+ciamCertPurpose: partner-signing
+ciamFingerprint: 2D:E9:F6:D5:6B:75:74:00:17:73:F5:03:1D:98:70:71:6D:BC:6B:ED:2
+ F:6E:EC:C9:52:8B:DB:91:FB:BF:32:1F
+ciamIssuer: self-signed
+ciamNotAfter: 20280115000000Z
+ciamNotBefore: 20250115000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPartnerContact: cn=harbor-mro,ou=owners,dc=ciam-ops
+ciamRotationRunbook: cn=WI-CIAM-001,ou=runbooks,dc=ciam-ops
+ciamSubject: CN=Harbor MRO SSO
+
+dn: cn=harbor-mro-ingress,ou=external-allowlists,dc=ciam-ops
+objectClass: top
+objectClass: ciamExternalAllowlist
+cn: harbor-mro-ingress
+ciamAllowlistDirection: partner-ingress
+ciamExternalSystem: Harbor MRO SSO ingress allowlist
+ciamLeadTimeDays: 30
+ciamManagedBy: cn=harbor-mro,ou=owners,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRecordedCidr: 203.0.113.10/32
+ciamRecordedCidr: 203.0.113.200/32
+ciamRefersToRole: pf-egress
+ciamRequestStatus: done
+
+dn: cn=idm-sync,ou=consumers,dc=ciam-ops
+objectClass: top
+objectClass: ciamConsumer
+cn: idm-sync
+ciamAttrRead: cn=uid,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=mail,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=companyId,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=appEntitlement,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=registrationStatus,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
+ciamBindDn: uid=idm-sync,ou=service-accounts,dc=partners,dc=example-aero,dc=te
+ st
+ciamCriticality: high
+ciamFirstSeen: 20240103000000Z
+ciamLastSeen: 20260922000000Z
+ciamMigrationStatus: tested
+ciamObservedSource: 10.20.6.0/24
+ciamOperationMix: search 55%, modify 45%
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPeakOpsPerSec: 200
+ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
+ciamTlsOnly: TRUE
+ciamUnindexedSearchesPerDay: 0
+
+dn: cn=INC-2231,ou=incidents,dc=ciam-ops
+objectClass: top
+objectClass: ciamIncident
+cn: INC-2231
+ciamInvolved: cn=ds-2,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+ciamInvolved: cn=mail,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-op
+ s
+ciamOpenedAt: 20260914141200Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRootCause: mail equality index missing on ds-2 (unrecorded manual change);
+  searches by mail went unindexed
+ciamSeverity: sev3
+ciamTitle: Search latency spike on ds-2
+
+dn: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamUserAttribute
+cn: lastLoginTime
+ciamLdapName: lastLoginTime
+ciamPiiClass: low
+ciamPurpose: Inactivity detection for lifecycle cleanup
+
+dn: cn=legacy-rptuser,ou=consumers,dc=ciam-ops
+objectClass: top
+objectClass: ciamConsumer
+cn: legacy-rptuser
+ciamAttrRead: cn=uid,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=mail,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=givenName,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=sn,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=telephoneNumber,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=challengeAnswer,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=exportScreeningStatus,ou=user-schema,dc=ciam-ops
+ciamBindDn: uid=rptuser,ou=customers,ou=people,dc=partners,dc=example-aero,dc=
+ test
+ciamFirstSeen: 20210309000000Z
+ciamLastSeen: 20260922000000Z
+ciamMigrationStatus: unknown
+ciamObservedSource: 10.40.7.22/32
+ciamOperationMix: search 100%, filter (objectClass=*) over ou=people
+ciamPeakOpsPerSec: 5
+ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
+ciamTlsOnly: FALSE
+ciamUnindexedSearchesPerDay: 96
+
+dn: cn=mail,ou=user-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamUserAttribute
+cn: mail
+ciamLdapName: mail
+ciamPiiClass: moderate
+ciamPurpose: Contact and login email
+
+dn: cn=mobile-ops,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamIntegration
+cn: mobile-ops
+ciamClientId: mobile-ops
+ciamCriticality: medium
+ciamGrantType: authorization_code
+ciamGrantType: refresh_token
+ciamMfaRequired: TRUE
+ciamOwner: cn=mobile-team,ou=owners,dc=ciam-ops
+ciamPkceRequired: TRUE
+ciamPopulation: customers
+ciamProtocolType: oidc-client
+ciamRedirectUri: https://mobile.example-aero.test/oauth2/callback
+ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
+ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+
+dn: cn=mobile-team,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: mobile-team
+ciamOwnerKind: team
+mail: mobile@example-aero.test
+
+dn: cn=mro-analytics-team,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: mro-analytics-team
+ciamOwnerKind: team
+mail: mro-analytics@example-aero.test
+
+dn: cn=mro-batch-export,ou=consumers,dc=ciam-ops
+objectClass: top
+objectClass: ciamConsumer
+cn: mro-batch-export
+ciamAttrRead: cn=mail,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=companyId,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=soldToAccount,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=exportScreeningStatus,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=description,ou=user-schema,dc=ciam-ops
+ciamBindDn: uid=mro-export,ou=service-accounts,dc=partners,dc=example-aero,dc=
+ test
+ciamCriticality: medium
+ciamFirstSeen: 20240820000000Z
+ciamLastSeen: 20260922000000Z
+ciamMigrationStatus: identified
+ciamObservedSource: 10.40.12.0/24
+ciamOperationMix: search 100% (nightly 02:00-02:40 UTC)
+ciamOwner: cn=mro-analytics-team,ou=owners,dc=ciam-ops
+ciamPeakOpsPerSec: 40
+ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
+ciamTlsOnly: TRUE
+ciamUnindexedSearchesPerDay: 14
+
+dn: cn=mro-dc-egress-to-ldaps,ou=external-allowlists,dc=ciam-ops
+objectClass: top
+objectClass: ciamExternalAllowlist
+cn: mro-dc-egress-to-ldaps
+ciamAllowlistDirection: consumer-egress
+ciamAllowsConsumer: cn=mro-batch-export,ou=consumers,dc=ciam-ops
+ciamExternalSystem: MRO data-center egress firewall
+ciamLeadTimeDays: 21
+ciamManagedBy: cn=mro-analytics-team,ou=owners,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRecordedCidr: 10.20.1.100/32
+ciamRefersToRole: ds-ldaps-service
+ciamRequestStatus: to-request
+
+dn: cn=network-security,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: network-security
+ciamOwnerKind: team
+mail: netsec@example-aero.test
+
+dn: cn=pf-ds-svc,ou=consumers,dc=ciam-ops
+objectClass: top
+objectClass: ciamConsumer
+cn: pf-ds-svc
+ciamAttrRead: cn=uid,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=mail,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=givenName,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=sn,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=companyId,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=appEntitlement,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=registrationStatus,ou=user-schema,dc=ciam-ops
+ciamBindDn: uid=pf-svc,ou=service-accounts,dc=partners,dc=example-aero,dc=test
+ciamCriticality: critical
+ciamFirstSeen: 20240103000000Z
+ciamLastSeen: 20260922000000Z
+ciamMigrationStatus: tested
+ciamObservedSource: 10.20.4.0/24
+ciamObservedSource: 10.20.5.0/24
+ciamOperationMix: bind 61%, search 38%, modify 1%
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPeakOpsPerSec: 850
+ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
+ciamTlsOnly: TRUE
+ciamUnindexedSearchesPerDay: 0
+
+dn: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: pf-signing-2025
+ciamCertPurpose: saml-signing
+ciamFingerprint: 18:50:45:3C:96:D7:6C:B8:F5:90:6A:4B:06:37:F9:99:AE:16:65:5C:A
+ 3:29:EC:90:34:04:37:FA:10:28:B6:99
+ciamIssuer: self-signed
+ciamKeyRole: pf-signing-key
+ciamLastChanged: 20250701000000Z
+ciamNotAfter: 20270630000000Z
+ciamNotBefore: 20250701000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRotationRunbook: cn=WI-CIAM-010,ou=runbooks,dc=ciam-ops
+ciamSubject: CN=Example Aero SSO Signing 2025
+
+dn: cn=registrationStatus,ou=user-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamUserAttribute
+cn: registrationStatus
+ciamLdapName: registrationStatus
+ciamPiiClass: none
+ciamPurpose: Registration workflow state (pending / approved / active / disabl
+ ed)
+
+dn: cn=skyline-air,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: skyline-air
+ciamContactUrl: https://partners.skyline-air.example/it-requests
+ciamOwnerKind: partner
+mail: identity-ops@skyline-air.example
+
+dn: cn=skyline-air-federation,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamIntegration
+cn: skyline-air-federation
+ciamCriticality: high
+ciamEntityId: https://idp.skyline-air.example/saml
+ciamJitBaseDn: ou=partners,ou=people,dc=partners,dc=example-aero,dc=test
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamOwner: cn=skyline-air,ou=owners,dc=ciam-ops
+ciamPopulation: partners
+ciamProtocolType: saml2-idp
+ciamUsesCertificate: cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops
+ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+
+dn: cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: skyline-air-idp-signing
+ciamCertPurpose: partner-signing
+ciamFingerprint: ED:9B:7C:43:20:43:F4:3B:0B:EE:4E:79:6B:AC:59:85:3D:7C:CB:6B:5
+ 4:9C:D0:3E:83:C2:0E:17:D1:64:7C:83
+ciamIssuer: self-signed
+ciamNotAfter: 20261102000000Z
+ciamNotBefore: 20241102000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPartnerContact: cn=skyline-air,ou=owners,dc=ciam-ops
+ciamRotationRunbook: cn=WI-CIAM-001,ou=runbooks,dc=ciam-ops
+ciamSubject: CN=Skyline Air IdP Signing
+
+dn: cn=skyline-air-ingress,ou=external-allowlists,dc=ciam-ops
+objectClass: top
+objectClass: ciamExternalAllowlist
+cn: skyline-air-ingress
+ciamAllowlistDirection: partner-ingress
+ciamExternalSystem: Skyline Air IdP ingress allowlist (metadata and back-chann
+ el)
+ciamLeadTimeDays: 45
+ciamManagedBy: cn=skyline-air,ou=owners,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRecordedCidr: 203.0.113.10/32
+ciamRefersToRole: pf-egress
+ciamRequestStatus: to-request
+
+dn: cn=sn,ou=user-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamUserAttribute
+cn: sn
+ciamLdapName: sn
+ciamPiiClass: low
+ciamPurpose: Display name
+
+dn: cn=soldToAccount,ou=user-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamUserAttribute
+cn: soldToAccount
+ciamLdapName: soldToAccount
+ciamPiiClass: low
+ciamPurpose: Commercial account for aftermarket entitlements
+
+dn: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: sso-tls-2026
+ciamCertPurpose: tls-server
+ciamFingerprint: 24:1F:66:E0:87:78:48:4F:BF:6F:F4:18:9E:A7:E3:86:7F:AE:0D:35:C
+ 5:DA:D8:2C:63:67:03:65:E2:4A:3C:26
+ciamIssuer: CN=Public CA R11
+ciamKeyRole: sso-tls-keystore
+ciamNotAfter: 20270210000000Z
+ciamNotBefore: 20260210000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSubject: CN=sso.example-aero.test
+ciamSubjectAltName: sso.example-aero.test
+
+dn: cn=supplier-portal,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamIntegration
+cn: supplier-portal
+ciamAcsUrl: https://suppliers.example-aero.test/saml/acs
+ciamCriticality: high
+ciamEntityId: https://suppliers.example-aero.test/saml/sp
+ciamMfaRequired: TRUE
+ciamOwner: cn=supplier-portal-team,ou=owners,dc=ciam-ops
+ciamPopulation: suppliers
+ciamProtocolType: saml2-sp
+ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
+ciamUsesCertificate: cn=supplier-portal-sp-signing,ou=certificates,dc=ciam-ops
+ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+
+dn: cn=supplier-portal-egress-sg,ou=external-allowlists,dc=ciam-ops
+objectClass: top
+objectClass: ciamExternalAllowlist
+cn: supplier-portal-egress-sg
+ciamAllowlistDirection: consumer-egress
+ciamAllowsConsumer: cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
+ciamExternalSystem: Supplier portal outbound security group (Terraform)
+ciamLeadTimeDays: 5
+ciamManagedBy: cn=supplier-portal-team,ou=owners,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRecordedCidr: 10.20.1.100/32
+ciamRefersToRole: ds-ldaps-service
+ciamRequestStatus: to-request
+
+dn: cn=supplier-portal-sp-signing,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: supplier-portal-sp-signing
+ciamCertPurpose: saml-signing
+ciamFingerprint: A8:D9:35:14:65:C6:2D:22:A2:99:5F:10:6F:8B:32:C4:C3:ED:DE:D8:E
+ 6:82:F9:AE:28:81:0B:50:9A:7F:07:2B
+ciamIssuer: self-signed
+ciamNotAfter: 20261130000000Z
+ciamNotBefore: 20231130000000Z
+ciamOwner: cn=supplier-portal-team,ou=owners,dc=ciam-ops
+ciamSubject: CN=suppliers.example-aero.test SP
+
+dn: cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
+objectClass: top
+objectClass: ciamConsumer
+cn: supplier-portal-svc
+ciamAttrRead: cn=mail,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=companyId,ou=user-schema,dc=ciam-ops
+ciamAttrRead: cn=soldToAccount,ou=user-schema,dc=ciam-ops
+ciamBindDn: uid=supplier-svc,ou=service-accounts,dc=partners,dc=example-aero,d
+ c=test
+ciamCriticality: high
+ciamFirstSeen: 20231102000000Z
+ciamLastSeen: 20260922000000Z
+ciamMigrationStatus: contacted
+ciamObservedSource: 10.31.2.0/24
+ciamOperationMix: search 88%, modify 12%
+ciamOwner: cn=supplier-portal-team,ou=owners,dc=ciam-ops
+ciamPeakOpsPerSec: 60
+ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
+ciamTlsOnly: TRUE
+ciamUnindexedSearchesPerDay: 0
+
+dn: cn=supplier-portal-team,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: supplier-portal-team
+ciamOwnerKind: team
+mail: supplier-portal@example-aero.test
+
+dn: cn=tech-pubs,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamIntegration
+cn: tech-pubs
+ciamClientId: tech-pubs-web
+ciamCriticality: high
+ciamGrantType: authorization_code
+ciamGrantType: refresh_token
+ciamMfaRequired: FALSE
+ciamOwner: cn=tech-pubs-team,ou=owners,dc=ciam-ops
+ciamPkceRequired: TRUE
+ciamPopulation: customers
+ciamPopulation: suppliers
+ciamProtocolType: oidc-client
+ciamRedirectUri: https://techpubs.example-aero.test/oidc/callback
+ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
+ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+
+dn: cn=tech-pubs-team,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: tech-pubs-team
+ciamOwnerKind: team
+mail: tech-pubs@example-aero.test
+
+dn: cn=telephoneNumber,ou=user-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamUserAttribute
+cn: telephoneNumber
+ciamLdapName: telephoneNumber
+ciamPiiClass: moderate
+ciamPurpose: Account recovery and support contact
+
+dn: cn=uid,ou=user-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamUserAttribute
+cn: uid
+ciamLdapName: uid
+ciamPiiClass: low
+ciamPurpose: Login identifier (the user's email address)
+
+dn: cn=WI-CIAM-001,ou=runbooks,dc=ciam-ops
+objectClass: top
+objectClass: ciamRunbook
+cn: WI-CIAM-001
+ciamAppliesTo: cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops
+ciamAppliesTo: cn=harbor-mro-idp-signing,ou=certificates,dc=ciam-ops
+ciamDocUrl: https://wiki.example-aero.test/ciam/WI-CIAM-001
+ciamLastValidated: 20260510000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamTitle: Rotate a partner SAML signing certificate
+ciamVersion: 1.0
+
+dn: cn=WI-CIAM-002,ou=runbooks,dc=ciam-ops
+objectClass: top
+objectClass: ciamRunbook
+cn: WI-CIAM-002
+ciamAppliesTo: cn=ds-ldaps-2026,ou=certificates,dc=ciam-ops
+ciamDocUrl: https://wiki.example-aero.test/ciam/WI-CIAM-002
+ciamLastValidated: 20260801000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamTitle: Rotate the directory LDAPS certificate
+ciamVersion: 1.0
+
+dn: cn=WI-CIAM-004,ou=runbooks,dc=ciam-ops
+objectClass: top
+objectClass: ciamRunbook
+cn: WI-CIAM-004
+ciamAppliesTo: cn=mail,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-o
+ ps
+ciamAppliesTo: cn=uid,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-op
+ s
+ciamDocUrl: https://wiki.example-aero.test/ciam/WI-CIAM-004
+ciamLastValidated: 20260201000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamTitle: Add or rebuild a backend index
+ciamVersion: 1.0
+
+dn: cn=WI-CIAM-007,ou=runbooks,dc=ciam-ops
+objectClass: top
+objectClass: ciamRunbook
+cn: WI-CIAM-007
+ciamAppliesTo: cn=topology,ou=replication,ou=declared,ou=config,dc=ciam-ops
+ciamDocUrl: https://wiki.example-aero.test/ciam/WI-CIAM-007
+ciamLastValidated: 20260801000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamTitle: Recover replication after a replica outage
+ciamVersion: 1.0
+
+dn: cn=WI-CIAM-010,ou=runbooks,dc=ciam-ops
+objectClass: top
+objectClass: ciamRunbook
+cn: WI-CIAM-010
+ciamAppliesTo: cn=customer-portal,ou=integrations,dc=ciam-ops
+ciamAppliesTo: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
+ciamDocUrl: https://wiki.example-aero.test/ciam/WI-CIAM-010
+ciamLastValidated: 20260315000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamTitle: Onboard a SAML application
+ciamVersion: 1.0
+
+dn: ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: declared
+description: Desired, environment-neutral DS configuration
+
+dn: ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: observed
+description: Read-only snapshots captured from live servers
+
+dn: env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamEnvironment
+env: prod
+ciamLifecycle: active
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+
+dn: env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamEnvironment
+env: prod
+ciamJoinsDeploymentOf: env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+ciamLifecycle: building
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPlannedCutover: 20270115000000Z
+
+dn: ou=backends,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: backends
+
+dn: ou=claims,cn=customer-portal,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: claims
+
+dn: ou=claims,cn=mobile-ops,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: claims
+
+dn: ou=claims,cn=supplier-portal,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: claims
+
+dn: ou=claims,cn=tech-pubs,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: claims
+
+dn: ou=connection-handlers,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: connection-handlers
+
+dn: ou=log-publishers,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: log-publishers
+
+dn: ou=password-policies,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: password-policies
+
+dn: ou=replication,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: replication
+
+dn: snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamSnapshot
+snap: ds-1-20260920
+ciamCapturedAt: 20260920030000Z
+ciamServerRef: cn=ds-1,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+
+dn: snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamSnapshot
+snap: ds-2-20260920
+ciamCapturedAt: 20260920030000Z
+ciamServerRef: cn=ds-2,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+
+dn: snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamSnapshot
+snap: ds-3-20260920
+ciamCapturedAt: 20260920030000Z
+ciamServerRef: cn=ds-3,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+
+dn: cn=company,ou=claims,cn=customer-portal,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamClaimMap
+cn: company
+ciamClaimName: company
+ciamSourceAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
+
+dn: cn=company,ou=claims,cn=supplier-portal,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamClaimMap
+cn: company
+ciamClaimName: company
+ciamSourceAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
+
+dn: cn=customers,ou=password-policies,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: customers
+ciamLockoutDuration: 15 m
+ciamLockoutFailureCount: 5
+ciamPasswordHistoryCount: 5
+ciamPopulation: customers
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=ds-1,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: ds-1
+ciamHostname: ds-1.aws.internal.example-aero.test
+ciamImageRef: ami-0abcdef1234567890
+ciamInstanceSize: m6i.xlarge
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.20.1.11
+ciamProductVersion: PingDS 7.5.1
+ciamServerRole: ds
+ciamSubnet: cn=subnet-ds-a,ou=bindings,env=prod,cloud=aws-current,ou=environme
+ nts,dc=ciam-ops
+ciamZone: us-east-1a
+
+dn: cn=ds-1,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: ds-1
+ciamHostname: ds-1.az.internal.example-aero.test
+ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
+ ps/rg-ciam-images/providers/Microsoft.Compute/images/pingds-7.5.1-rhel9
+ciamInstanceSize: Standard_D4s_v5
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.60.1.11
+ciamProductVersion: PingDS 7.5.1
+ciamServerRole: ds
+ciamSubnet: cn=snet-ds,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=
+ ciam-ops
+ciamZone: 1
+
+dn: cn=ds-2,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: ds-2
+ciamHostname: ds-2.aws.internal.example-aero.test
+ciamImageRef: ami-0abcdef1234567890
+ciamInstanceSize: m6i.xlarge
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.20.2.11
+ciamProductVersion: PingDS 7.5.1
+ciamServerRole: ds
+ciamSubnet: cn=subnet-ds-b,ou=bindings,env=prod,cloud=aws-current,ou=environme
+ nts,dc=ciam-ops
+ciamZone: us-east-1b
+
+dn: cn=ds-2,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: ds-2
+ciamHostname: ds-2.az.internal.example-aero.test
+ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
+ ps/rg-ciam-images/providers/Microsoft.Compute/images/pingds-7.5.1-rhel9
+ciamInstanceSize: Standard_D4s_v5
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.60.1.12
+ciamProductVersion: PingDS 7.5.1
+ciamServerRole: ds
+ciamSubnet: cn=snet-ds,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=
+ ciam-ops
+ciamZone: 2
+
+dn: cn=ds-3,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: ds-3
+ciamHostname: ds-3.aws.internal.example-aero.test
+ciamImageRef: ami-0abcdef1234567890
+ciamInstanceSize: m6i.xlarge
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.20.3.11
+ciamProductVersion: PingDS 7.5.1
+ciamServerRole: ds
+ciamSubnet: cn=subnet-ds-c,ou=bindings,env=prod,cloud=aws-current,ou=environme
+ nts,dc=ciam-ops
+ciamZone: us-east-1c
+
+dn: cn=ds-3,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: ds-3
+ciamHostname: ds-3.az.internal.example-aero.test
+ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
+ ps/rg-ciam-images/providers/Microsoft.Compute/images/pingds-7.5.1-rhel9
+ciamInstanceSize: Standard_D4s_v5
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.60.1.13
+ciamProductVersion: PingDS 7.5.1
+ciamServerRole: ds
+ciamSubnet: cn=snet-ds,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=
+ ciam-ops
+ciamZone: 3
+
+dn: cn=email,ou=claims,cn=customer-portal,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamClaimMap
+cn: email
+ciamClaimName: email
+ciamSourceAttribute: cn=mail,ou=user-schema,dc=ciam-ops
+
+dn: cn=email,ou=claims,cn=mobile-ops,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamClaimMap
+cn: email
+ciamClaimName: email
+ciamSourceAttribute: cn=mail,ou=user-schema,dc=ciam-ops
+
+dn: cn=email,ou=claims,cn=supplier-portal,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamClaimMap
+cn: email
+ciamClaimName: email
+ciamSourceAttribute: cn=mail,ou=user-schema,dc=ciam-ops
+
+dn: cn=email,ou=claims,cn=tech-pubs,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamClaimMap
+cn: email
+ciamClaimName: email
+ciamSourceAttribute: cn=mail,ou=user-schema,dc=ciam-ops
+
+dn: cn=entitlements,ou=claims,cn=tech-pubs,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamClaimMap
+cn: entitlements
+ciamClaimName: entitlements
+ciamSourceAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
+
+dn: cn=export_status,ou=claims,cn=tech-pubs,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamClaimMap
+cn: export_status
+ciamClaimName: export_status
+ciamSourceAttribute: cn=exportScreeningStatus,ou=user-schema,dc=ciam-ops
+
+dn: cn=family_name,ou=claims,cn=customer-portal,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamClaimMap
+cn: family_name
+ciamClaimName: family_name
+ciamSourceAttribute: cn=sn,ou=user-schema,dc=ciam-ops
+
+dn: cn=given_name,ou=claims,cn=customer-portal,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamClaimMap
+cn: given_name
+ciamClaimName: given_name
+ciamSourceAttribute: cn=givenName,ou=user-schema,dc=ciam-ops
+
+dn: cn=HTTPS,ou=connection-handlers,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: HTTPS
+ciamEnabled: TRUE
+ciamListenPort: 8443
+
+dn: cn=Json File-Based Access Logger,ou=log-publishers,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogPublisher
+cn: Json File-Based Access Logger
+ciamEnabled: TRUE
+
+dn: cn=LDAP,ou=connection-handlers,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: LDAP
+ciamEnabled: FALSE
+ciamListenPort: 1389
+
+dn: cn=LDAPS,ou=connection-handlers,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: LDAPS
+ciamEnabled: TRUE
+ciamListenPort: 1636
+
+dn: cn=org,ou=claims,cn=mobile-ops,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamClaimMap
+cn: org
+ciamClaimName: org
+ciamSourceAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
+
+dn: cn=org,ou=claims,cn=tech-pubs,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamClaimMap
+cn: org
+ciamClaimName: org
+ciamSourceAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
+
+dn: cn=pf-admin-1,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: pf-admin-1
+ciamHostname: pf-admin-1.aws.internal.example-aero.test
+ciamImageRef: ami-0fedcba9876543210
+ciamInstanceSize: m6i.large
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.20.4.10
+ciamProductVersion: PingFederate 12.1.4
+ciamServerRole: pf-admin
+ciamSubnet: cn=subnet-pf-a,ou=bindings,env=prod,cloud=aws-current,ou=environme
+ nts,dc=ciam-ops
+ciamZone: us-east-1a
+
+dn: cn=pf-admin-1,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: pf-admin-1
+ciamHostname: pf-admin-1.az.internal.example-aero.test
+ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
+ ps/rg-ciam-images/providers/Microsoft.Compute/images/pingfederate-12.1.4-rhel
+ 9
+ciamInstanceSize: Standard_D2s_v5
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.60.2.10
+ciamProductVersion: PingFederate 12.1.4
+ciamServerRole: pf-admin
+ciamSubnet: cn=snet-pf,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=
+ ciam-ops
+ciamZone: 1
+
+dn: cn=pf-engine-1,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: pf-engine-1
+ciamHostname: pf-engine-1.aws.internal.example-aero.test
+ciamImageRef: ami-0fedcba9876543210
+ciamInstanceSize: m6i.large
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.20.4.21
+ciamProductVersion: PingFederate 12.1.4
+ciamServerRole: pf-engine
+ciamSubnet: cn=subnet-pf-a,ou=bindings,env=prod,cloud=aws-current,ou=environme
+ nts,dc=ciam-ops
+ciamZone: us-east-1a
+
+dn: cn=pf-engine-1,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: pf-engine-1
+ciamHostname: pf-engine-1.az.internal.example-aero.test
+ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
+ ps/rg-ciam-images/providers/Microsoft.Compute/images/pingfederate-12.1.4-rhel
+ 9
+ciamInstanceSize: Standard_D2s_v5
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.60.2.21
+ciamProductVersion: PingFederate 12.1.4
+ciamServerRole: pf-engine
+ciamSubnet: cn=snet-pf,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=
+ ciam-ops
+ciamZone: 1
+
+dn: cn=pf-engine-2,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: pf-engine-2
+ciamHostname: pf-engine-2.aws.internal.example-aero.test
+ciamImageRef: ami-0fedcba9876543210
+ciamInstanceSize: m6i.large
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.20.5.21
+ciamProductVersion: PingFederate 12.1.4
+ciamServerRole: pf-engine
+ciamSubnet: cn=subnet-pf-b,ou=bindings,env=prod,cloud=aws-current,ou=environme
+ nts,dc=ciam-ops
+ciamZone: us-east-1b
+
+dn: cn=pf-engine-2,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: pf-engine-2
+ciamHostname: pf-engine-2.az.internal.example-aero.test
+ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
+ ps/rg-ciam-images/providers/Microsoft.Compute/images/pingfederate-12.1.4-rhel
+ 9
+ciamInstanceSize: Standard_D2s_v5
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.60.2.22
+ciamProductVersion: PingFederate 12.1.4
+ciamServerRole: pf-engine
+ciamSubnet: cn=snet-pf,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=
+ ciam-ops
+ciamZone: 2
+
+dn: cn=roles,ou=claims,cn=customer-portal,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamClaimMap
+cn: roles
+ciamClaimName: roles
+ciamSourceAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
+ciamTransform: keep values with prefix 'customer-portal:', strip prefix
+
+dn: cn=roles,ou=claims,cn=supplier-portal,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamClaimMap
+cn: roles
+ciamClaimName: roles
+ciamSourceAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
+ciamTransform: keep values with prefix 'supplier-portal:', strip prefix
+
+dn: cn=service-accounts,ou=password-policies,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: service-accounts
+ciamLockoutFailureCount: 0
+ciamPasswordHistoryCount: 0
+ciamStorageScheme: PBKDF2-HMAC-SHA512
+
+dn: cn=sold_to,ou=claims,cn=supplier-portal,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamClaimMap
+cn: sold_to
+ciamClaimName: sold_to
+ciamSourceAttribute: cn=soldToAccount,ou=user-schema,dc=ciam-ops
+
+dn: cn=sub,ou=claims,cn=mobile-ops,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamClaimMap
+cn: sub
+ciamClaimName: sub
+ciamSourceAttribute: cn=uid,ou=user-schema,dc=ciam-ops
+
+dn: cn=suppliers,ou=password-policies,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: suppliers
+ciamLockoutDuration: 15 m
+ciamLockoutFailureCount: 5
+ciamMaxPasswordAge: 365 d
+ciamPasswordHistoryCount: 8
+ciamPopulation: suppliers
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=topology,ou=replication,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamReplicationTopology
+cn: topology
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamReplicaCount: 3
+ciamReplicationPurgeDelay: 3 d
+
+dn: cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamBackend
+cn: userData
+ciamBackendType: je
+ciamBaseDn: dc=partners,dc=example-aero,dc=test
+
+dn: ou=backends,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: backends
+
+dn: ou=backends,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: backends
+
+dn: ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: backends
+
+dn: ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: bindings
+
+dn: ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: bindings
+
+dn: ou=password-policies,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: password-policies
+
+dn: ou=password-policies,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: password-policies
+
+dn: ou=password-policies,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: password-policies
+
+dn: cn=appEntitlement,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: appEntitlement
+ciamIndexType: equality
+ciamIndexedAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
+
+dn: cn=backup,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamBackupTarget
+cn: backup
+ciamBindingRole: backup-target
+ciamRetentionDays: 35
+ciamStorageRef: s3://example-aero-ciam-prod-ds-backups
+
+dn: cn=companyId,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: companyId
+ciamIndexType: equality
+ciamIndexedAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
+
+dn: cn=customers,ou=password-policies,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: customers
+ciamLockoutDuration: 15 m
+ciamLockoutFailureCount: 5
+ciamPasswordHistoryCount: 5
+ciamPopulation: customers
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=customers,ou=password-policies,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: customers
+ciamLockoutDuration: 15 m
+ciamLockoutFailureCount: 5
+ciamPasswordHistoryCount: 5
+ciamPopulation: customers
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=customers,ou=password-policies,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: customers
+ciamLockoutDuration: 15 m
+ciamLockoutFailureCount: 10
+ciamPasswordHistoryCount: 5
+ciamPopulation: customers
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=egress-pf,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamEgress
+cn: egress-pf
+ciamBindingRole: pf-egress
+ciamCidr: 203.0.113.10/32
+ciamProviderRef: nat-0123456789abcdef0
+
+dn: cn=egress-pf,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamEgress
+cn: egress-pf
+ciamBindingRole: pf-egress
+ciamCidr: 203.0.113.200/32
+ciamProviderRef: natgw-ciam-prod
+
+dn: cn=fw-admin,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-admin
+ciamBindingRole: fw-admin
+ciamPort: 4444
+ciamProtocol: tcp
+ciamSourceCidr: 10.20.9.0/28
+ciamTargetRole: ds
+
+dn: cn=fw-admin,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-admin
+ciamBindingRole: fw-admin
+ciamPort: 4444
+ciamProtocol: tcp
+ciamRulePriority: 150
+ciamSourceCidr: 10.60.9.0/28
+ciamTargetRole: ds
+
+dn: cn=fw-customer-portal,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-customer-portal
+ciamAllowsConsumer: cn=customer-portal-svc,ou=consumers,dc=ciam-ops
+ciamBindingRole: fw-consumer-customer-portal-svc
+ciamPort: 1636
+ciamProtocol: tcp
+ciamSourceCidr: 10.30.8.0/24
+ciamTargetRole: ds
+
+dn: cn=fw-customer-portal,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-customer-portal
+ciamAllowsConsumer: cn=customer-portal-svc,ou=consumers,dc=ciam-ops
+ciamBindingRole: fw-consumer-customer-portal-svc
+ciamPort: 1636
+ciamProtocol: tcp
+ciamRulePriority: 110
+ciamSourceCidr: 10.30.8.0/24
+ciamTargetRole: ds
+
+dn: cn=fw-idm-sync,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-idm-sync
+ciamAllowsConsumer: cn=idm-sync,ou=consumers,dc=ciam-ops
+ciamBindingRole: fw-consumer-idm-sync
+ciamPort: 1636
+ciamProtocol: tcp
+ciamSourceCidr: 10.20.6.0/24
+ciamTargetRole: ds
+
+dn: cn=fw-idm-sync,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-idm-sync
+ciamAllowsConsumer: cn=idm-sync,ou=consumers,dc=ciam-ops
+ciamBindingRole: fw-consumer-idm-sync
+ciamPort: 1636
+ciamProtocol: tcp
+ciamRulePriority: 130
+ciamSourceCidr: 10.60.6.0/24
+ciamTargetRole: ds
+
+dn: cn=fw-legacy-rptuser,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-legacy-rptuser
+ciamAllowsConsumer: cn=legacy-rptuser,ou=consumers,dc=ciam-ops
+ciamBindingRole: fw-consumer-legacy-rptuser
+ciamPort: 1636
+ciamProtocol: tcp
+ciamSourceCidr: 10.40.7.22/32
+ciamTargetRole: ds
+
+dn: cn=fw-mro-batch,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-mro-batch
+ciamAllowsConsumer: cn=mro-batch-export,ou=consumers,dc=ciam-ops
+ciamBindingRole: fw-consumer-mro-batch-export
+ciamPort: 1636
+ciamProtocol: tcp
+ciamSourceCidr: 10.40.12.0/24
+ciamTargetRole: ds
+
+dn: cn=fw-mro-batch,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-mro-batch
+ciamAllowsConsumer: cn=mro-batch-export,ou=consumers,dc=ciam-ops
+ciamBindingRole: fw-consumer-mro-batch-export
+ciamChangeRef: cn=CHG-2001,ou=changes,dc=ciam-ops
+ciamPort: 1636
+ciamProtocol: tcp
+ciamRulePriority: 170
+ciamSourceCidr: 10.40.12.0/24
+ciamTargetRole: ds
+
+dn: cn=fw-pf-ds-svc,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-pf-ds-svc
+ciamAllowsConsumer: cn=pf-ds-svc,ou=consumers,dc=ciam-ops
+ciamBindingRole: fw-consumer-pf-ds-svc
+ciamChangeRef: cn=CHG-0877,ou=changes,dc=ciam-ops
+ciamPort: 1636
+ciamProtocol: tcp
+ciamSourceCidr: 10.20.4.0/24
+ciamSourceCidr: 10.20.5.0/24
+ciamTargetRole: ds
+
+dn: cn=fw-pf-ds-svc,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-pf-ds-svc
+ciamAllowsConsumer: cn=pf-ds-svc,ou=consumers,dc=ciam-ops
+ciamBindingRole: fw-consumer-pf-ds-svc
+ciamPort: 1636
+ciamProtocol: tcp
+ciamRulePriority: 100
+ciamSourceCidr: 10.60.2.0/24
+ciamTargetRole: ds
+
+dn: cn=fw-replication,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-replication
+ciamBindingRole: fw-replication
+ciamChangeRef: cn=CHG-2040,ou=changes,dc=ciam-ops
+ciamPort: 8989
+ciamProtocol: tcp
+ciamSourceCidr: 10.20.1.0/24
+ciamSourceCidr: 10.20.2.0/24
+ciamSourceCidr: 10.20.3.0/24
+ciamSourceCidr: 10.60.1.0/24
+ciamTargetRole: ds
+
+dn: cn=fw-replication,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-replication
+ciamBindingRole: fw-replication
+ciamPort: 8989
+ciamProtocol: tcp
+ciamRulePriority: 140
+ciamSourceCidr: 10.60.1.0/24
+ciamSourceCidr: 10.20.0.0/16
+ciamTargetRole: ds
+
+dn: cn=fw-sso-public,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-sso-public
+ciamBindingRole: fw-sso-public
+ciamPort: 443
+ciamProtocol: tcp
+ciamSourceCidr: 0.0.0.0/0
+ciamTargetRole: pf-engine
+
+dn: cn=fw-sso-public,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-sso-public
+ciamBindingRole: fw-sso-public
+ciamPort: 443
+ciamProtocol: tcp
+ciamRulePriority: 160
+ciamSourceCidr: 0.0.0.0/0
+ciamTargetRole: pf-engine
+
+dn: cn=fw-supplier-portal,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-supplier-portal
+ciamAllowsConsumer: cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
+ciamBindingRole: fw-consumer-supplier-portal-svc
+ciamPort: 1636
+ciamProtocol: tcp
+ciamSourceCidr: 10.31.2.0/24
+ciamTargetRole: ds
+
+dn: cn=fw-supplier-portal,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-supplier-portal
+ciamAllowsConsumer: cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
+ciamBindingRole: fw-consumer-supplier-portal-svc
+ciamPort: 1636
+ciamProtocol: tcp
+ciamRulePriority: 120
+ciamSourceCidr: 10.31.2.0/24
+ciamTargetRole: ds
+
+dn: cn=key-disk,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamKeyRef
+cn: key-disk
+ciamBindingRole: disk-encryption
+ciamRefUri: aws-kms://arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34c
+ d-56ef-1234567890ab
+
+dn: cn=key-disk,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamKeyRef
+cn: key-disk
+ciamBindingRole: disk-encryption
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-pr
+ od
+ciamRefUri: azkv-key://kv-ciam-prod/keys/disk-cmk
+
+dn: cn=lastLoginTime,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: lastLoginTime
+ciamIndexType: ordering
+ciamIndexedAttribute: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
+
+dn: cn=link-aws-current,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamInterconnect
+cn: link-aws-current
+ciamBindingRole: cross-cloud-replication
+ciamInterconnectKind: site-to-site VPN (landing-zone managed)
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamPeerEnvironment: env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+ciamPort: 8989
+ciamSourceCidr: 10.20.0.0/16
+
+dn: cn=mail,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: mail
+ciamChangeRef: cn=CHG-0931,ou=changes,dc=ciam-ops
+ciamIndexType: equality
+ciamIndexedAttribute: cn=mail,ou=user-schema,dc=ciam-ops
+ciamLastChanged: 20260614000000Z
+
+dn: cn=registrationStatus,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: registrationStatus
+ciamIndexType: equality
+ciamIndexedAttribute: cn=registrationStatus,ou=user-schema,dc=ciam-ops
+
+dn: cn=secret-ds-deployment-id,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-ds-deployment-id
+ciamBindingRole: ds-deployment-id
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /prod/ds-deployment-id
+
+dn: cn=secret-ds-deployment-id,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-ds-deployment-id
+ciamBindingRole: ds-deployment-id
+ciamRefUri: azkv://kv-ciam-prod/ds-deployment-id
+
+dn: cn=secret-ds-deployment-password,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-ds-deployment-password
+ciamBindingRole: ds-deployment-password
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /prod/ds-deployment-password
+
+dn: cn=secret-ds-deployment-password,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-ds-deployment-password
+ciamBindingRole: ds-deployment-password
+ciamRefUri: azkv://kv-ciam-prod/ds-deployment-password
+
+dn: cn=secret-ds-root-password,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-ds-root-password
+ciamBindingRole: ds-root-password
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /prod/ds-root-password
+
+dn: cn=secret-ds-root-password,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-ds-root-password
+ciamBindingRole: ds-root-password
+ciamRefUri: azkv://kv-ciam-prod/ds-root-password
+
+dn: cn=secret-ds-tls-keystore,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-ds-tls-keystore
+ciamBindingRole: ds-tls-keystore
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /prod/ds-tls-keystore
+
+dn: cn=secret-ds-tls-keystore,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-ds-tls-keystore
+ciamBindingRole: ds-tls-keystore
+ciamRefUri: azkv://kv-ciam-prod/ds-tls-keystore
+
+dn: cn=secret-pf-admin-password,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-admin-password
+ciamBindingRole: pf-admin-password
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /prod/pf-admin-password
+
+dn: cn=secret-pf-admin-password,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-admin-password
+ciamBindingRole: pf-admin-password
+ciamRefUri: azkv://kv-ciam-prod/pf-admin-password
+
+dn: cn=secret-pf-signing-key,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-signing-key
+ciamBindingRole: pf-signing-key
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /prod/pf-signing-key
+
+dn: cn=secret-pf-signing-key,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-signing-key
+ciamBindingRole: pf-signing-key
+ciamRefUri: azkv://kv-ciam-prod/pf-signing-key
+
+dn: cn=secret-sso-tls-keystore,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-sso-tls-keystore
+ciamBindingRole: sso-tls-keystore
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /prod/sso-tls-keystore
+
+dn: cn=secret-sso-tls-keystore,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-sso-tls-keystore
+ciamBindingRole: sso-tls-keystore
+ciamRefUri: azkv://kv-ciam-prod/sso-tls-keystore
+
+dn: cn=service-accounts,ou=password-policies,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: service-accounts
+ciamLockoutFailureCount: 0
+ciamPasswordHistoryCount: 0
+ciamStorageScheme: PBKDF2-HMAC-SHA512
+
+dn: cn=service-accounts,ou=password-policies,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: service-accounts
+ciamLockoutFailureCount: 0
+ciamPasswordHistoryCount: 0
+ciamStorageScheme: PBKDF2-HMAC-SHA512
+
+dn: cn=service-accounts,ou=password-policies,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: service-accounts
+ciamLockoutFailureCount: 0
+ciamPasswordHistoryCount: 0
+ciamStorageScheme: PBKDF2-HMAC-SHA512
+
+dn: cn=snet-ds,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: snet-ds
+ciamBindingRole: subnet-ds
+ciamCidr: 10.60.1.0/24
+ciamProviderRef: vnet-ciam-prod/snet-ds
+
+dn: cn=snet-pf,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: snet-pf
+ciamBindingRole: subnet-pf
+ciamCidr: 10.60.2.0/24
+ciamProviderRef: vnet-ciam-prod/snet-pf
+
+dn: cn=soldToAccount,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: soldToAccount
+ciamIndexType: equality
+ciamIndexedAttribute: cn=soldToAccount,ou=user-schema,dc=ciam-ops
+
+dn: cn=subnet-ds-a,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: subnet-ds-a
+ciamBindingRole: subnet-ds
+ciamCidr: 10.20.1.0/24
+ciamProviderRef: subnet-0a11b22c33d44e55a
+ciamZone: us-east-1a
+
+dn: cn=subnet-ds-b,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: subnet-ds-b
+ciamBindingRole: subnet-ds
+ciamCidr: 10.20.2.0/24
+ciamProviderRef: subnet-0a11b22c33d44e55b
+ciamZone: us-east-1b
+
+dn: cn=subnet-ds-c,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: subnet-ds-c
+ciamBindingRole: subnet-ds
+ciamCidr: 10.20.3.0/24
+ciamProviderRef: subnet-0a11b22c33d44e55c
+ciamZone: us-east-1c
+
+dn: cn=subnet-pf-a,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: subnet-pf-a
+ciamBindingRole: subnet-pf
+ciamCidr: 10.20.4.0/24
+ciamProviderRef: subnet-0f66e77d88c99b00a
+ciamZone: us-east-1a
+
+dn: cn=subnet-pf-b,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: subnet-pf-b
+ciamBindingRole: subnet-pf
+ciamCidr: 10.20.5.0/24
+ciamProviderRef: subnet-0f66e77d88c99b00b
+ciamZone: us-east-1b
+
+dn: cn=suppliers,ou=password-policies,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: suppliers
+ciamLockoutDuration: 15 m
+ciamLockoutFailureCount: 5
+ciamMaxPasswordAge: 365 d
+ciamPasswordHistoryCount: 8
+ciamPopulation: suppliers
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=suppliers,ou=password-policies,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: suppliers
+ciamLockoutDuration: 15 m
+ciamLockoutFailureCount: 5
+ciamMaxPasswordAge: 365 d
+ciamPasswordHistoryCount: 8
+ciamPopulation: suppliers
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=suppliers,ou=password-policies,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: suppliers
+ciamLockoutDuration: 15 m
+ciamLockoutFailureCount: 5
+ciamMaxPasswordAge: 365 d
+ciamPasswordHistoryCount: 8
+ciamPopulation: suppliers
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=svc-ldaps,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServiceName
+cn: svc-ldaps
+ciamBindingRole: ds-ldaps-service
+ciamDnsZone: id.example-aero.test
+ciamDnsZoneRef: Z0EXAMPLE1PRIVATE
+ciamFqdn: ldap.id.example-aero.test
+ciamFrontendIp: 10.20.1.100
+ciamPort: 1636
+ciamTargetRole: ds
+ciamTlsCertificate: cn=ds-ldaps-2026,ou=certificates,dc=ciam-ops
+
+dn: cn=svc-ldaps,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServiceName
+cn: svc-ldaps
+ciamBindingRole: ds-ldaps-service
+ciamChangeRef: cn=CHG-2003,ou=changes,dc=ciam-ops
+ciamDnsZone: id.example-aero.test
+ciamFqdn: ldap.id.example-aero.test
+ciamFrontendIp: 10.60.1.100
+ciamPort: 1636
+ciamTargetRole: ds
+
+dn: cn=svc-sso,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServiceName
+cn: svc-sso
+ciamBindingRole: pf-sso-service
+ciamDnsZone: example-aero.test
+ciamDnsZoneRef: Z0EXAMPLE2PUBLIC
+ciamFqdn: sso.example-aero.test
+ciamFrontendIp: 198.51.100.20
+ciamPort: 443
+ciamProviderRef: eipalloc-0a1b2c3d4e5f60001
+ciamTargetRole: pf-engine
+ciamTlsCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+
+dn: cn=svc-sso,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServiceName
+cn: svc-sso
+ciamBindingRole: pf-sso-service
+ciamDnsZone: example-aero.test
+ciamFqdn: sso.example-aero.test
+ciamFrontendIp: 198.51.100.77
+ciamPort: 443
+ciamProviderRef: pip-ciam-sso-prod
+ciamTargetRole: pf-engine
+ciamTlsCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+
+dn: cn=uid,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: uid
+ciamIndexType: equality
+ciamIndexType: presence
+ciamIndexedAttribute: cn=uid,ou=user-schema,dc=ciam-ops
+
+dn: cn=userData,ou=backends,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamBackend
+cn: userData
+ciamBackendType: je
+ciamBaseDn: dc=partners,dc=example-aero,dc=test
+
+dn: cn=userData,ou=backends,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamBackend
+cn: userData
+ciamBackendType: je
+ciamBaseDn: dc=partners,dc=example-aero,dc=test
+
+dn: cn=userData,ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamBackend
+cn: userData
+ciamBackendType: je
+ciamBaseDn: dc=partners,dc=example-aero,dc=test
+
+dn: cn=vnet,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamNetwork
+cn: vnet
+ciamBindingRole: network
+ciamCidr: 10.60.0.0/16
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamProviderRef: vnet-ciam-prod
+ciamResourceGroup: rg-ciam-prod
+
+dn: cn=vpc,ou=bindings,env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamNetwork
+cn: vpc
+ciamBindingRole: network
+ciamCidr: 10.20.0.0/16
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamProviderRef: vpc-0a1b2c3d4e5f67890
+
+dn: cn=appEntitlement,cn=userData,ou=backends,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: appEntitlement
+ciamIndexType: equality
+ciamIndexedAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
+
+dn: cn=appEntitlement,cn=userData,ou=backends,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: appEntitlement
+ciamIndexType: equality
+ciamIndexedAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
+
+dn: cn=appEntitlement,cn=userData,ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: appEntitlement
+ciamIndexType: equality
+ciamIndexedAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
+
+dn: cn=companyId,cn=userData,ou=backends,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: companyId
+ciamIndexType: equality
+ciamIndexedAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
+
+dn: cn=companyId,cn=userData,ou=backends,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: companyId
+ciamIndexType: equality
+ciamIndexedAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
+
+dn: cn=companyId,cn=userData,ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: companyId
+ciamIndexType: equality
+ciamIndexedAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
+
+dn: cn=description,cn=userData,ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: description
+ciamIndexType: substring
+ciamIndexedAttribute: cn=description,ou=user-schema,dc=ciam-ops
+
+dn: cn=lastLoginTime,cn=userData,ou=backends,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: lastLoginTime
+ciamIndexType: ordering
+ciamIndexedAttribute: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
+
+dn: cn=lastLoginTime,cn=userData,ou=backends,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: lastLoginTime
+ciamIndexType: ordering
+ciamIndexedAttribute: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
+
+dn: cn=lastLoginTime,cn=userData,ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: lastLoginTime
+ciamIndexType: ordering
+ciamIndexedAttribute: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
+
+dn: cn=mail,cn=userData,ou=backends,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: mail
+ciamIndexType: equality
+ciamIndexedAttribute: cn=mail,ou=user-schema,dc=ciam-ops
+
+dn: cn=mail,cn=userData,ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: mail
+ciamIndexType: equality
+ciamIndexedAttribute: cn=mail,ou=user-schema,dc=ciam-ops
+
+dn: cn=registrationStatus,cn=userData,ou=backends,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: registrationStatus
+ciamIndexType: equality
+ciamIndexedAttribute: cn=registrationStatus,ou=user-schema,dc=ciam-ops
+
+dn: cn=registrationStatus,cn=userData,ou=backends,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: registrationStatus
+ciamIndexType: equality
+ciamIndexedAttribute: cn=registrationStatus,ou=user-schema,dc=ciam-ops
+
+dn: cn=registrationStatus,cn=userData,ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: registrationStatus
+ciamIndexType: equality
+ciamIndexedAttribute: cn=registrationStatus,ou=user-schema,dc=ciam-ops
+
+dn: cn=soldToAccount,cn=userData,ou=backends,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: soldToAccount
+ciamIndexType: equality
+ciamIndexedAttribute: cn=soldToAccount,ou=user-schema,dc=ciam-ops
+
+dn: cn=soldToAccount,cn=userData,ou=backends,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: soldToAccount
+ciamIndexType: equality
+ciamIndexedAttribute: cn=soldToAccount,ou=user-schema,dc=ciam-ops
+
+dn: cn=soldToAccount,cn=userData,ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: soldToAccount
+ciamIndexType: equality
+ciamIndexedAttribute: cn=soldToAccount,ou=user-schema,dc=ciam-ops
+
+dn: cn=uid,cn=userData,ou=backends,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: uid
+ciamIndexType: equality
+ciamIndexType: presence
+ciamIndexedAttribute: cn=uid,ou=user-schema,dc=ciam-ops
+
+dn: cn=uid,cn=userData,ou=backends,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: uid
+ciamIndexType: equality
+ciamIndexType: presence
+ciamIndexedAttribute: cn=uid,ou=user-schema,dc=ciam-ops
+
+dn: cn=uid,cn=userData,ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: uid
+ciamIndexType: equality
+ciamIndexType: presence
+ciamIndexedAttribute: cn=uid,ou=user-schema,dc=ciam-ops
+

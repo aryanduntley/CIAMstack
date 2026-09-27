@@ -17,6 +17,7 @@ objectClass: ciamEnvironment
 env: prod
 ciamJoinsDeploymentOf: env=prod,cloud=aws-current,ou=environments,dc=ciam-ops
 ciamLifecycle: building
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPlannedCutover: 20270115000000Z
 
 dn: ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
@@ -30,6 +31,7 @@ objectClass: ciamNetwork
 cn: vnet
 ciamBindingRole: network
 ciamCidr: 10.60.0.0/16
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
 ciamProviderRef: vnet-ciam-prod
 ciamResourceGroup: rg-ciam-prod
 
@@ -71,6 +73,7 @@ ciamFrontendIp: 198.51.100.77
 ciamPort: 443
 ciamProviderRef: pip-ciam-sso-prod
 ciamTargetRole: pf-engine
+ciamTlsCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 
 dn: cn=fw-pf-ds-svc,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
 objectClass: top

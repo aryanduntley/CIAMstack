@@ -1,0 +1,19 @@
+# AIMFP-specific (project.db and ProjectBlueprint.md ARE tracked)
+.aimfp-project/user_preferences.db
+.aimfp-project/backups/
+.aimfp-project/logs/
+.aimfp-project/temp/
+.aimfp-project/.mcp-session-*
+
+# SQLite runtime files
+*.db-wal
+*.db-shm
+
+# Standard ignores
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.env
+*.log
+.DS_Store

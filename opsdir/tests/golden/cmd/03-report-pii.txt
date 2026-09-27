@@ -1,0 +1,16 @@
+attribute              pii       export  consumer             owner                 aci                justification                                                       
+---------------------  --------  ------  -------------------  --------------------  -----------------  --------------------------------------------------------------------
+challengeAnswer        high              customer-portal-svc  customer-portal-team  aci-portal-write   Customer portal registration and profile management                 
+challengeAnswer        high              legacy-rptuser                             aci-legacy-all                                                                         
+exportScreeningStatus  high      True    legacy-rptuser                             aci-legacy-all                                                                         
+exportScreeningStatus  high      True    mro-batch-export     mro-analytics-team    aci-mro-read       Nightly aftermarket entitlement reconciliation                      
+mail                   moderate          customer-portal-svc  customer-portal-team  aci-portal-write   Customer portal registration and profile management                 
+mail                   moderate          idm-sync             ciam-platform         aci-idm-write      Identity sync from the registration workflow                        
+mail                   moderate          legacy-rptuser                             aci-legacy-all                                                                         
+mail                   moderate          mro-batch-export     mro-analytics-team    aci-mro-read       Nightly aftermarket entitlement reconciliation                      
+mail                   moderate          pf-ds-svc            ciam-platform         aci-pf-read        PingFederate reads profile attributes to build assertions and tokens
+mail                   moderate          supplier-portal-svc  supplier-portal-team  aci-supplier-read  Supplier portal account lookup                                      
+telephoneNumber        moderate          customer-portal-svc  customer-portal-team  aci-portal-write   Customer portal registration and profile management                 
+telephoneNumber        moderate          legacy-rptuser                             aci-legacy-all                                                                         
+(12 rows)
+exit 0

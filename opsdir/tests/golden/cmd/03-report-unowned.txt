@@ -1,0 +1,6 @@
+dn                                          kind          problem                   
+------------------------------------------  ------------  --------------------------
+cn=aci-legacy-all,ou=acis,dc=ciam-ops       ciamAci       no owner, no justification
+cn=legacy-rptuser,ou=consumers,dc=ciam-ops  ciamConsumer  no owner                  
+(2 rows)
+exit 0

@@ -1,0 +1,2 @@
+REJECTED by the directory: update or delete on table "entry" violates foreign key constraint "entry_ref_to_id_fkey" on table "entry_ref" (Key (id)=(<ROW>) is still referenced from table "entry_ref".)
+exit 1

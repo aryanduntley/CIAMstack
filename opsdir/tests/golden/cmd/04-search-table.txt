@@ -1,0 +1,7 @@
+dn                                               ciamMigrationStatus  ciamOwner                                    
+-----------------------------------------------  -------------------  ---------------------------------------------
+cn=legacy-rptuser,ou=consumers,dc=ciam-ops       unknown                                                           
+cn=mro-batch-export,ou=consumers,dc=ciam-ops     identified           cn=mro-analytics-team,ou=owners,dc=ciam-ops  
+cn=supplier-portal-svc,ou=consumers,dc=ciam-ops  contacted            cn=supplier-portal-team,ou=owners,dc=ciam-ops
+(3 rows)
+exit 0

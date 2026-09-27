@@ -1,0 +1,2 @@
+CHG-2001: add cn=fw-mro-batch,ou=bindings,env=prod,cloud=rtx-next,ou=environments,dc=ciam-ops
+exit 0

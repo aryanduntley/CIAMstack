@@ -1,0 +1,10 @@
+portability  values
+-----------  ------
+meta         538   
+intent       379   
+binding      167   
+observed     97    
+contract     32    
+secret-ref   16    
+(6 rows)
+exit 0

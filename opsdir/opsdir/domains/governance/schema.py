@@ -1,0 +1,51 @@
+"""governance domain schema fragment: its attribute types and object classes (OIDs pinned by number)."""
+from ...core.standard import AttributeDef, ClassDef, SchemaFragment
+
+ATTRIBUTES = (
+    AttributeDef(110, 'ciamTitle', 'string', 'meta', True,
+                 'Title'),
+    AttributeDef(111, 'ciamVersion', 'string', 'meta', True,
+                 'Document version'),
+    AttributeDef(112, 'ciamAppliesTo', 'dn', 'meta', False,
+                 'Entries this work instruction depends on'),
+    AttributeDef(113, 'ciamLastValidated', 'time', 'meta', True,
+                 'When the work instruction was last validated against config'),
+    AttributeDef(114, 'ciamDocUrl', 'url', 'meta', True,
+                 'Document location'),
+    AttributeDef(115, 'ciamChangeStatus', 'enum:proposed|approved|applied|rejected', 'meta', True,
+                 'Change record status'),
+    AttributeDef(116, 'ciamApprovedBy', 'string', 'meta', True,
+                 'Approver (CAB)'),
+    AttributeDef(117, 'ciamPlannedAt', 'time', 'meta', True,
+                 'Planned implementation time'),
+    AttributeDef(118, 'ciamOpenedAt', 'time', 'meta', True,
+                 'Incident opened'),
+    AttributeDef(119, 'ciamSeverity', 'enum:sev1|sev2|sev3|sev4', 'meta', True,
+                 'Incident severity'),
+    AttributeDef(120, 'ciamInvolved', 'dn', 'meta', False,
+                 'Entries involved in the incident'),
+    AttributeDef(121, 'ciamRootCause', 'string', 'meta', True,
+                 'Root cause'),
+    AttributeDef(122, 'ciamOwnerKind', 'enum:team|partner|vendor|operator', 'meta', True,
+                 'Kind of party'),
+    AttributeDef(123, 'ciamContactUrl', 'url', 'meta', True,
+                 'Contact / escalation link'),
+    AttributeDef(124, 'ciamDisplayName', 'string', 'meta', True,
+                 'Name used in correspondence (the organization operating the platform, a team)'),
+)
+CLASSES = (
+    ClassDef(29, 'ciamRunbook', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamLastValidated'),
+             ('ciamVersion', 'ciamAppliesTo', 'ciamDocUrl'),
+             'Work instruction'),
+    ClassDef(30, 'ciamChange', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamChangeStatus'),
+             ('ciamApprovedBy', 'ciamPlannedAt'),
+             'Change record (mirrored from ITSM)'),
+    ClassDef(31, 'ciamIncident', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamOpenedAt'),
+             ('ciamSeverity', 'ciamInvolved', 'ciamRootCause'),
+             'Incident / postmortem'),
+    ClassDef(32, 'ciamParty', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamOwnerKind'),
+             ('mail', 'ciamContactUrl', 'ciamDisplayName'),
+             'Team, partner, vendor, or the operator of the platform'),
+)
+
+FRAGMENT = SchemaFragment(ATTRIBUTES, CLASSES)

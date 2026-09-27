@@ -1,6 +1,8 @@
 # opsdir: an LDAP-model standard for platform configuration
 
-**Status:** draft 0.1 (2026-09-23), Aryan Duntley. Reference implementation in this folder.
+**Status:** draft 0.2 (2026-09-26), Aryan Duntley. Reference implementation in this folder.
+
+*0.2: the schema is composed from per-domain fragments with pinned OIDs (§2.1); reference schemes, required roles and renderers come from adapters (§3.2, §7, §8); owners and the operator are data (§5).*
 
 ## 1. Purpose
 
@@ -22,6 +24,13 @@ opsdir uses the LDAP information model unchanged (RFC 4512):
 - **Attribute types** with syntax, equality rule and single/multi-value.
 - The schema is published as a standard LDAP schema file: `schema/ciam-ops.schema.ldif`.
 
+### 2.1 Schema fragments and pinned OIDs
+
+The published schema is **composed**, never hand-edited. Each part of the stack owns a *schema fragment*: the core (the base class `ciamObject`, ownership, and vocabulary shared by several domains), and each domain (infrastructure, directory, federation, pki, governance). Adapters may add fragments for product-specific facts. `scripts/gen-schema.py` composes the standard definitions and every fragment into the file.
+
+- **OIDs are pinned by number** in each definition (`<arc>.1.<n>` for attribute types, `<arc>.2.<n>` for object classes). They are never derived from position. Moving a definition between fragments never renumbers anything, and a published number is never reused.
+- Composition is refused when fragments reuse a number or a name, or when a class uses an attribute or superclass that no fragment defines.
+
 ## 3. Extensions (RFC 4512 `X-` extensions)
 
 Every attribute type declares two extensions.
@@ -41,7 +50,7 @@ Every attribute type declares two extensions.
 
 `string · int · bool · time (GeneralizedTime) · dn (internal reference) · extdn (DN in another directory) · cidr · ip · fqdn · url · port · ref-uri · json · enum:a|b|c`
 
-`ref-uri` accepts only reference schemes: `aws-sm:// aws-kms:// azkv:// azkv-key:// vault:// s3:// azblob://`.
+`ref-uri` accepts only reference schemes that some adapter declares it owns. The store loads them into its `ref_scheme` table at init. Today these are `aws-sm:// aws-kms:// s3://` (AWS), `azkv:// azkv-key:// azblob://` (Azure) and `vault://` (HashiCorp Vault). Adding a secret store adds its schemes, and the store's validation doesn't change.
 
 ## 4. Normative rules
 
@@ -53,7 +62,7 @@ A conforming store MUST enforce all of these, not merely document them:
 | R2 | **Tree integrity.** The parent entry exists. The RDN value is present in the entry. Non-leaf entries can't be deleted. |
 | R3 | **Referential integrity.** Every `dn`-typed value resolves to an existing entry at commit. A referenced entry can't be deleted. *(Stronger than LDAP, where referential integrity is an optional plugin.)* |
 | R4 | **No secrets.** `secret-ref` attributes MUST be `ref-uri`. The schema offers no attribute that can hold secret material. |
-| R5 | **Governed writes.** Every write carries a change ID. Outside the initial bootstrap, the change MUST exist under `ou=changes` with status `approved` or `applied`. |
+| R5 | **Governed writes.** Every write carries a change ID. Outside the initial bootstrap, the change MUST exist under `ou=changes` of the naming context with status `approved` or `applied`. |
 | R6 | **History.** Every insert, update and delete is recorded with before/after values and change ID. |
 | R7 | **Roles, not names.** Renderers look up bindings by `ciamBindingRole` (e.g. `ds-ldaps-service`, `ds-deployment-password`), never by hostname or resource ID. |
 | R8 | **Neutral outputs are identical.** Artifacts rendered only from `intent` MUST be byte-identical for every environment. The planner checks this. |
@@ -72,7 +81,7 @@ A conforming store MUST enforce all of these, not merely document them:
 | `ou=integrations` | `ciamIntegration` → `ou=claims` (`ciamClaimMap`) | SAML / OIDC / partner federation and claim mappings |
 | `ou=certificates` | `ciamCertificate` | Public facts only: fingerprint, dates, SANs, key *role* |
 | `ou=external-allowlists` | `ciamExternalAllowlist` | Allowlists in **other parties'** systems that contain **our** addresses (by role) |
-| `ou=runbooks`, `ou=changes`, `ou=incidents`, `ou=owners` | `ciamRunbook`, `ciamChange`, `ciamIncident`, `ciamParty` | Operations and governance |
+| `ou=runbooks`, `ou=changes`, `ou=incidents`, `ou=owners` | `ciamRunbook`, `ciamChange`, `ciamIncident`, `ciamParty` | Operations and governance. Parties are teams, partners, vendors, and the **operator** of the platform (`ciamOwnerKind: operator`); `ciamDisplayName` is how a party is named in correspondence. |
 
 ## 6. Relationship to the real (user) directory
 
@@ -82,11 +91,29 @@ opsdir **never stores user data.** It *describes* the user directory:
 
 ## 7. Bindings and roles
 
-An environment is complete when it binds every required role (see `opsdir/render/model.py`, `REQUIRED_ROLES`): `network`, `subnet-ds`, `subnet-pf`, `ds-ldaps-service`, `pf-sso-service`, `pf-egress`, `disk-encryption`, `backup-target`, and the secret roles. Consumer firewall rules use the role `fw-consumer-<consumer>`, so the planner can match them across environments. External allowlists refer to *our* roles (`ciamRefersToRole`), so a new environment's address for that role is checked against what the other party has recorded.
+An environment is complete when it binds every **required role**. The required roles aren't a fixed list: they are the union of what every domain requires (infrastructure: `network`, `disk-encryption`) and what each **applicable adapter** requires. For example, PingDS requires `subnet-ds`, `ds-ldaps-service`, `backup-target` and the `ds-*` secret roles, and PingFederate requires `subnet-pf`, `pf-sso-service`, `pf-egress` and its key and secret roles. Roles nothing binds are reported as `UNBOUND`.
 
-## 8. Renderer contract
+Consumer firewall rules use the role `fw-consumer-<consumer>`, so the planner can match them across environments. External allowlists refer to *our* roles (`ciamRefersToRole`), so a new environment's address for that role is checked against what the other party has recorded. A service name records the certificate it presents in that environment (`ciamTlsCertificate`), so certificate users are known from data.
 
-Input: a consistent snapshot of the directory and an environment DN. Output: files plus `MANIFEST.json` (each file's scope `environment-neutral` / `environment-specific`, and its SHA-256). Missing required roles are reported as `UNBOUND`, never guessed. A provider (AWS, Azure, on-prem) is selected by `ciamCloudProvider`. Adding a provider means adding a renderer, not changing the data.
+**Owners are data.** A finding names the owners of the entry it concerns: a service, a consumer, the network binding, or the environment. It never names a hardcoded team.
+
+## 8. Adapter contract
+
+Every product, cloud provider and secret store is an **adapter**: a self-contained package whose `Adapter` record declares:
+
+| Field | Meaning |
+|---|---|
+| `applies(environment)` | Whether the adapter applies, decided **from directory data only**: the cloud's `ciamCloudProvider`, or the products (`ciamProductVersion`) on the environment's servers. There is no default target. |
+| `required_roles` | Roles the environment must bind for it (§7) |
+| `render_neutral(directory)` | Environment-neutral files. They MUST be byte-identical for every environment (R8). |
+| `render_env(environment, services)` | Environment-specific files. `services.secret_command(ref-uri)` resolves secret references at run time, through whichever adapter owns the scheme. |
+| `checks` | Planner checks it adds, as `(PlanContext) → Findings` |
+| `ref_schemes`, `secret_schemes` | Reference schemes it owns, and resolvers for the secret ones (§3.2) |
+| `renders`, `neutral_label` | How its outputs are described in a migration plan |
+
+Input is a consistent snapshot of the directory and an environment. Output is files plus `MANIFEST.json` (each file's scope, `environment-neutral` or `environment-specific`, and its SHA-256). Missing required roles are reported as `UNBOUND`, never guessed. Adding a provider or product means adding an adapter and registering it. The data, the core and the other adapters don't change.
+
+Vendor-neutral parts of the stack are **domains**. Each domain record carries its schema fragment (§2.1), required roles, SQL views and reports. Only **connectors** combine domains and adapters: the registry, render composition, the migration planner and the report catalogue.
 
 ## 9. Interchange
 
@@ -97,6 +124,6 @@ Input: a consistent snapshot of the directory and an environment DN. Output: fil
 
 - Environment overlays (stage/prod sharing most bindings) and per-environment overrides of intent (e.g., smaller replica counts in stage).
 - A read-only LDAP front end over the Postgres store (e.g., an LDAP proxy), so operators can `ldapsearch` it.
-- Importers that populate `observed` automatically: DS access-log mining → `ou=consumers`, `dsconfig` export → snapshots, PF Admin API → integrations.
+- Importers that populate `observed` automatically (the adapter contract gains importers alongside renderers): DS access-log mining → `ou=consumers`, `dsconfig` export → snapshots, PF Admin API → integrations.
 - Two-way ITSM sync for `ou=changes`.
 - Validation of rendered `dsconfig`/`setup` flags and PingFederate JSON against the exact product versions.
