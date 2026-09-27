@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-format-terraform"
+version = "0.1.0"
+description = "Terraform HCL formatting for opsdir adapters: names, expressions and blocks laid out like `terraform fmt`."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]

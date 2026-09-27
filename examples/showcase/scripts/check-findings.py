@@ -12,9 +12,8 @@ import pathlib
 import sys
 from typing import NamedTuple
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
-from opsdir.connectors import plan  # noqa: E402
-from opsdir.store import postgres as db  # noqa: E402
+from opsdir.connectors import plan
+from opsdir.store import postgres as db
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 AS_OF = dt.date(2026, 9, 23)

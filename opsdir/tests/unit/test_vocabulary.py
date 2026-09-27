@@ -15,14 +15,6 @@ def test_the_core_schema_leaves_these_values_open():
     assert {a["name"] for a in _attribute_rows() if a["value_type"] == "vocab"} == VOCAB_ATTRIBUTES
 
 
-def test_domains_and_adapters_define_the_values():
-    rows = set(vocabulary())
-    assert ("ciamServerRole", "ds", "directory") in rows
-    assert ("ciamCloudProvider", "aws", "aws") in rows and ("ciamCloudProvider", "azure", "azure") in rows
-    assert ("ciamServerRole", "pf-engine", "pingfederate") in rows
-    assert len(rows) == len(vocabulary())                      # no repeats
-
-
 def test_vocabulary_is_only_declared_for_vocab_attributes():
     assert misdeclared_vocabulary(vocabulary(), _attribute_rows()) == ()
     assert misdeclared_vocabulary((("ciamRegion", "x", "someone"),), _attribute_rows()) == (("ciamRegion", "someone"),)

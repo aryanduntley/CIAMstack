@@ -6,7 +6,8 @@ import pytest
 from opsdir.cli import export_text
 from opsdir.connectors.render import render_env
 from opsdir.core.naming import SUFFIX
-from support import APPROVED, GOLDEN, read_tree
+from showcase_support import APPROVED, GOLDEN
+from support import read_tree
 
 pytestmark = pytest.mark.integration
 

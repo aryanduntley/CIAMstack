@@ -1,72 +1,64 @@
 # CIAMstack
 
-A program that **datifies** a CIAM platform: every piece of its configuration, infrastructure, dependencies and operational knowledge becomes typed, cross-referenced entries in one database. The working files are **generated** from that database: Terraform, `dsconfig` batches, DS setup scripts, ACI LDIF and PingFederate config.
+A database-first management system for identity (CIAM) platforms. Every piece of a platform's configuration, infrastructure, keys-as-references, dependencies and operational knowledge becomes **typed, governed, cross-referenced entries in one database**, the system of record the platform is operated from. Reports, user interfaces and every working file (infrastructure code, product configuration, setup scripts) are built on it instead of config files and consoles scattered everywhere.
 
-- **A change is an entry,** made under an approved change record. It's never a hand edit to a file.
-- **A migration is a read:** render the same database for a new environment. Only that environment's *bindings* are new.
+- **A change is an entry,** made under an approved change record and kept in history, never a hand edit to a file or a console.
 - **Questions become queries:** blast radius, expiry, drift, who can read what, which outside parties' allowlists hold our addresses.
+- **Moving a platform is one capability:** a migration workspace declares the target's stack and bindings, the planner compares it with the live record, and the target is rendered from the same intent.
+- **Sensitive data is never stored,** only referenced.
 
-Nothing is tied to one stack. Clouds, compute styles, product lineages, versions and enterprise tools are values in the database, handled by **adapters**. Each part of the stack is self-contained (its schema, parsers and renderers live together), and only **connectors** combine them. The first adapters cover **PingDS, PingFederate, AWS, Azure and HashiCorp Vault**.
+Nothing in the core is tied to a platform. Clouds, products, versions and secret stores are values in the database, handled by **adapter packages** that the core discovers when they are installed. The first packages cover the ForgeRock/Ping directory and federation stack (PingDS, PingFederate), AWS, Azure and HashiCorp Vault; more follow as packages, never as core changes.
 
 The code is Modular, Functional and Procedural: immutable records, pure functions, and effects (database, files, printing) kept at the edges.
 
 ## Layout
 
 ```
-README.md                 this file
+opsdir/                   the core: an installable Python package on PostgreSQL (see opsdir/README.md)
+  SPEC.md                 the standard: LDAP schema + X-PORTABILITY / X-VALUE-TYPE, rules R1–R10
+packages/                 adapter packages, each installable on its own and registering itself with the core:
+  opsdir-adapter-aws/  opsdir-adapter-azure/  opsdir-adapter-pingds/  opsdir-adapter-pingfederate/
+  opsdir-adapter-hashicorp-vault/  opsdir-format-terraform/ (shared HCL formatter)
+examples/showcase/        a runnable fictional estate using those packages: data, demo, golden outputs
 documentation/            project-level documentation
   STACK.md                the full stack inventory: every subsystem, file and store, what can be
-                          datified, and what opsdir covers today vs the gaps (build order in §21)
+                          datified, and what is covered today vs the gaps (build order in §21)
   ops-directory-model.md  design rationale: portable intent vs bindings, prior art, objections
-opsdir/                   the reference implementation (Python + Postgres)
-  SPEC.md                 the standard: LDAP schema + X-PORTABILITY / X-VALUE-TYPE, rules R1–R10
-  README.md               how to run it, the package layout, what's verified and what isn't
-  opsdir/                 the package: core/ store/ domains/ adapters/ formats/ connectors/ cli.py
-  schema/ data/ changes/ fixtures/ scripts/ tests/   (see opsdir/README.md)
+pytest.ini                one test configuration for the core, the packages and the showcase
 .aimfp-project/           AIMFP project tracking (blueprint, roadmap, tracked files and functions)
 docs/                     local dev notes; git-ignored, never part of the project
 ```
 
 ## Quick start
 
-Everything is self-contained in `opsdir/`. Nothing is installed system-wide.
+Requirements: Python 3.11+ and PostgreSQL. Set up the role and databases once ([Database](opsdir/README.md#database)), then:
 
 ```bash
-cd opsdir
-python3 -m venv .venv && PIP_USER=0 .venv/bin/pip install --no-cache-dir "psycopg[binary]" pytest   # once
-./demo.sh          # full walk-through; outputs in opsdir/out/
-./opsdir.sh --help # the CLI (starts the private Postgres cluster if needed)
-.venv/bin/python -m pytest   # unit suite (no database)
+opsdir/scripts/dev-install.sh     # venv (opsdir/.venv) + the core + every package, editable
+examples/showcase/demo.sh         # the whole story on the fictional estate; outputs in examples/showcase/out/
+opsdir/opsdir.sh --help           # the CLI, against the local dev database
+opsdir/scripts/test.sh            # every test: core, packages, showcase; unit + integration
 ```
 
-`PIP_USER=0` is needed because this machine's global pip config sets `user = true`, which pip refuses inside a venv. `--no-cache-dir` keeps pip from writing to `~/.cache/pip`.
-
-Requirements: Python 3 and PostgreSQL. By default `./opsdir.sh` runs a private throwaway cluster from the server binaries in `/usr/lib/postgresql/*/bin`. To use an existing database instead, set `OPSDIR_DSN`. The local development database on this machine is:
-
-```bash
-export OPSDIR_DSN="host=localhost port=5432 user=opsdir password=testpass dbname=opsdir"   # dev/test only
-```
-
-Terraform is optional (`TERRAFORM=/path/to/terraform ./demo.sh` adds `fmt` + `validate`).
+Terraform is optional (`TERRAFORM=/path/to/terraform examples/showcase/demo.sh` adds `fmt` + `validate`).
 
 ## Where everything lives (and how to remove it)
 
 | Thing | Path | Remove with |
 |---|---|---|
-| Python venv (`psycopg`, `pytest`) | `opsdir/.venv/` | `rm -rf opsdir/.venv` |
-| Private Postgres cluster | `opsdir/.pgdata/`, socket in `opsdir/.pgsock/` (port 54329, unix socket only) | `opsdir/scripts/pg-local.sh destroy` |
-| Rendered output | `opsdir/out/` | `rm -rf opsdir/out` |
-| Python bytecode | `__pycache__/` under `opsdir/` | `find opsdir -name __pycache__ -exec rm -rf {} +` |
-| Local dev database (optional) | role and database `opsdir` in the system PostgreSQL (localhost:5432) | `sudo -u postgres dropdb opsdir && sudo -u postgres dropuser opsdir` |
+| Python venv (`psycopg`, `packaging`, `pytest`, the packages) | `opsdir/.venv/` | `rm -rf opsdir/.venv` |
+| Rendered output | `out/` wherever the CLI ran (the demo: `examples/showcase/out/`) | `rm -rf examples/showcase/out` |
+| Python bytecode and build metadata | `__pycache__/`, `*.egg-info/` | `find . -name __pycache__ -o -name '*.egg-info' \| xargs rm -rf` |
+| Dev and test databases | role `opsdir`; databases `opsdir`, `opsdir_workspace`, `opsdir_test`, `opsdir_test_workspace` in the local PostgreSQL | `for d in opsdir_test_workspace opsdir_test opsdir_workspace opsdir; do sudo -u postgres dropdb $d; done; sudo -u postgres dropuser opsdir` |
 
-Deleting the `CIAMstack/` folder removes all of it. Stop the cluster first (`opsdir/scripts/pg-local.sh stop`) if it's running. Outside this folder, running `terraform` to validate rendered output leaves checkpoint files in `~/.terraform.d/`.
+Deleting the `CIAMstack/` folder removes everything but the databases. Outside this folder, running `terraform` to validate rendered output leaves checkpoint files in `~/.terraform.d/`.
 
 ## Status
 
-A working foundation, rewritten into Modular/Functional/Procedural form and split into self-contained parts (milestones 1.1 and 1.2), running on **synthetic data** (230 fictional entries, "Example Aero"). `opsdir/scripts/snapshot-outputs.sh` captures every output, and `opsdir/tests/golden/` holds the accepted baseline. The demo passes its own checks: the planner finds all 7 planted blockers, and 5 remain after two approved changes. The rendered Terraform passes `terraform validate` against the real AWS and Azure provider schemas. **Not verified:** `dsconfig`/`setup` flags have not been run against a real PingDS, the PingFederate JSON is an illustrative subset of the Admin API, and the schema hasn't been loaded into a real LDAP server. See `opsdir/README.md` for the full table.
+The foundation is in place: a Modular/Functional/Procedural core with versioned schema upgrades, governed writes and full history; an agnostic core that discovers domains and adapter packages; declared stacks with `opsdir check`; adapter-owned vocabulary validated by the store; change sets, migration workspaces with a three-way cutover, and a migration runner that works in either direction. The showcase passes its own checks (the planner finds all 7 planted blockers, and 5 remain after two approved changes) and its rendered Terraform passes `terraform validate`. **Not verified:** product configuration against real product instances; see [`examples/showcase/README.md`](examples/showcase/README.md).
 
-The roadmap (7 stages) is tracked in AIMFP (`.aimfp-project/`). Next are the test harness (pytest plus the snapshot as an integration test), database setup with versioned SQL migrations, and the rest of the documentation. After that come the platform-agnostic core (adapter contract, versioned schema, keys/secrets model) and the `documentation/STACK.md` §21 gaps, starting with the observed-state importers.
+The roadmap is tracked in AIMFP (`.aimfp-project/`). Next: standard bases (the LDAP standard schema and a generic LDAPv3 adapter, OpenDJ, SAML and OIDC), then the rest of the ForgeRock/Ping lineage (PingAM, PingIDM, PingGateway) as adapter packages, user-defined attributes, and importers that read live systems into the record.
 
 ## Note on inherited docs
 
-`documentation/ops-directory-model.md` was written in another workspace. Its relative links to `../systems-and-workflows.md`, `../automation-path.md` and the codex discussion log don't resolve here. `STACK.md` covers the stack content those links pointed to.
+`documentation/ops-directory-model.md` was written in another workspace and still carries some of that framing; its relative links to `../systems-and-workflows.md`, `../automation-path.md` and a discussion log don't resolve here. `documentation/STACK.md` covers the stack content those links pointed to. Both are rewritten in milestone 1.5.

@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 # Capture every opsdir output into one directory, so a refactor can be checked byte for byte:
 #   OPSDIR_DSN=... scripts/snapshot-outputs.sh OUTDIR
-#   diff -r tests/golden OUTDIR
-# Regenerates data/ and schema/ in place, then DROPS and reloads the opsdir schema in OPSDIR_DSN.
+#   diff -r golden OUTDIR
+# Regenerates data/ and the core's published schema in place, then DROPS and reloads the opsdir schema in OPSDIR_DSN.
 # Paths under OUTDIR, history timestamps and internal row ids are masked so snapshots taken anywhere
 # compare equal.
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.."                          # the showcase
+CORE=$(cd ../../opsdir && pwd)                   # the opsdir core: its venv, schema and gen-schema.py
 OUT=$(realpath -m "${1:?usage: snapshot-outputs.sh OUTDIR}")
 : "${OPSDIR_DSN:?set OPSDIR_DSN to the database to use (its opsdir schema is dropped)}"
 AS_OF=2026-09-23                                # the synthetic data is dated relative to this day
-PY=.venv/bin/python
+PY=$CORE/.venv/bin/python
 BLAST="cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops"
 UNTESTED='(&(objectClass=ciamConsumer)(!(ciamMigrationStatus=tested)))'
 
@@ -25,15 +26,15 @@ cap() {
 rm -rf "$OUT" && mkdir -p "$OUT/cmd"
 
 # The generators must reproduce the published schema and data files exactly (independent of git state).
-generated() { sha256sum schema/*.ldif data/*.ldif data/*.json; }
+generated() { (cd "$CORE" && sha256sum schema/*.ldif); sha256sum data/*.ldif data/*.json; }
 generated > "$OUT/cmd/.generated-before"
-cap 00-gen-schema    "$PY" scripts/gen-schema.py
+cap 00-gen-schema    "$PY" "$CORE/scripts/gen-schema.py"
 cap 00-gen-synthetic "$PY" scripts/gen-synthetic.py
 cap 00-generated-diff diff "$OUT/cmd/.generated-before" <(generated)
 rm "$OUT/cmd/.generated-before"
 
 cap 01-init od init
-cap 02-load od load
+cap 02-load od load data/*.ldif
 cap 02-check od check
 for r in portability expiring pii drift stale unowned; do cap "03-report-$r" od report "$r"; done
 cap 03-report-blast-radius od report blast-radius "$BLAST"

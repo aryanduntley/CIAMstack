@@ -1,5 +1,5 @@
 """Configuration drift: each server's latest observed snapshot compared with the declared configuration."""
-from ...core.directory import children, get, one, rdn_value, subtree
+from ...core.directory import children, get, norm_dn, one, rdn_value, subtree
 from .naming import DECLARED, OBSERVED
 
 IGNORE = {"ciamLastChanged", "ciamChangeRef", "ciamOwner", "description"}   # governance, not config
@@ -46,9 +46,11 @@ def _branch_drift(d, server, snap, branch):
                  for f in _compare(server, rel, declared.get(rel), observed.get(rel)))
 
 
-def drift(d):
-    """Compare the latest snapshot of each server with the declared config, branch by branch.
-    Only branches present in a snapshot are compared (a snapshot may capture part of the config)."""
-    latest = _latest_snapshots(d)
+def drift(d, servers=None):
+    """Compare the latest snapshot of each server with the declared config, branch by branch; `servers` (DNs)
+    limits it to those servers. Only branches present in a snapshot are compared (a snapshot may capture part of
+    the config)."""
+    wanted = None if servers is None else {norm_dn(s) for s in servers}
+    latest = {srv: snap for srv, snap in _latest_snapshots(d).items() if wanted is None or norm_dn(srv) in wanted}
     return [f for srv in sorted(latest) for branch in children(d, latest[srv].dn)
             for f in _branch_drift(d, rdn_value(get(d, srv)), latest[srv], branch)]

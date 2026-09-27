@@ -35,9 +35,9 @@ def test_domains_run_in_declared_order_then_by_name():
 
 
 def test_adapters_run_providers_first_then_products_then_secret_stores():
-    found = (adapter("vault", "secret-store"), adapter("prod-b", "product"), adapter("cloud-z", "provider"),
+    found = (adapter("secrets", "secret-store"), adapter("prod-b", "product"), adapter("cloud-z", "provider"),
              adapter("prod-a", "product"), adapter("cloud-a", "provider"))
-    assert [a.name for a in ordered_adapters(found)] == ["cloud-a", "cloud-z", "prod-a", "prod-b", "vault"]
+    assert [a.name for a in ordered_adapters(found)] == ["cloud-a", "cloud-z", "prod-a", "prod-b", "secrets"]
 
 
 def test_adapter_of_unknown_kind_is_refused():

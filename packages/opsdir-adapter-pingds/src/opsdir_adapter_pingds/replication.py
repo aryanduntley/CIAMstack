@@ -1,10 +1,10 @@
 """PingDS replication: bootstrap peers for new replicas, and the planner checks that keep a migration inside the
 existing replication deployment (same deployment ID, so encrypted data and backups stay readable)."""
-from ...core.directory import children, follow, one, rdn_value, values
-from ...core.environment import joins, of_class, one_role, servers_with_role
-from ...core.findings import findings, merge_findings, responsible
-from ...core.network import covers
-from ...domains.directory.naming import DIRECTORY_SERVER_ROLE
+from opsdir.core.directory import children, follow, one, rdn_value, values
+from opsdir.core.environment import joins, of_class, one_role, servers_with_role
+from opsdir.core.findings import findings, merge_findings, responsible
+from opsdir.core.network import covers
+from opsdir.domains.directory.naming import DIRECTORY_SERVER_ROLE
 
 REPLICATION_PORT = "8989"      # PingDS default replication port
 

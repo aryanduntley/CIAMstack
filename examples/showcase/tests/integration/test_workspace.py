@@ -7,7 +7,7 @@ from opsdir.connectors.registry import store_parts
 from opsdir.core.interchange.export import export_text
 from opsdir.core.naming import SUFFIX
 from opsdir.store import migrations, postgres as db
-from support import APPROVED, DATA
+from showcase_support import APPROVED, DATA
 
 pytestmark = pytest.mark.integration
 

@@ -6,6 +6,7 @@ Installing an adapter package is all it takes to add a product, cloud provider o
 to an environment is decided by each adapter from directory data (provider of the cloud, products on the servers),
 never by a default.
 """
+from functools import partial
 from importlib.metadata import entry_points
 from pathlib import Path
 
@@ -93,19 +94,19 @@ def store_parts():
     return read_migrations(), definition_files(), schema_ldif(schema_fragments()), ref_schemes(), vocabulary()
 
 
-def applicable(m):
+def applicable(m, installed=ADAPTERS):
     """The installed adapters that render an environment: its declared stack's, else inferred from its data.
     Refuses an environment whose stack declares adapters that are not installed."""
-    missing = missing_adapters(m, ADAPTERS)
+    missing = missing_adapters(m, installed)
     if missing:
         raise SystemExit(f"{m.label} declares adapters that are not installed: "
                          f"{', '.join(c.adapter for c in missing)} (run `opsdir check`)")
-    return declared_adapters(m, ADAPTERS)
+    return declared_adapters(m, installed)
 
 
-def required_roles(adapters):
+def required_roles(adapters, domains=DOMAINS):
     """Roles an environment must bind: every domain's, then each applicable adapter's (first mention wins)."""
-    return tuple(dict.fromkeys(r for part in (*DOMAINS, *adapters) for r in part.required_roles))
+    return tuple(dict.fromkeys(r for part in (*domains, *adapters) for r in part.required_roles))
 
 
 def environment_specs(d):
@@ -114,25 +115,27 @@ def environment_specs(d):
                  for e in subtree(d, ENVIRONMENTS, "ciamEnvironment"))
 
 
-def environment(d, spec):
-    """(EnvModel with its required roles resolved, the adapters that apply to it)."""
+def environment(d, spec, installed=ADAPTERS):
+    """(EnvModel with its required roles resolved, the installed adapters that apply to it)."""
     m = env_model(d, spec)
-    adapters = applicable(m)
+    adapters = applicable(m, installed)
     return with_required_roles(m, required_roles(adapters)), adapters
 
 
-def ref_schemes():
+def ref_schemes(installed=ADAPTERS):
     """Every secret/key/storage reference scheme some adapter owns (the store accepts only these in ref-uri values)."""
-    return tuple(dict.fromkeys(s for a in ADAPTERS for s in a.ref_schemes))
+    return tuple(dict.fromkeys(s for a in installed for s in a.ref_schemes))
 
 
-def secret_command(uri):
+def secret_command(uri, installed=ADAPTERS):
     """Shell command resolving a secret reference, from the adapter that owns its scheme."""
     scheme, rest = uri.split("://", 1)
-    resolvers = {s: resolve for a in ADAPTERS for s, resolve in a.secret_schemes.items()}
+    resolvers = {s: resolve for a in installed for s, resolve in a.secret_schemes.items()}
     if scheme not in resolvers:
         raise SystemExit(f"no resolver for secret scheme {scheme}")
     return resolvers[scheme](rest)
 
 
-SERVICES = Services(secret_command=secret_command)
+def services(installed=ADAPTERS):
+    """What connectors provide to adapters while rendering, resolved against the installed adapters."""
+    return Services(secret_command=partial(secret_command, installed=installed))

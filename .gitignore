@@ -21,9 +21,7 @@ docs/
 
 # ------------------------------------------------------------------ opsdir runtime state and output
 opsdir/.venv/
-opsdir/.pgdata/
-opsdir/.pgsock/
-opsdir/out/
+out/
 
 # ------------------------------------------------------------------ Python
 __pycache__/

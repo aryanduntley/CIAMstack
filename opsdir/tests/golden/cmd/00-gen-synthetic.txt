@@ -1,2 +1,0 @@
-wrote 238 entries in 15 files to /home/eveningb4dawn/Desktop/Projects/CIAMstack/opsdir/data
-exit 0

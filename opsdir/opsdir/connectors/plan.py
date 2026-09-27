@@ -18,7 +18,7 @@ from ..core.findings import findings, merge_findings, owner_label, responsible
 from ..domains.directory.domain import consumers_of_role
 from ..domains.governance.domain import display_name, operator
 from ..domains.pki.naming import CERTIFICATES
-from .registry import DOMAINS
+from .registry import ADAPTERS, DOMAINS
 from .render import assemble, render_parts
 
 Plan = NamedTuple("Plan", [("src", EnvModel), ("dst", EnvModel), ("cutover", Optional[dt.date]),
@@ -106,14 +106,15 @@ def render_summary(adapters):
     return ", ".join(items[:-1]) + ", and " + items[-1] if len(items) > 1 else (items[0] if items else "nothing")
 
 
-def plan(d, src_spec, dst_spec, as_of):
-    src, _, src_neutral, src_specific = render_parts(d, src_spec)
-    dst, adapters, dst_neutral, dst_specific = render_parts(d, dst_spec)
+def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS):
+    """Plan moving src to dst with the installed adapters: render both, run every check, collect the findings."""
+    src, _, src_neutral, src_specific = render_parts(d, src_spec, installed)
+    dst, adapters, dst_neutral, dst_specific = render_parts(d, dst_spec, installed)
     cutover = gtime_date(one(dst.env, "ciamPlannedCutover")) if one(dst.env, "ciamPlannedCutover") else None
     dst_files = assemble(dst, dst_neutral, dst_specific)
     ctx = PlanContext(d, src, dst, cutover, as_of, assemble(src, src_neutral, src_specific), dst_files,
                       tuple(src_neutral))
-    f = merge_findings([check(ctx) for check in checks(adapters)])
+    f = merge_findings([check(ctx) for check in checks(adapters, domains)])
     return Plan(src, dst, cutover, as_of, f.blockers, f.actions, f.ok, _group_requests(f.requests), dst_files,
                 render_summary(adapters))
 

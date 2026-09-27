@@ -23,9 +23,9 @@
 # *.spec.ts
 
 # CIAMstack: runtime state and generated output (never source)
-opsdir/.pgdata/
-opsdir/.pgsock/
 opsdir/.venv/
-opsdir/out/
+out/
 .intercomm-aimfp/
-opsdir/tests/golden/
+examples/showcase/golden/
+*.egg-info/
+examples/showcase/data/

@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-adapter-pingfederate"
+version = "0.1.0"
+description = "opsdir adapter for PingFederate: SP connections, OIDC clients and IdP connections from the federation domain."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1"]
+
+[project.entry-points."opsdir.adapters"]
+pingfederate = "opsdir_adapter_pingfederate.adapter:ADAPTER"
+
+[tool.setuptools.packages.find]
+where = ["src"]

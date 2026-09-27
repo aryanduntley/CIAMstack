@@ -3,15 +3,17 @@
 #   ./demo.sh                 run everything (output under out/)
 #   TERRAFORM=/path/terraform ./demo.sh   also run terraform fmt/validate on the rendered code
 set -uo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")"                           # the showcase; outputs go to out/ here
+CORE=$(cd ../../opsdir && pwd)
+PY=$CORE/.venv/bin/python
 AS_OF=2026-09-23                               # the synthetic data is dated relative to this day
-od() { ./opsdir.sh --as-of "$AS_OF" "$@"; }
-. scripts/dev-env.sh          # OPSDIR_DSN: the local dev database unless already set (init below drops its opsdir schema)
+od() { "$CORE/opsdir.sh" --as-of "$AS_OF" "$@"; }
+. "$CORE/scripts/dev-env.sh"   # OPSDIR_DSN: the local dev database unless already set (init below drops its opsdir schema)
 step() { printf '\n\033[1m══ %s\033[0m\n' "$*"; }
 
 step "1. Build the directory: LDAP schema + synthetic estate (all LDIF) into Postgres"
-.venv/bin/python scripts/gen-synthetic.py
-od init && od load
+"$PY" scripts/gen-synthetic.py
+od init && od load data/*.ldif
 od report portability
 
 step "2. Ask it questions"
@@ -41,7 +43,7 @@ fi
 step "4. Migration plan (before changes)"
 echo "The synthetic estate is deliberately broken; blockers are planted problems the planner must find."
 od plan source/prod target/prod | sed -n '1,8p'
-.venv/bin/python scripts/check-findings.py before
+"$PY" scripts/check-findings.py before
 
 step "5. Guardrails: these writes must be REJECTED"
 od modify --change CHG-2002 changes/rejected/CHG-2002-unapproved.ldif
@@ -59,6 +61,6 @@ diff -ru out/before/terraform out/target-prod/terraform
 
 step "7. Migration plan (after changes)"
 od plan source/prod target/prod | sed -n '1,20p'
-.venv/bin/python scripts/check-findings.py after
+"$PY" scripts/check-findings.py after
 echo
 echo "Full outputs: out/source-prod, out/target-prod, out/plan-source-prod-to-target-prod"

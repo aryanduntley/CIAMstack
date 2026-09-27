@@ -6,7 +6,7 @@
 
 ## 1. Purpose
 
-A platform's configuration is usually spread across Terraform files, CLI batch files, admin consoles, spreadsheets and people's heads. **opsdir** puts it in a directory instead: one tree of typed, schema-checked, cross-referenced entries. Working configuration (Terraform, `dsconfig`, federation config) is **generated** from that tree.
+A platform's configuration is usually spread across infrastructure-as-code files, CLI batch files, admin consoles, spreadsheets and people's heads. **opsdir** puts it in a directory instead: one tree of typed, schema-checked, cross-referenced entries. Working configuration (infrastructure code, product configuration, setup scripts) is **generated** from that tree by adapters.
 
 Consequences:
 - **A change is a directory entry,** made under an approved change record. Files are re-rendered, never hand-edited.
@@ -93,7 +93,7 @@ opsdir **never stores user data.** It *describes* the user directory:
 
 ## 7. Bindings and roles
 
-An environment is complete when it binds every **required role**. The required roles aren't a fixed list: they are the union of what every domain requires (infrastructure: `network`, `disk-encryption`) and what each **applicable adapter** requires. For example, PingDS requires `subnet-ds`, `ds-ldaps-service`, `backup-target` and the `ds-*` secret roles, and PingFederate requires `subnet-pf`, `pf-sso-service`, `pf-egress` and its key and secret roles. Roles nothing binds are reported as `UNBOUND`.
+An environment is complete when it binds every **required role**. The required roles aren't a fixed list: they are the union of what every domain requires (infrastructure: `network`, `disk-encryption`) and what each **applicable adapter** requires. For example, a directory server adapter may require a subnet for its servers, a stable LDAPS service name, a backup target and the secrets its deployment needs; each adapter package documents its roles. Roles nothing binds are reported as `UNBOUND`.
 
 Consumer firewall rules use the role `fw-consumer-<consumer>`, so the planner can match them across environments. External allowlists refer to *our* roles (`ciamRefersToRole`), so a new environment's address for that role is checked against what the other party has recorded. A service name records the certificate it presents in that environment (`ciamTlsCertificate`), so certificate users are known from data.
 
@@ -126,6 +126,6 @@ Vendor-neutral parts of the stack are **domains**. Each domain record carries it
 
 - Environment overlays (stage/prod sharing most bindings) and per-environment overrides of intent (e.g., smaller replica counts in stage).
 - A read-only LDAP front end over the Postgres store (e.g., an LDAP proxy), so operators can `ldapsearch` it.
-- Importers that populate `observed` automatically (the adapter contract gains importers alongside renderers): DS access-log mining → `ou=consumers`, `dsconfig` export → snapshots, PF Admin API → integrations.
+- Importers that populate `observed` automatically (the adapter contract gains importers alongside renderers): directory access-log mining → `ou=consumers`, a product's configuration export → snapshots, a federation product's admin API → integrations.
 - Two-way ITSM sync for `ou=changes`.
-- Validation of rendered `dsconfig`/`setup` flags and PingFederate JSON against the exact product versions.
+- Validation of each adapter's rendered output against the exact product versions it declares.

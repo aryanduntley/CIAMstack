@@ -54,27 +54,28 @@ A working prototype (`opsdir/`) exists and has been cataloged: LDIF/schema parse
 
 ### Key Infrastructure
 
-- PostgreSQL 17: the store. It enforces the LDAP model plus R3 referential integrity, R5 governed writes and R6 history. Local system cluster on 5432, plus a private throwaway cluster in `opsdir/.pgdata` (unix socket, port 54329)
+- PostgreSQL 17: the store. It enforces the LDAP model plus R3 referential integrity, R5 governed writes and R6 history. The system cluster on localhost:5432 (role opsdir; databases opsdir for dev/demo and opsdir_test for tests); schema versioned by numbered migrations (opsdir migrate)
 - psycopg 3: DB driver (wrapped by the `store` module only)
 - Terraform (optional): `fmt`/`validate` of rendered code
-- pytest: unit suite (to be added in 1.3)
+- pytest: unit suites (core, packages, showcase) + integration suites against Postgres; `opsdir/scripts/test.sh`
 
 ### Package Structure
 
-Current (after milestones 1.1 and 1.2): each technology is self-contained; only connectors join them.
+Current (after milestone 2.1): an agnostic core, adapter packages, and a separate showcase.
 ```
-opsdir/
-  opsdir/            core/ store/ domains/{infrastructure,directory,federation,pki,governance}
-                     adapters/{pingds,pingfederate,aws,azure,hashicorp_vault} formats/ connectors/ cli.py
-  schema/            ciam-ops.schema.ldif (composed from fragments by scripts/gen-schema.py)
-  data/              synthetic estate (written by scripts/gen-synthetic.py from fixtures/example_estate)
-  fixtures/          example_estate/: the synthetic estate as pure builders, one module per part of the stack
-  changes/           approved change LDIF; changes/rejected/ = writes that must fail
-  scripts/           gen-schema.py gen-synthetic.py check-findings.py pg-local.sh snapshot-outputs.sh
-  tests/golden/      accepted snapshot of every output
-  demo.sh opsdir.sh
+opsdir/              the core package (pyproject: opsdir), names no platform/product/vendor/secret store
+  opsdir/            core/ store/ domains/{infrastructure,directory,federation,pki,governance} connectors/ cli.py
+  schema/            ciam-ops.schema.ldif (published export of the core + domain fragments; scripts/gen-schema.py)
+  scripts/           dev-install.sh dev-env.sh gen-schema.py test.sh
+  tests/             core tests (unit + integration) with mini_estate.py: a fake adapter, no real one needed
+packages/            adapter packages, each its own distribution registering via entry point opsdir.adapters:
+                     opsdir-adapter-{aws,azure,pingds,pingfederate,hashicorp-vault}, opsdir-format-terraform
+examples/showcase/   the fictional estate: example_estate/ data/ changes/ golden/ scripts/ tests/ demo.sh
+pytest.ini           one test configuration (core, packages, showcase); opsdir/scripts/test.sh runs everything
 ```
-Dependencies point one way: connectors → adapters → domains → store → core (formats used by adapters only).
+Dependencies point one way: adapter packages → core; inside the core connectors → domains → core and
+connectors → store → core; domains never import the store. The registry discovers domains (opsdir.domains) and
+adapters (opsdir.adapters) through entry points; rendering and planning take the installed adapters as a parameter.
 Adapter contract: a record of functions (no classes).
 
 ---
@@ -86,7 +87,7 @@ Adapter contract: a record of functions (no classes).
 1. **Data Model & Standard**: schema, portability classes, value types, branches (`schema.py`, `gen-schema.py`, `ciam-ops.schema.ldif`)
 2. **Store & Governance**: Postgres rules R1-R10, history, export (`db.py`, `sql/*.sql`)
 3. **Importers (files/APIs -> DB)**: live-system and file adapters (Stage 3+)
-4. **Renderers (DB -> files)**: `render/*`
+4. **Renderers (DB -> files)**: adapter packages (`packages/*`), composed by `connectors/render.py`
 5. **Provider & Lineage Agnosticism**: adapter contract and registry (Stage 2)
 6. **Keys, Secrets & PKI Metadata**: reference-only key/cert/credential model (Stage 2)
 7. **Planning, Queries & Reports**: `plan.py`, `reports.py`, `002_reports.sql`
@@ -192,7 +193,7 @@ No preferences set yet.
 - **Generated means generated**: rendered files carry do-not-edit headers and SHA-256 manifests (R10)
 - **No targeting**: no specific cloud/landing zone, product version or tool vendor is assumed anywhere in core code; each is data selected at run time
 - **Versions stay out of a move**: a migration re-hosts the recorded versions; any upgrade is its own change
-- **Dev databases**: private throwaway cluster (`opsdir/.pgdata`, socket 54329) or the local system PostgreSQL 17 (role `opsdir`, database `opsdir`, dev-only password `testpass`; build/test use only, not a security boundary)
+- **Dev databases**: the local system PostgreSQL 17, role `opsdir` (dev-only password `testpass`; build/test use only, not a security boundary), database `opsdir` (dev/demo, `OPSDIR_DSN`) and `opsdir_test` (tests, `OPSDIR_TEST_DSN`). The private throwaway cluster was removed in milestone 1.4.
 
 ---
 
@@ -205,7 +206,6 @@ No preferences set yet.
 - `documentation/ops-directory-model.md`: design rationale. It still contains interview/pitch framing that milestone 1.5 removes.
 - Synthetic data is fictional ("Example Aero", RFC 5737 IPs, AWS doc account 111122223333, RFC 5612 OID arc)
 - Global pip config has `user = true`; venv installs need `PIP_USER=0`
-- `.pgdata` needs mode 0700 if the folder is copied
 
 ### External References
 

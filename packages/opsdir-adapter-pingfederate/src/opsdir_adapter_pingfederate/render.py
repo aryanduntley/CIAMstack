@@ -7,8 +7,8 @@ Terraform provider.
 """
 import json
 
-from ...core.directory import children, follow, get, one, rdn_value, values
-from ...domains.federation.domain import INTEGRATIONS
+from opsdir.core.directory import children, follow, get, one, rdn_value, values
+from opsdir.domains.federation.naming import INTEGRATIONS
 
 USER_DIRECTORY = {"type": "LDAP_DATA_STORE", "id": "ciam-user-directory"}
 

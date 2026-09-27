@@ -17,7 +17,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from fixtures.example_estate.build import build  # noqa: E402
+from example_estate.build import build  # noqa: E402
 
 OUT = ROOT / "data"
 
@@ -29,7 +29,7 @@ def main():
         old.unlink()
     for rel, text in files.items():
         (OUT / rel).write_text(text)
-    print(f"wrote {n} entries in {sum(1 for p in files if p.endswith('.ldif'))} files to {OUT}")
+    print(f"wrote {n} entries in {sum(1 for p in files if p.endswith('.ldif'))} files to {OUT.relative_to(ROOT)}/")
 
 
 if __name__ == "__main__":

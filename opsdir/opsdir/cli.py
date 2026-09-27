@@ -2,12 +2,13 @@
 
   opsdir init                          DROP the opsdir schema and create it from nothing (all migrations)
   opsdir upgrade                       upgrade the schema in place (pending migrations), keeping data and history
-  opsdir load [files...]               load LDIF content (default: data/*.ldif) under change BOOTSTRAP
+  opsdir load FILE...                  load LDIF content under change BOOTSTRAP
   opsdir check [ENV...]                each environment's declared stack against the installed adapters
   opsdir search [-b base] [-s scope] FILTER [attr...]
   opsdir report expiring|pii|stale|unowned|drift|portability|blast-radius DN
-  opsdir render ENV [-o dir]           e.g. source/prod, target/prod
+  opsdir render ENV [-o dir]           e.g. prod environment of a cloud: CLOUD/ENV (default out/ here)
   opsdir plan FROM TO [-o dir]         migration plan + change-request drafts for external parties
+  opsdir migrate FROM TO [-o dir]      check both stacks, plan, render the target; exit 1 unless ready
   opsdir modify --change CHG-… FILE    apply LDIF change records under an approved change
   opsdir export [-b base]              dump entries as LDIF (for Git review)
   opsdir history [DN]                  change history
@@ -22,7 +23,7 @@ import os
 import pathlib
 import sys
 
-from .connectors import plan as planmod, reports, workspace
+from .connectors import migration, plan as planmod, reports, workspace
 from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, store_parts
 from .connectors.stack import STATUS_HEADERS, stack_rows
 from .core.environment import env_model
@@ -32,7 +33,6 @@ from .core.directory import subtree, values
 from .core.interchange import ldif
 from .core.interchange.export import export_text
 from .core.naming import SUFFIX
-from .core.paths import ROOT
 from .store import migrations, postgres as db
 from .store.queries import fetch_history
 
@@ -40,7 +40,7 @@ from .store.queries import fetch_history
 SUBCOMMANDS = (
     ("init", ()),
     ("upgrade", ()),
-    ("load", ((("files",), {"nargs": "*"}),)),
+    ("load", ((("files",), {"nargs": "+"}),)),
     ("check", ((("envs",), {"nargs": "*"}),)),
     ("search", ((("-b", "--base"), {"default": SUFFIX}),
                 (("-s", "--scope"), {"default": "sub", "choices": ["base", "one", "sub"]}),
@@ -48,6 +48,7 @@ SUBCOMMANDS = (
     ("report", ((("name",), {}), (("dn",), {"nargs": "?"}))),
     ("render", ((("env",), {}), (("-o", "--out"), {}))),
     ("plan", ((("src",), {}), (("dst",), {}), (("-o", "--out"), {}))),
+    ("migrate", ((("src",), {}), (("dst",), {}), (("-o", "--out"), {}))),
     ("modify", ((("--change",), {"required": True}), (("file",), {}))),
     ("export", ((("-b", "--base"), {"default": SUFFIX}),)),
     ("history", ((("dn",), {"nargs": "?"}),)),
@@ -101,7 +102,7 @@ def _cmd_upgrade(conn, a, as_of):
 
 
 def _cmd_load(conn, a, as_of):
-    files = a.files or sorted(str(p) for p in (ROOT / "data").glob("*.ldif"))
+    files = a.files
     n = db.load_ldif(conn, files)
     return f"loaded {n} entries from {len(files)} files; {db.reference_count(conn)} DN references verified"
 
@@ -129,7 +130,7 @@ def _cmd_report(conn, a, as_of):
 
 def _cmd_render(conn, a, as_of):
     m, files = render_env(db.load_directory(conn), a.env)
-    out = write_tree(a.out or ROOT / "out" / m.label.replace("/", "-"), files)
+    out = write_tree(a.out or pathlib.Path("out") / m.label.replace("/", "-"), files)
     return "\n".join((f"rendered {len(files)} files for {m.dn} ({m.provider}) → {out}",
                       *(f"  UNBOUND role: {r}" for r in m.unbound)))
 
@@ -138,9 +139,24 @@ def _cmd_plan(conn, a, as_of):
     p = planmod.plan(db.load_directory(conn), a.src, a.dst, as_of)
     md = planmod.to_markdown(p)
     label = f"plan-{p.src.label.replace('/', '-')}-to-{p.dst.label.replace('/', '-')}"
-    out = pathlib.Path(a.out or ROOT / "out" / label)
+    out = pathlib.Path(a.out or pathlib.Path("out") / label)
     write_tree(out, {"PLAN.md": md, **planmod.request_drafts(p)})
     return md + f"\n\n(written to {out}/PLAN.md and {len(p.requests)} request drafts in {out}/requests/)"
+
+
+def migrate_text(d, src, dst, as_of, out):
+    """(text, files to write, exit status) of `opsdir migrate`."""
+    r = migration.run(d, src, dst, as_of, ADAPTERS, ADAPTER_VERSIONS)
+    text = f"{format_table(r.stack_rows, STATUS_HEADERS)}\n{migration.summary(r, out)}"
+    return text, migration.output_files(r), (0 if r.ready else 1)
+
+
+def _cmd_migrate(conn, a, as_of):
+    label = f"migration-{a.src.replace('/', '-')}-to-{a.dst.replace('/', '-')}"
+    out = pathlib.Path(a.out or pathlib.Path("out") / label)
+    text, files, status = migrate_text(db.load_directory(conn), a.src, a.dst, as_of, out)
+    write_tree(out, files)
+    return text, status
 
 
 def _cmd_modify(conn, a, as_of):
@@ -175,7 +191,7 @@ def _cmd_workspace(conn, a, as_of):
 
 
 COMMANDS = {"init": _cmd_init, "upgrade": _cmd_upgrade, "load": _cmd_load, "check": _cmd_check, "search": _cmd_search, "report": _cmd_report,
-            "render": _cmd_render, "plan": _cmd_plan, "modify": _cmd_modify, "export": _cmd_export,
+            "render": _cmd_render, "plan": _cmd_plan, "migrate": _cmd_migrate, "modify": _cmd_modify, "export": _cmd_export,
             "history": _cmd_history,
             "workspace": _cmd_workspace}
 

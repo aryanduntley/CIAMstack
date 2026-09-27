@@ -1,13 +1,12 @@
 """The opsdir standard as data, and the generators that publish it and the synthetic estate."""
 import pytest
 
-from fixtures.example_estate.build import build
 from opsdir.connectors.registry import schema_fragments
 from opsdir.core.interchange.ldif import parse
 from opsdir.core.standard import (ARC, CORE, AttributeDef, ClassDef, SchemaFragment, check_fragments, equality,
                                   fragment_counts, schema_ldif, syntax)
 from opsdir.store.postgres import schema_rows
-from support import DATA, SCHEMA
+from support import SCHEMA
 
 A = AttributeDef(900, "ciamTestAttr", "port", "intent", True, "test attribute")
 C = ClassDef(900, "ciamTestClass", "ciamObject", "AUXILIARY", ("ciamTestAttr",), ("cn",), "test class")
@@ -57,10 +56,3 @@ def test_published_schema_counts_match_the_fragments():
     n_attrs, n_classes = fragment_counts(schema_fragments())
     assert len(rec.attrs["attributeTypes"]) == n_attrs + 6      # + standard LDAP attributes
     assert len(rec.attrs["objectClasses"]) == n_classes + 3
-
-
-def test_synthetic_estate_is_exactly_what_the_fixture_builds():
-    n, files = build()
-    on_disk = {p.name: p.read_text() for p in DATA.iterdir() if p.suffix in (".ldif", ".json")}
-    assert files == on_disk
-    assert n == sum(1 for f in on_disk.values() for line in f.splitlines() if line.startswith("dn: "))

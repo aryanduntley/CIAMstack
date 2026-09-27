@@ -23,10 +23,10 @@ def check_consumers(ctx):
 
 
 def check_hygiene(ctx):
-    """Migrate the declared state, not accidents: source drift and ACIs without owner/justification."""
+    """Migrate the declared state, not accidents: drift on the source's servers and ACIs without owner/justification."""
     drifted = [("Drift", f"{ctx.src.label} {server}: {kind}: `{rel}` {detail}".rstrip(),
                 responsible(ctx.d, ctx.src.env), None)
-               for server, kind, rel, detail in drift(ctx.d)]
+               for server, kind, rel, detail in drift(ctx.d, [s.dn for s in ctx.src.servers])]
     acis = [("Access", f"ACI `{rdn_value(aci)}` has no owner/justification. Review before recreating it "
              f"in {ctx.dst.label}.", responsible(ctx.d, ctx.dst.env), None)
             for aci in children(ctx.d, ACIS, "ciamAci")

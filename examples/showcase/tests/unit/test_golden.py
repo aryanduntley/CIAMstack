@@ -8,7 +8,8 @@ from opsdir.connectors.plan import plan, request_drafts, to_markdown
 from opsdir.connectors.render import render_env
 from opsdir.core.naming import SUFFIX
 from opsdir.domains.directory.drift import DRIFT_HEADERS, drift
-from support import APPROVED, DATA, GOLDEN, cmd_output, read_tree
+from showcase_support import APPROVED, DATA, GOLDEN, cmd_output
+from support import read_tree
 
 SRC, DST = "source/prod", "target/prod"
 # (fixture state, environment spec) -> golden render directory

@@ -2,11 +2,11 @@
 from functools import reduce
 from itertools import chain
 
-from ...core.directory import follow, one, rdn_value, values
-from ...core.environment import of_class, one_role, servers_with_role, subnet_of
-from ...core.manifest import header
-from ...core.network import is_private
-from ...formats.terraform_hcl import Block, block, ref, tf_name
+from opsdir.core.directory import follow, one, rdn_value, values
+from opsdir.core.environment import of_class, one_role, servers_with_role, subnet_of
+from opsdir.core.manifest import header
+from opsdir.core.network import is_private
+from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 
 RG = ref("data.azurerm_resource_group.main.name")
 LOC = ref("data.azurerm_resource_group.main.location")
