@@ -2,7 +2,7 @@
 import psycopg
 import pytest
 
-from opsdir.connectors.registry import store_parts
+from opsdir.connectors.registry import schema_sync, store_parts
 from opsdir.store import migrations, postgres as db
 from showcase_support import APPROVED, DATA
 
@@ -37,7 +37,7 @@ def _counts(conn):
 def _loaded(conn, parts):
     """A store with the synthetic estate and the approved changes, as the demo leaves it."""
     migrations.init(conn, *parts)
-    db.load_ldif(conn, sorted(DATA.glob("*.ldif")))
+    db.load_ldif(conn, sorted(DATA.glob("*.ldif")), schema_sync=schema_sync())
     for change_id, path in APPROVED:
         db.apply_changes(conn, path, change_id)
 

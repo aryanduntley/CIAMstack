@@ -8,6 +8,7 @@ import json
 import os
 import pathlib
 from functools import reduce
+from typing import Callable, NamedTuple
 
 import psycopg
 
@@ -16,6 +17,14 @@ from ..core.interchange import ldif, rfc4512
 
 INSERT_ENTRY = "insert into entry (dn, object_classes, attrs, change_id) values (%s, %s, %s, %s)"
 UPDATE_ENTRY = "update entry set object_classes = %s, attrs = %s where dn_norm = %s"
+INVALID_SQL = ("select dn, p from (select id, dn, entry_problem(dn, object_classes, attrs) p from entry) x"
+               " where p is not null order by id limit 20")
+ROWS_OF_CLASSES_SQL = "select dn, object_classes, attrs from entry where object_classes && %s::text[] order by id"
+
+# Entries under `branch` define part of the schema itself (custom fields and record types). A write that touches them
+# re-syncs the schema registry with `sync(conn)` (the caller composes the schema), and every stored entry is checked
+# again against it, in the same transaction.
+SchemaSync = NamedTuple("SchemaSync", [("branch", str), ("sync", Callable)])
 
 
 def connect(dsn=None):
@@ -72,6 +81,26 @@ def split_record(canon, attrs):
     classes = [v for name, vals in attrs.items() if is_oc(name) for v in vals]
     canonical = [(canon.get(name.lower(), name), vals) for name, vals in attrs.items() if not is_oc(name)]
     return classes, {c: [v for n, vals in canonical if n == c for v in vals] for c in dict.fromkeys(n for n, _ in canonical)}
+
+
+def _under(dn, branch):
+    n, b = norm_dn(dn), norm_dn(branch)
+    return n == b or n.endswith("," + b)
+
+
+def _on_path(dn, branch):
+    """The entry is the branch, under it, or one of its ancestors (which must exist before it)."""
+    return _under(dn, branch) or _under(branch, dn)
+
+
+def schema_phases(records, branch):
+    """(definition adds and modifies, every other record, definition deletes): definitions (with the branch's
+    ancestors) change first so the rest of the change can use them, and go last so the rest can stop using them
+    first. Order is kept within a phase."""
+    defining = tuple(r for r in records if _on_path(r.dn, branch))
+    return (tuple(r for r in defining if r.changetype != "delete"),
+            tuple(r for r in records if not _on_path(r.dn, branch)),
+            tuple(r for r in defining if r.changetype == "delete"))
 
 
 def entry_rows(canon, records):
@@ -135,19 +164,52 @@ def read_ldif_files(paths):
     return tuple(r for p in paths for r in ldif.parse(pathlib.Path(p).read_text()))
 
 
-def load_ldif(conn, paths, change_id="BOOTSTRAP"):
+def load_ldif(conn, paths, change_id="BOOTSTRAP", schema_sync=None):
     """Effect: load the content records of LDIF files in one transaction under a change id."""
-    return load_records(conn, read_ldif_files(paths), change_id)
+    return load_records(conn, read_ldif_files(paths), change_id, schema_sync)
 
 
-def load_records(conn, records, change_id="BOOTSTRAP"):
-    """Effect: load content records in one transaction under a change id; returns how many."""
-    rows = entry_rows(_canon(conn), records)
+def invalid_entries(conn):
+    """Effect: (dn, problem) for stored entries the registry no longer accepts (at most 20)."""
+    return conn.execute(INVALID_SQL).fetchall()
+
+
+def revalidate(conn):
+    """Effect: refuse (inside the caller's transaction) when stored entries break the registry as it now is."""
+    bad = invalid_entries(conn)
+    if bad:
+        raise SystemExit("the schema would no longer accept stored entries: " + "; ".join(p for _, p in bad))
+
+
+def rows_of_classes(conn, classes):
+    """Effect: (dn, object classes, attrs) of the entries of any of these classes, in the order they were added."""
+    return conn.execute(ROWS_OF_CLASSES_SQL, (list(classes),)).fetchall()
+
+
+def _touches(records, schema_sync):
+    return schema_sync is not None and any(_under(r.dn, schema_sync.branch) for r in records)
+
+
+def _insert_all(conn, change_id, records):
+    for row in entry_rows(_canon(conn), records):
+        _insert(conn, change_id, row)
+
+
+def load_records(conn, records, change_id="BOOTSTRAP", schema_sync=None):
+    """Effect: load content records in one transaction under a change id; returns how many. Definitions of the schema
+    itself (schema_sync.branch) load first and are composed into the registry before the rest."""
+    records = tuple(records)
     with conn.transaction():
         _begin_change(conn, change_id)
-        for row in rows:
-            _insert(conn, change_id, row)
-    return len(rows)
+        if _touches(records, schema_sync):
+            defining, rest, _ = schema_phases(records, schema_sync.branch)
+            _insert_all(conn, change_id, defining)
+            schema_sync.sync(conn)
+            _insert_all(conn, change_id, rest)
+            revalidate(conn)
+        else:
+            _insert_all(conn, change_id, records)
+    return len(records)
 
 
 def _apply_record(conn, canon, change_id, r):
@@ -168,25 +230,41 @@ def _apply_record(conn, canon, change_id, r):
     return f"{r.changetype} {r.dn}"
 
 
-def apply_records(conn, records, change_id):
-    """Effect: apply change records (add / modify / delete) under one change id, atomically."""
+def _apply_all(conn, change_id, records):
     canon = _canon(conn)
+    return [_apply_record(conn, canon, change_id, r) for r in records]
+
+
+def apply_records(conn, records, change_id, schema_sync=None):
+    """Effect: apply change records (add / modify / delete) under one change id, atomically. A change to definitions
+    of the schema itself (schema_sync.branch) is applied in phases (schema_phases), the registry re-synced after the
+    definitions change and again at the end, and every stored entry checked against the result."""
+    records = tuple(records)
     with conn.transaction():
         _begin_change(conn, change_id)
-        return [_apply_record(conn, canon, change_id, r) for r in records]
+        if not _touches(records, schema_sync):
+            return _apply_all(conn, change_id, records)
+        defining, rest, dropping = schema_phases(records, schema_sync.branch)
+        done = _apply_all(conn, change_id, defining)
+        schema_sync.sync(conn)
+        done = [*done, *_apply_all(conn, change_id, rest), *_apply_all(conn, change_id, dropping)]
+        schema_sync.sync(conn)
+        revalidate(conn)
+        return done
 
 
-def apply_changes(conn, path, change_id):
+def apply_changes(conn, path, change_id, schema_sync=None):
     """Effect: apply an LDIF file of change records under one change id, atomically."""
-    return apply_records(conn, read_ldif_files([path]), change_id)
+    return apply_records(conn, read_ldif_files([path]), change_id, schema_sync)
 
 
 # ------------------------------------------------------------------ reads
 def fetch_directory_rows(conn):
-    """Effect: read the schema registry and every entry."""
+    """Effect: read the schema registry and every entry, entries in the order they were added (so every reader of
+    the snapshot sees the same order the in-memory directory built from the same files has)."""
     return (conn.execute("select name, value_type, portability from attribute_type").fetchall(),
             conn.execute("select name, sup from object_class").fetchall(),
-            conn.execute("select dn, object_classes, attrs from entry").fetchall())
+            conn.execute("select dn, object_classes, attrs from entry order by id").fetchall())
 
 
 def load_directory(conn):

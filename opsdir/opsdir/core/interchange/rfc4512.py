@@ -2,6 +2,7 @@
 import re
 
 _TOKEN = re.compile(r"\(|\)|'[^']*'|\$|[^\s()$']+")
+RULES = ("X-MIN", "X-MAX", "X-PATTERN", "X-MAX-LENGTH")   # value rules the store enforces beyond X-VALUE-TYPE
 FLAGS = frozenset({"SINGLE-VALUE", "ABSTRACT", "STRUCTURAL", "AUXILIARY", "OBSOLETE", "COLLECTIVE",
                    "NO-USER-MODIFICATION"})
 
@@ -52,6 +53,7 @@ def attribute_type(defn):
         "name": names[0], "oid": d["oid"], "syntax_oid": d.get("SYNTAX"), "equality": d.get("EQUALITY"),
         "value_type": d.get("X-VALUE-TYPE", "string"), "portability": d.get("X-PORTABILITY", "meta"),
         "single_value": bool(d.get("SINGLE-VALUE")), "description": d.get("DESC"), "origin": d.get("X-ORIGIN"),
+        "rules": {k: d[k] for k in RULES if k in d},
     }
 
 
@@ -76,15 +78,24 @@ def name_list(names):
     return names[0] if len(names) == 1 else "( " + " $ ".join(names) + " )"
 
 
-def attribute_type_definition(oid, name, desc, equality, syntax, single_value, extensions):
-    """An attributeTypes definition; extensions is ((X-NAME, value), ...) in output order."""
-    xs = "".join(f" {k} '{quote(v)}'" for k, v in extensions)
-    return (f"( {oid} NAME '{name}' DESC '{quote(desc)}' EQUALITY {equality} SYNTAX {syntax}"
-            f"{' SINGLE-VALUE' if single_value else ''}{xs} )")
+def _desc(desc):
+    return f" DESC '{quote(desc)}'" if desc is not None else ""
+
+
+def _extensions(extensions):
+    return "".join(f" {k} '{quote(v)}'" for k, v in extensions)
+
+
+def attribute_type_definition(oid, name, desc, equality, syntax, single_value, extensions, ordering=None, substr=None):
+    """An attributeTypes definition; extensions is ((X-NAME, value), ...) in output order. desc and the matching
+    rules (equality, ordering, substr) are optional: None leaves them out."""
+    rules = "".join(f" {k} {v}" for k, v in (("EQUALITY", equality), ("ORDERING", ordering), ("SUBSTR", substr)) if v)
+    return (f"( {oid} NAME '{name}'{_desc(desc)}{rules} SYNTAX {syntax}"
+            f"{' SINGLE-VALUE' if single_value else ''}{_extensions(extensions)} )")
 
 
 def object_class_definition(oid, name, desc, sup, kind, must, may, extensions):
-    """An objectClasses definition; sup, must and may are optional."""
-    xs = "".join(f" {k} '{quote(v)}'" for k, v in extensions)
-    return (f"( {oid} NAME '{name}' DESC '{quote(desc)}'" + (f" SUP {sup}" if sup else "") + f" {kind}"
-            + (f" MUST {name_list(must)}" if must else "") + (f" MAY {name_list(may)}" if may else "") + f"{xs} )")
+    """An objectClasses definition; desc, sup, must and may are optional."""
+    return (f"( {oid} NAME '{name}'{_desc(desc)}" + (f" SUP {sup}" if sup else "") + f" {kind}"
+            + (f" MUST {name_list(must)}" if must else "") + (f" MAY {name_list(may)}" if may else "")
+            + f"{_extensions(extensions)} )")

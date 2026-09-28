@@ -5,7 +5,7 @@ supplier-portal-sp-signing  saml-signing     2026-11-30  68                     
 ds-ldaps-2026               tls-server       2026-12-20  88         ldap.id.example-aero.test                                                                        
 sso-tls-2026                tls-server       2027-02-10  140        sso.example-aero.test      customer-portal,supplier-portal,tech-pubs,mobile-ops,skyline-air-feder
 customer-portal-sp-signing  saml-signing     2027-03-01  159                                   customer-portal                                                       
-pf-signing-2025             saml-signing     2027-06-30  280                                   customer-portal,supplier-portal,tech-pubs,mobile-ops                  
+pf-signing-2025             saml-signing     2027-06-30  280                                   sso,customer-portal,supplier-portal,tech-pubs,mobile-ops              
 harbor-mro-idp-signing      partner-signing  2028-01-15  479                                   harbor-mro-federation                                                 
 (7 rows)
 exit 0

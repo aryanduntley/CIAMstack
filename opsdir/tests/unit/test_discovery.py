@@ -4,15 +4,15 @@ import pytest
 from opsdir.connectors.registry import (ADAPTER_GROUP, DOMAIN_GROUP, DOMAINS, ordered_adapters, ordered_domains,
                                         registered)
 from opsdir.core.contract import Adapter, Domain
-from opsdir.core.standard import SchemaFragment
+from opsdir.core.standard import fragment
 
 
 def domain(name, order):
-    return Domain(name, SchemaFragment((), ()), (), (), {}, (), order, {})
+    return Domain(name, fragment((), ()), (), (), {}, (), order, {})
 
 
 def adapter(name, kind):
-    return Adapter(name, kind, lambda m: True, (), None, None, (), (), {}, None, None, {})
+    return Adapter(name, kind, lambda m: True, (), None, None, (), (), {}, None, None, {}, None, (), ())
 
 
 def test_registered_returns_the_records():
@@ -46,4 +46,4 @@ def test_adapter_of_unknown_kind_is_refused():
 
 
 def test_installed_core_registers_its_domains():
-    assert [d.name for d in DOMAINS] == ["infrastructure", "directory", "federation", "pki", "governance"]
+    assert [d.name for d in DOMAINS] == ["infrastructure", "directory", "federation", "pki", "governance", "custom"]

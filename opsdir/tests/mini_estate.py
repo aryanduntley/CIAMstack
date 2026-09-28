@@ -5,12 +5,18 @@ network, so moving alpha -> beta is blocked and beta -> alpha is ready. Both dec
 """
 from opsdir.core.contract import Adapter
 from opsdir.core.findings import findings
+from opsdir.core.standard import AttributeDef, ClassDef, fragment
 from opsdir.core.interchange.ldif import parse
 from support import SCHEMA, build_directory
 
 PROVIDER = "fakecloud"
 ADAPTER_NAME = "fake-cloud"
 VERSIONS = {ADAPTER_NAME: "0.5"}
+FAKE_ARC = "1.3.6.1.4.1.32473.99"       # the fake adapter's own OID arc
+# What the fake adapter adds to the schema: a tier any entry may carry through an auxiliary class.
+FAKE_SCHEMA = fragment((AttributeDef(1, "fakeTier", "enum:gold|silver", "binding", True, "Service tier"),),
+                       (ClassDef(1, "fakeTiered", "top", "AUXILIARY", (), ("fakeTier",), "Carries a service tier"),),
+                       FAKE_ARC, ADAPTER_NAME)
 
 
 def _environment(cloud, disk_encryption):
@@ -100,4 +106,5 @@ def _resolve(rest):
 FAKE = Adapter(name=ADAPTER_NAME, kind="provider", applies=_applies, required_roles=(),
                render_neutral=_render_neutral, render_env=_render_env, checks=(_check,), ref_schemes=("fake",),
                secret_schemes={"fake": _resolve}, renders="fake files", neutral_label="Fake",
-               vocabulary={"ciamCloudProvider": (PROVIDER,)})
+               vocabulary={"ciamCloudProvider": (PROVIDER,)}, schema=FAKE_SCHEMA,
+               formats=(("fake/*.txt", "text"),), products=())

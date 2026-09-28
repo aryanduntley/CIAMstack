@@ -1,0 +1,29 @@
+"""OpenID Connect documents rendered from the federation domain, environment-neutral:
+
+  oidc/clients/<integration>.json    each recorded OIDC client's registration metadata (RFC 7591)
+  oidc/discovery/<service>.json      each given identity service's provider metadata (the document it serves at
+                                     /.well-known/openid-configuration), at the product's endpoint paths
+
+A product adapter supplies its endpoint paths (OidcEndpoints) and which services it serves.
+"""
+import json
+
+from opsdir.core.directory import one, rdn_value
+from opsdir.domains.federation.services import integrations
+from .discovery import discovery_document
+from .registration import client_metadata
+
+
+FORMATS = (("oidc/*.json", "json"),)       # the format of every file oidc_files renders
+
+
+def _json(value):
+    return json.dumps(value, indent=2) + "\n"
+
+
+def oidc_files(d, services, endpoints):
+    """{path: JSON text}: every recorded OIDC client, and each given identity service that has an issuer."""
+    clients = integrations(d, "oidc-client")
+    return {**{f"oidc/clients/{rdn_value(i)}.json": _json(client_metadata(i)) for i in clients},
+            **{f"oidc/discovery/{rdn_value(s)}.json": _json(discovery_document(d, s, endpoints, clients))
+               for s in services if one(s, "ciamOidcIssuer")}}

@@ -6,7 +6,8 @@ depends on core only: its reports are data (SQL text or a pure function of the d
 connectors run against the store. An Adapter is one product,
 cloud provider or secret store: it decides from directory data whether it applies to an environment, and
 declares the roles it needs, what it renders, the planner checks it adds and the secret-reference schemes
-it can resolve. Both are plain records of data and functions; connectors compose them.
+it can resolve; a package may also add schema definitions of its own (a fragment under its own OID arc). Both are
+plain records of data and functions; connectors compose them.
 """
 from typing import Callable, Mapping, NamedTuple, Optional
 
@@ -40,12 +41,20 @@ Domain = NamedTuple("Domain", [("name", str), ("schema", object),     # its Sche
                                ("order", int),          # domains run and report in ascending order
                                ("vocabulary", Mapping)])  # {vocab attribute: values it defines}
 
+# A language or file format opsdir renders or reads: registered (entry point group opsdir.formats) by the core for the
+# standard ones and by any package for its own, so what a managed system is written in is data, never an assumption.
+# comment: how the format writes a comment: (line prefix,) such as ("#",), (start, end) such as ("<!--", "-->"), or ()
+# when it has none (JSON). read (text -> data) and write (data -> text) are the package's, when it provides them.
+Format = NamedTuple("Format", [("name", str), ("title", str), ("media_type", str), ("extensions", tuple),
+                               ("comment", tuple), ("read", Optional[Callable]), ("write", Optional[Callable])])
+
 # What connectors provide to adapters while rendering: secret_command(ref-uri) -> shell command that resolves it
 Services = NamedTuple("Services", [("secret_command", Callable)])
 
 Adapter = NamedTuple("Adapter", [("name", str),
                                  ("kind", str),                       # provider | product | secret-store
-                                 ("applies", Callable),               # (EnvModel) -> bool, from directory data only
+                                 ("applies", Optional[Callable]),     # (EnvModel) -> bool, from directory data only;
+                                                                      # None = declaration-only (see connectors.stack)
                                  ("required_roles", tuple),
                                  ("render_neutral", Optional[Callable]),  # (Directory) -> {path: text}, same everywhere
                                  ("render_env", Optional[Callable]),      # (EnvModel, Services) -> {path: text}
@@ -54,7 +63,12 @@ Adapter = NamedTuple("Adapter", [("name", str),
                                  ("secret_schemes", Mapping),         # ref-uri scheme -> (rest of uri) -> shell command
                                  ("renders", Optional[str]),          # what its environment-specific output is, in words
                                  ("neutral_label", Optional[str]),    # short name of its environment-neutral config
-                                 ("vocabulary", Mapping)])            # {vocab attribute: values it defines}
+                                 ("vocabulary", Mapping),             # {vocab attribute: values it defines}
+                                 ("schema", Optional[object]),        # its SchemaFragment (own OID arc), or None
+                                 ("formats", tuple),                  # ((path glob, format name), ...): the format
+                                                                      # of every file it renders (first match wins)
+                                 ("products", tuple)])                # ((product, PEP 440 range), ...): the product
+                                                                      # versions it renders and reads
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

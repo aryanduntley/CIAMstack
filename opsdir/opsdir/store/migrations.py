@@ -8,15 +8,20 @@ Definitions hold no data: views and report/graph functions (sql/definitions/, an
 SQL). They are re-applied on every upgrade after all views are dropped, so they are simply edited in place.
 
 The LDAP schema registry, the reference schemes and the vocabulary (values of `vocab` attributes the domains and
-adapters define) are synced on every upgrade from the registered schema fragments, domains and adapters. `upgrade` brings a database up to date in place; `init` drops the opsdir schema and upgrades from nothing.
+adapters define) are synced on every upgrade from the registered schema fragments, domains and adapters. A definition
+no installed part defines any more (an uninstalled adapter's) is removed, unless entries still use it. The schema is
+composed inside the upgrade's transaction (the caller's `schema(conn)`: it may read definitions the record holds),
+and every stored entry is checked against the result, so no upgrade leaves an entry the schema no longer accepts. `upgrade` brings a database up to date in place; `init` drops the opsdir schema and upgrades from nothing.
 """
 import hashlib
 import re
 from pathlib import Path
 from typing import NamedTuple
 
+from psycopg.types.json import Jsonb
+
 from ..core.naming import SUFFIX
-from .postgres import schema_rows
+from .postgres import revalidate, schema_rows
 
 MIGRATIONS = Path(__file__).resolve().parent / "sql" / "migrations"
 DEFINITIONS = Path(__file__).resolve().parent / "sql" / "definitions"
@@ -25,7 +30,7 @@ Migration = NamedTuple("Migration", [("version", int), ("name", str), ("sql", st
 
 _FILE_NAME = re.compile(r"^(\d{4})_([a-z0-9_]+)\.sql$")
 _ATTRIBUTE_COLUMNS = ("name", "oid", "syntax_oid", "equality", "value_type", "portability", "single_value",
-                      "description", "origin")
+                      "description", "origin", "rules")
 _CLASS_COLUMNS = ("name", "oid", "sup", "kind", "must", "may", "description", "origin")
 
 STATE_SQL = ("select to_regnamespace('opsdir') is not null, to_regclass('opsdir.schema_migration') is not null")
@@ -43,6 +48,8 @@ VOCABULARY_IN_USE_SQL = (
     " where j.k in (select name from opsdir.attribute_type where value_type = 'vocab')"
     " and not exists (select 1 from opsdir.vocabulary w where w.attr = j.k and w.value = v) order by 1, 2 limit 20")
 REGISTERED_SQL = "select (select array_agg(name) from opsdir.attribute_type), (select array_agg(name) from opsdir.object_class)"
+ATTRIBUTES_IN_USE_SQL = ("select distinct k from opsdir.entry, jsonb_object_keys(attrs) k where k = any(%s) order by 1")
+CLASSES_IN_USE_SQL = ("select distinct c from opsdir.entry, unnest(object_classes) c where c = any(%s) order by 1")
 
 
 # ------------------------------------------------------------------ pure
@@ -84,8 +91,7 @@ def pending(applied, migrations):
 
 
 def removed_definitions(registered_attributes, registered_classes, ats, ocs):
-    """Registered attribute types and object classes the published schema no longer defines (a published
-    definition is never removed; entries may still use it)."""
+    """Registered attribute types and object classes the composed schema no longer defines."""
     attrs, classes = {a["name"] for a in ats}, {o["name"] for o in ocs}
     return (tuple(sorted(n for n in registered_attributes if n not in attrs)),
             tuple(sorted(n for n in registered_classes if n not in classes)))
@@ -120,17 +126,26 @@ def _apply_definitions(conn, definition_files):
         conn.execute(Path(f).read_text())
 
 
-def _sync_registry(conn, schema_text):
+def _in_use(conn, sql, names):
+    return tuple(r[0] for r in conn.execute(sql, (list(names),)).fetchall()) if names else ()
+
+
+def sync_registry(conn, schema_text):
+    """Upsert every definition; remove those no installed part defines, refusing when entries still use them."""
     ats, ocs = schema_rows(schema_text)
     registered = conn.execute(REGISTERED_SQL).fetchone()
     gone_attrs, gone_classes = removed_definitions(registered[0] or (), registered[1] or (), ats, ocs)
-    if gone_attrs or gone_classes:
-        raise SystemExit(f"schema: registered definitions are missing from the published schema: "
-                         f"{', '.join(gone_attrs + gone_classes)}")
+    used = _in_use(conn, ATTRIBUTES_IN_USE_SQL, gone_attrs) + _in_use(conn, CLASSES_IN_USE_SQL, gone_classes)
+    if used:
+        raise SystemExit("schema: entries use definitions that no installed part defines any more (is a package "
+                         f"missing?): {', '.join(used)}")
     for a in ats:
-        conn.execute(UPSERT_ATTRIBUTE_TYPE, a)
+        conn.execute(UPSERT_ATTRIBUTE_TYPE, {**a, "rules": Jsonb(a["rules"])})
     for o in ocs:                               # superclasses first (schema_rows)
         conn.execute(UPSERT_OBJECT_CLASS, o)
+    conn.execute("delete from opsdir.vocabulary where attr = any(%s)", (list(gone_attrs),))
+    conn.execute("delete from opsdir.object_class where name = any(%s)", (list(gone_classes),))
+    conn.execute("delete from opsdir.attribute_type where name = any(%s)", (list(gone_attrs),))
 
 
 def _sync_vocabulary(conn, schema_text, vocabulary):
@@ -153,11 +168,11 @@ def _sync_names(conn, ref_schemes):
         conn.execute("insert into opsdir.ref_scheme values (%s) on conflict do nothing", (scheme,))
 
 
-def upgrade(conn, migrations, definition_files, schema_text, ref_schemes, vocabulary):
+def upgrade(conn, migrations, definition_files, schema, ref_schemes, vocabulary):
     """Effect: bring the opsdir schema up to date in one transaction (one migrator at a time): pending migrations,
-    then definitions, the LDAP schema registry, the reference schemes and the vocabulary. Returns the migrations
-    applied. Refuses a database created before versioned migrations, and one whose entries use values no longer
-    defined."""
+    then definitions, the LDAP schema registry (schema(conn) composes its text), the reference schemes and the
+    vocabulary. Returns the migrations applied. Refuses a database created before versioned migrations, one whose
+    entries use values or definitions no longer defined, and one whose entries the new schema doesn't accept."""
     with conn.transaction():
         conn.execute("select pg_advisory_xact_lock(hashtext('opsdir.upgrade'))")
         exists, versioned = conn.execute(STATE_SQL).fetchone()
@@ -171,17 +186,19 @@ def upgrade(conn, migrations, definition_files, schema_text, ref_schemes, vocabu
             conn.execute(RECORD_SQL, (m.version, m.name, m.checksum))
         conn.execute("set search_path = opsdir")
         _apply_definitions(conn, definition_files)
-        _sync_registry(conn, schema_text)
+        schema_text = schema(conn)
+        sync_registry(conn, schema_text)
         _sync_names(conn, ref_schemes)
         _sync_vocabulary(conn, schema_text, vocabulary)
+        revalidate(conn)
     return todo
 
 
-def init(conn, migrations, definition_files, schema_text, ref_schemes, vocabulary):
+def init(conn, migrations, definition_files, schema, ref_schemes, vocabulary):
     """Effect: drop the opsdir schema (all data) and upgrade from nothing, atomically."""
     with conn.transaction():
         conn.execute("drop schema if exists opsdir cascade")
-        return upgrade(conn, migrations, definition_files, schema_text, ref_schemes, vocabulary)
+        return upgrade(conn, migrations, definition_files, schema, ref_schemes, vocabulary)
 
 
 def current_version(conn):

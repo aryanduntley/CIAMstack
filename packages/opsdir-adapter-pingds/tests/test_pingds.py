@@ -25,4 +25,5 @@ def test_requires_the_roles_a_directory_deployment_binds():
 
 
 def test_renders_its_environment_neutral_files_from_any_directory():
-    assert sorted(ADAPTER.render_neutral(make_directory((), (), ()))) == ["ds/acis.ldif", "ds/dsconfig.batch"]
+    assert sorted(ADAPTER.render_neutral(make_directory((), (), ()))) == [
+        "ds/acis.ldif", "ds/dsconfig.batch", "ldap/dit.ldif", "ldap/schema.ldif"]

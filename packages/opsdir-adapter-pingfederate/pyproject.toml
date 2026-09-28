@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "opsdir adapter for PingFederate: SP connections, OIDC clients and IdP connections from the federation domain."
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["opsdir>=0.1"]
+dependencies = ["opsdir>=0.1", "opsdir-base-saml>=0.1", "opsdir-base-oidc>=0.1"]
 
 [project.entry-points."opsdir.adapters"]
 pingfederate = "opsdir_adapter_pingfederate.adapter:ADAPTER"

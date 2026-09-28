@@ -4,7 +4,7 @@ from opsdir.core.standard import schema_ldif
 from opsdir.store.migrations import misdeclared_vocabulary
 from opsdir.store.postgres import schema_rows
 
-VOCAB_ATTRIBUTES = {"ciamCloudProvider", "ciamCloudEnvironment", "ciamServerRole", "ciamTargetRole"}
+VOCAB_ATTRIBUTES = {"ciamCloudProvider", "ciamCloudEnvironment", "ciamServerRole", "ciamTargetRole", "ciamFormat"}
 
 
 def _attribute_rows():
@@ -21,4 +21,9 @@ def test_vocabulary_is_only_declared_for_vocab_attributes():
 
 
 def test_vocabulary_can_be_composed_from_any_parts():
-    assert vocabulary(domains=(), adapters=()) == ()
+    assert vocabulary(domains=(), adapters=(), formats=()) == ()
+
+
+def test_the_registered_formats_are_the_values_of_ciam_format():
+    formats = {v for attr, v, _ in vocabulary() if attr == "ciamFormat"}
+    assert {"ldif", "json", "xml", "yaml", "shell", "c", "hcl", "dsconfig-batch"} <= formats

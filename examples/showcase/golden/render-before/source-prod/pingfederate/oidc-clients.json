@@ -11,6 +11,15 @@
       "REFRESH_TOKEN"
     ],
     "requireProofKeyForCodeExchange": true,
+    "clientAuth": {
+      "type": "NONE"
+    },
+    "restrictScopes": true,
+    "restrictedScopes": [
+      "openid",
+      "email",
+      "offline_access"
+    ],
     "x-opsdir": {
       "claims": {
         "email": {
@@ -53,6 +62,15 @@
       "REFRESH_TOKEN"
     ],
     "requireProofKeyForCodeExchange": true,
+    "clientAuth": {
+      "type": "NONE"
+    },
+    "restrictScopes": true,
+    "restrictedScopes": [
+      "openid",
+      "profile",
+      "email"
+    ],
     "x-opsdir": {
       "claims": {
         "email": {

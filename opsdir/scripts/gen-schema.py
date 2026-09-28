@@ -10,13 +10,13 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from opsdir.connectors.registry import schema_fragments  # noqa: E402
+from opsdir.connectors.registry import core_fragments  # noqa: E402
 from opsdir.core.paths import SCHEMA_FILE  # noqa: E402
 from opsdir.core.standard import fragment_counts, schema_ldif  # noqa: E402
 
 
 def main():
-    fragments = schema_fragments()
+    fragments = core_fragments()
     SCHEMA_FILE.write_text(schema_ldif(fragments))
     print(*fragment_counts(fragments)[:1], "attrs", fragment_counts(fragments)[1], "classes")
 

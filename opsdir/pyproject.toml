@@ -23,6 +23,29 @@ directory = "opsdir.domains.directory.domain:DOMAIN"
 federation = "opsdir.domains.federation.domain:DOMAIN"
 pki = "opsdir.domains.pki.domain:DOMAIN"
 governance = "opsdir.domains.governance.domain:DOMAIN"
+custom = "opsdir.domains.custom.domain:DOMAIN"
+
+# The standard file formats; packages register their own under the same group.
+[project.entry-points."opsdir.formats"]
+ldif = "opsdir.core.formats:LDIF"
+json = "opsdir.core.formats:JSON"
+xml = "opsdir.core.formats:XML"
+yaml = "opsdir.core.formats:YAML"
+shell = "opsdir.core.formats:SHELL"
+java-properties = "opsdir.core.formats:JAVA_PROPERTIES"
+ini = "opsdir.core.formats:INI"
+toml = "opsdir.core.formats:TOML"
+csv = "opsdir.core.formats:CSV"
+c = "opsdir.core.formats:C"
+javascript = "opsdir.core.formats:JAVASCRIPT"
+groovy = "opsdir.core.formats:GROOVY"
+python = "opsdir.core.formats:PYTHON"
+powershell = "opsdir.core.formats:POWERSHELL"
+sql = "opsdir.core.formats:SQL"
+html = "opsdir.core.formats:HTML"
+markdown = "opsdir.core.formats:MARKDOWN"
+pem = "opsdir.core.formats:PEM"
+text = "opsdir.core.formats:TEXT"
 
 [tool.setuptools.packages.find]
 include = ["opsdir*"]

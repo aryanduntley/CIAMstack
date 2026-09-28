@@ -2,14 +2,14 @@
 import pytest
 
 from opsdir.cli import check_text
-from opsdir.connectors.registry import ADAPTERS, applicable, environment_specs
+from opsdir.connectors.registry import ADAPTER_VERSIONS, ADAPTERS, applicable, environment_specs
 from opsdir.connectors.stack import declared_adapters, missing_adapters, stack_rows
 from opsdir.core.contract import Adapter
 from opsdir.core.environment import StackComponent, env_model
 
 
 def adapter(name, kind="product", applies=True):
-    return Adapter(name, kind, lambda m: applies, (), None, None, (), (), {}, None, None, {})
+    return Adapter(name, kind, lambda m: applies, (), None, None, (), (), {}, None, None, {}, None, (), ())
 
 
 def component(adapter_name, role="r", versions=">=1,<2", source=None):
@@ -71,3 +71,11 @@ def test_an_environment_without_a_stack_is_reported_not_failed(source):
 def test_check_passes_on_the_showcase(estate):
     text, status = check_text(estate["before"], environment_specs(estate["before"]))
     assert status == 0 and text.endswith("0 problem(s)")
+
+
+def test_servers_on_product_versions_their_adapter_doesnt_support_are_problems(source):
+    pingds = next(a for a in ADAPTERS if a.name == "pingds")
+    assert stack_rows(source, ADAPTERS, ADAPTER_VERSIONS)[1] == 0              # 7.5.1 is inside >=7,<9
+    narrowed = tuple(a._replace(products=(("PingDS", ">=8"),)) if a is pingds else a for a in ADAPTERS)
+    rows, n = stack_rows(source, narrowed, ADAPTER_VERSIONS)
+    assert n == 3 and rows[-1][2:] == ("pingds", "server ds-3 runs PingDS 7.5.1; pingds supports >=8")

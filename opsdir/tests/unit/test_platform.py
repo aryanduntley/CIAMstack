@@ -7,14 +7,18 @@ import pytest
 
 from opsdir.connectors import migration
 from opsdir.connectors.plan import plan
-from opsdir.connectors.registry import environment, environment_specs, secret_command, services, vocabulary
+from opsdir.connectors.registry import (core_fragments, environment, environment_specs, schema_fragments,
+                                       secret_command, services, vocabulary)
 from opsdir.connectors.render import render_env
-from opsdir.connectors.stack import stack_rows
+from opsdir.connectors.stack import declared_adapters, stack_rows
+from opsdir.core.environment import StackComponent
 from opsdir.connectors.workspace import cutover_changes
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
+from opsdir.core.standard import schema_ldif
+from opsdir.store.postgres import schema_rows
 import mini_estate
-from mini_estate import FAKE, VERSIONS
+from mini_estate import FAKE, FAKE_ARC, FAKE_SCHEMA, VERSIONS
 
 AS_OF = dt.date(2026, 1, 1)
 ALPHA, BETA = "alpha/prod", "beta/prod"
@@ -57,6 +61,31 @@ def test_stack_check_against_what_is_installed(d):
     assert stack_rows(m, (FAKE,), VERSIONS) == (((ALPHA, "provider", "fake-cloud", "ok (installed 0.5)"),), 0)
     rows, problems = stack_rows(m, (), {})
     assert problems == 1 and rows[0][3] == "NOT INSTALLED; get it from https://example.test/fake-cloud"
+
+
+def test_an_installed_adapters_schema_joins_the_store_but_not_the_published_file():
+    assert schema_fragments(adapters=(FAKE,)) == (*core_fragments(), FAKE_SCHEMA)
+    assert FAKE_SCHEMA not in core_fragments() and schema_fragments(adapters=()) == core_fragments()
+    ats, _ = schema_rows(schema_ldif(schema_fragments(adapters=(FAKE,))))
+    assert next(a for a in ats if a["name"] == "fakeTier")["oid"] == f"{FAKE_ARC}.1.1"
+
+
+# A generic adapter for a standard: every compliant environment would match it, so it is never inferred.
+GENERIC = FAKE._replace(name="generic", kind="product", applies=None, ref_schemes=(), secret_schemes={}, vocabulary={})
+
+
+def test_a_declaration_only_adapter_is_never_inferred(d):
+    m = env_model(d, ALPHA)
+    assert declared_adapters(m._replace(stack=()), (FAKE, GENERIC)) == (FAKE,)
+    assert stack_rows(m, (FAKE, GENERIC), {**VERSIONS, "generic": "1.0"})[1] == 0     # undeclared: not a problem
+
+
+def test_a_declaration_only_adapter_renders_where_a_stack_declares_it(d):
+    m = env_model(d, ALPHA)
+    declared = m._replace(stack=(*m.stack, StackComponent("directory", "generic", None, None)))
+    assert declared_adapters(declared, (FAKE, GENERIC)) == (FAKE, GENERIC)
+    rows, problems = stack_rows(declared, (FAKE, GENERIC), {**VERSIONS, "generic": "1.0"})
+    assert problems == 0 and rows[-1][2:] == ("generic", "ok (installed 1.0)")
 
 
 def test_the_plan_blocks_a_move_that_loses_a_role(d):

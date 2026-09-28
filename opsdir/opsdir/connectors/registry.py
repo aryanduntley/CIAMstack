@@ -1,7 +1,8 @@
 """The parts of the stack and which of them apply to an environment.
 
-Domains and adapters are discovered, never imported by name: every installed distribution registers them under the
-entry-point groups `opsdir.domains` and `opsdir.adapters` (the core registers its built-in domains the same way).
+Domains, adapters and file formats are discovered, never imported by name: every installed distribution registers them
+under the entry-point groups `opsdir.domains`, `opsdir.adapters` and `opsdir.formats` (the core registers its
+built-in domains and the standard formats the same way).
 Installing an adapter package is all it takes to add a product, cloud provider or secret store. Which adapters apply
 to an environment is decided by each adapter from directory data (provider of the cloud, products on the servers),
 never by a default.
@@ -10,16 +11,19 @@ from functools import partial
 from importlib.metadata import entry_points
 from pathlib import Path
 
-from ..core.contract import Adapter, Domain, Services
+from ..core.contract import Adapter, Domain, Format, Services
 from ..core.directory import get, rdn_value, subtree
 from ..core.environment import env_model, with_required_roles
 from ..core.naming import branch
 from ..core.standard import CORE, schema_ldif
 from ..store.migrations import DEFINITIONS as STORE_DEFINITIONS, read_migrations
+from . import schema
 from .stack import declared_adapters, missing_adapters
 
 DOMAIN_GROUP = "opsdir.domains"
 ADAPTER_GROUP = "opsdir.adapters"
+FORMAT_GROUP = "opsdir.formats"
+FORMAT_ATTRIBUTE = "ciamFormat"                          # its values are the registered formats' names
 KIND_ORDER = ("provider", "product", "secret-store")     # providers first: their files lead a render
 ENVIRONMENTS = branch("environments")
 CONNECTOR_SQL = (Path(__file__).resolve().parent / "sql" / "connectors.sql",)
@@ -66,6 +70,7 @@ DOMAINS = ordered_domains(registered(DOMAIN_GROUP, Domain, discover(DOMAIN_GROUP
 _ADAPTERS_FOUND = discover(ADAPTER_GROUP)
 ADAPTERS = ordered_adapters(registered(ADAPTER_GROUP, Adapter, _ADAPTERS_FOUND))
 ADAPTER_VERSIONS = versions(_ADAPTERS_FOUND)
+FORMATS = tuple(sorted(registered(FORMAT_GROUP, Format, discover(FORMAT_GROUP)), key=lambda f: f.name))
 if not DOMAINS:
     raise SystemExit("no opsdir domains are registered: install the package (pip install -e opsdir)")
 
@@ -77,21 +82,42 @@ def definition_files():
     return (*sorted(STORE_DEFINITIONS.glob("*.sql")), *(f for domain in DOMAINS for f in domain.sql), *CONNECTOR_SQL)
 
 
-def schema_fragments():
-    """Every schema fragment: core first, then each domain's."""
-    return (CORE, *(domain.schema for domain in DOMAINS))
+def core_fragments(domains=DOMAINS):
+    """The core's schema fragment, then each domain's: what the published schema file holds."""
+    return (CORE, *(domain.schema for domain in domains))
 
 
-def vocabulary(domains=DOMAINS, adapters=ADAPTERS):
-    """(attribute, value, owner) for every `vocab` value a registered domain or adapter defines."""
-    return tuple(dict.fromkeys((attr, value, part.name) for part in (*domains, *adapters)
-                               for attr, values in part.vocabulary.items() for value in values))
+def schema_fragments(domains=DOMAINS, adapters=ADAPTERS):
+    """Every schema fragment the store is built from: the core's and the domains', then each installed adapter's
+    (a package that adds definitions numbers them under its own OID arc)."""
+    return (*core_fragments(domains), *(a.schema for a in adapters if a.schema))
 
 
-def store_parts():
+def vocabulary(domains=DOMAINS, adapters=ADAPTERS, formats=FORMATS):
+    """(attribute, value, owner) for every `vocab` value a registered domain or adapter defines, and each registered
+    format's name (the values of ciamFormat)."""
+    return tuple(dict.fromkeys(
+        [(attr, value, part.name) for part in (*domains, *adapters) for attr, values in part.vocabulary.items()
+         for value in values]
+        + [(FORMAT_ATTRIBUTE, f.name, f"format {f.name}") for f in formats]))
+
+
+def format_named(name, formats=FORMATS):
+    """The registered format of that name, or None."""
+    return next((f for f in formats if f.name == name), None)
+
+
+def schema_sync(installed=ADAPTERS):
+    """How a write that changes custom definitions re-syncs the store's schema, for the installed adapters."""
+    return schema.schema_sync(schema_fragments(adapters=installed))
+
+
+def store_parts(installed=ADAPTERS):
     """Effect (reads the migration files): what `init` and `upgrade` build the store from: (migrations, definition
-    files, schema text composed from the registered fragments, reference schemes, vocabulary)."""
-    return read_migrations(), definition_files(), schema_ldif(schema_fragments()), ref_schemes(), vocabulary()
+    files, the schema (a function of the connection: code-owned fragments composed with the record's custom
+    definitions), reference schemes, vocabulary)."""
+    return (read_migrations(), definition_files(), partial(schema.store_schema, fragments=schema_fragments(adapters=installed)),
+            ref_schemes(installed), vocabulary(adapters=installed))
 
 
 def applicable(m, installed=ADAPTERS):

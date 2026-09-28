@@ -1,5 +1,5 @@
 """governance domain schema fragment: its attribute types and object classes (OIDs pinned by number)."""
-from ...core.standard import AttributeDef, ClassDef, SchemaFragment
+from ...core.standard import AttributeDef, ClassDef, fragment
 
 ATTRIBUTES = (
     AttributeDef(110, 'ciamTitle', 'string', 'meta', True,
@@ -48,4 +48,4 @@ CLASSES = (
              'Team, partner, vendor, or the operator of the platform'),
 )
 
-FRAGMENT = SchemaFragment(ATTRIBUTES, CLASSES)
+FRAGMENT = fragment(ATTRIBUTES, CLASSES)

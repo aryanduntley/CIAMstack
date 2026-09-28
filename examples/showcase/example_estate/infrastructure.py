@@ -2,6 +2,7 @@
 being built (45-env-target, with planted gaps), and external allowlists that hold our addresses
 (80-external-allowlists)."""
 from .common import AWS, AZ, CON, ENVS, XA, cert, chg, owner, spec, t
+from .custom import RESIDENCY
 
 SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password", "ds-tls-keystore",
                 "sso-tls-keystore", "pf-signing-key", "pf-admin-password")
@@ -148,14 +149,16 @@ def environments():
     return (spec(aws, f"cloud=source,{ENVS}", ["top", "ciamCloud"], cloud="source",
                  ciamCloudProvider="aws", ciamRegion="us-east-1", ciamCloudEnvironment="public", ciamLifecycle="active",
                  description="Current cloud hosting environment (AWS)"),
-            spec(aws, AWS, ["top", "ciamEnvironment"], env="prod", ciamLifecycle="active", ciamOwner=owner("ciam-platform")),
+            spec(aws, AWS, ["top", "ciamEnvironment"], env="prod", ciamLifecycle="active", ciamOwner=owner("ciam-platform"),
+                 xDataResidency=RESIDENCY["source"]),
             *environment(aws, AWS, SOURCE),
             spec(az, f"cloud=target,{ENVS}", ["top", "ciamCloud"], cloud="target",
                  ciamCloudProvider="azure", ciamRegion="usgovvirginia", ciamCloudEnvironment="usgovernment",
                  ciamLifecycle="building",
                  description="New cloud landing zone being built (Azure Government)"),
             spec(az, AZ, ["top", "ciamEnvironment"], env="prod", ciamLifecycle="building",
-                 ciamPlannedCutover=t("2027-01-15"), ciamJoinsDeploymentOf=AWS, ciamOwner=owner("ciam-platform")),
+                 ciamPlannedCutover=t("2027-01-15"), ciamJoinsDeploymentOf=AWS, ciamOwner=owner("ciam-platform"),
+                 xDataResidency=RESIDENCY["target"]),
             *environment(az, AZ, TARGET))
 
 

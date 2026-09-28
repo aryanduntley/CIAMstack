@@ -1,19 +1,27 @@
 """Declared stacks against the installed adapters: which adapters render an environment, and `opsdir check`.
 
 An environment's stack (entries under ou=stack) says which adapter fills each role. When it declares one, exactly
-those adapters render it; otherwise they are inferred from the data (each adapter's `applies`). A connector: it
-joins the directory's declarations with what the registry discovered. Every function here is pure.
+those adapters render it; otherwise they are inferred from the data (each adapter's `applies`). A declaration-only
+adapter (`applies` is None: a generic adapter for a standard, which every compliant server would match) is never
+inferred; it renders only where a stack declares it. A connector: it joins the directory's declarations with what
+the registry discovered. Every function here is pure.
 """
-from packaging.specifiers import InvalidSpecifier, SpecifierSet
+from ..core.directory import one, rdn_value
+from ..core.versions import in_range, product_version
 
 STATUS_HEADERS = ("environment", "role", "adapter", "status")
+
+
+def matches_data(a, m):
+    """Whether an adapter's `applies` matches the environment's data (never, for a declaration-only adapter)."""
+    return a.applies is not None and a.applies(m)
 
 
 def declared_adapters(m, adapters):
     """The adapters that render an environment: its declared stack's (in registry order), or those whose `applies`
     matches its data when it declares none."""
     if not m.stack:
-        return tuple(a for a in adapters if a.applies(m))
+        return tuple(a for a in adapters if matches_data(a, m))
     names = {c.adapter for c in m.stack}
     return tuple(a for a in adapters if a.name in names)
 
@@ -24,11 +32,6 @@ def missing_adapters(m, adapters):
     return tuple(c for c in m.stack if c.adapter not in installed)
 
 
-def _in_range(version, versions):
-    try:
-        return SpecifierSet(versions).contains(version, prereleases=True)
-    except InvalidSpecifier:
-        return False
 
 
 def _component_status(m, c, by_name, versions):
@@ -37,22 +40,39 @@ def _component_status(m, c, by_name, versions):
     if a is None:
         return f"NOT INSTALLED{f'; get it from {c.source}' if c.source else ''}", True
     v = versions.get(c.adapter) or "unknown"
-    if c.versions and not _in_range(v, c.versions):
+    if c.versions and not in_range(v, c.versions):
         return f"installed {v}, but the stack accepts {c.versions}", True
-    if a.kind != "secret-store" and not a.applies(m):
+    if a.kind != "secret-store" and a.applies is not None and not a.applies(m):
         return f"installed {v}, but the environment's data doesn't match it (provider or products)", True
     return f"ok (installed {v})", False
 
 
+def unsupported_products(m, adapters):
+    """(server, adapter, product version, range) for every server running a product one of the adapters renders,
+    at a version outside the range the adapter declares."""
+    return tuple((s, a, one(s, "ciamProductVersion"), versions) for s in m.servers for a in adapters
+                 for product, versions in a.products
+                 if product_version(one(s, "ciamProductVersion"))[0] == product
+                 and not in_range(product_version(one(s, "ciamProductVersion"))[1], versions))
+
+
+def _product_rows(m, adapters):
+    return tuple((m.label, "-", a.name, f"server {rdn_value(s)} runs {version}; {a.name} supports {versions}")
+                 for s, a, version, versions in unsupported_products(m, adapters))
+
+
 def stack_rows(m, adapters, versions):
-    """(rows, problem count) describing one environment's stack against the installed adapters (name -> version)."""
+    """(rows, problem count) describing one environment's stack against the installed adapters (name -> version),
+    and servers whose product versions the adapters rendering them don't support."""
+    products = _product_rows(m, declared_adapters(m, adapters))
     if not m.stack:
         inferred = ", ".join(a.name for a in declared_adapters(m, adapters)) or "none"
-        return ((m.label, "-", "-", f"no stack declared; adapters inferred from the data: {inferred}"),), 0
+        return ((m.label, "-", "-", f"no stack declared; adapters inferred from the data: {inferred}"), *products), \
+            len(products)
     by_name = {a.name: a for a in adapters}
     declared = [(c, *_component_status(m, c, by_name, versions)) for c in m.stack]
     names = {c.adapter for c in m.stack}
-    undeclared = [a for a in adapters if a.kind != "secret-store" and a.applies(m) and a.name not in names]
+    undeclared = [a for a in adapters if a.kind != "secret-store" and matches_data(a, m) and a.name not in names]
     rows = ([(m.label, c.role, c.adapter, status) for c, status, _ in declared]
             + [(m.label, "-", a.name, "applies to the environment's data but is not in its stack") for a in undeclared])
-    return tuple(rows), sum(problem for _, _, problem in declared) + len(undeclared)
+    return (*rows, *products), sum(problem for _, _, problem in declared) + len(undeclared) + len(products)

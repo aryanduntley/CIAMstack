@@ -11,4 +11,5 @@ def applies(m):
 ADAPTER = Adapter(name="hashicorp-vault", kind="secret-store", applies=applies, required_roles=(),
                   render_neutral=None, render_env=None, checks=(), ref_schemes=("vault",),
                   secret_schemes={"vault": kv_command}, renders=None, neutral_label=None,
-                  vocabulary={})
+                  vocabulary={}, schema=None, formats=(),
+                  products=())

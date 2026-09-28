@@ -1,5 +1,5 @@
 """directory domain schema fragment: its attribute types and object classes (OIDs pinned by number)."""
-from ...core.standard import AttributeDef, ClassDef, SchemaFragment
+from ...core.standard import AttributeDef, ClassDef, fragment
 
 ATTRIBUTES = (
     AttributeDef(3, 'snap', 'string', 'observed', True,
@@ -35,7 +35,7 @@ ATTRIBUTES = (
     AttributeDef(61, 'ciamCapturedAt', 'time', 'observed', True,
                  'Snapshot capture time'),
     AttributeDef(62, 'ciamLdapName', 'string', 'intent', True,
-                 'Attribute name in the user directory'),
+                 'Attribute or object class name in the user directory'),
     AttributeDef(63, 'ciamPiiClass', 'enum:none|low|moderate|high', 'intent', True,
                  'Privacy classification'),
     AttributeDef(64, 'ciamExportControlled', 'bool', 'intent', True,
@@ -80,6 +80,27 @@ ATTRIBUTES = (
                  'Why the access exists'),
     AttributeDef(85, 'ciamReviewedOn', 'time', 'meta', True,
                  'Last access review'),
+    # Definitions of user-directory attributes and classes the standards do not provide (core.ldap_schema)
+    AttributeDef(130, 'ciamLdapOid', 'string', 'intent', True,
+                 'OID of a non-standard user-directory attribute type or object class'),
+    AttributeDef(131, 'ciamLdapSyntax', 'string', 'intent', True,
+                 'LDAP syntax OID of a non-standard user-directory attribute'),
+    AttributeDef(132, 'ciamLdapEquality', 'string', 'intent', True,
+                 'Equality matching rule of a non-standard user-directory attribute'),
+    AttributeDef(133, 'ciamLdapSubstring', 'string', 'intent', True,
+                 'Substring matching rule of a non-standard user-directory attribute'),
+    AttributeDef(134, 'ciamLdapOrdering', 'string', 'intent', True,
+                 'Ordering matching rule of a non-standard user-directory attribute'),
+    AttributeDef(135, 'ciamLdapSingleValue', 'bool', 'intent', True,
+                 'A non-standard user-directory attribute holds one value'),
+    AttributeDef(136, 'ciamLdapClassKind', 'enum:structural|auxiliary|abstract', 'intent', True,
+                 'Kind of a user-directory object class'),
+    AttributeDef(137, 'ciamLdapSuperior', 'string', 'intent', True,
+                 'Superclass (by name: standard, or another recorded class) of a user-directory object class'),
+    AttributeDef(138, 'ciamLdapMust', 'dn', 'intent', False,
+                 'User-directory attribute records a user-directory object class requires'),
+    AttributeDef(139, 'ciamLdapMay', 'dn', 'intent', False,
+                 'User-directory attribute records a user-directory object class allows'),
 )
 CLASSES = (
     ClassDef(16, 'ciamBackend', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamBackendType', 'ciamBaseDn'),
@@ -104,7 +125,8 @@ CLASSES = (
              (),
              'Observed config snapshot of one server'),
     ClassDef(23, 'ciamUserAttribute', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamLdapName', 'ciamPiiClass'),
-             ('ciamExportControlled', 'ciamPurpose', 'ciamRetentionRule'),
+             ('ciamExportControlled', 'ciamPurpose', 'ciamRetentionRule', 'ciamLdapOid', 'ciamLdapSyntax',
+              'ciamLdapEquality', 'ciamLdapSubstring', 'ciamLdapOrdering', 'ciamLdapSingleValue'),
              'Record describing a user-directory attribute'),
     ClassDef(24, 'ciamConsumer', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamBindDn'),
              ('ciamObservedSource', 'ciamOperationMix', 'ciamSubtreeRead', 'ciamAttrRead', 'ciamUnindexedSearchesPerDay', 'ciamTlsOnly', 'ciamPeakOpsPerSec', 'ciamFirstSeen', 'ciamLastSeen', 'ciamCriticality', 'ciamMigrationStatus'),
@@ -112,6 +134,9 @@ CLASSES = (
     ClassDef(25, 'ciamAci', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamAciTargetDn', 'ciamAciRight', 'ciamAciGrantee'),
              ('ciamAciTargetAttr', 'ciamAciAllAttributes', 'ciamJustification', 'ciamReviewedOn'),
              'Access control instruction'),
+    ClassDef(34, 'ciamUserObjectClass', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamLdapName', 'ciamLdapClassKind'),
+             ('ciamLdapOid', 'ciamLdapSuperior', 'ciamLdapMust', 'ciamLdapMay', 'ciamPurpose'),
+             'Record describing a user-directory object class'),
 )
 
-FRAGMENT = SchemaFragment(ATTRIBUTES, CLASSES)
+FRAGMENT = fragment(ATTRIBUTES, CLASSES)

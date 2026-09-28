@@ -8,7 +8,10 @@ version = "0.1.0"
 description = "Terraform HCL formatting for opsdir adapters: names, expressions and blocks laid out like `terraform fmt`."
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = ["opsdir>=0.1"]
+
+[project.entry-points."opsdir.formats"]
+hcl = "opsdir_format_terraform.format:FORMAT"
 
 [tool.setuptools.packages.find]
 where = ["src"]

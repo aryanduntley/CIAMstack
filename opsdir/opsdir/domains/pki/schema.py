@@ -1,5 +1,5 @@
 """pki domain schema fragment: its attribute types and object classes (OIDs pinned by number)."""
-from ...core.standard import AttributeDef, ClassDef, SchemaFragment
+from ...core.standard import AttributeDef, ClassDef, fragment
 
 ATTRIBUTES = (
     AttributeDef(100, 'ciamFingerprint', 'string', 'meta', True,
@@ -29,4 +29,4 @@ CLASSES = (
              'Certificate (public facts only)'),
 )
 
-FRAGMENT = SchemaFragment(ATTRIBUTES, CLASSES)
+FRAGMENT = fragment(ATTRIBUTES, CLASSES)

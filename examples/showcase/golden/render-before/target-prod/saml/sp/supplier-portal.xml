@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="https://suppliers.example-aero.test/saml/sp">
+  <md:SPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+    <!-- KeyDescriptor needs the certificate itself, which the record doesn't hold. Certificates the record links: -->
+    <!-- pf-signing-2025 (pf-signing-key) SHA-256 18:50:45:3C:96:D7:6C:B8:F5:90:6A:4B:06:37:F9:99:AE:16:65:5C:A3:29:EC:90:34:04:37:FA:10:28:B6:99 -->
+    <!-- supplier-portal-sp-signing (no key role) SHA-256 A8:D9:35:14:65:C6:2D:22:A2:99:5F:10:6F:8B:32:C4:C3:ED:DE:D8:E6:82:F9:AE:28:81:0B:50:9A:7F:07:2B -->
+    <!-- sso-tls-2026 (sso-tls-keystore) SHA-256 24:1F:66:E0:87:78:48:4F:BF:6F:F4:18:9E:A7:E3:86:7F:AE:0D:35:C5:DA:D8:2C:63:67:03:65:E2:4A:3C:26 -->
+    <md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</md:NameIDFormat>
+    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://suppliers.example-aero.test/saml/acs" index="0" isDefault="true"/>
+    <md:AttributeConsumingService index="0">
+      <md:ServiceName xml:lang="en">supplier-portal</md:ServiceName>
+      <md:RequestedAttribute Name="company" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"/>
+      <md:RequestedAttribute Name="email" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"/>
+      <md:RequestedAttribute Name="roles" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"/>
+      <md:RequestedAttribute Name="sold_to" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"/>
+    </md:AttributeConsumingService>
+  </md:SPSSODescriptor>
+</md:EntityDescriptor>

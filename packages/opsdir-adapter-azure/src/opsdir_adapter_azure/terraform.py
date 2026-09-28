@@ -5,6 +5,7 @@ from itertools import chain
 from opsdir.core.directory import follow, one, rdn_value, values
 from opsdir.core.environment import of_class, one_role, servers_with_role, subnet_of
 from opsdir.core.manifest import header
+from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir.core.network import is_private
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 
@@ -173,10 +174,10 @@ def render(m, services):
            *_key_vault_secrets(m))
     notes = "\n".join(_interconnect_note(m, ic) for ic in of_class(m, "ciamInterconnect"))
     unbound = "".join(f"# UNBOUND: required role '{r}' has no binding in this environment\n" for r in m.unbound)
-    main = header(m, "Azure infrastructure for the CIAM platform") + unbound + notes + "\n\n" \
+    main = header(m, "Azure infrastructure for the CIAM platform", HCL) + unbound + notes + "\n\n" \
         + "\n\n".join(out) + "\n"
     gov = (("environment", "usgovernment"),) if one(m.cloud, "ciamCloudEnvironment") == "usgovernment" else ()
-    providers = header(m, "Providers and inputs") + "\n" + "\n\n".join([
+    providers = header(m, "Providers and inputs", HCL) + "\n" + "\n\n".join([
         block("terraform", [], [("required_providers", Block((
             ("azurerm", {"source": "hashicorp/azurerm", "version": "~> 4.0"}),)))]),
         block("provider", ["azurerm"], [("features", Block(())), ("subscription_id", ref("var.subscription_id")),

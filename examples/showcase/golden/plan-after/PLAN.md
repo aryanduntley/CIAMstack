@@ -34,7 +34,7 @@ Target roles still unbound: `backup-target`
 
 ## Already in place
 
-- All 5 environment-neutral outputs render identically for both environments (ds/dsconfig.batch, ds/acis.ldif, pingfederate/sp-connections.json, pingfederate/oidc-clients.json, pingfederate/idp-connections.json). Intent moves as-is.
+- All 15 environment-neutral outputs render identically for both environments (ldap/schema.ldif, ldap/dit.ldif, ds/dsconfig.batch, ds/acis.ldif, pingfederate/sp-connections.json, pingfederate/oidc-clients.json, pingfederate/idp-connections.json, saml/sp/customer-portal.xml, saml/sp/supplier-portal.xml, saml/partner-idp/harbor-mro-federation.xml, saml/partner-idp/skyline-air-federation.xml, saml/idp/sso.xml, oidc/clients/mobile-ops.json, oidc/clients/tech-pubs.json, oidc/discovery/sso.json). Intent moves as-is.
 - Contract kept: `ds-ldaps-service` is `ldap.id.example-aero.test` in both environments.
 - Contract kept: `pf-sso-service` is `sso.example-aero.test` in both environments.
 - New in target/prod: `cross-cloud-replication`.
@@ -44,7 +44,8 @@ Target roles still unbound: `backup-target`
 - Same product versions in both environments (PingDS 7.5.1, PingFederate 12.1.4): a re-host, not an upgrade.
 - External allowlist `customer-portal-egress` (customer-portal-team) already covers target/prod's `ds-ldaps-service` (10.60.1.100/32).
 - External allowlist `harbor-mro-ingress` (harbor-mro) already covers target/prod's `pf-egress` (203.0.113.200/32).
+- Every user-directory attribute and object class is standard (7) or defined in the record (8).
 
 ## What the target renders to
 
-`opsdir render target/prod` produces 11 files from the same databases: Terraform for the target cloud, per-server DS setup scripts that join the existing deployment, and the environment-neutral DS/PingFederate configuration.
+`opsdir render target/prod` produces 21 files from the same databases: Terraform for the target cloud, per-server DS setup scripts that join the existing deployment, and the environment-neutral DS/PingFederate configuration.

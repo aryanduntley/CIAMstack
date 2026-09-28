@@ -1,4 +1,4 @@
-"""Directory fixture data: user-attribute records (25-user-schema), declared server configuration
+"""Directory fixture data: the user directory's schema records (25-user-schema), declared server configuration
 (30-config-declared), observed snapshots with planted drift (50-config-observed), consumers found in access
 logs (55-consumers) and ACIs (60-acis)."""
 from .common import ACI, AWS, CON, DECL, OBS, PEOPLE, US, USERS, chg, ou, owner, spec, t, ua
@@ -17,6 +17,25 @@ USER_ATTRIBUTES = (
     ("lastLoginTime", "low", None, "Inactivity detection for lifecycle cleanup"),
     ("appEntitlement", "low", None, "Application entitlements (app:role)"),
     ("description", "low", None, "Free text; used by a legacy export for account notes"),
+)
+# Definitions of the attributes no standard provides: name → (OID, syntax, equality, substring, ordering, single).
+# OIDs under the RFC 5612 documentation PEN (sub-arc 2 = this fictional estate's user schema).
+ARC = "1.3.6.1.4.1.32473.2"
+STRING, GTIME = "1.3.6.1.4.1.1466.115.121.1.15", "1.3.6.1.4.1.1466.115.121.1.24"
+DEFINITIONS = {
+    "companyId": (f"{ARC}.1.1", STRING, "caseIgnoreMatch", None, None, "TRUE"),
+    "soldToAccount": (f"{ARC}.1.2", STRING, "caseIgnoreMatch", None, None, None),
+    "registrationStatus": (f"{ARC}.1.3", STRING, "caseIgnoreMatch", None, None, "TRUE"),
+    "exportScreeningStatus": (f"{ARC}.1.4", STRING, "caseIgnoreMatch", None, None, "TRUE"),
+    "challengeAnswer": (f"{ARC}.1.5", STRING, "caseExactMatch", None, None, None),
+    "lastLoginTime": (f"{ARC}.1.6", GTIME, "generalizedTimeMatch", None, "generalizedTimeOrderingMatch", "TRUE"),
+    "appEntitlement": (f"{ARC}.1.7", STRING, "caseIgnoreMatch", "caseIgnoreSubstringsMatch", None, None),
+}
+# User object classes: (name, kind, OID or None for a standard class, superclass, MAY attributes, purpose)
+USER_CLASSES = (
+    ("inetOrgPerson", "structural", None, None, (), "Structural class of every user entry"),
+    ("exampleAeroPerson", "auxiliary", f"{ARC}.2.1", "top", tuple(DEFINITIONS),
+     "Customer / supplier attributes added to every user entry"),
 )
 INDEXES = (("uid", ["equality", "presence"], None), ("mail", ["equality"], "2026-06-14"),
            ("companyId", ["equality"], None), ("registrationStatus", ["equality"], None),
@@ -69,10 +88,23 @@ ACIS = (
 )
 
 
+def _definition(name):
+    oid, syntax, eq, sub, order, single = DEFINITIONS.get(name, (None,) * 6)
+    return dict(ciamLdapOid=oid, ciamLdapSyntax=syntax, ciamLdapEquality=eq, ciamLdapSubstring=sub,
+                ciamLdapOrdering=order, ciamLdapSingleValue=single)
+
+
 def user_attributes():
     return tuple(spec("25-user-schema", f"cn={name},{US}", ["top", "ciamUserAttribute"], cn=name, ciamLdapName=name,
-                      ciamPiiClass=pii, ciamExportControlled=export, ciamPurpose=purpose)
+                      ciamPiiClass=pii, ciamExportControlled=export, ciamPurpose=purpose, **_definition(name))
                  for name, pii, export, purpose in USER_ATTRIBUTES)
+
+
+def user_classes():
+    return tuple(spec("25-user-schema", f"cn={name},{US}", ["top", "ciamUserObjectClass"], cn=name, ciamLdapName=name,
+                      ciamLdapClassKind=kind, ciamLdapOid=oid, ciamLdapSuperior=sup, ciamLdapMay=ua(*may) or None,
+                      ciamPurpose=purpose)
+                 for name, kind, oid, sup, may, purpose in USER_CLASSES)
 
 
 def config_tree(file, base, overrides=None, drop=(), extra_index=None):

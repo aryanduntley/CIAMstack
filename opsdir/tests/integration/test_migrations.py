@@ -2,12 +2,35 @@
 import pytest
 
 from opsdir.connectors.registry import schema_fragments, store_parts
-from opsdir.core.standard import CORE, fragment_counts, schema_ldif
+from opsdir.core.interchange.ldif import parse
+from opsdir.core.standard import fragment_counts, schema_ldif
 from opsdir.store import migrations, postgres as db
+from mini_estate import FAKE
 
 pytestmark = pytest.mark.integration
 
 PROBE_SQL = "create table opsdir.probe (id int primary key);"
+# An entry that uses the fake adapter's own definitions (mini_estate.FAKE_SCHEMA)
+TIERED = """dn: dc=ciam-ops
+objectClass: top
+objectClass: domain
+dc: ciam-ops
+
+dn: ou=tiered,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+objectClass: fakeTiered
+ou: tiered
+fakeTier: gold
+"""
+
+
+PUBLISHED = schema_ldif(schema_fragments())      # the store's schema when the record defines nothing custom
+
+
+def _counts(schema_text):
+    ats, ocs = db.schema_rows(schema_text)
+    return len(ats), len(ocs)
 
 
 @pytest.fixture
@@ -63,11 +86,22 @@ def test_schema_from_before_versioning_is_refused(conn, parts):
     assert migrations.current_version(conn) >= 1
 
 
-def test_removing_a_published_definition_is_refused(conn, parts):
-    migrations.init(conn, *parts)
-    shipped, definitions, _, schemes, _ = parts
-    with pytest.raises(SystemExit, match="missing from the published schema"):
-        migrations.upgrade(conn, shipped, definitions, schema_ldif((CORE,)), schemes, ())
+def test_an_uninstalled_packages_unused_definitions_are_removed(conn, parts):
+    with_fake = store_parts((FAKE,))
+    migrations.init(conn, *with_fake)
+    assert db.registry_counts(conn) == tuple(n + 1 for n in _counts(PUBLISHED))
+    migrations.upgrade(conn, *parts)                                # the fake adapter uninstalled
+    assert db.registry_counts(conn) == _counts(PUBLISHED)
+
+
+def test_removing_definitions_entries_use_is_refused(conn, parts):
+    with_fake = store_parts((FAKE,))
+    migrations.init(conn, *with_fake)
+    db.load_records(conn, parse(TIERED))
+    with pytest.raises(SystemExit, match="no installed part defines any more .*: fakeTier, fakeTiered"):
+        migrations.upgrade(conn, *parts)
+    assert conn.execute("select count(*) from opsdir.attribute_type where name = 'fakeTier'").fetchone()[0] == 1
+
 
 
 def test_init_matches_the_cli_and_leaves_a_versioned_store(conn, parts):

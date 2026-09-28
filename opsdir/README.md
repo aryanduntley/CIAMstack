@@ -63,13 +63,24 @@ sudo -u postgres createdb -O opsdir -T template0 opsdir_test_workspace
 
 - **Migrations** (`opsdir/store/sql/migrations/NNNN_name.sql`) create and change what holds data: tables, the rule functions and their triggers. Each is applied once, in order, and recorded with its checksum in `opsdir.schema_migration`. **Never edit an applied migration**; add the next number. `upgrade` refuses a database whose applied migrations were edited, that has migrations this code doesn't know, or that was created before versioning (`init` rebuilds those).
 - **Definitions** (`opsdir/store/sql/definitions/`, and every domain's and connector's `sql/`) hold no data: views and report functions. Every `upgrade` drops the views and re-applies all definitions, so they are edited in place.
-- Every `upgrade` also syncs the **schema registry** from the registered schema fragments (removing a published definition is refused), the **reference schemes** the installed adapters own, and the **vocabulary** (below). Everything runs in one transaction, one upgrade at a time.
+- Every `upgrade` also syncs the **schema registry** from the registered schema fragments (the core's, the domains' and each installed adapter's), the **reference schemes** the installed adapters own, and the **vocabulary** (below). A definition no installed part defines any more (an uninstalled adapter's) is removed; the upgrade is refused while entries still use it. Everything runs in one transaction, one upgrade at a time.
 
 ## Stacks and vocabulary
 
 Each environment declares its **stack** under `ou=stack`: one `ciamStackComponent` per role, naming the adapter that fills it (as its package registers it), the adapter versions it accepts (a PEP 440 range) and where to get it. When an environment declares a stack, exactly those adapters render it, and rendering refuses a declared adapter that isn't installed; without one, adapters are chosen from the data (each adapter's `applies`). `opsdir check` reports, per component: not installed (and where to get it), a version outside the range, installed but not matching the environment's data, or an adapter that applies to the data but isn't declared.
 
 Some attributes take values no core schema can list: the cloud provider, its partition, server and target roles. Their value type is `vocab`: each installed domain or adapter declares the values it defines, `upgrade` syncs them, and the store rejects any other value. Uninstalling an adapter whose values entries still use is refused at `upgrade`.
+
+## Custom fields and record types
+
+The record can't foresee every fact, so operators add their own as governed entries under `ou=custom-schema`: a `ciamFieldDefinition` (a field any listed record type may carry) or a `ciamRecordTypeDefinition` (a new kind of record). Names start with `x`. The metadata covers what it is and why (description, purpose, owner, sensitivity, status, documentation and runbook links), its values (type, one or many, unit, example, default, min/max, pattern, max length), which records carry it, where the value lives in real systems and which adapters use it, and its portability in a migration (and whether an environment may override it).
+
+```bash
+./opsdir.sh modify --change CHG-… define-and-use.ldif   # one change can define a field and set it on entries
+./opsdir.sh report custom                               # every custom field and record type, and how many entries use it
+```
+
+The store composes the definitions into its schema in the same transaction (and on every `upgrade`), enforces the value rules on every write, and refuses a change that would leave stored entries invalid or delete a definition entries still use.
 
 ## Migration workspaces
 
@@ -93,17 +104,23 @@ opsdir/                      the package (names no platform, product, vendor or 
   core/                      technology-neutral records and pure functions: directory snapshot and lookups, RFC 4515
                              search, environment model (bindings by role, declared stack), contracts (Domain,
                              Adapter, Report, Services, PlanContext), the standard (value types, OID arc, schema
-                             fragments), findings, manifest, change sets, interchange (LDIF, RFC 4512, export)
+                             fragments), the standard LDAP schema (ldap_schema: RFC 4519/4524/2798/... definitions,
+                             the one source for both opsdir's schema and the user directories it manages),
+                             findings, manifest, change sets, interchange (LDIF, RFC 4512, export)
   store/                     PostgreSQL: postgres.py (connect, load, governed changes, snapshot read), migrations.py
                              (init, upgrade), workspace.py (workspace base), queries.py, sql/migrations, sql/definitions
   domains/                   vendor-neutral parts of the stack, each with naming, schema fragment, checks, reports and
     infrastructure/          SQL views: clouds, environments, servers, bindings, stacks, external allowlists
-    directory/               the LDAP user directory: declared/observed configuration and drift, consumers, ACIs
-    federation/              SAML/OIDC integrations and claim maps
+    directory/               the LDAP user directory: its schema (attributes and object classes, standard or
+                             defined in the record), declared/observed configuration and drift, consumers, ACIs
+    federation/              SAML/OIDC integrations and claim maps, the platform's own identity services, and the
+                             protocols' standard vocabulary (grant types, auth methods, bindings, NameID formats)
     pki/                     certificates and their expiry
     governance/              owners (including the operator), changes, incidents, runbooks
+    custom/                  fields and record types operators define as entries, composed into the store's schema
   connectors/                the only code that joins parts: registry (discovers domains and adapters through entry
-                             points), stack (declared stacks vs installed adapters), render, plan (migration planner),
+                             points), schema (the store's schema: code fragments + the record's custom definitions),
+                             stack (declared stacks vs installed adapters), render, plan (migration planner),
                              migration (runner), workspace (copy, diff, cutover), reports, sql (cross-domain views)
   cli.py                     thin orchestrator
 schema/ciam-ops.schema.ldif  the published RFC 4512 schema of the core and its domains (scripts/gen-schema.py)
@@ -118,7 +135,7 @@ Dependencies point one way. Adapter packages depend on the core, never the rever
 
 An adapter is one cloud provider, product or secret store. It lives in its own installable package:
 
-1. A module that defines `ADAPTER = Adapter(...)` (`opsdir.core.contract`): its name and kind (`provider`, `product` or `secret-store`), `applies(m)` decided from directory data only, the roles it requires, its renderers (environment-neutral and environment-specific), its planner checks, the reference schemes it owns and their resolvers, how its outputs are described, and the `vocab` values it defines.
+1. A module that defines `ADAPTER = Adapter(...)` (`opsdir.core.contract`): its name and kind (`provider`, `product` or `secret-store`), `applies(m)` decided from directory data only (or `None` for a generic adapter of a standard, which every compliant server would match: it renders only where an environment's stack declares it), the roles it requires, its renderers (environment-neutral and environment-specific), its planner checks, the reference schemes it owns and their resolvers, how its outputs are described, and the `vocab` values it defines.
 2. Its `pyproject.toml` depends on `opsdir` and registers it:
 
    ```toml
@@ -126,8 +143,10 @@ An adapter is one cloud provider, product or secret store. It lives in its own i
    example = "opsdir_adapter_example.adapter:ADAPTER"
    ```
 3. Tests in the package's `tests/` (the repository-root `pytest.ini` collects them).
+4. The format of every file it renders, `formats=(("ds/*.ldif", "ldif"), ...)`, and the product versions it supports, `products=(("SomeProduct", ">=7,<9"),)`. A format the core doesn't register (a product's own syntax, HCL, ...) is registered by the package that brings it, as a `Format` (`opsdir.core.contract`) under `[project.entry-points."opsdir.formats"]`.
+5. Optionally, schema definitions of its own: `schema=fragment(attributes, classes, arc, origin)` (`opsdir.core.standard`), numbered under an OID arc the package owns, so packages written independently never collide. The store composes them on `upgrade`; the core's published schema file holds only the core and its domains.
 
-Installing the package is all it takes: nothing in the core changes. A new vendor-neutral part of the stack is added the same way as a `Domain` (schema fragment with new, never-reused OID numbers, SQL views, checks, reports, vocabulary, an `order`), registered under `[project.entry-points."opsdir.domains"]`.
+Installing the package is all it takes: nothing in the core changes. Products build on the standard bases rather than repeat them: a directory adapter renders the standard LDAP files (`opsdir-adapter-ldap`) and a DS-lineage product the lineage's files (`opsdir-base-ds`); a federation adapter renders SAML metadata and OIDC documents at its own endpoint paths (`opsdir-base-saml`, `opsdir-base-oidc`) and maps the standard vocabulary to its API's names. Packages that register an adapter are named `opsdir-adapter-*`, libraries `opsdir-base-*`, formatters `opsdir-format-*`. A new vendor-neutral part of the stack is added the same way as a `Domain` (schema fragment with new, never-reused OID numbers, SQL views, checks, reports, vocabulary, an `order`), registered under `[project.entry-points."opsdir.domains"]`.
 
 ## Tests
 

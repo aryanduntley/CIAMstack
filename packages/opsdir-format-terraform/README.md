@@ -2,7 +2,7 @@
 
 Terraform HCL formatting for opsdir adapters: names, expressions and blocks laid out like `terraform fmt`.
 
-A format library shared by adapters that render Terraform. It knows HCL, not any cloud provider or product.
+A format library shared by adapters that render Terraform. It knows HCL, not any cloud provider or product. It registers the `hcl` format with opsdir (entry point `opsdir.formats`), so adapters declare their `.tf` files as `hcl` and the MANIFEST records it.
 
 ```python
 from opsdir_format_terraform.hcl import block, hcl, ref, tf_name, Block

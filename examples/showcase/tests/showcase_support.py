@@ -6,7 +6,7 @@ import pathlib
 import subprocess
 
 from opsdir.store.postgres import read_ldif_files
-from support import SCHEMA, build_directory
+from support import build_directory, schema_for
 
 SHOWCASE = pathlib.Path(__file__).resolve().parents[1]
 DATA = SHOWCASE / "data"
@@ -24,8 +24,8 @@ def cmd_output(text, status=0):
 
 def fixture_directory(changes=()):
     """Effect (reads files): the example estate as a Directory, after (change id, LDIF file) changes."""
-    return build_directory(SCHEMA.read_text(), read_ldif_files(sorted(DATA.glob("*.ldif"))),
-                           read_ldif_files([path for _, path in changes]))
+    records = read_ldif_files(sorted(DATA.glob("*.ldif")))
+    return build_directory(schema_for(records), records, read_ldif_files([path for _, path in changes]))
 
 
 def run_snapshot(dsn, out):

@@ -15,7 +15,7 @@ CIAMstack is a platform-agnostic, data-centric suite that puts an entire identit
 
 ### Current Phase
 
-A working prototype (`opsdir/`) exists and has been cataloged: LDIF/schema parsers, Postgres store with rules R1-R10, renderers (Terraform AWS/Azure, dsconfig, DS setup, ACI LDIF, illustrative PingFederate JSON), migration planner, reports, CLI, synthetic showcase estate (229 entries) and a findings checker. It contains four classes with methods (`Entry`, `Directory`, `EnvModel`, `Block`), so Stage 1 rewrites it to Modular / Functional / Procedural form without changing behavior.
+Path 1 is done except the 1.5 docs/showcase rewrite; path 2 has 2.1, 2.2, 2.6 and 2.7 completed (agnostic core with adapter packages, extensible schema with custom fields and record types, formats and product versions as data, standard LDAP/SAML/OIDC bases with PingDS, OpenDJ and PingFederate on them). Next: 2.5 (artifact store with formats, structured value sources, secret scanning), then path 3 (PingAM, PingIDM, PingGateway). scripts/test.sh: 421 tests pass (unit + Postgres integration + showcase golden).
 
 ### Goals
 
@@ -26,6 +26,9 @@ A working prototype (`opsdir/`) exists and has been cataloged: LDIF/schema parse
 - Product-internal choices (e.g. where PF keeps OAuth clients: XML, JDBC or LDAP) are database entries with parsers covering every case, never build-time decisions
 - Version-neutral moves: versions are data carried unchanged through a migration; upgrades are separate changes
 - Cover every STACK.md section 21 gap and every section 22 question as data + parsers
+- Management first: the record is what the platform is operated from; migration is one feature, not the product's framing
+- Operators can record facts nobody foresaw: custom fields and record types with rich metadata, governed like all data
+- Language/format agnostic: every format rendered or read is registered data; adapters declare the formats of their files and the product versions they support
 
 ### Success Criteria
 
@@ -61,22 +64,32 @@ A working prototype (`opsdir/`) exists and has been cataloged: LDIF/schema parse
 
 ### Package Structure
 
-Current (after milestone 2.1): an agnostic core, adapter packages, and a separate showcase.
+Current (after milestones 2.1, 2.2, 2.6, 2.7): an agnostic core, adapter/base/format packages, and a separate showcase.
 ```
 opsdir/              the core package (pyproject: opsdir), names no platform/product/vendor/secret store
-  opsdir/            core/ store/ domains/{infrastructure,directory,federation,pki,governance} connectors/ cli.py
+  opsdir/            core/ (records, standard + OID arcs, ldap_schema catalogue, formats, versions, interchange)
+                     store/ (Postgres: migrations 0001-0004, governed writes, schema phases, re-validation)
+                     domains/{infrastructure,directory,federation,pki,governance,custom}
+                     connectors/ (registry, schema, stack, render, plan, migration, workspace, reports) cli.py
   schema/            ciam-ops.schema.ldif (published export of the core + domain fragments; scripts/gen-schema.py)
   scripts/           dev-install.sh dev-env.sh gen-schema.py test.sh
   tests/             core tests (unit + integration) with mini_estate.py: a fake adapter, no real one needed
-packages/            adapter packages, each its own distribution registering via entry point opsdir.adapters:
-                     opsdir-adapter-{aws,azure,pingds,pingfederate,hashicorp-vault}, opsdir-format-terraform
+packages/            installable packages; adapters register via opsdir.adapters, formats via opsdir.formats:
+  standards          opsdir-adapter-ldap (standard LDIF + declaration-only generic adapter), opsdir-base-saml,
+                     opsdir-base-oidc
+  lineages/products  opsdir-base-ds (OpenDJ -> ForgeRock DS -> PingDS), opsdir-adapter-pingds,
+                     opsdir-adapter-opendj, opsdir-adapter-pingfederate
+  clouds/stores      opsdir-adapter-aws, opsdir-adapter-azure, opsdir-adapter-hashicorp-vault
+  formats            opsdir-format-terraform (hcl)
 examples/showcase/   the fictional estate: example_estate/ data/ changes/ golden/ scripts/ tests/ demo.sh
 pytest.ini           one test configuration (core, packages, showcase); opsdir/scripts/test.sh runs everything
 ```
-Dependencies point one way: adapter packages → core; inside the core connectors → domains → core and
-connectors → store → core; domains never import the store. The registry discovers domains (opsdir.domains) and
-adapters (opsdir.adapters) through entry points; rendering and planning take the installed adapters as a parameter.
-Adapter contract: a record of functions (no classes).
+Dependencies point one way: packages -> core; inside the core connectors -> domains -> core and
+connectors -> store -> core; domains never import the store. The registry discovers domains (opsdir.domains),
+adapters (opsdir.adapters) and formats (opsdir.formats) through entry points; rendering and planning take the
+installed adapters as a parameter. Contracts (Domain, Adapter, Format, Report) are records of data and functions.
+Naming rule: packages registering an adapter are opsdir-adapter-*, libraries opsdir-base-*, formats opsdir-format-*.
+Schema OIDs: each owner has an arc (PEN .1 core/domains, .2 showcase user schema, .3.<n> packages, .4 custom).
 
 ---
 
@@ -108,35 +121,36 @@ Adapter contract: a record of functions (no classes).
 
 ## 4. Completion Path
 
-### Stage 1: FP Foundation (Modular, Functional, Procedural rewrite)
-- 1.1 FP core data model (completed)
-- 1.2 Modular layout: core, adapters, connectors (completed)
-- 1.3 Test harness
-- 1.4 Database setup & SQL versioning
-- 1.5 Product-only documentation
+### Path 1: FP Foundation (Modular, Functional, Procedural rewrite)
+- 1.1 FP core data model, 1.2 Modular layout, 1.3 Test harness, 1.4 Database setup & SQL versioning (completed)
+- 1.5 Product-only documentation, incl. the management-first showcase reframe (pending)
 
-### Stage 2: Platform-Agnostic Core
-- 2.1 Adapter contract & registry
-- 2.2 Extensible, versioned schema
-- 2.3 Keys, certificates & secrets model (incl. credential sprawl, gap 9)
-- 2.4 Environment overlays & overrides
-- 2.5 Reference artifact store & data safety
-- 2.6 Vendor & version neutrality
+### Path 2: Platform-Agnostic Core
+- 2.1 Agnostic core + adapter packages (completed)
+- 2.2 Extensible, versioned schema: package fragments, custom fields and record types (completed)
+- 2.3 Keys, certificates & secrets model (pending)
+- 2.4 Environment overlays & overrides, incl. required roles as data (pending)
+- 2.5 Reference artifact store & data safety, incl. recorded formats and structured value sources (pending, next)
+- 2.6 Vendor, version & format neutrality (completed)
+- 2.7 Standard bases: LDAP, SAML, OIDC (completed)
 
-### Stage 3: Importers (files/APIs -> DB)
-- 3.1 DS configuration importer, 3.2 DS access-log miner, 3.3 PingFederate importer, 3.4 String census, 3.5 Cloud & IaC importers
+### Path 3: ForgeRock / Ping Product Lineage
+- 3.1 PingAM, 3.2 PingIDM, 3.3 PingGateway, as adapter packages on the standard bases
 
-### Stage 4: Stack Coverage
-- 4.1 PF depth, 4.2 Hidden automation, 4.3 Host baseline & Kubernetes workloads, 4.4 Messaging & external services, 4.5 Data profile, 4.6 Observability intent
+### Path 4: Importers (files/APIs -> DB)
+- DS configuration importer, DS access-log miner, PingFederate importer, string census, cloud & IaC importers
 
-### Stage 5: Renderers & Targets
-- 5.1 PF renderer (real target), 5.2 Kubernetes/ForgeOps, 5.3 Config management & on-prem, 5.4 Observability renderers, 5.5 Round-trip guarantees
+### Path 5: Stack Coverage
+- PF depth, hidden automation, host baseline & Kubernetes workloads, messaging & external services, data profile, observability intent
 
-### Stage 6: Conditional Products & Governance
-- 6.1 PA/IG/AM/IDM/SiteMinder adapters, 6.2 Enterprise tool integrations (ITSM/CMDB, GRC, SIEM, PAM, PKI/CA, firewall managers; vendor-agnostic), 6.3 Unknowns register (per-estate open questions tracked as entries)
+### Path 6: Renderers & Targets
+- PF renderer (real target), Kubernetes/ForgeOps, config management & on-prem, observability renderers, round-trip guarantees
 
-### Stage 7: Interfaces, Validation & Release
-- 7.1 Management interfaces, 7.2 Validation against real products, 7.3 SPEC 1.0, docs & showcase
+### Path 7: Conditional Products & Governance
+- PingAccess and SiteMinder adapters, enterprise tool integrations (vendor-agnostic), unknowns register
+
+### Path 8: Interfaces, Validation & Release
+- Management interfaces, validation against real products, SPEC 1.0, docs & showcase
 
 Post-completion paths: Added Features (998), Updates (999).
 
@@ -153,6 +167,16 @@ Post-completion paths: Added Features (998), Updates (999).
 
 - **Change**: STACK.md section 22 is no longer treated as out of scope. Every one of those questions (lineage, VM vs Kubernetes, PF client storage, HSM keys, consumer binding style, landing zone, versions, enterprise tool vendors) is answered by data + parsers. Added milestone 2.6 (vendor & version neutrality); broadened 2.1, 3.3 and 6.2.
 - **Rationale**: The system is built for agnostic use, so per-estate facts are values in the DB, not build-time decisions.
+
+### Version 1.2 - 2026-09-27
+
+- **Change**: The core names no platform, product, vendor or secret store; every adapter is its own package discovered by entry points; declared stacks, change sets, migration workspaces. New path 3 (ForgeRock/Ping lineage) and milestone 2.7 (standard bases); later paths renumbered 4-8.
+- **Rationale**: Management of any stack, with this CIAM stack as the first; migration is one capability of the management system.
+
+### Version 1.3 - 2026-09-28
+
+- **Change**: Standard bases (LDAP once in the core; generic LDAPv3, DS lineage, SAML and OIDC bases; OpenDJ adapter; identity services). Extensible schema (package fragments under own OID arcs; custom fields and record types with rich metadata, value rules, re-validation). Formats and supported product versions as data.
+- **Rationale**: Products build on the standards they implement; operators must be able to record facts nobody foresaw; what a managed system is written in is data, not an assumption (only CIAMstack's own code is Python).
 
 ---
 

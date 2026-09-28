@@ -1,7 +1,7 @@
 # opsdir-adapter-pingds
 
-opsdir adapter for PingDS (ForgeRock Directory Services): dsconfig batch, ACI LDIF, setup scripts, replication checks.
+opsdir adapter for PingDS (ForgeRock Directory Services): dsconfig batch, ACI LDIF, setup scripts, replication checks. Built on `opsdir-base-ds` (the DS lineage) and `opsdir-adapter-ldap` (the standard LDAP files).
 
-Applies to environments with directory servers whose `ciamProductVersion` is PingDS. Renders the directory domain as PingDS artifacts: an environment-neutral `dsconfig` batch file and ACI LDIF, and per-server setup scripts that join the existing replication deployment. Adds planner checks for replication continuity (same deployment, interconnect, replication port).
+Applies to environments with directory servers whose `ciamProductVersion` is PingDS. Renders the directory domain as PingDS artifacts: environment-neutral `ldap/schema.ldif`, `ldap/dit.ldif`, `ds/dsconfig.batch` and `ds/acis.ldif`, and per-server setup scripts (`setup --profile ds-user-data`) that join the existing replication deployment. Adds planner checks for replication continuity (same deployment ID, interconnect, replication port).
 
 Installing the package registers it with opsdir (entry point `opsdir.adapters`: `pingds`); nothing in the opsdir core changes. In this repository: `scripts/dev-install.sh`.

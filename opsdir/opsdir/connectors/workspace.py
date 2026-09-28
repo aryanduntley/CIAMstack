@@ -70,14 +70,15 @@ def _live_text(live):
     return export_text(load_directory(live), SUFFIX)
 
 
-def create(live, ws, parts, source, replace=False):
-    """Effect: copy the live record into the workspace database (rebuilt from nothing) and record the base."""
+def create(live, ws, parts, source, replace=False, schema_sync=None):
+    """Effect: copy the live record into the workspace database (rebuilt from nothing) and record the base.
+    schema_sync (registry.schema_sync()) composes the record's custom definitions as they load."""
     if has_schema(ws) and not replace:
         raise SystemExit("the workspace database already holds an opsdir store; `workspace create --replace` rebuilds "
                          "it (its data is dropped)")
     text = _live_text(live)
     migrations.init(ws, *parts)
-    n = load_records(ws, parse(text))
+    n = load_records(ws, parse(text), schema_sync=schema_sync)
     record_base(ws, safe_source(source), fingerprint(text), text)
     return n
 
@@ -102,7 +103,7 @@ def diff_text(live, ws):
     return write_records(diff(base_d, ws_d))
 
 
-def cutover(live, ws, parts, source, change_id):
+def cutover(live, ws, parts, source, change_id, schema_sync=None):
     """Effect: apply the workspace's changes to the live record under an approved change, then rebuild the workspace
     from the new live record. Refuses when live and workspace changed the same entries since the copy."""
     _, base_d, ws_d = _snapshots(live, ws)
@@ -110,6 +111,6 @@ def cutover(live, ws, parts, source, change_id):
     if conflicts:
         raise SystemExit("the live record and the workspace both changed: " + ", ".join(conflicts)
                          + ". Resolve in the workspace (or recreate it) before cutover.")
-    applied = apply_records(live, changes, change_id) if changes else []
-    create(live, ws, parts, source, replace=True)
+    applied = apply_records(live, changes, change_id, schema_sync) if changes else []
+    create(live, ws, parts, source, replace=True, schema_sync=schema_sync)
     return applied

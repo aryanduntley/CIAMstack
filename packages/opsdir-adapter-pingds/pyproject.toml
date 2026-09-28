@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "opsdir adapter for PingDS (ForgeRock Directory Services): dsconfig batch, ACI LDIF, setup scripts, replication checks."
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["opsdir>=0.1"]
+dependencies = ["opsdir>=0.1", "opsdir-base-ds>=0.1"]
 
 [project.entry-points."opsdir.adapters"]
 pingds = "opsdir_adapter_pingds.adapter:ADAPTER"

@@ -6,9 +6,11 @@ ciamAcsUrl: https://portal.example-aero.test/saml/acs
 ciamCriticality: critical
 ciamEntityId: https://portal.example-aero.test/saml/sp
 ciamMfaRequired: TRUE
+ciamNameIdFormat: persistent
 ciamOwner: cn=customer-portal-team,ou=owners,dc=ciam-ops
 ciamPopulation: customers
 ciamProtocolType: saml2-sp
+ciamSamlBinding: HTTP-POST
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=customer-portal-sp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
@@ -24,6 +26,7 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamOwner: cn=harbor-mro,ou=owners,dc=ciam-ops
 ciamPopulation: partners
 ciamProtocolType: saml2-idp
+ciamSsoUrl: https://sso.harbor-mro.example/idp/SSO.saml2
 ciamUsesCertificate: cn=harbor-mro-idp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 
@@ -41,8 +44,13 @@ ciamPkceRequired: TRUE
 ciamPopulation: customers
 ciamProtocolType: oidc-client
 ciamRedirectUri: https://mobile.example-aero.test/oauth2/callback
+ciamScope: openid
+ciamScope: email
+ciamScope: offline_access
+ciamTokenAuthMethod: none
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+xTokenLifetimeMinutes: 30
 
 dn: cn=skyline-air-federation,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -51,10 +59,12 @@ cn: skyline-air-federation
 ciamCriticality: high
 ciamEntityId: https://idp.skyline-air.example/saml
 ciamJitBaseDn: ou=partners,ou=people,dc=partners,dc=example-aero,dc=test
+ciamNameIdFormat: persistent
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamOwner: cn=skyline-air,ou=owners,dc=ciam-ops
 ciamPopulation: partners
 ciamProtocolType: saml2-idp
+ciamSsoUrl: https://idp.skyline-air.example/saml/sso
 ciamUsesCertificate: cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 
@@ -66,9 +76,11 @@ ciamAcsUrl: https://suppliers.example-aero.test/saml/acs
 ciamCriticality: high
 ciamEntityId: https://suppliers.example-aero.test/saml/sp
 ciamMfaRequired: TRUE
+ciamNameIdFormat: emailAddress
 ciamOwner: cn=supplier-portal-team,ou=owners,dc=ciam-ops
 ciamPopulation: suppliers
 ciamProtocolType: saml2-sp
+ciamSamlBinding: HTTP-POST
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=supplier-portal-sp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
@@ -86,10 +98,16 @@ ciamOwner: cn=tech-pubs-team,ou=owners,dc=ciam-ops
 ciamPkceRequired: TRUE
 ciamPopulation: customers
 ciamPopulation: suppliers
+ciamPostLogoutRedirectUri: https://techpubs.example-aero.test/signed-out
 ciamProtocolType: oidc-client
 ciamRedirectUri: https://techpubs.example-aero.test/oidc/callback
+ciamScope: openid
+ciamScope: profile
+ciamScope: email
+ciamTokenAuthMethod: none
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+xTokenLifetimeMinutes: 60
 
 # 6 entries
 exit 0

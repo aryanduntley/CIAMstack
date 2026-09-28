@@ -1,0 +1,16 @@
+{
+  "client_id": "mobile-ops",
+  "client_name": "mobile-ops",
+  "redirect_uris": [
+    "https://mobile.example-aero.test/oauth2/callback"
+  ],
+  "grant_types": [
+    "authorization_code",
+    "refresh_token"
+  ],
+  "response_types": [
+    "code"
+  ],
+  "token_endpoint_auth_method": "none",
+  "scope": "openid email offline_access"
+}

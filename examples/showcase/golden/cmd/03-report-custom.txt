@@ -1,0 +1,10 @@
+kind         name                   type                  applies to / extends  status  owner          used by entries
+-----------  ---------------------  --------------------  --------------------  ------  -------------  ---------------
+field        xCostCenter            string                ciamParty             active  ciam-platform  3              
+field        xDataResidency         enum:us|us-gov|eu|ca  ciamEnvironment       active  ciam-platform  2              
+field        xFlagEnabled           bool                  xFeatureFlag          active  ciam-platform  2              
+field        xRolloutPercent        int                   xFeatureFlag          active  ciam-platform  1              
+field        xTokenLifetimeMinutes  int                   ciamIntegration       active  ciam-platform  2              
+record type  xFeatureFlag           structural            -                     active  ciam-platform  2              
+(6 rows)
+exit 0

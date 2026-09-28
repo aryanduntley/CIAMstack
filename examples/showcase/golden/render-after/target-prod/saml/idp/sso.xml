@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="https://sso.example-aero.test/idp">
+  <md:IDPSSODescriptor WantAuthnRequestsSigned="false" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+    <!-- KeyDescriptor needs the certificate itself, which the record doesn't hold. Certificates the record links: -->
+    <!-- pf-signing-2025 (pf-signing-key) SHA-256 18:50:45:3C:96:D7:6C:B8:F5:90:6A:4B:06:37:F9:99:AE:16:65:5C:A3:29:EC:90:34:04:37:FA:10:28:B6:99 -->
+    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://sso.example-aero.test/idp/SLO.saml2"/>
+    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://sso.example-aero.test/idp/SLO.saml2"/>
+    <md:NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</md:NameIDFormat>
+    <md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</md:NameIDFormat>
+    <md:NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</md:NameIDFormat>
+    <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://sso.example-aero.test/idp/SSO.saml2"/>
+    <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://sso.example-aero.test/idp/SSO.saml2"/>
+  </md:IDPSSODescriptor>
+</md:EntityDescriptor>

@@ -38,6 +38,12 @@ objectClass: organizationalUnit
 ou: acis
 description: Access control instructions on the user directory
 
+dn: ou=identity-services,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: identity-services
+description: The platform's own identity provider / OpenID provider
+
 dn: ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -80,6 +86,18 @@ objectClass: top
 objectClass: organizationalUnit
 ou: owners
 description: Teams, partners and vendors
+
+dn: ou=custom-schema,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: custom-schema
+description: Fields and record types the operator defines
+
+dn: ou=feature-flags,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: feature-flags
+description: Feature switches of the login experience (a custom record type)
 
 dn: ou=declared,ou=config,dc=ciam-ops
 objectClass: top

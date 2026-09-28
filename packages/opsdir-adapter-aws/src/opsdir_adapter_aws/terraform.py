@@ -5,6 +5,7 @@ from itertools import chain
 from opsdir.core.directory import follow, one, rdn_value, values
 from opsdir.core.environment import of_class, one_role, secret, servers_with_role, subnet_of
 from opsdir.core.manifest import header
+from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir.core.network import is_private
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 
@@ -108,8 +109,8 @@ def render(m, services):
     out = (*_network(m), *_security_groups(m), *(_instance(m, s, kms) for s in m.servers),
            *chain.from_iterable(_service(m, svc) for svc in of_class(m, "ciamServiceName")), *_references(m))
     unbound = "".join(f"# UNBOUND: required role '{r}' has no binding in this environment\n" for r in m.unbound)
-    main = header(m, "AWS infrastructure for the CIAM platform") + unbound + "\n" + "\n\n".join(out) + "\n"
-    providers = header(m, "Providers") + "\n" + "\n\n".join([
+    main = header(m, "AWS infrastructure for the CIAM platform", HCL) + unbound + "\n" + "\n\n".join(out) + "\n"
+    providers = header(m, "Providers", HCL) + "\n" + "\n\n".join([
         block("terraform", [], [("required_providers", Block((
             ("aws", {"source": "hashicorp/aws", "version": "~> 5.0"}),)))]),
         block("provider", ["aws"], [("region", one(m.cloud, "ciamRegion"))]),

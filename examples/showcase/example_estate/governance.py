@@ -1,6 +1,7 @@
 """Governance fixture data: owners (10-owners), change records (20-changes), work instructions
 (65-runbooks) and incidents (85-incidents)."""
 from .common import AWS, CERTS, CHG, DECL, INC, INTS, OWN, RB, owner, spec, t
+from .custom import COST_CENTERS
 
 PARTIES = (      # cn, kind, mail, contact url, display name
     ("ciam-platform", "team", "ciam-platform@example-aero.test", None, "CIAM platform team"),
@@ -36,7 +37,8 @@ RUNBOOKS = (
 
 def owners():
     return tuple(spec("10-owners", f"cn={cn},{OWN}", ["top", "ciamParty"], cn=cn, ciamOwnerKind=kind, mail=mail,
-                      ciamContactUrl=url, ciamDisplayName=display) for cn, kind, mail, url, display in PARTIES)
+                      ciamContactUrl=url, ciamDisplayName=display, xCostCenter=COST_CENTERS.get(cn))
+                 for cn, kind, mail, url, display in PARTIES)
 
 
 def changes():

@@ -5,42 +5,102 @@
   "files": {
     "ds/acis.ldif": {
       "scope": "environment-neutral",
+      "format": "ldif",
       "sha256": "48d21fe0ad6ed3587aa7a6c9dc64cf4dd32e27e975a7f01c04b2806e5d884b82"
     },
     "ds/dsconfig.batch": {
       "scope": "environment-neutral",
+      "format": "dsconfig-batch",
       "sha256": "cb9ce47572ec0b2692847e6a57ccacb5d8655d0be52e4058c1bb663403a58a2b"
     },
     "ds/setup-ds-1.sh": {
       "scope": "environment-specific",
-      "sha256": "2218a3a83557f779aa50534d4f8f9e9c0f3c469afe3e615f14614cdfc97e48f9"
+      "format": "shell",
+      "sha256": "8a94eadd841ff48f93a103875ea2523bc3b11fdc536131ea58fe1569de27f5c2"
     },
     "ds/setup-ds-2.sh": {
       "scope": "environment-specific",
-      "sha256": "81ba512530e67d1de4867096bfd6d2d870f39b7d4a4159303a1ed4f9755e9fc9"
+      "format": "shell",
+      "sha256": "e62bed4f8b6c554a1a4ff921aabbb9dd768f54f124f19cb9f7713ae75ba799d6"
     },
     "ds/setup-ds-3.sh": {
       "scope": "environment-specific",
-      "sha256": "4f69b4320d36b2bf1c152a859cb40071e3c4587420f98b5b89809471d9926267"
+      "format": "shell",
+      "sha256": "dddb2c34ac98d82b3345dcffd3fcfcf2f94dc02e505691455f7a6807982d5272"
+    },
+    "ldap/dit.ldif": {
+      "scope": "environment-neutral",
+      "format": "ldif",
+      "sha256": "6b13c8b376f14ea90c12cc4a46c436fe0a83b56351810d7afbb78886eb2002cd"
+    },
+    "ldap/schema.ldif": {
+      "scope": "environment-neutral",
+      "format": "ldif",
+      "sha256": "ebe0e8a50905a8bb95003372251836c2a30bd4c8436ba59ac8ad56b8273fc017"
+    },
+    "oidc/clients/mobile-ops.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "92e59f02f4d45b2c44e386086f6204a2f331e7ed77147f907417b1d224b2462e"
+    },
+    "oidc/clients/tech-pubs.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "9806619723885da5108609dd53ab1edb614a41a2bcc3adef9f177bd8ae8dd156"
+    },
+    "oidc/discovery/sso.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "1ce02f40f94346a85bbb05be4fef958d857edb681734ff234492f8eb24b5150b"
     },
     "pingfederate/idp-connections.json": {
       "scope": "environment-neutral",
+      "format": "json",
       "sha256": "23f5a0a78e550a31fe3724e180f479e965295fa0b7c8f743cca973e59657a214"
     },
     "pingfederate/oidc-clients.json": {
       "scope": "environment-neutral",
-      "sha256": "f85922ece1ef2fe935126b7af8c623aa40cb9affd0e6557fdff7363625497de7"
+      "format": "json",
+      "sha256": "3380db1648f0180f5c2a976dbc48775628175d1c009148a39eddd684e60f3c36"
     },
     "pingfederate/sp-connections.json": {
       "scope": "environment-neutral",
+      "format": "json",
       "sha256": "dbb151dfcbf0d748796110c370accdea19c6d06f15ef5e5bcf5105c61198c2d5"
+    },
+    "saml/idp/sso.xml": {
+      "scope": "environment-neutral",
+      "format": "xml",
+      "sha256": "e901982fd5b19b941c6312cc54e7d882ff5e879bd7ce04fa438b7ebd16015385"
+    },
+    "saml/partner-idp/harbor-mro-federation.xml": {
+      "scope": "environment-neutral",
+      "format": "xml",
+      "sha256": "f6ca69c84de46d746e4f70819cf87872436e17aad0b31a557c403277a51529c6"
+    },
+    "saml/partner-idp/skyline-air-federation.xml": {
+      "scope": "environment-neutral",
+      "format": "xml",
+      "sha256": "6a7c98a9160a8c56c5952d837594aa3ed09c53eca16029e6882c4570b0429ddd"
+    },
+    "saml/sp/customer-portal.xml": {
+      "scope": "environment-neutral",
+      "format": "xml",
+      "sha256": "d8e8a6fb1914c0a2780140f061b15a2f168c74a63cdb78e238f7b9f0e9d3d846"
+    },
+    "saml/sp/supplier-portal.xml": {
+      "scope": "environment-neutral",
+      "format": "xml",
+      "sha256": "6bb13c0304722ca9b2942a2ef00ea6fd2648469d599edcdd4c48e099f6b80d37"
     },
     "terraform/main.tf": {
       "scope": "environment-specific",
+      "format": "hcl",
       "sha256": "e194abf1309cb1390383c41efc3954aa22857884c42c7503869a206773ec886f"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",
+      "format": "hcl",
       "sha256": "946d8e0976325822eed184c015743cf07484026e624c8870b1affecadb35911e"
     }
   }

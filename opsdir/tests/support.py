@@ -8,8 +8,11 @@ from functools import reduce
 import psycopg
 import pytest
 
-from opsdir.core.directory import make_directory, norm_dn
+from opsdir.connectors.registry import schema_fragments
+from opsdir.connectors.schema import composed_schema
+from opsdir.core.directory import make_directory, make_entry, norm_dn
 from opsdir.core.paths import SCHEMA_FILE
+from opsdir.domains.custom.definitions import FIELD, RECORD_TYPE
 from opsdir.store.postgres import apply_mods, entry_rows, schema_rows, split_record
 
 SCHEMA = SCHEMA_FILE
@@ -42,6 +45,19 @@ def apply_record(canon, rows, r):
     if r.changetype == "modify":
         return tuple(_modified(canon, row, r.mods) if norm_dn(row[0]) == n else row for row in rows)
     raise ValueError(f"unsupported changetype {r.changetype}")
+
+
+def _defines(classes):
+    return any(c.lower() in (FIELD.lower(), RECORD_TYPE.lower()) for c in classes)
+
+
+def schema_for(records):
+    """The schema a store holding these content records composes (as `opsdir load` and `upgrade` do): the installed
+    parts' fragments with the custom definitions among the records."""
+    canon = {a["name"].lower(): a["name"] for a in schema_rows(SCHEMA.read_text())[0]}
+    rows = (split_record(canon, r.attrs) for r in records)
+    return composed_schema(schema_fragments(), tuple(make_entry(r.dn, classes, attrs) for r, (classes, attrs)
+                                                     in zip(records, rows) if _defines(classes)))
 
 
 def build_directory(schema_text, records, change_records=()):

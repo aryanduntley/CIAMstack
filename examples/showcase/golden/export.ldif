@@ -36,6 +36,12 @@ objectClass: organizationalUnit
 ou: consumers
 description: Clients of the user directory, discovered from access logs
 
+dn: ou=custom-schema,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: custom-schema
+description: Fields and record types the operator defines
+
 dn: ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -48,6 +54,18 @@ objectClass: organizationalUnit
 ou: external-allowlists
 description: Allowlists in consumer and partner systems that contain our addre
  sses
+
+dn: ou=feature-flags,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: feature-flags
+description: Feature switches of the login experience (a custom record type)
+
+dn: ou=identity-services,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: identity-services
+description: The platform's own identity provider / OpenID provider
 
 dn: ou=incidents,dc=ciam-ops
 objectClass: top
@@ -203,7 +221,11 @@ dn: cn=appEntitlement,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
 cn: appEntitlement
+ciamLdapEquality: caseIgnoreMatch
 ciamLdapName: appEntitlement
+ciamLdapOid: 1.3.6.1.4.1.32473.2.1.7
+ciamLdapSubstring: caseIgnoreSubstringsMatch
+ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: low
 ciamPurpose: Application entitlements (app:role)
 
@@ -211,7 +233,10 @@ dn: cn=challengeAnswer,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
 cn: challengeAnswer
+ciamLdapEquality: caseExactMatch
 ciamLdapName: challengeAnswer
+ciamLdapOid: 1.3.6.1.4.1.32473.2.1.5
+ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: high
 ciamPurpose: Legacy knowledge-based recovery answers; candidate for retirement
 
@@ -274,12 +299,17 @@ cn: ciam-platform
 ciamDisplayName: CIAM platform team
 ciamOwnerKind: team
 mail: ciam-platform@example-aero.test
+xCostCenter: CC-1001
 
 dn: cn=companyId,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
 cn: companyId
+ciamLdapEquality: caseIgnoreMatch
 ciamLdapName: companyId
+ciamLdapOid: 1.3.6.1.4.1.32473.2.1.1
+ciamLdapSingleValue: TRUE
+ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: none
 ciamPurpose: Link to the customer / supplier organization record
 
@@ -291,9 +321,11 @@ ciamAcsUrl: https://portal.example-aero.test/saml/acs
 ciamCriticality: critical
 ciamEntityId: https://portal.example-aero.test/saml/sp
 ciamMfaRequired: TRUE
+ciamNameIdFormat: persistent
 ciamOwner: cn=customer-portal-team,ou=owners,dc=ciam-ops
 ciamPopulation: customers
 ciamProtocolType: saml2-sp
+ciamSamlBinding: HTTP-POST
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=customer-portal-sp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
@@ -354,6 +386,7 @@ objectClass: ciamParty
 cn: customer-portal-team
 ciamOwnerKind: team
 mail: customer-portal@example-aero.test
+xCostCenter: CC-2040
 
 dn: cn=description,ou=user-schema,dc=ciam-ops
 objectClass: top
@@ -386,12 +419,33 @@ cn: example-aero
 ciamDisplayName: Example Aero
 ciamOwnerKind: operator
 
+dn: cn=exampleAeroPerson,ou=user-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamUserObjectClass
+cn: exampleAeroPerson
+ciamLdapClassKind: auxiliary
+ciamLdapMay: cn=companyId,ou=user-schema,dc=ciam-ops
+ciamLdapMay: cn=soldToAccount,ou=user-schema,dc=ciam-ops
+ciamLdapMay: cn=registrationStatus,ou=user-schema,dc=ciam-ops
+ciamLdapMay: cn=exportScreeningStatus,ou=user-schema,dc=ciam-ops
+ciamLdapMay: cn=challengeAnswer,ou=user-schema,dc=ciam-ops
+ciamLdapMay: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
+ciamLdapMay: cn=appEntitlement,ou=user-schema,dc=ciam-ops
+ciamLdapName: exampleAeroPerson
+ciamLdapOid: 1.3.6.1.4.1.32473.2.2.1
+ciamLdapSuperior: top
+ciamPurpose: Customer / supplier attributes added to every user entry
+
 dn: cn=exportScreeningStatus,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
 cn: exportScreeningStatus
 ciamExportControlled: TRUE
+ciamLdapEquality: caseIgnoreMatch
 ciamLdapName: exportScreeningStatus
+ciamLdapOid: 1.3.6.1.4.1.32473.2.1.4
+ciamLdapSingleValue: TRUE
+ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: high
 ciamPurpose: Result of restricted-party / export screening from the authoritat
  ive system
@@ -423,6 +477,7 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamOwner: cn=harbor-mro,ou=owners,dc=ciam-ops
 ciamPopulation: partners
 ciamProtocolType: saml2-idp
+ciamSsoUrl: https://sso.harbor-mro.example/idp/SSO.saml2
 ciamUsesCertificate: cn=harbor-mro-idp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 
@@ -493,13 +548,34 @@ ciamRootCause: mail equality index missing on ds-2 (unrecorded manual change);
 ciamSeverity: sev3
 ciamTitle: Search latency spike on ds-2
 
+dn: cn=inetOrgPerson,ou=user-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamUserObjectClass
+cn: inetOrgPerson
+ciamLdapClassKind: structural
+ciamLdapName: inetOrgPerson
+ciamPurpose: Structural class of every user entry
+
 dn: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
 cn: lastLoginTime
+ciamLdapEquality: generalizedTimeMatch
 ciamLdapName: lastLoginTime
+ciamLdapOid: 1.3.6.1.4.1.32473.2.1.6
+ciamLdapOrdering: generalizedTimeOrderingMatch
+ciamLdapSingleValue: TRUE
+ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.24
 ciamPiiClass: low
 ciamPurpose: Inactivity detection for lifecycle cleanup
+
+dn: cn=legacy-kba-recovery,ou=feature-flags,dc=ciam-ops
+objectClass: top
+objectClass: xFeatureFlag
+cn: legacy-kba-recovery
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+description: Knowledge-based account recovery (being retired)
+xFlagEnabled: FALSE
 
 dn: cn=legacy-rptuser,ou=consumers,dc=ciam-ops
 objectClass: top
@@ -546,8 +622,13 @@ ciamPkceRequired: TRUE
 ciamPopulation: customers
 ciamProtocolType: oidc-client
 ciamRedirectUri: https://mobile.example-aero.test/oauth2/callback
+ciamScope: openid
+ciamScope: email
+ciamScope: offline_access
+ciamTokenAuthMethod: none
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+xTokenLifetimeMinutes: 30
 
 dn: cn=mobile-team,ou=owners,dc=ciam-ops
 objectClass: top
@@ -607,6 +688,15 @@ cn: network-security
 ciamOwnerKind: team
 mail: netsec@example-aero.test
 
+dn: cn=passkey-enrollment,ou=feature-flags,dc=ciam-ops
+objectClass: top
+objectClass: xFeatureFlag
+cn: passkey-enrollment
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+description: Offer passkey enrollment after sign-in
+xFlagEnabled: TRUE
+xRolloutPercent: 25
+
 dn: cn=pf-ds-svc,ou=consumers,dc=ciam-ops
 objectClass: top
 objectClass: ciamConsumer
@@ -652,7 +742,11 @@ dn: cn=registrationStatus,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
 cn: registrationStatus
+ciamLdapEquality: caseIgnoreMatch
 ciamLdapName: registrationStatus
+ciamLdapOid: 1.3.6.1.4.1.32473.2.1.3
+ciamLdapSingleValue: TRUE
+ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: none
 ciamPurpose: Registration workflow state (pending / approved / active / disabl
  ed)
@@ -672,10 +766,12 @@ cn: skyline-air-federation
 ciamCriticality: high
 ciamEntityId: https://idp.skyline-air.example/saml
 ciamJitBaseDn: ou=partners,ou=people,dc=partners,dc=example-aero,dc=test
+ciamNameIdFormat: persistent
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamOwner: cn=skyline-air,ou=owners,dc=ciam-ops
 ciamPopulation: partners
 ciamProtocolType: saml2-idp
+ciamSsoUrl: https://idp.skyline-air.example/saml/sso
 ciamUsesCertificate: cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 
@@ -720,9 +816,34 @@ dn: cn=soldToAccount,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
 cn: soldToAccount
+ciamLdapEquality: caseIgnoreMatch
 ciamLdapName: soldToAccount
+ciamLdapOid: 1.3.6.1.4.1.32473.2.1.2
+ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: low
 ciamPurpose: Commercial account for aftermarket entitlements
+
+dn: cn=sso,ou=identity-services,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityService
+cn: sso
+ciamBaseUrl: https://sso.example-aero.test
+ciamCriticality: critical
+ciamEntityId: https://sso.example-aero.test/idp
+ciamNameIdFormat: persistent
+ciamNameIdFormat: emailAddress
+ciamNameIdFormat: transient
+ciamOidcIssuer: https://sso.example-aero.test
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamScope: openid
+ciamScope: profile
+ciamScope: email
+ciamScope: offline_access
+ciamSigningAlg: RS256
+ciamSigningAlg: PS256
+ciamTargetRole: pf-engine
+ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
+description: Single sign-on for customers, suppliers and partners
 
 dn: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 objectClass: top
@@ -747,9 +868,11 @@ ciamAcsUrl: https://suppliers.example-aero.test/saml/acs
 ciamCriticality: high
 ciamEntityId: https://suppliers.example-aero.test/saml/sp
 ciamMfaRequired: TRUE
+ciamNameIdFormat: emailAddress
 ciamOwner: cn=supplier-portal-team,ou=owners,dc=ciam-ops
 ciamPopulation: suppliers
 ciamProtocolType: saml2-sp
+ciamSamlBinding: HTTP-POST
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=supplier-portal-sp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
@@ -808,6 +931,7 @@ objectClass: ciamParty
 cn: supplier-portal-team
 ciamOwnerKind: team
 mail: supplier-portal@example-aero.test
+xCostCenter: CC-2041
 
 dn: cn=tech-pubs,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -822,10 +946,16 @@ ciamOwner: cn=tech-pubs-team,ou=owners,dc=ciam-ops
 ciamPkceRequired: TRUE
 ciamPopulation: customers
 ciamPopulation: suppliers
+ciamPostLogoutRedirectUri: https://techpubs.example-aero.test/signed-out
 ciamProtocolType: oidc-client
 ciamRedirectUri: https://techpubs.example-aero.test/oidc/callback
+ciamScope: openid
+ciamScope: profile
+ciamScope: email
+ciamTokenAuthMethod: none
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+xTokenLifetimeMinutes: 60
 
 dn: cn=tech-pubs-team,ou=owners,dc=ciam-ops
 objectClass: top
@@ -910,6 +1040,90 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamTitle: Onboard a SAML application
 ciamVersion: 1.0
 
+dn: cn=xCostCenter,ou=custom-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamFieldDefinition
+cn: xCostCenter
+ciamCarriedBy: ciamParty
+ciamDefinitionNumber: 1
+ciamExample: CC-1001
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPattern: ^CC-[0-9]{4}$
+ciamPiiClass: none
+ciamPortability: meta
+ciamPurpose: Cost center billed for the team's usage
+ciamValueSource: finance: cost-center register
+ciamValueType: string
+
+dn: cn=xDataResidency,ou=custom-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamFieldDefinition
+cn: xDataResidency
+ciamCarriedBy: ciamEnvironment
+ciamDefinitionNumber: 2
+ciamDocumentation: https://wiki.example-aero.test/security/data-residency
+ciamOverridable: TRUE
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPortability: binding
+ciamPurpose: Jurisdiction the environment's identity data must stay in
+ciamValueSource: terraform: azurerm_resource_group.location
+ciamValueSource: terraform: aws provider region
+ciamValueType: enum:us|us-gov|eu|ca
+
+dn: cn=xFeatureFlag,ou=custom-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamRecordTypeDefinition
+cn: xFeatureFlag
+ciamDefinitionNumber: 1
+ciamOptionalField: xRolloutPercent
+ciamOptionalField: description
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPurpose: A feature switch of the login experience
+ciamRecordKind: structural
+ciamRequiredField: xFlagEnabled
+ciamValueSource: pingfederate: authentication policy switches
+
+dn: cn=xFlagEnabled,ou=custom-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamFieldDefinition
+cn: xFlagEnabled
+ciamDefinitionNumber: 4
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPortability: intent
+ciamPurpose: Whether the feature is on
+ciamValueType: bool
+
+dn: cn=xRolloutPercent,ou=custom-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamFieldDefinition
+cn: xRolloutPercent
+ciamDefinitionNumber: 5
+ciamMaxValue: 100
+ciamMinValue: 0
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPortability: intent
+ciamPurpose: Share of users who get the feature
+ciamUnit: percent
+ciamValueType: int
+
+dn: cn=xTokenLifetimeMinutes,ou=custom-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamFieldDefinition
+cn: xTokenLifetimeMinutes
+ciamCarriedBy: ciamIntegration
+ciamDefaultValue: 60
+ciamDefinitionNumber: 3
+ciamDefinitionStatus: active
+ciamMaxValue: 1440
+ciamMinValue: 5
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPortability: intent
+ciamPurpose: Access token lifetime agreed with the application owner
+ciamUnit: minutes
+ciamUsedBy: pingfederate
+ciamValueSource: pingfederate: access token manager lifetime
+ciamValueType: int
+
 dn: ou=declared,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -928,6 +1142,7 @@ objectClass: ciamEnvironment
 env: prod
 ciamLifecycle: active
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+xDataResidency: us
 
 dn: env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -937,6 +1152,7 @@ ciamJoinsDeploymentOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamLifecycle: building
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPlannedCutover: 20270115000000Z
+xDataResidency: us-gov
 
 dn: ou=backends,ou=declared,ou=config,dc=ciam-ops
 objectClass: top

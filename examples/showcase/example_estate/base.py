@@ -6,13 +6,16 @@ BRANCHES = (("environments", "Clouds, environments, servers and bindings"),
             ("user-schema", "Records describing attributes of the user directory"),
             ("consumers", "Clients of the user directory, discovered from access logs"),
             ("acis", "Access control instructions on the user directory"),
+            ("identity-services", "The platform's own identity provider / OpenID provider"),
             ("integrations", "Federation integrations (SAML / OIDC) and their claim maps"),
             ("certificates", "Certificates (public facts only — never keys)"),
             ("external-allowlists", "Allowlists in consumer and partner systems that contain our addresses"),
             ("runbooks", "Work instructions"),
             ("changes", "Change records mirrored from ITSM"),
             ("incidents", "Incidents and postmortems"),
-            ("owners", "Teams, partners and vendors"))
+            ("owners", "Teams, partners and vendors"),
+            ("custom-schema", "Fields and record types the operator defines"),
+            ("feature-flags", "Feature switches of the login experience (a custom record type)"))
 
 
 def entries():

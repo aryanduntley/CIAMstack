@@ -1,5 +1,7 @@
 import pytest
 
+from opsdir.connectors.registry import format_named
+from opsdir_format_terraform.format import FORMAT
 from opsdir_format_terraform.hcl import Block, block, hcl, ref, tf_name
 
 
@@ -41,3 +43,7 @@ def test_block_aligns_equals_within_runs_like_terraform_fmt():
         '  }',
         '  count = 1',
         '}'))
+
+
+def test_registered_as_the_hcl_format():
+    assert format_named("hcl") == FORMAT and FORMAT.comment == ("#",) and ".tf" in FORMAT.extensions

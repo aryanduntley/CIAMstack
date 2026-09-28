@@ -29,5 +29,8 @@ ROOT_PASSWORD="$(az keyvault secret show --vault-name 'kv-ciam-prod' --name 'ds-
   --set ds-user-data/baseDn:dc=partners,dc=example-aero,dc=test \
   --acceptLicense
 
-# Then apply the environment-neutral configuration:
+# Then apply the environment-neutral configuration, in this order (indexes need the schema):
+#   ldapmodify ... -f ../ldap/schema.ldif
+#   ldapadd -c ... -f ../ldap/dit.ldif
 #   dsconfig ... --batchFilePath ../ds/dsconfig.batch
+#   ldapmodify ... -f ../ds/acis.ldif

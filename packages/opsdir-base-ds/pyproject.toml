@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-base-ds"
+version = "0.1.0"
+description = "opsdir base for the DS lineage of directory servers (OpenDJ, ForgeRock DS, PingDS): dsconfig batch, ACIs, setup helpers, replication checks."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1", "opsdir-adapter-ldap>=0.1"]
+
+[project.entry-points."opsdir.formats"]
+dsconfig-batch = "opsdir_base_ds.config:DSCONFIG_BATCH"
+
+[tool.setuptools.packages.find]
+where = ["src"]

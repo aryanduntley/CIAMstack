@@ -44,7 +44,11 @@ dn: cn=companyId,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
 cn: companyId
+ciamLdapEquality: caseIgnoreMatch
 ciamLdapName: companyId
+ciamLdapOid: 1.3.6.1.4.1.32473.2.1.1
+ciamLdapSingleValue: TRUE
+ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: none
 ciamPurpose: Link to the customer / supplier organization record
 
@@ -52,7 +56,10 @@ dn: cn=soldToAccount,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
 cn: soldToAccount
+ciamLdapEquality: caseIgnoreMatch
 ciamLdapName: soldToAccount
+ciamLdapOid: 1.3.6.1.4.1.32473.2.1.2
+ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: low
 ciamPurpose: Commercial account for aftermarket entitlements
 
@@ -60,7 +67,11 @@ dn: cn=registrationStatus,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
 cn: registrationStatus
+ciamLdapEquality: caseIgnoreMatch
 ciamLdapName: registrationStatus
+ciamLdapOid: 1.3.6.1.4.1.32473.2.1.3
+ciamLdapSingleValue: TRUE
+ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: none
 ciamPurpose: Registration workflow state (pending / approved / active / disabl
  ed)
@@ -70,7 +81,11 @@ objectClass: top
 objectClass: ciamUserAttribute
 cn: exportScreeningStatus
 ciamExportControlled: TRUE
+ciamLdapEquality: caseIgnoreMatch
 ciamLdapName: exportScreeningStatus
+ciamLdapOid: 1.3.6.1.4.1.32473.2.1.4
+ciamLdapSingleValue: TRUE
+ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: high
 ciamPurpose: Result of restricted-party / export screening from the authoritat
  ive system
@@ -79,7 +94,10 @@ dn: cn=challengeAnswer,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
 cn: challengeAnswer
+ciamLdapEquality: caseExactMatch
 ciamLdapName: challengeAnswer
+ciamLdapOid: 1.3.6.1.4.1.32473.2.1.5
+ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: high
 ciamPurpose: Legacy knowledge-based recovery answers; candidate for retirement
 
@@ -87,7 +105,12 @@ dn: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
 cn: lastLoginTime
+ciamLdapEquality: generalizedTimeMatch
 ciamLdapName: lastLoginTime
+ciamLdapOid: 1.3.6.1.4.1.32473.2.1.6
+ciamLdapOrdering: generalizedTimeOrderingMatch
+ciamLdapSingleValue: TRUE
+ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.24
 ciamPiiClass: low
 ciamPurpose: Inactivity detection for lifecycle cleanup
 
@@ -95,7 +118,11 @@ dn: cn=appEntitlement,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
 cn: appEntitlement
+ciamLdapEquality: caseIgnoreMatch
 ciamLdapName: appEntitlement
+ciamLdapOid: 1.3.6.1.4.1.32473.2.1.7
+ciamLdapSubstring: caseIgnoreSubstringsMatch
+ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: low
 ciamPurpose: Application entitlements (app:role)
 
@@ -106,3 +133,28 @@ cn: description
 ciamLdapName: description
 ciamPiiClass: low
 ciamPurpose: Free text; used by a legacy export for account notes
+
+dn: cn=inetOrgPerson,ou=user-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamUserObjectClass
+cn: inetOrgPerson
+ciamLdapClassKind: structural
+ciamLdapName: inetOrgPerson
+ciamPurpose: Structural class of every user entry
+
+dn: cn=exampleAeroPerson,ou=user-schema,dc=ciam-ops
+objectClass: top
+objectClass: ciamUserObjectClass
+cn: exampleAeroPerson
+ciamLdapClassKind: auxiliary
+ciamLdapMay: cn=companyId,ou=user-schema,dc=ciam-ops
+ciamLdapMay: cn=soldToAccount,ou=user-schema,dc=ciam-ops
+ciamLdapMay: cn=registrationStatus,ou=user-schema,dc=ciam-ops
+ciamLdapMay: cn=exportScreeningStatus,ou=user-schema,dc=ciam-ops
+ciamLdapMay: cn=challengeAnswer,ou=user-schema,dc=ciam-ops
+ciamLdapMay: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
+ciamLdapMay: cn=appEntitlement,ou=user-schema,dc=ciam-ops
+ciamLdapName: exampleAeroPerson
+ciamLdapOid: 1.3.6.1.4.1.32473.2.2.1
+ciamLdapSuperior: top
+ciamPurpose: Customer / supplier attributes added to every user entry

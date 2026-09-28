@@ -24,6 +24,7 @@ echo "-- who can read privacy-classified attributes?"; od report pii
 echo "-- config drift (declared vs observed)"; od report drift
 echo "-- stale work instructions";           od report stale
 echo "-- unowned";                           od report unowned
+echo "-- custom fields and record types";    od report custom
 echo "-- LDAP filter search: consumers not yet tested"
 od search -b ou=consumers,dc=ciam-ops '(&(objectClass=ciamConsumer)(!(ciamMigrationStatus=tested)))' ciamMigrationStatus ciamOwner
 

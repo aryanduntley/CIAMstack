@@ -24,7 +24,7 @@ import pathlib
 import sys
 
 from .connectors import migration, plan as planmod, reports, workspace
-from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, store_parts
+from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, schema_sync, store_parts
 from .connectors.stack import STATUS_HEADERS, stack_rows
 from .core.environment import env_model
 from .connectors.render import render_env
@@ -103,7 +103,7 @@ def _cmd_upgrade(conn, a, as_of):
 
 def _cmd_load(conn, a, as_of):
     files = a.files
-    n = db.load_ldif(conn, files)
+    n = db.load_ldif(conn, files, schema_sync=schema_sync())
     return f"loaded {n} entries from {len(files)} files; {db.reference_count(conn)} DN references verified"
 
 
@@ -160,7 +160,7 @@ def _cmd_migrate(conn, a, as_of):
 
 
 def _cmd_modify(conn, a, as_of):
-    return "\n".join(f"{a.change}: {line}" for line in db.apply_changes(conn, a.file, a.change))
+    return "\n".join(f"{a.change}: {line}" for line in db.apply_changes(conn, a.file, a.change, schema_sync()))
 
 
 def _cmd_export(conn, a, as_of):
@@ -177,7 +177,7 @@ def _cmd_workspace(conn, a, as_of):
     ws_dsn = workspace.workspace_dsn()
     ws, source = db.connect(ws_dsn), os.environ["OPSDIR_DSN"]
     if a.action == "create":
-        n = workspace.create(conn, ws, store_parts(), source, a.replace)
+        n = workspace.create(conn, ws, store_parts(), source, a.replace, schema_sync())
         return f"workspace created: {n} entries copied from {workspace.safe_source(source)}"
     if a.action == "status":
         return workspace.status(conn, ws)
@@ -185,7 +185,7 @@ def _cmd_workspace(conn, a, as_of):
         return workspace.diff_text(conn, ws) or "# no changes"
     if not a.change:
         raise SystemExit("usage: opsdir workspace cutover --change CHG-… (an approved change in the live record)")
-    applied = workspace.cutover(conn, ws, store_parts(), source, a.change)
+    applied = workspace.cutover(conn, ws, store_parts(), source, a.change, schema_sync())
     return "\n".join((*(f"{a.change}: {line}" for line in applied),
                       f"cutover: {len(applied)} change(s) applied to the live record; workspace re-copied"))
 
