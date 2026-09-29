@@ -1,0 +1,14 @@
+step                  what                                                                    where                             owner               
+--------------------  ----------------------------------------------------------------------  --------------------------------  --------------------
+carry-over            every environment receives the same new material, together: partners a                                    ciam-platform       
+rotate                aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/pro  source/prod                       ciam-platform       
+rotate                azkv://kv-ciam-prod/pf-signing-key                                      target/prod                       ciam-platform       
+rotate                aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/sta  source/stage                      ciam-platform       
+re-issue certificate  pf-signing-2025                                                         CN=Example Aero SSO Signing 2025  ciam-platform       
+uses the certificate  sso                                                                                                       ciam-platform       
+uses the certificate  customer-portal                                                                                           customer-portal-team
+uses the certificate  supplier-portal                                                                                           supplier-portal-team
+uses the certificate  tech-pubs                                                                                                 tech-pubs-team      
+uses the certificate  mobile-ops                                                                                                mobile-team         
+(10 rows)
+exit 0

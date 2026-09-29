@@ -5,6 +5,66 @@
     "backup-target"
   ],
   "files": {
+    "am/global/Realms/partners.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "81d7d7515ff9d35b54fdf406cde579efe7e0ed11ca540dd4988fa44ac739fd07"
+    },
+    "am/realms/root-partners/Applications/partner-apps.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "36b35c84cf5fec41475dc1242aecf43d9c22d3627981df4483265983c869e605"
+    },
+    "am/realms/root-partners/AuthTree/PartnerLogin.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "d7eeeb1eb97ffa52274fe7d4709e5071762c770414d6d741a1805aaa8cc23943"
+    },
+    "am/realms/root-partners/DataStoreDecisionNode/5e1d0c9b-0004-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "ee251eda445b48183fde1e32b4bbeef3270ba1ef0e68d169e6b2c4686227d1ea"
+    },
+    "am/realms/root-partners/OAuth2Clients/partner-portal.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "ee10b46182ca98d2f205437a21fd2b9898931ddb5f3ffda99d2b638ad1263631"
+    },
+    "am/realms/root-partners/OneTimePasswordCollectorDecisionNode/5e1d0c9b-0007-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "76ab84cfa9c8493bd0fb84667724c5cb8e8076064b9abed292c224f02af4185b"
+    },
+    "am/realms/root-partners/OneTimePasswordGeneratorNode/5e1d0c9b-0005-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "a7e8dfa24f6ea4d60c4cd33884ff1751acd303398e2601a4266bdedef83bc4a3"
+    },
+    "am/realms/root-partners/OneTimePasswordSmtpSenderNode/5e1d0c9b-0006-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "313af4f0b11c12400316ed48c1c830f943a594b462b2eefca6a093f21888e836"
+    },
+    "am/realms/root-partners/PageNode/5e1d0c9b-0001-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "b004e0719a07b6983dd9efb570f6f6e28cbaf370f25fe41586df100ff375a963"
+    },
+    "am/realms/root-partners/PasswordCollectorNode/5e1d0c9b-0003-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "9c5e9949274792117247f9e3997949048122cdc42c3cd5894930ed872f912316"
+    },
+    "am/realms/root-partners/Policies/partner-portal-access.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "0afcecea68f13b1a223478ad14c360b7522a70b84af3fdd3b12e2e3e982f94fb"
+    },
+    "am/realms/root-partners/UsernameCollectorNode/5e1d0c9b-0002-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "5b4ef2dc500317b2ef3a5c42cb81045ba988138a390b811dd24379535da4bf61"
+    },
     "ds/acis.ldif": {
       "scope": "environment-neutral",
       "format": "ldif",
@@ -30,6 +90,12 @@
       "format": "shell",
       "sha256": "612ac9468a720342846fd7db3e130ea7c5714e28e18bccc03ee9dd90a0e9e276"
     },
+    "files/am/realms/root-partners/OAuth2Provider/OAuth2Provider.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "captured": true,
+      "sha256": "1808094cf7dab551ce36b7684a2978599c56c8854e2c698a51f306b1d8db9fac"
+    },
     "files/pingfederate/bin/run.properties": {
       "scope": "environment-specific",
       "format": "java-properties",
@@ -41,6 +107,24 @@
       "format": "json",
       "captured": true,
       "sha256": "5d64b31420d4627260d1bd2cf0b9dd3bdea95d85f02350aa7bc5bb115da37904"
+    },
+    "files/pinggateway/config/admin.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "captured": true,
+      "sha256": "416d3e7721a0ff94123158e9744486c99566decd99382d98a1f3f165becf81e1"
+    },
+    "files/pinggateway/config/config.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "captured": true,
+      "sha256": "bf953996c739c80ae2317a6018f25d5746b718e382d38df6ef909fb0b9ab5a50"
+    },
+    "files/pingidm/conf/audit.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "captured": true,
+      "sha256": "6946e9fa32350e6dde16047ae678192573d8eca0688961b0a510811e011864f0"
     },
     "ldap/dit.ldif": {
       "scope": "environment-neutral",
@@ -57,10 +141,20 @@
       "format": "json",
       "sha256": "92e59f02f4d45b2c44e386086f6204a2f331e7ed77147f907417b1d224b2462e"
     },
+    "oidc/clients/partner-portal.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "da4836800e10d2be1c5c7eb39ab90604278c0653d58097f4c68beefad8c07aaa"
+    },
     "oidc/clients/tech-pubs.json": {
       "scope": "environment-neutral",
       "format": "json",
       "sha256": "9806619723885da5108609dd53ab1edb614a41a2bcc3adef9f177bd8ae8dd156"
+    },
+    "oidc/discovery/partners.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "6d76d8d85f20ac6ce2fb074734d06d34088b59c4e8dc003e946b8764f8c369d0"
     },
     "oidc/discovery/sso.json": {
       "scope": "environment-neutral",
@@ -81,6 +175,41 @@
       "scope": "environment-neutral",
       "format": "json",
       "sha256": "dbb151dfcbf0d748796110c370accdea19c6d06f15ef5e5bcf5105c61198c2d5"
+    },
+    "pinggateway/routes/partner-portal.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "cd1beac9ef8c5d82f87547ed1f8f3865b8e86ca0ae12aa7cbda38ff57e0f096f"
+    },
+    "pingidm/conf/managed.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "cf05c6a125025cd00c1301cb987f030028906e57bc08770a2993ce40452ce23c"
+    },
+    "pingidm/conf/provisioner.openicf-hrdb.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "e9d1f9079e1304cf2f199128c57ffe1eb65c958a2b0269da6d91d7f101f40c4e"
+    },
+    "pingidm/conf/provisioner.openicf-ldap.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "56fe1a6eaba2496d247d5f6cf368eae48f4a14a09b282d4b04786217b628c9aa"
+    },
+    "pingidm/conf/schedule-reconcile-hr.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "0e5edb2672f3380227d325e64bc900a1608a6f32c8d0f4667a7939b7a228a6d8"
+    },
+    "pingidm/conf/sync.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "3d8cd9c31ffd2d5814c3c34e18ba71d193acfd7ee94e776f0e0bb5343e584318"
+    },
+    "saml/idp/partners.xml": {
+      "scope": "environment-neutral",
+      "format": "xml",
+      "sha256": "6c2188a9f180ca6dba6427fb9833f99c29dad54245983b0b7f978800f2ec111a"
     },
     "saml/idp/sso.xml": {
       "scope": "environment-neutral",
@@ -110,7 +239,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "5f35047b37065de1fab34f4e1bc0e5cc6bffca525194e418cfeb7d6e3af96b63"
+      "sha256": "25f624b34ca3108175fc7948a63f157ce2df4a6d7e2924be65a2785530980684"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

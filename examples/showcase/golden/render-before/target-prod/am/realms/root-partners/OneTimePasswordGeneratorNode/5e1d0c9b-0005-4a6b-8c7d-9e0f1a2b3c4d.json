@@ -1,0 +1,15 @@
+{
+  "metadata": {
+    "realm": "/partners",
+    "entityType": "OneTimePasswordGeneratorNode",
+    "entityId": "5e1d0c9b-0005-4a6b-8c7d-9e0f1a2b3c4d",
+    "pathParams": {}
+  },
+  "data": {
+    "_id": "5e1d0c9b-0005-4a6b-8c7d-9e0f1a2b3c4d",
+    "length": 8,
+    "_type": {
+      "_id": "OneTimePasswordGeneratorNode"
+    }
+  }
+}

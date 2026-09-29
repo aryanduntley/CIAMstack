@@ -1,0 +1,27 @@
+{
+  "metadata": {
+    "realm": "/partners",
+    "amsterVersion": "7.5.1",
+    "entityType": "Applications",
+    "entityId": "partner-apps",
+    "pathParams": {}
+  },
+  "data": {
+    "_id": "partner-apps",
+    "name": "partner-apps",
+    "applicationType": "iPlanetAMWebAgentService",
+    "resourceTypeUuids": [
+      "76656a38-5f8e-401b-83aa-4ccb74ce88d2"
+    ],
+    "subjects": [
+      "AuthenticatedUsers",
+      "Identity"
+    ],
+    "conditions": [
+      "AuthenticateToRealm",
+      "AuthLevel"
+    ],
+    "creationDate": 1726000000000,
+    "lastModifiedDate": 1726500000000
+  }
+}

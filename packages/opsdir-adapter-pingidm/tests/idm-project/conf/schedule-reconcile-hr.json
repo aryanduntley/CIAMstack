@@ -1,0 +1,11 @@
+{
+    "enabled": true,
+    "persisted": true,
+    "type": "cron",
+    "schedule": "0 0 2 * * ?",
+    "invokeService": "sync",
+    "invokeContext": {
+        "action": "reconcile",
+        "mapping": "hr_managedUser"
+    }
+}

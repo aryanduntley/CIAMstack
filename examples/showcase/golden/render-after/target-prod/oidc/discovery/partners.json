@@ -1,0 +1,29 @@
+{
+  "issuer": "https://login.example-aero.test/am/oauth2/realms/root/realms/partners",
+  "authorization_endpoint": "https://login.example-aero.test/am/oauth2/realms/root/realms/partners/authorize",
+  "token_endpoint": "https://login.example-aero.test/am/oauth2/realms/root/realms/partners/access_token",
+  "userinfo_endpoint": "https://login.example-aero.test/am/oauth2/realms/root/realms/partners/userinfo",
+  "jwks_uri": "https://login.example-aero.test/am/oauth2/realms/root/realms/partners/connect/jwk_uri",
+  "end_session_endpoint": "https://login.example-aero.test/am/oauth2/realms/root/realms/partners/connect/endSession",
+  "scopes_supported": [
+    "openid",
+    "profile",
+    "email"
+  ],
+  "response_types_supported": [
+    "code"
+  ],
+  "grant_types_supported": [
+    "authorization_code",
+    "refresh_token"
+  ],
+  "subject_types_supported": [
+    "public"
+  ],
+  "id_token_signing_alg_values_supported": [
+    "RS256"
+  ],
+  "token_endpoint_auth_methods_supported": [
+    "private_key_jwt"
+  ]
+}

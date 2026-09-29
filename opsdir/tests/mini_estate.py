@@ -4,7 +4,9 @@ Two environments on the made-up provider `fakecloud`: alpha binds a network and 
 network, so moving alpha -> beta is blocked and beta -> alpha is ready. Both declare the fake adapter in their stack
 and put the same service name in front of the identity service's `web` servers.
 """
-from opsdir.core.contract import Adapter
+from opsdir.core.contract import Adapter, Imported, Importer
+from opsdir.core.directory import get, make_entry
+from opsdir.core.secrets import scan
 from opsdir.core.findings import findings
 from opsdir.core.standard import AttributeDef, ClassDef, fragment
 from opsdir.core.interchange.ldif import parse
@@ -106,6 +108,28 @@ def directory(change_records=()):
     return build_directory(REGISTRY, parse(LDIF), change_records)
 
 
+def _binding(env, cn, oc, role, uri, attrs):
+    extra = "".join(f"\n{k}: {v}" for k, vals in attrs.items() for v in (vals if isinstance(vals, tuple) else (vals,)))
+    return (f"dn: cn={cn},ou=bindings,env=prod,cloud={env},ou=environments,dc=ciam-ops\nchangetype: add\n"
+            f"objectClass: top\nobjectClass: {oc}\ncn: {cn}\nciamBindingRole: {role}\nciamRefUri: {uri}{extra}\n")
+
+
+def credential_changes(alpha=None, beta=None, **credential):
+    """Change records adding the credential `signing-key` (carry-over, exportable, HSM not required, rotated every
+    90 days, unless `credential` says otherwise) and a secret reference for it in alpha and in beta, with the binding
+    attributes given (None: no binding in that environment)."""
+    facts = {"ciamCredentialType": "private-key", "ciamContinuity": "carry-over", "ciamExportable": "TRUE",
+             "ciamRotationDays": "90", "ciamKeyAlgorithm": "RSA", "ciamKeySize": "2048", **credential}
+    extra = "".join(f"\n{k}: {v}" for k, v in facts.items() if v is not None)
+    return tuple(parse("\n".join((
+        "dn: ou=credentials,dc=ciam-ops\nchangetype: add\nobjectClass: top\nobjectClass: organizationalUnit\n"
+        "ou: credentials\n",
+        f"dn: cn=signing-key,ou=credentials,dc=ciam-ops\nchangetype: add\nobjectClass: top\n"
+        f"objectClass: ciamCredential\ncn: signing-key\nciamBindingRole: signing-key{extra}\n",
+        *(_binding(env, "secret-signing-key", "ciamSecretRef", "signing-key", f"fake://secrets/{env}/signing", attrs)
+          for env, attrs in (("alpha", alpha), ("beta", beta)) if attrs is not None)))))
+
+
 # ------------------------------------------------------------------ the fake provider adapter
 def _applies(m):
     return m.provider == PROVIDER
@@ -127,8 +151,28 @@ def _resolve(rest):
     return f"fake-cli get {rest}"
 
 
+def _service(d, base, name, url):
+    old = get(d, f"cn={name},{base}")
+    attrs = {**(dict(old.attrs) if old else {"cn": (name,)}), "ciamBaseUrl": (url,)}
+    return make_entry(f"cn={name},{base}", ("top", "ciamIdentityService"), attrs)
+
+
+def _read_services(files, d, patterns):
+    """The fake product's export: services/<name>.url holds an identity service's base URL. A service the record
+    already has keeps its other attributes; a file that looks like secret material is withheld."""
+    base = "ou=identity-services,dc=ciam-ops"
+    urls = {path.split("/")[-1][:-4]: text.strip() for path, text in files.items() if path.startswith("services/")}
+    secret = {name for name, url in urls.items() if scan(url, patterns)}
+    return Imported(containers=(make_entry(base, ("top", "organizationalUnit"), {"ou": ("identity-services",)}),),
+                    groups=tuple((f"cn={n},{base}", (_service(d, base, n, urls[n]),)) for n in urls if n not in secret),
+                    notices=tuple(f"{n}: withheld (looks like secret material)" for n in sorted(secret)))
+
+
+FAKE_IMPORTER = Importer("services", "identity services from the fake product's export", _read_services)
+
+
 FAKE = Adapter(name=ADAPTER_NAME, kind="provider", applies=_applies, required_roles=(),
                render_neutral=_render_neutral, render_env=_render_env, checks=(_check,), ref_schemes=("fake",),
                secret_schemes={"fake": _resolve}, renders="fake files", neutral_label="Fake",
                vocabulary={"ciamCloudProvider": (PROVIDER,)}, schema=FAKE_SCHEMA,
-               formats=(("fake/*.txt", "text"),), products=(), secret_patterns=())
+               formats=(("fake/*.txt", "text"),), products=(), secret_patterns=(), importers=(FAKE_IMPORTER,))

@@ -46,3 +46,21 @@ def test_ports_come_from_the_declared_handlers_else_the_lineage_defaults():
 def test_the_lineages_batch_syntax_is_a_registered_format():
     assert format_named("dsconfig-batch") == DSCONFIG_BATCH
     assert format_of("ds/dsconfig.batch", FORMATS) == "dsconfig-batch" and format_of("ldap/dit.ldif", FORMATS) == "ldif"
+
+
+def _replicas(*servers):
+    from opsdir_base_ds.replication import check_replication_path
+    env = make_entry("env=prod,cloud=x,ou=environments,dc=ciam-ops", ["ciamEnvironment"], {"env": ["prod"]})
+    m = lambda label, srv: SimpleNamespace(label=label, env=env, servers=srv, bindings=())  # noqa: E731
+    return check_replication_path(SimpleNamespace(d=make_directory((), {}, ()), src=m("x/prod", ()),
+                                                  dst=m("y/prod", servers)))
+
+
+def test_a_replica_without_a_private_ip_is_named_not_skipped():
+    ds = make_entry("cn=ds-1,env=prod,cloud=y", ["ciamServer"], {"cn": ["ds-1"], "ciamServerRole": ["ds"]})
+    assert "y/prod replica ds-1 records no private IP, so whether x/prod admits it on port 8989 can't be checked." in \
+        [text for _, text, _ in _replicas(ds).blockers]
+
+
+def test_no_replicas_is_said_not_passed_as_all_admitted():
+    assert "y/prod records no directory replicas: no replication traffic to admit." in _replicas().ok

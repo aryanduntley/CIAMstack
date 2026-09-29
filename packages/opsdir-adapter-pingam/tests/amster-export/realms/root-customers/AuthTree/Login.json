@@ -1,0 +1,46 @@
+{
+  "metadata": {
+    "realm": "/customers",
+    "amsterVersion": "7.5.1",
+    "entityType": "AuthTree",
+    "entityId": "Login",
+    "pathParams": {}
+  },
+  "data": {
+    "_id": "Login",
+    "_rev": "-1",
+    "entryNodeId": "a1b2c3d4-0000-4000-8000-000000000001",
+    "enabled": true,
+    "description": "Customer sign-in",
+    "nodes": {
+      "a1b2c3d4-0000-4000-8000-000000000001": {
+        "nodeType": "PageNode",
+        "displayName": "Sign in",
+        "connections": {
+          "outcome": "a1b2c3d4-0000-4000-8000-000000000004"
+        }
+      },
+      "a1b2c3d4-0000-4000-8000-000000000004": {
+        "nodeType": "DataStoreDecisionNode",
+        "displayName": "Check password",
+        "connections": {
+          "true": "a1b2c3d4-0000-4000-8000-000000000005",
+          "false": "e301438c-0bd0-429c-ab0c-66126501069a"
+        }
+      },
+      "a1b2c3d4-0000-4000-8000-000000000005": {
+        "nodeType": "OneTimePasswordSmtpSenderNode",
+        "displayName": "Email a code",
+        "connections": {
+          "outcome": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0"
+        }
+      }
+    },
+    "staticNodes": {
+      "startNode": {
+        "x": 50,
+        "y": 25
+      }
+    }
+  }
+}

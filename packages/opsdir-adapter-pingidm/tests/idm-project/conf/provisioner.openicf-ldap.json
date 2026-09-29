@@ -1,0 +1,48 @@
+{
+    "name": "ldap",
+    "connectorRef": {
+        "bundleName": "org.forgerock.openicf.connectors.ldap-connector",
+        "bundleVersion": "[1.5.0.0,1.6.0.0)",
+        "connectorName": "org.identityconnectors.ldap.LdapConnector"
+    },
+    "configurationProperties": {
+        "host": "ldap.example.test",
+        "port": 1636,
+        "ssl": true,
+        "principal": "uid=idm-sync,ou=service-accounts,dc=example,dc=test",
+        "credentials": {
+            "$crypto": {
+                "type": "x-simple-encryption",
+                "value": {
+                    "cipher": "AES/CBC/PKCS5Padding",
+                    "data": "ZmFrZS1lbmNyeXB0ZWQtdmFsdWUtZm9yLXRlc3Rz",
+                    "iv": "c3ludGhldGljaXY=",
+                    "key": "openidm-sym-default"
+                }
+            }
+        },
+        "baseContexts": [
+            "ou=people,dc=example,dc=test"
+        ],
+        "accountObjectClasses": [
+            "top",
+            "inetOrgPerson"
+        ]
+    },
+    "objectTypes": {
+        "account": {
+            "$schema": "http://json-schema.org/draft-03/schema",
+            "nativeType": "__ACCOUNT__",
+            "properties": {
+                "uid": {
+                    "type": "string",
+                    "nativeName": "uid"
+                },
+                "mail": {
+                    "type": "string",
+                    "nativeName": "mail"
+                }
+            }
+        }
+    }
+}

@@ -21,3 +21,23 @@ ciamSigningAlg: PS256
 ciamTargetRole: pf-engine
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 description: Single sign-on for customers, suppliers and partners
+
+dn: cn=partners,ou=identity-services,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityService
+objectClass: pingamRealm
+cn: partners
+ciamBaseUrl: https://login.example-aero.test
+ciamCriticality: high
+ciamEntityId: https://login.example-aero.test/am/partners
+ciamNameIdFormat: persistent
+ciamOidcIssuer: https://login.example-aero.test/am/oauth2/realms/root/realms/p
+ artners
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamScope: openid
+ciamScope: profile
+ciamScope: email
+ciamSigningAlg: RS256
+ciamTargetRole: am
+description: Partner and supplier staff sign-in (PingAM realm /partners)
+pingamRealmPath: /partners

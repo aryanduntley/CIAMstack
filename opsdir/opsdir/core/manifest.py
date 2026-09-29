@@ -2,7 +2,9 @@
 import hashlib
 import json
 
+from .directory import one, values
 from .formats import generated_header
+from .overlays import overridden_in
 
 
 def header(m, what, fmt):
@@ -15,8 +17,14 @@ def _scope(p, neutral, scopes):
     return scopes.get(p) or ("environment-neutral" if p in neutral else "environment-specific")
 
 
+def _override(o):
+    return {"entry": one(o, "ciamOverrides"), "attribute": one(o, "ciamOverrideAttribute"),
+            "values": list(values(o, "ciamOverrideValue")), "from": overridden_in(o)}
+
+
 def manifest(m, neutral, specific, formats, captured=None, scopes=None, not_rendered=()):
-    """MANIFEST.json text: environment, provider, unbound roles, each file's scope, format and SHA-256 (captured
+    """MANIFEST.json text: environment, provider, unbound roles, the overrides the environment rendered with (when it
+    has any: an environment-neutral file then carries its values), each file's scope, format and SHA-256 (captured
     config files included, marked captured), and the captured files that could not be rendered, with why."""
     captured, scopes = captured or {}, scopes or {}
     files = {p: {"scope": _scope(p, neutral, scopes), "format": formats[p],
@@ -24,5 +32,6 @@ def manifest(m, neutral, specific, formats, captured=None, scopes=None, not_rend
              for p, c in sorted({**neutral, **specific, **captured}.items())}
     missing = {"captured_not_rendered": [{"file": name, "why": why} for name, why in not_rendered]} \
         if not_rendered else {}
-    return json.dumps({"environment": m.dn, "provider": m.provider, "unbound_roles": list(m.unbound),
+    overrides = {"overrides": [_override(o) for o in m.overrides]} if m.overrides else {}
+    return json.dumps({"environment": m.dn, "provider": m.provider, "unbound_roles": list(m.unbound), **overrides,
                        "files": files, **missing}, indent=2) + "\n"

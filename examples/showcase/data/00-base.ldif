@@ -56,6 +56,13 @@ objectClass: organizationalUnit
 ou: certificates
 description:: Q2VydGlmaWNhdGVzIChwdWJsaWMgZmFjdHMgb25seSDigJQgbmV2ZXIga2V5cyk=
 
+dn: ou=credentials,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: credentials
+description: Keys and secrets as metadata; each environment binds them to wher
+ e it keeps the material
+
 dn: ou=external-allowlists,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit

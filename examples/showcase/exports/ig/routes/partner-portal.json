@@ -1,0 +1,50 @@
+{
+  "name": "partner-portal",
+  "baseURI": "https://partners-app.apps.example-aero.test:8443",
+  "condition": "${find(request.uri.host, '^partners.example-aero.test')}",
+  "handler": {
+    "type": "Chain",
+    "config": {
+      "filters": [
+        {
+          "name": "PartnerSignIn",
+          "type": "AuthorizationCodeOAuth2ClientFilter",
+          "config": {
+            "clientEndpoint": "/home/id_token",
+            "requireHttps": true,
+            "failureHandler": {
+              "type": "StaticResponseHandler",
+              "config": {
+                "status": 403
+              }
+            },
+            "registrations": [
+              {
+                "name": "partner-portal",
+                "type": "ClientRegistration",
+                "config": {
+                  "clientId": "partner-portal",
+                  "issuer": {
+                    "name": "PartnerRealm",
+                    "type": "Issuer",
+                    "config": {
+                      "wellKnownEndpoint": "https://login.example-aero.test/am/oauth2/realms/root/realms/partners/.well-known/openid-configuration"
+                    }
+                  },
+                  "scopes": [
+                    "openid",
+                    "profile",
+                    "email"
+                  ],
+                  "authenticatedRegistrationHandler": "ClientAuthHandler",
+                  "secretsProvider": "SystemAndEnvSecretStore-1"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "handler": "ReverseProxyHandler"
+    }
+  }
+}

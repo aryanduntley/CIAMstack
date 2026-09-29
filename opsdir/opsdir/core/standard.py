@@ -31,6 +31,7 @@ EQUALITY = {"int": "integerMatch", "port": "integerMatch", "bool": "booleanMatch
 # number: pinned OID suffix under <arc>.1 (attributes) or <arc>.2 (classes) of the fragment that holds it
 # rules: ((X-extension, value), ...) the store enforces on every value, beyond the value type: X-MIN, X-MAX (int and
 # port values), X-PATTERN (a regular expression the whole value matches), X-MAX-LENGTH (characters). Usually none.
+# X-OVERRIDABLE TRUE (OVERRIDABLE below) marks intent an environment may override (ciamOverride entries).
 AttributeDef = namedtuple("AttributeDef", ("number", "name", "value_type", "portability", "single_value",
                                            "description", "rules"), defaults=((),))
 ClassDef = NamedTuple("ClassDef", [("number", int), ("name", str), ("sup", str), ("kind", str),
@@ -76,7 +77,9 @@ HEADER = ("# Operations Directory schema (opsdir): the attribute types and objec
           "#   X-VALUE-TYPE   stricter value type enforced by the store (string, int, bool, time, dn, extdn,",
           "#                  cidr, ip, fqdn, url, port, ref-uri, json, enum:a|b|c, vocab = values the",
           "#                  installed domains and adapters register)",
+          "#   X-OVERRIDABLE  TRUE: an environment may override the value (its own ciamOverride entries)",
           "# OIDs use the RFC 5612 documentation arc 1.3.6.1.4.1.32473 as a placeholder.")
+OVERRIDABLE = (("X-OVERRIDABLE", "TRUE"),)      # the rules of intent an environment may override
 SUBSCHEMA = ("dn: cn=schema", "objectClass: top", "objectClass: ldapSubentry", "objectClass: subschema", "cn: schema")
 
 # Base of every entry, plus vocabulary shared by several domains.

@@ -1,0 +1,25 @@
+{
+  "metadata": {
+    "realm": "/partners",
+    "entityType": "OneTimePasswordSmtpSenderNode",
+    "entityId": "5e1d0c9b-0006-4a6b-8c7d-9e0f1a2b3c4d",
+    "pathParams": {}
+  },
+  "data": {
+    "_id": "5e1d0c9b-0006-4a6b-8c7d-9e0f1a2b3c4d",
+    "fromEmailAddress": "no-reply@example-aero.test",
+    "hostName": "smtp.example-aero.test",
+    "hostPort": 587,
+    "password": null,
+    "sslOption": "START_TLS",
+    "username": "am-mailer",
+    "_type": {
+      "_id": "OneTimePasswordSmtpSenderNode"
+    },
+    "x-opsdir": {
+      "withheld": [
+        "/password"
+      ]
+    }
+  }
+}

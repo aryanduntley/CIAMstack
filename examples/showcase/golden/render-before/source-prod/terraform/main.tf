@@ -6,6 +6,14 @@ data "aws_vpc" "main" {
   id = "vpc-0a1b2c3d4e5f67890"
 }
 
+data "aws_subnet" "subnet_am_a" {
+  id = "subnet-0c77d88e99fa00b1a"
+}
+
+data "aws_subnet" "subnet_am_b" {
+  id = "subnet-0c77d88e99fa00b1b"
+}
+
 data "aws_subnet" "subnet_ds_a" {
   id = "subnet-0a11b22c33d44e55a"
 }
@@ -18,6 +26,14 @@ data "aws_subnet" "subnet_ds_c" {
   id = "subnet-0a11b22c33d44e55c"
 }
 
+data "aws_subnet" "subnet_idm_a" {
+  id = "subnet-0d88e99fa00b11c2a"
+}
+
+data "aws_subnet" "subnet_ig_a" {
+  id = "subnet-0e99fa00b11c22d3a"
+}
+
 data "aws_subnet" "subnet_pf_a" {
   id = "subnet-0f66e77d88c99b00a"
 }
@@ -26,9 +42,36 @@ data "aws_subnet" "subnet_pf_b" {
   id = "subnet-0f66e77d88c99b00b"
 }
 
+resource "aws_security_group" "am" {
+  name        = "ciam-prod-am"
+  description = "CIAM am (source/prod)"
+  vpc_id      = data.aws_vpc.main.id
+  tags = {
+    ManagedBy = "opsdir"
+  }
+}
+
 resource "aws_security_group" "ds" {
   name        = "ciam-prod-ds"
   description = "CIAM ds (source/prod)"
+  vpc_id      = data.aws_vpc.main.id
+  tags = {
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_security_group" "idm" {
+  name        = "ciam-prod-idm"
+  description = "CIAM idm (source/prod)"
+  vpc_id      = data.aws_vpc.main.id
+  tags = {
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_security_group" "ig" {
+  name        = "ciam-prod-ig"
+  description = "CIAM ig (source/prod)"
   vpc_id      = data.aws_vpc.main.id
   tags = {
     ManagedBy = "opsdir"
@@ -62,6 +105,15 @@ resource "aws_vpc_security_group_ingress_rule" "fw_admin_0_4444" {
   description       = "fw-admin (fw-admin)"
 }
 
+resource "aws_vpc_security_group_ingress_rule" "fw_apps_public_0_443" {
+  security_group_id = aws_security_group.ig.id
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+  description       = "fw-apps-public (fw-apps-public)"
+}
+
 resource "aws_vpc_security_group_ingress_rule" "fw_customer_portal_0_1636" {
   security_group_id = aws_security_group.ds.id
   cidr_ipv4         = "10.30.8.0/24"
@@ -87,6 +139,15 @@ resource "aws_vpc_security_group_ingress_rule" "fw_legacy_rptuser_0_1636" {
   to_port           = 1636
   ip_protocol       = "tcp"
   description       = "consumer legacy-rptuser (fw-legacy-rptuser)"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "fw_login_public_0_443" {
+  security_group_id = aws_security_group.am.id
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+  description       = "fw-login-public (fw-login-public)"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "fw_mro_batch_0_1636" {
@@ -170,6 +231,44 @@ resource "aws_vpc_security_group_ingress_rule" "fw_supplier_portal_0_1636" {
   description       = "consumer supplier-portal-svc (fw-supplier-portal)"
 }
 
+resource "aws_instance" "am_1" {
+  ami                    = "ami-0a9b8c7d6e5f40321"
+  instance_type          = "m6i.large"
+  subnet_id              = data.aws_subnet.subnet_am_a.id
+  private_ip             = "10.20.7.21"
+  vpc_security_group_ids = [aws_security_group.am.id]
+  root_block_device {
+    encrypted  = true
+    kms_key_id = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
+  }
+  tags = {
+    Name      = "am-1"
+    Role      = "am"
+    Hostname  = "am-1.aws.internal.example-aero.test"
+    Product   = "PingAM 7.5.1"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_instance" "am_2" {
+  ami                    = "ami-0a9b8c7d6e5f40321"
+  instance_type          = "m6i.large"
+  subnet_id              = data.aws_subnet.subnet_am_b.id
+  private_ip             = "10.20.8.21"
+  vpc_security_group_ids = [aws_security_group.am.id]
+  root_block_device {
+    encrypted  = true
+    kms_key_id = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
+  }
+  tags = {
+    Name      = "am-2"
+    Role      = "am"
+    Hostname  = "am-2.aws.internal.example-aero.test"
+    Product   = "PingAM 7.5.1"
+    ManagedBy = "opsdir"
+  }
+}
+
 resource "aws_instance" "ds_1" {
   ami                    = "ami-0abcdef1234567890"
   instance_type          = "m6i.xlarge"
@@ -178,7 +277,7 @@ resource "aws_instance" "ds_1" {
   vpc_security_group_ids = [aws_security_group.ds.id]
   root_block_device {
     encrypted  = true
-    kms_key_id = "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+    kms_key_id = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
   }
   tags = {
     Name      = "ds-1"
@@ -197,7 +296,7 @@ resource "aws_instance" "ds_2" {
   vpc_security_group_ids = [aws_security_group.ds.id]
   root_block_device {
     encrypted  = true
-    kms_key_id = "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+    kms_key_id = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
   }
   tags = {
     Name      = "ds-2"
@@ -216,13 +315,51 @@ resource "aws_instance" "ds_3" {
   vpc_security_group_ids = [aws_security_group.ds.id]
   root_block_device {
     encrypted  = true
-    kms_key_id = "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+    kms_key_id = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
   }
   tags = {
     Name      = "ds-3"
     Role      = "ds"
     Hostname  = "ds-3.aws.internal.example-aero.test"
     Product   = "PingDS 7.5.1"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_instance" "idm_1" {
+  ami                    = "ami-0b1c2d3e4f5a60987"
+  instance_type          = "m6i.large"
+  subnet_id              = data.aws_subnet.subnet_idm_a.id
+  private_ip             = "10.20.6.21"
+  vpc_security_group_ids = [aws_security_group.idm.id]
+  root_block_device {
+    encrypted  = true
+    kms_key_id = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
+  }
+  tags = {
+    Name      = "idm-1"
+    Role      = "idm"
+    Hostname  = "idm-1.aws.internal.example-aero.test"
+    Product   = "PingIDM 7.5.0"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_instance" "ig_1" {
+  ami                    = "ami-0c2d3e4f5a6b70123"
+  instance_type          = "m6i.large"
+  subnet_id              = data.aws_subnet.subnet_ig_a.id
+  private_ip             = "10.20.10.21"
+  vpc_security_group_ids = [aws_security_group.ig.id]
+  root_block_device {
+    encrypted  = true
+    kms_key_id = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
+  }
+  tags = {
+    Name      = "ig-1"
+    Role      = "ig"
+    Hostname  = "ig-1.aws.internal.example-aero.test"
+    Product   = "PingGateway 2024.11.0"
     ManagedBy = "opsdir"
   }
 }
@@ -235,7 +372,7 @@ resource "aws_instance" "pf_admin_1" {
   vpc_security_group_ids = [aws_security_group.pf_admin.id]
   root_block_device {
     encrypted  = true
-    kms_key_id = "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+    kms_key_id = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
   }
   tags = {
     Name      = "pf-admin-1"
@@ -254,7 +391,7 @@ resource "aws_instance" "pf_engine_1" {
   vpc_security_group_ids = [aws_security_group.pf_engine.id]
   root_block_device {
     encrypted  = true
-    kms_key_id = "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+    kms_key_id = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
   }
   tags = {
     Name      = "pf-engine-1"
@@ -273,7 +410,7 @@ resource "aws_instance" "pf_engine_2" {
   vpc_security_group_ids = [aws_security_group.pf_engine.id]
   root_block_device {
     encrypted  = true
-    kms_key_id = "arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+    kms_key_id = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
   }
   tags = {
     Name      = "pf-engine-2"
@@ -281,6 +418,57 @@ resource "aws_instance" "pf_engine_2" {
     Hostname  = "pf-engine-2.aws.internal.example-aero.test"
     Product   = "PingFederate 12.1.4"
     ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_lb" "svc_apps" {
+  name               = "ciam-prod-svc-apps"
+  internal           = true
+  load_balancer_type = "network"
+  subnet_mapping {
+    subnet_id = data.aws_subnet.subnet_ig_a.id
+  }
+  tags = {
+    Service   = "apps.example-aero.test"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_lb_target_group" "svc_apps_443" {
+  name        = "ciam-prod-svc-apps-443"
+  port        = 443
+  protocol    = "TCP"
+  vpc_id      = data.aws_vpc.main.id
+  target_type = "instance"
+  health_check {
+    protocol = "TCP"
+  }
+}
+
+resource "aws_lb_target_group_attachment" "svc_apps_443_ig_1" {
+  target_group_arn = aws_lb_target_group.svc_apps_443.arn
+  target_id        = aws_instance.ig_1.id
+  port             = 443
+}
+
+resource "aws_lb_listener" "svc_apps_443" {
+  load_balancer_arn = aws_lb.svc_apps.arn
+  port              = 443
+  protocol          = "TCP"
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.svc_apps_443.arn
+  }
+}
+
+resource "aws_route53_record" "svc_apps" {
+  zone_id = "Z0EXAMPLE2PUBLIC"
+  name    = "apps.example-aero.test"
+  type    = "A"
+  alias {
+    name                   = aws_lb.svc_apps.dns_name
+    zone_id                = aws_lb.svc_apps.zone_id
+    evaluate_target_health = true
   }
 }
 
@@ -354,6 +542,66 @@ resource "aws_route53_record" "svc_ldaps" {
   }
 }
 
+resource "aws_lb" "svc_login" {
+  name               = "ciam-prod-svc-login"
+  internal           = true
+  load_balancer_type = "network"
+  subnet_mapping {
+    subnet_id = data.aws_subnet.subnet_am_a.id
+  }
+  subnet_mapping {
+    subnet_id = data.aws_subnet.subnet_am_b.id
+  }
+  tags = {
+    Service   = "login.example-aero.test"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_lb_target_group" "svc_login_443" {
+  name        = "ciam-prod-svc-login-443"
+  port        = 443
+  protocol    = "TCP"
+  vpc_id      = data.aws_vpc.main.id
+  target_type = "instance"
+  health_check {
+    protocol = "TCP"
+  }
+}
+
+resource "aws_lb_target_group_attachment" "svc_login_443_am_1" {
+  target_group_arn = aws_lb_target_group.svc_login_443.arn
+  target_id        = aws_instance.am_1.id
+  port             = 443
+}
+
+resource "aws_lb_target_group_attachment" "svc_login_443_am_2" {
+  target_group_arn = aws_lb_target_group.svc_login_443.arn
+  target_id        = aws_instance.am_2.id
+  port             = 443
+}
+
+resource "aws_lb_listener" "svc_login_443" {
+  load_balancer_arn = aws_lb.svc_login.arn
+  port              = 443
+  protocol          = "TCP"
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.svc_login_443.arn
+  }
+}
+
+resource "aws_route53_record" "svc_login" {
+  zone_id = "Z0EXAMPLE2PUBLIC"
+  name    = "login.example-aero.test"
+  type    = "A"
+  alias {
+    name                   = aws_lb.svc_login.dns_name
+    zone_id                = aws_lb.svc_login.zone_id
+    evaluate_target_health = true
+  }
+}
+
 resource "aws_lb" "svc_sso" {
   name               = "ciam-prod-svc-sso"
   internal           = true
@@ -414,6 +662,18 @@ resource "aws_route53_record" "svc_sso" {
   }
 }
 
+data "aws_secretsmanager_secret" "am_admin_password" {
+  arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/am-admin-password"
+}
+
+data "aws_secretsmanager_secret" "am_ds_bind_password" {
+  arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/am-ds-bind-password"
+}
+
+data "aws_secretsmanager_secret" "am_keystore" {
+  arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/am-keystore"
+}
+
 data "aws_secretsmanager_secret" "ds_deployment_id" {
   arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/ds-deployment-id"
 }
@@ -428,6 +688,26 @@ data "aws_secretsmanager_secret" "ds_root_password" {
 
 data "aws_secretsmanager_secret" "ds_tls_keystore" {
   arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/ds-tls-keystore"
+}
+
+data "aws_secretsmanager_secret" "idm_admin_password" {
+  arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/idm-admin-password"
+}
+
+data "aws_secretsmanager_secret" "idm_ds_bind_password" {
+  arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/idm-ds-bind-password"
+}
+
+data "aws_secretsmanager_secret" "idm_hrdb_password" {
+  arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/idm-hrdb-password"
+}
+
+data "aws_secretsmanager_secret" "idm_keystore" {
+  arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/idm-keystore"
+}
+
+data "aws_secretsmanager_secret" "ig_keystore" {
+  arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/ig-keystore"
 }
 
 data "aws_secretsmanager_secret" "pf_admin_password" {

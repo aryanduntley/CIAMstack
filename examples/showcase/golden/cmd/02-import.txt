@@ -1,0 +1,3 @@
+am.realms.root-partners.OAuth2Provider.OAuth2Provider.json: 11 settings
+CHG-2004: 28 change(s) applied
+exit 0

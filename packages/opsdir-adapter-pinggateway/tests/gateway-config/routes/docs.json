@@ -1,0 +1,6 @@
+{
+  "name": "docs",
+  "baseURI": "https://docs.internal.example.test",
+  "condition": "${find(request.uri.path, '^/docs')}",
+  "handler": "ReverseProxyHandler"
+}

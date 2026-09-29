@@ -1,0 +1,54 @@
+{
+  "objects": [
+    {
+      "name": "user",
+      "onCreate": {
+        "file": "script/onCreate-user.js",
+        "type": "text/javascript"
+      },
+      "schema": {
+        "$schema": "http://forgerock.org/json-schema#",
+        "properties": {
+          "companyId": {
+            "title": "Company",
+            "type": "string"
+          },
+          "employeeNumber": {
+            "type": "string"
+          },
+          "givenName": {
+            "type": "string"
+          },
+          "mail": {
+            "title": "Email",
+            "type": "string"
+          },
+          "sn": {
+            "type": "string"
+          },
+          "userName": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "userName",
+          "mail"
+        ],
+        "title": "Partner user",
+        "type": "object"
+      }
+    },
+    {
+      "name": "role",
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    }
+  ]
+}

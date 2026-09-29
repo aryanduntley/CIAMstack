@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "realm": "/partners",
+    "amsterVersion": "7.5.1",
+    "entityType": "OneTimePasswordSmtpSenderNode",
+    "entityId": "5e1d0c9b-0006-4a6b-8c7d-9e0f1a2b3c4d",
+    "pathParams": {}
+  },
+  "data": {
+    "_id": "5e1d0c9b-0006-4a6b-8c7d-9e0f1a2b3c4d",
+    "_type": {
+      "_id": "OneTimePasswordSmtpSenderNode"
+    },
+    "hostName": "smtp.example-aero.test",
+    "hostPort": 587,
+    "username": "am-mailer",
+    "password": "Synthetic-Smtp-Pass-1",
+    "fromEmailAddress": "no-reply@example-aero.test",
+    "sslOption": "START_TLS"
+  }
+}

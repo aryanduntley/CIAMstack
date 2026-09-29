@@ -1,0 +1,31 @@
+{
+  "metadata": {
+    "realm": "/partners",
+    "amsterVersion": "7.5.1",
+    "entityType": "PageNode",
+    "entityId": "5e1d0c9b-0001-4a6b-8c7d-9e0f1a2b3c4d",
+    "pathParams": {}
+  },
+  "data": {
+    "_id": "5e1d0c9b-0001-4a6b-8c7d-9e0f1a2b3c4d",
+    "_type": {
+      "_id": "PageNode",
+      "name": "Page Node"
+    },
+    "pageHeader": {
+      "en": "Partner sign-in"
+    },
+    "nodes": [
+      {
+        "_id": "5e1d0c9b-0002-4a6b-8c7d-9e0f1a2b3c4d",
+        "nodeType": "UsernameCollectorNode",
+        "displayName": "User name"
+      },
+      {
+        "_id": "5e1d0c9b-0003-4a6b-8c7d-9e0f1a2b3c4d",
+        "nodeType": "PasswordCollectorNode",
+        "displayName": "Password"
+      }
+    ]
+  }
+}

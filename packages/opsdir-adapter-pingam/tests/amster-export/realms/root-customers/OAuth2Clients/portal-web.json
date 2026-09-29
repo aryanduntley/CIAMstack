@@ -1,0 +1,55 @@
+{
+  "metadata": {
+    "realm": "/customers",
+    "amsterVersion": "7.5.1",
+    "entityType": "OAuth2Clients",
+    "entityId": "portal-web",
+    "pathParams": {}
+  },
+  "data": {
+    "_id": "portal-web",
+    "_rev": "12345",
+    "coreOAuth2ClientConfig": {
+      "clientType": {
+        "inherited": false,
+        "value": "Confidential"
+      },
+      "userpassword": "client-secret-value-1",
+      "redirectionUris": {
+        "inherited": false,
+        "value": [
+          "https://portal.example.test/callback"
+        ]
+      },
+      "scopes": {
+        "inherited": false,
+        "value": [
+          "openid",
+          "profile|Your profile"
+        ]
+      }
+    },
+    "advancedOAuth2ClientConfig": {
+      "grantTypes": {
+        "inherited": false,
+        "value": [
+          "authorization_code",
+          "refresh_token",
+          "implicit"
+        ]
+      },
+      "tokenEndpointAuthMethod": {
+        "inherited": false,
+        "value": "client_secret_basic"
+      }
+    },
+    "coreOpenIDClientConfig": {
+      "postLogoutRedirectUri": {
+        "inherited": false,
+        "value": [
+          "https://portal.example.test/"
+        ]
+      }
+    }
+  }
+}

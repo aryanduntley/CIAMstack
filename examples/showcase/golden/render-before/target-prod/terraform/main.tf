@@ -13,8 +13,26 @@ data "azurerm_virtual_network" "main" {
   resource_group_name = data.azurerm_resource_group.main.name
 }
 
+data "azurerm_subnet" "snet_am" {
+  name                 = "snet-am"
+  virtual_network_name = "vnet-ciam-prod"
+  resource_group_name  = data.azurerm_resource_group.main.name
+}
+
 data "azurerm_subnet" "snet_ds" {
   name                 = "snet-ds"
+  virtual_network_name = "vnet-ciam-prod"
+  resource_group_name  = data.azurerm_resource_group.main.name
+}
+
+data "azurerm_subnet" "snet_idm" {
+  name                 = "snet-idm"
+  virtual_network_name = "vnet-ciam-prod"
+  resource_group_name  = data.azurerm_resource_group.main.name
+}
+
+data "azurerm_subnet" "snet_ig" {
+  name                 = "snet-ig"
   virtual_network_name = "vnet-ciam-prod"
   resource_group_name  = data.azurerm_resource_group.main.name
 }
@@ -25,8 +43,35 @@ data "azurerm_subnet" "snet_pf" {
   resource_group_name  = data.azurerm_resource_group.main.name
 }
 
+resource "azurerm_network_security_group" "am" {
+  name                = "nsg-ciam-prod-am"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  tags = {
+    ManagedBy = "opsdir"
+  }
+}
+
 resource "azurerm_network_security_group" "ds" {
   name                = "nsg-ciam-prod-ds"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  tags = {
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "azurerm_network_security_group" "idm" {
+  name                = "nsg-ciam-prod-idm"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  tags = {
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "azurerm_network_security_group" "ig" {
+  name                = "nsg-ciam-prod-ig"
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   tags = {
@@ -67,6 +112,21 @@ resource "azurerm_network_security_rule" "fw_admin" {
   network_security_group_name = azurerm_network_security_group.ds.name
 }
 
+resource "azurerm_network_security_rule" "fw_apps_public" {
+  name                        = "fw-apps-public"
+  description                 = "fw-apps-public"
+  priority                    = 180
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_ranges     = ["443"]
+  source_address_prefixes     = ["0.0.0.0/0"]
+  destination_address_prefix  = "*"
+  resource_group_name         = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.ig.name
+}
+
 resource "azurerm_network_security_rule" "fw_customer_portal" {
   name                        = "fw-customer-portal"
   description                 = "consumer customer-portal-svc"
@@ -95,6 +155,21 @@ resource "azurerm_network_security_rule" "fw_idm_sync" {
   destination_address_prefix  = "*"
   resource_group_name         = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.ds.name
+}
+
+resource "azurerm_network_security_rule" "fw_login_public" {
+  name                        = "fw-login-public"
+  description                 = "fw-login-public"
+  priority                    = 170
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_ranges     = ["443"]
+  source_address_prefixes     = ["0.0.0.0/0"]
+  destination_address_prefix  = "*"
+  resource_group_name         = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.am.name
 }
 
 resource "azurerm_network_security_rule" "fw_pf_ds_svc" {
@@ -155,6 +230,94 @@ resource "azurerm_network_security_rule" "fw_supplier_portal" {
   destination_address_prefix  = "*"
   resource_group_name         = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.ds.name
+}
+
+resource "azurerm_network_interface" "am_1" {
+  name                = "nic-am-1"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  ip_configuration {
+    name                          = "primary"
+    subnet_id                     = data.azurerm_subnet.snet_am.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.60.3.21"
+  }
+}
+
+resource "azurerm_network_interface_security_group_association" "am_1" {
+  network_interface_id      = azurerm_network_interface.am_1.id
+  network_security_group_id = azurerm_network_security_group.am.id
+}
+
+resource "azurerm_linux_virtual_machine" "am_1" {
+  name                  = "am-1"
+  computer_name         = "am-1"
+  resource_group_name   = data.azurerm_resource_group.main.name
+  location              = data.azurerm_resource_group.main.location
+  size                  = "Standard_D2s_v5"
+  zone                  = "1"
+  admin_username        = "ciamadmin"
+  network_interface_ids = [azurerm_network_interface.am_1.id]
+  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingam-7.5.1-rhel9"
+  admin_ssh_key {
+    username   = "ciamadmin"
+    public_key = var.admin_ssh_public_key
+  }
+  os_disk {
+    caching                = "ReadWrite"
+    storage_account_type   = "Premium_LRS"
+    disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
+  }
+  tags = {
+    Role      = "am"
+    Hostname  = "am-1.az.internal.example-aero.test"
+    Product   = "PingAM 7.5.1"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "azurerm_network_interface" "am_2" {
+  name                = "nic-am-2"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  ip_configuration {
+    name                          = "primary"
+    subnet_id                     = data.azurerm_subnet.snet_am.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.60.3.22"
+  }
+}
+
+resource "azurerm_network_interface_security_group_association" "am_2" {
+  network_interface_id      = azurerm_network_interface.am_2.id
+  network_security_group_id = azurerm_network_security_group.am.id
+}
+
+resource "azurerm_linux_virtual_machine" "am_2" {
+  name                  = "am-2"
+  computer_name         = "am-2"
+  resource_group_name   = data.azurerm_resource_group.main.name
+  location              = data.azurerm_resource_group.main.location
+  size                  = "Standard_D2s_v5"
+  zone                  = "2"
+  admin_username        = "ciamadmin"
+  network_interface_ids = [azurerm_network_interface.am_2.id]
+  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingam-7.5.1-rhel9"
+  admin_ssh_key {
+    username   = "ciamadmin"
+    public_key = var.admin_ssh_public_key
+  }
+  os_disk {
+    caching                = "ReadWrite"
+    storage_account_type   = "Premium_LRS"
+    disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
+  }
+  tags = {
+    Role      = "am"
+    Hostname  = "am-2.az.internal.example-aero.test"
+    Product   = "PingAM 7.5.1"
+    ManagedBy = "opsdir"
+  }
 }
 
 resource "azurerm_network_interface" "ds_1" {
@@ -285,6 +448,94 @@ resource "azurerm_linux_virtual_machine" "ds_3" {
     Role      = "ds"
     Hostname  = "ds-3.az.internal.example-aero.test"
     Product   = "PingDS 7.5.1"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "azurerm_network_interface" "idm_1" {
+  name                = "nic-idm-1"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  ip_configuration {
+    name                          = "primary"
+    subnet_id                     = data.azurerm_subnet.snet_idm.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.60.6.21"
+  }
+}
+
+resource "azurerm_network_interface_security_group_association" "idm_1" {
+  network_interface_id      = azurerm_network_interface.idm_1.id
+  network_security_group_id = azurerm_network_security_group.idm.id
+}
+
+resource "azurerm_linux_virtual_machine" "idm_1" {
+  name                  = "idm-1"
+  computer_name         = "idm-1"
+  resource_group_name   = data.azurerm_resource_group.main.name
+  location              = data.azurerm_resource_group.main.location
+  size                  = "Standard_D2s_v5"
+  zone                  = "1"
+  admin_username        = "ciamadmin"
+  network_interface_ids = [azurerm_network_interface.idm_1.id]
+  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingidm-7.5.0-rhel9"
+  admin_ssh_key {
+    username   = "ciamadmin"
+    public_key = var.admin_ssh_public_key
+  }
+  os_disk {
+    caching                = "ReadWrite"
+    storage_account_type   = "Premium_LRS"
+    disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
+  }
+  tags = {
+    Role      = "idm"
+    Hostname  = "idm-1.az.internal.example-aero.test"
+    Product   = "PingIDM 7.5.0"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "azurerm_network_interface" "ig_1" {
+  name                = "nic-ig-1"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  ip_configuration {
+    name                          = "primary"
+    subnet_id                     = data.azurerm_subnet.snet_ig.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.60.10.21"
+  }
+}
+
+resource "azurerm_network_interface_security_group_association" "ig_1" {
+  network_interface_id      = azurerm_network_interface.ig_1.id
+  network_security_group_id = azurerm_network_security_group.ig.id
+}
+
+resource "azurerm_linux_virtual_machine" "ig_1" {
+  name                  = "ig-1"
+  computer_name         = "ig-1"
+  resource_group_name   = data.azurerm_resource_group.main.name
+  location              = data.azurerm_resource_group.main.location
+  size                  = "Standard_D2s_v5"
+  zone                  = "1"
+  admin_username        = "ciamadmin"
+  network_interface_ids = [azurerm_network_interface.ig_1.id]
+  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pinggateway-2024.11.0-rhel9"
+  admin_ssh_key {
+    username   = "ciamadmin"
+    public_key = var.admin_ssh_public_key
+  }
+  os_disk {
+    caching                = "ReadWrite"
+    storage_account_type   = "Premium_LRS"
+    disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
+  }
+  tags = {
+    Role      = "ig"
+    Hostname  = "ig-1.az.internal.example-aero.test"
+    Product   = "PingGateway 2024.11.0"
     ManagedBy = "opsdir"
   }
 }
@@ -421,6 +672,61 @@ resource "azurerm_linux_virtual_machine" "pf_engine_2" {
   }
 }
 
+resource "azurerm_lb" "svc_apps" {
+  name                = "lb-ciam-prod-svc-apps"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  sku                 = "Standard"
+  frontend_ip_configuration {
+    name                          = "frontend"
+    zones                         = ["1", "2", "3"]
+    subnet_id                     = data.azurerm_subnet.snet_ig.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "198.51.100.79"
+  }
+  tags = {
+    Service   = "apps.example-aero.test"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "azurerm_lb_backend_address_pool" "svc_apps" {
+  name            = "servers"
+  loadbalancer_id = azurerm_lb.svc_apps.id
+}
+
+resource "azurerm_network_interface_backend_address_pool_association" "svc_apps_ig_1" {
+  network_interface_id    = azurerm_network_interface.ig_1.id
+  ip_configuration_name   = "primary"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.svc_apps.id
+}
+
+resource "azurerm_lb_probe" "svc_apps_443" {
+  name            = "tcp-443"
+  loadbalancer_id = azurerm_lb.svc_apps.id
+  protocol        = "Tcp"
+  port            = 443
+}
+
+resource "azurerm_lb_rule" "svc_apps_443" {
+  name                           = "tcp-443"
+  loadbalancer_id                = azurerm_lb.svc_apps.id
+  protocol                       = "Tcp"
+  frontend_port                  = 443
+  backend_port                   = 443
+  frontend_ip_configuration_name = "frontend"
+  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.svc_apps.id]
+  probe_id                       = azurerm_lb_probe.svc_apps_443.id
+}
+
+resource "azurerm_private_dns_a_record" "svc_apps" {
+  name                = "apps"
+  zone_name           = "example-aero.test"
+  resource_group_name = data.azurerm_resource_group.main.name
+  ttl                 = 300
+  records             = ["198.51.100.79"]
+}
+
 resource "azurerm_lb" "svc_ldaps" {
   name                = "lb-ciam-prod-svc-ldaps"
   location            = data.azurerm_resource_group.main.location
@@ -486,6 +792,67 @@ resource "azurerm_private_dns_a_record" "svc_ldaps" {
   resource_group_name = data.azurerm_resource_group.main.name
   ttl                 = 300
   records             = ["10.60.1.100"]
+}
+
+resource "azurerm_lb" "svc_login" {
+  name                = "lb-ciam-prod-svc-login"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  sku                 = "Standard"
+  frontend_ip_configuration {
+    name                          = "frontend"
+    zones                         = ["1", "2", "3"]
+    subnet_id                     = data.azurerm_subnet.snet_am.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "198.51.100.78"
+  }
+  tags = {
+    Service   = "login.example-aero.test"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "azurerm_lb_backend_address_pool" "svc_login" {
+  name            = "servers"
+  loadbalancer_id = azurerm_lb.svc_login.id
+}
+
+resource "azurerm_network_interface_backend_address_pool_association" "svc_login_am_1" {
+  network_interface_id    = azurerm_network_interface.am_1.id
+  ip_configuration_name   = "primary"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.svc_login.id
+}
+
+resource "azurerm_network_interface_backend_address_pool_association" "svc_login_am_2" {
+  network_interface_id    = azurerm_network_interface.am_2.id
+  ip_configuration_name   = "primary"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.svc_login.id
+}
+
+resource "azurerm_lb_probe" "svc_login_443" {
+  name            = "tcp-443"
+  loadbalancer_id = azurerm_lb.svc_login.id
+  protocol        = "Tcp"
+  port            = 443
+}
+
+resource "azurerm_lb_rule" "svc_login_443" {
+  name                           = "tcp-443"
+  loadbalancer_id                = azurerm_lb.svc_login.id
+  protocol                       = "Tcp"
+  frontend_port                  = 443
+  backend_port                   = 443
+  frontend_ip_configuration_name = "frontend"
+  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.svc_login.id]
+  probe_id                       = azurerm_lb_probe.svc_login_443.id
+}
+
+resource "azurerm_private_dns_a_record" "svc_login" {
+  name                = "login"
+  zone_name           = "example-aero.test"
+  resource_group_name = data.azurerm_resource_group.main.name
+  ttl                 = 300
+  records             = ["198.51.100.78"]
 }
 
 resource "azurerm_lb" "svc_sso" {
@@ -554,6 +921,21 @@ data "azurerm_key_vault" "kv_ciam_prod" {
   resource_group_name = data.azurerm_resource_group.main.name
 }
 
+data "azurerm_key_vault_secret" "am_admin_password" {
+  name         = "am-admin-password"
+  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
+}
+
+data "azurerm_key_vault_secret" "am_ds_bind_password" {
+  name         = "am-ds-bind-password"
+  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
+}
+
+data "azurerm_key_vault_secret" "am_keystore" {
+  name         = "am-keystore"
+  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
+}
+
 data "azurerm_key_vault_secret" "ds_deployment_id" {
   name         = "ds-deployment-id"
   key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
@@ -571,6 +953,31 @@ data "azurerm_key_vault_secret" "ds_root_password" {
 
 data "azurerm_key_vault_secret" "ds_tls_keystore" {
   name         = "ds-tls-keystore"
+  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
+}
+
+data "azurerm_key_vault_secret" "idm_admin_password" {
+  name         = "idm-admin-password"
+  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
+}
+
+data "azurerm_key_vault_secret" "idm_ds_bind_password" {
+  name         = "idm-ds-bind-password"
+  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
+}
+
+data "azurerm_key_vault_secret" "idm_hrdb_password" {
+  name         = "idm-hrdb-password"
+  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
+}
+
+data "azurerm_key_vault_secret" "idm_keystore" {
+  name         = "idm-keystore"
+  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
+}
+
+data "azurerm_key_vault_secret" "ig_keystore" {
+  name         = "ig-keystore"
   key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
 }
 

@@ -18,6 +18,9 @@
                                        record code, scripts, templates or a package (a file or a directory under the
                                        repo checkout R) by repo path and SHA-256; its content is not stored
   opsdir verify [--root R]             bundles and captured files against a repo checkout (exit 1 if anything differs)
+  opsdir import [--change CHG-…] ADAPTER[/IMPORTER] PATH [--dry-run]
+                                       read a product's export (a directory or a file) into the record with an
+                                       adapter's importer; without --change (or with --dry-run) only lists the changes
   opsdir export [-b base]              dump entries as LDIF (for Git review)
   opsdir history [DN]                  change history
   opsdir workspace create [--replace]  copy the live record (OPSDIR_DSN) into the migration workspace
@@ -67,6 +70,8 @@ SUBCOMMANDS = (
                                                              "other"]}),
                 (("--version",), {}), (("--format",), {}), (("--role",), {}), (("--deploy-path",), {}))),
     ("verify", ((("--root",), {}),)),
+    ("import", ((("--change",), {}), (("importer",), {"help": "adapter[/importer]"}), (("path",), {}),
+                (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}))),
     ("export", ((("-b", "--base"), {"default": SUFFIX}),)),
     ("history", ((("dn",), {"nargs": "?"}),)),
     ("workspace", ((("action",), {"choices": ["create", "status", "diff", "cutover"]}),
@@ -222,6 +227,37 @@ def _cmd_bundle(conn, a, as_of):
     return "\n".join((*preview.notices, f"{a.change}: {len(r.lines)} change(s) applied" if r.lines else "no changes"))
 
 
+def read_texts(path):
+    """Effect: an export's files as text, {relative path: text} ({name: text} for a single file); files that aren't
+    UTF-8 text are left out and named."""
+    p = pathlib.Path(path)
+    files = ({p.name: p} if p.is_file() else
+             {f.relative_to(p).as_posix(): f for f in sorted(p.rglob("*")) if f.is_file()} if p.is_dir() else None)
+    if files is None:
+        raise SystemExit(f"nothing at {p}")
+    read = {rel: _text(f) for rel, f in files.items()}
+    return {rel: t for rel, t in read.items() if t is not None}, tuple(rel for rel, t in read.items() if t is None)
+
+
+def _text(f):
+    try:
+        return f.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return None
+
+
+def _cmd_import(conn, a, as_of):
+    files, skipped = read_texts(a.path)
+    preview = ops.preview_import(conn, a.importer, files)
+    notes = (*(f"skipped (not UTF-8 text): {rel}" for rel in skipped), *preview.notices)
+    if a.dry_run or not a.change:
+        listed = (f"{r.changetype} {r.dn}" for r in preview.changes)
+        return "\n".join((*notes, *listed, f"{len(preview.changes)} change(s) (not applied"
+                          f"{'' if a.dry_run else '; give --change to apply'})"))
+    r = ops.apply_preview(conn, preview, a.change)
+    return "\n".join((*notes, f"{a.change}: {len(r.lines)} change(s) applied" if r.lines else "no changes"))
+
+
 def _cmd_verify(conn, a, as_of):
     root = pathlib.Path(a.root or ".")
     r = ops.verify(conn, {path: read_content(root / path) for path in ops.verify_paths(conn)})
@@ -269,7 +305,7 @@ def _cmd_workspace(conn, a, as_of):
 
 COMMANDS = {"init": _cmd_init, "upgrade": _cmd_upgrade, "load": _cmd_load, "check": _cmd_check, "search": _cmd_search, "report": _cmd_report,
             "render": _cmd_render, "plan": _cmd_plan, "migrate": _cmd_migrate, "modify": _cmd_modify, "export": _cmd_export,
-            "history": _cmd_history, "capture": _cmd_capture, "file": _cmd_file, "bundle": _cmd_bundle,
+            "history": _cmd_history, "capture": _cmd_capture, "import": _cmd_import, "file": _cmd_file, "bundle": _cmd_bundle,
             "verify": _cmd_verify,
             "workspace": _cmd_workspace}
 

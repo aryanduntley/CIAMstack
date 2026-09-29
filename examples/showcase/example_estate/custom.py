@@ -18,7 +18,7 @@ FIELDS = (
         ciamValueSource=["terraform: azurerm_resource_group.location", "terraform: aws provider region"])),
     ("xTokenLifetimeMinutes", dict(
         ciamDefinitionNumber=3, ciamValueType="int", ciamPortability="intent", ciamCarriedBy="ciamIntegration",
-        ciamMinValue=5, ciamMaxValue=1440, ciamUnit="minutes", ciamDefaultValue=60,
+        ciamMinValue=5, ciamMaxValue=1440, ciamUnit="minutes", ciamDefaultValue=60, ciamOverridable="TRUE",
         ciamPurpose="Access token lifetime agreed with the application owner",
         ciamSettingRef=TOKEN_LIFETIME, ciamUsedBy="pingfederate",
         ciamDefinitionStatus="active")),

@@ -1,11 +1,24 @@
-environment  role        adapter       status              
------------  ----------  ------------  --------------------
-source/prod  directory   pingds        ok (installed 0.1.0)
-source/prod  federation  pingfederate  ok (installed 0.1.0)
-source/prod  provider    aws           ok (installed 0.1.0)
-target/prod  directory   pingds        ok (installed 0.1.0)
-target/prod  federation  pingfederate  ok (installed 0.1.0)
-target/prod  provider    azure         ok (installed 0.1.0)
-(6 rows)
+environment   role                 adapter       status                                                                
+------------  -------------------  ------------  ----------------------------------------------------------------------
+source/prod   access               pingam        ok (installed 0.1.0)                                                  
+source/prod   directory            pingds        ok (installed 0.1.0)                                                  
+source/prod   federation           pingfederate  ok (installed 0.1.0)                                                  
+source/prod   gateway              pinggateway   ok (installed 0.1.0)                                                  
+source/prod   identity-management  pingidm       ok (installed 0.1.0)                                                  
+source/prod   provider             aws           ok (installed 0.1.0)                                                  
+target/prod   access               pingam        ok (installed 0.1.0)                                                  
+target/prod   directory            pingds        ok (installed 0.1.0)                                                  
+target/prod   federation           pingfederate  ok (installed 0.1.0)                                                  
+target/prod   gateway              pinggateway   ok (installed 0.1.0)                                                  
+target/prod   identity-management  pingidm       ok (installed 0.1.0)                                                  
+target/prod   provider             azure         ok (installed 0.1.0)                                                  
+source/stage  -                    -             overlay of source/prod: inherits the bindings, stack, required roles a
+source/stage  access               pingam        ok (installed 0.1.0)                                                  
+source/stage  directory            pingds        ok (installed 0.1.0)                                                  
+source/stage  federation           pingfederate  ok (installed 0.1.0)                                                  
+source/stage  gateway              pinggateway   ok (installed 0.1.0)                                                  
+source/stage  identity-management  pingidm       ok (installed 0.1.0)                                                  
+source/stage  provider             aws           ok (installed 0.1.0)                                                  
+(19 rows)
 0 problem(s)
 exit 0

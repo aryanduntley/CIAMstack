@@ -1,6 +1,6 @@
 """Federation domain lookups every product adapter and standard base reads: the integrations by protocol, the claims
 an integration releases, and the platform's own identity services."""
-from ...core.directory import children, follow, one, values
+from ...core.directory import children, follow, norm_dn, one, values
 from .naming import IDENTITY_SERVICES, INTEGRATIONS
 
 
@@ -8,6 +8,19 @@ def integrations(d, protocol=None):
     """Integrations in DN order, optionally only those of one protocol type (saml2-sp, oidc-client, saml2-idp, ...)."""
     return tuple(i for i in children(d, INTEGRATIONS, "ciamIntegration")
                  if protocol is None or one(i, "ciamProtocolType") == protocol)
+
+
+def serves(service, i):
+    """Whether an identity service serves an integration: the one it is registered with (ciamServedBy), or any when
+    it names none."""
+    served_by = one(i, "ciamServedBy")
+    return served_by is None or norm_dn(served_by) == service.norm
+
+
+def integrations_served(d, services, protocol=None):
+    """The integrations some of these identity services serve (and those registered with none), in DN order."""
+    return tuple(i for i in integrations(d, protocol)
+                 if one(i, "ciamServedBy") is None or any(serves(s, i) for s in services))
 
 
 def claims(d, i):

@@ -6,6 +6,7 @@
 #   X-VALUE-TYPE   stricter value type enforced by the store (string, int, bool, time, dn, extdn,
 #                  cidr, ip, fqdn, url, port, ref-uri, json, enum:a|b|c, vocab = values the
 #                  installed domains and adapters register)
+#   X-OVERRIDABLE  TRUE: an environment may override the value (its own ciamOverride entries)
 # OIDs use the RFC 5612 documentation arc 1.3.6.1.4.1.32473 as a placeholder.
 dn: cn=schema
 objectClass: top
@@ -90,9 +91,10 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.20 NAME 'ciamSubnet' DESC 'Subnet bi
  .1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 
  'dn' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.21 NAME 'ciamBindingRole' DESC 'Abst
- ract role this binding fulfils; migrations match roles across environments'
-  EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE
-  X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+ ract role a binding fulfils (for a credential, the role of the bindings tha
+ t hold it); migrations match roles across environments' EQUALITY caseIgnore
+ Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta
+ ' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.22 NAME 'ciamProviderRef' DESC 'Prov
  ider identifier of the resource (network, subnet, DNS zone, encryption key 
  set)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-
@@ -215,19 +217,19 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.51 NAME 'ciamStorageScheme' DESC 'Pa
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.52 NAME 'ciamLockoutFailureCount' DE
  SC 'Failed binds before lockout' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1
  466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int' X-O
- RIGIN 'opsdir' )
+ VERRIDABLE 'TRUE' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.53 NAME 'ciamLockoutDuration' DESC '
  Lockout duration (DS duration syntax)' EQUALITY caseIgnoreMatch SYNTAX 1.3.
  6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 
- 'string' X-ORIGIN 'opsdir' )
+ 'string' X-OVERRIDABLE 'TRUE' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.54 NAME 'ciamPasswordHistoryCount' D
  ESC 'Passwords remembered' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.11
- 5.121.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int' X-ORIGIN 
- 'opsdir' )
+ 5.121.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int' X-OVERRID
+ ABLE 'TRUE' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.55 NAME 'ciamMaxPasswordAge' DESC 'M
  aximum password age (DS duration syntax)' EQUALITY caseIgnoreMatch SYNTAX 1
  .3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TY
- PE 'string' X-ORIGIN 'opsdir' )
+ PE 'string' X-OVERRIDABLE 'TRUE' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.56 NAME 'ciamEnabled' DESC 'Enabled 
  flag' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALU
  E X-PORTABILITY 'intent' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
@@ -236,12 +238,12 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.57 NAME 'ciamListenPort' DESC 'Liste
  -VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'port' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.58 NAME 'ciamReplicaCount' DESC 'DS 
  replicas per environment' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115
- .121.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int' X-ORIGIN '
- opsdir' )
+ .121.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int' X-OVERRIDA
+ BLE 'TRUE' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.59 NAME 'ciamReplicationPurgeDelay' 
  DESC 'Replication changelog purge delay' EQUALITY caseIgnoreMatch SYNTAX 1.
  3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYP
- E 'string' X-ORIGIN 'opsdir' )
+ E 'string' X-OVERRIDABLE 'TRUE' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.60 NAME 'ciamServerRef' DESC 'Server
   a snapshot was captured from' EQUALITY distinguishedNameMatch SYNTAX 1.3.6
  .1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE
@@ -746,6 +748,126 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.186 NAME 'ciamSettingRef' DESC 'Sett
  ings of captured config files (ou=config-files) where the value lives' EQUA
  LITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABIL
  ITY 'meta' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.187 NAME 'ciamCredentialType' DESC '
+ What kind of key or secret the credential is' EQUALITY caseIgnoreMatch SYNT
+ AX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALU
+ E-TYPE 'enum:private-key|symmetric-key|keystore|password|api-token|client-s
+ ecret|shared-secret|deployment-id|ssh-key|other' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.188 NAME 'ciamKeyAlgorithm' DESC 'Ke
+ y algorithm (e.g. RSA, EC P-256, AES-256, HMAC-SHA256)' EQUALITY caseIgnore
+ Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'inte
+ nt' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.189 NAME 'ciamKeySize' DESC 'Key siz
+ e in bits' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGL
+ E-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int' X-MIN '1' X-ORIGIN 'opsdi
+ r' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.190 NAME 'ciamKeyUsage' DESC 'What t
+ he credential is used for' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466
+ .115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:signing|encryption|
+ key-wrapping|tls|authentication|replication|administration|other' X-ORIGIN 
+ 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.191 NAME 'ciamMaterialFormat' DESC '
+ The form the material takes where it is used' EQUALITY caseIgnoreMatch SYNT
+ AX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALU
+ E-TYPE 'enum:pem|der|pkcs12|jks|jceks|jwk|raw|text|other' X-ORIGIN 'opsdir'
+  )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.192 NAME 'ciamHsmRequired' DESC 'The
+  material must be generated and kept in a hardware security module' EQUALIT
+ Y booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILI
+ TY 'intent' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.193 NAME 'ciamExportable' DESC 'The 
+ material may leave the store that holds it (be copied to another store or e
+ nvironment)' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SING
+ LE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.194 NAME 'ciamRotationDays' DESC 'Ro
+ tation policy: the longest the same material may stay in use, in days' EQUA
+ LITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTA
+ BILITY 'intent' X-VALUE-TYPE 'int' X-MIN '1' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.195 NAME 'ciamContinuity' DESC 'carr
+ y-over: the same material must reach every environment that takes over from
+  or joins this one (replication deployment keys, signing keys partners trus
+ t, session encryption keys); per-environment: each environment may hold its
+  own' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-
+ VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:carry-over|per-environment'
+  X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.196 NAME 'ciamContinuityReason' DESC
+  'What breaks if the material is not carried over' EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-V
+ ALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.197 NAME 'ciamUsedIn' DESC 'Where th
+ e credential is configured or used (config files, consumers, integrations, 
+ bundles)' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1
+ .12 X-PORTABILITY 'meta' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.198 NAME 'ciamProtectionLevel' DESC 
+ 'How the store protects the material: in software, in an HSM, a managed HSM
+ , or an external key store' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.146
+ 6.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'enum:soft
+ ware|hsm|managed-hsm|external' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.199 NAME 'ciamAutoRotate' DESC 'The 
+ store rotates (or renews) the material automatically' EQUALITY booleanMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'binding' X
+ -VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.200 NAME 'ciamRotationFunction' DESC
+  'Provider id of the function or job that rotates the material' EQUALITY ca
+ seIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILI
+ TY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.201 NAME 'ciamReplicaRegion' DESC 'R
+ egions the key or secret is replicated to (multi-region keys, replicated se
+ crets)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-POR
+ TABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.202 NAME 'ciamKeyUser' DESC 'Princip
+ al the store lets use the material (provider id of a role, identity or serv
+ ice account)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.203 NAME 'ciamKeyAdmin' DESC 'Princi
+ pal the store lets manage the key or secret (provider id)' EQUALITY caseIgn
+ oreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VAL
+ UE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.204 NAME 'ciamLastRotated' DESC 'Whe
+ n the material in this environment was last rotated' EQUALITY generalizedTi
+ meMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'ob
+ served' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.205 NAME 'ciamCopyRef' DESC 'Another
+  place this environment holds the same material (a PAM safe, a second store
+ ): rotating it must update these too' EQUALITY caseIgnoreMatch SYNTAX 1.3.6
+ .1.4.1.1466.115.121.1.26 X-PORTABILITY 'secret-ref' X-VALUE-TYPE 'ref-uri' 
+ X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.206 NAME 'ciamMaterialFrom' DESC 'Th
+ e binding in another environment whose material this one holds (carried ove
+ r, not regenerated)' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.146
+ 6.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'dn' X-ORI
+ GIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.207 NAME 'ciamHoldsCertificate' DESC
+  'The certificate a certificate store entry holds' EQUALITY distinguishedNa
+ meMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'bi
+ nding' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.208 NAME 'ciamOverlayOf' DESC 'The e
+ nvironment this one is an overlay of: it inherits that environment\27s bind
+ ings, stack, required roles and overrides, except the roles it binds, drops
+ , declares or overrides itself (never servers)' EQUALITY distinguishedNameM
+ atch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'bindi
+ ng' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.209 NAME 'ciamDropsRole' DESC 'A rol
+ e of the base environment this overlay does not inherit' EQUALITY caseIgnor
+ eMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE
+ -TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.210 NAME 'ciamOverrides' DESC 'The e
+ ntry whose value this environment overrides' EQUALITY distinguishedNameMatc
+ h SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'binding'
+  X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.211 NAME 'ciamOverrideAttribute' DES
+ C 'The attribute overridden: one whose definition allows it (X-OVERRIDABLE)
+ ' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALU
+ E X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.212 NAME 'ciamOverrideValue' DESC 'T
+ he value(s) this environment uses instead of the shared one' EQUALITY caseI
+ gnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'binding' X-V
+ ALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.213 NAME 'ciamServedBy' DESC 'The id
+ entity service the integration is registered with (none: every identity ser
+ vice serves it)' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.11
+ 5.121.1.12 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X-ORIGIN '
+ opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef ) X-ORIGIN 'opsdir' )
@@ -755,7 +877,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.2 NAME 'ciamCloud' DESC 'A cloud host
  ir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.3 NAME 'ciamEnvironment' DESC 'A depl
  oyment stage within a cloud' SUP ciamObject STRUCTURAL MUST env MAY ( ciamL
- ifecycle $ ciamPlannedCutover $ ciamJoinsDeploymentOf ) X-ORIGIN 'opsdir' )
+ ifecycle $ ciamPlannedCutover $ ciamJoinsDeploymentOf $ ciamOverlayOf $ cia
+ mDropsRole ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.4 NAME 'ciamServer' DESC 'A server in
  stance' SUP ciamObject STRUCTURAL MUST ( cn $ ciamServerRole $ ciamHostname
   $ ciamSubnet ) MAY ( ciamProductVersion $ ciamPrivateIp $ ciamZone $ ciamI
@@ -778,11 +901,15 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.9 NAME 'ciamFirewallRule' DESC 'Inbou
  $ ciamTargetRole ) MAY ( ciamProtocol $ ciamAllowsConsumer $ ciamRulePriori
  ty ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.10 NAME 'ciamSecretRef' DESC 'Referen
- ce to a secret' SUP ciamBinding STRUCTURAL MUST ciamRefUri X-ORIGIN 'opsdir
- ' )
+ ce to a secret' SUP ciamBinding STRUCTURAL MUST ciamRefUri MAY ( ciamProtec
+ tionLevel $ ciamAutoRotate $ ciamRotationFunction $ ciamReplicaRegion $ cia
+ mKeyUser $ ciamKeyAdmin $ ciamLastRotated $ ciamCopyRef $ ciamMaterialFrom 
+ ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.11 NAME 'ciamKeyRef' DESC 'Reference 
- to an encryption key' SUP ciamBinding STRUCTURAL MUST ciamRefUri X-ORIGIN '
- opsdir' )
+ to an encryption key' SUP ciamBinding STRUCTURAL MUST ciamRefUri MAY ( ciam
+ ProtectionLevel $ ciamAutoRotate $ ciamRotationFunction $ ciamReplicaRegion
+  $ ciamKeyUser $ ciamKeyAdmin $ ciamLastRotated $ ciamCopyRef $ ciamMateria
+ lFrom ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.12 NAME 'ciamEgress' DESC 'Outbound (
  NAT) addresses our services send from' SUP ciamBinding STRUCTURAL MUST ciam
  Cidr X-ORIGIN 'opsdir' )
@@ -842,7 +969,7 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.26 NAME 'ciamIntegration' DESC 'Appli
  Id $ ciamGrantType $ ciamPkceRequired $ ciamPopulation $ ciamMfaRequired $ 
  ciamUsesCertificate $ ciamJitBaseDn $ ciamCriticality $ ciamTokenAuthMethod
   $ ciamScope $ ciamPostLogoutRedirectUri $ ciamSamlBinding $ ciamNameIdForm
- at $ ciamSsoUrl ) X-ORIGIN 'opsdir' )
+ at $ ciamSsoUrl $ ciamServedBy ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.27 NAME 'ciamClaimMap' DESC 'One clai
  m / SAML attribute mapping' SUP ciamObject STRUCTURAL MUST ( cn $ ciamClaim
  Name $ ciamSourceAttribute ) MAY ciamTransform X-ORIGIN 'opsdir' )
@@ -907,3 +1034,23 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.41 NAME 'ciamBundle' DESC 'Code, scri
  ot held in the record' SUP ciamObject STRUCTURAL MUST ( cn $ ciamRepoPath $
   ciamBundleKind $ ciamSha256 ) MAY ( ciamFormat $ ciamBundleVersion $ ciamT
  argetRole $ ciamDeployPath ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.42 NAME 'ciamCredential' DESC 'A key 
+ or secret as metadata, the same in every environment: each environment bind
+ s its role to where the material is kept' SUP ciamObject STRUCTURAL MUST ( 
+ cn $ ciamBindingRole $ ciamCredentialType $ ciamContinuity ) MAY ( ciamKeyA
+ lgorithm $ ciamKeySize $ ciamKeyUsage $ ciamMaterialFormat $ ciamHsmRequire
+ d $ ciamExportable $ ciamRotationDays $ ciamContinuityReason $ ciamUsedIn $
+  ciamRotationRunbook ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.43 NAME 'ciamCertificateRef' DESC 'A 
+ certificate held in a cloud certificate store' SUP ciamBinding STRUCTURAL M
+ UST ( ciamRefUri $ ciamHoldsCertificate ) MAY ( ciamAutoRotate $ ciamLastRo
+ tated $ ciamReplicaRegion $ ciamKeyUser $ ciamMaterialFrom ) X-ORIGIN 'opsd
+ ir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.44 NAME 'ciamRequiredRole' DESC 'A ro
+ le the environment must bind, declared as data (beyond what its domains and
+  adapters require); the description says why' SUP ciamObject STRUCTURAL MUS
+ T ( cn $ ciamBindingRole ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.45 NAME 'ciamOverride' DESC 'An envir
+ onment\27s own value for one overridable attribute of a shared entry; the d
+ escription says why' SUP ciamObject STRUCTURAL MUST ( cn $ ciamOverrides $ 
+ ciamOverrideAttribute $ ciamOverrideValue ) X-ORIGIN 'opsdir' )

@@ -69,7 +69,7 @@ Every attribute type declares two extensions.
 
 `string · int · bool · time (GeneralizedTime) · dn (internal reference) · extdn (DN in another directory) · cidr · ip · fqdn · url · port · ref-uri · json · enum:a|b|c · vocab`
 
-An attribute type may also state **value rules** the store enforces on every value: `X-MIN`, `X-MAX` (numbers), `X-PATTERN` (a regular expression the value matches), `X-MAX-LENGTH` (characters). Custom fields use them (§2.3).
+An attribute type may also state **value rules** the store enforces on every value: `X-MIN`, `X-MAX` (numbers), `X-PATTERN` (a regular expression the value matches), `X-MAX-LENGTH` (characters). Custom fields use them (§2.3). `X-OVERRIDABLE TRUE` marks `intent` an environment may override (§7.2): in the core, the directory's password-policy lockout, history and age and its replication shape; a custom field when its definition says `ciamOverridable`.
 
 `vocab` values are owned by the installed domains and adapters: each declares the values it defines (a provider adapter its provider name and partitions, a product adapter its server roles), the store syncs them on every upgrade and accepts only registered values.
 
@@ -88,7 +88,7 @@ A conforming store MUST enforce all of these, not merely document them:
 | R5 | **Governed writes.** Every write carries a change ID. Outside the initial bootstrap, the change MUST exist under `ou=changes` of the naming context with status `approved` or `applied`. |
 | R6 | **History.** Every insert, update and delete is recorded with before/after values and change ID. |
 | R7 | **Roles, not names.** Renderers look up bindings by `ciamBindingRole` (e.g. `ds-ldaps-service`, `ds-deployment-password`), never by hostname or resource ID. |
-| R8 | **Neutral outputs are identical.** Artifacts rendered only from `intent` MUST be byte-identical for every environment. The planner checks this. |
+| R8 | **Neutral outputs are identical.** Artifacts rendered only from `intent` MUST be byte-identical for every environment, except where an environment overrides an overridable value (§7.2). The planner checks this, and names each override the two environments differ by. |
 | R9 | **Contracts are stable.** A migration plan MUST flag any `contract` value that differs between source and target. |
 | R10 | **Generated means generated.** Rendered files carry a "do not edit" header, written in the file's own comment syntax (a format without comments, such as JSON, relies on the manifest), and a manifest (scope, format, SHA-256). |
 
@@ -96,7 +96,7 @@ A conforming store MUST enforce all of these, not merely document them:
 
 | Branch | Object classes | Holds |
 |---|---|---|
-| `ou=environments` | `ciamCloud` → `ciamEnvironment` → `ciamServer`, `ou=bindings` (`ciamNetwork`, `ciamSubnetBinding`, `ciamServiceName`, `ciamFirewallRule`, `ciamEgress`, `ciamSecretRef`, `ciamKeyRef`, `ciamBackupTarget`, `ciamInterconnect`) | Where things run, per environment |
+| `ou=environments` | `ciamCloud` → `ciamEnvironment` → `ciamServer`, `ou=stack` (`ciamStackComponent`, `ciamRequiredRole`), `ou=overrides` (`ciamOverride`), `ou=bindings` (`ciamNetwork`, `ciamSubnetBinding`, `ciamServiceName`, `ciamFirewallRule`, `ciamEgress`, `ciamSecretRef`, `ciamKeyRef`, `ciamCertificateRef`, `ciamBackupTarget`, `ciamInterconnect`) | Where things run, per environment |
 | `ou=config` | `ou=declared` (`ciamBackend`, `ciamIndex`, `ciamPasswordPolicy`, `ciamConnectionHandler`, `ciamLogPublisher`, `ciamReplicationTopology`); `ou=observed` (`ciamSnapshot` + mirrored tree) | Desired vs actual server config |
 | `ou=user-schema` | `ciamUserAttribute`, `ciamUserObjectClass` | The user directory's schema: every attribute (purpose, PII class, export control) and object class, each standard or defined in the record (§6) |
 | `ou=consumers` | `ciamConsumer` | Clients of the user directory (from access logs) |
@@ -104,6 +104,7 @@ A conforming store MUST enforce all of these, not merely document them:
 | `ou=identity-services` | `ciamIdentityService` | The platform's own identity provider / OpenID provider as partners and applications know it: public base URL, SAML entity ID, OIDC issuer (contracts), supported scopes, signing algorithms and NameID formats, and the server role that serves it |
 | `ou=integrations` | `ciamIntegration` → `ou=claims` (`ciamClaimMap`) | SAML / OIDC / partner federation and claim mappings, in the protocols' own vocabulary (grant types, token endpoint auth methods, scopes, bindings, NameID formats) |
 | `ou=certificates` | `ciamCertificate` | Public facts only: fingerprint, dates, SANs, key *role* |
+| `ou=credentials` | `ciamCredential` | Keys and secrets as metadata, the same in every environment (§7.1); never their material |
 | `ou=external-allowlists` | `ciamExternalAllowlist` | Allowlists in **other parties'** systems that contain **our** addresses (by role) |
 | `ou=custom-schema` | `ciamFieldDefinition`, `ciamRecordTypeDefinition` | Fields and record types operators define, with their metadata (§2.3) |
 | `ou=runbooks`, `ou=changes`, `ou=incidents`, `ou=owners` | `ciamRunbook`, `ciamChange`, `ciamIncident`, `ciamParty` | Operations and governance. Parties are teams, partners, vendors, and the **operator** of the platform (`ciamOwnerKind: operator`); `ciamDisplayName` is how a party is named in correspondence. |
@@ -117,9 +118,23 @@ opsdir **never stores user data.** It *describes* the user directory:
 
 ## 7. Bindings and roles
 
-An environment is complete when it binds every **required role**. The required roles aren't a fixed list: they are the union of what every domain requires (infrastructure: `network`, `disk-encryption`) and what each **applicable adapter** requires. For example, a directory server adapter may require a subnet for its servers, a stable LDAPS service name, a backup target and the secrets its deployment needs; each adapter package documents its roles. Roles nothing binds are reported as `UNBOUND`.
+An environment is complete when it binds every **required role**. The required roles aren't a fixed list: they are the union of what every domain requires (infrastructure: `network`, `disk-encryption`), what each **applicable adapter** requires, and what the environment **declares** as data (`ciamRequiredRole` under its `ou=stack`, with why). For example, a directory server adapter may require a subnet for its servers, a stable LDAPS service name, a backup target and the secrets its deployment needs; each adapter package documents its roles. Roles nothing binds are reported as `UNBOUND`, and a migration plan blocks on every role the target must bind but doesn't.
 
 Consumer firewall rules use the role `fw-consumer-<consumer>`, so the planner can match them across environments. External allowlists refer to *our* roles (`ciamRefersToRole`), so a new environment's address for that role is checked against what the other party has recorded. A service name records the certificate it presents in that environment (`ciamTlsCertificate`), so certificate users are known from data.
+
+### 7.1 Keys, secrets and certificates
+
+Keys and secrets are described in two layers joined by role, like every other binding. A **credential** (`ciamCredential`, `ou=credentials`) is what a key or secret *is*, the same everywhere: its type (private key, symmetric key, keystore, password, API token, client secret, deployment id, ...), algorithm and size, what it is used for, the form its material takes, whether it must be generated and kept in an HSM (`ciamHsmRequired`) and whether its material may leave its store (`ciamExportable`), its rotation period, its **continuity** (`carry-over`: the same material must reach every environment that takes over from or joins this one, such as a directory deployment id or a signing key partners trust; `per-environment`: each environment holds its own) and why, and everywhere it is configured or used (`ciamUsedIn`). Certificates name the role of their private key (`ciamKeyRole`); captured config settings link to it (`role#ciamRefUri`).
+
+Each environment binds the credential's role to where it keeps the material: a secret or key reference (`ciamSecretRef`, `ciamKeyRef`), or for a certificate held in a cloud certificate store, a certificate reference (`ciamCertificateRef`, holding a `ciamCertificate`). A binding records what its store does for the material: protection level (software, HSM, managed HSM, external key store), automatic rotation and the function that rotates it, replica regions (multi-region keys, replicated secrets), who may use and manage it (provider principal ids), when it was last rotated, other places the same environment holds it (`ciamCopyRef`, e.g. a PAM vault) and, when the material was carried over rather than regenerated, the binding it came from (`ciamMaterialFrom`). None of these can hold material (R4).
+
+Reports: `keys ENV` (where an environment keeps every credential, credentials it doesn't bind, material bindings no credential describes), `credentials` (sprawl: every environment and store holding each credential, its copies, the certificates keyed by it, linked settings, where it is used; roles holding material that nothing describes) and `rotation-impact DN` (a credential or certificate: every binding and copy to rotate, settings to re-render, certificates to re-issue and whoever presents or trusts them, partners, the runbook). The planner blocks a move that puts HSM-only material in a software store or that must carry material over from a store it can't leave, asks for carry-over material to be copied before cutover (and recorded), and flags a target store that drops the source's automatic rotation or replicas.
+
+### 7.2 Overlays and overrides
+
+**Overlays.** An environment may be an overlay of another (`ciamOverlayOf`): a stage environment that shares most of production's bindings, say. It inherits its base's bindings, stack components, declared required roles and overrides, except the roles it binds or declares itself (its own binding for a role replaces all of the base's for that role), the roles it drops (`ciamDropsRole`) and the attributes it overrides itself. A base may itself be an overlay. Servers are never inherited. A cycle, a base that is not an environment, or a base on another provider is refused. `opsdir check` names each environment's base.
+
+**Overrides.** An environment may hold its own value for one attribute of a shared entry (`ciamOverride` under its `ou=overrides`: `ciamOverrides` the entry, `ciamOverrideAttribute`, `ciamOverrideValue`, and why in its description), for attributes whose definition says `X-OVERRIDABLE` only. The store refuses an override of any other attribute, a value that is invalid for the attribute (type, vocabulary, rules, single value), or an attribute the entry's classes don't allow, and re-validates every override on upgrade. Every renderer of an environment reads the record with its overrides applied, so an environment-neutral file may carry an environment's value; the MANIFEST lists the overrides it was rendered with. `opsdir report overrides` lists every environment's overrides (its own and inherited) with the shared value and why. The planner reports each attribute the source and target run with different values because of their overrides (an action: confirm the target should behave differently), and blocks on neutral outputs that differ for any other reason. Config file settings vary per environment through links (§9.1), not overrides.
 
 **Owners are data.** A finding names the owners of the entry it concerns: a service, a consumer, the network binding, or the environment. It never names a hardcoded team.
 
@@ -133,13 +148,17 @@ Every product, cloud provider and secret store is an **adapter**: a self-contain
 | `required_roles` | Roles the environment must bind for it (§7) |
 | `render_neutral(directory)` | Environment-neutral files. They MUST be byte-identical for every environment (R8). |
 | `render_env(environment, services)` | Environment-specific files. `services.secret_command(ref-uri)` resolves secret references at run time, through whichever adapter owns the scheme. |
-| `checks` | Planner checks it adds, as `(PlanContext) → Findings` |
+| `checks` | Planner checks it adds, as `(PlanContext) → Findings`. A check never passes silently: data it needs but doesn't find is a finding with an owner, and a check that fails is reported as a blocker naming it and the error (the other checks still run, and the verdict can't be READY) |
 | `ref_schemes`, `secret_schemes` | Reference schemes it owns, and resolvers for the secret ones (§3.2) |
 | `renders`, `neutral_label` | How its outputs are described in a migration plan |
 | `formats` | The format of every file it renders, as `(path glob, format)` pairs; rendering refuses a file with no declared format, or one in a format no installed package registers (§9) |
 | `products` | The products it renders and reads and the versions it supports, as `(product, PEP 440 range)`; `opsdir check` flags a server whose `ciamProductVersion` is outside the range |
+| `secret_patterns` | The forms its vendor's secret material takes; the store refuses any value that matches (R4) |
+| `importers` | How it reads the product's own exports into the record: `read(files, directory, secret patterns)` returns the containers to create when missing, groups of entries (each group becomes exactly what a subtree holds) and notices. An importer merges with what the record already holds (entries and attributes it doesn't own are kept), withholds anything that may be secret and says so, and names what it can't place. `opsdir import [--change CHG] ADAPTER[/IMPORTER] PATH` lists the change records (`--dry-run`, or no change given) or applies them under an approved change; importing the same export again changes nothing. |
 
 Input is a consistent snapshot of the directory and an environment. Output is files plus `MANIFEST.json` (each file's scope, `environment-neutral` or `environment-specific`, and its SHA-256). Missing required roles are reported as `UNBOUND`, never guessed. Adding a provider or product means adding an adapter and registering it. The data, the core and the other adapters don't change.
+
+A product serving several identity services (such as one per realm) renders, for each, the integrations registered with it (`ciamServedBy`) and those that name none.
 
 Vendor-neutral parts of the stack are **domains**. Each domain record carries its schema fragment (§2.1), required roles, SQL views and reports. Only **connectors** combine domains and adapters: the registry, render composition, the migration planner and the report catalogue.
 
@@ -171,7 +190,6 @@ A config file is held in the record so it can be rebuilt from the record alone, 
 
 ## 10. Open issues
 
-- Environment overlays (stage/prod sharing most bindings) and per-environment overrides of intent (e.g., smaller replica counts in stage).
 - A read-only LDAP front end over the Postgres store (e.g., an LDAP proxy), so operators can `ldapsearch` it.
 - Importers that populate `observed` automatically (the adapter contract gains importers alongside renderers): directory access-log mining → `ou=consumers`, a product's configuration export → snapshots, a federation product's admin API → integrations.
 - Two-way ITSM sync for `ou=changes`.

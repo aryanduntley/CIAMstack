@@ -27,6 +27,9 @@ On a machine whose global pip config sets `user = true`, pip refuses it inside a
 ./opsdir.sh load FILE.ldif...         # load LDIF content under change BOOTSTRAP
 ./opsdir.sh check [CLOUD/ENV...]      # each environment's declared stack vs the installed adapters
 ./opsdir.sh modify --change CHG-… FILE.ldif   # apply LDIF change records under an approved change
+./opsdir.sh import [--change CHG-…] ADAPTER[/IMPORTER] PATH [--dry-run]   # read a product's export into the record
+./opsdir.sh capture --change CHG-… FILE       # hold a config file in the record (settings, whole, or a reference)
+./opsdir.sh file NAME [--env CLOUD/ENV]       # rebuild a captured file from the record
 ./opsdir.sh search -b BASE 'FILTER' [ATTR...] # RFC 4515 search, as LDIF or a table of attributes
 ./opsdir.sh report NAME [DN]          # portability, unowned, blast-radius DN, and every domain's reports
 ./opsdir.sh render CLOUD/ENV [-o DIR] # everything the environment's adapters render, plus MANIFEST.json

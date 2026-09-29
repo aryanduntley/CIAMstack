@@ -56,12 +56,14 @@ ATTRIBUTES = (
                  'Public base URL of an identity service (its endpoints are paths under it)'),
     AttributeDef(148, 'ciamSigningAlg', 'enum:' + '|'.join(SIGNING_ALGS), 'intent', False,
                  'Token signing algorithms (JWS)'),
+    AttributeDef(213, 'ciamServedBy', 'dn', 'intent', True,
+                 'The identity service the integration is registered with (none: every identity service serves it)'),
 )
 CLASSES = (
     ClassDef(26, 'ciamIntegration', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamProtocolType'),
              ('ciamEntityId', 'ciamAcsUrl', 'ciamRedirectUri', 'ciamClientId', 'ciamGrantType', 'ciamPkceRequired', 'ciamPopulation', 'ciamMfaRequired', 'ciamUsesCertificate', 'ciamJitBaseDn', 'ciamCriticality',
               'ciamTokenAuthMethod', 'ciamScope', 'ciamPostLogoutRedirectUri', 'ciamSamlBinding', 'ciamNameIdFormat',
-              'ciamSsoUrl'),
+              'ciamSsoUrl', 'ciamServedBy'),
              'Application or partner integration'),
     ClassDef(27, 'ciamClaimMap', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamClaimName', 'ciamSourceAttribute'),
              ('ciamTransform',),

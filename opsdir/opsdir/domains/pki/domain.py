@@ -1,8 +1,11 @@
-"""PKI domain: certificates as public facts (fingerprint, validity, SANs, purpose, key role, who uses them)."""
+"""PKI domain: keys, secrets and certificates as metadata and references (never material): credentials, where each
+environment keeps them, certificates as public facts, and who uses them."""
 from pathlib import Path
 
-from ...core.contract import Domain, sql_report
-from .checks import check_certificates
+from ...core.contract import Domain, directory_report, sql_report
+from .checks import check_certificates, check_credentials
+from .reports import (IMPACT_HEADERS, KEYS_HEADERS, SPRAWL_HEADERS, key_placement_rows, rotation_impact_rows,
+                      sprawl_rows)
 from .schema import FRAGMENT
 
 EXPIRING_SQL = ("select cert, purpose, not_after, days_left, array_to_string(names, ','),"
@@ -11,5 +14,9 @@ EXPIRING_SQL = ("select cert, purpose, not_after, days_left, array_to_string(nam
 EXPIRING_HEADERS = ("certificate", "purpose", "not_after", "days_left", "names", "used_by")
 
 DOMAIN = Domain(name="pki", schema=FRAGMENT, required_roles=(), sql=(Path(__file__).parent / "sql" / "pki.sql",),
-                reports={"expiring": sql_report(EXPIRING_HEADERS, EXPIRING_SQL)}, checks=(check_certificates,), order=40,
+                reports={"expiring": sql_report(EXPIRING_HEADERS, EXPIRING_SQL),
+                         "keys": directory_report(KEYS_HEADERS, key_placement_rows, needs_dn=True),
+                         "credentials": directory_report(SPRAWL_HEADERS, sprawl_rows),
+                         "rotation-impact": directory_report(IMPACT_HEADERS, rotation_impact_rows, needs_dn=True)},
+                checks=(check_certificates, check_credentials), order=40,
                 vocabulary={})

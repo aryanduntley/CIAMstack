@@ -1,0 +1,12 @@
+{
+  "handler": {
+    "type": "Router",
+    "name": "_router"
+  },
+  "heap": [
+    {
+      "name": "SystemAndEnvSecretStore-1",
+      "type": "SystemAndEnvSecretStore"
+    }
+  ]
+}

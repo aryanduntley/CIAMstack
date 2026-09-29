@@ -1,0 +1,67 @@
+{
+  "metadata": {
+    "realm": "/partners",
+    "entityType": "AuthTree",
+    "entityId": "PartnerLogin",
+    "pathParams": {}
+  },
+  "data": {
+    "_id": "PartnerLogin",
+    "entryNodeId": "5e1d0c9b-0001-4a6b-8c7d-9e0f1a2b3c4d",
+    "enabled": true,
+    "nodes": {
+      "5e1d0c9b-0001-4a6b-8c7d-9e0f1a2b3c4d": {
+        "nodeType": "PageNode",
+        "displayName": "Sign in",
+        "connections": {
+          "outcome": "5e1d0c9b-0004-4a6b-8c7d-9e0f1a2b3c4d"
+        }
+      },
+      "5e1d0c9b-0004-4a6b-8c7d-9e0f1a2b3c4d": {
+        "nodeType": "DataStoreDecisionNode",
+        "displayName": "Check password",
+        "connections": {
+          "false": "e301438c-0bd0-429c-ab0c-66126501069a",
+          "true": "5e1d0c9b-0005-4a6b-8c7d-9e0f1a2b3c4d"
+        }
+      },
+      "5e1d0c9b-0005-4a6b-8c7d-9e0f1a2b3c4d": {
+        "nodeType": "OneTimePasswordGeneratorNode",
+        "displayName": "Make a code",
+        "connections": {
+          "outcome": "5e1d0c9b-0006-4a6b-8c7d-9e0f1a2b3c4d"
+        }
+      },
+      "5e1d0c9b-0006-4a6b-8c7d-9e0f1a2b3c4d": {
+        "nodeType": "OneTimePasswordSmtpSenderNode",
+        "displayName": "Email the code",
+        "connections": {
+          "outcome": "5e1d0c9b-0007-4a6b-8c7d-9e0f1a2b3c4d"
+        }
+      },
+      "5e1d0c9b-0007-4a6b-8c7d-9e0f1a2b3c4d": {
+        "nodeType": "OneTimePasswordCollectorDecisionNode",
+        "displayName": "Check the code",
+        "connections": {
+          "false": "e301438c-0bd0-429c-ab0c-66126501069a",
+          "true": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0"
+        }
+      }
+    },
+    "description": "Partner staff sign-in with an emailed one-time code",
+    "staticNodes": {
+      "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+        "x": 900,
+        "y": 40
+      },
+      "e301438c-0bd0-429c-ab0c-66126501069a": {
+        "x": 900,
+        "y": 220
+      },
+      "startNode": {
+        "x": 40,
+        "y": 30
+      }
+    }
+  }
+}

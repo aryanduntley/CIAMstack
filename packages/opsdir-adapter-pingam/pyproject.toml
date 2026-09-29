@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-adapter-pingam"
+version = "0.1.0"
+description = "opsdir adapter for PingAM (ForgeRock AM): realms, OAuth2 clients, authentication journeys and policy sets; Amster import."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1", "opsdir-base-saml>=0.1", "opsdir-base-oidc>=0.1"]
+
+[project.entry-points."opsdir.adapters"]
+pingam = "opsdir_adapter_pingam.adapter:ADAPTER"
+
+[tool.setuptools.packages.find]
+where = ["src"]

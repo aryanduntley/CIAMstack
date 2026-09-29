@@ -1,6 +1,10 @@
-file              level     format           repo path                                              settings  withheld  problem
-----------------  --------  ---------------  -----------------------------------------------------  --------  --------  -------
-default-atm.json  settings  json             pingfederate/server/default/data/atm/default-atm.json  3         0                
-run.properties    settings  java-properties  pingfederate/bin/run.properties                        6         0                
-(2 rows)
+file                                                        level     format           repo path                                                   settings  withheld  problem
+----------------------------------------------------------  --------  ---------------  ----------------------------------------------------------  --------  --------  -------
+am.realms.root-partners.OAuth2Provider.OAuth2Provider.json  settings  json             am/realms/root-partners/OAuth2Provider/OAuth2Provider.json  11        0                
+default-atm.json                                            settings  json             pingfederate/server/default/data/atm/default-atm.json       3         0                
+idm.conf.audit.json                                         settings  json             pingidm/conf/audit.json                                     2         0                
+ig.config.admin.json                                        settings  json             pinggateway/config/admin.json                               2         0                
+ig.config.config.json                                       settings  json             pinggateway/config/config.json                              4         0                
+run.properties                                              settings  java-properties  pingfederate/bin/run.properties                             6         0                
+(6 rows)
 exit 0

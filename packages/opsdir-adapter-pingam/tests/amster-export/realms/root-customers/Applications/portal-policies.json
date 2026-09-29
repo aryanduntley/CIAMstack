@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "realm": "/customers",
+    "amsterVersion": "7.5.1",
+    "entityType": "Applications",
+    "entityId": "portal-policies",
+    "pathParams": {}
+  },
+  "data": {
+    "_id": "portal-policies",
+    "name": "portal-policies",
+    "applicationType": "iPlanetAMWebAgentService",
+    "resourceTypeUuids": [
+      "76656a38-5f8e-401b-83aa-4ccb74ce88d2"
+    ],
+    "subjects": [
+      "AuthenticatedUsers"
+    ],
+    "creationDate": 1695000000000,
+    "lastModifiedDate": 1695000000001
+  }
+}

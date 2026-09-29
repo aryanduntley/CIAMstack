@@ -1,0 +1,17 @@
+{
+  "metadata": {
+    "realm": null,
+    "entityType": "Realms",
+    "entityId": "partners",
+    "pathParams": {}
+  },
+  "data": {
+    "_id": "partners",
+    "name": "partners",
+    "parentPath": "/",
+    "active": true,
+    "aliases": [
+      "login.example-aero.test"
+    ]
+  }
+}

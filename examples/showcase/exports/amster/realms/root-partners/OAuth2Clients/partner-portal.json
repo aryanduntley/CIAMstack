@@ -1,0 +1,54 @@
+{
+  "metadata": {
+    "realm": "/partners",
+    "amsterVersion": "7.5.1",
+    "entityType": "OAuth2Clients",
+    "entityId": "partner-portal",
+    "pathParams": {}
+  },
+  "data": {
+    "_id": "partner-portal",
+    "_rev": "1402557129",
+    "coreOAuth2ClientConfig": {
+      "clientType": {
+        "inherited": false,
+        "value": "Confidential"
+      },
+      "redirectionUris": {
+        "inherited": false,
+        "value": [
+          "https://partners.example-aero.test/callback"
+        ]
+      },
+      "scopes": {
+        "inherited": false,
+        "value": [
+          "openid",
+          "profile",
+          "email"
+        ]
+      }
+    },
+    "advancedOAuth2ClientConfig": {
+      "grantTypes": {
+        "inherited": false,
+        "value": [
+          "authorization_code",
+          "refresh_token"
+        ]
+      },
+      "tokenEndpointAuthMethod": {
+        "inherited": false,
+        "value": "private_key_jwt"
+      }
+    },
+    "coreOpenIDClientConfig": {
+      "postLogoutRedirectUri": {
+        "inherited": false,
+        "value": [
+          "https://partners.example-aero.test/"
+        ]
+      }
+    }
+  }
+}

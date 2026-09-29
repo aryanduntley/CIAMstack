@@ -1,0 +1,11 @@
+# opsdir-adapter-pinggateway
+
+opsdir adapter for PingGateway (ForgeRock Identity Gateway): the routes that protect applications, rendered for each environment from the record and imported from a gateway configuration directory.
+
+- **Routes as entries** (`ou=routes,ou=pinggateway`, this package's schema, OID arc `1.3.6.1.4.1.32473.3.3`): the condition a route handles, the gateway's own JSON for its handler chain (secrets withheld), and what it depends on: the binding role of the application it protects (`pinggwBackendRole`), the integration whose client it signs users in as (`pinggwIntegration`, the standard layer) and the OpenID provider it trusts (`pinggwIssuer`, a contract).
+- **Render** (per environment): `pinggateway/routes/<name>.json`, the backend address from the environment's binding of the route's backend role. The gateway's own settings (`config/config.json`, `admin.json`) are captured config files, rendered with the environment's other captured files.
+- **Import**: `opsdir import --change CHG-… pinggateway CONFIG_DIR` reads `routes/` and `config/`: a backend host that is a service name in the record becomes that role; client ids are matched to integrations and providers recorded.
+- **Planner check**: a route whose backend role the target doesn't bind, or whose client or OpenID provider the record doesn't have, is a blocker; a route to a fixed backend is an action.
+- **Required roles**: `subnet-ig`, `ig-service`, `ig-keystore`. Server role: `ig`. Products: PingGateway 2023–2026, ForgeRock Identity Gateway 7.
+
+The routes follow the gateway's JSON but are not yet validated against a live gateway. Installing the package registers it with opsdir (entry point `opsdir.adapters`: `pinggateway`); nothing in the opsdir core changes. In this repository: `scripts/dev-install.sh`.

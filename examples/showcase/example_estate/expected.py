@@ -11,6 +11,11 @@ EXPECTED = {
         ("B5", "Consumer", "Consumer `legacy-rptuser`", "legacy account: unknown status, no owner, no TLS", None),
         ("B6", "Consumer", "Consumer `mro-batch-export`", "MRO export only 'identified', not tested", None),
         ("B7", "Consumer", "Consumer `supplier-portal-svc`", "supplier portal only 'contacted', not tested", None),
+        ("B8", "Key", "`disk-encryption` must be kept in an HSM", "the target's disk key is software-protected", None),
+        ("B9", "IDM", "Connector `hrdb` has withheld credentials but no credential role",
+         "imported HR database connector names no secret", "CHG-2005"),
+        ("B10", "IDM", "Connector `ldap` has withheld credentials but no credential role",
+         "imported directory connector names no secret", "CHG-2005"),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -24,6 +29,13 @@ EXPECTED = {
         ("A9", "Drift", "ds-3: not declared (unrecorded change): `cn=description", "unrecorded index on ds-3", None),
         ("A10", "Drift", "ds-3: differs: `cn=customers", "lockout threshold changed on ds-3", None),
         ("A11", "Access", "ACI `aci-legacy-all`", "ACI with no owner or justification", None),
+        ("A12", "Key", "Copy `pf-signing-key`", "signing key must be carried over, not recorded as carried over", None),
+        ("A13", "Key", "`pf-admin-password` loses automatic rotation", "target secret has no rotation function", None),
+        ("A14", "Key", "`disk-encryption` loses automatic rotation and replicas",
+         "target disk key neither rotates nor replicates", None),
+        ("A15", "IDM", "Connector `hrdb` reaches a fixed host", "HR database reached at the same host everywhere", None),
+        ("A16", "Gateway", "Route `partner-portal` sends requests to a fixed backend",
+         "the partner portal application is reached at the same host everywhere", None),
     ],
 }
 

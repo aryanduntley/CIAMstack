@@ -21,6 +21,10 @@ CHANGES = (
     ("CHG-2040", "Allow target DS subnet on the replication port", "applied", "CAB 2026-09-04", "2026-09-06"),
     ("CHG-2001", "Add NSG rule for the MRO batch export in the target environment", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2003", "Restore the stable LDAPS service name in the target environment", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2004", "Import the partner realm's PingAM configuration (Amster export)", "approved", "CAB 2026-09-18",
+     "2026-09-22"),
+    ("CHG-2005", "Name the secrets the IDM connectors use (credential roles)", "approved", "CAB 2026-09-18",
+     "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

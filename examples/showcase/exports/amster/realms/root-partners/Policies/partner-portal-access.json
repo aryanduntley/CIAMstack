@@ -1,0 +1,31 @@
+{
+  "metadata": {
+    "realm": "/partners",
+    "amsterVersion": "7.5.1",
+    "entityType": "Policies",
+    "entityId": "partner-portal-access",
+    "pathParams": {}
+  },
+  "data": {
+    "_id": "partner-portal-access",
+    "name": "partner-portal-access",
+    "applicationName": "partner-apps",
+    "active": true,
+    "description": "Partner staff who signed in with a one-time code may use the partner portal",
+    "resources": [
+      "https://partners.example-aero.test/*"
+    ],
+    "actionValues": {
+      "GET": true,
+      "POST": true
+    },
+    "subject": {
+      "type": "AuthenticatedUsers"
+    },
+    "condition": {
+      "type": "AuthLevel",
+      "authLevel": 2
+    },
+    "lastModifiedDate": "2026-09-10T08:00:00Z"
+  }
+}

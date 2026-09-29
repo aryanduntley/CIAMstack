@@ -1,0 +1,25 @@
+{
+  "metadata": {
+    "realm": "/customers",
+    "amsterVersion": "7.5.1",
+    "entityType": "Policies",
+    "entityId": "portal-read",
+    "pathParams": {}
+  },
+  "data": {
+    "_id": "portal-read",
+    "name": "portal-read",
+    "applicationName": "portal-policies",
+    "active": true,
+    "resources": [
+      "https://portal.example.test/*"
+    ],
+    "actionValues": {
+      "GET": true
+    },
+    "subject": {
+      "type": "AuthenticatedUsers"
+    },
+    "lastModifiedDate": "2026-01-01T00:00:00Z"
+  }
+}

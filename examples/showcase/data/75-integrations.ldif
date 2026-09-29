@@ -13,6 +13,7 @@ ciamOwner: cn=customer-portal-team,ou=owners,dc=ciam-ops
 ciamPopulation: customers
 ciamProtocolType: saml2-sp
 ciamSamlBinding: HTTP-POST
+ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=customer-portal-sp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
@@ -71,6 +72,7 @@ ciamOwner: cn=supplier-portal-team,ou=owners,dc=ciam-ops
 ciamPopulation: suppliers
 ciamProtocolType: saml2-sp
 ciamSamlBinding: HTTP-POST
+ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=supplier-portal-sp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
@@ -128,6 +130,7 @@ ciamRedirectUri: https://techpubs.example-aero.test/oidc/callback
 ciamScope: openid
 ciamScope: profile
 ciamScope: email
+ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamTokenAuthMethod: none
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
@@ -183,6 +186,7 @@ ciamRedirectUri: https://mobile.example-aero.test/oauth2/callback
 ciamScope: openid
 ciamScope: email
 ciamScope: offline_access
+ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamTokenAuthMethod: none
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
@@ -226,6 +230,7 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamOwner: cn=skyline-air,ou=owners,dc=ciam-ops
 ciamPopulation: partners
 ciamProtocolType: saml2-idp
+ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamSsoUrl: https://idp.skyline-air.example/saml/sso
 ciamUsesCertificate: cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
@@ -241,6 +246,7 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamOwner: cn=harbor-mro,ou=owners,dc=ciam-ops
 ciamPopulation: partners
 ciamProtocolType: saml2-idp
+ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamSsoUrl: https://sso.harbor-mro.example/idp/SSO.saml2
 ciamUsesCertificate: cn=harbor-mro-idp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops

@@ -11,7 +11,7 @@ from functools import partial
 from importlib.metadata import entry_points
 from pathlib import Path
 
-from ..core.contract import Adapter, Domain, Format, Services
+from ..core.contract import Adapter, Domain, Format, SecretPattern, Services
 from ..core.directory import get, rdn_value, subtree
 from ..core.environment import env_model, with_required_roles
 from ..core.naming import branch
@@ -111,6 +111,11 @@ def secret_patterns(installed=ADAPTERS):
     if wrong:
         raise SystemExit("secret patterns the store can't use: " + "; ".join(wrong))
     return tuple((p.name, p.pattern, owner, p.description) for p, owner in owned)
+
+
+def pattern_records(installed=ADAPTERS):
+    """The secret patterns as SecretPattern records (what capture and importers withhold values with)."""
+    return tuple(SecretPattern(name, pattern, description) for name, pattern, _, description in secret_patterns(installed))
 
 
 def format_named(name, formats=FORMATS):

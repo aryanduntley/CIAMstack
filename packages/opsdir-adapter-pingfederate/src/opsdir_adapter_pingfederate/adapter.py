@@ -22,4 +22,4 @@ ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required
                   vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES}, schema=None,
                   formats=(("pingfederate/*.json", "json"), *SAML_FORMATS, *OIDC_FORMATS),
                   products=(("PingFederate", ">=11,<13"),),
-                  secret_patterns=SECRET_PATTERNS)
+                  secret_patterns=SECRET_PATTERNS, importers=())

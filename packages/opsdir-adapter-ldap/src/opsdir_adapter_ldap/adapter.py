@@ -21,4 +21,4 @@ ADAPTER = Adapter(name=NAME, kind="product", applies=None, required_roles=(), re
                   render_env=None, checks=(), ref_schemes=(), secret_schemes={}, renders=None, neutral_label="LDAP",
                   vocabulary={}, schema=None, formats=FORMATS,
                   products=(),
-                  secret_patterns=())
+                  secret_patterns=(), importers=())

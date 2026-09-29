@@ -78,8 +78,11 @@ packages/            installable packages; adapters register via opsdir.adapters
   standards          opsdir-adapter-ldap (standard LDIF + declaration-only generic adapter), opsdir-base-saml,
                      opsdir-base-oidc
   lineages/products  opsdir-base-ds (OpenDJ -> ForgeRock DS -> PingDS), opsdir-adapter-pingds,
-                     opsdir-adapter-opendj, opsdir-adapter-pingfederate
-  clouds/stores      opsdir-adapter-aws, opsdir-adapter-azure, opsdir-adapter-hashicorp-vault
+                     opsdir-adapter-opendj, opsdir-adapter-pingfederate, opsdir-adapter-pingam,
+                     opsdir-adapter-pingidm, opsdir-adapter-pinggateway (each with an importer of the product's
+                     own export: Amster, IDM project, gateway config)
+  clouds/stores      opsdir-adapter-aws, opsdir-adapter-azure, opsdir-adapter-hashicorp-vault,
+                     opsdir-adapter-kubernetes, opsdir-adapter-cyberark (PAM)
   formats            opsdir-format-terraform (hcl)
 examples/showcase/   the fictional estate: example_estate/ data/ changes/ golden/ scripts/ tests/ demo.sh
 pytest.ini           one test configuration (core, packages, showcase); opsdir/scripts/test.sh runs everything

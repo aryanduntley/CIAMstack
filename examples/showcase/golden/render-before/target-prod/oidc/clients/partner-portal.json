@@ -1,0 +1,19 @@
+{
+  "client_id": "partner-portal",
+  "client_name": "partner-portal",
+  "redirect_uris": [
+    "https://partners.example-aero.test/callback"
+  ],
+  "post_logout_redirect_uris": [
+    "https://partners.example-aero.test/"
+  ],
+  "grant_types": [
+    "authorization_code",
+    "refresh_token"
+  ],
+  "response_types": [
+    "code"
+  ],
+  "token_endpoint_auth_method": "private_key_jwt",
+  "scope": "openid profile email"
+}

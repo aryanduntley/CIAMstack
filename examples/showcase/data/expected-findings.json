@@ -49,6 +49,27 @@
       "match": "Consumer `supplier-portal-svc`",
       "planted": "supplier portal only 'contacted', not tested",
       "cleared_by": null
+    },
+    {
+      "id": "B8",
+      "area": "Key",
+      "match": "`disk-encryption` must be kept in an HSM",
+      "planted": "the target's disk key is software-protected",
+      "cleared_by": null
+    },
+    {
+      "id": "B9",
+      "area": "IDM",
+      "match": "Connector `hrdb` has withheld credentials but no credential role",
+      "planted": "imported HR database connector names no secret",
+      "cleared_by": "CHG-2005"
+    },
+    {
+      "id": "B10",
+      "area": "IDM",
+      "match": "Connector `ldap` has withheld credentials but no credential role",
+      "planted": "imported directory connector names no secret",
+      "cleared_by": "CHG-2005"
     }
   ],
   "actions": [
@@ -127,6 +148,41 @@
       "area": "Access",
       "match": "ACI `aci-legacy-all`",
       "planted": "ACI with no owner or justification",
+      "cleared_by": null
+    },
+    {
+      "id": "A12",
+      "area": "Key",
+      "match": "Copy `pf-signing-key`",
+      "planted": "signing key must be carried over, not recorded as carried over",
+      "cleared_by": null
+    },
+    {
+      "id": "A13",
+      "area": "Key",
+      "match": "`pf-admin-password` loses automatic rotation",
+      "planted": "target secret has no rotation function",
+      "cleared_by": null
+    },
+    {
+      "id": "A14",
+      "area": "Key",
+      "match": "`disk-encryption` loses automatic rotation and replicas",
+      "planted": "target disk key neither rotates nor replicates",
+      "cleared_by": null
+    },
+    {
+      "id": "A15",
+      "area": "IDM",
+      "match": "Connector `hrdb` reaches a fixed host",
+      "planted": "HR database reached at the same host everywhere",
+      "cleared_by": null
+    },
+    {
+      "id": "A16",
+      "area": "Gateway",
+      "match": "Route `partner-portal` sends requests to a fixed backend",
+      "planted": "the partner portal application is reached at the same host everywhere",
       "cleared_by": null
     }
   ]

@@ -3,6 +3,7 @@ import re
 
 _TOKEN = re.compile(r"\(|\)|'[^']*'|\$|[^\s()$']+")
 RULES = ("X-MIN", "X-MAX", "X-PATTERN", "X-MAX-LENGTH")   # value rules the store enforces beyond X-VALUE-TYPE
+MARKS = ("X-OVERRIDABLE",)      # what else a definition says about its values: an environment may override them
 FLAGS = frozenset({"SINGLE-VALUE", "ABSTRACT", "STRUCTURAL", "AUXILIARY", "OBSOLETE", "COLLECTIVE",
                    "NO-USER-MODIFICATION"})
 
@@ -53,7 +54,7 @@ def attribute_type(defn):
         "name": names[0], "oid": d["oid"], "syntax_oid": d.get("SYNTAX"), "equality": d.get("EQUALITY"),
         "value_type": d.get("X-VALUE-TYPE", "string"), "portability": d.get("X-PORTABILITY", "meta"),
         "single_value": bool(d.get("SINGLE-VALUE")), "description": d.get("DESC"), "origin": d.get("X-ORIGIN"),
-        "rules": {k: d[k] for k in RULES if k in d},
+        "rules": {k: d[k] for k in (*RULES, *MARKS) if k in d},
     }
 
 

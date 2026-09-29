@@ -18,11 +18,11 @@ def test_unknown_environment_exits(estate):
 def test_env_model_resolves_cloud_servers_and_bindings(estate):
     m = env_model(estate["before"], "source/prod")
     assert (m.provider, m.label, m.unbound) == ("aws", "source/prod", ())
-    assert len(m.servers) == 6 and all("ciamServer" in s.classes for s in m.servers)
+    assert len(m.servers) == 10 and all("ciamServer" in s.classes for s in m.servers)
     assert one_role(m, "network").dn.startswith("cn=vpc,")
     assert one_role(m, "no-such-role") is None
     assert len(by_role(m, "subnet-ds")) == 3
-    assert {b.dn.split(",")[0] for b in of_class(m, "ciamServiceName")} == {"cn=svc-ldaps", "cn=svc-sso"}
+    assert {b.dn.split(",")[0] for b in of_class(m, "ciamServiceName")} == {"cn=svc-ldaps", "cn=svc-sso", "cn=svc-login", "cn=svc-apps"}
 
 
 def test_role_lookups_on_servers(estate):
@@ -43,7 +43,7 @@ def test_required_roles_decide_what_is_unbound(estate):
 def test_adapters_are_chosen_from_directory_data(estate):
     for spec, provider in (("source/prod", "aws"), ("target/prod", "azure")):
         m, adapters = environment(estate["before"], spec)
-        assert [a.name for a in adapters] == [provider, "pingds", "pingfederate"]
+        assert [a.name for a in adapters] == [provider, "pingam", "pingds", "pingfederate", "pinggateway", "pingidm"]
         assert m.unbound == (("backup-target",) if provider == "azure" else ())
         assert "backup-target" in required_roles(adapters)
 

@@ -11,7 +11,7 @@ target the Admin API or the PingFederate Terraform provider. Endpoint paths are 
 import json
 
 from opsdir.core.directory import get, one, rdn_value, values
-from opsdir.domains.federation.services import claims, identity_services, integrations
+from opsdir.domains.federation.services import claims, identity_services, integrations_served
 from opsdir_base_oidc.discovery import OidcEndpoints
 from opsdir_base_oidc.render import oidc_files
 from opsdir_base_saml.render import SamlEndpoints, saml_files
@@ -99,12 +99,13 @@ def _resource(d, i):
     return RESOURCES[one(i, "ciamProtocolType")][1](i, claims(d, i), owners, certs)
 
 
-def pingfederate_files(d):
-    return {path: json.dumps([_resource(d, i) for i in integrations(d, ptype)], indent=2) + "\n"
+def pingfederate_files(d, served):
+    """The integrations the services PingFederate serves are registered with (or that name none)."""
+    return {path: json.dumps([_resource(d, i) for i in integrations_served(d, served, ptype)], indent=2) + "\n"
             for ptype, (path, _) in RESOURCES.items()}
 
 
 def render_neutral(d):
     """PingFederate's own resources, then the standard SAML and OIDC documents for the services it serves."""
     served = identity_services(d, SERVER_ROLES)
-    return {**pingfederate_files(d), **saml_files(d, served, SAML_ENDPOINTS), **oidc_files(d, served, OIDC_ENDPOINTS)}
+    return {**pingfederate_files(d, served), **saml_files(d, served, SAML_ENDPOINTS), **oidc_files(d, served, OIDC_ENDPOINTS)}

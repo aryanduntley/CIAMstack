@@ -4,8 +4,8 @@ the change records under an approved change."""
 from typing import NamedTuple
 
 from ..core.changeset import diff
-from ..core.contract import SecretPattern
 from ..core.directory import get, make_entry, one, subtree
+from ..core.environment import as_seen
 from ..core.formats import format_by_extension
 import hashlib
 
@@ -14,7 +14,7 @@ from ..domains.configuration.bundles import (VERIFY_HEADERS, bundle_entries, bun
 from ..domains.configuration.naming import BUNDLES, CONFIG_FILES, bundle_dn, file_dn
 from ..domains.configuration.record import (captured_files, deployed_files, file_entries, linked, rebuild,
                                             render_problems)
-from .registry import ADAPTERS, FORMATS, environment, format_named, secret_patterns
+from .registry import ADAPTERS, FORMATS, environment, format_named, pattern_records
 
 # The captured files an environment receives, rendered: {path: text}, {path: format}, {path: scope}, and
 # ((file name, reason), ...) for those that can't be rendered there
@@ -31,16 +31,11 @@ def capture_format(path, name=None, formats=FORMATS):
     return fmt
 
 
-def _patterns(installed):
-    return tuple(SecretPattern(name, pattern, description)
-                 for name, pattern, _, description in secret_patterns(installed))
-
-
 def capture_changes(d, fmt, text, name, repo_path, role=None, deploy_path=None, accept_concerns=False,
                     installed=ADAPTERS):
     """(LDIF change records, notices): what turns the record's copy of the file (none yet, or an earlier capture)
     into this one. Settings whose locators are unchanged keep their entries (and history)."""
-    entries, notices = file_entries(fmt, text, name, repo_path, _patterns(installed), role, deploy_path,
+    entries, notices = file_entries(fmt, text, name, repo_path, pattern_records(installed), role, deploy_path,
                                     accept_concerns)
     return _changes(d, CONFIG_FILES, file_dn(name), entries), notices
 
@@ -61,7 +56,7 @@ def bundle_changes(d, name, repo_path, kind, content, format_name=None, version=
     noticed (the bundle is deployed as it is)."""
     digest = content_digest(content)
     entry = bundle_entries(name, repo_path, kind, digest, format_name, version, role, deploy_path)
-    concerns = content_concerns(content, _patterns(installed))
+    concerns = content_concerns(content, pattern_records(installed))
     return _changes(d, BUNDLES, bundle_dn(name), (entry,)), (
         f"{name}: {kind} bundle at {repo_path} ({len(content)} file(s), sha256 {digest[:12]})",
         *(f"{name}: may hold secret material: {c}" for c in concerns))
@@ -74,9 +69,9 @@ def rebuilt_file(d, name, spec=None, installed=ADAPTERS, formats=FORMATS):
     if entry is None:
         raise SystemExit(f"no captured file named {name} (see `opsdir report capture`)")
     fmt = format_named(one(entry, "ciamFormat"), formats)
-    m = environment(d, spec, installed)[0] if spec else None
+    m = as_seen(environment(d, spec, installed)[0]) if spec else None
     try:
-        return rebuild(d, fmt, entry, m), one(entry, "ciamRepoPath")
+        return rebuild(m.d if m else d, fmt, entry, m), one(entry, "ciamRepoPath")
     except ValueError as e:
         raise SystemExit(str(e))
 
@@ -132,7 +127,7 @@ def verification(d, contents, formats=FORMATS, installed=ADAPTERS):
     """(headers, rows): every bundle and captured file against a checkout of the repo. contents: {repo path:
     {relative path: bytes} (one file: {"": bytes}), or None when the repo has nothing there}."""
     digests = {path: content_digest(c) if c is not None else None for path, c in contents.items()}
-    patterns = _patterns(installed)
+    patterns = pattern_records(installed)
     concerns = {path: content_concerns(c, patterns) for path, c in contents.items() if c is not None}
     return VERIFY_HEADERS, (*bundle_verification(d, digests, concerns),
                             *(_config_row(d, f, digests, formats) for f in captured_files(d)))

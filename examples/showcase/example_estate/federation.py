@@ -57,14 +57,25 @@ IDENTITY_SERVICE = dict(
     ciamOwner=owner("ciam-platform"), description="Single sign-on for customers, suppliers and partners")
 
 
+# The partner realm on PingAM (its clients, journeys and policies are imported from an Amster export by the demo)
+PARTNER_REALM = dict(
+    ciamBaseUrl="https://login.example-aero.test", ciamEntityId="https://login.example-aero.test/am/partners",
+    ciamOidcIssuer="https://login.example-aero.test/am/oauth2/realms/root/realms/partners",
+    ciamScope=["openid", "profile", "email"], ciamSigningAlg=["RS256"], ciamNameIdFormat=["persistent"],
+    ciamTargetRole="am", ciamCriticality="high", pingamRealmPath="/partners", ciamOwner=owner("ciam-platform"),
+    description="Partner and supplier staff sign-in (PingAM realm /partners)")
+
+
 def identity_services():
-    return (spec("74-identity-services", f"cn=sso,{IDS}", ["top", "ciamIdentityService"], cn="sso", **IDENTITY_SERVICE),)
+    return (spec("74-identity-services", f"cn=sso,{IDS}", ["top", "ciamIdentityService"], cn="sso", **IDENTITY_SERVICE),
+            spec("74-identity-services", f"cn=partners,{IDS}", ["top", "ciamIdentityService", "pingamRealm"],
+                 cn="partners", **PARTNER_REALM))
 
 
 def _integration(cn, ptype, kw, claims):
     idn = f"cn={cn},{INTS}"
     return (spec("75-integrations", idn, ["top", "ciamIntegration"], cn=cn, ciamProtocolType=ptype,
-                 xTokenLifetimeMinutes=TOKEN_LIFETIMES.get(cn), **kw),
+                 xTokenLifetimeMinutes=TOKEN_LIFETIMES.get(cn), ciamServedBy=f"cn=sso,{IDS}", **kw),
             *((ou("75-integrations", "claims", idn),) if claims else ()),
             *(spec("75-integrations", f"cn={claim},ou=claims,{idn}", ["top", "ciamClaimMap"], cn=claim,
                    ciamClaimName=claim, ciamSourceAttribute=ua(src)[0], ciamTransform=transform)

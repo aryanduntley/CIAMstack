@@ -40,6 +40,7 @@ ciamDefinitionNumber: 3
 ciamDefinitionStatus: active
 ciamMaxValue: 1440
 ciamMinValue: 5
+ciamOverridable: TRUE
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPortability: intent
 ciamPurpose: Access token lifetime agreed with the application owner

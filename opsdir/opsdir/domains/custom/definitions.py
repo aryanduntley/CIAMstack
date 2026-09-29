@@ -6,8 +6,8 @@ composition (so a definition that can't be built is never accepted).
 import re
 
 from ...core.directory import is_a, one, values
-from ...core.standard import (CUSTOM_ARC, STANDARD_CLASSES, SYNTAX, AttributeDef, ClassDef, check_fragments,
-                              fragment)
+from ...core.standard import (CUSTOM_ARC, OVERRIDABLE, STANDARD_CLASSES, SYNTAX, AttributeDef, ClassDef,
+                              check_fragments, fragment)
 from .naming import PREFIX
 
 FIELD, RECORD_TYPE = "ciamFieldDefinition", "ciamRecordTypeDefinition"
@@ -37,8 +37,10 @@ def _description(e):
 
 
 def rules(e):
-    """The value rules a field definition states, as X- extensions."""
-    return tuple((x, one(e, attr)) for attr, x in RULES if one(e, attr) is not None)
+    """The value rules a field definition states, as X- extensions (and X-OVERRIDABLE when an environment may
+    override it)."""
+    return (*((x, one(e, attr)) for attr, x in RULES if one(e, attr) is not None),
+            *(OVERRIDABLE if one(e, "ciamOverridable") == "TRUE" else ()))
 
 
 def field_def(e):

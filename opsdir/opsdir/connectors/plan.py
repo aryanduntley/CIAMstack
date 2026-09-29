@@ -6,7 +6,8 @@ here as a blocker with an owner.
 
 A connector: the checks here span domains (service names vs the consumers and certificates that depend
 on them, firewall bindings vs consumers). They run first, then every applicable adapter's checks, then
-every domain's, in registration order; every check is a pure function of a PlanContext returning Findings.
+every domain's, in registration order; every check is a pure function of a PlanContext returning Findings. A check
+that fails never passes silently or hides the others: its failure is a blocker naming the check and the error.
 """
 import datetime as dt
 from typing import NamedTuple, Optional
@@ -15,6 +16,8 @@ from ..core.contract import PlanContext
 from ..core.directory import children, follow, get, gtime_date, one, rdn_value, values
 from ..core.environment import EnvModel, one_role, of_class
 from ..core.findings import findings, merge_findings, owner_label, responsible
+from ..core.naming import env_label
+from ..core.overlays import override_differences
 from ..domains.directory.domain import consumers_of_role
 from ..domains.governance.domain import display_name, operator
 from ..domains.pki.naming import CERTIFICATES
@@ -30,11 +33,15 @@ Plan = NamedTuple("Plan", [("src", EnvModel), ("dst", EnvModel), ("cutover", Opt
 
 # ------------------------------------------------------------------ cross-domain checks
 def _check_neutral(ctx):
-    """Environment-neutral outputs must be byte-identical (R8)."""
+    """Environment-neutral outputs must be byte-identical (R8), except where the environments' own overrides make
+    them run different values (the Overrides actions name each)."""
     differ = [p for p in ctx.neutral_paths if ctx.src_files[p] != ctx.dst_files.get(p)]
     if not differ:
         return findings(ok=[f"All {len(ctx.neutral_paths)} environment-neutral outputs render identically for both "
                             f"environments ({', '.join(ctx.neutral_paths)}). Intent moves as-is."])
+    if override_differences(ctx.d, ctx.src.overrides, ctx.dst.overrides):
+        return findings(ok=[f"Environment-neutral outputs {', '.join(differ)} differ only by the environments' "
+                            "overrides (see the Overrides actions); the shared intent is identical."])
     return findings(blockers=[("Intent", "Environment-neutral outputs differ: " + ", ".join(differ),
                                responsible(ctx.d, ctx.dst.env))])
 
@@ -82,8 +89,41 @@ def _check_roles(ctx):
                     ok=[f"New in {ctx.dst.label}: `{r}`." for r in sorted(dst_roles - src_roles)])
 
 
+def _declared_why(ctx, role):
+    """Why the target's lineage declares a role required (the ciamRequiredRole's description), if it does."""
+    found = [r for e in ctx.dst.lineage for r in children(ctx.d, f"ou=stack,{e.dn}", "ciamRequiredRole")
+             if one(r, "ciamBindingRole") == role]
+    return (f"declared by {env_label(found[0].dn.split(',ou=stack,', 1)[1])}"
+            + (f": {one(found[0], 'description')}" if one(found[0], "description") else "")) if found else None
+
+
+def _check_required(ctx):
+    """Every role the target must bind (its domains', its adapters', the ones it declares) is bound. Roles the source
+    binds are reported by the role check; this names the rest."""
+    src_roles = {one(b, "ciamBindingRole") for b in ctx.src.bindings}
+    return findings(blockers=[("Binding", f"Role `{r}` is required in {ctx.dst.label} "
+                               f"({_declared_why(ctx, r) or 'by its domains and adapters'}) but nothing binds it.",
+                               responsible(ctx.d, ctx.dst.env))
+                              for r in ctx.dst.unbound if r not in src_roles])
+
+
 # ------------------------------------------------------------------ composition
-CROSS_DOMAIN_CHECKS = (_check_neutral, _check_contracts, _check_roles)
+CROSS_DOMAIN_CHECKS = (_check_neutral, _check_contracts, _check_roles, _check_required)
+
+
+def check_name(check):
+    return f"{check.__module__}.{check.__qualname__}"
+
+
+def run_check(check, ctx):
+    """A check's findings; when it fails (data it didn't expect, a defect), a blocker that names the check and the
+    error instead, so the verdict can't be READY and every other check still reports."""
+    try:
+        return check(ctx)
+    except Exception as e:      # any failure becomes a finding: a plan never passes a check it couldn't run
+        return findings(blockers=[("Planner", f"Check `{check_name(check)}` could not run ({type(e).__name__}: {e}). "
+                                   "What it verifies is unknown until it does: correct the data it names, or report "
+                                   "the defect.", responsible(ctx.d, ctx.dst.env))])
 
 
 def checks(adapters, domains=DOMAINS):
@@ -114,7 +154,7 @@ def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS):
     dst_files = assemble(dst, adapters, dst_neutral, dst_specific)
     ctx = PlanContext(d, src, dst, cutover, as_of, assemble(src, src_adapters, src_neutral, src_specific), dst_files,
                       tuple(src_neutral))
-    f = merge_findings([check(ctx) for check in checks(adapters, domains)])
+    f = merge_findings([run_check(check, ctx) for check in checks(adapters, domains)])
     return Plan(src, dst, cutover, as_of, f.blockers, f.actions, f.ok, _group_requests(f.requests), dst_files,
                 render_summary(adapters))
 

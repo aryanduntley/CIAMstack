@@ -9,7 +9,7 @@ from opsdir.core.environment import StackComponent, env_model
 
 
 def adapter(name, kind="product", applies=True):
-    return Adapter(name, kind, lambda m: applies, (), None, None, (), (), {}, None, None, {}, None, (), (), ())
+    return Adapter(name, kind, lambda m: applies, (), None, None, (), (), {}, None, None, {}, None, (), (), (), ())
 
 
 def component(adapter_name, role="r", versions=">=1,<2", source=None):
@@ -23,18 +23,22 @@ def source(estate):
 
 def test_environments_declare_their_stack(estate, source):
     assert {(c.role, c.adapter) for c in source.stack} == {("provider", "aws"), ("directory", "pingds"),
-                                                           ("federation", "pingfederate")}
-    assert environment_specs(estate["before"]) == ("source/prod", "target/prod")
+                                                           ("federation", "pingfederate"), ("access", "pingam"),
+                                                           ("identity-management", "pingidm"), ("gateway", "pinggateway")}
+    assert environment_specs(estate["before"]) == ("source/prod", "target/prod", "source/stage")
+    stage = env_model(estate["before"], "source/stage")       # an overlay of source/prod: its stack is prod's
+    assert stage.stack == source.stack and [e.dn for e in stage.lineage][1] == source.dn
 
 
 def test_the_declared_stack_decides_which_adapters_render(source):
-    assert [a.name for a in declared_adapters(source, ADAPTERS)] == ["aws", "pingds", "pingfederate"]
+    assert [a.name for a in declared_adapters(source, ADAPTERS)] == ["aws", "pingam", "pingds", "pingfederate", "pinggateway", "pingidm"]
     only_provider = source._replace(stack=(component("aws", "provider"),))
     assert [a.name for a in declared_adapters(only_provider, ADAPTERS)] == ["aws"]
 
 
 def test_without_a_stack_adapters_are_inferred_from_the_data(source):
-    assert [a.name for a in declared_adapters(source._replace(stack=()), ADAPTERS)] == ["aws", "pingds", "pingfederate"]
+    assert [a.name for a in declared_adapters(source._replace(stack=()), ADAPTERS)] == \
+        ["aws", "pingam", "pingds", "pingfederate", "pinggateway", "pingidm"]
 
 
 def test_rendering_refuses_a_declared_adapter_that_is_not_installed(source):

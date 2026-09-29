@@ -8,7 +8,7 @@ accepts (an approved change record). Effects are the store's; everything else is
 """
 from typing import NamedTuple
 
-from .connectors import capture as capturemod, migration, plan as planmod, reports, workspace
+from .connectors import capture as capturemod, importing, migration, plan as planmod, reports, workspace
 from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, schema_sync, store_parts
 from .connectors.render import render_env
 from .connectors.stack import STATUS_HEADERS, stack_rows
@@ -131,8 +131,15 @@ def preview_bundle(conn, name, repo_path, kind, content, format_name=None, versi
     return Preview(name, tuple(changes), tuple(notices))
 
 
+def preview_import(conn, spec, files):
+    """Effect (reads the record): the change records importing a product's export would apply, and the importer's
+    notices (what it withheld, what it couldn't place). spec: 'adapter[/importer]'; files: {relative path: text}."""
+    changes, notices = importing.preview_import(db.load_directory(conn), spec, files)
+    return Preview(spec, tuple(changes), tuple(notices))
+
+
 def apply_preview(conn, preview, change_id):
-    """Effect: apply a previewed write (a capture, a bundle) under an approved change."""
+    """Effect: apply a previewed write (a capture, a bundle, an import) under an approved change."""
     return modify(conn, preview.changes, change_id) if preview.changes else Applied(change_id, ())
 
 

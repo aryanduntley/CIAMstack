@@ -1,0 +1,42 @@
+{
+  "name": "ldap",
+  "connectorRef": {
+    "bundleName": "org.forgerock.openicf.connectors.ldap-connector",
+    "bundleVersion": "[1.5.0.0,1.6.0.0)",
+    "connectorName": "org.identityconnectors.ldap.LdapConnector"
+  },
+  "configurationProperties": {
+    "accountObjectClasses": [
+      "top",
+      "inetOrgPerson",
+      "exampleAeroPerson"
+    ],
+    "baseContexts": [
+      "ou=people,dc=partners,dc=example-aero,dc=test"
+    ],
+    "credentials": "${withheld}",
+    "port": 1636,
+    "principal": "uid=idm-sync,ou=service-accounts,dc=partners,dc=example-aero,dc=test",
+    "ssl": true,
+    "host": "ldap.id.cloud.example-aero.test"
+  },
+  "objectTypes": {
+    "account": {
+      "nativeType": "__ACCOUNT__",
+      "properties": {
+        "companyId": {
+          "nativeName": "companyId",
+          "type": "string"
+        },
+        "mail": {
+          "nativeName": "mail",
+          "type": "string"
+        },
+        "uid": {
+          "nativeName": "uid",
+          "type": "string"
+        }
+      }
+    }
+  }
+}

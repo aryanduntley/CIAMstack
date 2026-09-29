@@ -1,0 +1,12 @@
+{
+    "auditServiceConfig": {
+        "handlerForQueries": "json",
+        "availableAuditEventHandlers": [
+            "json"
+        ]
+    },
+    "eventTopics": {
+        "authentication": {},
+        "sync": {}
+    }
+}

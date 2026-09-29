@@ -1,0 +1,17 @@
+{
+  "metadata": {
+    "realm": "/customers",
+    "amsterVersion": "7.5.1",
+    "entityType": "OAuth2Provider",
+    "entityId": "OAuth2Provider",
+    "pathParams": {}
+  },
+  "data": {
+    "_id": "OAuth2Provider",
+    "coreOAuth2Config": {
+      "accessTokenLifetime": 3600,
+      "refreshTokenLifetime": 604800,
+      "issueRefreshToken": true
+    }
+  }
+}

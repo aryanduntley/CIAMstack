@@ -7,6 +7,7 @@ inferred; it renders only where a stack declares it. A connector: it joins the d
 the registry discovered. Every function here is pure.
 """
 from ..core.directory import one, rdn_value
+from ..core.naming import env_label
 from ..core.versions import in_range, product_version
 
 STATUS_HEADERS = ("environment", "role", "adapter", "status")
@@ -61,9 +62,22 @@ def _product_rows(m, adapters):
                  for s, a, version, versions in unsupported_products(m, adapters))
 
 
+def _overlay_rows(m):
+    bases = [env_label(e.dn) for e in m.lineage[1:]]
+    through = f" (itself an overlay of {', '.join(bases[1:])})" if len(bases) > 1 else ""
+    return ((m.label, "-", "-", f"overlay of {bases[0]}{through}: inherits the bindings, stack, required roles and "
+             "overrides it doesn't set itself"),) if bases else ()
+
+
 def stack_rows(m, adapters, versions):
     """(rows, problem count) describing one environment's stack against the installed adapters (name -> version),
-    and servers whose product versions the adapters rendering them don't support."""
+    servers whose product versions the adapters rendering them don't support, and the environments it is an
+    overlay of."""
+    rows, problems = _stack_rows(m, adapters, versions)
+    return (*_overlay_rows(m), *rows), problems
+
+
+def _stack_rows(m, adapters, versions):
     products = _product_rows(m, declared_adapters(m, adapters))
     if not m.stack:
         inferred = ", ".join(a.name for a in declared_adapters(m, adapters)) or "none"

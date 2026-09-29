@@ -2,12 +2,15 @@
 
 Nothing is looked up by hostname or file path. Callers ask for *roles* ("network", "ds-ldaps-service")
 and the environment's bindings answer (SPEC R7). Which roles an environment must bind is supplied by
-the caller (the adapters that apply), never hardcoded here.
+the caller (the adapters that apply), never hardcoded here, plus the roles the environment itself declares.
+An overlay environment's bindings, stack, declared roles and overrides include what it inherits (core.overlays).
 """
 from typing import NamedTuple, Optional
 
-from .directory import Directory, Entry, children, follow, get, is_a, one, rdn_value
+from .directory import Directory, Entry, children, follow, get, is_a, one, rdn_value, subtree
 from .naming import branch
+from .overlays import (apply_overrides, declared_roles, effective_bindings, effective_overrides, effective_stack,
+                       lineage)
 
 # One declared component of an environment's stack: the adapter (by registered name) that fills a role.
 StackComponent = NamedTuple("StackComponent", [("role", str), ("adapter", str), ("versions", Optional[str]),
@@ -15,7 +18,10 @@ StackComponent = NamedTuple("StackComponent", [("role", str), ("adapter", str), 
 EnvModel = NamedTuple("EnvModel", [("d", Directory), ("dn", str), ("env", Entry), ("cloud", Entry),
                                    ("provider", str), ("label", str), ("servers", tuple),
                                    ("bindings", tuple), ("unbound", tuple),
-                                   ("stack", tuple)])       # StackComponents, empty when none is declared
+                                   ("stack", tuple),        # StackComponents, empty when none is declared
+                                   ("declared_roles", tuple),   # roles the environment declares it must bind
+                                   ("overrides", tuple),        # ciamOverride entries that apply to it
+                                   ("lineage", tuple)])         # the environment, then its bases (overlays)
 
 
 def env_dn(spec):
@@ -35,23 +41,45 @@ def _with_role(bindings, role):
     return tuple(b for b in bindings if one(b, "ciamBindingRole") == role)
 
 
+def _unbound(bindings, required_roles, declared):
+    return tuple(r for r in dict.fromkeys((*required_roles, *declared)) if not _with_role(bindings, r))
+
+
 def env_model(d, spec, required_roles=()):
-    """Resolve an environment spec against a snapshot; roles in required_roles that nothing binds are unbound."""
+    """Resolve an environment spec against a snapshot: its own servers, and its bindings, stack, declared roles and
+    overrides with what it inherits as an overlay. Roles in required_roles, or declared by the environment, that
+    nothing binds are unbound."""
     dn = env_dn(spec)
     env = get(d, dn)
     if not env:
         raise SystemExit(f"no such environment: {dn}")
     cloud = get(d, dn.split(",", 1)[1])
-    bindings = children(d, f"ou=bindings,{dn}")
+    layers = lineage(d, env)
+    bindings, declared = effective_bindings(d, layers), declared_roles(d, layers)
     return EnvModel(d=d, dn=dn, env=env, cloud=cloud, provider=one(cloud, "ciamCloudProvider"),
                     label=f"{rdn_value(cloud)}/{rdn_value(env)}", servers=children(d, dn, "ciamServer"),
-                    bindings=bindings, unbound=tuple(r for r in required_roles if not _with_role(bindings, r)),
-                    stack=tuple(stack_component(c) for c in children(d, f"ou=stack,{dn}", "ciamStackComponent")))
+                    bindings=bindings, unbound=_unbound(bindings, required_roles, declared),
+                    stack=tuple(stack_component(c) for c in effective_stack(d, layers)),
+                    declared_roles=declared, overrides=effective_overrides(d, layers), lineage=layers)
+
+
+def as_seen(m):
+    """The environment with its snapshot as it sees the record: its overrides in place of the shared values. What
+    every renderer of the environment reads."""
+    return m._replace(d=apply_overrides(m.d, m.overrides)) if m.overrides else m
 
 
 def with_required_roles(m, required_roles):
-    """The same environment, with unbound roles recomputed for a (new) set of required roles."""
-    return m._replace(unbound=tuple(r for r in required_roles if not _with_role(m.bindings, r)))
+    """The same environment, with unbound roles recomputed for a (new) set of required roles (and its own)."""
+    return m._replace(unbound=_unbound(m.bindings, required_roles, m.declared_roles))
+
+
+def published_role(d, host):
+    """The binding role of the service name some environment publishes at this host (case-insensitive), or None:
+    how an importer turns a host in a product's configuration into a role each environment binds."""
+    names = (b for b in subtree(d, branch("environments"), "ciamServiceName")
+             if host and (one(b, "ciamFqdn") or "").lower() == host.lower())
+    return next((one(b, "ciamBindingRole") for b in names), None)
 
 
 def by_role(m, role):

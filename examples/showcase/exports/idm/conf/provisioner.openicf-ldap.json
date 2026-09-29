@@ -1,0 +1,52 @@
+{
+    "name": "ldap",
+    "connectorRef": {
+        "bundleName": "org.forgerock.openicf.connectors.ldap-connector",
+        "bundleVersion": "[1.5.0.0,1.6.0.0)",
+        "connectorName": "org.identityconnectors.ldap.LdapConnector"
+    },
+    "configurationProperties": {
+        "host": "ldap.id.example-aero.test",
+        "port": 1636,
+        "ssl": true,
+        "principal": "uid=idm-sync,ou=service-accounts,dc=partners,dc=example-aero,dc=test",
+        "credentials": {
+            "$crypto": {
+                "type": "x-simple-encryption",
+                "value": {
+                    "cipher": "AES/CBC/PKCS5Padding",
+                    "data": "U3ludGhldGljLWVuY3J5cHRlZC12YWx1ZQ==",
+                    "iv": "c3ludGhldGljLWl2",
+                    "key": "openidm-sym-default"
+                }
+            }
+        },
+        "baseContexts": [
+            "ou=people,dc=partners,dc=example-aero,dc=test"
+        ],
+        "accountObjectClasses": [
+            "top",
+            "inetOrgPerson",
+            "exampleAeroPerson"
+        ]
+    },
+    "objectTypes": {
+        "account": {
+            "nativeType": "__ACCOUNT__",
+            "properties": {
+                "uid": {
+                    "type": "string",
+                    "nativeName": "uid"
+                },
+                "mail": {
+                    "type": "string",
+                    "nativeName": "mail"
+                },
+                "companyId": {
+                    "type": "string",
+                    "nativeName": "companyId"
+                }
+            }
+        }
+    }
+}

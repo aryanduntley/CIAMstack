@@ -10,7 +10,7 @@ what partners are given. A product adapter supplies its endpoint paths (SamlEndp
 from typing import NamedTuple
 
 from opsdir.core.directory import get, one, rdn_value, values
-from opsdir.domains.federation.services import claims, endpoint, integrations
+from opsdir.domains.federation.services import claims, endpoint, integrations_served
 from .metadata import DEFAULT_ACS_BINDING, DEFAULT_SSO_BINDING, idp_descriptor, sp_descriptor
 from .xmltext import document
 
@@ -47,7 +47,9 @@ def idp_metadata(d, service, endpoints):
 
 
 def saml_files(d, services, endpoints):
-    """{path: XML text} for every SAML partner in the record and each given identity service with an entity ID."""
-    return {**{f"saml/sp/{rdn_value(i)}.xml": sp_metadata(d, i) for i in integrations(d, "saml2-sp")},
-            **{f"saml/partner-idp/{rdn_value(i)}.xml": partner_idp_metadata(d, i) for i in integrations(d, "saml2-idp")},
+    """{path: XML text} for every SAML partner the given identity services serve and each of them with an entity
+    ID."""
+    return {**{f"saml/sp/{rdn_value(i)}.xml": sp_metadata(d, i) for i in integrations_served(d, services, "saml2-sp")},
+            **{f"saml/partner-idp/{rdn_value(i)}.xml": partner_idp_metadata(d, i)
+               for i in integrations_served(d, services, "saml2-idp")},
             **{f"saml/idp/{rdn_value(s)}.xml": idp_metadata(d, s, endpoints) for s in services if one(s, "ciamEntityId")}}

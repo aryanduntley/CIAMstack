@@ -1,0 +1,16 @@
+{
+  "handler": {
+    "type": "Router",
+    "name": "_router",
+    "capture": "all"
+  },
+  "heap": [
+    {
+      "name": "capture",
+      "type": "CaptureDecorator",
+      "config": {
+        "captureEntity": false
+      }
+    }
+  ]
+}

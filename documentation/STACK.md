@@ -337,15 +337,15 @@ Everything here is **S** in opsdir: a `ref-uri`, never a value (SPEC R4).
 
 | Artifact | Where | Datify | opsdir today |
 |---|---|---|---|
-| Secrets Manager secrets (names, rotation Lambdas, rotation schedule) | AWS | ● ref + rotation facts | ✔ `ciamSecretRef` (rotation —) |
-| KMS keys: aliases, key policies, grants, multi-region settings | AWS | ● ref + policy intent (who may decrypt what) | ✔ `ciamKeyRef` |
+| Secrets Manager secrets (names, rotation Lambdas, rotation schedule) | AWS | ● ref + rotation facts | ✔ `ciamSecretRef` + rotation facts (`ciamAutoRotate`, `ciamRotationFunction`, `ciamLastRotated`) |
+| KMS keys: aliases, key policies, grants, multi-region settings | AWS | ● ref + policy intent (who may decrypt what) | ✔ `ciamKeyRef` + protection level, key users/admins, replica regions (grants —) |
 | Key Vault / Managed HSM (target side) | Azure | ● | ✔ (`azkv://`) |
-| CloudHSM (if PF keys are HSM-backed) | AWS | ● ref. **HSM keys don't export.** Rotating the signing key becomes a partner-facing change. | — |
-| PAM (CyberArk): safes, accounts (`uid=admin`, service-account passwords, PF admin), platforms, CPM rotation, reconcile accounts | PAM | ● ref per account + rotation policy | — |
-| **Credential sprawl:** the same service-account password stored in DS, PF data store config, PAM, scripts | Everywhere | ● One `ciamSecretRef` per credential, with `usedBy` → every place it's configured. Rotation becomes a query. | ~ |
+| CloudHSM (if PF keys are HSM-backed) | AWS | ● ref. **HSM keys don't export.** Rotating the signing key becomes a partner-facing change. | ✔ `ciamHsmRequired`, `ciamExportable`, `ciamProtectionLevel`; planner blocks a carry-over that can't leave its store |
+| PAM (CyberArk): safes, accounts (`uid=admin`, service-account passwords, PF admin), platforms, CPM rotation, reconcile accounts | PAM | ● ref per account + rotation policy | ~ `cyberark://` refs (as a binding or `ciamCopyRef`) + rotation policy; platforms/CPM — |
+| **Credential sprawl:** the same service-account password stored in DS, PF data store config, PAM, scripts | Everywhere | ● One `ciamSecretRef` per credential, with `usedBy` → every place it's configured. Rotation becomes a query. | ✔ `ciamCredential` + `ciamUsedIn`, `ciamCopyRef`; `credentials` and `rotation-impact` reports |
 | Internal PKI: issuing CA (AD CS / Venafi / private CA), templates, CRL/OCSP URLs | PKI | ● CA + chain facts. Certificate-lifecycle tool refs. | — |
 | Keystores: DS (PKCS12), PF, PA, JDK cacerts, partner trust anchors | Various | ● Cert facts per keystore with `usedBy` | ✔ cert facts |
-| DS deployment ID/password, PF `pf.jwk`, PA `pa.jwk`, cluster encryption keys | Product | ● ref. Continuity requirement recorded. | ✔ DS · — PF/PA |
+| DS deployment ID/password, PF `pf.jwk`, PA `pa.jwk`, cluster encryption keys | Product | ● ref. Continuity requirement recorded. | ✔ `ciamContinuity` + `ciamMaterialFrom` (planner: copy before cutover) |
 
 ---
 
@@ -486,7 +486,7 @@ Result: "change this hostname" becomes a query that lists every file and every p
 | 6 | **Messaging** | `ciamMailSender` (address as contract, SPF/DKIM facts), `ciamExternalService` (Duo, CAPTCHA, SMTP, SMS) with allowed-domain and egress needs |
 | 7 | **Data profile** (§3) | `ou=data-profile` statistics entries, from a values-free profiler |
 | 8 | **Observability intent** | `ciamAlertRule`, `ciamLogRoute`, `ciamCanary`, rendered to CloudWatch / Azure Monitor |
-| 9 | **Credential sprawl** | `usedBy` on `ciamSecretRef`, plus PAM refs and a rotation-impact report |
+| 9 | **Credential sprawl** | ✔ done (milestone 2.3): `ciamCredential` with `ciamUsedIn`, PAM refs (`ciamCopyRef`), `credentials` and `rotation-impact` reports |
 | 10 | **Conditional products** | PingAccess, SiteMinder (XPSExport importer), AM (Amster importer), IDM (conf/*.json importer), ForgeOps overlay renderer |
 | 11 | **Governance sync** | ServiceNow change/CMDB sync, a GRC control → query mapping |
 | 12 | **Unknowns register** | `ciamUnknown` (question, owner, blocking?, answer), included in the planner's verdict |

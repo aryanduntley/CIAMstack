@@ -13,7 +13,7 @@ def specs():
     """Every entry spec, in the order entries appear within their data files."""
     return (*base.entries(), *custom.definitions(), *governance.owners(), *governance.changes(), *directory.user_attributes(),
             *directory.user_classes(), *directory.declared_config(), *infrastructure.environments(), *directory.observed_config(),
-            *directory.consumers(), *directory.acis(), *governance.runbooks(), *pki.certificates(),
+            *directory.consumers(), *directory.acis(), *governance.runbooks(), *pki.certificates(), *pki.credentials(),
             *federation.identity_services(), *federation.integrations(), *infrastructure.external_allowlists(), *governance.incidents(),
             *custom.feature_flags(), *config.config_files(), *config.bundles())
 

@@ -7,7 +7,7 @@ A database-first management system for identity (CIAM) platforms. Every piece of
 - **Moving a platform is one capability:** a migration workspace declares the target's stack and bindings, the planner compares it with the live record, and the target is rendered from the same intent.
 - **Sensitive data is never stored,** only referenced.
 
-Nothing in the core is tied to a platform. Clouds, products, versions and secret stores are values in the database, handled by **adapter packages** that the core discovers when they are installed. Products build on **standard bases**: LDAP (the record itself is LDAP-modeled, so the standard LDAP schema lives in the core; a generic LDAPv3 adapter renders it for any compliant server), SAML 2.0 and OpenID Connect. The first packages cover the ForgeRock/Ping directory and federation stack (PingDS and OpenDJ on a shared DS-lineage base, PingFederate on the SAML and OIDC bases), AWS, Azure and HashiCorp Vault; more follow as packages, never as core changes.
+Nothing in the core is tied to a platform. Clouds, products, versions and secret stores are values in the database, handled by **adapter packages** that the core discovers when they are installed. Products build on **standard bases**: LDAP (the record itself is LDAP-modeled, so the standard LDAP schema lives in the core; a generic LDAPv3 adapter renders it for any compliant server), SAML 2.0 and OpenID Connect. The first packages cover the ForgeRock/Ping directory and federation stack (PingDS and OpenDJ on a shared DS-lineage base, PingFederate on the SAML and OIDC bases), AWS, Azure and the HashiCorp Vault, Kubernetes and CyberArk secret stores; more follow as packages, never as core changes.
 
 The code is Modular, Functional and Procedural: immutable records, pure functions, and effects (database, files, printing) kept at the edges.
 
@@ -20,8 +20,10 @@ packages/                 installable packages; adapters register themselves wit
   standards               opsdir-adapter-ldap/ (standard LDIF + generic LDAPv3 adapter)
                           opsdir-base-saml/  opsdir-base-oidc/
   lineages, products      opsdir-base-ds/ (OpenDJ → ForgeRock DS → PingDS)  opsdir-adapter-pingds/
-                          opsdir-adapter-opendj/  opsdir-adapter-pingfederate/
+                          opsdir-adapter-opendj/  opsdir-adapter-pingfederate/  opsdir-adapter-pingam/
+                          opsdir-adapter-pingidm/  opsdir-adapter-pinggateway/
   clouds, secret stores   opsdir-adapter-aws/  opsdir-adapter-azure/  opsdir-adapter-hashicorp-vault/
+                          opsdir-adapter-kubernetes/  opsdir-adapter-cyberark/
   formats                 opsdir-format-terraform/ (shared HCL formatter)
 examples/showcase/        a runnable fictional estate using those packages: data, demo, golden outputs
 documentation/            project-level documentation
@@ -61,7 +63,7 @@ Deleting the `CIAMstack/` folder removes everything but the databases. Outside t
 
 The foundation is in place: a Modular/Functional/Procedural core with versioned schema upgrades, governed writes and full history; an agnostic core that discovers domains and adapter packages; declared stacks with `opsdir check`; adapter-owned vocabulary validated by the store; change sets, migration workspaces with a three-way cutover, and a migration runner that works in either direction. The showcase passes its own checks (the planner finds all 7 planted blockers, and 5 remain after two approved changes) and its rendered Terraform passes `terraform validate`. **Not verified:** product configuration against real product instances; see [`examples/showcase/README.md`](examples/showcase/README.md).
 
-Standard bases are in place: the standard LDAP schema in the core, the user directory's schema recorded (standard or defined in the record) and rendered as standard LDIF, the DS lineage shared by PingDS and OpenDJ, and SAML metadata, OIDC client registrations and discovery rendered from the federation domain. The roadmap is tracked in AIMFP (`.aimfp-project/`). Next: the rest of the ForgeRock/Ping lineage (PingAM, PingIDM, PingGateway) as adapter packages on these bases, user-defined fields for the record itself, and importers that read live systems into the record.
+Standard bases are in place: the standard LDAP schema in the core, the user directory's schema recorded (standard or defined in the record) and rendered as standard LDIF, the DS lineage shared by PingDS and OpenDJ, and SAML metadata, OIDC client registrations and discovery rendered from the federation domain. PingAM (ForgeRock AM) is an adapter package on these bases: realms are identity services, OAuth2 clients and SAML partners are standard integrations, journeys and policy sets are held in its own schema, and an Amster export is read into the record by its importer (`opsdir import`). PingIDM (ForgeRock IDM) is one too: managed objects, connectors, mappings and schedules as entries, each connector naming the role of the system it reaches and of its credentials so every environment renders its own, read from an IDM project directory by its importer. PingGateway (ForgeRock Identity Gateway) completes the lineage: its routes are entries linked to the integration whose client they sign users in as and the OpenID provider they trust, rendered per environment and read from a gateway configuration by its importer. The roadmap is tracked in AIMFP (`.aimfp-project/`). Next: importers that read the other live systems (PingDS, PingFederate, clouds) into the record, and the renderers of path 6.
 
 ## Note on inherited docs
 

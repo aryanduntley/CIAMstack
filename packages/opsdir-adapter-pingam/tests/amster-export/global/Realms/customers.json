@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "realm": null,
+    "amsterVersion": "7.5.1",
+    "entityType": "Realms",
+    "entityId": "customers",
+    "pathParams": {}
+  },
+  "data": {
+    "_id": "customers",
+    "name": "customers",
+    "parentPath": "/",
+    "active": true,
+    "aliases": [
+      "login.example.test"
+    ]
+  }
+}

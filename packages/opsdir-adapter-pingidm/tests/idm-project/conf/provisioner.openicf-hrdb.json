@@ -1,0 +1,24 @@
+{
+    "name": "hrdb",
+    "connectorRef": {
+        "bundleName": "org.forgerock.openicf.connectors.scriptedsql-connector",
+        "bundleVersion": "[1.5.0.0,1.6.0.0)",
+        "connectorName": "org.forgerock.openicf.connectors.scriptedsql.ScriptedSQLConnector"
+    },
+    "configurationProperties": {
+        "url": "jdbc:postgresql://hrdb.corp.example.test:5432/hr",
+        "username": "idm_reader",
+        "password": "Hr-Db-Pass-2026",
+        "driverClassName": "org.postgresql.Driver"
+    },
+    "objectTypes": {
+        "employee": {
+            "nativeType": "__ACCOUNT__",
+            "properties": {
+                "employeeNumber": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

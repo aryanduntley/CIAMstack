@@ -1,0 +1,30 @@
+{
+  "name": "hrdb",
+  "connectorRef": {
+    "bundleName": "org.forgerock.openicf.connectors.scriptedsql-connector",
+    "bundleVersion": "[1.5.0.0,1.6.0.0)",
+    "connectorName": "org.forgerock.openicf.connectors.scriptedsql.ScriptedSQLConnector"
+  },
+  "configurationProperties": {
+    "driverClassName": "org.postgresql.Driver",
+    "password": "${secret:azkv://kv-ciam-prod/idm-hrdb-password}",
+    "url": "jdbc:postgresql://hrdb.corp.example-aero.test:5432/partners",
+    "username": "idm_reader"
+  },
+  "objectTypes": {
+    "employee": {
+      "nativeType": "__ACCOUNT__",
+      "properties": {
+        "company": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "employeeNumber": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

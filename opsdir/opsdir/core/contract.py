@@ -60,6 +60,15 @@ Codec = NamedTuple("Codec", [("split", Callable), ("decode", Callable), ("encode
 # and PostgreSQL share (core.secrets.dialect_problems); the core registers the generic forms, adapters their vendors'.
 SecretPattern = NamedTuple("SecretPattern", [("name", str), ("pattern", str), ("description", str)])
 
+# How an adapter reads a product's own export (an admin tool's export directory, an API dump) into the record:
+# read(files, d, patterns) -> Imported. files: {relative path: text}; d: the record as it is (an importer merges with
+# what it holds, keeping attributes and entries it doesn't own); patterns: the SecretPatterns the store refuses (an
+# importer withholds matching values and says so in its notices). Pure: the connectors diff and the store applies.
+Importer = NamedTuple("Importer", [("name", str), ("description", str), ("read", Callable)])
+# What an import yields: containers (branch entries to create when missing, never changed otherwise); groups: ((scope
+# DN, entries that should exist in that subtree), ...), each replacing the record's subtree at its scope; notices.
+Imported = NamedTuple("Imported", [("containers", tuple), ("groups", tuple), ("notices", tuple)])
+
 # What connectors provide to adapters while rendering: secret_command(ref-uri) -> shell command that resolves it
 Services = NamedTuple("Services", [("secret_command", Callable)])
 
@@ -81,7 +90,8 @@ Adapter = NamedTuple("Adapter", [("name", str),
                                                                       # of every file it renders (first match wins)
                                  ("products", tuple),                 # ((product, PEP 440 range), ...): the product
                                                                       # versions it renders and reads
-                                 ("secret_patterns", tuple)])         # SecretPatterns: its vendor's credential forms
+                                 ("secret_patterns", tuple),          # SecretPatterns: its vendor's credential forms
+                                 ("importers", tuple)])               # Importers: the product exports it reads
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

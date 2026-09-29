@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "realm": "/partners",
+    "amsterVersion": "7.5.1",
+    "entityType": "OAuth2Clients",
+    "entityId": "b2b",
+    "pathParams": {}
+  },
+  "data": {
+    "_id": "b2b",
+    "coreOAuth2ClientConfig": {
+      "redirectionUris": {
+        "inherited": false,
+        "value": []
+      }
+    }
+  }
+}

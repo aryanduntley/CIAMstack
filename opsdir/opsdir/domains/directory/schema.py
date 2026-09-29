@@ -1,5 +1,5 @@
 """directory domain schema fragment: its attribute types and object classes (OIDs pinned by number)."""
-from ...core.standard import AttributeDef, ClassDef, fragment
+from ...core.standard import OVERRIDABLE, AttributeDef, ClassDef, fragment
 
 ATTRIBUTES = (
     AttributeDef(3, 'snap', 'string', 'observed', True,
@@ -15,21 +15,21 @@ ATTRIBUTES = (
     AttributeDef(51, 'ciamStorageScheme', 'string', 'intent', True,
                  'Password storage scheme'),
     AttributeDef(52, 'ciamLockoutFailureCount', 'int', 'intent', True,
-                 'Failed binds before lockout'),
+                 'Failed binds before lockout', OVERRIDABLE),
     AttributeDef(53, 'ciamLockoutDuration', 'string', 'intent', True,
-                 'Lockout duration (DS duration syntax)'),
+                 'Lockout duration (DS duration syntax)', OVERRIDABLE),
     AttributeDef(54, 'ciamPasswordHistoryCount', 'int', 'intent', True,
-                 'Passwords remembered'),
+                 'Passwords remembered', OVERRIDABLE),
     AttributeDef(55, 'ciamMaxPasswordAge', 'string', 'intent', True,
-                 'Maximum password age (DS duration syntax)'),
+                 'Maximum password age (DS duration syntax)', OVERRIDABLE),
     AttributeDef(56, 'ciamEnabled', 'bool', 'intent', True,
                  'Enabled flag'),
     AttributeDef(57, 'ciamListenPort', 'port', 'intent', True,
                  'Listener port'),
     AttributeDef(58, 'ciamReplicaCount', 'int', 'intent', True,
-                 'DS replicas per environment'),
+                 'DS replicas per environment', OVERRIDABLE),
     AttributeDef(59, 'ciamReplicationPurgeDelay', 'string', 'intent', True,
-                 'Replication changelog purge delay'),
+                 'Replication changelog purge delay', OVERRIDABLE),
     AttributeDef(60, 'ciamServerRef', 'dn', 'observed', True,
                  'Server a snapshot was captured from'),
     AttributeDef(61, 'ciamCapturedAt', 'time', 'observed', True,

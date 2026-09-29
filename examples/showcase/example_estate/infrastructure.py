@@ -1,26 +1,37 @@
-"""Infrastructure fixture data: the current AWS environment (40-env-source), the target environment
-being built (45-env-target, with planted gaps), and external allowlists that hold our addresses
-(80-external-allowlists)."""
-from .common import AWS, AZ, CON, ENVS, XA, cert, chg, owner, spec, t
+"""Infrastructure fixture data: the current AWS environment (40-env-source), its stage environment (42-env-source-
+stage: an overlay of production that shares its network and overrides a few values), the target environment being
+built (45-env-target, with planted gaps), and external allowlists that hold our addresses (80-external-allowlists)."""
+from .common import AWS, AZ, CON, DECL, ENVS, INTS, XA, cert, chg, owner, spec, t
 from .custom import RESIDENCY
 
 SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password", "ds-tls-keystore",
-                "sso-tls-keystore", "pf-signing-key", "pf-admin-password")
-DS_V, PF_V = "PingDS 7.5.1", "PingFederate 12.1.4"
+                "sso-tls-keystore", "pf-signing-key", "pf-admin-password", "am-admin-password", "am-keystore",
+                "am-ds-bind-password", "idm-admin-password", "idm-keystore", "idm-ds-bind-password", "idm-hrdb-password",
+                "ig-keystore")
+DS_V, PF_V, AM_V, IDM_V, IG_V = "PingDS 7.5.1", "PingFederate 12.1.4", "PingAM 7.5.1", "PingIDM 7.5.0", "PingGateway 2024.11.0"
 IMG = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/"
 
 SOURCE = {
-    "stack": (("provider", "aws"), ("directory", "pingds"), ("federation", "pingfederate")),
+    "stack": (("provider", "aws"), ("directory", "pingds"), ("federation", "pingfederate"), ("access", "pingam"),
+              ("identity-management", "pingidm"), ("gateway", "pinggateway")),
     "net": ("vpc", "vpc-0a1b2c3d4e5f67890", "10.20.0.0/16"),
     "subnets": [("subnet-ds-a", "subnet-ds", "subnet-0a11b22c33d44e55a", "10.20.1.0/24", "us-east-1a"),
                 ("subnet-ds-b", "subnet-ds", "subnet-0a11b22c33d44e55b", "10.20.2.0/24", "us-east-1b"),
                 ("subnet-ds-c", "subnet-ds", "subnet-0a11b22c33d44e55c", "10.20.3.0/24", "us-east-1c"),
                 ("subnet-pf-a", "subnet-pf", "subnet-0f66e77d88c99b00a", "10.20.4.0/24", "us-east-1a"),
-                ("subnet-pf-b", "subnet-pf", "subnet-0f66e77d88c99b00b", "10.20.5.0/24", "us-east-1b")],
+                ("subnet-pf-b", "subnet-pf", "subnet-0f66e77d88c99b00b", "10.20.5.0/24", "us-east-1b"),
+                ("subnet-am-a", "subnet-am", "subnet-0c77d88e99fa00b1a", "10.20.7.0/24", "us-east-1a"),
+                ("subnet-am-b", "subnet-am", "subnet-0c77d88e99fa00b1b", "10.20.8.0/24", "us-east-1b"),
+                ("subnet-idm-a", "subnet-idm", "subnet-0d88e99fa00b11c2a", "10.20.6.0/24", "us-east-1a"),
+                ("subnet-ig-a", "subnet-ig", "subnet-0e99fa00b11c22d3a", "10.20.10.0/24", "us-east-1a")],
     "services": [("svc-ldaps", "ds-ldaps-service", "ldap.id.example-aero.test", "id.example-aero.test",
                   "Z0EXAMPLE1PRIVATE", "ds", [1636], "10.20.1.100", None, "ds-ldaps-2026"),
                  ("svc-sso", "pf-sso-service", "sso.example-aero.test", "example-aero.test",
-                  "Z0EXAMPLE2PUBLIC", "pf-engine", [443], "198.51.100.20", "eipalloc-0a1b2c3d4e5f60001", "sso-tls-2026")],
+                  "Z0EXAMPLE2PUBLIC", "pf-engine", [443], "198.51.100.20", "eipalloc-0a1b2c3d4e5f60001", "sso-tls-2026"),
+                 ("svc-login", "am-service", "login.example-aero.test", "example-aero.test",
+                  "Z0EXAMPLE2PUBLIC", "am", [443], "198.51.100.21", "eipalloc-0a1b2c3d4e5f60003", None),
+                 ("svc-apps", "ig-service", "apps.example-aero.test", "example-aero.test",
+                  "Z0EXAMPLE2PUBLIC", "ig", [443], "198.51.100.22", "eipalloc-0a1b2c3d4e5f60005", None)],
     "fw": [("fw-pf-ds-svc", "fw-consumer-pf-ds-svc", ["10.20.4.0/24", "10.20.5.0/24"], [1636], "ds", "pf-ds-svc", "CHG-0877"),
            ("fw-customer-portal", "fw-consumer-customer-portal-svc", ["10.30.8.0/24"], [1636], "ds", "customer-portal-svc", None),
            ("fw-supplier-portal", "fw-consumer-supplier-portal-svc", ["10.31.2.0/24"], [1636], "ds", "supplier-portal-svc", None),
@@ -30,38 +41,79 @@ SOURCE = {
            ("fw-replication", "fw-replication", ["10.20.1.0/24", "10.20.2.0/24", "10.20.3.0/24", "10.60.1.0/24"],
             [8989], "ds", None, "CHG-2040"),
            ("fw-admin", "fw-admin", ["10.20.9.0/28"], [4444], "ds", None, None),
-           ("fw-sso-public", "fw-sso-public", ["0.0.0.0/0"], [443], "pf-engine", None, None)],
+           ("fw-sso-public", "fw-sso-public", ["0.0.0.0/0"], [443], "pf-engine", None, None),
+           ("fw-login-public", "fw-login-public", ["0.0.0.0/0"], [443], "am", None, None),
+           ("fw-apps-public", "fw-apps-public", ["0.0.0.0/0"], [443], "ig", None, None)],
     "egress": ("nat-0123456789abcdef0", "203.0.113.10/32"),
     "secret": lambda role: f"aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/{role}",
-    "key": ("aws-kms://arn:aws:kms:us-east-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab", None),
+    "key": ("aws-kms://arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab", None),
+    # what each store does for the material, by role (cloud key-service facts)
+    "key_facts": {
+        "ds-root-password": {"ciamLastRotated": t("2026-03-02"),
+                             "ciamCopyRef": "cyberark://ciam-ops/CIAM-PROD/ds-root-password"},
+        "pf-admin-password": {"ciamAutoRotate": "TRUE", "ciamLastRotated": t("2026-09-01"),
+                              "ciamRotationFunction": "arn:aws:lambda:us-east-1:111122223333:function:ciam-rotate-pf-admin"},
+        "pf-signing-key": {"ciamKeyUser": "arn:aws:iam::111122223333:role/ciam-pf-admin"},
+        "disk-encryption": {"ciamProtectionLevel": "hsm", "ciamAutoRotate": "TRUE", "ciamReplicaRegion": "us-west-2",
+                            "ciamKeyUser": "arn:aws:iam::111122223333:role/ciam-server-instance",
+                            "ciamKeyAdmin": "arn:aws:iam::111122223333:role/ciam-key-admins"},
+    },
     "backup": "s3://example-aero-ciam-prod-ds-backups",
     "servers": [("ds-1", "ds", "ds-1.aws.internal.example-aero.test", "10.20.1.11", "us-east-1a", "m6i.xlarge", "ami-0abcdef1234567890", "subnet-ds-a", DS_V),
                 ("ds-2", "ds", "ds-2.aws.internal.example-aero.test", "10.20.2.11", "us-east-1b", "m6i.xlarge", "ami-0abcdef1234567890", "subnet-ds-b", DS_V),
                 ("ds-3", "ds", "ds-3.aws.internal.example-aero.test", "10.20.3.11", "us-east-1c", "m6i.xlarge", "ami-0abcdef1234567890", "subnet-ds-c", DS_V),
                 ("pf-engine-1", "pf-engine", "pf-engine-1.aws.internal.example-aero.test", "10.20.4.21", "us-east-1a", "m6i.large", "ami-0fedcba9876543210", "subnet-pf-a", PF_V),
                 ("pf-engine-2", "pf-engine", "pf-engine-2.aws.internal.example-aero.test", "10.20.5.21", "us-east-1b", "m6i.large", "ami-0fedcba9876543210", "subnet-pf-b", PF_V),
-                ("pf-admin-1", "pf-admin", "pf-admin-1.aws.internal.example-aero.test", "10.20.4.10", "us-east-1a", "m6i.large", "ami-0fedcba9876543210", "subnet-pf-a", PF_V)],
+                ("pf-admin-1", "pf-admin", "pf-admin-1.aws.internal.example-aero.test", "10.20.4.10", "us-east-1a", "m6i.large", "ami-0fedcba9876543210", "subnet-pf-a", PF_V),
+                ("am-1", "am", "am-1.aws.internal.example-aero.test", "10.20.7.21", "us-east-1a", "m6i.large", "ami-0a9b8c7d6e5f40321", "subnet-am-a", AM_V),
+                ("am-2", "am", "am-2.aws.internal.example-aero.test", "10.20.8.21", "us-east-1b", "m6i.large", "ami-0a9b8c7d6e5f40321", "subnet-am-b", AM_V),
+                ("idm-1", "idm", "idm-1.aws.internal.example-aero.test", "10.20.6.21", "us-east-1a", "m6i.large", "ami-0b1c2d3e4f5a60987", "subnet-idm-a", IDM_V),
+                ("ig-1", "ig", "ig-1.aws.internal.example-aero.test", "10.20.10.21", "us-east-1a", "m6i.large", "ami-0c2d3e4f5a6b70123", "subnet-ig-a", IG_V)],
 }
 TARGET = {
-    "stack": (("provider", "azure"), ("directory", "pingds"), ("federation", "pingfederate")),
+    "stack": (("provider", "azure"), ("directory", "pingds"), ("federation", "pingfederate"), ("access", "pingam"),
+              ("identity-management", "pingidm"), ("gateway", "pinggateway")),
     "net": ("vnet", "vnet-ciam-prod", "10.60.0.0/16"), "rg": "rg-ciam-prod", "pinned_priorities": True,
     "subnets": [("snet-ds", "subnet-ds", "vnet-ciam-prod/snet-ds", "10.60.1.0/24", None),
-                ("snet-pf", "subnet-pf", "vnet-ciam-prod/snet-pf", "10.60.2.0/24", None)],
+                ("snet-pf", "subnet-pf", "vnet-ciam-prod/snet-pf", "10.60.2.0/24", None),
+                ("snet-am", "subnet-am", "vnet-ciam-prod/snet-am", "10.60.3.0/24", None),
+                ("snet-idm", "subnet-idm", "vnet-ciam-prod/snet-idm", "10.60.6.0/24", None),
+                ("snet-ig", "subnet-ig", "vnet-ciam-prod/snet-ig", "10.60.10.0/24", None)],
     "services": [("svc-ldaps", "ds-ldaps-service", "ldap.id.cloud.example-aero.test", "id.cloud.example-aero.test",
                   None, "ds", [1636], "10.60.1.100", None, None),     # no certificate covers this (planted) name
                  ("svc-sso", "pf-sso-service", "sso.example-aero.test", "example-aero.test",
-                  None, "pf-engine", [443], "198.51.100.77", "pip-ciam-sso-prod", "sso-tls-2026")],
+                  None, "pf-engine", [443], "198.51.100.77", "pip-ciam-sso-prod", "sso-tls-2026"),
+                 ("svc-login", "am-service", "login.example-aero.test", "example-aero.test",
+                  None, "am", [443], "198.51.100.78", "pip-ciam-login-prod", None),
+                 ("svc-apps", "ig-service", "apps.example-aero.test", "example-aero.test",
+                  None, "ig", [443], "198.51.100.79", "pip-ciam-apps-prod", None)],
     "fw": [("fw-pf-ds-svc", "fw-consumer-pf-ds-svc", ["10.60.2.0/24"], [1636], "ds", "pf-ds-svc", None),
            ("fw-customer-portal", "fw-consumer-customer-portal-svc", ["10.30.8.0/24"], [1636], "ds", "customer-portal-svc", None),
            ("fw-supplier-portal", "fw-consumer-supplier-portal-svc", ["10.31.2.0/24"], [1636], "ds", "supplier-portal-svc", None),
            ("fw-idm-sync", "fw-consumer-idm-sync", ["10.60.6.0/24"], [1636], "ds", "idm-sync", None),
            ("fw-replication", "fw-replication", ["10.60.1.0/24", "10.20.0.0/16"], [8989], "ds", None, None),
            ("fw-admin", "fw-admin", ["10.60.9.0/28"], [4444], "ds", None, None),
-           ("fw-sso-public", "fw-sso-public", ["0.0.0.0/0"], [443], "pf-engine", None, None)],
+           ("fw-sso-public", "fw-sso-public", ["0.0.0.0/0"], [443], "pf-engine", None, None),
+           ("fw-login-public", "fw-login-public", ["0.0.0.0/0"], [443], "am", None, None),
+           ("fw-apps-public", "fw-apps-public", ["0.0.0.0/0"], [443], "ig", None, None)],
     "egress": ("natgw-ciam-prod", "203.0.113.200/32"),
     "secret": lambda role: f"azkv://kv-ciam-prod/{role}",
     "key": ("azkv-key://kv-ciam-prod/keys/disk-cmk",
             "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"),
+    # planted: the disk key is software-protected (standard vault) and neither rotates nor replicates; the PingFederate
+    # admin password loses its automatic rotation; the signing key is not recorded as carried over from the source
+    "key_facts": {
+        "ds-deployment-id": {"ciamMaterialFrom": f"cn=secret-ds-deployment-id,ou=bindings,{AWS}"},
+        "ds-deployment-password": {"ciamMaterialFrom": f"cn=secret-ds-deployment-password,ou=bindings,{AWS}"},
+        "am-keystore": {"ciamMaterialFrom": f"cn=secret-am-keystore,ou=bindings,{AWS}"},
+        "idm-keystore": {"ciamMaterialFrom": f"cn=secret-idm-keystore,ou=bindings,{AWS}"},
+        "ds-root-password": {"ciamCopyRef": "cyberark://ciam-ops/CIAM-TARGET/ds-root-password"},
+        "pf-admin-password": {"ciamAutoRotate": "FALSE"},
+        "disk-encryption": {"ciamProtectionLevel": "software",
+                            "ciamKeyUser": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/"
+                                           "rg-ciam-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/"
+                                           "id-ciam-servers"},
+    },
     "backup": None,   # deliberately missing: the demo's migration plan should catch it
     "interconnect": ("link-source", "site-to-site VPN (landing-zone managed)", AWS, ["10.20.0.0/16"]),
     "servers": [("ds-1", "ds", "ds-1.az.internal.example-aero.test", "10.60.1.11", "1", "Standard_D4s_v5", IMG + "pingds-7.5.1-rhel9", "snet-ds", DS_V),
@@ -69,7 +121,11 @@ TARGET = {
                 ("ds-3", "ds", "ds-3.az.internal.example-aero.test", "10.60.1.13", "3", "Standard_D4s_v5", IMG + "pingds-7.5.1-rhel9", "snet-ds", DS_V),
                 ("pf-engine-1", "pf-engine", "pf-engine-1.az.internal.example-aero.test", "10.60.2.21", "1", "Standard_D2s_v5", IMG + "pingfederate-12.1.4-rhel9", "snet-pf", PF_V),
                 ("pf-engine-2", "pf-engine", "pf-engine-2.az.internal.example-aero.test", "10.60.2.22", "2", "Standard_D2s_v5", IMG + "pingfederate-12.1.4-rhel9", "snet-pf", PF_V),
-                ("pf-admin-1", "pf-admin", "pf-admin-1.az.internal.example-aero.test", "10.60.2.10", "1", "Standard_D2s_v5", IMG + "pingfederate-12.1.4-rhel9", "snet-pf", PF_V)],
+                ("pf-admin-1", "pf-admin", "pf-admin-1.az.internal.example-aero.test", "10.60.2.10", "1", "Standard_D2s_v5", IMG + "pingfederate-12.1.4-rhel9", "snet-pf", PF_V),
+                ("am-1", "am", "am-1.az.internal.example-aero.test", "10.60.3.21", "1", "Standard_D2s_v5", IMG + "pingam-7.5.1-rhel9", "snet-am", AM_V),
+                ("am-2", "am", "am-2.az.internal.example-aero.test", "10.60.3.22", "2", "Standard_D2s_v5", IMG + "pingam-7.5.1-rhel9", "snet-am", AM_V),
+                ("idm-1", "idm", "idm-1.az.internal.example-aero.test", "10.60.6.21", "1", "Standard_D2s_v5", IMG + "pingidm-7.5.0-rhel9", "snet-idm", IDM_V),
+                ("ig-1", "ig", "ig-1.az.internal.example-aero.test", "10.60.10.21", "1", "Standard_D2s_v5", IMG + "pinggateway-2024.11.0-rhel9", "snet-ig", IG_V)],
 }
 ALLOWLISTS = (
     ("mro-dc-egress-to-ldaps", "mro-analytics-team", "MRO data-center egress firewall", "consumer-egress",
@@ -108,9 +164,9 @@ def _bindings(file, env, p):
             spec(file, b("egress-pf"), ["top", "ciamEgress"], cn="egress-pf", ciamBindingRole="pf-egress",
                  ciamProviderRef=p["egress"][0], ciamCidr=p["egress"][1]),
             *(spec(file, b(f"secret-{role}"), ["top", "ciamSecretRef"], cn=f"secret-{role}", ciamBindingRole=role,
-                   ciamRefUri=p["secret"](role)) for role in SECRET_ROLES),
+                   ciamRefUri=p["secret"](role), **p["key_facts"].get(role, {})) for role in SECRET_ROLES),
             spec(file, b("key-disk"), ["top", "ciamKeyRef"], cn="key-disk", ciamBindingRole="disk-encryption",
-                 ciamRefUri=p["key"][0], ciamProviderRef=p["key"][1]),
+                 ciamRefUri=p["key"][0], ciamProviderRef=p["key"][1], **p["key_facts"].get("disk-encryption", {})),
             *((spec(file, b("backup"), ["top", "ciamBackupTarget"], cn="backup", ciamBindingRole="backup-target",
                     ciamStorageRef=p["backup"], ciamRetentionDays=35),) if p.get("backup") else ()),
             *((_interconnect(file, b, *p["interconnect"]),) if p.get("interconnect") else ()))
@@ -151,7 +207,8 @@ def environments():
                  description="Current cloud hosting environment (AWS)"),
             spec(aws, AWS, ["top", "ciamEnvironment"], env="prod", ciamLifecycle="active", ciamOwner=owner("ciam-platform"),
                  xDataResidency=RESIDENCY["source"]),
-            *environment(aws, AWS, SOURCE),
+            *environment(aws, AWS, SOURCE), *required_roles(aws, AWS),
+            *stage(),
             spec(az, f"cloud=target,{ENVS}", ["top", "ciamCloud"], cloud="target",
                  ciamCloudProvider="azure", ciamRegion="usgovvirginia", ciamCloudEnvironment="usgovernment",
                  ciamLifecycle="building",
@@ -159,7 +216,71 @@ def environments():
             spec(az, AZ, ["top", "ciamEnvironment"], env="prod", ciamLifecycle="building",
                  ciamPlannedCutover=t("2027-01-15"), ciamJoinsDeploymentOf=AWS, ciamOwner=owner("ciam-platform"),
                  xDataResidency=RESIDENCY["target"]),
-            *environment(az, AZ, TARGET))
+            *environment(az, AZ, TARGET), *required_roles(az, AZ))
+
+
+STAGE = f"env=stage,cloud=source,{ENVS}"
+# what stage has of its own; everything else (network, subnets, egress, disk key, firewall rules) it shares with prod
+STAGE_SERVICES = (("svc-ldaps", "ds-ldaps-service", "ldap.stage.id.example-aero.test", "id.example-aero.test",
+                   "Z0EXAMPLE1PRIVATE", "ds", 1636, "10.20.1.150", None),
+                  ("svc-sso", "pf-sso-service", "sso.stage.example-aero.test", "example-aero.test",
+                   "Z0EXAMPLE2PUBLIC", "pf-engine", 443, "198.51.100.30", "eipalloc-0a1b2c3d4e5f60002"),
+                  ("svc-login", "am-service", "login.stage.example-aero.test", "example-aero.test",
+                   "Z0EXAMPLE2PUBLIC", "am", 443, "198.51.100.31", "eipalloc-0a1b2c3d4e5f60004"),
+                  ("svc-apps", "ig-service", "apps.stage.example-aero.test", "example-aero.test",
+                   "Z0EXAMPLE2PUBLIC", "ig", 443, "198.51.100.32", "eipalloc-0a1b2c3d4e5f60006"))
+STAGE_SERVERS = (("ds-s1", "ds", "10.20.1.31", "us-east-1a", "subnet-ds-a", "ami-0abcdef1234567890", DS_V),
+                 ("pf-engine-s1", "pf-engine", "10.20.4.31", "us-east-1a", "subnet-pf-a", "ami-0fedcba9876543210", PF_V),
+                 ("pf-admin-s1", "pf-admin", "10.20.4.32", "us-east-1a", "subnet-pf-a", "ami-0fedcba9876543210", PF_V),
+                 ("am-s1", "am", "10.20.7.31", "us-east-1a", "subnet-am-a", "ami-0a9b8c7d6e5f40321", AM_V),
+                 ("idm-s1", "idm", "10.20.6.31", "us-east-1a", "subnet-idm-a", "ami-0b1c2d3e4f5a60987", IDM_V),
+                 ("ig-s1", "ig", "10.20.10.31", "us-east-1a", "subnet-ig-a", "ami-0c2d3e4f5a6b70123", IG_V))
+# consumers reach production only
+STAGE_DROPS = tuple(role for _, role, *_ in SOURCE["fw"] if role.startswith("fw-consumer-") and role != "fw-consumer-pf-ds-svc")
+# (name, overridden entry, attribute, value, why)
+STAGE_OVERRIDES = (
+    ("replicas", f"cn=topology,ou=replication,{DECL}", "ciamReplicaCount", 1, "stage runs one directory replica"),
+    ("customer-lockout", f"cn=customers,ou=password-policies,{DECL}", "ciamLockoutFailureCount", 20,
+     "test automation signs in repeatedly"),
+    ("tech-pubs-token", f"cn=tech-pubs,{INTS}", "xTokenLifetimeMinutes", 5, "short tokens to test refresh"),
+)
+# roles declared required as data (beyond what domains and adapters require): (environment, role, why)
+REQUIRED_ROLES = ((AWS, "backup-target", "every production-grade environment keeps directory backups (RPO 24 h)"),
+                  (AZ, "cross-cloud-replication", "target replicas join the source's deployment over the interconnect"))
+
+
+def stage():
+    """source/stage, an overlay of source/prod: its own servers, service names, secrets and backups, prod's network
+    and firewall rules (except the consumers'), and overrides of shared intent."""
+    file, B = "42-env-source-stage", f"ou=bindings,{STAGE}"
+    return (spec(file, STAGE, ["top", "ciamEnvironment"], env="stage", ciamLifecycle="active", ciamOverlayOf=AWS,
+                 ciamDropsRole=STAGE_DROPS, ciamOwner=owner("ciam-platform"), xDataResidency=RESIDENCY["source"],
+                 description="Stage: an overlay of production (shared network, own servers and secrets)"),
+            spec(file, B, ["top", "organizationalUnit"], ou="bindings"),
+            *(spec(file, f"cn={cn},{B}", ["top", "ciamServiceName"], cn=cn, ciamBindingRole=role, ciamFqdn=fqdn,
+                   ciamDnsZone=zone, ciamDnsZoneRef=zref, ciamTargetRole=trole, ciamPort=port, ciamFrontendIp=ip,
+                   ciamProviderRef=pref) for cn, role, fqdn, zone, zref, trole, port, ip, pref in STAGE_SERVICES),
+            *(spec(file, f"cn=secret-{role},{B}", ["top", "ciamSecretRef"], cn=f"secret-{role}", ciamBindingRole=role,
+                   ciamRefUri=f"aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/stage/{role}")
+              for role in SECRET_ROLES),
+            spec(file, f"cn=backup,{B}", ["top", "ciamBackupTarget"], cn="backup", ciamBindingRole="backup-target",
+                 ciamStorageRef="s3://example-aero-ciam-stage-ds-backups", ciamRetentionDays=7),
+            spec(file, f"ou=overrides,{STAGE}", ["top", "organizationalUnit"], ou="overrides"),
+            *(spec(file, f"cn={cn},ou=overrides,{STAGE}", ["top", "ciamOverride"], cn=cn, ciamOverrides=target,
+                   ciamOverrideAttribute=attr, ciamOverrideValue=value, description=why, ciamOwner=owner("ciam-platform"))
+              for cn, target, attr, value, why in STAGE_OVERRIDES),
+            *(spec(file, f"cn={cn},{STAGE}", ["top", "ciamServer"], cn=cn, ciamServerRole=role,
+                   ciamHostname=f"{cn}.aws.internal.example-aero.test", ciamPrivateIp=ip, ciamZone=zone,
+                   ciamInstanceSize="m6i.large", ciamImageRef=image, ciamSubnet=f"cn={subnet},ou=bindings,{AWS}",
+                   ciamProductVersion=version, ciamOwner=owner("ciam-platform"))
+              for cn, role, ip, zone, subnet, image, version in STAGE_SERVERS))
+
+
+def required_roles(file, env):
+    """The roles an environment declares it must bind, under its ou=stack."""
+    return tuple(spec(file, f"cn={role},ou=stack,{e}", ["top", "ciamRequiredRole"], cn=role, ciamBindingRole=role,
+                      description=why, ciamOwner=owner("ciam-platform"))
+                 for e, role, why in REQUIRED_ROLES if e == env)
 
 
 def external_allowlists():

@@ -12,7 +12,7 @@ def domain(name, order):
 
 
 def adapter(name, kind):
-    return Adapter(name, kind, lambda m: True, (), None, None, (), (), {}, None, None, {}, None, (), (), ())
+    return Adapter(name, kind, lambda m: True, (), None, None, (), (), {}, None, None, {}, None, (), (), (), ())
 
 
 def test_registered_returns_the_records():

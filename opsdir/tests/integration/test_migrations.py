@@ -89,8 +89,8 @@ def test_schema_from_before_versioning_is_refused(conn, parts):
 def test_an_uninstalled_packages_unused_definitions_are_removed(conn, parts):
     with_fake = store_parts((FAKE,))
     migrations.init(conn, *with_fake)
-    assert db.registry_counts(conn) == tuple(n + 1 for n in _counts(REGISTERED))
-    migrations.upgrade(conn, *parts)                                # the fake adapter uninstalled
+    assert db.registry_counts(conn) == _counts(registry_ldif(schema_fragments(adapters=(FAKE,))))
+    migrations.upgrade(conn, *parts)                                # the fake adapter uninstalled, the others in
     assert db.registry_counts(conn) == _counts(REGISTERED)
 
 

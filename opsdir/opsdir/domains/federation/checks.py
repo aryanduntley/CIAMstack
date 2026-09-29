@@ -29,10 +29,13 @@ def _listed(names):
 
 
 def _identity_service(ctx, service):
-    role = one(service, "ciamTargetRole")
+    role, name, hosts = one(service, "ciamTargetRole"), rdn_value(service), published_hosts(service)
+    if not hosts:
+        return findings(ok=[f"Identity service `{name}` publishes no http(s) URL host: no address to keep."])
     if role is None:
-        return findings()
-    name, hosts = rdn_value(service), published_hosts(service)
+        return findings(actions=[("Identity service", f"`{name}` names no server role (ciamTargetRole), so whether "
+                                  f"{ctx.dst.label} keeps its published address ({', '.join(hosts)}) can't be "
+                                  "checked. Record the role that serves it.", responsible(ctx.d, service), None)])
     dst, src = service_names(ctx.dst, role), service_names(ctx.src, role)
     if all(h in dst for h in hosts):
         return findings(ok=[f"Identity service `{name}` keeps its published address in {ctx.dst.label} "

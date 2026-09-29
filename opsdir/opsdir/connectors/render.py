@@ -1,6 +1,7 @@
 """Render a complete, working configuration set for one environment: the applicable adapters' outputs, each in a
 format the adapter declares and some installed package registers, the captured config files the environment
 receives, plus the MANIFEST (R10)."""
+from ..core.environment import as_seen
 from ..core.formats import format_of
 from ..core.manifest import manifest
 from .capture import rendered_config
@@ -8,11 +9,13 @@ from .registry import ADAPTERS, FORMATS, environment, services
 
 
 def render_parts(d, spec, installed=ADAPTERS):
-    """(EnvModel, applicable adapters, environment-neutral files, environment-specific files)."""
-    m, adapters = environment(d, spec, installed)
+    """(EnvModel as the environment sees the record (its overrides applied), applicable adapters,
+    environment-neutral files, environment-specific files)."""
+    shared, adapters = environment(d, spec, installed)
+    m = as_seen(shared)
     if not any(a.kind == "provider" for a in adapters):
         raise SystemExit(f"no renderer for provider {m.provider}")
-    neutral = {p: text for a in adapters if a.render_neutral for p, text in a.render_neutral(d).items()}
+    neutral = {p: text for a in adapters if a.render_neutral for p, text in a.render_neutral(m.d).items()}
     specific = {p: text for a in adapters if a.render_env for p, text in a.render_env(m, services(installed)).items()}
     return m, adapters, neutral, specific
 

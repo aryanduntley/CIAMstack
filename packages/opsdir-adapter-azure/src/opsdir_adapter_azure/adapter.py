@@ -11,10 +11,10 @@ def applies(m):
 
 
 ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles=(),
-                  render_neutral=None, render_env=render, checks=(), ref_schemes=("azkv", "azkv-key", "azblob"),
+                  render_neutral=None, render_env=render, checks=(), ref_schemes=("azkv", "azkv-key", "azkv-cert", "azblob"),
                   secret_schemes={"azkv": keyvault_command}, renders="Terraform for the target cloud",
                   neutral_label=None,
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamCloudEnvironment": ("public", "usgovernment")}, schema=None,
                   formats=(("terraform/*.tf", "hcl"),),
                   products=(),
-                  secret_patterns=SECRET_PATTERNS)
+                  secret_patterns=SECRET_PATTERNS, importers=())

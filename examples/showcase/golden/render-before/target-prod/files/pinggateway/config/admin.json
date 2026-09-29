@@ -1,0 +1,8 @@
+{
+  "mode": "PRODUCTION",
+  "connectors": [
+    {
+      "port": 8085
+    }
+  ]
+}

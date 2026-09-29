@@ -1,0 +1,15 @@
+{
+  "metadata": {
+    "realm": "/customers",
+    "amsterVersion": "7.5.1",
+    "entityType": "UsernameCollectorNode",
+    "entityId": "a1b2c3d4-0000-4000-8000-000000000002",
+    "pathParams": {}
+  },
+  "data": {
+    "_id": "a1b2c3d4-0000-4000-8000-000000000002",
+    "_type": {
+      "_id": "UsernameCollectorNode"
+    }
+  }
+}

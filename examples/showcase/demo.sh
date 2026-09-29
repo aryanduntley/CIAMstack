@@ -14,10 +14,20 @@ step() { printf '\n\033[1m══ %s\033[0m\n' "$*"; }
 step "1. Build the directory: LDAP schema + synthetic estate (all LDIF) into Postgres"
 "$PY" scripts/gen-synthetic.py
 od init && od load data/*.ldif
+echo "-- the partner realm's PingAM configuration, read from its Amster export (approved change CHG-2004)"
+od import --change CHG-2004 pingam exports/amster
+echo "-- the partner identity sync's PingIDM project (same change)"
+od import --change CHG-2004 pingidm exports/idm
+echo "-- the partner portal's PingGateway routes (same change)"
+od import --change CHG-2004 pinggateway exports/ig
 od report portability
 
 step "2. Ask it questions"
 echo "-- certificates by expiry";            od report expiring
+echo "-- where the target keeps every key and secret"; od report keys target/prod
+echo "-- credential sprawl: every key and secret, where it is held and used"; od report credentials
+echo "-- what rotating the PingFederate signing key touches"
+od report rotation-impact "cn=pf-signing-key,ou=credentials,dc=ciam-ops"
 echo "-- what depends on the Skyline Air signing cert?"
 od report blast-radius "cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops"
 echo "-- who can read privacy-classified attributes?"; od report pii
@@ -28,12 +38,15 @@ echo "-- custom fields and record types";    od report custom
 echo "-- config files held in the record";   od report capture
 echo "-- bundles deployed as they are";      od report bundles
 echo "-- run.properties rebuilt from the record for the target"; od file run.properties --env target/prod
+echo "-- per-environment overrides of shared intent (stage is an overlay of prod)"; od report overrides
 echo "-- LDAP filter search: consumers not yet tested"
 od search -b ou=consumers,dc=ciam-ops '(&(objectClass=ciamConsumer)(!(ciamMigrationStatus=tested)))' ciamMigrationStatus ciamOwner
 
 step "3. Render BOTH clouds from the same databases"
-rm -rf out/source-prod out/target-prod
-od render source/prod && od render target/prod
+rm -rf out/source-prod out/target-prod out/source-stage
+od render source/prod && od render target/prod && od render source/stage
+echo "-- stage renders prod's shared configuration with its own overrides:"
+diff out/source-prod/ds/dsconfig.batch out/source-stage/ds/dsconfig.batch | grep '^[<>]' || true
 for f in ds/dsconfig.batch ds/acis.ldif pingfederate/sp-connections.json pingfederate/oidc-clients.json pingfederate/idp-connections.json; do
   cmp -s "out/source-prod/$f" "out/target-prod/$f" && echo "identical in both clouds: $f" || echo "DIFFERS: $f"
 done
@@ -59,6 +72,7 @@ step "6. Approved changes are just directory entries; re-render and diff"
 rm -rf out/before && cp -r out/target-prod out/before
 od modify --change CHG-2001 changes/CHG-2001-mro-firewall-target.ldif
 od modify --change CHG-2003 changes/CHG-2003-stable-ldaps-name.ldif
+od modify --change CHG-2005 changes/CHG-2005-idm-connector-credentials.ldif
 od history
 od render target/prod >/dev/null
 diff -ru out/before/terraform out/target-prod/terraform

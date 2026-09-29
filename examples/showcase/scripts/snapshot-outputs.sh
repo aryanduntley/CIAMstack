@@ -13,6 +13,7 @@ OUT=$(realpath -m "${1:?usage: snapshot-outputs.sh OUTDIR}")
 AS_OF=2026-09-23                                # the synthetic data is dated relative to this day
 PY=$CORE/.venv/bin/python
 BLAST="cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops"
+ROTATE="cn=pf-signing-key,ou=credentials,dc=ciam-ops"
 UNTESTED='(&(objectClass=ciamConsumer)(!(ciamMigrationStatus=tested)))'
 
 od() { "$PY" -m opsdir --as-of "$AS_OF" "$@"; }
@@ -35,15 +36,25 @@ rm "$OUT/cmd/.generated-before"
 
 cap 01-init od init
 cap 02-load od load data/*.ldif
+cap 02-import od import --change CHG-2004 pingam exports/amster
+cap 02-import-idm od import --change CHG-2004 pingidm exports/idm
+cap 02-import-ig od import --change CHG-2004 pinggateway exports/ig
 cap 02-check od check
-for r in portability expiring pii drift stale unowned custom capture bundles; do cap "03-report-$r" od report "$r"; done
+for r in portability expiring credentials pii drift stale unowned custom capture bundles; do cap "03-report-$r" od report "$r"; done
 cap 03-report-blast-radius od report blast-radius "$BLAST"
+cap 03-report-keys-source od report keys source/prod
+cap 03-report-keys-target od report keys target/prod
+cap 03-report-rotation-impact od report rotation-impact "$ROTATE"
+cap 03-report-overrides od report overrides
+cap 03-report-keys-stage od report keys source/stage
 cap 04-search-table od search -b ou=consumers,dc=ciam-ops "$UNTESTED" ciamMigrationStatus ciamOwner
 cap 04-search-ldif  od search -b ou=integrations,dc=ciam-ops '(objectClass=ciamIntegration)'
 cap 04-file-run-properties od file run.properties --env target/prod
+cap 04-file-run-properties-stage od file run.properties --env source/stage
 
 cap 05-render-source  od render source/prod -o "$OUT/render-before/source-prod"
 cap 05-render-target  od render target/prod    -o "$OUT/render-before/target-prod"
+cap 05-render-stage   od render source/stage   -o "$OUT/render-before/source-stage"
 cap 06-plan-before od plan source/prod target/prod -o "$OUT/plan-before"
 cap 06-check-before "$PY" scripts/check-findings.py before
 
@@ -54,6 +65,7 @@ cap 07-reject-missing-attr od modify --change CHG-2001 changes/rejected/missing-
 
 cap 08-apply-chg-2001 od modify --change CHG-2001 changes/CHG-2001-mro-firewall-target.ldif
 cap 08-apply-chg-2003 od modify --change CHG-2003 changes/CHG-2003-stable-ldaps-name.ldif
+cap 08-apply-chg-2005 od modify --change CHG-2005 changes/CHG-2005-idm-connector-credentials.ldif
 od history 2>&1 | sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}/<TIMESTAMP>        /' \
   > "$OUT/cmd/09-history.txt"
 

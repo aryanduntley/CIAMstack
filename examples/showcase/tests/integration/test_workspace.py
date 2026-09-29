@@ -7,7 +7,7 @@ from opsdir.connectors.registry import schema_sync, store_parts
 from opsdir.core.interchange.export import export_text
 from opsdir.core.naming import SUFFIX
 from opsdir.store import migrations, postgres as db
-from showcase_support import APPROVED, DATA
+from showcase_support import APPROVED, DATA, import_exports
 
 pytestmark = pytest.mark.integration
 
@@ -24,6 +24,7 @@ def stores(dsn, workspace_dsn):
     live, ws = db.connect(dsn), db.connect(workspace_dsn)
     migrations.init(live, *store_parts())
     db.load_ldif(live, sorted(DATA.glob("*.ldif")), schema_sync=schema_sync())
+    import_exports(live)
     workspace.create(live, ws, store_parts(), dsn, replace=True, schema_sync=schema_sync())
     yield live, ws
     live.close()
@@ -53,10 +54,10 @@ def test_workspace_changes_reach_live_only_at_cutover(stores, dsn):
     live, ws = stores
     for change_id, path in APPROVED:
         db.apply_changes(ws, path, change_id)
-    assert workspace.diff_text(live, ws).count("changetype:") == 2
+    assert workspace.diff_text(live, ws).count("changetype:") == 4          # a firewall rule, two connectors, a name
     assert "dn: cn=fw-mro-batch,ou=bindings,env=prod,cloud=target" not in export_text(db.load_directory(live), SUFFIX)
     applied = workspace.cutover(live, ws, store_parts(), dsn, APPROVED[1][0], schema_sync())
-    assert [line.split(" ", 1)[0] for line in applied] == ["add", "modify"]
+    assert [line.split(" ", 1)[0] for line in applied] == ["add", "modify", "modify", "modify"]
     assert export_text(db.load_directory(live), SUFFIX) == export_text(db.load_directory(ws), SUFFIX)
     assert workspace.diff_text(live, ws) == ""                                   # re-copied after cutover
 

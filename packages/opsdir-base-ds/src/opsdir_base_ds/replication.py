@@ -44,12 +44,20 @@ def _check_interconnect(d, src, dst):
 
 def _check_replication_port(d, src, dst):
     rules = [f for f in of_class(src, "ciamFirewallRule") if REPLICATION_PORT in values(f, "ciamPort")]
-    replicas = [(s, one(s, "ciamPrivateIp") + "/32") for s in servers_with_role(dst, DIRECTORY_SERVER_ROLE)]
+    servers = servers_with_role(dst, DIRECTORY_SERVER_ROLE)
+    replicas = [(s, one(s, "ciamPrivateIp") + "/32") for s in servers if one(s, "ciamPrivateIp")]
+    unknown = [s for s in servers if not one(s, "ciamPrivateIp")]
     closed = [(s, ip) for s, ip in replicas if not any(covers(values(f, "ciamSourceCidr"), ip) for f in rules)]
+    owner = responsible(d, one_role(src, "network"), src.env)
+    admitted = (f"{src.label} already admits every {dst.label} replica on the replication port." if servers else
+                f"{dst.label} records no directory replicas: no replication traffic to admit.")
     return findings(
-        blockers=[("Replication", f"{src.label} doesn't admit {dst.label} replica {rdn_value(s)} ({ip}) on "
-                   f"port {REPLICATION_PORT}.", responsible(d, one_role(src, "network"), src.env)) for s, ip in closed],
-        ok=[] if closed else [f"{src.label} already admits every {dst.label} replica on the replication port."])
+        blockers=[*(("Replication", f"{src.label} doesn't admit {dst.label} replica {rdn_value(s)} ({ip}) on "
+                     f"port {REPLICATION_PORT}.", owner) for s, ip in closed),
+                  *(("Replication", f"{dst.label} replica {rdn_value(s)} records no private IP, so whether "
+                     f"{src.label} admits it on port {REPLICATION_PORT} can't be checked.", responsible(d, s, dst.env))
+                    for s in unknown)],
+        ok=[] if closed or unknown else [admitted])
 
 
 def check_replication_path(ctx):
