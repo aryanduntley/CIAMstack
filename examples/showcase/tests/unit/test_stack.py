@@ -9,7 +9,7 @@ from opsdir.core.environment import StackComponent, env_model
 
 
 def adapter(name, kind="product", applies=True):
-    return Adapter(name, kind, lambda m: applies, (), None, None, (), (), {}, None, None, {}, None, (), ())
+    return Adapter(name, kind, lambda m: applies, (), None, None, (), (), {}, None, None, {}, None, (), (), ())
 
 
 def component(adapter_name, role="r", versions=">=1,<2", source=None):

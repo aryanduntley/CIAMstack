@@ -14,7 +14,7 @@ from .product import handler_name
 
 # The lineage's batch syntax: dsconfig subcommands, one per line (registered under opsdir.formats).
 DSCONFIG_BATCH = Format(name="dsconfig-batch", title="DS lineage dsconfig batch file", media_type="text/plain",
-                        extensions=(".batch",), comment=("#",), read=None, write=None)
+                        extensions=(".batch",), comment=("#",), read=None, write=None, codec=None)
 # The format of every neutral file the lineage renders (products add their setup scripts)
 FORMATS = (*LDAP_FORMATS, ("ds/dsconfig.batch", "dsconfig-batch"), ("ds/*.ldif", "ldif"))
 # directory attribute → dsconfig password-policy property (optional ones)

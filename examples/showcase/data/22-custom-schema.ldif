@@ -43,9 +43,10 @@ ciamMinValue: 5
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPortability: intent
 ciamPurpose: Access token lifetime agreed with the application owner
+ciamSettingRef: cn=1eea4b2c84ae8090,cn=default-atm.json,ou=config-files,dc=cia
+ m-ops
 ciamUnit: minutes
 ciamUsedBy: pingfederate
-ciamValueSource: pingfederate: access token manager lifetime
 ciamValueType: int
 
 dn: cn=xFlagEnabled,ou=custom-schema,dc=ciam-ops

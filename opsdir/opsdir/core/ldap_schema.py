@@ -15,6 +15,13 @@ SYNTAXES = {"audio": ".4", "binary": ".5", "bit-string": ".6", "boolean": ".7", 
             "octet-string": ".40", "postal-address": ".41", "printable-string": ".44", "telephone-number": ".50",
             "teletex-terminal-identifier": ".51", "telex-number": ".52"}
 
+# The equality rule RFC 4519/4524/2798 give attributes of a syntax (RFC 4517 §4.2); syntaxes without one are absent
+EQUALITY = {".7": "booleanMatch", ".11": "caseIgnoreMatch", ".12": "distinguishedNameMatch", ".15": "caseIgnoreMatch",
+            ".24": "generalizedTimeMatch", ".26": "caseIgnoreIA5Match", ".27": "integerMatch",
+            ".34": "uniqueMemberMatch", ".36": "numericStringMatch", ".38": "objectIdentifierMatch",
+            ".40": "octetStringMatch", ".41": "caseIgnoreListMatch", ".44": "caseIgnoreMatch",
+            ".50": "telephoneNumberMatch", ".6": "bitStringMatch", ".8": "certificateExactMatch"}
+
 StandardAttribute = NamedTuple("StandardAttribute", [("oid", str), ("name", str), ("syntax", str),
                                                      ("single_value", bool), ("standard", str)])
 StandardClass = NamedTuple("StandardClass", [("oid", str), ("name", str), ("sup", str), ("kind", str),
@@ -24,6 +31,11 @@ StandardClass = NamedTuple("StandardClass", [("oid", str), ("name", str), ("sup"
 def syntax_oid(name):
     """Full OID of a named RFC 4517 syntax."""
     return SYNTAX_PREFIX + SYNTAXES[name]
+
+
+def equality(attribute):
+    """The standard equality matching rule of a standard attribute (by its syntax), or None."""
+    return EQUALITY.get(attribute.syntax.removeprefix(SYNTAX_PREFIX))
 
 
 def _a(oid, name, syntax, standard, single_value=False):

@@ -2,8 +2,9 @@
 """Generate schema/ciam-ops.schema.ldif — the opsdir standard as RFC 4512 LDAP schema.
 
 The definitions live with the part of the stack that owns them (core/standard.py and each domain's
-schema.py); this script only composes and writes them. Commit the LDIF: it is the published artifact
-(loaded by opsdir, and by an LDAP server that ignores the X- extensions).
+schema.py); this script only composes and writes them. Commit the LDIF: it is the published artifact, loadable
+by an LDAP server (which ignores the X- extensions). It holds only opsdir's own definitions, never the standard
+ones; the store builds its registry from the same fragments (core.standard.registry_ldif).
 """
 import pathlib
 import sys

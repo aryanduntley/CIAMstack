@@ -24,6 +24,7 @@ federation = "opsdir.domains.federation.domain:DOMAIN"
 pki = "opsdir.domains.pki.domain:DOMAIN"
 governance = "opsdir.domains.governance.domain:DOMAIN"
 custom = "opsdir.domains.custom.domain:DOMAIN"
+configuration = "opsdir.domains.configuration.domain:DOMAIN"
 
 # The standard file formats; packages register their own under the same group.
 [project.entry-points."opsdir.formats"]

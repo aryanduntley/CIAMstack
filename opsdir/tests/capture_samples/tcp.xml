@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    JGroups TCP stack for PingFederate clustering (synthetic sample)
+-->
+<config xmlns="urn:org:jgroups"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups-4.2.xsd">
+    <TCP bind_port="7600"
+         bind_addr="${pf.cluster.bind.address}"
+         thread_pool.min_threads="0" />
+    <TCPPING initial_hosts="${pf.cluster.tcp.discovery.initial.hosts}" port_range="0"/>
+    <MERGE3 max_interval="30000" min_interval="10000"/>
+    <FD_SOCK/>
+    <pbcast.NAKACK2 use_mcast_xmit="false"/>
+    <AUTH auth_class="org.jgroups.auth.MD5Token" token_hash="SHA"/>
+</config>

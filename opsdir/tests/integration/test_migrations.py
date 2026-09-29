@@ -3,7 +3,7 @@ import pytest
 
 from opsdir.connectors.registry import schema_fragments, store_parts
 from opsdir.core.interchange.ldif import parse
-from opsdir.core.standard import fragment_counts, schema_ldif
+from opsdir.core.standard import fragment_counts, registry_ldif
 from opsdir.store import migrations, postgres as db
 from mini_estate import FAKE
 
@@ -25,7 +25,7 @@ fakeTier: gold
 """
 
 
-PUBLISHED = schema_ldif(schema_fragments())      # the store's schema when the record defines nothing custom
+REGISTERED = registry_ldif(schema_fragments())    # the store's registry when the record defines nothing custom
 
 
 def _counts(schema_text):
@@ -89,9 +89,9 @@ def test_schema_from_before_versioning_is_refused(conn, parts):
 def test_an_uninstalled_packages_unused_definitions_are_removed(conn, parts):
     with_fake = store_parts((FAKE,))
     migrations.init(conn, *with_fake)
-    assert db.registry_counts(conn) == tuple(n + 1 for n in _counts(PUBLISHED))
+    assert db.registry_counts(conn) == tuple(n + 1 for n in _counts(REGISTERED))
     migrations.upgrade(conn, *parts)                                # the fake adapter uninstalled
-    assert db.registry_counts(conn) == _counts(PUBLISHED)
+    assert db.registry_counts(conn) == _counts(REGISTERED)
 
 
 def test_removing_definitions_entries_use_is_refused(conn, parts):

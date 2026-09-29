@@ -1,4 +1,5 @@
-"""Minimal LDIF (RFC 2849) reader/writer: content records and change records.
+"""Minimal LDIF (RFC 2849) reader/writer: content records and change records, and LDIF files as captured settings
+(core.capture).
 
 Supports comments, line folding, base64 values (attr:: value), and changetype add/modify/delete.
 """
@@ -6,6 +7,9 @@ import base64
 import re
 from itertools import accumulate, groupby
 from typing import NamedTuple
+
+from ..contract import Codec
+from .lines import physical_lines
 
 # attrs: {name: (values…)} in file order (content records); mods: ((op, attr, (values…)), …) (modify records)
 LdifRecord = NamedTuple("LdifRecord", [("dn", str), ("changetype", str), ("attrs", dict), ("mods", tuple)])
@@ -116,3 +120,59 @@ def write_record(r, width=78):
 def write_records(records, width=78):
     """Change records as one LDIF text, blank-line separated."""
     return "\n".join(write_record(r, width) for r in records)
+
+
+# ------------------------------------------------------------------ capture (core.capture)
+# In content records every attribute value is a setting, located by "<dn>|<attribute>" (repeats numbered by the
+# capture engine: mail, mail#2). Its raw text runs from the colon after the attribute name to the end of the logical
+# line, folds included (": value", ":: base64"). dn, changetype, version, comments, URL values (":<") and change
+# records are layout.
+_ATTR_LINE = re.compile(r"([A-Za-z0-9][A-Za-z0-9;.-]*)(?=::?(?!<))")
+
+
+def _logical_lines(text):
+    """Physical lines grouped into logical lines (a line starting with one space continues the one before)."""
+    lines = physical_lines(text)
+    ids = accumulate(0 if line.startswith(" ") and k else 1 for k, line in enumerate(lines))
+    return tuple("".join(line for _, line in group) for _, group in groupby(zip(ids, lines), key=lambda x: x[0]))
+
+
+def _record_state(state, line):
+    """(dn of the current record, whether it is a change record) after a logical line."""
+    dn, change = state
+    if not line.strip():
+        return None, False
+    name = line.split(":", 1)[0].lower()
+    if name == "dn":
+        return _decode_value(line[2:].rstrip("\r\n")), False
+    return dn, change or name == "changetype"
+
+
+def _decode_value(raw):
+    unfolded = re.sub(r"\r?\n ", "", raw)
+    return base64.b64decode(unfolded[2:].strip()).decode() if unfolded.startswith("::") else unfolded[1:].lstrip(" ")
+
+
+def _capture_parts(state, line):
+    dn, change = state
+    m = _ATTR_LINE.match(line)
+    if dn is None or change or m is None or line.startswith("#") or m.group(1).lower() in ("dn", "changetype"):
+        return (line,)
+    end = len(line) - len(line.rstrip("\r\n"))
+    return m.group(1), (f"{dn}|{m.group(1)}", line[m.end():len(line) - end]), line[len(line) - end:]
+
+
+def capture_split(text):
+    logical = _logical_lines(text)
+    after = tuple(accumulate(logical, _record_state, initial=(None, False)))[1:]      # state after each line
+    return tuple(p for state, line in zip(after, logical) for p in _capture_parts(state, line))
+
+
+def capture_encode(value, raw):
+    """A changed value as ": value", or ":: base64" when the original was base64 or the value needs it."""
+    if raw.startswith("::") or _needs_b64(value):
+        return ":: " + base64.b64encode(value.encode()).decode()
+    return ": " + value
+
+
+CODEC = Codec(capture_split, _decode_value, capture_encode)

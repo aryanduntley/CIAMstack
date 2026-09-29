@@ -15,7 +15,8 @@ from ..core.contract import Adapter, Domain, Format, Services
 from ..core.directory import get, rdn_value, subtree
 from ..core.environment import env_model, with_required_roles
 from ..core.naming import branch
-from ..core.standard import CORE, schema_ldif
+from ..core.secrets import CORE_OWNER, CORE_PATTERNS, dialect_problems
+from ..core.standard import CORE
 from ..store.migrations import DEFINITIONS as STORE_DEFINITIONS, read_migrations
 from . import schema
 from .stack import declared_adapters, missing_adapters
@@ -102,6 +103,16 @@ def vocabulary(domains=DOMAINS, adapters=ADAPTERS, formats=FORMATS):
         + [(FORMAT_ATTRIBUTE, f.name, f"format {f.name}") for f in formats]))
 
 
+def secret_patterns(installed=ADAPTERS):
+    """(name, pattern, owner, description) for every form of secret material the store refuses: the core's generic
+    ones, then each installed adapter's. Refuses patterns the store can't evaluate or names registered twice."""
+    owned = (*((p, CORE_OWNER) for p in CORE_PATTERNS), *((p, a.name) for a in installed for p in a.secret_patterns))
+    wrong = dialect_problems(tuple(p for p, _ in owned))
+    if wrong:
+        raise SystemExit("secret patterns the store can't use: " + "; ".join(wrong))
+    return tuple((p.name, p.pattern, owner, p.description) for p, owner in owned)
+
+
 def format_named(name, formats=FORMATS):
     """The registered format of that name, or None."""
     return next((f for f in formats if f.name == name), None)
@@ -115,9 +126,9 @@ def schema_sync(installed=ADAPTERS):
 def store_parts(installed=ADAPTERS):
     """Effect (reads the migration files): what `init` and `upgrade` build the store from: (migrations, definition
     files, the schema (a function of the connection: code-owned fragments composed with the record's custom
-    definitions), reference schemes, vocabulary)."""
+    definitions), reference schemes, vocabulary, secret patterns)."""
     return (read_migrations(), definition_files(), partial(schema.store_schema, fragments=schema_fragments(adapters=installed)),
-            ref_schemes(installed), vocabulary(adapters=installed))
+            ref_schemes(installed), vocabulary(adapters=installed), secret_patterns(installed))
 
 
 def applicable(m, installed=ADAPTERS):

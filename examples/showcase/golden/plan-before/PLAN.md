@@ -46,7 +46,10 @@ Target roles still unbound: `backup-target`
 - External allowlist `customer-portal-egress` (customer-portal-team) already covers target/prod's `ds-ldaps-service` (10.60.1.100/32).
 - External allowlist `harbor-mro-ingress` (harbor-mro) already covers target/prod's `pf-egress` (203.0.113.200/32).
 - Every user-directory attribute and object class is standard (7) or defined in the record (8).
+- Identity service `sso` keeps its published address in target/prod (sso.example-aero.test served by the `pf-engine` service name).
+- Config file `default-atm.json` renders for target/prod (pingfederate/server/default/data/atm/default-atm.json).
+- Config file `run.properties` renders for target/prod (pingfederate/bin/run.properties).
 
 ## What the target renders to
 
-`opsdir render target/prod` produces 21 files from the same databases: Terraform for the target cloud, per-server DS setup scripts that join the existing deployment, and the environment-neutral DS/PingFederate configuration.
+`opsdir render target/prod` produces 23 files from the same databases: Terraform for the target cloud, per-server DS setup scripts that join the existing deployment, and the environment-neutral DS/PingFederate configuration.

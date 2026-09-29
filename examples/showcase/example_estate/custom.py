@@ -2,6 +2,7 @@
 (22-custom-schema), and records of that type (90-feature-flags). The fields are used on owners, environments and
 integrations elsewhere in the estate."""
 from .common import CUSTOM, FLAGS, owner, spec
+from .config import TOKEN_LIFETIME
 
 # name -> definition attributes (the metadata says what, which values, which records, where it lives, why)
 FIELDS = (
@@ -19,7 +20,7 @@ FIELDS = (
         ciamDefinitionNumber=3, ciamValueType="int", ciamPortability="intent", ciamCarriedBy="ciamIntegration",
         ciamMinValue=5, ciamMaxValue=1440, ciamUnit="minutes", ciamDefaultValue=60,
         ciamPurpose="Access token lifetime agreed with the application owner",
-        ciamValueSource="pingfederate: access token manager lifetime", ciamUsedBy="pingfederate",
+        ciamSettingRef=TOKEN_LIFETIME, ciamUsedBy="pingfederate",
         ciamDefinitionStatus="active")),
     ("xFlagEnabled", dict(
         ciamDefinitionNumber=4, ciamValueType="bool", ciamPortability="intent",

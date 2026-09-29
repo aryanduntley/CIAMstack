@@ -1,11 +1,13 @@
-"""File formats as data: the standard formats the core registers, and how a file's format is found and how a
-generated-file header is written in it. Packages register further formats (HCL, a product's batch syntax, ...) the
+"""File formats as data: the standard formats the core registers (with the codec that captures a config file into
+the record where the format has one), and how a file's format is found and how a generated-file header is written in
+it. Packages register further formats (HCL, a product's batch syntax, ...) the
 same way; adapters declare which format each file they render is in."""
 import json
 from fnmatch import fnmatchcase
 
 from .contract import Format
-from .interchange.ldif import parse, write_records
+from .interchange import ini, json_text, properties, xml_text
+from .interchange.ldif import CODEC as LDIF_CODEC, parse, write_records
 
 
 def _ldif_records(text):
@@ -16,18 +18,19 @@ def _json_text(value):
     return json.dumps(value, indent=2) + "\n"
 
 
-def _format(name, title, media_type, extensions, comment, read=None, write=None):
-    return Format(name, title, media_type, tuple(extensions), tuple(comment), read, write)
+def _format(name, title, media_type, extensions, comment, read=None, write=None, codec=None):
+    return Format(name, title, media_type, tuple(extensions), tuple(comment), read, write, codec)
 
 
 LDIF = _format("ldif", "LDAP Data Interchange Format (RFC 2849)", "text/x-ldif", (".ldif",), ("#",),
-               _ldif_records, write_records)
-JSON = _format("json", "JSON (RFC 8259)", "application/json", (".json",), (), json.loads, _json_text)
-XML = _format("xml", "XML", "application/xml", (".xml",), ("<!--", "-->"))
+               _ldif_records, write_records, LDIF_CODEC)
+JSON = _format("json", "JSON (RFC 8259)", "application/json", (".json",), (), json.loads, _json_text, json_text.CODEC)
+XML = _format("xml", "XML", "application/xml", (".xml",), ("<!--", "-->"), codec=xml_text.CODEC)
 YAML = _format("yaml", "YAML", "application/yaml", (".yaml", ".yml"), ("#",))
 SHELL = _format("shell", "POSIX shell / bash script", "text/x-shellscript", (".sh",), ("#",))
-JAVA_PROPERTIES = _format("java-properties", "Java properties", "text/x-java-properties", (".properties",), ("#",))
-INI = _format("ini", "INI configuration", "text/plain", (".ini", ".cfg", ".conf"), ("#",))
+JAVA_PROPERTIES = _format("java-properties", "Java properties", "text/x-java-properties", (".properties",), ("#",),
+                          codec=properties.CODEC)
+INI = _format("ini", "INI configuration", "text/plain", (".ini", ".cfg", ".conf"), ("#",), codec=ini.CODEC)
 TOML = _format("toml", "TOML", "application/toml", (".toml",), ("#",))
 CSV = _format("csv", "CSV (RFC 4180)", "text/csv", (".csv",), ())
 C = _format("c", "C source or header", "text/x-c", (".c", ".h"), ("/*", "*/"))
@@ -45,6 +48,12 @@ TEXT = _format("text", "Plain text", "text/plain", (".txt",), ())
 def format_of(path, declarations):
     """The format a path is declared in: the first (glob, format name) whose glob matches it, else None."""
     return next((name for glob, name in declarations if fnmatchcase(path, glob)), None)
+
+
+def format_by_extension(path, formats):
+    """The registered format whose extensions include the path's (case-insensitive), or None."""
+    name = str(path).lower()
+    return next((f for f in formats if any(name.endswith(x) for x in f.extensions)), None)
 
 
 def comment_lines(fmt, lines):

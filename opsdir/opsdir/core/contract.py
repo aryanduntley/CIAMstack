@@ -46,7 +46,19 @@ Domain = NamedTuple("Domain", [("name", str), ("schema", object),     # its Sche
 # comment: how the format writes a comment: (line prefix,) such as ("#",), (start, end) such as ("<!--", "-->"), or ()
 # when it has none (JSON). read (text -> data) and write (data -> text) are the package's, when it provides them.
 Format = NamedTuple("Format", [("name", str), ("title", str), ("media_type", str), ("extensions", tuple),
-                               ("comment", tuple), ("read", Optional[Callable]), ("write", Optional[Callable])])
+                               ("comment", tuple), ("read", Optional[Callable]), ("write", Optional[Callable]),
+                               ("codec", Optional[object])])       # its Codec, when files in it can be captured
+
+# How a config file in a format is captured into the record and rebuilt from it byte for byte (core.capture):
+# split(text) -> the file as a tuple of literal text (str) and settings ((locator, raw), where raw is the setting's
+# text exactly as it appears in the file); decode(raw) -> the setting's value; encode(value, raw) -> the text that
+# writes a changed value, in the style of the original raw text (its quoting, its type). Locators are unique in a file.
+Codec = NamedTuple("Codec", [("split", Callable), ("decode", Callable), ("encode", Callable)])
+
+# A form secret material takes (a private key block, a vendor's access key, ...): the store refuses any value that
+# matches, so no write can put a secret in the record (SPEC R4). pattern is a regular expression in the dialect Python
+# and PostgreSQL share (core.secrets.dialect_problems); the core registers the generic forms, adapters their vendors'.
+SecretPattern = NamedTuple("SecretPattern", [("name", str), ("pattern", str), ("description", str)])
 
 # What connectors provide to adapters while rendering: secret_command(ref-uri) -> shell command that resolves it
 Services = NamedTuple("Services", [("secret_command", Callable)])
@@ -67,8 +79,9 @@ Adapter = NamedTuple("Adapter", [("name", str),
                                  ("schema", Optional[object]),        # its SchemaFragment (own OID arc), or None
                                  ("formats", tuple),                  # ((path glob, format name), ...): the format
                                                                       # of every file it renders (first match wins)
-                                 ("products", tuple)])                # ((product, PEP 440 range), ...): the product
+                                 ("products", tuple),                 # ((product, PEP 440 range), ...): the product
                                                                       # versions it renders and reads
+                                 ("secret_patterns", tuple)])         # SecretPatterns: its vendor's credential forms
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

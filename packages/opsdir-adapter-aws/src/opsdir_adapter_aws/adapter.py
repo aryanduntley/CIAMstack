@@ -1,6 +1,6 @@
 """AWS adapter: applies to environments in clouds whose ciamCloudProvider is aws."""
 from opsdir.core.contract import Adapter
-from .secrets import secretsmanager_command
+from .secrets import SECRET_PATTERNS, secretsmanager_command
 from .terraform import render
 
 PROVIDER = "aws"
@@ -16,4 +16,5 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                   neutral_label=None,
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamCloudEnvironment": ("public",)}, schema=None,
                   formats=(("terraform/*.tf", "hcl"),),
-                  products=())
+                  products=(),
+                  secret_patterns=SECRET_PATTERNS)

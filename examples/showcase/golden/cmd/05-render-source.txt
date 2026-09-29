@@ -1,2 +1,2 @@
-rendered 21 files for env=prod,cloud=source,ou=environments,dc=ciam-ops (aws) → <OUT>/render-before/source-prod
+rendered 23 files for env=prod,cloud=source,ou=environments,dc=ciam-ops (aws) → <OUT>/render-before/source-prod
 exit 0

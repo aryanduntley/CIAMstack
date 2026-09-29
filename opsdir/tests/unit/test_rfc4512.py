@@ -3,7 +3,8 @@ import pytest
 from opsdir.core.interchange.rfc4512 import (attribute_type, attribute_type_definition, name_list, object_class,
                                              object_class_definition, quote)
 from opsdir.core.ldap_schema import standard_attribute, standard_class
-from opsdir.core.paths import SCHEMA_FILE
+from opsdir.connectors.registry import core_fragments
+from opsdir.core.standard import registry_ldif
 
 
 def test_attribute_type_reads_standard_fields_and_x_extensions():
@@ -65,8 +66,8 @@ def test_description_and_matching_rules_are_optional():
         "( 1.2.3.9 NAME 'x' SUP top AUXILIARY )"
 
 
-def test_standard_definitions_in_the_published_schema_come_from_the_catalogue():
-    text = SCHEMA_FILE.read_text().replace("\n ", "")
+def test_standard_definitions_in_the_stores_registry_come_from_the_catalogue():
+    text = registry_ldif(core_fragments()).replace("\n ", "")
     assert f"( {standard_attribute('mail').oid} NAME 'mail'" in text and "X-ORIGIN 'RFC 4524'" in text
     assert f"( {standard_class('domain').oid} NAME 'domain'" in text
 

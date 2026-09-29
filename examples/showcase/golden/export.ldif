@@ -11,6 +11,12 @@ objectClass: organizationalUnit
 ou: acis
 description: Access control instructions on the user directory
 
+dn: ou=bundles,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: bundles
+description: Code, scripts, templates and packages deployed as they are
+
 dn: ou=certificates,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -29,6 +35,12 @@ objectClass: organizationalUnit
 ou: config
 description: Directory server configuration: declared (desired) and observed (
  snapshots)
+
+dn: ou=config-files,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: config-files
+description: Config files held in the record
 
 dn: ou=consumers,dc=ciam-ops
 objectClass: top
@@ -388,6 +400,20 @@ ciamOwnerKind: team
 mail: customer-portal@example-aero.test
 xCostCenter: CC-2040
 
+dn: cn=default-atm.json,ou=config-files,dc=ciam-ops
+objectClass: top
+objectClass: ciamConfigFile
+cn: default-atm.json
+ciamCaptureLevel: settings
+ciamFormat: json
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRepoPath: pingfederate/server/default/data/atm/default-atm.json
+ciamSha256: 5d64b31420d4627260d1bd2cf0b9dd3bdea95d85f02350aa7bc5bb115da37904
+ciamSkeleton:: ewogICJpZCI6ICR77oCAL2lk7oCBfSwKICAibGlmZXRpbWVNaW51dGVzIjogJHv
+ ugIAvbGlmZXRpbWVNaW51dGVz7oCBfSwKICAicmV1c2VFeGlzdGluZ1Rva2VucyI6ICR77oCAL3Jl
+ dXNlRXhpc3RpbmdUb2tlbnPugIF9Cn0K
+ciamTargetRole: pf-engine
+
 dn: cn=description,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
@@ -600,6 +626,19 @@ ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
 ciamTlsOnly: FALSE
 ciamUnindexedSearchesPerDay: 96
 
+dn: cn=login-templates,ou=bundles,dc=ciam-ops
+objectClass: top
+objectClass: ciamBundle
+cn: login-templates
+ciamBundleKind: template
+ciamBundleVersion: 2026.09
+ciamFormat: html
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRepoPath: pingfederate/server/default/conf/template
+ciamSha256: 5d649f2453f646aa1d3387676809eed6d908440ffb3c3905a811ec628d5b101a
+ciamTargetRole: pf-engine
+description: Branded sign-in pages
+
 dn: cn=mail,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
@@ -750,6 +789,23 @@ ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: none
 ciamPurpose: Registration workflow state (pending / approved / active / disabl
  ed)
+
+dn: cn=run.properties,ou=config-files,dc=ciam-ops
+objectClass: top
+objectClass: ciamConfigFile
+cn: run.properties
+ciamCaptureLevel: settings
+ciamFormat: java-properties
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRepoPath: pingfederate/bin/run.properties
+ciamSha256: 41679530b806f64d058b468e7a3ca3c554bbc1035fcfc09fad3a14172d687c16
+ciamSkeleton:: IyBQaW5nRmVkZXJhdGUgZW5naW5lIHJ1bi5wcm9wZXJ0aWVzIChFeGFtcGxlIEF
+ lcm8sIHN5bnRoZXRpYykKcGYub3BlcmF0aW9uYWwubW9kZT0ke+6AgHBmLm9wZXJhdGlvbmFsLm1v
+ ZGXugIF9CnBmLmVuZ2luZS5ob3N0bmFtZT0ke+6AgHBmLmVuZ2luZS5ob3N0bmFtZe6AgX0KcGYua
+ HR0cHMucG9ydD0ke+6AgHBmLmh0dHBzLnBvcnTugIF9CnBmLmFkbWluLmh0dHBzLnBvcnQ9JHvugI
+ BwZi5hZG1pbi5odHRwcy5wb3J07oCBfQpwZi5hZG1pbi5wd2Q9JHvugIBwZi5hZG1pbi5wd2TugIF
+ 9CnBmLmxvZy5ldmVudGRldGFpbD0ke+6AgHBmLmxvZy5ldmVudGRldGFpbO6AgX0K
+ciamTargetRole: pf-engine
 
 dn: cn=skyline-air,ou=owners,dc=ciam-ops
 objectClass: top
@@ -1119,9 +1175,10 @@ ciamMinValue: 5
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPortability: intent
 ciamPurpose: Access token lifetime agreed with the application owner
+ciamSettingRef: cn=1eea4b2c84ae8090,cn=default-atm.json,ou=config-files,dc=cia
+ m-ops
 ciamUnit: minutes
 ciamUsedBy: pingfederate
-ciamValueSource: pingfederate: access token manager lifetime
 ciamValueType: int
 
 dn: ou=declared,ou=config,dc=ciam-ops
@@ -1135,6 +1192,80 @@ objectClass: top
 objectClass: organizationalUnit
 ou: observed
 description: Read-only snapshots captured from live servers
+
+dn: cn=031021627bad8f98,cn=default-atm.json,ou=config-files,dc=ciam-ops
+objectClass: top
+objectClass: ciamConfigSetting
+cn: 031021627bad8f98
+ciamLocator: /id
+ciamSettingRaw: "default-atm"
+ciamSettingValue: default-atm
+
+dn: cn=1eea4b2c84ae8090,cn=default-atm.json,ou=config-files,dc=ciam-ops
+objectClass: top
+objectClass: ciamConfigSetting
+cn: 1eea4b2c84ae8090
+ciamLocator: /lifetimeMinutes
+ciamSettingRaw: 60
+ciamSettingValue: 60
+
+dn: cn=3eb107a09dad6b7f,cn=run.properties,ou=config-files,dc=ciam-ops
+objectClass: top
+objectClass: ciamConfigSetting
+cn: 3eb107a09dad6b7f
+ciamLocator: pf.operational.mode
+ciamSettingRaw: CLUSTERED_ENGINE
+ciamSettingValue: CLUSTERED_ENGINE
+
+dn: cn=78285a76d0ca9c9d,cn=run.properties,ou=config-files,dc=ciam-ops
+objectClass: top
+objectClass: ciamConfigSetting
+cn: 78285a76d0ca9c9d
+ciamLocator: pf.https.port
+ciamSettingRaw: 9031
+ciamSettingValue: 9031
+
+dn: cn=8a94b3c791b80ed6,cn=run.properties,ou=config-files,dc=ciam-ops
+objectClass: top
+objectClass: ciamConfigSetting
+cn: 8a94b3c791b80ed6
+ciamLocator: pf.engine.hostname
+ciamSettingRaw: sso.example-aero.test
+ciamSettingValue: sso.example-aero.test
+ciamValueFrom: pf-sso-service#ciamFqdn
+
+dn: cn=a008fccc358437e9,cn=run.properties,ou=config-files,dc=ciam-ops
+objectClass: top
+objectClass: ciamConfigSetting
+cn: a008fccc358437e9
+ciamLocator: pf.admin.https.port
+ciamSettingRaw: 9999
+ciamSettingValue: 9999
+
+dn: cn=b4d42125ac974fb4,cn=run.properties,ou=config-files,dc=ciam-ops
+objectClass: top
+objectClass: ciamConfigSetting
+cn: b4d42125ac974fb4
+ciamCaptureProblem: value withheld: its name says it holds a secret
+ciamLocator: pf.admin.pwd
+ciamSecretRequired: TRUE
+ciamValueFrom: pf-admin-password#ciamRefUri
+
+dn: cn=b8a8fe33a98249d1,cn=run.properties,ou=config-files,dc=ciam-ops
+objectClass: top
+objectClass: ciamConfigSetting
+cn: b8a8fe33a98249d1
+ciamLocator: pf.log.eventdetail
+ciamSettingRaw: false
+ciamSettingValue: false
+
+dn: cn=f5a2dd8fd1c7a4e2,cn=default-atm.json,ou=config-files,dc=ciam-ops
+objectClass: top
+objectClass: ciamConfigSetting
+cn: f5a2dd8fd1c7a4e2
+ciamLocator: /reuseExistingTokens
+ciamSettingRaw: true
+ciamSettingValue: true
 
 dn: env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top

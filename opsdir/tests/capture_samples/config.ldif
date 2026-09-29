@@ -1,0 +1,21 @@
+dn: cn=Default Password Policy,cn=Password Policies,cn=config
+objectClass: top
+objectClass: ds-cfg-password-policy
+objectClass: ds-cfg-authentication-policy
+cn: Default Password Policy
+ds-cfg-password-attribute: userPassword
+ds-cfg-default-password-storage-scheme: cn=PBKDF2-HMAC-SHA256,cn=Password Storage Sch
+ emes,cn=config
+ds-cfg-lockout-failure-count: 5
+ds-cfg-lockout-duration: 30 m
+ds-cfg-java-class: org.opends.server.core.PasswordPolicyFactory
+
+dn: cn=LDAPS,cn=Connection Handlers,cn=config
+objectClass: top
+objectClass: ds-cfg-connection-handler
+objectClass: ds-cfg-ldap-connection-handler
+cn: LDAPS
+ds-cfg-listen-port: 1636
+ds-cfg-use-ssl: true
+ds-cfg-enabled: true
+description:: TERBUFMgZm9yIGFwcGxpY2F0aW9ucyDigJQgY2xpZW50cyBhbmQgcGFydG5lcnM=

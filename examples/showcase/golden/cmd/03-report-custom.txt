@@ -1,10 +1,10 @@
-kind         name                   type                  applies to / extends  status  owner          used by entries
------------  ---------------------  --------------------  --------------------  ------  -------------  ---------------
-field        xCostCenter            string                ciamParty             active  ciam-platform  3              
-field        xDataResidency         enum:us|us-gov|eu|ca  ciamEnvironment       active  ciam-platform  2              
-field        xFlagEnabled           bool                  xFeatureFlag          active  ciam-platform  2              
-field        xRolloutPercent        int                   xFeatureFlag          active  ciam-platform  1              
-field        xTokenLifetimeMinutes  int                   ciamIntegration       active  ciam-platform  2              
-record type  xFeatureFlag           structural            -                     active  ciam-platform  2              
+kind         name                   type                  applies to / extends  lives in                                                                status  owner          used by entries
+-----------  ---------------------  --------------------  --------------------  ----------------------------------------------------------------------  ------  -------------  ---------------
+field        xCostCenter            string                ciamParty             finance: cost-center register                                           active  ciam-platform  3              
+field        xDataResidency         enum:us|us-gov|eu|ca  ciamEnvironment       terraform: azurerm_resource_group.location; terraform: aws provider re  active  ciam-platform  2              
+field        xFlagEnabled           bool                  xFeatureFlag          -                                                                       active  ciam-platform  2              
+field        xRolloutPercent        int                   xFeatureFlag          -                                                                       active  ciam-platform  1              
+field        xTokenLifetimeMinutes  int                   ciamIntegration       default-atm.json:/lifetimeMinutes                                       active  ciam-platform  2              
+record type  xFeatureFlag           structural            -                     pingfederate: authentication policy switches                            active  ciam-platform  2              
 (6 rows)
 exit 0

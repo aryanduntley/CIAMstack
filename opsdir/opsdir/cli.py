@@ -1,4 +1,4 @@
-"""opsdir command line.
+"""opsdir command line: parses arguments, calls operations (opsdir.operations), presents their results.
 
   opsdir init                          DROP the opsdir schema and create it from nothing (all migrations)
   opsdir upgrade                       upgrade the schema in place (pending migrations), keeping data and history
@@ -10,6 +10,14 @@
   opsdir plan FROM TO [-o dir]         migration plan + change-request drafts for external parties
   opsdir migrate FROM TO [-o dir]      check both stacks, plan, render the target; exit 1 unless ready
   opsdir modify --change CHG-… FILE    apply LDIF change records under an approved change
+  opsdir capture --change CHG-… FILE [--name N] [--repo-path P] [--format F] [--role R] [--deploy-path D]
+                                       hold a config file in the record (setting by setting; whole when it can't be
+                                       parsed; only a reference when it may hold secrets, unless --accept-concerns)
+  opsdir file NAME [--env ENV] [-o PATH]  rebuild a captured file from the record (links resolved for ENV)
+  opsdir bundle --change CHG-… --kind K PATH [--root R] [--name N] [--version V] [--format F] [--role R]
+                                       record code, scripts, templates or a package (a file or a directory under the
+                                       repo checkout R) by repo path and SHA-256; its content is not stored
+  opsdir verify [--root R]             bundles and captured files against a repo checkout (exit 1 if anything differs)
   opsdir export [-b base]              dump entries as LDIF (for Git review)
   opsdir history [DN]                  change history
   opsdir workspace create [--replace]  copy the live record (OPSDIR_DSN) into the migration workspace
@@ -21,20 +29,19 @@ import argparse
 import datetime as dt
 import os
 import pathlib
+import re
 import sys
 
-from .connectors import migration, plan as planmod, reports, workspace
-from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, schema_sync, store_parts
-from .connectors.stack import STATUS_HEADERS, stack_rows
-from .core.environment import env_model
-from .connectors.render import render_env
+from . import operations as ops
+from .connectors import migration, workspace
+from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS
+from .connectors.stack import STATUS_HEADERS
 from .core import search as ldap_search
-from .core.directory import subtree, values
+from .core.directory import values
 from .core.interchange import ldif
-from .core.interchange.export import export_text
+from .core.interchange.export import export_text  # noqa: F401  (callers import it from here)
 from .core.naming import SUFFIX
-from .store import migrations, postgres as db
-from .store.queries import fetch_history
+from .store import postgres as db
 
 # subcommand → ((argument flags, argparse options), …)
 SUBCOMMANDS = (
@@ -50,6 +57,16 @@ SUBCOMMANDS = (
     ("plan", ((("src",), {}), (("dst",), {}), (("-o", "--out"), {}))),
     ("migrate", ((("src",), {}), (("dst",), {}), (("-o", "--out"), {}))),
     ("modify", ((("--change",), {"required": True}), (("file",), {}))),
+    ("capture", ((("--change",), {"required": True}), (("file",), {}), (("--name",), {}), (("--repo-path",), {}),
+                 (("--format",), {}), (("--role",), {}), (("--deploy-path",), {}),
+                 (("--accept-concerns",), {"action": "store_true",
+                                           "help": "store a text flagged as possibly secret (after review)"}))),
+    ("file", ((("name",), {}), (("--env",), {}), (("-o", "--out"), {}))),
+    ("bundle", ((("--change",), {"required": True}), (("path",), {}), (("--root",), {}), (("--name",), {}),
+                (("--kind",), {"required": True, "choices": ["code", "script", "template", "package", "dashboard",
+                                                             "other"]}),
+                (("--version",), {}), (("--format",), {}), (("--role",), {}), (("--deploy-path",), {}))),
+    ("verify", ((("--root",), {}),)),
     ("export", ((("-b", "--base"), {"default": SUFFIX}),)),
     ("history", ((("dn",), {"nargs": "?"}),)),
     ("workspace", ((("action",), {"choices": ["create", "status", "diff", "cutover"]}),
@@ -78,121 +95,182 @@ def write_tree(outdir, files):
     return outdir
 
 
+def entries_text(entries, attrs=()):
+    """Entries as a table of the requested attributes, or as LDIF with an entry count when none are given."""
+    if attrs:
+        return format_table([[e.dn] + ["|".join(values(e, x)) for x in attrs] for e in entries], ["dn", *attrs])
+    return "\n".join((*(ldif.write_entry(e.dn, e.classes, e.attrs) for e in entries), f"# {len(entries)} entries"))
+
+
 def search_text(d, base, filt, scope="sub", attrs=()):
     """Search hits as a table of the requested attributes, or as LDIF with an entry count when none are given."""
-    hits = ldap_search.search(d, base, filt, scope)
-    if attrs:
-        return format_table([[e.dn] + ["|".join(values(e, x)) for x in attrs] for e in hits], ["dn", *attrs])
-    return "\n".join((*(ldif.write_entry(e.dn, e.classes, e.attrs) for e in hits), f"# {len(hits)} entries"))
+    return entries_text(ldap_search.search(d, base, filt, scope), attrs)
 
 
-# ------------------------------------------------------------------ commands: each returns the text to print
-def _cmd_init(conn, a, as_of):
-    migrations.init(conn, *store_parts())
-    n = db.registry_counts(conn)
-    return f"initialized: {n[0]} attribute types, {n[1]} object classes"
-
-
-def _cmd_upgrade(conn, a, as_of):
-    applied = migrations.upgrade(conn, *store_parts())
-    n = db.registry_counts(conn)
-    return "\n".join((*(f"applied migration {migrations.label(m)}" for m in applied),
-                      f"schema at migration {migrations.current_version(conn):04d}"
-                      f"{'' if applied else ' (up to date)'}: {n[0]} attribute types, {n[1]} object classes"))
-
-
-def _cmd_load(conn, a, as_of):
-    files = a.files
-    n = db.load_ldif(conn, files, schema_sync=schema_sync())
-    return f"loaded {n} entries from {len(files)} files; {db.reference_count(conn)} DN references verified"
+def stack_text(result):
+    """(text, exit status) of a stack check."""
+    return f"{format_table(result.rows, result.headers)}\n{result.problems} problem(s)", (1 if result.problems else 0)
 
 
 def check_text(d, specs):
     """(text, exit status): every environment's declared stack against the installed adapters."""
-    results = [stack_rows(env_model(d, spec), ADAPTERS, ADAPTER_VERSIONS) for spec in specs]
-    problems = sum(n for _, n in results)
-    table = format_table([row for rows, _ in results for row in rows], STATUS_HEADERS)
-    return f"{table}\n{problems} problem(s)", (1 if problems else 0)
-
-
-def _cmd_check(conn, a, as_of):
-    d = db.load_directory(conn)
-    return check_text(d, a.envs or environment_specs(d))
-
-
-def _cmd_search(conn, a, as_of):
-    return search_text(db.load_directory(conn), a.base, a.filter, a.scope, a.attrs)
-
-
-def _cmd_report(conn, a, as_of):
-    return format_table(*reports.report_rows(conn, a.name, a.dn))
-
-
-def _cmd_render(conn, a, as_of):
-    m, files = render_env(db.load_directory(conn), a.env)
-    out = write_tree(a.out or pathlib.Path("out") / m.label.replace("/", "-"), files)
-    return "\n".join((f"rendered {len(files)} files for {m.dn} ({m.provider}) → {out}",
-                      *(f"  UNBOUND role: {r}" for r in m.unbound)))
-
-
-def _cmd_plan(conn, a, as_of):
-    p = planmod.plan(db.load_directory(conn), a.src, a.dst, as_of)
-    md = planmod.to_markdown(p)
-    label = f"plan-{p.src.label.replace('/', '-')}-to-{p.dst.label.replace('/', '-')}"
-    out = pathlib.Path(a.out or pathlib.Path("out") / label)
-    write_tree(out, {"PLAN.md": md, **planmod.request_drafts(p)})
-    return md + f"\n\n(written to {out}/PLAN.md and {len(p.requests)} request drafts in {out}/requests/)"
+    return stack_text(ops.stack_check(d, specs))
 
 
 def migrate_text(d, src, dst, as_of, out):
     """(text, files to write, exit status) of `opsdir migrate`."""
     r = migration.run(d, src, dst, as_of, ADAPTERS, ADAPTER_VERSIONS)
-    text = f"{format_table(r.stack_rows, STATUS_HEADERS)}\n{migration.summary(r, out)}"
-    return text, migration.output_files(r), (0 if r.ready else 1)
+    return migrated_text(r, out), migration.output_files(r), (0 if r.ready else 1)
+
+
+def migrated_text(r, out):
+    return f"{format_table(r.stack_rows, STATUS_HEADERS)}\n{migration.summary(r, out)}"
+
+
+def capture_name(path):
+    """A captured file's default name: its file name, with anything but letters, digits, '.', '_' and '-' as '-'."""
+    return re.sub(r"[^A-Za-z0-9._-]", "-", pathlib.Path(path).name)
+
+
+# ------------------------------------------------------------------ commands: parse, call an operation, present
+def _cmd_init(conn, a, as_of):
+    r = ops.init(conn)
+    return f"initialized: {r.attribute_types} attribute types, {r.object_classes} object classes"
+
+
+def _cmd_upgrade(conn, a, as_of):
+    r = ops.upgrade(conn)
+    return "\n".join((*(f"applied migration {label}" for label in r.applied),
+                      f"schema at migration {r.version:04d}{'' if r.applied else ' (up to date)'}: "
+                      f"{r.attribute_types} attribute types, {r.object_classes} object classes"))
+
+
+def _cmd_load(conn, a, as_of):
+    r = ops.load(conn, db.read_ldif_files(a.files))
+    return f"loaded {r.entries} entries from {len(a.files)} files; {r.references} DN references verified"
+
+
+def _cmd_check(conn, a, as_of):
+    return stack_text(ops.check(conn, a.envs))
+
+
+def _cmd_search(conn, a, as_of):
+    return entries_text(ops.search(conn, a.base, a.filter, a.scope), a.attrs)
+
+
+def _cmd_report(conn, a, as_of):
+    r = ops.report(conn, a.name, a.dn)
+    return format_table(r.rows, r.headers)
+
+
+def _cmd_render(conn, a, as_of):
+    r = ops.render(conn, a.env)
+    out = write_tree(a.out or pathlib.Path("out") / r.label.replace("/", "-"), r.files)
+    return "\n".join((f"rendered {len(r.files)} files for {r.dn} ({r.provider}) → {out}",
+                      *(f"  UNBOUND role: {role}" for role in r.unbound)))
+
+
+def _cmd_plan(conn, a, as_of):
+    r = ops.plan(conn, a.src, a.dst, as_of)
+    label = f"plan-{r.plan.src.label.replace('/', '-')}-to-{r.plan.dst.label.replace('/', '-')}"
+    out = pathlib.Path(a.out or pathlib.Path("out") / label)
+    write_tree(out, {"PLAN.md": r.markdown, **r.drafts})
+    return r.markdown + f"\n\n(written to {out}/PLAN.md and {len(r.plan.requests)} request drafts in {out}/requests/)"
 
 
 def _cmd_migrate(conn, a, as_of):
     label = f"migration-{a.src.replace('/', '-')}-to-{a.dst.replace('/', '-')}"
     out = pathlib.Path(a.out or pathlib.Path("out") / label)
-    text, files, status = migrate_text(db.load_directory(conn), a.src, a.dst, as_of, out)
-    write_tree(out, files)
-    return text, status
+    r = ops.migrate(conn, a.src, a.dst, as_of)
+    write_tree(out, r.files)
+    return migrated_text(r.run, out), (0 if r.run.ready else 1)
+
+
+def _applied_text(r):
+    return "\n".join(f"{r.change_id}: {line}" for line in r.lines)
 
 
 def _cmd_modify(conn, a, as_of):
-    return "\n".join(f"{a.change}: {line}" for line in db.apply_changes(conn, a.file, a.change, schema_sync()))
+    return _applied_text(ops.modify(conn, db.read_ldif_files([a.file]), a.change))
+
+
+def _cmd_capture(conn, a, as_of):
+    preview = ops.preview_capture(conn, pathlib.Path(a.file).read_text(), a.name or capture_name(a.file),
+                                  a.repo_path or a.file, a.format, a.role, a.deploy_path, a.accept_concerns)
+    r = ops.apply_preview(conn, preview, a.change)
+    return "\n".join((*preview.notices, f"{a.change}: {len(r.lines)} change(s) applied" if r.lines else "no changes"))
+
+
+def read_content(path):
+    """Effect: a bundle's content, {relative path: bytes} ({"": bytes} for a single file), or None when absent."""
+    p = pathlib.Path(path)
+    if p.is_file():
+        return {"": p.read_bytes()}
+    if p.is_dir():
+        return {f.relative_to(p).as_posix(): f.read_bytes() for f in sorted(p.rglob("*")) if f.is_file()}
+    return None
+
+
+def _cmd_bundle(conn, a, as_of):
+    root = pathlib.Path(a.root or ".")
+    content = read_content(root / a.path)
+    if content is None:
+        raise SystemExit(f"nothing at {root / a.path}")
+    preview = ops.preview_bundle(conn, a.name or capture_name(a.path), a.path, a.kind, content, a.format, a.version,
+                                 a.role, a.deploy_path)
+    r = ops.apply_preview(conn, preview, a.change)
+    return "\n".join((*preview.notices, f"{a.change}: {len(r.lines)} change(s) applied" if r.lines else "no changes"))
+
+
+def _cmd_verify(conn, a, as_of):
+    root = pathlib.Path(a.root or ".")
+    r = ops.verify(conn, {path: read_content(root / path) for path in ops.verify_paths(conn)})
+    fine = ("unchanged", "same as the record")
+    problems = sum(row[3] not in fine or bool(row[4]) for row in r.rows)
+    return f"{format_table(r.rows, r.headers)}\n{problems} to look at", (1 if problems else 0)
+
+
+def _cmd_file(conn, a, as_of):
+    r = ops.rebuild_file(conn, a.name, a.env)
+    if not a.out:
+        return r.text.rstrip("\n") if r.text.endswith("\n") else r.text
+    out = pathlib.Path(a.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(r.text)
+    return f"rebuilt {a.name} ({r.repo_path}) → {out}"
 
 
 def _cmd_export(conn, a, as_of):
-    return export_text(db.load_directory(conn), a.base)
+    return ops.export(conn, a.base)
 
 
 def _cmd_history(conn, a, as_of):
-    return format_table(fetch_history(conn, a.dn), reports.HISTORY_HEADERS)
+    r = ops.history(conn, a.dn)
+    return format_table(r.rows, r.headers)
 
 
 def _cmd_workspace(conn, a, as_of):
     if a.workspace:
         raise SystemExit("workspace commands run against the live record (OPSDIR_DSN); drop --workspace")
-    ws_dsn = workspace.workspace_dsn()
-    ws, source = db.connect(ws_dsn), os.environ["OPSDIR_DSN"]
+    ws, source = db.connect(workspace.workspace_dsn()), os.environ["OPSDIR_DSN"]
     if a.action == "create":
-        n = workspace.create(conn, ws, store_parts(), source, a.replace, schema_sync())
+        n = ops.workspace_create(conn, ws, source, a.replace)
         return f"workspace created: {n} entries copied from {workspace.safe_source(source)}"
     if a.action == "status":
-        return workspace.status(conn, ws)
+        return workspace.status_text(*ops.workspace_state(conn, ws))
     if a.action == "diff":
-        return workspace.diff_text(conn, ws) or "# no changes"
+        return ldif.write_records(ops.workspace_state(conn, ws).changes) or "# no changes"
     if not a.change:
         raise SystemExit("usage: opsdir workspace cutover --change CHG-… (an approved change in the live record)")
-    applied = workspace.cutover(conn, ws, store_parts(), source, a.change, schema_sync())
-    return "\n".join((*(f"{a.change}: {line}" for line in applied),
-                      f"cutover: {len(applied)} change(s) applied to the live record; workspace re-copied"))
+    r = ops.workspace_cutover(conn, ws, source, a.change)
+    return "\n".join((*(f"{a.change}: {line}" for line in r.lines),
+                      f"cutover: {len(r.lines)} change(s) applied to the live record; workspace re-copied"))
 
 
 COMMANDS = {"init": _cmd_init, "upgrade": _cmd_upgrade, "load": _cmd_load, "check": _cmd_check, "search": _cmd_search, "report": _cmd_report,
             "render": _cmd_render, "plan": _cmd_plan, "migrate": _cmd_migrate, "modify": _cmd_modify, "export": _cmd_export,
-            "history": _cmd_history,
+            "history": _cmd_history, "capture": _cmd_capture, "file": _cmd_file, "bundle": _cmd_bundle,
+            "verify": _cmd_verify,
             "workspace": _cmd_workspace}
 
 

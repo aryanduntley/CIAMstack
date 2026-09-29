@@ -37,7 +37,9 @@ The published schema is **composed**, never hand-edited. Each part of the stack 
 
 ### 2.2 The standard LDAP schema
 
-LDAP is the base of the model, so the standard LDAP definitions (RFC 4512 `top` and `objectClass`, RFC 4519, RFC 4524 COSINE, RFC 2798 `inetOrgPerson`, RFC 4523, RFC 2079, RFC 2247) are held once, as data, in the core. They serve both LDAP layers: opsdir's own schema takes the standard definitions it uses from them (their OIDs, single-value, superclass, kind, MUST and origin; opsdir adds only value type, portability and description), and the user directories opsdir manages are described against them (§6).
+LDAP is the base of the model, so the standard LDAP definitions (RFC 4512 `top` and `objectClass`, RFC 4519, RFC 4524 COSINE, RFC 2798 `inetOrgPerson`, RFC 4523, RFC 2079, RFC 2247) are held once, as data, in the core. They serve both LDAP layers: opsdir's own entries use some of them (`top`, `objectClass`, `cn`, `ou`, `dc`, `description`, `mail`, `organizationalUnit`, `domain`), and the user directories opsdir manages are described against them (§6).
+
+**opsdir never redefines a standard definition.** The published schema holds only definitions under opsdir's own arcs; the standard ones they build on are every compliant server's own. The store registers the standard definitions its entries use exactly as the standards define them (OID, syntax, matching rule, single-value, superclass, kind, MUST), adding only its own annotations (value type, portability, description), and never publishes them.
 
 ### 2.3 Custom fields and record types
 
@@ -46,7 +48,7 @@ Nobody can foresee every fact a platform needs recorded, so operators define the
 - **Names start with `x`** (`xCostCenter`, `xFeatureFlag`): the core (`ciam…`) and packages never use that prefix, so their later definitions can't collide. OIDs are pinned numbers under the custom arc.
 - The store composes the definitions into its schema next to the core's, the domains' and the packages' fragments: on every `upgrade`, and inside the approved change that adds or changes them, so one change can define a field and use it (definitions are applied first, removed last).
 - A definition that can't be built is refused (a name without the prefix, an unknown value type, a rule that doesn't fit the type, an unknown record type). A change that would leave stored entries invalid (a tighter rule, a narrower type) is refused and names them; a definition entries still use can't be deleted.
-- How parsers and renderers read and write custom fields is described by the metadata (`ciamValueSource`, `ciamUsedBy`); mapping them in adapters is future work.
+- **Where the value lives.** `ciamSettingRef` links a definition to the settings of captured config files that hold its value (§9.1): structured and checked like every reference. `ciamValueSource` names places the record does not hold (a console, a register) in free text; `ciamUsedBy` names the adapters that read or write it.
 
 ## 3. Extensions (RFC 4512 `X-` extensions)
 
@@ -82,7 +84,7 @@ A conforming store MUST enforce all of these, not merely document them:
 | R1 | **Schema checking.** Object classes known. At least one structural class. Only MUST/MAY attributes. All MUST attributes present. SINGLE-VALUE respected. Every value valid for its `X-VALUE-TYPE`. |
 | R2 | **Tree integrity.** The parent entry exists. The RDN value is present in the entry. Non-leaf entries can't be deleted. |
 | R3 | **Referential integrity.** Every `dn`-typed value resolves to an existing entry at commit. A referenced entry can't be deleted. *(Stronger than LDAP, where referential integrity is an optional plugin.)* |
-| R4 | **No secrets.** `secret-ref` attributes MUST be `ref-uri`. The schema offers no attribute that can hold secret material. |
+| R4 | **No secrets.** `secret-ref` attributes MUST be `ref-uri`. The schema offers no attribute that can hold secret material, and the store refuses any value (or entry name) that matches a registered form of secret material: the core registers the generic forms (private key blocks, credentials in URLs, signed tokens, secret assignments in configuration syntax, stored LDAP passwords), each adapter its vendor's. The refusal names the attribute and the form, never the value. Importers and scanners redact with the same patterns. |
 | R5 | **Governed writes.** Every write carries a change ID. Outside the initial bootstrap, the change MUST exist under `ou=changes` of the naming context with status `approved` or `applied`. |
 | R6 | **History.** Every insert, update and delete is recorded with before/after values and change ID. |
 | R7 | **Roles, not names.** Renderers look up bindings by `ciamBindingRole` (e.g. `ds-ldaps-service`, `ds-deployment-password`), never by hostname or resource ID. |
@@ -155,6 +157,17 @@ Products build on the standards they implement instead of repeating them. A base
 
 - **LDIF in, LDIF out.** Content and change records (RFC 2849) are the interchange format. `opsdir export` produces reviewable LDIF for Git.
 - The schema file is standard RFC 4512. Directory servers generally ignore unknown `X-` extensions. *Not yet tested against a live LDAP server. The OIDs use the RFC 5612 documentation arc `1.3.6.1.4.1.32473` and must be replaced with a registered arc.*
+
+### 9.1 Config files in the record
+
+A config file is held in the record so it can be rebuilt from the record alone, byte for byte (branch `ou=config-files`, `opsdir capture`, `opsdir file`). A format that can be captured registers a codec: how to cut a file into layout and settings, how to read a setting's value from its text and how to write a changed value in the format's own style. The core's codecs cover Java properties (the key), INI (`section.key`), JSON and JSON with comments (a JSON Pointer to every scalar; its type is kept), XML (`/path/@attribute`, `/path/text()` of leaf elements) and LDIF (`dn|attribute`); a repeated locator is numbered from its second occurrence (`key#2`).
+
+- **Levels** (`ciamCaptureLevel`). `settings`: the layout on the `ciamConfigFile` entry and one `ciamConfigSetting` per setting, each governed and historied; a value is a literal or a link (`ciamValueFrom: role#attribute`) to the binding of the environment the file is rendered for (a secret reference renders as `${secret:<ref-uri>}`). `whole-file`: the file can't be parsed as its format (the reason and position are recorded); its whole text is kept. `reference`: only where the file lives (`ciamRepoPath`), its SHA-256 and why nothing else is stored.
+- **Nothing that may be secret is stored.** A setting whose value matches a secret pattern, whose name says it holds a secret (its last word is password, secret, token, pin, credential, or a pair such as api key or client secret) or whose value looks random is withheld (`ciamSecretRequired`) and must be linked to a secret reference. A layout or whole text is stored only when nothing in it raises such a concern; otherwise the file is held as a reference. An operator who has reviewed a flagged text may accept it; the store's guard (R4) applies regardless.
+- **Re-capture is a change set.** Capturing a file again changes only the settings that changed; settings keep their entries and history.
+- **Rendering.** Each environment's render includes the captured files it receives (those deployed to a role its servers run, or to no role) under `files/<repo path>`, byte for byte with its bindings; the MANIFEST lists them (scope, format, `captured`, SHA-256) and any it could not render, with why. The planner blocks a move when a file the target receives can't be rendered there, and lists files held only as references as actions.
+- **Bundles.** Code, scripts, templates and packages are not config: a `ciamBundle` (`ou=bundles`, `opsdir bundle`) records where one lives in version control, what it is, its version, where it is deployed and its SHA-256 (of the file; of a directory, of its files' `sha256  path` lines sorted by path). Its content is never stored; what in its text may be secret material is reported, since it is deployed as it is.
+- **Verification.** `opsdir verify --root <checkout>` compares every bundle's digest and every captured file's rebuilt text (a reference's recorded hash) with a checkout of the repo.
 
 ## 10. Open issues
 

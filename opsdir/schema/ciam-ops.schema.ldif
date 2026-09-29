@@ -1,5 +1,7 @@
-# Operations Directory schema (opsdir) — LDAP schema extended for platform configuration.
-# Standard RFC 4512 definitions. Extensions (legal per RFC 4512 §4.2):
+# Operations Directory schema (opsdir): the attribute types and object classes opsdir defines for platform
+# configuration, as RFC 4512 definitions. The standard definitions they build on (RFC 4512 top, RFC 4519
+# cn, ou, description, RFC 4524 dc, mail, domain) are the server's own and are not redefined here.
+# Extensions (legal per RFC 4512 §4.2):
 #   X-PORTABILITY  intent | contract | binding | secret-ref | observed | meta
 #   X-VALUE-TYPE   stricter value type enforced by the store (string, int, bool, time, dn, extdn,
 #                  cidr, ip, fqdn, url, port, ref-uri, json, enum:a|b|c, vocab = values the
@@ -10,24 +12,6 @@ objectClass: top
 objectClass: ldapSubentry
 objectClass: subschema
 cn: schema
-attributeTypes: ( 2.5.4.0 NAME 'objectClass' DESC 'LDAP object classes' EQUA
- LITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'me
- ta' X-VALUE-TYPE 'string' X-ORIGIN 'RFC 4512' )
-attributeTypes: ( 2.5.4.3 NAME 'cn' DESC 'Common name / RDN' EQUALITY caseIg
- noreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta' X-VALUE
- -TYPE 'string' X-ORIGIN 'RFC 4519' )
-attributeTypes: ( 2.5.4.11 NAME 'ou' DESC 'Organizational unit / RDN' EQUALI
- TY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta
- ' X-VALUE-TYPE 'string' X-ORIGIN 'RFC 4519' )
-attributeTypes: ( 0.9.2342.19200300.100.1.25 NAME 'dc' DESC 'Domain componen
- t / RDN' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SING
- LE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'RFC 4519' )
-attributeTypes: ( 2.5.4.13 NAME 'description' DESC 'Free text' EQUALITY case
- IgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta' X-VAL
- UE-TYPE 'string' X-ORIGIN 'RFC 4519' )
-attributeTypes: ( 0.9.2342.19200300.100.1.3 NAME 'mail' DESC 'Contact email'
-  EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILIT
- Y 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'RFC 4524' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.1 NAME 'cloud' DESC 'RDN of a cloud 
  hosting environment' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.1
  21.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'o
@@ -662,10 +646,10 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.162 NAME 'ciamOverridable' DESC 'An
  Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'meta'
   X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.163 NAME 'ciamValueSource' DESC 'Whe
- re the value lives in a real system, as "system: locator" (an infrastructur
- e-code attribute, an API path, a configuration file key, ...)' EQUALITY cas
- eIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta' X-VA
- LUE-TYPE 'string' X-ORIGIN 'opsdir' )
+ re the value lives in a system the record does not hold, as "system: locato
+ r" (a console, a register, an API path); for a config file held in the reco
+ rd use ciamSettingRef' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115
+ .121.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.164 NAME 'ciamUsedBy' DESC 'Adapters
  , parsers or renderers that read or write it' EQUALITY caseIgnoreMatch SYNT
  AX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 'string'
@@ -701,12 +685,67 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.172 NAME 'ciamFormat' DESC 'File for
  mat or language of something recorded (one of the registered formats)' EQUA
  LITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PO
  RTABILITY 'meta' X-VALUE-TYPE 'vocab' X-ORIGIN 'opsdir' )
-objectClasses: ( 2.5.6.0 NAME 'top' DESC 'Top of the class hierarchy' ABSTRA
- CT MUST objectClass X-ORIGIN 'RFC 4512' )
-objectClasses: ( 2.5.6.5 NAME 'organizationalUnit' DESC 'Organizational unit
- ' SUP top STRUCTURAL MUST ou MAY description X-ORIGIN 'RFC 4519' )
-objectClasses: ( 0.9.2342.19200300.100.4.13 NAME 'domain' DESC 'Domain' SUP 
- top STRUCTURAL MUST dc MAY description X-ORIGIN 'RFC 4524' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.173 NAME 'ciamRepoPath' DESC 'Where 
+ the file lives in version control (the same for every environment)' EQUALIT
+ Y caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTA
+ BILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.174 NAME 'ciamDeployPath' DESC 'Wher
+ e the file is written on the servers it is deployed to' EQUALITY caseIgnore
+ Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'inte
+ nt' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.175 NAME 'ciamCaptureLevel' DESC 'Ho
+ w the record holds the file: its settings one by one, its whole text, or on
+ ly a reference to it' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.
+ 121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'enum:settings|whol
+ e-file|reference' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.176 NAME 'ciamSkeleton' DESC 'The fi
+ le\27s text with each setting\27s place marked (settings), or its whole tex
+ t (whole-file)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.
+ 15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsd
+ ir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.177 NAME 'ciamSha256' DESC 'SHA-256 
+ of the file as captured' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.1
+ 15.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-P
+ ATTERN '^[0-9a-f]{64}$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.178 NAME 'ciamCaptureProblem' DESC '
+ Why the file is not held as settings, or why a value was withheld' EQUALITY
+  caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta' 
+ X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.179 NAME 'ciamLocator' DESC 'Where a
+  setting is in its file (key, section.key, JSON pointer, XPath, dn|attribut
+ e)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VA
+ LUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.180 NAME 'ciamSettingValue' DESC 'Th
+ e value of a setting' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.
+ 121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN
+  'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.181 NAME 'ciamSettingRaw' DESC 'The 
+ setting\27s text exactly as the file wrote it when captured (its quoting an
+ d type are kept)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.
+ 1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'op
+ sdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.182 NAME 'ciamValueFrom' DESC 'Where
+  the value comes from instead of a literal: role#attribute, a binding of th
+ e environment the file is rendered for (a secret reference renders as ${sec
+ ret:<ref-uri>})' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1
+ .15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-PATTERN '^[
+ A-Za-z0-9._-]+#[A-Za-z][A-Za-z0-9-]*$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.183 NAME 'ciamSecretRequired' DESC '
+ The value was withheld at capture: it must come from a secret reference (ci
+ amValueFrom)' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SIN
+ GLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.184 NAME 'ciamBundleKind' DESC 'What
+  a bundle is' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'enum:code|script|template|
+ package|dashboard|other' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.185 NAME 'ciamBundleVersion' DESC 'T
+ he version of a bundle (a release, a tag, a package version)' EQUALITY case
+ IgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY
+  'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.186 NAME 'ciamSettingRef' DESC 'Sett
+ ings of captured config files (ou=config-files) where the value lives' EQUA
+ LITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABIL
+ ITY 'meta' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef ) X-ORIGIN 'opsdir' )
@@ -844,8 +883,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.35 NAME 'ciamIdentityService' DESC 'T
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.36 NAME 'ciamCustomDefinition' DESC '
  A field or record type an operator defines' SUP ciamObject ABSTRACT MUST ( 
  cn $ ciamDefinitionNumber ) MAY ( ciamPurpose $ ciamPiiClass $ ciamDefiniti
- onStatus $ ciamDocumentation $ ciamRunbookRef $ ciamValueSource $ ciamUsedB
- y ) X-ORIGIN 'opsdir' )
+ onStatus $ ciamDocumentation $ ciamRunbookRef $ ciamValueSource $ ciamSetti
+ ngRef $ ciamUsedBy ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.37 NAME 'ciamFieldDefinition' DESC 'D
  efinition of a custom field' SUP ciamCustomDefinition STRUCTURAL MUST ( cia
  mValueType $ ciamPortability ) MAY ( ciamMultiValued $ ciamCarriedBy $ ciam
@@ -855,3 +894,16 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.38 NAME 'ciamRecordTypeDefinition' DE
  SC 'Definition of a custom record type' SUP ciamCustomDefinition STRUCTURAL
   MAY ( ciamRecordKind $ ciamParentType $ ciamRequiredField $ ciamOptionalFi
  eld ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.39 NAME 'ciamConfigFile' DESC 'A conf
+ ig file held in the record' SUP ciamObject STRUCTURAL MUST ( cn $ ciamForma
+ t $ ciamRepoPath $ ciamCaptureLevel ) MAY ( ciamTargetRole $ ciamDeployPath
+  $ ciamSkeleton $ ciamSha256 $ ciamCaptureProblem ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.40 NAME 'ciamConfigSetting' DESC 'One
+  setting of a captured config file' SUP ciamObject STRUCTURAL MUST ( cn $ c
+ iamLocator ) MAY ( ciamSettingValue $ ciamSettingRaw $ ciamValueFrom $ ciam
+ SecretRequired $ ciamCaptureProblem ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.41 NAME 'ciamBundle' DESC 'Code, scri
+ pts, templates or a package, deployed as a unit: recorded where it lives, n
+ ot held in the record' SUP ciamObject STRUCTURAL MUST ( cn $ ciamRepoPath $
+  ciamBundleKind $ ciamSha256 ) MAY ( ciamFormat $ ciamBundleVersion $ ciamT
+ argetRole $ ciamDeployPath ) X-ORIGIN 'opsdir' )

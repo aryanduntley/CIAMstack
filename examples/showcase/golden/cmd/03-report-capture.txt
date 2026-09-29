@@ -1,0 +1,6 @@
+file              level     format           repo path                                              settings  withheld  problem
+----------------  --------  ---------------  -----------------------------------------------------  --------  --------  -------
+default-atm.json  settings  json             pingfederate/server/default/data/atm/default-atm.json  3         0                
+run.properties    settings  java-properties  pingfederate/bin/run.properties                        6         0                
+(2 rows)
+exit 0

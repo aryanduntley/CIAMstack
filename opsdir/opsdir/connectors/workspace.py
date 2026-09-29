@@ -91,16 +91,20 @@ def _snapshots(live, ws):
     return base, base_directory(types, classes, base.ldif), load_directory(ws)
 
 
-def status(live, ws):
-    """Effect: what the workspace changed, and whether the live record moved on since the copy."""
+def state(live, ws):
+    """Effect: (the workspace's base, its change records since the copy, whether the live record changed since)."""
     base, base_d, ws_d = _snapshots(live, ws)
-    return status_text(base, diff(base_d, ws_d), fingerprint(_live_text(live)) != base.fingerprint)
+    return base, diff(base_d, ws_d), fingerprint(_live_text(live)) != base.fingerprint
+
+
+def status(live, ws):
+    """Effect: what the workspace changed, and whether the live record moved on since the copy, as text."""
+    return status_text(*state(live, ws))
 
 
 def diff_text(live, ws):
     """Effect: the workspace's changes as LDIF change records."""
-    _, base_d, ws_d = _snapshots(live, ws)
-    return write_records(diff(base_d, ws_d))
+    return write_records(state(live, ws)[1])
 
 
 def cutover(live, ws, parts, source, change_id, schema_sync=None):

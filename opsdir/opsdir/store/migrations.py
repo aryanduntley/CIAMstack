@@ -168,11 +168,19 @@ def _sync_names(conn, ref_schemes):
         conn.execute("insert into opsdir.ref_scheme values (%s) on conflict do nothing", (scheme,))
 
 
-def upgrade(conn, migrations, definition_files, schema, ref_schemes, vocabulary):
+def _sync_secret_patterns(conn, patterns):
+    conn.execute("delete from opsdir.secret_pattern")
+    for row in patterns:
+        conn.execute("insert into opsdir.secret_pattern (name, pattern, owner, description) values (%s, %s, %s, %s)",
+                     row)
+
+
+def upgrade(conn, migrations, definition_files, schema, ref_schemes, vocabulary, secret_patterns):
     """Effect: bring the opsdir schema up to date in one transaction (one migrator at a time): pending migrations,
-    then definitions, the LDAP schema registry (schema(conn) composes its text), the reference schemes and the
-    vocabulary. Returns the migrations applied. Refuses a database created before versioned migrations, one whose
-    entries use values or definitions no longer defined, and one whose entries the new schema doesn't accept."""
+    then definitions, the LDAP schema registry (schema(conn) composes its text), the reference schemes, the
+    vocabulary and the secret patterns ((name, pattern, owner, description), ...). Returns the migrations applied.
+    Refuses a database created before versioned migrations, one whose entries use values or definitions no longer
+    defined, and one whose entries the new schema doesn't accept (including a value a new secret pattern matches)."""
     with conn.transaction():
         conn.execute("select pg_advisory_xact_lock(hashtext('opsdir.upgrade'))")
         exists, versioned = conn.execute(STATE_SQL).fetchone()
@@ -190,15 +198,16 @@ def upgrade(conn, migrations, definition_files, schema, ref_schemes, vocabulary)
         sync_registry(conn, schema_text)
         _sync_names(conn, ref_schemes)
         _sync_vocabulary(conn, schema_text, vocabulary)
+        _sync_secret_patterns(conn, secret_patterns)
         revalidate(conn)
     return todo
 
 
-def init(conn, migrations, definition_files, schema, ref_schemes, vocabulary):
+def init(conn, migrations, definition_files, schema, ref_schemes, vocabulary, secret_patterns):
     """Effect: drop the opsdir schema (all data) and upgrade from nothing, atomically."""
     with conn.transaction():
         conn.execute("drop schema if exists opsdir cascade")
-        return upgrade(conn, migrations, definition_files, schema, ref_schemes, vocabulary)
+        return upgrade(conn, migrations, definition_files, schema, ref_schemes, vocabulary, secret_patterns)
 
 
 def current_version(conn):

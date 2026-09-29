@@ -36,10 +36,11 @@ rm "$OUT/cmd/.generated-before"
 cap 01-init od init
 cap 02-load od load data/*.ldif
 cap 02-check od check
-for r in portability expiring pii drift stale unowned custom; do cap "03-report-$r" od report "$r"; done
+for r in portability expiring pii drift stale unowned custom capture bundles; do cap "03-report-$r" od report "$r"; done
 cap 03-report-blast-radius od report blast-radius "$BLAST"
 cap 04-search-table od search -b ou=consumers,dc=ciam-ops "$UNTESTED" ciamMigrationStatus ciamOwner
 cap 04-search-ldif  od search -b ou=integrations,dc=ciam-ops '(objectClass=ciamIntegration)'
+cap 04-file-run-properties od file run.properties --env target/prod
 
 cap 05-render-source  od render source/prod -o "$OUT/render-before/source-prod"
 cap 05-render-target  od render target/prod    -o "$OUT/render-before/target-prod"

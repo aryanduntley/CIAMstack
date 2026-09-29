@@ -1,7 +1,9 @@
 """Render a complete, working configuration set for one environment: the applicable adapters' outputs, each in a
-format the adapter declares and some installed package registers, plus the MANIFEST (R10)."""
+format the adapter declares and some installed package registers, the captured config files the environment
+receives, plus the MANIFEST (R10)."""
 from ..core.formats import format_of
 from ..core.manifest import manifest
+from .capture import rendered_config
 from .registry import ADAPTERS, FORMATS, environment, services
 
 
@@ -35,8 +37,14 @@ def file_formats(adapters, paths, formats=FORMATS):
 
 
 def assemble(m, adapters, neutral, specific):
-    formats = file_formats(adapters, (*neutral, *specific))
-    return {**neutral, **specific, "MANIFEST.json": manifest(m, neutral, specific, formats)}
+    """The environment's files: the adapters' outputs, the captured config files it receives, and the MANIFEST."""
+    config = rendered_config(m.d, m)
+    clash = sorted(set(config.files) & {*neutral, *specific})
+    if clash:
+        raise SystemExit(f"captured files and rendered files share paths: {', '.join(clash)}")
+    formats = {**file_formats(adapters, (*neutral, *specific)), **config.formats}
+    return {**neutral, **specific, **config.files,
+            "MANIFEST.json": manifest(m, neutral, specific, formats, config.files, config.scopes, config.not_rendered)}
 
 
 def render_env(d, spec, installed=ADAPTERS):

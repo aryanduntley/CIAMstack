@@ -4,7 +4,7 @@ with what the store holds."""
 from functools import partial
 
 from ..core.directory import make_entry
-from ..core.standard import schema_ldif
+from ..core.standard import registry_ldif
 from ..domains.custom.definitions import FIELD, RECORD_TYPE, compose, problems
 from ..domains.custom.naming import CUSTOM_SCHEMA
 from ..store.migrations import sync_registry
@@ -17,7 +17,7 @@ def composed_schema(fragments, definitions):
     wrong = problems(fragments, definitions)
     if wrong:
         raise SystemExit("custom definitions don't compose: " + "; ".join(wrong))
-    return schema_ldif(compose(fragments, definitions))
+    return registry_ldif(compose(fragments, definitions))
 
 
 def store_schema(conn, fragments):

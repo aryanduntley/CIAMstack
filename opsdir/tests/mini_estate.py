@@ -1,13 +1,14 @@
 """A minimal estate and a fake provider adapter, so the core is tested without any real adapter or the showcase.
 
 Two environments on the made-up provider `fakecloud`: alpha binds a network and disk encryption; beta binds only a
-network, so moving alpha -> beta is blocked and beta -> alpha is ready. Both declare the fake adapter in their stack.
+network, so moving alpha -> beta is blocked and beta -> alpha is ready. Both declare the fake adapter in their stack
+and put the same service name in front of the identity service's `web` servers.
 """
 from opsdir.core.contract import Adapter
 from opsdir.core.findings import findings
 from opsdir.core.standard import AttributeDef, ClassDef, fragment
 from opsdir.core.interchange.ldif import parse
-from support import SCHEMA, build_directory
+from support import REGISTRY, build_directory
 
 PROVIDER = "fakecloud"
 ADAPTER_NAME = "fake-cloud"
@@ -47,6 +48,15 @@ cn: net
 ciamBindingRole: network
 ciamCidr: 10.1.0.0/16{key}
 
+dn: cn=svc-sso,ou=bindings,{env}
+objectClass: top
+objectClass: ciamServiceName
+cn: svc-sso
+ciamBindingRole: sso-service
+ciamFqdn: sso.example.test
+ciamPort: 443
+ciamTargetRole: web
+
 dn: ou=stack,{env}
 objectClass: top
 objectClass: organizationalUnit
@@ -73,13 +83,27 @@ objectClass: top
 objectClass: organizationalUnit
 ou: environments
 
+dn: ou=identity-services,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: identity-services
+
+dn: cn=sso,ou=identity-services,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityService
+cn: sso
+ciamBaseUrl: https://sso.example.test
+ciamEntityId: urn:example:sso
+ciamOidcIssuer: https://SSO.example.test/oauth2
+ciamTargetRole: web
+
 {_environment("alpha", disk_encryption=True)}
 {_environment("beta", disk_encryption=False)}"""
 
 
 def directory(change_records=()):
     """The mini estate as a Directory, after change records."""
-    return build_directory(SCHEMA.read_text(), parse(LDIF), change_records)
+    return build_directory(REGISTRY, parse(LDIF), change_records)
 
 
 # ------------------------------------------------------------------ the fake provider adapter
@@ -107,4 +131,4 @@ FAKE = Adapter(name=ADAPTER_NAME, kind="provider", applies=_applies, required_ro
                render_neutral=_render_neutral, render_env=_render_env, checks=(_check,), ref_schemes=("fake",),
                secret_schemes={"fake": _resolve}, renders="fake files", neutral_label="Fake",
                vocabulary={"ciamCloudProvider": (PROVIDER,)}, schema=FAKE_SCHEMA,
-               formats=(("fake/*.txt", "text"),), products=())
+               formats=(("fake/*.txt", "text"),), products=(), secret_patterns=())

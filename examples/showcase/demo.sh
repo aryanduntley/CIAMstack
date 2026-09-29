@@ -25,6 +25,9 @@ echo "-- config drift (declared vs observed)"; od report drift
 echo "-- stale work instructions";           od report stale
 echo "-- unowned";                           od report unowned
 echo "-- custom fields and record types";    od report custom
+echo "-- config files held in the record";   od report capture
+echo "-- bundles deployed as they are";      od report bundles
+echo "-- run.properties rebuilt from the record for the target"; od file run.properties --env target/prod
 echo "-- LDAP filter search: consumers not yet tested"
 od search -b ou=consumers,dc=ciam-ops '(&(objectClass=ciamConsumer)(!(ciamMigrationStatus=tested)))' ciamMigrationStatus ciamOwner
 

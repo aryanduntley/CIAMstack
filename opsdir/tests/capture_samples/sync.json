@@ -1,0 +1,22 @@
+{
+    "mappings" : [
+        {
+            "name" : "systemLdapAccounts_managedUser",
+            "source" : "system/ldap/account",
+            "target" : "managed/user",
+            "enableSync" : true,
+            "correlationQuery" : { "type" : "text/javascript", "source" : "var qry = {'_queryFilter': 'userName eq \"' + source.uid + '\"'}; qry" },
+            "properties" : [
+                { "source" : "uid", "target" : "userName" },
+                { "source" : "mail", "target" : "mail" },
+                { "source" : "sn", "target" : "sn" }
+            ],
+            "policies" : [
+                { "situation" : "CONFIRMED", "action" : "UPDATE" },
+                { "situation" : "FOUND", "action" : "UPDATE" },
+                { "situation" : "MISSING", "action" : "UNLINK" }
+            ],
+            "taskThreads" : 10
+        }
+    ]
+}

@@ -15,7 +15,8 @@ from opsdir.core.environment import StackComponent
 from opsdir.connectors.workspace import cutover_changes
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
-from opsdir.core.standard import schema_ldif
+from opsdir.core.standard import registry_ldif
+from opsdir.domains.federation.checks import published_hosts
 from opsdir.store.postgres import schema_rows
 import mini_estate
 from mini_estate import FAKE, FAKE_ARC, FAKE_SCHEMA, VERSIONS
@@ -66,7 +67,7 @@ def test_stack_check_against_what_is_installed(d):
 def test_an_installed_adapters_schema_joins_the_store_but_not_the_published_file():
     assert schema_fragments(adapters=(FAKE,)) == (*core_fragments(), FAKE_SCHEMA)
     assert FAKE_SCHEMA not in core_fragments() and schema_fragments(adapters=()) == core_fragments()
-    ats, _ = schema_rows(schema_ldif(schema_fragments(adapters=(FAKE,))))
+    ats, _ = schema_rows(registry_ldif(schema_fragments(adapters=(FAKE,))))
     assert next(a for a in ats if a["name"] == "fakeTier")["oid"] == f"{FAKE_ARC}.1.1"
 
 
@@ -93,6 +94,36 @@ def test_the_plan_blocks_a_move_that_loses_a_role(d):
     assert [b[1] for b in p.blockers] == ["Role `disk-encryption` is bound in alpha/prod but not in beta/prod."]
     assert "fake check ran for beta/prod" in p.ok
     assert any("render identically" in ok for ok in p.ok)
+
+
+def test_the_identity_service_keeps_its_published_address(d):
+    p = plan(d, BETA, ALPHA, AS_OF, (FAKE,))
+    assert "Identity service `sso` keeps its published address in alpha/prod (sso.example.test served by the " \
+           "`web` service name)." in p.ok
+    assert p.blockers == ()
+
+
+def test_a_renamed_service_name_is_blocked_once_by_the_contract_check(d):
+    rename = parse("dn: cn=svc-sso,ou=bindings,env=prod,cloud=alpha,ou=environments,dc=ciam-ops\n"
+                   "changetype: modify\nreplace: ciamFqdn\nciamFqdn: sso.alpha.example.test\n-\n")
+    p = plan(mini_estate.directory(rename), BETA, ALPHA, AS_OF, (FAKE,))
+    assert [b[0] for b in p.blockers] == ["Contract"]
+
+
+def test_a_published_address_no_service_name_serves_is_blocked(d):
+    moved = parse("dn: cn=sso,ou=identity-services,dc=ciam-ops\nchangetype: modify\nreplace: ciamBaseUrl\n"
+                  "ciamBaseUrl: https://login.example.test\n-\n")
+    r = migration.run(mini_estate.directory(moved), BETA, ALPHA, AS_OF, (FAKE,), VERSIONS)
+    assert r.ready is False
+    ((area, text, _),) = r.plan.blockers
+    assert area == "Identity service"
+    assert text.startswith("`sso` publishes `login.example.test`, which no service name for `web` serves "
+                           "(beta/prod: `sso.example.test`; alpha/prod: `sso.example.test`)")
+
+
+def test_published_hosts_are_the_url_contracts_hosts_once_each():
+    (service,) = [e for e in mini_estate.directory().entries.values() if e.dn.startswith("cn=sso,")]
+    assert published_hosts(service) == ("sso.example.test",)         # the URN entity ID has no host
 
 
 @pytest.mark.parametrize("src, dst, ready", [(ALPHA, BETA, False), (BETA, ALPHA, True)])

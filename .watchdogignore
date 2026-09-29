@@ -29,3 +29,7 @@ out/
 examples/showcase/golden/
 *.egg-info/
 examples/showcase/data/
+opsdir/tests/capture_samples/
+
+# Documentation: not code, not tracked (user, 2026-09-28)
+*.md

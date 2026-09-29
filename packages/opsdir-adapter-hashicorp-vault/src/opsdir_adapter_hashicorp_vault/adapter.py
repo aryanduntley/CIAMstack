@@ -1,6 +1,6 @@
 """HashiCorp Vault adapter: a secret store usable from any environment; it renders nothing itself."""
 from opsdir.core.contract import Adapter
-from .secrets import kv_command
+from .secrets import SECRET_PATTERNS, kv_command
 
 
 def applies(m):
@@ -12,4 +12,5 @@ ADAPTER = Adapter(name="hashicorp-vault", kind="secret-store", applies=applies, 
                   render_neutral=None, render_env=None, checks=(), ref_schemes=("vault",),
                   secret_schemes={"vault": kv_command}, renders=None, neutral_label=None,
                   vocabulary={}, schema=None, formats=(),
-                  products=())
+                  products=(),
+                  secret_patterns=SECRET_PATTERNS)

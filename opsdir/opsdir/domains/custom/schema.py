@@ -1,7 +1,8 @@
 """custom domain schema fragment: how operators define fields and record types of their own (OIDs pinned by number).
 
 The definitions are entries (governed, historied, exported like everything else); the metadata says what a field is,
-what values it takes, which records carry it, where its value lives in real systems, and how it behaves in a migration.
+what values it takes, which records carry it, where its value lives (settings of captured config files, or other
+systems), and how it behaves in a migration.
 """
 from ...core.standard import AttributeDef, ClassDef, fragment
 
@@ -34,8 +35,8 @@ ATTRIBUTES = (
     AttributeDef(162, 'ciamOverridable', 'bool', 'meta', True,
                  'An environment may override the value (environment overlays)'),
     AttributeDef(163, 'ciamValueSource', 'string', 'meta', False,
-                 'Where the value lives in a real system, as "system: locator" (an infrastructure-code attribute, an API path, '
-                 'a configuration file key, ...)'),
+                 'Where the value lives in a system the record does not hold, as "system: locator" (a console, a '
+                 'register, an API path); for a config file held in the record use ciamSettingRef'),
     AttributeDef(164, 'ciamUsedBy', 'string', 'meta', False,
                  'Adapters, parsers or renderers that read or write it'),
     AttributeDef(165, 'ciamDefinitionStatus', 'enum:proposed|active|deprecated', 'meta', True,
@@ -52,11 +53,13 @@ ATTRIBUTES = (
                  'Fields a record of this type must carry (besides cn)'),
     AttributeDef(171, 'ciamOptionalField', 'string', 'meta', False,
                  'Fields a record of this type may carry'),
+    AttributeDef(186, 'ciamSettingRef', 'dn', 'meta', False,
+                 'Settings of captured config files (ou=config-files) where the value lives'),
 )
 CLASSES = (
     ClassDef(36, 'ciamCustomDefinition', 'ciamObject', 'ABSTRACT', ('cn', 'ciamDefinitionNumber'),
-             ('ciamPurpose', 'ciamPiiClass', 'ciamDefinitionStatus', 'ciamDocumentation', 'ciamRunbookRef', 'ciamValueSource',
-              'ciamUsedBy'),
+             ('ciamPurpose', 'ciamPiiClass', 'ciamDefinitionStatus', 'ciamDocumentation', 'ciamRunbookRef',
+              'ciamValueSource', 'ciamSettingRef', 'ciamUsedBy'),
              'A field or record type an operator defines'),
     ClassDef(37, 'ciamFieldDefinition', 'ciamCustomDefinition', 'STRUCTURAL', ('ciamValueType', 'ciamPortability'),
              ('ciamMultiValued', 'ciamCarriedBy', 'ciamUnit', 'ciamExample', 'ciamDefaultValue', 'ciamMinValue',

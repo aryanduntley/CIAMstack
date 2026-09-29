@@ -28,6 +28,18 @@
       "format": "shell",
       "sha256": "dddb2c34ac98d82b3345dcffd3fcfcf2f94dc02e505691455f7a6807982d5272"
     },
+    "files/pingfederate/bin/run.properties": {
+      "scope": "environment-specific",
+      "format": "java-properties",
+      "captured": true,
+      "sha256": "fb9fcb9ab3af77d11606b0a6fb89da4fe25804736f0035f096f169a2a68a4156"
+    },
+    "files/pingfederate/server/default/data/atm/default-atm.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "captured": true,
+      "sha256": "5d64b31420d4627260d1bd2cf0b9dd3bdea95d85f02350aa7bc5bb115da37904"
+    },
     "ldap/dit.ldif": {
       "scope": "environment-neutral",
       "format": "ldif",

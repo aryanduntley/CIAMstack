@@ -72,8 +72,8 @@ def test_a_value_no_installed_part_defines_is_rejected(conn, parts, tmp_path):
 
 def test_removing_an_adapter_whose_values_are_in_use_is_refused(conn, parts):
     _loaded(conn, parts)
-    *rest, vocab = parts
+    *rest, vocab, patterns = parts
     without_aws = tuple(row for row in vocab if row[2] != "aws")
     with pytest.raises(SystemExit, match="is an adapter missing"):
-        migrations.upgrade(conn, *rest, without_aws)
+        migrations.upgrade(conn, *rest, without_aws, patterns)
     assert conn.execute("select count(*) from opsdir.vocabulary").fetchone()[0] == len(vocab)   # rolled back

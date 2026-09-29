@@ -1,6 +1,6 @@
 """Azure adapter: applies to environments in clouds whose ciamCloudProvider is azure."""
 from opsdir.core.contract import Adapter
-from .secrets import keyvault_command
+from .secrets import SECRET_PATTERNS, keyvault_command
 from .terraform import render
 
 PROVIDER = "azure"
@@ -16,4 +16,5 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                   neutral_label=None,
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamCloudEnvironment": ("public", "usgovernment")}, schema=None,
                   formats=(("terraform/*.tf", "hcl"),),
-                  products=())
+                  products=(),
+                  secret_patterns=SECRET_PATTERNS)

@@ -11,10 +11,18 @@ def header(m, what, fmt):
                                   "Do not edit. Change the operations directory (under an approved change) and re-render."))
 
 
-def manifest(m, neutral, specific, formats):
-    """MANIFEST.json text: environment, provider, unbound roles, each file's scope, format and SHA-256."""
-    files = {p: {"scope": "environment-neutral" if p in neutral else "environment-specific", "format": formats[p],
-                 "sha256": hashlib.sha256(c.encode()).hexdigest()}
-             for p, c in sorted({**neutral, **specific}.items())}
+def _scope(p, neutral, scopes):
+    return scopes.get(p) or ("environment-neutral" if p in neutral else "environment-specific")
+
+
+def manifest(m, neutral, specific, formats, captured=None, scopes=None, not_rendered=()):
+    """MANIFEST.json text: environment, provider, unbound roles, each file's scope, format and SHA-256 (captured
+    config files included, marked captured), and the captured files that could not be rendered, with why."""
+    captured, scopes = captured or {}, scopes or {}
+    files = {p: {"scope": _scope(p, neutral, scopes), "format": formats[p],
+                 **({"captured": True} if p in captured else {}), "sha256": hashlib.sha256(c.encode()).hexdigest()}
+             for p, c in sorted({**neutral, **specific, **captured}.items())}
+    missing = {"captured_not_rendered": [{"file": name, "why": why} for name, why in not_rendered]} \
+        if not_rendered else {}
     return json.dumps({"environment": m.dn, "provider": m.provider, "unbound_roles": list(m.unbound),
-                       "files": files}, indent=2) + "\n"
+                       "files": files, **missing}, indent=2) + "\n"

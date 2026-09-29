@@ -3,7 +3,7 @@ import pytest
 
 from opsdir.connectors.registry import core_fragments
 from opsdir.core.directory import make_directory, make_entry
-from opsdir.core.standard import CUSTOM_ARC, schema_ldif
+from opsdir.core.standard import CUSTOM_ARC, registry_ldif
 from opsdir.domains.custom.definitions import compose, custom_fragment, problems
 from opsdir.domains.custom.domain import custom_rows
 from opsdir.domains.custom.naming import CUSTOM_SCHEMA
@@ -33,7 +33,7 @@ ALL = (RETENTION, QUEUE, BROKER, TAGGED, TAG)
 
 
 def _rows(entries):
-    return schema_rows(schema_ldif(compose(core_fragments(), entries)))
+    return schema_rows(registry_ldif(compose(core_fragments(), entries)))
 
 
 def test_fields_become_attribute_types_under_the_custom_arc_with_their_rules():
@@ -100,8 +100,21 @@ def test_the_custom_report_says_where_each_definition_is_used():
                              {"cn": ["orders"], "xBroker": ["mq.example.test"]})
     d = make_directory((), {}, [(e.dn, e.classes, dict(e.attrs)) for e in (*ALL, queue_entry)])
     assert custom_rows(d) == [
-        ("field", "xBroker", "fqdn", "xMessageQueue", "active", "**NO OWNER**", "1"),
-        ("field", "xRetentionDays", "int", "ciamServer", "active", "**NO OWNER**", "0"),
-        ("field", "xTag", "string", "xTagged", "active", "**NO OWNER**", "0"),
-        ("record type", "xMessageQueue", "structural", "-", "active", "**NO OWNER**", "1"),
-        ("record type", "xTagged", "auxiliary", "-", "active", "**NO OWNER**", "0")]
+        ("field", "xBroker", "fqdn", "xMessageQueue", "-", "active", "**NO OWNER**", "1"),
+        ("field", "xRetentionDays", "int", "ciamServer", "-", "active", "**NO OWNER**", "0"),
+        ("field", "xTag", "string", "xTagged", "-", "active", "**NO OWNER**", "0"),
+        ("record type", "xMessageQueue", "structural", "-", "-", "active", "**NO OWNER**", "1"),
+        ("record type", "xTagged", "auxiliary", "-", "-", "active", "**NO OWNER**", "0")]
+
+
+def test_the_custom_report_says_where_a_fields_value_lives():
+    setting = "cn=1a2b,cn=run.properties,ou=config-files,dc=ciam-ops"
+    config = (make_entry("cn=run.properties,ou=config-files,dc=ciam-ops", ("top", "ciamConfigFile"),
+                         {"cn": ["run.properties"]}),
+              make_entry(setting, ("top", "ciamConfigSetting"), {"cn": ["1a2b"], "ciamLocator": ["pf.session.ttl"]}))
+    linked = tuple(e._replace(attrs={**e.attrs, "ciamSettingRef": (setting,),
+                                     "ciamValueSource": ("console: session settings",)})
+                   if e.dn.startswith("cn=xRetentionDays,") else e for e in ALL)
+    d = make_directory((), {}, [(e.dn, e.classes, dict(e.attrs)) for e in (*linked, *config)])
+    row = next(r for r in custom_rows(d) if r[1] == "xRetentionDays")
+    assert row[4] == "run.properties:pf.session.ttl; console: session settings"

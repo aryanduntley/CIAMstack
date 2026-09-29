@@ -8,14 +8,16 @@ from functools import reduce
 import psycopg
 import pytest
 
-from opsdir.connectors.registry import schema_fragments
+from opsdir.connectors.registry import core_fragments, schema_fragments
 from opsdir.connectors.schema import composed_schema
 from opsdir.core.directory import make_directory, make_entry, norm_dn
 from opsdir.core.paths import SCHEMA_FILE
+from opsdir.core.standard import registry_ldif
 from opsdir.domains.custom.definitions import FIELD, RECORD_TYPE
 from opsdir.store.postgres import apply_mods, entry_rows, schema_rows, split_record
 
 SCHEMA = SCHEMA_FILE
+REGISTRY = registry_ldif(core_fragments())      # the store's registry for the core and its domains
 # the test database on the local dev server (README, Database); the integration suite drops its opsdir schema
 TEST_DSN = "host=localhost port=5432 user=opsdir password=testpass dbname=opsdir_test"
 TEST_WORKSPACE_DSN = "host=localhost port=5432 user=opsdir password=testpass dbname=opsdir_test_workspace"
@@ -54,7 +56,7 @@ def _defines(classes):
 def schema_for(records):
     """The schema a store holding these content records composes (as `opsdir load` and `upgrade` do): the installed
     parts' fragments with the custom definitions among the records."""
-    canon = {a["name"].lower(): a["name"] for a in schema_rows(SCHEMA.read_text())[0]}
+    canon = {a["name"].lower(): a["name"] for a in schema_rows(REGISTRY)[0]}
     rows = (split_record(canon, r.attrs) for r in records)
     return composed_schema(schema_fragments(), tuple(make_entry(r.dn, classes, attrs) for r, (classes, attrs)
                                                      in zip(records, rows) if _defines(classes)))
