@@ -1,0 +1,9 @@
+{
+  "key": {
+    "kid": "https://kv-ciam-prod.vault.azure.net/keys/disk-cmk/4f1e",
+    "kty": "RSA"
+  },
+  "attributes": {
+    "enabled": true
+  }
+}

@@ -13,9 +13,9 @@ def test_synthetic_estate_is_exactly_what_the_fixture_builds():
     assert n == sum(1 for f in on_disk.values() for line in f.splitlines() if line.startswith("dn: "))
 
 
-def test_the_directory_servers_exports_and_access_logs_are_exactly_what_the_fixture_builds():
+def test_the_generated_exports_are_exactly_what_the_fixture_builds():
     root = SHOWCASE / "exports"
     on_disk = {p.relative_to(root).as_posix(): (gzip.decompress(p.read_bytes()).decode() if p.suffix == ".gz"
                                                  else p.read_text())
-               for d in ("ds-config", "ds-access-logs") for p in sorted((root / d).rglob("*")) if p.is_file()}
+               for d in ("ds-config", "ds-access-logs", "cloud") for p in sorted((root / d).rglob("*")) if p.is_file()}
     assert exports() == on_disk

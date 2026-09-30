@@ -149,15 +149,21 @@ def _service(m, svc):
 
 
 def _key_vault_secrets(m):
-    """Data sources only: each Key Vault once (in order of first use), then its secrets."""
+    """Each Key Vault once (in order of first use) and a check that it holds the environment's secrets. The check reads
+    the vault's secret names (azurerm_key_vault_secrets), never a secret: azurerm_key_vault_secret would copy each value
+    into Terraform state. A missing secret fails the plan (a postcondition), naming its role."""
     refs = tuple((*one(b, "ciamRefUri").split("://", 1)[1].split("/", 1), one(b, "ciamBindingRole"))
                  for b in of_class(m, "ciamSecretRef"))
     vaults = dict.fromkeys(vault for vault, _, _ in refs)
     return tuple(chain.from_iterable(
         (block("data", ["azurerm_key_vault", tf_name(vault)], [("name", vault), ("resource_group_name", RG)]),
-         *(block("data", ["azurerm_key_vault_secret", tf_name(role)], [
-             ("name", name), ("key_vault_id", ref(f"data.azurerm_key_vault.{tf_name(vault)}.id"))])
-           for v, name, role in refs if v == vault))
+         block("data", ["azurerm_key_vault_secrets", tf_name(vault)], [
+             ("#", "names only: no secret value enters Terraform state"),
+             ("key_vault_id", ref(f"data.azurerm_key_vault.{tf_name(vault)}.id")),
+             ("lifecycle", Block(tuple(("postcondition", Block((
+                 ("condition", ref(f'contains(self.names, "{name}")')),
+                 ("error_message", f"Key Vault {vault} has no secret {name} (role {role})"))))
+                 for v, name, role in refs if v == vault)))]))
         for vault in vaults))
 
 

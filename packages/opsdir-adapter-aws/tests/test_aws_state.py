@@ -145,9 +145,9 @@ def test_a_new_tagged_resource_is_added_and_an_untagged_one_named():
         ("ds", f"cn=subnet-ds-a,{B}", "ds-2.internal.test")
     assert get(after, f"cn=i-0ccc,{ENV}") is None
     assert "main/prod: server i-0ccc (ciamPrivateIp 10.20.1.50) is not in the record and names no role (tag it Role, " \
-           "or record it); not imported" in imported.notices
+           "name it in roles.json, or record it); not imported" in imported.notices
     assert "main/prod: firewall sgr-99 (ciamSourceCidr 0.0.0.0/0, ciamPort 1636) is not in the record and names no " \
-           "role (tag it Role, or record it); not imported" in imported.notices
+           "role (tag it Role, name it in roles.json, or record it); not imported" in imported.notices
     assert "main/prod: server ds-2 added (role ds)" in imported.notices
 
 
@@ -173,8 +173,8 @@ def test_only_aws_environments_laid_out_by_cloud_and_environment_are_imported():
     assert imported.groups == ()
     assert set(imported.notices) >= {
         "other/prod: not an AWS environment in the record; not imported",
-        "terraform.tfstate: put each environment's state under <cloud>/<env>/ (e.g. source/prod/terraform.tfstate); "
-        "not imported",
+        "terraform.tfstate: put each environment's Terraform state under <cloud>/<env>/ (e.g. "
+        "source/prod/terraform.tfstate); not imported",
         "main/test: no such environment in the record; nothing imported"}
 
 
@@ -186,3 +186,16 @@ def test_a_new_binding_keeps_the_providers_reference_so_it_is_found_again():
     after = _after(d, read_terraform_state(files, d, ()))
     assert one(get(after, f"cn=subnet-0b,{B}"), "ciamProviderRef") == "subnet-0b"
     assert not import_changes(after, read_terraform_state(files, after, ()))
+
+
+def test_a_security_groups_role_is_that_of_its_instances():
+    extra = (_res("managed", "aws_instance", "pf_1", {
+                 "id": "i-0pf", "ami": "ami-0pf", "instance_type": "m6i.large", "private_ip": "10.20.4.21",
+                 "subnet_id": SUBNET, "vpc_security_group_ids": ["sg-0pf"],
+                 "tags": {"Name": "pf-engine-1", "Role": "pf-engine", "Hostname": "pf-engine-1.internal.test"}}),
+             _res("managed", "aws_security_group", "pf_engine", {"id": "sg-0pf", "name": "ciam-prod-pf-engine"}),
+             _res("managed", "aws_vpc_security_group_ingress_rule", "fw_sso_public_0_443", {
+                 "security_group_rule_id": "sgr-02", "security_group_id": "sg-0pf", "cidr_ipv4": "0.0.0.0/0",
+                 "from_port": 443, "to_port": 443, "ip_protocol": "tcp", "description": "fw-sso-public (fw-sso-public)"}))
+    (rule,) = [r for r in state_resources(_state(*extra))[0] if r.kind == "firewall" and r.name == "fw-sso-public"]
+    assert rule.attrs["ciamTargetRole"] == ("pf-engine",)

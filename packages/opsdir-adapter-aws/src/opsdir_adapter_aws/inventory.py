@@ -10,9 +10,11 @@ From Terraform state (terraform.tfstate, format version 4), managed resources an
     + aws_route53_record (+ aws_eip)             balancer, its zone, listener ports, the role of the instances it
                                                  targets, its private address (internal) or Elastic IP allocation
   aws_vpc_security_group_ingress_rule,        -> firewall rules, grouped by the rule name their descriptions end with
-    inline aws_security_group ingress            ("... (fw-name)") or by tag Name; the target role is the security
-                                                 group's tag Role or the last part of its name (ciam-<env>-<role>)
-  aws_secretsmanager_secret (+ its rotation)  -> secret reference aws-sm://<arn>; its value is never read
+    inline aws_security_group ingress            ("... (fw-name)") or by tag Name; the target role is that of the
+                                                 instances in the security group, else its tag Role, else the last
+                                                 part of its name (ciam-<env>-<role>)
+  aws_secretsmanager_secret (+ its rotation)  -> secret reference aws-sm://<arn>, rotation (and, from the CLI, whether
+                                                 rotation is off and when it last ran); its value is never read
                                                  (aws_secretsmanager_secret_version is skipped)
   aws_kms_key (+ aws_kms_replica_key)         -> key reference aws-kms://<arn>, rotation, replica regions
   aws_s3_bucket                               -> storage s3://<bucket>
@@ -21,11 +23,10 @@ Roles of resources the record doesn't have come from their tags Role (or Binding
 """
 import re
 from collections import Counter
+from functools import reduce
 
-from opsdir.core.contract import Imported, Importer
-from opsdir.core.directory import get, make_entry, one
-from opsdir.core.environment import env_dn
-from opsdir.core.inventory import environment_groups, resource
+from opsdir.core.contract import Importer
+from opsdir.core.inventory import layout_import, per_file, resource
 from opsdir_format_terraform.state import read_state
 
 PROVIDER = "aws"
@@ -91,19 +92,26 @@ def _services(found):
             "ciamPort": sorted({str(ls.get("port")) for ls in listeners if ls.get("port")} |
                                {str(groups[g].get("port")) for g in forwarded if g in groups and not listeners}),
             "ciamTargetRole": roles.most_common(1)[0][0] if roles else None,
-            "ciamFrontendIp": private if lb.get("internal") else eips.get(allocation),
+            "ciamFrontendIp": private if lb.get("internal") else eips.get(allocation) or next(
+                (m.get("public_ip") for m in mappings if m.get("public_ip")), None),
             "ciamProviderRef": None if lb.get("internal") else allocation},
             name=lb.get("name"), role=_role(lb))
     return tuple(one_lb(lb) for lb in _of(found, "aws_lb", "aws_alb"))
 
 
-def _target_role(sg):
-    return _role(sg) or (sg.get("name") or "").rsplit("-", 1)[-1] or None
+def _target_role(sg, members):
+    """The role a security group guards: its instances' (tag Role), its own tag Role, or its name's last part."""
+    roles = Counter(members.get(sg.get("id")) or ())
+    return (roles.most_common(1)[0][0] if roles else None) or _role(sg) or \
+        (sg.get("name") or "").rsplit("-", 1)[-1] or None
 
 
 def _firewall(found):
     """Firewall rules: ingress rules of the security groups, grouped into the record's rules by name."""
     groups = {a.get("id"): a for a in _of(found, "aws_security_group")}
+    members = reduce(lambda acc, i: {**acc, **{g: (*acc.get(g, ()), _tags(i)["Role"])
+                                                for g in i.get("vpc_security_group_ids") or ()}},
+                     (i for i in _of(found, "aws_instance") if _tags(i).get("Role")), {})
     separate = [(groups.get(r.get("security_group_id")) or {}, r.get("cidr_ipv4"), r.get("from_port"),
                  r.get("ip_protocol"), r.get("description") or "", _tags(r).get("Name"), _role(r),
                  r.get("security_group_rule_id") or r.get("id"))
@@ -117,9 +125,10 @@ def _firewall(found):
     names = list(dict.fromkeys(n for n, *_ in named))
     return tuple(resource("firewall", name, {
                      "ciamSourceCidr": sorted({cidr for n, _, cidr, *_ in named if n == name and cidr}),
-                     "ciamPort": sorted({str(port) for n, _, _, port, *_ in named if n == name and port}),
+                     "ciamPort": sorted({str(port) for n, _, _, port, *_ in named if n == name and port and int(port) > 0}),
                      "ciamProtocol": next((p for n, *_, p, _ in named if n == name and p in ("tcp", "udp")), None),
-                     "ciamTargetRole": next((_target_role(sg) for n, sg, *_ in named if n == name and sg), None)},
+                     "ciamTargetRole": next((_target_role(sg, members) for n, sg, *_ in named if n == name and sg),
+                                            None)},
                           name=name, role=next((r for n, *_, r in named if n == name and r), None))
                  for name in names)
 
@@ -133,7 +142,9 @@ def _secrets(found):
     rotation = {a.get("secret_id"): a for a in _of(found, "aws_secretsmanager_secret_rotation")}
     return tuple(resource("secret", a.get("arn"), {
                      "ciamRefUri": f"aws-sm://{a.get('arn')}",
-                     "ciamAutoRotate": "TRUE" if a.get("arn") in rotation or a.get("id") in rotation else None,
+                     "ciamAutoRotate": "TRUE" if a.get("arn") in rotation or a.get("id") in rotation else
+                     "FALSE" if a.get("rotation_enabled") is False else None,
+                     "ciamLastRotated": a.get("last_rotated"),
                      "ciamRotationFunction": (rotation.get(a.get("arn")) or rotation.get(a.get("id")) or {})
                      .get("rotation_lambda_arn")},
                           name=_tags(a).get("Name") or a.get("name"), role=_role(a))
@@ -163,6 +174,13 @@ def _egress(found):
                  for a in _of(found, "aws_nat_gateway") if a.get("id"))
 
 
+def pairs_resources(pairs):
+    """The resources of (Terraform resource type, attributes) pairs: what every AWS source is read into (Terraform state
+    as it is; CLI inventories normalized to the same attribute names, opsdir_adapter_aws.cli)."""
+    return (*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *_firewall(pairs),
+            *_secrets(pairs), *_keys(pairs), *_storage(pairs), *_egress(pairs))
+
+
 def state_resources(text):
     """(resources, notices) of an AWS Terraform state."""
     found, problem = read_state(text)
@@ -170,42 +188,15 @@ def state_resources(text):
         return (), (problem,)
     pairs = [(r.type, r.attributes) for r in found]
     skipped = Counter(t for t, _ in pairs if t in SKIPPED)
-    return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *_firewall(pairs),
-             *_secrets(pairs), *_keys(pairs), *_storage(pairs), *_egress(pairs)),
+    return (pairs_resources(pairs),
             tuple(f"{t} ({n}): not read (holds secret values, or isn't modeled yet)" for t, n in sorted(skipped.items())))
 
 
 # ------------------------------------------------------------------ the importer
-def _environments(files):
-    """{'cloud/env': (paths of the Terraform states under <cloud>/<env>/)}, and paths outside that layout."""
-    states = sorted(p for p in files if p.endswith(".tfstate"))
-    placed = {p: "/".join(p.split("/")[:2]) for p in states if p.count("/") >= 2}
-    return ({spec: tuple(p for p in states if placed.get(p) == spec) for spec in dict.fromkeys(placed.values())},
-            tuple(p for p in states if p not in placed))
-
-
-def _bindings_container(spec):
-    dn = f"ou=bindings,{env_dn(spec)}"
-    return make_entry(dn, ("top", "organizationalUnit"), {"ou": ("bindings",)})
-
-
 def read_terraform_state(files, d, patterns, at=None):
     """Imported: each environment's servers and bindings from the AWS Terraform states under <cloud>/<env>/."""
-    envs, stray = _environments(files)
-    parsed = {spec: [state_resources(files[p]) for p in paths] for spec, paths in envs.items()}
-    wrong = [spec for spec in envs if get(d, env_dn(spec)) is not None
-             and one(get(d, env_dn(spec).split(",", 1)[1]), "ciamCloudProvider") != PROVIDER]
-    placed = {spec: environment_groups(d, spec, tuple(r for rs, _ in parsed[spec] for r in rs))
-              for spec in envs if spec not in wrong}
-    return Imported(
-        containers=tuple(_bindings_container(spec) for spec in placed),
-        groups=tuple(g for groups, _ in placed.values() for g in groups),
-        notices=(*(n for spec in placed for _, ns in parsed[spec] for n in ns),
-                 *(n for _, ns in placed.values() for n in ns),
-                 *(f"{spec}: not an AWS environment in the record; not imported" for spec in wrong),
-                 *(f"{p}: put each environment's state under <cloud>/<env>/ (e.g. source/prod/terraform.tfstate); "
-                   f"not imported" for p in stray),
-                 *(("no Terraform state found (*.tfstate under <cloud>/<env>/)",) if not envs and not stray else ())))
+    return layout_import(files, d, PROVIDER, "AWS", per_file(state_resources), ".tfstate", "Terraform state",
+                         "terraform.tfstate")
 
 
 TERRAFORM_STATE = Importer("terraform-state", "AWS Terraform state (terraform.tfstate) under <cloud>/<env>/, as the "

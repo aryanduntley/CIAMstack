@@ -10,7 +10,7 @@ It is built for the ForgeRock/Ping stack on AWS and Azure today, and nothing in 
 
 ### See the whole platform in one place
 
-- **Load what you have.** Describe the platform as LDIF (`opsdir load`), or read a product's own export straight in: directory servers' configuration (`config.ldif` and its archived versions) and access logs (which applications bind, from where, reading what), a PingFederate bulk export, AWS Terraform state, a PingAM Amster export, a PingIDM project, a PingGateway configuration (`opsdir import`). Secret values found along the way are withheld and reported, never stored.
+- **Load what you have.** Describe the platform as LDIF (`opsdir load`), or read a product's own export straight in: directory servers' configuration (`config.ldif` and its archived versions) and access logs (which applications bind, from where, reading what), a PingFederate bulk export, AWS and Azure Terraform state, CLI output, CloudFormation stacks or ARM/Bicep deployments, a PingAM Amster export, a PingIDM project, a PingGateway configuration (`opsdir import`). Secret values found along the way are withheld and reported, never stored.
 - **Hold your config files, not just point at them.** `opsdir capture` keeps a configuration file setting by setting and `opsdir file` rebuilds it for any environment; `opsdir bundle` records code, scripts and templates by repo path and SHA-256, and `opsdir verify` checks them against a checkout.
 - **Find where values are copied.** `opsdir census` scans servers' and applications' files (scripts, configs, `/etc/hosts`, templates) for the values the record holds (hostnames, addresses, service names, bind and base DNs, URLs, fingerprints, cloud resource IDs) and records each file and line, pointing at the entry the value belongs to. Secret material in them is flagged by line, never stored.
 - **Know who depends on what.** Applications that bind to the directory, federation partners and their claims, the ACIs each one relies on, the certificates and keys behind them, and other parties' allowlists that hold your addresses are all entries with owners.
@@ -68,8 +68,8 @@ Adapters are separate installable packages. Installing one registers it with the
 - `opsdir-adapter-pinggateway`: PingGateway 2023–2026 / ForgeRock IG 7: routes rendered per environment and linked to the client and issuer they rely on; **imports gateway configurations**.
 
 **Clouds**
-- `opsdir-adapter-aws`: Terraform for AWS (VPC, subnets, instances, load balancers, security groups, DNS); Secrets Manager, KMS, Certificate Manager and S3 references; **imports Terraform state** into the environment's servers and bindings.
-- `opsdir-adapter-azure`: Terraform for Azure, commercial or government (virtual network, subnets, VMs, load balancers, network security rules with pinned priorities, DNS); Key Vault secret, key and certificate references.
+- `opsdir-adapter-aws`: Terraform for AWS (VPC, subnets, instances, load balancers, security groups, DNS); Secrets Manager, KMS, Certificate Manager and S3 references; **imports Terraform state, AWS CLI output and CloudFormation stacks** into the environment's servers and bindings.
+- `opsdir-adapter-azure`: Terraform for Azure, commercial or government (virtual network, subnets, VMs, load balancers, network security rules with pinned priorities, DNS); Key Vault secret, key and certificate references; **imports Terraform state, Azure CLI output and ARM/Bicep deployments** into the environment's servers and bindings.
 
 **Secret stores** (resolved at run time; values never reach the database or a rendered file)
 - AWS Secrets Manager and KMS (in `opsdir-adapter-aws`), Azure Key Vault (in `opsdir-adapter-azure`).
@@ -103,7 +103,7 @@ The [showcase](examples/showcase/README.md) walks through all of the above on a 
 
 **Not yet verified:** rendered product configuration against real product instances (PingDS `dsconfig`/`setup`, PingFederate Admin API payloads, which are an illustrative subset today, PingAM, PingIDM, PingGateway), and `terraform plan` against real accounts. See [what's verified](examples/showcase/README.md#whats-verified-and-what-isnt).
 
-**Next:** importers for Azure Terraform state, the clouds' own inventories and templates (CloudFormation, ARM/Bicep), so an existing platform can be loaded without writing LDIF by hand. What is covered and what is still a gap, subsystem by subsystem: [`documentation/STACK.md`](documentation/STACK.md) §21.
+**Next:** stack coverage (path 5): PingFederate depth, hidden automation, host baselines and Kubernetes workloads, and the rest of the cloud estate (IAM, edge, data and backup, governance). What is covered and what is still a gap, subsystem by subsystem: [`documentation/STACK.md`](documentation/STACK.md) §21.
 
 ## Documentation
 

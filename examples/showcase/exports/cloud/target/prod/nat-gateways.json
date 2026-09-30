@@ -1,0 +1,12 @@
+[
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/natGateways/natgw-ciam-prod",
+    "name": "natgw-ciam-prod",
+    "type": "Microsoft.Network/natGateways",
+    "publicIpAddresses": [
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/publicIPAddresses/pip-natgw-ciam-prod"
+      }
+    ]
+  }
+]

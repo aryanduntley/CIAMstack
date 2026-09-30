@@ -1,0 +1,13 @@
+[
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/privateDnsZones/id.cloud.example-aero.test/A/ldap",
+    "name": "ldap",
+    "fqdn": "ldap.id.cloud.example-aero.test.",
+    "type": "Microsoft.Network/privateDnsZones/A",
+    "aRecords": [
+      {
+        "ipv4Address": "10.60.1.100"
+      }
+    ]
+  }
+]

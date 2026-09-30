@@ -1,8 +1,8 @@
 # CIAMstack - Project Blueprint
 
-**Version**: 1.0
-**Status**: Stage 1 (FP Foundation): 1.1 and 1.2 completed; 1.3 next
-**Last Updated**: 2026-09-26
+**Version**: 1.5
+**Status**: Paths 1-4 completed; path 5 (Stack Coverage) next; Updates U.4 (package READMEs) open
+**Last Updated**: 2026-09-30
 **AIMFP Compliance**: Strict
 
 ---
@@ -15,7 +15,7 @@ CIAMstack is a platform-agnostic, data-centric suite that puts an entire identit
 
 ### Current Phase
 
-Paths 1-3 are complete (FP foundation incl. the product-only docs and management-first showcase; the platform-agnostic core; PingAM, PingIDM and PingGateway). Path 4 (importers) is in progress: DS configuration (config.ldif + archived configs -> observed snapshots, or the declared configuration), DS access logs (-> consumers, values-free, with the `consumers` review report), PingFederate (bulk export -> integrations, claims, certificate facts; data stores checked) and the string census (`opsdir census` -> where the record's values occur in files) are done; cloud & IaC importers (3.5) are in progress: the neutral inventory mapper (core/inventory.py) and the AWS Terraform-state importer are done, then Azure state, cloud CLI inventories, CloudFormation / ARM-Bicep, and the showcase. scripts/test.sh: 842 tests pass (unit + Postgres integration + showcase golden).
+Paths 1-4 are complete (FP foundation incl. the product-only docs and management-first showcase; the platform-agnostic core; PingAM, PingIDM and PingGateway; importers). Path 4 importers: DS configuration (config.ldif + archived configs -> observed snapshots, or the declared configuration), DS access logs (-> consumers, values-free, with the `consumers` review report), PingFederate (bulk export -> integrations, claims, certificate facts; data stores checked), the string census (`opsdir census`), and the clouds for AWS and Azure alike: Terraform state, CLI inventories and native IaC (CloudFormation stacks; ARM templates and Bicep with their deployments), all through one neutral mapper (core/inventory.py: roles from tags, container metadata or a per-environment roles.json; account-wide listings counted; the record's value order kept) and one attribute mapping per provider. `import --dry-run` lists what each change sets; the showcase shows planted cloud drift that way. Path 5 (Stack Coverage) is next; its cloud milestones (4.3, 4.7-4.11) extend the cloud importers for the categories they model. Open alongside: U.4 (package READMEs to a common standard; Azure done). scripts/test.sh: 892 tests pass (unit + Postgres integration + showcase golden).
 
 ### Goals
 
@@ -64,7 +64,7 @@ Paths 1-3 are complete (FP foundation incl. the product-only docs and management
 
 ### Package Structure
 
-Current (paths 1-3 done, path 4 in progress): an agnostic core, adapter/base/format packages, and a separate showcase.
+Current (paths 1-4 done): an agnostic core, adapter/base/format packages, and a separate showcase.
 ```
 opsdir/              the core package (pyproject: opsdir), names no platform/product/vendor/secret store
   opsdir/            core/ (records, standard + OID arcs, ldap_schema catalogue, formats, versions, interchange,
@@ -84,11 +84,13 @@ packages/            installable packages; adapters register via opsdir.adapters
                      opsdir-adapter-pingidm, opsdir-adapter-pinggateway (each with an importer of the product's
                      own export: Amster, IDM project, gateway config; the DS lineage imports config.ldif,
                      archived configs and JSON access logs; PingFederate its Admin API bulk export)
-  clouds/stores      opsdir-adapter-aws (imports Terraform state), opsdir-adapter-azure,
+  clouds/stores      opsdir-adapter-aws and opsdir-adapter-azure (each imports Terraform state, its CLI's
+                     output and its native IaC: CloudFormation / ARM-Bicep),
                      opsdir-adapter-hashicorp-vault, opsdir-adapter-kubernetes, opsdir-adapter-cyberark (PAM)
   formats            opsdir-format-terraform (hcl; Terraform state reader)
 examples/showcase/   the fictional estate: example_estate/ data/ exports/ (product exports, generated DS configs
-                     and access logs, census files) changes/ golden/ scripts/ tests/ demo.sh
+                     and access logs, census files, generated cloud state/CLI output with planted drift) changes/
+                     golden/ scripts/ tests/ demo.sh
 pytest.ini           one test configuration (core, packages, showcase); opsdir/scripts/test.sh runs everything
 ```
 Dependencies point one way: packages -> core; inside the core connectors -> domains -> core and
@@ -140,10 +142,10 @@ Schema OIDs: each owner has an arc (PEN .1 core/domains, .2 showcase user schema
 ### Path 3: ForgeRock / Ping Product Lineage - completed
 - 3.1 PingAM, 3.2 PingIDM, 3.3 PingGateway, as adapter packages on the standard bases
 
-### Path 4: Importers (files/APIs -> DB) - in progress
-- DS configuration importer, DS access-log miner (+ consumers review report), PingFederate importer, string census
-  (completed); cloud & IaC importers (in progress: AWS Terraform state done; Azure state, CLI inventories,
-  CloudFormation / ARM-Bicep, showcase to go)
+### Path 4: Importers (files/APIs -> DB) - completed
+- 3.1 DS configuration importer, 3.2 DS access-log miner (+ consumers review report), 3.3 PingFederate importer,
+  3.4 string census, 3.5 cloud & IaC importers (AWS and Azure: Terraform state, CLI inventories, CloudFormation /
+  ARM-Bicep; roles.json; showcase drift via --dry-run)
 
 ### Path 5: Stack Coverage
 - PF depth, hidden automation, host baseline & Kubernetes workloads, messaging & external services, data profile, observability intent
@@ -157,7 +159,8 @@ Schema OIDs: each owner has an arc (PEN .1 core/domains, .2 showcase user schema
 ### Path 8: Interfaces, Validation & Release
 - Management interfaces, validation against real products (first an existing AWS platform, then a staging move AWS -> Azure; validation/ folder), SPEC 1.0, docs & showcase, AI interface (MCP server, incl. a consumer verification tool)
 
-Post-completion paths: Added Features (998), Updates (999).
+Post-completion paths: Added Features (998), Updates (999; open: U.4 package READMEs to a common standard; U.5 no
+secret values in rendered Terraform state, completed).
 
 ---
 
@@ -187,6 +190,11 @@ Post-completion paths: Added Features (998), Updates (999).
 
 - **Change**: Paths 1-3 closed; the documentation and showcase describe the product only, management first (the move is one chapter; the target is an ordinary second environment). Path 4 importers: DS config snapshots (import time in the importer contract, .gz exports), DS access logs (values-free consumers; `consumers` review report; dated directory reports), PingFederate bulk export, string census (ciamScannedFile/ciamOccurrence; planner flags hard-coded source values), and the neutral cloud inventory mapper with the AWS Terraform-state importer. New milestone 5.6 (ARM/Bicep and CloudFormation renderers); 7.2 records the testing plan; 7.4 requires a consumer verification MCP tool. README rewritten for adopters (what you can do, adapter catalogue, adapters for other systems).
 - **Rationale**: The user will propose the project to an operations team after it is done (open source on GitHub): an existing platform must load without hand-written LDIF, reviews must be easy, and both clouds and their native IaC are covered in full.
+
+### Version 1.5 - 2026-09-30
+
+- **Change**: Path 4 closed with milestone 3.5: AWS and Azure read back from Terraform state, CLI output and native IaC (CloudFormation; ARM/Bicep with an ARM expression evaluator), one neutral mapper and one attribute mapping per provider; roles for what a cloud can't tag from container metadata or a per-environment roles.json (never a placeholder role: ciamBindingRole is required and is what migrations match on); `--dry-run` shows each modification; the showcase plants cloud drift. Updates path reopened: U.4 package READMEs to a common standard (Azure done), U.5 the Azure renderer no longer reads secret values into Terraform state (names-only existence checks).
+- **Rationale**: An existing platform, whatever its IaC, must load without hand-written LDIF and show how it differs from the record before anything is written; future sessions must not miss behavior, so each package documents itself to one standard.
 
 ---
 

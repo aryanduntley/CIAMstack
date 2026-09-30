@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "opsdir adapter for Amazon Web Services: Terraform for AWS environments and aws-sm:// secret references."
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["opsdir>=0.1", "opsdir-format-terraform>=0.1"]
+dependencies = ["opsdir>=0.1", "opsdir-format-terraform>=0.1", "pyyaml>=6"]
 
 [project.entry-points."opsdir.adapters"]
 aws = "opsdir_adapter_aws.adapter:ADAPTER"

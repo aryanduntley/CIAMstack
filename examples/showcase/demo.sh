@@ -56,6 +56,10 @@ echo "-- run.properties rebuilt from the record for production"; od file run.pro
 
 step "5. Drift and hygiene"
 echo "-- config drift (declared vs observed)"; od report drift
+echo "-- what the source cloud runs against the record: its Terraform state (--dry-run: nothing is applied)"
+od import --dry-run aws/terraform-state exports/cloud
+echo "-- the second environment, from the Azure CLI (roles.json gives the new subnet its role)"
+od import --dry-run azure/cli-inventory exports/cloud
 echo "-- stale work instructions";           od report stale
 echo "-- unowned";                           od report unowned
 

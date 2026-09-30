@@ -1,0 +1,9 @@
+[
+  {
+    "kid": "https://kv-ciam-prod.vault.azure.net/keys/disk-cmk",
+    "name": "disk-cmk",
+    "attributes": {
+      "enabled": true
+    }
+  }
+]

@@ -936,77 +936,69 @@ data "azurerm_key_vault" "kv_ciam_prod" {
   resource_group_name = data.azurerm_resource_group.main.name
 }
 
-data "azurerm_key_vault_secret" "am_admin_password" {
-  name         = "am-admin-password"
+data "azurerm_key_vault_secrets" "kv_ciam_prod" {
+  # names only: no secret value enters Terraform state
   key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
-}
-
-data "azurerm_key_vault_secret" "am_ds_bind_password" {
-  name         = "am-ds-bind-password"
-  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
-}
-
-data "azurerm_key_vault_secret" "am_keystore" {
-  name         = "am-keystore"
-  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
-}
-
-data "azurerm_key_vault_secret" "ds_deployment_id" {
-  name         = "ds-deployment-id"
-  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
-}
-
-data "azurerm_key_vault_secret" "ds_deployment_password" {
-  name         = "ds-deployment-password"
-  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
-}
-
-data "azurerm_key_vault_secret" "ds_root_password" {
-  name         = "ds-root-password"
-  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
-}
-
-data "azurerm_key_vault_secret" "ds_tls_keystore" {
-  name         = "ds-tls-keystore"
-  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
-}
-
-data "azurerm_key_vault_secret" "idm_admin_password" {
-  name         = "idm-admin-password"
-  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
-}
-
-data "azurerm_key_vault_secret" "idm_ds_bind_password" {
-  name         = "idm-ds-bind-password"
-  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
-}
-
-data "azurerm_key_vault_secret" "idm_hrdb_password" {
-  name         = "idm-hrdb-password"
-  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
-}
-
-data "azurerm_key_vault_secret" "idm_keystore" {
-  name         = "idm-keystore"
-  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
-}
-
-data "azurerm_key_vault_secret" "ig_keystore" {
-  name         = "ig-keystore"
-  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
-}
-
-data "azurerm_key_vault_secret" "pf_admin_password" {
-  name         = "pf-admin-password"
-  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
-}
-
-data "azurerm_key_vault_secret" "pf_signing_key" {
-  name         = "pf-signing-key"
-  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
-}
-
-data "azurerm_key_vault_secret" "sso_tls_keystore" {
-  name         = "sso-tls-keystore"
-  key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
+  lifecycle {
+    postcondition {
+      condition     = contains(self.names, "am-admin-password")
+      error_message = "Key Vault kv-ciam-prod has no secret am-admin-password (role am-admin-password)"
+    }
+    postcondition {
+      condition     = contains(self.names, "am-ds-bind-password")
+      error_message = "Key Vault kv-ciam-prod has no secret am-ds-bind-password (role am-ds-bind-password)"
+    }
+    postcondition {
+      condition     = contains(self.names, "am-keystore")
+      error_message = "Key Vault kv-ciam-prod has no secret am-keystore (role am-keystore)"
+    }
+    postcondition {
+      condition     = contains(self.names, "ds-deployment-id")
+      error_message = "Key Vault kv-ciam-prod has no secret ds-deployment-id (role ds-deployment-id)"
+    }
+    postcondition {
+      condition     = contains(self.names, "ds-deployment-password")
+      error_message = "Key Vault kv-ciam-prod has no secret ds-deployment-password (role ds-deployment-password)"
+    }
+    postcondition {
+      condition     = contains(self.names, "ds-root-password")
+      error_message = "Key Vault kv-ciam-prod has no secret ds-root-password (role ds-root-password)"
+    }
+    postcondition {
+      condition     = contains(self.names, "ds-tls-keystore")
+      error_message = "Key Vault kv-ciam-prod has no secret ds-tls-keystore (role ds-tls-keystore)"
+    }
+    postcondition {
+      condition     = contains(self.names, "idm-admin-password")
+      error_message = "Key Vault kv-ciam-prod has no secret idm-admin-password (role idm-admin-password)"
+    }
+    postcondition {
+      condition     = contains(self.names, "idm-ds-bind-password")
+      error_message = "Key Vault kv-ciam-prod has no secret idm-ds-bind-password (role idm-ds-bind-password)"
+    }
+    postcondition {
+      condition     = contains(self.names, "idm-hrdb-password")
+      error_message = "Key Vault kv-ciam-prod has no secret idm-hrdb-password (role idm-hrdb-password)"
+    }
+    postcondition {
+      condition     = contains(self.names, "idm-keystore")
+      error_message = "Key Vault kv-ciam-prod has no secret idm-keystore (role idm-keystore)"
+    }
+    postcondition {
+      condition     = contains(self.names, "ig-keystore")
+      error_message = "Key Vault kv-ciam-prod has no secret ig-keystore (role ig-keystore)"
+    }
+    postcondition {
+      condition     = contains(self.names, "pf-admin-password")
+      error_message = "Key Vault kv-ciam-prod has no secret pf-admin-password (role pf-admin-password)"
+    }
+    postcondition {
+      condition     = contains(self.names, "pf-signing-key")
+      error_message = "Key Vault kv-ciam-prod has no secret pf-signing-key (role pf-signing-key)"
+    }
+    postcondition {
+      condition     = contains(self.names, "sso-tls-keystore")
+      error_message = "Key Vault kv-ciam-prod has no secret sso-tls-keystore (role sso-tls-keystore)"
+    }
+  }
 }

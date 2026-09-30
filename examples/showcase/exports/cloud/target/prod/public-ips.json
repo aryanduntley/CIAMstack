@@ -1,0 +1,26 @@
+[
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/publicIPAddresses/pip-ciam-sso-prod",
+    "name": "pip-ciam-sso-prod",
+    "ipAddress": "198.51.100.77",
+    "type": "Microsoft.Network/publicIPAddresses"
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/publicIPAddresses/pip-ciam-login-prod",
+    "name": "pip-ciam-login-prod",
+    "ipAddress": "198.51.100.78",
+    "type": "Microsoft.Network/publicIPAddresses"
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/publicIPAddresses/pip-ciam-apps-prod",
+    "name": "pip-ciam-apps-prod",
+    "ipAddress": "198.51.100.79",
+    "type": "Microsoft.Network/publicIPAddresses"
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/publicIPAddresses/pip-natgw-ciam-prod",
+    "name": "pip-natgw-ciam-prod",
+    "ipAddress": "203.0.113.200",
+    "type": "Microsoft.Network/publicIPAddresses"
+  }
+]

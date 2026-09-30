@@ -1,0 +1,10 @@
+[
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod",
+    "name": "des-ciam-prod",
+    "type": "Microsoft.Compute/diskEncryptionSets",
+    "activeKey": {
+      "keyUrl": "https://kv-ciam-prod.vault.azure.net/keys/disk-cmk/4f1e"
+    }
+  }
+]

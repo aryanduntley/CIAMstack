@@ -1,0 +1,224 @@
+[
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-ds-1",
+    "name": "nic-ds-1",
+    "type": "Microsoft.Network/networkInterfaces",
+    "networkSecurityGroup": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-ciam-prod-ds"
+    },
+    "ipConfigurations": [
+      {
+        "name": "primary",
+        "primary": true,
+        "privateIPAddress": "10.60.1.11",
+        "subnet": {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-ds"
+        },
+        "loadBalancerBackendAddressPools": [
+          {
+            "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/loadBalancers/lb-ciam-prod-svc-ldaps/backendAddressPools/servers"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-ds-2",
+    "name": "nic-ds-2",
+    "type": "Microsoft.Network/networkInterfaces",
+    "networkSecurityGroup": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-ciam-prod-ds"
+    },
+    "ipConfigurations": [
+      {
+        "name": "primary",
+        "primary": true,
+        "privateIPAddress": "10.60.1.12",
+        "subnet": {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-ds"
+        },
+        "loadBalancerBackendAddressPools": [
+          {
+            "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/loadBalancers/lb-ciam-prod-svc-ldaps/backendAddressPools/servers"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-ds-3",
+    "name": "nic-ds-3",
+    "type": "Microsoft.Network/networkInterfaces",
+    "networkSecurityGroup": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-ciam-prod-ds"
+    },
+    "ipConfigurations": [
+      {
+        "name": "primary",
+        "primary": true,
+        "privateIPAddress": "10.60.1.13",
+        "subnet": {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-ds"
+        },
+        "loadBalancerBackendAddressPools": [
+          {
+            "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/loadBalancers/lb-ciam-prod-svc-ldaps/backendAddressPools/servers"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-pf-engine-1",
+    "name": "nic-pf-engine-1",
+    "type": "Microsoft.Network/networkInterfaces",
+    "networkSecurityGroup": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-ciam-prod-pf-engine"
+    },
+    "ipConfigurations": [
+      {
+        "name": "primary",
+        "primary": true,
+        "privateIPAddress": "10.60.2.21",
+        "subnet": {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-pf"
+        },
+        "loadBalancerBackendAddressPools": [
+          {
+            "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/loadBalancers/lb-ciam-prod-svc-sso/backendAddressPools/servers"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-pf-engine-2",
+    "name": "nic-pf-engine-2",
+    "type": "Microsoft.Network/networkInterfaces",
+    "networkSecurityGroup": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-ciam-prod-pf-engine"
+    },
+    "ipConfigurations": [
+      {
+        "name": "primary",
+        "primary": true,
+        "privateIPAddress": "10.60.2.22",
+        "subnet": {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-pf"
+        },
+        "loadBalancerBackendAddressPools": [
+          {
+            "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/loadBalancers/lb-ciam-prod-svc-sso/backendAddressPools/servers"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-pf-admin-1",
+    "name": "nic-pf-admin-1",
+    "type": "Microsoft.Network/networkInterfaces",
+    "networkSecurityGroup": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-ciam-prod-pf-admin"
+    },
+    "ipConfigurations": [
+      {
+        "name": "primary",
+        "primary": true,
+        "privateIPAddress": "10.60.2.10",
+        "subnet": {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-pf"
+        },
+        "loadBalancerBackendAddressPools": []
+      }
+    ]
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-am-1",
+    "name": "nic-am-1",
+    "type": "Microsoft.Network/networkInterfaces",
+    "networkSecurityGroup": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-ciam-prod-am"
+    },
+    "ipConfigurations": [
+      {
+        "name": "primary",
+        "primary": true,
+        "privateIPAddress": "10.60.3.21",
+        "subnet": {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-am"
+        },
+        "loadBalancerBackendAddressPools": [
+          {
+            "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/loadBalancers/lb-ciam-prod-svc-login/backendAddressPools/servers"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-am-2",
+    "name": "nic-am-2",
+    "type": "Microsoft.Network/networkInterfaces",
+    "networkSecurityGroup": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-ciam-prod-am"
+    },
+    "ipConfigurations": [
+      {
+        "name": "primary",
+        "primary": true,
+        "privateIPAddress": "10.60.3.22",
+        "subnet": {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-am"
+        },
+        "loadBalancerBackendAddressPools": [
+          {
+            "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/loadBalancers/lb-ciam-prod-svc-login/backendAddressPools/servers"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-idm-1",
+    "name": "nic-idm-1",
+    "type": "Microsoft.Network/networkInterfaces",
+    "networkSecurityGroup": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-ciam-prod-idm"
+    },
+    "ipConfigurations": [
+      {
+        "name": "primary",
+        "primary": true,
+        "privateIPAddress": "10.60.6.21",
+        "subnet": {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-idm"
+        },
+        "loadBalancerBackendAddressPools": []
+      }
+    ]
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-ig-1",
+    "name": "nic-ig-1",
+    "type": "Microsoft.Network/networkInterfaces",
+    "networkSecurityGroup": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-ciam-prod-ig"
+    },
+    "ipConfigurations": [
+      {
+        "name": "primary",
+        "primary": true,
+        "privateIPAddress": "10.60.10.21",
+        "subnet": {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-ig"
+        },
+        "loadBalancerBackendAddressPools": [
+          {
+            "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/loadBalancers/lb-ciam-prod-svc-apps/backendAddressPools/servers"
+          }
+        ]
+      }
+    ]
+  }
+]

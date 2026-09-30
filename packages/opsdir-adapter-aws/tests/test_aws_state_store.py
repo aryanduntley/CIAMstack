@@ -1,5 +1,6 @@
-"""AWS Terraform state imported into the store, against Postgres: a new tagged instance is added under an approved
-change with its subnet linked, nothing secret reaches the store, and importing the same state again changes nothing."""
+"""AWS Terraform state and CLI outputs imported into the store, against Postgres: a new tagged instance is added under
+an approved change with its subnet linked, nothing secret reaches the store, and importing the same source again changes
+nothing."""
 import json
 import os
 
@@ -82,3 +83,23 @@ def test_a_state_is_imported_under_a_change_and_again_changes_nothing(conn):
     assert (row["ciamSubnet"], row["ciamServerRole"]) == ([f"cn=subnet-1,ou=bindings,{ENV}"], ["ds"])
     assert "p4ss" not in str(conn.execute("select jsonb_agg(attrs) from opsdir.entry").fetchone()[0])
     assert ops.preview_import(conn, "aws/terraform-state", files).changes == ()
+
+
+CLI = {"vpcs.json": {"Vpcs": [{"VpcId": "vpc-1", "CidrBlock": "10.20.0.0/16"}]},
+       "subnets.json": {"Subnets": [{"SubnetId": "subnet-1", "VpcId": "vpc-1", "CidrBlock": "10.20.1.0/24",
+                                     "AvailabilityZone": "us-east-1a", "Tags": [{"Key": "Role", "Value": "subnet-ds"}]}]},
+       "instances.json": {"Reservations": [{"Instances": [
+           {"InstanceId": "i-1", "ImageId": "ami-0abc", "InstanceType": "m6i.xlarge", "PrivateIpAddress": "10.20.1.11",
+            "SubnetId": "subnet-1", "VpcId": "vpc-1", "State": {"Name": "running"},
+            "Placement": {"AvailabilityZone": "us-east-1a"},
+            "Tags": [{"Key": "Name", "Value": "ds-1"}, {"Key": "Role", "Value": "ds"},
+                     {"Key": "Hostname", "Value": "ds-1.internal.test"}]}]}]}}
+
+
+def test_cli_outputs_are_imported_under_a_change_and_again_change_nothing(conn):
+    files = {f"main/prod/{p}": json.dumps(doc) for p, doc in CLI.items()}
+    preview = ops.preview_import(conn, "aws/cli-inventory", files)
+    assert ops.apply_preview(conn, preview, "CHG-TF-1").lines
+    row = conn.execute(f"select attrs from opsdir.entry where dn = 'cn=ds-1,{ENV}'").fetchone()[0]
+    assert (row["ciamSubnet"], row["ciamPrivateIp"]) == ([f"cn=subnet-1,ou=bindings,{ENV}"], ["10.20.1.11"])
+    assert ops.preview_import(conn, "aws/cli-inventory", files).changes == ()

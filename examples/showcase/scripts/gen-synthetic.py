@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Generate the synthetic Example Aero estate as LDIF files in data/, and the directory servers' configuration
-exports in exports/ds-config/ and access logs in exports/ds-access-logs/ (a showcase and test fixture).
+"""Generate the synthetic Example Aero estate as LDIF files in data/, the directory servers' configuration exports in
+exports/ds-config/ and access logs in exports/ds-access-logs/, and what the clouds report in exports/cloud/ (a
+showcase and test fixture).
 
 The estate is built by fixtures/example_estate, one module per part of the stack; this script only writes
 it. Everything is fictional. The estate is seeded with realistic problems for the tools to find:
@@ -12,6 +13,9 @@ it. Everything is fictional. The estate is seeded with realistic problems for th
     LDAPS service name breaks the stable-name contract
   - partner and consumer allowlists pin our old IP addresses
   - certificates expire before the planned cutover; one work instruction is stale
+  - the clouds differ from the record (shown with `opsdir import --dry-run`): in the source's Terraform state, a
+    resized PingFederate engine, an untagged bastion, a hand-opened vendor rule, the disk key's rotation off; in the
+    target's Azure CLI output, a reprioritized NSG rule, a resized directory server, a subnet added in the portal
 The planted problems are listed in data/expected-findings.json.
 """
 import gzip
@@ -44,7 +48,7 @@ def main():
         old.unlink()
     for rel, text in files.items():
         (OUT / rel).write_text(text)
-    for generated in ("ds-config", "ds-access-logs"):
+    for generated in ("ds-config", "ds-access-logs", "cloud"):
         shutil.rmtree(EXPORTS / generated, ignore_errors=True)
     for rel, text in exports().items():
         write_export(rel, text)

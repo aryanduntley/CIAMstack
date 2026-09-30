@@ -43,6 +43,7 @@ from . import operations as ops
 from .connectors import migration, workspace
 from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS
 from .connectors.stack import STATUS_HEADERS
+from .core.changeset import describe
 from .core import search as ldap_search
 from .core.directory import values
 from .core.interchange import ldif
@@ -270,14 +271,18 @@ def import_time(text=None):
         raise SystemExit(f"--at {text}: give the time as YYYYMMDDhhmmssZ (UTC), e.g. 20260930141500Z") from None
 
 
+def _not_applied(notes, changes, dry_run):
+    """A preview's notices, each change with what it modifies, and the count (nothing applied)."""
+    return "\n".join((*notes, *(line for r in changes for line in describe(r)),
+                      f"{len(changes)} change(s) (not applied{'' if dry_run else '; give --change to apply'})"))
+
+
 def _cmd_import(conn, a, as_of):
     files, skipped = read_texts(a.path)
     preview = ops.preview_import(conn, a.importer, files, import_time(a.at))
     notes = (*(f"skipped (not UTF-8 text): {rel}" for rel in skipped), *preview.notices)
     if a.dry_run or not a.change:
-        listed = (f"{r.changetype} {r.dn}" for r in preview.changes)
-        return "\n".join((*notes, *listed, f"{len(preview.changes)} change(s) (not applied"
-                          f"{'' if a.dry_run else '; give --change to apply'})"))
+        return _not_applied(notes, preview.changes, a.dry_run)
     r = ops.apply_preview(conn, preview, a.change)
     return "\n".join((*notes, f"{a.change}: {len(r.lines)} change(s) applied" if r.lines else "no changes"))
 
@@ -287,8 +292,7 @@ def _cmd_census(conn, a, as_of):
     preview = ops.preview_census(conn, files)
     notes = (*(f"skipped (not UTF-8 text): {rel}" for rel in skipped), *preview.notices)
     if a.dry_run or not a.change:
-        return "\n".join((*notes, *(f"{r.changetype} {r.dn}" for r in preview.changes),
-                          f"{len(preview.changes)} change(s) (not applied{'' if a.dry_run else '; give --change to apply'})"))
+        return _not_applied(notes, preview.changes, a.dry_run)
     r = ops.apply_preview(conn, preview, a.change)
     return "\n".join((*notes, f"{a.change}: {len(r.lines)} change(s) applied" if r.lines else "no changes"))
 

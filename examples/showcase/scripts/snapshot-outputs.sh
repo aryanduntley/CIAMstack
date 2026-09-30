@@ -28,7 +28,7 @@ rm -rf "$OUT" && mkdir -p "$OUT/cmd"
 
 # The generators must reproduce the published schema and data files exactly (independent of git state).
 generated() { (cd "$CORE" && sha256sum schema/*.ldif); sha256sum data/*.ldif data/*.json;
-              find exports/ds-config exports/ds-access-logs -type f | sort | xargs sha256sum; }
+              find exports/ds-config exports/ds-access-logs exports/cloud -type f | sort | xargs sha256sum; }
 generated > "$OUT/cmd/.generated-before"
 cap 00-gen-schema    "$PY" "$CORE/scripts/gen-schema.py"
 cap 00-gen-synthetic "$PY" scripts/gen-synthetic.py
@@ -46,6 +46,8 @@ cap 02-import-pf od import --change CHG-2008 pingfederate exports/pingfederate
 cap 02-census od census --change CHG-2009 exports/census
 cap 02-check od check
 for r in portability expiring credentials pii drift stale unowned custom capture bundles consumers census; do cap "03-report-$r" od report "$r"; done
+cap 03-cloud-drift-source od import --dry-run aws/terraform-state exports/cloud
+cap 03-cloud-drift-target od import --dry-run azure/cli-inventory exports/cloud
 cap 03-report-blast-radius od report blast-radius "$BLAST"
 cap 03-report-keys-source od report keys source/prod
 cap 03-report-keys-target od report keys target/prod

@@ -1,0 +1,235 @@
+[
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-ciam-prod-ds",
+    "name": "nsg-ciam-prod-ds",
+    "type": "Microsoft.Network/networkSecurityGroups",
+    "resourceGroup": "rg-ciam-prod",
+    "securityRules": [
+      {
+        "name": "fw-pf-ds-svc",
+        "priority": 100,
+        "direction": "Inbound",
+        "access": "Allow",
+        "protocol": "Tcp",
+        "sourceAddressPrefixes": [
+          "10.60.2.0/24"
+        ],
+        "destinationPortRanges": [
+          "1636"
+        ],
+        "description": "consumer pf-ds-svc"
+      },
+      {
+        "name": "fw-customer-portal",
+        "priority": 110,
+        "direction": "Inbound",
+        "access": "Allow",
+        "protocol": "Tcp",
+        "sourceAddressPrefixes": [
+          "10.30.8.0/24"
+        ],
+        "destinationPortRanges": [
+          "1636"
+        ],
+        "description": "consumer customer-portal-svc"
+      },
+      {
+        "name": "fw-supplier-portal",
+        "priority": 120,
+        "direction": "Inbound",
+        "access": "Allow",
+        "protocol": "Tcp",
+        "sourceAddressPrefixes": [
+          "10.31.2.0/24"
+        ],
+        "destinationPortRanges": [
+          "1636"
+        ],
+        "description": "consumer supplier-portal-svc"
+      },
+      {
+        "name": "fw-idm-sync",
+        "priority": 400,
+        "direction": "Inbound",
+        "access": "Allow",
+        "protocol": "Tcp",
+        "sourceAddressPrefixes": [
+          "10.60.6.0/24"
+        ],
+        "destinationPortRanges": [
+          "1636"
+        ],
+        "description": "consumer idm-sync"
+      },
+      {
+        "name": "fw-replication",
+        "priority": 140,
+        "direction": "Inbound",
+        "access": "Allow",
+        "protocol": "Tcp",
+        "sourceAddressPrefixes": [
+          "10.60.1.0/24",
+          "10.20.0.0/16"
+        ],
+        "destinationPortRanges": [
+          "8989"
+        ],
+        "description": "fw-replication"
+      },
+      {
+        "name": "fw-admin",
+        "priority": 150,
+        "direction": "Inbound",
+        "access": "Allow",
+        "protocol": "Tcp",
+        "sourceAddressPrefixes": [
+          "10.60.9.0/28"
+        ],
+        "destinationPortRanges": [
+          "4444"
+        ],
+        "description": "fw-admin"
+      }
+    ],
+    "networkInterfaces": [
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-ds-1"
+      },
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-ds-2"
+      },
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-ds-3"
+      }
+    ],
+    "tags": {
+      "ManagedBy": "opsdir"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-ciam-prod-pf-engine",
+    "name": "nsg-ciam-prod-pf-engine",
+    "type": "Microsoft.Network/networkSecurityGroups",
+    "resourceGroup": "rg-ciam-prod",
+    "securityRules": [
+      {
+        "name": "fw-sso-public",
+        "priority": 160,
+        "direction": "Inbound",
+        "access": "Allow",
+        "protocol": "Tcp",
+        "sourceAddressPrefixes": [
+          "0.0.0.0/0"
+        ],
+        "destinationPortRanges": [
+          "443"
+        ],
+        "description": "fw-sso-public"
+      }
+    ],
+    "networkInterfaces": [
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-pf-engine-1"
+      },
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-pf-engine-2"
+      }
+    ],
+    "tags": {
+      "ManagedBy": "opsdir"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-ciam-prod-pf-admin",
+    "name": "nsg-ciam-prod-pf-admin",
+    "type": "Microsoft.Network/networkSecurityGroups",
+    "resourceGroup": "rg-ciam-prod",
+    "securityRules": [],
+    "networkInterfaces": [
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-pf-admin-1"
+      }
+    ],
+    "tags": {
+      "ManagedBy": "opsdir"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-ciam-prod-am",
+    "name": "nsg-ciam-prod-am",
+    "type": "Microsoft.Network/networkSecurityGroups",
+    "resourceGroup": "rg-ciam-prod",
+    "securityRules": [
+      {
+        "name": "fw-login-public",
+        "priority": 170,
+        "direction": "Inbound",
+        "access": "Allow",
+        "protocol": "Tcp",
+        "sourceAddressPrefixes": [
+          "0.0.0.0/0"
+        ],
+        "destinationPortRanges": [
+          "443"
+        ],
+        "description": "fw-login-public"
+      }
+    ],
+    "networkInterfaces": [
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-am-1"
+      },
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-am-2"
+      }
+    ],
+    "tags": {
+      "ManagedBy": "opsdir"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-ciam-prod-idm",
+    "name": "nsg-ciam-prod-idm",
+    "type": "Microsoft.Network/networkSecurityGroups",
+    "resourceGroup": "rg-ciam-prod",
+    "securityRules": [],
+    "networkInterfaces": [
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-idm-1"
+      }
+    ],
+    "tags": {
+      "ManagedBy": "opsdir"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-ciam-prod-ig",
+    "name": "nsg-ciam-prod-ig",
+    "type": "Microsoft.Network/networkSecurityGroups",
+    "resourceGroup": "rg-ciam-prod",
+    "securityRules": [
+      {
+        "name": "fw-apps-public",
+        "priority": 180,
+        "direction": "Inbound",
+        "access": "Allow",
+        "protocol": "Tcp",
+        "sourceAddressPrefixes": [
+          "0.0.0.0/0"
+        ],
+        "destinationPortRanges": [
+          "443"
+        ],
+        "description": "fw-apps-public"
+      }
+    ],
+    "networkInterfaces": [
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-ig-1"
+      }
+    ],
+    "tags": {
+      "ManagedBy": "opsdir"
+    }
+  }
+]

@@ -1,0 +1,123 @@
+[
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/loadBalancers/lb-ciam-prod-svc-ldaps",
+    "name": "lb-ciam-prod-svc-ldaps",
+    "type": "Microsoft.Network/loadBalancers",
+    "frontendIPConfigurations": [
+      {
+        "name": "frontend",
+        "privateIPAddress": "10.60.1.100",
+        "subnet": {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-ds"
+        }
+      }
+    ],
+    "backendAddressPools": [
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/loadBalancers/lb-ciam-prod-svc-ldaps/backendAddressPools/servers",
+        "name": "servers"
+      }
+    ],
+    "loadBalancingRules": [
+      {
+        "name": "tcp-1636",
+        "frontendPort": 1636,
+        "backendPort": 1636
+      }
+    ],
+    "tags": {
+      "Service": "ldap.id.cloud.example-aero.test",
+      "ManagedBy": "opsdir"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/loadBalancers/lb-ciam-prod-svc-sso",
+    "name": "lb-ciam-prod-svc-sso",
+    "type": "Microsoft.Network/loadBalancers",
+    "frontendIPConfigurations": [
+      {
+        "name": "frontend",
+        "publicIPAddress": {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/publicIPAddresses/pip-ciam-sso-prod"
+        }
+      }
+    ],
+    "backendAddressPools": [
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/loadBalancers/lb-ciam-prod-svc-sso/backendAddressPools/servers",
+        "name": "servers"
+      }
+    ],
+    "loadBalancingRules": [
+      {
+        "name": "tcp-443",
+        "frontendPort": 443,
+        "backendPort": 443
+      }
+    ],
+    "tags": {
+      "Service": "sso.example-aero.test",
+      "ManagedBy": "opsdir"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/loadBalancers/lb-ciam-prod-svc-login",
+    "name": "lb-ciam-prod-svc-login",
+    "type": "Microsoft.Network/loadBalancers",
+    "frontendIPConfigurations": [
+      {
+        "name": "frontend",
+        "publicIPAddress": {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/publicIPAddresses/pip-ciam-login-prod"
+        }
+      }
+    ],
+    "backendAddressPools": [
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/loadBalancers/lb-ciam-prod-svc-login/backendAddressPools/servers",
+        "name": "servers"
+      }
+    ],
+    "loadBalancingRules": [
+      {
+        "name": "tcp-443",
+        "frontendPort": 443,
+        "backendPort": 443
+      }
+    ],
+    "tags": {
+      "Service": "login.example-aero.test",
+      "ManagedBy": "opsdir"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/loadBalancers/lb-ciam-prod-svc-apps",
+    "name": "lb-ciam-prod-svc-apps",
+    "type": "Microsoft.Network/loadBalancers",
+    "frontendIPConfigurations": [
+      {
+        "name": "frontend",
+        "publicIPAddress": {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/publicIPAddresses/pip-ciam-apps-prod"
+        }
+      }
+    ],
+    "backendAddressPools": [
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/loadBalancers/lb-ciam-prod-svc-apps/backendAddressPools/servers",
+        "name": "servers"
+      }
+    ],
+    "loadBalancingRules": [
+      {
+        "name": "tcp-443",
+        "frontendPort": 443,
+        "backendPort": 443
+      }
+    ],
+    "tags": {
+      "Service": "apps.example-aero.test",
+      "ManagedBy": "opsdir"
+    }
+  }
+]

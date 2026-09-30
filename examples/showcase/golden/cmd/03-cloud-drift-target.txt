@@ -1,0 +1,8 @@
+target/prod: subnet snet-mgmt added (role subnet-mgmt)
+add cn=snet-mgmt,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+modify cn=ds-3,env=prod,cloud=target,ou=environments,dc=ciam-ops
+    replace ciamInstanceSize: Standard_D8s_v5
+modify cn=fw-idm-sync,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+    replace ciamRulePriority: 400
+3 change(s) (not applied)
+exit 0

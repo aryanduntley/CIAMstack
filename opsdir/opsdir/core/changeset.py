@@ -37,3 +37,12 @@ def diff(base, current):
                      for n in sorted(c) if n in b and entry_mods(b[n], c[n]))
     deletes = sorted((b[n] for n in b if n not in c), key=lambda e: (-_depth(e), e.norm))
     return (*map(_add, adds), *modifies, *map(_delete, deletes))
+
+
+def describe(record, width=100):
+    """Lines naming a change record and, for a modify, what each modification does (values shortened to width)."""
+    def shown(values):
+        text = " | ".join(values)
+        return text if len(text) <= width else text[:width - 1] + "…"
+    return (f"{record.changetype} {record.dn}",
+            *(f"    {op} {attr}" + (f": {shown(values)}" if values else "") for op, attr, values in record.mods))

@@ -1,0 +1,46 @@
+[
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod",
+    "name": "vnet-ciam-prod",
+    "type": "Microsoft.Network/virtualNetworks",
+    "resourceGroup": "rg-ciam-prod",
+    "location": "eastus2",
+    "addressSpace": {
+      "addressPrefixes": [
+        "10.60.0.0/16"
+      ]
+    },
+    "subnets": [
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-ds",
+        "name": "snet-ds",
+        "addressPrefix": "10.60.1.0/24"
+      },
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-pf",
+        "name": "snet-pf",
+        "addressPrefix": "10.60.2.0/24"
+      },
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-am",
+        "name": "snet-am",
+        "addressPrefix": "10.60.3.0/24"
+      },
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-idm",
+        "name": "snet-idm",
+        "addressPrefix": "10.60.6.0/24"
+      },
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-ig",
+        "name": "snet-ig",
+        "addressPrefix": "10.60.10.0/24"
+      },
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-mgmt",
+        "name": "snet-mgmt",
+        "addressPrefix": "10.60.9.0/28"
+      }
+    ]
+  }
+]
