@@ -15,7 +15,6 @@ provider "azurerm" {
   features {
   }
   subscription_id = var.subscription_id
-  environment     = "usgovernment"
 }
 
 variable "subscription_id" {

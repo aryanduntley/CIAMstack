@@ -139,17 +139,17 @@ ciamCloudEnvironment: public
 ciamCloudProvider: aws
 ciamLifecycle: active
 ciamRegion: us-east-1
-description: Current cloud hosting environment (AWS)
+description: Primary hosting environment (AWS)
 
 dn: cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamCloud
 cloud: target
-ciamCloudEnvironment: usgovernment
+ciamCloudEnvironment: public
 ciamCloudProvider: azure
 ciamLifecycle: building
-ciamRegion: usgovvirginia
-description: New cloud landing zone being built (Azure Government)
+ciamRegion: eastus2
+description: Second hosting environment (Azure)
 
 dn: cn=aci-idm-write,ou=acis,dc=ciam-ops
 objectClass: top
@@ -1511,7 +1511,7 @@ ciamPortability: binding
 ciamPurpose: Jurisdiction the environment's identity data must stay in
 ciamValueSource: terraform: azurerm_resource_group.location
 ciamValueSource: terraform: aws provider region
-ciamValueType: enum:us|us-gov|eu|ca
+ciamValueType: enum:us|eu|uk|ca
 
 dn: cn=xFeatureFlag,ou=custom-schema,dc=ciam-ops
 objectClass: top
@@ -1976,7 +1976,7 @@ ciamJoinsDeploymentOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamLifecycle: building
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPlannedCutover: 20270115000000Z
-xDataResidency: us-gov
+xDataResidency: us
 
 dn: env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top

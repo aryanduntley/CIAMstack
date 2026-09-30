@@ -8,12 +8,12 @@
 
 ## 1. Purpose
 
-A platform's configuration is usually spread across infrastructure-as-code files, CLI batch files, admin consoles, spreadsheets and people's heads. **opsdir** puts it in a directory instead: one tree of typed, schema-checked, cross-referenced entries. Working configuration (infrastructure code, product configuration, setup scripts) is **generated** from that tree by adapters.
+A platform's configuration is usually spread across infrastructure-as-code files, CLI batch files, admin consoles, spreadsheets and people's heads. **opsdir** puts it in a directory instead: one tree of typed, schema-checked, cross-referenced entries, the system of record the platform is operated from. Working configuration (infrastructure code, product configuration, setup scripts) is **generated** from that tree by adapters, and read back into it by their importers.
 
 Consequences:
 - **A change is a directory entry,** made under an approved change record. Files are re-rendered, never hand-edited.
-- **A migration is a read.** The same databases are rendered for a different environment. Only that environment's *bindings* are new.
 - **Questions become queries:** blast radius, expiry, drift, who can read what, which external allowlists hold our addresses.
+- **Every environment is a read.** The same record is rendered for each environment; only that environment's *bindings* differ. Moving a platform to a new environment is therefore one capability of the record: declare the new bindings, plan, render.
 
 The first domain is a CIAM platform (directory, federation, PKI and the infrastructure they run on), but nothing in the model is specific to it or to any product.
 
@@ -54,9 +54,9 @@ Nobody can foresee every fact a platform needs recorded, so operators define the
 
 Every attribute type declares two extensions.
 
-### 3.1 `X-PORTABILITY`: what happens to this value in a migration
+### 3.1 `X-PORTABILITY`: what differs between environments
 
-| Class | Meaning | In a migration |
+| Class | Meaning | Across environments (and in a move) |
 |---|---|---|
 | `intent` | What the platform should be: schema, indexes, ACIs, policies, claim maps | **Moves unchanged.** Renders identically in every environment. |
 | `contract` | Names other parties depend on: service FQDNs, SAML entity IDs, ACS/redirect URLs, client IDs, claim names | **Must not change.** Any difference between source and target is a blocker. |
@@ -191,6 +191,6 @@ A config file is held in the record so it can be rebuilt from the record alone, 
 ## 10. Open issues
 
 - A read-only LDAP front end over the Postgres store (e.g., an LDAP proxy), so operators can `ldapsearch` it.
-- Importers that populate `observed` automatically (the adapter contract gains importers alongside renderers): directory access-log mining → `ou=consumers`, a product's configuration export → snapshots, a federation product's admin API → integrations.
+- More importers (the adapter contract has them alongside renderers; PingAM, PingIDM and PingGateway ship one): directory access-log mining → `ou=consumers`, a directory's configuration export → `observed` snapshots, a federation product's admin API → integrations, cloud and Terraform inventories → bindings.
 - Two-way ITSM sync for `ou=changes`.
 - Validation of each adapter's rendered output against the exact product versions it declares.

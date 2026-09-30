@@ -1,12 +1,12 @@
 # CIAMstack: Stack Inventory & Datification Map
 
-*Every subsystem, file, store and external dependency that a production PingDS + PingFederate CIAM estate on AWS is likely to carry. Every item here has to be accounted for in a migration, and each is assessed for whether it can live as data in the opsdir database. Drafted 2026-09-24. It builds on `ops-directory-model.md` (the design) and `opsdir/SPEC.md` (the standard).*
+*Every subsystem, file, store and external dependency a production identity (CIAM) platform on the ForgeRock/Ping stack is likely to carry, whether each can live as data in the opsdir record, and what the record covers today. It builds on [`ops-directory-model.md`](ops-directory-model.md) (the design) and [`opsdir/SPEC.md`](../opsdir/SPEC.md) (the standard). Coverage is as of 2026-09-30 (roadmap paths 1–3 done).*
 
 ---
 
 ## 0. How to read this
 
-**The reference stack.** This is an *external identity* (customer/partner/supplier) platform. PingDS is the directory and PingFederate does federation and SSO. It runs on AWS, with an enterprise reverse proxy, Duo MFA, several portals as relying parties, and the usual enterprise wrapping (ITSM, SIEM, PAM, PKI). It is **moving to a different cloud landing zone** (another AWS org or GovCloud, or Azure). This is the most likely shape of a large merged aerospace/defense estate. Nothing here is confirmed about any real company.
+**The reference stack.** This is an *external identity* (customer/partner/supplier) platform. PingDS is the directory and PingFederate does federation and SSO, with PingAM, PingIDM and PingGateway where the ForgeRock lineage is present. It runs in a public cloud, with a reverse proxy, an MFA service, several portals as relying parties, and the usual enterprise wrapping (ITSM, SIEM, PAM, PKI). Every item is something an operator has to account for to run, audit or change the platform; moving it to another cloud, account or region is the scenario that tests the inventory hardest, so each class says what happens to the item in a move. The shape is typical of such platforms, not any particular organization's.
 
 **Presence in the estate** (per subsystem):
 - **[core]**: the stack can't exist without it.
@@ -15,7 +15,7 @@
 
 **Class** is opsdir's `X-PORTABILITY` class (SPEC §3.1), plus one extra letter for things opsdir must *not* hold:
 
-| Code | Class | In a migration |
+| Code | Class | Across environments and moves |
 |---|---|---|
 | **I** | intent | Moves unchanged and renders identically everywhere |
 | **C** | contract | Names other parties depend on. Must not change. |
@@ -30,7 +30,7 @@
 - **◐** *describe it*: the artifact stays where it is (a binary, a template, a vendor console). opsdir holds its facts: location, version, hash, owner, what depends on it.
 - **○** *count it*: user data, runtime state or secret material. opsdir holds counts, checksums, locations and references, never the content.
 
-**opsdir today:** ✔ modeled in the current schema · ~ partial · — gap.
+**opsdir today:** ✔ modeled in the current schema (core or an adapter package) · ~ partial · — gap. "Captured" means the file can be held in the record setting by setting and rebuilt per environment (`opsdir capture`, SPEC §9.1) without a dedicated model; "bundle" means code or templates recorded by repo path and SHA-256 (`opsdir bundle`).
 
 ---
 
@@ -78,15 +78,15 @@ PingDS (ForgeRock DS lineage, 7.x→8.x). `<ds>` is the install root (often `/op
 | Password validators & generators | Character set, length, dictionary (+ dictionary file), repeated chars, similarity | I | ● Dictionary file as ◐ with its hash | — |
 | Password storage schemes | PBKDF2-HMAC-SHA256/512, Bcrypt, SSHA512, legacy (SSHA, crypt, MD5) | I | ● List enabled schemes, and count users per scheme (see §3) | ~ `ciamStorageScheme` |
 | Plugins | Referential integrity, unique attribute, 7-bit clean, entity tag, attribute cleanup, change number control, custom plugins | I | ● | — |
-| Custom extensions | `<ds>/extlib/*.jar`, custom plugin classes | I | ◐ Name, version, SHA-256, source repo | — |
+| Custom extensions | `<ds>/extlib/*.jar`, custom plugin classes | I | ◐ Name, version, SHA-256, source repo | ✔ bundle (`ciamBundle`) |
 | Virtual attributes | `isMemberOf`, `entryDN`, `numSubordinates`, collective attrs, user-defined templates | I | ● | — |
 | Groups config | Static, dynamic and virtual-static group implementations, `isMemberOf` | I | ● | — |
 | Global ACIs | `global-aci` in `cn=Access Control Handler,cn=config` | I | ● Same model as data ACIs | ~ `ciamAci` holds data ACIs. Global ones not separated. |
-| Root/admin users & privileges | `uid=admin` (7.x), `uid=monitor`, `ds-privilege-name` sets (`bypass-acl`, `password-reset`, `proxied-auth`, `config-read`…) | I + S | ● Accounts and privileges as entries, passwords as refs | ~ secret refs only |
+| Root/admin users & privileges | `uid=admin` (7.x), `uid=monitor`, `ds-privilege-name` sets (`bypass-acl`, `password-reset`, `proxied-auth`, `config-read`…) | I + S | ● Accounts and privileges as entries, passwords as refs | ~ passwords as `ciamCredential` + per-environment refs; accounts and privileges — |
 | Replication | Server IDs, group IDs, bootstrap servers, replication ports (8989), purge delay, changelog enablement, assured replication, topology | I (shape) + B (hosts/IDs) | ● | ✔ `ciamReplicationTopology`, `ciamJoinsDeploymentOf` |
 | External change log (`cn=changelog`) | Consumers (IDM, sync jobs, CDC) read it, each with a cookie or change number | I + O | ● Register the ECL readers as consumers. Cookies are ○. | — |
-| Deployment ID + password | Generated at setup. Derives the shared master key. | S | ○ Reference only. **It must be continuous across the migration.** | ✔ roles `ds-deployment-id/password` |
-| Keystore / truststore | `<ds>/config/keystore` (PKCS12) + `keystore.pin`, truststore, key-manager and trust-manager providers | S (+ cert facts) | ○ keys · ● cert facts | ~ cert facts ✔, provider config — |
+| Deployment ID + password | Generated at setup. Derives the shared master key. | S | ○ Reference only. **It must be continuous across a move.** | ✔ `ciamCredential` with `ciamContinuity: carry-over`; planner checks the target receives the same material |
+| Keystore / truststore | `<ds>/config/keystore` (PKCS12) + `keystore.pin`, truststore, key-manager and trust-manager providers | S (+ cert facts) | ○ keys · ● cert facts | ~ cert facts ✔, keystores as credentials ✔, provider config — |
 | Crypto manager | Cipher and key-wrapping config, attribute/backend encryption settings | I | ● | — |
 | Log publishers | Access (JSON/CSV/LDAP), error, debug, replication, HTTP access; filtering criteria; rotation and retention policies | I (+B for paths) | ● | ~ `ciamLogPublisher` (rotation/retention/filters —) |
 | Common-audit handlers | JSON / CSV / Syslog / Splunk / JMS / Elasticsearch handler configs | I + B + S | ● | — |
@@ -94,7 +94,7 @@ PingDS (ForgeRock DS lineage, 7.x→8.x). `<ds>` is the install root (often `/op
 | Monitoring endpoints | `cn=monitor`, HTTP `/metrics/prometheus`, `/alive`, `/healthy`; the monitor user | I | ● | — |
 | Work queue / threads / JVM tuning | `num-worker-threads`, entry cache, `OPENDJ_JAVA_ARGS` (heap, GC) | I (+B for sizes) | ● | — |
 | Disk thresholds | `disk-low-threshold`, `disk-full-threshold` per backend | I | ● | — |
-| Rest2LDAP mappings | `<ds>/config/rest2ldap/endpoints/**.json` | I + C (the REST paths) | ● Mapping as entries. Its JSON as ◐ with a hash. | — |
+| Rest2LDAP mappings | `<ds>/config/rest2ldap/endpoints/**.json` | I + C (the REST paths) | ● Mapping as entries. Its JSON as ◐ with a hash. | ~ captured; mapping not modeled |
 | Setup profiles used | `setup --profile` names + params (AM identity store, AM config, AM CTS, IDM repo, DS user data) | I | ● Record which profiles made which backends | — |
 | Scheduled tasks | Recurring backups, purges, imports in the tasks backend (`<ds>/config/tasks.ldif`) | I (+B for targets) | ● | ~ backup target only |
 | Product version & build | `<ds>/config/buildinfo`, patch level | M/O | ● | ✔ `ciamProductVersion` |
@@ -104,8 +104,8 @@ PingDS (ForgeRock DS lineage, 7.x→8.x). `<ds>` is the install root (often `/op
 
 | Artifact | Location / format | Class | Datify | opsdir today |
 |---|---|---|---|---|
-| Standard schema | `<ds>/config/schema/00-core.ldif` … | I | ◐ Version reference only | — |
-| Custom schema | `<ds>/config/schema/99-user.ldif` (or custom files), `cn=schema` | I | ● Every custom attributeType and objectClass as an entry, with purpose, PII class and export flag | ✔ `ciamUserAttribute` (attributes ✔; custom objectClasses —) |
+| Standard schema | `<ds>/config/schema/00-core.ldif` … | I | ◐ Version reference only | ✔ the standard LDAP catalogue is in the core; each user attribute and class is marked standard or defined in the record |
+| Custom schema | `<ds>/config/schema/99-user.ldif` (or custom files), `cn=schema` | I | ● Every custom attributeType and objectClass as an entry, with purpose, PII class and export flag | ✔ `ciamUserAttribute`, `ciamUserObjectClass`; rendered as standard LDIF (`ldap/schema.ldif`) |
 | Schema-checking policy | Strictness settings, allowing attribute names with underscores, etc. | I | ● | — |
 
 ### 2.3 Directory-hosted operational data (beyond people)
@@ -116,7 +116,7 @@ PingDS (ForgeRock DS lineage, 7.x→8.x). `<ds>` is the install root (often `/op
 |---|---|---|---|
 | PingFederate **OAuth client storage** (if LDAP-backed) | I (the clients) | ● as `ciamIntegration` (it is intent) | ~ |
 | PingFederate **persistent grants** (if LDAP-backed) | D | ○ count + TTLs | — |
-| AM config store / CTS / identity store backends (if AM exists) | I / D / D | ● config · ○ CTS/identities | — |
+| AM config store / CTS / identity store backends (if AM exists) | I / D / D | ● config · ○ CTS/identities | ~ AM configuration via the PingAM package (§8); CTS and identity counts — |
 | IDM repo backend (if IDM uses DS) | D | ○ | — |
 | Service-account entries (`ou=service-accounts`) | I + S | ● One entry per account, pointing at its consumer, its ACIs and its credential ref | ~ via `ciamConsumer` |
 | Delegated-admin groups, role groups | I | ● | — |
@@ -131,14 +131,14 @@ Moved by **PingDS replication** (target replicas join the existing deployment). 
 |---|---|
 | ● The DIT layout: base DNs, `ou` branches, naming attribute per branch (`uid=<email>`…) | Consumers hard-code base DNs, so the layout is a **contract** |
 | ○ Entry counts per branch / objectClass / population | Sizing, import time, replication initialization time |
-| ○ Attribute fill rates per attribute | Finds dead attributes and legacy leftovers (e.g. names from pre-merger companies) |
+| ○ Attribute fill rates per attribute | Finds dead attributes and leftovers from systems merged in over the years |
 | ○ Password-hash scheme distribution | Legacy schemes must stay enabled on the target, or users need a rehash-on-login plan |
 | ○ `lastLoginTime` / `pwdChangedTime` distribution | Inactive-account cleanup scope. Decide before or after the move? |
 | ○ Locked / disabled / pending-registration counts | Lifecycle hygiene baseline |
 | ○ Group sizes, orphan groups, members pointing at missing DNs | Referential cleanup |
 | ○ Largest entries, big multi-valued attributes | Replication and index-entry-limit risks |
 | ○ Entries holding challenge questions (KBA) | A modernization target (NIST 800-63B) |
-| ● Per-attribute PII class, export-control flag, retention rule | Privacy and ITAR gating, what may leave which boundary |
+| ● Per-attribute PII class, export-control flag, retention rule | Privacy and export-control gating: what may leave which boundary |
 | ○ Duplicate identities (the same person across legacy stores) | Consolidation scope |
 
 Importer: an `ldapsearch`-driven profiler that emits statistics only (no values). Shape: `observed` entries under `ou=user-schema` and a new `ou=data-profile`.
@@ -153,17 +153,17 @@ Importer: an `ldapsearch`-driven profiler that emits statistics only (no values)
 
 | Artifact | Location / format | Class | Datify | opsdir today |
 |---|---|---|---|---|
-| Node run config | `<pf>/bin/run.properties`: ports (9031 runtime, 9999 admin), operational mode (`CLUSTERED_CONSOLE`/`CLUSTERED_ENGINE`), node tags, `pf.cluster.*`, bind addresses, HSM mode | I + B | ● Render per node | — |
-| JVM memory | `<pf>/bin/jvm-memory.options` | I (+B for sizes) | ● | — |
-| Cluster discovery | `<pf>/server/default/conf/tcp.xml` (JGroups): S3_PING / NATIVE_S3_PING / DNS_PING on AWS, AZURE_PING / DNS_PING on Azure; encryption key for cluster traffic | **B** + S | ● **A classic migration miss.** The discovery protocol is cloud-specific. | — |
-| Jetty / TLS / headers | `<pf>/server/default/conf/jetty-runtime.xml`, `jetty-admin.xml`, response headers, cipher suites | I | ● | — |
-| Logging | `<pf>/server/default/conf/log4j2.xml`: server, audit, provisioner, transaction, admin and admin-api logs; syslog/Splunk appenders | I + B (targets) | ● | — |
-| Service wiring | `<pf>/server/default/conf/META-INF/hivemodule.xml` (which store backs clients, grants, sessions) | I | ● | — |
-| Custom adapters / plugins | `<pf>/server/default/deploy/*.jar` (Duo adapter, custom PCVs, custom data sources) | I | ◐ Name, version, SHA-256, source | — |
-| JDBC drivers | `<pf>/server/default/lib/*.jar` | I | ◐ | — |
-| Login / error / reset templates | `<pf>/server/default/conf/template/*.html` (Velocity), CSS, images: **branding lives here** (legacy company names, logos) | I + C (URLs in them) | ◐ Hash + owner, plus a **string scan** for hostnames and legacy brands (§15) | — |
-| Language packs | `<pf>/server/default/conf/language-packs/*.properties` | I | ◐ | — |
-| Config master key | `<pf>/server/default/data/pf.jwk` (encrypts secrets inside the config), or an HSM | S | ○ Reference only. Its continuity decides whether a config archive imports cleanly. | ~ generic `pf-signing-key` role only |
+| Node run config | `<pf>/bin/run.properties`: ports (9031 runtime, 9999 admin), operational mode (`CLUSTERED_CONSOLE`/`CLUSTERED_ENGINE`), node tags, `pf.cluster.*`, bind addresses, HSM mode | I + B | ● Render per node | ~ captured and rebuilt per environment (showcase); node entries — |
+| JVM memory | `<pf>/bin/jvm-memory.options` | I (+B for sizes) | ● | ~ capturable |
+| Cluster discovery | `<pf>/server/default/conf/tcp.xml` (JGroups): S3_PING / NATIVE_S3_PING / DNS_PING on AWS, AZURE_PING / DNS_PING on Azure; encryption key for cluster traffic | **B** + S | ● **A classic miss when moving.** The discovery protocol is cloud-specific. | ~ capturable (XML); discovery as a binding — |
+| Jetty / TLS / headers | `<pf>/server/default/conf/jetty-runtime.xml`, `jetty-admin.xml`, response headers, cipher suites | I | ● | ~ capturable |
+| Logging | `<pf>/server/default/conf/log4j2.xml`: server, audit, provisioner, transaction, admin and admin-api logs; syslog/Splunk appenders | I + B (targets) | ● | ~ capturable |
+| Service wiring | `<pf>/server/default/conf/META-INF/hivemodule.xml` (which store backs clients, grants, sessions) | I | ● | ~ capturable |
+| Custom adapters / plugins | `<pf>/server/default/deploy/*.jar` (MFA adapter, custom PCVs, custom data sources) | I | ◐ Name, version, SHA-256, source | ✔ bundle |
+| JDBC drivers | `<pf>/server/default/lib/*.jar` | I | ◐ | ✔ bundle |
+| Login / error / reset templates | `<pf>/server/default/conf/template/*.html` (Velocity), CSS, images: **branding lives here** (brand names, logos) | I + C (URLs in them) | ◐ Hash + owner, plus a **string scan** for hostnames and old brands (§15) | ~ bundle ✔ (showcase: `login-templates`); string scan — |
+| Language packs | `<pf>/server/default/conf/language-packs/*.properties` | I | ◐ | ~ capturable or bundle |
+| Config master key | `<pf>/server/default/data/pf.jwk` (encrypts secrets inside the config), or an HSM | S | ○ Reference only. Its continuity decides whether a config archive imports cleanly. | ~ expressible as a `ciamCredential` with carry-over continuity; not declared by the PingFederate package yet |
 | Config store | `<pf>/server/default/data/` (XML + config-store files) | I + B + S | ○ Don't parse the files. Datify through the **Admin API** (§4.2) instead. | — |
 | Auto config archives | `<pf>/server/default/data/archive/*.zip` | O | ◐ Location, date, hash | — |
 | Drop-in deployer | `<pf>/server/default/data/drop-in-deployer/` (config archive applied at start) | I | ◐ | — |
@@ -176,9 +176,9 @@ Importer: an `ldapsearch`-driven profiler that emits statistics only (no values)
 |---|---|---|---|
 | **SP connections** (SAML/WS-Fed outbound): entity ID, ACS URLs, bindings, attribute contract, signing/encryption certs, SLO | I + **C** | ● | ✔ `ciamIntegration` (SAML) + claims |
 | **IdP connections** (inbound partner federation): partner entity ID, SSO URLs, JIT provisioning, attribute mapping | I + C | ● | ~ `ciamJitBaseDn`; inbound mapping — |
-| **OAuth/OIDC clients**: client ID, redirect URIs, grant types, PKCE, auth method, token policy, scopes | I + C (+S for secrets) | ● | ✔ (auth method, token lifetimes —) |
+| **OAuth/OIDC clients**: client ID, redirect URIs, grant types, PKCE, auth method, token policy, scopes | I + C (+S for secrets) | ● | ✔ in the OIDC vocabulary (`ciamGrantType`, `ciamTokenAuthMethod`, `ciamScope`); rendered as standard client registrations; token lifetimes ~ (captured ATM file, custom field) |
 | OAuth scopes, scope groups, exclusive scopes | I | ● | — |
-| Access token managers (JWT / reference), signing key choice, lifetimes | I | ● | — |
+| Access token managers (JWT / reference), signing key choice, lifetimes | I | ● | ~ captured (showcase: `default-atm.json`) |
 | OIDC policies (ID token claims, lifetimes) | I | ● | — |
 | Token exchange / processors / generators | I | ● | — |
 | Authentication policies (trees), policy contracts, authentication selectors (IdP discovery, "select your identity provider") | I | ● These are the login flows, so they deserve first-class modeling | — |
@@ -188,9 +188,9 @@ Importer: an `ldapsearch`-driven profiler that emits statistics only (no values)
 | Local identity profiles (PF-native registration & profile management), if used | I | ● | — |
 | Password reset / change settings (email or SMS OTP), notification publishers (SMTP) | I + B + S | ● | — |
 | CAPTCHA providers | I + S | ● | — |
-| Signing key pairs, SSL server key pairs, decryption keys | S + cert facts | ○ keys · ● cert facts (fingerprint, expiry, `usedBy`) | ✔ `ciamCertificate` |
+| Signing key pairs, SSL server key pairs, decryption keys | S + cert facts | ○ keys · ● cert facts (fingerprint, expiry, `usedBy`) | ✔ `ciamCertificate` + `ciamCredential` (carry-over, HSM, exportable) |
 | Trusted CAs, partner metadata URLs & refresh | I + C | ● | — |
-| Virtual host names, base URL, SAML entity ID of *our* IdP, OIDC issuer | **C** | ● **Must not change** | ✔ `ciamEntityId`, `ciamIssuer` |
+| Virtual host names, base URL, SAML entity ID of *our* IdP, OIDC issuer | **C** | ● **Must not change** | ✔ `ciamIdentityService` (base URL, entity ID, issuer); SAML metadata and OIDC discovery rendered |
 | Redirect validation allowlist | I | ● | — |
 | Session settings, persistent session storage, session revocation | I | ● | — |
 | Outbound provisioning (SCIM/connectors to SaaS apps) + provisioner DB | I + D | ● channels · ○ state | — |
@@ -210,7 +210,7 @@ Importer: an `ldapsearch`-driven profiler that emits statistics only (no values)
 
 ---
 
-## 5. MFA: Duo  [likely]
+## 5. MFA service (e.g. Duo)  [likely]
 
 | Artifact | Where | Class | Datify | opsdir today |
 |---|---|---|---|---|
@@ -237,7 +237,7 @@ Importer: an `ldapsearch`-driven profiler that emits statistics only (no values)
 | WAF web ACLs, managed rule groups, IP sets, rate limits | AWS WAF / Akamai / F5 ASM | I (rules) + B (attachment) | ● | — |
 | CDN (if in front of login pages) | CloudFront / Akamai | B | ● | — |
 | **PingAccess** (if in the CIAM path): `<pa>/conf/run.properties`, `<pa>/data/PingAccess.mv.db` (H2 config DB), `pa.jwk`, applications, resources, sites, virtual hosts, rules, identity mappings (header injection), web sessions, token provider → PF, agents, key pairs, cluster | PA Admin API `/pa-admin-api/v3` | I + C + B + S | ● via Admin API, like PF | — |
-| PingGateway / ForgeRock IG (if used): `config/routes/*.json`, `admin.json`, `config.json` | Files | I + B | ● | — |
+| PingGateway / ForgeRock IG (if used): `config/routes/*.json`, `admin.json`, `config.json` | Files | I + B | ● | ✔ PingGateway package: routes linked to their integration and issuer, rendered per environment; `admin.json`/`config.json` captured |
 | F5 BIG-IP (if used): VIPs, pools, iRules, profiles, certs | UCS archive / AS3 declarations | I + B | ● via AS3 JSON | — |
 | Header-based SSO contracts (header names apps trust) | Gateway rules | **C** | ● | — |
 
@@ -251,14 +251,14 @@ Importer: an `ldapsearch`-driven profiler that emits statistics only (no values)
 | SiteMinder web agents: `WebAgent.conf`, `SmHost.conf` (trusted host registration), agent keys | Web servers | B + S | ● facts · ○ keys | — |
 | Registration / approval app: pending requests DB, approval workflow, email templates | App DB / ServiceNow | I + D | ● workflow & templates as ◐ · ○ requests | — |
 | Liferay portal: `portal-ext.properties`, SAML/OIDC plugin configs, IdP list (the "select your identity provider" page), `osgi/configs/*.config` | Portal servers | I + C + B | ● The SAML SP settings are the portal's half of an integration | ~ integration side only |
-| Supplier-portal integration (e.g. Exostar federation): metadata, attribute contract, trust | PF IdP/SP connection + partner | I + C | ● | ~ |
+| Supplier-portal integration (e.g. a supplier identity hub): metadata, attribute contract, trust | PF IdP/SP connection + partner | I + C | ● | ~ |
 | Legacy portals still binding directly to LDAP | App configs (unknown) | C (bind DN, base DN, hostnames) | ● **Found from access logs**, then recorded as consumers | ✔ `ciamConsumer` |
 
 ---
 
 ## 8. ForgeRock-lineage components (only if present)  [maybe]
 
-The name "PingDS" (not PingDirectory) hints at a ForgeRock-lineage stack, which may include these. Confirm first.
+A DS-lineage directory (PingDS, not PingDirectory) often comes with the rest of the ForgeRock lineage. Confirm which parts are present. **Covered today:** PingAM, PingIDM and PingGateway are adapter packages, each with an importer for its own export (Amster export, IDM project, gateway configuration) and per-environment rendering; ForgeOps rendering is on the roadmap (§21).
 
 | Component | Config artifacts | Datify |
 |---|---|---|
@@ -274,7 +274,7 @@ The name "PingDS" (not PingDirectory) hints at a ForgeRock-lineage stack, which 
 | Artifact | Where | Class | Datify | opsdir today |
 |---|---|---|---|---|
 | SMTP relay (SES / Exchange Online / on-prem relay), port, auth | PF notification publisher, DS SMTP config, portal apps | B + S | ● | — |
-| **Sender addresses** (e.g. a legacy-company `portaladmin@…` address) | PF / portal templates | **C** | ● **User-visible contract.** Changing it goes through the change process. | — |
+| **Sender addresses** (e.g. a `portaladmin@…` address under an older brand) | PF / portal templates | **C** | ● **User-visible contract.** Changing it goes through the change process. | — |
 | SPF / DKIM / DMARC records for sender domains | DNS | B + C | ● New sending IPs or services must be added to SPF/DKIM **before** cutover, or reset emails get spam-foldered | — |
 | Email templates (welcome, reset, registration) | PF templates / app | I | ◐ hash + string scan | — |
 | SMS / voice OTP provider (if any) | Twilio etc. | I + S | ● | — |
@@ -327,7 +327,7 @@ The name "PingDS" (not PingDirectory) hints at a ForgeRock-lineage stack, which 
 | logrotate configs | Host | I | ● | — |
 
 ### 11.2 Kubernetes style (EKS/AKS, if ForgeOps)
-Cluster version, node groups, namespaces, StatefulSets, PVCs & storage classes, ingress controller, cert-manager issuers, external-secrets / secret-agent, network policies, IRSA / workload identity, Helm releases. All ● and split I/B exactly like §8's ForgeOps row.
+Cluster version, node groups, namespaces, StatefulSets, PVCs & storage classes, ingress controller, cert-manager issuers, external-secrets / secret-agent, network policies, IRSA / workload identity, Helm releases. All ● and split I/B exactly like §8's ForgeOps row. **Today:** Kubernetes secrets as references (`k8s-secret://`, opsdir-adapter-kubernetes); workloads —.
 
 ---
 
@@ -339,12 +339,13 @@ Everything here is **S** in opsdir: a `ref-uri`, never a value (SPEC R4).
 |---|---|---|---|
 | Secrets Manager secrets (names, rotation Lambdas, rotation schedule) | AWS | ● ref + rotation facts | ✔ `ciamSecretRef` + rotation facts (`ciamAutoRotate`, `ciamRotationFunction`, `ciamLastRotated`) |
 | KMS keys: aliases, key policies, grants, multi-region settings | AWS | ● ref + policy intent (who may decrypt what) | ✔ `ciamKeyRef` + protection level, key users/admins, replica regions (grants —) |
-| Key Vault / Managed HSM (target side) | Azure | ● | ✔ (`azkv://`) |
+| Key Vault / Managed HSM | Azure | ● | ✔ (`azkv://`, `azkv-key://`, `azkv-cert://`) |
+| Kubernetes secrets (containerized deployments) | Cluster | ● ref | ✔ (`k8s-secret://`) |
 | CloudHSM (if PF keys are HSM-backed) | AWS | ● ref. **HSM keys don't export.** Rotating the signing key becomes a partner-facing change. | ✔ `ciamHsmRequired`, `ciamExportable`, `ciamProtectionLevel`; planner blocks a carry-over that can't leave its store |
 | PAM (CyberArk): safes, accounts (`uid=admin`, service-account passwords, PF admin), platforms, CPM rotation, reconcile accounts | PAM | ● ref per account + rotation policy | ~ `cyberark://` refs (as a binding or `ciamCopyRef`) + rotation policy; platforms/CPM — |
 | **Credential sprawl:** the same service-account password stored in DS, PF data store config, PAM, scripts | Everywhere | ● One `ciamSecretRef` per credential, with `usedBy` → every place it's configured. Rotation becomes a query. | ✔ `ciamCredential` + `ciamUsedIn`, `ciamCopyRef`; `credentials` and `rotation-impact` reports |
 | Internal PKI: issuing CA (AD CS / Venafi / private CA), templates, CRL/OCSP URLs | PKI | ● CA + chain facts. Certificate-lifecycle tool refs. | — |
-| Keystores: DS (PKCS12), PF, PA, JDK cacerts, partner trust anchors | Various | ● Cert facts per keystore with `usedBy` | ✔ cert facts |
+| Keystores: DS (PKCS12), PF, PA, JDK cacerts, partner trust anchors | Various | ● Cert facts per keystore with `usedBy` | ✔ cert facts; keystores as credentials |
 | DS deployment ID/password, PF `pf.jwk`, PA `pa.jwk`, cluster encryption keys | Product | ● ref. Continuity requirement recorded. | ✔ `ciamContinuity` + `ciamMaterialFrom` (planner: copy before cutover) |
 
 ---
@@ -435,7 +436,7 @@ Result: "change this hostname" becomes a query that lists every file and every p
 | Assignment groups, on-call schedules, escalation paths | ITSM / PagerDuty | M | ● as `ciamParty` + schedules | ~ `ciamParty` |
 | Runbooks / work instructions | Confluence / SharePoint / KB | M | ● entry + `appliesTo` + `lastValidated` · ◐ document itself | ✔ `ciamRunbook` |
 | Architecture & data-flow diagrams | Docs | M | ◐ Rendering them *from* opsdir is a future feature | — |
-| Security plan entries (SSP / ATO boundary, CMMC/NIST 800-171 control mapping), SOX ITGC controls | GRC tool | M | ● Control → evidence query (e.g. "list ACIs with review older than 12 months") | — |
+| Security plan and authorization boundary, control mappings (e.g. NIST 800-53 / 800-171, ISO 27001, SOC 2, SOX ITGC) | GRC tool | M | ● Control → evidence query (e.g. "list ACIs with review older than 12 months") | — |
 | Risk register, exceptions/waivers (with expiry) | GRC | M | ● | — |
 | Data classification & retention schedule | Policy | M | ● feeds `ciamPiiClass`, `ciamRetentionRule` | ✔ |
 | Vendor contracts, DPAs, partner federation agreements | Legal / procurement | M | ◐ | — |
@@ -449,8 +450,8 @@ Result: "change this hostname" becomes a query that lists every file and every p
 | Federation partners (inbound IdPs, outbound SPs) | Our metadata URL, entity ID, signing cert, ACS/SSO URLs | ● contacts, lead times, what they pin | ✔ `ciamParty` + integrations |
 | App teams (relying parties & LDAP binders) | Hostnames, bind DNs, client IDs, claim names | ● | ✔ `ciamConsumer`, `ciamIntegration` |
 | Network/firewall teams (ours and theirs) | Rules for our IPs | ● | ✔ `ciamExternalAllowlist` |
-| Supplier identity hub (e.g. Exostar) | Federation config | ● | ~ |
-| SaaS vendors (Duo, CAPTCHA, email) | Keys, allowed domains, IPs | ● | — |
+| Supplier identity hubs | Federation config | ● | ~ |
+| SaaS vendors (MFA, CAPTCHA, email) | Keys, allowed domains, IPs | ● | — |
 | Auditors | Evidence formats and cadences | ● | — |
 
 ---
@@ -470,36 +471,40 @@ Result: "change this hostname" becomes a query that lists every file and every p
 
 ---
 
-## 21. Coverage vs opsdir today, and the build order
+## 21. Coverage today, and the build order
 
-**Modeled today (✔):** servers, bindings (network, subnets, service names, firewall rules, egress, interconnects, secret/key refs, backup targets), DS backends/indexes/password policies/connection handlers/log publishers/replication, user-attribute records, consumers, ACIs, integrations + claim maps, certificates, external allowlists, runbooks, changes, incidents, owners. Renderers: Terraform (AWS, Azure), `dsconfig` batch, DS setup scripts, ACI LDIF, PingFederate JSON (illustrative subset).
+**Modeled today (✔):**
+- **Where things run:** clouds and environments (overlays of other environments, per-environment overrides with why, declared stacks and required roles), servers, and bindings: networks, subnets, service names, firewall rules, egress, interconnects, secret, key and certificate references, backup targets.
+- **Directory:** backends, indexes, password policies, connection handlers, log publishers, replication topology, declared vs observed snapshots; the user directory's schema (every attribute and object class, standard or defined in the record); consumers and ACIs.
+- **Federation:** the platform's own identity services (base URL, entity ID, issuer), SAML and OIDC integrations with claim maps in the protocols' own vocabulary.
+- **Keys and secrets:** certificates (public facts), credentials with continuity, HSM, exportability and rotation facts, one per key or secret and bound per environment; secret stores AWS Secrets Manager/KMS, Azure Key Vault, HashiCorp Vault, Kubernetes secrets, CyberArk.
+- **Products on the standard bases:** PingDS and OpenDJ (DS lineage), PingFederate, PingAM (realms, journeys, policy sets), PingIDM (managed objects, connectors, mappings, schedules), PingGateway (routes); importers for the PingAM, PingIDM and PingGateway exports.
+- **Files:** config files held setting by setting and rebuilt per environment; code and templates as bundles, verified against a checkout.
+- **Governance:** owners and parties, changes, incidents, runbooks, external allowlists, custom fields and record types.
 
-**Gaps, in suggested order** (by migration risk removed per unit of work):
+**Renderers:** Terraform (AWS, Azure), `dsconfig` batch and setup scripts (PingDS, OpenDJ), standard LDIF (user schema and tree), ACI LDIF, PingFederate JSON (illustrative subset), SAML metadata, OIDC client registrations and discovery, PingAM (Amster entities), PingIDM (project files), PingGateway (routes), captured files.
 
-| # | Gap | New classes / importers / renderers |
+**Gaps, in roadmap order** (the roadmap is tracked in `.aimfp-project/`):
+
+| Roadmap path | Closes | New classes / importers / renderers |
 |---|---|---|
-| 1 | **Observed importers** (the model is only as good as its data) | DS access-log miner → `ciamConsumer`; `config.ldif` / `dsconfig` export → snapshots; PF Admin API bulk export → integrations, adapters, data stores, keys |
-| 2 | **String census** (§15) | File scanner → `ciamOccurrence` (observed): file, host, line, value-hash, owning entry |
-| 3 | **PF depth** | `ciamAuthPolicy`, `ciamAdapter`, `ciamDataStore`, `ciamAccessTokenManager`, `ciamOidcPolicy`, `ciamScope`, `ciamNotificationPublisher`; PF node files (`run.properties`, `tcp.xml` discovery as a **binding**) |
-| 4 | **Hidden automation** | `ciamJob` (cron/scheduled task/Lambda/pipeline): schedule, host role, purpose, owner, script hash |
-| 5 | **Host baseline** | `ciamHostBaseline` per server role: OS, JDK + cacerts additions, limits, sysctl, agents, FIPS, systemd units |
-| 6 | **Messaging** | `ciamMailSender` (address as contract, SPF/DKIM facts), `ciamExternalService` (Duo, CAPTCHA, SMTP, SMS) with allowed-domain and egress needs |
-| 7 | **Data profile** (§3) | `ou=data-profile` statistics entries, from a values-free profiler |
-| 8 | **Observability intent** | `ciamAlertRule`, `ciamLogRoute`, `ciamCanary`, rendered to CloudWatch / Azure Monitor |
-| 9 | **Credential sprawl** | ✔ done (milestone 2.3): `ciamCredential` with `ciamUsedIn`, PAM refs (`ciamCopyRef`), `credentials` and `rotation-impact` reports |
-| 10 | **Conditional products** | PingAccess, SiteMinder (XPSExport importer), AM (Amster importer), IDM (conf/*.json importer), ForgeOps overlay renderer |
-| 11 | **Governance sync** | ServiceNow change/CMDB sync, a GRC control → query mapping |
-| 12 | **Unknowns register** | `ciamUnknown` (question, owner, blocking?, answer), included in the planner's verdict |
+| **4. Importers** | the model is only as good as its data | DS configuration (`config.ldif`, `dsconfig` export, archived configs → snapshots); DS access-log miner → `ciamConsumer`; PingFederate (Admin API / bulk export / archive → integrations, adapters, data stores, key facts); **string census** (§15: file scanner → `ciamOccurrence`: file, host, line, value hash, owning entry); cloud and Terraform inventories → bindings |
+| **5. Stack coverage** | §4, §9–§14, §17 | PingFederate depth (`ciamAuthPolicy`, `ciamAdapter`, `ciamDataStore`, `ciamAccessTokenManager`, `ciamOidcPolicy`, `ciamScope`, node files with `tcp.xml` discovery as a **binding**); hidden automation (`ciamJob`: cron, scheduled tasks, serverless functions, pipelines); host baseline and Kubernetes workloads (`ciamHostBaseline`); messaging and external services (`ciamMailSender`, `ciamExternalService`); data profile (`ou=data-profile`, values-free); observability intent (`ciamAlertRule`, `ciamLogRoute`, `ciamCanary`); platform IAM and admin plane; edge and traffic protection; network depth; data services, backup and DR; cloud governance, audit and cost |
+| **6. Renderers & targets** | working files for every covered target | PingFederate Admin API payloads / Terraform provider (replacing the illustrative subset), Kubernetes/ForgeOps overlays, config management and on-prem, observability rules, per-adapter round-trip tests (import → render → import) |
+| **7. Conditional products & governance** | §6–§7, §18 | PingAccess, SiteMinder (XPSExport), cloud-managed identity services; vendor-neutral ITSM/CMDB, GRC, SIEM, PAM, PKI and firewall-manager integrations; the unknowns register (`ciamUnknown`: question, owner, blocking, answer) in the planner's verdict |
+| **8. Interfaces, validation & release** | operating it day to day | full CLI, a read-only LDAP front end or HTTP API, an MCP server for AI assistants, validation against real product instances, SPEC 1.0 with a registered OID arc |
 
 ---
 
-## 22. Unknowns that reshape this map
+## 22. Questions to answer for each estate
 
-1. Which lineage is present beyond PingDS + PF: AM, IDM, IG, PingAccess, SiteMinder?
-2. VM (EC2) or Kubernetes (ForgeOps)? This decides §11.1 vs §11.2 and which renderer matters.
-3. Where PF keeps clients, grants and sessions: XML, JDBC or LDAP (DS)?
+These don't change the model; they decide which parts of it an estate uses and which importers and renderers matter first.
+
+1. Which products are present beyond the directory and federation server: PingAM, PingIDM, PingGateway, PingAccess, SiteMinder?
+2. Virtual machines or Kubernetes (ForgeOps)? This decides §11.1 vs §11.2 and which renderer matters.
+3. Where does PingFederate keep clients, grants and sessions: XML, JDBC or LDAP (DS)?
 4. Are signing keys HSM-backed?
 5. Do consumers bind to service names or to replica hostnames?
-6. Target landing zone: another AWS org/GovCloud or Azure (Government)? What's pre-built there (network, DNS, PKI, SIEM, PAM)?
-7. Is a DS version upgrade in or out of the move?
+6. If a move is planned: to which cloud, account or region, and what is pre-built there (network, DNS, PKI, SIEM, PAM)?
+7. Is a product version upgrade in or out of the move?
 8. Which ITSM, SIEM, PAM, PKI and firewall-manager products are in place? Each one is an importer.

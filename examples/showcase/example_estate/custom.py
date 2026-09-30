@@ -11,7 +11,7 @@ FIELDS = (
         ciamPattern="^CC-[0-9]{4}$", ciamExample="CC-1001", ciamPurpose="Cost center billed for the team's usage",
         ciamValueSource="finance: cost-center register", ciamPiiClass="none")),
     ("xDataResidency", dict(
-        ciamDefinitionNumber=2, ciamValueType="enum:us|us-gov|eu|ca", ciamPortability="binding",
+        ciamDefinitionNumber=2, ciamValueType="enum:us|eu|uk|ca", ciamPortability="binding",
         ciamCarriedBy="ciamEnvironment", ciamOverridable="TRUE",
         ciamPurpose="Jurisdiction the environment's identity data must stay in",
         ciamDocumentation="https://wiki.example-aero.test/security/data-residency",
@@ -39,7 +39,7 @@ FEATURE_FLAGS = (("passkey-enrollment", "TRUE", 25, "Offer passkey enrollment af
                  ("legacy-kba-recovery", "FALSE", None, "Knowledge-based account recovery (being retired)"))
 # the values the estate's records carry: owner cost centers, environment residency, integration token lifetimes
 COST_CENTERS = {"ciam-platform": "CC-1001", "customer-portal-team": "CC-2040", "supplier-portal-team": "CC-2041"}
-RESIDENCY = {"source": "us", "target": "us-gov"}
+RESIDENCY = {"source": "us", "target": "us"}
 TOKEN_LIFETIMES = {"tech-pubs": 60, "mobile-ops": 30}
 
 

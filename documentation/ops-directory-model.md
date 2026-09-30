@@ -1,250 +1,221 @@
-# The Operations Directory: modeling the CIAM estate as a directory
+# The operations record: design rationale
 
-*Improvement proposal for the Collins / RTX CIAM role. Companion to `../systems-and-workflows.md` (§ refs "spec §") and `../automation-path.md` (§ refs "auto §"). Drafted 2026-09-23 from Aryan's idea, with one Claude↔Codex round (`../../../codex/discussion.txt`, topic `collins-ops-directory`). Everything about RTX's real estate is still unknown; this is a design proposal built for synthetic data.*
+*Why CIAMstack models an identity platform as a directory-shaped record, what that record holds, and where the approach reaches its limits. The standard itself (schema, extensions, rules R1–R10, adapter contract) is [`opsdir/SPEC.md`](../opsdir/SPEC.md); the inventory of everything a platform carries, and how much of it is modeled today, is [`STACK.md`](STACK.md).*
 
 ---
 
 ## 1. The idea
 
-**Everything about the directory lives in a directory.**
+**Everything about the platform lives in one record, shaped like a directory.**
 
-PingDS already keeps its own configuration as LDAP entries: the `cn=config` backend is a tree, and `dsconfig` edits entries in it. The proposal takes that one step further. Model the whole *operational estate* around the identity platform the same way: servers, config, schema, ACIs, consumers, integrations, claim mappings, certificates, runbooks, changes, incidents and owners. The result is a small set of structured databases shaped like the directory they describe.
+Directory servers already keep their own configuration as LDAP entries: the `cn=config` backend is a tree, and tools such as `dsconfig` edit entries in it. CIAMstack takes that one step further and models the whole *operational estate* around an identity platform the same way: servers and where they run, product configuration, the user directory's schema, ACIs, the applications and services that bind to the directory, federation integrations and their claims, certificates, keys and secrets (as references), runbooks, changes, incidents and owners.
 
-**Aryan's thesis:** the migration to the "next gen RTX cloud environment" should come down to *moving a small handful of databases (even large ones) and letting the new infrastructure configure itself from them.* Migrations should be quick, easy and repeatable.
+That record is the **system of record the platform is operated from**:
 
-> **Correction on an earlier claim.** I previously called config-as-code "their direction". **The posting doesn't say that.** It asks for "developing automation" and for defining "platform roadmaps, standards, and runbooks", and it names no tools. Terraform, Ansible, Python and Azure DevOps appear in a **different** RTX posting (the July 2026 Enterprise Services Cloud Platform role that builds Azure landing zones; see `../newStrategy.txt`). So config-as-code is how the *landing zone the directory may move into* is probably built. It is not confirmed practice on the CIAM team. Spec §15 Q10 ("what does 'developing automation' mean on this team today?") is still open.
+- **A change is an entry** made under an approved change record and kept in history. Nobody hand-edits a rendered file or clicks through a console to change the platform.
+- **Working files are generated from it:** infrastructure code, product configuration, setup scripts. Each environment gets its own render from the same record.
+- **Questions become queries:** what expires, what a certificate's rotation breaks, who can read which attributes, what drifted, what nobody owns.
+- **Moving the platform is one capability among these,** not the reason the record exists. Because the record already separates what is portable from what is bound to a place (§2), a second environment is rendered from the same intent, and a planner says what still stands in the way.
 
 ---
 
-## 2. The core principle: separate what moves from what's bound to a place
+## 2. Separating what is portable from what is bound to a place
 
-The thesis holds exactly as far as everything is classified correctly into one of these five kinds of state:
+Every attribute in the schema declares its **portability class** (`X-PORTABILITY`, SPEC §3.1). The record works because every value is classified as one of these kinds:
 
-| Kind | Examples | Environment-neutral? | How it moves |
+| Kind | Examples | The same in every environment? | How it reaches an environment |
 |---|---|---|---|
-| **A. User data** | people, organizations, groups, entitlements, password hashes, registration status | Yes | **PingDS's own replication.** Add replicas in the target, let them converge, shift traffic, retire the old ones. Ping documents "add new servers and retire old ones" as an official upgrade/migration strategy. |
-| **B. Platform intent** | schema, indexes, ACIs, password policies, backends, log publishers, replication *topology shape* | Yes | Rendered into `dsconfig` batch files / setup profiles for the target. |
-| **C. Federation intent** | PingFederate SP connections, OIDC clients, attribute contracts, claim maps, adapters, policies | Mostly (URLs and certs are bindings) | Rendered into PF Admin API calls / config archive / Terraform. |
-| **D. Estate knowledge** | consumers (bind DNs from logs), owners, criticality, dependencies, runbooks, changes, incidents | Yes | It *is* the operations directory. It moves as a file set / DB. |
-| **E. Bindings** | hostnames, IPs, subnets, LB/DNS, firewall rules, compute sizes, storage classes, key-vault/KMS **references**, cert-to-hostname | **No.** This is the part that differs per cloud | **Rewritten per environment.** It should be the *only* thing written by hand for a migration. |
-| *(Secrets)* | keys, passwords, the DS **deployment ID + password** | N/A | **Never stored.** Only referenced. Re-provisioned into the target's secret store (Key Vault / Secrets Manager) through the normal secrets process. |
+| **User data** | people, organizations, groups, entitlements, password hashes | Yes | **The product's own replication.** CIAMstack never holds it; it records its shape (schema, counts, distributions). New replicas join the existing deployment and converge. |
+| **Intent** | schema, indexes, ACIs, password policies, backends, log publishers, replication topology shape, federation connections, OAuth clients, journeys, sync mappings | Yes | Rendered into the product's own configuration (`dsconfig` batch files, setup scripts, product JSON, standard SAML/OIDC documents). |
+| **Contract** | service DNS names, SAML entity IDs, OIDC issuers, redirect URIs, bind DNs other teams use | Yes, and it **must not change** | Rendered unchanged; the planner blocks any environment that would change one. |
+| **Binding** | hostnames, IPs, subnets, load balancers and DNS records, firewall rules, instance sizes, key-store references | **No**: this is what differs per environment | Written per environment. A new environment is mostly a new set of bindings. |
+| **Secret reference** | where a key, password or keystore is kept | No | **Never stored**, only referenced (SPEC R4). Resolved at run time from the environment's secret store. |
+| **Observed** | snapshots of live configuration, metrics mined from logs | — | Measured from the live system; evidence, compared with intent (drift). |
+| **Meta** | owners, dates, status, documentation | Yes | Kept with the entry. |
 
-**Migration under this model** = keep A–D, write a new E for the target, render and apply, let replication carry A, verify, cut over.
-
-**A fact that shows why the secrets row matters.** PingDS encrypts backend data, backups and passwords with symmetric keys, which are protected by a **shared master key derived from the deployment ID and its password**. Every replica must have the same pair to decrypt what the others encrypted. So target replicas **must join the existing deployment** with the same deployment ID and password. If you stand up a fresh deployment in the new cloud and import LDIF, you lose that continuity. A migration plan that treats "the data" as just a big file would miss this. *(Source: PingDS cryptographic keys docs, see Sources.)*
+**Why the secret row matters.** A DS-lineage directory (PingDS, ForgeRock DS) encrypts backend data, backups and passwords with symmetric keys protected by a **shared master key derived from the deployment ID and its password**. Every replica must share the pair to read what the others encrypted, so a new environment's replicas **must join the existing deployment** with the same deployment ID and password. Standing up a fresh deployment and importing LDIF loses that continuity. The record captures this as data (`ciamContinuity: carry-over` on the credential, `ciamMaterialFrom` on each environment's binding naming where the material comes from), and the planner checks it. *(Source: PingDS cryptographic keys documentation, see Sources.)*
 
 ---
 
-## 3. The operations directory (DIT)
+## 3. The record's layout
+
+The naming context is `dc=ciam-ops`. The core defines the branches below (SPEC §5); adapter packages add their own under their own schema arcs.
 
 ```
 dc=ciam-ops
 ├── ou=environments
-│   ├── cloud=aws-current
-│   │   └── env=prod | stage | dev
-│   │       ├── cn=ds-1 … ds-n            ciamServer: version, AZ, role, replicationId
-│   │       ├── cn=pf-engine-1 … n        ciamServer (PingFederate)
-│   │       └── ou=bindings               ciamBinding: dnsName, lbTarget, subnet, fwRule, secretRef, kmsRef
-│   └── cloud=rtx-next                    (same shape; filled in during migration)
+│   └── cloud=<name>                        ciamCloud: provider, region, partition
+│       └── env=<name>                      ciamEnvironment: lifecycle, overlay of another environment, overrides
+│           ├── cn=<server>                 ciamServer: role, hostname, zone, size, image, product version
+│           ├── ou=stack                    ciamStackComponent (role -> adapter + version range), ciamRequiredRole
+│           ├── ou=overrides                ciamOverride: an overridable value, per environment, with why
+│           └── ou=bindings                 ciamNetwork, ciamSubnetBinding, ciamServiceName, ciamFirewallRule,
+│                                           ciamEgress, ciamSecretRef, ciamKeyRef, ciamCertificateRef,
+│                                           ciamBackupTarget, ciamInterconnect
 ├── ou=config
-│   ├── ou=declared                       desired DS config, env-neutral (kind B)
-│   └── ou=observed
-│       └── snap=<server>-<timestamp>     mirrored cn=config per server (read-only snapshots)
-├── ou=schema
-│   └── cn=<attributeName>                ciamAttributeRecord: purpose, piiClass, exportControlled,
-│                                         readBy → consumer DNs, releasedAs → claim DNs
-├── ou=acis
-│   └── cn=<aci-id>                       ciamAciRecord: target, bindDN, rights, justification, ticket, reviewedOn
-├── ou=consumers
-│   └── cn=<bindDN-hash>                  ciamConsumer: bindDN, sourceIPs, opMix, subtrees, attrsRead,
-│                                         unindexedSearches, tlsOnly, peakRate, owner →, criticality,
-│                                         migrationStatus (unknown/identified/contacted/tested/cutover)
-├── ou=integrations
-│   └── cn=<app>                          ciamIntegration: protocol (SAML/OIDC/LDAP/header), entityId,
-│       │                                 acsUrl/redirectUri, population, mfaRequired, owner →, usesCertificate →
-│       └── ou=claims
-│           └── cn=<claim>                ciamClaimMap: sourceAttribute →, claimName, transform
-├── ou=certificates
-│   └── cn=<fingerprint>                  ciamCertificate: subject, issuer, notAfter, purpose,
-│                                         usedBy → DNs, rotationRunbook →, partnerContact →   (never the key)
-├── ou=runbooks
-│   └── cn=<wi-id>                        ciamRunbook: title, version, appliesTo → config DNs, lastValidated
-├── ou=changes / ou=incidents             ciamChange / ciamIncident: ticket, approvedBy, modified/involved → DNs
-└── ou=owners                             teams and contacts (references only, no HR data)
+│   ├── ou=declared                         desired directory configuration: backends, indexes, password policies,
+│   │                                       connection handlers, log publishers, replication topology
+│   └── ou=observed                         ciamSnapshot per server: the live configuration, mirrored
+├── ou=user-schema                          ciamUserAttribute, ciamUserObjectClass: purpose, PII class, export control,
+│                                           standard or defined in the record
+├── ou=consumers                            ciamConsumer: bind DN, source addresses, attributes read, owner, status
+├── ou=acis                                 ciamAci: target, grantee (a consumer), rights, justification, review date
+├── ou=identity-services                    ciamIdentityService: the platform's own IdP / OpenID provider (contracts)
+├── ou=integrations                         ciamIntegration (SAML / OIDC / LDAP) -> ou=claims (ciamClaimMap)
+├── ou=certificates                         ciamCertificate: public facts only (fingerprint, dates, SANs, key role)
+├── ou=credentials                          ciamCredential: what a key or secret is, how it rotates, where it is used
+├── ou=external-allowlists                  ciamExternalAllowlist: other parties' allowlists holding our addresses
+├── ou=config-files, ou=bundles             files held setting by setting; code and templates by repo path + hash
+├── ou=custom-schema                        ciamFieldDefinition, ciamRecordTypeDefinition: operator-defined
+├── ou=runbooks, ou=changes, ou=incidents   ciamRunbook, ciamChange, ciamIncident
+└── ou=owners                               ciamParty: teams, partners, vendors, the operator
 ```
 
-The **DN references** (`→`) are what make this more than an inventory. Together they form a dependency graph that can be queried with ordinary LDAP filters.
+Product packages add branches for what only they have: `ou=pingam` (journeys, policy sets), `ou=pingidm` (managed objects, connectors, mappings, schedules), `ou=pinggateway` (routes). Wherever a concept is standard (an OAuth client, a SAML partner, an LDAP server), the product's objects are recorded in the standard branches instead, so every product on the same base reads and renders them.
 
-### 3.1 Draft schema (illustrative)
+The **DN references** between entries are what make the record more than an inventory. An ACI names its grantee consumer; a claim names the user attribute it maps from; a certificate names its key; a service name names the certificate it presents. Together they form a dependency graph the store enforces (R3: a referenced entry can't be deleted) and the reports walk.
+
+### 3.1 The schema is real LDAP schema
+
+The schema is published as standard RFC 4512 definitions (`opsdir/schema/ciam-ops.schema.ldif`), with CIAMstack's extensions as legal `X-` qualifiers. For example:
 
 ```ldif
-# OIDs under a private arc would be assigned properly; placeholders shown.
-attributeTypes: ( 1.3.6.1.4.1.99999.1.1 NAME 'ciamUsedBy'
-  DESC 'DN of an entry that depends on this one'
-  SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 )                      # DN syntax
-attributeTypes: ( 1.3.6.1.4.1.99999.1.2 NAME 'ciamNotAfter'
-  SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE )         # GeneralizedTime
-attributeTypes: ( 1.3.6.1.4.1.99999.1.3 NAME 'ciamMigrationStatus'
-  EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
-attributeTypes: ( 1.3.6.1.4.1.99999.1.4 NAME 'ciamPiiClass'
-  EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
-
-objectClasses: ( 1.3.6.1.4.1.99999.2.1 NAME 'ciamCertificate' SUP top STRUCTURAL
-  MUST ( cn $ ciamNotAfter )
-  MAY ( description $ ciamUsedBy $ ciamRotationRunbook $ ciamPartnerContact ) )
-objectClasses: ( 1.3.6.1.4.1.99999.2.2 NAME 'ciamConsumer' SUP top STRUCTURAL
-  MUST ( cn $ ciamBindDN )
-  MAY ( ciamSourceIP $ ciamAttrsRead $ ciamOwner $ ciamCriticality $ ciamMigrationStatus ) )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.104 NAME 'ciamNotAfter' DESC 'Expires'
+  EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE
+  X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.28 NAME 'ciamCertificate' DESC 'Certificate (public facts only)'
+  SUP ciamObject STRUCTURAL MUST ( cn $ ciamFingerprint $ ciamNotAfter $ ciamCertPurpose )
+  MAY ( ciamSubject $ ciamIssuer $ ciamNotBefore $ ciamSubjectAltName $ ciamKeyRole $
+        ciamPartnerContact $ ciamRotationRunbook ) X-ORIGIN 'opsdir' )
 ```
 
-Writing the model as real LDAP schema is part of the pitch: it shows schema fluency on screen.
+`X-PORTABILITY` makes the schema itself say what differs between environments; `X-VALUE-TYPE` adds stricter types than LDAP syntaxes (DNs, CIDRs, FQDNs, ports, reference URIs, enumerations, vocabularies registered by adapters). OIDs sit under the RFC 5612 documentation arc until a registered arc replaces it; each package's fragment has its own sub-arc with pinned numbers, and operators add fields and record types as entries (SPEC §2.3).
 
 ---
 
-## 4. Questions it answers (example queries)
+## 4. Questions it answers
 
-| Question | Query sketch |
+| Question | How |
 |---|---|
-| Cert blast radius: what breaks if this partner cert expires? | read `cn=<fp>,ou=certificates` → follow `ciamUsedBy` → integrations → `ciamOwner` |
-| What expires in the next 30 days? | `(&(objectClass=ciamCertificate)(ciamNotAfter<=20261023000000Z))` |
-| Migration readiness: which consumers aren't ready for cutover? | `(&(objectClass=ciamConsumer)(!(ciamMigrationStatus=tested)))` |
-| Unknown consumers (bind DNs with no owner) | `(&(objectClass=ciamConsumer)(!(ciamOwner=*)))`. The target at cutover is **zero** (auto §6). |
-| Least privilege: who can read PII-classified attributes? | join `ou=schema (ciamPiiClass=high)` ↔ `ou=acis` ↔ `ou=consumers` |
-| Stale runbooks | runbooks whose `appliesTo` DNs changed after `lastValidated` |
-| Drift | `ou=config/declared` vs latest `ou=config/observed` snapshot, normalized |
-| Claims released to an app | children of `ou=claims,cn=<app>,ou=integrations` |
+| What expires, and when? | `opsdir report expiring` |
+| What breaks if this certificate expires or is rotated? | `opsdir report blast-radius <certificate DN>`: follows every reference to it, to integrations, service names and owners |
+| What does rotating this key or secret touch? | `opsdir report rotation-impact <credential DN>`: every environment's copy, its certificate, every application that trusts it |
+| Where does each environment keep its keys and secrets, and are they kept correctly? | `opsdir report keys <env>`, `opsdir report credentials` |
+| Who can read privacy-classified attributes? | `opsdir report pii`: user attributes by PII class ↔ ACIs ↔ consumers |
+| What drifted from the declared configuration? | `opsdir report drift`: declared vs the latest observed snapshot, normalized |
+| Which work instructions are stale? | `opsdir report stale`: runbooks whose dependencies changed after they were last validated |
+| What does nobody own? | `opsdir report unowned` |
+| How does an environment differ from the one it overlays? | `opsdir report overrides` |
+| Any ad-hoc question | `opsdir search -b <base> '<LDAP filter>' [attributes]`, e.g. `(&(objectClass=ciamConsumer)(!(ciamOwner=*)))` for consumers with no owner |
+
+Reports are data registered by domains and adapter packages; SQL reports run in the store, directory reports over a snapshot of the record.
 
 ---
 
-## 5. How it feeds the automation workstreams
+## 5. Operating from the record
 
-| Workstream (auto §3) | What the operations directory provides |
-|---|---|
-| 3.1 Migration discovery & readiness | `ou=consumers` *is* the dependency register. The readiness report comes from the `cloud=aws-current` vs `cloud=rtx-next` subtrees. |
-| 3.2 Config-as-code + drift | `ou=config/declared` vs `ou=config/observed` |
-| 3.3 Tier-3 triage | Maps an app → integration → claims → attributes → consumer → servers, so the triage job knows where to look |
-| 3.4 Cert / metadata expiry | `ou=certificates` plus `usedBy` gives each warning its blast radius and owner |
-| 3.5 Audit evidence | ACI justifications, change records and review dates are already structured |
-| 3.7 App onboarding PR | A new app becomes a new `cn=<app>,ou=integrations` subtree, reviewed as a PR |
-| 3.9 Runbook upkeep | `appliesTo` + config change timestamps → stale flag |
-
-It is the concrete shape of the "evidence store" in auto §8.1, shared by Module A (consumer discovery) and Module B (triage).
+- **Governed writes.** Every write names a change record under `ou=changes`; unapproved changes, invalid values, secret values in reference fields and deletes that would break references are rejected by the database (R1–R6), and every accepted write lands in history.
+- **Rendering.** `opsdir render <cloud>/<env>` builds an environment model (roles, bindings, overrides) and runs every applicable adapter's renderer. Output carries a MANIFEST with each file's scope and SHA-256. Rendered files are never edited; the record is.
+- **Declared stacks.** Each environment declares, per role, which adapter and which version range it runs; `opsdir check` says whether the adapters are installed and where to get missing ones.
+- **Environments as overlays.** A stage environment can be an overlay of production: it shares what it doesn't bind itself, drops roles it shouldn't have, and overrides values the schema marks `X-OVERRIDABLE`, each with why.
+- **Importers.** An adapter's importer reads a product's own export (an Amster export, an IDM project, a gateway configuration) into the record as change records, under an approved change; secret values found on the way are withheld and reported.
+- **Files and bundles.** Configuration files are held setting by setting and rebuilt for any environment; code and templates are recorded by repo path and digest and verified against a checkout.
+- **Custom fields and record types.** Operators extend the record with their own governed, typed, documented fields (`ciamFieldDefinition`) and record types (`ciamRecordTypeDefinition`).
 
 ---
 
-## 6. Stress-testing the thesis
+## 6. Moving between environments
 
-### 6.1 A sharper version of the thesis
-Codex's main criticism was that "move a handful of DBs and the infra configures itself" will sound naive in an interview unless the next sentence names what does *not* move. The databases are only part of the picture. **The migration succeeds when external contracts stay stable and the bindings are regenerated safely.** The stronger statement:
+Moving a platform, to another cloud, another account or region, or another product version later, uses what the record already holds. A **migration workspace** is a copy of the live record where the target's stack and bindings are declared; the **planner** compares it with the live record; **cutover** applies the workspace's changes back as one approved change set. It works in either direction.
 
-> "If we separate portable identity-platform intent from environment-specific bindings, most of the migration becomes reconciliation: build the new landing-zone bindings, add replicas, let the data sync, validate every dependency, shift stable endpoints, retire the old stack. The hard part is making hidden dependencies visible before cutover. That's what the operations directory is for."
+### 6.1 The statement that holds
 
-That keeps Aryan's idea intact (the databases carry everything portable) and puts the difficulty where it really is.
+"Move a few databases and the new infrastructure configures itself" is only half true. The databases carry everything portable; the move succeeds when **external contracts stay stable and bindings are regenerated safely**. Most of a move becomes reconciliation: build the new bindings, add replicas, let the data replicate, validate every dependency, shift stable endpoints, retire the old environment. The hard part is making hidden dependencies visible before cutover, which is what the record is for.
 
 ### 6.2 Where it holds
-- **User data** moves through supported PingDS replication (kind A). This is the part most people expect to be hard, and here it's the easiest.
-- **Portable intent** (B, C, D) can be modeled neutrally and *rendered* for the target through supported tooling: `dsconfig` batch files, DS setup, PF Admin API / config archive, IaC.
-- **Readiness becomes queryable**: consumers still bound to server hostnames, certs expiring before cutover, ACIs with no owner, apps depending on a given claim.
 
-### 6.3 Where it breaks (and what to do about it)
-| Hard edge | Why it doesn't "move" | Design answer |
+- **User data** moves through the directory's supported replication.
+- **Intent** (configuration, federation, access rules, estate knowledge) is modeled neutrally and rendered for the target through supported tooling: `dsconfig` batch files, setup scripts, product APIs or exports, infrastructure code, standard SAML and OIDC documents.
+- **Readiness is queryable:** consumers not yet tested, certificates expiring before cutover, ACIs with no owner, applications depending on a claim, keys the target keeps wrongly.
+
+### 6.3 Where it breaks, and what the record does about it
+
+| Hard edge | Why it doesn't simply move | Design answer |
 |---|---|---|
-| **Keys / crypto boundaries** | AWS KMS keys don't move to Azure Key Vault. TLS private keys, PF signing keys and HSM-backed keys are bound to their environment. | Store *references* only. Keys are re-issued or re-wrapped through the secrets process. Keep the DS deployment ID + password continuous (§2). |
-| **Hostnames and certificates** | Certs bind to DNS names. If names change, every consumer and partner is affected. | **Stable service DNS names** (never server names). Certs are issued for service names. |
-| **SAML / OIDC external contracts** | Entity IDs, ACS URLs, issuer, JWKS and metadata URLs, and signing certs are partner-facing. Changing them means partner work. | **Keep entity IDs and issuer URLs stable.** Plan any signing-cert rotation as its own change, separate from the move. |
-| **Consumer network controls** | IP allowlists, firewall rules, private endpoints, Direct Connect / ExpressRoute and NAT egress IPs usually **dominate the timeline**. | **All of it goes in the directory** (Aryan's call): our inbound rules and egress addresses as bindings, and *other parties'* allowlists as `ciamExternalAllowlist` entries that point at our address *roles*. The directory can't apply a change inside a partner's firewall, but on day one it lists every external allowlist the new environment breaks, with the owner, lead time and a do-by date, and drafts each request. Stable addresses make the answer "nothing to change". |
-| **Consumer behavior** | Apps may pin certs, hard-code replica hostnames, depend on search timing or read undocumented attributes. | Mine the access logs (auto §3.1). Replay recorded search shapes against the target. |
-| **Cross-cloud replication** | Needs a routable, secure, low-latency path between clouds and a clean topology design. | A network design item with its own validation. |
-| **Version compatibility** | Backend formats, password storage schemes, plugins and schema need proof for the specific version. | Keep an upgrade out of the move if possible, or test it separately. |
-| **Organizational gates** | CAB, DR tests, security review, audit evidence and owner sign-off. These are usually the real long pole. | The directory produces the evidence and the per-consumer sign-off status. It speeds up the gates without skipping them. |
+| **Keys and crypto boundaries** | Cloud KMS keys don't move between providers; TLS private keys, signing keys and HSM-backed keys are bound to where they live. | Store *references* only. The credential says whether the target must receive the same material (carry over) or may re-issue it, whether it may leave its store at all, and whether it must be HSM-protected; the planner checks each. Keep the directory's deployment ID and password continuous (§2). |
+| **Hostnames and certificates** | Certificates bind to DNS names. If names change, every consumer and partner is affected. | **Stable service names** (never server names), certificates issued for service names, and a planner block on any contract that changes. |
+| **SAML / OIDC external contracts** | Entity IDs, ACS URLs, issuers, JWKS and metadata URLs and signing certificates are partner-facing. | Entity IDs and issuers are contracts. A signing-certificate rotation is its own change, separate from the move. |
+| **Network controls** | IP allowlists, firewall rules, private endpoints, dedicated links and egress addresses usually **dominate the timeline**. | All of it is in the record: our inbound rules and egress addresses as bindings, and *other parties'* allowlists as `ciamExternalAllowlist` entries pointing at our address *roles*. The planner lists every external allowlist a new environment breaks, with owner, lead time and a do-by date, and drafts each request. Stable addresses make the answer "nothing to change". |
+| **Consumer behavior** | Applications may pin certificates, hard-code replica hostnames, depend on search timing or read undocumented attributes. | Consumers are records with a status per move (unknown → identified → contacted → tested → cut over); access-log mining fills them from evidence. |
+| **Cross-environment replication** | Needs a routable, secure, low-latency path and a clean topology design. | The interconnect is a binding, and the replication path a required role. |
+| **Version compatibility** | Backend formats, password storage schemes, plugins and schema need proof for the specific version. | Product versions are data and carried unchanged; an upgrade is a separate change. |
+| **Organizational gates** | Change boards, DR tests, security review, audit evidence and owner sign-off. | The record produces the evidence and each consumer's sign-off status. It speeds the gates up without skipping them. |
 
-**Rules that make the thesis as true as possible:** stable service DNS · stable entity IDs and issuer · no consumer binding to replica hosts · bindings abstracted into `ou=bindings` · only product-supported export and rendering tools, never hand-edited internals · a diff between desired and observed state that produces a human-reviewable plan · a migration scoreboard (blocker, owner, risk, evidence, rollback) · **data migration and consumer cutover kept as separate phases**.
+**Rules that keep moves boring:** stable service DNS names · stable entity IDs and issuers · no consumer binding to replica hosts · bindings only under `ou=bindings` · rendering only through product-supported tools, never hand-edited internals · desired vs observed state compared into a human-reviewable plan · every blocker with an owner, a date and evidence · data migration and consumer cutover as separate phases.
 
 ---
 
-## 7. Prior art (who already does this)
+## 7. Prior art
 
 | System | How close | What it shows | Limitation |
 |---|---|---|---|
-| **FreeIPA / Red Hat IdM** | Very close | Identity, policy, DNS, sudo, HBAC and certificate config all live in 389 Directory Server. Adding a replica = replicating the directory. | Works because the product was *built* around LDAP replication. Hosts, DNS, CA and Kerberos still have sharp edges. |
-| **Active Directory Configuration naming context** | Very close, and **the best enterprise analogy** | Forest config, sites, services and replication topology are directory objects. Exchange keeps its whole organization config in AD. | In AD's case the directory *is* the platform. Apps have to be written to trust it. |
-| **OpenLDAP / 389-DS / PingDS `cn=config`** | Close, but narrower | Server config as LDAP entries. PingDS is the direct precedent for this proposal. | Covers server config only, not the estate (consumers, certs, owners). |
-| **Ping DevOps server profiles / `manage-profile`** | Relevant *pattern* | Layered config in Git applied at container start. `manage-profile generate-profile` emits running config as a reusable profile. | **These are PingDirectory / PingFederate / PingAccess tools, not PingDS** (different lineage: UnboundID vs ForgeRock). PingDS containerizes via ForgeOps. Cite it as "Ping already works this way for its other products", not as a PingDS feature. |
-| **PingFederate config archive / bulk export (Ping CLI)** | Relevant | PF config can be exported and imported. | Archives are backup/transport artifacts, not clean declarative intent. URLs, certs, secrets and adapters still need per-environment handling. |
-| **Kubernetes etcd + controllers** | Conceptually closest | All cluster state in one DB. Controllers continuously move actual state toward desired state. This is the "infra configures itself from the DB" model exactly. | Restoring etcd doesn't move a business platform. LBs, storage, DNS and identities still bind to an environment. |
-| **GitOps (Argo CD / Flux)** | Close operating model | Desired state in Git. A reconciler detects drift and syncs. | Good at declared state. Blind to runtime dependencies discovered from logs unless paired with an inventory. |
-| **NetBox / Nautobot** | Close as a "source of truth" | Topology and relationships drive network automation. | Doesn't model identity semantics (ACIs, claim maps, password policy). |
-| **ServiceNow CMDB** | Adjacent | CIs and service relationships for change, incident and impact. | Too generic to be the executable control plane for PingDS/PF config. It's the place to integrate with. |
-| **Terraform state** | Partial | Declared infrastructure and its dependency graph. | Knows load balancers and DNS. Doesn't know why an ACI exists or which claim feeds which app. |
-| **Vault / secret managers** | Partial | Secrets, PKI, rotation. | The operations directory references them and never copies them. |
+| **FreeIPA / Red Hat IdM** | Very close | Identity, policy, DNS, sudo, HBAC and certificate configuration all live in 389 Directory Server. Adding a replica = replicating the directory. | Works because the product was *built* around LDAP replication. Hosts, DNS, CA and Kerberos still have sharp edges. |
+| **Active Directory configuration naming context** | Very close | Forest configuration, sites, services and replication topology are directory objects; Exchange keeps its whole organization configuration in AD. | The directory *is* the platform; applications have to be written to trust it. |
+| **OpenLDAP / 389-DS / PingDS `cn=config`** | Close, narrower | Server configuration as LDAP entries: the direct precedent. | Covers one server's configuration, not the estate (consumers, certificates, owners). |
+| **Ping DevOps server profiles / `manage-profile`** | Relevant pattern | Layered configuration in Git applied at container start; `manage-profile generate-profile` emits running configuration as a profile. | Tools of the PingDirectory / PingFederate / PingAccess line, not the DS lineage, which containerizes through ForgeOps. |
+| **PingFederate configuration archive / bulk export** | Relevant | Configuration can be exported and imported. | Archives are transport artifacts, not declarative intent; URLs, certificates, secrets and adapters still need per-environment handling. |
+| **Kubernetes etcd + controllers** | Conceptually closest | All cluster state in one store; controllers move actual state toward desired state. | Restoring etcd doesn't move a business platform: load balancers, storage, DNS and identities stay bound to an environment. |
+| **GitOps (Argo CD / Flux)** | Close operating model | Desired state in Git; a reconciler detects drift and syncs. | Blind to runtime dependencies found in logs unless paired with an inventory. |
+| **NetBox / Nautobot** | Close as a source of truth | Topology and relationships drive network automation. | No identity semantics (ACIs, claim maps, password policy). |
+| **CMDBs (e.g. ServiceNow)** | Adjacent | Configuration items and service relationships for change, incident and impact. | Too generic to be the executable control plane for product configuration; the place to integrate with. |
+| **Terraform state** | Partial | Declared infrastructure and its dependency graph. | Knows load balancers and DNS, not why an ACI exists or which claim feeds which application. |
+| **Vault and other secret managers** | Partial | Secrets, PKI, rotation. | The record references them and never copies them. |
 
-**What's new here:** the pieces exist separately. Directory-as-config (AD, FreeIPA, `cn=config`), source of truth (NetBox), reconciliation (Kubernetes, GitOps) and config export (Ping profiles, PF archives). What doesn't seem to exist is a **dependency-aware model of a *CIAM* estate**: which ACI serves which bind DN, which app it belongs to, which claim it feeds, which cert it relies on, and who signs off. That link from identity semantics to infrastructure is the gap this fills. *(An absence claim from one research round, not an exhaustive survey.)*
+**What CIAMstack adds:** the pieces exist separately (directory-as-configuration, source of truth, reconciliation, configuration export). What is missing elsewhere is a **dependency-aware model of an identity estate**: which ACI serves which bind DN, which application it belongs to, which claim it feeds, which certificate and key it relies on, where that key is kept in each environment, and who signs off. That link from identity semantics to infrastructure is what the record holds.
 
 ---
 
-## 8. Storage (decided 2026-09-23: Postgres)
-
-**Aryan's decision:** Postgres is the store for everything, declared and observed. It enforces the LDAP information model and references the real LDAP directory rather than copying it. This replaces the earlier Git-first split.
+## 8. Storage
 
 | Layer | Store | Why |
 |---|---|---|
-| **All entries** (intent, contracts, bindings, secret refs, observed, meta) | **Postgres**, one `entry` table keyed by DN, schema registry loaded from a standard LDAP schema file | Transactions, typed validation, **enforced referential integrity**, full history, SQL reporting |
-| **Review and interchange** | **LDIF**: change records are applied under an approved change; `export` produces reviewable LDIF for Git | Keeps the PR/CAB workflow without making Git the database |
-| **Dependency queries** | Postgres recursive queries (`dependents()`) | Enough at this scale; no graph DB |
-| **LDAP front end** | Optional later, read-only | Only if operators want `ldapsearch`; avoids confusing it with the customer directory |
+| **All entries** (intent, contracts, bindings, secret references, observed, meta) | **PostgreSQL**: one entry table keyed by DN, the schema registry synced from the published LDAP schema, versioned migrations | Transactions, typed validation, **enforced referential integrity**, full history, SQL reporting |
+| **Review and interchange** | **LDIF**: change records applied under an approved change; `opsdir export` produces reviewable LDIF | Keeps pull-request and change-board review without making Git the database |
+| **Dependency queries** | Recursive queries in the store | Enough at this scale; no graph database |
+| **Migration workspace** | A second database, a copy of the live record | The target is declared and planned without touching the live record |
 
-The **model** is LDAP (DIT, DNs, object classes, MUST/MAY, multi-values). **Postgres adds what LDAP doesn't guarantee:** R3 referential integrity, R5 governed writes and R6 history (SPEC.md §4).
-
----
-
-## 9. Objections and honest answers
-
-**"We already have ServiceNow CMDB."**
-> "Good. I wouldn't replace it. ServiceNow stays the system for CIs, ownership, change and incidents. This is a domain-specific model for the identity platform: ACIs, schema, bind consumers, claim maps, cert usage, DS/PF config, migration readiness. ServiceNow gets summarized CIs and relationships. This layer holds the executable detail needed to build, diff, validate and migrate the platform."
-
-**"This is one more system to run."**
-> "That's a real risk. I'd start with the smallest useful version: declared state reviewed in Git plus reports generated from config and log snapshots. No always-on reconciler at first. It has to earn its keep by finding stale consumers, undocumented ACIs, cert blast radius and migration blockers. It only becomes a running service if it removes enough toil or risk to justify owning it."
-
-**Other objections to prepare for:** another source of truth (answer: it's authoritative only for identity-platform intent, and everything else is referenced) · observed data may contain PII (answer: redaction layer, auto §8.1, P6) · LDIF in Git leaks internal hostnames, bind DNs and partner names (answer: the repo gets the same classification and ACLs as the config itself) · who owns data quality · who approves changes (the existing CAB, since the directory produces plans, not changes) · what if the reconciler is wrong (it only proposes, humans apply, auto §2 P2).
+The **model** is LDAP (DIT, DNs, object classes, MUST/MAY, multi-valued attributes). **PostgreSQL adds what LDAP doesn't guarantee:** referential integrity (R3), governed writes (R5) and history (R6).
 
 ---
 
-## 10. How to present it
+## 9. Design questions
 
-**Don't pitch** "I invented a meta-directory that makes migrations instant."
+**"We already have a CMDB."** The CMDB stays the system for configuration items, ownership, change and incidents. CIAMstack is a domain-specific model for the identity platform: ACIs, schema, bind consumers, claim maps, certificate and key usage, product configuration, readiness. The CMDB receives summarized items and relationships; the record holds the executable detail needed to build, diff, validate and move the platform.
 
-**Pitch:**
-> "For this migration, I'd build a dependency-aware source of truth that separates identity-platform intent from cloud bindings. The user directory moves through supported PingDS replication. Platform intent is rendered through supported tooling: dsconfig, PF export or its API, IaC. The value isn't magic. It's making hidden dependencies visible early enough that cutover is boring."
+**"Isn't this one more system to run?"** It earns its place by what it finds and what it generates: stale consumers, undocumented ACIs, certificate blast radius, key sprawl, blockers, and the working files themselves. It runs on one PostgreSQL database; there is no always-on reconciler, and renders and plans are run on demand.
 
-**One demo walk (synthetic data):**
-1. Here's an ACI.
-2. Here's the bind DN that uses it, found in the access logs.
-3. Here's the app that owns it.
-4. Here's the claim mapping and the DS attribute it depends on.
-5. Here's the cert and the DNS name it reaches.
-6. Here's what changes in `cloud=rtx-next`, what stays stable, and who has to sign off before cutover.
+**"Another source of truth?"** It is authoritative for identity-platform intent and bindings. Everything else (secrets, user data, other teams' systems) is referenced, not copied.
 
-**Say plainly:**
-> "I haven't administered Ping hands-on, so I'd validate this against Ping-supported tools and your existing work instructions. I'm not proposing to hand-edit product internals or replace ServiceNow."
+**"Observed data may contain PII."** The record describes the user directory (schema, consumers, ACIs) and never holds user entries; observed data is limited to configuration, and planned profilers and log miners record statistics, bind DNs and attribute names, never values. Secret values found in imports are withheld and reported.
+
+**"LDIF in Git leaks internal hostnames, bind DNs and partner names."** Exports get the same classification and access control as the configuration they describe.
+
+**"Who approves changes?"** The existing change process: a write names an approved change record, and the record produces plans and diffs for reviewers.
+
+**"What if a plan is wrong?"** Plans propose; people approve and apply. Every finding carries its evidence, and a check that can't run reports that it couldn't, rather than passing silently.
 
 ---
 
-## 11. The working demo: `opsdir/`
+## 10. Lessons from the build
 
-Built 2026-09-23. See `opsdir/README.md` (how to run, what's verified) and `opsdir/SPEC.md` (the standard).
-
-- **The standard:** LDAP schema (RFC 4512) extended with `X-PORTABILITY` (intent / contract / binding / secret-ref / observed / meta) and `X-VALUE-TYPE`. That makes the *schema itself* say what moves in a migration. There are ten enforced rules (R1–R10).
-- **Terraform from the database** (Aryan's point: most shops already use Terraform, and this is a tool *for* Terraformers). A renderer reads the directory and writes the Terraform (AWS or Azure), `dsconfig` batch, DS setup scripts, ACI LDIF and PingFederate config. A change is a directory entry, and the files are regenerated. The rendered Terraform passes `terraform validate` against the real AWS and Azure provider schemas.
-- **Migration = a read.** 229 synthetic entries render byte-identical DS/PF config for both clouds. The Azure replicas bootstrap from the AWS replicas, so they join the existing deployment. The planner lists blockers and dated actions, including partner allowlists, and drafts the requests.
-- **A design lesson from the build:** adding one Azure rule at first renumbered three others (Terraform churn). Provider-specific settings like NSG priority must be **pinned bindings in the directory**, never computed at render time.
-
-## 12. Open questions / next steps
-- **Fit with Aryan's own automation scope.** This is a candidate for the framework's core data model (auto §8.1), under Module A and Module B. Next importers: DS access logs → `ou=consumers`, `dsconfig` export → snapshots, PF Admin API → integrations.
-- **Ask them** (adds to spec §15): Do consumers bind to service names or to replica hostnames? Are SAML entity IDs and issuer URLs tied to the current hosting domain? Is the DS upgrade in or out of scope for the move? Is there a CMDB relationship model for the identity platform today?
+- **Provider-specific settings are bindings, pinned in the record.** Adding one Azure network rule at first renumbered three others (Terraform churn). Rule priorities and similar provider values are stored per environment, never computed at render time.
+- **The standard files are identical everywhere.** The directory configuration, ACIs, federation configuration and the standard SAML, OIDC and LDAP documents render byte-identical for every environment of the same record; only infrastructure code and per-server scripts differ. The showcase tests hold that line.
+- **Nothing passes silently.** A planner check that lacks the data it needs reports a finding instead of an OK.
 
 ---
 
 ## Sources
+
 - PingDS cryptographic keys (deployment ID/password → shared master key; replicas must share it): https://docs.pingidentity.com/pingds/7.5/security-guide/pki.html
 - PingDS upgrade strategies ("add new servers and retire old ones"): https://backstage.pingidentity.com/docs/ds/7.1/upgrade-guide/add-new-servers.html
 - PingDS replication: https://backstage.forgerock.com/docs/ds/7.2/config-guide/replication.html
@@ -257,4 +228,4 @@ Built 2026-09-23. See `opsdir/README.md` (how to run, what's verified) and `opsd
 - Argo CD auto-sync: https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/
 - NetBox: https://netboxlabs.com/docs/learn/
 - ServiceNow CMDB: https://www.servicenow.com/docs/r/servicenow-platform/configuration-management-database-cmdb/c_ITILConfigurationManagement.html
-- Codex-cited sources were spot-checked for the Ping and FreeIPA claims. The others are well-established but weren't opened this session.
+- RFC 4512 (LDAP directory information models): https://www.rfc-editor.org/rfc/rfc4512 · RFC 5612 (documentation OID arc): https://www.rfc-editor.org/rfc/rfc5612

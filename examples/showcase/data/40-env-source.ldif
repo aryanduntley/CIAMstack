@@ -8,7 +8,7 @@ ciamCloudEnvironment: public
 ciamCloudProvider: aws
 ciamLifecycle: active
 ciamRegion: us-east-1
-description: Current cloud hosting environment (AWS)
+description: Primary hosting environment (AWS)
 
 dn: env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top

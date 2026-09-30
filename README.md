@@ -29,7 +29,8 @@ examples/showcase/        a runnable fictional estate using those packages: data
 documentation/            project-level documentation
   STACK.md                the full stack inventory: every subsystem, file and store, what can be
                           datified, and what is covered today vs the gaps (build order in §21)
-  ops-directory-model.md  design rationale: portable intent vs bindings, prior art, objections
+  ops-directory-model.md  design rationale: the record, portable intent vs bindings, operating from it,
+                          moving between environments, prior art, design questions
 pytest.ini                one test configuration for the core, the packages and the showcase
 .aimfp-project/           AIMFP project tracking (blueprint, roadmap, tracked files and functions)
 docs/                     local dev notes; git-ignored, never part of the project
@@ -41,7 +42,7 @@ Requirements: Python 3.11+ and PostgreSQL. Set up the role and databases once ([
 
 ```bash
 opsdir/scripts/dev-install.sh     # venv (opsdir/.venv) + the core + every package, editable
-examples/showcase/demo.sh         # the whole story on the fictional estate; outputs in examples/showcase/out/
+examples/showcase/demo.sh         # operating a fictional estate from the record; outputs in examples/showcase/out/
 opsdir/opsdir.sh --help           # the CLI, against the local dev database
 opsdir/scripts/test.sh            # every test: core, packages, showcase; unit + integration
 ```
@@ -61,10 +62,10 @@ Deleting the `CIAMstack/` folder removes everything but the databases. Outside t
 
 ## Status
 
-The foundation is in place: a Modular/Functional/Procedural core with versioned schema upgrades, governed writes and full history; an agnostic core that discovers domains and adapter packages; declared stacks with `opsdir check`; adapter-owned vocabulary validated by the store; change sets, migration workspaces with a three-way cutover, and a migration runner that works in either direction. The showcase passes its own checks (the planner finds all 7 planted blockers, and 5 remain after two approved changes) and its rendered Terraform passes `terraform validate`. **Not verified:** product configuration against real product instances; see [`examples/showcase/README.md`](examples/showcase/README.md).
+The foundation is in place: a Modular/Functional/Procedural core with versioned schema upgrades, governed writes and full history; an agnostic core that discovers domains and adapter packages; declared stacks with `opsdir check`; adapter-owned vocabulary validated by the store; environments as overlays with governed overrides; keys and secrets as credentials bound per environment to any of five secret stores; config files held setting by setting and code recorded by digest; custom fields and record types defined in the record; change sets, migration workspaces with a three-way cutover, and a migration runner that works in either direction.
 
-Standard bases are in place: the standard LDAP schema in the core, the user directory's schema recorded (standard or defined in the record) and rendered as standard LDIF, the DS lineage shared by PingDS and OpenDJ, and SAML metadata, OIDC client registrations and discovery rendered from the federation domain. PingAM (ForgeRock AM) is an adapter package on these bases: realms are identity services, OAuth2 clients and SAML partners are standard integrations, journeys and policy sets are held in its own schema, and an Amster export is read into the record by its importer (`opsdir import`). PingIDM (ForgeRock IDM) is one too: managed objects, connectors, mappings and schedules as entries, each connector naming the role of the system it reaches and of its credentials so every environment renders its own, read from an IDM project directory by its importer. PingGateway (ForgeRock Identity Gateway) completes the lineage: its routes are entries linked to the integration whose client they sign users in as and the OpenID provider they trust, rendered per environment and read from a gateway configuration by its importer. The roadmap is tracked in AIMFP (`.aimfp-project/`). Next: importers that read the other live systems (PingDS, PingFederate, clouds) into the record, and the renderers of path 6.
+Standard bases are in place: the standard LDAP schema in the core, the user directory's schema recorded and rendered as standard LDIF, the DS lineage shared by PingDS and OpenDJ, and SAML metadata, OIDC client registrations and discovery rendered from the federation domain. PingAM, PingIDM and PingGateway are adapter packages on these bases, each with an importer that reads the product's own export (an Amster export, an IDM project, a gateway configuration) into the record under an approved change.
 
-## Note on inherited docs
+The showcase walks through operating a fictional estate from the record (reports, keys, custom fields, drift, guardrails, rendering each environment) and then moving production to a second environment: the planner finds all 10 planted blockers, 6 remain after three approved changes, and the rendered Terraform passes `terraform validate`. **Not verified:** product configuration against real product instances; see [`examples/showcase/README.md`](examples/showcase/README.md).
 
-`documentation/ops-directory-model.md` was written in another workspace and still carries some of that framing; its relative links to `../systems-and-workflows.md`, `../automation-path.md` and a discussion log don't resolve here. `documentation/STACK.md` covers the stack content those links pointed to. Both are rewritten in milestone 1.5.
+The roadmap is tracked in AIMFP (`.aimfp-project/`); what is covered and what is still a gap is in [`documentation/STACK.md`](documentation/STACK.md) §21. Next: importers that read the other live systems (PingDS configuration and access logs, PingFederate, cloud and Terraform inventories) into the record.

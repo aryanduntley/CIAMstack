@@ -5,7 +5,7 @@
   opsdir load FILE...                  load LDIF content under change BOOTSTRAP
   opsdir check [ENV...]                each environment's declared stack against the installed adapters
   opsdir search [-b base] [-s scope] FILTER [attr...]
-  opsdir report expiring|pii|stale|unowned|drift|portability|blast-radius DN
+  opsdir report NAME [DN]              portability, unowned, blast-radius DN, and every domain's reports (expiring, keys ENV, …)
   opsdir render ENV [-o dir]           e.g. prod environment of a cloud: CLOUD/ENV (default out/ here)
   opsdir plan FROM TO [-o dir]         migration plan + change-request drafts for external parties
   opsdir migrate FROM TO [-o dir]      check both stacks, plan, render the target; exit 1 unless ready

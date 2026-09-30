@@ -28,7 +28,7 @@ ciamPortability: binding
 ciamPurpose: Jurisdiction the environment's identity data must stay in
 ciamValueSource: terraform: azurerm_resource_group.location
 ciamValueSource: terraform: aws provider region
-ciamValueType: enum:us|us-gov|eu|ca
+ciamValueType: enum:us|eu|uk|ca
 
 dn: cn=xTokenLifetimeMinutes,ou=custom-schema,dc=ciam-ops
 objectClass: top
