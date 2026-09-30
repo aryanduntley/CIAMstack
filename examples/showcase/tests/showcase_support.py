@@ -25,7 +25,8 @@ IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", None),
            ("CHG-2004", "pingidm", SHOWCASE / "exports" / "idm", None),
            ("CHG-2004", "pinggateway", SHOWCASE / "exports" / "ig", None),
            ("CHG-2006", "pingds/config", SHOWCASE / "exports" / "ds-config", "20260920030000Z"),
-           ("CHG-2007", "pingds/access-log", SHOWCASE / "exports" / "ds-access-logs", None))
+           ("CHG-2007", "pingds/access-log", SHOWCASE / "exports" / "ds-access-logs", None),
+           ("CHG-2008", "pingfederate", SHOWCASE / "exports" / "pingfederate", None))
 
 
 def cmd_output(text, status=0):

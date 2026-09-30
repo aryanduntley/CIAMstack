@@ -144,6 +144,11 @@
       "format": "json",
       "sha256": "da4836800e10d2be1c5c7eb39ab90604278c0653d58097f4c68beefad8c07aaa"
     },
+    "oidc/clients/reports-api.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "61235e88f367a8e677527038d57eeb01feb7b3aefb2327a35dfd77084ab35bda"
+    },
     "oidc/clients/tech-pubs.json": {
       "scope": "environment-neutral",
       "format": "json",
@@ -157,7 +162,7 @@
     "oidc/discovery/sso.json": {
       "scope": "environment-neutral",
       "format": "json",
-      "sha256": "1ce02f40f94346a85bbb05be4fef958d857edb681734ff234492f8eb24b5150b"
+      "sha256": "a334487beac8c8897703a40a7983df76743ebbce03efd0f131eb78cf191743df"
     },
     "pingfederate/idp-connections.json": {
       "scope": "environment-neutral",
@@ -167,7 +172,7 @@
     "pingfederate/oidc-clients.json": {
       "scope": "environment-neutral",
       "format": "json",
-      "sha256": "3380db1648f0180f5c2a976dbc48775628175d1c009148a39eddd684e60f3c36"
+      "sha256": "f6d24c3cd2578a1730505188dfa544d88372a633b86e0a5b63eab945ba2c1747"
     },
     "pingfederate/sp-connections.json": {
       "scope": "environment-neutral",

@@ -42,6 +42,7 @@ cap 02-import-idm od import --change CHG-2004 pingidm exports/idm
 cap 02-import-ig od import --change CHG-2004 pinggateway exports/ig
 cap 02-import-ds od import --change CHG-2006 --at 20260920030000Z pingds/config exports/ds-config
 cap 02-import-ds-logs od import --change CHG-2007 pingds/access-log exports/ds-access-logs
+cap 02-import-pf od import --change CHG-2008 pingfederate exports/pingfederate
 cap 02-check od check
 for r in portability expiring credentials pii drift stale unowned custom capture bundles consumers; do cap "03-report-$r" od report "$r"; done
 cap 03-report-blast-radius od report blast-radius "$BLAST"

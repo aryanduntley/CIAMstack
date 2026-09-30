@@ -54,6 +54,12 @@ def described(d):
             *(_class(e, recorded) for e in classes))
 
 
+def attribute_records(d):
+    """{lowercase LDAP name: user-schema record} of every attribute the record describes."""
+    return {one(e, "ciamLdapName").lower(): e for e in children(d, USER_SCHEMA, "ciamUserAttribute")
+            if one(e, "ciamLdapName")}
+
+
 def defined_attributes(d):
     """Recorded attributes whose definition the record supplies (what a server must be given)."""
     return tuple(x.entry for x in described(d) if x.kind == "attribute" and x.origin == DEFINED and not x.problem)

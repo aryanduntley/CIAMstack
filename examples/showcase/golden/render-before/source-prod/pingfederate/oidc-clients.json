@@ -51,6 +51,28 @@
     }
   },
   {
+    "clientId": "reports-api",
+    "name": "reports-api",
+    "enabled": true,
+    "redirectUris": [],
+    "grantTypes": [
+      "CLIENT_CREDENTIALS"
+    ],
+    "requireProofKeyForCodeExchange": false,
+    "clientAuth": {
+      "type": "SECRET"
+    },
+    "restrictScopes": true,
+    "restrictedScopes": [
+      "reports.read"
+    ],
+    "x-opsdir": {
+      "claims": {},
+      "mfaRequired": false,
+      "owners": []
+    }
+  },
+  {
     "clientId": "tech-pubs-web",
     "name": "tech-pubs",
     "enabled": true,

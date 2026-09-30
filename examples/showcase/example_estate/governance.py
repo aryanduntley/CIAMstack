@@ -29,6 +29,8 @@ CHANGES = (
      "CAB 2026-09-18", "2026-09-20"),
     ("CHG-2007", "Record the directory's consumers from the production access logs", "approved", "CAB 2026-09-18",
      "2026-09-23"),
+    ("CHG-2008", "Import PingFederate's configuration (Admin API bulk export)", "approved", "CAB 2026-09-18",
+     "2026-09-23"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

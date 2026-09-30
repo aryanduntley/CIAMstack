@@ -1,0 +1,525 @@
+{
+  "metadata": {
+    "pfVersion": "12.1.4.0"
+  },
+  "operations": [
+    {
+      "operationType": "SAVE",
+      "resourceType": "/keyPairs/signing",
+      "items": [
+        {
+          "id": "signing-2025",
+          "sha256Fingerprint": "1850453C96D76CB8F5906A4B0637F999AE16655CA329EC90340437FA1028B699",
+          "validFrom": "2025-07-01T00:00:00.000Z",
+          "expires": "2027-06-30T00:00:00.000Z",
+          "keyAlgorithm": "RSA",
+          "keySize": 2048,
+          "status": "VALID",
+          "subjectDN": "CN=Example Aero SSO Signing 2025",
+          "issuerDN": "CN=Example Aero SSO Signing 2025"
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/keyPairs/sslServer",
+      "items": [
+        {
+          "id": "sso-tls-2026",
+          "sha256Fingerprint": "241F66E08778484FBF6FF4189EA7E3867FAE0D35C5DAD82C63670365E24A3C26",
+          "validFrom": "2026-02-10T00:00:00.000Z",
+          "expires": "2027-02-10T00:00:00.000Z",
+          "keyAlgorithm": "RSA",
+          "keySize": 2048,
+          "status": "VALID",
+          "subjectDN": "CN=sso.example-aero.test",
+          "issuerDN": "CN=Public CA R11",
+          "subjectAlternativeNames": [
+            "sso.example-aero.test"
+          ]
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/dataStores",
+      "items": [
+        {
+          "type": "LDAP",
+          "id": "user-directory",
+          "name": "User directory",
+          "ldapType": "PING_DIRECTORY",
+          "hostnames": [
+            "ldap.id.example-aero.test:1636",
+            "ds-1.aws.internal.example-aero.test:1636"
+          ],
+          "useSsl": true,
+          "userDN": "uid=pf-svc,ou=service-accounts,dc=partners,dc=example-aero,dc=test",
+          "encryptedPassword": "OBF:JWE:eyJhbGciOiJkaXIifQ..fictional-not-a-real-password",
+          "minConnections": 10,
+          "maxConnections": 100
+        },
+        {
+          "type": "JDBC",
+          "id": "grant-store",
+          "name": "Persistent grant store",
+          "driverClass": "org.postgresql.Driver",
+          "connectionUrl": "jdbc:postgresql://pf-grants.db.aws.internal.example-aero.test:5432/pf",
+          "userName": "pf_grants",
+          "encryptedPassword": "OBF:JWE:eyJhbGciOiJkaXIifQ..fictional-not-a-real-password"
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/idp/adapters",
+      "items": [
+        {
+          "id": "htmlform",
+          "name": "HTML Form",
+          "pluginDescriptorRef": {
+            "id": "com.pingidentity.adapters.htmlform.idp.HtmlFormIdpAuthnAdapter"
+          }
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/oauth/accessTokenManagers",
+      "items": [
+        {
+          "id": "default-jwt",
+          "name": "Default JWT",
+          "pluginDescriptorRef": {
+            "id": "com.pingidentity.pf.access.token.management.plugins.JwtBearerAccessTokenManagementPlugin"
+          }
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/idp/spConnections",
+      "items": [
+        {
+          "id": "customer-portal",
+          "name": "customer-portal",
+          "entityId": "https://portal.example-aero.test/saml/sp",
+          "active": true,
+          "contactInfo": {
+            "company": "customer-portal-team"
+          },
+          "spBrowserSso": {
+            "protocol": "SAML20",
+            "enabledProfiles": [
+              "SP_INITIATED_SSO"
+            ],
+            "ssoServiceEndpoints": [
+              {
+                "binding": "POST",
+                "url": "https://portal.example-aero.test/saml/acs",
+                "isDefault": true
+              }
+            ],
+            "attributeContract": {
+              "coreAttributes": [
+                {
+                  "name": "SAML_SUBJECT"
+                }
+              ],
+              "extendedAttributes": [
+                {
+                  "name": "company"
+                },
+                {
+                  "name": "email"
+                },
+                {
+                  "name": "family_name"
+                },
+                {
+                  "name": "given_name"
+                },
+                {
+                  "name": "roles"
+                }
+              ]
+            },
+            "adapterMappings": [
+              {
+                "attributeContractFulfillment": {
+                  "SAML_SUBJECT": {
+                    "source": {
+                      "type": "LDAP_DATA_STORE",
+                      "id": "user-directory"
+                    },
+                    "value": "uid"
+                  },
+                  "company": {
+                    "source": {
+                      "type": "LDAP_DATA_STORE",
+                      "id": "user-directory"
+                    },
+                    "value": "companyId"
+                  },
+                  "email": {
+                    "source": {
+                      "type": "LDAP_DATA_STORE",
+                      "id": "user-directory"
+                    },
+                    "value": "mail"
+                  },
+                  "family_name": {
+                    "source": {
+                      "type": "LDAP_DATA_STORE",
+                      "id": "user-directory"
+                    },
+                    "value": "sn"
+                  },
+                  "given_name": {
+                    "source": {
+                      "type": "LDAP_DATA_STORE",
+                      "id": "user-directory"
+                    },
+                    "value": "givenName"
+                  },
+                  "roles": {
+                    "source": {
+                      "type": "LDAP_DATA_STORE",
+                      "id": "user-directory"
+                    },
+                    "value": "appEntitlement",
+                    "x-opsdir-transform": "keep values with prefix 'customer-portal:', strip prefix"
+                  }
+                },
+                "idpAdapterRef": {
+                  "id": "htmlform"
+                }
+              }
+            ]
+          },
+          "type": "SP",
+          "credentials": {
+            "signingSettings": {
+              "signingKeyPairRef": {
+                "id": "signing-2025"
+              },
+              "algorithm": "SHA256withRSA"
+            },
+            "certs": [
+              {
+                "primaryVerificationCert": true,
+                "certView": {
+                  "sha256Fingerprint": "6DAEAB5CF25D9FEEBA687593B0DD8549E5C11CA7676778E51E4CE69B9037C515",
+                  "validFrom": "2024-03-01T00:00:00.000Z",
+                  "expires": "2027-03-01T00:00:00.000Z",
+                  "keyAlgorithm": "RSA",
+                  "keySize": 2048,
+                  "status": "VALID",
+                  "subjectDN": "CN=portal.example-aero.test SP",
+                  "issuerDN": "CN=portal.example-aero.test SP"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "supplier-portal",
+          "name": "supplier-portal",
+          "entityId": "https://suppliers.example-aero.test/saml/sp",
+          "active": true,
+          "contactInfo": {
+            "company": "supplier-portal-team"
+          },
+          "spBrowserSso": {
+            "protocol": "SAML20",
+            "enabledProfiles": [
+              "SP_INITIATED_SSO"
+            ],
+            "ssoServiceEndpoints": [
+              {
+                "binding": "POST",
+                "url": "https://suppliers.example-aero.test/saml/acs",
+                "isDefault": true
+              }
+            ],
+            "attributeContract": {
+              "coreAttributes": [
+                {
+                  "name": "SAML_SUBJECT"
+                }
+              ],
+              "extendedAttributes": [
+                {
+                  "name": "company"
+                },
+                {
+                  "name": "email"
+                },
+                {
+                  "name": "roles"
+                },
+                {
+                  "name": "sold_to"
+                }
+              ]
+            },
+            "adapterMappings": [
+              {
+                "attributeContractFulfillment": {
+                  "SAML_SUBJECT": {
+                    "source": {
+                      "type": "LDAP_DATA_STORE",
+                      "id": "user-directory"
+                    },
+                    "value": "uid"
+                  },
+                  "company": {
+                    "source": {
+                      "type": "LDAP_DATA_STORE",
+                      "id": "user-directory"
+                    },
+                    "value": "companyId"
+                  },
+                  "email": {
+                    "source": {
+                      "type": "LDAP_DATA_STORE",
+                      "id": "user-directory"
+                    },
+                    "value": "mail"
+                  },
+                  "roles": {
+                    "source": {
+                      "type": "LDAP_DATA_STORE",
+                      "id": "user-directory"
+                    },
+                    "value": "appEntitlement",
+                    "x-opsdir-transform": "keep values with prefix 'supplier-portal:', strip prefix"
+                  },
+                  "sold_to": {
+                    "source": {
+                      "type": "LDAP_DATA_STORE",
+                      "id": "user-directory"
+                    },
+                    "value": "soldToAccount"
+                  }
+                },
+                "idpAdapterRef": {
+                  "id": "htmlform"
+                }
+              }
+            ]
+          },
+          "type": "SP",
+          "credentials": {
+            "signingSettings": {
+              "signingKeyPairRef": {
+                "id": "signing-2025"
+              },
+              "algorithm": "SHA256withRSA"
+            },
+            "certs": [
+              {
+                "primaryVerificationCert": true,
+                "certView": {
+                  "sha256Fingerprint": "A8D9351465C62D22A2995F106F8B32C4C3EDDED8E682F9AE28810B509A7F072B",
+                  "validFrom": "2023-11-30T00:00:00.000Z",
+                  "expires": "2026-11-30T00:00:00.000Z",
+                  "keyAlgorithm": "RSA",
+                  "keySize": 2048,
+                  "status": "VALID",
+                  "subjectDN": "CN=suppliers.example-aero.test SP",
+                  "issuerDN": "CN=suppliers.example-aero.test SP"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/sp/idpConnections",
+      "items": [
+        {
+          "id": "harbor-mro-federation",
+          "name": "harbor-mro-federation",
+          "entityId": "https://sso.harbor-mro.example/idp",
+          "active": true,
+          "credentials": {
+            "certs": [
+              {
+                "primaryVerificationCert": true,
+                "certView": {
+                  "sha256Fingerprint": "2DE9F6D56B7574001773F5031D9870716DBC6BED2F6EECC9528BDB91FBBF321F",
+                  "validFrom": "2025-01-15T00:00:00.000Z",
+                  "expires": "2028-01-15T00:00:00.000Z",
+                  "keyAlgorithm": "RSA",
+                  "keySize": 2048,
+                  "status": "VALID",
+                  "subjectDN": "CN=Harbor MRO SSO",
+                  "issuerDN": "CN=Harbor MRO SSO"
+                }
+              },
+              {
+                "primaryVerificationCert": true,
+                "certView": {
+                  "sha256Fingerprint": "241F66E08778484FBF6FF4189EA7E3867FAE0D35C5DAD82C63670365E24A3C26",
+                  "validFrom": "2026-02-10T00:00:00.000Z",
+                  "expires": "2027-02-10T00:00:00.000Z",
+                  "keyAlgorithm": "RSA",
+                  "keySize": 2048,
+                  "status": "VALID",
+                  "subjectDN": "CN=sso.example-aero.test",
+                  "issuerDN": "CN=Public CA R11",
+                  "subjectAlternativeNames": [
+                    "sso.example-aero.test"
+                  ]
+                }
+              }
+            ]
+          },
+          "idpBrowserSso": {
+            "protocol": "SAML20",
+            "jitProvisioning": {
+              "userRepository": {
+                "type": "LDAP",
+                "baseDn": "ou=partners,ou=people,dc=partners,dc=example-aero,dc=test",
+                "dataStoreRef": {
+                  "id": "user-directory"
+                }
+              }
+            }
+          },
+          "type": "IDP"
+        },
+        {
+          "id": "skyline-air-federation",
+          "name": "skyline-air-federation",
+          "entityId": "https://idp.skyline-air.example/saml",
+          "active": true,
+          "credentials": {
+            "certs": [
+              {
+                "primaryVerificationCert": true,
+                "certView": {
+                  "sha256Fingerprint": "ED9B7C432043F43B0BEE4E796BAC59853D7CCB6B549CD03E83C20E17D1647C83",
+                  "validFrom": "2024-11-02T00:00:00.000Z",
+                  "expires": "2026-11-02T00:00:00.000Z",
+                  "keyAlgorithm": "RSA",
+                  "keySize": 2048,
+                  "status": "VALID",
+                  "subjectDN": "CN=Skyline Air IdP Signing",
+                  "issuerDN": "CN=Skyline Air IdP Signing"
+                }
+              },
+              {
+                "primaryVerificationCert": true,
+                "certView": {
+                  "sha256Fingerprint": "241F66E08778484FBF6FF4189EA7E3867FAE0D35C5DAD82C63670365E24A3C26",
+                  "validFrom": "2026-02-10T00:00:00.000Z",
+                  "expires": "2027-02-10T00:00:00.000Z",
+                  "keyAlgorithm": "RSA",
+                  "keySize": 2048,
+                  "status": "VALID",
+                  "subjectDN": "CN=sso.example-aero.test",
+                  "issuerDN": "CN=Public CA R11",
+                  "subjectAlternativeNames": [
+                    "sso.example-aero.test"
+                  ]
+                }
+              }
+            ]
+          },
+          "idpBrowserSso": {
+            "protocol": "SAML20",
+            "jitProvisioning": {
+              "userRepository": {
+                "type": "LDAP",
+                "baseDn": "ou=partners,ou=people,dc=partners,dc=example-aero,dc=test",
+                "dataStoreRef": {
+                  "id": "user-directory"
+                }
+              }
+            }
+          },
+          "type": "IDP"
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/oauth/clients",
+      "items": [
+        {
+          "clientId": "mobile-ops",
+          "name": "mobile-ops",
+          "enabled": true,
+          "redirectUris": [
+            "https://mobile.example-aero.test/oauth2/callback"
+          ],
+          "grantTypes": [
+            "AUTHORIZATION_CODE",
+            "REFRESH_TOKEN"
+          ],
+          "requireProofKeyForCodeExchange": true,
+          "clientAuth": {
+            "type": "NONE"
+          },
+          "restrictScopes": true,
+          "restrictedScopes": [
+            "openid",
+            "email",
+            "offline_access"
+          ],
+          "defaultAccessTokenManagerRef": {
+            "id": "default-jwt"
+          }
+        },
+        {
+          "clientId": "tech-pubs-web",
+          "name": "tech-pubs",
+          "enabled": true,
+          "redirectUris": [
+            "https://techpubs.example-aero.test/oidc/callback"
+          ],
+          "grantTypes": [
+            "AUTHORIZATION_CODE",
+            "REFRESH_TOKEN"
+          ],
+          "requireProofKeyForCodeExchange": true,
+          "clientAuth": {
+            "type": "NONE"
+          },
+          "restrictScopes": true,
+          "restrictedScopes": [
+            "openid",
+            "profile",
+            "email"
+          ],
+          "defaultAccessTokenManagerRef": {
+            "id": "default-jwt"
+          }
+        },
+        {
+          "clientId": "reports-api",
+          "name": "Reporting API",
+          "enabled": true,
+          "grantTypes": [
+            "CLIENT_CREDENTIALS"
+          ],
+          "restrictScopes": true,
+          "restrictedScopes": [
+            "reports.read"
+          ],
+          "clientAuth": {
+            "type": "SECRET",
+            "encryptedSecret": "OBF:JWE:eyJhbGciOiJkaXIifQ..fictional-not-a-real-secret"
+          },
+          "defaultAccessTokenManagerRef": {
+            "id": "default-jwt"
+          }
+        }
+      ]
+    }
+  ]
+}

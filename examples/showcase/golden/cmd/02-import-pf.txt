@@ -1,0 +1,10 @@
+exported from PingFederate 12.1.4.0
+client reports-api: its secret is not imported; each environment binds it
+new integration reports-api (client), not in the record before: give it an owner
+LDAP data store User directory: binds as consumer pf-ds-svc
+LDAP data store User directory: reaches directory server ds-1.aws.internal.example-aero.test by its hostname, not a service name (it changes when servers are replaced or moved)
+JDBC data store Persistent grant store: not recorded yet (PingFederate depth)
+not read yet (PingFederate depth): /idp/adapters (1), /oauth/accessTokenManagers (1)
+where PingFederate keeps OAuth clients, grants and sessions is set in its hivemodule.xml, not the Admin API: hold it with opsdir capture
+CHG-2008: 1 change(s) applied
+exit 0

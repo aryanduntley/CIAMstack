@@ -160,8 +160,9 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2007  update  cn=mro-batch-export,ou=consumers,dc=ciam-ops
 <TIMESTAMP>          CHG-2007  update  cn=pf-ds-svc,ou=consumers,dc=ciam-ops
 <TIMESTAMP>          CHG-2007  update  cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
+<TIMESTAMP>          CHG-2008  insert  cn=reports-api,ou=integrations,dc=ciam-ops
 <TIMESTAMP>          CHG-2001  insert  cn=fw-mro-batch,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2003  update  cn=svc-ldaps,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2005  update  cn=ldap,ou=connectors,ou=pingidm,dc=ciam-ops
 <TIMESTAMP>          CHG-2005  update  cn=hrdb,ou=connectors,ou=pingidm,dc=ciam-ops
-(164 rows)
+(165 rows)

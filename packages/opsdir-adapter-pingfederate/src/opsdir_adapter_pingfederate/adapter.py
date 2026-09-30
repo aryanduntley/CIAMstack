@@ -3,6 +3,7 @@ from opsdir.core.contract import Adapter, SecretPattern
 from opsdir.core.directory import one
 from opsdir_base_oidc.render import FORMATS as OIDC_FORMATS
 from opsdir_base_saml.render import FORMATS as SAML_FORMATS
+from .importer import BULK
 from .render import SERVER_ROLES, render_neutral
 
 PRODUCT = "PingFederate"
@@ -22,4 +23,4 @@ ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required
                   vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES}, schema=None,
                   formats=(("pingfederate/*.json", "json"), *SAML_FORMATS, *OIDC_FORMATS),
                   products=(("PingFederate", ">=11,<13"),),
-                  secret_patterns=SECRET_PATTERNS, importers=())
+                  secret_patterns=SECRET_PATTERNS, importers=(BULK,))

@@ -16,10 +16,10 @@ an observed snapshot, or the declared configuration itself.
 """
 import re
 
-from opsdir.core.directory import children, make_entry, one, rdn_value
+from opsdir.core.directory import make_entry, rdn_value
 from opsdir.core.interchange.ldif import parse
-from opsdir.domains.directory.naming import USER_SCHEMA
 from opsdir.domains.directory.schema import ATTRIBUTES
+from opsdir.domains.directory.user_schema import attribute_records
 from .config import POLICY_PROPS
 
 DATABASE_BACKENDS = (("ds-cfg-je-backend", "je"), ("ds-cfg-pdb-backend", "pdb"))
@@ -154,8 +154,7 @@ def _publisher_entries(records, base, label):
 
 def user_attributes(d):
     """{lowercase LDAP name: user-schema record} of every attribute the record describes."""
-    return {one(e, "ciamLdapName").lower(): e for e in children(d, USER_SCHEMA, "ciamUserAttribute")
-            if one(e, "ciamLdapName")}
+    return attribute_records(d)
 
 
 def config_entries(product, d, text, base, label):

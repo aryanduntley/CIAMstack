@@ -82,6 +82,15 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260923000000Z
 ciamTitle: Record the directory's consumers from the production access logs
 
+dn: cn=CHG-2008,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2008
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260923000000Z
+ciamTitle: Import PingFederate's configuration (Admin API bulk export)
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

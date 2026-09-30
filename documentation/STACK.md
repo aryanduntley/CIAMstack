@@ -174,9 +174,9 @@ Importer: an `ldapsearch`-driven profiler that emits statistics only (no values)
 
 | Object | Class | Datify | opsdir today |
 |---|---|---|---|
-| **SP connections** (SAML/WS-Fed outbound): entity ID, ACS URLs, bindings, attribute contract, signing/encryption certs, SLO | I + **C** | ● | ✔ `ciamIntegration` (SAML) + claims |
-| **IdP connections** (inbound partner federation): partner entity ID, SSO URLs, JIT provisioning, attribute mapping | I + C | ● | ~ `ciamJitBaseDn`; inbound mapping — |
-| **OAuth/OIDC clients**: client ID, redirect URIs, grant types, PKCE, auth method, token policy, scopes | I + C (+S for secrets) | ● | ✔ in the OIDC vocabulary (`ciamGrantType`, `ciamTokenAuthMethod`, `ciamScope`); rendered as standard client registrations; token lifetimes ~ (captured ATM file, custom field) |
+| **SP connections** (SAML/WS-Fed outbound): entity ID, ACS URLs, bindings, attribute contract, signing/encryption certs, SLO | I + **C** | ● | ✔ `ciamIntegration` (SAML) + claims; **imported** from the bulk export |
+| **IdP connections** (inbound partner federation): partner entity ID, SSO URLs, JIT provisioning, attribute mapping | I + C | ● | ~ `ciamJitBaseDn`, partner certificates, **imported**; inbound mapping — |
+| **OAuth/OIDC clients**: client ID, redirect URIs, grant types, PKCE, auth method, token policy, scopes | I + C (+S for secrets) | ● | ✔ **imported**, in the OIDC vocabulary (`ciamGrantType`, `ciamTokenAuthMethod`, `ciamScope`); rendered as standard client registrations; token lifetimes ~ (captured ATM file, custom field) |
 | OAuth scopes, scope groups, exclusive scopes | I | ● | — |
 | Access token managers (JWT / reference), signing key choice, lifetimes | I | ● | ~ captured (showcase: `default-atm.json`) |
 | OIDC policies (ID token claims, lifetimes) | I | ● | — |
@@ -184,11 +184,11 @@ Importer: an `ldapsearch`-driven profiler that emits statistics only (no values)
 | Authentication policies (trees), policy contracts, authentication selectors (IdP discovery, "select your identity provider") | I | ● These are the login flows, so they deserve first-class modeling | — |
 | IdP adapters: HTML Form, Identifier-First, Duo, Kerberos… | I (+S) | ● | — |
 | Password credential validators (LDAP Username PCV → DS) | I + S | ● | — |
-| **Data stores**: LDAP (DS hosts, bind DN, pool sizes, LDAPS), JDBC | I + B (hosts) + S | ● **Consumer link to the directory.** Hosts must be *service names*. | ~ as a consumer |
+| **Data stores**: LDAP (DS hosts, bind DN, pool sizes, LDAPS), JDBC | I + B (hosts) + S | ● **Consumer link to the directory.** Hosts must be *service names*. | ~ as a consumer; the import checks bind DN, hostnames and TLS |
 | Local identity profiles (PF-native registration & profile management), if used | I | ● | — |
 | Password reset / change settings (email or SMS OTP), notification publishers (SMTP) | I + B + S | ● | — |
 | CAPTCHA providers | I + S | ● | — |
-| Signing key pairs, SSL server key pairs, decryption keys | S + cert facts | ○ keys · ● cert facts (fingerprint, expiry, `usedBy`) | ✔ `ciamCertificate` + `ciamCredential` (carry-over, HSM, exportable) |
+| Signing key pairs, SSL server key pairs, decryption keys | S + cert facts | ○ keys · ● cert facts (fingerprint, expiry, `usedBy`) | ✔ `ciamCertificate` + `ciamCredential` (carry-over, HSM, exportable); cert facts **imported** |
 | Trusted CAs, partner metadata URLs & refresh | I + C | ● | — |
 | Virtual host names, base URL, SAML entity ID of *our* IdP, OIDC issuer | **C** | ● **Must not change** | ✔ `ciamIdentityService` (base URL, entity ID, issuer); SAML metadata and OIDC discovery rendered |
 | Redirect validation allowlist | I | ● | — |
@@ -488,7 +488,7 @@ Result: "change this hostname" becomes a query that lists every file and every p
 
 | Roadmap path | Closes | New classes / importers / renderers |
 |---|---|---|
-| **4. Importers** | the model is only as good as its data | ~~DS configuration~~ (done: `config.ldif` and archived configs → snapshots, or the declared configuration); ~~DS access-log miner~~ (done: JSON access logs → `ciamConsumer`, values-free); PingFederate (Admin API / bulk export / archive → integrations, adapters, data stores, key facts); **string census** (§15: file scanner → `ciamOccurrence`: file, host, line, value hash, owning entry); cloud inventories, Terraform state, ARM/Bicep deployments and CloudFormation stacks → bindings |
+| **4. Importers** | the model is only as good as its data | ~~DS configuration~~ (done: `config.ldif` and archived configs → snapshots, or the declared configuration); ~~DS access-log miner~~ (done: JSON access logs → `ciamConsumer`, values-free); ~~PingFederate~~ (done: bulk export → integrations, claims, certificate facts; data stores checked; adapters, token managers, data stores and storage locations with path 5's PingFederate depth); **string census** (§15: file scanner → `ciamOccurrence`: file, host, line, value hash, owning entry); cloud inventories, Terraform state, ARM/Bicep deployments and CloudFormation stacks → bindings |
 | **5. Stack coverage** | §4, §9–§14, §17 | PingFederate depth (`ciamAuthPolicy`, `ciamAdapter`, `ciamDataStore`, `ciamAccessTokenManager`, `ciamOidcPolicy`, `ciamScope`, node files with `tcp.xml` discovery as a **binding**); hidden automation (`ciamJob`: cron, scheduled tasks, serverless functions, pipelines); host baseline and Kubernetes workloads (`ciamHostBaseline`); messaging and external services (`ciamMailSender`, `ciamExternalService`); data profile (`ou=data-profile`, values-free); observability intent (`ciamAlertRule`, `ciamLogRoute`, `ciamCanary`); platform IAM and admin plane; edge and traffic protection; network depth; data services, backup and DR; cloud governance, audit and cost |
 | **6. Renderers & targets** | working files for every covered target | PingFederate Admin API payloads / Terraform provider (replacing the illustrative subset), Kubernetes/ForgeOps overlays, config management and on-prem, observability rules, per-adapter round-trip tests (import → render → import), each cloud's native IaC alongside Terraform (ARM templates / Bicep for Azure, CloudFormation for AWS) |
 | **7. Conditional products & governance** | §6–§7, §18 | PingAccess, SiteMinder (XPSExport), cloud-managed identity services; vendor-neutral ITSM/CMDB, GRC, SIEM, PAM, PKI and firewall-manager integrations; the unknowns register (`ciamUnknown`: question, owner, blocking, answer) in the planner's verdict |

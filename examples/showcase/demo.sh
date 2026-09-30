@@ -24,6 +24,8 @@ echo "-- what the production directory servers actually run: each one's config.l
 od import --change CHG-2006 --at 20260920030000Z pingds/config exports/ds-config
 echo "-- who uses the directory: consumers found in its access logs (values-free; end users only counted)"
 od import --change CHG-2007 pingds/access-log exports/ds-access-logs
+echo "-- PingFederate's configuration, from its Admin API bulk export (a client the record didn't have is found)"
+od import --change CHG-2008 pingfederate exports/pingfederate
 echo "-- each environment's declared stack against the installed adapters"; od check
 echo "-- what each kind of value is: intent, contract, binding, secret reference, observed, meta"; od report portability
 

@@ -71,6 +71,17 @@ ciamScope: email
 ciamServedBy: cn=partners,ou=identity-services,dc=ciam-ops
 ciamTokenAuthMethod: private_key_jwt
 
+dn: cn=reports-api,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamIntegration
+cn: reports-api
+ciamClientId: reports-api
+ciamGrantType: client_credentials
+ciamProtocolType: oidc-client
+ciamScope: reports.read
+ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
+ciamTokenAuthMethod: client_secret_basic
+
 dn: cn=skyline-air-federation,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamIntegration
@@ -131,5 +142,5 @@ ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 xTokenLifetimeMinutes: 60
 
-# 7 entries
+# 8 entries
 exit 0

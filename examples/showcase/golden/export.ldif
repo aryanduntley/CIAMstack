@@ -424,6 +424,15 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260923000000Z
 ciamTitle: Record the directory's consumers from the production access logs
 
+dn: cn=CHG-2008,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2008
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260923000000Z
+ciamTitle: Import PingFederate's configuration (Admin API bulk export)
+
 dn: cn=CHG-2040,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange
@@ -1180,6 +1189,17 @@ ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: none
 ciamPurpose: Registration workflow state (pending / approved / active / disabl
  ed)
+
+dn: cn=reports-api,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamIntegration
+cn: reports-api
+ciamClientId: reports-api
+ciamGrantType: client_credentials
+ciamProtocolType: oidc-client
+ciamScope: reports.read
+ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
+ciamTokenAuthMethod: client_secret_basic
 
 dn: cn=run.properties,ou=config-files,dc=ciam-ops
 objectClass: top

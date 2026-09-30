@@ -1,0 +1,260 @@
+{
+  "metadata": {
+    "pfVersion": "12.1.4.0"
+  },
+  "operations": [
+    {
+      "operationType": "SAVE",
+      "resourceType": "/keyPairs/signing",
+      "items": [
+        {
+          "id": "signing-2025",
+          "keyAlgorithm": "RSA",
+          "keySize": 2048,
+          "sha256Fingerprint": "1850453C96D76CB8F5906A4B0637F999AE16655CA329EC90340437FA1028B699",
+          "subjectDN": "CN=sso.example.test",
+          "issuerDN": "CN=sso.example.test",
+          "validFrom": "2025-07-01T00:00:00.000Z",
+          "expires": "2027-06-30T00:00:00.000Z",
+          "status": "VALID"
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/keyPairs/sslServer",
+      "items": [
+        {
+          "id": "sso-tls",
+          "sha256Fingerprint": "5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A",
+          "subjectDN": "CN=sso.example.test",
+          "issuerDN": "CN=Example Issuing CA",
+          "subjectAlternativeNames": [
+            "sso.example.test"
+          ],
+          "validFrom": "2026-02-10T00:00:00.000Z",
+          "expires": "2027-02-10T00:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/idp/spConnections",
+      "items": [
+        {
+          "type": "SP",
+          "id": "portal-sp",
+          "name": "Customer portal",
+          "entityId": "https://portal.example.test/saml/sp",
+          "active": true,
+          "contactInfo": {
+            "company": "Portal team"
+          },
+          "spBrowserSso": {
+            "protocol": "SAML20",
+            "enabledProfiles": [
+              "SP_INITIATED_SSO"
+            ],
+            "ssoServiceEndpoints": [
+              {
+                "binding": "POST",
+                "url": "https://portal.example.test/saml/acs",
+                "isDefault": true,
+                "index": 0
+              }
+            ],
+            "attributeContract": {
+              "coreAttributes": [
+                {
+                  "name": "SAML_SUBJECT",
+                  "nameFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
+                }
+              ],
+              "extendedAttributes": [
+                {
+                  "name": "email"
+                },
+                {
+                  "name": "org"
+                },
+                {
+                  "name": "tier"
+                }
+              ]
+            },
+            "adapterMappings": [
+              {
+                "idpAdapterRef": {
+                  "id": "htmlform"
+                },
+                "attributeContractFulfillment": {
+                  "SAML_SUBJECT": {
+                    "source": {
+                      "type": "ADAPTER"
+                    },
+                    "value": "subject"
+                  },
+                  "email": {
+                    "source": {
+                      "type": "LDAP_DATA_STORE",
+                      "id": "user-directory"
+                    },
+                    "value": "mail"
+                  },
+                  "org": {
+                    "source": {
+                      "type": "LDAP_DATA_STORE",
+                      "id": "user-directory"
+                    },
+                    "value": "companyId"
+                  },
+                  "tier": {
+                    "source": {
+                      "type": "TEXT"
+                    },
+                    "value": "gold"
+                  }
+                }
+              }
+            ]
+          },
+          "credentials": {
+            "signingSettings": {
+              "signingKeyPairRef": {
+                "id": "signing-2025"
+              },
+              "algorithm": "SHA256withRSA"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/sp/idpConnections",
+      "items": [
+        {
+          "type": "IDP",
+          "id": "partner-idp",
+          "name": "Partner Air",
+          "entityId": "https://idp.partner.example/saml",
+          "active": true,
+          "idpBrowserSso": {
+            "protocol": "SAML20",
+            "jitProvisioning": {
+              "userRepository": {
+                "type": "LDAP",
+                "dataStoreRef": {
+                  "id": "user-directory"
+                },
+                "baseDn": "ou=partners,ou=people,dc=example,dc=test"
+              }
+            }
+          },
+          "credentials": {
+            "certs": [
+              {
+                "primaryVerificationCert": true,
+                "certView": {
+                  "sha256Fingerprint": "C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3C3",
+                  "subjectDN": "CN=idp.partner.example",
+                  "issuerDN": "CN=idp.partner.example",
+                  "validFrom": "2024-11-02T00:00:00.000Z",
+                  "expires": "2026-11-02T00:00:00.000Z"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/oauth/clients",
+      "items": [
+        {
+          "clientId": "mobile",
+          "name": "Mobile app",
+          "enabled": true,
+          "redirectUris": [
+            "https://mobile.example.test/cb"
+          ],
+          "grantTypes": [
+            "AUTHORIZATION_CODE",
+            "REFRESH_TOKEN"
+          ],
+          "requireProofKeyForCodeExchange": true,
+          "clientAuth": {
+            "type": "NONE"
+          },
+          "restrictScopes": true,
+          "restrictedScopes": [
+            "openid",
+            "email"
+          ]
+        },
+        {
+          "clientId": "batch",
+          "name": "Batch job",
+          "enabled": true,
+          "grantTypes": [
+            "CLIENT_CREDENTIALS",
+            "EXTENSION"
+          ],
+          "clientAuth": {
+            "type": "SECRET",
+            "encryptedSecret": "OBF:JWE:eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0..not-real"
+          }
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/dataStores",
+      "items": [
+        {
+          "type": "LDAP",
+          "id": "user-directory",
+          "name": "User directory",
+          "ldapType": "PING_DIRECTORY",
+          "hostnames": [
+            "ds-1.internal.example.test:1636",
+            "ldap.example.test:1636"
+          ],
+          "useSsl": true,
+          "userDN": "uid=pf-svc,ou=service-accounts,dc=example,dc=test",
+          "encryptedPassword": "OBF:JWE:not-a-real-password-value"
+        },
+        {
+          "type": "JDBC",
+          "id": "grants-db",
+          "name": "Grant store",
+          "driverClass": "org.postgresql.Driver",
+          "connectionUrl": "jdbc:postgresql://grants.db.example.test:5432/pf",
+          "userName": "pf",
+          "encryptedPassword": "OBF:JWE:x"
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/idp/adapters",
+      "items": [
+        {
+          "id": "htmlform",
+          "name": "HTML Form"
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/oauth/accessTokenManagers",
+      "items": [
+        {
+          "id": "default",
+          "name": "Default"
+        }
+      ]
+    }
+  ]
+}
