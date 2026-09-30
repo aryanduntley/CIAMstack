@@ -1,0 +1,33 @@
+file                                         server       value of                                                                attribute           lines  concerns
+-------------------------------------------  -----------  ----------------------------------------------------------------------  ------------------  -----  ----------------------------------------------------------------------
+apps/customer-portal/application.properties               cn=svc-ldaps,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam  ciamFqdn            2      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
+apps/customer-portal/application.properties               cn=ds-ldaps-2026,ou=certificates,dc=ciam-ops                            ciamSubjectAltName  2      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
+apps/customer-portal/application.properties               cn=aci-idm-write,ou=acis,dc=ciam-ops                                    ciamAciTargetDn     3      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
+apps/customer-portal/application.properties               cn=aci-legacy-all,ou=acis,dc=ciam-ops                                   ciamAciTargetDn     3      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
+apps/customer-portal/application.properties               cn=aci-mro-read,ou=acis,dc=ciam-ops                                     ciamAciTargetDn     3      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
+apps/customer-portal/application.properties               cn=aci-pf-read,ou=acis,dc=ciam-ops                                      ciamAciTargetDn     3      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
+apps/customer-portal/application.properties               cn=aci-portal-write,ou=acis,dc=ciam-ops                                 ciamAciTargetDn     3      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
+apps/customer-portal/application.properties               cn=aci-supplier-read,ou=acis,dc=ciam-ops                                ciamAciTargetDn     3      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
+apps/customer-portal/application.properties               cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops               ciamBaseDn          3, 4   line 5: secret material (secret-assignment); line 5: ldap.password is given a value
+apps/customer-portal/application.properties               cn=customer-portal-svc,ou=consumers,dc=ciam-ops                         ciamBindDn          4      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
+apps/customer-portal/application.properties               cn=customer-portal,ou=integrations,dc=ciam-ops                          ciamEntityId        6      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
+apps/customer-portal/application.properties               cn=sso,ou=identity-services,dc=ciam-ops                                 ciamBaseUrl         7      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
+apps/customer-portal/application.properties               cn=sso,ou=identity-services,dc=ciam-ops                                 ciamEntityId        7      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
+apps/customer-portal/application.properties               cn=svc-sso,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-o  ciamFqdn            7      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
+apps/customer-portal/application.properties               cn=svc-sso,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-o  ciamFqdn            7      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
+apps/customer-portal/application.properties               cn=sso,ou=identity-services,dc=ciam-ops                                 ciamOidcIssuer      7      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
+apps/customer-portal/application.properties               cn=sso-tls-2026,ou=certificates,dc=ciam-ops                             ciamSubjectAltName  7      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
+etc/hosts                                    pf-engine-1  cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops               ciamHostname        3
+etc/hosts                                    pf-engine-1  cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops               ciamPrivateIp       3
+opt/scripts/nightly-export.sh                ds-2         cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops               ciamHostname        4
+opt/scripts/nightly-export.sh                ds-2         cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops               ciamBaseDn          5, 6
+opt/scripts/nightly-export.sh                ds-2         cn=mro-batch-export,ou=consumers,dc=ciam-ops                            ciamBindDn          5
+opt/scripts/nightly-export.sh                ds-2         cn=aci-idm-write,ou=acis,dc=ciam-ops                                    ciamAciTargetDn     6
+opt/scripts/nightly-export.sh                ds-2         cn=aci-legacy-all,ou=acis,dc=ciam-ops                                   ciamAciTargetDn     6
+opt/scripts/nightly-export.sh                ds-2         cn=aci-mro-read,ou=acis,dc=ciam-ops                                     ciamAciTargetDn     6
+opt/scripts/nightly-export.sh                ds-2         cn=aci-pf-read,ou=acis,dc=ciam-ops                                      ciamAciTargetDn     6
+opt/scripts/nightly-export.sh                ds-2         cn=aci-portal-write,ou=acis,dc=ciam-ops                                 ciamAciTargetDn     6
+opt/scripts/nightly-export.sh                ds-2         cn=aci-supplier-read,ou=acis,dc=ciam-ops                                ciamAciTargetDn     6
+opt/scripts/nightly-export.sh                ds-2         cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops               ciamPrivateIp       8
+(29 rows)
+exit 0

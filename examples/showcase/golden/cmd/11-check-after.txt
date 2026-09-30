@@ -4,7 +4,8 @@ Expected findings check (after changes)
            B4   cleared by CHG-2001: no target firewall rule for the MRO export → gone
            B9   cleared by CHG-2005: imported HR database connector names no secret → gone
            B10  cleared by CHG-2005: imported directory connector names no secret → gone
-  actions  planted 16   expected now 16   detected 16   missed 0   unexpected 0
+  actions  planted 19   expected now 18   detected 18   missed 0   unexpected 0
+           A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
   RESULT: PASS. The planner found every planted problem and nothing else. 'NOT READY' is the correct verdict
           for this deliberately broken environment.
 exit 0

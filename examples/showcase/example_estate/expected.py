@@ -36,6 +36,12 @@ EXPECTED = {
         ("A15", "IDM", "Connector `hrdb` reaches a fixed host", "HR database reached at the same host everywhere", None),
         ("A16", "Gateway", "Route `partner-portal` sends requests to a fixed backend",
          "the partner portal application is reached at the same host everywhere", None),
+        ("A17", "Hard-coded", "`opt/scripts/nightly-export.sh` on ds-2 holds source/prod values",
+         "the MRO export script names ds-1 by hostname and address", None),
+        ("A18", "Hard-coded", "`etc/hosts` on pf-engine-1 holds source/prod values",
+         "PingFederate's engine pins ds-1's address in /etc/hosts", None),
+        ("A19", "Hard-coded", "`apps/customer-portal/application.properties` holds source/prod values",
+         "the portal names the LDAPS service, which the target renames (B1)", "CHG-2003"),
     ],
 }
 

@@ -17,6 +17,11 @@ objectClass: organizationalUnit
 ou: bundles
 description: Code, scripts, templates and packages deployed as they are
 
+dn: ou=census,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: census
+
 dn: ou=certificates,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -150,6 +155,14 @@ ciamCloudProvider: azure
 ciamLifecycle: building
 ciamRegion: eastus2
 description: Second hosting environment (Azure)
+
+dn: cn=483017ca92ce3ac8,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamScannedFile
+cn: 483017ca92ce3ac8
+ciamOnServer: cn=pf-engine-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamRepoPath: etc/hosts
+ciamSha256: 78b07d136f28209b3382df98b923779ff28d3e133c419144255ccd74f0bf44eb
 
 dn: cn=aci-idm-write,ou=acis,dc=ciam-ops
 objectClass: top
@@ -433,6 +446,16 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260923000000Z
 ciamTitle: Import PingFederate's configuration (Admin API bulk export)
 
+dn: cn=CHG-2009,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2009
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260923000000Z
+ciamTitle: Census of the servers' and applications' files for values of the re
+ cord
+
 dn: cn=CHG-2040,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange
@@ -690,6 +713,23 @@ ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: high
 ciamPurpose: Result of restricted-party / export screening from the authoritat
  ive system
+
+dn: cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamScannedFile
+cn: fd1eaf88edae748a
+ciamConcern: line 5: secret material (secret-assignment)
+ciamConcern: line 5: ldap.password is given a value
+ciamRepoPath: apps/customer-portal/application.properties
+ciamSha256: fe3605e8bf164152e3f1cc4f922223ede626b8c027d29f7002270e3a4ed06cb8
+
+dn: cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamScannedFile
+cn: fda3b4cba0f0ad02
+ciamOnServer: cn=ds-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamRepoPath: opt/scripts/nightly-export.sh
+ciamSha256: b0deff05a91717b60751d8acf4bfeb90280cc77b83632aedc54aa33710d29bb8
 
 dn: cn=givenName,ou=user-schema,dc=ciam-ops
 objectClass: top
@@ -1667,6 +1707,42 @@ ciamLocator: /id
 ciamSettingRaw: "default-atm"
 ciamSettingValue: default-atm
 
+dn: cn=0ae6558ff544cfff,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 0ae6558ff544cfff
+ciamLineNumber: 3
+ciamLineNumber: 4
+ciamOccurrenceOf: cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
+ciamOccurringAttr: ciamBaseDn
+
+dn: cn=0ae6558ff544cfff,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 0ae6558ff544cfff
+ciamLineNumber: 5
+ciamLineNumber: 6
+ciamOccurrenceOf: cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
+ciamOccurringAttr: ciamBaseDn
+
+dn: cn=1910dfbfcde4e9ce,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 1910dfbfcde4e9ce
+ciamLineNumber: 2
+ciamOccurrenceOf: cn=svc-ldaps,ou=bindings,env=prod,cloud=source,ou=environmen
+ ts,dc=ciam-ops
+ciamOccurringAttr: ciamFqdn
+
+dn: cn=1a09cd59493312ee,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 1a09cd59493312ee
+ciamLineNumber: 7
+ciamOccurrenceOf: cn=svc-sso,ou=bindings,env=prod,cloud=source,ou=environments
+ ,dc=ciam-ops
+ciamOccurringAttr: ciamFqdn
+
 dn: cn=1ba5b9f2e1214443,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops
 objectClass: top
 objectClass: ciamConfigSetting
@@ -1683,6 +1759,14 @@ ciamLocator: /lifetimeMinutes
 ciamSettingRaw: 60
 ciamSettingValue: 60
 
+dn: cn=20ffc8f644594dd0,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 20ffc8f644594dd0
+ciamLineNumber: 7
+ciamOccurrenceOf: cn=sso,ou=identity-services,dc=ciam-ops
+ciamOccurringAttr: ciamBaseUrl
+
 dn: cn=21ffbbc6bc37c308,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops
 objectClass: top
 objectClass: ciamConfigSetting
@@ -1690,6 +1774,14 @@ cn: 21ffbbc6bc37c308
 ciamLocator: /data/coreOAuth2Config/codeLifetime
 ciamSettingRaw: 120
 ciamSettingValue: 120
+
+dn: cn=223ce7924cf183b6,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 223ce7924cf183b6
+ciamLineNumber: 7
+ciamOccurrenceOf: cn=sso,ou=identity-services,dc=ciam-ops
+ciamOccurringAttr: ciamOidcIssuer
 
 dn: cn=28d37a64d1f2098a,cn=ig.config.admin.json,ou=config-files,dc=ciam-ops
 objectClass: top
@@ -1706,6 +1798,14 @@ cn: 2f6c473084e7ea6c
 ciamLocator: /metadata/realm
 ciamSettingRaw: "/partners"
 ciamSettingValue: /partners
+
+dn: cn=311f8092e3e02109,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 311f8092e3e02109
+ciamLineNumber: 7
+ciamOccurrenceOf: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+ciamOccurringAttr: ciamSubjectAltName
 
 dn: cn=353f2ecae4dc5e3f,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops
 objectClass: top
@@ -1731,6 +1831,54 @@ ciamLocator: /metadata/amsterVersion
 ciamSettingRaw: "7.5.1"
 ciamSettingValue: 7.5.1
 
+dn: cn=560abbbd33f5d737,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 560abbbd33f5d737
+ciamLineNumber: 3
+ciamOccurrenceOf: cn=aci-legacy-all,ou=acis,dc=ciam-ops
+ciamOccurringAttr: ciamAciTargetDn
+
+dn: cn=560abbbd33f5d737,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 560abbbd33f5d737
+ciamLineNumber: 6
+ciamOccurrenceOf: cn=aci-legacy-all,ou=acis,dc=ciam-ops
+ciamOccurringAttr: ciamAciTargetDn
+
+dn: cn=68dfdaadcf1fcd63,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 68dfdaadcf1fcd63
+ciamLineNumber: 3
+ciamOccurrenceOf: cn=aci-supplier-read,ou=acis,dc=ciam-ops
+ciamOccurringAttr: ciamAciTargetDn
+
+dn: cn=68dfdaadcf1fcd63,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 68dfdaadcf1fcd63
+ciamLineNumber: 6
+ciamOccurrenceOf: cn=aci-supplier-read,ou=acis,dc=ciam-ops
+ciamOccurringAttr: ciamAciTargetDn
+
+dn: cn=75db0bb73adad0f5,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 75db0bb73adad0f5
+ciamLineNumber: 3
+ciamOccurrenceOf: cn=aci-pf-read,ou=acis,dc=ciam-ops
+ciamOccurringAttr: ciamAciTargetDn
+
+dn: cn=75db0bb73adad0f5,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 75db0bb73adad0f5
+ciamLineNumber: 6
+ciamOccurrenceOf: cn=aci-pf-read,ou=acis,dc=ciam-ops
+ciamOccurringAttr: ciamAciTargetDn
+
 dn: cn=78285a76d0ca9c9d,cn=run.properties,ou=config-files,dc=ciam-ops
 objectClass: top
 objectClass: ciamConfigSetting
@@ -1738,6 +1886,22 @@ cn: 78285a76d0ca9c9d
 ciamLocator: pf.https.port
 ciamSettingRaw: 9031
 ciamSettingValue: 9031
+
+dn: cn=827b5d26323c2ba0,cn=483017ca92ce3ac8,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 827b5d26323c2ba0
+ciamLineNumber: 3
+ciamOccurrenceOf: cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamOccurringAttr: ciamPrivateIp
+
+dn: cn=827b5d26323c2ba0,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 827b5d26323c2ba0
+ciamLineNumber: 8
+ciamOccurrenceOf: cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamOccurringAttr: ciamPrivateIp
 
 dn: cn=887d2ebf8ef77e5d,cn=ig.config.admin.json,ou=config-files,dc=ciam-ops
 objectClass: top
@@ -1780,6 +1944,38 @@ ciamLocator: /auditServiceConfig/handlerForQueries
 ciamSettingRaw: "json"
 ciamSettingValue: json
 
+dn: cn=8c8b33787d781301,cn=483017ca92ce3ac8,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 8c8b33787d781301
+ciamLineNumber: 3
+ciamOccurrenceOf: cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamOccurringAttr: ciamHostname
+
+dn: cn=8c8b33787d781301,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 8c8b33787d781301
+ciamLineNumber: 4
+ciamOccurrenceOf: cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamOccurringAttr: ciamHostname
+
+dn: cn=915c5a6d3ba1510a,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 915c5a6d3ba1510a
+ciamLineNumber: 6
+ciamOccurrenceOf: cn=customer-portal,ou=integrations,dc=ciam-ops
+ciamOccurringAttr: ciamEntityId
+
+dn: cn=992169e5cbadd2a1,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 992169e5cbadd2a1
+ciamLineNumber: 7
+ciamOccurrenceOf: cn=sso,ou=identity-services,dc=ciam-ops
+ciamOccurringAttr: ciamEntityId
+
 dn: cn=9d7646b79e865e69,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops
 objectClass: top
 objectClass: ciamConfigSetting
@@ -1804,6 +2000,14 @@ ciamLocator: /heap/0/name
 ciamSettingRaw: "SystemAndEnvSecretStore-1"
 ciamSettingValue: SystemAndEnvSecretStore-1
 
+dn: cn=ad3d342eed225ff6,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: ad3d342eed225ff6
+ciamLineNumber: 5
+ciamOccurrenceOf: cn=mro-batch-export,ou=consumers,dc=ciam-ops
+ciamOccurringAttr: ciamBindDn
+
 dn: cn=b24b629b40d0196b,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops
 objectClass: top
 objectClass: ciamConfigSetting
@@ -1821,6 +2025,14 @@ ciamLocator: pf.admin.pwd
 ciamSecretRequired: TRUE
 ciamValueFrom: pf-admin-password#ciamRefUri
 
+dn: cn=b889774be35ab26e,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: b889774be35ab26e
+ciamLineNumber: 2
+ciamOccurrenceOf: cn=ds-ldaps-2026,ou=certificates,dc=ciam-ops
+ciamOccurringAttr: ciamSubjectAltName
+
 dn: cn=b8a8fe33a98249d1,cn=run.properties,ou=config-files,dc=ciam-ops
 objectClass: top
 objectClass: ciamConfigSetting
@@ -1829,6 +2041,30 @@ ciamLocator: pf.log.eventdetail
 ciamSettingRaw: false
 ciamSettingValue: false
 
+dn: cn=c3d7809625b82975,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: c3d7809625b82975
+ciamLineNumber: 3
+ciamOccurrenceOf: cn=aci-portal-write,ou=acis,dc=ciam-ops
+ciamOccurringAttr: ciamAciTargetDn
+
+dn: cn=c3d7809625b82975,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: c3d7809625b82975
+ciamLineNumber: 6
+ciamOccurrenceOf: cn=aci-portal-write,ou=acis,dc=ciam-ops
+ciamOccurringAttr: ciamAciTargetDn
+
+dn: cn=d3463ecca0c1772f,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: d3463ecca0c1772f
+ciamLineNumber: 4
+ciamOccurrenceOf: cn=customer-portal-svc,ou=consumers,dc=ciam-ops
+ciamOccurringAttr: ciamBindDn
+
 dn: cn=d4684ac3b13198d8,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops
 objectClass: top
 objectClass: ciamConfigSetting
@@ -1836,6 +2072,22 @@ cn: d4684ac3b13198d8
 ciamLocator: /data/coreOAuth2Config/accessTokenLifetime
 ciamSettingRaw: 3600
 ciamSettingValue: 3600
+
+dn: cn=d6f31adc7a5d2df2,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: d6f31adc7a5d2df2
+ciamLineNumber: 3
+ciamOccurrenceOf: cn=aci-mro-read,ou=acis,dc=ciam-ops
+ciamOccurringAttr: ciamAciTargetDn
+
+dn: cn=d6f31adc7a5d2df2,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: d6f31adc7a5d2df2
+ciamLineNumber: 6
+ciamOccurrenceOf: cn=aci-mro-read,ou=acis,dc=ciam-ops
+ciamOccurringAttr: ciamAciTargetDn
 
 dn: cn=d82debf6eb335a9d,cn=ig.config.config.json,ou=config-files,dc=ciam-ops
 objectClass: top
@@ -1869,6 +2121,22 @@ ciamLocator: /data/_id
 ciamSettingRaw: "OAuth2Provider"
 ciamSettingValue: OAuth2Provider
 
+dn: cn=e6f396ca61715013,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: e6f396ca61715013
+ciamLineNumber: 3
+ciamOccurrenceOf: cn=aci-idm-write,ou=acis,dc=ciam-ops
+ciamOccurringAttr: ciamAciTargetDn
+
+dn: cn=e6f396ca61715013,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: e6f396ca61715013
+ciamLineNumber: 6
+ciamOccurrenceOf: cn=aci-idm-write,ou=acis,dc=ciam-ops
+ciamOccurringAttr: ciamAciTargetDn
+
 dn: cn=f5a2dd8fd1c7a4e2,cn=default-atm.json,ou=config-files,dc=ciam-ops
 objectClass: top
 objectClass: ciamConfigSetting
@@ -1876,6 +2144,15 @@ cn: f5a2dd8fd1c7a4e2
 ciamLocator: /reuseExistingTokens
 ciamSettingRaw: true
 ciamSettingValue: true
+
+dn: cn=f7a86c11c0702ed0,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: f7a86c11c0702ed0
+ciamLineNumber: 7
+ciamOccurrenceOf: cn=svc-sso,ou=bindings,env=prod,cloud=target,ou=environments
+ ,dc=ciam-ops
+ciamOccurringAttr: ciamFqdn
 
 dn: cn=fbf19b7efd8b212b,cn=ig.config.config.json,ou=config-files,dc=ciam-ops
 objectClass: top

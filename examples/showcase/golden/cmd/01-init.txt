@@ -1,2 +1,2 @@
-initialized: 251 attribute types, 58 object classes
+initialized: 256 attribute types, 60 object classes
 exit 0

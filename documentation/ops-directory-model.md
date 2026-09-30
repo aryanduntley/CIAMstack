@@ -107,6 +107,7 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.28 NAME 'ciamCertificate' DESC 'Certifica
 | Which work instructions are stale? | `opsdir report stale`: runbooks whose dependencies changed after they were last validated |
 | What does nobody own? | `opsdir report unowned` |
 | How does an environment differ from the one it overlays? | `opsdir report overrides` |
+| Which files copy a value of the record, on which lines? | `opsdir census PATH` records it; `opsdir report census [DN]` lists it, and `blast-radius` includes the files |
 | Any ad-hoc question | `opsdir search -b <base> '<LDAP filter>' [attributes]`, e.g. `(&(objectClass=ciamConsumer)(!(ciamOwner=*)))` for consumers with no owner |
 
 Reports are data registered by domains and adapter packages; SQL reports run in the store, directory reports over a snapshot of the record.

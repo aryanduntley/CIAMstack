@@ -91,6 +91,16 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260923000000Z
 ciamTitle: Import PingFederate's configuration (Admin API bulk export)
 
+dn: cn=CHG-2009,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2009
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260923000000Z
+ciamTitle: Census of the servers' and applications' files for values of the re
+ cord
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

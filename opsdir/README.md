@@ -30,6 +30,7 @@ On a machine whose global pip config sets `user = true`, pip refuses it inside a
 ./opsdir.sh import [--change CHG-…] ADAPTER[/IMPORTER] PATH [--dry-run] [--at TIME]   # read a product's export into the record
 ./opsdir.sh capture --change CHG-… FILE       # hold a config file in the record (settings, whole, or a reference)
 ./opsdir.sh file NAME [--env CLOUD/ENV]       # rebuild a captured file from the record
+./opsdir.sh census --change CHG-… PATH        # where the record's values occur in files (secrets flagged, not stored)
 ./opsdir.sh search -b BASE 'FILTER' [ATTR...] # RFC 4515 search, as LDIF or a table of attributes
 ./opsdir.sh report NAME [DN]          # portability, unowned, blast-radius DN, and every domain's reports (consumers,
                                       # keys ENV, drift, ...); dates as of --as-of

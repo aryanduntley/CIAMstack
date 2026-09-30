@@ -11,9 +11,13 @@ import hashlib
 
 from ..domains.configuration.bundles import (VERIFY_HEADERS, bundle_entries, bundle_verification, bundles,
                                              content_concerns, content_digest)
-from ..domains.configuration.naming import BUNDLES, CONFIG_FILES, bundle_dn, file_dn
+from ..core.contract import Imported
+from ..domains.configuration.census import census_groups
+from ..domains.directory.naming import OBSERVED
+from ..domains.configuration.naming import BUNDLES, CENSUS, CONFIG_FILES, bundle_dn, file_dn
 from ..domains.configuration.record import (captured_files, deployed_files, file_entries, linked, rebuild,
                                             render_problems)
+from .importing import import_changes
 from .registry import ADAPTERS, FORMATS, environment, format_named, pattern_records
 
 # The captured files an environment receives, rendered: {path: text}, {path: format}, {path: scope}, and
@@ -60,6 +64,15 @@ def bundle_changes(d, name, repo_path, kind, content, format_name=None, version=
     return _changes(d, BUNDLES, bundle_dn(name), (entry,)), (
         f"{name}: {kind} bundle at {repo_path} ({len(content)} file(s), sha256 {digest[:12]})",
         *(f"{name}: may hold secret material: {c}" for c in concerns))
+
+
+def census_changes(d, files, installed=ADAPTERS):
+    """(change records, notices) recording where the record's values occur in files ({relative path: text}): each
+    file's census entry made exactly what this scan found (an unchanged file changes nothing). Observed configuration
+    snapshots are not looked for: they repeat the declared values."""
+    groups, notices = census_groups(d, files, pattern_records(installed), exclude=(OBSERVED,))
+    branch = make_entry(CENSUS, ("top", "organizationalUnit"), {"ou": ("census",)})
+    return import_changes(d, Imported((branch,), groups, ())), notices
 
 
 def rebuilt_file(d, name, spec=None, installed=ADAPTERS, formats=FORMATS):

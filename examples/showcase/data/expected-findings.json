@@ -184,6 +184,27 @@
       "match": "Route `partner-portal` sends requests to a fixed backend",
       "planted": "the partner portal application is reached at the same host everywhere",
       "cleared_by": null
+    },
+    {
+      "id": "A17",
+      "area": "Hard-coded",
+      "match": "`opt/scripts/nightly-export.sh` on ds-2 holds source/prod values",
+      "planted": "the MRO export script names ds-1 by hostname and address",
+      "cleared_by": null
+    },
+    {
+      "id": "A18",
+      "area": "Hard-coded",
+      "match": "`etc/hosts` on pf-engine-1 holds source/prod values",
+      "planted": "PingFederate's engine pins ds-1's address in /etc/hosts",
+      "cleared_by": null
+    },
+    {
+      "id": "A19",
+      "area": "Hard-coded",
+      "match": "`apps/customer-portal/application.properties` holds source/prod values",
+      "planted": "the portal names the LDAPS service, which the target renames (B1)",
+      "cleared_by": "CHG-2003"
     }
   ]
 }

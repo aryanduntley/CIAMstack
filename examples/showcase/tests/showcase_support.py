@@ -8,6 +8,7 @@ import subprocess
 
 from opsdir import operations as ops
 from opsdir.cli import import_time, read_texts
+from opsdir.connectors.capture import census_changes
 from opsdir.connectors.importing import preview_import
 from opsdir.store.postgres import read_ldif_files
 from support import build_directory, schema_for
@@ -27,6 +28,8 @@ IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", None),
            ("CHG-2006", "pingds/config", SHOWCASE / "exports" / "ds-config", "20260920030000Z"),
            ("CHG-2007", "pingds/access-log", SHOWCASE / "exports" / "ds-access-logs", None),
            ("CHG-2008", "pingfederate", SHOWCASE / "exports" / "pingfederate", None))
+# then the census of files that copy the record's values (change id, directory)
+CENSUS = ("CHG-2009", SHOWCASE / "exports" / "census")
 
 
 def cmd_output(text, status=0):
@@ -46,14 +49,17 @@ def import_records(schema, records):
         _, spec, root, at = imported
         return (*done, *preview_import(build_directory(schema, records, done), spec, export_files(root),
                                        at=import_time(at) if at else None)[0])
-    return reduce(step, IMPORTS, ())
+    imported = reduce(step, IMPORTS, ())
+    return (*imported, *census_changes(build_directory(schema, records, imported), export_files(CENSUS[1]))[0])
 
 
 def import_exports(conn):
-    """Effect: import the product exports (IMPORTS) into a store that holds the loaded estate, as the demo does."""
-    return [ops.apply_preview(conn, ops.preview_import(conn, spec, export_files(root), import_time(at) if at else None),
-                              change_id)
-            for change_id, spec, root, at in IMPORTS]
+    """Effect: import the product exports (IMPORTS) into a store that holds the loaded estate, then take the census
+    (CENSUS), as the demo does."""
+    return [*(ops.apply_preview(conn, ops.preview_import(conn, spec, export_files(root),
+                                                         import_time(at) if at else None), change_id)
+              for change_id, spec, root, at in IMPORTS),
+            ops.apply_preview(conn, ops.preview_census(conn, export_files(CENSUS[1])), CENSUS[0])]
 
 
 def fixture_directory(changes=()):

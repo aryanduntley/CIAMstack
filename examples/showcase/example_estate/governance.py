@@ -31,6 +31,8 @@ CHANGES = (
      "2026-09-23"),
     ("CHG-2008", "Import PingFederate's configuration (Admin API bulk export)", "approved", "CAB 2026-09-18",
      "2026-09-23"),
+    ("CHG-2009", "Census of the servers' and applications' files for values of the record", "approved",
+     "CAB 2026-09-18", "2026-09-23"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

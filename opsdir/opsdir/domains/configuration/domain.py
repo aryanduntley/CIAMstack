@@ -4,6 +4,7 @@ file's format decides how it is read and written."""
 from ...core.contract import Domain, directory_report
 from ...core.directory import children, one
 from .bundles import BUNDLE_HEADERS, bundle_rows
+from .census import CENSUS_HEADERS, census_rows, check_census
 from .checks import check_config_files
 from .naming import CONFIG_FILES
 from .schema import FRAGMENT
@@ -24,6 +25,8 @@ def capture_rows(d, dn=None):
 
 DOMAIN = Domain(name="configuration", schema=FRAGMENT, required_roles=(), sql=(),
                 reports={"capture": directory_report(CAPTURE_HEADERS, capture_rows),
-                         "bundles": directory_report(BUNDLE_HEADERS, bundle_rows)}, checks=(check_config_files,),
+                         "bundles": directory_report(BUNDLE_HEADERS, bundle_rows),
+                         "census": directory_report(CENSUS_HEADERS, census_rows)},
+                checks=(check_config_files, check_census),
                 order=55,
                 vocabulary={})

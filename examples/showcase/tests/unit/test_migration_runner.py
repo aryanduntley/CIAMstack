@@ -46,7 +46,7 @@ def test_a_missing_adapter_stops_the_run_before_planning(estate, as_of):
 
 def test_the_cli_text_and_exit_status(estate, as_of):
     text, files, status = migrate_text(estate["before"], SRC, DST, as_of, "out/m")
-    assert status == 1 and text.endswith("NOT READY (10 blockers, 16 actions); 49 target files, PLAN.md and "
+    assert status == 1 and text.endswith("NOT READY (10 blockers, 19 actions); 49 target files, PLAN.md and "
                                          "3 request draft(s) in out/m")
     assert "PLAN.md" in files
 

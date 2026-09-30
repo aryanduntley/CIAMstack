@@ -26,6 +26,8 @@ echo "-- who uses the directory: consumers found in its access logs (values-free
 od import --change CHG-2007 pingds/access-log exports/ds-access-logs
 echo "-- PingFederate's configuration, from its Admin API bulk export (a client the record didn't have is found)"
 od import --change CHG-2008 pingfederate exports/pingfederate
+echo "-- where the record's values are copied into files (the census): each file and line; secrets flagged, not stored"
+od census --change CHG-2009 exports/census
 echo "-- each environment's declared stack against the installed adapters"; od check
 echo "-- what each kind of value is: intent, contract, binding, secret reference, observed, meta"; od report portability
 
@@ -35,6 +37,8 @@ echo "-- what depends on the Skyline Air signing cert?"
 od report blast-radius "cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops"
 echo "-- who can read privacy-classified attributes?"; od report pii
 echo "-- the consumers to review: what they do, who owns them, what to check"; od report consumers
+echo "-- what changing ds-1 touches in files: its hostname and address, copied where"
+od report census "cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops"
 echo "-- LDAP filter search: consumers not yet tested against the second environment"
 od search -b ou=consumers,dc=ciam-ops '(&(objectClass=ciamConsumer)(!(ciamMigrationStatus=tested)))' ciamMigrationStatus ciamOwner
 

@@ -5,6 +5,7 @@ from ...core.naming import branch
 
 CONFIG_FILES = branch("config-files")
 BUNDLES = branch("bundles")
+CENSUS = branch("census")          # files scanned for the record's values, and the values found in each
 
 
 def file_dn(name):
