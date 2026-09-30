@@ -15,7 +15,7 @@ CIAMstack is a platform-agnostic, data-centric suite that puts an entire identit
 
 ### Current Phase
 
-Path 1 is done except the 1.5 docs/showcase rewrite; path 2 has 2.1, 2.2, 2.6 and 2.7 completed (agnostic core with adapter packages, extensible schema with custom fields and record types, formats and product versions as data, standard LDAP/SAML/OIDC bases with PingDS, OpenDJ and PingFederate on them). Next: 2.5 (artifact store with formats, structured value sources, secret scanning), then path 3 (PingAM, PingIDM, PingGateway). scripts/test.sh: 421 tests pass (unit + Postgres integration + showcase golden).
+Paths 1-3 are complete (FP foundation incl. the product-only docs and management-first showcase; the platform-agnostic core; PingAM, PingIDM and PingGateway). Path 4 (importers) is in progress: DS configuration (config.ldif + archived configs -> observed snapshots, or the declared configuration), DS access logs (-> consumers, values-free, with the `consumers` review report), PingFederate (bulk export -> integrations, claims, certificate facts; data stores checked) and the string census (`opsdir census` -> where the record's values occur in files) are done; cloud & IaC importers (3.5) are in progress: the neutral inventory mapper (core/inventory.py) and the AWS Terraform-state importer are done, then Azure state, cloud CLI inventories, CloudFormation / ARM-Bicep, and the showcase. scripts/test.sh: 842 tests pass (unit + Postgres integration + showcase golden).
 
 ### Goals
 
@@ -64,12 +64,14 @@ Path 1 is done except the 1.5 docs/showcase rewrite; path 2 has 2.1, 2.2, 2.6 an
 
 ### Package Structure
 
-Current (after milestones 2.1, 2.2, 2.6, 2.7): an agnostic core, adapter/base/format packages, and a separate showcase.
+Current (paths 1-3 done, path 4 in progress): an agnostic core, adapter/base/format packages, and a separate showcase.
 ```
 opsdir/              the core package (pyproject: opsdir), names no platform/product/vendor/secret store
-  opsdir/            core/ (records, standard + OID arcs, ldap_schema catalogue, formats, versions, interchange)
-                     store/ (Postgres: migrations 0001-0004, governed writes, schema phases, re-validation)
-                     domains/{infrastructure,directory,federation,pki,governance,custom}
+  opsdir/            core/ (records, standard + OID arcs, ldap_schema catalogue, formats, versions, interchange,
+                     environment + overlays, capture, secrets, inventory: neutral cloud resources -> bindings)
+                     store/ (Postgres: versioned migrations, governed writes, schema phases, re-validation)
+                     domains/{infrastructure,directory,federation,pki,governance,custom,configuration}
+                     (configuration: captured files, bundles, the census of values copied into files)
                      connectors/ (registry, schema, stack, render, plan, migration, workspace, reports) cli.py
   schema/            ciam-ops.schema.ldif (published export of the core + domain fragments; scripts/gen-schema.py)
   scripts/           dev-install.sh dev-env.sh gen-schema.py test.sh
@@ -80,11 +82,13 @@ packages/            installable packages; adapters register via opsdir.adapters
   lineages/products  opsdir-base-ds (OpenDJ -> ForgeRock DS -> PingDS), opsdir-adapter-pingds,
                      opsdir-adapter-opendj, opsdir-adapter-pingfederate, opsdir-adapter-pingam,
                      opsdir-adapter-pingidm, opsdir-adapter-pinggateway (each with an importer of the product's
-                     own export: Amster, IDM project, gateway config)
-  clouds/stores      opsdir-adapter-aws, opsdir-adapter-azure, opsdir-adapter-hashicorp-vault,
-                     opsdir-adapter-kubernetes, opsdir-adapter-cyberark (PAM)
-  formats            opsdir-format-terraform (hcl)
-examples/showcase/   the fictional estate: example_estate/ data/ changes/ golden/ scripts/ tests/ demo.sh
+                     own export: Amster, IDM project, gateway config; the DS lineage imports config.ldif,
+                     archived configs and JSON access logs; PingFederate its Admin API bulk export)
+  clouds/stores      opsdir-adapter-aws (imports Terraform state), opsdir-adapter-azure,
+                     opsdir-adapter-hashicorp-vault, opsdir-adapter-kubernetes, opsdir-adapter-cyberark (PAM)
+  formats            opsdir-format-terraform (hcl; Terraform state reader)
+examples/showcase/   the fictional estate: example_estate/ data/ exports/ (product exports, generated DS configs
+                     and access logs, census files) changes/ golden/ scripts/ tests/ demo.sh
 pytest.ini           one test configuration (core, packages, showcase); opsdir/scripts/test.sh runs everything
 ```
 Dependencies point one way: packages -> core; inside the core connectors -> domains -> core and
@@ -124,36 +128,34 @@ Schema OIDs: each owner has an arc (PEN .1 core/domains, .2 showcase user schema
 
 ## 4. Completion Path
 
-### Path 1: FP Foundation (Modular, Functional, Procedural rewrite)
-- 1.1 FP core data model, 1.2 Modular layout, 1.3 Test harness, 1.4 Database setup & SQL versioning (completed)
-- 1.5 Product-only documentation, incl. the management-first showcase reframe (pending)
+### Path 1: FP Foundation (Modular, Functional, Procedural rewrite) - completed
+- 1.1 FP core data model, 1.2 Modular layout, 1.3 Test harness, 1.4 Database setup & SQL versioning,
+  1.5 Product-only documentation incl. the management-first showcase reframe
 
-### Path 2: Platform-Agnostic Core
-- 2.1 Agnostic core + adapter packages (completed)
-- 2.2 Extensible, versioned schema: package fragments, custom fields and record types (completed)
-- 2.3 Keys, certificates & secrets model (pending)
-- 2.4 Environment overlays & overrides, incl. required roles as data (pending)
-- 2.5 Reference artifact store & data safety, incl. recorded formats and structured value sources (pending, next)
-- 2.6 Vendor, version & format neutrality (completed)
-- 2.7 Standard bases: LDAP, SAML, OIDC (completed)
+### Path 2: Platform-Agnostic Core - completed
+- 2.1 Agnostic core + adapter packages, 2.2 Extensible versioned schema, 2.3 Keys/certificates/secrets model,
+  2.4 Environment overlays & overrides, 2.5 Reference artifact store & data safety, 2.6 Vendor/version/format
+  neutrality, 2.7 Standard bases (LDAP, SAML, OIDC), 2.8 Operations layer
 
-### Path 3: ForgeRock / Ping Product Lineage
+### Path 3: ForgeRock / Ping Product Lineage - completed
 - 3.1 PingAM, 3.2 PingIDM, 3.3 PingGateway, as adapter packages on the standard bases
 
-### Path 4: Importers (files/APIs -> DB)
-- DS configuration importer, DS access-log miner, PingFederate importer, string census, cloud & IaC importers
+### Path 4: Importers (files/APIs -> DB) - in progress
+- DS configuration importer, DS access-log miner (+ consumers review report), PingFederate importer, string census
+  (completed); cloud & IaC importers (in progress: AWS Terraform state done; Azure state, CLI inventories,
+  CloudFormation / ARM-Bicep, showcase to go)
 
 ### Path 5: Stack Coverage
 - PF depth, hidden automation, host baseline & Kubernetes workloads, messaging & external services, data profile, observability intent
 
 ### Path 6: Renderers & Targets
-- PF renderer (real target), Kubernetes/ForgeOps, config management & on-prem, observability renderers, round-trip guarantees
+- PF renderer (real target), Kubernetes/ForgeOps, config management & on-prem, observability renderers, round-trip guarantees, cloud-native IaC renderers (ARM/Bicep, CloudFormation)
 
 ### Path 7: Conditional Products & Governance
 - PingAccess and SiteMinder adapters, enterprise tool integrations (vendor-agnostic), unknowns register
 
 ### Path 8: Interfaces, Validation & Release
-- Management interfaces, validation against real products, SPEC 1.0, docs & showcase
+- Management interfaces, validation against real products (first an existing AWS platform, then a staging move AWS -> Azure; validation/ folder), SPEC 1.0, docs & showcase, AI interface (MCP server, incl. a consumer verification tool)
 
 Post-completion paths: Added Features (998), Updates (999).
 
@@ -180,6 +182,11 @@ Post-completion paths: Added Features (998), Updates (999).
 
 - **Change**: Standard bases (LDAP once in the core; generic LDAPv3, DS lineage, SAML and OIDC bases; OpenDJ adapter; identity services). Extensible schema (package fragments under own OID arcs; custom fields and record types with rich metadata, value rules, re-validation). Formats and supported product versions as data.
 - **Rationale**: Products build on the standards they implement; operators must be able to record facts nobody foresaw; what a managed system is written in is data, not an assumption (only CIAMstack's own code is Python).
+
+### Version 1.4 - 2026-09-30
+
+- **Change**: Paths 1-3 closed; the documentation and showcase describe the product only, management first (the move is one chapter; the target is an ordinary second environment). Path 4 importers: DS config snapshots (import time in the importer contract, .gz exports), DS access logs (values-free consumers; `consumers` review report; dated directory reports), PingFederate bulk export, string census (ciamScannedFile/ciamOccurrence; planner flags hard-coded source values), and the neutral cloud inventory mapper with the AWS Terraform-state importer. New milestone 5.6 (ARM/Bicep and CloudFormation renderers); 7.2 records the testing plan; 7.4 requires a consumer verification MCP tool. README rewritten for adopters (what you can do, adapter catalogue, adapters for other systems).
+- **Rationale**: The user will propose the project to an operations team after it is done (open source on GitHub): an existing platform must load without hand-written LDIF, reviews must be easy, and both clouds and their native IaC are covered in full.
 
 ---
 
