@@ -79,7 +79,7 @@ ATTRIBUTES = (
     AttributeDef(84, 'ciamJustification', 'string', 'meta', True,
                  'Why the access exists'),
     AttributeDef(85, 'ciamReviewedOn', 'time', 'meta', True,
-                 'Last access review'),
+                 "Last review (of the access an ACI grants, of a consumer record)"),
     # Definitions of user-directory attributes and classes the standards do not provide (core.ldap_schema)
     AttributeDef(130, 'ciamLdapOid', 'string', 'intent', True,
                  'OID of a non-standard user-directory attribute type or object class'),
@@ -129,7 +129,7 @@ CLASSES = (
               'ciamLdapEquality', 'ciamLdapSubstring', 'ciamLdapOrdering', 'ciamLdapSingleValue'),
              'Record describing a user-directory attribute'),
     ClassDef(24, 'ciamConsumer', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamBindDn'),
-             ('ciamObservedSource', 'ciamOperationMix', 'ciamSubtreeRead', 'ciamAttrRead', 'ciamUnindexedSearchesPerDay', 'ciamTlsOnly', 'ciamPeakOpsPerSec', 'ciamFirstSeen', 'ciamLastSeen', 'ciamCriticality', 'ciamMigrationStatus'),
+             ('ciamObservedSource', 'ciamOperationMix', 'ciamSubtreeRead', 'ciamAttrRead', 'ciamUnindexedSearchesPerDay', 'ciamTlsOnly', 'ciamPeakOpsPerSec', 'ciamFirstSeen', 'ciamLastSeen', 'ciamCriticality', 'ciamMigrationStatus', 'ciamReviewedOn'),
              'A client of the user directory'),
     ClassDef(25, 'ciamAci', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamAciTargetDn', 'ciamAciRight', 'ciamAciGrantee'),
              ('ciamAciTargetAttr', 'ciamAciAllAttributes', 'ciamJustification', 'ciamReviewedOn'),

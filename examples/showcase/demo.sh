@@ -22,6 +22,8 @@ echo "-- the partner portal's PingGateway routes (same change)"
 od import --change CHG-2004 pinggateway exports/ig
 echo "-- what the production directory servers actually run: each one's config.ldif (and ds-2's archived one)"
 od import --change CHG-2006 --at 20260920030000Z pingds/config exports/ds-config
+echo "-- who uses the directory: consumers found in its access logs (values-free; end users only counted)"
+od import --change CHG-2007 pingds/access-log exports/ds-access-logs
 echo "-- each environment's declared stack against the installed adapters"; od check
 echo "-- what each kind of value is: intent, contract, binding, secret reference, observed, meta"; od report portability
 
@@ -30,6 +32,7 @@ echo "-- certificates by expiry";            od report expiring
 echo "-- what depends on the Skyline Air signing cert?"
 od report blast-radius "cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops"
 echo "-- who can read privacy-classified attributes?"; od report pii
+echo "-- the consumers to review: what they do, who owns them, what to check"; od report consumers
 echo "-- LDAP filter search: consumers not yet tested against the second environment"
 od search -b ou=consumers,dc=ciam-ops '(&(objectClass=ciamConsumer)(!(ciamMigrationStatus=tested)))' ciamMigrationStatus ciamOwner
 

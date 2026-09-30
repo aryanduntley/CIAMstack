@@ -76,9 +76,9 @@ def search(conn, base, filt, scope="sub"):
     return tuple(ldap_search.search(db.load_directory(conn), base, filt, scope))
 
 
-def report(conn, name, dn=None):
-    """Effect (reads the record): a named report's rows."""
-    rows, headers = reports.report_rows(conn, name, dn)
+def report(conn, name, dn=None, as_of=None):
+    """Effect (reads the record): a named report's rows, dates evaluated as of as_of (today when not given)."""
+    rows, headers = reports.report_rows(conn, name, dn, as_of)
     return Rows(tuple(headers), tuple(rows))
 
 

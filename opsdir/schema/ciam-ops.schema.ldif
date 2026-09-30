@@ -344,9 +344,9 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.84 NAME 'ciamJustification' DESC 'Wh
  21.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'o
  psdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.85 NAME 'ciamReviewedOn' DESC 'Last 
- access review' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.12
- 1.1.24 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsd
- ir' )
+ review (of the access an ACI grants, of a consumer record)' EQUALITY genera
+ lizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE X-PORTABIL
+ ITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.86 NAME 'ciamProtocolType' DESC 'Int
  egration type' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.1
  5 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:saml2-sp|oidc-clie
@@ -957,8 +957,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.24 NAME 'ciamConsumer' DESC 'A client
   of the user directory' SUP ciamObject STRUCTURAL MUST ( cn $ ciamBindDn ) 
  MAY ( ciamObservedSource $ ciamOperationMix $ ciamSubtreeRead $ ciamAttrRea
  d $ ciamUnindexedSearchesPerDay $ ciamTlsOnly $ ciamPeakOpsPerSec $ ciamFir
- stSeen $ ciamLastSeen $ ciamCriticality $ ciamMigrationStatus ) X-ORIGIN 'o
- psdir' )
+ stSeen $ ciamLastSeen $ ciamCriticality $ ciamMigrationStatus $ ciamReviewe
+ dOn ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.25 NAME 'ciamAci' DESC 'Access contro
  l instruction' SUP ciamObject STRUCTURAL MUST ( cn $ ciamAciTargetDn $ ciam
  AciRight $ ciamAciGrantee ) MAY ( ciamAciTargetAttr $ ciamAciAllAttributes 

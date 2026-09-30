@@ -82,10 +82,12 @@ SUBCOMMANDS = (
 
 
 def format_table(rows, headers):
-    """Rows as aligned text columns (each capped at 70 characters) with a row count."""
+    """Rows as aligned text columns with a row count: each column capped at 70 characters but the last, which nothing
+    follows (it is often the one to read in full: what to check, why, a detail)."""
     cells = [[("" if v is None else str(v)) for v in r] for r in rows]
+    last = len(headers) - 1
     widths = [min(max([len(h)] + [len(r[i]) for r in cells]), 70) for i, h in enumerate(headers)]
-    fmt = lambda r: "  ".join(c[:70].ljust(widths[i]) for i, c in enumerate(r))  # noqa: E731
+    fmt = lambda r: "  ".join(c if i == last else c[:70].ljust(widths[i]) for i, c in enumerate(r)).rstrip()  # noqa: E731
     return "\n".join((fmt(headers), "  ".join("-" * w for w in widths), *(fmt(r) for r in cells),
                       f"({len(cells)} rows)"))
 
@@ -166,7 +168,7 @@ def _cmd_search(conn, a, as_of):
 
 
 def _cmd_report(conn, a, as_of):
-    r = ops.report(conn, a.name, a.dn)
+    r = ops.report(conn, a.name, a.dn, as_of)
     return format_table(r.rows, r.headers)
 
 

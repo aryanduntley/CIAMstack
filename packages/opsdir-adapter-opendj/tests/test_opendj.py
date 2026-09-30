@@ -34,7 +34,7 @@ def test_renders_the_lineage_files_as_opendj():
 
 
 def test_its_servers_configuration_is_read_back_under_the_records_handler_names():
-    assert [i.name for i in ADAPTER.importers] == ["config", "declared"]
+    assert [i.name for i in ADAPTER.importers] == ["config", "declared", "access-log"]
     config = ("dn: cn=LDAPS Connection Handler,cn=Connection Handlers,cn=config\nobjectClass: top\n"
               "objectClass: ds-cfg-connection-handler\ncn: LDAPS Connection Handler\nds-cfg-enabled: true\n"
               "ds-cfg-listen-port: 1636\n")

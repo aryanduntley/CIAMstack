@@ -28,7 +28,7 @@ rm -rf "$OUT" && mkdir -p "$OUT/cmd"
 
 # The generators must reproduce the published schema and data files exactly (independent of git state).
 generated() { (cd "$CORE" && sha256sum schema/*.ldif); sha256sum data/*.ldif data/*.json;
-              find exports/ds-config -type f | sort | xargs sha256sum; }
+              find exports/ds-config exports/ds-access-logs -type f | sort | xargs sha256sum; }
 generated > "$OUT/cmd/.generated-before"
 cap 00-gen-schema    "$PY" "$CORE/scripts/gen-schema.py"
 cap 00-gen-synthetic "$PY" scripts/gen-synthetic.py
@@ -41,8 +41,9 @@ cap 02-import od import --change CHG-2004 pingam exports/amster
 cap 02-import-idm od import --change CHG-2004 pingidm exports/idm
 cap 02-import-ig od import --change CHG-2004 pinggateway exports/ig
 cap 02-import-ds od import --change CHG-2006 --at 20260920030000Z pingds/config exports/ds-config
+cap 02-import-ds-logs od import --change CHG-2007 pingds/access-log exports/ds-access-logs
 cap 02-check od check
-for r in portability expiring credentials pii drift stale unowned custom capture bundles; do cap "03-report-$r" od report "$r"; done
+for r in portability expiring credentials pii drift stale unowned custom capture bundles consumers; do cap "03-report-$r" od report "$r"; done
 cap 03-report-blast-radius od report blast-radius "$BLAST"
 cap 03-report-keys-source od report keys source/prod
 cap 03-report-keys-target od report keys target/prod

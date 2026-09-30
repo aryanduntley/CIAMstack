@@ -8,7 +8,8 @@ What the lineage shares, rendered from the directory domain:
 - `setup.py`: what every setup script is built from: the user backend, listener ports, the environment's directory servers, secret references as run-time lookups.
 - `replication.py`: the replication port and bootstrap peers, and the planner checks every product shares (an interconnect to the source, the replication port admitted for each new replica), plus `check_joins` for the product's own wording of what joining the source's replication keeps.
 - `observe.py`: the other direction: a server's `config.ldif` (the `cn=config` tree) read as the directory domain models configuration: database backends (JE, PDB; the server's internal backends are skipped) and their indexes (linked to the user-schema record of the indexed attribute; others named), password policies, connection handlers under the record's names, log publishers. The replication topology's shape can't be seen from one server and isn't read.
-- `importers.py`: the importers every product registers, `config` and `declared` (below).
+- `access_log.py`: the directory's clients mined from the servers' JSON access logs (below).
+- `importers.py`: the importers every product registers, `config`, `declared` and `access-log` (below).
 
 ## Reading servers' configuration back
 
@@ -32,6 +33,16 @@ A `config.ldif` at the top of `EXPORT` is placed by the server ID its global con
 - **`declared`** sets the declared configuration (`ou=declared`) from one server's `config.ldif`: each branch the server has (backends, password policies, connection handlers, log publishers) becomes exactly what it runs, entries it doesn't have are removed, and attributes the importer doesn't own (owners, what a policy is for) are kept. Meant for a record that doesn't declare its configuration yet; review it with `--dry-run` first.
 
 Anything the importers can't place (an index on an attribute the record has no user-schema record for, an index type the record doesn't model, a folder that names no directory server) is named in the import's notices.
+
+## Finding the directory's consumers in its access logs
+
+```bash
+opsdir import --change CHG-… pingds/access-log LOGS   # LOGS: the servers' logs/ directories, any layout
+```
+
+Reads the JSON access log every server of the lineage writes (`logs/ldap-access.audit.json` and its rotated files; one JSON object per line, `eventName: DJ-LDAP`). Every operation is attributed to the identity that performed it (`userId`, or the DN a successful bind used). An identity that does more than authenticate is a consumer of the directory: it is recorded under `ou=consumers`, or updated when the record already has a consumer with that bind DN, with where it connects from (`ciamObservedSource`, a /24 where several addresses share one), its operation mix, the subtrees it searches, the attributes it asks for (linked to their user-schema records), its unindexed searches per day, whether every connection was TLS (LDAPS, or StartTLS first), its peak operations per second, and when it was first and last seen (widened, never narrowed). What the record says beyond that (owner, criticality, migration status) is kept; a new consumer's migration status is `unknown`, so the planner asks about it.
+
+It is values-free: search filters and attribute values are never read, and a search of one entry records the entry's container, not the entry. An identity that only binds is an end user whose password is being checked, not a client: it is counted in the notices and never recorded. Import a representative window (a week, say) from every server; importing the same logs again changes nothing. The CSV and legacy text access logs are named in the notices, not read.
 
 The lineage's `dsconfig` batch syntax is a format of its own, `dsconfig-batch`, which this package registers (entry point `opsdir.formats`); `config.FORMATS` declares the format of every neutral file the lineage renders.
 

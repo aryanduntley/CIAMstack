@@ -1,7 +1,7 @@
-server  finding                           entry (relative to declared config)     detail                                                                
+server  finding                           entry (relative to declared config)     detail
 ------  --------------------------------  --------------------------------------  ----------------------------------------------------------------------
-ds-2    missing on server                 cn=mail,cn=userData,ou=backends                                                                               
-ds-3    not declared (unrecorded change)  cn=description,cn=userData,ou=backends  ciamIndexType=substring, ciamIndexedAttribute=cn=description,ou=user-s
-ds-3    differs                           cn=customers,ou=password-policies       ciamLockoutFailureCount: declared ['5'] observed ['10']               
+ds-2    missing on server                 cn=mail,cn=userData,ou=backends
+ds-3    not declared (unrecorded change)  cn=description,cn=userData,ou=backends  ciamIndexType=substring, ciamIndexedAttribute=cn=description,ou=user-schema,dc=ciam-ops
+ds-3    differs                           cn=customers,ou=password-policies       ciamLockoutFailureCount: declared ['5'] observed ['10']
 (3 rows)
 exit 0

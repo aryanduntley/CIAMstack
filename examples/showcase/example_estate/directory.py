@@ -1,5 +1,6 @@
 """Directory fixture data: the user directory's schema records (25-user-schema), declared server configuration
-(30-config-declared), consumers found in access logs (55-consumers) and ACIs (60-acis); and the production
+(30-config-declared), what operators know about the consumers found in access logs (55-consumers) and ACIs
+(60-acis); and the production
 directory servers' own configuration files (exports/ds-config: each server's config.ldif, as PingDS writes it, with
 the planted drift, and an archived configuration), which the demo imports as observed snapshots."""
 from opsdir.core.interchange.ldif import write_entry
@@ -61,26 +62,18 @@ SERVERS = (("ds-1", "ds-1.aws.internal.example-aero.test", {}),
                                                              "overrides": {("lockout", "customers"): 10}}))
 # ds-2 before the unrecorded change behind INC-2231: the server archived its configuration then
 ARCHIVED = (("ds-2", "20260912224000Z", {}),)
+# what operators know about each consumer: (name, bind DN under the user directory, first seen, owner, criticality,
+# migration status, last reviewed); what it does is observed from the access logs (access_logs.py, imported)
 CONSUMERS = (
-    ("pf-ds-svc", "uid=pf-svc,ou=service-accounts", ["10.20.4.0/24", "10.20.5.0/24"],
-     "bind 61%, search 38%, modify 1%", ["uid", "mail", "givenName", "sn", "companyId", "appEntitlement", "registrationStatus"],
-     0, "TRUE", 850, "2024-01-03", "ciam-platform", "critical", "tested"),
-    ("customer-portal-svc", "uid=portal-svc,ou=service-accounts", ["10.30.8.0/24"],
-     "search 70%, modify 25%, add 5%", ["mail", "registrationStatus", "telephoneNumber", "companyId", "challengeAnswer"],
-     0, "TRUE", 120, "2023-05-17", "customer-portal-team", "critical", "tested"),
-    ("supplier-portal-svc", "uid=supplier-svc,ou=service-accounts", ["10.31.2.0/24"],
-     "search 88%, modify 12%", ["mail", "companyId", "soldToAccount"],
-     0, "TRUE", 60, "2023-11-02", "supplier-portal-team", "high", "contacted"),
-    ("mro-batch-export", "uid=mro-export,ou=service-accounts", ["10.40.12.0/24"],
-     "search 100% (nightly 02:00-02:40 UTC)", ["mail", "companyId", "soldToAccount", "exportScreeningStatus", "description"],
-     14, "TRUE", 40, "2024-08-20", "mro-analytics-team", "medium", "identified"),
-    ("legacy-rptuser", "uid=rptuser,ou=customers,ou=people", ["10.40.7.22/32"],
-     "search 100%, filter (objectClass=*) over ou=people", ["uid", "mail", "givenName", "sn", "telephoneNumber",
-                                                             "challengeAnswer", "exportScreeningStatus"],
-     96, "FALSE", 5, "2021-03-09", None, None, "unknown"),
-    ("idm-sync", "uid=idm-sync,ou=service-accounts", ["10.20.6.0/24"],
-     "search 55%, modify 45%", ["uid", "mail", "companyId", "appEntitlement", "registrationStatus", "lastLoginTime"],
-     0, "TRUE", 200, "2024-01-03", "ciam-platform", "high", "tested"),
+    ("pf-ds-svc", "uid=pf-svc,ou=service-accounts", "2024-01-03", "ciam-platform", "critical", "tested", "2026-03-02"),
+    ("customer-portal-svc", "uid=portal-svc,ou=service-accounts", "2023-05-17", "customer-portal-team", "critical",
+     "tested", "2025-06-10"),
+    ("supplier-portal-svc", "uid=supplier-svc,ou=service-accounts", "2023-11-02", "supplier-portal-team", "high",
+     "contacted", "2026-01-15"),
+    ("mro-batch-export", "uid=mro-export,ou=service-accounts", "2024-08-20", "mro-analytics-team", "medium",
+     "identified", None),
+    ("legacy-rptuser", "uid=rptuser,ou=customers,ou=people", "2021-03-09", None, None, "unknown", None),
+    ("idm-sync", "uid=idm-sync,ou=service-accounts", "2024-01-03", "ciam-platform", "high", "tested", "2026-03-02"),
 )
 ACIS = (
     ("aci-pf-read", "pf-ds-svc", ["uid", "mail", "givenName", "sn", "companyId", "appEntitlement", "registrationStatus"],
@@ -208,11 +201,9 @@ def server_exports():
 
 def consumers():
     return tuple(spec("55-consumers", f"cn={cn},{CON}", ["top", "ciamConsumer"], cn=cn, ciamBindDn=f"{bind},{USERS}",
-                      ciamObservedSource=src, ciamOperationMix=mix, ciamSubtreeRead=PEOPLE, ciamAttrRead=ua(*attrs),
-                      ciamUnindexedSearchesPerDay=unidx, ciamTlsOnly=tls, ciamPeakOpsPerSec=peak,
-                      ciamFirstSeen=t(first), ciamLastSeen=t("2026-09-22"), ciamOwner=owner(own) if own else None,
-                      ciamCriticality=crit, ciamMigrationStatus=status)
-                 for cn, bind, src, mix, attrs, unidx, tls, peak, first, own, crit, status in CONSUMERS)
+                      ciamFirstSeen=t(first), ciamOwner=owner(own) if own else None, ciamCriticality=crit,
+                      ciamMigrationStatus=status, ciamReviewedOn=t(reviewed) if reviewed else None)
+                 for cn, bind, first, own, crit, status, reviewed in CONSUMERS)
 
 
 def acis():

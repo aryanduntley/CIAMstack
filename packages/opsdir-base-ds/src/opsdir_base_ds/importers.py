@@ -1,23 +1,27 @@
-"""Importers of DS-lineage servers' configuration files, registered by each product of the lineage. Pure.
+"""Importers of DS-lineage servers' own files, registered by each product of the lineage. Pure.
 
-  config    each server's config.ldif -> an observed snapshot of it (ou=observed), dated when the import runs, added
-            only when the configuration differs from the server's latest snapshot (importing it again changes
-            nothing); each archived-configs/config-<YYYYMMDDhhmmss>Z(.gz) -> a snapshot of the configuration in effect
-            until then (the server archives config.ldif before each change made online), dated by its name
-  declared  one server's config.ldif -> the declared configuration (ou=declared), each branch it has made exactly
-            what the server runs; attributes the importer doesn't own (owners, what a policy is for, ...) are kept.
-            For a record that doesn't declare its configuration yet; review it with --dry-run first.
+  config      each server's config.ldif -> an observed snapshot of it (ou=observed), dated when the import runs,
+              added only when the configuration differs from the server's latest snapshot (importing it again
+              changes nothing); each archived-configs/config-<YYYYMMDDhhmmss>Z(.gz) -> a snapshot of the
+              configuration in effect until then (the server archives config.ldif before each change made online),
+              dated by its name
+  declared    one server's config.ldif -> the declared configuration (ou=declared), each branch it has made exactly
+              what the server runs; attributes the importer doesn't own (owners, what a policy is for, ...) are
+              kept. For a record that doesn't declare its configuration yet; review it with --dry-run first.
+  access-log  the servers' JSON access logs -> the directory's consumers (ou=consumers; see access_log.py)
 
-An export holds a copy of each server's config/ directory in a folder named by the server's hostname, or by its record
-name when no other environment has a server of that name. A config.ldif at the top of the export is placed by the
-server ID its global configuration records (setup --serverId).
+For config and declared, an export holds a copy of each server's config/ directory in a folder named by the
+server's hostname, or by its record name when no other environment has a server of that name; a config.ldif at the
+top of the export is placed by the server ID its global configuration records (setup --serverId). For access-log, the
+servers' logs/ directories, in any layout.
 """
 import re
 
 from opsdir.core.contract import Imported, Importer
 from opsdir.core.directory import get, make_entry, norm_dn, one, rdn_value
 from opsdir.domains.directory.drift import latest_snapshots
-from opsdir.domains.directory.naming import CONFIG, DECLARED, DIRECTORY_SERVER_ROLE, OBSERVED
+from opsdir.domains.directory.naming import CONFIG, CONSUMERS, DECLARED, DIRECTORY_SERVER_ROLE, OBSERVED
+from .access_log import read_access_logs
 from .observe import OWNED, config_entries, server_id
 
 ARCHIVED = re.compile(r"(?:^|/)archived-configs/config-(\d{14})Z(?:\.ldif)?$")
@@ -190,9 +194,17 @@ def declared_reader(product):
     return read
 
 
+def access_log_reader(files, d, patterns, at=None):
+    """read(files, d, patterns, at) for the access-log importer: each consumer found its own group."""
+    entries, notices = read_access_logs(files, d, patterns, at)
+    return Imported(containers=(_ou(CONSUMERS),), groups=tuple((e.dn, (e,)) for e in entries), notices=notices)
+
+
 def importers(product):
     """The importers every product of the lineage registers."""
     return (Importer("config", f"{product.name} servers' configuration (a copy of each server's config/ directory: "
                                "config.ldif, archived-configs/) as observed snapshots", snapshot_reader(product)),
             Importer("declared", f"one {product.name} server's config.ldif as the declared configuration",
-                     declared_reader(product)))
+                     declared_reader(product)),
+            Importer("access-log", f"{product.name} servers' JSON access logs (logs/ldap-access.audit.json and its "
+                                   "rotated files) as the directory's consumers", access_log_reader))

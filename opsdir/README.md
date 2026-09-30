@@ -31,7 +31,8 @@ On a machine whose global pip config sets `user = true`, pip refuses it inside a
 ./opsdir.sh capture --change CHG-… FILE       # hold a config file in the record (settings, whole, or a reference)
 ./opsdir.sh file NAME [--env CLOUD/ENV]       # rebuild a captured file from the record
 ./opsdir.sh search -b BASE 'FILTER' [ATTR...] # RFC 4515 search, as LDIF or a table of attributes
-./opsdir.sh report NAME [DN]          # portability, unowned, blast-radius DN, and every domain's reports
+./opsdir.sh report NAME [DN]          # portability, unowned, blast-radius DN, and every domain's reports (consumers,
+                                      # keys ENV, drift, ...); dates as of --as-of
 ./opsdir.sh render CLOUD/ENV [-o DIR] # everything the environment's adapters render, plus MANIFEST.json
 ./opsdir.sh plan SRC DST [-o DIR]     # what blocks moving SRC to DST, dated actions, request drafts
 ./opsdir.sh migrate SRC DST [-o DIR]  # check both stacks, plan, render the target; exit 1 unless ready

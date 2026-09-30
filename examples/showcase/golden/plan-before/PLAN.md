@@ -16,8 +16,8 @@ Target roles still unbound: `backup-target`
 | Binding | Consumer `mro-batch-export` (status identified) is allowed in source/prod but has no firewall rule in target/prod. | mro-analytics-team |
 | IDM | Connector `hrdb` has withheld credentials but no credential role: nothing says which secret target/prod gives it. Set pingidmCredentialRole. | ciam-platform |
 | IDM | Connector `ldap` has withheld credentials but no credential role: nothing says which secret target/prod gives it. Set pingidmCredentialRole. | ciam-platform |
-| Consumer | Consumer `legacy-rptuser` (uid=rptuser,ou=customers,ou=people,dc=partners,dc=example-aero,dc=test) is `unknown`, not tested against target/prod. It also binds without TLS. 96 unindexed searches/day. | **NO OWNER** |
-| Consumer | Consumer `mro-batch-export` (uid=mro-export,ou=service-accounts,dc=partners,dc=example-aero,dc=test) is `identified`, not tested against target/prod. 14 unindexed searches/day. | mro-analytics-team |
+| Consumer | Consumer `legacy-rptuser` (uid=rptuser,ou=customers,ou=people,dc=partners,dc=example-aero,dc=test) is `unknown`, not tested against target/prod. It also binds without TLS. 12 unindexed searches/day. | **NO OWNER** |
+| Consumer | Consumer `mro-batch-export` (uid=mro-export,ou=service-accounts,dc=partners,dc=example-aero,dc=test) is `identified`, not tested against target/prod. 4 unindexed searches/day. | mro-analytics-team |
 | Consumer | Consumer `supplier-portal-svc` (uid=supplier-svc,ou=service-accounts,dc=partners,dc=example-aero,dc=test) is `contacted`, not tested against target/prod. | supplier-portal-team |
 | Key | `disk-encryption` must be kept in an HSM, but target/prod keeps it in software (azkv-key://kv-ciam-prod/keys/disk-cmk). | ciam-platform |
 

@@ -18,19 +18,20 @@ from .environment import EnvModel
 # parameter when needs_dn), `from_directory(directory, dn)` (a pure function of the snapshot), or `fetch(conn, dn)`
 # (a store-level query; for the store's own reports, never a domain's).
 Report = NamedTuple("Report", [("headers", tuple), ("sql", Optional[str]), ("from_directory", Optional[Callable]),
-                               ("fetch", Optional[Callable]), ("needs_dn", bool)])
+                               ("fetch", Optional[Callable]), ("needs_dn", bool),
+                               ("dated", bool)])   # from_directory(d, dn, as_of): it evaluates dates as of a day
 
 
 def sql_report(headers, sql, needs_dn=False):
-    return Report(tuple(headers), sql, None, None, needs_dn)
+    return Report(tuple(headers), sql, None, None, needs_dn, False)
 
 
-def directory_report(headers, from_directory, needs_dn=False):
-    return Report(tuple(headers), None, from_directory, None, needs_dn)
+def directory_report(headers, from_directory, needs_dn=False, dated=False):
+    return Report(tuple(headers), None, from_directory, None, needs_dn, dated)
 
 
 def fetch_report(headers, fetch, needs_dn=False):
-    return Report(tuple(headers), None, None, fetch, needs_dn)
+    return Report(tuple(headers), None, None, fetch, needs_dn, False)
 
 
 Domain = NamedTuple("Domain", [("name", str), ("schema", object),     # its SchemaFragment

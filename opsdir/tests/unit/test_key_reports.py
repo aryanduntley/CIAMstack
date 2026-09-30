@@ -1,5 +1,7 @@
 """Key reports on the mini estate (in memory): where an environment keeps each key and secret, how spread out each
-credential is, and everything a rotation touches."""
+credential is (rotations overdue as of a day marked), and everything a rotation touches."""
+import datetime as dt
+
 import pytest
 
 from opsdir.core.interchange.ldif import parse
@@ -136,3 +138,10 @@ def test_an_overlay_shares_its_bases_key_and_rotation_impact_says_so():
     assert by_name(sprawl_rows(d), role_column=1)["signing-key"][4] == "alpha/prod, alpha/stage"
     assert [(step, where) for step, _, where, _ in rotation_impact_rows(d, credential_dn("signing-key"))][:2] == [
         ("carry-over", ""), ("rotate", "alpha/prod (shared with alpha/stage)")]
+
+
+def test_a_rotation_due_before_the_as_of_date_is_marked_overdue():
+    d = estate(alpha={"ciamLastRotated": "20260301000000Z"})           # rotated every 90 days: due 2026-05-30
+    assert by_name(key_placement_rows(d, "alpha/prod", dt.date(2026, 5, 30)))["signing-key"][-1] == "ok"
+    assert by_name(key_placement_rows(d, "alpha/prod", dt.date(2026, 5, 31)))["signing-key"][-1] == \
+        "rotation overdue (due 2026-05-30)"

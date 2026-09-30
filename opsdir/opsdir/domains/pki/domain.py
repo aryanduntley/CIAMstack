@@ -15,7 +15,7 @@ EXPIRING_HEADERS = ("certificate", "purpose", "not_after", "days_left", "names",
 
 DOMAIN = Domain(name="pki", schema=FRAGMENT, required_roles=(), sql=(Path(__file__).parent / "sql" / "pki.sql",),
                 reports={"expiring": sql_report(EXPIRING_HEADERS, EXPIRING_SQL),
-                         "keys": directory_report(KEYS_HEADERS, key_placement_rows, needs_dn=True),
+                         "keys": directory_report(KEYS_HEADERS, key_placement_rows, needs_dn=True, dated=True),
                          "credentials": directory_report(SPRAWL_HEADERS, sprawl_rows),
                          "rotation-impact": directory_report(IMPACT_HEADERS, rotation_impact_rows, needs_dn=True)},
                 checks=(check_certificates, check_credentials), order=40,

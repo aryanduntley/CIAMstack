@@ -41,7 +41,13 @@ def binding_status(d, credential, b):
     return "; ".join(notes) or "ok"
 
 
-def _placement_row(m, credential):
+def _due(credential, b, as_of):
+    """'rotation overdue' when the material was due for rotation before as_of."""
+    due = rotate_by(credential, b)
+    return f"rotation overdue (due {due})" if due and as_of and due < as_of else None
+
+
+def _placement_row(m, credential, as_of=None):
     b = binding_for(m, credential)
     name, kind, role = one(credential, "cn"), one(credential, "ciamCredentialType"), one(credential, "ciamBindingRole")
     if b is None:
@@ -49,7 +55,9 @@ def _placement_row(m, credential):
     uri = one(b, "ciamRefUri")
     return (name, kind, role, scheme(uri), uri, one(b, "ciamProtectionLevel", ""), _yes_no(one(b, "ciamAutoRotate")),
             str(rotate_by(credential, b) or ""), _joined(values(b, "ciamReplicaRegion")),
-            _joined(values(b, "ciamKeyUser")), binding_status(m.d, credential, b))
+            _joined(values(b, "ciamKeyUser")),
+            "; ".join(s for s in (_due(credential, b, as_of), binding_status(m.d, credential, b)) if s and s != "ok")
+            or "ok")
 
 
 def _undocumented_row(b):
@@ -59,13 +67,13 @@ def _undocumented_row(b):
             _joined(values(b, "ciamKeyUser")), "undocumented: no credential describes this role")
 
 
-def key_placement_rows(d, dn):
-    """Where the environment (spec or DN) keeps every credential, credentials it doesn't bind, and material bindings
-    no credential describes."""
+def key_placement_rows(d, dn, as_of=None):
+    """Where the environment (spec or DN) keeps every credential (rotations overdue as of as_of marked), credentials it
+    doesn't bind, and material bindings no credential describes."""
     m = env_model(d, dn)
     creds = credentials(d)
     described = {one(c, "ciamBindingRole") for c in creds}
-    return [*(_placement_row(m, c) for c in creds),
+    return [*(_placement_row(m, c, as_of) for c in creds),
             *(_undocumented_row(b) for b in material_bindings(m) if one(b, "ciamBindingRole") not in described)]
 
 

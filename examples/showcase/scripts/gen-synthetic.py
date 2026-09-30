@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Generate the synthetic Example Aero estate as LDIF files in data/, and the directory servers' configuration
-exports in exports/ds-config/ (a showcase and test fixture).
+exports in exports/ds-config/ and access logs in exports/ds-access-logs/ (a showcase and test fixture).
 
 The estate is built by fixtures/example_estate, one module per part of the stack; this script only writes
 it. Everything is fictional. The estate is seeded with realistic problems for the tools to find:
@@ -44,7 +44,8 @@ def main():
         old.unlink()
     for rel, text in files.items():
         (OUT / rel).write_text(text)
-    shutil.rmtree(EXPORTS / "ds-config", ignore_errors=True)
+    for generated in ("ds-config", "ds-access-logs"):
+        shutil.rmtree(EXPORTS / generated, ignore_errors=True)
     for rel, text in exports().items():
         write_export(rel, text)
     print(f"wrote {n} entries in {sum(1 for p in files if p.endswith('.ldif'))} files to {OUT.relative_to(ROOT)}/")

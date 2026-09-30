@@ -1,9 +1,10 @@
-"""A PingDS server's configuration imported into the store, against Postgres: `opsdir import pingds/config` reads a
-copy of the server's config/ directory (its archived configurations compressed, as the server keeps them), the
-store accepts every snapshot entry, the latest snapshot is compared with the declared configuration, and importing
-the same configuration again changes nothing."""
+"""A PingDS server's own files imported into the store, against Postgres: `opsdir import pingds/config` reads a copy
+of the server's config/ directory (its archived configurations compressed, as the server keeps them), the store
+accepts every snapshot entry, the latest snapshot is compared with the declared configuration, and importing the same
+configuration again changes nothing; `pingds/access-log` records the directory's consumers from its access log."""
 import datetime as dt
 import gzip
+import json
 import os
 import shutil
 from pathlib import Path
@@ -139,3 +140,29 @@ def test_the_latest_snapshot_is_compared_with_the_declared_configuration(conn, e
         "ds-1/config.ldif": files["ds-1.example.test/config/config.ldif"]}, AT), "CHG-DS-1")
     ops.apply_preview(conn, ops.preview_import(conn, "pingds/config", files, AT), "CHG-DS-1")
     assert ops.report(conn, "drift").rows == ()          # declared from the same server: nothing drifted
+
+
+def _log_line(conn, op, at, user=None, **request):
+    return json.dumps({"eventName": "DJ-LDAP", "client": {"ip": "10.0.5.7", "port": 40000},
+                       "request": {"protocol": "LDAPS", "operation": op, "connId": conn, **request},
+                       "response": {"status": "SUCCESSFUL", "statusCode": "0"}, "timestamp": at,
+                       **({"userId": user} if user else {})})
+
+
+def test_consumers_are_mined_from_access_logs_and_again_change_nothing(conn, tmp_path):
+    app = "uid=app-svc,ou=service-accounts,dc=example,dc=test"
+    logs = tmp_path / "logs"
+    logs.mkdir()
+    (logs / "ldap-access.audit.json").write_text("\n".join((
+        _log_line(1, "BIND", "2026-09-20T03:00:00Z", dn=app),
+        _log_line(1, "SEARCH", "2026-09-20T03:00:01Z", user=app, dn="ou=people,dc=example,dc=test", scope="sub",
+                  attrs=["mail"]),
+        _log_line(2, "BIND", "2026-09-20T03:00:02Z", dn="uid=alice,ou=people,dc=example,dc=test"))) + "\n")
+    files, _ = read_texts(tmp_path)
+    preview = ops.preview_import(conn, "pingds/access-log", files, AT)
+    assert ops.apply_preview(conn, preview, "CHG-DS-1").lines
+    row = conn.execute("select attrs from opsdir.entry where dn = 'cn=app-svc,ou=consumers,dc=ciam-ops'").fetchone()[0]
+    assert (row["ciamAttrRead"], row["ciamObservedSource"], row["ciamMigrationStatus"]) == \
+        (["cn=mail,ou=user-schema,dc=ciam-ops"], ["10.0.5.7/32"], ["unknown"])
+    assert "alice" not in str(conn.execute("select jsonb_agg(attrs) from opsdir.entry").fetchone()[0])
+    assert ops.preview_import(conn, "pingds/access-log", files, AT).changes == ()

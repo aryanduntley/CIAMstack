@@ -191,6 +191,6 @@ A config file is held in the record so it can be rebuilt from the record alone, 
 ## 10. Open issues
 
 - A read-only LDAP front end over the Postgres store (e.g., an LDAP proxy), so operators can `ldapsearch` it.
-- More importers (the adapter contract has them alongside renderers; the DS lineage, PingAM, PingIDM and PingGateway ship them): directory access-log mining → `ou=consumers`, a federation product's admin API → integrations, cloud and Terraform inventories → bindings.
+- More importers (the adapter contract has them alongside renderers; the DS lineage, PingAM, PingIDM and PingGateway ship them): a federation product's admin API → integrations, cloud and Terraform inventories → bindings.
 - Two-way ITSM sync for `ou=changes`.
 - Validation of each adapter's rendered output against the exact product versions it declares.

@@ -415,6 +415,15 @@ ciamPlannedAt: 20260920000000Z
 ciamTitle: Record the production directory servers' configuration (config.ldif
   exports)
 
+dn: cn=CHG-2007,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2007
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260923000000Z
+ciamTitle: Record the directory's consumers from the production access logs
+
 dn: cn=CHG-2040,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange
@@ -503,12 +512,13 @@ ciamBindDn: uid=portal-svc,ou=service-accounts,dc=partners,dc=example-aero,dc=
  test
 ciamCriticality: critical
 ciamFirstSeen: 20230517000000Z
-ciamLastSeen: 20260922000000Z
+ciamLastSeen: 20260922080017Z
 ciamMigrationStatus: tested
 ciamObservedSource: 10.30.8.0/24
-ciamOperationMix: search 70%, modify 25%, add 5%
+ciamOperationMix: search 58%, modify 21%, bind 17%, add 4%
 ciamOwner: cn=customer-portal-team,ou=owners,dc=ciam-ops
-ciamPeakOpsPerSec: 120
+ciamPeakOpsPerSec: 8
+ciamReviewedOn: 20250610000000Z
 ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
 ciamTlsOnly: TRUE
 ciamUnindexedSearchesPerDay: 0
@@ -803,12 +813,13 @@ ciamBindDn: uid=idm-sync,ou=service-accounts,dc=partners,dc=example-aero,dc=te
  st
 ciamCriticality: high
 ciamFirstSeen: 20240103000000Z
-ciamLastSeen: 20260922000000Z
+ciamLastSeen: 20260922040014Z
 ciamMigrationStatus: tested
 ciamObservedSource: 10.20.6.0/24
-ciamOperationMix: search 55%, modify 45%
+ciamOperationMix: search 48%, modify 39%, bind 13%
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
-ciamPeakOpsPerSec: 200
+ciamPeakOpsPerSec: 10
+ciamReviewedOn: 20260302000000Z
 ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
 ciamTlsOnly: TRUE
 ciamUnindexedSearchesPerDay: 0
@@ -928,14 +939,14 @@ ciamAttrRead: cn=exportScreeningStatus,ou=user-schema,dc=ciam-ops
 ciamBindDn: uid=rptuser,ou=customers,ou=people,dc=partners,dc=example-aero,dc=
  test
 ciamFirstSeen: 20210309000000Z
-ciamLastSeen: 20260922000000Z
+ciamLastSeen: 20260922010011Z
 ciamMigrationStatus: unknown
 ciamObservedSource: 10.40.7.22/32
-ciamOperationMix: search 100%, filter (objectClass=*) over ou=people
-ciamPeakOpsPerSec: 5
+ciamOperationMix: search 92%, bind 8%
+ciamPeakOpsPerSec: 3
 ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
 ciamTlsOnly: FALSE
-ciamUnindexedSearchesPerDay: 96
+ciamUnindexedSearchesPerDay: 12
 
 dn: cn=login-templates,ou=bundles,dc=ciam-ops
 objectClass: top
@@ -1008,15 +1019,15 @@ ciamBindDn: uid=mro-export,ou=service-accounts,dc=partners,dc=example-aero,dc=
  test
 ciamCriticality: medium
 ciamFirstSeen: 20240820000000Z
-ciamLastSeen: 20260922000000Z
+ciamLastSeen: 20260922020008Z
 ciamMigrationStatus: identified
 ciamObservedSource: 10.40.12.0/24
-ciamOperationMix: search 100% (nightly 02:00-02:40 UTC)
+ciamOperationMix: search 92%, bind 8%
 ciamOwner: cn=mro-analytics-team,ou=owners,dc=ciam-ops
-ciamPeakOpsPerSec: 40
+ciamPeakOpsPerSec: 6
 ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
 ciamTlsOnly: TRUE
-ciamUnindexedSearchesPerDay: 14
+ciamUnindexedSearchesPerDay: 4
 
 dn: cn=mro-dc-egress-to-ldaps,ou=external-allowlists,dc=ciam-ops
 objectClass: top
@@ -1112,13 +1123,14 @@ ciamAttrRead: cn=registrationStatus,ou=user-schema,dc=ciam-ops
 ciamBindDn: uid=pf-svc,ou=service-accounts,dc=partners,dc=example-aero,dc=test
 ciamCriticality: critical
 ciamFirstSeen: 20240103000000Z
-ciamLastSeen: 20260922000000Z
+ciamLastSeen: 20260922060024Z
 ciamMigrationStatus: tested
 ciamObservedSource: 10.20.4.0/24
 ciamObservedSource: 10.20.5.0/24
-ciamOperationMix: bind 61%, search 38%, modify 1%
+ciamOperationMix: search 70%, bind 28%, modify 2%
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
-ciamPeakOpsPerSec: 850
+ciamPeakOpsPerSec: 20
+ciamReviewedOn: 20260302000000Z
 ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
 ciamTlsOnly: TRUE
 ciamUnindexedSearchesPerDay: 0
@@ -1367,12 +1379,13 @@ ciamBindDn: uid=supplier-svc,ou=service-accounts,dc=partners,dc=example-aero,d
  c=test
 ciamCriticality: high
 ciamFirstSeen: 20231102000000Z
-ciamLastSeen: 20260922000000Z
+ciamLastSeen: 20260922090009Z
 ciamMigrationStatus: contacted
 ciamObservedSource: 10.31.2.0/24
-ciamOperationMix: search 88%, modify 12%
+ciamOperationMix: search 75%, bind 17%, modify 8%
 ciamOwner: cn=supplier-portal-team,ou=owners,dc=ciam-ops
-ciamPeakOpsPerSec: 60
+ciamPeakOpsPerSec: 4
+ciamReviewedOn: 20260115000000Z
 ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
 ciamTlsOnly: TRUE
 ciamUnindexedSearchesPerDay: 0

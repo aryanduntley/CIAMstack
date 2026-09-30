@@ -103,6 +103,7 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.28 NAME 'ciamCertificate' DESC 'Certifica
 | Where does each environment keep its keys and secrets, and are they kept correctly? | `opsdir report keys <env>`, `opsdir report credentials` |
 | Who can read privacy-classified attributes? | `opsdir report pii`: user attributes by PII class ↔ ACIs ↔ consumers |
 | What drifted from the declared configuration? | `opsdir report drift`: declared vs the latest observed snapshot, normalized |
+| Which applications use the directory, and what should be checked about each? | `opsdir report consumers`: owner, criticality, migration status, TLS, unindexed searches, last seen and reviewed, and what to check (no owner, plain text, high-PII attributes read, no ACI, not seen lately, review due) |
 | Which work instructions are stale? | `opsdir report stale`: runbooks whose dependencies changed after they were last validated |
 | What does nobody own? | `opsdir report unowned` |
 | How does an environment differ from the one it overlays? | `opsdir report overrides` |

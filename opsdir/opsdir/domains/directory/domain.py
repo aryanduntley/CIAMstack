@@ -7,6 +7,7 @@ from pathlib import Path
 from ...core.contract import Domain, directory_report, sql_report
 from ...core.directory import children, rdn_value
 from .checks import check_consumers, check_hygiene
+from .consumers import CONSUMERS_HEADERS, consumer_rows
 from .drift import DRIFT_HEADERS, drift
 from .naming import CONSUMERS, DIRECTORY_SERVER_ROLE
 from .schema import FRAGMENT
@@ -31,6 +32,7 @@ def _drift_rows(d, dn):
 DOMAIN = Domain(name="directory", schema=FRAGMENT, required_roles=(),
                 sql=(Path(__file__).parent / "sql" / "directory.sql",),
                 reports={"pii": sql_report(PII_HEADERS, PII_SQL), "drift": directory_report(DRIFT_HEADERS, _drift_rows),
-                         "user-schema": directory_report(USER_SCHEMA_HEADERS, user_schema_rows)},
+                         "user-schema": directory_report(USER_SCHEMA_HEADERS, user_schema_rows),
+                         "consumers": directory_report(CONSUMERS_HEADERS, consumer_rows, dated=True)},
                 checks=(check_user_schema, check_consumers, check_hygiene), order=20,
                 vocabulary={"ciamServerRole": (DIRECTORY_SERVER_ROLE,), "ciamTargetRole": (DIRECTORY_SERVER_ROLE,)})

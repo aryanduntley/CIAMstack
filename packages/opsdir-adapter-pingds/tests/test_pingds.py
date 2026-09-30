@@ -30,4 +30,4 @@ def test_renders_its_environment_neutral_files_from_any_directory():
 
 
 def test_it_reads_its_servers_configuration_as_snapshots_or_as_the_declared_configuration():
-    assert [i.name for i in ADAPTER.importers] == ["config", "declared"]
+    assert [i.name for i in ADAPTER.importers] == ["config", "declared", "access-log"]

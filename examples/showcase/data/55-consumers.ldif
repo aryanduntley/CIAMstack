@@ -4,137 +4,65 @@ dn: cn=pf-ds-svc,ou=consumers,dc=ciam-ops
 objectClass: top
 objectClass: ciamConsumer
 cn: pf-ds-svc
-ciamAttrRead: cn=uid,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=mail,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=givenName,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=sn,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=companyId,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=appEntitlement,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=registrationStatus,ou=user-schema,dc=ciam-ops
 ciamBindDn: uid=pf-svc,ou=service-accounts,dc=partners,dc=example-aero,dc=test
 ciamCriticality: critical
 ciamFirstSeen: 20240103000000Z
-ciamLastSeen: 20260922000000Z
 ciamMigrationStatus: tested
-ciamObservedSource: 10.20.4.0/24
-ciamObservedSource: 10.20.5.0/24
-ciamOperationMix: bind 61%, search 38%, modify 1%
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
-ciamPeakOpsPerSec: 850
-ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
-ciamTlsOnly: TRUE
-ciamUnindexedSearchesPerDay: 0
+ciamReviewedOn: 20260302000000Z
 
 dn: cn=customer-portal-svc,ou=consumers,dc=ciam-ops
 objectClass: top
 objectClass: ciamConsumer
 cn: customer-portal-svc
-ciamAttrRead: cn=mail,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=registrationStatus,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=telephoneNumber,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=companyId,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=challengeAnswer,ou=user-schema,dc=ciam-ops
 ciamBindDn: uid=portal-svc,ou=service-accounts,dc=partners,dc=example-aero,dc=
  test
 ciamCriticality: critical
 ciamFirstSeen: 20230517000000Z
-ciamLastSeen: 20260922000000Z
 ciamMigrationStatus: tested
-ciamObservedSource: 10.30.8.0/24
-ciamOperationMix: search 70%, modify 25%, add 5%
 ciamOwner: cn=customer-portal-team,ou=owners,dc=ciam-ops
-ciamPeakOpsPerSec: 120
-ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
-ciamTlsOnly: TRUE
-ciamUnindexedSearchesPerDay: 0
+ciamReviewedOn: 20250610000000Z
 
 dn: cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
 objectClass: top
 objectClass: ciamConsumer
 cn: supplier-portal-svc
-ciamAttrRead: cn=mail,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=companyId,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=soldToAccount,ou=user-schema,dc=ciam-ops
 ciamBindDn: uid=supplier-svc,ou=service-accounts,dc=partners,dc=example-aero,d
  c=test
 ciamCriticality: high
 ciamFirstSeen: 20231102000000Z
-ciamLastSeen: 20260922000000Z
 ciamMigrationStatus: contacted
-ciamObservedSource: 10.31.2.0/24
-ciamOperationMix: search 88%, modify 12%
 ciamOwner: cn=supplier-portal-team,ou=owners,dc=ciam-ops
-ciamPeakOpsPerSec: 60
-ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
-ciamTlsOnly: TRUE
-ciamUnindexedSearchesPerDay: 0
+ciamReviewedOn: 20260115000000Z
 
 dn: cn=mro-batch-export,ou=consumers,dc=ciam-ops
 objectClass: top
 objectClass: ciamConsumer
 cn: mro-batch-export
-ciamAttrRead: cn=mail,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=companyId,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=soldToAccount,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=exportScreeningStatus,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=description,ou=user-schema,dc=ciam-ops
 ciamBindDn: uid=mro-export,ou=service-accounts,dc=partners,dc=example-aero,dc=
  test
 ciamCriticality: medium
 ciamFirstSeen: 20240820000000Z
-ciamLastSeen: 20260922000000Z
 ciamMigrationStatus: identified
-ciamObservedSource: 10.40.12.0/24
-ciamOperationMix: search 100% (nightly 02:00-02:40 UTC)
 ciamOwner: cn=mro-analytics-team,ou=owners,dc=ciam-ops
-ciamPeakOpsPerSec: 40
-ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
-ciamTlsOnly: TRUE
-ciamUnindexedSearchesPerDay: 14
 
 dn: cn=legacy-rptuser,ou=consumers,dc=ciam-ops
 objectClass: top
 objectClass: ciamConsumer
 cn: legacy-rptuser
-ciamAttrRead: cn=uid,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=mail,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=givenName,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=sn,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=telephoneNumber,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=challengeAnswer,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=exportScreeningStatus,ou=user-schema,dc=ciam-ops
 ciamBindDn: uid=rptuser,ou=customers,ou=people,dc=partners,dc=example-aero,dc=
  test
 ciamFirstSeen: 20210309000000Z
-ciamLastSeen: 20260922000000Z
 ciamMigrationStatus: unknown
-ciamObservedSource: 10.40.7.22/32
-ciamOperationMix: search 100%, filter (objectClass=*) over ou=people
-ciamPeakOpsPerSec: 5
-ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
-ciamTlsOnly: FALSE
-ciamUnindexedSearchesPerDay: 96
 
 dn: cn=idm-sync,ou=consumers,dc=ciam-ops
 objectClass: top
 objectClass: ciamConsumer
 cn: idm-sync
-ciamAttrRead: cn=uid,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=mail,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=companyId,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=appEntitlement,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=registrationStatus,ou=user-schema,dc=ciam-ops
-ciamAttrRead: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
 ciamBindDn: uid=idm-sync,ou=service-accounts,dc=partners,dc=example-aero,dc=te
  st
 ciamCriticality: high
 ciamFirstSeen: 20240103000000Z
-ciamLastSeen: 20260922000000Z
 ciamMigrationStatus: tested
-ciamObservedSource: 10.20.6.0/24
-ciamOperationMix: search 55%, modify 45%
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
-ciamPeakOpsPerSec: 200
-ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
-ciamTlsOnly: TRUE
-ciamUnindexedSearchesPerDay: 0
+ciamReviewedOn: 20260302000000Z

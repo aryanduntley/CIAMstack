@@ -10,7 +10,7 @@ It is built for the ForgeRock/Ping stack on AWS and Azure today, and nothing in 
 
 ### See the whole platform in one place
 
-- **Load what you have.** Describe the platform as LDIF (`opsdir load`), or read a product's own export straight in: directory servers' configuration (`config.ldif` and its archived versions), a PingAM Amster export, a PingIDM project, a PingGateway configuration (`opsdir import`). Secret values found along the way are withheld and reported, never stored.
+- **Load what you have.** Describe the platform as LDIF (`opsdir load`), or read a product's own export straight in: directory servers' configuration (`config.ldif` and its archived versions) and access logs (which applications bind, from where, reading what), a PingAM Amster export, a PingIDM project, a PingGateway configuration (`opsdir import`). Secret values found along the way are withheld and reported, never stored.
 - **Hold your config files, not just point at them.** `opsdir capture` keeps a configuration file setting by setting and `opsdir file` rebuilds it for any environment; `opsdir bundle` records code, scripts and templates by repo path and SHA-256, and `opsdir verify` checks them against a checkout.
 - **Know who depends on what.** Applications that bind to the directory, federation partners and their claims, the ACIs each one relies on, the certificates and keys behind them, and other parties' allowlists that hold your addresses are all entries with owners.
 
@@ -24,6 +24,7 @@ It is built for the ForgeRock/Ping stack on AWS and Azure today, and nothing in 
 | Where does each environment keep its keys and secrets, and correctly? | `opsdir report keys <env>`, `opsdir report credentials` |
 | Who can read privacy-classified attributes? | `opsdir report pii` |
 | What has drifted from the intended configuration? | `opsdir report drift` |
+| Which applications use the directory, and what should we check about each? | `opsdir report consumers` |
 | Which runbooks are out of date? What does nobody own? | `opsdir report stale`, `opsdir report unowned` |
 | How does stage differ from production, and why? | `opsdir report overrides` |
 | Anything else | `opsdir search -b <base> '<LDAP filter>'` |
@@ -55,8 +56,8 @@ Adapters are separate installable packages. Installing one registers it with the
 
 **Directory servers**
 - `opsdir-base-ds`: the DS lineage (OpenDJ → ForgeRock DS → PingDS): `dsconfig` batch, ACI syntax, replication checks.
-- `opsdir-adapter-pingds`: PingDS 7–8: `dsconfig` batch, ACIs, per-server setup scripts that join the existing replication deployment, continuity checks; **imports each server's configuration** (`config.ldif` and its archived versions) as snapshots for drift, or as the declared configuration.
-- `opsdir-adapter-opendj`: OpenDJ 4: the same record as `dsconfig`, ACIs, `setup` and `dsreplication` scripts; imports server configuration the same way.
+- `opsdir-adapter-pingds`: PingDS 7–8: `dsconfig` batch, ACIs, per-server setup scripts that join the existing replication deployment, continuity checks; **imports each server's configuration** (`config.ldif` and its archived versions) as snapshots for drift, or as the declared configuration, and **finds the directory's consumers in its access logs**.
+- `opsdir-adapter-opendj`: OpenDJ 4: the same record as `dsconfig`, ACIs, `setup` and `dsreplication` scripts; imports server configuration and access logs the same way.
 
 **Federation, access management, identity management and gateway**
 - `opsdir-adapter-pingfederate`: PingFederate 11–12: SP connections, OIDC clients and IdP connections as Admin API-shaped JSON, plus the standard SAML and OIDC documents at PingFederate's paths.
@@ -79,7 +80,7 @@ Adapters are separate installable packages. Installing one registers it with the
 
 ### Adapters for other systems
 
-Anything not listed can be added as a package, by your team or anyone else, without touching the core or the other adapters: another directory or federation product, another cloud, another secret store, an ITSM or monitoring tool. An adapter declares when it applies (from the record's data), the roles an environment must bind for it, its renderers and importers, its planner checks, the secret-reference schemes it owns, the file formats it writes, the product versions it supports and, if it needs them, schema definitions under its own OID arc. How to write one: [`opsdir/README.md`](opsdir/README.md#writing-an-adapter-package); the contract: [`opsdir/SPEC.md`](opsdir/SPEC.md) §8. The roadmap already includes PingAccess, SiteMinder, Kubernetes/ForgeOps, configuration-management, ARM/Bicep and CloudFormation renderers, and importers for directory access logs, PingFederate and cloud inventories.
+Anything not listed can be added as a package, by your team or anyone else, without touching the core or the other adapters: another directory or federation product, another cloud, another secret store, an ITSM or monitoring tool. An adapter declares when it applies (from the record's data), the roles an environment must bind for it, its renderers and importers, its planner checks, the secret-reference schemes it owns, the file formats it writes, the product versions it supports and, if it needs them, schema definitions under its own OID arc. How to write one: [`opsdir/README.md`](opsdir/README.md#writing-an-adapter-package); the contract: [`opsdir/SPEC.md`](opsdir/SPEC.md) §8. The roadmap already includes PingAccess, SiteMinder, Kubernetes/ForgeOps, configuration-management, ARM/Bicep and CloudFormation renderers, and importers for PingFederate and cloud inventories.
 
 ## Try it
 
@@ -96,11 +97,11 @@ The [showcase](examples/showcase/README.md) walks through all of the above on a 
 
 ## Where it stands
 
-**Working and tested (798 tests):** the governed store with versioned schema upgrades and full history; every report, search and guardrail above; rendering for every adapter listed; the directory-configuration, PingAM, PingIDM and PingGateway importers; overlays and overrides; keys and secrets across five secret stores; captured files and bundles; custom fields and record types; migration workspaces, the planner and the migration runner in both directions. The rendered Terraform passes `terraform validate` against the AWS and Azure provider schemas.
+**Working and tested (809 tests):** the governed store with versioned schema upgrades and full history; every report, search and guardrail above; rendering for every adapter listed; the directory-configuration, access-log, PingAM, PingIDM and PingGateway importers; overlays and overrides; keys and secrets across five secret stores; captured files and bundles; custom fields and record types; migration workspaces, the planner and the migration runner in both directions. The rendered Terraform passes `terraform validate` against the AWS and Azure provider schemas.
 
 **Not yet verified:** rendered product configuration against real product instances (PingDS `dsconfig`/`setup`, PingFederate Admin API payloads, which are an illustrative subset today, PingAM, PingIDM, PingGateway), and `terraform plan` against real accounts. See [what's verified](examples/showcase/README.md#whats-verified-and-what-isnt).
 
-**Next:** importers for the systems that don't have one yet (directory access logs, PingFederate, cloud and Terraform inventories), so an existing platform can be loaded without writing LDIF by hand. What is covered and what is still a gap, subsystem by subsystem: [`documentation/STACK.md`](documentation/STACK.md) §21.
+**Next:** importers for the systems that don't have one yet (PingFederate, cloud and Terraform inventories, a census of values copied into files), so an existing platform can be loaded without writing LDIF by hand. What is covered and what is still a gap, subsystem by subsystem: [`documentation/STACK.md`](documentation/STACK.md) §21.
 
 ## Documentation
 
