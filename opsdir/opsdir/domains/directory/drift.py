@@ -2,7 +2,8 @@
 from ...core.directory import children, get, norm_dn, one, rdn_value, subtree
 from .naming import DECLARED, OBSERVED
 
-IGNORE = {"ciamLastChanged", "ciamChangeRef", "ciamOwner", "description"}   # governance, not config
+# governance, and what a policy is for: not server configuration, so never observed
+IGNORE = {"ciamLastChanged", "ciamChangeRef", "ciamOwner", "description", "ciamPopulation"}
 DRIFT_HEADERS = ("server", "finding", "entry (relative to declared config)", "detail")
 
 
@@ -11,14 +12,15 @@ def _rel(dn, base):
 
 
 def _config(e):
-    return {k: sorted(v) for k, v in e.attrs.items() if k not in IGNORE}
+    """The entry's configuration, attributes in name order (however the record happens to hold them)."""
+    return {k: sorted(v) for k, v in sorted(e.attrs.items()) if k not in IGNORE}
 
 
 def _fmt(attrs):
     return ", ".join(f"{k}={'|'.join(v)}" for k, v in attrs.items() if k not in ("cn", "ou"))
 
 
-def _latest_snapshots(d):
+def latest_snapshots(d):
     """{server dn: its most recent snapshot} (the first one wins a tie on capture time)."""
     snaps = children(d, OBSERVED, "ciamSnapshot")
     servers = dict.fromkeys(one(s, "ciamServerRef") for s in snaps)
@@ -51,6 +53,6 @@ def drift(d, servers=None):
     limits it to those servers. Only branches present in a snapshot are compared (a snapshot may capture part of
     the config)."""
     wanted = None if servers is None else {norm_dn(s) for s in servers}
-    latest = {srv: snap for srv, snap in _latest_snapshots(d).items() if wanted is None or norm_dn(srv) in wanted}
+    latest = {srv: snap for srv, snap in latest_snapshots(d).items() if wanted is None or norm_dn(srv) in wanted}
     return [f for srv in sorted(latest) for branch in children(d, latest[srv].dn)
             for f in _branch_drift(d, rdn_value(get(d, srv)), latest[srv], branch)]

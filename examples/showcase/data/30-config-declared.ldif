@@ -84,6 +84,18 @@ cn: appEntitlement
 ciamIndexType: equality
 ciamIndexedAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
 
+dn: cn=Default Password Policy,ou=password-policies,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: Default Password Policy
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=Root Password Policy,ou=password-policies,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: Root Password Policy
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
 dn: cn=customers,ou=password-policies,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamPasswordPolicy
@@ -134,11 +146,29 @@ cn: HTTPS
 ciamEnabled: TRUE
 ciamListenPort: 8443
 
+dn: cn=LDIF,ou=connection-handlers,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: LDIF
+ciamEnabled: FALSE
+
 dn: cn=Json File-Based Access Logger,ou=log-publishers,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamLogPublisher
 cn: Json File-Based Access Logger
 ciamEnabled: TRUE
+
+dn: cn=File-Based Error Logger,ou=log-publishers,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogPublisher
+cn: File-Based Error Logger
+ciamEnabled: TRUE
+
+dn: cn=File-Based Debug Logger,ou=log-publishers,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogPublisher
+cn: File-Based Debug Logger
+ciamEnabled: FALSE
 
 dn: cn=topology,ou=replication,ou=declared,ou=config,dc=ciam-ops
 objectClass: top

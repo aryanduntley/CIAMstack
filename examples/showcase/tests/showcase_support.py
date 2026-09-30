@@ -7,6 +7,7 @@ import pathlib
 import subprocess
 
 from opsdir import operations as ops
+from opsdir.cli import import_time, read_texts
 from opsdir.connectors.importing import preview_import
 from opsdir.store.postgres import read_ldif_files
 from support import build_directory, schema_for
@@ -19,10 +20,11 @@ SCRIPTS = SHOWCASE / "scripts"
 APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ldif"),
             ("CHG-2003", SHOWCASE / "changes" / "CHG-2003-stable-ldaps-name.ldif"),
             ("CHG-2005", SHOWCASE / "changes" / "CHG-2005-idm-connector-credentials.ldif"))
-# the product exports the demo imports right after loading: (change id, importer, export directory)
-IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster"),
-           ("CHG-2004", "pingidm", SHOWCASE / "exports" / "idm"),
-           ("CHG-2004", "pinggateway", SHOWCASE / "exports" / "ig"))
+# the product exports the demo imports right after loading: (change id, importer, export directory, when taken)
+IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", None),
+           ("CHG-2004", "pingidm", SHOWCASE / "exports" / "idm", None),
+           ("CHG-2004", "pinggateway", SHOWCASE / "exports" / "ig", None),
+           ("CHG-2006", "pingds/config", SHOWCASE / "exports" / "ds-config", "20260920030000Z"))
 
 
 def cmd_output(text, status=0):
@@ -31,23 +33,25 @@ def cmd_output(text, status=0):
 
 
 def export_files(root):
-    """Effect: a product export's files, {relative path: text}."""
-    return {p.relative_to(root).as_posix(): p.read_text() for p in sorted(root.rglob("*")) if p.is_file()}
+    """Effect: a product export's files, {relative path: text}, as `opsdir import` reads them (.gz decompressed)."""
+    return read_texts(root)[0]
 
 
 def import_records(schema, records):
     """Effect (reads the exports): the change records importing the product exports (IMPORTS) into the loaded
     estate makes, one after the other (each import sees what the ones before it added, as in the store)."""
     def step(done, imported):
-        _, spec, root = imported
-        return (*done, *preview_import(build_directory(schema, records, done), spec, export_files(root))[0])
+        _, spec, root, at = imported
+        return (*done, *preview_import(build_directory(schema, records, done), spec, export_files(root),
+                                       at=import_time(at) if at else None)[0])
     return reduce(step, IMPORTS, ())
 
 
 def import_exports(conn):
     """Effect: import the product exports (IMPORTS) into a store that holds the loaded estate, as the demo does."""
-    return [ops.apply_preview(conn, ops.preview_import(conn, spec, export_files(root)), change_id)
-            for change_id, spec, root in IMPORTS]
+    return [ops.apply_preview(conn, ops.preview_import(conn, spec, export_files(root), import_time(at) if at else None),
+                              change_id)
+            for change_id, spec, root, at in IMPORTS]
 
 
 def fixture_directory(changes=()):

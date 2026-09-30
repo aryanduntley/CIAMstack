@@ -20,6 +20,8 @@ echo "-- the partner identity sync's PingIDM project (same change)"
 od import --change CHG-2004 pingidm exports/idm
 echo "-- the partner portal's PingGateway routes (same change)"
 od import --change CHG-2004 pinggateway exports/ig
+echo "-- what the production directory servers actually run: each one's config.ldif (and ds-2's archived one)"
+od import --change CHG-2006 --at 20260920030000Z pingds/config exports/ds-config
 echo "-- each environment's declared stack against the installed adapters"; od check
 echo "-- what each kind of value is: intent, contract, binding, secret reference, observed, meta"; od report portability
 

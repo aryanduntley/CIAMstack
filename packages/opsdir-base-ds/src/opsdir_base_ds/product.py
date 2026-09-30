@@ -7,7 +7,8 @@ from opsdir.core.directory import one
 DsProduct = NamedTuple("DsProduct", [("name", str),                # as servers record it in ciamProductVersion
                                      ("root_dn", str),             # directory administrator's bind DN
                                      ("dsconfig_apply", tuple),    # comment lines: how to apply the batch file
-                                     ("handler_names", Mapping)])  # connection handler record name → product name
+                                     ("handler_names", Mapping),   # connection handler record name → product name
+                                     ("builtin_policies", tuple)])  # password policies every server already has
 
 
 def handler_name(product, record_name):

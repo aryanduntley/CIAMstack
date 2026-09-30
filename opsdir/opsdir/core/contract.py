@@ -61,9 +61,10 @@ Codec = NamedTuple("Codec", [("split", Callable), ("decode", Callable), ("encode
 SecretPattern = NamedTuple("SecretPattern", [("name", str), ("pattern", str), ("description", str)])
 
 # How an adapter reads a product's own export (an admin tool's export directory, an API dump) into the record:
-# read(files, d, patterns) -> Imported. files: {relative path: text}; d: the record as it is (an importer merges with
-# what it holds, keeping attributes and entries it doesn't own); patterns: the SecretPatterns the store refuses (an
-# importer withholds matching values and says so in its notices). Pure: the connectors diff and the store applies.
+# read(files, d, patterns, at) -> Imported. files: {relative path: text}; d: the record as it is (an importer merges
+# with what it holds, keeping attributes and entries it doesn't own); patterns: the SecretPatterns the store refuses (an
+# importer withholds matching values and says so in its notices); at: when the import runs (a UTC datetime, or None
+# when not given), for importers that date what they observe. Pure: the connectors diff and the store applies.
 Importer = NamedTuple("Importer", [("name", str), ("description", str), ("read", Callable)])
 # What an import yields: containers (branch entries to create when missing, never changed otherwise); groups: ((scope
 # DN, entries that should exist in that subtree), ...), each replacing the record's subtree at its scope; notices.

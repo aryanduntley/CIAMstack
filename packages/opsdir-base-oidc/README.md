@@ -1,6 +1,6 @@
 # opsdir-base-oidc
 
-The OAuth 2.0 / OpenID Connect base: client registration metadata and the provider's discovery document, rendered from the federation domain. A library, not an adapter: federation product adapters (PingFederate, later PingAM) build on it and register themselves.
+The OAuth 2.0 / OpenID Connect base: client registration metadata and the provider's discovery document, rendered from the federation domain. A library, not an adapter: federation product adapters (PingFederate, PingAM) build on it and register themselves.
 
 Environment-neutral files, via `render.oidc_files(d, services, endpoints)`:
 

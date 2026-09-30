@@ -21,7 +21,8 @@ OPENDJ = DsProduct(
                     "--bindPasswordFile <file> \\",
                     "#          --trustStorePath <truststore> --batchFilePath dsconfig.batch --no-prompt"),
     handler_names={"LDAP": "LDAP Connection Handler", "LDAPS": "LDAPS Connection Handler",
-                   "HTTPS": "HTTP Connection Handler"})
+                   "HTTPS": "HTTP Connection Handler"},
+    builtin_policies=("Default Password Policy", "Root Password Policy"))
 SETUP_SECRET_ROLES = ("ds-root-password", "ds-replication-admin-password")
 ADMIN_PORT = 4444
 

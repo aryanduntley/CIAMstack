@@ -27,3 +27,7 @@ def test_requires_the_roles_a_directory_deployment_binds():
 def test_renders_its_environment_neutral_files_from_any_directory():
     assert sorted(ADAPTER.render_neutral(make_directory((), (), ()))) == [
         "ds/acis.ldif", "ds/dsconfig.batch", "ldap/dit.ldif", "ldap/schema.ldif"]
+
+
+def test_it_reads_its_servers_configuration_as_snapshots_or_as_the_declared_configuration():
+    assert [i.name for i in ADAPTER.importers] == ["config", "declared"]

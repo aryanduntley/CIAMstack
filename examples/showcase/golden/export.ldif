@@ -405,6 +405,16 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Name the secrets the IDM connectors use (credential roles)
 
+dn: cn=CHG-2006,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2006
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260920000000Z
+ciamTitle: Record the production directory servers' configuration (config.ldif
+  exports)
+
 dn: cn=CHG-2040,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange
@@ -2049,26 +2059,38 @@ objectClass: top
 objectClass: organizationalUnit
 ou: replication
 
-dn: snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamSnapshot
-snap: ds-1-20260920
+snap: source-prod-ds-1-20260920030000Z
 ciamCapturedAt: 20260920030000Z
 ciamServerRef: cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+description: config.ldif, imported
 
-dn: snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamSnapshot
-snap: ds-2-20260920
+snap: source-prod-ds-2-20260912224000Z
+ciamCapturedAt: 20260912224000Z
+ciamServerRef: cn=ds-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
+description: archived by the server at 20260912224000Z: the configuration in e
+ ffect until then
+
+dn: snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamSnapshot
+snap: source-prod-ds-2-20260920030000Z
 ciamCapturedAt: 20260920030000Z
 ciamServerRef: cn=ds-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
+description: config.ldif, imported
 
-dn: snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamSnapshot
-snap: ds-3-20260920
+snap: source-prod-ds-3-20260920030000Z
 ciamCapturedAt: 20260920030000Z
 ciamServerRef: cn=ds-3,env=prod,cloud=source,ou=environments,dc=ciam-ops
+description: config.ldif, imported
 
 dn: cn=am-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -2169,6 +2191,12 @@ ciamLockoutDuration: 15 m
 ciamLockoutFailureCount: 5
 ciamPasswordHistoryCount: 5
 ciamPopulation: customers
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=Default Password Policy,ou=password-policies,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: Default Password Policy
 ciamStorageScheme: PBKDF2-HMAC-SHA256
 
 dn: cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
@@ -2328,6 +2356,18 @@ cn: family_name
 ciamClaimName: family_name
 ciamSourceAttribute: cn=sn,ou=user-schema,dc=ciam-ops
 
+dn: cn=File-Based Debug Logger,ou=log-publishers,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogPublisher
+cn: File-Based Debug Logger
+ciamEnabled: FALSE
+
+dn: cn=File-Based Error Logger,ou=log-publishers,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogPublisher
+cn: File-Based Error Logger
+ciamEnabled: TRUE
+
 dn: cn=given_name,ou=claims,cn=customer-portal,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamClaimMap
@@ -2454,6 +2494,12 @@ objectClass: ciamConnectionHandler
 cn: LDAPS
 ciamEnabled: TRUE
 ciamListenPort: 1636
+
+dn: cn=LDIF,ou=connection-handlers,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: LDIF
+ciamEnabled: FALSE
 
 dn: cn=org,ou=claims,cn=mobile-ops,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -2635,6 +2681,12 @@ ciamClaimName: roles
 ciamSourceAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
 ciamTransform: keep values with prefix 'supplier-portal:', strip prefix
 
+dn: cn=Root Password Policy,ou=password-policies,ou=declared,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: Root Password Policy
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
 dn: cn=service-accounts,ou=password-policies,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamPasswordPolicy
@@ -2683,17 +2735,22 @@ cn: userData
 ciamBackendType: je
 ciamBaseDn: dc=partners,dc=example-aero,dc=test
 
-dn: ou=backends,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: backends
 
-dn: ou=backends,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: backends
 
-dn: ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: ou=backends,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: backends
+
+dn: ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: backends
@@ -2713,22 +2770,67 @@ objectClass: top
 objectClass: organizationalUnit
 ou: bindings
 
+dn: ou=connection-handlers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: connection-handlers
+
+dn: ou=connection-handlers,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: connection-handlers
+
+dn: ou=connection-handlers,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: connection-handlers
+
+dn: ou=connection-handlers,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: connection-handlers
+
+dn: ou=log-publishers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: log-publishers
+
+dn: ou=log-publishers,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: log-publishers
+
+dn: ou=log-publishers,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: log-publishers
+
+dn: ou=log-publishers,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: log-publishers
+
 dn: ou=overrides,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: overrides
 
-dn: ou=password-policies,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: ou=password-policies,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: password-policies
 
-dn: ou=password-policies,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: ou=password-policies,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: password-policies
 
-dn: ou=password-policies,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: ou=password-policies,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: password-policies
+
+dn: ou=password-policies,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: password-policies
@@ -2895,34 +2997,64 @@ ciamOverrides: cn=customers,ou=password-policies,ou=declared,ou=config,dc=ciam
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 description: test automation signs in repeatedly
 
-dn: cn=customers,ou=password-policies,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=customers,ou=password-policies,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamPasswordPolicy
 cn: customers
 ciamLockoutDuration: 15 m
 ciamLockoutFailureCount: 5
 ciamPasswordHistoryCount: 5
-ciamPopulation: customers
 ciamStorageScheme: PBKDF2-HMAC-SHA256
 
-dn: cn=customers,ou=password-policies,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=customers,ou=password-policies,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamPasswordPolicy
 cn: customers
 ciamLockoutDuration: 15 m
 ciamLockoutFailureCount: 5
 ciamPasswordHistoryCount: 5
-ciamPopulation: customers
 ciamStorageScheme: PBKDF2-HMAC-SHA256
 
-dn: cn=customers,ou=password-policies,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=customers,ou=password-policies,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: customers
+ciamLockoutDuration: 15 m
+ciamLockoutFailureCount: 5
+ciamPasswordHistoryCount: 5
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=customers,ou=password-policies,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamPasswordPolicy
 cn: customers
 ciamLockoutDuration: 15 m
 ciamLockoutFailureCount: 10
 ciamPasswordHistoryCount: 5
-ciamPopulation: customers
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=Default Password Policy,ou=password-policies,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: Default Password Policy
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=Default Password Policy,ou=password-policies,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: Default Password Policy
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=Default Password Policy,ou=password-policies,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: Default Password Policy
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=Default Password Policy,ou=password-policies,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: Default Password Policy
 ciamStorageScheme: PBKDF2-HMAC-SHA256
 
 dn: cn=directory,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
@@ -2980,6 +3112,54 @@ ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
  s/opsdir-adapter-pingfederate
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: federation
+
+dn: cn=File-Based Debug Logger,ou=log-publishers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogPublisher
+cn: File-Based Debug Logger
+ciamEnabled: FALSE
+
+dn: cn=File-Based Debug Logger,ou=log-publishers,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogPublisher
+cn: File-Based Debug Logger
+ciamEnabled: FALSE
+
+dn: cn=File-Based Debug Logger,ou=log-publishers,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogPublisher
+cn: File-Based Debug Logger
+ciamEnabled: FALSE
+
+dn: cn=File-Based Debug Logger,ou=log-publishers,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogPublisher
+cn: File-Based Debug Logger
+ciamEnabled: FALSE
+
+dn: cn=File-Based Error Logger,ou=log-publishers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogPublisher
+cn: File-Based Error Logger
+ciamEnabled: TRUE
+
+dn: cn=File-Based Error Logger,ou=log-publishers,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogPublisher
+cn: File-Based Error Logger
+ciamEnabled: TRUE
+
+dn: cn=File-Based Error Logger,ou=log-publishers,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogPublisher
+cn: File-Based Error Logger
+ciamEnabled: TRUE
+
+dn: cn=File-Based Error Logger,ou=log-publishers,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogPublisher
+cn: File-Based Error Logger
+ciamEnabled: TRUE
 
 dn: cn=fw-admin,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -3240,6 +3420,34 @@ ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: gateway
 
+dn: cn=HTTPS,ou=connection-handlers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: HTTPS
+ciamEnabled: TRUE
+ciamListenPort: 8443
+
+dn: cn=HTTPS,ou=connection-handlers,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: HTTPS
+ciamEnabled: TRUE
+ciamListenPort: 8443
+
+dn: cn=HTTPS,ou=connection-handlers,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: HTTPS
+ciamEnabled: TRUE
+ciamListenPort: 8443
+
+dn: cn=HTTPS,ou=connection-handlers,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: HTTPS
+ciamEnabled: TRUE
+ciamListenPort: 8443
+
 dn: cn=identity-management,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamStackComponent
@@ -3259,6 +3467,30 @@ ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
  s/opsdir-adapter-pingidm
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: identity-management
+
+dn: cn=Json File-Based Access Logger,ou=log-publishers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogPublisher
+cn: Json File-Based Access Logger
+ciamEnabled: TRUE
+
+dn: cn=Json File-Based Access Logger,ou=log-publishers,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogPublisher
+cn: Json File-Based Access Logger
+ciamEnabled: TRUE
+
+dn: cn=Json File-Based Access Logger,ou=log-publishers,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogPublisher
+cn: Json File-Based Access Logger
+ciamEnabled: TRUE
+
+dn: cn=Json File-Based Access Logger,ou=log-publishers,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogPublisher
+cn: Json File-Based Access Logger
+ciamEnabled: TRUE
 
 dn: cn=key-disk,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -3293,6 +3525,86 @@ objectClass: ciamIndex
 cn: lastLoginTime
 ciamIndexType: ordering
 ciamIndexedAttribute: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
+
+dn: cn=LDAP,ou=connection-handlers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: LDAP
+ciamEnabled: FALSE
+ciamListenPort: 1389
+
+dn: cn=LDAP,ou=connection-handlers,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: LDAP
+ciamEnabled: FALSE
+ciamListenPort: 1389
+
+dn: cn=LDAP,ou=connection-handlers,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: LDAP
+ciamEnabled: FALSE
+ciamListenPort: 1389
+
+dn: cn=LDAP,ou=connection-handlers,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: LDAP
+ciamEnabled: FALSE
+ciamListenPort: 1389
+
+dn: cn=LDAPS,ou=connection-handlers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: LDAPS
+ciamEnabled: TRUE
+ciamListenPort: 1636
+
+dn: cn=LDAPS,ou=connection-handlers,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: LDAPS
+ciamEnabled: TRUE
+ciamListenPort: 1636
+
+dn: cn=LDAPS,ou=connection-handlers,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: LDAPS
+ciamEnabled: TRUE
+ciamListenPort: 1636
+
+dn: cn=LDAPS,ou=connection-handlers,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: LDAPS
+ciamEnabled: TRUE
+ciamListenPort: 1636
+
+dn: cn=LDIF,ou=connection-handlers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: LDIF
+ciamEnabled: FALSE
+
+dn: cn=LDIF,ou=connection-handlers,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: LDIF
+ciamEnabled: FALSE
+
+dn: cn=LDIF,ou=connection-handlers,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: LDIF
+ciamEnabled: FALSE
+
+dn: cn=LDIF,ou=connection-handlers,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamConnectionHandler
+cn: LDIF
+ciamEnabled: FALSE
 
 dn: cn=link-source,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -3360,6 +3672,30 @@ ciamOverrideValue: 1
 ciamOverrides: cn=topology,ou=replication,ou=declared,ou=config,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 description: stage runs one directory replica
+
+dn: cn=Root Password Policy,ou=password-policies,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: Root Password Policy
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=Root Password Policy,ou=password-policies,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: Root Password Policy
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=Root Password Policy,ou=password-policies,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: Root Password Policy
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=Root Password Policy,ou=password-policies,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: Root Password Policy
+ciamStorageScheme: PBKDF2-HMAC-SHA256
 
 dn: cn=secret-am-admin-password,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -3723,7 +4059,7 @@ ciamBindingRole: sso-tls-keystore
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /stage/sso-tls-keystore
 
-dn: cn=service-accounts,ou=password-policies,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=service-accounts,ou=password-policies,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamPasswordPolicy
 cn: service-accounts
@@ -3731,7 +4067,7 @@ ciamLockoutFailureCount: 0
 ciamPasswordHistoryCount: 0
 ciamStorageScheme: PBKDF2-HMAC-SHA512
 
-dn: cn=service-accounts,ou=password-policies,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=service-accounts,ou=password-policies,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamPasswordPolicy
 cn: service-accounts
@@ -3739,7 +4075,15 @@ ciamLockoutFailureCount: 0
 ciamPasswordHistoryCount: 0
 ciamStorageScheme: PBKDF2-HMAC-SHA512
 
-dn: cn=service-accounts,ou=password-policies,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=service-accounts,ou=password-policies,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: service-accounts
+ciamLockoutFailureCount: 0
+ciamPasswordHistoryCount: 0
+ciamStorageScheme: PBKDF2-HMAC-SHA512
+
+dn: cn=service-accounts,ou=password-policies,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamPasswordPolicy
 cn: service-accounts
@@ -3875,7 +4219,7 @@ ciamCidr: 10.20.5.0/24
 ciamProviderRef: subnet-0f66e77d88c99b00b
 ciamZone: us-east-1b
 
-dn: cn=suppliers,ou=password-policies,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=suppliers,ou=password-policies,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamPasswordPolicy
 cn: suppliers
@@ -3883,10 +4227,9 @@ ciamLockoutDuration: 15 m
 ciamLockoutFailureCount: 5
 ciamMaxPasswordAge: 365 d
 ciamPasswordHistoryCount: 8
-ciamPopulation: suppliers
 ciamStorageScheme: PBKDF2-HMAC-SHA256
 
-dn: cn=suppliers,ou=password-policies,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=suppliers,ou=password-policies,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamPasswordPolicy
 cn: suppliers
@@ -3894,10 +4237,9 @@ ciamLockoutDuration: 15 m
 ciamLockoutFailureCount: 5
 ciamMaxPasswordAge: 365 d
 ciamPasswordHistoryCount: 8
-ciamPopulation: suppliers
 ciamStorageScheme: PBKDF2-HMAC-SHA256
 
-dn: cn=suppliers,ou=password-policies,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=suppliers,ou=password-policies,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamPasswordPolicy
 cn: suppliers
@@ -3905,7 +4247,16 @@ ciamLockoutDuration: 15 m
 ciamLockoutFailureCount: 5
 ciamMaxPasswordAge: 365 d
 ciamPasswordHistoryCount: 8
-ciamPopulation: suppliers
+ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=suppliers,ou=password-policies,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamPasswordPolicy
+cn: suppliers
+ciamLockoutDuration: 15 m
+ciamLockoutFailureCount: 5
+ciamMaxPasswordAge: 365 d
+ciamPasswordHistoryCount: 8
 ciamStorageScheme: PBKDF2-HMAC-SHA256
 
 dn: cn=svc-apps,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
@@ -4079,21 +4430,28 @@ ciamIndexType: equality
 ciamIndexType: presence
 ciamIndexedAttribute: cn=uid,ou=user-schema,dc=ciam-ops
 
-dn: cn=userData,ou=backends,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamBackend
 cn: userData
 ciamBackendType: je
 ciamBaseDn: dc=partners,dc=example-aero,dc=test
 
-dn: cn=userData,ou=backends,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamBackend
 cn: userData
 ciamBackendType: je
 ciamBaseDn: dc=partners,dc=example-aero,dc=test
 
-dn: cn=userData,ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=userData,ou=backends,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamBackend
+cn: userData
+ciamBackendType: je
+ciamBaseDn: dc=partners,dc=example-aero,dc=test
+
+dn: cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamBackend
 cn: userData
@@ -4119,133 +4477,175 @@ ciamCidr: 10.20.0.0/16
 ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
 ciamProviderRef: vpc-0a1b2c3d4e5f67890
 
-dn: cn=appEntitlement,cn=userData,ou=backends,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=appEntitlement,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: appEntitlement
 ciamIndexType: equality
 ciamIndexedAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
 
-dn: cn=appEntitlement,cn=userData,ou=backends,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=appEntitlement,cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: appEntitlement
 ciamIndexType: equality
 ciamIndexedAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
 
-dn: cn=appEntitlement,cn=userData,ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=appEntitlement,cn=userData,ou=backends,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: appEntitlement
 ciamIndexType: equality
 ciamIndexedAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
 
-dn: cn=companyId,cn=userData,ou=backends,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=appEntitlement,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: appEntitlement
+ciamIndexType: equality
+ciamIndexedAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
+
+dn: cn=companyId,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: companyId
 ciamIndexType: equality
 ciamIndexedAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
 
-dn: cn=companyId,cn=userData,ou=backends,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=companyId,cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: companyId
 ciamIndexType: equality
 ciamIndexedAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
 
-dn: cn=companyId,cn=userData,ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=companyId,cn=userData,ou=backends,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: companyId
 ciamIndexType: equality
 ciamIndexedAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
 
-dn: cn=description,cn=userData,ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=companyId,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: companyId
+ciamIndexType: equality
+ciamIndexedAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
+
+dn: cn=description,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: description
 ciamIndexType: substring
 ciamIndexedAttribute: cn=description,ou=user-schema,dc=ciam-ops
 
-dn: cn=lastLoginTime,cn=userData,ou=backends,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=lastLoginTime,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: lastLoginTime
 ciamIndexType: ordering
 ciamIndexedAttribute: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
 
-dn: cn=lastLoginTime,cn=userData,ou=backends,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=lastLoginTime,cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: lastLoginTime
 ciamIndexType: ordering
 ciamIndexedAttribute: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
 
-dn: cn=lastLoginTime,cn=userData,ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=lastLoginTime,cn=userData,ou=backends,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: lastLoginTime
 ciamIndexType: ordering
 ciamIndexedAttribute: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
 
-dn: cn=mail,cn=userData,ou=backends,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=lastLoginTime,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: lastLoginTime
+ciamIndexType: ordering
+ciamIndexedAttribute: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
+
+dn: cn=mail,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: mail
 ciamIndexType: equality
 ciamIndexedAttribute: cn=mail,ou=user-schema,dc=ciam-ops
 
-dn: cn=mail,cn=userData,ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=mail,cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: mail
 ciamIndexType: equality
 ciamIndexedAttribute: cn=mail,ou=user-schema,dc=ciam-ops
 
-dn: cn=registrationStatus,cn=userData,ou=backends,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=mail,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: mail
+ciamIndexType: equality
+ciamIndexedAttribute: cn=mail,ou=user-schema,dc=ciam-ops
+
+dn: cn=registrationStatus,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: registrationStatus
 ciamIndexType: equality
 ciamIndexedAttribute: cn=registrationStatus,ou=user-schema,dc=ciam-ops
 
-dn: cn=registrationStatus,cn=userData,ou=backends,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=registrationStatus,cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: registrationStatus
 ciamIndexType: equality
 ciamIndexedAttribute: cn=registrationStatus,ou=user-schema,dc=ciam-ops
 
-dn: cn=registrationStatus,cn=userData,ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=registrationStatus,cn=userData,ou=backends,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: registrationStatus
 ciamIndexType: equality
 ciamIndexedAttribute: cn=registrationStatus,ou=user-schema,dc=ciam-ops
 
-dn: cn=soldToAccount,cn=userData,ou=backends,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=registrationStatus,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: registrationStatus
+ciamIndexType: equality
+ciamIndexedAttribute: cn=registrationStatus,ou=user-schema,dc=ciam-ops
+
+dn: cn=soldToAccount,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: soldToAccount
 ciamIndexType: equality
 ciamIndexedAttribute: cn=soldToAccount,ou=user-schema,dc=ciam-ops
 
-dn: cn=soldToAccount,cn=userData,ou=backends,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=soldToAccount,cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: soldToAccount
 ciamIndexType: equality
 ciamIndexedAttribute: cn=soldToAccount,ou=user-schema,dc=ciam-ops
 
-dn: cn=soldToAccount,cn=userData,ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=soldToAccount,cn=userData,ou=backends,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: soldToAccount
 ciamIndexType: equality
 ciamIndexedAttribute: cn=soldToAccount,ou=user-schema,dc=ciam-ops
 
-dn: cn=uid,cn=userData,ou=backends,snap=ds-1-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=soldToAccount,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: soldToAccount
+ciamIndexType: equality
+ciamIndexedAttribute: cn=soldToAccount,ou=user-schema,dc=ciam-ops
+
+dn: cn=uid,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: uid
@@ -4253,7 +4653,7 @@ ciamIndexType: equality
 ciamIndexType: presence
 ciamIndexedAttribute: cn=uid,ou=user-schema,dc=ciam-ops
 
-dn: cn=uid,cn=userData,ou=backends,snap=ds-2-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=uid,cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: uid
@@ -4261,7 +4661,15 @@ ciamIndexType: equality
 ciamIndexType: presence
 ciamIndexedAttribute: cn=uid,ou=user-schema,dc=ciam-ops
 
-dn: cn=uid,cn=userData,ou=backends,snap=ds-3-20260920,ou=observed,ou=config,dc=ciam-ops
+dn: cn=uid,cn=userData,ou=backends,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+objectClass: top
+objectClass: ciamIndex
+cn: uid
+ciamIndexType: equality
+ciamIndexType: presence
+ciamIndexedAttribute: cn=uid,ou=user-schema,dc=ciam-ops
+
+dn: cn=uid,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
 cn: uid

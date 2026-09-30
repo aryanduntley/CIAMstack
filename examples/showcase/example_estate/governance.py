@@ -25,6 +25,8 @@ CHANGES = (
      "2026-09-22"),
     ("CHG-2005", "Name the secrets the IDM connectors use (credential roles)", "approved", "CAB 2026-09-18",
      "2026-09-24"),
+    ("CHG-2006", "Record the production directory servers' configuration (config.ldif exports)", "approved",
+     "CAB 2026-09-18", "2026-09-20"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

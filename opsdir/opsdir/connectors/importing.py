@@ -41,8 +41,9 @@ def import_changes(d, imported):
     return diff(d._replace(entries=before), d._replace(entries=after))
 
 
-def preview_import(d, spec, files, installed=ADAPTERS):
-    """(change records, notices) of importing files ({relative path: text}) with the importer spec names."""
+def preview_import(d, spec, files, installed=ADAPTERS, at=None):
+    """(change records, notices) of importing files ({relative path: text}) with the importer spec names, the import
+    running at `at` (a UTC datetime; None when not given)."""
     _, importer = importer_named(spec, installed)
-    imported = importer.read(files, d, pattern_records(installed))
+    imported = importer.read(files, d, pattern_records(installed), at)
     return import_changes(d, imported), imported.notices

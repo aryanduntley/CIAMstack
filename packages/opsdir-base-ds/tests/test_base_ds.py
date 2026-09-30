@@ -10,7 +10,7 @@ from opsdir_base_ds.product import DsProduct, handler_name, runs
 from opsdir_base_ds.setup import handler_ports, port
 
 PRODUCT = DsProduct(name="SomeDS", root_dn="cn=admin", dsconfig_apply=("# Apply: somehow",),
-                    handler_names={"LDAPS": "Secure Handler"})
+                    handler_names={"LDAPS": "Secure Handler"}, builtin_policies=("Default Password Policy",))
 
 
 def _directory():
@@ -64,3 +64,14 @@ def test_a_replica_without_a_private_ip_is_named_not_skipped():
 
 def test_no_replicas_is_said_not_passed_as_all_admitted():
     assert "y/prod records no directory replicas: no replication traffic to admit." in _replicas().ok
+
+
+def test_a_policy_every_server_already_has_is_set_not_created():
+    d = make_directory((), {}, tuple(
+        (f"cn={name},ou=password-policies,{DECLARED}", ("top", "ciamPasswordPolicy"),
+         {"cn": [name], "ciamStorageScheme": ["PBKDF2-HMAC-SHA256"], "ciamLockoutFailureCount": ["5"]})
+        for name in ("Default Password Policy", "customers")))
+    batch = dsconfig_batch(PRODUCT, d)
+    assert ('set-password-policy-prop --policy-name "Default Password Policy" --set default-password-storage-scheme:'
+            'PBKDF2-HMAC-SHA256 --set password-attribute:userPassword --set lockout-failure-count:5') in batch
+    assert 'create-password-policy --policy-name "customers" --type password-policy' in batch

@@ -157,7 +157,7 @@ def _service(d, base, name, url):
     return make_entry(f"cn={name},{base}", ("top", "ciamIdentityService"), attrs)
 
 
-def _read_services(files, d, patterns):
+def _read_services(files, d, patterns, at=None):
     """The fake product's export: services/<name>.url holds an identity service's base URL. A service the record
     already has keeps its other attributes; a file that looks like secret material is withheld."""
     base = "ou=identity-services,dc=ciam-ops"

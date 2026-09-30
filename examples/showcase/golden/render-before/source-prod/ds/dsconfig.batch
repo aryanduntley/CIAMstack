@@ -12,6 +12,8 @@ create-backend-index --backend-name userData --index-name registrationStatus --s
 create-backend-index --backend-name userData --index-name soldToAccount --set index-type:equality
 create-backend-index --backend-name userData --index-name uid --set index-type:equality --set index-type:presence
 
+set-password-policy-prop --policy-name "Default Password Policy" --set default-password-storage-scheme:PBKDF2-HMAC-SHA256 --set password-attribute:userPassword
+set-password-policy-prop --policy-name "Root Password Policy" --set default-password-storage-scheme:PBKDF2-HMAC-SHA256 --set password-attribute:userPassword
 create-password-policy --policy-name "customers" --type password-policy --set default-password-storage-scheme:PBKDF2-HMAC-SHA256 --set password-attribute:userPassword --set lockout-failure-count:5 --set lockout-duration:"15 m" --set password-history-count:5
 create-password-policy --policy-name "service-accounts" --type password-policy --set default-password-storage-scheme:PBKDF2-HMAC-SHA512 --set password-attribute:userPassword --set lockout-failure-count:0 --set password-history-count:0
 create-password-policy --policy-name "suppliers" --type password-policy --set default-password-storage-scheme:PBKDF2-HMAC-SHA256 --set password-attribute:userPassword --set lockout-failure-count:5 --set lockout-duration:"15 m" --set password-history-count:8 --set max-password-age:"365 d"
@@ -19,5 +21,8 @@ create-password-policy --policy-name "suppliers" --type password-policy --set de
 set-connection-handler-prop --handler-name HTTPS --set enabled:true --set listen-port:8443
 set-connection-handler-prop --handler-name LDAP --set enabled:false --set listen-port:1389
 set-connection-handler-prop --handler-name LDAPS --set enabled:true --set listen-port:1636
+set-connection-handler-prop --handler-name LDIF --set enabled:false
+set-log-publisher-prop --publisher-name "File-Based Debug Logger" --set enabled:false
+set-log-publisher-prop --publisher-name "File-Based Error Logger" --set enabled:true
 set-log-publisher-prop --publisher-name "Json File-Based Access Logger" --set enabled:true
 set-synchronization-provider-prop --provider-name "Multimaster Synchronization" --set replication-purge-delay:"3 d"

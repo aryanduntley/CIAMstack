@@ -1,0 +1,93 @@
+dn: cn=config
+objectClass: top
+objectClass: ds-cfg-root-config
+cn: config
+ds-cfg-server-id: ds-1
+
+dn: cn=Backends,cn=config
+objectClass: top
+objectClass: ds-cfg-branch
+cn: Backends
+
+dn: ds-cfg-backend-id=userData,cn=Backends,cn=config
+objectClass: top
+objectClass: ds-cfg-backend
+objectClass: ds-cfg-pluggable-backend
+objectClass: ds-cfg-je-backend
+ds-cfg-backend-id: userData
+ds-cfg-base-dn: dc=example,dc=test
+ds-cfg-enabled: true
+ds-cfg-db-directory: db
+ds-cfg-java-class: org.opends.server.backends.jeb.JEBackend
+
+dn: cn=Indexes,ds-cfg-backend-id=userData,cn=Backends,cn=config
+objectClass: top
+objectClass: ds-cfg-branch
+cn: Indexes
+
+dn: ds-cfg-attribute=mail,cn=Indexes,ds-cfg-backend-id=userData,cn=Backends,cn=config
+objectClass: top
+objectClass: ds-cfg-backend-index
+ds-cfg-attribute: mail
+ds-cfg-index-type: equality
+
+dn: ds-cfg-attribute=objectClass,cn=Indexes,ds-cfg-backend-id=userData,cn=Backends,cn=config
+objectClass: top
+objectClass: ds-cfg-backend-index
+ds-cfg-attribute: objectClass
+ds-cfg-index-type: equality
+
+dn: ds-cfg-backend-id=rootUser,cn=Backends,cn=config
+objectClass: top
+objectClass: ds-cfg-backend
+objectClass: ds-cfg-ldif-backend
+ds-cfg-backend-id: rootUser
+ds-cfg-base-dn: uid=admin
+ds-cfg-ldif-file: db/rootUser/rootUser.ldif
+
+dn: cn=Password Policies,cn=config
+objectClass: top
+objectClass: ds-cfg-branch
+cn: Password Policies
+
+dn: cn=customers,cn=Password Policies,cn=config
+objectClass: top
+objectClass: ds-cfg-authentication-policy
+objectClass: ds-cfg-password-policy
+cn: customers
+ds-cfg-java-class: org.opends.server.core.PasswordPolicyFactory
+ds-cfg-password-attribute: userPassword
+ds-cfg-default-password-storage-scheme: cn=PBKDF2-HMAC-SHA256,cn=Password Stor
+ age Schemes,cn=config
+ds-cfg-lockout-failure-count: 5
+ds-cfg-lockout-duration: 15 m
+
+dn: cn=Connection Handlers,cn=config
+objectClass: top
+objectClass: ds-cfg-branch
+cn: Connection Handlers
+
+dn: cn=LDAPS,cn=Connection Handlers,cn=config
+objectClass: top
+objectClass: ds-cfg-connection-handler
+objectClass: ds-cfg-ldap-connection-handler
+cn: LDAPS
+ds-cfg-enabled: true
+ds-cfg-listen-port: 1636
+ds-cfg-listen-address: 0.0.0.0
+ds-cfg-use-ssl: true
+ds-cfg-key-manager-provider: cn=PKCS12,cn=Key Manager Providers,cn=config
+
+dn: cn=Loggers,cn=config
+objectClass: top
+objectClass: ds-cfg-branch
+cn: Loggers
+
+dn: cn=Json File-Based Access Logger,cn=Loggers,cn=config
+objectClass: top
+objectClass: ds-cfg-log-publisher
+objectClass: ds-cfg-access-log-publisher
+objectClass: ds-cfg-json-file-access-log-publisher
+cn: Json File-Based Access Logger
+ds-cfg-enabled: true
+ds-cfg-log-directory: logs

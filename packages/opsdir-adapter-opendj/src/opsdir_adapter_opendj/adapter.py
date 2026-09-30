@@ -1,6 +1,7 @@
 """OpenDJ (DS lineage) adapter: applies to environments whose servers run OpenDJ."""
 from opsdir.core.contract import Adapter
 from opsdir_base_ds.config import FORMATS as LINEAGE_FORMATS
+from opsdir_base_ds.importers import importers
 from opsdir_base_ds.product import runs
 from .render import OPENDJ, render_neutral, setup_scripts
 from .replication import check_replication
@@ -20,4 +21,4 @@ ADAPTER = Adapter(name="opendj", kind="product", applies=applies, required_roles
                   neutral_label="DS", vocabulary={}, schema=None,
                   formats=(*LINEAGE_FORMATS, ("ds/setup-*.sh", "shell")),
                   products=(("OpenDJ", ">=4,<5"),),
-                  secret_patterns=(), importers=())
+                  secret_patterns=(), importers=importers(OPENDJ))

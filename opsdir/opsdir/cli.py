@@ -18,7 +18,7 @@
                                        record code, scripts, templates or a package (a file or a directory under the
                                        repo checkout R) by repo path and SHA-256; its content is not stored
   opsdir verify [--root R]             bundles and captured files against a repo checkout (exit 1 if anything differs)
-  opsdir import [--change CHG-…] ADAPTER[/IMPORTER] PATH [--dry-run]
+  opsdir import [--change CHG-…] ADAPTER[/IMPORTER] PATH [--dry-run] [--at YYYYMMDDhhmmssZ]
                                        read a product's export (a directory or a file) into the record with an
                                        adapter's importer; without --change (or with --dry-run) only lists the changes
   opsdir export [-b base]              dump entries as LDIF (for Git review)
@@ -30,6 +30,7 @@
 """
 import argparse
 import datetime as dt
+import gzip
 import os
 import pathlib
 import re
@@ -71,7 +72,8 @@ SUBCOMMANDS = (
                 (("--version",), {}), (("--format",), {}), (("--role",), {}), (("--deploy-path",), {}))),
     ("verify", ((("--root",), {}),)),
     ("import", ((("--change",), {}), (("importer",), {"help": "adapter[/importer]"}), (("path",), {}),
-                (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}))),
+                (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}),
+                (("--at",), {"help": "when the export was taken, YYYYMMDDhhmmssZ (UTC; default: now)"}))),
     ("export", ((("-b", "--base"), {"default": SUFFIX}),)),
     ("history", ((("dn",), {"nargs": "?"}),)),
     ("workspace", ((("action",), {"choices": ["create", "status", "diff", "cutover"]}),
@@ -228,27 +230,42 @@ def _cmd_bundle(conn, a, as_of):
 
 
 def read_texts(path):
-    """Effect: an export's files as text, {relative path: text} ({name: text} for a single file); files that aren't
-    UTF-8 text are left out and named."""
+    """Effect: an export's files as text, {relative path: text} ({name: text} for a single file); a gzip-compressed
+    file is read decompressed, under its name without .gz; files that aren't UTF-8 text are left out and named."""
     p = pathlib.Path(path)
     files = ({p.name: p} if p.is_file() else
              {f.relative_to(p).as_posix(): f for f in sorted(p.rglob("*")) if f.is_file()} if p.is_dir() else None)
     if files is None:
         raise SystemExit(f"nothing at {p}")
-    read = {rel: _text(f) for rel, f in files.items()}
+    read = {_plain_name(rel): _text(f) for rel, f in files.items()}
     return {rel: t for rel, t in read.items() if t is not None}, tuple(rel for rel, t in read.items() if t is None)
+
+
+def _plain_name(rel):
+    return rel[:-3] if rel.endswith(".gz") else rel
 
 
 def _text(f):
     try:
-        return f.read_text(encoding="utf-8")
-    except UnicodeDecodeError:
+        raw = f.read_bytes()
+        return (gzip.decompress(raw) if f.name.endswith(".gz") else raw).decode("utf-8")
+    except (UnicodeDecodeError, OSError, EOFError):
         return None
+
+
+def import_time(text=None):
+    """When an import's export was taken: text as YYYYMMDDhhmmssZ (UTC), else now (whole seconds)."""
+    if text is None:
+        return dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
+    try:
+        return dt.datetime.strptime(text, "%Y%m%d%H%M%SZ").replace(tzinfo=dt.timezone.utc)
+    except ValueError:
+        raise SystemExit(f"--at {text}: give the time as YYYYMMDDhhmmssZ (UTC), e.g. 20260930141500Z") from None
 
 
 def _cmd_import(conn, a, as_of):
     files, skipped = read_texts(a.path)
-    preview = ops.preview_import(conn, a.importer, files)
+    preview = ops.preview_import(conn, a.importer, files, import_time(a.at))
     notes = (*(f"skipped (not UTF-8 text): {rel}" for rel in skipped), *preview.notices)
     if a.dry_run or not a.change:
         listed = (f"{r.changetype} {r.dn}" for r in preview.changes)

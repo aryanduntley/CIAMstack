@@ -18,7 +18,7 @@ PINGDS = DsProduct(
     name="PingDS", root_dn="uid=admin",
     dsconfig_apply=("# Apply: dsconfig --hostname <ds> --port 4444 --bindDN uid=admin --bindPasswordFile <file> \\",
                     "#          --usePkcs12TrustStore <truststore> --batchFilePath dsconfig.batch --no-prompt"),
-    handler_names={})
+    handler_names={}, builtin_policies=("Default Password Policy", "Root Password Policy"))
 SETUP_SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password")
 
 

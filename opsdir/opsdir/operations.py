@@ -131,10 +131,11 @@ def preview_bundle(conn, name, repo_path, kind, content, format_name=None, versi
     return Preview(name, tuple(changes), tuple(notices))
 
 
-def preview_import(conn, spec, files):
+def preview_import(conn, spec, files, at=None):
     """Effect (reads the record): the change records importing a product's export would apply, and the importer's
-    notices (what it withheld, what it couldn't place). spec: 'adapter[/importer]'; files: {relative path: text}."""
-    changes, notices = importing.preview_import(db.load_directory(conn), spec, files)
+    notices (what it withheld, what it couldn't place). spec: 'adapter[/importer]'; files: {relative path: text};
+    at: when the import runs (a UTC datetime), for importers that date what they observe."""
+    changes, notices = importing.preview_import(db.load_directory(conn), spec, files, at=at)
     return Preview(spec, tuple(changes), tuple(notices))
 
 

@@ -54,8 +54,108 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2004  insert  cn=d82debf6eb335a9d,cn=ig.config.config.json,ou=config-files,dc=ciam-o
 <TIMESTAMP>          CHG-2004  insert  cn=fbf19b7efd8b212b,cn=ig.config.config.json,ou=config-files,dc=ciam-o
 <TIMESTAMP>          CHG-2004  insert  cn=partner-portal,ou=routes,ou=pinggateway,dc=ciam-ops                
+<TIMESTAMP>          CHG-2006  insert  snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-op
+<TIMESTAMP>          CHG-2006  insert  snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-op
+<TIMESTAMP>          CHG-2006  insert  snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-op
+<TIMESTAMP>          CHG-2006  insert  snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-op
+<TIMESTAMP>          CHG-2006  insert  ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=confi
+<TIMESTAMP>          CHG-2006  insert  ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=confi
+<TIMESTAMP>          CHG-2006  insert  ou=backends,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=confi
+<TIMESTAMP>          CHG-2006  insert  ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=confi
+<TIMESTAMP>          CHG-2006  insert  ou=connection-handlers,snap=source-prod-ds-1-20260920030000Z,ou=observ
+<TIMESTAMP>          CHG-2006  insert  ou=connection-handlers,snap=source-prod-ds-2-20260912224000Z,ou=observ
+<TIMESTAMP>          CHG-2006  insert  ou=connection-handlers,snap=source-prod-ds-2-20260920030000Z,ou=observ
+<TIMESTAMP>          CHG-2006  insert  ou=connection-handlers,snap=source-prod-ds-3-20260920030000Z,ou=observ
+<TIMESTAMP>          CHG-2006  insert  ou=log-publishers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou
+<TIMESTAMP>          CHG-2006  insert  ou=log-publishers,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou
+<TIMESTAMP>          CHG-2006  insert  ou=log-publishers,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou
+<TIMESTAMP>          CHG-2006  insert  ou=log-publishers,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou
+<TIMESTAMP>          CHG-2006  insert  ou=password-policies,snap=source-prod-ds-1-20260920030000Z,ou=observed
+<TIMESTAMP>          CHG-2006  insert  ou=password-policies,snap=source-prod-ds-2-20260912224000Z,ou=observed
+<TIMESTAMP>          CHG-2006  insert  ou=password-policies,snap=source-prod-ds-2-20260920030000Z,ou=observed
+<TIMESTAMP>          CHG-2006  insert  ou=password-policies,snap=source-prod-ds-3-20260920030000Z,ou=observed
+<TIMESTAMP>          CHG-2006  insert  cn=customers,ou=password-policies,snap=source-prod-ds-1-20260920030000
+<TIMESTAMP>          CHG-2006  insert  cn=customers,ou=password-policies,snap=source-prod-ds-2-20260912224000
+<TIMESTAMP>          CHG-2006  insert  cn=customers,ou=password-policies,snap=source-prod-ds-2-20260920030000
+<TIMESTAMP>          CHG-2006  insert  cn=customers,ou=password-policies,snap=source-prod-ds-3-20260920030000
+<TIMESTAMP>          CHG-2006  insert  cn=Default Password Policy,ou=password-policies,snap=source-prod-ds-1-
+<TIMESTAMP>          CHG-2006  insert  cn=Default Password Policy,ou=password-policies,snap=source-prod-ds-2-
+<TIMESTAMP>          CHG-2006  insert  cn=Default Password Policy,ou=password-policies,snap=source-prod-ds-2-
+<TIMESTAMP>          CHG-2006  insert  cn=Default Password Policy,ou=password-policies,snap=source-prod-ds-3-
+<TIMESTAMP>          CHG-2006  insert  cn=File-Based Debug Logger,ou=log-publishers,snap=source-prod-ds-1-202
+<TIMESTAMP>          CHG-2006  insert  cn=File-Based Debug Logger,ou=log-publishers,snap=source-prod-ds-2-202
+<TIMESTAMP>          CHG-2006  insert  cn=File-Based Debug Logger,ou=log-publishers,snap=source-prod-ds-2-202
+<TIMESTAMP>          CHG-2006  insert  cn=File-Based Debug Logger,ou=log-publishers,snap=source-prod-ds-3-202
+<TIMESTAMP>          CHG-2006  insert  cn=File-Based Error Logger,ou=log-publishers,snap=source-prod-ds-1-202
+<TIMESTAMP>          CHG-2006  insert  cn=File-Based Error Logger,ou=log-publishers,snap=source-prod-ds-2-202
+<TIMESTAMP>          CHG-2006  insert  cn=File-Based Error Logger,ou=log-publishers,snap=source-prod-ds-2-202
+<TIMESTAMP>          CHG-2006  insert  cn=File-Based Error Logger,ou=log-publishers,snap=source-prod-ds-3-202
+<TIMESTAMP>          CHG-2006  insert  cn=HTTPS,ou=connection-handlers,snap=source-prod-ds-1-20260920030000Z,
+<TIMESTAMP>          CHG-2006  insert  cn=HTTPS,ou=connection-handlers,snap=source-prod-ds-2-20260912224000Z,
+<TIMESTAMP>          CHG-2006  insert  cn=HTTPS,ou=connection-handlers,snap=source-prod-ds-2-20260920030000Z,
+<TIMESTAMP>          CHG-2006  insert  cn=HTTPS,ou=connection-handlers,snap=source-prod-ds-3-20260920030000Z,
+<TIMESTAMP>          CHG-2006  insert  cn=Json File-Based Access Logger,ou=log-publishers,snap=source-prod-ds
+<TIMESTAMP>          CHG-2006  insert  cn=Json File-Based Access Logger,ou=log-publishers,snap=source-prod-ds
+<TIMESTAMP>          CHG-2006  insert  cn=Json File-Based Access Logger,ou=log-publishers,snap=source-prod-ds
+<TIMESTAMP>          CHG-2006  insert  cn=Json File-Based Access Logger,ou=log-publishers,snap=source-prod-ds
+<TIMESTAMP>          CHG-2006  insert  cn=LDAP,ou=connection-handlers,snap=source-prod-ds-1-20260920030000Z,o
+<TIMESTAMP>          CHG-2006  insert  cn=LDAP,ou=connection-handlers,snap=source-prod-ds-2-20260912224000Z,o
+<TIMESTAMP>          CHG-2006  insert  cn=LDAP,ou=connection-handlers,snap=source-prod-ds-2-20260920030000Z,o
+<TIMESTAMP>          CHG-2006  insert  cn=LDAP,ou=connection-handlers,snap=source-prod-ds-3-20260920030000Z,o
+<TIMESTAMP>          CHG-2006  insert  cn=LDAPS,ou=connection-handlers,snap=source-prod-ds-1-20260920030000Z,
+<TIMESTAMP>          CHG-2006  insert  cn=LDAPS,ou=connection-handlers,snap=source-prod-ds-2-20260912224000Z,
+<TIMESTAMP>          CHG-2006  insert  cn=LDAPS,ou=connection-handlers,snap=source-prod-ds-2-20260920030000Z,
+<TIMESTAMP>          CHG-2006  insert  cn=LDAPS,ou=connection-handlers,snap=source-prod-ds-3-20260920030000Z,
+<TIMESTAMP>          CHG-2006  insert  cn=LDIF,ou=connection-handlers,snap=source-prod-ds-1-20260920030000Z,o
+<TIMESTAMP>          CHG-2006  insert  cn=LDIF,ou=connection-handlers,snap=source-prod-ds-2-20260912224000Z,o
+<TIMESTAMP>          CHG-2006  insert  cn=LDIF,ou=connection-handlers,snap=source-prod-ds-2-20260920030000Z,o
+<TIMESTAMP>          CHG-2006  insert  cn=LDIF,ou=connection-handlers,snap=source-prod-ds-3-20260920030000Z,o
+<TIMESTAMP>          CHG-2006  insert  cn=Root Password Policy,ou=password-policies,snap=source-prod-ds-1-202
+<TIMESTAMP>          CHG-2006  insert  cn=Root Password Policy,ou=password-policies,snap=source-prod-ds-2-202
+<TIMESTAMP>          CHG-2006  insert  cn=Root Password Policy,ou=password-policies,snap=source-prod-ds-2-202
+<TIMESTAMP>          CHG-2006  insert  cn=Root Password Policy,ou=password-policies,snap=source-prod-ds-3-202
+<TIMESTAMP>          CHG-2006  insert  cn=service-accounts,ou=password-policies,snap=source-prod-ds-1-2026092
+<TIMESTAMP>          CHG-2006  insert  cn=service-accounts,ou=password-policies,snap=source-prod-ds-2-2026091
+<TIMESTAMP>          CHG-2006  insert  cn=service-accounts,ou=password-policies,snap=source-prod-ds-2-2026092
+<TIMESTAMP>          CHG-2006  insert  cn=service-accounts,ou=password-policies,snap=source-prod-ds-3-2026092
+<TIMESTAMP>          CHG-2006  insert  cn=suppliers,ou=password-policies,snap=source-prod-ds-1-20260920030000
+<TIMESTAMP>          CHG-2006  insert  cn=suppliers,ou=password-policies,snap=source-prod-ds-2-20260912224000
+<TIMESTAMP>          CHG-2006  insert  cn=suppliers,ou=password-policies,snap=source-prod-ds-2-20260920030000
+<TIMESTAMP>          CHG-2006  insert  cn=suppliers,ou=password-policies,snap=source-prod-ds-3-20260920030000
+<TIMESTAMP>          CHG-2006  insert  cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=obser
+<TIMESTAMP>          CHG-2006  insert  cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=obser
+<TIMESTAMP>          CHG-2006  insert  cn=userData,ou=backends,snap=source-prod-ds-2-20260920030000Z,ou=obser
+<TIMESTAMP>          CHG-2006  insert  cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=obser
+<TIMESTAMP>          CHG-2006  insert  cn=appEntitlement,cn=userData,ou=backends,snap=source-prod-ds-1-202609
+<TIMESTAMP>          CHG-2006  insert  cn=appEntitlement,cn=userData,ou=backends,snap=source-prod-ds-2-202609
+<TIMESTAMP>          CHG-2006  insert  cn=appEntitlement,cn=userData,ou=backends,snap=source-prod-ds-2-202609
+<TIMESTAMP>          CHG-2006  insert  cn=appEntitlement,cn=userData,ou=backends,snap=source-prod-ds-3-202609
+<TIMESTAMP>          CHG-2006  insert  cn=companyId,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030
+<TIMESTAMP>          CHG-2006  insert  cn=companyId,cn=userData,ou=backends,snap=source-prod-ds-2-20260912224
+<TIMESTAMP>          CHG-2006  insert  cn=companyId,cn=userData,ou=backends,snap=source-prod-ds-2-20260920030
+<TIMESTAMP>          CHG-2006  insert  cn=companyId,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030
+<TIMESTAMP>          CHG-2006  insert  cn=description,cn=userData,ou=backends,snap=source-prod-ds-3-202609200
+<TIMESTAMP>          CHG-2006  insert  cn=lastLoginTime,cn=userData,ou=backends,snap=source-prod-ds-1-2026092
+<TIMESTAMP>          CHG-2006  insert  cn=lastLoginTime,cn=userData,ou=backends,snap=source-prod-ds-2-2026091
+<TIMESTAMP>          CHG-2006  insert  cn=lastLoginTime,cn=userData,ou=backends,snap=source-prod-ds-2-2026092
+<TIMESTAMP>          CHG-2006  insert  cn=lastLoginTime,cn=userData,ou=backends,snap=source-prod-ds-3-2026092
+<TIMESTAMP>          CHG-2006  insert  cn=mail,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,
+<TIMESTAMP>          CHG-2006  insert  cn=mail,cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,
+<TIMESTAMP>          CHG-2006  insert  cn=mail,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,
+<TIMESTAMP>          CHG-2006  insert  cn=registrationStatus,cn=userData,ou=backends,snap=source-prod-ds-1-20
+<TIMESTAMP>          CHG-2006  insert  cn=registrationStatus,cn=userData,ou=backends,snap=source-prod-ds-2-20
+<TIMESTAMP>          CHG-2006  insert  cn=registrationStatus,cn=userData,ou=backends,snap=source-prod-ds-2-20
+<TIMESTAMP>          CHG-2006  insert  cn=registrationStatus,cn=userData,ou=backends,snap=source-prod-ds-3-20
+<TIMESTAMP>          CHG-2006  insert  cn=soldToAccount,cn=userData,ou=backends,snap=source-prod-ds-1-2026092
+<TIMESTAMP>          CHG-2006  insert  cn=soldToAccount,cn=userData,ou=backends,snap=source-prod-ds-2-2026091
+<TIMESTAMP>          CHG-2006  insert  cn=soldToAccount,cn=userData,ou=backends,snap=source-prod-ds-2-2026092
+<TIMESTAMP>          CHG-2006  insert  cn=soldToAccount,cn=userData,ou=backends,snap=source-prod-ds-3-2026092
+<TIMESTAMP>          CHG-2006  insert  cn=uid,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,o
+<TIMESTAMP>          CHG-2006  insert  cn=uid,cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,o
+<TIMESTAMP>          CHG-2006  insert  cn=uid,cn=userData,ou=backends,snap=source-prod-ds-2-20260920030000Z,o
+<TIMESTAMP>          CHG-2006  insert  cn=uid,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,o
 <TIMESTAMP>          CHG-2001  insert  cn=fw-mro-batch,ou=bindings,env=prod,cloud=target,ou=environments,dc=c
 <TIMESTAMP>          CHG-2003  update  cn=svc-ldaps,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam
 <TIMESTAMP>          CHG-2005  update  cn=ldap,ou=connectors,ou=pingidm,dc=ciam-ops                          
 <TIMESTAMP>          CHG-2005  update  cn=hrdb,ou=connectors,ou=pingidm,dc=ciam-ops                          
-(58 rows)
+(158 rows)

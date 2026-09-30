@@ -1,6 +1,6 @@
 # opsdir-base-saml
 
-The SAML 2.0 base: standard metadata (OASIS SAML 2.0 metadata) rendered from the federation domain. A library, not an adapter: federation product adapters (PingFederate, later PingAM) build on it and register themselves.
+The SAML 2.0 base: standard metadata (OASIS SAML 2.0 metadata) rendered from the federation domain. A library, not an adapter: federation product adapters (PingFederate, PingAM) build on it and register themselves.
 
 Environment-neutral files, via `render.saml_files(d, services, endpoints)`:
 

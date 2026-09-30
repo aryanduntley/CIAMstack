@@ -1,53 +1,127 @@
 # CIAMstack
 
-A database-first management system for identity (CIAM) platforms. Every piece of a platform's configuration, infrastructure, keys-as-references, dependencies and operational knowledge becomes **typed, governed, cross-referenced entries in one database**, the system of record the platform is operated from. Reports, user interfaces and every working file (infrastructure code, product configuration, setup scripts) are built on it instead of config files and consoles scattered everywhere.
+**Run your identity platform from one governed record instead of scattered config files, consoles and spreadsheets.**
 
-- **A change is an entry,** made under an approved change record and kept in history, never a hand edit to a file or a console.
-- **Questions become queries:** blast radius, expiry, drift, who can read what, which outside parties' allowlists hold our addresses.
-- **Moving a platform is one capability:** a migration workspace declares the target's stack and bindings, the planner compares it with the live record, and the target is rendered from the same intent.
-- **Sensitive data is never stored,** only referenced.
+CIAMstack (the `opsdir` tool) keeps everything about an identity (CIAM) platform in one PostgreSQL database: servers and where they run, directory and federation configuration, access rules, the applications that depend on the platform, certificates, keys and secrets (as references only), owners, runbooks and changes. Every entry is typed, schema-checked and linked to what it depends on, and every change is approved and kept in history. The working files you deploy (Terraform, product configuration, setup scripts) are generated from the record, for every environment.
 
-Nothing in the core is tied to a platform. Clouds, products, versions and secret stores are values in the database, handled by **adapter packages** that the core discovers when they are installed. Products build on **standard bases**: LDAP (the record itself is LDAP-modeled, so the standard LDAP schema lives in the core; a generic LDAPv3 adapter renders it for any compliant server), SAML 2.0 and OpenID Connect. The first packages cover the ForgeRock/Ping directory and federation stack (PingDS and OpenDJ on a shared DS-lineage base, PingFederate on the SAML and OIDC bases), AWS, Azure and the HashiCorp Vault, Kubernetes and CyberArk secret stores; more follow as packages, never as core changes.
+It is built for the ForgeRock/Ping stack on AWS and Azure today, and nothing in its core is tied to a vendor: each product, cloud and secret store is an installable **adapter** package, and new ones can be written for other systems.
 
-The code is Modular, Functional and Procedural: immutable records, pure functions, and effects (database, files, printing) kept at the edges.
+## What you can do with it
 
-## Layout
+### See the whole platform in one place
 
-```
-opsdir/                   the core: an installable Python package on PostgreSQL (see opsdir/README.md)
-  SPEC.md                 the standard: LDAP schema + X-PORTABILITY / X-VALUE-TYPE, rules R1–R10
-packages/                 installable packages; adapters register themselves with the core, bases are libraries:
-  standards               opsdir-adapter-ldap/ (standard LDIF + generic LDAPv3 adapter)
-                          opsdir-base-saml/  opsdir-base-oidc/
-  lineages, products      opsdir-base-ds/ (OpenDJ → ForgeRock DS → PingDS)  opsdir-adapter-pingds/
-                          opsdir-adapter-opendj/  opsdir-adapter-pingfederate/  opsdir-adapter-pingam/
-                          opsdir-adapter-pingidm/  opsdir-adapter-pinggateway/
-  clouds, secret stores   opsdir-adapter-aws/  opsdir-adapter-azure/  opsdir-adapter-hashicorp-vault/
-                          opsdir-adapter-kubernetes/  opsdir-adapter-cyberark/
-  formats                 opsdir-format-terraform/ (shared HCL formatter)
-examples/showcase/        a runnable fictional estate using those packages: data, demo, golden outputs
-documentation/            project-level documentation
-  STACK.md                the full stack inventory: every subsystem, file and store, what can be
-                          datified, and what is covered today vs the gaps (build order in §21)
-  ops-directory-model.md  design rationale: the record, portable intent vs bindings, operating from it,
-                          moving between environments, prior art, design questions
-pytest.ini                one test configuration for the core, the packages and the showcase
-.aimfp-project/           AIMFP project tracking (blueprint, roadmap, tracked files and functions)
-docs/                     local dev notes; git-ignored, never part of the project
-```
+- **Load what you have.** Describe the platform as LDIF (`opsdir load`), or read a product's own export straight in: directory servers' configuration (`config.ldif` and its archived versions), a PingAM Amster export, a PingIDM project, a PingGateway configuration (`opsdir import`). Secret values found along the way are withheld and reported, never stored.
+- **Hold your config files, not just point at them.** `opsdir capture` keeps a configuration file setting by setting and `opsdir file` rebuilds it for any environment; `opsdir bundle` records code, scripts and templates by repo path and SHA-256, and `opsdir verify` checks them against a checkout.
+- **Know who depends on what.** Applications that bind to the directory, federation partners and their claims, the ACIs each one relies on, the certificates and keys behind them, and other parties' allowlists that hold your addresses are all entries with owners.
 
-## Quick start
+### Answer operational questions in seconds
+
+| Question | Command |
+|---|---|
+| What expires soon? | `opsdir report expiring` |
+| What breaks if this certificate expires or is replaced? | `opsdir report blast-radius <certificate DN>` |
+| What does rotating this key or secret touch? | `opsdir report rotation-impact <credential DN>` |
+| Where does each environment keep its keys and secrets, and correctly? | `opsdir report keys <env>`, `opsdir report credentials` |
+| Who can read privacy-classified attributes? | `opsdir report pii` |
+| What has drifted from the intended configuration? | `opsdir report drift` |
+| Which runbooks are out of date? What does nobody own? | `opsdir report stale`, `opsdir report unowned` |
+| How does stage differ from production, and why? | `opsdir report overrides` |
+| Anything else | `opsdir search -b <base> '<LDAP filter>'` |
+
+### Change the platform safely
+
+- **Every change is governed.** Writes name an approved change record; the database rejects unapproved changes, invalid values, secret values in reference fields and deletions that would break something still in use.
+- **Every change is kept.** `opsdir history` shows who changed what under which change; `opsdir export` produces LDIF for review in Git.
+- **Every environment is rendered from the same record.** `opsdir render <cloud>/<env>` writes the environment's Terraform, directory configuration and setup scripts, federation configuration, standard SAML/OIDC/LDAP documents and product files, with a MANIFEST of hashes. Configuration that should be identical across environments renders byte-identical; only the environment's own bindings differ.
+- **Environments share what they should.** A stage environment can be an overlay of production: it inherits the shared intent and overrides only documented values (fewer replicas, a different lockout threshold), each with why.
+- **Extend the record yourself.** Define your own fields and record types (a cost center, a data residency, a feature flag) as governed, typed, documented entries (`opsdir report custom`).
+
+### Prepare and run a platform move
+
+Moving to another cloud, account or region uses everything above:
+
+- **Plan against the live record.** `opsdir plan <from> <to>` compares the target with production and returns a verdict listing every blocker and action with its owner, and a do-by date for each action from its lead time: changed contracts (service names, SAML entity IDs, OIDC issuers), missing firewall rules and backups, applications not yet tested against the target, certificates expiring before cutover, keys the target would keep wrongly (not in an HSM, regenerated instead of carried over), directory replicas that must join the existing replication deployment, and **other parties' allowlists that still pin your old addresses**, with a drafted request to each party.
+- **Work in a copy.** `opsdir workspace create` copies the live record; declare the target's stack and bindings there, plan, render and review, while the platform keeps being operated from the live record. `opsdir workspace cutover` applies the result as one approved change (a three-way merge that refuses conflicting edits).
+- **Run it end to end.** `opsdir migrate <from> <to>` checks both stacks, plans and renders the target, and exits non-zero unless it is ready. It works in either direction.
+
+## Adapters
+
+Adapters are separate installable packages. Installing one registers it with the core; nothing in the core changes. Each environment declares which adapters and versions it runs, and `opsdir check` confirms they are installed.
+
+**Standards (shared by every product that implements them)**
+- `opsdir-adapter-ldap`: the user directory's schema and tree as standard LDIF; a generic LDAPv3 adapter for any compliant directory server.
+- `opsdir-base-saml`: SAML 2.0 metadata for every partner and for the platform's own identity provider.
+- `opsdir-base-oidc`: OpenID Connect client registrations and the provider's discovery document.
+
+**Directory servers**
+- `opsdir-base-ds`: the DS lineage (OpenDJ → ForgeRock DS → PingDS): `dsconfig` batch, ACI syntax, replication checks.
+- `opsdir-adapter-pingds`: PingDS 7–8: `dsconfig` batch, ACIs, per-server setup scripts that join the existing replication deployment, continuity checks; **imports each server's configuration** (`config.ldif` and its archived versions) as snapshots for drift, or as the declared configuration.
+- `opsdir-adapter-opendj`: OpenDJ 4: the same record as `dsconfig`, ACIs, `setup` and `dsreplication` scripts; imports server configuration the same way.
+
+**Federation, access management, identity management and gateway**
+- `opsdir-adapter-pingfederate`: PingFederate 11–12: SP connections, OIDC clients and IdP connections as Admin API-shaped JSON, plus the standard SAML and OIDC documents at PingFederate's paths.
+- `opsdir-adapter-pingam`: PingAM / ForgeRock AM 7–8: realms, OAuth2/OIDC clients, SAML, authentication journeys and policy sets as Amster entities; **imports Amster exports**.
+- `opsdir-adapter-pingidm`: PingIDM / ForgeRock IDM 7–8: managed objects, connectors, sync mappings and schedules as project files, each connector pointing at the right host in every environment; **imports IDM projects**.
+- `opsdir-adapter-pinggateway`: PingGateway 2023–2026 / ForgeRock IG 7: routes rendered per environment and linked to the client and issuer they rely on; **imports gateway configurations**.
+
+**Clouds**
+- `opsdir-adapter-aws`: Terraform for AWS (VPC, subnets, instances, load balancers, security groups, DNS); Secrets Manager, KMS, Certificate Manager and S3 references.
+- `opsdir-adapter-azure`: Terraform for Azure, commercial or government (virtual network, subnets, VMs, load balancers, network security rules with pinned priorities, DNS); Key Vault secret, key and certificate references.
+
+**Secret stores** (resolved at run time; values never reach the database or a rendered file)
+- AWS Secrets Manager and KMS (in `opsdir-adapter-aws`), Azure Key Vault (in `opsdir-adapter-azure`).
+- `opsdir-adapter-hashicorp-vault`: `vault://` references, resolved with the Vault CLI.
+- `opsdir-adapter-kubernetes`: `k8s-secret://` references, resolved with `kubectl`.
+- `opsdir-adapter-cyberark`: `cyberark://` references, resolved with the Credential Provider SDK.
+
+**Formats**
+- `opsdir-format-terraform`: HCL laid out like `terraform fmt`, shared by the cloud adapters.
+
+### Adapters for other systems
+
+Anything not listed can be added as a package, by your team or anyone else, without touching the core or the other adapters: another directory or federation product, another cloud, another secret store, an ITSM or monitoring tool. An adapter declares when it applies (from the record's data), the roles an environment must bind for it, its renderers and importers, its planner checks, the secret-reference schemes it owns, the file formats it writes, the product versions it supports and, if it needs them, schema definitions under its own OID arc. How to write one: [`opsdir/README.md`](opsdir/README.md#writing-an-adapter-package); the contract: [`opsdir/SPEC.md`](opsdir/SPEC.md) §8. The roadmap already includes PingAccess, SiteMinder, Kubernetes/ForgeOps, configuration-management, ARM/Bicep and CloudFormation renderers, and importers for directory access logs, PingFederate and cloud inventories.
+
+## Try it
 
 Requirements: Python 3.11+ and PostgreSQL. Set up the role and databases once ([Database](opsdir/README.md#database)), then:
 
 ```bash
 opsdir/scripts/dev-install.sh     # venv (opsdir/.venv) + the core + every package, editable
-examples/showcase/demo.sh         # operating a fictional estate from the record; outputs in examples/showcase/out/
+examples/showcase/demo.sh         # a fictional estate operated from the record; outputs in examples/showcase/out/
 opsdir/opsdir.sh --help           # the CLI, against the local dev database
 opsdir/scripts/test.sh            # every test: core, packages, showcase; unit + integration
 ```
 
-Terraform is optional (`TERRAFORM=/path/to/terraform examples/showcase/demo.sh` adds `fmt` + `validate`).
+The [showcase](examples/showcase/README.md) walks through all of the above on a fictional company's platform (PingDS, PingFederate, PingAM, PingIDM and PingGateway on AWS, with a stage overlay), then plans moving production to a second environment on Azure. Its problems are planted on purpose, and the tests check that the planner finds every one. Terraform is optional (`TERRAFORM=/path/to/terraform examples/showcase/demo.sh` adds `fmt` + `validate`).
+
+## Where it stands
+
+**Working and tested (798 tests):** the governed store with versioned schema upgrades and full history; every report, search and guardrail above; rendering for every adapter listed; the directory-configuration, PingAM, PingIDM and PingGateway importers; overlays and overrides; keys and secrets across five secret stores; captured files and bundles; custom fields and record types; migration workspaces, the planner and the migration runner in both directions. The rendered Terraform passes `terraform validate` against the AWS and Azure provider schemas.
+
+**Not yet verified:** rendered product configuration against real product instances (PingDS `dsconfig`/`setup`, PingFederate Admin API payloads, which are an illustrative subset today, PingAM, PingIDM, PingGateway), and `terraform plan` against real accounts. See [what's verified](examples/showcase/README.md#whats-verified-and-what-isnt).
+
+**Next:** importers for the systems that don't have one yet (directory access logs, PingFederate, cloud and Terraform inventories), so an existing platform can be loaded without writing LDIF by hand. What is covered and what is still a gap, subsystem by subsystem: [`documentation/STACK.md`](documentation/STACK.md) §21.
+
+## Documentation
+
+- [`opsdir/README.md`](opsdir/README.md): install, CLI, database, workspaces, architecture, writing adapters.
+- [`opsdir/SPEC.md`](opsdir/SPEC.md): the standard: LDAP schema with portability classes, rules R1–R10, the adapter contract.
+- [`documentation/ops-directory-model.md`](documentation/ops-directory-model.md): design rationale: why a directory-shaped record, what differs between environments, where moves get hard, prior art.
+- [`documentation/STACK.md`](documentation/STACK.md): the full inventory of what an identity platform carries and how much of it is modeled today.
+
+## Layout
+
+```
+opsdir/                   the core: an installable Python package on PostgreSQL
+packages/                 adapter, base and format packages (listed above)
+examples/showcase/        a runnable fictional estate: data, product exports, demo, golden outputs
+documentation/            design rationale and stack inventory
+pytest.ini                one test configuration for the core, the packages and the showcase
+.aimfp-project/           project tracking (blueprint, roadmap, tracked files and functions)
+docs/                     local dev notes; git-ignored, never part of the project
+```
+
+The code is Modular, Functional and Procedural: immutable records, pure functions, and effects (database, files, printing) kept at the edges.
 
 ## Where everything lives (and how to remove it)
 
@@ -59,13 +133,3 @@ Terraform is optional (`TERRAFORM=/path/to/terraform examples/showcase/demo.sh` 
 | Dev and test databases | role `opsdir`; databases `opsdir`, `opsdir_workspace`, `opsdir_test`, `opsdir_test_workspace` in the local PostgreSQL | `for d in opsdir_test_workspace opsdir_test opsdir_workspace opsdir; do sudo -u postgres dropdb $d; done; sudo -u postgres dropuser opsdir` |
 
 Deleting the `CIAMstack/` folder removes everything but the databases. Outside this folder, running `terraform` to validate rendered output leaves checkpoint files in `~/.terraform.d/`.
-
-## Status
-
-The foundation is in place: a Modular/Functional/Procedural core with versioned schema upgrades, governed writes and full history; an agnostic core that discovers domains and adapter packages; declared stacks with `opsdir check`; adapter-owned vocabulary validated by the store; environments as overlays with governed overrides; keys and secrets as credentials bound per environment to any of five secret stores; config files held setting by setting and code recorded by digest; custom fields and record types defined in the record; change sets, migration workspaces with a three-way cutover, and a migration runner that works in either direction.
-
-Standard bases are in place: the standard LDAP schema in the core, the user directory's schema recorded and rendered as standard LDIF, the DS lineage shared by PingDS and OpenDJ, and SAML metadata, OIDC client registrations and discovery rendered from the federation domain. PingAM, PingIDM and PingGateway are adapter packages on these bases, each with an importer that reads the product's own export (an Amster export, an IDM project, a gateway configuration) into the record under an approved change.
-
-The showcase walks through operating a fictional estate from the record (reports, keys, custom fields, drift, guardrails, rendering each environment) and then moving production to a second environment: the planner finds all 10 planted blockers, 6 remain after three approved changes, and the rendered Terraform passes `terraform validate`. **Not verified:** product configuration against real product instances; see [`examples/showcase/README.md`](examples/showcase/README.md).
-
-The roadmap is tracked in AIMFP (`.aimfp-project/`); what is covered and what is still a gap is in [`documentation/STACK.md`](documentation/STACK.md) §21. Next: importers that read the other live systems (PingDS configuration and access logs, PingFederate, cloud and Terraform inventories) into the record.

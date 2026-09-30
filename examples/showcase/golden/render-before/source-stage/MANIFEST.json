@@ -97,7 +97,7 @@
     "ds/dsconfig.batch": {
       "scope": "environment-neutral",
       "format": "dsconfig-batch",
-      "sha256": "1597f06796248675dce8150bb98c93f622d334b8ef23bdf9024bf5e85bb6984f"
+      "sha256": "3f7090173ae291305374ccdce54cfe8b6b1f75758ed56ec03370035d1814130a"
     },
     "ds/setup-ds-s1.sh": {
       "scope": "environment-specific",

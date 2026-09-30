@@ -6,6 +6,7 @@ from opsdir.connectors.registry import ADAPTERS
 from opsdir.core.directory import make_directory, make_entry
 from opsdir_adapter_opendj.adapter import ADAPTER
 from opsdir_adapter_opendj.render import OPENDJ
+from opsdir_base_ds.observe import config_entries
 
 
 def _servers(*products):
@@ -30,3 +31,13 @@ def test_renders_the_lineage_files_as_opendj():
     files = ADAPTER.render_neutral(make_directory((), (), ()))
     assert sorted(files) == ["ds/acis.ldif", "ds/dsconfig.batch", "ldap/dit.ldif", "ldap/schema.ldif"]
     assert OPENDJ.root_dn in files["ds/dsconfig.batch"]
+
+
+def test_its_servers_configuration_is_read_back_under_the_records_handler_names():
+    assert [i.name for i in ADAPTER.importers] == ["config", "declared"]
+    config = ("dn: cn=LDAPS Connection Handler,cn=Connection Handlers,cn=config\nobjectClass: top\n"
+              "objectClass: ds-cfg-connection-handler\ncn: LDAPS Connection Handler\nds-cfg-enabled: true\n"
+              "ds-cfg-listen-port: 1636\n")
+    entries, _ = config_entries(OPENDJ, make_directory((), {}, ()), config, "ou=declared,ou=config,dc=ciam-ops", "x")
+    assert [e.dn for e in entries] == ["ou=connection-handlers,ou=declared,ou=config,dc=ciam-ops",
+                                       "cn=LDAPS,ou=connection-handlers,ou=declared,ou=config,dc=ciam-ops"]

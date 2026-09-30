@@ -151,7 +151,7 @@ def _ou(dn):
     return make_entry(dn, ("top", "organizationalUnit"), {"ou": (dn.split(",", 1)[0].split("=", 1)[1],)})
 
 
-def read_project(files, d, patterns):
+def read_project(files, d, patterns, at=None):
     """Imported from an IDM project directory."""
     groups, notices = _structured(d, files, patterns)
     other = sorted(p for p in files if p.startswith("conf/") and not _is_structured(p))

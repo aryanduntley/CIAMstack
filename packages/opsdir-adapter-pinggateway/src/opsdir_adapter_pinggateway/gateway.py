@@ -87,7 +87,7 @@ def _ou(dn):
     return make_entry(dn, ("top", "organizationalUnit"), {"ou": (dn.split(",", 1)[0].split("=", 1)[1],)})
 
 
-def read_config(files, d, patterns):
+def read_config(files, d, patterns, at=None):
     """Imported from a gateway configuration directory."""
     routes = tuple((p, _parse(t)) for p, t in sorted(files.items()) if p.startswith("routes/") and p.endswith(".json"))
     named = tuple((r.get("name") or p[len("routes/"):-5], r) for p, r in routes if r is not None)
