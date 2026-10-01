@@ -27,7 +27,8 @@ IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", None),
            ("CHG-2004", "pinggateway", SHOWCASE / "exports" / "ig", None),
            ("CHG-2006", "pingds/config", SHOWCASE / "exports" / "ds-config", "20260920030000Z"),
            ("CHG-2007", "pingds/access-log", SHOWCASE / "exports" / "ds-access-logs", None),
-           ("CHG-2008", "pingfederate", SHOWCASE / "exports" / "pingfederate", None))
+           ("CHG-2008", "pingfederate/bulk", SHOWCASE / "exports" / "pingfederate", None),
+           ("CHG-2008", "pingfederate/node-files", SHOWCASE / "exports" / "pingfederate-nodes", None))
 # then the census of files that copy the record's values (change id, directory)
 CENSUS = ("CHG-2009", SHOWCASE / "exports" / "census")
 

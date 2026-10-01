@@ -20,6 +20,8 @@ EXPECTED = {
          "imported grant database store names no secret", "CHG-2005"),
         ("B12", "PingFederate", "Data store `user-directory` has withheld credentials but no credential role",
          "imported directory data store names no secret", "CHG-2005"),
+        ("B13", "Binding", "Role `pf-cluster-discovery`",
+         "the target binds no PingFederate cluster discovery: the nodes' tcp.xml uses S3 on AWS", None),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),

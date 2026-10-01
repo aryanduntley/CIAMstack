@@ -37,6 +37,7 @@ pingfedConnectionId: harbor-mro-federation
 dn: cn=mobile-ops,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamIntegration
+objectClass: pingfedClient
 cn: mobile-ops
 ciamClientId: mobile-ops
 ciamCriticality: medium
@@ -55,6 +56,9 @@ ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamTokenAuthMethod: none
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+pingfedUses: cn=default-jwt,ou=access-token-managers,ou=pingfederate,dc=ciam-o
+ ps
+pingfedUses: cn=default-oidc,ou=oidc-policies,ou=pingfederate,dc=ciam-ops
 xTokenLifetimeMinutes: 30
 
 dn: cn=partner-portal,ou=integrations,dc=ciam-ops
@@ -76,6 +80,7 @@ ciamTokenAuthMethod: private_key_jwt
 dn: cn=reports-api,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamIntegration
+objectClass: pingfedClient
 cn: reports-api
 ciamClientId: reports-api
 ciamGrantType: client_credentials
@@ -83,6 +88,8 @@ ciamProtocolType: oidc-client
 ciamScope: reports.read
 ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamTokenAuthMethod: client_secret_basic
+pingfedUses: cn=default-jwt,ou=access-token-managers,ou=pingfederate,dc=ciam-o
+ ps
 
 dn: cn=skyline-air-federation,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -124,6 +131,7 @@ ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 dn: cn=tech-pubs,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamIntegration
+objectClass: pingfedClient
 cn: tech-pubs
 ciamClientId: tech-pubs-web
 ciamCriticality: high
@@ -144,6 +152,8 @@ ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamTokenAuthMethod: none
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+pingfedUses: cn=default-jwt,ou=access-token-managers,ou=pingfederate,dc=ciam-o
+ ps
 xTokenLifetimeMinutes: 60
 
 # 8 entries

@@ -1,9 +1,10 @@
-"""PingFederate plugin instances: password credential validators, IdP adapters and authentication selectors, read from
-the Admin API into the record and rendered back for each environment. Pure.
+"""PingFederate plugin instances: password credential validators, IdP adapters, authentication selectors and access
+token managers, read from the Admin API into the record and rendered back for each environment. Pure.
 
 One pingfedPlugin entry per instance (cn: its id) under its kind's branch: the plugin it is (pluginDescriptorRef, as
 pingfedPluginType), the instance it inherits from (parentRef, as pingfedParent), the objects its settings name
-(pingfedUses: a validator's data store, an HTML form adapter's validators, the adapters a composite adapter chains) and
+(pingfedUses: a validator's data store, an HTML form adapter's validators, the adapters a composite adapter chains, the
+certificates of the key pairs a JWT token manager signs with) and
 its settings as the Admin API writes them, with what may be secret withheld (opsdir_adapter_pingfederate.withheld):
 each environment renders the reference of the instance's credential role there. What the record adds to an instance
 (its credential role, owners) is kept on import, and the rendered files import back unchanged.
@@ -14,7 +15,7 @@ from typing import NamedTuple
 from opsdir.core.directory import children, get, make_entry, one, rdn_value
 from opsdir.core.jsondata import canonical
 from opsdir.core.naming import rdn_safe
-from .naming import IDP_ADAPTERS, SELECTORS, VALIDATORS, named
+from .naming import IDP_ADAPTERS, SELECTORS, TOKEN_MANAGERS, VALIDATORS, named
 from .objects import NOT_EXPORTED, links, merged_attrs, why_unresolved
 from .withheld import filled, withheld_settings
 
@@ -23,11 +24,14 @@ KINDS = {"validator": Kind("/passwordCredentialValidators", VALIDATORS, "passwor
                            "password credential validator"),
          "idp-adapter": Kind("/idp/adapters", IDP_ADAPTERS, "idp-adapters.json", "IdP adapter"),
          "selector": Kind("/authenticationSelectors", SELECTORS, "authentication-selectors.json",
-                          "authentication selector")}
+                          "authentication selector"),
+         "access-token-manager": Kind("/oauth/accessTokenManagers", TOKEN_MANAGERS, "access-token-managers.json",
+                                      "access token manager")}
 # settings fields whose value is another PingFederate object's id, by the field's name (PingFederate's own plugins;
 # verify against the target version, and add a custom plugin's fields here)
 REF_FIELDS = {"Password Credential Validator Instance": "validator", "LDAP Datastore": "datastore",
-              "JDBC Datastore": "datastore", "Adapter Instance": "idp-adapter"}
+              "JDBC Datastore": "datastore", "Adapter Instance": "idp-adapter",
+              "Certificate": "key-pair"}           # a JWT token manager's signing key pairs (its Certificates table)
 OWNED = ("cn", "pingfedPluginKind", "pingfedPluginType", "pingfedParent", "pingfedUses", "pingfedConfig",
          "pingfedWithheld")
 

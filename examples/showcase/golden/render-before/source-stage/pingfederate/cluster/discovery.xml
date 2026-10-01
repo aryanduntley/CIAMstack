@@ -1,0 +1,2 @@
+<!-- PingFederate cluster discovery for source/stage: the protocol element each node's server/default/conf/tcp.xml takes in place of TCPPING -->
+<org.jgroups.aws.s3.NATIVE_S3_PING region_name="us-east-1" bucket_name="example-aero-ciam-stage-pf-cluster" bucket_prefix="pingfederate"/>

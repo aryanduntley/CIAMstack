@@ -1,8 +1,8 @@
 """A PingFederate bulk export read into the record: SP and IdP connections and OAuth clients as integrations (merged
 with the record's, keeping owners, populations and claim transforms), claims linked to user-schema records, the
 certificates of PingFederate's own keys and of partners matched by fingerprint, secrets never read, data stores
-recorded (in detail: test_pingfederate_datastores), resources left for later named, importing again changing nothing,
-and the adapter's own rendered files reading back as they were."""
+recorded (in detail: test_pingfederate_datastores), every resource type of the export read, importing again changing
+nothing, and the adapter's own rendered files reading back as they were."""
 import json
 from pathlib import Path
 
@@ -106,7 +106,7 @@ def test_no_secret_is_read():
     assert "OBF:" not in dump and "not-a-real-password" not in dump
 
 
-def test_data_stores_are_recorded_and_later_resources_named():
+def test_data_stores_are_recorded_and_every_resource_read():
     d = _record()
     imported = read_export(_files(), d, ())
     after = _after(d, imported)
@@ -116,8 +116,8 @@ def test_data_stores_are_recorded_and_later_resources_named():
             "LDAP data store User directory: reaches server ds-1.internal.example.test by its hostname, not a service "
             "name (it changes when servers are replaced or moved)",
             "LDAP data store User directory: no single service name for its hosts, so it reaches the same place from "
-            "every environment",
-            "not read yet (PingFederate depth): /oauth/accessTokenManagers (1)"} <= set(imported.notices)
+            "every environment"} <= set(imported.notices)
+    assert not any(n.startswith("not read yet") for n in imported.notices)
     assert not any("ldap.example.test" in n for n in imported.notices)          # a service name: as it should be
 
 

@@ -1,0 +1,16 @@
+<!-- pf-engine-1.aws.internal.example-aero.test: JGroups stack (Example Aero, synthetic) -->
+<config xmlns="urn:org:jgroups">
+  <TCP bind_addr="${pf.cluster.bind.address}" bind_port="${pf.cluster.bind.port}" port_range="0"/>
+  <org.jgroups.aws.s3.NATIVE_S3_PING region_name="us-east-1" bucket_name="example-aero-ciam-prod-pf-cluster"
+                                     bucket_prefix="pingfederate" remove_all_data_on_view_change="true"/>
+  <MERGE3 max_interval="30000" min_interval="10000"/>
+  <FD_SOCK/>
+  <FD_ALL timeout="12000" interval="3000"/>
+  <VERIFY_SUSPECT timeout="1500"/>
+  <pbcast.NAKACK2 use_mcast_xmit="false"/>
+  <UNICAST3/>
+  <pbcast.STABLE desired_avg_gossip="50000" max_bytes="4M"/>
+  <pbcast.GMS print_local_addr="true" join_timeout="2000"/>
+  <MFC max_credits="2M" min_threshold="0.4"/>
+  <FRAG2 frag_size="60K"/>
+</config>

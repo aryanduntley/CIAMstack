@@ -1029,6 +1029,7 @@ ciamPurpose: Contact and login email
 dn: cn=mobile-ops,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamIntegration
+objectClass: pingfedClient
 cn: mobile-ops
 ciamClientId: mobile-ops
 ciamCriticality: medium
@@ -1047,6 +1048,9 @@ ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamTokenAuthMethod: none
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+pingfedUses: cn=default-jwt,ou=access-token-managers,ou=pingfederate,dc=ciam-o
+ ps
+pingfedUses: cn=default-oidc,ou=oidc-policies,ou=pingfederate,dc=ciam-ops
 xTokenLifetimeMinutes: 30
 
 dn: cn=mobile-team,ou=owners,dc=ciam-ops
@@ -1222,6 +1226,7 @@ ciamRotationDays: 180
 dn: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 objectClass: top
 objectClass: ciamCertificate
+objectClass: pingfedKeyPair
 cn: pf-signing-2025
 ciamCertPurpose: saml-signing
 ciamFingerprint: 18:50:45:3C:96:D7:6C:B8:F5:90:6A:4B:06:37:F9:99:AE:16:65:5C:A
@@ -1234,6 +1239,7 @@ ciamNotBefore: 20250701000000Z
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationRunbook: cn=WI-CIAM-010,ou=runbooks,dc=ciam-ops
 ciamSubject: CN=Example Aero SSO Signing 2025
+pingfedKeyPairId: signing-2025
 
 dn: cn=pf-signing-key,ou=credentials,dc=ciam-ops
 objectClass: top
@@ -1268,6 +1274,7 @@ ciamPurpose: Registration workflow state (pending / approved / active / disabl
 dn: cn=reports-api,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamIntegration
+objectClass: pingfedClient
 cn: reports-api
 ciamClientId: reports-api
 ciamGrantType: client_credentials
@@ -1275,6 +1282,8 @@ ciamProtocolType: oidc-client
 ciamScope: reports.read
 ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamTokenAuthMethod: client_secret_basic
+pingfedUses: cn=default-jwt,ou=access-token-managers,ou=pingfederate,dc=ciam-o
+ ps
 
 dn: cn=run.properties,ou=config-files,dc=ciam-ops
 objectClass: top
@@ -1393,6 +1402,7 @@ description: Single sign-on for customers, suppliers and partners
 dn: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 objectClass: top
 objectClass: ciamCertificate
+objectClass: pingfedKeyPair
 cn: sso-tls-2026
 ciamCertPurpose: tls-server
 ciamFingerprint: 24:1F:66:E0:87:78:48:4F:BF:6F:F4:18:9E:A7:E3:86:7F:AE:0D:35:C
@@ -1404,6 +1414,7 @@ ciamNotBefore: 20260210000000Z
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamSubject: CN=sso.example-aero.test
 ciamSubjectAltName: sso.example-aero.test
+pingfedKeyPairId: sso-tls-2026
 
 dn: cn=sso-tls-keystore,ou=credentials,dc=ciam-ops
 objectClass: top
@@ -1498,6 +1509,7 @@ xCostCenter: CC-2041
 dn: cn=tech-pubs,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamIntegration
+objectClass: pingfedClient
 cn: tech-pubs
 ciamClientId: tech-pubs-web
 ciamCriticality: high
@@ -1518,6 +1530,8 @@ ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamTokenAuthMethod: none
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+pingfedUses: cn=default-jwt,ou=access-token-managers,ou=pingfederate,dc=ciam-o
+ ps
 xTokenLifetimeMinutes: 60
 
 dn: cn=tech-pubs-team,ou=owners,dc=ciam-ops
@@ -1689,10 +1703,25 @@ ciamUnit: minutes
 ciamUsedBy: pingfederate
 ciamValueType: int
 
+dn: ou=access-token-managers,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: access-token-managers
+
+dn: ou=authentication-policies,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: authentication-policies
+
 dn: ou=connectors,ou=pingidm,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: connectors
+
+dn: ou=credential-validators,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: credential-validators
 
 dn: ou=data-stores,ou=pingfederate,dc=ciam-ops
 objectClass: top
@@ -1731,10 +1760,25 @@ objectClass: organizationalUnit
 ou: observed
 description: Read-only snapshots captured from live servers
 
+dn: ou=oidc-policies,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: oidc-policies
+
+dn: ou=policy-contracts,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: policy-contracts
+
 dn: ou=policy-sets,ou=pingam,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: policy-sets
+
+dn: ou=resources,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: resources
 
 dn: ou=routes,ou=pinggateway,dc=ciam-ops
 objectClass: top
@@ -1745,6 +1789,11 @@ dn: ou=schedules,ou=pingidm,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: schedules
+
+dn: ou=settings,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: settings
 
 dn: cn=031021627bad8f98,cn=default-atm.json,ou=config-files,dc=ciam-ops
 objectClass: top
@@ -2160,6 +2209,42 @@ ciamLocator: /data/coreOIDCConfig/jwtTokenLifetime
 ciamSettingRaw: 3600
 ciamSettingValue: 3600
 
+dn: cn=default,ou=authentication-policies,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: pingfedAuthPolicySet
+cn: default
+pingfedConfig: {"failIfNoSelection":false,"trackedHttpParameters":[]}
+
+dn: cn=default-apc,ou=policy-contracts,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: pingfedPolicyContract
+cn: default-apc
+pingfedConfig: {"coreAttributes":[{"name":"subject"}],"extendedAttributes":[{"
+ name":"mail"}],"name":"Default"}
+
+dn: cn=default-jwt,ou=access-token-managers,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: pingfedPlugin
+cn: default-jwt
+pingfedConfig: {"name":"Default JWT"}
+pingfedPluginKind: access-token-manager
+pingfedPluginType: com.pingidentity.pf.access.token.management.plugins.JwtBear
+ erAccessTokenManagementPlugin
+
+dn: cn=default-oidc,ou=oidc-policies,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: pingfedOidcPolicy
+cn: default-oidc
+pingfedConfig: {"accessTokenManagerRef":{"id":"default-jwt"},"attributeContrac
+ t":{"coreAttributes":[{"name":"sub"}],"extendedAttributes":[{"name":"email"}]
+ },"idTokenLifetime":5,"name":"Default"}
+pingfedUses: cn=default-jwt,ou=access-token-managers,ou=pingfederate,dc=ciam-o
+ ps
+
 dn: cn=e6ca05f0ac2fcd95,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops
 objectClass: top
 objectClass: ciamConfigSetting
@@ -2258,10 +2343,17 @@ objectClass: top
 objectClass: ciamObject
 objectClass: pingfedPlugin
 cn: htmlform
-pingfedConfig: {"name":"HTML Form"}
+pingfedConfig: {"attributeContract":{"coreAttributes":[{"name":"username","pse
+ udonym":true}]},"configuration":{"fields":[{"name":"Login Template","value":"
+ html.form.login.template.html"},{"name":"Allow Password Changes","value":"fal
+ se"}],"tables":[{"name":"Credential Validators","rows":[{"defaultRow":false,"
+ fields":[{"name":"Password Credential Validator Instance","value":"pcv-custom
+ ers"}]}]}]},"name":"HTML Form"}
 pingfedPluginKind: idp-adapter
 pingfedPluginType: com.pingidentity.adapters.htmlform.idp.HtmlFormIdpAuthnAdap
  ter
+pingfedUses: cn=pcv-customers,ou=credential-validators,ou=pingfederate,dc=ciam
+ -ops
 
 dn: cn=ldap,ou=connectors,ou=pingidm,dc=ciam-ops
 objectClass: top
@@ -2297,6 +2389,21 @@ pingidmPosition: 1
 pingidmSource: managed/user
 pingidmTarget: system/ldap/account
 
+dn: cn=oauth-auth-server,ou=settings,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: pingfedSettings
+cn: oauth-auth-server
+pingfedConfig: {"authorizationCodeTimeout":60,"exclusiveScopes":[],"persistent
+ GrantLifetime":-1,"scopes":[{"description":"Email address","name":"email"},{"
+ description":"Basic profile","name":"profile"},{"description":"Refresh tokens
+ ","name":"offline_access"},{"description":"Read MRO reports","name":"reports.
+ read"}]}
+pingfedScope: email
+pingfedScope: profile
+pingfedScope: offline_access
+pingfedScope: reports.read
+
 dn: cn=partner-portal,ou=routes,ou=pinggateway,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -2318,6 +2425,21 @@ pinggwIntegration: cn=partner-portal,ou=integrations,dc=ciam-ops
 pinggwIssuer: https://login.example-aero.test/am/oauth2/realms/root/realms/par
  tners
 
+dn: cn=pcv-customers,ou=credential-validators,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: pingfedPlugin
+cn: pcv-customers
+pingfedConfig: {"attributeContract":{"coreAttributes":[{"name":"DN"},{"name":"
+ username"}]},"configuration":{"fields":[{"name":"LDAP Datastore","value":"use
+ r-directory"},{"name":"Search Base","value":"ou=people,dc=partners,dc=example
+ -aero,dc=test"},{"name":"Search Filter","value":"uid=${username}"}],"tables":
+ []},"name":"Customer directory"}
+pingfedPluginKind: validator
+pingfedPluginType: org.sourceid.saml20.domain.LDAPUsernamePasswordCredentialVa
+ lidator
+pingfedUses: cn=user-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
+
 dn: cn=reconcile-hr,ou=schedules,ou=pingidm,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -2335,6 +2457,15 @@ objectClass: pingidmManagedObject
 cn: role
 pingidmPosition: 1
 pingidmSchema: {"properties":{"name":{"type":"string"}},"type":"object"}
+
+dn: cn=storage,ou=settings,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: pingfedSettings
+cn: storage
+pingfedConfig: {"clients":{"implementation":"org.sourceid.oauth20.domain.Clien
+ tManagerJdbcImpl","storage":"JDBC"},"grants":{"implementation":"org.sourceid.
+ oauth20.token.AccessGrantManagerJdbcImpl","storage":"JDBC"}}
 
 dn: cn=user,ou=managed-objects,ou=pingidm,dc=ciam-ops
 objectClass: top
@@ -2453,6 +2584,11 @@ dn: ou=replication,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: replication
+
+dn: ou=serverSettings,ou=resources,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: serverSettings
 
 dn: snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
@@ -2577,6 +2713,20 @@ objectClass: ciamClaimMap
 cn: company
 ciamClaimName: company
 ciamSourceAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
+
+dn: cn=Customers,cn=default,ou=authentication-policies,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: pingfedAuthPolicy
+cn: Customers
+pingfedEnabled: TRUE
+pingfedPolicyTree: {"action":{"authenticationSource":{"sourceRef":{"id":"htmlf
+ orm"},"type":"IDP_ADAPTER"},"type":"AUTHN_SOURCE"},"children":[{"action":{"au
+ thenticationPolicyContractRef":{"id":"default-apc"},"context":"Success","type
+ ":"APC_MAPPING"}},{"action":{"context":"Fail","type":"DONE"}}]}
+pingfedPosition: 0
+pingfedUses: cn=htmlform,ou=idp-adapters,ou=pingfederate,dc=ciam-ops
+pingfedUses: cn=default-apc,ou=policy-contracts,ou=pingfederate,dc=ciam-ops
 
 dn: cn=customers,ou=password-policies,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
@@ -2937,6 +3087,7 @@ pingamTreeConfig: {"description":"Partner staff sign-in with an emailed one-ti
 dn: cn=pf-admin-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
+objectClass: pingfedNode
 cn: pf-admin-1
 ciamHostname: pf-admin-1.aws.internal.example-aero.test
 ciamImageRef: ami-0fedcba9876543210
@@ -2948,6 +3099,12 @@ ciamServerRole: pf-admin
 ciamSubnet: cn=subnet-pf-a,ou=bindings,env=prod,cloud=source,ou=environments,d
  c=ciam-ops
 ciamZone: us-east-1a
+pingfedConfig: {"pf.cluster.bind.address":"10.20.4.10","pf.cluster.transport.p
+ rotocol":"tcp","pf.log.eventdetail":"false"}
+pingfedDiscovery: NATIVE_S3_PING
+pingfedListener: admin=9999
+pingfedListener: cluster=7600
+pingfedOperationalMode: CLUSTERED_CONSOLE
 
 dn: cn=pf-admin-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -2984,6 +3141,7 @@ ciamZone: us-east-1a
 dn: cn=pf-engine-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
+objectClass: pingfedNode
 cn: pf-engine-1
 ciamHostname: pf-engine-1.aws.internal.example-aero.test
 ciamImageRef: ami-0fedcba9876543210
@@ -2995,6 +3153,13 @@ ciamServerRole: pf-engine
 ciamSubnet: cn=subnet-pf-a,ou=bindings,env=prod,cloud=source,ou=environments,d
  c=ciam-ops
 ciamZone: us-east-1a
+pingfedConfig: {"pf.cluster.bind.address":"10.20.4.21","pf.cluster.transport.p
+ rotocol":"tcp","pf.log.eventdetail":"false"}
+pingfedDiscovery: NATIVE_S3_PING
+pingfedListener: runtime=9031
+pingfedListener: cluster=7600
+pingfedNodeTags: us-east-1a
+pingfedOperationalMode: CLUSTERED_ENGINE
 
 dn: cn=pf-engine-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -3016,6 +3181,7 @@ ciamZone: 1
 dn: cn=pf-engine-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
+objectClass: pingfedNode
 cn: pf-engine-2
 ciamHostname: pf-engine-2.aws.internal.example-aero.test
 ciamImageRef: ami-0fedcba9876543210
@@ -3027,6 +3193,13 @@ ciamServerRole: pf-engine
 ciamSubnet: cn=subnet-pf-b,ou=bindings,env=prod,cloud=source,ou=environments,d
  c=ciam-ops
 ciamZone: us-east-1b
+pingfedConfig: {"pf.cluster.bind.address":"10.20.5.21","pf.cluster.transport.p
+ rotocol":"tcp","pf.log.eventdetail":"false"}
+pingfedDiscovery: NATIVE_S3_PING
+pingfedListener: runtime=9031
+pingfedListener: cluster=7600
+pingfedNodeTags: us-east-1b
+pingfedOperationalMode: CLUSTERED_ENGINE
 
 dn: cn=pf-engine-2,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -3089,6 +3262,16 @@ cn: service-accounts
 ciamLockoutFailureCount: 0
 ciamPasswordHistoryCount: 0
 ciamStorageScheme: PBKDF2-HMAC-SHA512
+
+dn: cn=settings,ou=serverSettings,ou=resources,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: pingfedResource
+cn: settings
+pingfedConfig: {"contactInfo":{"company":"Example Aero","email":"ciam-platform
+ @example-aero.test"},"rolesAndProtocols":{"oauthRole":{"enableOauth":true,"en
+ ableOpenIdConnect":true}}}
+pingfedResourceType: /serverSettings
 
 dn: cn=sold_to,ou=claims,cn=supplier-portal,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -4030,6 +4213,23 @@ pingamPolicyConfig: {"actionValues":{"GET":true,"POST":true},"active":true,"co
  ndition":{"authLevel":2,"type":"AuthLevel"},"description":"Partner staff who 
  signed in with a one-time code may use the partner portal","resources":["http
  s://partners.example-aero.test/*"],"subject":{"type":"AuthenticatedUsers"}}
+
+dn: cn=pf-discovery,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamBackupTarget
+cn: pf-discovery
+ciamBindingRole: pf-cluster-discovery
+ciamStorageRef: s3://example-aero-ciam-prod-pf-cluster
+description: PingFederate cluster discovery (NATIVE_S3_PING / AZURE_PING stora
+ ge)
+
+dn: cn=pf-discovery,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamBackupTarget
+cn: pf-discovery
+ciamBindingRole: pf-cluster-discovery
+ciamStorageRef: s3://example-aero-ciam-stage-pf-cluster
+description: Stage's own PingFederate cluster discovery: never prod's
 
 dn: cn=provider,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top

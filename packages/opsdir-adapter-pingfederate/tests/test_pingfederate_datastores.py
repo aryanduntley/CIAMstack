@@ -91,7 +91,7 @@ def records():
 def imported(changes=(), files=None):
     """(the record after importing (then the changes), the import's change records, notices)."""
     base = build_directory(REGISTRY, records())
-    import_changes, notices = preview_import(base, "pingfederate", files or export(), (ADAPTER,))
+    import_changes, notices = preview_import(base, "pingfederate/bulk", files or export(), (ADAPTER,))
     return build_directory(REGISTRY, records(), (*import_changes, *changes)), import_changes, notices
 
 
@@ -179,7 +179,7 @@ def test_no_data_stores_render_nothing():
 def test_what_it_renders_imports_back_unchanged(env):
     d, _, _ = imported(SET_ROLE)
     rendered = {p[len("pingfederate/"):]: t for p, t in render_env(env_model(d, env), None).items()}
-    again, _ = preview_import(d, "pingfederate", rendered, (ADAPTER,))
+    again, _ = preview_import(d, "pingfederate/bulk", rendered, (ADAPTER,))
     assert again == ()
 
 

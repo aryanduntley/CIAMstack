@@ -79,6 +79,42 @@
           "name": "HTML Form",
           "pluginDescriptorRef": {
             "id": "com.pingidentity.adapters.htmlform.idp.HtmlFormIdpAuthnAdapter"
+          },
+          "configuration": {
+            "tables": [
+              {
+                "name": "Credential Validators",
+                "rows": [
+                  {
+                    "defaultRow": false,
+                    "fields": [
+                      {
+                        "name": "Password Credential Validator Instance",
+                        "value": "pcv-customers"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "fields": [
+              {
+                "name": "Login Template",
+                "value": "html.form.login.template.html"
+              },
+              {
+                "name": "Allow Password Changes",
+                "value": "false"
+              }
+            ]
+          },
+          "attributeContract": {
+            "coreAttributes": [
+              {
+                "name": "username",
+                "pseudonym": true
+              }
+            ]
           }
         }
       ]
@@ -473,6 +509,11 @@
           ],
           "defaultAccessTokenManagerRef": {
             "id": "default-jwt"
+          },
+          "oidcPolicy": {
+            "policyGroup": {
+              "id": "default-oidc"
+            }
           }
         },
         {
@@ -517,6 +558,183 @@
           },
           "defaultAccessTokenManagerRef": {
             "id": "default-jwt"
+          }
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/passwordCredentialValidators",
+      "items": [
+        {
+          "id": "pcv-customers",
+          "name": "Customer directory",
+          "pluginDescriptorRef": {
+            "id": "org.sourceid.saml20.domain.LDAPUsernamePasswordCredentialValidator"
+          },
+          "configuration": {
+            "tables": [],
+            "fields": [
+              {
+                "name": "LDAP Datastore",
+                "value": "user-directory"
+              },
+              {
+                "name": "Search Base",
+                "value": "ou=people,dc=partners,dc=example-aero,dc=test"
+              },
+              {
+                "name": "Search Filter",
+                "value": "uid=${username}"
+              }
+            ]
+          },
+          "attributeContract": {
+            "coreAttributes": [
+              {
+                "name": "DN"
+              },
+              {
+                "name": "username"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/authenticationPolicyContracts",
+      "items": [
+        {
+          "id": "default-apc",
+          "name": "Default",
+          "coreAttributes": [
+            {
+              "name": "subject"
+            }
+          ],
+          "extendedAttributes": [
+            {
+              "name": "mail"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/authenticationPolicies/default",
+      "items": [
+        {
+          "failIfNoSelection": false,
+          "trackedHttpParameters": [],
+          "authnSelectionTrees": [
+            {
+              "name": "Customers",
+              "enabled": true,
+              "rootNode": {
+                "action": {
+                  "type": "AUTHN_SOURCE",
+                  "authenticationSource": {
+                    "type": "IDP_ADAPTER",
+                    "sourceRef": {
+                      "id": "htmlform"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "action": {
+                      "type": "APC_MAPPING",
+                      "context": "Success",
+                      "authenticationPolicyContractRef": {
+                        "id": "default-apc"
+                      }
+                    }
+                  },
+                  {
+                    "action": {
+                      "type": "DONE",
+                      "context": "Fail"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/oauth/openIdConnect/policies",
+      "items": [
+        {
+          "id": "default-oidc",
+          "name": "Default",
+          "accessTokenManagerRef": {
+            "id": "default-jwt"
+          },
+          "idTokenLifetime": 5,
+          "attributeContract": {
+            "coreAttributes": [
+              {
+                "name": "sub"
+              }
+            ],
+            "extendedAttributes": [
+              {
+                "name": "email"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/oauth/authServerSettings",
+      "items": [
+        {
+          "scopes": [
+            {
+              "name": "email",
+              "description": "Email address"
+            },
+            {
+              "name": "profile",
+              "description": "Basic profile"
+            },
+            {
+              "name": "offline_access",
+              "description": "Refresh tokens"
+            },
+            {
+              "name": "reports.read",
+              "description": "Read MRO reports"
+            }
+          ],
+          "exclusiveScopes": [],
+          "authorizationCodeTimeout": 60,
+          "persistentGrantLifetime": -1
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/serverSettings",
+      "items": [
+        {
+          "contactInfo": {
+            "company": "Example Aero",
+            "email": "ciam-platform@example-aero.test"
+          },
+          "rolesAndProtocols": {
+            "oauthRole": {
+              "enableOauth": true,
+              "enableOpenIdConnect": true
+            }
           }
         }
       ]

@@ -16,7 +16,7 @@ from opsdir.core.interchange.ldif import parse
 from opsdir.core.standard import registry_ldif
 from opsdir.domains.federation.naming import INTEGRATIONS
 from opsdir_adapter_pingfederate.adapter import ADAPTER
-from opsdir_adapter_pingfederate.checks import check_authentication
+from opsdir_adapter_pingfederate.checks import check_references
 from opsdir_adapter_pingfederate.naming import (CONTRACTS, DATA_STORES, DEFAULT_POLICY, FRAGMENTS, IDP_ADAPTERS,
                                                 SELECTORS, VALIDATORS, named)
 from opsdir_adapter_pingfederate.render import render_env, render_neutral
@@ -108,7 +108,7 @@ def records(extra=""):
 def imported(changes=(), files=None, extra=""):
     """(the record (with extra LDIF) after importing (then the changes), the import's change records, notices)."""
     base = build_directory(REGISTRY, records(extra))
-    import_changes, notices = preview_import(base, "pingfederate", files or export(), (ADAPTER,))
+    import_changes, notices = preview_import(base, "pingfederate/bulk", files or export(), (ADAPTER,))
     return build_directory(REGISTRY, records(extra), (*import_changes, *changes)), import_changes, notices
 
 
@@ -168,7 +168,7 @@ def test_contracts_and_fragments(after):
 
 def test_a_tree_the_export_no_longer_has_is_removed():
     d, first, _ = imported()
-    second, _ = preview_import(d, "pingfederate", export({**POLICY, "authnSelectionTrees": [WORKFORCE]}), (ADAPTER,))
+    second, _ = preview_import(d, "pingfederate/bulk", export({**POLICY, "authnSelectionTrees": [WORKFORCE]}), (ADAPTER,))
     again = build_directory(REGISTRY, records(), (*first, *second))
     assert get(again, named(DEFAULT_POLICY, "Legacy")) is None and get(again, named(DEFAULT_POLICY, "Workforce"))
 
@@ -195,12 +195,12 @@ def test_what_it_renders_imports_back_unchanged(env):
     d, _, _ = imported(SET_DUO_ROLE)
     files = {**render_neutral(d), **render_env(env_model(d, env), None)}
     rendered = {p[len("pingfederate/"):]: t for p, t in files.items() if p.startswith("pingfederate/")}
-    again, _ = preview_import(d, "pingfederate", rendered, (ADAPTER,))
+    again, _ = preview_import(d, "pingfederate/bulk", rendered, (ADAPTER,))
     assert again == ()
 
 
 def plan(d, dst="beta/prod"):
-    return check_authentication(PlanContext(d, env_model(d, "alpha/prod"), env_model(d, dst), None,
+    return check_references(PlanContext(d, env_model(d, "alpha/prod"), env_model(d, dst), None,
                                             dt.date(2026, 10, 1), {}, {}, ()))
 
 
@@ -219,8 +219,8 @@ def test_the_planner_names_what_is_missing_and_what_the_target_lacks():
 def test_a_policy_naming_only_what_the_record_has_is_ok():
     d, _, _ = imported(SET_DUO_ROLE, export({**POLICY, "authnSelectionTrees": [WORKFORCE, PARTNERS]}))
     f = plan(d, "alpha/prod")
-    assert (f.blockers, f.ok) == ((), ("PingFederate's 5 plugin instance(s) and 2 authentication policy tree(s) name "
-                                       "only what the record has.",))
+    assert (f.blockers, f.ok) == ((), ("PingFederate's 5 plugin instance(s), 2 authentication policy tree(s) and 0 "
+                                       "OIDC policy(-ies) name only what the record has.",))
 
 
 # An IdP connection a policy tree authenticates through is the partner integration carrying PingFederate's id for it
@@ -255,7 +255,7 @@ def test_an_idp_connection_id_two_integrations_claim_resolves_to_neither():
                         "ciamProtocolType: saml2-idp\nciamEntityId: https://copy.example/okta\n"
                         "pingfedConnectionId: acme-okta\n"))
     d, _, _ = imported((*SET_DUO_ROLE, *claim))
-    assert "Authentication policy `Partners` names IdP connection `acme-okta`, which 2 integrations claim (acme-copy, " \
+    assert "Authentication policy `Partners` names IdP connection `acme-okta`, which 2 entries claim (acme-copy, " \
            "acme-okta): exactly one may carry its id, so the record must give it to one." in \
         [t for _, t, _ in plan(d, "alpha/prod").blockers]
 

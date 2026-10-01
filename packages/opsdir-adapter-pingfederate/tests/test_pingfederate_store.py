@@ -78,7 +78,7 @@ def conn():
 
 
 def test_a_bulk_export_is_imported_under_a_change_and_again_changes_nothing(conn):
-    preview = ops.preview_import(conn, "pingfederate", files_of(EXPORT))
+    preview = ops.preview_import(conn, "pingfederate/bulk", files_of(EXPORT))
     assert ops.apply_preview(conn, preview, "CHG-PF-1").lines
     kinds = dict(conn.execute("select attrs->'ciamProtocolType'->>0, count(*) from opsdir.entry "
                               "where 'ciamIntegration' = any (object_classes) group by 1").fetchall())
@@ -87,4 +87,4 @@ def test_a_bulk_export_is_imported_under_a_change_and_again_changes_nothing(conn
     assert certs == 3
     dump = str(conn.execute("select jsonb_agg(attrs) from opsdir.entry").fetchone()[0])
     assert "OBF:" not in dump
-    assert ops.preview_import(conn, "pingfederate", files_of(EXPORT)).changes == ()
+    assert ops.preview_import(conn, "pingfederate/bulk", files_of(EXPORT)).changes == ()

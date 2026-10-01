@@ -1,0 +1,22 @@
+[
+  {
+    "id": "default-oidc",
+    "accessTokenManagerRef": {
+      "id": "default-jwt"
+    },
+    "attributeContract": {
+      "coreAttributes": [
+        {
+          "name": "sub"
+        }
+      ],
+      "extendedAttributes": [
+        {
+          "name": "email"
+        }
+      ]
+    },
+    "idTokenLifetime": 5,
+    "name": "Default"
+  }
+]

@@ -18,7 +18,8 @@ servers' logs/ directories, in any layout.
 import re
 
 from opsdir.core.contract import Imported, Importer
-from opsdir.core.directory import get, make_entry, norm_dn, one, rdn_value
+from opsdir.core.directory import get, make_entry, norm_dn, rdn_value
+from opsdir.core.environment import server_location, server_named
 from opsdir.domains.directory.drift import latest_snapshots
 from opsdir.domains.directory.naming import CONFIG, CONSUMERS, DECLARED, DIRECTORY_SERVER_ROLE, OBSERVED
 from .access_log import read_access_logs
@@ -37,28 +38,9 @@ def _stamp(at):
 
 
 # ------------------------------------------------------------------ which server a folder is
-def _ds_servers(d):
-    return tuple(e for e in d.entries.values() if "ciamServer" in e.classes
-                 and one(e, "ciamServerRole") == DIRECTORY_SERVER_ROLE)
-
-
-def _where(server):
-    """'cloud/env' of a server entry."""
-    parts = dict(p.split("=", 1) for p in server.dn.split(",")[1:3])
-    return f"{parts.get('cloud')}/{parts.get('env')}"
-
-
 def _server_named(d, name):
     """(server entry, None), or (None, why not) for a folder name or server ID."""
-    wanted = name.lower()
-    by_host = tuple(s for s in _ds_servers(d) if (one(s, "ciamHostname") or "").lower() == wanted)
-    found = by_host or tuple(s for s in _ds_servers(d) if rdn_value(s).lower() == wanted)
-    if len(found) == 1:
-        return found[0], None
-    if not found:
-        return None, f"{name}: no directory server in the record has this hostname or name; not imported"
-    return None, (f"{name}: names directory servers in several environments ({', '.join(_where(s) for s in found)}); "
-                  f"name the folder by the server's hostname; not imported")
+    return server_named(d, name, (DIRECTORY_SERVER_ROLE,), "directory server")
 
 
 def _folders(files):
@@ -87,7 +69,7 @@ def _placed(d, folder, inside):
 
 # ------------------------------------------------------------------ snapshots
 def _snap_name(server, stamp):
-    cloud_env = _where(server).replace("/", "-")
+    cloud_env = server_location(server).replace("/", "-")
     return f"{cloud_env}-{rdn_value(server)}-{stamp}"
 
 
@@ -97,7 +79,7 @@ def _snapshot(product, d, server, stamp, text, description):
     dn = f"snap={name},{OBSERVED}"
     head = make_entry(dn, ("top", "ciamSnapshot"), {"snap": (name,), "ciamServerRef": (server.dn,),
                                                     "ciamCapturedAt": (stamp,), "description": (description,)})
-    entries, notices = config_entries(product, d, text, dn, f"{_where(server)} {rdn_value(server)}")
+    entries, notices = config_entries(product, d, text, dn, f"{server_location(server)} {rdn_value(server)}")
     return dn, (head, *entries), notices
 
 
@@ -124,7 +106,7 @@ def _current(product, d, server, text, at):
     scope, entries, notices = _snapshot(product, d, server, _stamp(at), text, "config.ldif, imported")
     same = _unchanged(d, server, scope, entries)
     if same is not None:
-        return (), (*notices, f"{_where(server)} {rdn_value(server)}: configuration unchanged since snapshot "
+        return (), (*notices, f"{server_location(server)} {rdn_value(server)}: configuration unchanged since snapshot "
                               f"{rdn_value(same)}; no new snapshot")
     return ((scope, entries),), notices
 

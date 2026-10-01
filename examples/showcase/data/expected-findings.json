@@ -84,6 +84,13 @@
       "match": "Data store `user-directory` has withheld credentials but no credential role",
       "planted": "imported directory data store names no secret",
       "cleared_by": "CHG-2005"
+    },
+    {
+      "id": "B13",
+      "area": "Binding",
+      "match": "Role `pf-cluster-discovery`",
+      "planted": "the target binds no PingFederate cluster discovery: the nodes' tcp.xml uses S3 on AWS",
+      "cleared_by": null
     }
   ],
   "actions": [

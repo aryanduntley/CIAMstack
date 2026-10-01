@@ -20,6 +20,14 @@
       "email",
       "offline_access"
     ],
+    "defaultAccessTokenManagerRef": {
+      "id": "default-jwt"
+    },
+    "oidcPolicy": {
+      "policyGroup": {
+        "id": "default-oidc"
+      }
+    },
     "x-opsdir": {
       "claims": {
         "email": {
@@ -66,6 +74,9 @@
     "restrictedScopes": [
       "reports.read"
     ],
+    "defaultAccessTokenManagerRef": {
+      "id": "default-jwt"
+    },
     "x-opsdir": {
       "claims": {},
       "mfaRequired": false,
@@ -93,6 +104,9 @@
       "profile",
       "email"
     ],
+    "defaultAccessTokenManagerRef": {
+      "id": "default-jwt"
+    },
     "x-opsdir": {
       "claims": {
         "email": {

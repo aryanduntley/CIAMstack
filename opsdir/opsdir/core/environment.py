@@ -84,6 +84,28 @@ def published_role(d, host):
     return next((one(b, "ciamBindingRole") for b in names), None)
 
 
+def server_location(server):
+    """'cloud/env' of a server entry."""
+    parts = dict(p.split("=", 1) for p in server.dn.split(",")[1:3])
+    return f"{parts.get('cloud')}/{parts.get('env')}"
+
+
+def server_named(d, name, roles, what):
+    """(server entry, None), or (None, why not): the one server of these roles whose hostname is name, else whose
+    record name is (case-insensitive): how an importer of servers' own files places a folder named by its server.
+    what: the servers in words ('directory server')."""
+    servers = tuple(e for e in d.entries.values() if "ciamServer" in e.classes and one(e, "ciamServerRole") in roles)
+    wanted = name.lower()
+    found = tuple(s for s in servers if (one(s, "ciamHostname") or "").lower() == wanted) or \
+        tuple(s for s in servers if rdn_value(s).lower() == wanted)
+    if len(found) == 1:
+        return found[0], None
+    if not found:
+        return None, f"{name}: no {what} in the record has this hostname or name; not imported"
+    return None, (f"{name}: names {what}s in several environments ({', '.join(server_location(s) for s in found)}); "
+                  f"name the folder by the server's hostname; not imported")
+
+
 def by_role(m, role):
     return _with_role(m.bindings, role)
 

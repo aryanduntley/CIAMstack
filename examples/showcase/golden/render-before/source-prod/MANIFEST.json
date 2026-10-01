@@ -164,6 +164,31 @@
       "format": "json",
       "sha256": "a334487beac8c8897703a40a7983df76743ebbce03efd0f131eb78cf191743df"
     },
+    "pingfederate/access-token-managers.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "7067bac30d836172489d77aba371e4d542812b54e248da80dd479f66be73654c"
+    },
+    "pingfederate/auth-server-settings.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "153cbf990240295ae02df11d5a6f6c1ca911f3bd4aeb9dde608af6ce63364ae5"
+    },
+    "pingfederate/authentication-policies.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "1623a6a79f99247a258d926d8ec62fb3d17b29a3c61d08cabf26f67c1fa211aa"
+    },
+    "pingfederate/authentication-policy-contracts.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "0e524f18a93aa510c329fd7394991ddab3f666fbf16476c487c54a6175265e5e"
+    },
+    "pingfederate/cluster/discovery.xml": {
+      "scope": "environment-specific",
+      "format": "xml",
+      "sha256": "1212e44ab8ed0b29eb2e82f7f960340f840fbc3bf2445e3eef8c51046667c89e"
+    },
     "pingfederate/data-stores.json": {
       "scope": "environment-specific",
       "format": "json",
@@ -172,7 +197,7 @@
     "pingfederate/idp-adapters.json": {
       "scope": "environment-specific",
       "format": "json",
-      "sha256": "7e288ebee52fc277961dbeff53c867212d164ddce45a88cd86cbac4cdc7fea01"
+      "sha256": "465041765f6361e825dff9a7a5823d816a5621cd27fc060a86d14b10bee101c5"
     },
     "pingfederate/idp-connections.json": {
       "scope": "environment-neutral",
@@ -182,7 +207,22 @@
     "pingfederate/oidc-clients.json": {
       "scope": "environment-neutral",
       "format": "json",
-      "sha256": "f6d24c3cd2578a1730505188dfa544d88372a633b86e0a5b63eab945ba2c1747"
+      "sha256": "9916e05b722f67db0e8fd449a47e9000f0e597630021df4c7091778d426444eb"
+    },
+    "pingfederate/oidc-policies.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "2284c732e9f2ebd13e15a700ae86717cbb2c1da8d8d39c4c548e8a3d9b85c9ce"
+    },
+    "pingfederate/other-resources.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "7a37deaa4c8ab8e76de8f4679124c2a9bfd767ba6cdf96e57cf29d327287d6eb"
+    },
+    "pingfederate/password-credential-validators.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "137dcd19c382a0a1e3a79d16b27d4a8d00504748a8f3f1a70ca04654dce8f552"
     },
     "pingfederate/sp-connections.json": {
       "scope": "environment-neutral",

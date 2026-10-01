@@ -1,5 +1,5 @@
 Expected findings check (after changes)
-  blockers planted 12   expected now  6   detected  6   missed 0   unexpected 0
+  blockers planted 13   expected now  7   detected  7   missed 0   unexpected 0
            B1   cleared by CHG-2003: the target environment binds a new LDAPS name (landing-zone DNS default) → gone
            B4   cleared by CHG-2001: no target firewall rule for the MRO export → gone
            B9   cleared by CHG-2005: imported HR database connector names no secret → gone

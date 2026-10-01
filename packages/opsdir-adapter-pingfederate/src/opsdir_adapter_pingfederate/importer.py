@@ -12,7 +12,11 @@ render reads back as it was.
                                      (auxiliary class pingfedConnection: what authentication policies name it by)
   /oauth/clients                  -> OAuth/OIDC clients (oidc-client integrations): client ID, redirect URIs, grant
                                      types, PKCE, token endpoint authentication, restricted scopes
-  /keyPairs/signing, /sslServer   -> certificate facts of PingFederate's own keys (never the keys)
+  /keyPairs/signing, /sslServer   -> certificate facts of PingFederate's own keys (never the keys), carrying the key
+                                     pair's id (pingfedKeyPair: what token managers sign with)
+  /oauth/accessTokenManagers,      -> access token managers (plugins), OIDC policies, the authorization server's
+    /oauth/openIdConnect/policies,    settings (opsdir_adapter_pingfederate.oauth); a client is linked to the token
+    /oauth/authServerSettings         manager and OIDC policy it names
   /dataStores                     -> data stores (pingfedDataStore, opsdir_adapter_pingfederate.datastores): hosts that
                                      are a service name become its role, the bind account its consumer record,
                                      credentials withheld
@@ -31,7 +35,6 @@ Adapters, token managers, policies and where clients, grants and sessions are st
 import datetime as dt
 import json
 import re
-from collections import Counter
 from functools import reduce
 
 from opsdir.core.contract import Imported, Importer
@@ -41,23 +44,29 @@ from opsdir.domains.federation.naming import INTEGRATIONS
 from opsdir.domains.federation.services import identity_services, integrations
 from opsdir.domains.pki.naming import CERTIFICATES
 from .datastores import data_store_groups
-from .naming import (CONTRACTS, DATA_STORES, FRAGMENTS, IDP_ADAPTERS, PINGFEDERATE, POLICIES, SELECTORS,
-                     VALIDATORS)
-from .objects import CONNECTION, ref_dn
+from .naming import (CONTRACTS, DATA_STORES, FRAGMENTS, IDP_ADAPTERS, OIDC_POLICIES, PINGFEDERATE, POLICIES,
+                     SELECTORS, SETTINGS, TOKEN_MANAGERS, VALIDATORS)
+from .generic import resource_groups
+from .naming import RESOURCES as RESOURCES_BRANCH, STORAGE
+from .oauth import client_links, oauth_groups
+from .objects import CONNECTION, KEY_PAIR, ref_dn
 from .plugins import KINDS, plugin_groups
 from .policies import policy_groups
-from .render import BINDINGS, CLIENT_AUTH, GRANT_TYPES, SERVER_ROLES
+from .naming import SERVER_ROLES
+from .render import BINDINGS, CLIENT_AUTH, GRANT_TYPES
 
 RESOURCES = {"/idp/spConnections": "sp", "/sp/idpConnections": "idp", "/oauth/clients": "client",
              "/keyPairs/signing": "signing", "/keyPairs/sslServer": "ssl", "/dataStores": "datastore",
              **{k.resource: kind for kind, k in KINDS.items()}, "/authenticationPolicyContracts": "contract",
-             "/authenticationPolicies/default": "policy", "/authenticationPolicies/fragments": "fragment"}
+             "/authenticationPolicies/default": "policy", "/authenticationPolicies/fragments": "fragment",
+             "/oauth/openIdConnect/policies": "oidc-policy", "/oauth/authServerSettings": "auth-server"}
 RENDERED = {"sp-connections.json": "sp", "idp-connections.json": "idp", "oidc-clients.json": "client",
             "data-stores.json": "datastore", **{k.output: kind for kind, k in KINDS.items()},
             "authentication-policy-contracts.json": "contract", "authentication-policies.json": "policy",
-            "authentication-policy-fragments.json": "fragment"}
+            "authentication-policy-fragments.json": "fragment", "oidc-policies.json": "oidc-policy",
+            "auth-server-settings.json": "auth-server"}
 # the kinds of objects other objects name by id (opsdir_adapter_pingfederate.objects)
-NAMED_KINDS = ("datastore", *KINDS, "contract", "fragment")
+NAMED_KINDS = ("datastore", *KINDS, "contract", "fragment", "oidc-policy")
 KEY_ROLES = {"signing": ("saml-signing", "pf-signing-key"), "ssl": ("tls-server", "sso-tls-keystore")}
 OWNED = {"saml2-sp": ("ciamProtocolType", "ciamEntityId", "ciamAcsUrl", "ciamSamlBinding"),
          "saml2-idp": ("ciamProtocolType", "ciamEntityId"),
@@ -85,7 +94,7 @@ def _json(text):
 
 
 def resources(files):
-    """({kind: items}, {resource type not read: count}, PingFederate version, unreadable paths) from the export."""
+    """({kind: items}, {resource type not modeled: items}, PingFederate version, unreadable paths) from the export."""
     parsed = {p: _json(t) for p, t in files.items() if p.endswith(".json")}
     bulk = [op for doc in parsed.values() if isinstance(doc, dict)
             for op in doc.get("operations") or () if isinstance(op, dict)]
@@ -95,7 +104,10 @@ def resources(files):
              for item in op.get("items") or ())
     pairs = [(k, i) for k, i in (*found, *rendered) if k and isinstance(i, dict)]
     return ({kind: tuple(i for k, i in pairs if k == kind) for kind in (*RESOURCES.values(),)},
-            Counter(op.get("resourceType") for op in bulk if op.get("resourceType") not in RESOURCES),
+            {t: tuple(i for op in bulk if op.get("resourceType") == t and op.get("operationType", "SAVE") == "SAVE"
+                      for i in op.get("items") or () if isinstance(i, dict))
+             for t in dict.fromkeys(op.get("resourceType") for op in bulk)
+             if isinstance(t, str) and t not in RESOURCES},
             next((doc["metadata"].get("pfVersion") for doc in parsed.values()
                   if isinstance(doc, dict) and isinstance(doc.get("metadata"), dict)), None),
             tuple(p for p, doc in parsed.items() if doc is None))
@@ -145,37 +157,42 @@ def _cert_facts(view):
             "ciamSubjectAltName": tuple(view.get("subjectAlternativeNames") or ())}
 
 
-def _certificate(d, held, facts, name, purpose, key_role=None):
+def _certificate(d, held, facts, name, purpose, key_role=None, key_pair=None):
     """The certificate entry: the record's (by fingerprint) with the facts the export gives replacing its own (facts it
-    doesn't give are kept), or a new one."""
+    doesn't give are kept), or a new one; key_pair: the id of the PingFederate key pair it is the certificate of."""
+    facts = {**facts, **({"pingfedKeyPairId": (key_pair,)} if key_pair else {})}
+    aux = ("pingfedKeyPair",) if key_pair else ()
     given = same_order(held, {k: v for k, v in facts.items() if v})
     if held is not None:
-        return make_entry(held.dn, held.classes, {**{k: v for k, v in held.attrs.items() if k not in given}, **given})
-    return make_entry(f"cn={name},{CERTIFICATES}", ("top", "ciamCertificate"),
+        return make_entry(held.dn, tuple(dict.fromkeys((*held.classes, *aux))),
+                          {**{k: v for k, v in held.attrs.items() if k not in given}, **given})
+    return make_entry(f"cn={name},{CERTIFICATES}", ("top", "ciamCertificate", *aux),
                       {"cn": (name,), "ciamCertPurpose": (purpose,), **({"ciamKeyRole": (key_role,)} if key_role else {}),
                        **{k: v for k, v in facts.items() if v}})
 
 
 def certificate_entries(d, found):
-    """{fingerprint: certificate entry} for PingFederate's own key pairs and the certificates of its connections (a
-    partner identity provider's signing certificates; a service provider's own signing or encryption certificates)."""
+    """{fingerprint: certificate entry} for PingFederate's own key pairs (carrying the key pair's id: pingfedKeyPair)
+    and the certificates of its connections (a partner identity provider's signing certificates; a service provider's
+    own signing or encryption certificates)."""
     held = {fingerprint(one(c, "ciamFingerprint")): c for c in children(d, CERTIFICATES, "ciamCertificate")}
-    views = (*((kp, *KEY_ROLES[kind], f"pf-{kp.get('id')}") for kind in ("signing", "ssl") for kp in found[kind]),
-             *((c.get("certView") or {}, "partner-signing", None, f"{conn.get('id') or conn.get('name')}-signing")
+    views = (*((kp, *KEY_ROLES[kind], f"pf-{kp.get('id')}", kp.get("id")) for kind in ("signing", "ssl")
+               for kp in found[kind]),
+             *((c.get("certView") or {}, "partner-signing", None, f"{conn.get('id') or conn.get('name')}-signing", None)
                for conn in found["idp"] for c in ((conn.get("credentials") or {}).get("certs") or ())
                if not c.get("encryptionCert")),
              *((c.get("certView") or {}, "saml-encryption" if c.get("encryptionCert") else "saml-signing", None,
-                f"{conn.get('id') or conn.get('name')}-sp-{'encryption' if c.get('encryptionCert') else 'signing'}")
+                f"{conn.get('id') or conn.get('name')}-sp-{'encryption' if c.get('encryptionCert') else 'signing'}", None)
                for conn in found["sp"] for c in ((conn.get("credentials") or {}).get("certs") or ())))
-    facts = [(f, purpose, role, name) for view, purpose, role, name in views for f in (_cert_facts(view),) if f]
+    facts = [(f, purpose, role, name, kp) for view, purpose, role, name, kp in views for f in (_cert_facts(view),) if f]
 
     def add(made, fact):
-        f, purpose, role, name = fact
+        f, purpose, role, name, kp = fact
         fp = f["ciamFingerprint"][0]
         if fp in made:
             return made
         taken = {one(c, "cn").lower() for c in (*held.values(), *made.values())}
-        return {**made, fp: _certificate(d, held.get(fp), f, _name(name, taken), purpose, role)}
+        return {**made, fp: _certificate(d, held.get(fp), f, _name(name, taken), purpose, role, kp)}
     return reduce(add, facts, {})
 
 
@@ -272,7 +289,7 @@ def _idp(d, idp, certs, held, dn, name, served):
             *_others(d, dn, held, ())), ()
 
 
-def _client(d, client, held, dn, name, served):
+def _client(d, client, held, dn, name, served, exported):
     grants, odd_grants = _standard(client.get("grantTypes") or (), PF_GRANTS, values(held, "ciamGrantType") if held else ())
     auth_type = (client.get("clientAuth") or {}).get("type")
     auth, _ = _standard([auth_type] if auth_type else [], PF_AUTH, values(held, "ciamTokenAuthMethod") if held else ())
@@ -280,18 +297,21 @@ def _client(d, client, held, dn, name, served):
                 "ciamGrantType": grants, "ciamTokenAuthMethod": auth[:1],
                 "ciamPkceRequired": ("TRUE",) if client.get("requireProofKeyForCodeExchange") else (),
                 "ciamScope": tuple(client.get("restrictedScopes") or ()) if client.get("restrictScopes") else ()}
-    entry = _merged(held, dn, name, "oidc-client", imported, OWNED["oidc-client"], served)
+    uses, unlinked = client_links(d, client, exported)
+    entry = _merged(held, dn, name, "oidc-client", {**imported, "pingfedUses": uses},
+                    (*OWNED["oidc-client"], "pingfedUses"), served, ("pingfedClient",) if uses else ())
     secret = client.get("clientAuth") or {}
-    notices = (*((f"client {client.get('clientId')}: grant types with no single standard name, not recorded: "
+    notices = (*unlinked, *((f"client {client.get('clientId')}: grant types with no single standard name, not recorded: "
                   f"{', '.join(odd_grants)}",) if odd_grants else ()),
                *((f"client {client.get('clientId')}: its secret is not imported; each environment binds it",)
                  if secret.get("secret") or secret.get("encryptedSecret") else ()))
     return (entry, *_others(d, dn, held, ())), notices
 
 
-def integration_groups(d, found, certs):
+def integration_groups(d, found, certs, exported):
     """(groups, notices, {("idp-connection", id): DN}): an integration for every SP connection, IdP connection and
-    OAuth client in the export, and where each IdP connection's is (what policies that name it link to)."""
+    OAuth client in the export (a client linked to the token manager and OIDC policy it names: exported {(kind, id):
+    DN}), and where each IdP connection's is (what policies that name it link to)."""
     user_attrs = attribute_records(d)
     pf_services = identity_services(d, SERVER_ROLES)
     served = pf_services[0] if len(pf_services) == 1 else None
@@ -312,7 +332,7 @@ def integration_groups(d, found, certs):
     keys = {kp.get("id"): fingerprint(kp.get("sha256Fingerprint")) for kp in found["signing"]}
     built = tuple(_sp(d, item, certs, keys, user_attrs, held, dn, name, served) if kind == "sp"
                   else _idp(d, item, certs, held, dn, name, served) if kind == "idp"
-                  else _client(d, item, held, dn, name, served)
+                  else _client(d, item, held, dn, name, served, exported)
                   for kind, item, held, name, dn in placed)
     return (tuple((dn, entries) for (_, _, _, _, dn), (entries, _) in zip(placed, built)),
             (*(n for _, ns in built for n in ns),
@@ -326,26 +346,33 @@ def read_export(files, d, patterns, at=None):
     """Imported from a PingFederate bulk export (or this adapter's rendered files)."""
     found, unread, version, unreadable = resources(files)
     certs = certificate_entries(d, found)
-    groups, notices, connections = integration_groups(d, found, certs)
-    exported = {**{(kind, item.get("id")): ref_dn(kind, item.get("id")) for kind in NAMED_KINDS for item in found[kind]},
-                **connections}
+    keys = {fingerprint(kp.get("sha256Fingerprint")): kp.get("id") for k in ("signing", "ssl") for kp in found[k]}
+    named_ = {**{(kind, item.get("id")): ref_dn(kind, item.get("id")) for kind in NAMED_KINDS for item in found[kind]},
+              **{(KEY_PAIR, keys[fp]): c.dn for fp, c in certs.items() if fp in keys}}
+    groups, notices, connections = integration_groups(d, found, certs, named_)
+    exported = {**named_, **connections}
     stores, store_notices = data_store_groups(d, found["datastore"], patterns)
     plugins, plugin_notices = plugin_groups(d, found, patterns, exported)
     policies, policy_notices = policy_groups(d, found, exported)
-    nothing = not any(found.values())
+    oauth, oauth_notices = oauth_groups(d, found, patterns, exported)
+    held, held_notices = resource_groups(d, unread, patterns)
+    nothing = not any(found.values()) and not unread
     branches = (*((VALIDATORS,) if found["validator"] else ()), *((IDP_ADAPTERS,) if found["idp-adapter"] else ()),
                 *((SELECTORS,) if found["selector"] else ()), *((CONTRACTS,) if found["contract"] else ()),
-                *((POLICIES,) if found["policy"] else ()), *((FRAGMENTS,) if found["fragment"] else ()))
+                *((POLICIES,) if found["policy"] else ()), *((FRAGMENTS,) if found["fragment"] else ()),
+                *((TOKEN_MANAGERS,) if found["access-token-manager"] else ()),
+                *((OIDC_POLICIES,) if found["oidc-policy"] else ()), *((SETTINGS,) if found["auth-server"] else ()),
+                *((RESOURCES_BRANCH,) if unread else ()))
     return Imported(
         containers=tuple(make_entry(b, ("top", "organizationalUnit"), {"ou": (b.split(",", 1)[0].split("=", 1)[1],)})
                          for b in (INTEGRATIONS, CERTIFICATES, PINGFEDERATE, DATA_STORES, *branches)),
-        groups=(*((c.dn, (c,)) for c in certs.values()), *groups, *stores, *plugins, *policies),
+        groups=(*((c.dn, (c,)) for c in certs.values()), *groups, *stores, *plugins, *policies, *oauth, *held),
         notices=(*((f"exported from PingFederate {version}",) if version else ()), *notices, *store_notices,
-                 *plugin_notices, *policy_notices,
-                 *((f"not read yet (PingFederate depth): {', '.join(f'{r} ({n})' for r, n in sorted(unread.items()))}",)
-                   if unread else ()),
-                 *(("where PingFederate keeps OAuth clients, grants and sessions is set in its hivemodule.xml, not the "
-                    "Admin API: hold it with opsdir capture",) if found["client"] else ()),
+                 *plugin_notices, *policy_notices, *oauth_notices,
+                 *held_notices,
+                 *(("where PingFederate keeps OAuth clients, grants and sessions is set in its nodes' hivemodule.xml, not "
+                    "the Admin API: import the nodes' files with pingfederate/node-files",)
+                   if found["client"] and get(d, STORAGE) is None else ()),
                  *(f"not JSON, not read: {p}" for p in unreadable),
                  *(("no PingFederate configuration found (a bulk export, or pingfederate/*.json)",) if nothing else ())))
 

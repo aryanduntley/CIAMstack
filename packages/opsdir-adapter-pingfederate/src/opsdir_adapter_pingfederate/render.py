@@ -7,8 +7,12 @@ OIDC bases, the standard documents at PingFederate's endpoint paths (all environ
     authentication-policy-fragments.json      authentication policies (environment-neutral)
   pingfederate/data-stores.json   data stores, per environment: hosts from the bindings of their target roles,
                                   withheld credentials as the references of their credential roles
-  pingfederate/password-credential-validators.json, idp-adapters.json, authentication-selectors.json
-                                  plugin instances, per environment: withheld secrets from their credential roles
+  pingfederate/password-credential-validators.json, idp-adapters.json, authentication-selectors.json,
+    access-token-managers.json    plugin instances, per environment: withheld secrets from their credential roles
+  pingfederate/cluster/discovery.xml
+                                  per environment: the tcp.xml discovery protocol from its pf-cluster-discovery binding
+  pingfederate/other-resources.json
+                                  per environment: the resources held as is, in the bulk export's shape
 
 The PingFederate JSON follows the shape of Admin API resources (SP connections, OIDC clients, IdP connections) but is
 an illustrative subset. It hasn't been validated against a live /pf-admin-api/v1. In production this renderer would
@@ -22,12 +26,14 @@ from opsdir_base_oidc.discovery import OidcEndpoints
 from opsdir_base_oidc.render import oidc_files
 from opsdir_base_saml.render import SamlEndpoints, saml_files
 from .datastores import data_stores_file
-from .naming import DATA_STORES
+from .naming import DATA_STORES, SERVER_ROLES
+from .generic import resources_file
+from .nodes import discovery_file
+from .oauth import client_view, oauth_files
 from .plugins import plugin_files
 from .policies import policy_files
 
 USER_DIRECTORY = {"type": "LDAP_DATA_STORE", "id": "ciam-user-directory"}
-SERVER_ROLES = ("pf-engine", "pf-admin")      # ciamServerRole / ciamTargetRole values this adapter defines
 SAML_ENDPOINTS = SamlEndpoints(sso=(("HTTP-Redirect", "/idp/SSO.saml2"), ("HTTP-POST", "/idp/SSO.saml2")),
                                slo=(("HTTP-Redirect", "/idp/SLO.saml2"), ("HTTP-POST", "/idp/SLO.saml2")))
 OIDC_ENDPOINTS = OidcEndpoints(authorization="/as/authorization.oauth2", token="/as/token.oauth2",
@@ -53,7 +59,7 @@ def _fulfillment(claims):
     return {name: _fulfillment_entry(attr, transform) for name, attr, transform in claims}
 
 
-def _sp_connection(i, claims, owners, certs):
+def _sp_connection(i, claims, owners, certs, refs):
     return {
         "id": rdn_value(i), "name": rdn_value(i), "entityId": one(i, "ciamEntityId"), "active": True,
         "contactInfo": {"company": ", ".join(owners)},
@@ -78,17 +84,17 @@ def _client_options(i):
             **({"restrictScopes": True, "restrictedScopes": scopes} if scopes else {})}
 
 
-def _oidc_client(i, claims, owners, certs):
+def _oidc_client(i, claims, owners, certs, refs):
     return {
         "clientId": one(i, "ciamClientId"), "name": rdn_value(i), "enabled": True,
         "redirectUris": list(values(i, "ciamRedirectUri")),
         "grantTypes": [GRANT_TYPES[g] for g in values(i, "ciamGrantType")],
-        "requireProofKeyForCodeExchange": one(i, "ciamPkceRequired") == "TRUE", **_client_options(i),
+        "requireProofKeyForCodeExchange": one(i, "ciamPkceRequired") == "TRUE", **_client_options(i), **refs,
         "x-opsdir": {"claims": _fulfillment(claims), "mfaRequired": one(i, "ciamMfaRequired") == "TRUE",
                      "owners": list(owners)}}
 
 
-def _idp_connection(i, claims, owners, certs):
+def _idp_connection(i, claims, owners, certs, refs):
     return {
         "id": one(i, "pingfedConnectionId") or rdn_value(i), "name": rdn_value(i), "entityId": one(i, "ciamEntityId"),
         "active": True,
@@ -107,7 +113,7 @@ RESOURCES = {"saml2-sp": ("pingfederate/sp-connections.json", _sp_connection),
 def _resource(d, i):
     owners = tuple(rdn_value(get(d, o)) for o in values(i, "ciamOwner"))
     certs = tuple(one(get(d, c), "ciamFingerprint") for c in values(i, "ciamUsesCertificate"))
-    return RESOURCES[one(i, "ciamProtocolType")][1](i, claims(d, i), owners, certs)
+    return RESOURCES[one(i, "ciamProtocolType")][1](i, claims(d, i), owners, certs, client_view(d, i))
 
 
 def pingfederate_files(d, served):
@@ -119,11 +125,12 @@ def pingfederate_files(d, served):
 def render_neutral(d):
     """PingFederate's own resources, then the standard SAML and OIDC documents for the services it serves."""
     served = identity_services(d, SERVER_ROLES)
-    return {**pingfederate_files(d, served), **policy_files(d), **saml_files(d, served, SAML_ENDPOINTS),
-            **oidc_files(d, served, OIDC_ENDPOINTS)}
+    return {**pingfederate_files(d, served), **policy_files(d), **oauth_files(d),
+            **saml_files(d, served, SAML_ENDPOINTS), **oidc_files(d, served, OIDC_ENDPOINTS)}
 
 
 def render_env(m, services):
     """PingFederate's configuration for environment m: its data stores and plugin instances (validators, adapters,
-    selectors), with that environment's hosts and secret references."""
-    return {**data_stores_file(m, children(m.d, DATA_STORES, "pingfedDataStore")), **plugin_files(m)}
+    selectors, token managers), with that environment's hosts and secret references, and its cluster's discovery."""
+    return {**data_stores_file(m, children(m.d, DATA_STORES, "pingfedDataStore")), **plugin_files(m),
+            **discovery_file(m), **resources_file(m)}

@@ -460,6 +460,15 @@ ciamBindingRole: backup-target
 ciamRetentionDays: 35
 ciamStorageRef: s3://example-aero-ciam-prod-ds-backups
 
+dn: cn=pf-discovery,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamBackupTarget
+cn: pf-discovery
+ciamBindingRole: pf-cluster-discovery
+ciamStorageRef: s3://example-aero-ciam-prod-pf-cluster
+description: PingFederate cluster discovery (NATIVE_S3_PING / AZURE_PING stora
+ ge)
+
 dn: ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit

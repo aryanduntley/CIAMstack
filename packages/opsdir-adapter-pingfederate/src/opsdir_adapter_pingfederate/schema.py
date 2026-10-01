@@ -1,7 +1,7 @@
 """PingFederate schema fragment, under this package's own OID arc: PingFederate's own configuration objects, beyond
 what the standard bases describe (integrations, certificates and identity services are the federation and PKI
-domains'): data stores, plugin instances (validators, adapters, selectors), authentication policy contracts, policies
-and fragments. Each object keeps its settings as the Admin API writes them (JSON), with values that may be secret
+domains'): data stores, plugin instances (validators, adapters, selectors, access token managers), authentication
+policy contracts, policies and fragments, OIDC policies, settings resources (the authorization server's). Each object keeps its settings as the Admin API writes them (JSON), with values that may be secret
 withheld; what differs per environment is not in them: an object names the binding role of the system it reaches and
 the secret role of its credentials, and each environment renders its own hosts and secret references."""
 from opsdir.core.standard import AttributeDef, ClassDef, fragment
@@ -24,9 +24,9 @@ ATTRIBUTES = (
                  'The other settings, as the Admin API writes them (values that may be secret withheld)'),
     AttributeDef(7, 'pingfedWithheld', 'string', 'meta', False,
                  'Settings withheld at import because they may be secret (JSON Pointer)'),
-    AttributeDef(8, 'pingfedPluginKind', 'enum:validator|idp-adapter|selector', 'intent', True,
+    AttributeDef(8, 'pingfedPluginKind', 'enum:validator|idp-adapter|selector|access-token-manager', 'intent', True,
                  'What a plugin instance is: a password credential validator, an IdP adapter, an authentication '
-                 'selector'),
+                 'selector, an access token manager'),
     AttributeDef(9, 'pingfedPluginType', 'string', 'intent', True,
                  "The plugin an instance is (pluginDescriptorRef: its implementation's class name)"),
     AttributeDef(10, 'pingfedParent', 'dn', 'intent', True,
@@ -43,6 +43,22 @@ ATTRIBUTES = (
                  "result that leads to them)"),
     AttributeDef(15, 'pingfedConnectionId', 'string', 'intent', True,
                  "The id PingFederate knows a partner connection by: what its authentication policies name"),
+    AttributeDef(16, 'pingfedKeyPairId', 'string', 'intent', True,
+                 "The id PingFederate knows one of its key pairs by: what its token managers sign with"),
+    AttributeDef(17, 'pingfedScope', 'string', 'intent', False,
+                 'A scope the authorization server defines (common and exclusive scopes)'),
+    AttributeDef(18, 'pingfedOperationalMode', 'enum:CLUSTERED_CONSOLE|CLUSTERED_ENGINE|STANDALONE', 'intent', True,
+                 "What a PingFederate node is in its cluster (run.properties pf.operational.mode)"),
+    AttributeDef(19, 'pingfedNodeTags', 'string', 'intent', False,
+                 "A PingFederate node's tags (run.properties node.tags: what adaptive clustering groups it by)"),
+    AttributeDef(20, 'pingfedListener', 'string', 'intent', False,
+                 'A port a PingFederate node listens on, by what for: runtime=9031, admin=9999, cluster=7600',
+                 (("X-PATTERN", "^[a-z][a-z0-9-]*=[0-9]+$"),)),
+    AttributeDef(21, 'pingfedDiscovery', 'string', 'meta', True,
+                 "The JGroups discovery protocol a node's tcp.xml uses, as found on the node (TCPPING, NATIVE_S3_PING, "
+                 "AZURE_PING, DNS_PING, ...)"),
+    AttributeDef(22, 'pingfedResourceType', 'string', 'intent', True,
+                 "The Admin API resource a held-as-is item comes from (/serverSettings, /oauth/accessTokenMappings, ...)"),
 )
 CLASSES = (
     ClassDef(1, 'pingfedDataStore', 'ciamObject', 'STRUCTURAL', ('cn', 'pingfedStoreType'),
@@ -63,6 +79,24 @@ CLASSES = (
              'An authentication policy tree (cn: its name), or a policy fragment (cn: its id)'),
     ClassDef(6, 'pingfedConnection', 'top', 'AUXILIARY', ('pingfedConnectionId',), (),
              'An integration that is a PingFederate partner connection (an IdP connection): the id policies name it by'),
+    ClassDef(7, 'pingfedKeyPair', 'top', 'AUXILIARY', ('pingfedKeyPairId',), (),
+             "A certificate of one of PingFederate's own key pairs: the id its token managers name it by"),
+    ClassDef(8, 'pingfedOidcPolicy', 'ciamObject', 'STRUCTURAL', ('cn',), ('pingfedUses', 'pingfedConfig'),
+             'An OpenID Connect policy (cn: its id): the ID token it issues, from the token manager it names'),
+    ClassDef(9, 'pingfedSettings', 'ciamObject', 'STRUCTURAL', ('cn',),
+             ('pingfedScope', 'pingfedUses', 'pingfedCredentialRole', 'pingfedConfig', 'pingfedWithheld'),
+             "One of PingFederate's settings resources (cn: which: oauth-auth-server, ...), as the Admin API writes it"),
+    ClassDef(10, 'pingfedClient', 'top', 'AUXILIARY', (), ('pingfedUses',),
+             'An OAuth client of PingFederate: the token manager and OIDC policy it is issued tokens by'),
+    ClassDef(11, 'pingfedNode', 'top', 'AUXILIARY', (),
+             ('pingfedOperationalMode', 'pingfedNodeTags', 'pingfedListener', 'pingfedDiscovery',
+              'pingfedCredentialRole', 'pingfedConfig', 'pingfedWithheld'),
+             "A server that is a PingFederate node: its run.properties (mode, tags, listeners, other settings) and the "
+             "cluster discovery its tcp.xml uses"),
+    ClassDef(12, 'pingfedResource', 'ciamObject', 'STRUCTURAL', ('cn', 'pingfedResourceType'),
+             ('pingfedCredentialRole', 'pingfedConfig', 'pingfedWithheld'),
+             'An item of an Admin API resource the adapter does not model, held as the Admin API writes it (cn: its id; '
+             'settings for a resource that is one object)'),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES, ARC, ORIGIN)

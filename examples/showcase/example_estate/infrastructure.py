@@ -59,6 +59,7 @@ SOURCE = {
                             "ciamKeyAdmin": "arn:aws:iam::111122223333:role/ciam-key-admins"},
     },
     "backup": "s3://example-aero-ciam-prod-ds-backups",
+    "discovery": "s3://example-aero-ciam-prod-pf-cluster",   # where PingFederate's nodes find each other
     "servers": [("ds-1", "ds", "ds-1.aws.internal.example-aero.test", "10.20.1.11", "us-east-1a", "m6i.xlarge", "ami-0abcdef1234567890", "subnet-ds-a", DS_V),
                 ("ds-2", "ds", "ds-2.aws.internal.example-aero.test", "10.20.2.11", "us-east-1b", "m6i.xlarge", "ami-0abcdef1234567890", "subnet-ds-b", DS_V),
                 ("ds-3", "ds", "ds-3.aws.internal.example-aero.test", "10.20.3.11", "us-east-1c", "m6i.xlarge", "ami-0abcdef1234567890", "subnet-ds-c", DS_V),
@@ -115,6 +116,7 @@ TARGET = {
                                            "id-ciam-servers"},
     },
     "backup": None,   # deliberately missing: the demo's migration plan should catch it
+    "discovery": None,   # deliberately missing too: the nodes' tcp.xml discovery is cloud-specific (S3 on AWS)
     "interconnect": ("link-source", "site-to-site VPN (landing-zone managed)", AWS, ["10.20.0.0/16"]),
     "servers": [("ds-1", "ds", "ds-1.az.internal.example-aero.test", "10.60.1.11", "1", "Standard_D4s_v5", IMG + "pingds-7.5.1-rhel9", "snet-ds", DS_V),
                 ("ds-2", "ds", "ds-2.az.internal.example-aero.test", "10.60.1.12", "2", "Standard_D4s_v5", IMG + "pingds-7.5.1-rhel9", "snet-ds", DS_V),
@@ -169,6 +171,10 @@ def _bindings(file, env, p):
                  ciamRefUri=p["key"][0], ciamProviderRef=p["key"][1], **p["key_facts"].get("disk-encryption", {})),
             *((spec(file, b("backup"), ["top", "ciamBackupTarget"], cn="backup", ciamBindingRole="backup-target",
                     ciamStorageRef=p["backup"], ciamRetentionDays=35),) if p.get("backup") else ()),
+            *((spec(file, b("pf-discovery"), ["top", "ciamBackupTarget"], cn="pf-discovery",
+                    ciamBindingRole="pf-cluster-discovery", ciamStorageRef=p["discovery"],
+                    description="PingFederate cluster discovery (NATIVE_S3_PING / AZURE_PING storage)"),)
+              if p.get("discovery") else ()),
             *((_interconnect(file, b, *p["interconnect"]),) if p.get("interconnect") else ()))
 
 
@@ -265,6 +271,10 @@ def stage():
               for role in SECRET_ROLES),
             spec(file, f"cn=backup,{B}", ["top", "ciamBackupTarget"], cn="backup", ciamBindingRole="backup-target",
                  ciamStorageRef="s3://example-aero-ciam-stage-ds-backups", ciamRetentionDays=7),
+            spec(file, f"cn=pf-discovery,{B}", ["top", "ciamBackupTarget"], cn="pf-discovery",
+                 ciamBindingRole="pf-cluster-discovery",
+                 ciamStorageRef="s3://example-aero-ciam-stage-pf-cluster",
+                 description="Stage's own PingFederate cluster discovery: never prod's"),
             spec(file, f"ou=overrides,{STAGE}", ["top", "organizationalUnit"], ou="overrides"),
             *(spec(file, f"cn={cn},ou=overrides,{STAGE}", ["top", "ciamOverride"], cn=cn, ciamOverrides=target,
                    ciamOverrideAttribute=attr, ciamOverrideValue=value, description=why, ciamOwner=owner("ciam-platform"))

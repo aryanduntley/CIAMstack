@@ -8,13 +8,13 @@ Applies to environments with servers whose `ciamProductVersion` is PingFederate 
 - `saml/sp/`, `saml/partner-idp/`: every SAML partner's metadata as recorded; `oidc/clients/`: every OIDC client's registration metadata.
 - `saml/idp/<service>.xml`, `oidc/discovery/<service>.json`: the IdP metadata and OpenID provider metadata of the identity services its servers serve (`ciamTargetRole` `pf-engine` or `pf-admin`), with PingFederate's default endpoint paths (`/idp/SSO.saml2`, `/as/authorization.oauth2`, `/as/token.oauth2`, `/pf/JWKS`, ...).
 
-Per environment: `pingfederate/data-stores.json`, the data stores with that environment's hosts and secret references (below).
+Per environment: `pingfederate/data-stores.json`, the data stores with that environment's hosts and secret references; the plugin instances (`password-credential-validators.json`, `idp-adapters.json`, `authentication-selectors.json`, `access-token-managers.json`); `cluster/discovery.xml`, the cluster's discovery; `other-resources.json`, the resources held as is (all below).
 
 ## Reading PingFederate's configuration
 
 ```bash
 curl -u administrator:… -H 'X-XSRF-Header: PingFederate' https://pf-admin:9999/pf-admin-api/v1/bulk/export > export/data.json
-opsdir import --change CHG-… pingfederate export/        # --dry-run first to see what it would change
+opsdir import --change CHG-… pingfederate/bulk export/        # --dry-run first to see what it would change
 ```
 
 The importer `pingfederate/bulk` reads the Admin API bulk export (and this adapter's own rendered `pingfederate/*.json`, so a render reads back unchanged):
@@ -22,12 +22,12 @@ The importer `pingfederate/bulk` reads the Admin API bulk export (and this adapt
 - **SP connections** become SAML service-provider integrations: entity ID, default ACS URL and binding, the claims of the attribute contract linked to the user-schema records they are fulfilled from, the certificates the connection uses (the key pair it signs with, the SP's own certificates).
 - **IdP connections** become partner identity-provider integrations: entity ID, the JIT provisioning base DN, the partner's signing certificates, and the id PingFederate knows the connection by (auxiliary class `pingfedConnection`, `pingfedConnectionId`). The integration keeps the name the record gives it; renders write the connection back under its PingFederate id.
 - **OAuth clients** become OIDC client integrations: client ID, redirect URIs, grant types, PKCE, token endpoint authentication, restricted scopes. Where PingFederate's name stands for several standard ones (`SECRET`), the record's value is kept when it is one of them, else the standard default (`client_secret_basic`).
-- **Key pairs** (`/keyPairs/signing`, `/keyPairs/sslServer`) and connection certificates become certificate facts, matched by fingerprint; facts the export doesn't give are kept.
+- **Key pairs** (`/keyPairs/signing`, `/keyPairs/sslServer`) and connection certificates become certificate facts, matched by fingerprint; facts the export doesn't give are kept. A key pair's certificate carries the id PingFederate knows the key pair by (auxiliary class `pingfedKeyPair`, `pingfedKeyPairId`): what token managers sign with.
 
 - **Data stores** (LDAP, JDBC, custom) become `pingfedDataStore` entries, below.
-- **Password credential validators, IdP adapters, authentication selectors, policy contracts, the default authentication policy and policy fragments** become entries too, below.
+- **Password credential validators, IdP adapters, authentication selectors, policy contracts, the default authentication policy and policy fragments** become entries too, below; so do **access token managers, OIDC policies and the authorization server's settings** (OAuth, below).
 
-Integrations are matched by entity ID or client ID, data stores by id, and keep everything the export doesn't hold (owners, criticality, populations, claim transforms, certificate links the record makes, a data store's credential role). A client or connection the record didn't have is added and named in the notices, so it gets an owner. Client secrets, data store passwords and plugin secrets are never read. Access token managers, OIDC policies and where clients, grants and sessions are kept (`hivemodule.xml`: hold it with `opsdir capture`) are named, and read in a later version (milestone 4.1).
+Integrations are matched by entity ID or client ID, data stores by id, and keep everything the export doesn't hold (owners, criticality, populations, claim transforms, certificate links the record makes, a data store's credential role). A client or connection the record didn't have is added and named in the notices, so it gets an owner. Client secrets, data store passwords and plugin secrets are never read. Every other resource type of the export is held as is (below), so nothing the export holds is left out. Two importers, so name the one you mean: `pingfederate/bulk` (the bulk export) and `pingfederate/node-files` (the nodes' own files).
 
 ## Data stores
 
@@ -55,6 +55,37 @@ The credential role is never guessed: an approved change sets it. The rendered f
 - **Secrets.** Every encrypted value (`encryptedValue`, `encryptedPassword`, …) and every settings field whose name says it holds a secret (`Secret Key`, `Client Secret`, `Password`) is withheld; each environment renders the reference of the instance's credential role (`pingfedCredentialRole`), `UNBOUND:<role>`, or `${withheld}` while none is set. All of an instance's secrets take that one role's reference.
 - **The default policy is imported as one:** a tree the export no longer has is removed. Trees whose names can't name an entry, or that repeat another tree's name, are named and not imported.
 
-**Planner check** (`check_data_stores`): a store with withheld credentials but no credential role, and a target or credential role the target environment doesn't bind, are blockers; a fixed host and an LDAP store without TLS are actions. **`check_authentication`:** a plugin instance, policy tree or fragment that names an object the record doesn't have (PingFederate refuses such a configuration), and a plugin instance with withheld secrets but no credential role or one the target doesn't bind, are blockers.
+## OAuth: token managers, OIDC policies, scopes
+
+| Admin API | Record (under `ou=pingfederate`) | Rendered |
+|---|---|---|
+| `/oauth/accessTokenManagers` | `pingfedPlugin` kind `access-token-manager` under `ou=access-token-managers`, linked (`pingfedUses`) to the certificates of the key pairs a JWT manager signs with (its `Certificates` table) | Per environment: `pingfederate/access-token-managers.json` (symmetric keys and other secrets from its credential role) |
+| `/oauth/openIdConnect/policies` | `pingfedOidcPolicy` (cn: its id) under `ou=oidc-policies`, linked to its token manager | `oidc-policies.json` (environment-neutral) |
+| `/oauth/authServerSettings` | `pingfedSettings` `cn=oauth-auth-server,ou=settings`: the settings, with every scope it defines (common and exclusive) in `pingfedScope` | `auth-server-settings.json` (environment-neutral) |
+| An OAuth client's `defaultAccessTokenManagerRef`, `oidcPolicy.policyGroup` | Its integration gains auxiliary class `pingfedClient`, linked (`pingfedUses`) to the token manager and OIDC policy | Written back into `oidc-clients.json` |
+
+A key pair, like an IdP connection, is found by the id its certificate carries (`pingfedKeyPairId`); exactly one certificate may carry it. Not yet held: token manager attribute mappings (`/oauth/accessTokenMappings`), token exchange, an OAuth client's own token lifetimes and other settings beyond the standard registration.
+
+## Nodes and cluster discovery
+
+```bash
+opsdir import --change CHG-… pingfederate/node-files nodes/     # nodes/<hostname>/bin/run.properties, ...
+```
+
+One folder per node, named by the server's hostname (or its record name), holding what the node has under its install root:
+
+| File | Recorded |
+|---|---|
+| `bin/run.properties` | On the server, auxiliary class `pingfedNode`: `pingfedOperationalMode` (`CLUSTERED_CONSOLE`, `CLUSTERED_ENGINE`, `STANDALONE`), `pingfedNodeTags`, `pingfedListener` (`runtime=9031`, `admin=9999`, `cluster=7600`, ...), every other setting in `pingfedConfig` (`pf.cluster.auth.pwd` and other secrets withheld, from the node's credential role) |
+| `server/default/conf/tcp.xml` | The JGroups discovery protocol the node uses (`pingfedDiscovery`: `TCPPING`, `NATIVE_S3_PING`, `AZURE_PING`, `DNS_PING`, ...), checked against the environment's discovery binding |
+| `server/default/conf/META-INF/hivemodule.xml` | `pingfedSettings` `cn=storage,ou=settings`: which kind of store (JDBC, LDAP, XML file, ...) backs OAuth clients, persistent grants and sessions (`ClientManager`, `AccessGrantManager`, `SessionStorageManager`; verify against the target version) |
+
+**Discovery is a binding.** How the nodes find each other is cloud-specific, the classic miss when moving: the environment binds role `pf-cluster-discovery` to a storage location (`s3://bucket[/prefix]`, `azblob://account/container`; today a `ciamBackupTarget`, the core's only storage binding) or a service name, and `pingfederate/cluster/discovery.xml` renders the matching element (`NATIVE_S3_PING` with the cloud's region; `AZURE_PING` with the storage key from role `pf-cluster-discovery-key`; `DNS_PING`), the one each node's `tcp.xml` takes in place of `TCPPING`. Import notices name a node whose protocol differs from the binding, a node using `TCPPING` (static members), and dynamic discovery the environment doesn't bind. `run.properties` itself is a config file to hold with `opsdir capture` (its values linked to bindings); the node facts are what the planner and the ports matrix read.
+
+## Resources held as is
+
+Every resource type of the bulk export not modeled above (`/serverSettings`, `/oauth/accessTokenMappings`, `/notificationPublishers`, `/captchaProviders`, administrative accounts, ...) is kept item by item: `pingfedResource` (cn: the item's id; `settings` for a resource that is one object; `item-<n>` otherwise) under `ou=<type, '/' as '.'>,ou=resources,ou=pingfederate`, with `pingfedResourceType`, its settings (secrets withheld) and a credential role. A type is imported as one group: items the export no longer has are removed. Each environment renders them as `pingfederate/other-resources.json`, in the bulk export's shape, which imports back through `pingfederate/bulk` unchanged. Notice: `held as is (not modeled): <type> (<items>)`.
+
+**Planner check** (`check_data_stores`): a store with withheld credentials but no credential role, and a target or credential role the target environment doesn't bind, are blockers; a fixed host and an LDAP store without TLS are actions. **`check_references`:** a plugin instance, policy tree, fragment or OIDC policy that names an object the record doesn't have (an IdP connection or key pair no entry, or more than one, carries the id of) (PingFederate refuses such a configuration), and a plugin instance or held resource with withheld secrets but no credential role or one the target doesn't bind, are blockers. **`check_cluster`:** clustered nodes whose discovery nobody recorded, and a target discovery binding that is neither storage nor a service name, are blockers (a source binding the target lacks is the core's binding check); a different kind of discovery in the target (S3 to a blob container) is an action; a node's withheld secrets need a credential role the target binds.
 
 Defines the server roles `pf-engine` and `pf-admin`. Installing the package registers it with opsdir (entry point `opsdir.adapters`: `pingfederate`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.

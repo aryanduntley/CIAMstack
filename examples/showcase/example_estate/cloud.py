@@ -118,7 +118,9 @@ def _aws_keys(p, rotation):
                                                                    "primary_key_arn": key_arn})
               for r in (p["key_facts"]["disk-encryption"].get("ciamReplicaRegion"),) if r),
             _res("data", "aws_s3_bucket", "ds_backups", {"bucket": p["backup"][len("s3://"):],
-                                                         "arn": f"arn:aws:s3:::{p['backup'][len('s3://'):]}"})]
+                                                         "arn": f"arn:aws:s3:::{p['backup'][len('s3://'):]}"}),
+            *(_res("data", "aws_s3_bucket", "pf_cluster", {"bucket": bucket, "arn": f"arn:aws:s3:::{bucket}"})
+              for bucket in (p["discovery"][len("s3://"):].split("/", 1)[0],) if p.get("discovery"))]
 
 
 def _drifted_source(p, subnets, groups):

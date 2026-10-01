@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<!-- PingFederate service wiring (Example Aero, synthetic): OAuth clients and persistent grants in the grant store -->
+<module id="org.sourceid" version="1.0.0">
+  <service-point id="ClientManager" interface="org.sourceid.oauth20.domain.ClientManager">
+    <invoke-factory><construct class="org.sourceid.oauth20.domain.ClientManagerJdbcImpl"/></invoke-factory>
+  </service-point>
+  <service-point id="AccessGrantManager" interface="org.sourceid.oauth20.token.AccessGrantManager">
+    <invoke-factory><construct class="org.sourceid.oauth20.token.AccessGrantManagerJdbcImpl"/></invoke-factory>
+  </service-point>
+</module>
