@@ -70,6 +70,20 @@
       "match": "Connector `ldap` has withheld credentials but no credential role",
       "planted": "imported directory connector names no secret",
       "cleared_by": "CHG-2005"
+    },
+    {
+      "id": "B11",
+      "area": "PingFederate",
+      "match": "Data store `grant-store` has withheld credentials but no credential role",
+      "planted": "imported grant database store names no secret",
+      "cleared_by": "CHG-2005"
+    },
+    {
+      "id": "B12",
+      "area": "PingFederate",
+      "match": "Data store `user-directory` has withheld credentials but no credential role",
+      "planted": "imported directory data store names no secret",
+      "cleared_by": "CHG-2005"
     }
   ],
   "actions": [
@@ -205,6 +219,20 @@
       "match": "`apps/customer-portal/application.properties` holds source/prod values",
       "planted": "the portal names the LDAPS service, which the target renames (B1)",
       "cleared_by": "CHG-2003"
+    },
+    {
+      "id": "A20",
+      "area": "PingFederate",
+      "match": "Data store `grant-store` reaches a fixed host",
+      "planted": "the grant database is reached at the same host everywhere",
+      "cleared_by": null
+    },
+    {
+      "id": "A21",
+      "area": "PingFederate",
+      "match": "Data store `user-directory` reaches a fixed host",
+      "planted": "PingFederate's LDAP data store lists ds-1 by hostname next to the LDAPS service",
+      "cleared_by": null
     }
   ]
 }

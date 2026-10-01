@@ -8,4 +8,4 @@ opsdir adapter for PingGateway (ForgeRock Identity Gateway): the routes that pro
 - **Planner check**: a route whose backend role the target doesn't bind, or whose client or OpenID provider the record doesn't have, is a blocker; a route to a fixed backend is an action.
 - **Required roles**: `subnet-ig`, `ig-service`, `ig-keystore`. Server role: `ig`. Products: PingGateway 2023–2026, ForgeRock Identity Gateway 7.
 
-The routes follow the gateway's JSON but are not yet validated against a live gateway. Installing the package registers it with opsdir (entry point `opsdir.adapters`: `pinggateway`); nothing in the opsdir core changes. In this repository: `scripts/dev-install.sh`.
+The routes follow the gateway's JSON but are not yet validated against a live gateway. Installing the package registers it with opsdir (entry point `opsdir.adapters`: `pinggateway`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.

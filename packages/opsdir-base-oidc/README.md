@@ -11,4 +11,4 @@ Environment-neutral files, via `render.oidc_files(d, services, endpoints)`:
 
 The product supplies `OidcEndpoints` (paths; `None` where it has none) and which identity services it serves. Values use the protocols' own names (the federation domain's standard vocabulary); a product adapter maps them to its API's names.
 
-In this repository: `scripts/dev-install.sh`.
+In this repository: `opsdir/scripts/dev-install.sh`.

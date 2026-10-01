@@ -9,4 +9,4 @@ opsdir adapter for PingIDM (ForgeRock IDM): managed objects, connectors, sync ma
 - **Planner check**: mappings or reconciliation schedules that name what the deployment doesn't have, and connectors without a credential role or whose roles the target doesn't bind, are blockers; a connector with a fixed host is an action.
 - **Required roles**: `subnet-idm`, `idm-admin-password`, `idm-keystore`. Server role: `idm`. Products: PingIDM 7–8, ForgeRock IDM 7.
 
-The files follow IDM's `conf/` layout but are not yet validated against a live IDM. Installing the package registers it with opsdir (entry point `opsdir.adapters`: `pingidm`); nothing in the opsdir core changes. In this repository: `scripts/dev-install.sh`.
+The files follow IDM's `conf/` layout but are not yet validated against a live IDM. Installing the package registers it with opsdir (entry point `opsdir.adapters`: `pingidm`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.

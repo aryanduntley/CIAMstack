@@ -184,7 +184,7 @@ Importer: an `ldapsearch`-driven profiler that emits statistics only (no values)
 | Authentication policies (trees), policy contracts, authentication selectors (IdP discovery, "select your identity provider") | I | ● These are the login flows, so they deserve first-class modeling | — |
 | IdP adapters: HTML Form, Identifier-First, Duo, Kerberos… | I (+S) | ● | — |
 | Password credential validators (LDAP Username PCV → DS) | I + S | ● | — |
-| **Data stores**: LDAP (DS hosts, bind DN, pool sizes, LDAPS), JDBC | I + B (hosts) + S | ● **Consumer link to the directory.** Hosts must be *service names*. | ~ as a consumer; the import checks bind DN, hostnames and TLS |
+| **Data stores**: LDAP (DS hosts, bind DN, pool sizes, LDAPS), JDBC | I + B (hosts) + S | ● **Consumer link to the directory.** Hosts must be *service names*. | ✔ `pingfedDataStore` (PingFederate package schema): hosts that are service names become a target role rendered per environment, bind DN linked to its consumer, credentials withheld and named by a credential role; **imported**; planner flags fixed hosts and plain LDAP |
 | Local identity profiles (PF-native registration & profile management), if used | I | ● | — |
 | Password reset / change settings (email or SMS OTP), notification publishers (SMTP) | I + B + S | ● | — |
 | CAPTCHA providers | I + S | ● | — |

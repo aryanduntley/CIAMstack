@@ -14,7 +14,9 @@ idm-hrdb-password       password       idm-hrdb-password       azkv      azkv://
 idm-keystore            keystore       idm-keystore            azkv      azkv://kv-ciam-prod/idm-keystore                                                                                                                                  carried over from source/prod
 ig-keystore             keystore       ig-keystore             azkv      azkv://kv-ciam-prod/ig-keystore                                                                                                                                   ok
 pf-admin-password       password       pf-admin-password       azkv      azkv://kv-ciam-prod/pf-admin-password                   no                                                                                                        ok
+pf-ds-bind-password     password       pf-ds-bind-password     azkv      azkv://kv-ciam-prod/pf-ds-bind-password                                                                                                                           ok
+pf-grants-db-password   password       pf-grants-db-password   azkv      azkv://kv-ciam-prod/pf-grants-db-password                                                                                                                         ok
 pf-signing-key          private-key    pf-signing-key          azkv      azkv://kv-ciam-prod/pf-signing-key                                                                                                                                ok
 sso-tls-keystore        keystore       sso-tls-keystore        azkv      azkv://kv-ciam-prod/sso-tls-keystore                                                                                                                              ok
-(16 rows)
+(18 rows)
 exit 0

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "opsdir-adapter-aws"
 version = "0.1.0"
-description = "opsdir adapter for Amazon Web Services: Terraform for AWS environments and aws-sm:// secret references."
+description = "opsdir adapter for Amazon Web Services: Terraform for AWS environments; AWS Terraform state, AWS CLI output and CloudFormation stacks read back into the record; aws-sm:// secret references."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = ["opsdir>=0.1", "opsdir-format-terraform>=0.1", "pyyaml>=6"]

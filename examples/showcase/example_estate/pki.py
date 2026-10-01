@@ -66,6 +66,10 @@ CREDENTIALS = (
      None, "cn=idm-sync,ou=consumers,dc=ciam-ops", None),
     ("idm-hrdb-password", "password", None, None, ["authentication"], "text", None, "TRUE", 180, "per-environment",
      None, None, None),
+    ("pf-ds-bind-password", "password", None, None, ["authentication"], "text", None, "TRUE", 90, "per-environment",
+     None, "cn=pf-ds-svc,ou=consumers,dc=ciam-ops", None),
+    ("pf-grants-db-password", "password", None, None, ["authentication"], "text", None, "TRUE", 180, "per-environment",
+     None, None, None),
     ("ig-keystore", "keystore", "RSA", 2048, ["tls"], "pkcs12", None, "TRUE", 365, "per-environment", None, None,
      None),
 )

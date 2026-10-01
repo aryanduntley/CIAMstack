@@ -15,13 +15,14 @@ The importer owns what it reads; what the record adds to its entries (a connecto
 import json
 
 from opsdir.core.contract import Imported, Importer
-from opsdir.core.directory import children, get, make_entry, one
+from opsdir.core.directory import get, make_entry, one
 from opsdir.core.environment import published_role
 from opsdir.core.formats import JAVA_PROPERTIES, JSON
-from opsdir.core.jsondata import canonical, without_secrets
-from opsdir.core.naming import branch, rdn_safe
+from opsdir.core.jsondata import canonical, rendered_in_place, without_secrets
+from opsdir.core.naming import rdn_safe
 from opsdir.domains.configuration.naming import CONFIG_FILES, file_dn
 from opsdir.domains.configuration.record import file_entries
+from opsdir.domains.directory.consumers import consumer_by_bind_dn
 from .naming import CONNECTORS, MANAGED, MAPPINGS, PINGIDM, SCHEDULES, SERVER_ROLES, named
 
 CONNECTOR_PREFIX, SCHEDULE_PREFIX = "conf/provisioner.openicf-", "conf/schedule-"
@@ -31,14 +32,10 @@ CODE_DIRS = ("script/", "ui/", "bundle/", "connectors/")     # an IDM project's 
 CODE_EXTENSIONS = (".js", ".groovy", ".py", ".sh", ".jar")
 
 
-RENDERED_IN_PLACE = ("${secret:", "${withheld}", "UNBOUND:")    # what opsdir renders where a secret was withheld
-
-
 def _sealed(value):
     """Secret material whole: IDM's encrypted values ({"$crypto": ...}), and what opsdir renders in their place, so
     a rendered file imports back unchanged."""
-    return (isinstance(value, dict) and "$crypto" in value) or (isinstance(value, str)
-                                                                and value.startswith(RENDERED_IN_PLACE))
+    return (isinstance(value, dict) and "$crypto" in value) or rendered_in_place(value)
 
 
 def _settings(data, patterns, drop):
@@ -90,17 +87,11 @@ def _schedule(d, name, data, patterns):
 
 
 # ------------------------------------------------------------------ connectors
-def consumer_of(d, principal):
-    """The directory consumer record whose bind DN the connector binds as, or None."""
-    return next((c for c in children(d, branch("consumers"), "ciamConsumer")
-                 if principal and (one(c, "ciamBindDn") or "").lower() == principal.lower()), None)
-
-
 def _connector(d, name, data, patterns):
     props = data.get("configurationProperties") or {}
     host = props.get("host") or ""
     role = host[len("UNBOUND:"):] if host.startswith("UNBOUND:") else published_role(d, host)
-    consumer = consumer_of(d, props.get("principal"))
+    consumer = consumer_by_bind_dn(d, props.get("principal"))
     stored = {**data, "configurationProperties": {k: v for k, v in props.items() if not (role and k == "host")}}
     config, held = _settings(stored, patterns, ("name", "connectorRef"))
     ref = data.get("connectorRef") or {}

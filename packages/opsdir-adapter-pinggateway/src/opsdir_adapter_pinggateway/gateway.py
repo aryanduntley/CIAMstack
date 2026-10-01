@@ -13,9 +13,9 @@ import json
 
 from opsdir.core.contract import Imported, Importer
 from opsdir.core.directory import get, make_entry, one
-from opsdir.core.environment import published_role
+from opsdir.core.environment import UNBOUND, published_role
 from opsdir.core.formats import JSON
-from opsdir.core.jsondata import canonical, without_secrets
+from opsdir.core.jsondata import canonical, rendered_in_place, without_secrets
 from opsdir.core.naming import rdn_safe
 from opsdir.domains.configuration.naming import CONFIG_FILES, file_dn
 from opsdir.domains.configuration.record import file_entries
@@ -23,7 +23,6 @@ from opsdir.domains.federation.services import integrations
 from .naming import PINGGATEWAY, ROUTES, SERVER_ROLES, route_dn
 from .routes import backend, client_ids, issuers
 
-UNBOUND = "UNBOUND:"
 OWNED = ("cn", "pinggwCondition", "pinggwBackendRole", "pinggwBackendScheme", "pinggwIntegration", "pinggwIssuer",
          "pinggwConfig", "pinggwWithheld")
 
@@ -34,11 +33,6 @@ def _parse(text):
     except ValueError:
         return None
     return value if isinstance(value, dict) else None
-
-
-def _sealed(value):
-    """What opsdir renders where a secret was withheld, so a rendered route imports back unchanged."""
-    return isinstance(value, str) and value.startswith(("${secret:", "${withheld}", UNBOUND))
 
 
 def _backend_role(d, route):
@@ -54,7 +48,7 @@ def _backend_role(d, route):
 def _route(d, name, route, patterns):
     role, scheme = _backend_role(d, route)
     kept = {k: v for k, v in route.items() if k not in ("name", "condition") and not (role and k == "baseURI")}
-    config, held = without_secrets(kept, patterns, sealed=_sealed)
+    config, held = without_secrets(kept, patterns, sealed=rendered_in_place)
     ids = client_ids(route)
     clients = {one(i, "ciamClientId"): i for i in integrations(d, "oidc-client")}
     integration = next((clients[c] for c in ids if c in clients), None)

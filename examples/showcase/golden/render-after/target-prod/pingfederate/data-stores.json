@@ -1,0 +1,26 @@
+[
+  {
+    "type": "JDBC",
+    "id": "grant-store",
+    "connectionUrl": "jdbc:postgresql://pf-grants.db.aws.internal.example-aero.test:5432/pf",
+    "driverClass": "org.postgresql.Driver",
+    "name": "Persistent grant store",
+    "password": "${secret:azkv://kv-ciam-prod/pf-grants-db-password}",
+    "userName": "pf_grants"
+  },
+  {
+    "type": "LDAP",
+    "id": "user-directory",
+    "hostnames": [
+      "ldap.id.example-aero.test:1636",
+      "ds-1.aws.internal.example-aero.test:1636"
+    ],
+    "ldapType": "PING_DIRECTORY",
+    "maxConnections": 100,
+    "minConnections": 10,
+    "name": "User directory",
+    "password": "${secret:azkv://kv-ciam-prod/pf-ds-bind-password}",
+    "useSsl": true,
+    "userDN": "uid=pf-svc,ou=service-accounts,dc=partners,dc=example-aero,dc=test"
+  }
+]

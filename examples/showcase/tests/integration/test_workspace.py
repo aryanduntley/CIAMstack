@@ -54,10 +54,10 @@ def test_workspace_changes_reach_live_only_at_cutover(stores, dsn):
     live, ws = stores
     for change_id, path in APPROVED:
         db.apply_changes(ws, path, change_id)
-    assert workspace.diff_text(live, ws).count("changetype:") == 4          # a firewall rule, two connectors, a name
+    assert workspace.diff_text(live, ws).count("changetype:") == 6   # a firewall rule, two connectors, two stores, a name
     assert "dn: cn=fw-mro-batch,ou=bindings,env=prod,cloud=target" not in export_text(db.load_directory(live), SUFFIX)
     applied = workspace.cutover(live, ws, store_parts(), dsn, APPROVED[1][0], schema_sync())
-    assert [line.split(" ", 1)[0] for line in applied] == ["add", "modify", "modify", "modify"]
+    assert [line.split(" ", 1)[0] for line in applied] == ["add", *["modify"] * 5]
     assert export_text(db.load_directory(live), SUFFIX) == export_text(db.load_directory(ws), SUFFIX)
     assert workspace.diff_text(live, ws) == ""                                   # re-copied after cutover
 

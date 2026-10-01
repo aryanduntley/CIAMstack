@@ -10,4 +10,4 @@ opsdir adapter for PingAM (ForgeRock AM): realms, OAuth2/OIDC clients, SAML, aut
 - **Planner check**: a journey that starts at, or leads to, a node it doesn't have is a blocker.
 - **Required roles**: `subnet-am`, `am-service`, `am-admin-password`, `am-keystore`, `am-ds-bind-password`. Server role: `am`. Products: PingAM 7–8, ForgeRock AM 7.
 
-Installing the package registers it with opsdir (entry point `opsdir.adapters`: `pingam`); nothing in the opsdir core changes. In this repository: `scripts/dev-install.sh`.
+Installing the package registers it with opsdir (entry point `opsdir.adapters`: `pingam`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.

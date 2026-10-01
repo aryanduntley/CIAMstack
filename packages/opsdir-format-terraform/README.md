@@ -11,4 +11,4 @@ from opsdir_format_terraform.hcl import block, hcl, ref, tf_name, Block
 from opsdir_format_terraform.state import read_state
 ```
 
-In this repository: `scripts/dev-install.sh`.
+In this repository: `opsdir/scripts/dev-install.sh`.

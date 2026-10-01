@@ -2,7 +2,11 @@
 Product adapters that keep a product's settings as JSON (journeys, connectors, policies) share these. Pure."""
 import json
 
+from .environment import UNBOUND
 from .secrets import withheld
+
+WITHHELD = "${withheld}"          # a withheld value nothing supplies: the deployment must
+RENDERED_IN_PLACE = ("${secret:", WITHHELD, UNBOUND)     # what opsdir renders where a value was withheld
 
 
 def canonical(value):
@@ -30,6 +34,12 @@ def without_secrets(value, patterns, pointer="", sealed=_never):
     return value, ()
 
 
+def rendered_in_place(value):
+    """Whether a value is what opsdir renders in place of a withheld or per-environment one (${secret:<ref>},
+    ${withheld}, UNBOUND:<role>): importers hold it as withheld, so a rendered file imports back unchanged."""
+    return isinstance(value, str) and value.startswith(RENDERED_IN_PLACE)
+
+
 def _step(key):
     return key.replace("~1", "/").replace("~0", "~")
 
@@ -46,3 +56,8 @@ def with_value(value, pointer, new):
     base = value if isinstance(value, dict) else {}
     key = _step(head)
     return {**base, key: with_value(base.get(key), rest, new)}
+
+
+def with_values(value, pointers, new):
+    """The value with `new` at each of the JSON Pointers (a withheld value's places, say)."""
+    return value if not pointers else with_values(with_value(value, pointers[0], new), pointers[1:], new)

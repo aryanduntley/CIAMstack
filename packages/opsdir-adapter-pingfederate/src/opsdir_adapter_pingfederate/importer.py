@@ -12,12 +12,14 @@ render reads back as it was.
   /oauth/clients                  -> OAuth/OIDC clients (oidc-client integrations): client ID, redirect URIs, grant
                                      types, PKCE, token endpoint authentication, restricted scopes
   /keyPairs/signing, /sslServer   -> certificate facts of PingFederate's own keys (never the keys)
-Integrations are matched by entity ID or client ID, certificates by fingerprint; what the record holds beyond the
-export (owners, criticality, populations, what a claim is transformed with) is kept. Where PingFederate's names are
-coarser than the standard ones (SECRET for three client authentication methods), the record's value is kept when it
-is one of them. Client secrets and data store passwords are never read. Data stores are checked against the record
-(the directory account PingFederate binds as, the names it reaches the directory by); adapters, token managers,
-policies and where clients, grants and sessions are stored are PingFederate depth, read later.
+  /dataStores                     -> data stores (pingfedDataStore, opsdir_adapter_pingfederate.datastores): hosts that
+                                     are a service name become its role, the bind account its consumer record,
+                                     credentials withheld
+Integrations are matched by entity ID or client ID, certificates by fingerprint, data stores by id; what the record
+holds beyond the export (owners, criticality, populations, what a claim is transformed with, a data store's credential
+role) is kept. Where PingFederate's names are coarser than the standard ones (SECRET for three client authentication
+methods), the record's value is kept when it is one of them. Client secrets and data store passwords are never read.
+Adapters, token managers, policies and where clients, grants and sessions are stored are named, read later.
 """
 import datetime as dt
 import json
@@ -27,16 +29,18 @@ from functools import reduce
 
 from opsdir.core.contract import Imported, Importer
 from opsdir.core.directory import children, get, make_entry, norm_dn, one, rdn_value, subtree, values
-from opsdir.domains.directory.naming import CONSUMERS
 from opsdir.domains.directory.user_schema import attribute_records
 from opsdir.domains.federation.naming import INTEGRATIONS
 from opsdir.domains.federation.services import identity_services, integrations
 from opsdir.domains.pki.naming import CERTIFICATES
+from .datastores import data_store_groups
+from .naming import DATA_STORES, PINGFEDERATE
 from .render import BINDINGS, CLIENT_AUTH, GRANT_TYPES, SERVER_ROLES
 
 RESOURCES = {"/idp/spConnections": "sp", "/sp/idpConnections": "idp", "/oauth/clients": "client",
              "/keyPairs/signing": "signing", "/keyPairs/sslServer": "ssl", "/dataStores": "datastore"}
-RENDERED = {"sp-connections.json": "sp", "idp-connections.json": "idp", "oidc-clients.json": "client"}
+RENDERED = {"sp-connections.json": "sp", "idp-connections.json": "idp", "oidc-clients.json": "client",
+            "data-stores.json": "datastore"}
 KEY_ROLES = {"signing": ("saml-signing", "pf-signing-key"), "ssl": ("tls-server", "sso-tls-keystore")}
 OWNED = {"saml2-sp": ("ciamProtocolType", "ciamEntityId", "ciamAcsUrl", "ciamSamlBinding"),
          "saml2-idp": ("ciamProtocolType", "ciamEntityId"),
@@ -295,48 +299,19 @@ def integration_groups(d, found, certs):
                for kind, _, held, name, _ in placed if held is None)))
 
 
-# ------------------------------------------------------------------ data stores: checked, not recorded
-def _host(hostport):
-    return hostport.rsplit(":", 1)[0].lower() if hostport.count(":") == 1 else hostport.lower()
-
-
-def datastore_notices(d, stores):
-    """What the export's data stores say about the directory PingFederate uses, checked against the record."""
-    consumers = {norm_dn(one(c, "ciamBindDn")): c for c in children(d, CONSUMERS, "ciamConsumer") if one(c, "ciamBindDn")}
-    services = {one(e, "ciamFqdn").lower() for e in d.entries.values() if "ciamServiceName" in e.classes
-                and one(e, "ciamFqdn")}
-    servers = {one(e, "ciamHostname").lower() for e in d.entries.values() if "ciamServer" in e.classes
-               and one(e, "ciamHostname")}
-
-    def ldap(s):
-        name, bind = s.get("name") or s.get("id"), s.get("userDN")
-        hosts = [_host(h) for h in s.get("hostnames") or ()]
-        consumer = consumers.get(norm_dn(bind)) if bind else None
-        return (*((f"LDAP data store {name}: binds as consumer {one(consumer, 'cn')}",) if consumer else
-                  (f"LDAP data store {name}: binds as {bind}, which no consumer records",) if bind else ()),
-                *(f"LDAP data store {name}: reaches directory server {h} by its hostname, not a service name (it "
-                  f"changes when servers are replaced or moved)" for h in hosts if h in servers),
-                *(f"LDAP data store {name}: reaches {h}, which is neither a service name nor a server in the record"
-                  for h in hosts if h not in servers and h not in services),
-                *((f"LDAP data store {name}: connects without TLS",) if s.get("useSsl") is False else ()))
-    return tuple(n for s in stores for n in (ldap(s) if s.get("type") == "LDAP" else
-                                             (f"{s.get('type', 'unknown')} data store {s.get('name') or s.get('id')}: "
-                                              f"not recorded yet (PingFederate depth)",)))
-
-
 # ------------------------------------------------------------------ the importer
 def read_export(files, d, patterns, at=None):
     """Imported from a PingFederate bulk export (or this adapter's rendered files)."""
     found, unread, version, unreadable = resources(files)
     certs = certificate_entries(d, found)
     groups, notices = integration_groups(d, found, certs)
+    stores, store_notices = data_store_groups(d, found["datastore"], patterns)
     nothing = not any(found.values())
     return Imported(
         containers=tuple(make_entry(b, ("top", "organizationalUnit"), {"ou": (b.split(",", 1)[0].split("=", 1)[1],)})
-                         for b in (INTEGRATIONS, CERTIFICATES)),
-        groups=(*((c.dn, (c,)) for c in certs.values()), *groups),
-        notices=(*((f"exported from PingFederate {version}",) if version else ()), *notices,
-                 *datastore_notices(d, found["datastore"]),
+                         for b in (INTEGRATIONS, CERTIFICATES, PINGFEDERATE, DATA_STORES)),
+        groups=(*((c.dn, (c,)) for c in certs.values()), *groups, *stores),
+        notices=(*((f"exported from PingFederate {version}",) if version else ()), *notices, *store_notices,
                  *((f"not read yet (PingFederate depth): {', '.join(f'{r} ({n})' for r, n in sorted(unread.items()))}",)
                    if unread else ()),
                  *(("where PingFederate keeps OAuth clients, grants and sessions is set in its hivemodule.xml, not the "

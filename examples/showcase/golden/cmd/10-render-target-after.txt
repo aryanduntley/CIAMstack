@@ -1,3 +1,3 @@
-rendered 49 files for env=prod,cloud=target,ou=environments,dc=ciam-ops (azure) → <OUT>/render-after/target-prod
+rendered 50 files for env=prod,cloud=target,ou=environments,dc=ciam-ops (azure) → <OUT>/render-after/target-prod
   UNBOUND role: backup-target
 exit 0

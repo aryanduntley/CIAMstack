@@ -180,6 +180,11 @@
       "format": "json",
       "sha256": "a334487beac8c8897703a40a7983df76743ebbce03efd0f131eb78cf191743df"
     },
+    "pingfederate/data-stores.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "1c2e1f997214afe51a7376d570760e79d5eafe02cba44c15c5776144eb458134"
+    },
     "pingfederate/idp-connections.json": {
       "scope": "environment-neutral",
       "format": "json",
@@ -258,7 +263,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "0f94217bb25f011fafbe09baf1396c485f2ed83f0adb151f65c0d6aa8e087807"
+      "sha256": "796877f5079b9bc1f8dcb7d81d57751d5523cf81884c9845b7f2a65cd999cce3"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

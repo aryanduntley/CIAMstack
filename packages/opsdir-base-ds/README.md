@@ -57,4 +57,4 @@ from opsdir_base_ds.observe import config_entries, server_id
 from opsdir_base_ds.importers import importers
 ```
 
-In this repository: `scripts/dev-install.sh`.
+In this repository: `opsdir/scripts/dev-install.sh`.

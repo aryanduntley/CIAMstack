@@ -192,6 +192,22 @@ ciamBindingRole: ig-keystore
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /stage/ig-keystore
 
+dn: cn=secret-pf-ds-bind-password,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-ds-bind-password
+ciamBindingRole: pf-ds-bind-password
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /stage/pf-ds-bind-password
+
+dn: cn=secret-pf-grants-db-password,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-grants-db-password
+ciamBindingRole: pf-grants-db-password
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /stage/pf-grants-db-password
+
 dn: cn=backup,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamBackupTarget

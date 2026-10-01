@@ -58,8 +58,8 @@ ciamBindDn: {BIND_DN}
 """
 LDAP = named(CONNECTORS, "ldap")
 HRDB = named(CONNECTORS, "hrdb")
-SET_ROLE = parse(f"dn: {LDAP}\nchangetype: modify\nreplace: pingidmCredentialRole\n"
-                 "pingidmCredentialRole: idm-ds-bind-password\n-\n")
+SET_ROLE = tuple(parse(f"dn: {LDAP}\nchangetype: modify\nreplace: pingidmCredentialRole\n"
+                       "pingidmCredentialRole: idm-ds-bind-password\n-\n"))
 
 
 def files_of(root):

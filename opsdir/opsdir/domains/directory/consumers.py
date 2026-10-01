@@ -11,6 +11,13 @@ UNSEEN_DAYS = 30         # not seen in the logs for longer than this: still in u
 REVIEW_DAYS = 365        # a review older than this is due again
 
 
+def consumer_by_bind_dn(d, bind_dn):
+    """The consumer record whose ciamBindDn is bind_dn (case-insensitive), or None: how an importer links the account
+    a product binds to the directory as (an IDM connector's principal, a PingFederate data store's user DN)."""
+    return next((c for c in children(d, CONSUMERS, "ciamConsumer")
+                 if bind_dn and (one(c, "ciamBindDn") or "").lower() == bind_dn.lower()), None)
+
+
 def _date(v):
     return gtime_date(v) if v else None
 

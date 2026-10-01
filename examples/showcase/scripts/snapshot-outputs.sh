@@ -72,7 +72,7 @@ cap 07-reject-missing-attr od modify --change CHG-2001 changes/rejected/missing-
 
 cap 08-apply-chg-2001 od modify --change CHG-2001 changes/CHG-2001-mro-firewall-target.ldif
 cap 08-apply-chg-2003 od modify --change CHG-2003 changes/CHG-2003-stable-ldaps-name.ldif
-cap 08-apply-chg-2005 od modify --change CHG-2005 changes/CHG-2005-idm-connector-credentials.ldif
+cap 08-apply-chg-2005 od modify --change CHG-2005 changes/CHG-2005-credential-roles.ldif
 od history 2>&1 | sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}/<TIMESTAMP>        /' \
   > "$OUT/cmd/09-history.txt"
 

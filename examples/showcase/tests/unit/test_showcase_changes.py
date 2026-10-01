@@ -11,9 +11,11 @@ from support import build_directory, schema_for
 def test_the_showcase_changes_are_exactly_the_approved_ones(estate):
     records = diff(estate["before"], estate["after"])
     assert [(r.changetype, r.dn.split(",")[0]) for r in records] == [
-        ("add", "cn=fw-mro-batch"), ("modify", "cn=hrdb"), ("modify", "cn=ldap"), ("modify", "cn=svc-ldaps")]
-    assert {attr for _, attr, _ in records[3].mods} == {"ciamFqdn", "ciamDnsZone", "ciamChangeRef"}
-    assert {attr for _, attr, _ in records[2].mods} == {"pingidmCredentialRole", "ciamChangeRef"}
+        ("add", "cn=fw-mro-batch"), ("modify", "cn=grant-store"), ("modify", "cn=hrdb"), ("modify", "cn=ldap"),
+        ("modify", "cn=svc-ldaps"), ("modify", "cn=user-directory")]
+    assert {attr for _, attr, _ in records[4].mods} == {"ciamFqdn", "ciamDnsZone", "ciamChangeRef"}
+    assert {attr for _, attr, _ in records[3].mods} == {"pingidmCredentialRole", "ciamChangeRef"}
+    assert {attr for _, attr, _ in records[5].mods} == {"pingfedCredentialRole", "ciamChangeRef"}
 
 
 def test_applying_a_change_set_to_its_base_gives_the_other_snapshot(estate):

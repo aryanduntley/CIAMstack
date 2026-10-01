@@ -160,7 +160,11 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2007  update  cn=mro-batch-export,ou=consumers,dc=ciam-ops
 <TIMESTAMP>          CHG-2007  update  cn=pf-ds-svc,ou=consumers,dc=ciam-ops
 <TIMESTAMP>          CHG-2007  update  cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
+<TIMESTAMP>          CHG-2008  insert  ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=reports-api,ou=integrations,dc=ciam-ops
+<TIMESTAMP>          CHG-2008  insert  ou=data-stores,ou=pingfederate,dc=ciam-ops
+<TIMESTAMP>          CHG-2008  insert  cn=grant-store,ou=data-stores,ou=pingfederate,dc=ciam-ops
+<TIMESTAMP>          CHG-2008  insert  cn=user-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2009  insert  ou=census,dc=ciam-ops
 <TIMESTAMP>          CHG-2009  insert  cn=483017ca92ce3ac8,ou=census,dc=ciam-ops
 <TIMESTAMP>          CHG-2009  insert  cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
@@ -198,4 +202,6 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2003  update  cn=svc-ldaps,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2005  update  cn=ldap,ou=connectors,ou=pingidm,dc=ciam-ops
 <TIMESTAMP>          CHG-2005  update  cn=hrdb,ou=connectors,ou=pingidm,dc=ciam-ops
-(198 rows)
+<TIMESTAMP>          CHG-2005  update  cn=user-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
+<TIMESTAMP>          CHG-2005  update  cn=grant-store,ou=data-stores,ou=pingfederate,dc=ciam-ops
+(204 rows)

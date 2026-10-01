@@ -12,6 +12,8 @@ from .naming import branch
 from .overlays import (apply_overrides, declared_roles, effective_bindings, effective_overrides, effective_stack,
                        lineage)
 
+UNBOUND = "UNBOUND:"              # a value from a role the environment doesn't bind: UNBOUND:<role>
+
 # One declared component of an environment's stack: the adapter (by registered name) that fills a role.
 StackComponent = NamedTuple("StackComponent", [("role", str), ("adapter", str), ("versions", Optional[str]),
                                                ("source", Optional[str])])
@@ -106,6 +108,21 @@ def subnet_of(m, server):
 def secret(m, role):
     b = one_role(m, role)
     return one(b, "ciamRefUri") if b else None
+
+
+def bound(m, role, attr):
+    """The attribute of the role's binding in environment m (a service name's ciamFqdn, a secret's ciamRefUri), or
+    UNBOUND:<role> when the environment binds none: what a product renderer writes where a value differs per
+    environment (the planner blocks on the unbound ones)."""
+    b = one_role(m, role)
+    return one(b, attr) if b is not None and one(b, attr) else f"{UNBOUND}{role}"
+
+
+def secret_placeholder(m, role):
+    """How a withheld credential is written for environment m: the reference of the role's binding, resolved at
+    deployment (${secret:<ref-uri>}), or UNBOUND:<role>."""
+    ref = bound(m, role, "ciamRefUri")
+    return ref if ref.startswith(UNBOUND) else "${secret:" + ref + "}"
 
 
 def joins(m):

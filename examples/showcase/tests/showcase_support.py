@@ -20,7 +20,7 @@ SCRIPTS = SHOWCASE / "scripts"
 # the approved changes the showcase applies, in order: (change id, LDIF file)
 APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ldif"),
             ("CHG-2003", SHOWCASE / "changes" / "CHG-2003-stable-ldaps-name.ldif"),
-            ("CHG-2005", SHOWCASE / "changes" / "CHG-2005-idm-connector-credentials.ldif"))
+            ("CHG-2005", SHOWCASE / "changes" / "CHG-2005-credential-roles.ldif"))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken)
 IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", None),
            ("CHG-2004", "pingidm", SHOWCASE / "exports" / "idm", None),

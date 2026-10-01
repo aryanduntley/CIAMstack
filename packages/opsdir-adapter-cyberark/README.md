@@ -6,4 +6,4 @@ A secret-store adapter: owns the `cyberark://<app-id>/<safe>/<object>` reference
 
 Use it where an account is vaulted in PAM: as the binding's reference, or as another copy of a secret held elsewhere (`ciamCopyRef`), so a rotation report lists the vault too.
 
-Installing the package registers it with opsdir (entry point `opsdir.adapters`: `cyberark`); nothing in the opsdir core changes. In this repository: `scripts/dev-install.sh`.
+Installing the package registers it with opsdir (entry point `opsdir.adapters`: `cyberark`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.

@@ -1,8 +1,8 @@
 """A PingFederate bulk export read into the record: SP and IdP connections and OAuth clients as integrations (merged
 with the record's, keeping owners, populations and claim transforms), claims linked to user-schema records, the
 certificates of PingFederate's own keys and of partners matched by fingerprint, secrets never read, data stores
-checked against the directory's consumers and names, resources left for later named, importing again changing
-nothing, and the adapter's own rendered files reading back as they were."""
+recorded (in detail: test_pingfederate_datastores), resources left for later named, importing again changing nothing,
+and the adapter's own rendered files reading back as they were."""
 import json
 from pathlib import Path
 
@@ -13,6 +13,7 @@ from opsdir.domains.federation.naming import IDENTITY_SERVICES, INTEGRATIONS
 from opsdir.domains.federation.services import identity_services
 from opsdir.domains.pki.naming import CERTIFICATES
 from opsdir_adapter_pingfederate.importer import fingerprint, read_export
+from opsdir_adapter_pingfederate.naming import DATA_STORES
 from opsdir_adapter_pingfederate.render import SERVER_ROLES, pingfederate_files
 
 EXPORT = Path(__file__).resolve().parent / "bulk-export"
@@ -44,7 +45,8 @@ def _record():
         _row(f"cn=pf-ds-svc,{CONSUMERS}", ("ciamConsumer",), cn="pf-ds-svc",
              ciamBindDn="uid=pf-svc,ou=service-accounts,dc=example,dc=test"),
         _row(f"cn=ds-1,{ENV}", ("ciamServer",), cn="ds-1", ciamServerRole="ds", ciamHostname="ds-1.internal.example.test"),
-        _row(f"cn=svc-ldaps,ou=bindings,{ENV}", ("ciamServiceName",), cn="svc-ldaps", ciamFqdn="ldap.example.test")))
+        _row(f"cn=svc-ldaps,ou=bindings,{ENV}", ("ciamServiceName",), cn="svc-ldaps", ciamFqdn="ldap.example.test",
+             ciamBindingRole="ds-ldaps-service")))
 
 
 def _files():
@@ -104,15 +106,19 @@ def test_no_secret_is_read():
     assert "OBF:" not in dump and "not-a-real-password" not in dump
 
 
-def test_data_stores_are_checked_against_the_directory_and_later_resources_named():
-    notices = read_export(_files(), _record(), ()).notices
+def test_data_stores_are_recorded_and_later_resources_named():
+    d = _record()
+    imported = read_export(_files(), d, ())
+    after = _after(d, imported)
+    users = get(after, f"cn=user-directory,{DATA_STORES}")
+    assert (one(users, "pingfedStoreType"), one(users, "pingfedConsumer")) == ("LDAP", f"cn=pf-ds-svc,{CONSUMERS}")
     assert {"exported from PingFederate 12.1.4.0",
-            "LDAP data store User directory: binds as consumer pf-ds-svc",
-            "LDAP data store User directory: reaches directory server ds-1.internal.example.test by its hostname, not a "
-            "service name (it changes when servers are replaced or moved)",
-            "JDBC data store Grant store: not recorded yet (PingFederate depth)",
-            "not read yet (PingFederate depth): /idp/adapters (1), /oauth/accessTokenManagers (1)"} <= set(notices)
-    assert not any("ldap.example.test" in n for n in notices)          # a service name: as it should be
+            "LDAP data store User directory: reaches server ds-1.internal.example.test by its hostname, not a service "
+            "name (it changes when servers are replaced or moved)",
+            "LDAP data store User directory: no single service name for its hosts, so it reaches the same place from "
+            "every environment",
+            "not read yet (PingFederate depth): /idp/adapters (1), /oauth/accessTokenManagers (1)"} <= set(imported.notices)
+    assert not any("ldap.example.test" in n for n in imported.notices)          # a service name: as it should be
 
 
 def test_importing_the_same_export_again_changes_nothing():

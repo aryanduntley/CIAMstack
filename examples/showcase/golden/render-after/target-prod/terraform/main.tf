@@ -993,6 +993,14 @@ data "azurerm_key_vault_secrets" "kv_ciam_prod" {
       error_message = "Key Vault kv-ciam-prod has no secret pf-admin-password (role pf-admin-password)"
     }
     postcondition {
+      condition     = contains(self.names, "pf-ds-bind-password")
+      error_message = "Key Vault kv-ciam-prod has no secret pf-ds-bind-password (role pf-ds-bind-password)"
+    }
+    postcondition {
+      condition     = contains(self.names, "pf-grants-db-password")
+      error_message = "Key Vault kv-ciam-prod has no secret pf-grants-db-password (role pf-grants-db-password)"
+    }
+    postcondition {
       condition     = contains(self.names, "pf-signing-key")
       error_message = "Key Vault kv-ciam-prod has no secret pf-signing-key (role pf-signing-key)"
     }

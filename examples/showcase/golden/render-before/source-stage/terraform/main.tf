@@ -557,6 +557,14 @@ data "aws_secretsmanager_secret" "pf_admin_password" {
   arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/stage/pf-admin-password"
 }
 
+data "aws_secretsmanager_secret" "pf_ds_bind_password" {
+  arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/stage/pf-ds-bind-password"
+}
+
+data "aws_secretsmanager_secret" "pf_grants_db_password" {
+  arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/stage/pf-grants-db-password"
+}
+
 data "aws_secretsmanager_secret" "pf_signing_key" {
   arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/stage/pf-signing-key"
 }

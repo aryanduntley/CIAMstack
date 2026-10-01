@@ -14,4 +14,4 @@ The first two are the partners' contracts in the standard's form, importable int
 
 `metadata.py` builds entity descriptors from plain values; `xmltext.py` is a small, pure XML writer (immutable elements, deterministic text).
 
-In this repository: `scripts/dev-install.sh`.
+In this repository: `opsdir/scripts/dev-install.sh`.

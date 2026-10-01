@@ -23,12 +23,13 @@ def test_the_base_snapshot_reads_back_as_the_same_directory(estate):
 
 def test_workspace_changes_apply_when_live_did_not_move(estate):
     changes, conflicts = cutover_changes(estate["before"], estate["before"], estate["after"])
-    assert [r.changetype for r in changes] == ["add", "modify", "modify", "modify"] and conflicts == ()
+    assert [r.changetype for r in changes] == ["add", *["modify"] * 5] and conflicts == ()
 
 
 def test_the_same_entries_changed_on_both_sides_are_conflicts(estate):
     changes, conflicts = cutover_changes(estate["before"], estate["after"], estate["after"])
-    assert [c.split(",")[0] for c in conflicts] == ["cn=fw-mro-batch", "cn=hrdb", "cn=ldap", "cn=svc-ldaps"]
+    assert [c.split(",")[0] for c in conflicts] == ["cn=fw-mro-batch", "cn=grant-store", "cn=hrdb", "cn=ldap",
+                                                    "cn=svc-ldaps", "cn=user-directory"]
 
 
 def test_status_counts_changes_and_reports_live_movement(estate):
@@ -36,5 +37,5 @@ def test_status_counts_changes_and_reports_live_movement(estate):
     changes, _ = cutover_changes(estate["before"], estate["before"], estate["after"])
     assert status_text(base, changes, True).splitlines() == [
         "workspace copied from host=h password=*** at 2026-09-27 12:00:00",
-        "changes since then: 1 added, 3 modified, 0 deleted",
+        "changes since then: 1 added, 5 modified, 0 deleted",
         "live record: changed since the copy"]

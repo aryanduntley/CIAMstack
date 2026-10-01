@@ -16,6 +16,10 @@ EXPECTED = {
          "imported HR database connector names no secret", "CHG-2005"),
         ("B10", "IDM", "Connector `ldap` has withheld credentials but no credential role",
          "imported directory connector names no secret", "CHG-2005"),
+        ("B11", "PingFederate", "Data store `grant-store` has withheld credentials but no credential role",
+         "imported grant database store names no secret", "CHG-2005"),
+        ("B12", "PingFederate", "Data store `user-directory` has withheld credentials but no credential role",
+         "imported directory data store names no secret", "CHG-2005"),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -42,6 +46,10 @@ EXPECTED = {
          "PingFederate's engine pins ds-1's address in /etc/hosts", None),
         ("A19", "Hard-coded", "`apps/customer-portal/application.properties` holds source/prod values",
          "the portal names the LDAPS service, which the target renames (B1)", "CHG-2003"),
+        ("A20", "PingFederate", "Data store `grant-store` reaches a fixed host",
+         "the grant database is reached at the same host everywhere", None),
+        ("A21", "PingFederate", "Data store `user-directory` reaches a fixed host",
+         "PingFederate's LDAP data store lists ds-1 by hostname next to the LDAPS service", None),
     ],
 }
 

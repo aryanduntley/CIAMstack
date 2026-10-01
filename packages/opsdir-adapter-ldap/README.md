@@ -19,4 +19,4 @@ from opsdir_adapter_ldap.schema import schema_ldif         # with another subsch
 from opsdir_adapter_ldap.dit import dit_ldif, tree
 ```
 
-Installing the package registers the adapter with opsdir (entry point `opsdir.adapters`: `ldap`); nothing in the opsdir core changes. In this repository: `scripts/dev-install.sh`.
+Installing the package registers the adapter with opsdir (entry point `opsdir.adapters`: `ldap`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.

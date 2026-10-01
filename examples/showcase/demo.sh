@@ -95,7 +95,7 @@ echo "-- approved changes are entries; re-render and diff"
 rm -rf out/before && cp -r out/target-prod out/before
 od modify --change CHG-2001 changes/CHG-2001-mro-firewall-target.ldif
 od modify --change CHG-2003 changes/CHG-2003-stable-ldaps-name.ldif
-od modify --change CHG-2005 changes/CHG-2005-idm-connector-credentials.ldif
+od modify --change CHG-2005 changes/CHG-2005-credential-roles.ldif
 od history
 od render target/prod >/dev/null
 diff -ru out/before/terraform out/target-prod/terraform

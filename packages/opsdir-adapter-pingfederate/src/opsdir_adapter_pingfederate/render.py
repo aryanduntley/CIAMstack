@@ -3,6 +3,8 @@ OIDC bases, the standard documents at PingFederate's endpoint paths (all environ
 
   pingfederate/*.json       SP connections, OIDC clients, IdP connections
   saml/, oidc/              standard metadata, client registrations and discovery (opsdir-base-saml, -oidc)
+  pingfederate/data-stores.json   data stores, per environment: hosts from the bindings of their target roles,
+                                  withheld credentials as the references of their credential roles
 
 The PingFederate JSON follows the shape of Admin API resources (SP connections, OIDC clients, IdP connections) but is
 an illustrative subset. It hasn't been validated against a live /pf-admin-api/v1. In production this renderer would
@@ -10,11 +12,13 @@ target the Admin API or the PingFederate Terraform provider. Endpoint paths are 
 """
 import json
 
-from opsdir.core.directory import get, one, rdn_value, values
+from opsdir.core.directory import children, get, one, rdn_value, values
 from opsdir.domains.federation.services import claims, identity_services, integrations_served
 from opsdir_base_oidc.discovery import OidcEndpoints
 from opsdir_base_oidc.render import oidc_files
 from opsdir_base_saml.render import SamlEndpoints, saml_files
+from .datastores import data_stores_file
+from .naming import DATA_STORES
 
 USER_DIRECTORY = {"type": "LDAP_DATA_STORE", "id": "ciam-user-directory"}
 SERVER_ROLES = ("pf-engine", "pf-admin")      # ciamServerRole / ciamTargetRole values this adapter defines
@@ -109,3 +113,8 @@ def render_neutral(d):
     """PingFederate's own resources, then the standard SAML and OIDC documents for the services it serves."""
     served = identity_services(d, SERVER_ROLES)
     return {**pingfederate_files(d, served), **saml_files(d, served, SAML_ENDPOINTS), **oidc_files(d, served, OIDC_ENDPOINTS)}
+
+
+def render_env(m, services):
+    """PingFederate's configuration for environment m: its data stores."""
+    return data_stores_file(m, children(m.d, DATA_STORES, "pingfedDataStore"))

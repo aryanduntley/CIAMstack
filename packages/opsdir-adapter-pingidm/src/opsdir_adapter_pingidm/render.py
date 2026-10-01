@@ -14,12 +14,11 @@ blocks on both).
 import json
 
 from opsdir.core.directory import children, one, rdn_value, values
-from opsdir.core.environment import one_role
-from opsdir.core.jsondata import with_value
+from opsdir.core.environment import bound, secret_placeholder
+from opsdir.core.jsondata import WITHHELD, with_value, with_values
 from .naming import CONNECTORS, MANAGED, MAPPINGS, SCHEDULES
 
 FORMATS = (("pingidm/conf/*.json", "json"),)
-WITHHELD = "${withheld}"          # a withheld value no credential role supplies: the deployment must
 
 
 def _json(value):
@@ -58,31 +57,16 @@ def render_neutral(d):
             **schedule_files(d)}
 
 
-def _bound(m, role, attr):
-    b = one_role(m, role)
-    return one(b, attr) if b is not None and one(b, attr) else f"UNBOUND:{role}"
-
-
 def provisioner(m, c):
     """A connector's provisioner file for environment m: its host and credentials from the environment's bindings."""
     target, credential = one(c, "pingidmTargetRole"), one(c, "pingidmCredentialRole")
     config = _config(c)
-    hosted = with_value(config, "/configurationProperties/host", _bound(m, target, "ciamFqdn")) if target else config
-    filled = _fill(hosted, values(c, "pingidmWithheld"), _secret(m, credential) if credential else WITHHELD)
+    hosted = with_value(config, "/configurationProperties/host", bound(m, target, "ciamFqdn")) if target else config
+    filled = with_values(hosted, values(c, "pingidmWithheld"), secret_placeholder(m, credential) if credential
+                         else WITHHELD)
     ref = {k: v for k, v in (("bundleName", one(c, "pingidmBundle")), ("bundleVersion", one(c, "pingidmBundleVersion")),
                              ("connectorName", one(c, "pingidmConnectorName"))) if v}
     return {"name": rdn_value(c), "connectorRef": ref, **filled}
-
-
-def _secret(m, role):
-    """How a withheld credential is written for environment m: the reference of the role's binding, resolved at
-    deployment (${secret:<ref-uri>}), or UNBOUND:<role>."""
-    ref = _bound(m, role, "ciamRefUri")
-    return ref if ref.startswith("UNBOUND:") else "${secret:" + ref + "}"
-
-
-def _fill(config, pointers, secret):
-    return config if not pointers else _fill(with_value(config, pointers[0], secret), pointers[1:], secret)
 
 
 def render_env(m, services):

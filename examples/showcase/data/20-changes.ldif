@@ -61,7 +61,8 @@ cn: CHG-2005
 ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
-ciamTitle: Name the secrets the IDM connectors use (credential roles)
+ciamTitle: Name the secrets the IDM connectors and PingFederate data stores us
+ e (credential roles)
 
 dn: cn=CHG-2006,ou=changes,dc=ciam-ops
 objectClass: top

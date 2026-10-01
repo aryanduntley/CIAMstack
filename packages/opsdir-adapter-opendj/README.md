@@ -13,4 +13,4 @@ Reads servers' configuration back with the lineage's importers, `opendj/config` 
 
 Command and option names follow the OpenDJ 4.x documentation; verify them against the exact target version before use.
 
-Installing the package registers it with opsdir (entry point `opsdir.adapters`: `opendj`); nothing in the opsdir core changes. In this repository: `scripts/dev-install.sh`.
+Installing the package registers it with opsdir (entry point `opsdir.adapters`: `opendj`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.
