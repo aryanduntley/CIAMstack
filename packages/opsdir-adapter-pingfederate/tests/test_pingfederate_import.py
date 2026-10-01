@@ -117,7 +117,7 @@ def test_data_stores_are_recorded_and_later_resources_named():
             "name (it changes when servers are replaced or moved)",
             "LDAP data store User directory: no single service name for its hosts, so it reaches the same place from "
             "every environment",
-            "not read yet (PingFederate depth): /idp/adapters (1), /oauth/accessTokenManagers (1)"} <= set(imported.notices)
+            "not read yet (PingFederate depth): /oauth/accessTokenManagers (1)"} <= set(imported.notices)
     assert not any("ldap.example.test" in n for n in imported.notices)          # a service name: as it should be
 
 

@@ -181,9 +181,9 @@ Importer: an `ldapsearch`-driven profiler that emits statistics only (no values)
 | Access token managers (JWT / reference), signing key choice, lifetimes | I | ● | ~ captured (showcase: `default-atm.json`) |
 | OIDC policies (ID token claims, lifetimes) | I | ● | — |
 | Token exchange / processors / generators | I | ● | — |
-| Authentication policies (trees), policy contracts, authentication selectors (IdP discovery, "select your identity provider") | I | ● These are the login flows, so they deserve first-class modeling | — |
-| IdP adapters: HTML Form, Identifier-First, Duo, Kerberos… | I (+S) | ● | — |
-| Password credential validators (LDAP Username PCV → DS) | I + S | ● | — |
+| Authentication policies (trees), policy contracts, authentication selectors (IdP discovery, "select your identity provider") | I | ● These are the login flows, so they deserve first-class modeling | ✔ `pingfedAuthPolicySet` + `pingfedAuthPolicy` per tree and fragment, `pingfedPolicyContract`, selectors as `pingfedPlugin`; linked to what they run; **imported**; planner blocks on references the record lacks |
+| IdP adapters: HTML Form, Identifier-First, Duo, Kerberos… | I (+S) | ● | ✔ `pingfedPlugin` (settings, parent, linked validators/adapters; secrets withheld, a credential role per environment); **imported** |
+| Password credential validators (LDAP Username PCV → DS) | I + S | ● | ✔ `pingfedPlugin`, linked to its data store; **imported** |
 | **Data stores**: LDAP (DS hosts, bind DN, pool sizes, LDAPS), JDBC | I + B (hosts) + S | ● **Consumer link to the directory.** Hosts must be *service names*. | ✔ `pingfedDataStore` (PingFederate package schema): hosts that are service names become a target role rendered per environment, bind DN linked to its consumer, credentials withheld and named by a credential role; **imported**; planner flags fixed hosts and plain LDAP |
 | Local identity profiles (PF-native registration & profile management), if used | I | ● | — |
 | Password reset / change settings (email or SMS OTP), notification publishers (SMTP) | I + B + S | ● | — |

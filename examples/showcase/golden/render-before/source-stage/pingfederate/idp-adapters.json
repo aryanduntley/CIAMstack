@@ -1,0 +1,9 @@
+[
+  {
+    "id": "htmlform",
+    "pluginDescriptorRef": {
+      "id": "com.pingidentity.adapters.htmlform.idp.HtmlFormIdpAuthnAdapter"
+    },
+    "name": "HTML Form"
+  }
+]

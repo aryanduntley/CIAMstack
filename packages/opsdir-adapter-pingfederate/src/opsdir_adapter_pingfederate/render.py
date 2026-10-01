@@ -3,8 +3,12 @@ OIDC bases, the standard documents at PingFederate's endpoint paths (all environ
 
   pingfederate/*.json       SP connections, OIDC clients, IdP connections
   saml/, oidc/              standard metadata, client registrations and discovery (opsdir-base-saml, -oidc)
+  pingfederate/authentication-policy-contracts.json, authentication-policies.json,
+    authentication-policy-fragments.json      authentication policies (environment-neutral)
   pingfederate/data-stores.json   data stores, per environment: hosts from the bindings of their target roles,
                                   withheld credentials as the references of their credential roles
+  pingfederate/password-credential-validators.json, idp-adapters.json, authentication-selectors.json
+                                  plugin instances, per environment: withheld secrets from their credential roles
 
 The PingFederate JSON follows the shape of Admin API resources (SP connections, OIDC clients, IdP connections) but is
 an illustrative subset. It hasn't been validated against a live /pf-admin-api/v1. In production this renderer would
@@ -19,6 +23,8 @@ from opsdir_base_oidc.render import oidc_files
 from opsdir_base_saml.render import SamlEndpoints, saml_files
 from .datastores import data_stores_file
 from .naming import DATA_STORES
+from .plugins import plugin_files
+from .policies import policy_files
 
 USER_DIRECTORY = {"type": "LDAP_DATA_STORE", "id": "ciam-user-directory"}
 SERVER_ROLES = ("pf-engine", "pf-admin")      # ciamServerRole / ciamTargetRole values this adapter defines
@@ -112,9 +118,11 @@ def pingfederate_files(d, served):
 def render_neutral(d):
     """PingFederate's own resources, then the standard SAML and OIDC documents for the services it serves."""
     served = identity_services(d, SERVER_ROLES)
-    return {**pingfederate_files(d, served), **saml_files(d, served, SAML_ENDPOINTS), **oidc_files(d, served, OIDC_ENDPOINTS)}
+    return {**pingfederate_files(d, served), **policy_files(d), **saml_files(d, served, SAML_ENDPOINTS),
+            **oidc_files(d, served, OIDC_ENDPOINTS)}
 
 
 def render_env(m, services):
-    """PingFederate's configuration for environment m: its data stores."""
-    return data_stores_file(m, children(m.d, DATA_STORES, "pingfedDataStore"))
+    """PingFederate's configuration for environment m: its data stores and plugin instances (validators, adapters,
+    selectors), with that environment's hosts and secret references."""
+    return {**data_stores_file(m, children(m.d, DATA_STORES, "pingfedDataStore")), **plugin_files(m)}

@@ -60,6 +60,7 @@ Target roles still unbound: `backup-target`
 - target/prod joins the DS replication deployment of source/prod (same deployment ID; keys and encrypted data stay readable).
 - Interconnect `link-source` (site-to-site VPN (landing-zone managed)) links the environments.
 - source/prod already admits every target/prod replica on the replication port.
+- PingFederate's 1 plugin instance(s) and 0 authentication policy tree(s) name only what the record has.
 - The gateway route signs users in with clients and OpenID providers the record has.
 - Same product versions in both environments (PingAM 7.5.1, PingDS 7.5.1, PingFederate 12.1.4, PingGateway 2024.11.0, PingIDM 7.5.0): a re-host, not an upgrade.
 - External allowlist `customer-portal-egress` (customer-portal-team) already covers target/prod's `ds-ldaps-service` (10.60.1.100/32).
@@ -80,4 +81,4 @@ Target roles still unbound: `backup-target`
 
 ## What the target renders to
 
-`opsdir render target/prod` produces 50 files from the same databases: Terraform for the target cloud, per-server DS setup scripts that join the existing deployment, PingFederate data stores for each environment, gateway routes to each environment's applications, IDM connector configuration for each environment, and the environment-neutral PingAM/DS/PingFederate/PingIDM configuration.
+`opsdir render target/prod` produces 51 files from the same databases: Terraform for the target cloud, per-server DS setup scripts that join the existing deployment, PingFederate data stores and plugin instances for each environment, gateway routes to each environment's applications, IDM connector configuration for each environment, and the environment-neutral PingAM/DS/PingFederate/PingIDM configuration.

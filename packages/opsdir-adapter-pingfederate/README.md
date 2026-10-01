@@ -25,8 +25,9 @@ The importer `pingfederate/bulk` reads the Admin API bulk export (and this adapt
 - **Key pairs** (`/keyPairs/signing`, `/keyPairs/sslServer`) and connection certificates become certificate facts, matched by fingerprint; facts the export doesn't give are kept.
 
 - **Data stores** (LDAP, JDBC, custom) become `pingfedDataStore` entries, below.
+- **Password credential validators, IdP adapters, authentication selectors, policy contracts, the default authentication policy and policy fragments** become entries too, below.
 
-Integrations are matched by entity ID or client ID, data stores by id, and keep everything the export doesn't hold (owners, criticality, populations, claim transforms, certificate links the record makes, a data store's credential role). A client or connection the record didn't have is added and named in the notices, so it gets an owner. Client secrets and data store passwords are never read. Adapters, access token managers, policies and where clients, grants and sessions are kept (`hivemodule.xml`: hold it with `opsdir capture`) are named, and read in a later version (milestone 4.1).
+Integrations are matched by entity ID or client ID, data stores by id, and keep everything the export doesn't hold (owners, criticality, populations, claim transforms, certificate links the record makes, a data store's credential role). A client or connection the record didn't have is added and named in the notices, so it gets an owner. Client secrets, data store passwords and plugin secrets are never read. Access token managers, OIDC policies and where clients, grants and sessions are kept (`hivemodule.xml`: hold it with `opsdir capture`) are named, and read in a later version (milestone 4.1).
 
 ## Data stores
 
@@ -40,6 +41,19 @@ Held under `ou=data-stores,ou=pingfederate` in this package's schema (OID arc `1
 
 The credential role is never guessed: an approved change sets it. The rendered file imports back unchanged. Notices name a store that binds as an account no consumer records, hosts that are a server's hostname (they change when servers are replaced or moved) or unknown to the record, a store with no single service name, an LDAP store without TLS (`useSsl` and `useStartTLS` off), and withheld credentials without a credential role.
 
-**Planner check** (`check_data_stores`): a store with withheld credentials but no credential role, and a target or credential role the target environment doesn't bind, are blockers; a fixed host and an LDAP store without TLS are actions.
+## Authentication: plugins and policies
+
+| Admin API | Record (under `ou=pingfederate`) | Rendered |
+|---|---|---|
+| `/passwordCredentialValidators`, `/idp/adapters`, `/authenticationSelectors` | `pingfedPlugin` (cn: its id) under `ou=credential-validators`, `ou=idp-adapters`, `ou=authentication-selectors`: `pingfedPluginKind`, `pingfedPluginType` (its `pluginDescriptorRef`), `pingfedParent` (its `parentRef`), `pingfedUses` (the objects its settings fields name), settings | Per environment: `pingfederate/password-credential-validators.json`, `idp-adapters.json`, `authentication-selectors.json` |
+| `/authenticationPolicyContracts` | `pingfedPolicyContract` (cn: its id) under `ou=policy-contracts` | `authentication-policy-contracts.json` (environment-neutral) |
+| `/authenticationPolicies/default` | `pingfedAuthPolicySet` `cn=default,ou=authentication-policies` (its own settings), one `pingfedAuthPolicy` per tree below it (cn: the tree's name; `pingfedPosition`, `pingfedEnabled`, `pingfedPolicyTree`, `pingfedUses`) | `authentication-policies.json` (environment-neutral) |
+| `/authenticationPolicies/fragments` | `pingfedAuthPolicy` (cn: its id) under `ou=policy-fragments` | `authentication-policy-fragments.json` (environment-neutral) |
+
+- **References.** Objects keep the ids PingFederate names others by, and the record links them by DN (`pingfedUses`): a validator's data store (`LDAP Datastore`, `JDBC Datastore`), an HTML form adapter's validators (`Password Credential Validator Instance`), a composite adapter's adapters (`Adapter Instance`), and what a policy tree or fragment runs (IdP adapters, selectors, policy contracts, fragments; IdP connections as sources are kept in the tree but not linked). The field names are data (`plugins.REF_FIELDS`); a custom plugin's fields are added there. A reference neither the export nor the record has is named on import.
+- **Secrets.** Every encrypted value (`encryptedValue`, `encryptedPassword`, …) and every settings field whose name says it holds a secret (`Secret Key`, `Client Secret`, `Password`) is withheld; each environment renders the reference of the instance's credential role (`pingfedCredentialRole`), `UNBOUND:<role>`, or `${withheld}` while none is set. All of an instance's secrets take that one role's reference.
+- **The default policy is imported as one:** a tree the export no longer has is removed. Trees whose names can't name an entry, or that repeat another tree's name, are named and not imported.
+
+**Planner check** (`check_data_stores`): a store with withheld credentials but no credential role, and a target or credential role the target environment doesn't bind, are blockers; a fixed host and an LDAP store without TLS are actions. **`check_authentication`:** a plugin instance, policy tree or fragment that names an object the record doesn't have (PingFederate refuses such a configuration), and a plugin instance with withheld secrets but no credential role or one the target doesn't bind, are blockers.
 
 Defines the server roles `pf-engine` and `pf-admin`. Installing the package registers it with opsdir (entry point `opsdir.adapters`: `pingfederate`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.

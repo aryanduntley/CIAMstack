@@ -171,6 +171,11 @@
       "format": "json",
       "sha256": "840540e47c5f3829287e86bd129ac082d69fe5870a354e95fb855e18ee1a6469"
     },
+    "pingfederate/idp-adapters.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "7e288ebee52fc277961dbeff53c867212d164ddce45a88cd86cbac4cdc7fea01"
+    },
     "pingfederate/idp-connections.json": {
       "scope": "environment-neutral",
       "format": "json",

@@ -15,6 +15,12 @@ render reads back as it was.
   /dataStores                     -> data stores (pingfedDataStore, opsdir_adapter_pingfederate.datastores): hosts that
                                      are a service name become its role, the bind account its consumer record,
                                      credentials withheld
+  /passwordCredentialValidators,  -> plugin instances (pingfedPlugin, opsdir_adapter_pingfederate.plugins), linked to
+    /idp/adapters,                   the objects their settings name, secrets withheld
+    /authenticationSelectors
+  /authenticationPolicyContracts, -> policy contracts, the default policy's trees, fragments
+    /authenticationPolicies/default,  (opsdir_adapter_pingfederate.policies), linked to what they run
+    /authenticationPolicies/fragments
 Integrations are matched by entity ID or client ID, certificates by fingerprint, data stores by id; what the record
 holds beyond the export (owners, criticality, populations, what a claim is transformed with, a data store's credential
 role) is kept. Where PingFederate's names are coarser than the standard ones (SECRET for three client authentication
@@ -34,13 +40,22 @@ from opsdir.domains.federation.naming import INTEGRATIONS
 from opsdir.domains.federation.services import identity_services, integrations
 from opsdir.domains.pki.naming import CERTIFICATES
 from .datastores import data_store_groups
-from .naming import DATA_STORES, PINGFEDERATE
+from .naming import (CONTRACTS, DATA_STORES, FRAGMENTS, IDP_ADAPTERS, PINGFEDERATE, POLICIES, SELECTORS,
+                     VALIDATORS)
+from .plugins import KINDS, plugin_groups
+from .policies import policy_groups
 from .render import BINDINGS, CLIENT_AUTH, GRANT_TYPES, SERVER_ROLES
 
 RESOURCES = {"/idp/spConnections": "sp", "/sp/idpConnections": "idp", "/oauth/clients": "client",
-             "/keyPairs/signing": "signing", "/keyPairs/sslServer": "ssl", "/dataStores": "datastore"}
+             "/keyPairs/signing": "signing", "/keyPairs/sslServer": "ssl", "/dataStores": "datastore",
+             **{k.resource: kind for kind, k in KINDS.items()}, "/authenticationPolicyContracts": "contract",
+             "/authenticationPolicies/default": "policy", "/authenticationPolicies/fragments": "fragment"}
 RENDERED = {"sp-connections.json": "sp", "idp-connections.json": "idp", "oidc-clients.json": "client",
-            "data-stores.json": "datastore"}
+            "data-stores.json": "datastore", **{k.output: kind for kind, k in KINDS.items()},
+            "authentication-policy-contracts.json": "contract", "authentication-policies.json": "policy",
+            "authentication-policy-fragments.json": "fragment"}
+# the kinds of objects other objects name by id (opsdir_adapter_pingfederate.objects)
+NAMED_KINDS = ("datastore", *KINDS, "contract", "fragment")
 KEY_ROLES = {"signing": ("saml-signing", "pf-signing-key"), "ssl": ("tls-server", "sso-tls-keystore")}
 OWNED = {"saml2-sp": ("ciamProtocolType", "ciamEntityId", "ciamAcsUrl", "ciamSamlBinding"),
          "saml2-idp": ("ciamProtocolType", "ciamEntityId"),
@@ -73,7 +88,7 @@ def resources(files):
     bulk = [op for doc in parsed.values() if isinstance(doc, dict)
             for op in doc.get("operations") or () if isinstance(op, dict)]
     rendered = [(RENDERED[p.rsplit("/", 1)[-1]], item) for p, doc in parsed.items()
-                if p.rsplit("/", 1)[-1] in RENDERED and isinstance(doc, list) for item in doc]
+                if p.rsplit("/", 1)[-1] in RENDERED for item in (doc if isinstance(doc, list) else [doc])]
     found = ((RESOURCES.get(op.get("resourceType")), item) for op in bulk if op.get("operationType", "SAVE") == "SAVE"
              for item in op.get("items") or ())
     pairs = [(k, i) for k, i in (*found, *rendered) if k and isinstance(i, dict)]
@@ -305,13 +320,20 @@ def read_export(files, d, patterns, at=None):
     found, unread, version, unreadable = resources(files)
     certs = certificate_entries(d, found)
     groups, notices = integration_groups(d, found, certs)
+    exported = {(kind, item.get("id")) for kind in NAMED_KINDS for item in found[kind]}
     stores, store_notices = data_store_groups(d, found["datastore"], patterns)
+    plugins, plugin_notices = plugin_groups(d, found, patterns, exported)
+    policies, policy_notices = policy_groups(d, found, exported)
     nothing = not any(found.values())
+    branches = (*((VALIDATORS,) if found["validator"] else ()), *((IDP_ADAPTERS,) if found["idp-adapter"] else ()),
+                *((SELECTORS,) if found["selector"] else ()), *((CONTRACTS,) if found["contract"] else ()),
+                *((POLICIES,) if found["policy"] else ()), *((FRAGMENTS,) if found["fragment"] else ()))
     return Imported(
         containers=tuple(make_entry(b, ("top", "organizationalUnit"), {"ou": (b.split(",", 1)[0].split("=", 1)[1],)})
-                         for b in (INTEGRATIONS, CERTIFICATES, PINGFEDERATE, DATA_STORES)),
-        groups=(*((c.dn, (c,)) for c in certs.values()), *groups, *stores),
+                         for b in (INTEGRATIONS, CERTIFICATES, PINGFEDERATE, DATA_STORES, *branches)),
+        groups=(*((c.dn, (c,)) for c in certs.values()), *groups, *stores, *plugins, *policies),
         notices=(*((f"exported from PingFederate {version}",) if version else ()), *notices, *store_notices,
+                 *plugin_notices, *policy_notices,
                  *((f"not read yet (PingFederate depth): {', '.join(f'{r} ({n})' for r, n in sorted(unread.items()))}",)
                    if unread else ()),
                  *(("where PingFederate keeps OAuth clients, grants and sessions is set in its hivemodule.xml, not the "

@@ -3,7 +3,7 @@ from opsdir.core.contract import Adapter, SecretPattern
 from opsdir.core.directory import one
 from opsdir_base_oidc.render import FORMATS as OIDC_FORMATS
 from opsdir_base_saml.render import FORMATS as SAML_FORMATS
-from .checks import check_data_stores
+from .checks import check_authentication, check_data_stores
 from .importer import BULK
 from .render import SERVER_ROLES, render_env, render_neutral
 from .schema import FRAGMENT
@@ -20,8 +20,9 @@ def applies(m):
 
 
 ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required_roles=REQUIRED_ROLES,
-                  render_neutral=render_neutral, render_env=render_env, checks=(check_data_stores,), ref_schemes=(),
-                  secret_schemes={}, renders="PingFederate data stores for each environment",
+                  render_neutral=render_neutral, render_env=render_env,
+                  checks=(check_data_stores, check_authentication), ref_schemes=(),
+                  secret_schemes={}, renders="PingFederate data stores and plugin instances for each environment",
                   neutral_label="PingFederate",
                   vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES}, schema=FRAGMENT,
                   formats=(("pingfederate/*.json", "json"), *SAML_FORMATS, *OIDC_FORMATS),

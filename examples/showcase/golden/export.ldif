@@ -1701,6 +1701,11 @@ objectClass: organizationalUnit
 ou: declared
 description: Desired, environment-neutral DS configuration
 
+dn: ou=idp-adapters,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: idp-adapters
+
 dn: ou=journeys,ou=pingam,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -2243,6 +2248,16 @@ pingidmConnectorName: org.forgerock.openicf.connectors.scriptedsql.ScriptedSQL
  Connector
 pingidmCredentialRole: idm-hrdb-password
 pingidmWithheld: /configurationProperties/password
+
+dn: cn=htmlform,ou=idp-adapters,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: pingfedPlugin
+cn: htmlform
+pingfedConfig: {"name":"HTML Form"}
+pingfedPluginKind: idp-adapter
+pingfedPluginType: com.pingidentity.adapters.htmlform.idp.HtmlFormIdpAuthnAdap
+ ter
 
 dn: cn=ldap,ou=connectors,ou=pingidm,dc=ciam-ops
 objectClass: top

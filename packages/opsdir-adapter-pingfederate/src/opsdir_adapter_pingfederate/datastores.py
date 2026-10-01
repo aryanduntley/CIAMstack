@@ -7,8 +7,7 @@ differs per environment:
   hosts         LDAP hostnames, the host of a JDBC connection URL: when every host is the same service name in the
                 record, the store names that binding's role (pingfedTargetRole) and port, and each environment renders
                 its own host; otherwise the hosts are kept as they are (a fixed host, named in the notices)
-  credentials   withheld (password, and every encrypted value: PingFederate encrypts them with the deployment's own
-                master key, so they never carry to another deployment); each environment renders the reference of the
+  credentials   withheld (opsdir_adapter_pingfederate.withheld); each environment renders the reference of the
                 store's credential role (pingfedCredentialRole), which a change sets: it is never guessed
   bind account  an LDAP store's user DN is linked to the directory consumer record with that bind DN
 
@@ -18,17 +17,18 @@ What the record adds to a data store (its credential role, owners) is kept on im
 import json
 import re
 
-from opsdir.core.directory import get, make_entry, one, rdn_value, values
-from opsdir.core.environment import UNBOUND, bound, published_role, secret_placeholder
-from opsdir.core.jsondata import WITHHELD, canonical, rendered_in_place, with_values, without_secrets
+from opsdir.core.directory import get, make_entry, one, rdn_value
+from opsdir.core.environment import UNBOUND, bound, published_role
+from opsdir.core.jsondata import canonical
 from opsdir.core.naming import rdn_safe
 from opsdir.domains.directory.consumers import consumer_by_bind_dn
 from .naming import DATA_STORES, named
+from .objects import merged_attrs
+from .withheld import filled, withheld_settings
 
 OUTPUT = "pingfederate/data-stores.json"
 OWNED = ("cn", "pingfedStoreType", "pingfedTargetRole", "pingfedPort", "pingfedConsumer", "pingfedConfig",
          "pingfedWithheld")
-ENCRYPTED = "$encrypted"            # an encrypted value, held whole until it is withheld
 _JDBC = re.compile(r"^(jdbc:[^/]*//)([^/;?]*)(.*)$", re.S)     # prefix, hosts, the rest of a JDBC URL
 
 
@@ -77,26 +77,6 @@ def _with_host(kind, config, host):
     return {**config, "connectionUrl": found.group(1) + host + found.group(3)} if found else config
 
 
-# ------------------------------------------------------------------ credentials
-def _plain_key(key):
-    return key[9].lower() + key[10:] if key.startswith("encrypted") and len(key) > 9 and key[9].isupper() else key
-
-
-def plain_values(value):
-    """Settings with every encrypted value (encryptedPassword, encryptedValue) under its plain name (password, value),
-    wrapped as encrypted: what the deployment's own key encrypted is withheld, and the plain name is where each
-    environment's reference is rendered."""
-    if isinstance(value, dict):
-        return {_plain_key(k): ({ENCRYPTED: v} if _plain_key(k) != k else plain_values(v)) for k, v in value.items()}
-    if isinstance(value, list):
-        return [plain_values(v) for v in value]
-    return value
-
-
-def _sealed(value):
-    return rendered_in_place(value) or (isinstance(value, dict) and ENCRYPTED in value)
-
-
 # ------------------------------------------------------------------ import
 def _notices(d, store, label, hosts, role, consumer, held, credential):
     servers = {one(e, "ciamHostname").lower() for e in d.entries.values()
@@ -125,16 +105,14 @@ def data_store_entry(d, store, patterns):
     hosts = store_hosts(store)
     role, port = target(d, hosts)
     kept = {k: v for k, v in (_without_hosts(store) if role else store).items() if k not in ("id", "type")}
-    config, held = without_secrets(plain_values(kept), patterns, sealed=_sealed)
+    config, held = withheld_settings(kept, patterns)
     consumer = consumer_by_bind_dn(d, store.get("userDN")) if kind == "LDAP" else None
     dn = named(DATA_STORES, sid)
     existing = get(d, dn)
     owned = {"cn": (sid,), "pingfedStoreType": (kind,), "pingfedTargetRole": (role,),
              "pingfedPort": (str(port) if port else None,), "pingfedConsumer": (consumer.dn if consumer else None,),
              "pingfedConfig": (canonical(config),), "pingfedWithheld": held}
-    attrs = {**{k: v for k, v in (existing.attrs.items() if existing else ()) if k not in OWNED},
-             **{k: tuple(x for x in v if x is not None) for k, v in owned.items() if any(x is not None for x in v)}}
-    entry = make_entry(dn, ("top", "ciamObject", "pingfedDataStore"), attrs)
+    entry = make_entry(dn, ("top", "ciamObject", "pingfedDataStore"), merged_attrs(existing, owned, OWNED))
     return dn, entry, _notices(d, store, label, hosts, role, consumer, held, one(entry, "pingfedCredentialRole"))
 
 
@@ -153,10 +131,7 @@ def data_store_view(m, store):
     config = json.loads(one(store, "pingfedConfig") or "{}")
     host = bound(m, role, "ciamFqdn") if role else None
     placed = _with_host(kind, config, f"{host}:{port}" if port else host) if host else config
-    credential = one(store, "pingfedCredentialRole")
-    filled = with_values(placed, values(store, "pingfedWithheld"),
-                         secret_placeholder(m, credential) if credential else WITHHELD)
-    return {"type": kind, "id": rdn_value(store), **filled}
+    return {"type": kind, "id": rdn_value(store), **filled(m, store, placed)}
 
 
 def data_stores_file(m, stores):
