@@ -8,7 +8,8 @@ render reads back as it was.
                                      binding, the claims of the attribute contract (linked to user-schema records),
                                      the certificate its assertions are signed with
   /sp/idpConnections              -> partner identity providers (saml2-idp integrations): entity ID, JIT base DN,
-                                     the partner's signing certificates
+                                     the partner's signing certificates, the id PingFederate knows the connection by
+                                     (auxiliary class pingfedConnection: what authentication policies name it by)
   /oauth/clients                  -> OAuth/OIDC clients (oidc-client integrations): client ID, redirect URIs, grant
                                      types, PKCE, token endpoint authentication, restricted scopes
   /keyPairs/signing, /sslServer   -> certificate facts of PingFederate's own keys (never the keys)
@@ -42,6 +43,7 @@ from opsdir.domains.pki.naming import CERTIFICATES
 from .datastores import data_store_groups
 from .naming import (CONTRACTS, DATA_STORES, FRAGMENTS, IDP_ADAPTERS, PINGFEDERATE, POLICIES, SELECTORS,
                      VALIDATORS)
+from .objects import CONNECTION, ref_dn
 from .plugins import KINDS, plugin_groups
 from .policies import policy_groups
 from .render import BINDINGS, CLIENT_AUTH, GRANT_TYPES, SERVER_ROLES
@@ -189,11 +191,12 @@ def same_order(held, attrs):
     return {k: (values(held, k) if held is not None and set(values(held, k)) == set(v) else v) for k, v in attrs.items()}
 
 
-def _merged(held, dn, name, protocol, imported, owned, served):
-    """The integration: the record's with what the export says (attributes it owns replaced), or a new one."""
+def _merged(held, dn, name, protocol, imported, owned, served, aux=()):
+    """The integration: the record's with what the export says (attributes it owns replaced), or a new one; aux: the
+    auxiliary classes the export says it has."""
     kept = {k: v for k, v in (held.attrs.items() if held else ()) if k not in owned}
     base = kept or {"cn": (name,), **({"ciamServedBy": (served.dn,)} if served else {})}
-    return make_entry(dn, held.classes if held else ("top", "ciamIntegration"),
+    return make_entry(dn, tuple(dict.fromkeys((*(held.classes if held else ("top", "ciamIntegration")), *aux))),
                       {**base, "ciamProtocolType": (protocol,), **same_order(held, {k: v for k, v in imported.items() if v})})
 
 
@@ -261,10 +264,12 @@ def _idp(d, idp, certs, held, dn, name, served):
     browser = idp.get("idpBrowserSso") or {}
     jit = ((browser.get("jitProvisioning") or {}).get("userRepository") or {}).get("baseDn")
     used = linked(held, (certs[fp].dn for fp in certs_of(idp) if fp in certs))
+    cid = idp.get("id")
     imported = {"ciamEntityId": (idp.get("entityId"),), "ciamJitBaseDn": tuple(filter(None, (jit,))),
-                "ciamUsesCertificate": used}
-    owned = (*OWNED["saml2-idp"], *(("ciamJitBaseDn",) if jit else ()), "ciamUsesCertificate")
-    return (_merged(held, dn, name, "saml2-idp", imported, owned, served), *_others(d, dn, held, ())), ()
+                "ciamUsesCertificate": used, "pingfedConnectionId": tuple(filter(None, (cid,)))}
+    owned = (*OWNED["saml2-idp"], *(("ciamJitBaseDn",) if jit else ()), "ciamUsesCertificate", "pingfedConnectionId")
+    return (_merged(held, dn, name, "saml2-idp", imported, owned, served, ("pingfedConnection",) if cid else ()),
+            *_others(d, dn, held, ())), ()
 
 
 def _client(d, client, held, dn, name, served):
@@ -285,7 +290,8 @@ def _client(d, client, held, dn, name, served):
 
 
 def integration_groups(d, found, certs):
-    """(groups, notices): an integration for every SP connection, IdP connection and OAuth client in the export."""
+    """(groups, notices, {("idp-connection", id): DN}): an integration for every SP connection, IdP connection and
+    OAuth client in the export, and where each IdP connection's is (what policies that name it link to)."""
     user_attrs = attribute_records(d)
     pf_services = identity_services(d, SERVER_ROLES)
     served = pf_services[0] if len(pf_services) == 1 else None
@@ -311,7 +317,8 @@ def integration_groups(d, found, certs):
     return (tuple((dn, entries) for (_, _, _, _, dn), (entries, _) in zip(placed, built)),
             (*(n for _, ns in built for n in ns),
              *(f"new integration {name} ({kind}), not in the record before: give it an owner"
-               for kind, _, held, name, _ in placed if held is None)))
+               for kind, _, held, name, _ in placed if held is None)),
+            {(CONNECTION, item.get("id")): dn for kind, item, _, _, dn in placed if kind == "idp" and item.get("id")})
 
 
 # ------------------------------------------------------------------ the importer
@@ -319,8 +326,9 @@ def read_export(files, d, patterns, at=None):
     """Imported from a PingFederate bulk export (or this adapter's rendered files)."""
     found, unread, version, unreadable = resources(files)
     certs = certificate_entries(d, found)
-    groups, notices = integration_groups(d, found, certs)
-    exported = {(kind, item.get("id")) for kind in NAMED_KINDS for item in found[kind]}
+    groups, notices, connections = integration_groups(d, found, certs)
+    exported = {**{(kind, item.get("id")): ref_dn(kind, item.get("id")) for kind in NAMED_KINDS for item in found[kind]},
+                **connections}
     stores, store_notices = data_store_groups(d, found["datastore"], patterns)
     plugins, plugin_notices = plugin_groups(d, found, patterns, exported)
     policies, policy_notices = policy_groups(d, found, exported)

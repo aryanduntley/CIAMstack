@@ -41,6 +41,8 @@ ATTRIBUTES = (
     AttributeDef(14, 'pingfedPolicyTree', 'json', 'intent', True,
                  "The policy's tree as PingFederate writes it (rootNode: each node's action and its children, by the "
                  "result that leads to them)"),
+    AttributeDef(15, 'pingfedConnectionId', 'string', 'intent', True,
+                 "The id PingFederate knows a partner connection by: what its authentication policies name"),
 )
 CLASSES = (
     ClassDef(1, 'pingfedDataStore', 'ciamObject', 'STRUCTURAL', ('cn', 'pingfedStoreType'),
@@ -59,6 +61,8 @@ CLASSES = (
     ClassDef(5, 'pingfedAuthPolicy', 'ciamObject', 'STRUCTURAL', ('cn', 'pingfedPolicyTree'),
              ('pingfedPosition', 'pingfedEnabled', 'pingfedUses', 'pingfedConfig'),
              'An authentication policy tree (cn: its name), or a policy fragment (cn: its id)'),
+    ClassDef(6, 'pingfedConnection', 'top', 'AUXILIARY', ('pingfedConnectionId',), (),
+             'An integration that is a PingFederate partner connection (an IdP connection): the id policies name it by'),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES, ARC, ORIGIN)

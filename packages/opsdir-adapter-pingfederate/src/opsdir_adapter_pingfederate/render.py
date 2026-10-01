@@ -90,7 +90,8 @@ def _oidc_client(i, claims, owners, certs):
 
 def _idp_connection(i, claims, owners, certs):
     return {
-        "id": rdn_value(i), "name": rdn_value(i), "entityId": one(i, "ciamEntityId"), "active": True,
+        "id": one(i, "pingfedConnectionId") or rdn_value(i), "name": rdn_value(i), "entityId": one(i, "ciamEntityId"),
+        "active": True,
         "credentials": {"certs": [{"certView": {"sha256Fingerprint": f}} for f in certs]},
         "idpBrowserSso": {"protocol": "SAML20", "jitProvisioning": {
             "userRepository": {"type": "LDAP", "baseDn": one(i, "ciamJitBaseDn")}}},

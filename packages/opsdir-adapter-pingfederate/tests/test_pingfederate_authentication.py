@@ -14,6 +14,7 @@ from opsdir.core.directory import get, one, values
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
 from opsdir.core.standard import registry_ldif
+from opsdir.domains.federation.naming import INTEGRATIONS
 from opsdir_adapter_pingfederate.adapter import ADAPTER
 from opsdir_adapter_pingfederate.checks import check_authentication
 from opsdir_adapter_pingfederate.naming import (CONTRACTS, DATA_STORES, DEFAULT_POLICY, FRAGMENTS, IDP_ADAPTERS,
@@ -77,31 +78,38 @@ WORKFORCE = {"name": "Workforce", "enabled": True, "rootNode": _node(
                        "authenticationPolicyContractRef": {"id": "default-apc"}})),
           _node({"type": "DONE", "context": "Fail"})))}
 LEGACY = {"name": "Legacy", "enabled": False, "rootNode": _node(_source("kerberos"))}
-POLICY = {"failIfNoSelection": False, "trackedHttpParameters": [], "authnSelectionTrees": [WORKFORCE, LEGACY]}
+PARTNERS = {"name": "Partners", "enabled": True, "rootNode": _node(
+    {"type": "AUTHN_SOURCE", "authenticationSource": {"type": "IDP_CONNECTION", "sourceRef": {"id": "acme-okta"}}},
+    _node({"type": "APC_MAPPING", "context": "Success", "authenticationPolicyContractRef": {"id": "default-apc"}}))}
+POLICY = {"failIfNoSelection": False, "trackedHttpParameters": [],
+          "authnSelectionTrees": [WORKFORCE, LEGACY, PARTNERS]}
+ACME = {"id": "acme-okta", "name": "Acme Okta", "entityId": "https://acme.example/okta",
+        "idpBrowserSso": {"protocol": "SAML20"}}
 MFA = {"id": "mfa", "name": "MFA", "rootNode": _node(_source("duo"), _node({"type": "DONE", "context": "Success"})),
        "inputs": {"id": "default-apc"}, "outputs": {"id": "default-apc"}}
 SET_DUO_ROLE = tuple(parse(f"dn: {named(IDP_ADAPTERS, 'duo')}\nchangetype: modify\nreplace: pingfedCredentialRole\n"
                            "pingfedCredentialRole: pf-duo-secret\n-\n"))
 
 
-def export(policy=POLICY):
+def export(policy=POLICY, connections=(ACME,)):
     ops = (("/dataStores", [STORE]), ("/passwordCredentialValidators", [VALIDATOR]),
+           ("/sp/idpConnections", connections),
            ("/idp/adapters", [HTML_FORM, PARTNER_FORM, DUO]), ("/authenticationSelectors", [SELECTOR]),
            ("/authenticationPolicyContracts", [CONTRACT]), ("/authenticationPolicies/default", [policy]),
            ("/authenticationPolicies/fragments", [MFA]))
-    return {"data.json": json.dumps({"operations": [{"operationType": "SAVE", "resourceType": r, "items": items}
+    return {"data.json": json.dumps({"operations": [{"operationType": "SAVE", "resourceType": r, "items": list(items)}
                                                      for r, items in ops]})}
 
 
-def records():
-    return tuple(parse(mini_estate.LDIF + "\n" + EXTRA))
+def records(extra=""):
+    return tuple(parse(mini_estate.LDIF + "\n" + EXTRA + extra))
 
 
-def imported(changes=(), files=None):
-    """(the record after importing (then the changes), the import's change records, notices)."""
-    base = build_directory(REGISTRY, records())
+def imported(changes=(), files=None, extra=""):
+    """(the record (with extra LDIF) after importing (then the changes), the import's change records, notices)."""
+    base = build_directory(REGISTRY, records(extra))
     import_changes, notices = preview_import(base, "pingfederate", files or export(), (ADAPTER,))
-    return build_directory(REGISTRY, records(), (*import_changes, *changes)), import_changes, notices
+    return build_directory(REGISTRY, records(extra), (*import_changes, *changes)), import_changes, notices
 
 
 @pytest.fixture(scope="module")
@@ -175,7 +183,7 @@ def test_plugins_render_per_environment_and_policies_everywhere_the_same():
     assert duo["alpha"]["pluginDescriptorRef"] == {"id": "com.pingidentity.adapters.duo.DuoSecurityAdapter"}
     neutral = render_neutral(d)
     policy = json.loads(neutral["pingfederate/authentication-policies.json"])
-    assert [t["name"] for t in policy["authnSelectionTrees"]] == ["Workforce", "Legacy"]
+    assert [t["name"] for t in policy["authnSelectionTrees"]] == ["Workforce", "Legacy", "Partners"]
     assert policy["authnSelectionTrees"][0] == WORKFORCE and policy["failIfNoSelection"] is False
     assert json.loads(neutral["pingfederate/authentication-policy-fragments.json"]) == [MFA]
     assert {"pingfederate/password-credential-validators.json", "pingfederate/authentication-selectors.json"} <= \
@@ -209,7 +217,56 @@ def test_the_planner_names_what_is_missing_and_what_the_target_lacks():
 
 
 def test_a_policy_naming_only_what_the_record_has_is_ok():
-    d, _, _ = imported(SET_DUO_ROLE, export({**POLICY, "authnSelectionTrees": [WORKFORCE]}))
+    d, _, _ = imported(SET_DUO_ROLE, export({**POLICY, "authnSelectionTrees": [WORKFORCE, PARTNERS]}))
     f = plan(d, "alpha/prod")
-    assert (f.blockers, f.ok) == ((), ("PingFederate's 5 plugin instance(s) and 1 authentication policy tree(s) name "
+    assert (f.blockers, f.ok) == ((), ("PingFederate's 5 plugin instance(s) and 2 authentication policy tree(s) name "
                                        "only what the record has.",))
+
+
+# An IdP connection a policy tree authenticates through is the partner integration carrying PingFederate's id for it
+# (pingfedConnectionId): that id, not the integration's name in the record, is the link, and exactly one integration
+# may carry it.
+ACME_DN = f"cn=acme-okta,{INTEGRATIONS}"
+
+
+def test_a_tree_through_a_recorded_idp_connection_links_it(after):
+    d, _ = after
+    acme = get(d, ACME_DN)
+    assert ("pingfedConnection" in acme.classes, one(acme, "pingfedConnectionId")) == (True, "acme-okta")
+    partners = get(d, named(DEFAULT_POLICY, "Partners"))
+    assert values(partners, "pingfedUses") == (ACME_DN, named(CONTRACTS, "default-apc"))
+    assert not any("Partners" in t for _, t, _ in plan(d, "alpha/prod").blockers)
+
+
+def test_a_tree_through_an_unrecorded_idp_connection_is_blocked():
+    d, _, notices = imported(SET_DUO_ROLE, export(connections=()))
+    assert ACME_DN not in values(get(d, named(DEFAULT_POLICY, "Partners")), "pingfedUses")
+    assert "authentication policy Partners: runs IdP connection `acme-okta`, which neither the export nor the record " \
+           "has" in notices
+    blockers = [t for _, t, _ in plan(d, "alpha/prod").blockers]
+    assert "Authentication policy `Partners` names IdP connection `acme-okta`, which the record doesn't have: " \
+           "PingFederate refuses the configuration until it is recorded." in blockers
+
+
+def test_an_idp_connection_id_two_integrations_claim_resolves_to_neither():
+    claim = tuple(parse(f"dn: cn=acme-copy,{INTEGRATIONS}\nchangetype: add\nobjectClass: top\n"
+                        "objectClass: ciamObject\nobjectClass: ciamIntegration\nobjectClass: pingfedConnection\n"
+                        "cn: acme-copy\n"
+                        "ciamProtocolType: saml2-idp\nciamEntityId: https://copy.example/okta\n"
+                        "pingfedConnectionId: acme-okta\n"))
+    d, _, _ = imported((*SET_DUO_ROLE, *claim))
+    assert "Authentication policy `Partners` names IdP connection `acme-okta`, which 2 integrations claim (acme-copy, " \
+           "acme-okta): exactly one may carry its id, so the record must give it to one." in \
+        [t for _, t, _ in plan(d, "alpha/prod").blockers]
+
+
+def test_an_idp_connection_the_record_names_differently_still_resolves():
+    partner = (f"\ndn: {INTEGRATIONS}\nobjectClass: top\nobjectClass: organizationalUnit\nou: integrations\n\n"
+               f"dn: cn=acme-partner,{INTEGRATIONS}\nobjectClass: top\nobjectClass: ciamObject\n"
+               "objectClass: ciamIntegration\ncn: acme-partner\nciamProtocolType: saml2-idp\n"
+               "ciamEntityId: https://acme.example/okta\n")
+    d, _, _ = imported(SET_DUO_ROLE, extra=partner)
+    acme = f"cn=acme-partner,{INTEGRATIONS}"
+    assert get(d, ACME_DN) is None and one(get(d, acme), "pingfedConnectionId") == "acme-okta"
+    assert values(get(d, named(DEFAULT_POLICY, "Partners")), "pingfedUses")[0] == acme
+    assert not any("Partners" in t for _, t, _ in plan(d, "alpha/prod").blockers)

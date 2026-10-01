@@ -9,7 +9,7 @@ from opsdir.core.environment import one_role
 from opsdir.core.findings import findings, merge_findings, responsible
 from .datastores import store_hosts
 from .naming import DATA_STORES, DEFAULT_POLICY, FRAGMENTS
-from .objects import describe, missing
+from .objects import NOT_RECORDED, missing, why_unresolved
 from .plugins import KINDS, plugin_refs
 from .policies import fragment_refs, node_refs
 
@@ -55,8 +55,8 @@ def check_data_stores(ctx):
 
 def _named(ctx, e, what, refs):
     owner = responsible(ctx.d, e, ctx.dst.env)
-    return tuple(("PingFederate", f"{what} names {describe(k, i)}, which the record doesn't have: PingFederate "
-                  "refuses the configuration until it is recorded.", owner) for k, i in missing(ctx.d, refs))
+    return tuple(("PingFederate", f"{what} names {why_unresolved(ctx.d, k, i, NOT_RECORDED)}.", owner)
+                 for k, i in missing(ctx.d, refs))
 
 
 def _plugin(ctx, p):

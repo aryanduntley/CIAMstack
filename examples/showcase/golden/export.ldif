@@ -756,6 +756,7 @@ mail: it-security@harbor-mro.example
 dn: cn=harbor-mro-federation,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamIntegration
+objectClass: pingfedConnection
 cn: harbor-mro-federation
 ciamCriticality: medium
 ciamEntityId: https://sso.harbor-mro.example/idp
@@ -768,6 +769,7 @@ ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamSsoUrl: https://sso.harbor-mro.example/idp/SSO.saml2
 ciamUsesCertificate: cn=harbor-mro-idp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+pingfedConnectionId: harbor-mro-federation
 
 dn: cn=harbor-mro-idp-signing,ou=certificates,dc=ciam-ops
 objectClass: top
@@ -1302,6 +1304,7 @@ mail: identity-ops@skyline-air.example
 dn: cn=skyline-air-federation,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamIntegration
+objectClass: pingfedConnection
 cn: skyline-air-federation
 ciamCriticality: high
 ciamEntityId: https://idp.skyline-air.example/saml
@@ -1315,6 +1318,7 @@ ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamSsoUrl: https://idp.skyline-air.example/saml/sso
 ciamUsesCertificate: cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+pingfedConnectionId: skyline-air-federation
 
 dn: cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops
 objectClass: top

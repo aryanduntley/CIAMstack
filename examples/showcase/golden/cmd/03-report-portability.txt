@@ -1,7 +1,7 @@
 portability  values
 -----------  ------
 meta         1109
-intent       877
+intent       879
 binding      386
 observed     205
 contract     81

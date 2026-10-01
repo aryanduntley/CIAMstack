@@ -15,7 +15,7 @@ from opsdir.core.directory import children, get, make_entry, one, rdn_value
 from opsdir.core.jsondata import canonical
 from opsdir.core.naming import rdn_safe
 from .naming import IDP_ADAPTERS, SELECTORS, VALIDATORS, named
-from .objects import describe, links, merged_attrs
+from .objects import NOT_EXPORTED, links, merged_attrs, why_unresolved
 from .withheld import filled, withheld_settings
 
 Kind = NamedTuple("Kind", [("resource", str), ("base", str), ("output", str), ("label", str)])
@@ -70,7 +70,7 @@ def plugin_entry(d, kind, item, patterns, exported):
              "pingfedParent": parents[:1] or (None,), "pingfedUses": uses, "pingfedConfig": (canonical(config),),
              "pingfedWithheld": held}
     entry = make_entry(dn, ("top", "ciamObject", "pingfedPlugin"), merged_attrs(get(d, dn), owned, OWNED))
-    return dn, entry, (*(f"{label}: names {describe(rk, ri)}, which neither the export nor the record has"
+    return dn, entry, (*(f"{label}: names {why_unresolved(d, rk, ri, NOT_EXPORTED)}"
                          for rk, ri in (*lost_parent, *lost)),
                        *((f"{label}: its secrets are withheld; set pingfedCredentialRole to the secret role that holds "
                           "them",) if held and not one(entry, "pingfedCredentialRole") else ()))

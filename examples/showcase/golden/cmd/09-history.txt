@@ -167,6 +167,8 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2008  insert  cn=grant-store,ou=data-stores,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=htmlform,ou=idp-adapters,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=user-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
+<TIMESTAMP>          CHG-2008  update  cn=harbor-mro-federation,ou=integrations,dc=ciam-ops
+<TIMESTAMP>          CHG-2008  update  cn=skyline-air-federation,ou=integrations,dc=ciam-ops
 <TIMESTAMP>          CHG-2009  insert  ou=census,dc=ciam-ops
 <TIMESTAMP>          CHG-2009  insert  cn=483017ca92ce3ac8,ou=census,dc=ciam-ops
 <TIMESTAMP>          CHG-2009  insert  cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
@@ -206,4 +208,4 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2005  update  cn=hrdb,ou=connectors,ou=pingidm,dc=ciam-ops
 <TIMESTAMP>          CHG-2005  update  cn=user-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2005  update  cn=grant-store,ou=data-stores,ou=pingfederate,dc=ciam-ops
-(206 rows)
+(208 rows)

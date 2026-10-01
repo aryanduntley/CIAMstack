@@ -8,7 +8,7 @@ select c.dn,
        gtime(a1(c.attrs, 'ciamNotAfter'))::date       as not_after,
        gtime(a1(c.attrs, 'ciamNotAfter'))::date - as_of() as days_left,
        array(select u.dn from entry_ref r join entry u on u.id = r.from_id
-              where r.to_id = c.id and r.attr = 'ciamUsesCertificate') as used_by,
+              where r.to_id = c.id and r.attr = 'ciamUsesCertificate' order by u.dn) as used_by,
        aall(c.attrs, 'ciamSubjectAltName')            as names,
        a1(c.attrs, 'ciamKeyRole')                     as key_role
   from entry c where 'ciamCertificate' = any (c.object_classes);

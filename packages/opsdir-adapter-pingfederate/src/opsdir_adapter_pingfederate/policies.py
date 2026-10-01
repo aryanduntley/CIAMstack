@@ -9,7 +9,8 @@ fragments, read from the Admin API into the record and rendered back (environmen
 
 A tree keeps its nodes as PingFederate writes them: each node's action (an IdP adapter or connection to authenticate
 with, a selector, a policy contract to map to, a fragment, done, ...) and its children, by the result that leads to
-them. The objects a tree runs are linked by DN (pingfedUses); a policy that names one the record doesn't have is
+them. The objects a tree runs are linked by DN (pingfedUses; an IdP connection is the partner integration that carries
+its id); a policy that names one the record doesn't have is
 named in the notices and blocked by the planner. The default policy's trees are imported as one: a tree the export
 no longer has is removed.
 """
@@ -19,7 +20,7 @@ from opsdir.core.directory import children, get, make_entry, one, rdn_value
 from opsdir.core.jsondata import canonical
 from opsdir.core.naming import rdn_safe
 from .naming import CONTRACTS, DEFAULT_POLICY, FRAGMENTS, named
-from .objects import describe, links, merged_attrs
+from .objects import CONNECTION, NOT_EXPORTED, links, merged_attrs, why_unresolved
 
 TREE_OWNED = ("cn", "pingfedPosition", "pingfedEnabled", "pingfedPolicyTree", "pingfedUses", "pingfedConfig")
 
@@ -29,13 +30,16 @@ def _id(ref):
 
 
 def node_refs(node):
-    """(kind, id) of the objects a tree node and the nodes below it run, each once."""
+    """(kind, id) of the objects a tree node and the nodes below it run (IdP adapters and connections, selectors,
+    policy contracts, fragments), each once."""
     if not isinstance(node, dict):
         return ()
     action = node.get("action") if isinstance(node.get("action"), dict) else {}
     kind = action.get("type")
     source = action.get("authenticationSource") if isinstance(action.get("authenticationSource"), dict) else {}
-    own = (("idp-adapter", _id(source.get("sourceRef"))) if kind == "AUTHN_SOURCE" and source.get("type") == "IDP_ADAPTER"
+    sources = {"IDP_ADAPTER": "idp-adapter", "IDP_CONNECTION": CONNECTION}
+    own = ((sources[source.get("type")], _id(source.get("sourceRef")))
+           if kind == "AUTHN_SOURCE" and source.get("type") in sources
            else ("selector", _id(action.get("authenticationSelectorRef"))) if kind == "AUTHN_SELECTOR"
            else ("contract", _id(action.get("authenticationPolicyContractRef"))) if kind == "APC_MAPPING"
            else ("fragment", _id(action.get("fragment"))) if kind == "FRAGMENT" else None)
@@ -71,7 +75,7 @@ def _tree(d, n, tree, exported):
              "pingfedPolicyTree": (canonical(tree.get("rootNode") or {}),), "pingfedUses": uses,
              "pingfedConfig": (canonical(rest) if rest else None,)}
     return (make_entry(dn, ("top", "ciamObject", "pingfedAuthPolicy"), merged_attrs(get(d, dn), owned, TREE_OWNED)),
-            tuple(f"authentication policy {name}: runs {describe(k, i)}, which neither the export nor the record has"
+            tuple(f"authentication policy {name}: runs {why_unresolved(d, k, i, NOT_EXPORTED)}"
                   for k, i in lost))
 
 
@@ -105,7 +109,7 @@ def fragment_entry(d, item, exported):
     owned = {"cn": (fid,), "pingfedPolicyTree": (canonical(item.get("rootNode") or {}),), "pingfedUses": uses,
              "pingfedConfig": (canonical(rest) if rest else None,)}
     entry = make_entry(dn, ("top", "ciamObject", "pingfedAuthPolicy"), merged_attrs(get(d, dn), owned, TREE_OWNED))
-    return dn, entry, tuple(f"{label}: runs {describe(k, i)}, which neither the export nor the record has"
+    return dn, entry, tuple(f"{label}: runs {why_unresolved(d, k, i, NOT_EXPORTED)}"
                             for k, i in lost)
 
 

@@ -9,5 +9,5 @@ JDBC data store Persistent grant store: no single service name for its hosts, so
 JDBC data store Persistent grant store: its credentials are withheld; set pingfedCredentialRole to the secret role that holds them
 not read yet (PingFederate depth): /oauth/accessTokenManagers (1)
 where PingFederate keeps OAuth clients, grants and sessions is set in its hivemodule.xml, not the Admin API: hold it with opsdir capture
-CHG-2008: 7 change(s) applied
+CHG-2008: 9 change(s) applied
 exit 0
