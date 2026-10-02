@@ -423,10 +423,11 @@ resource "aws_instance" "pf_engine_2" {
 
 resource "aws_lb" "svc_apps" {
   name               = "ciam-prod-svc-apps"
-  internal           = true
+  internal           = false
   load_balancer_type = "network"
   subnet_mapping {
-    subnet_id = data.aws_subnet.subnet_ig_a.id
+    subnet_id     = data.aws_subnet.subnet_ig_a.id
+    allocation_id = "eipalloc-0a1b2c3d4e5f60005"
   }
   tags = {
     Service   = "apps.example-aero.test"
@@ -544,10 +545,11 @@ resource "aws_route53_record" "svc_ldaps" {
 
 resource "aws_lb" "svc_login" {
   name               = "ciam-prod-svc-login"
-  internal           = true
+  internal           = false
   load_balancer_type = "network"
   subnet_mapping {
-    subnet_id = data.aws_subnet.subnet_am_a.id
+    subnet_id     = data.aws_subnet.subnet_am_a.id
+    allocation_id = "eipalloc-0a1b2c3d4e5f60003"
   }
   subnet_mapping {
     subnet_id = data.aws_subnet.subnet_am_b.id
@@ -604,10 +606,11 @@ resource "aws_route53_record" "svc_login" {
 
 resource "aws_lb" "svc_sso" {
   name               = "ciam-prod-svc-sso"
-  internal           = true
+  internal           = false
   load_balancer_type = "network"
   subnet_mapping {
-    subnet_id = data.aws_subnet.subnet_pf_a.id
+    subnet_id     = data.aws_subnet.subnet_pf_a.id
+    allocation_id = "eipalloc-0a1b2c3d4e5f60001"
   }
   subnet_mapping {
     subnet_id = data.aws_subnet.subnet_pf_b.id

@@ -16,6 +16,10 @@ this module places them.
   cluster   -> ciamCluster          matched by provider ref (a managed Kubernetes cluster)
   sending   -> ciamSendingIdentity  matched by provider ref (an email sending identity for a domain)
   stream    -> ciamStreamBinding    matched by provider ref (a queue, topic or bus carrying an event stream)
+  channel   -> ciamAlertChannel     matched by provider ref (a topic or action group alarms notify)
+  logs      -> ciamLogDestination   matched by provider ref (a log group, a workspace)
+  alarm     -> ciamAlarmBinding     matched by provider ref (an alarm the cloud runs: the alert rule it realizes)
+  canary    -> ciamCanaryBinding    matched by provider ref (a synthetic check the cloud runs)
 What a source says replaces the record's value for the attributes it gives; the rest of the entry is kept. A resource
 the record doesn't have is added only when the source names its role (a tag), and is named otherwise: a role can't be
 guessed. A binding an overlay inherits from its base is left to the base environment.
@@ -45,8 +49,11 @@ CLASSES = MappingProxyType({"network": "ciamNetwork", "subnet": "ciamSubnetBindi
                             "service": "ciamServiceName", "firewall": "ciamFirewallRule", "secret": "ciamSecretRef",
                             "key": "ciamKeyRef", "storage": "ciamBackupTarget", "egress": "ciamEgress",
                             "job": "ciamJobBinding", "compute": "ciamComputeGroup", "cluster": "ciamCluster",
-                            "sending": "ciamSendingIdentity", "stream": "ciamStreamBinding"})
-BY_REF = ("network", "subnet", "egress", "job", "compute", "cluster", "sending", "stream")   # matched by provider ref
+                            "sending": "ciamSendingIdentity", "stream": "ciamStreamBinding",
+                            "channel": "ciamAlertChannel", "logs": "ciamLogDestination", "alarm": "ciamAlarmBinding",
+                            "canary": "ciamCanaryBinding"})
+BY_REF = ("network", "subnet", "egress", "job", "compute", "cluster", "sending", "stream", "channel", "logs", "alarm",
+          "canary")                                                                       # matched by provider ref
 ROLE_MAP = "roles.json"                         # <cloud>/<env>/roles.json: roles for what a cloud can't tag
 _UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
 
@@ -109,7 +116,8 @@ REQUIRED = MappingProxyType({
     "network": ("ciamCidr",), "subnet": ("ciamCidr",), "server": ("ciamHostname", "ciamSubnet"),
     "service": ("ciamFqdn", "ciamTargetRole", "ciamPort"), "firewall": ("ciamSourceCidr", "ciamPort", "ciamTargetRole"),
     "secret": ("ciamRefUri",), "key": ("ciamRefUri",), "storage": ("ciamStorageRef",), "egress": ("ciamCidr",),
-    "job": (), "compute": ("ciamTargetRole",), "cluster": (), "sending": ("ciamSenderDomain",), "stream": ()})
+    "job": (), "compute": ("ciamTargetRole",), "cluster": (), "sending": ("ciamSenderDomain",), "stream": (),
+    "channel": ("ciamChannelKind",), "logs": ("ciamDestinationKind",), "alarm": (), "canary": ()})
 
 
 def _entry(dn, r, held, links, name):
@@ -216,6 +224,21 @@ def compute_roles(tags):
     return tags.get("BindingRole") or (f"compute-{target}" if target else None), target
 
 
+def realization_roles(tags, prefix):
+    """(binding role, what it realizes) an alarm's or synthetic check's tags name: its tag Realizes names the alert
+    rule or canary it serves; its binding role is its tag Role or BindingRole, else <prefix>-<realizes> (so every
+    cloud's alarm for a rule binds the same role), else None (named, not recorded)."""
+    realizes = tags.get("Realizes")
+    return tagged_role(tags) or (f"{prefix}-{realizes}" if realizes else None), realizes
+
+
+def duration_text(seconds):
+    """Seconds as the record writes a duration (30s, 5m, 2h, 1d: the largest unit that divides it), or None."""
+    if not seconds:
+        return None
+    return next(f"{seconds // n}{u}" for n, u in ((86400, "d"), (3600, "h"), (60, "m"), (1, "s")) if seconds % n == 0)
+
+
 def cluster_role(tags):
     """The binding role a managed cluster's tags name (BindingRole, else Role), else cluster."""
     return tagged_role(tags) or "cluster"
@@ -294,7 +317,8 @@ def layout_import(files, d, provider, label, parse, suffix, what, example, summa
         notices=(*(n for spec in placed for _, ns in parsed[spec] for n in ns),
                  *(n for _, ns in roled.values() for n in ns),
                  *(n for _, ns in placed.values() for n in ns),
-                 *(f"{spec}: not an {label} environment in the record; not imported" for spec in wrong),
+                 *(f"{spec}: not {'an' if label[:1] in 'AEIOU' else 'a'} {label} environment in the record; "
+                   "not imported" for spec in wrong),
                  *(f"{p}: put each environment's {what} under <cloud>/<env>/ (e.g. source/prod/{example}); "
                    f"not imported" for p in stray),
                  *((f"no {what} found ({', '.join('*' + x for x in _suffixes(suffix))} under <cloud>/<env>/)",)

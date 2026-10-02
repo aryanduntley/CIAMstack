@@ -687,17 +687,19 @@ resource "azurerm_linux_virtual_machine" "pf_engine_2" {
   }
 }
 
+data "azurerm_public_ip" "svc_apps" {
+  name                = "pip-ciam-apps-prod"
+  resource_group_name = data.azurerm_resource_group.main.name
+}
+
 resource "azurerm_lb" "svc_apps" {
   name                = "lb-ciam-prod-svc-apps"
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   sku                 = "Standard"
   frontend_ip_configuration {
-    name                          = "frontend"
-    zones                         = ["1", "2", "3"]
-    subnet_id                     = data.azurerm_subnet.snet_ig.id
-    private_ip_address_allocation = "Static"
-    private_ip_address            = "198.51.100.79"
+    name                 = "frontend"
+    public_ip_address_id = data.azurerm_public_ip.svc_apps.id
   }
   tags = {
     Service   = "apps.example-aero.test"
@@ -734,7 +736,7 @@ resource "azurerm_lb_rule" "svc_apps_443" {
   probe_id                       = azurerm_lb_probe.svc_apps_443.id
 }
 
-resource "azurerm_private_dns_a_record" "svc_apps" {
+resource "azurerm_dns_a_record" "svc_apps" {
   name                = "apps"
   zone_name           = "example-aero.test"
   resource_group_name = data.azurerm_resource_group.main.name
@@ -809,17 +811,19 @@ resource "azurerm_private_dns_a_record" "svc_ldaps" {
   records             = ["10.60.1.100"]
 }
 
+data "azurerm_public_ip" "svc_login" {
+  name                = "pip-ciam-login-prod"
+  resource_group_name = data.azurerm_resource_group.main.name
+}
+
 resource "azurerm_lb" "svc_login" {
   name                = "lb-ciam-prod-svc-login"
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   sku                 = "Standard"
   frontend_ip_configuration {
-    name                          = "frontend"
-    zones                         = ["1", "2", "3"]
-    subnet_id                     = data.azurerm_subnet.snet_am.id
-    private_ip_address_allocation = "Static"
-    private_ip_address            = "198.51.100.78"
+    name                 = "frontend"
+    public_ip_address_id = data.azurerm_public_ip.svc_login.id
   }
   tags = {
     Service   = "login.example-aero.test"
@@ -862,12 +866,17 @@ resource "azurerm_lb_rule" "svc_login_443" {
   probe_id                       = azurerm_lb_probe.svc_login_443.id
 }
 
-resource "azurerm_private_dns_a_record" "svc_login" {
+resource "azurerm_dns_a_record" "svc_login" {
   name                = "login"
   zone_name           = "example-aero.test"
   resource_group_name = data.azurerm_resource_group.main.name
   ttl                 = 300
   records             = ["198.51.100.78"]
+}
+
+data "azurerm_public_ip" "svc_sso" {
+  name                = "pip-ciam-sso-prod"
+  resource_group_name = data.azurerm_resource_group.main.name
 }
 
 resource "azurerm_lb" "svc_sso" {
@@ -876,11 +885,8 @@ resource "azurerm_lb" "svc_sso" {
   resource_group_name = data.azurerm_resource_group.main.name
   sku                 = "Standard"
   frontend_ip_configuration {
-    name                          = "frontend"
-    zones                         = ["1", "2", "3"]
-    subnet_id                     = data.azurerm_subnet.snet_pf.id
-    private_ip_address_allocation = "Static"
-    private_ip_address            = "198.51.100.77"
+    name                 = "frontend"
+    public_ip_address_id = data.azurerm_public_ip.svc_sso.id
   }
   tags = {
     Service   = "sso.example-aero.test"
@@ -923,7 +929,7 @@ resource "azurerm_lb_rule" "svc_sso_443" {
   probe_id                       = azurerm_lb_probe.svc_sso_443.id
 }
 
-resource "azurerm_private_dns_a_record" "svc_sso" {
+resource "azurerm_dns_a_record" "svc_sso" {
   name                = "sso"
   zone_name           = "example-aero.test"
   resource_group_name = data.azurerm_resource_group.main.name

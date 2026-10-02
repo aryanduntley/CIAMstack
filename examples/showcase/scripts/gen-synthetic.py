@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate the synthetic Example Aero estate as LDIF files in data/, the directory servers' configuration exports in
-exports/ds-config/ and access logs in exports/ds-access-logs/, and what the clouds report in exports/cloud/ (a
-showcase and test fixture).
+exports/ds-config/ and access logs in exports/ds-access-logs/, what the clouds report in exports/cloud/, and the
+production directory's user data (as ldapsearch prints it) in exports/ds-data/ (a showcase and test fixture).
 
 The estate is built by fixtures/example_estate, one module per part of the stack; this script only writes
 it. Everything is fictional. The estate is seeded with realistic problems for the tools to find:
@@ -25,7 +25,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from example_estate.build import build, exports  # noqa: E402
+from example_estate.build import GENERATED, build, exports  # noqa: E402
 
 OUT = ROOT / "data"
 EXPORTS = ROOT / "exports"
@@ -48,7 +48,7 @@ def main():
         old.unlink()
     for rel, text in files.items():
         (OUT / rel).write_text(text)
-    for generated in ("ds-config", "ds-access-logs", "cloud"):
+    for generated in GENERATED:
         shutil.rmtree(EXPORTS / generated, ignore_errors=True)
     for rel, text in exports().items():
         write_export(rel, text)

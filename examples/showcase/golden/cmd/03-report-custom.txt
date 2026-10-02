@@ -1,7 +1,7 @@
 kind         name                   type              applies to / extends  lives in                                                                status  owner          used by entries
 -----------  ---------------------  ----------------  --------------------  ----------------------------------------------------------------------  ------  -------------  ---------------
 field        xCostCenter            string            ciamParty             finance: cost-center register                                           active  ciam-platform  3
-field        xDataResidency         enum:us|eu|uk|ca  ciamEnvironment       terraform: azurerm_resource_group.location; terraform: aws provider re  active  ciam-platform  3
+field        xDataResidency         enum:us|eu|uk|ca  ciamEnvironment       terraform: azurerm_resource_group.location; terraform: aws provider re  active  ciam-platform  4
 field        xFlagEnabled           bool              xFeatureFlag          -                                                                       active  ciam-platform  2
 field        xRolloutPercent        int               xFeatureFlag          -                                                                       active  ciam-platform  1
 field        xTokenLifetimeMinutes  int               ciamIntegration       default-atm.json:/lifetimeMinutes                                       active  ciam-platform  2

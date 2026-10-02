@@ -33,20 +33,29 @@ From Terraform state (terraform.tfstate, format version 4), managed resources an
     aws_ses_domain_identity (+ the domain's     verified (DKIM signing status SUCCESS), SPF authorizing SES (include:
     Route 53 TXT records)                        amazonses.com) and the DMARC policy, from the domain's TXT records
   aws_sqs_queue, aws_sns_topic,               -> stream carriers (kind stream, ciamStreamBinding): queue, topic, bus,
-    aws_cloudwatch_event_bus,                    log stream
+    aws_cloudwatch_event_bus,                    log stream; an SNS topic an alarm notifies is an alert channel instead
     aws_kinesis_stream
+  aws_sns_topic an alarm's actions name       -> alert channel (kind channel, ciamAlertChannel): topic
+  aws_cloudwatch_log_group                    -> log destination (kind logs, ciamLogDestination): log group, its
+                                                 retention in days (0: never expires)
+  aws_cloudwatch_metric_alarm                 -> alarm (kind alarm, ciamAlarmBinding): what it evaluates (namespace and
+                                                 metric, or a metric query), the topics it notifies, the alert rule it
+                                                 realizes (tag Realizes)
+  aws_synthetics_canary                       -> synthetic check (kind canary, ciamCanaryBinding): its rate as an
+                                                 interval, the canary it realizes (tag Realizes)
 Roles of resources the record doesn't have come from their tags Role (or BindingRole). A compute group's binding role
-is its tag BindingRole, else compute-<its tag Role>; a cluster's is its tag BindingRole or Role, else cluster.
+is its tag BindingRole, else compute-<its tag Role>; a cluster's is its tag BindingRole or Role, else cluster; an
+alarm's or synthetic check's, else alarm-<Realizes> or canary-<Realizes>.
 """
 import re
 from collections import Counter
 from functools import reduce
 
 from opsdir.core.contract import Importer
-from opsdir.core.inventory import (cluster_role, compute_roles, layout_import, of_types, per_file, resource,
-                                   tagged_role)
+from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, layout_import, of_types, per_file,
+                                   realization_roles, resource, tagged_role)
 from opsdir.domains.messaging.dns import dmarc_policy, spf_authorizes
-from opsdir_format_terraform.state import read_state
+from opsdir_format_terraform.state import blocks, read_state
 
 PROVIDER = "aws"
 
@@ -220,22 +229,18 @@ def base_arn(arn):
     return ":".join(parts[:7]) if len(parts) > 7 and parts[2] == "lambda" and parts[5] == "function" else arn
 
 
-def _blocks(v):
-    return v if isinstance(v, list) else [v] if isinstance(v, dict) else []
-
-
 def _jobs(found):
     """Functions, pipelines and build projects, each with the schedules EventBridge rules and Scheduler run it on."""
     rules = {a.get("name"): a.get("schedule_expression") for a in of_types(found, "aws_cloudwatch_event_rule")}
     started = [*((base_arn(t.get("arn")), rules.get(t.get("rule"))) for t in of_types(found, "aws_cloudwatch_event_target")),
                *((base_arn(b.get("arn")), a.get("schedule_expression")) for a in of_types(found, "aws_scheduler_schedule")
-                 for b in _blocks(a.get("target")))]
+                 for b in blocks(a.get("target")))]
 
     def schedules(arn):
         return sorted({when for target, when in started if target == arn and when})
 
     def image(a):
-        return next((b.get("image") for b in _blocks(a.get("environment")) if b.get("image")), None)
+        return next((b.get("image") for b in blocks(a.get("environment")) if b.get("image")), None)
     return (*(resource("job", a.get("arn"), {"ciamRuntime": a.get("runtime"), "ciamSchedule": schedules(a.get("arn"))},
                        name=a.get("function_name"), role=_role(a)) for a in of_types(found, "aws_lambda_function")
               if a.get("arn")),
@@ -247,20 +252,20 @@ def _jobs(found):
 
 def _asg_tags(a):
     """An autoscaling group's tags: its tag blocks (key, value) and any tags map."""
-    return {**{t.get("key"): t.get("value") for t in _blocks(a.get("tag")) if t.get("key")}, **_tags(a)}
+    return {**{t.get("key"): t.get("value") for t in blocks(a.get("tag")) if t.get("key")}, **_tags(a)}
 
 
 def _template_of(a, templates):
-    ref = next((t for t in (*_blocks(a.get("launch_template")),
-                            *(lt for p in _blocks(a.get("mixed_instances_policy"))
-                              for spec in _blocks(p.get("launch_template"))
-                              for lt in _blocks(spec.get("launch_template_specification")))) if t), {})
+    ref = next((t for t in (*blocks(a.get("launch_template")),
+                            *(lt for p in blocks(a.get("mixed_instances_policy"))
+                              for spec in blocks(p.get("launch_template"))
+                              for lt in blocks(spec.get("launch_template_specification")))) if t), {})
     return templates.get(ref.get("id")) or templates.get(ref.get("name")) or \
         templates.get(ref.get("launch_template_id")) or templates.get(ref.get("launch_template_name")) or {}
 
 
 def _tokens(template):
-    tokens = next((m.get("http_tokens") for m in _blocks(template.get("metadata_options")) if m.get("http_tokens")),
+    tokens = next((m.get("http_tokens") for m in blocks(template.get("metadata_options")) if m.get("http_tokens")),
                   None)
     return {"required": "TRUE", "optional": "FALSE"}.get(tokens)
 
@@ -292,13 +297,13 @@ def _clusters(found):
     zones = {s.get("id"): s.get("availability_zone") for s in of_types(found, "aws_subnet")}
 
     def pool(n):
-        scale = next(iter(_blocks(n.get("scaling_config"))), {})
+        scale = next(iter(blocks(n.get("scaling_config"))), {})
         return (f"{n.get('node_group_name')}: {', '.join(n.get('instance_types') or ()) or '?'}, "
                 f"{scale.get('min_size', '?')}-{scale.get('max_size', '?')}")
 
     def cluster(c):
         name = c.get("name")
-        subnets = [s for v in _blocks(c.get("vpc_config")) for s in v.get("subnet_ids") or ()]
+        subnets = [s for v in blocks(c.get("vpc_config")) for s in v.get("subnet_ids") or ()]
         return resource("cluster", c.get("arn") or name, {
             "ciamClusterVersion": c.get("version"),
             "ciamClusterAddon": sorted(f"{a.get('addon_name')} {a.get('addon_version') or ''}".strip()
@@ -322,7 +327,7 @@ def _txt(found, name):
 
 
 def _dkim(identity, found, domain):
-    status = next((b.get("status") for b in _blocks(identity.get("dkim_signing_attributes")) if b.get("status")), None)
+    status = next((b.get("status") for b in blocks(identity.get("dkim_signing_attributes")) if b.get("status")), None)
     if status:
         return "TRUE" if str(status).upper() == "SUCCESS" else "FALSE"
     return "TRUE" if any((a.get("domain") or "").lower() == domain for a in of_types(found, "aws_ses_domain_dkim")) \
@@ -341,11 +346,69 @@ def _sending(found):
                  if "@" not in (a.get("email_identity") or a.get("domain") or "@"))
 
 
+ALARM_ACTIONS = ("alarm_actions", "ok_actions", "insufficient_data_actions")
+_RATE = re.compile(r"^rate\((\d+) (minute|minutes|hour|hours|day|days)\)$")
+_UNIT_SECONDS = {"minute": 60, "hour": 3600, "day": 86400}
+
+
+def _notified(found):
+    """The ARNs every alarm's actions name (alert channels: topics alarms notify)."""
+    return frozenset(arn for a in of_types(found, "aws_cloudwatch_metric_alarm") for k in ALARM_ACTIONS
+                     for arn in a.get(k) or ())
+
+
+def _channels(found):
+    """SNS topics an alarm notifies, as alert channels."""
+    notified = _notified(found)
+    return tuple(resource("channel", a.get("arn"), {"ciamChannelKind": "topic"}, name=a.get("name"), role=_role(a))
+                 for a in of_types(found, "aws_sns_topic") if a.get("arn") in notified)
+
+
+def _log_destinations(found):
+    """CloudWatch log groups, with their retention (0: never expires)."""
+    return tuple(resource("logs", a.get("arn"), {"ciamDestinationKind": "log-group",
+                                                 "ciamRetentionDays": a.get("retention_in_days")},
+                          name=a.get("name"), role=_role(a))
+                 for a in of_types(found, "aws_cloudwatch_log_group") if a.get("arn"))
+
+
+def _metric(a):
+    named = " ".join(p for p in (a.get("namespace"), a.get("metric_name")) if p)
+    return named or ("metric query" if a.get("metric_query") else None)
+
+
+def _alarms(found):
+    """CloudWatch metric alarms: what each evaluates, what it notifies, the alert rule it realizes."""
+    def alarm(a):
+        role, realizes = realization_roles(_tags(a), "alarm")
+        notifies = sorted({x for k in ALARM_ACTIONS for x in a.get(k) or ()})
+        return resource("alarm", a.get("arn"), {"ciamMetric": _metric(a), "ciamRealizes": realizes,
+                                                "ciamNotifies": notifies}, name=a.get("alarm_name"), role=role)
+    return tuple(alarm(a) for a in of_types(found, "aws_cloudwatch_metric_alarm") if a.get("arn"))
+
+
+def _interval(schedule):
+    m = _RATE.match(((schedule or [{}])[0] or {}).get("expression") or "")
+    return duration_text(int(m.group(1)) * _UNIT_SECONDS[m.group(2).rstrip("s")]) if m else None
+
+
+def _canaries(found):
+    """CloudWatch Synthetics canaries: how often each runs, the canary it realizes."""
+    def canary(a):
+        role, realizes = realization_roles(_tags(a), "canary")
+        return resource("canary", a.get("arn"), {"ciamInterval": _interval(a.get("schedule")),
+                                                 "ciamRealizes": realizes}, name=a.get("name"), role=role)
+    return tuple(canary(a) for a in of_types(found, "aws_synthetics_canary") if a.get("arn"))
+
+
 def _streams(found):
-    """Queues, topics, event buses and data streams as stream carriers (the default event bus left out)."""
+    """Queues, topics, event buses and data streams as stream carriers (the default event bus, and topics an alarm
+    notifies, left out)."""
+    notified = _notified(found)
     return tuple(resource("stream", a.get("arn"), {"ciamStreamKind": kind}, name=a.get("name"), role=_role(a))
                  for t, kind in STREAM_TYPES for a in of_types(found, t)
-                 if a.get("arn") and not (t == "aws_cloudwatch_event_bus" and a.get("name") == "default"))
+                 if a.get("arn") and not (t == "aws_cloudwatch_event_bus" and a.get("name") == "default")
+                 and not (t == "aws_sns_topic" and a.get("arn") in notified))
 
 
 def pairs_resources(pairs):
@@ -354,7 +417,8 @@ def pairs_resources(pairs):
     rules, rule_notices = _firewall(pairs)
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *rules, *_secrets(pairs),
              *_keys(pairs), *_storage(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
-             *_sending(pairs), *_streams(pairs)), rule_notices)
+             *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
+             *_canaries(pairs)), rule_notices)
 
 
 def state_resources(text):

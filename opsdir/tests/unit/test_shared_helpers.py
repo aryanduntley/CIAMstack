@@ -8,7 +8,7 @@ from opsdir.core.directory import gtime, gtime_of_iso, make_entry, one, ou_entry
 from opsdir.core.formats import JSON
 from opsdir.core.inventory import of_types, tagged_role
 from opsdir.core.jsondata import held_json, indented
-from opsdir.core.sources import by_folder, folders, json_document, parsed, under
+from opsdir.core.sources import by_folder, folders, json_document, json_records, parsed, under
 from opsdir.domains.automation.pipelines import environment_name
 from opsdir.domains.configuration.naming import file_dn
 from opsdir.domains.configuration.record import captured_file
@@ -30,6 +30,12 @@ def test_json_document():
     assert json_document("") is None
     assert json_document('"text"', dict) is None
     assert json_document("false") is False
+
+
+def test_json_records():
+    assert json_records('[{"a": 1}, {"a": 2}]') == [{"a": 1}, {"a": 2}] and json_records('{"a": 1}') == [{"a": 1}]
+    assert json_records('{"a": 1}\n\n{"a": 2}\n') == [{"a": 1}, {"a": 2}]
+    assert json_records("not json") is None and json_records('{"a": 1}\n{oops') is None and json_records("") is None
 
 
 def test_files_grouped_by_folder():

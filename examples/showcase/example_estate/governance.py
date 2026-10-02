@@ -39,6 +39,8 @@ CHANGES = (
     ("CHG-2012", "Import the servers' host baselines", "approved", "CAB 2026-09-18", "2026-09-23"),
     ("CHG-2013", "Record the corporate root CA the PingFederate servers trust", "approved", "CAB 2026-09-18",
      "2026-09-24"),
+    ("CHG-2014", "Record the shape of the production user data (values-free data profile)", "approved",
+     "CAB 2026-09-18", "2026-09-23"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

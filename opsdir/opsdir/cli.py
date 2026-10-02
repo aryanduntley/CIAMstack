@@ -21,6 +21,10 @@
   opsdir import [--change CHG-…] ADAPTER[/IMPORTER] PATH [--dry-run] [--at YYYYMMDDhhmmssZ]
                                        read a product's export (a directory or a file) into the record with an
                                        adapter's importer; without --change (or with --dry-run) only lists the changes
+  opsdir data-profile --env CLOUD/ENV [LDIF] [--term NAME=ATTRIBUTE[=VALUE]]... [--at YYYYMMDDhhmmssZ] [-o FILE]
+                                       the shape of a directory's user data, values-free: reads LDIF (ldapsearch
+                                       output or an export; default standard input) once and writes counts only, for
+                                       `opsdir import ldap/data-profile`; needs no database
   opsdir census [--change CHG-…] PATH [--dry-run] [--replace]
                                        where the record's values (hostnames, addresses, DNs, fingerprints, census
                                        terms operators define, ...) occur in files: each file and line, secret
@@ -85,6 +89,13 @@ SUBCOMMANDS = (
     ("import", ((("--change",), {}), (("importer",), {"help": "adapter[/importer]"}), (("path",), {}),
                 (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}),
                 (("--at",), {"help": "when the export was taken, YYYYMMDDhhmmssZ (UTC; default: now)"}))),
+    ("data-profile", ((("--env",), {"required": True, "help": "CLOUD/ENV whose directory the data is from"}),
+                      (("path",), {"nargs": "?", "default": "-", "help": "LDIF to read (default: standard input)"}),
+                      (("--at",), {"help": "when the data was read, YYYYMMDDhhmmssZ (UTC; default: now)"}),
+                      (("--term",), {"action": "append", "default": [], "metavar": "NAME=ATTRIBUTE[=VALUE]",
+                                     "help": "what one of the estate's attributes means (last-login=lastLoginTime, "
+                                             "pending=registrationStatus=pending, kba=challengeAnswer, ...)"}),
+                      (("-o", "--out"), {"help": "write the profile here (default: standard output)"}))),
     ("export", ((("-b", "--base"), {"default": SUFFIX}),)),
     ("history", ((("dn",), {"nargs": "?"}),)),
     ("workspace", ((("action",), {"choices": ["create", "status", "diff", "cutover"]}),
@@ -320,6 +331,29 @@ def _cmd_file(conn, a, as_of):
     return f"rebuilt {a.name} ({r.repo_path}) → {out}"
 
 
+def read_lines(path):
+    """Effect: the lines of a file, or of standard input for -, opened when the first line is read."""
+    if path == "-":
+        yield from sys.stdin
+        return
+    with open(path, encoding="utf-8", errors="replace") as lines:
+        yield from lines
+
+
+def _cmd_data_profile(conn, a, as_of):
+    if "/" not in a.env:
+        raise SystemExit(f"--env {a.env}: give the environment as CLOUD/ENV, e.g. source/prod")
+    try:
+        text = ops.data_profile(read_lines(a.path), a.env, as_of, import_time(a.at), a.term)
+    except ValueError as e:
+        raise SystemExit(f"--term: {e}") from None
+    if not a.out:
+        return text.rstrip("\n")
+    pathlib.Path(a.out).parent.mkdir(parents=True, exist_ok=True)
+    pathlib.Path(a.out).write_text(text)
+    return f"wrote {a.out}"
+
+
 def _cmd_export(conn, a, as_of):
     return ops.export(conn, a.base)
 
@@ -352,7 +386,8 @@ COMMANDS = MappingProxyType({"init": _cmd_init, "upgrade": _cmd_upgrade, "load":
                              "migrate": _cmd_migrate, "modify": _cmd_modify, "export": _cmd_export,
                              "history": _cmd_history, "capture": _cmd_capture, "import": _cmd_import, "file": _cmd_file,
                              "bundle": _cmd_bundle, "verify": _cmd_verify, "census": _cmd_census,
-                             "workspace": _cmd_workspace})
+                             "data-profile": _cmd_data_profile, "workspace": _cmd_workspace})
+NO_DATABASE = frozenset({"data-profile"})          # commands that run where only the source is reachable
 
 
 def parser():
@@ -371,8 +406,9 @@ def parser():
 def main(argv=None):
     a = parser().parse_args(argv)
     as_of = dt.date.fromisoformat(a.as_of) if a.as_of else dt.date.today()
-    conn = db.connect(workspace.workspace_dsn() if a.workspace else None)
-    db.set_as_of(conn, as_of)
+    conn = None if a.cmd in NO_DATABASE else db.connect(workspace.workspace_dsn() if a.workspace else None)
+    if conn is not None:
+        db.set_as_of(conn, as_of)
     result = COMMANDS[a.cmd](conn, a, as_of)          # text, or (text, exit status)
     text, status = result if isinstance(result, tuple) else (result, 0)
     if text:

@@ -25,6 +25,8 @@ def test_covers(cidrs, addr, expected):
 
 def test_is_private():
     assert is_private("10.1.2.3/32") and not is_private("9.9.9.9")
+    assert all(is_private(a) for a in ("172.31.0.5", "192.168.1.1", "100.64.0.1", "fd00::1"))
+    assert not any(is_private(a) for a in ("198.51.100.20", "203.0.113.10", "192.0.2.1", "2001:db8::1", "172.32.0.1"))
 
 
 def test_branch_names():
@@ -33,7 +35,8 @@ def test_branch_names():
 
 
 def _adapter(renders, neutral_label):
-    return Adapter("x", "product", None, (), None, None, (), (), {}, renders, neutral_label, {}, None, (), (), (), ())
+    return Adapter("x", "product", None, (), None, None, (), (), {}, renders, neutral_label, {}, None, (), (), (), (),
+                   None)
 
 
 def test_render_summary_reads_like_a_sentence():

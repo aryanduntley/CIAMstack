@@ -1,0 +1,149 @@
+[
+  {
+    "name": "//compute.googleapis.com/projects/example-aero-net/global/networks/ciam-standby",
+    "assetType": "compute.googleapis.com/Network",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "kind": "compute#network",
+        "name": "ciam-standby",
+        "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby"
+      }
+    }
+  },
+  {
+    "name": "//compute.googleapis.com/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-ds",
+    "assetType": "compute.googleapis.com/Subnetwork",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "kind": "compute#subnetwork",
+        "name": "ciam-standby-ds",
+        "ipCidrRange": "10.70.1.0/24",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby",
+        "region": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1",
+        "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-ds"
+      }
+    }
+  },
+  {
+    "name": "//compute.googleapis.com/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-pf",
+    "assetType": "compute.googleapis.com/Subnetwork",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "kind": "compute#subnetwork",
+        "name": "ciam-standby-pf",
+        "ipCidrRange": "10.70.2.0/24",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby",
+        "region": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1",
+        "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-pf"
+      }
+    }
+  },
+  {
+    "name": "//compute.googleapis.com/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-am",
+    "assetType": "compute.googleapis.com/Subnetwork",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "kind": "compute#subnetwork",
+        "name": "ciam-standby-am",
+        "ipCidrRange": "10.70.3.0/24",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby",
+        "region": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1",
+        "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-am"
+      }
+    }
+  },
+  {
+    "name": "//compute.googleapis.com/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-idm",
+    "assetType": "compute.googleapis.com/Subnetwork",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "kind": "compute#subnetwork",
+        "name": "ciam-standby-idm",
+        "ipCidrRange": "10.70.6.0/24",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby",
+        "region": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1",
+        "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-idm"
+      }
+    }
+  },
+  {
+    "name": "//compute.googleapis.com/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-ig",
+    "assetType": "compute.googleapis.com/Subnetwork",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "kind": "compute#subnetwork",
+        "name": "ciam-standby-ig",
+        "ipCidrRange": "10.70.10.0/24",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby",
+        "region": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1",
+        "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-ig"
+      }
+    }
+  },
+  {
+    "name": "//dns.googleapis.com/projects/example-aero-net/managedZones/ciam-standby-private/rrsets/ldap.id.example-aero.test./A",
+    "assetType": "dns.googleapis.com/ResourceRecordSet",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "name": "ldap.id.example-aero.test.",
+        "type": "A",
+        "ttl": 300,
+        "rrdatas": [
+          "10.70.1.100"
+        ]
+      }
+    }
+  },
+  {
+    "name": "//dns.googleapis.com/projects/example-aero-net/managedZones/example-aero-public/rrsets/sso.example-aero.test./A",
+    "assetType": "dns.googleapis.com/ResourceRecordSet",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "name": "sso.example-aero.test.",
+        "type": "A",
+        "ttl": 300,
+        "rrdatas": [
+          "198.51.100.90"
+        ]
+      }
+    }
+  },
+  {
+    "name": "//dns.googleapis.com/projects/example-aero-net/managedZones/example-aero-public/rrsets/login.example-aero.test./A",
+    "assetType": "dns.googleapis.com/ResourceRecordSet",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "name": "login.example-aero.test.",
+        "type": "A",
+        "ttl": 300,
+        "rrdatas": [
+          "198.51.100.91"
+        ]
+      }
+    }
+  },
+  {
+    "name": "//dns.googleapis.com/projects/example-aero-net/managedZones/example-aero-public/rrsets/apps.example-aero.test./A",
+    "assetType": "dns.googleapis.com/ResourceRecordSet",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "name": "apps.example-aero.test.",
+        "type": "A",
+        "ttl": 300,
+        "rrdatas": [
+          "198.51.100.92"
+        ]
+      }
+    }
+  }
+]

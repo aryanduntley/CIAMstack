@@ -2,6 +2,7 @@
 from opsdir.core.contract import Adapter
 from opsdir_base_ds.config import FORMATS as LINEAGE_FORMATS
 from opsdir_base_ds.importers import importers
+from opsdir_base_ds.profile import TERMS
 from opsdir_base_ds.product import runs
 from .render import PINGDS, render_neutral, setup_scripts
 from .replication import check_replication
@@ -21,4 +22,4 @@ ADAPTER = Adapter(name="pingds", kind="product", applies=applies, required_roles
                   vocabulary={}, schema=None,
                   formats=(*LINEAGE_FORMATS, ("ds/setup-*.sh", "shell")),
                   products=(("PingDS", ">=7,<9"),),
-                  secret_patterns=(), importers=importers(PINGDS))
+                  secret_patterns=(), importers=importers(PINGDS), profile_terms=TERMS)

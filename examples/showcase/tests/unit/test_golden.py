@@ -14,7 +14,7 @@ from support import read_tree
 SRC, DST = "source/prod", "target/prod"
 # (fixture state, environment spec) -> golden render directory
 RENDERS = (("before", SRC, "render-before/source-prod"), ("before", DST, "render-before/target-prod"),
-           ("after", DST, "render-after/target-prod"))
+           ("after", DST, "render-after/target-prod"), ("before", "standby/prod", "render-before/standby-prod"))
 
 
 @pytest.mark.parametrize("state, spec, golden", RENDERS)

@@ -6,10 +6,11 @@ from opsdir.connectors.registry import ADAPTER_VERSIONS, ADAPTERS, applicable, e
 from opsdir.connectors.stack import declared_adapters, missing_adapters, stack_rows
 from opsdir.core.contract import Adapter
 from opsdir.core.environment import StackComponent, env_model
+from example_estate.build import specs
 
 
 def adapter(name, kind="product", applies=True):
-    return Adapter(name, kind, lambda m: applies, (), None, None, (), (), {}, None, None, {}, None, (), (), (), ())
+    return Adapter(name, kind, lambda m: applies, (), None, None, (), (), {}, None, None, {}, None, (), (), (), (), None)
 
 
 def component(adapter_name, role="r", versions=">=1,<2", source=None):
@@ -25,7 +26,9 @@ def test_environments_declare_their_stack(estate, source):
     assert {(c.role, c.adapter) for c in source.stack} == {("provider", "aws"), ("directory", "pingds"),
                                                            ("federation", "pingfederate"), ("access", "pingam"),
                                                            ("identity-management", "pingidm"), ("gateway", "pinggateway")}
-    assert environment_specs(estate["before"]) == ("source/prod", "target/prod", "source/stage")
+    declared = {f"{dn.split(',')[1].split('=')[1]}/{dn.split(',')[0].split('=')[1]}"     # every environment entry
+                for dn in (e.dn for e in specs() if "ciamEnvironment" in e.classes)}
+    assert set(environment_specs(estate["before"])) == declared and "standby/prod" in declared
     stage = env_model(estate["before"], "source/stage")       # an overlay of source/prod: its stack is prod's
     assert stage.stack == source.stack and [e.dn for e in stage.lineage][1] == source.dn
 

@@ -6,4 +6,4 @@ from .pipelines import PIPELINES_IMPORTER
 ADAPTER = Adapter(name="azure-devops", kind="delivery", applies=None, required_roles=(), render_neutral=None,
                   render_env=None, checks=(), ref_schemes=(), secret_schemes={}, renders=None, neutral_label=None,
                   vocabulary={}, schema=None, formats=(), products=(), secret_patterns=(),
-                  importers=(PIPELINES_IMPORTER,))
+                  importers=(PIPELINES_IMPORTER,), profile_terms=None)

@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-adapter-gcp"
+version = "0.1.0"
+description = "opsdir adapter for Google Cloud: Terraform for Google Cloud environments; Google Cloud Terraform state and inventories read back into the record; gcp-sm:// secret references."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1", "opsdir-format-terraform>=0.1"]
+
+[project.entry-points."opsdir.adapters"]
+gcp = "opsdir_adapter_gcp.adapter:ADAPTER"
+
+[tool.setuptools.packages.find]
+where = ["src"]

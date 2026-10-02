@@ -1,0 +1,378 @@
+[
+  {
+    "kind": "compute#instance",
+    "name": "ds-1",
+    "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/instances/ds-1",
+    "zone": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a",
+    "machineType": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/machineTypes/n2-standard-4",
+    "hostname": "ds-1.gcp.internal.example-aero.test",
+    "tags": {
+      "items": [
+        "ciam-prod-ds"
+      ]
+    },
+    "labels": {
+      "role": "ds",
+      "product": "pingds-7-5-1",
+      "managed_by": "opsdir"
+    },
+    "metadata": {
+      "items": [
+        {
+          "key": "enable-oslogin",
+          "value": "TRUE"
+        },
+        {
+          "key": "ciam-role",
+          "value": "ds"
+        },
+        {
+          "key": "ciam-product",
+          "value": "PingDS 7.5.1"
+        }
+      ]
+    },
+    "disks": [
+      {
+        "boot": true,
+        "source": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/disks/ds-1"
+      }
+    ],
+    "networkInterfaces": [
+      {
+        "networkIP": "10.70.1.11",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby",
+        "subnetwork": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-ds"
+      }
+    ]
+  },
+  {
+    "kind": "compute#instance",
+    "name": "ds-2",
+    "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-b/instances/ds-2",
+    "zone": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-b",
+    "machineType": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-b/machineTypes/n2-standard-8",
+    "hostname": "ds-2.gcp.internal.example-aero.test",
+    "tags": {
+      "items": [
+        "ciam-prod-ds"
+      ]
+    },
+    "labels": {
+      "role": "ds",
+      "product": "pingds-7-5-1",
+      "managed_by": "opsdir"
+    },
+    "metadata": {
+      "items": [
+        {
+          "key": "enable-oslogin",
+          "value": "TRUE"
+        },
+        {
+          "key": "ciam-role",
+          "value": "ds"
+        },
+        {
+          "key": "ciam-product",
+          "value": "PingDS 7.5.1"
+        }
+      ]
+    },
+    "disks": [
+      {
+        "boot": true,
+        "source": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-b/disks/ds-2"
+      }
+    ],
+    "networkInterfaces": [
+      {
+        "networkIP": "10.70.1.12",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby",
+        "subnetwork": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-ds"
+      }
+    ]
+  },
+  {
+    "kind": "compute#instance",
+    "name": "pf-engine-1",
+    "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/instances/pf-engine-1",
+    "zone": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a",
+    "machineType": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/machineTypes/n2-standard-2",
+    "hostname": "pf-engine-1.gcp.internal.example-aero.test",
+    "tags": {
+      "items": [
+        "ciam-prod-pf-engine"
+      ]
+    },
+    "labels": {
+      "role": "pf-engine",
+      "product": "pingfederate-12-1-4",
+      "managed_by": "opsdir"
+    },
+    "metadata": {
+      "items": [
+        {
+          "key": "enable-oslogin",
+          "value": "TRUE"
+        },
+        {
+          "key": "ciam-role",
+          "value": "pf-engine"
+        },
+        {
+          "key": "ciam-product",
+          "value": "PingFederate 12.1.4"
+        }
+      ]
+    },
+    "disks": [
+      {
+        "boot": true,
+        "source": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/disks/pf-engine-1"
+      }
+    ],
+    "networkInterfaces": [
+      {
+        "networkIP": "10.70.2.21",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby",
+        "subnetwork": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-pf"
+      }
+    ]
+  },
+  {
+    "kind": "compute#instance",
+    "name": "pf-engine-2",
+    "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-b/instances/pf-engine-2",
+    "zone": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-b",
+    "machineType": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-b/machineTypes/n2-standard-2",
+    "hostname": "pf-engine-2.gcp.internal.example-aero.test",
+    "tags": {
+      "items": [
+        "ciam-prod-pf-engine"
+      ]
+    },
+    "labels": {
+      "role": "pf-engine",
+      "product": "pingfederate-12-1-4",
+      "managed_by": "opsdir"
+    },
+    "metadata": {
+      "items": [
+        {
+          "key": "enable-oslogin",
+          "value": "TRUE"
+        },
+        {
+          "key": "ciam-role",
+          "value": "pf-engine"
+        },
+        {
+          "key": "ciam-product",
+          "value": "PingFederate 12.1.4"
+        }
+      ]
+    },
+    "disks": [
+      {
+        "boot": true,
+        "source": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-b/disks/pf-engine-2"
+      }
+    ],
+    "networkInterfaces": [
+      {
+        "networkIP": "10.70.2.22",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby",
+        "subnetwork": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-pf"
+      }
+    ]
+  },
+  {
+    "kind": "compute#instance",
+    "name": "pf-admin-1",
+    "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/instances/pf-admin-1",
+    "zone": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a",
+    "machineType": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/machineTypes/n2-standard-2",
+    "hostname": "pf-admin-1.gcp.internal.example-aero.test",
+    "tags": {
+      "items": [
+        "ciam-prod-pf-admin"
+      ]
+    },
+    "labels": {
+      "role": "pf-admin",
+      "product": "pingfederate-12-1-4",
+      "managed_by": "opsdir"
+    },
+    "metadata": {
+      "items": [
+        {
+          "key": "enable-oslogin",
+          "value": "TRUE"
+        },
+        {
+          "key": "ciam-role",
+          "value": "pf-admin"
+        },
+        {
+          "key": "ciam-product",
+          "value": "PingFederate 12.1.4"
+        }
+      ]
+    },
+    "disks": [
+      {
+        "boot": true,
+        "source": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/disks/pf-admin-1"
+      }
+    ],
+    "networkInterfaces": [
+      {
+        "networkIP": "10.70.2.10",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby",
+        "subnetwork": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-pf"
+      }
+    ]
+  },
+  {
+    "kind": "compute#instance",
+    "name": "am-1",
+    "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/instances/am-1",
+    "zone": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a",
+    "machineType": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/machineTypes/n2-standard-2",
+    "hostname": "am-1.gcp.internal.example-aero.test",
+    "tags": {
+      "items": [
+        "ciam-prod-am"
+      ]
+    },
+    "labels": {
+      "role": "am",
+      "product": "pingam-7-5-1",
+      "managed_by": "opsdir"
+    },
+    "metadata": {
+      "items": [
+        {
+          "key": "enable-oslogin",
+          "value": "TRUE"
+        },
+        {
+          "key": "ciam-role",
+          "value": "am"
+        },
+        {
+          "key": "ciam-product",
+          "value": "PingAM 7.5.1"
+        }
+      ]
+    },
+    "disks": [
+      {
+        "boot": true,
+        "source": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/disks/am-1"
+      }
+    ],
+    "networkInterfaces": [
+      {
+        "networkIP": "10.70.3.21",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby",
+        "subnetwork": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-am"
+      }
+    ]
+  },
+  {
+    "kind": "compute#instance",
+    "name": "idm-1",
+    "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/instances/idm-1",
+    "zone": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a",
+    "machineType": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/machineTypes/n2-standard-2",
+    "hostname": "idm-1.gcp.internal.example-aero.test",
+    "tags": {
+      "items": [
+        "ciam-prod-idm"
+      ]
+    },
+    "labels": {
+      "role": "idm",
+      "product": "pingidm-7-5-0",
+      "managed_by": "opsdir"
+    },
+    "metadata": {
+      "items": [
+        {
+          "key": "enable-oslogin",
+          "value": "TRUE"
+        },
+        {
+          "key": "ciam-role",
+          "value": "idm"
+        },
+        {
+          "key": "ciam-product",
+          "value": "PingIDM 7.5.0"
+        }
+      ]
+    },
+    "disks": [
+      {
+        "boot": true,
+        "source": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/disks/idm-1"
+      }
+    ],
+    "networkInterfaces": [
+      {
+        "networkIP": "10.70.6.21",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby",
+        "subnetwork": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-idm"
+      }
+    ]
+  },
+  {
+    "kind": "compute#instance",
+    "name": "ig-1",
+    "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/instances/ig-1",
+    "zone": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a",
+    "machineType": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/machineTypes/n2-standard-2",
+    "hostname": "ig-1.gcp.internal.example-aero.test",
+    "tags": {
+      "items": [
+        "ciam-prod-ig"
+      ]
+    },
+    "labels": {
+      "role": "ig",
+      "product": "pinggateway-2024-11-0",
+      "managed_by": "opsdir"
+    },
+    "metadata": {
+      "items": [
+        {
+          "key": "enable-oslogin",
+          "value": "TRUE"
+        },
+        {
+          "key": "ciam-role",
+          "value": "ig"
+        },
+        {
+          "key": "ciam-product",
+          "value": "PingGateway 2024.11.0"
+        }
+      ]
+    },
+    "disks": [
+      {
+        "boot": true,
+        "source": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/disks/ig-1"
+      }
+    ],
+    "networkInterfaces": [
+      {
+        "networkIP": "10.70.10.21",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby",
+        "subnetwork": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-ig"
+      }
+    ]
+  }
+]

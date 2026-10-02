@@ -44,6 +44,10 @@ Reads the JSON access log every server of the lineage writes (`logs/ldap-access.
 
 It is values-free: search filters and attribute values are never read, and a search of one entry records the entry's container, not the entry. An identity that only binds is an end user whose password is being checked, not a client: it is counted in the notices and never recorded. Import a representative window (a week, say) from every server; importing the same logs again changes nothing. The CSV and legacy text access logs are named in the notices, not read.
 
+## What the lineage's attributes mean to the data profile
+
+`profile.TERMS` (the adapters' `profile_terms`) tells `opsdir data-profile` what the lineage adds to the LDAP standards: the last login time a password policy records (`last-login-time-attribute`: `ds-last-login-time` in PingDS's sample policies, `ds-pwp-last-login-time` in older configurations) and the flag an administrator disables an account with (`ds-pwp-account-disabled: true`). Both are operational, so ask `ldapsearch` for them (`"*" "+"`). A policy that records the last login in another attribute needs that name added here; a `last-login-time-format` that doesn't start with `yyyyMMdd` counts as `unreadable`.
+
 The lineage's `dsconfig` batch syntax is a format of its own, `dsconfig-batch`, which this package registers (entry point `opsdir.formats`); `config.FORMATS` declares the format of every neutral file the lineage renders.
 
 What differs between products is data, a `DsProduct` record: the product name as servers record it, the administrator's bind DN, how to apply the batch file, and the product's names for connection handlers recorded under neutral names (`LDAP`, `LDAPS`, `HTTPS`). Setup scripts and the join check stay in each product's adapter.
@@ -55,6 +59,7 @@ from opsdir_base_ds.setup import setup_inputs, port
 from opsdir_base_ds.replication import check_joins, check_replication_path, peer_ds_hosts
 from opsdir_base_ds.observe import config_entries, server_id
 from opsdir_base_ds.importers import importers
+from opsdir_base_ds.profile import TERMS
 ```
 
 In this repository: `opsdir/scripts/dev-install.sh`.

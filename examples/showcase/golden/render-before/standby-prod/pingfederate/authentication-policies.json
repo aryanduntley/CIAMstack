@@ -1,0 +1,38 @@
+{
+  "failIfNoSelection": false,
+  "trackedHttpParameters": [],
+  "authnSelectionTrees": [
+    {
+      "name": "Customers",
+      "enabled": true,
+      "rootNode": {
+        "action": {
+          "authenticationSource": {
+            "sourceRef": {
+              "id": "htmlform"
+            },
+            "type": "IDP_ADAPTER"
+          },
+          "type": "AUTHN_SOURCE"
+        },
+        "children": [
+          {
+            "action": {
+              "authenticationPolicyContractRef": {
+                "id": "default-apc"
+              },
+              "context": "Success",
+              "type": "APC_MAPPING"
+            }
+          },
+          {
+            "action": {
+              "context": "Fail",
+              "type": "DONE"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

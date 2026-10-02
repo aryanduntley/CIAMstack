@@ -4,13 +4,13 @@ instance, authentication policy and OIDC policy names only objects the record ha
 withheld secrets come from a credential role the target binds."""
 
 from opsdir.core.directory import children, one, rdn_value, values
-from opsdir.core.environment import one_role
+from opsdir.core.environment import bound_nowhere, one_role
 from opsdir.core.findings import findings, merge_findings, responsible
 from opsdir.core.jsondata import held_json
 from .datastores import store_hosts
+from .discovery import CHOICES, RENDERED, binding_protocol, clustered, lacks, where
 from .generic import held_resources, resource_label
 from .naming import DATA_STORES, DEFAULT_POLICY, DISCOVERY_ROLE, FRAGMENTS, OIDC_POLICIES
-from .nodes import binding_kind, clustered
 from .oauth import oidc_policy_refs
 from .objects import NOT_RECORDED, missing, why_unresolved
 from .plugins import KINDS, plugin_refs
@@ -24,7 +24,7 @@ def _config(e, attr="pingfedConfig"):
 def _credentials(ctx, e, what, owner):
     """Blockers: withheld values nothing names a secret for, and roles the target doesn't bind."""
     credential = one(e, "pingfedCredentialRole")
-    unbound = [r for r in (one(e, "pingfedTargetRole"), credential) if r and one_role(ctx.dst, r) is None]
+    unbound = bound_nowhere((one(e, "pingfedTargetRole"), credential), ctx.dst)
     return (*((("PingFederate", f"{what} has withheld credentials but no credential role: nothing says which secret "
                 f"{ctx.dst.label} gives it. Set pingfedCredentialRole.", owner),)
               if values(e, "pingfedWithheld") and not credential else ()),
@@ -97,36 +97,39 @@ def check_references(ctx):
                                          "has."))
 
 
-def _where(b):
-    return one(b, "ciamStorageRef") or one(b, "ciamFqdn")
-
-
 def _discovery(ctx, nodes, src, dst, owner):
-    src_kind, dst_kind = (binding_kind(b) if b is not None else None for b in (src, dst))
-    put = "put pingfederate/cluster/discovery.xml in place of the discovery protocol in each node's tcp.xml"
+    src_p, dst_p = (binding_protocol(b) if b is not None else None for b in (src, dst))
+    choose = f"choose pingfedDiscoveryProtocol ({', '.join(CHOICES)})"
     if dst is None and src is not None:
         return findings()          # a role the source binds and the target doesn't: the core's binding check says so
     if dst is None:
         return findings(blockers=[("PingFederate", f"PingFederate's cluster ({len(nodes)} clustered node(s) in "
-                                   f"{ctx.src.label}) has no recorded discovery, so nothing says where its members "
-                                   f"find each other in {ctx.dst.label}: bind role `{DISCOVERY_ROLE}` in both (s3://"
-                                   "bucket, azblob://account/container or a DNS service name).", owner)])
-    if dst_kind is None:
-        return findings(blockers=[("PingFederate", f"{ctx.dst.label} binds `{DISCOVERY_ROLE}` to neither storage nor a "
-                                   "service name: bind it to s3://bucket, azblob://account/container or a DNS service "
-                                   "name.", owner)])
-    if src_kind and src_kind != dst_kind:
-        return findings(actions=[("PingFederate", f"PingFederate's cluster discovery changes from {src_kind} "
-                                  f"({_where(src)}) to {dst_kind} ({_where(dst)}): {put}.", owner, None)])
-    return findings(ok=[f"PingFederate's cluster discovery ({dst_kind}: {_where(dst)}) is bound in {ctx.dst.label}."])
+                                   f"{ctx.src.label}) has no recorded discovery, so nothing says how its members "
+                                   f"find each other in {ctx.dst.label}: bind role `{DISCOVERY_ROLE}` in both and "
+                                   f"{choose}.", owner)])
+    if dst_p is None or dst_p.support != RENDERED:
+        why = f"{dst_p.name}, {dst_p.about}" if dst_p else "no protocol and nothing that implies one"
+        return findings(blockers=[("PingFederate", f"{ctx.dst.label}'s `{DISCOVERY_ROLE}` binding uses {why}: "
+                                   f"{choose}.", owner)])
+    lack = lacks(dst_p, dst)
+    if lack:
+        return findings(blockers=[("PingFederate", f"{ctx.dst.label}'s `{DISCOVERY_ROLE}` binding uses {dst_p.name}, "
+                                   f"which needs {lack}.", owner)])
+    if src_p and src_p.name != dst_p.name:
+        return findings(actions=[("PingFederate", f"PingFederate's cluster discovery changes from {src_p.name} "
+                                  f"({where(src)}) to {dst_p.name} ({where(dst)}): put the lines of "
+                                  "pingfederate/cluster/jgroups.properties in each node's bin/jgroups.properties.",
+                                  owner, None)])
+    return findings(ok=[f"PingFederate's cluster discovery ({dst_p.name}: {where(dst)}) is bound in {ctx.dst.label}."])
 
 
 def check_cluster(ctx):
     """A PingFederate cluster (clustered nodes, or a discovery binding, in the source) needs a discovery binding in the
-    target. Clustered nodes with no discovery recorded anywhere, and a target binding that is neither storage nor a
-    service name, are blockers (a source binding the target lacks is the core binding check's); a different kind of
-    place (S3 to a blob container, ...) is an action, the classic miss when moving, since every node's tcp.xml must
-    change. A node's withheld run.properties secrets need a credential role the target binds."""
+    target. Clustered nodes with no discovery recorded anywhere, and a target binding whose protocol the adapter
+    doesn't render (AZURE_PING, ...) or that lacks what its protocol needs, are blockers (a source binding the target
+    lacks is the core binding check's); a different protocol (NATIVE_S3_PING to DNS_PING, ...) is an action, the
+    classic miss when moving, since every node's jgroups.properties must change. A node's withheld run.properties
+    secrets need a credential role the target binds."""
     nodes, src, dst = clustered(ctx.src), one_role(ctx.src, DISCOVERY_ROLE), one_role(ctx.dst, DISCOVERY_ROLE)
     if not nodes and src is None and dst is None:
         return findings()

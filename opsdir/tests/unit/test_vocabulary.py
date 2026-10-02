@@ -1,5 +1,5 @@
 """Values of `vocab` attributes are defined by the installed domains and adapters, never by the core schema."""
-from opsdir.connectors.registry import schema_fragments, vocabulary
+from opsdir.connectors.registry import core_fragments, schema_fragments, vocabulary
 from opsdir.core.standard import registry_ldif
 from opsdir.store.migrations import misdeclared_vocabulary
 from opsdir.store.postgres import schema_rows
@@ -7,12 +7,12 @@ from opsdir.store.postgres import schema_rows
 VOCAB_ATTRIBUTES = {"ciamCloudProvider", "ciamCloudEnvironment", "ciamServerRole", "ciamTargetRole", "ciamFormat"}
 
 
-def _attribute_rows():
-    return schema_rows(registry_ldif(schema_fragments()))[0]
+def _attribute_rows(fragments=None):
+    return schema_rows(registry_ldif(fragments or schema_fragments()))[0]
 
 
 def test_the_core_schema_leaves_these_values_open():
-    assert {a["name"] for a in _attribute_rows() if a["value_type"] == "vocab"} == VOCAB_ATTRIBUTES
+    assert {a["name"] for a in _attribute_rows(core_fragments()) if a["value_type"] == "vocab"} == VOCAB_ATTRIBUTES
 
 
 def test_vocabulary_is_only_declared_for_vocab_attributes():

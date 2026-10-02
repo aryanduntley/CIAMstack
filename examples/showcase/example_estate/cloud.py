@@ -6,16 +6,23 @@ so each export matches it except for the drift planted here, which `opsdir impor
     - an untagged bastion instance nobody recorded
     - a hand-opened security group rule, "temporary vendor access", 10.99.0.0/16 to LDAPS
     - the disk key's automatic rotation switched off
+    - a CloudWatch alarm someone added in the console (ds-cpu-high), untagged: named, not recorded
   target/prod, Azure CLI output (az … -o json), with a role map:
     - fw-idm-sync's NSG priority changed in the portal (130 -> 400)
     - ds-3 resized (Standard_D4s_v5 -> Standard_D8s_v5)
     - a management subnet added in the portal, snet-mgmt; roles.json gives it the role subnet-mgmt
+  standby/prod, Cloud Asset Inventory (an export, JSON lines) and gcloud output (--format=json):
+    - ds-2 resized in the console (n2-standard-4 -> n2-standard-8; the instance list carries it)
+    - an SSH rule for IAP opened by hand (35.235.240.0/20 to port 22): named, not recorded (no role)
+    - Secret Manager names secrets by project number; `gcloud projects describe` reads them as the project ID
 """
 import hashlib
 import json
+import re
 
-from .common import AWS, AZ
-from .infrastructure import SECRET_ROLES, SOURCE, TARGET
+from .common import AWS, AZ, GCP
+from .infrastructure import HOST, PROJECT, SECRET_ROLES, SOURCE, STANDBY, TARGET
+from .observability import MONITORING
 
 ACCOUNT, REGION = "111122223333", "us-east-1"
 SUB = "00000000-0000-0000-0000-000000000000"
@@ -123,6 +130,32 @@ def _aws_keys(p, rotation):
               for bucket in (p["discovery"][len("s3://"):].split("/", 1)[0],) if p.get("discovery"))]
 
 
+def _aws_monitoring():
+    """CloudWatch as the source runs it: the alert topic, the log groups, the alarms and the canary the record holds
+    (each tagged with its role or the rule it realizes), and one alarm nobody tagged (named in the dry run)."""
+    by_class = {oc: [(cn, role, attrs) for c, cn, role, attrs in MONITORING["source"] if c == oc]
+                for oc in ("ciamAlertChannel", "ciamLogDestination", "ciamAlarmBinding", "ciamCanaryBinding")}
+    return [*(_res("managed", "aws_sns_topic", cn, {"arn": a["ciamProviderRef"], "name": f"ciam-prod-{cn}",
+                                                    "tags": {"Role": role}})
+              for cn, role, a in by_class["ciamAlertChannel"]),
+            *(_res("managed", "aws_cloudwatch_log_group", cn, {
+                "arn": a["ciamProviderRef"], "name": a["ciamProviderRef"].split("log-group:", 1)[1],
+                "retention_in_days": a["ciamRetentionDays"], "tags": {"Role": role}})
+              for cn, role, a in by_class["ciamLogDestination"]),
+            *(_res("managed", "aws_cloudwatch_metric_alarm", cn, {
+                "arn": a["ciamProviderRef"], "alarm_name": cn, "namespace": a["ciamMetric"].split(" ")[0],
+                "metric_name": a["ciamMetric"].split(" ")[1], "alarm_actions": [a["ciamNotifies"]],
+                "tags": {"Realizes": a["ciamRealizes"]}})
+              for cn, _, a in by_class["ciamAlarmBinding"]),
+            *(_res("managed", "aws_synthetics_canary", cn, {
+                "arn": a["ciamProviderRef"], "name": f"ciam-{cn}", "schedule": [{"expression": "rate(5 minutes)"}],
+                "tags": {"Realizes": a["ciamRealizes"]}})
+              for cn, _, a in by_class["ciamCanaryBinding"]),
+            _res("managed", "aws_cloudwatch_metric_alarm", "ds-cpu-high", {      # someone added it in the console
+                "arn": "arn:aws:cloudwatch:us-east-1:111122223333:alarm:ds-cpu-high", "alarm_name": "ds-cpu-high",
+                "namespace": "AWS/EC2", "metric_name": "CPUUtilization"})]
+
+
 def _drifted_source(p, subnets, groups):
     """What someone did outside the record: an untagged bastion and a hand-opened rule."""
     return [_res("managed", "aws_instance", "bastion", {
@@ -141,7 +174,7 @@ def source_state():
     subnets, instances, groups = _source_ids(p)
     resources = [*_aws_network(p, subnets), *_aws_servers(p, subnets, instances, groups, {"pf-engine-2": "m6i.xlarge"}),
                  *_aws_firewall(p, groups), *_aws_services(p, instances), *_aws_keys(p, rotation=False),
-                 *_drifted_source(p, subnets, groups)]
+                 *_aws_monitoring(), *_drifted_source(p, subnets, groups)]
     return _dumps({"version": 4, "terraform_version": "1.9.5", "serial": 214, "lineage": "5e0c-ciam-prod",
                    "outputs": {}, "resources": resources})
 
@@ -260,8 +293,182 @@ def target_inventory():
             "roles.json": {f"{p['net'][1]}/snet-mgmt": "subnet-mgmt"}}
 
 
+# ------------------------------------------------------------------ standby/prod: Cloud Asset Inventory and gcloud
+GAPI = "https://www.googleapis.com/compute/v1"
+NUMBER = "481516234200"                                  # the standby project's number (Secret Manager names by it)
+REGION_URL = f"{GAPI}/{PROJECT}/regions/us-central1"
+
+
+def _asset(asset_type, data, name=None):
+    """One asset as `gcloud asset export --content-type=resource` writes it (a line of JSON)."""
+    service = asset_type.split("/")[0]
+    return {"name": name or f"//{service}/{(data.get('selfLink') or data['name']).split('/v1/')[-1]}",
+            "assetType": asset_type, "resource": {"version": "v1", "data": data}}
+
+
+def _label(v):
+    return re.sub(r"[^a-z0-9_-]", "-", (v or "").lower())[:63]
+
+
+def _gcp_instance(server, full, resized):
+    """An instance as Compute Engine reports it: Cloud Asset Inventory keeps only platform metadata keys (full=False),
+    `gcloud compute instances list` all of them."""
+    cn, role, host, ip, zone, size, image, subnet, version = server
+    subnets = {name: ref for name, _, ref, _, _ in STANDBY["subnets"]}
+    metadata = [{"key": "enable-oslogin", "value": "TRUE"},
+                *(({"key": "ciam-role", "value": role}, {"key": "ciam-product", "value": version}) if full else ())]
+    return {"kind": "compute#instance", "name": cn, "selfLink": f"{GAPI}/{PROJECT}/zones/{zone}/instances/{cn}",
+            "zone": f"{GAPI}/{PROJECT}/zones/{zone}",
+            "machineType": f"{GAPI}/{PROJECT}/zones/{zone}/machineTypes/{resized.get(cn, size)}",
+            "hostname": host, "tags": {"items": [f"ciam-prod-{role}"]},
+            "labels": {"role": _label(role), "product": _label(version), "managed_by": "opsdir"},
+            "metadata": {"items": metadata},
+            "disks": [{"boot": True, "source": f"{GAPI}/{PROJECT}/zones/{zone}/disks/{cn}"}],
+            "networkInterfaces": [{"networkIP": ip, "network": f"{GAPI}/{STANDBY['net'][1]}",
+                                   "subnetwork": f"{GAPI}/{subnets[subnet]}"}]}
+
+
+def _gcp_firewalls(p):
+    """The rendered rules (pinned priorities, '(name)' descriptions), each service's health-check probe rule, and the
+    rule opened by hand."""
+    network = f"{GAPI}/{p['net'][1]}"
+    return [*({"kind": "compute#firewall", "name": f"ciam-prod-{cn}", "description": f"{role} ({cn})",
+               "network": network, "direction": "INGRESS", "priority": 100 + 10 * i, "sourceRanges": cidrs,
+               "targetTags": [f"ciam-prod-{trole}"], "allowed": [{"IPProtocol": "tcp", "ports": [str(x) for x in ports]}]}
+              for i, (cn, role, cidrs, ports, trole, _, _) in enumerate(p["fw"])),
+            *({"kind": "compute#firewall", "name": f"ciam-prod-{cn}-health-checks", "network": network,
+               "description": f"Google Cloud health checks for {cn}", "direction": "INGRESS", "priority": 1000,
+               "sourceRanges": ["35.191.0.0/16"] if ip.startswith("10.") else
+               ["35.191.0.0/16", "209.85.152.0/22", "209.85.204.0/22"],
+               "targetTags": [f"ciam-prod-{trole}"], "allowed": [{"IPProtocol": "tcp", "ports": [str(ports[0])]}]}
+              for cn, _, _, _, _, trole, ports, ip, _, _ in p["services"]),
+            {"kind": "compute#firewall", "name": "allow-iap-ssh", "description": "IAP SSH for the vendor (temporary)",
+             "network": network, "direction": "INGRESS", "priority": 900, "sourceRanges": ["35.235.240.0/20"],
+             "targetTags": ["ciam-prod-ds"], "allowed": [{"IPProtocol": "tcp", "ports": ["22"]}]}]
+
+
+def _gcp_services(p):
+    """(forwarding rules, backend services, record sets, get-health outputs by service) of the service names."""
+    servers = p["servers"]
+    rules, backends, records, health = [], [], [], {}
+    for cn, _, fqdn, _, zref, trole, ports, ip, _, _ in p["services"]:
+        name, targets = f"ciam-prod-{cn}", [s for s in servers if s[1] == trole]
+        groups = {zone: f"{GAPI}/{PROJECT}/zones/{zone}/instanceGroups/{name}-{zone}" for zone in sorted({s[4] for s in targets})}
+        backend = f"{REGION_URL}/backendServices/{name}"
+        rules.append({"kind": "compute#forwardingRule", "name": name, "region": REGION_URL, "IPAddress": ip,
+                      "ports": [str(x) for x in ports], "IPProtocol": "TCP", "backendService": backend,
+                      "loadBalancingScheme": "INTERNAL" if ip.startswith("10.") else "EXTERNAL",
+                      "selfLink": f"{REGION_URL}/forwardingRules/{name}", "labels": {"managed_by": "opsdir"}})
+        backends.append({"kind": "compute#backendService", "name": name, "region": REGION_URL, "selfLink": backend,
+                         "backends": [{"group": g, "balancingMode": "CONNECTION"} for g in groups.values()]})
+        records.append(_asset("dns.googleapis.com/ResourceRecordSet",
+                              {"name": f"{fqdn}.", "type": "A", "ttl": 300, "rrdatas": [ip]},
+                              name=f"//dns.googleapis.com/{HOST}/managedZones/{zref}/rrsets/{fqdn}./A"))
+        health[name] = [{"backend": g, "status": {"kind": "compute#backendServiceGroupHealth", "healthStatus": [
+            {"instance": f"{GAPI}/{PROJECT}/zones/{zone}/instances/{s[0]}", "ipAddress": s[3], "port": ports[0],
+             "healthState": "HEALTHY"} for s in targets if s[4] == zone]}} for zone, g in groups.items()]
+    return rules, backends, records, health
+
+
+def _gcp_references(p):
+    """Secrets (named by project number), the disk key, the backup bucket, the audit topic and the engines' group."""
+    key = p["key"][0].split("://", 1)[1]
+    (mig, _, target, ref, image, size, least, runs, most, zones, _), = p["compute"]
+    template = f"{GAPI}/{PROJECT}/global/instanceTemplates/{ref.rsplit('/', 1)[1]}-1"
+    return [*(_asset("secretmanager.googleapis.com/Secret", {"name": f"projects/{NUMBER}/secrets/{role}",
+                                                             "labels": {"role": role},
+                                                             "replication": {"automatic": {}}})
+              for role in SECRET_ROLES),
+            _asset("cloudkms.googleapis.com/CryptoKey", {"name": key, "purpose": "ENCRYPT_DECRYPT",
+                                                         "rotationPeriod": "7776000s", "labels": {"role": "disk-encryption"},
+                                                         "versionTemplate": {"protectionLevel": "HSM",
+                                                                             "algorithm": "GOOGLE_SYMMETRIC_ENCRYPTION"}}),
+            _asset("storage.googleapis.com/Bucket", {"kind": "storage#bucket", "name": p["backup"][5:],
+                                                     "labels": {"role": "backup-target"}},
+                   name=f"//storage.googleapis.com/{p['backup'][5:]}"),
+            *(_asset("pubsub.googleapis.com/Topic", {"name": sref, "labels": {"role": role}})
+              for _, role, sref, _ in p["streams"]),
+            _asset("compute.googleapis.com/InstanceGroupManager", {
+                "kind": "compute#instanceGroupManager", "name": ref.rsplit("/", 1)[1], "region": REGION_URL,
+                "selfLink": f"{GAPI}/{ref}", "targetSize": runs, "versions": [{"instanceTemplate": template}],
+                "distributionPolicy": {"zones": [{"zone": f"{GAPI}/{PROJECT}/zones/{z}"} for z in zones]}}),
+            _asset("compute.googleapis.com/InstanceTemplate", {
+                "kind": "compute#instanceTemplate", "name": template.rsplit("/", 1)[1], "selfLink": template,
+                "properties": {"machineType": size, "labels": {"role": target},
+                               "disks": [{"boot": True, "initializeParams": {"sourceImage": f"{GAPI}/{image}"}}]}}),
+            _asset("compute.googleapis.com/Autoscaler", {
+                "kind": "compute#autoscaler", "name": ref.rsplit("/", 1)[1], "region": REGION_URL,
+                "selfLink": f"{REGION_URL}/autoscalers/{ref.rsplit('/', 1)[1]}", "target": f"{GAPI}/{ref}",
+                "autoscalingPolicy": {"minNumReplicas": least, "maxNumReplicas": most}})]
+
+
+def _gcp_monitoring():
+    """What Cloud Monitoring and Logging run, from the standby's monitoring bindings."""
+    def asset(oc, attrs):
+        ref = attrs["ciamProviderRef"]
+        if oc == "ciamAlertChannel":
+            return _asset("monitoring.googleapis.com/NotificationChannel", {
+                "name": ref, "type": "pagerduty", "displayName": "ciam-page", "labels": {"service_key": "**********"},
+                "userLabels": {"role": "alerts-page"}})
+        if oc == "ciamLogDestination":
+            return _asset("logging.googleapis.com/LogBucket", {"name": ref, "retentionDays": attrs["ciamRetentionDays"],
+                                                               "lifecycleState": "ACTIVE"})
+        if oc == "ciamAlarmBinding":
+            condition = ({"conditionMatchedLog": {"filter": 'logName:"pingfederate" AND "AUTHN_ATTEMPT" AND "FAILURE"'}}
+                         if attrs["ciamMetric"] == "log query" else
+                         {"conditionThreshold": {"filter": f'metric.type="{attrs["ciamMetric"]}" AND '
+                                                           'resource.type="gce_instance"'}})
+            return _asset("monitoring.googleapis.com/AlertPolicy", {
+                "name": ref, "displayName": ref.rsplit("/", 1)[1], "conditions": [condition],
+                "notificationChannels": [attrs["ciamNotifies"]], "userLabels": {"realizes": attrs["ciamRealizes"]}})
+        return _asset("monitoring.googleapis.com/UptimeCheckConfig", {
+            "name": ref, "displayName": "sso-login", "period": "300s", "userLabels": {"realizes": attrs["ciamRealizes"]}})
+    return [asset(oc, attrs) for oc, _, _, attrs in MONITORING["standby"]]
+
+
+def standby_inventory():
+    """{file name: text} of the standby environment's Cloud Asset Inventory export and gcloud output, with the planted
+    drift."""
+    p = STANDBY
+    resized = {"ds-2": "n2-standard-8"}
+    rules, backends, records, health = _gcp_services(p)
+    nat, address = p["egress"][0].split("/"), p["egress"][1][:-3]
+    exported = [*(_asset("compute.googleapis.com/Instance", _gcp_instance(s, False, {})) for s in p["servers"]),
+                *(_asset("compute.googleapis.com/Disk", {"kind": "compute#disk", "name": s[0], "sourceImage": f"{GAPI}/{s[6]}",
+                                                         "selfLink": f"{GAPI}/{PROJECT}/zones/{s[4]}/disks/{s[0]}"})
+                  for s in p["servers"]),
+                *(_asset("compute.googleapis.com/Firewall", fw) for fw in _gcp_firewalls(p)),
+                *(_asset("compute.googleapis.com/ForwardingRule", r) for r in rules),
+                *(_asset("compute.googleapis.com/RegionBackendService", b) for b in backends),
+                _asset("compute.googleapis.com/Address", {"kind": "compute#address", "name": "ciam-standby-nat-1",
+                                                          "address": address, "region": REGION_URL,
+                                                          "selfLink": f"{REGION_URL}/addresses/ciam-standby-nat-1"}),
+                _asset("compute.googleapis.com/Router", {"kind": "compute#router", "name": nat[2], "region": REGION_URL,
+                                                         "selfLink": f"{REGION_URL}/routers/{nat[2]}",
+                                                         "nats": [{"name": nat[3], "natIpAllocateOption": "MANUAL_ONLY",
+                                                                   "natIps": [f"{REGION_URL}/addresses/ciam-standby-nat-1"]}]}),
+                *_gcp_references(p), *_gcp_monitoring(),
+                _asset("iam.googleapis.com/ServiceAccount", {"name": f"{PROJECT}/serviceAccounts/ciam-servers@"
+                                                                     "example-aero-ciam-standby.iam.gserviceaccount.com"})]
+    host = [_asset("compute.googleapis.com/Network", {"kind": "compute#network", "name": p["net"][1].rsplit("/", 1)[1],
+                                                      "selfLink": f"{GAPI}/{p['net'][1]}"}),
+            *(_asset("compute.googleapis.com/Subnetwork", {"kind": "compute#subnetwork", "name": ref.rsplit("/", 1)[1],
+                                                           "ipCidrRange": cidr, "network": f"{GAPI}/{p['net'][1]}",
+                                                           "region": f"{GAPI}/{HOST}/regions/us-central1",
+                                                           "selfLink": f"{GAPI}/{ref}"})
+              for _, _, ref, cidr, _ in p["subnets"]),
+            *records]
+    return {"assets.jsonl": "".join(json.dumps(a, sort_keys=False) + "\n" for a in exported),
+            "host-network.json": _dumps(host),
+            "project.json": _dumps({"projectId": PROJECT.split("/")[1], "projectNumber": NUMBER,
+                                    "name": PROJECT.split("/")[1], "lifecycleState": "ACTIVE"}),
+            "instances.json": _dumps([_gcp_instance(s, True, resized) for s in p["servers"]]),
+            **{f"health/{name}.json": _dumps(doc) for name, doc in health.items()}}
+
+
 def cloud_exports():
     """{path under exports/cloud/: text}: what each cloud reports its environment runs."""
-    source, target = AWS.split(",")[1].split("=")[1], AZ.split(",")[1].split("=")[1]
+    source, target, standby = (dn.split(",")[1].split("=")[1] for dn in (AWS, AZ, GCP))
     return {f"{source}/prod/terraform.tfstate": source_state(),
-            **{f"{target}/prod/{name}": _dumps(doc) for name, doc in target_inventory().items()}}
+            **{f"{target}/prod/{name}": _dumps(doc) for name, doc in target_inventory().items()},
+            **{f"{standby}/prod/{name}": text for name, text in standby_inventory().items()}}

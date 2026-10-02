@@ -1,5 +1,6 @@
 """Showcase test support: where the example estate lives, the approved changes it applies, the estate as an
 in-memory directory, the snapshot of every command, and its scripts as modules."""
+import datetime as dt
 import importlib.util
 from functools import reduce
 import os
@@ -35,6 +36,12 @@ IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", None),
            ("CHG-2010", "linux/jobs", SHOWCASE / "exports" / "hosts", None),
            ("CHG-2010", "github-actions/workflows", SHOWCASE / "exports" / "pipelines", None),
            ("CHG-2012", "linux/baseline", SHOWCASE / "exports" / "hosts", None))
+# then the production user data's profile, as `opsdir data-profile` writes it from ldapsearch output: (change id,
+# environment, LDIF, when read, the estate's terms)
+PROFILE = ("CHG-2014", "source/prod", SHOWCASE / "exports" / "ds-data" / "source-prod.ldif", "20260920030000Z",
+           ("last-login=lastLoginTime", "kba=challengeAnswer", "pending=registrationStatus=pending",
+            "disabled=registrationStatus=disabled"))
+AS_OF = dt.date(2026, 9, 23)                     # the date the showcase runs as of
 # then the census of files that copy the record's values (change id, directory)
 CENSUS = ("CHG-2009", SHOWCASE / "exports" / "census")
 
@@ -49,23 +56,32 @@ def export_files(root):
     return read_texts(root)[0]
 
 
+def profile_files():
+    """Effect (reads the LDIF): {file name: text} of the data profile `opsdir data-profile` writes (PROFILE)."""
+    _, env, ldif, at, terms = PROFILE
+    return {"source-prod.json": ops.data_profile(ldif.read_text().splitlines(True), env, AS_OF, import_time(at), terms)}
+
+
 def import_records(schema, records):
-    """Effect (reads the exports): the change records importing the product exports (IMPORTS) into the loaded
-    estate makes, one after the other (each import sees what the ones before it added, as in the store)."""
+    """Effect (reads the exports): the change records importing the product exports (IMPORTS) and the data profile
+    (PROFILE) into the loaded estate makes, one after the other (each import sees what the ones before it added, as in
+    the store), then the census's."""
     def step(done, imported):
-        _, spec, root, at = imported
-        return (*done, *preview_import(build_directory(schema, records, done), spec, export_files(root),
+        _, spec, files, at = imported
+        return (*done, *preview_import(build_directory(schema, records, done), spec, files,
                                        at=import_time(at) if at else None)[0])
-    imported = reduce(step, IMPORTS, ())
+    imported = reduce(step, (*((c, s, export_files(root), at) for c, s, root, at in IMPORTS),
+                             (PROFILE[0], "ldap/data-profile", profile_files(), None)), ())
     return (*imported, *census_changes(build_directory(schema, records, imported), export_files(CENSUS[1]))[0])
 
 
 def import_exports(conn):
-    """Effect: import the product exports (IMPORTS) into a store that holds the loaded estate, then take the census
-    (CENSUS), as the demo does."""
+    """Effect: import the product exports (IMPORTS) and the data profile (PROFILE) into a store that holds the loaded
+    estate, then take the census (CENSUS), as the demo does."""
     return [*(ops.apply_preview(conn, ops.preview_import(conn, spec, export_files(root),
                                                          import_time(at) if at else None), change_id)
               for change_id, spec, root, at in IMPORTS),
+            ops.apply_preview(conn, ops.preview_import(conn, "ldap/data-profile", profile_files()), PROFILE[0]),
             ops.apply_preview(conn, ops.preview_census(conn, export_files(CENSUS[1])), CENSUS[0])]
 
 

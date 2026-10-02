@@ -42,6 +42,12 @@ SchemaFragment = NamedTuple("SchemaFragment", [("attributes", tuple), ("classes"
                                                ("origin", str)])     # X-ORIGIN of its definitions
 
 
+def enum_type(values):
+    """The value type of an attribute that takes one of these values (enum:a|b|c), from the vocabulary a domain
+    already names, so its schema and its code can't disagree."""
+    return "enum:" + "|".join(values)
+
+
 def fragment(attributes, classes, arc=ARC, origin="opsdir"):
     """A schema fragment: definitions numbered under an OID arc (the core's by default) and marked with an origin."""
     return SchemaFragment(tuple(attributes), tuple(classes), arc, origin)

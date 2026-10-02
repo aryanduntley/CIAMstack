@@ -1,0 +1,72 @@
+[
+  {
+    "id": "harbor-mro-federation",
+    "name": "harbor-mro-federation",
+    "entityId": "https://sso.harbor-mro.example/idp",
+    "active": true,
+    "credentials": {
+      "certs": [
+        {
+          "certView": {
+            "sha256Fingerprint": "2D:E9:F6:D5:6B:75:74:00:17:73:F5:03:1D:98:70:71:6D:BC:6B:ED:2F:6E:EC:C9:52:8B:DB:91:FB:BF:32:1F"
+          }
+        },
+        {
+          "certView": {
+            "sha256Fingerprint": "24:1F:66:E0:87:78:48:4F:BF:6F:F4:18:9E:A7:E3:86:7F:AE:0D:35:C5:DA:D8:2C:63:67:03:65:E2:4A:3C:26"
+          }
+        }
+      ]
+    },
+    "idpBrowserSso": {
+      "protocol": "SAML20",
+      "jitProvisioning": {
+        "userRepository": {
+          "type": "LDAP",
+          "baseDn": "ou=partners,ou=people,dc=partners,dc=example-aero,dc=test"
+        }
+      }
+    },
+    "x-opsdir": {
+      "owners": [
+        "ciam-platform",
+        "harbor-mro"
+      ]
+    }
+  },
+  {
+    "id": "skyline-air-federation",
+    "name": "skyline-air-federation",
+    "entityId": "https://idp.skyline-air.example/saml",
+    "active": true,
+    "credentials": {
+      "certs": [
+        {
+          "certView": {
+            "sha256Fingerprint": "ED:9B:7C:43:20:43:F4:3B:0B:EE:4E:79:6B:AC:59:85:3D:7C:CB:6B:54:9C:D0:3E:83:C2:0E:17:D1:64:7C:83"
+          }
+        },
+        {
+          "certView": {
+            "sha256Fingerprint": "24:1F:66:E0:87:78:48:4F:BF:6F:F4:18:9E:A7:E3:86:7F:AE:0D:35:C5:DA:D8:2C:63:67:03:65:E2:4A:3C:26"
+          }
+        }
+      ]
+    },
+    "idpBrowserSso": {
+      "protocol": "SAML20",
+      "jitProvisioning": {
+        "userRepository": {
+          "type": "LDAP",
+          "baseDn": "ou=partners,ou=people,dc=partners,dc=example-aero,dc=test"
+        }
+      }
+    },
+    "x-opsdir": {
+      "owners": [
+        "ciam-platform",
+        "skyline-air"
+      ]
+    }
+  }
+]

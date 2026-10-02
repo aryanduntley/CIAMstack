@@ -9,8 +9,8 @@ OIDC bases, the standard documents at PingFederate's endpoint paths (all environ
                                   withheld credentials as the references of their credential roles
   pingfederate/password-credential-validators.json, idp-adapters.json, authentication-selectors.json,
     access-token-managers.json    plugin instances, per environment: withheld secrets from their credential roles
-  pingfederate/cluster/discovery.xml
-                                  per environment: the tcp.xml discovery protocol from its pf-cluster-discovery binding
+  pingfederate/cluster/jgroups.properties
+                                  per environment: the nodes' discovery lines from its pf-cluster-discovery binding
   pingfederate/other-resources.json
                                   per environment: the resources held as is, in the bulk export's shape
 
@@ -29,7 +29,7 @@ from opsdir_base_saml.render import SamlEndpoints, saml_files
 from .datastores import data_stores_file
 from .naming import DATA_STORES, SERVER_ROLES
 from .generic import resources_file
-from .nodes import discovery_file
+from .discovery import discovery_file
 from .oauth import client_view, oauth_files
 from .plugins import plugin_files
 from .policies import policy_files

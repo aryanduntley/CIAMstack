@@ -2,11 +2,12 @@
 providers, MFA vendors, CAPTCHA), the addresses it sends mail from, and the event streams it publishes identity events
 to. A service, a sender and a stream are intent, the same in every environment; where an environment sends a
 domain's mail from (a cloud sending identity) and the queue or bus that carries a stream are bindings."""
-from ...core.standard import AttributeDef, ClassDef, fragment
+from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
+from .naming import DMARC_STRENGTH, SERVICE_KINDS, STREAM_KINDS
 
 ATTRIBUTES = (
     # ------------------------------------------------------------------ external services
-    AttributeDef(266, 'ciamServiceKind', 'enum:smtp-relay|email-api|sms|voice|mfa|captcha|push|other', 'intent', True,
+    AttributeDef(266, 'ciamServiceKind', enum_type(SERVICE_KINDS), 'intent', True,
                  'What an external service is: an SMTP relay, an email or SMS API, an MFA vendor, CAPTCHA, ...'),
     AttributeDef(267, 'ciamVendor', 'string', 'intent', True, 'Who provides an external service'),
     AttributeDef(268, 'ciamEndpointHost', 'fqdn', 'binding', True,
@@ -41,10 +42,10 @@ ATTRIBUTES = (
                  "Whether a sending identity's domain signs with DKIM keys the domain's DNS publishes"),
     AttributeDef(282, 'ciamSpfAuthorized', 'bool', 'binding', True,
                  "Whether the domain's SPF record authorizes a sending identity's service"),
-    AttributeDef(283, 'ciamDmarcPolicy', 'enum:none|quarantine|reject', 'binding', True,
+    AttributeDef(283, 'ciamDmarcPolicy', enum_type(DMARC_STRENGTH), 'binding', True,
                  "The policy the domain's DMARC record asks receivers to apply"),
     # ------------------------------------------------------------------ event streams
-    AttributeDef(284, 'ciamStreamKind', 'enum:queue|topic|bus|event-hub|webhook|log-stream|other', 'intent', True,
+    AttributeDef(284, 'ciamStreamKind', enum_type(STREAM_KINDS), 'intent', True,
                  'What carries an event stream: a queue, a topic, an event bus, an event hub, a webhook, a log '
                  'stream'),
     AttributeDef(285, 'ciamEventType', 'string', 'intent', False,

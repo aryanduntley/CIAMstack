@@ -1,0 +1,204 @@
+[
+  {
+    "id": "customer-portal",
+    "name": "customer-portal",
+    "entityId": "https://portal.example-aero.test/saml/sp",
+    "active": true,
+    "contactInfo": {
+      "company": "customer-portal-team"
+    },
+    "spBrowserSso": {
+      "protocol": "SAML20",
+      "enabledProfiles": [
+        "SP_INITIATED_SSO"
+      ],
+      "ssoServiceEndpoints": [
+        {
+          "binding": "POST",
+          "url": "https://portal.example-aero.test/saml/acs",
+          "isDefault": true
+        }
+      ],
+      "attributeContract": {
+        "coreAttributes": [
+          {
+            "name": "SAML_SUBJECT"
+          }
+        ],
+        "extendedAttributes": [
+          {
+            "name": "company"
+          },
+          {
+            "name": "email"
+          },
+          {
+            "name": "family_name"
+          },
+          {
+            "name": "given_name"
+          },
+          {
+            "name": "roles"
+          }
+        ]
+      },
+      "adapterMappings": [
+        {
+          "attributeContractFulfillment": {
+            "SAML_SUBJECT": {
+              "source": {
+                "type": "LDAP_DATA_STORE",
+                "id": "ciam-user-directory"
+              },
+              "value": "uid"
+            },
+            "company": {
+              "source": {
+                "type": "LDAP_DATA_STORE",
+                "id": "ciam-user-directory"
+              },
+              "value": "companyId"
+            },
+            "email": {
+              "source": {
+                "type": "LDAP_DATA_STORE",
+                "id": "ciam-user-directory"
+              },
+              "value": "mail"
+            },
+            "family_name": {
+              "source": {
+                "type": "LDAP_DATA_STORE",
+                "id": "ciam-user-directory"
+              },
+              "value": "sn"
+            },
+            "given_name": {
+              "source": {
+                "type": "LDAP_DATA_STORE",
+                "id": "ciam-user-directory"
+              },
+              "value": "givenName"
+            },
+            "roles": {
+              "source": {
+                "type": "LDAP_DATA_STORE",
+                "id": "ciam-user-directory"
+              },
+              "value": "appEntitlement",
+              "x-opsdir-transform": "keep values with prefix 'customer-portal:', strip prefix"
+            }
+          }
+        }
+      ]
+    },
+    "x-opsdir": {
+      "mfaRequired": true,
+      "populations": [
+        "customers"
+      ],
+      "certificateFingerprints": [
+        "18:50:45:3C:96:D7:6C:B8:F5:90:6A:4B:06:37:F9:99:AE:16:65:5C:A3:29:EC:90:34:04:37:FA:10:28:B6:99",
+        "6D:AE:AB:5C:F2:5D:9F:EE:BA:68:75:93:B0:DD:85:49:E5:C1:1C:A7:67:67:78:E5:1E:4C:E6:9B:90:37:C5:15",
+        "24:1F:66:E0:87:78:48:4F:BF:6F:F4:18:9E:A7:E3:86:7F:AE:0D:35:C5:DA:D8:2C:63:67:03:65:E2:4A:3C:26"
+      ]
+    }
+  },
+  {
+    "id": "supplier-portal",
+    "name": "supplier-portal",
+    "entityId": "https://suppliers.example-aero.test/saml/sp",
+    "active": true,
+    "contactInfo": {
+      "company": "supplier-portal-team"
+    },
+    "spBrowserSso": {
+      "protocol": "SAML20",
+      "enabledProfiles": [
+        "SP_INITIATED_SSO"
+      ],
+      "ssoServiceEndpoints": [
+        {
+          "binding": "POST",
+          "url": "https://suppliers.example-aero.test/saml/acs",
+          "isDefault": true
+        }
+      ],
+      "attributeContract": {
+        "coreAttributes": [
+          {
+            "name": "SAML_SUBJECT"
+          }
+        ],
+        "extendedAttributes": [
+          {
+            "name": "company"
+          },
+          {
+            "name": "email"
+          },
+          {
+            "name": "roles"
+          },
+          {
+            "name": "sold_to"
+          }
+        ]
+      },
+      "adapterMappings": [
+        {
+          "attributeContractFulfillment": {
+            "SAML_SUBJECT": {
+              "source": {
+                "type": "LDAP_DATA_STORE",
+                "id": "ciam-user-directory"
+              },
+              "value": "uid"
+            },
+            "company": {
+              "source": {
+                "type": "LDAP_DATA_STORE",
+                "id": "ciam-user-directory"
+              },
+              "value": "companyId"
+            },
+            "email": {
+              "source": {
+                "type": "LDAP_DATA_STORE",
+                "id": "ciam-user-directory"
+              },
+              "value": "mail"
+            },
+            "roles": {
+              "source": {
+                "type": "LDAP_DATA_STORE",
+                "id": "ciam-user-directory"
+              },
+              "value": "appEntitlement",
+              "x-opsdir-transform": "keep values with prefix 'supplier-portal:', strip prefix"
+            },
+            "sold_to": {
+              "source": {
+                "type": "LDAP_DATA_STORE",
+                "id": "ciam-user-directory"
+              },
+              "value": "soldToAccount"
+            }
+          }
+        }
+      ]
+    },
+    "x-opsdir": {
+      "mfaRequired": true,
+      "populations": [
+        "suppliers"
+      ],
+      "certificateFingerprints": [
+        "18:50:45:3C:96:D7:6C:B8:F5:90:6A:4B:06:37:F9:99:AE:16:65:5C:A3:29:EC:90:34:04:37:FA:10:28:B6:99",
+        "A8:D9:35:14:65:C6:2D:22:A2:99:5F:10:6F:8B:32:C4:C3:ED:DE:D8:E6:82:F9:AE:28:81:0B:50:9A:7F:07:2B",
+        "24:1F:66:E0:87:78:48:4F:BF:6F:F4:18:9E:A7:E3:86:7F:AE:0D:35:C5:DA:D8:2C:63:67:03:65:E2:4A:3C:26"
+      ]
+    }
+  }
+]

@@ -34,6 +34,11 @@ od import --change CHG-2010 linux/jobs exports/hosts
 od import --change CHG-2010 github-actions/workflows exports/pipelines
 echo "-- what the servers run beyond the products: each role's host baseline, from the same servers' files"
 od import --change CHG-2012 linux/baseline exports/hosts
+echo "-- the shape of the production user data, values-free: ldapsearch output read once, counts written (no database)"
+od data-profile --env source/prod --at 20260920030000Z --term last-login=lastLoginTime --term kba=challengeAnswer \
+  --term pending=registrationStatus=pending --term disabled=registrationStatus=disabled \
+  -o out/data-profile/source-prod.json exports/ds-data/source-prod.ldif
+od import --change CHG-2014 ldap/data-profile out/data-profile
 echo "-- each environment's declared stack against the installed adapters"; od check
 echo "-- what each kind of value is: intent, contract, binding, secret reference, observed, meta"; od report portability
 
@@ -43,6 +48,9 @@ echo "-- what depends on the Skyline Air signing cert?"
 od report blast-radius "cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops"
 echo "-- who can read privacy-classified attributes?"; od report pii
 echo "-- the consumers to review: what they do, who owns them, what to check"; od report consumers
+echo "-- the shape of the user data: size, password schemes, idle accounts, group health"; od report data-profile
+echo "-- what the platform is watched for, where its logs go, and what each cloud runs of it"
+od report alerts; od report log-routes; od report monitors
 echo "-- what changing ds-1 touches in files: its hostname and address, copied where"
 od report census "cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops"
 echo "-- LDAP filter search: consumers not yet tested against the second environment"
@@ -71,6 +79,8 @@ echo "-- what the source cloud runs against the record: its Terraform state (--d
 od import --dry-run aws/terraform-state exports/cloud
 echo "-- the second environment, from the Azure CLI (roles.json gives the new subnet its role)"
 od import --dry-run azure/cli-inventory exports/cloud
+echo "-- the warm standby, from a Cloud Asset Inventory export and gcloud (project numbers read as its ID)"
+od import --dry-run gcp/cli-inventory exports/cloud
 echo "-- stale work instructions";           od report stale
 echo "-- unowned";                           od report unowned
 
@@ -81,8 +91,12 @@ od modify --change CHG-2003 changes/rejected/secret-value.ldif
 od modify --change CHG-2001 changes/rejected/missing-required.ldif
 
 step "7. Render each environment from the record"
-rm -rf out/source-prod out/source-stage out/target-prod
+rm -rf out/source-prod out/source-stage out/target-prod out/standby-prod
 od render source/prod && od render source/stage
+echo "-- the warm standby on Google Cloud: its replicas join production's deployment; PingFederate lists its nodes"
+od render standby/prod
+od report keys standby/prod
+grep '^pf.cluster' out/standby-prod/pingfederate/cluster/jgroups.properties
 echo "-- per-environment overrides of shared intent (stage is an overlay of prod)"; od report overrides
 echo "-- stage renders prod's shared configuration with its own overrides:"
 diff out/source-prod/ds/dsconfig.batch out/source-stage/ds/dsconfig.batch | grep '^[<>]' || true
@@ -94,7 +108,7 @@ for f in ds/dsconfig.batch ds/acis.ldif pingfederate/sp-connections.json pingfed
   cmp -s "out/source-prod/$f" "out/target-prod/$f" && echo "identical in both environments: $f" || echo "DIFFERS: $f"
 done
 if [ -n "${TERRAFORM:-}" ]; then
-  for e in source-prod target-prod; do
+  for e in source-prod target-prod standby-prod; do
     "$TERRAFORM" -chdir="out/$e/terraform" fmt -check >/dev/null && echo "terraform fmt ok: $e"
     ( cd "out/$e/terraform" && "$TERRAFORM" init -backend=false -input=false >/dev/null && "$TERRAFORM" validate -no-color )
   done
@@ -116,4 +130,5 @@ echo "-- the plan (after changes)"
 od plan source/prod target/prod | sed -n '1,20p'
 "$PY" scripts/check-findings.py after
 echo
-echo "Full outputs: out/source-prod, out/source-stage, out/target-prod, out/plan-source-prod-to-target-prod"
+echo "Full outputs: out/source-prod, out/source-stage, out/target-prod, out/standby-prod,"
+echo "              out/plan-source-prod-to-target-prod"

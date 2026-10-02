@@ -28,6 +28,7 @@ configuration = "opsdir.domains.configuration.domain:DOMAIN"
 automation = "opsdir.domains.automation.domain:DOMAIN"
 compute = "opsdir.domains.compute.domain:DOMAIN"
 messaging = "opsdir.domains.messaging.domain:DOMAIN"
+observability = "opsdir.domains.observability.domain:DOMAIN"
 
 # The standard file formats; packages register their own under the same group.
 [project.entry-points."opsdir.formats"]

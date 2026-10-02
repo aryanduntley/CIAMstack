@@ -175,4 +175,5 @@ FAKE = Adapter(name=ADAPTER_NAME, kind="provider", applies=_applies, required_ro
                render_neutral=_render_neutral, render_env=_render_env, checks=(_check,), ref_schemes=("fake",),
                secret_schemes={"fake": _resolve}, renders="fake files", neutral_label="Fake",
                vocabulary={"ciamCloudProvider": (PROVIDER,)}, schema=FAKE_SCHEMA,
-               formats=(("fake/*.txt", "text"),), products=(), secret_patterns=(), importers=(FAKE_IMPORTER,))
+               formats=(("fake/*.txt", "text"),), products=(), secret_patterns=(), importers=(FAKE_IMPORTER,),
+               profile_terms=None)

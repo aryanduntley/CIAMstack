@@ -28,7 +28,7 @@ rm -rf "$OUT" && mkdir -p "$OUT/cmd"
 
 # The generators must reproduce the published schema and data files exactly (independent of git state).
 generated() { (cd "$CORE" && sha256sum schema/*.ldif); sha256sum data/*.ldif data/*.json;
-              find exports/ds-config exports/ds-access-logs exports/cloud -type f | sort | xargs sha256sum; }
+              find exports/ds-config exports/ds-access-logs exports/cloud exports/ds-data -type f | sort | xargs sha256sum; }
 generated > "$OUT/cmd/.generated-before"
 cap 00-gen-schema    "$PY" "$CORE/scripts/gen-schema.py"
 cap 00-gen-synthetic "$PY" scripts/gen-synthetic.py
@@ -47,19 +47,25 @@ cap 02-import-pf-nodes od import --change CHG-2008 pingfederate/node-files expor
 cap 02-import-jobs od import --change CHG-2010 linux/jobs exports/hosts
 cap 02-import-pipelines od import --change CHG-2010 github-actions/workflows exports/pipelines
 cap 02-import-baselines od import --change CHG-2012 linux/baseline exports/hosts
+cap 02-data-profile od data-profile --env source/prod --at 20260920030000Z --term last-login=lastLoginTime \
+  --term kba=challengeAnswer --term pending=registrationStatus=pending --term disabled=registrationStatus=disabled \
+  -o "$OUT/data-profile/source-prod.json" exports/ds-data/source-prod.ldif
+cap 02-import-data-profile od import --change CHG-2014 ldap/data-profile "$OUT/data-profile"
 cap 02-census od census --change CHG-2009 exports/census
 cap 02-check od check
-for r in portability expiring credentials pii drift stale unowned custom capture bundles consumers census jobs baselines compute external-services mail-senders event-streams; do cap "03-report-$r" od report "$r"; done
+for r in portability expiring credentials pii drift stale unowned custom capture bundles consumers census jobs baselines compute external-services mail-senders event-streams data-profile data-profile-attributes alerts log-routes canaries monitors; do cap "03-report-$r" od report "$r"; done
 # the stale report dates a dependency's change from history: a change this run imports is dated the day it runs
 sed -i -e "s/$(date +%F)/<RUN-DATE>/g" -e "s/$(date -u +%F)/<RUN-DATE>/g" "$OUT/cmd/03-report-stale.txt"
 cap 03-cloud-drift-source od import --dry-run aws/terraform-state exports/cloud
 cap 03-cloud-drift-target od import --dry-run azure/cli-inventory exports/cloud
+cap 03-cloud-drift-standby od import --dry-run gcp/cli-inventory exports/cloud
 cap 03-report-blast-radius od report blast-radius "$BLAST"
 cap 03-report-keys-source od report keys source/prod
 cap 03-report-keys-target od report keys target/prod
 cap 03-report-rotation-impact od report rotation-impact "$ROTATE"
 cap 03-report-overrides od report overrides
 cap 03-report-keys-stage od report keys source/stage
+cap 03-report-keys-standby od report keys standby/prod
 cap 04-search-table od search -b ou=consumers,dc=ciam-ops "$UNTESTED" ciamMigrationStatus ciamOwner
 cap 04-search-ldif  od search -b ou=integrations,dc=ciam-ops '(objectClass=ciamIntegration)'
 cap 04-file-run-properties od file run.properties --env target/prod
@@ -68,6 +74,7 @@ cap 04-file-run-properties-stage od file run.properties --env source/stage
 cap 05-render-source  od render source/prod -o "$OUT/render-before/source-prod"
 cap 05-render-target  od render target/prod    -o "$OUT/render-before/target-prod"
 cap 05-render-stage   od render source/stage   -o "$OUT/render-before/source-stage"
+cap 05-render-standby od render standby/prod   -o "$OUT/render-before/standby-prod"
 cap 06-plan-before od plan source/prod target/prod -o "$OUT/plan-before"
 cap 06-check-before "$PY" scripts/check-findings.py before
 

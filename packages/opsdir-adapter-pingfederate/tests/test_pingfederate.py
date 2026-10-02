@@ -23,7 +23,9 @@ def test_applies_when_a_server_runs_it():
 
 
 def test_owns_its_server_roles():
-    assert ADAPTER.vocabulary == {"ciamServerRole": ("pf-engine", "pf-admin"), "ciamTargetRole": ("pf-engine", "pf-admin")}
+    assert ADAPTER.vocabulary == {"ciamServerRole": ("pf-engine", "pf-admin"),
+                                  "ciamTargetRole": ("pf-engine", "pf-admin"),
+                                  "pingfedDiscoveryProtocol": ("TCPPING", "NATIVE_S3_PING", "DNS_PING")}
 
 
 def test_renders_empty_configuration_for_an_empty_directory():

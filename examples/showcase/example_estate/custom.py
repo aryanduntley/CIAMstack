@@ -42,7 +42,7 @@ FEATURE_FLAGS = (("passkey-enrollment", "TRUE", 25, "Offer passkey enrollment af
 # the values the estate's records carry: owner cost centers, environment residency, integration token lifetimes
 COST_CENTERS = MappingProxyType({"ciam-platform": "CC-1001", "customer-portal-team": "CC-2040",
                                  "supplier-portal-team": "CC-2041"})
-RESIDENCY = MappingProxyType({"source": "us", "target": "us"})
+RESIDENCY = MappingProxyType({"source": "us", "target": "us", "standby": "us"})
 TOKEN_LIFETIMES = MappingProxyType({"tech-pubs": 60, "mobile-ops": 30})
 
 

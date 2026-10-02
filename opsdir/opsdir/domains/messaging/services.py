@@ -7,7 +7,7 @@ cutover. A mail sender sends as a domain from a sending identity each environmen
 target's identity must sign with DKIM and be authorized by SPF before cutover, or reset mail lands in spam.
 """
 from ...core.directory import children, follow, get, one, rdn_value, values
-from ...core.environment import one_role
+from ...core.environment import bound_nowhere, one_role
 from ...core.findings import findings, merge_findings, responsible
 from .naming import DMARC_STRENGTH, EXTERNAL_SERVICES, MAIL_SENDERS
 
@@ -65,10 +65,6 @@ def public_names(m, roles):
                                and one(b, "ciamFqdn")))
 
 
-def _unbound(ctx, roles):
-    return [r for r in roles if one_role(ctx.src, r) is None and one_role(ctx.dst, r) is None]
-
-
 def _service(ctx, s):
     name, owner = rdn_value(s), responsible(ctx.d, s, ctx.dst.env)
     allowed = values(s, "ciamAllowedDomain")
@@ -79,7 +75,7 @@ def _service(ctx, s):
                       "cutover.", owner),) if missing else ()),
                   *(("Service", f"External service `{name}` uses role `{r}`, which neither {ctx.src.label} nor "
                      f"{ctx.dst.label} binds: record where each environment keeps it.", owner)
-                    for r in _unbound(ctx, values(s, "ciamUsesRole")))),
+                    for r in bound_nowhere(values(s, "ciamUsesRole"), ctx.src, ctx.dst))),
         actions=((("Service", f"External service `{name}` has no owner: a vendor account nobody owns lapses unnoticed. "
                    "Name who owns it.", owner, None),) if not values(s, "ciamOwner") else ()))
 

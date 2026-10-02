@@ -1,4 +1,5 @@
 target/prod: subnet snet-mgmt added (role subnet-mgmt)
+standby/prod: not an Azure environment in the record; not imported
 add cn=snet-mgmt,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 modify cn=ds-3,env=prod,cloud=target,ou=environments,dc=ciam-ops
     replace ciamInstanceSize: Standard_D8s_v5

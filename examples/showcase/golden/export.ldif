@@ -11,6 +11,11 @@ objectClass: organizationalUnit
 ou: acis
 description: Access control instructions on the user directory
 
+dn: ou=alert-rules,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: alert-rules
+
 dn: ou=baselines,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -21,6 +26,11 @@ objectClass: top
 objectClass: organizationalUnit
 ou: bundles
 description: Code, scripts, templates and packages deployed as they are
+
+dn: ou=canaries,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: canaries
 
 dn: ou=census,dc=ciam-ops
 objectClass: top
@@ -70,6 +80,11 @@ objectClass: top
 objectClass: organizationalUnit
 ou: custom-schema
 description: Fields and record types the operator defines
+
+dn: ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: data-profile
 
 dn: ou=environments,dc=ciam-ops
 objectClass: top
@@ -122,6 +137,11 @@ dn: ou=jobs,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: jobs
+
+dn: ou=log-routes,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: log-routes
 
 dn: ou=mail-senders,dc=ciam-ops
 objectClass: top
@@ -176,6 +196,16 @@ ciamLifecycle: active
 ciamRegion: us-east-1
 description: Primary hosting environment (AWS)
 
+dn: cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloud
+cloud: standby
+ciamCloudEnvironment: public
+ciamCloudProvider: gcp
+ciamLifecycle: building
+ciamRegion: us-central1
+description: Warm standby (Google Cloud)
+
 dn: cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamCloud
@@ -193,6 +223,18 @@ cn: 483017ca92ce3ac8
 ciamOnServer: cn=pf-engine-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamRepoPath: etc/hosts
 ciamSha256: 78b07d136f28209b3382df98b923779ff28d3e133c419144255ccd74f0bf44eb
+
+dn: cn=access-logs,ou=log-routes,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamLogRoute
+cn: access-logs
+ciamLogDestinationRole: ops-logs
+ciamLogKind: access
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPublishedBy: ds
+ciamPublishedBy: pf-engine
+ciamRetentionDays: 30
 
 dn: cn=aci-idm-write,ou=acis,dc=ciam-ops
 objectClass: top
@@ -400,6 +442,21 @@ ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: low
 ciamPurpose: Application entitlements (app:role)
 
+dn: cn=audit-logs,ou=log-routes,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamLogRoute
+cn: audit-logs
+ciamLegalHold: TRUE
+ciamLogDestinationRole: audit-logs
+ciamLogKind: audit
+ciamLogKind: admin
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPublishedBy: ds
+ciamPublishedBy: pf-engine
+ciamPublishedBy: pf-admin
+ciamRetentionDays: 400
+
 dn: cn=captcha-recaptcha,ou=external-services,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -559,6 +616,16 @@ ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Record the corporate root CA the PingFederate servers trust
+
+dn: cn=CHG-2014,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2014
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260923000000Z
+ciamTitle: Record the shape of the production user data (values-free data prof
+ ile)
 
 dn: cn=CHG-2040,ou=changes,dc=ciam-ops
 objectClass: top
@@ -1251,6 +1318,20 @@ ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
 ciamTlsOnly: FALSE
 ciamUnindexedSearchesPerDay: 12
 
+dn: cn=login-failures,ou=alert-rules,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAlertRule
+cn: login-failures
+ciamAlertRole: alerts-page
+ciamComparison: gt
+ciamEvaluationPeriod: 5m
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSeverity: sev2
+ciamSignal: login-failures
+ciamTargetRole: pf-engine
+ciamThreshold: 50 /min
+
 dn: cn=login-templates,ou=bundles,dc=ciam-ops
 objectClass: top
 objectClass: ciamBundle
@@ -1644,6 +1725,21 @@ ciamPiiClass: none
 ciamPurpose: Registration workflow state (pending / approved / active / disabl
  ed)
 
+dn: cn=replication-lag,ou=alert-rules,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAlertRule
+cn: replication-lag
+ciamAlertRole: alerts-page
+ciamComparison: gt
+ciamEvaluationPeriod: 5m
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRunbookRef: cn=WI-CIAM-007,ou=runbooks,dc=ciam-ops
+ciamSeverity: sev2
+ciamSignal: replication-delay
+ciamTargetRole: ds
+ciamThreshold: 5000 ms
+
 dn: cn=reports-api,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamIntegration
@@ -1750,6 +1846,39 @@ ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: low
 ciamPurpose: Commercial account for aftermarket entitlements
 
+dn: cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamDataProfile
+cn: source-prod
+ciamCapturedAt: 20260920030000Z
+ciamDanglingMemberCount: 1
+ciamDisabledCount: 8
+ciamEmptyGroupCount: 1
+ciamEntryCount: 255
+ciamGroupCount: 3
+ciamHashSchemeCount: PBKDF2-HMAC-SHA256=217
+ciamHashSchemeCount: PBKDF2-HMAC-SHA512=5
+ciamHashSchemeCount: SSHA512=24
+ciamKbaCount: 37
+ciamLargestEntryBytes: 566
+ciamLargestGroup: 3
+ciamLastLoginAge:: PDMwZD05
+ciamLastLoginAge: 30-90d=14
+ciamLastLoginAge: 90-365d=70
+ciamLastLoginAge: 1-2y=83
+ciamLastLoginAge: >2y=33
+ciamLastLoginAge: never=37
+ciamLockedCount: 6
+ciamPasswordAge:: PDMwZD02
+ciamPasswordAge: 30-90d=11
+ciamPasswordAge: 90-365d=58
+ciamPasswordAge: 1-2y=76
+ciamPasswordAge: >2y=89
+ciamPasswordAge: never=6
+ciamPendingCount: 11
+ciamProfiledEnvironment: env=prod,cloud=source,ou=environments,dc=ciam-ops
+
 dn: cn=sso,ou=identity-services,dc=ciam-ops
 objectClass: top
 objectClass: ciamIdentityService
@@ -1771,6 +1900,17 @@ ciamSigningAlg: PS256
 ciamTargetRole: pf-engine
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 description: Single sign-on for customers, suppliers and partners
+
+dn: cn=sso-login,ou=canaries,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCanary
+cn: sso-login
+ciamCanaryFlow: oidc-token
+ciamCheckedService: pf-sso-service
+ciamFeedsAlert: cn=login-failures,ou=alert-rules,dc=ciam-ops
+ciamInterval: 5m
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 
 dn: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 objectClass: top
@@ -2326,6 +2466,15 @@ ciamLineNumber: 6
 ciamOccurrenceOf: cn=aci-legacy-all,ou=acis,dc=ciam-ops
 ciamOccurringAttr: ciamAciTargetDn
 
+dn: cn=61c9f2288797f75f,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: 61c9f2288797f75f
+ciamLineNumber: 7
+ciamOccurrenceOf: cn=svc-sso,ou=bindings,env=prod,cloud=standby,ou=environment
+ s,dc=ciam-ops
+ciamOccurringAttr: ciamFqdn
+
 dn: cn=68dfdaadcf1fcd63,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
 objectClass: top
 objectClass: ciamOccurrence
@@ -2636,6 +2785,15 @@ pingfedConfig: {"accessTokenManagerRef":{"id":"default-jwt"},"attributeContrac
 pingfedUses: cn=default-jwt,ou=access-token-managers,ou=pingfederate,dc=ciam-o
  ps
 
+dn: cn=e0930981c2c28daf,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: e0930981c2c28daf
+ciamLineNumber: 2
+ciamOccurrenceOf: cn=svc-ldaps,ou=bindings,env=prod,cloud=standby,ou=environme
+ nts,dc=ciam-ops
+ciamOccurringAttr: ciamFqdn
+
 dn: cn=e6ca05f0ac2fcd95,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops
 objectClass: top
 objectClass: ciamConfigSetting
@@ -2925,6 +3083,17 @@ ciamLifecycle: active
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 xDataResidency: us
 
+dn: env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamEnvironment
+env: prod
+ciamJoinsDeploymentOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamLifecycle: building
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+description: Warm standby of production: directory replicas join its deploymen
+ t over a VPN
+xDataResidency: us
+
 dn: env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamEnvironment
@@ -2951,10 +3120,20 @@ description: Stage: an overlay of production (shared network, own servers and
  secrets)
 xDataResidency: us
 
+dn: ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: attributes
+
 dn: ou=backends,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: backends
+
+dn: ou=branches,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: branches
 
 dn: ou=claims,cn=customer-portal,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -3059,6 +3238,21 @@ ciamSubnet: cn=subnet-am-a,ou=bindings,env=prod,cloud=source,ou=environments,d
  c=ciam-ops
 ciamZone: us-east-1a
 
+dn: cn=am-1,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: am-1
+ciamHostname: am-1.gcp.internal.example-aero.test
+ciamImageRef: projects/example-aero-images/global/images/pingam-7-5-1-rhel9
+ciamInstanceSize: n2-standard-2
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.70.3.21
+ciamProductVersion: PingAM 7.5.1
+ciamServerRole: am
+ciamSubnet: cn=subnet-am,ou=bindings,env=prod,cloud=standby,ou=environments,dc
+ =ciam-ops
+ciamZone: us-central1-a
+
 dn: cn=am-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
@@ -3121,6 +3315,38 @@ ciamSubnet: cn=subnet-am-a,ou=bindings,env=prod,cloud=source,ou=environments,d
  c=ciam-ops
 ciamZone: us-east-1a
 
+dn: cn=appentitlement,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAttributeProfile
+cn: appentitlement
+ciamHolderCount: 240
+ciamLargestValueBytes: 20
+ciamLdapName: appentitlement
+ciamMostValues: 1
+ciamProfiledAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
+
+dn: cn=challengeanswer,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAttributeProfile
+cn: challengeanswer
+ciamHolderCount: 37
+ciamLargestValueBytes: 8
+ciamLdapName: challengeanswer
+ciamMostValues: 1
+ciamProfiledAttribute: cn=challengeAnswer,ou=user-schema,dc=ciam-ops
+
+dn: cn=cn,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAttributeProfile
+cn: cn
+ciamHolderCount: 244
+ciamLargestValueBytes: 22
+ciamLdapName: cn
+ciamMostValues: 1
+
 dn: cn=company,ou=claims,cn=customer-portal,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamClaimMap
@@ -3134,6 +3360,27 @@ objectClass: ciamClaimMap
 cn: company
 ciamClaimName: company
 ciamSourceAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
+
+dn: cn=companyid,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAttributeProfile
+cn: companyid
+ciamHolderCount: 240
+ciamLargestValueBytes: 5
+ciamLdapName: companyid
+ciamMostValues: 1
+ciamProfiledAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
+
+dn: cn=crmcontactid,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAttributeProfile
+cn: crmcontactid
+ciamHolderCount: 20
+ciamLargestValueBytes: 9
+ciamLdapName: crmcontactid
+ciamMostValues: 1
 
 dn: cn=Customers,cn=default,ou=authentication-policies,ou=pingfederate,dc=ciam-ops
 objectClass: top
@@ -3159,6 +3406,29 @@ ciamPasswordHistoryCount: 5
 ciamPopulation: customers
 ciamStorageScheme: PBKDF2-HMAC-SHA256
 
+dn: cn=customers.people.partners.example-aero.test,ou=branches,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamBranchProfile
+cn: customers.people.partners.example-aero.test
+ciamClassCount: exampleAeroPerson=180
+ciamClassCount: inetOrgPerson=181
+ciamClassCount: organizationalPerson=181
+ciamClassCount: person=181
+ciamClassCount: top=181
+ciamEntryCount: 181
+ciamProfiledBranch: ou=customers,ou=people,dc=partners,dc=example-aero,dc=test
+
+dn: cn=dc,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAttributeProfile
+cn: dc
+ciamHolderCount: 1
+ciamLargestValueBytes: 8
+ciamLdapName: dc
+ciamMostValues: 1
+
 dn: cn=Default Password Policy,ou=password-policies,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamPasswordPolicy
@@ -3179,6 +3449,21 @@ ciamServerRole: ds
 ciamSubnet: cn=subnet-ds-a,ou=bindings,env=prod,cloud=source,ou=environments,d
  c=ciam-ops
 ciamZone: us-east-1a
+
+dn: cn=ds-1,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: ds-1
+ciamHostname: ds-1.gcp.internal.example-aero.test
+ciamImageRef: projects/example-aero-images/global/images/pingds-7-5-1-rhel9
+ciamInstanceSize: n2-standard-4
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.70.1.11
+ciamProductVersion: PingDS 7.5.1
+ciamServerRole: ds
+ciamSubnet: cn=subnet-ds,ou=bindings,env=prod,cloud=standby,ou=environments,dc
+ =ciam-ops
+ciamZone: us-central1-a
 
 dn: cn=ds-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -3210,6 +3495,21 @@ ciamServerRole: ds
 ciamSubnet: cn=subnet-ds-b,ou=bindings,env=prod,cloud=source,ou=environments,d
  c=ciam-ops
 ciamZone: us-east-1b
+
+dn: cn=ds-2,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: ds-2
+ciamHostname: ds-2.gcp.internal.example-aero.test
+ciamImageRef: projects/example-aero-images/global/images/pingds-7-5-1-rhel9
+ciamInstanceSize: n2-standard-4
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.70.1.12
+ciamProductVersion: PingDS 7.5.1
+ciamServerRole: ds
+ciamSubnet: cn=subnet-ds,ou=bindings,env=prod,cloud=standby,ou=environments,dc
+ =ciam-ops
+ciamZone: us-central1-b
 
 dn: cn=ds-2,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -3308,12 +3608,33 @@ cn: entitlements
 ciamClaimName: entitlements
 ciamSourceAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
 
+dn: cn=example-aero.test,ou=branches,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamBranchProfile
+cn: example-aero.test
+ciamClassCount: domain=1
+ciamClassCount: top=1
+ciamEntryCount: 1
+ciamProfiledBranch: dc=example-aero,dc=test
+
 dn: cn=export_status,ou=claims,cn=tech-pubs,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamClaimMap
 cn: export_status
 ciamClaimName: export_status
 ciamSourceAttribute: cn=exportScreeningStatus,ou=user-schema,dc=ciam-ops
+
+dn: cn=exportscreeningstatus,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAttributeProfile
+cn: exportscreeningstatus
+ciamHolderCount: 60
+ciamLargestValueBytes: 7
+ciamLdapName: exportscreeningstatus
+ciamMostValues: 1
+ciamProfiledAttribute: cn=exportScreeningStatus,ou=user-schema,dc=ciam-ops
 
 dn: cn=family_name,ou=claims,cn=customer-portal,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -3341,6 +3662,27 @@ cn: given_name
 ciamClaimName: given_name
 ciamSourceAttribute: cn=givenName,ou=user-schema,dc=ciam-ops
 
+dn: cn=givenname,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAttributeProfile
+cn: givenname
+ciamHolderCount: 240
+ciamLargestValueBytes: 8
+ciamLdapName: givenname
+ciamMostValues: 1
+ciamProfiledAttribute: cn=givenName,ou=user-schema,dc=ciam-ops
+
+dn: cn=groups.partners.example-aero.test,ou=branches,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamBranchProfile
+cn: groups.partners.example-aero.test
+ciamClassCount: groupOfNames=3
+ciamClassCount: top=3
+ciamEntryCount: 3
+ciamProfiledBranch: ou=groups,dc=partners,dc=example-aero,dc=test
+
 dn: cn=HTTPS,ou=connection-handlers,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamConnectionHandler
@@ -3362,6 +3704,21 @@ ciamServerRole: idm
 ciamSubnet: cn=subnet-idm-a,ou=bindings,env=prod,cloud=source,ou=environments,
  dc=ciam-ops
 ciamZone: us-east-1a
+
+dn: cn=idm-1,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: idm-1
+ciamHostname: idm-1.gcp.internal.example-aero.test
+ciamImageRef: projects/example-aero-images/global/images/pingidm-7-5-0-rhel9
+ciamInstanceSize: n2-standard-2
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.70.6.21
+ciamProductVersion: PingIDM 7.5.0
+ciamServerRole: idm
+ciamSubnet: cn=subnet-idm,ou=bindings,env=prod,cloud=standby,ou=environments,d
+ c=ciam-ops
+ciamZone: us-central1-a
 
 dn: cn=idm-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -3409,6 +3766,22 @@ ciamSubnet: cn=subnet-ig-a,ou=bindings,env=prod,cloud=source,ou=environments,d
  c=ciam-ops
 ciamZone: us-east-1a
 
+dn: cn=ig-1,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: ig-1
+ciamHostname: ig-1.gcp.internal.example-aero.test
+ciamImageRef: projects/example-aero-images/global/images/pinggateway-2024-11-0
+ -rhel9
+ciamInstanceSize: n2-standard-2
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.70.10.21
+ciamProductVersion: PingGateway 2024.11.0
+ciamServerRole: ig
+ciamSubnet: cn=subnet-ig,ou=bindings,env=prod,cloud=standby,ou=environments,dc
+ =ciam-ops
+ciamZone: us-central1-a
+
 dn: cn=ig-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
@@ -3447,6 +3820,17 @@ objectClass: ciamLogPublisher
 cn: Json File-Based Access Logger
 ciamEnabled: TRUE
 
+dn: cn=lastlogintime,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAttributeProfile
+cn: lastlogintime
+ciamHolderCount: 209
+ciamLargestValueBytes: 15
+ciamLdapName: lastlogintime
+ciamMostValues: 1
+ciamProfiledAttribute: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
+
 dn: cn=LDAP,ou=connection-handlers,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamConnectionHandler
@@ -3467,6 +3851,37 @@ objectClass: ciamConnectionHandler
 cn: LDIF
 ciamEnabled: FALSE
 
+dn: cn=mail,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAttributeProfile
+cn: mail
+ciamHolderCount: 240
+ciamLargestValueBytes: 35
+ciamLdapName: mail
+ciamMostValues: 1
+ciamProfiledAttribute: cn=mail,ou=user-schema,dc=ciam-ops
+
+dn: cn=member,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAttributeProfile
+cn: member
+ciamHolderCount: 2
+ciamLargestValueBytes: 75
+ciamLdapName: member
+ciamMostValues: 3
+
+dn: cn=objectclass,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAttributeProfile
+cn: objectclass
+ciamHolderCount: 255
+ciamLargestValueBytes: 20
+ciamLdapName: objectclass
+ciamMostValues: 5
+
 dn: cn=org,ou=claims,cn=mobile-ops,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamClaimMap
@@ -3480,6 +3895,16 @@ objectClass: ciamClaimMap
 cn: org
 ciamClaimName: org
 ciamSourceAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
+
+dn: cn=ou,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAttributeProfile
+cn: ou
+ciamHolderCount: 5
+ciamLargestValueBytes: 16
+ciamLdapName: ou
+ciamMostValues: 1
 
 dn: cn=partner-apps,ou=partners,ou=policy-sets,ou=pingam,dc=ciam-ops
 objectClass: top
@@ -3505,6 +3930,26 @@ pingamTreeConfig: {"description":"Partner staff sign-in with an emailed one-ti
  0},"e301438c-0bd0-429c-ab0c-66126501069a":{"x":900,"y":220},"startNode":{"x":
  40,"y":30}}}
 
+dn: cn=partners.example-aero.test,ou=branches,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamBranchProfile
+cn: partners.example-aero.test
+ciamClassCount: organizationalUnit=3
+ciamClassCount: top=3
+ciamEntryCount: 3
+ciamProfiledBranch: dc=partners,dc=example-aero,dc=test
+
+dn: cn=people.partners.example-aero.test,ou=branches,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamBranchProfile
+cn: people.partners.example-aero.test
+ciamClassCount: organizationalUnit=2
+ciamClassCount: top=2
+ciamEntryCount: 2
+ciamProfiledBranch: ou=people,dc=partners,dc=example-aero,dc=test
+
 dn: cn=pf-admin-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
@@ -3525,6 +3970,24 @@ pingfedConfig: {"pf.cluster.bind.address":"10.20.4.10","pf.cluster.transport.p
 pingfedDiscovery: NATIVE_S3_PING
 pingfedListener: admin=9999
 pingfedListener: cluster=7600
+pingfedOperationalMode: CLUSTERED_CONSOLE
+
+dn: cn=pf-admin-1,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+objectClass: pingfedNode
+cn: pf-admin-1
+ciamHostname: pf-admin-1.gcp.internal.example-aero.test
+ciamImageRef: projects/example-aero-images/global/images/pingfederate-12-1-4-r
+ hel9
+ciamInstanceSize: n2-standard-2
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.70.2.10
+ciamProductVersion: PingFederate 12.1.4
+ciamServerRole: pf-admin
+ciamSubnet: cn=subnet-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc
+ =ciam-ops
+ciamZone: us-central1-a
 pingfedOperationalMode: CLUSTERED_CONSOLE
 
 dn: cn=pf-admin-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
@@ -3582,6 +4045,24 @@ pingfedListener: cluster=7600
 pingfedNodeTags: us-east-1a
 pingfedOperationalMode: CLUSTERED_ENGINE
 
+dn: cn=pf-engine-1,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+objectClass: pingfedNode
+cn: pf-engine-1
+ciamHostname: pf-engine-1.gcp.internal.example-aero.test
+ciamImageRef: projects/example-aero-images/global/images/pingfederate-12-1-4-r
+ hel9
+ciamInstanceSize: n2-standard-2
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.70.2.21
+ciamProductVersion: PingFederate 12.1.4
+ciamServerRole: pf-engine
+ciamSubnet: cn=subnet-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc
+ =ciam-ops
+ciamZone: us-central1-a
+pingfedOperationalMode: CLUSTERED_ENGINE
+
 dn: cn=pf-engine-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
@@ -3622,6 +4103,24 @@ pingfedListener: cluster=7600
 pingfedNodeTags: us-east-1b
 pingfedOperationalMode: CLUSTERED_ENGINE
 
+dn: cn=pf-engine-2,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+objectClass: pingfedNode
+cn: pf-engine-2
+ciamHostname: pf-engine-2.gcp.internal.example-aero.test
+ciamImageRef: projects/example-aero-images/global/images/pingfederate-12-1-4-r
+ hel9
+ciamInstanceSize: n2-standard-2
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.70.2.22
+ciamProductVersion: PingFederate 12.1.4
+ciamServerRole: pf-engine
+ciamSubnet: cn=subnet-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc
+ =ciam-ops
+ciamZone: us-central1-b
+pingfedOperationalMode: CLUSTERED_ENGINE
+
 dn: cn=pf-engine-2,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
@@ -3654,6 +4153,17 @@ ciamSubnet: cn=subnet-pf-a,ou=bindings,env=prod,cloud=source,ou=environments,d
  c=ciam-ops
 ciamZone: us-east-1a
 
+dn: cn=registrationstatus,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAttributeProfile
+cn: registrationstatus
+ciamHolderCount: 240
+ciamLargestValueBytes: 8
+ciamLdapName: registrationstatus
+ciamMostValues: 1
+ciamProfiledAttribute: cn=registrationStatus,ou=user-schema,dc=ciam-ops
+
 dn: cn=roles,ou=claims,cn=customer-portal,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamClaimMap
@@ -3684,6 +4194,17 @@ ciamLockoutFailureCount: 0
 ciamPasswordHistoryCount: 0
 ciamStorageScheme: PBKDF2-HMAC-SHA512
 
+dn: cn=service-accounts.partners.example-aero.test,ou=branches,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamBranchProfile
+cn: service-accounts.partners.example-aero.test
+ciamClassCount: account=5
+ciamClassCount: simpleSecurityObject=5
+ciamClassCount: top=5
+ciamEntryCount: 5
+ciamProfiledBranch: ou=service-accounts,dc=partners,dc=example-aero,dc=test
+
 dn: cn=settings,ou=serverSettings,ou=resources,ou=pingfederate,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -3694,12 +4215,34 @@ pingfedConfig: {"contactInfo":{"company":"Example Aero","email":"ciam-platform
  ableOpenIdConnect":true}}}
 pingfedResourceType: /serverSettings
 
+dn: cn=sn,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAttributeProfile
+cn: sn
+ciamHolderCount: 241
+ciamLargestValueBytes: 7
+ciamLdapName: sn
+ciamMostValues: 1
+ciamProfiledAttribute: cn=sn,ou=user-schema,dc=ciam-ops
+
 dn: cn=sold_to,ou=claims,cn=supplier-portal,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamClaimMap
 cn: sold_to
 ciamClaimName: sold_to
 ciamSourceAttribute: cn=soldToAccount,ou=user-schema,dc=ciam-ops
+
+dn: cn=soldtoaccount,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAttributeProfile
+cn: soldtoaccount
+ciamHolderCount: 60
+ciamLargestValueBytes: 5
+ciamLdapName: soldtoaccount
+ciamMostValues: 1
+ciamProfiledAttribute: cn=soldToAccount,ou=user-schema,dc=ciam-ops
 
 dn: cn=sub,ou=claims,cn=mobile-ops,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -3719,6 +4262,30 @@ ciamPasswordHistoryCount: 8
 ciamPopulation: suppliers
 ciamStorageScheme: PBKDF2-HMAC-SHA256
 
+dn: cn=suppliers.people.partners.example-aero.test,ou=branches,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamBranchProfile
+cn: suppliers.people.partners.example-aero.test
+ciamClassCount: exampleAeroPerson=60
+ciamClassCount: inetOrgPerson=60
+ciamClassCount: organizationalPerson=60
+ciamClassCount: person=60
+ciamClassCount: top=60
+ciamEntryCount: 60
+ciamProfiledBranch: ou=suppliers,ou=people,dc=partners,dc=example-aero,dc=test
+
+dn: cn=telephonenumber,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAttributeProfile
+cn: telephonenumber
+ciamHolderCount: 160
+ciamLargestValueBytes: 11
+ciamLdapName: telephonenumber
+ciamMostValues: 1
+ciamProfiledAttribute: cn=telephoneNumber,ou=user-schema,dc=ciam-ops
+
 dn: cn=topology,ou=replication,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamReplicationTopology
@@ -3727,12 +4294,33 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamReplicaCount: 3
 ciamReplicationPurgeDelay: 3 d
 
+dn: cn=uid,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAttributeProfile
+cn: uid
+ciamHolderCount: 246
+ciamLargestValueBytes: 12
+ciamLdapName: uid
+ciamMostValues: 1
+ciamProfiledAttribute: cn=uid,ou=user-schema,dc=ciam-ops
+
 dn: cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamBackend
 cn: userData
 ciamBackendType: je
 ciamBaseDn: dc=partners,dc=example-aero,dc=test
+
+dn: cn=userpassword,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAttributeProfile
+cn: userpassword
+ciamHolderCount: 246
+ciamLargestValueBytes: 43
+ciamLdapName: userpassword
+ciamMostValues: 1
 
 dn: ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
@@ -3755,6 +4343,11 @@ objectClass: organizationalUnit
 ou: backends
 
 dn: ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: bindings
+
+dn: ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: bindings
@@ -3835,6 +4428,11 @@ objectClass: organizationalUnit
 ou: password-policies
 
 dn: ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: stack
+
+dn: ou=stack,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: stack
@@ -3927,6 +4525,16 @@ ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: access
 
+dn: cn=access,ou=stack,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: access
+ciamAdapter: pingam
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-pingam
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: access
+
 dn: cn=access,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamStackComponent
@@ -3936,6 +4544,31 @@ ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
  s/opsdir-adapter-pingam
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: access
+
+dn: cn=alerts-page,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlertChannel
+cn: alerts-page
+ciamBindingRole: alerts-page
+ciamChannelKind: topic
+ciamProviderRef: arn:aws:sns:us-east-1:111122223333:ciam-prod-page
+
+dn: cn=alerts-page,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlertChannel
+cn: alerts-page
+ciamBindingRole: alerts-page
+ciamChannelKind: paging-service
+ciamProviderRef: projects/example-aero-ciam-standby/notificationChannels/1001
+
+dn: cn=alerts-page,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlertChannel
+cn: alerts-page
+ciamBindingRole: alerts-page
+ciamChannelKind: action-group
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Insights/actionGroups/ag-ciam-page
 
 dn: cn=appEntitlement,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
@@ -3969,6 +4602,45 @@ ciamBindingRole: audit-events
 ciamProviderRef: arn:aws:events:us-east-1:111122223333:event-bus/ciam-audit
 ciamStreamKind: bus
 
+dn: cn=audit-logs,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogDestination
+cn: audit-logs
+ciamBindingRole: audit-logs
+ciamDestinationKind: log-group
+ciamProviderRef: arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/audi
+ t
+ciamRetentionDays: 400
+
+dn: cn=audit-logs,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogDestination
+cn: audit-logs
+ciamBindingRole: audit-logs
+ciamDestinationKind: log-group
+ciamProviderRef: projects/example-aero-ciam-standby/locations/global/buckets/c
+ iam-audit
+ciamRetentionDays: 400
+
+dn: cn=audit-logs,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogDestination
+cn: audit-logs
+ciamBindingRole: audit-logs
+ciamDestinationKind: workspace
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-cia
+ m-prod-audit
+ciamRetentionDays: 90
+
+dn: cn=audit-topic,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStreamBinding
+cn: audit-topic
+ciamBindingRole: audit-events
+ciamProviderRef: projects/example-aero-ciam-standby/topics/ciam-audit
+ciamStreamKind: topic
+
 dn: cn=backup,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamBackupTarget
@@ -3976,6 +4648,14 @@ cn: backup
 ciamBindingRole: backup-target
 ciamRetentionDays: 35
 ciamStorageRef: s3://example-aero-ciam-prod-ds-backups
+
+dn: cn=backup,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamBackupTarget
+cn: backup
+ciamBindingRole: backup-target
+ciamRetentionDays: 35
+ciamStorageRef: gs://example-aero-ciam-standby-ds-backups
 
 dn: cn=backup,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -4091,6 +4771,16 @@ ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: directory
 
+dn: cn=directory,ou=stack,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: directory
+ciamAdapter: pingds
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-pingds
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: directory
+
 dn: cn=directory,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamStackComponent
@@ -4101,6 +4791,48 @@ ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: directory
 
+dn: cn=ds-disk-free,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlarmBinding
+cn: ds-disk-free
+ciamBindingRole: alarm-disk-free
+ciamMetric: CWAgent disk_used_percent
+ciamNotifies: arn:aws:sns:us-east-1:111122223333:ciam-prod-page
+ciamProviderRef: arn:aws:cloudwatch:us-east-1:111122223333:alarm:ds-disk-free
+ciamRealizes: disk-free
+
+dn: cn=ds-replication-lag,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlarmBinding
+cn: ds-replication-lag
+ciamBindingRole: alarm-replication-lag
+ciamMetric: CIAM/DS ReplicationDelay
+ciamNotifies: arn:aws:sns:us-east-1:111122223333:ciam-prod-page
+ciamProviderRef: arn:aws:cloudwatch:us-east-1:111122223333:alarm:ds-replicatio
+ n-lag
+ciamRealizes: replication-lag
+
+dn: cn=ds-replication-lag,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlarmBinding
+cn: ds-replication-lag
+ciamBindingRole: alarm-replication-lag
+ciamMetric: custom.googleapis.com/ds/replication_delay
+ciamNotifies: projects/example-aero-ciam-standby/notificationChannels/1001
+ciamProviderRef: projects/example-aero-ciam-standby/alertPolicies/2001
+ciamRealizes: replication-lag
+
+dn: cn=ds-replication-lag,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlarmBinding
+cn: ds-replication-lag
+ciamBindingRole: alarm-replication-lag
+ciamMetric: Microsoft.Compute/virtualMachines ReplicationDelay
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Insights/metricAlerts/ds-replication-l
+ ag
+ciamRealizes: replication-lag
+
 dn: cn=egress-pf,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamEgress
@@ -4108,6 +4840,15 @@ cn: egress-pf
 ciamBindingRole: pf-egress
 ciamCidr: 203.0.113.10/32
 ciamProviderRef: nat-0123456789abcdef0
+
+dn: cn=egress-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamEgress
+cn: egress-pf
+ciamBindingRole: pf-egress
+ciamCidr: 203.0.113.150/32
+ciamProviderRef: example-aero-ciam-standby/us-central1/ciam-standby-router/cia
+ m-standby-nat
 
 dn: cn=egress-pf,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -4118,6 +4859,16 @@ ciamCidr: 203.0.113.200/32
 ciamProviderRef: natgw-ciam-prod
 
 dn: cn=federation,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: federation
+ciamAdapter: pingfederate
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-pingfederate
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: federation
+
+dn: cn=federation,ou=stack,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamStackComponent
 cn: federation
@@ -4195,6 +4946,17 @@ ciamProtocol: tcp
 ciamSourceCidr: 10.20.9.0/28
 ciamTargetRole: ds
 
+dn: cn=fw-admin,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-admin
+ciamBindingRole: fw-admin
+ciamPort: 4444
+ciamProtocol: tcp
+ciamRulePriority: 150
+ciamSourceCidr: 10.70.9.0/28
+ciamTargetRole: ds
+
 dn: cn=fw-admin,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
@@ -4213,6 +4975,17 @@ cn: fw-apps-public
 ciamBindingRole: fw-apps-public
 ciamPort: 443
 ciamProtocol: tcp
+ciamSourceCidr: 0.0.0.0/0
+ciamTargetRole: ig
+
+dn: cn=fw-apps-public,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-apps-public
+ciamBindingRole: fw-apps-public
+ciamPort: 443
+ciamProtocol: tcp
+ciamRulePriority: 180
 ciamSourceCidr: 0.0.0.0/0
 ciamTargetRole: ig
 
@@ -4238,6 +5011,18 @@ ciamProtocol: tcp
 ciamSourceCidr: 10.30.8.0/24
 ciamTargetRole: ds
 
+dn: cn=fw-customer-portal,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-customer-portal
+ciamAllowsConsumer: cn=customer-portal-svc,ou=consumers,dc=ciam-ops
+ciamBindingRole: fw-consumer-customer-portal-svc
+ciamPort: 1636
+ciamProtocol: tcp
+ciamRulePriority: 110
+ciamSourceCidr: 10.30.8.0/24
+ciamTargetRole: ds
+
 dn: cn=fw-customer-portal,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
@@ -4259,6 +5044,18 @@ ciamBindingRole: fw-consumer-idm-sync
 ciamPort: 1636
 ciamProtocol: tcp
 ciamSourceCidr: 10.20.6.0/24
+ciamTargetRole: ds
+
+dn: cn=fw-idm-sync,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-idm-sync
+ciamAllowsConsumer: cn=idm-sync,ou=consumers,dc=ciam-ops
+ciamBindingRole: fw-consumer-idm-sync
+ciamPort: 1636
+ciamProtocol: tcp
+ciamRulePriority: 130
+ciamSourceCidr: 10.70.6.0/24
 ciamTargetRole: ds
 
 dn: cn=fw-idm-sync,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
@@ -4291,6 +5088,17 @@ cn: fw-login-public
 ciamBindingRole: fw-login-public
 ciamPort: 443
 ciamProtocol: tcp
+ciamSourceCidr: 0.0.0.0/0
+ciamTargetRole: am
+
+dn: cn=fw-login-public,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-login-public
+ciamBindingRole: fw-login-public
+ciamPort: 443
+ciamProtocol: tcp
+ciamRulePriority: 170
 ciamSourceCidr: 0.0.0.0/0
 ciamTargetRole: am
 
@@ -4342,6 +5150,18 @@ ciamSourceCidr: 10.20.4.0/24
 ciamSourceCidr: 10.20.5.0/24
 ciamTargetRole: ds
 
+dn: cn=fw-pf-ds-svc,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-pf-ds-svc
+ciamAllowsConsumer: cn=pf-ds-svc,ou=consumers,dc=ciam-ops
+ciamBindingRole: fw-consumer-pf-ds-svc
+ciamPort: 1636
+ciamProtocol: tcp
+ciamRulePriority: 100
+ciamSourceCidr: 10.70.2.0/24
+ciamTargetRole: ds
+
 dn: cn=fw-pf-ds-svc,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
@@ -4368,6 +5188,18 @@ ciamSourceCidr: 10.20.3.0/24
 ciamSourceCidr: 10.60.1.0/24
 ciamTargetRole: ds
 
+dn: cn=fw-replication,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-replication
+ciamBindingRole: fw-replication
+ciamPort: 8989
+ciamProtocol: tcp
+ciamRulePriority: 140
+ciamSourceCidr: 10.70.1.0/24
+ciamSourceCidr: 10.20.0.0/16
+ciamTargetRole: ds
+
 dn: cn=fw-replication,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
@@ -4387,6 +5219,17 @@ cn: fw-sso-public
 ciamBindingRole: fw-sso-public
 ciamPort: 443
 ciamProtocol: tcp
+ciamSourceCidr: 0.0.0.0/0
+ciamTargetRole: pf-engine
+
+dn: cn=fw-sso-public,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-sso-public
+ciamBindingRole: fw-sso-public
+ciamPort: 443
+ciamProtocol: tcp
+ciamRulePriority: 160
 ciamSourceCidr: 0.0.0.0/0
 ciamTargetRole: pf-engine
 
@@ -4412,6 +5255,18 @@ ciamProtocol: tcp
 ciamSourceCidr: 10.31.2.0/24
 ciamTargetRole: ds
 
+dn: cn=fw-supplier-portal,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-supplier-portal
+ciamAllowsConsumer: cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
+ciamBindingRole: fw-consumer-supplier-portal-svc
+ciamPort: 1636
+ciamProtocol: tcp
+ciamRulePriority: 120
+ciamSourceCidr: 10.31.2.0/24
+ciamTargetRole: ds
+
 dn: cn=fw-supplier-portal,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
@@ -4425,6 +5280,16 @@ ciamSourceCidr: 10.31.2.0/24
 ciamTargetRole: ds
 
 dn: cn=gateway,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: gateway
+ciamAdapter: pinggateway
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-pinggateway
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: gateway
+
+dn: cn=gateway,ou=stack,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamStackComponent
 cn: gateway
@@ -4482,6 +5347,16 @@ ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: identity-management
 
+dn: cn=identity-management,ou=stack,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: identity-management
+ciamAdapter: pingidm
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-pingidm
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: identity-management
+
 dn: cn=identity-management,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamStackComponent
@@ -4528,6 +5403,16 @@ ciamProtectionLevel: hsm
 ciamRefUri: aws-kms://arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab3
  4cd56ef1234567890ab
 ciamReplicaRegion: us-west-2
+
+dn: cn=key-disk,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamKeyRef
+cn: key-disk
+ciamAutoRotate: TRUE
+ciamBindingRole: disk-encryption
+ciamProtectionLevel: hsm
+ciamRefUri: gcp-kms://projects/example-aero-ciam-standby/locations/us-central1
+ /keyRings/ciam/cryptoKeys/disk
 
 dn: cn=key-disk,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -4630,6 +5515,17 @@ objectClass: ciamConnectionHandler
 cn: LDIF
 ciamEnabled: FALSE
 
+dn: cn=link-source,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamInterconnect
+cn: link-source
+ciamBindingRole: cross-cloud-replication
+ciamInterconnectKind: Cloud VPN to AWS (landing-zone managed)
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamPeerEnvironment: env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamPort: 8989
+ciamSourceCidr: 10.20.0.0/16
+
 dn: cn=link-source,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamInterconnect
@@ -4674,6 +5570,54 @@ ciamProviderRef: arn:aws:ses:us-east-1:111122223333:identity/example-aero.test
 ciamSenderDomain: example-aero.test
 ciamSpfAuthorized: TRUE
 
+dn: cn=mig-pf-engine,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamComputeGroup
+cn: mig-pf-engine
+ciamBindingRole: compute-pf-engine
+ciamDesiredSize: 2
+ciamImageRef: projects/example-aero-images/global/images/pingfederate-12-1-4-r
+ hel9
+ciamInstanceSize: n2-standard-2
+ciamMaxSize: 4
+ciamMinSize: 2
+ciamProviderRef: projects/example-aero-ciam-standby/regions/us-central1/instan
+ ceGroupManagers/ciam-pf-engine
+ciamSpansZone: us-central1-a
+ciamSpansZone: us-central1-b
+ciamTargetRole: pf-engine
+
+dn: cn=ops-logs,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogDestination
+cn: ops-logs
+ciamBindingRole: ops-logs
+ciamDestinationKind: log-group
+ciamProviderRef: arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/acce
+ ss
+ciamRetentionDays: 30
+
+dn: cn=ops-logs,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogDestination
+cn: ops-logs
+ciamBindingRole: ops-logs
+ciamDestinationKind: log-group
+ciamProviderRef: projects/example-aero-ciam-standby/locations/global/buckets/c
+ iam-ops
+ciamRetentionDays: 30
+
+dn: cn=ops-logs,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogDestination
+cn: ops-logs
+ciamBindingRole: ops-logs
+ciamDestinationKind: workspace
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-cia
+ m-prod-ops
+ciamRetentionDays: 30
+
 dn: cn=partner-portal-access,cn=partner-apps,ou=partners,ou=policy-sets,ou=pingam,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -4690,8 +5634,15 @@ objectClass: ciamBackupTarget
 cn: pf-discovery
 ciamBindingRole: pf-cluster-discovery
 ciamStorageRef: s3://example-aero-ciam-prod-pf-cluster
-description: PingFederate cluster discovery (NATIVE_S3_PING / AZURE_PING stora
- ge)
+description: PingFederate cluster discovery (NATIVE_S3_PING bucket)
+
+dn: cn=pf-discovery,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: pingfedClusterDiscovery
+cn: pf-discovery
+ciamBindingRole: pf-cluster-discovery
+description: PingFederate cluster discovery: the nodes listed (TCPPING)
+pingfedDiscoveryProtocol: TCPPING
 
 dn: cn=pf-discovery,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -4701,6 +5652,38 @@ ciamBindingRole: pf-cluster-discovery
 ciamStorageRef: s3://example-aero-ciam-stage-pf-cluster
 description: Stage's own PingFederate cluster discovery: never prod's
 
+dn: cn=pf-login-failures,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlarmBinding
+cn: pf-login-failures
+ciamBindingRole: alarm-login-failures
+ciamMetric: CIAM/PingFederate LoginFailures
+ciamNotifies: arn:aws:sns:us-east-1:111122223333:ciam-prod-page
+ciamProviderRef: arn:aws:cloudwatch:us-east-1:111122223333:alarm:pf-login-fail
+ ures
+ciamRealizes: login-failures
+
+dn: cn=pf-login-failures,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlarmBinding
+cn: pf-login-failures
+ciamBindingRole: alarm-login-failures
+ciamMetric: log query
+ciamNotifies: projects/example-aero-ciam-standby/notificationChannels/1001
+ciamProviderRef: projects/example-aero-ciam-standby/alertPolicies/2002
+ciamRealizes: login-failures
+
+dn: cn=pf-login-failures,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlarmBinding
+cn: pf-login-failures
+ciamBindingRole: alarm-login-failures
+ciamMetric: log query
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Insights/scheduledQueryRules/pf-login-
+ failures
+ciamRealizes: login-failures
+
 dn: cn=provider,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamStackComponent
@@ -4708,6 +5691,16 @@ cn: provider
 ciamAdapter: aws
 ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
  s/opsdir-adapter-aws
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: provider
+
+dn: cn=provider,ou=stack,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: provider
+ciamAdapter: gcp
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-gcp
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: provider
 
@@ -4770,6 +5763,14 @@ ciamBindingRole: am-admin-password
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/am-admin-password
 
+dn: cn=secret-am-admin-password,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-am-admin-password
+ciamBindingRole: am-admin-password
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/am-admin-passw
+ ord
+
 dn: cn=secret-am-admin-password,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
@@ -4793,6 +5794,14 @@ ciamBindingRole: am-ds-bind-password
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/am-ds-bind-password
 
+dn: cn=secret-am-ds-bind-password,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-am-ds-bind-password
+ciamBindingRole: am-ds-bind-password
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/am-ds-bind-pas
+ sword
+
 dn: cn=secret-am-ds-bind-password,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
@@ -4815,6 +5824,15 @@ cn: secret-am-keystore
 ciamBindingRole: am-keystore
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/am-keystore
+
+dn: cn=secret-am-keystore,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-am-keystore
+ciamBindingRole: am-keystore
+ciamMaterialFrom: cn=secret-am-keystore,ou=bindings,env=prod,cloud=source,ou=e
+ nvironments,dc=ciam-ops
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/am-keystore
 
 dn: cn=secret-am-keystore,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -4841,6 +5859,16 @@ ciamBindingRole: ds-deployment-id
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/ds-deployment-id
 
+dn: cn=secret-ds-deployment-id,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-ds-deployment-id
+ciamBindingRole: ds-deployment-id
+ciamMaterialFrom: cn=secret-ds-deployment-id,ou=bindings,env=prod,cloud=source
+ ,ou=environments,dc=ciam-ops
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/ds-deployment-
+ id
+
 dn: cn=secret-ds-deployment-id,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
@@ -4865,6 +5893,16 @@ cn: secret-ds-deployment-password
 ciamBindingRole: ds-deployment-password
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/ds-deployment-password
+
+dn: cn=secret-ds-deployment-password,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-ds-deployment-password
+ciamBindingRole: ds-deployment-password
+ciamMaterialFrom: cn=secret-ds-deployment-password,ou=bindings,env=prod,cloud=
+ source,ou=environments,dc=ciam-ops
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/ds-deployment-
+ password
 
 dn: cn=secret-ds-deployment-password,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -4893,6 +5931,14 @@ ciamLastRotated: 20260302000000Z
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/ds-root-password
 
+dn: cn=secret-ds-root-password,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-ds-root-password
+ciamBindingRole: ds-root-password
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/ds-root-passwo
+ rd
+
 dn: cn=secret-ds-root-password,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
@@ -4917,6 +5963,14 @@ ciamBindingRole: ds-tls-keystore
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/ds-tls-keystore
 
+dn: cn=secret-ds-tls-keystore,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-ds-tls-keystore
+ciamBindingRole: ds-tls-keystore
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/ds-tls-keystor
+ e
+
 dn: cn=secret-ds-tls-keystore,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
@@ -4939,6 +5993,14 @@ cn: secret-idm-admin-password
 ciamBindingRole: idm-admin-password
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/idm-admin-password
+
+dn: cn=secret-idm-admin-password,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-idm-admin-password
+ciamBindingRole: idm-admin-password
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/idm-admin-pass
+ word
 
 dn: cn=secret-idm-admin-password,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -4963,6 +6025,14 @@ ciamBindingRole: idm-ds-bind-password
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/idm-ds-bind-password
 
+dn: cn=secret-idm-ds-bind-password,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-idm-ds-bind-password
+ciamBindingRole: idm-ds-bind-password
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/idm-ds-bind-pa
+ ssword
+
 dn: cn=secret-idm-ds-bind-password,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
@@ -4986,6 +6056,14 @@ ciamBindingRole: idm-hrdb-password
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/idm-hrdb-password
 
+dn: cn=secret-idm-hrdb-password,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-idm-hrdb-password
+ciamBindingRole: idm-hrdb-password
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/idm-hrdb-passw
+ ord
+
 dn: cn=secret-idm-hrdb-password,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
@@ -5008,6 +6086,15 @@ cn: secret-idm-keystore
 ciamBindingRole: idm-keystore
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/idm-keystore
+
+dn: cn=secret-idm-keystore,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-idm-keystore
+ciamBindingRole: idm-keystore
+ciamMaterialFrom: cn=secret-idm-keystore,ou=bindings,env=prod,cloud=source,ou=
+ environments,dc=ciam-ops
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/idm-keystore
 
 dn: cn=secret-idm-keystore,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -5033,6 +6120,13 @@ cn: secret-ig-keystore
 ciamBindingRole: ig-keystore
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/ig-keystore
+
+dn: cn=secret-ig-keystore,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-ig-keystore
+ciamBindingRole: ig-keystore
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/ig-keystore
 
 dn: cn=secret-ig-keystore,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -5061,6 +6155,14 @@ ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
 ciamRotationFunction: arn:aws:lambda:us-east-1:111122223333:function:ciam-rota
  te-pf-admin
 
+dn: cn=secret-pf-admin-password,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-admin-password
+ciamBindingRole: pf-admin-password
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/pf-admin-passw
+ ord
+
 dn: cn=secret-pf-admin-password,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
@@ -5084,6 +6186,16 @@ cn: secret-pf-captcha-secret
 ciamBindingRole: pf-captcha-secret
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/pf-captcha-secret
+
+dn: cn=secret-pf-captcha-secret,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-captcha-secret
+ciamBindingRole: pf-captcha-secret
+ciamMaterialFrom: cn=secret-pf-captcha-secret,ou=bindings,env=prod,cloud=sourc
+ e,ou=environments,dc=ciam-ops
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/pf-captcha-sec
+ ret
 
 dn: cn=secret-pf-captcha-secret,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -5110,6 +6222,14 @@ ciamBindingRole: pf-ds-bind-password
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/pf-ds-bind-password
 
+dn: cn=secret-pf-ds-bind-password,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-ds-bind-password
+ciamBindingRole: pf-ds-bind-password
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/pf-ds-bind-pas
+ sword
+
 dn: cn=secret-pf-ds-bind-password,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
@@ -5132,6 +6252,14 @@ cn: secret-pf-grants-db-password
 ciamBindingRole: pf-grants-db-password
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/pf-grants-db-password
+
+dn: cn=secret-pf-grants-db-password,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-grants-db-password
+ciamBindingRole: pf-grants-db-password
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/pf-grants-db-p
+ assword
 
 dn: cn=secret-pf-grants-db-password,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -5157,6 +6285,13 @@ ciamKeyUser: arn:aws:iam::111122223333:role/ciam-pf-admin
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/pf-signing-key
 
+dn: cn=secret-pf-signing-key,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-signing-key
+ciamBindingRole: pf-signing-key
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/pf-signing-key
+
 dn: cn=secret-pf-signing-key,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
@@ -5180,6 +6315,14 @@ ciamBindingRole: pf-smtp-password
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/pf-smtp-password
 
+dn: cn=secret-pf-smtp-password,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-smtp-password
+ciamBindingRole: pf-smtp-password
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/pf-smtp-passwo
+ rd
+
 dn: cn=secret-pf-smtp-password,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
@@ -5202,6 +6345,14 @@ cn: secret-sso-tls-keystore
 ciamBindingRole: sso-tls-keystore
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/sso-tls-keystore
+
+dn: cn=secret-sso-tls-keystore,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-sso-tls-keystore
+ciamBindingRole: sso-tls-keystore
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/sso-tls-keysto
+ re
 
 dn: cn=secret-sso-tls-keystore,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -5297,6 +6448,45 @@ cn: soldToAccount
 ciamIndexType: equality
 ciamIndexedAttribute: cn=soldToAccount,ou=user-schema,dc=ciam-ops
 
+dn: cn=sso-login,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCanaryBinding
+cn: sso-login
+ciamBindingRole: canary-sso-login
+ciamInterval: 5m
+ciamProviderRef: arn:aws:synthetics:us-east-1:111122223333:canary:ciam-sso-log
+ in
+ciamRealizes: sso-login
+
+dn: cn=sso-login,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCanaryBinding
+cn: sso-login
+ciamBindingRole: canary-sso-login
+ciamInterval: 5m
+ciamProviderRef: projects/example-aero-ciam-standby/uptimeCheckConfigs/sso-log
+ in
+ciamRealizes: sso-login
+
+dn: cn=sso-login,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCanaryBinding
+cn: sso-login
+ciamBindingRole: canary-sso-login
+ciamInterval: 5m
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Insights/webtests/sso-login
+ciamRealizes: sso-login
+
+dn: cn=subnet-am,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: subnet-am
+ciamBindingRole: subnet-am
+ciamCidr: 10.70.3.0/24
+ciamProviderRef: projects/example-aero-net/regions/us-central1/subnetworks/cia
+ m-standby-am
+
 dn: cn=subnet-am-a,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSubnetBinding
@@ -5314,6 +6504,15 @@ ciamBindingRole: subnet-am
 ciamCidr: 10.20.8.0/24
 ciamProviderRef: subnet-0c77d88e99fa00b1b
 ciamZone: us-east-1b
+
+dn: cn=subnet-ds,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: subnet-ds
+ciamBindingRole: subnet-ds
+ciamCidr: 10.70.1.0/24
+ciamProviderRef: projects/example-aero-net/regions/us-central1/subnetworks/cia
+ m-standby-ds
 
 dn: cn=subnet-ds-a,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -5342,6 +6541,15 @@ ciamCidr: 10.20.3.0/24
 ciamProviderRef: subnet-0a11b22c33d44e55c
 ciamZone: us-east-1c
 
+dn: cn=subnet-idm,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: subnet-idm
+ciamBindingRole: subnet-idm
+ciamCidr: 10.70.6.0/24
+ciamProviderRef: projects/example-aero-net/regions/us-central1/subnetworks/cia
+ m-standby-idm
+
 dn: cn=subnet-idm-a,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSubnetBinding
@@ -5351,6 +6559,15 @@ ciamCidr: 10.20.6.0/24
 ciamProviderRef: subnet-0d88e99fa00b11c2a
 ciamZone: us-east-1a
 
+dn: cn=subnet-ig,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: subnet-ig
+ciamBindingRole: subnet-ig
+ciamCidr: 10.70.10.0/24
+ciamProviderRef: projects/example-aero-net/regions/us-central1/subnetworks/cia
+ m-standby-ig
+
 dn: cn=subnet-ig-a,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSubnetBinding
@@ -5359,6 +6576,15 @@ ciamBindingRole: subnet-ig
 ciamCidr: 10.20.10.0/24
 ciamProviderRef: subnet-0e99fa00b11c22d3a
 ciamZone: us-east-1a
+
+dn: cn=subnet-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: subnet-pf
+ciamBindingRole: subnet-pf
+ciamCidr: 10.70.2.0/24
+ciamProviderRef: projects/example-aero-net/regions/us-central1/subnetworks/cia
+ m-standby-pf
 
 dn: cn=subnet-pf-a,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -5431,6 +6657,19 @@ ciamPort: 443
 ciamProviderRef: eipalloc-0a1b2c3d4e5f60005
 ciamTargetRole: ig
 
+dn: cn=svc-apps,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServiceName
+cn: svc-apps
+ciamBindingRole: ig-service
+ciamDnsZone: example-aero.test
+ciamDnsZoneRef: example-aero-public
+ciamFqdn: apps.example-aero.test
+ciamFrontendIp: 198.51.100.92
+ciamPort: 443
+ciamProviderRef: ciam-standby-apps
+ciamTargetRole: ig
+
 dn: cn=svc-apps,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServiceName
@@ -5465,6 +6704,19 @@ ciamDnsZone: id.example-aero.test
 ciamDnsZoneRef: Z0EXAMPLE1PRIVATE
 ciamFqdn: ldap.id.example-aero.test
 ciamFrontendIp: 10.20.1.100
+ciamPort: 1636
+ciamTargetRole: ds
+ciamTlsCertificate: cn=ds-ldaps-2026,ou=certificates,dc=ciam-ops
+
+dn: cn=svc-ldaps,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServiceName
+cn: svc-ldaps
+ciamBindingRole: ds-ldaps-service
+ciamDnsZone: id.example-aero.test
+ciamDnsZoneRef: ciam-standby-private
+ciamFqdn: ldap.id.example-aero.test
+ciamFrontendIp: 10.70.1.100
 ciamPort: 1636
 ciamTargetRole: ds
 ciamTlsCertificate: cn=ds-ldaps-2026,ou=certificates,dc=ciam-ops
@@ -5506,6 +6758,19 @@ ciamPort: 443
 ciamProviderRef: eipalloc-0a1b2c3d4e5f60003
 ciamTargetRole: am
 
+dn: cn=svc-login,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServiceName
+cn: svc-login
+ciamBindingRole: am-service
+ciamDnsZone: example-aero.test
+ciamDnsZoneRef: example-aero-public
+ciamFqdn: login.example-aero.test
+ciamFrontendIp: 198.51.100.91
+ciamPort: 443
+ciamProviderRef: ciam-standby-login
+ciamTargetRole: am
+
 dn: cn=svc-login,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServiceName
@@ -5542,6 +6807,20 @@ ciamFqdn: sso.example-aero.test
 ciamFrontendIp: 198.51.100.20
 ciamPort: 443
 ciamProviderRef: eipalloc-0a1b2c3d4e5f60001
+ciamTargetRole: pf-engine
+ciamTlsCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+
+dn: cn=svc-sso,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServiceName
+cn: svc-sso
+ciamBindingRole: pf-sso-service
+ciamDnsZone: example-aero.test
+ciamDnsZoneRef: example-aero-public
+ciamFqdn: sso.example-aero.test
+ciamFrontendIp: 198.51.100.90
+ciamPort: 443
+ciamProviderRef: ciam-standby-sso
 ciamTargetRole: pf-engine
 ciamTlsCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 
@@ -5653,6 +6932,15 @@ ciamBindingRole: network
 ciamCidr: 10.20.0.0/16
 ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
 ciamProviderRef: vpc-0a1b2c3d4e5f67890
+
+dn: cn=vpc,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamNetwork
+cn: vpc
+ciamBindingRole: network
+ciamCidr: 10.70.0.0/16
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamProviderRef: projects/example-aero-net/global/networks/ciam-standby
 
 dn: cn=appEntitlement,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top

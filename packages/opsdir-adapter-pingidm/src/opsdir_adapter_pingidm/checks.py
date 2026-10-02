@@ -3,7 +3,7 @@ reconciliation schedule runs a mapping it has) and every connector can reach its
 role and a credential role the target binds; a connector with a fixed host is an action)."""
 
 from opsdir.core.directory import children, one, rdn_value, values
-from opsdir.core.environment import one_role
+from opsdir.core.environment import bound_nowhere
 from opsdir.core.findings import findings, merge_findings, responsible
 from opsdir.core.jsondata import held_json
 from .naming import CONNECTORS, MANAGED, MAPPINGS, SCHEDULES
@@ -40,7 +40,7 @@ def deployment_problems(d):
 def _connector(ctx, c):
     name, target, credential = rdn_value(c), one(c, "pingidmTargetRole"), one(c, "pingidmCredentialRole")
     owner = responsible(ctx.d, c, ctx.dst.env)
-    missing = [r for r in (target, credential) if r and one_role(ctx.dst, r) is None]
+    missing = bound_nowhere((target, credential), ctx.dst)
     blockers = (*((("IDM", f"Connector `{name}` has withheld credentials but no credential role: nothing says which "
                     f"secret {ctx.dst.label} gives it. Set pingidmCredentialRole.", owner),)
                   if values(c, "pingidmWithheld") and not credential else ()),

@@ -12,7 +12,7 @@ def domain(name, order):
 
 
 def adapter(name, kind):
-    return Adapter(name, kind, lambda m: True, (), None, None, (), (), {}, None, None, {}, None, (), (), (), ())
+    return Adapter(name, kind, lambda m: True, (), None, None, (), (), {}, None, None, {}, None, (), (), (), (), None)
 
 
 def test_registered_returns_the_records():
@@ -47,4 +47,5 @@ def test_adapter_of_unknown_kind_is_refused():
 
 def test_installed_core_registers_its_domains():
     assert [d.name for d in DOMAINS] == ["infrastructure", "directory", "federation", "pki", "governance",
-                                         "configuration", "automation", "compute", "messaging", "custom"]
+                                         "configuration", "automation", "compute", "messaging", "custom",
+                                         "observability"]

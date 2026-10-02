@@ -33,6 +33,10 @@ EXPECTED = MappingProxyType({
          None),
         ("B17", "Binding", "Role `audit-events` is bound in source/prod but not in target/prod",
          "no bus carries the identity audit stream in the target", None),
+        ("B18", "Binding", "Role `alarm-disk-free` is bound in source/prod but not in target/prod",
+         "the target doesn't run the disk-space alarm CloudWatch runs (nobody described it: A36)", None),
+        ("B19", "Logs", "Log route `audit-logs` must keep logs 400 days; target/prod's `audit-logs` keeps them 90",
+         "the target's audit workspace keeps logs 90 days, short of the 400-day obligation", None),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -79,6 +83,21 @@ EXPECTED = MappingProxyType({
          "the target's engine scale set sits in one zone; the source spreads them over two", None),
         ("A29", "Mail", "Sender `noreply@example-aero.test`: target/prod's DMARC policy for example-aero.test is "
          "quarantine", "the target's DMARC policy is weaker than the source's reject", None),
+        ("A30", "Data", "24 password value(s) in source/prod are hashed with SSHA512",
+         "customers migrated from the old portal, and the legacy reports account, still hold salted SHA-512 hashes; "
+         "every declared policy stores PBKDF2", None),
+        ("A31", "Data", "attribute(s) in source/prod's user data have no ou=user-schema record",
+         "a CRM integration nobody recorded writes crmContactId on suppliers; cn has no PII class either", None),
+        ("A32", "Data", "1 member DN(s) of source/prod's groups name entries that don't exist",
+         "the supplier approvers group still lists a supplier deleted last year", None),
+        ("A33", "Data", "37 entries in source/prod hold challenge questions (KBA)",
+         "customers registered before 2022 still hold challenge answers", None),
+        ("A34", "Alert", "Alert rule `login-failures` names no runbook",
+         "the login-failures rule pages without saying what to do", None),
+        ("A35", "Logs", "Log route `audit-logs` is under legal hold",
+         "the audit logs are under legal hold: the source's log group must outlive decommissioning", None),
+        ("A36", "Monitoring", "source/prod runs alarm `ds-disk-free`",
+         "CloudWatch runs a disk-space alarm no recorded rule describes", None),
     ],
 })
 

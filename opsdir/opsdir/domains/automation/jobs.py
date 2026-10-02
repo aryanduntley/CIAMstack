@@ -7,7 +7,7 @@ target doesn't is the core binding check's; what nobody records is this check's.
 after a move, so a job nobody owns is an action.
 """
 from ...core.directory import children, follow, get, one, rdn_value, values
-from ...core.environment import one_role, servers_with_role
+from ...core.environment import bound_nowhere, servers_with_role
 from ...core.findings import findings, merge_findings, responsible
 from .naming import JOBS, ON_SERVERS, REALIZED
 
@@ -41,7 +41,7 @@ def job_rows(d, dn=None):
 def _job(ctx, j):
     name, kind, owner = rdn_value(j), one(j, "ciamJobKind"), responsible(ctx.d, j, ctx.dst.env)
     role, realized_by = one(j, "ciamTargetRole"), one(j, "ciamJobRole")
-    nobody = [r for r in values(j, "ciamUsesRole") if one_role(ctx.src, r) is None and one_role(ctx.dst, r) is None]
+    nobody = bound_nowhere(values(j, "ciamUsesRole"), ctx.src, ctx.dst)
     blockers = (*((("Job", f"Job `{name}` runs on servers of role `{role}`, which {ctx.dst.label} has none of.",
                     owner),) if role and servers_with_role(ctx.src, role) and not servers_with_role(ctx.dst, role)
                   else ()),
@@ -49,8 +49,7 @@ def _job(ctx, j):
                    owner) for r in nobody),
                 *((("Job", f"Job `{name}` is realized by role `{realized_by}`, which neither {ctx.src.label} nor "
                     f"{ctx.dst.label} binds: record where it runs.", owner),)
-                  if realized_by and one_role(ctx.src, realized_by) is None and one_role(ctx.dst, realized_by) is None
-                  else ()))
+                  if bound_nowhere((realized_by,), ctx.src, ctx.dst) else ()))
     actions = (*((("Job", f"Job `{name}` has no owner: automation nobody owns breaks silently after a move. Name "
                    "who owns it.", owner, None),) if not values(j, "ciamOwner") else ()),
                *((("Job", f"Job `{name}` ({kind}) records neither the server role it runs on nor the role that "

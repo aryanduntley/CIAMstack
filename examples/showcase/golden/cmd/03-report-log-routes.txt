@@ -1,0 +1,6 @@
+log route    logs          from                     kept by     keep (days)  legal hold
+-----------  ------------  -----------------------  ----------  -----------  ----------
+access-logs  access        ds, pf-engine            ops-logs    30
+audit-logs   audit, admin  ds, pf-engine, pf-admin  audit-logs  400          yes
+(2 rows)
+exit 0

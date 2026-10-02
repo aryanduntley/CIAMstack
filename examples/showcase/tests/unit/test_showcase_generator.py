@@ -2,7 +2,7 @@
 fixture builds."""
 import gzip
 
-from example_estate.build import build, exports
+from example_estate.build import GENERATED, build, exports
 from showcase_support import SHOWCASE, DATA
 
 
@@ -17,5 +17,5 @@ def test_the_generated_exports_are_exactly_what_the_fixture_builds():
     root = SHOWCASE / "exports"
     on_disk = {p.relative_to(root).as_posix(): (gzip.decompress(p.read_bytes()).decode() if p.suffix == ".gz"
                                                  else p.read_text())
-               for d in ("ds-config", "ds-access-logs", "cloud") for p in sorted((root / d).rglob("*")) if p.is_file()}
+               for d in GENERATED for p in sorted((root / d).rglob("*")) if p.is_file()}
     assert exports() == on_disk

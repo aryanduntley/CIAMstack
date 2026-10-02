@@ -18,6 +18,16 @@ def json_document(text, kind=None):
     return parsed(json.loads, text, (ValueError,), kind)
 
 
+def json_records(text):
+    """The records of a JSON text: a list's items, a single value as one record, or JSON lines (one value per
+    non-blank line, as Cloud Asset Inventory exports write); None when it is none of these."""
+    doc = json_document(text)
+    if doc is not None:
+        return doc if isinstance(doc, list) else [doc]
+    lines = [json_document(line) for line in text.splitlines() if line.strip()]
+    return lines if lines and all(x is not None for x in lines) else None
+
+
 def under(files, root):
     """{path within root: text} of the files inside folder root."""
     return {p[len(root) + 1:]: text for p, text in files.items() if p.startswith(root + "/")}

@@ -34,17 +34,26 @@ From Terraform state (terraform.tfstate, format version 4; hashicorp/azurerm), m
                                                  spf.protection.outlook.com) and the DMARC policy, from the TXT records
   azurerm_servicebus_queue / _topic,          -> stream carriers (kind stream, ciamStreamBinding): queue, topic, event
     azurerm_eventhub, azurerm_eventgrid_topic    hub
+  azurerm_monitor_action_group                -> alert channel (kind channel, ciamAlertChannel): action group
+  azurerm_log_analytics_workspace             -> log destination (kind logs, ciamLogDestination): workspace, its
+                                                 retention in days
+  azurerm_monitor_metric_alert,               -> alarm (kind alarm, ciamAlarmBinding): what it evaluates (namespace and
+    azurerm_monitor_scheduled_query_rules_       metric, or a log query), the action groups it notifies, the alert rule
+    alert_v2                                     it realizes (tag Realizes)
+  azurerm_application_insights_standard_     -> synthetic check (kind canary, ciamCanaryBinding): its frequency as an
+    web_test                                     interval, the canary it realizes (tag Realizes)
 Roles of resources the record doesn't have come from their tags Role (or BindingRole), or for storage containers from
-their metadata (role); a compute group's binding role is its tag BindingRole, else compute-<its tag Role>, and a
-cluster's its tag BindingRole or Role, else cluster. Subnets and individual security rules carry neither in Azure:
+their metadata (role); a compute group's binding role is its tag BindingRole, else compute-<its tag Role>, a
+cluster's its tag BindingRole or Role, else cluster, and an alarm's or synthetic check's, else alarm-<Realizes> or
+canary-<Realizes>. Subnets and individual security rules carry neither in Azure:
 their roles come from the environment's role map (roles.json, opsdir.core.inventory), and without one new ones are
 named in the notices.
 """
 from collections import Counter
 
 from opsdir.core.contract import Importer
-from opsdir.core.inventory import (cluster_role, compute_roles, layout_import, of_types, per_file, resource,
-                                   tagged_role)
+from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, layout_import, of_types, per_file,
+                                   realization_roles, resource, tagged_role)
 from opsdir.core.sources import json_document
 from opsdir.domains.messaging.dns import dmarc_policy, spf_authorizes
 from opsdir_format_terraform.state import read_state
@@ -441,6 +450,54 @@ def _sending(found):
                  if a.get("domain_management") != "AzureManaged" and a.get("name"))
 
 
+def _channels(found):
+    """Action groups, as alert channels."""
+    return tuple(resource("channel", a.get("id"), {"ciamChannelKind": "action-group"}, name=a.get("name"),
+                          role=_role(a))
+                 for a in of_types(found, "azurerm_monitor_action_group") if a.get("id"))
+
+
+def _log_destinations(found):
+    """Log Analytics workspaces, with their retention."""
+    return tuple(resource("logs", a.get("id"), {"ciamDestinationKind": "workspace",
+                                                "ciamRetentionDays": a.get("retention_in_days")},
+                          name=a.get("name"), role=_role(a))
+                 for a in of_types(found, "azurerm_log_analytics_workspace") if a.get("id"))
+
+
+def _metric_alarm(a):
+    criteria = _first(a.get("criteria")) or _first(a.get("dynamic_criteria")) or {}
+    named = " ".join(p for p in (criteria.get("metric_namespace"), criteria.get("metric_name")) if p)
+    return named or None, sorted({x.get("action_group_id") for x in a.get("action") or () if x.get("action_group_id")})
+
+
+def _query_alarm(a):
+    return "log query", sorted({g for x in a.get("action") or () for g in x.get("action_groups") or ()})
+
+
+ALARM_TYPES = (("azurerm_monitor_metric_alert", _metric_alarm),
+               ("azurerm_monitor_scheduled_query_rules_alert_v2", _query_alarm))
+
+
+def _alarms(found):
+    """Metric and log-query alerts: what each evaluates, the action groups it notifies, the alert rule it realizes."""
+    def alarm(a, read):
+        role, realizes = realization_roles(_tags(a), "alarm")
+        metric, notifies = read(a)
+        return resource("alarm", a.get("id"), {"ciamMetric": metric, "ciamNotifies": notifies,
+                                               "ciamRealizes": realizes}, name=a.get("name"), role=role)
+    return tuple(alarm(a, read) for t, read in ALARM_TYPES for a in of_types(found, t) if a.get("id"))
+
+
+def _canaries(found):
+    """Application Insights standard web tests: how often each runs, the canary it realizes."""
+    def canary(a):
+        role, realizes = realization_roles(_tags(a), "canary")
+        return resource("canary", a.get("id"), {"ciamInterval": duration_text(a.get("frequency")),
+                                                "ciamRealizes": realizes}, name=a.get("name"), role=role)
+    return tuple(canary(a) for a in of_types(found, "azurerm_application_insights_standard_web_test") if a.get("id"))
+
+
 def _streams(found):
     """Service Bus queues and topics, Event Hubs and Event Grid topics as stream carriers."""
     return tuple(resource("stream", a.get("id"), {"ciamStreamKind": kind}, name=a.get("name"), role=_role(a))
@@ -453,7 +510,8 @@ def pairs_resources(pairs):
     rules, rule_notices = _firewall(pairs)
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *rules, *_secrets(pairs),
              *_keys(pairs), *_storage(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
-             *_sending(pairs), *_streams(pairs)), rule_notices)
+             *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
+             *_canaries(pairs)), rule_notices)
 
 
 def state_resources(text):

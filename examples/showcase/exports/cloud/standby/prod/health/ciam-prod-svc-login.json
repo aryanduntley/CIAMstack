@@ -1,0 +1,16 @@
+[
+  {
+    "backend": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/instanceGroups/ciam-prod-svc-login-us-central1-a",
+    "status": {
+      "kind": "compute#backendServiceGroupHealth",
+      "healthStatus": [
+        {
+          "instance": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/instances/am-1",
+          "ipAddress": "10.70.3.21",
+          "port": 443,
+          "healthState": "HEALTHY"
+        }
+      ]
+    }
+  }
+]

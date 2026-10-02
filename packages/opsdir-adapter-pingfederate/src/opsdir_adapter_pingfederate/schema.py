@@ -57,10 +57,13 @@ ATTRIBUTES = (
                  'A port a PingFederate node listens on, by what for: runtime=9031, admin=9999, cluster=7600',
                  (("X-PATTERN", "^[a-z][a-z0-9-]*=[0-9]+$"),)),
     AttributeDef(21, 'pingfedDiscovery', 'string', 'meta', True,
-                 "The JGroups discovery protocol a node's tcp.xml uses, as found on the node (TCPPING, NATIVE_S3_PING, "
-                 "AZURE_PING, DNS_PING, ...)"),
+                 "The JGroups discovery protocol a node uses, as found on the node (bin/jgroups.properties, or "
+                 "an upgraded install's tcp.xml): TCPPING, NATIVE_S3_PING, DNS_PING, ..."),
     AttributeDef(22, 'pingfedResourceType', 'string', 'intent', True,
                  "The Admin API resource a held-as-is item comes from (/serverSettings, /oauth/accessTokenMappings, ...)"),
+    AttributeDef(23, 'pingfedDiscoveryProtocol', 'vocab', 'binding', True,
+                 "The JGroups discovery protocol an environment's PingFederate nodes find each other with, chosen per "
+                 "environment from the protocols the adapter renders (TCPPING, NATIVE_S3_PING, DNS_PING)"),
 )
 CLASSES = (
     ClassDef(1, 'pingfedDataStore', 'ciamObject', 'STRUCTURAL', ('cn', 'pingfedStoreType'),
@@ -94,11 +97,15 @@ CLASSES = (
              ('pingfedOperationalMode', 'pingfedNodeTags', 'pingfedListener', 'pingfedDiscovery',
               'pingfedCredentialRole', 'pingfedConfig', 'pingfedWithheld'),
              "A server that is a PingFederate node: its run.properties (mode, tags, listeners, other settings) and the "
-             "cluster discovery its tcp.xml uses"),
+             "cluster discovery protocol it uses"),
     ClassDef(12, 'pingfedResource', 'ciamObject', 'STRUCTURAL', ('cn', 'pingfedResourceType'),
              ('pingfedCredentialRole', 'pingfedConfig', 'pingfedWithheld'),
              'An item of an Admin API resource the adapter does not model, held as the Admin API writes it (cn: its id; '
              'settings for a resource that is one object)'),
+    ClassDef(13, 'pingfedClusterDiscovery', 'ciamBinding', 'STRUCTURAL', ('pingfedDiscoveryProtocol',),
+             ('ciamStorageRef', 'ciamFqdn'),
+             "Where an environment's PingFederate nodes find each other (role pf-cluster-discovery): the protocol "
+             "chosen, and the bucket (NATIVE_S3_PING) or DNS name (DNS_PING) it needs; TCPPING needs neither"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES, ARC, ORIGIN)

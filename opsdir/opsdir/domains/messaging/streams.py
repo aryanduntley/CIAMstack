@@ -2,7 +2,7 @@
 check. Pure. A stream is intent; the queue or bus that carries it in each environment is a binding (ciamStreamRole):
 a stream whose carrier neither environment binds is a blocker (the core role check covers one the source binds)."""
 from ...core.directory import children, one, rdn_value, values
-from ...core.environment import one_role
+from ...core.environment import bound_nowhere
 from ...core.findings import findings, merge_findings, responsible
 from .naming import EVENT_STREAMS
 
@@ -23,7 +23,7 @@ def stream_rows(d, dn=None):
 
 def _stream(ctx, s):
     role = one(s, "ciamStreamRole")
-    nobody = role and one_role(ctx.src, role) is None and one_role(ctx.dst, role) is None
+    nobody = bound_nowhere((role,), ctx.src, ctx.dst)
     return findings(blockers=((("Stream", f"Event stream `{rdn_value(s)}` is carried by role `{role}`, which neither "
                                 f"{ctx.src.label} nor {ctx.dst.label} binds: record each environment's queue or bus.",
                                 responsible(ctx.d, s, ctx.dst.env)),) if nobody else ()),

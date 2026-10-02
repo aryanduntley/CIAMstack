@@ -1,0 +1,2 @@
+wrote <OUT>/data-profile/source-prod.json
+exit 0

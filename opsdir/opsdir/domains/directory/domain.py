@@ -1,7 +1,8 @@
 """Directory domain: a vendor-neutral LDAP user directory. Its declared and observed server configuration
 (backends, indexes, password policies, connection handlers, log publishers, replication), the records
 describing its schema (user attributes and object classes, standard or defined in the record), the consumers
-that bind to it, and the ACIs that grant them access. Product adapters render and import it."""
+that bind to it, the ACIs that grant them access, and the shape of its user data (a values-free profile per
+environment). Product adapters render and import it."""
 from pathlib import Path
 
 from ...core.contract import Domain, directory_report, sql_report
@@ -10,6 +11,7 @@ from .checks import check_consumers, check_hygiene
 from .consumers import CONSUMERS_HEADERS, consumer_rows
 from .drift import DRIFT_HEADERS, drift
 from .naming import CONSUMERS, DIRECTORY_SERVER_ROLE
+from .profile import ATTRIBUTE_HEADERS, PROFILE_HEADERS, attribute_rows, check_data_profile, profile_rows
 from .schema import FRAGMENT
 from .user_schema import USER_SCHEMA_HEADERS, check_user_schema, user_schema_rows
 
@@ -33,6 +35,8 @@ DOMAIN = Domain(name="directory", schema=FRAGMENT, required_roles=(),
                 sql=(Path(__file__).parent / "sql" / "directory.sql",),
                 reports={"pii": sql_report(PII_HEADERS, PII_SQL), "drift": directory_report(DRIFT_HEADERS, _drift_rows),
                          "user-schema": directory_report(USER_SCHEMA_HEADERS, user_schema_rows),
-                         "consumers": directory_report(CONSUMERS_HEADERS, consumer_rows, dated=True)},
-                checks=(check_user_schema, check_consumers, check_hygiene), order=20,
+                         "consumers": directory_report(CONSUMERS_HEADERS, consumer_rows, dated=True),
+                         "data-profile": directory_report(PROFILE_HEADERS, profile_rows),
+                         "data-profile-attributes": directory_report(ATTRIBUTE_HEADERS, attribute_rows)},
+                checks=(check_user_schema, check_consumers, check_hygiene, check_data_profile), order=20,
                 vocabulary={"ciamServerRole": (DIRECTORY_SERVER_ROLE,), "ciamTargetRole": (DIRECTORY_SERVER_ROLE,)})

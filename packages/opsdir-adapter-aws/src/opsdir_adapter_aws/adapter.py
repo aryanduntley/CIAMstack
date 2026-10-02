@@ -20,4 +20,5 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamCloudEnvironment": ("public",)}, schema=None,
                   formats=(("terraform/*.tf", "hcl"),),
                   products=(),
-                  secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY, CLOUDFORMATION))
+                  secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY, CLOUDFORMATION),
+                  profile_terms=None)

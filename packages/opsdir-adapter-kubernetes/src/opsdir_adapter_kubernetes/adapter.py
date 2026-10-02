@@ -15,4 +15,4 @@ ADAPTER = Adapter(name="kubernetes", kind="secret-store", applies=applies, requi
                   secret_schemes={"k8s-secret": secret_command}, renders=None, neutral_label=None,
                   vocabulary={}, schema=None, formats=(),
                   products=(),
-                  secret_patterns=(), importers=(WORKLOADS_IMPORTER,))
+                  secret_patterns=(), importers=(WORKLOADS_IMPORTER,), profile_terms=None)

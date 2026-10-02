@@ -6,7 +6,7 @@ target what the source has: somewhere to run the role (a cluster for the workloa
 roles it uses. A privileged workload is an action: what it can reach on its node isn't in the record.
 """
 from ...core.directory import children, one, rdn_value, values
-from ...core.environment import one_role, servers_with_role
+from ...core.environment import bound_nowhere, one_role, servers_with_role
 from ...core.findings import findings, merge_findings, responsible
 from .naming import WORKLOADS
 
@@ -49,7 +49,7 @@ def _workload(ctx, w):
           if runs_in(ctx.src, w) and not runs_in(ctx.dst, w) and not servers_with_role(ctx.dst, role) else ()),
         *((("Workload", f"Workload `{name}` assumes the identity of role `{identity}`, which neither "
             f"{ctx.src.label} nor {ctx.dst.label} binds: record the identity each environment gives it.", owner),)
-          if identity and one_role(ctx.src, identity) is None and one_role(ctx.dst, identity) is None else ()))
+          if bound_nowhere((identity,), ctx.src, ctx.dst) else ()))
     actions = ((("Workload", f"Workload `{name}` runs privileged containers: what they can reach on their nodes isn't "
                  "in the record. Drop the privilege or record why it is needed.", owner, None),)
                if "privileged" in values(w, "ciamPodSecurity") else ())

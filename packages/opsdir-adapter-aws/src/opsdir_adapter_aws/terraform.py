@@ -2,12 +2,13 @@
 import ipaddress
 from itertools import chain
 
-from opsdir.core.directory import follow, one, rdn_value, values
+from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import of_class, one_role, secret, servers_with_role, subnet_of
 from opsdir.core.manifest import header
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir.core.network import is_private
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir.domains.infrastructure.firewall import rule_purpose
+from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
 
 
 def _network(m):
@@ -27,8 +28,7 @@ def _security_groups(m):
 
 
 def _ingress_rules(m, fw):
-    consumer = follow(m.d, fw, "ciamAllowsConsumer")
-    why = f"consumer {rdn_value(consumer)}" if consumer else one(fw, "ciamBindingRole")
+    why = rule_purpose(m, fw)
     return tuple(block("resource", ["aws_vpc_security_group_ingress_rule", tf_name(f"{rdn_value(fw)}_{i}_{port}")], [
         ("security_group_id", ref(f"aws_security_group.{tf_name(one(fw, 'ciamTargetRole'))}.id")),
         ("cidr_ipv4", cidr), ("from_port", int(port)), ("to_port", int(port)),
@@ -108,7 +108,7 @@ def render(m, services):
     kms = secret(m, "disk-encryption")
     out = (*_network(m), *_security_groups(m), *(_instance(m, s, kms) for s in m.servers),
            *chain.from_iterable(_service(m, svc) for svc in of_class(m, "ciamServiceName")), *_references(m))
-    unbound = "".join(f"# UNBOUND: required role '{r}' has no binding in this environment\n" for r in m.unbound)
+    unbound = unbound_comments(m.unbound)
     main = header(m, "AWS infrastructure for the CIAM platform", HCL) + unbound + "\n" + "\n\n".join(out) + "\n"
     providers = header(m, "Providers", HCL) + "\n" + "\n\n".join([
         block("terraform", [], [("required_providers", Block((

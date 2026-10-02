@@ -1,0 +1,7 @@
+iam.googleapis.com/ServiceAccount (1): Cloud Asset Inventory assets of a type not read
+standby/prod: firewall allow-iap-ssh (ciamSourceCidr 35.235.240.0/20, ciamPort 22) is not in the record and names no role (tag it Role, name it in roles.json, or record it); not imported
+target/prod: not a Google Cloud environment in the record; not imported
+modify cn=ds-2,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+    replace ciamInstanceSize: n2-standard-8
+1 change(s) (not applied)
+exit 0

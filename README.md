@@ -4,15 +4,16 @@
 
 CIAMstack (the `opsdir` tool) keeps everything about an identity (CIAM) platform in one PostgreSQL database: servers and where they run, directory and federation configuration, access rules, the applications that depend on the platform, certificates, keys and secrets (as references only), owners, runbooks and changes. Every entry is typed, schema-checked and linked to what it depends on, and every change is approved and kept in history. The working files you deploy (Terraform, product configuration, setup scripts) are generated from the record, for every environment.
 
-It is built for the ForgeRock/Ping stack on AWS and Azure today, and nothing in its core is tied to a vendor: each product, cloud and secret store is an installable **adapter** package, and new ones can be written for other systems.
+It is built for the ForgeRock/Ping stack on AWS, Azure and Google Cloud today, and nothing in its core is tied to a vendor: each product, cloud and secret store is an installable **adapter** package, and new ones can be written for other systems.
 
 ## What you can do with it
 
 ### See the whole platform in one place
 
-- **Load what you have.** Describe the platform as LDIF (`opsdir load`), or read a product's own export straight in: directory servers' configuration (`config.ldif` and its archived versions) and access logs (which applications bind, from where, reading what), a PingFederate bulk export, AWS and Azure Terraform state, CLI output, CloudFormation stacks or ARM/Bicep deployments, a PingAM Amster export, a PingIDM project, a PingGateway configuration (`opsdir import`). Secret values found along the way are withheld and reported, never stored.
+- **Load what you have.** Describe the platform as LDIF (`opsdir load`), or read a product's own export straight in: directory servers' configuration (`config.ldif` and its archived versions) and access logs (which applications bind, from where, reading what), a PingFederate bulk export, AWS, Azure and Google Cloud Terraform state, CLI output (Cloud Asset Inventory and `gcloud` for Google Cloud), CloudFormation stacks or ARM/Bicep deployments, a PingAM Amster export, a PingIDM project, a PingGateway configuration (`opsdir import`). Secret values found along the way are withheld and reported, never stored.
 - **Hold your config files, not just point at them.** `opsdir capture` keeps a configuration file setting by setting and `opsdir file` rebuilds it for any environment; `opsdir bundle` records code, scripts and templates by repo path and SHA-256, and `opsdir verify` checks them against a checkout.
 - **Find where values are copied.** `opsdir census` scans servers' and applications' files (scripts, configs, `/etc/hosts`, templates) for the values the record holds (hostnames, addresses, service names, bind and base DNs, URLs, fingerprints, cloud resource IDs) and for terms you define (a field marked as a census term: an old brand or domain, an account ID, a bucket name), and records each file and line, pointing at the entry the value belongs to. Secret material in them is flagged by line, never stored. `--replace` makes a scan the whole census, dropping files no longer there.
+- **Know the shape of your user data, without copying it.** `ldapsearch … | opsdir data-profile --env CLOUD/ENV` reads the directory's entries once, where the directory is reachable (no database needed), and writes counts only: entries per container and object class, how full each attribute is, password values by hashing scheme, time since the last login and password change, locked and disabled accounts, empty groups and members pointing nowhere. `opsdir import ldap/data-profile` records it; the planner names legacy password schemes, attributes the record doesn't describe (no PII class) and dangling members.
 - **Know who depends on what.** Applications that bind to the directory, federation partners and their claims, the ACIs each one relies on, the certificates and keys behind them, and other parties' allowlists that hold your addresses are all entries with owners.
 
 ### Answer operational questions in seconds
@@ -31,6 +32,8 @@ It is built for the ForgeRock/Ping stack on AWS and Azure today, and nothing in 
 | What hidden automation runs (cron, timers, functions, pipelines), and who owns it? | `opsdir report jobs` |
 | Which outside services does the platform depend on, which addresses does it send mail from, and where do its events go? | `opsdir report external-services`, `opsdir report mail-senders`, `opsdir report event-streams` |
 | What do the servers run beyond the products (OS, Java truststore additions, limits, agents), and on what compute or cluster? | `opsdir report baselines`, `opsdir report compute`, `opsdir report workloads` |
+| What is the platform watched for, where do its logs go and for how long, and what does each cloud actually run? | `opsdir report alerts`, `opsdir report log-routes`, `opsdir report canaries`, `opsdir report monitors` |
+| How big is the user data, which password schemes does it hold, how many accounts are idle? | `opsdir report data-profile`, `opsdir report data-profile-attributes` |
 | Which files copy this server's hostname (or any value), on which lines? | `opsdir report census [<DN>]` |
 | Anything else | `opsdir search -b <base> '<LDAP filter>'` |
 
@@ -73,9 +76,10 @@ Adapters are separate installable packages. Installing one registers it with the
 **Clouds**
 - `opsdir-adapter-aws`: Terraform for AWS (VPC, subnets, instances, load balancers, security groups, DNS); Secrets Manager, KMS, Certificate Manager and S3 references; **imports Terraform state, AWS CLI output and CloudFormation stacks** into the environment's servers and bindings.
 - `opsdir-adapter-azure`: Terraform for Azure, commercial or government (virtual network, subnets, VMs, load balancers, network security rules with pinned priorities, DNS); Key Vault secret, key and certificate references; **imports Terraform state, Azure CLI output and ARM/Bicep deployments** into the environment's servers and bindings.
+- `opsdir-adapter-gcp`: Terraform for Google Cloud (the landing zone's Shared VPC network and subnetworks, instances with CMEK disks and Shielded VM, VPC firewall rules by network tag with pinned priorities, passthrough load balancers with their health-check rules, Cloud DNS); Secret Manager, Cloud KMS, Certificate Manager and Cloud Storage references; **imports Terraform state and Cloud Asset Inventory / `gcloud` output** into the environment's servers and bindings.
 
 **Secret stores** (resolved at run time; values never reach the database or a rendered file)
-- AWS Secrets Manager and KMS (in `opsdir-adapter-aws`), Azure Key Vault (in `opsdir-adapter-azure`).
+- AWS Secrets Manager and KMS (in `opsdir-adapter-aws`), Azure Key Vault (in `opsdir-adapter-azure`), Google Cloud Secret Manager and Cloud KMS (in `opsdir-adapter-gcp`).
 - `opsdir-adapter-hashicorp-vault`: `vault://` references, resolved with the Vault CLI.
 - `opsdir-adapter-kubernetes`: `k8s-secret://` references, resolved with `kubectl`; also **imports Kubernetes manifests** as workloads (below).
 - `opsdir-adapter-cyberark`: `cyberark://` references, resolved with the Credential Provider SDK.
@@ -103,15 +107,15 @@ opsdir/opsdir.sh --help           # the CLI, against the local dev database
 opsdir/scripts/test.sh            # every test: core, packages, showcase; unit + integration
 ```
 
-The [showcase](examples/showcase/README.md) walks through all of the above on a fictional company's platform (PingDS, PingFederate, PingAM, PingIDM and PingGateway on AWS, with a stage overlay), then plans moving production to a second environment on Azure. Its problems are planted on purpose, and the tests check that the planner finds every one. Terraform is optional (`TERRAFORM=/path/to/terraform examples/showcase/demo.sh` adds `fmt` + `validate`).
+The [showcase](examples/showcase/README.md) walks through all of the above on a fictional company's platform (PingDS, PingFederate, PingAM, PingIDM and PingGateway on AWS, with a stage overlay, and a warm standby being built on Google Cloud), then plans moving production to a second environment on Azure. Its problems are planted on purpose, and the tests check that the planner finds every one. Terraform is optional (`TERRAFORM=/path/to/terraform examples/showcase/demo.sh` adds `fmt` + `validate`).
 
 ## Where it stands
 
-**Working and tested (1081 tests):** the governed store with versioned schema upgrades and full history; every report, search and guardrail above; rendering for every adapter listed; the directory-configuration, access-log, PingFederate, PingAM, PingIDM and PingGateway importers, the AWS and Azure importers (Terraform state, CLI output, native templates), the Linux host, Kubernetes manifest and CI pipeline importers; the census of values copied into files; overlays and overrides; keys and secrets across five secret stores; captured files and bundles; custom fields and record types; migration workspaces, the planner and the migration runner in both directions. The rendered Terraform passes `terraform validate` against the AWS and Azure provider schemas.
+**Working and tested (1229 tests):** the governed store with versioned schema upgrades and full history; every report, search and guardrail above; rendering for every adapter listed; the directory-configuration, access-log, PingFederate, PingAM, PingIDM and PingGateway importers, the AWS, Azure and Google Cloud importers (Terraform state, CLI output and Cloud Asset Inventory, native templates for AWS and Azure), the Linux host, Kubernetes manifest and CI pipeline importers; the values-free data profile of a directory's user data; observability intent (alert rules, log routes with retention obligations, canaries) and what AWS, Azure and Google Cloud monitoring runs of it; the census of values copied into files; overlays and overrides; keys and secrets across six secret stores; captured files and bundles; custom fields and record types; migration workspaces, the planner and the migration runner in both directions. The rendered AWS and Azure Terraform passes `terraform validate` against the provider schemas; the Google Cloud Terraform follows the `hashicorp/google` 8.x schema and is validated with the rest in milestone 7.2.
 
 **Not yet verified:** rendered product configuration against real product instances (PingDS `dsconfig`/`setup`, PingFederate Admin API payloads, which are an illustrative subset today, PingAM, PingIDM, PingGateway), and `terraform plan` against real accounts. See [what's verified](examples/showcase/README.md#whats-verified-and-what-isnt).
 
-**Next:** stack coverage (path 5), after PingFederate depth, hidden automation, host baselines and Kubernetes workloads: messaging and external services, the data profile, observability intent, and the rest of the cloud estate (IAM, edge, data and backup, governance). What is covered and what is still a gap, subsystem by subsystem: [`documentation/STACK.md`](documentation/STACK.md) §21.
+**Next:** stack coverage (path 5), after PingFederate depth, hidden automation, host baselines and Kubernetes workloads, messaging and external services, the data profile, observability intent and a Google Cloud adapter at parity with AWS and Azure: the rest of the cloud estate on all three clouds (IAM and the admin plane, edge, network depth, data and backup, governance). What is covered and what is still a gap, subsystem by subsystem: [`documentation/STACK.md`](documentation/STACK.md) §21.
 
 ## Documentation
 

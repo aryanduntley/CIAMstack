@@ -1,0 +1,5 @@
+environment  captured  entries  password schemes                                          last login                                                password age                                             locked  disabled  pending  kba  groups  empty groups  largest group  dangling members  largest entry
+-----------  --------  -------  --------------------------------------------------------  --------------------------------------------------------  -------------------------------------------------------  ------  --------  -------  ---  ------  ------------  -------------  ----------------  -------------
+source/prod  20260920  255      PBKDF2-HMAC-SHA256=217, PBKDF2-HMAC-SHA512=5, SSHA512=24  <30d=9, 30-90d=14, 90-365d=70, 1-2y=83, >2y=33, never=37  <30d=6, 30-90d=11, 90-365d=58, 1-2y=76, >2y=89, never=6  6       8         11       37   3       1             3              1                 566
+(1 rows)
+exit 0

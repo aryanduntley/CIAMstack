@@ -2,9 +2,10 @@
 import datetime as dt
 
 from ...core.directory import children, follow, get, gtime_date, one, rdn_value, referrers, values
+from ...core.environment import environment_of
 from ...core.findings import findings, merge_findings, owner_label, responsible
 from ...core.naming import env_label
-from .credentials import binding_for, credentials, environment_of, material_bindings
+from .credentials import binding_for, credentials, material_bindings
 from .naming import CERTIFICATES
 
 # attributes through which an entry depends on a certificate (integrations; service names presenting it; host

@@ -2,7 +2,7 @@ import base64
 
 import pytest
 
-from opsdir.core.interchange.ldif import LdifRecord, fold, parse, write_entry
+from opsdir.core.interchange.ldif import LdifRecord, content_entries, fold, parse, write_entry
 
 
 def test_parse_content_records_with_comments_folding_and_base64():
@@ -62,3 +62,14 @@ def test_write_then_parse_round_trips(value):
     (r,) = parse(write_entry("cn=a,dc=x", ("top",), attrs))
     assert r.dn == "cn=a,dc=x"
     assert r.attrs == {"objectClass": ("top",), **attrs}
+
+
+def test_directory_data_is_streamed_tolerantly():
+    lines = iter(("version: 1\n", "\n", "# ann\n", "dn: uid=ann,dc=x\n", "objectClass: inetOrgPerson\n",
+                  "cn;lang-fr: Anne\n", "CN: Ann\n", f"jpegPhoto:: {base64.b64encode(bytes((255, 216))).decode()}\n",
+                  "description: one\n", "  two\n", "labeledURI:< file:///etc/passwd\n", "userPassword:: !!\n",
+                  "\n", "search: 2\n", "result: 0 Success\n"))
+    (dn, attrs), = content_entries(lines)
+    assert dn == "uid=ann,dc=x"
+    assert attrs == {"objectclass": ("inetOrgPerson",), "cn": ("Anne", "Ann"), "jpegphoto": (bytes((255, 216)),),
+                     "description": ("one two",), "labeleduri": (b"",), "userpassword": (b"",)}

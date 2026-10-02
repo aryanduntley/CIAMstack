@@ -8,7 +8,7 @@ what the record alone can tell: truststore additions it can't reproduce, names p
 runs servers of without a recorded baseline, and a target's compute that is less safe or less spread than the source's.
 """
 from ...core.directory import children, get, is_a, one, rdn_value, values
-from ...core.environment import servers_with_role
+from ...core.environment import environment_of, servers_with_role
 from ...core.findings import findings, merge_findings, responsible
 from ...core.naming import env_label
 from .naming import BASELINES
@@ -47,11 +47,6 @@ def baseline_rows(d, dn=None):
              "; ".join(values(b, "ciamPinnedHost")),
              ", ".join(rdn_value(s) for s in (get(d, x) for x in values(b, "ciamFoundOn")) if s))
             for b in baselines(d)]
-
-
-def environment_of(e):
-    """The DN of the environment a binding belongs to."""
-    return e.dn.split(",ou=bindings,", 1)[1]
 
 
 def compute_groups(m):

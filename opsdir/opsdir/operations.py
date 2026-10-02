@@ -8,7 +8,7 @@ accepts (an approved change record). Effects are the store's; everything else is
 """
 from typing import NamedTuple
 
-from .connectors import capture as capturemod, importing, migration, plan as planmod, reports, workspace
+from .connectors import capture as capturemod, importing, migration, plan as planmod, profiling, reports, workspace
 from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, schema_sync, store_parts
 from .connectors.render import render_env
 from .connectors.stack import STATUS_HEADERS, stack_rows
@@ -137,6 +137,14 @@ def preview_census(conn, files, replace=False):
     scan removes)."""
     changes, notices = capturemod.census_changes(db.load_directory(conn), files, replace=replace)
     return Preview("census", tuple(changes), tuple(notices))
+
+
+def data_profile(lines, label, as_of, captured, definitions=()):
+    """The profile file (JSON text) of environment 'cloud/env's directory data, an LDIF line stream read once: counts
+    only, nothing the lines hold is kept. definitions: the estate's own terms (NAME=ATTRIBUTE[=VALUE]; ValueError
+    names those that aren't). Needs no connection: it runs wherever the directory can be read; the file is recorded
+    with preview_import('ldap/data-profile', ...)."""
+    return profiling.profile_file(lines, label, as_of, captured, definitions)
 
 
 def preview_import(conn, spec, files, at=None):

@@ -1,0 +1,308 @@
+{
+  "environment": "env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+  "provider": "gcp",
+  "unbound_roles": [],
+  "files": {
+    "am/global/Realms/partners.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "81d7d7515ff9d35b54fdf406cde579efe7e0ed11ca540dd4988fa44ac739fd07"
+    },
+    "am/realms/root-partners/Applications/partner-apps.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "36b35c84cf5fec41475dc1242aecf43d9c22d3627981df4483265983c869e605"
+    },
+    "am/realms/root-partners/AuthTree/PartnerLogin.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "d7eeeb1eb97ffa52274fe7d4709e5071762c770414d6d741a1805aaa8cc23943"
+    },
+    "am/realms/root-partners/DataStoreDecisionNode/5e1d0c9b-0004-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "ee251eda445b48183fde1e32b4bbeef3270ba1ef0e68d169e6b2c4686227d1ea"
+    },
+    "am/realms/root-partners/OAuth2Clients/partner-portal.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "ee10b46182ca98d2f205437a21fd2b9898931ddb5f3ffda99d2b638ad1263631"
+    },
+    "am/realms/root-partners/OneTimePasswordCollectorDecisionNode/5e1d0c9b-0007-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "76ab84cfa9c8493bd0fb84667724c5cb8e8076064b9abed292c224f02af4185b"
+    },
+    "am/realms/root-partners/OneTimePasswordGeneratorNode/5e1d0c9b-0005-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "a7e8dfa24f6ea4d60c4cd33884ff1751acd303398e2601a4266bdedef83bc4a3"
+    },
+    "am/realms/root-partners/OneTimePasswordSmtpSenderNode/5e1d0c9b-0006-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "313af4f0b11c12400316ed48c1c830f943a594b462b2eefca6a093f21888e836"
+    },
+    "am/realms/root-partners/PageNode/5e1d0c9b-0001-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "b004e0719a07b6983dd9efb570f6f6e28cbaf370f25fe41586df100ff375a963"
+    },
+    "am/realms/root-partners/PasswordCollectorNode/5e1d0c9b-0003-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "9c5e9949274792117247f9e3997949048122cdc42c3cd5894930ed872f912316"
+    },
+    "am/realms/root-partners/Policies/partner-portal-access.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "0afcecea68f13b1a223478ad14c360b7522a70b84af3fdd3b12e2e3e982f94fb"
+    },
+    "am/realms/root-partners/UsernameCollectorNode/5e1d0c9b-0002-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "5b4ef2dc500317b2ef3a5c42cb81045ba988138a390b811dd24379535da4bf61"
+    },
+    "ds/acis.ldif": {
+      "scope": "environment-neutral",
+      "format": "ldif",
+      "sha256": "48d21fe0ad6ed3587aa7a6c9dc64cf4dd32e27e975a7f01c04b2806e5d884b82"
+    },
+    "ds/dsconfig.batch": {
+      "scope": "environment-neutral",
+      "format": "dsconfig-batch",
+      "sha256": "e48e1c229c468d9330727b496754c7bda5c92ef9e3969da4a6a552184862f9fb"
+    },
+    "ds/setup-ds-1.sh": {
+      "scope": "environment-specific",
+      "format": "shell",
+      "sha256": "10245e88a054f281a311ad201976ce916cacf7d7a88edc021c7759037d9e49e4"
+    },
+    "ds/setup-ds-2.sh": {
+      "scope": "environment-specific",
+      "format": "shell",
+      "sha256": "dd40d340b95f06ac94e8726b2304de22269dde170530c089e3bfac4ffe3419f5"
+    },
+    "files/am/realms/root-partners/OAuth2Provider/OAuth2Provider.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "captured": true,
+      "sha256": "1808094cf7dab551ce36b7684a2978599c56c8854e2c698a51f306b1d8db9fac"
+    },
+    "files/pingfederate/bin/run.properties": {
+      "scope": "environment-specific",
+      "format": "java-properties",
+      "captured": true,
+      "sha256": "0fa17bbede0845f448cb347961ff7d31b5aaf0cfb634b33b17c1525deab358b3"
+    },
+    "files/pingfederate/server/default/data/atm/default-atm.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "captured": true,
+      "sha256": "5d64b31420d4627260d1bd2cf0b9dd3bdea95d85f02350aa7bc5bb115da37904"
+    },
+    "files/pinggateway/config/admin.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "captured": true,
+      "sha256": "416d3e7721a0ff94123158e9744486c99566decd99382d98a1f3f165becf81e1"
+    },
+    "files/pinggateway/config/config.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "captured": true,
+      "sha256": "bf953996c739c80ae2317a6018f25d5746b718e382d38df6ef909fb0b9ab5a50"
+    },
+    "files/pingidm/conf/audit.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "captured": true,
+      "sha256": "6946e9fa32350e6dde16047ae678192573d8eca0688961b0a510811e011864f0"
+    },
+    "ldap/dit.ldif": {
+      "scope": "environment-neutral",
+      "format": "ldif",
+      "sha256": "6b13c8b376f14ea90c12cc4a46c436fe0a83b56351810d7afbb78886eb2002cd"
+    },
+    "ldap/schema.ldif": {
+      "scope": "environment-neutral",
+      "format": "ldif",
+      "sha256": "ebe0e8a50905a8bb95003372251836c2a30bd4c8436ba59ac8ad56b8273fc017"
+    },
+    "oidc/clients/mobile-ops.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "92e59f02f4d45b2c44e386086f6204a2f331e7ed77147f907417b1d224b2462e"
+    },
+    "oidc/clients/partner-portal.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "da4836800e10d2be1c5c7eb39ab90604278c0653d58097f4c68beefad8c07aaa"
+    },
+    "oidc/clients/reports-api.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "61235e88f367a8e677527038d57eeb01feb7b3aefb2327a35dfd77084ab35bda"
+    },
+    "oidc/clients/tech-pubs.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "9806619723885da5108609dd53ab1edb614a41a2bcc3adef9f177bd8ae8dd156"
+    },
+    "oidc/discovery/partners.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "6d76d8d85f20ac6ce2fb074734d06d34088b59c4e8dc003e946b8764f8c369d0"
+    },
+    "oidc/discovery/sso.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "a334487beac8c8897703a40a7983df76743ebbce03efd0f131eb78cf191743df"
+    },
+    "pingfederate/access-token-managers.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "7067bac30d836172489d77aba371e4d542812b54e248da80dd479f66be73654c"
+    },
+    "pingfederate/auth-server-settings.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "153cbf990240295ae02df11d5a6f6c1ca911f3bd4aeb9dde608af6ce63364ae5"
+    },
+    "pingfederate/authentication-policies.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "1623a6a79f99247a258d926d8ec62fb3d17b29a3c61d08cabf26f67c1fa211aa"
+    },
+    "pingfederate/authentication-policy-contracts.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "0e524f18a93aa510c329fd7394991ddab3f666fbf16476c487c54a6175265e5e"
+    },
+    "pingfederate/captcha-providers.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "efb486dfddd50774f26420c3e30a63b9d04c93f08e9c30a442185c36805e528c"
+    },
+    "pingfederate/cluster/jgroups.properties": {
+      "scope": "environment-specific",
+      "format": "java-properties",
+      "sha256": "edd71745c98e8babc8aefeebc3afa261a263b18ced2d9504d1352679623c4929"
+    },
+    "pingfederate/data-stores.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "1c2e1f997214afe51a7376d570760e79d5eafe02cba44c15c5776144eb458134"
+    },
+    "pingfederate/idp-adapters.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "465041765f6361e825dff9a7a5823d816a5621cd27fc060a86d14b10bee101c5"
+    },
+    "pingfederate/idp-connections.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "23f5a0a78e550a31fe3724e180f479e965295fa0b7c8f743cca973e59657a214"
+    },
+    "pingfederate/notification-publishers.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "48258e79f8e0437ef8b6241d1002df1e694e0181fd44d9dd3aef5dc7bdf92880"
+    },
+    "pingfederate/oidc-clients.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "9916e05b722f67db0e8fd449a47e9000f0e597630021df4c7091778d426444eb"
+    },
+    "pingfederate/oidc-policies.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "2284c732e9f2ebd13e15a700ae86717cbb2c1da8d8d39c4c548e8a3d9b85c9ce"
+    },
+    "pingfederate/other-resources.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "7a37deaa4c8ab8e76de8f4679124c2a9bfd767ba6cdf96e57cf29d327287d6eb"
+    },
+    "pingfederate/password-credential-validators.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "137dcd19c382a0a1e3a79d16b27d4a8d00504748a8f3f1a70ca04654dce8f552"
+    },
+    "pingfederate/sp-connections.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "dbb151dfcbf0d748796110c370accdea19c6d06f15ef5e5bcf5105c61198c2d5"
+    },
+    "pinggateway/routes/partner-portal.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "cd1beac9ef8c5d82f87547ed1f8f3865b8e86ca0ae12aa7cbda38ff57e0f096f"
+    },
+    "pingidm/conf/managed.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "cf05c6a125025cd00c1301cb987f030028906e57bc08770a2993ce40452ce23c"
+    },
+    "pingidm/conf/provisioner.openicf-hrdb.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "bc6ba7b19fdc756297c2bff8a46991537aa98a4d54b6db590d9e4dbd59b221c2"
+    },
+    "pingidm/conf/provisioner.openicf-ldap.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "b269205181d3ebee0f62d79d0a3c7992887bed93fd30c10855c390e054009bf7"
+    },
+    "pingidm/conf/schedule-reconcile-hr.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "0e5edb2672f3380227d325e64bc900a1608a6f32c8d0f4667a7939b7a228a6d8"
+    },
+    "pingidm/conf/sync.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "3d8cd9c31ffd2d5814c3c34e18ba71d193acfd7ee94e776f0e0bb5343e584318"
+    },
+    "saml/idp/partners.xml": {
+      "scope": "environment-neutral",
+      "format": "xml",
+      "sha256": "6c2188a9f180ca6dba6427fb9833f99c29dad54245983b0b7f978800f2ec111a"
+    },
+    "saml/idp/sso.xml": {
+      "scope": "environment-neutral",
+      "format": "xml",
+      "sha256": "e901982fd5b19b941c6312cc54e7d882ff5e879bd7ce04fa438b7ebd16015385"
+    },
+    "saml/partner-idp/harbor-mro-federation.xml": {
+      "scope": "environment-neutral",
+      "format": "xml",
+      "sha256": "f6ca69c84de46d746e4f70819cf87872436e17aad0b31a557c403277a51529c6"
+    },
+    "saml/partner-idp/skyline-air-federation.xml": {
+      "scope": "environment-neutral",
+      "format": "xml",
+      "sha256": "6a7c98a9160a8c56c5952d837594aa3ed09c53eca16029e6882c4570b0429ddd"
+    },
+    "saml/sp/customer-portal.xml": {
+      "scope": "environment-neutral",
+      "format": "xml",
+      "sha256": "d8e8a6fb1914c0a2780140f061b15a2f168c74a63cdb78e238f7b9f0e9d3d846"
+    },
+    "saml/sp/supplier-portal.xml": {
+      "scope": "environment-neutral",
+      "format": "xml",
+      "sha256": "6bb13c0304722ca9b2942a2ef00ea6fd2648469d599edcdd4c48e099f6b80d37"
+    },
+    "terraform/main.tf": {
+      "scope": "environment-specific",
+      "format": "hcl",
+      "sha256": "5d4b77fd3d0d9e393ee936b8878bb9d2b98f80227cbfc790502aed1bc9183b4b"
+    },
+    "terraform/providers.tf": {
+      "scope": "environment-specific",
+      "format": "hcl",
+      "sha256": "4f6532b48a2c8ba7a18fe3dbdf91ae3420814fadd0a5ca30e76d769966e49e53"
+    }
+  }
+}

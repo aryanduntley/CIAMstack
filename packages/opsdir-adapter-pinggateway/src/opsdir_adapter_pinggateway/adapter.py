@@ -21,4 +21,4 @@ ADAPTER = Adapter(name="pinggateway", kind="product", applies=applies, required_
                   vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES}, schema=FRAGMENT,
                   formats=FORMATS,
                   products=(("PingGateway", ">=2023,<2027"), ("ForgeRock Identity Gateway", ">=7,<8")),
-                  secret_patterns=(), importers=(GATEWAY_CONFIG,))
+                  secret_patterns=(), importers=(GATEWAY_CONFIG,), profile_terms=None)

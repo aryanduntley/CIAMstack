@@ -84,6 +84,11 @@ def published_role(d, host):
     return next((one(b, "ciamBindingRole") for b in names), None)
 
 
+def environment_of(binding):
+    """The DN of the environment a binding belongs to."""
+    return binding.dn.split(",ou=bindings,", 1)[1]
+
+
 def server_location(server):
     """'cloud/env' of a server entry."""
     parts = dict(p.split("=", 1) for p in server.dn.split(",")[1:3])
@@ -113,6 +118,13 @@ def by_role(m, role):
 def one_role(m, role):
     found = by_role(m, role)
     return found[0] if found else None
+
+
+def bound_nowhere(roles, *models):
+    """The roles (None and empty ones skipped) that none of the environment models binds: what a planner check blocks
+    on when nothing says where something lives (a role the source binds and the target doesn't is the core role
+    check's)."""
+    return tuple(r for r in roles if r and all(one_role(m, r) is None for m in models))
 
 
 def of_class(m, oc):

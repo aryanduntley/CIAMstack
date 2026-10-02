@@ -1,6 +1,8 @@
 """directory domain schema fragment: its attribute types and object classes (OIDs pinned by number)."""
 from ...core.standard import OVERRIDABLE, AttributeDef, ClassDef, fragment
 
+COUNTED = (("X-PATTERN", "^[^=]+=[0-9]+$"),)      # a distribution's value: name=count
+
 ATTRIBUTES = (
     AttributeDef(3, 'snap', 'string', 'observed', True,
                  'RDN of an observed configuration snapshot'),
@@ -101,6 +103,42 @@ ATTRIBUTES = (
                  'User-directory attribute records a user-directory object class requires'),
     AttributeDef(139, 'ciamLdapMay', 'dn', 'intent', False,
                  'User-directory attribute records a user-directory object class allows'),
+    # ------------------------------------------------------------------ data profile (counts only, never a value)
+    AttributeDef(289, 'ciamProfiledEnvironment', 'dn', 'observed', True,
+                 'The environment whose user directory a data profile describes'),
+    AttributeDef(290, 'ciamEntryCount', 'int', 'observed', True,
+                 'Entries counted: all the profiled entries, or those directly under a branch'),
+    AttributeDef(291, 'ciamClassCount', 'string', 'observed', False,
+                 'Entries of one object class, as name=count (inetOrgPerson=812000)', COUNTED),
+    AttributeDef(292, 'ciamHashSchemeCount', 'string', 'observed', False,
+                 'Password values hashed with one scheme, as SCHEME=count ({SSHA512} -> SSHA512; none: no scheme '
+                 'prefix, possibly clear text)', COUNTED),
+    AttributeDef(293, 'ciamLastLoginAge', 'string', 'observed', False,
+                 'Entries by time since their last login, as bucket=count (<30d, 30-90d, 90-365d, 1-2y, >2y, never, '
+                 'unreadable)', COUNTED),
+    AttributeDef(294, 'ciamPasswordAge', 'string', 'observed', False,
+                 'Entries by time since their password last changed, as bucket=count (the same buckets)',
+                 COUNTED),
+    AttributeDef(295, 'ciamLockedCount', 'int', 'observed', True, 'Entries locked out (pwdAccountLockedTime, ...)'),
+    AttributeDef(296, 'ciamDisabledCount', 'int', 'observed', True, 'Entries disabled by an administrator'),
+    AttributeDef(297, 'ciamPendingCount', 'int', 'observed', True, 'Entries pending registration or activation'),
+    AttributeDef(298, 'ciamKbaCount', 'int', 'observed', True,
+                 'Entries holding knowledge-based authentication (challenge questions)'),
+    AttributeDef(299, 'ciamGroupCount', 'int', 'observed', True,
+                 'Static groups (groupOfNames, groupOfUniqueNames, ...)'),
+    AttributeDef(300, 'ciamEmptyGroupCount', 'int', 'observed', True, 'Static groups without members'),
+    AttributeDef(301, 'ciamDanglingMemberCount', 'int', 'observed', True,
+                 'Distinct member DNs groups name that are not among the profiled entries'),
+    AttributeDef(302, 'ciamLargestGroup', 'int', 'observed', True, 'Members of the largest static group'),
+    AttributeDef(303, 'ciamLargestEntryBytes', 'int', 'observed', True, 'Size of the largest entry (names and values)'),
+    AttributeDef(304, 'ciamHolderCount', 'int', 'observed', True, 'Entries holding an attribute'),
+    AttributeDef(305, 'ciamMostValues', 'int', 'observed', True, 'The most values one entry holds of an attribute'),
+    AttributeDef(306, 'ciamLargestValueBytes', 'int', 'observed', True, 'Size of the largest value of an attribute'),
+    AttributeDef(307, 'ciamProfiledAttribute', 'dn', 'observed', True,
+                 'The ou=user-schema record describing a profiled attribute (absent: the record describes none)'),
+    AttributeDef(308, 'ciamProfiledBranch', 'string', 'observed', True,
+                 'The container a branch profile counts the entries of: its DN with every RDN that is not a '
+                 "container's masked (uid=*,ou=people,...); a pattern, not a reference to an entry"),
 )
 CLASSES = (
     ClassDef(16, 'ciamBackend', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamBackendType', 'ciamBaseDn'),
@@ -137,6 +175,18 @@ CLASSES = (
     ClassDef(34, 'ciamUserObjectClass', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamLdapName', 'ciamLdapClassKind'),
              ('ciamLdapOid', 'ciamLdapSuperior', 'ciamLdapMust', 'ciamLdapMay', 'ciamPurpose'),
              'Record describing a user-directory object class'),
+    ClassDef(59, 'ciamDataProfile', 'ciamObject', 'STRUCTURAL',
+             ('cn', 'ciamProfiledEnvironment', 'ciamCapturedAt', 'ciamEntryCount'),
+             ('ciamHashSchemeCount', 'ciamLastLoginAge', 'ciamPasswordAge', 'ciamLockedCount', 'ciamDisabledCount',
+              'ciamPendingCount', 'ciamKbaCount', 'ciamGroupCount', 'ciamEmptyGroupCount', 'ciamDanglingMemberCount',
+              'ciamLargestGroup', 'ciamLargestEntryBytes'),
+             "The shape of an environment's user data, values-free: counts and distributions"),
+    ClassDef(60, 'ciamBranchProfile', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamProfiledBranch', 'ciamEntryCount'),
+             ('ciamClassCount',),
+             'Entries directly under one container of the user directory, by object class'),
+    ClassDef(61, 'ciamAttributeProfile', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamLdapName', 'ciamHolderCount'),
+             ('ciamMostValues', 'ciamLargestValueBytes', 'ciamProfiledAttribute'),
+             'How one attribute is used in the user data: holders, most values, largest value'),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

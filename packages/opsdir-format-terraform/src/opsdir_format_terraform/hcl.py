@@ -66,3 +66,8 @@ def block(kind, labels, body, indent=0):
 
 def ref(expr):
     return "${" + expr + "}"
+
+
+def unbound_comments(roles):
+    """HCL comment lines naming each required role an environment doesn't bind."""
+    return "".join(f"# UNBOUND: required role '{r}' has no binding in this environment\n" for r in roles)

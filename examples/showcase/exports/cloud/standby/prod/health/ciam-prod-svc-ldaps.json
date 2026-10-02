@@ -1,0 +1,30 @@
+[
+  {
+    "backend": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/instanceGroups/ciam-prod-svc-ldaps-us-central1-a",
+    "status": {
+      "kind": "compute#backendServiceGroupHealth",
+      "healthStatus": [
+        {
+          "instance": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a/instances/ds-1",
+          "ipAddress": "10.70.1.11",
+          "port": 1636,
+          "healthState": "HEALTHY"
+        }
+      ]
+    }
+  },
+  {
+    "backend": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-b/instanceGroups/ciam-prod-svc-ldaps-us-central1-b",
+    "status": {
+      "kind": "compute#backendServiceGroupHealth",
+      "healthStatus": [
+        {
+          "instance": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-b/instances/ds-2",
+          "ipAddress": "10.70.1.12",
+          "port": 1636,
+          "healthState": "HEALTHY"
+        }
+      ]
+    }
+  }
+]

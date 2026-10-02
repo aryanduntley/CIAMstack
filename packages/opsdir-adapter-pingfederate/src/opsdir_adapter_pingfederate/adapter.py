@@ -4,6 +4,7 @@ from opsdir.core.directory import one
 from opsdir_base_oidc.render import FORMATS as OIDC_FORMATS
 from opsdir_base_saml.render import FORMATS as SAML_FORMATS
 from .checks import check_cluster, check_data_stores, check_references
+from .discovery import CHOICES
 from .importer import BULK
 from .naming import SERVER_ROLES
 from .nodes import NODE_FILES
@@ -28,8 +29,9 @@ ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required
                   renders="PingFederate data stores, plugin instances, cluster discovery and other resources for each "
                           "environment",
                   neutral_label="PingFederate",
-                  vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES}, schema=FRAGMENT,
-                  formats=(("pingfederate/*.json", "json"), ("pingfederate/cluster/*.xml", "xml"), *SAML_FORMATS,
-                           *OIDC_FORMATS),
+                  vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES,
+                              "pingfedDiscoveryProtocol": CHOICES}, schema=FRAGMENT,
+                  formats=(("pingfederate/*.json", "json"), ("pingfederate/cluster/*.properties", "java-properties"),
+                           *SAML_FORMATS, *OIDC_FORMATS),
                   products=(("PingFederate", ">=11,<13"),),
-                  secret_patterns=SECRET_PATTERNS, importers=(BULK, NODE_FILES))
+                  secret_patterns=SECRET_PATTERNS, importers=(BULK, NODE_FILES), profile_terms=None)

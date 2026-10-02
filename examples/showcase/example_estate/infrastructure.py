@@ -1,10 +1,12 @@
 """Infrastructure fixture data: the current AWS environment (40-env-source), its stage environment (42-env-source-
 stage: an overlay of production that shares its network and overrides a few values), the target environment being
-built (45-env-target, with planted gaps), and external allowlists that hold our addresses (80-external-allowlists)."""
+built (45-env-target, with planted gaps), a warm standby on Google Cloud being built (47-env-standby), and external
+allowlists that hold our addresses (80-external-allowlists)."""
 from types import MappingProxyType
 
-from .common import AWS, AZ, CON, DECL, ENVS, INTS, XA, cert, chg, owner, spec, t
+from .common import AWS, AZ, CON, DECL, ENVS, GCP, INTS, XA, cert, chg, owner, spec, t
 from .custom import RESIDENCY
+from .observability import MONITORING
 
 SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password", "ds-tls-keystore",
                 "sso-tls-keystore", "pf-signing-key", "pf-admin-password", "am-admin-password", "am-keystore",
@@ -67,6 +69,8 @@ SOURCE = MappingProxyType({
                  "arn:aws:ses:us-east-1:111122223333:identity/example-aero.test", "TRUE", "TRUE", "reject"),),
     # event stream carriers: (name, binding role, provider ref, kind)
     "streams": (("audit-bus", "audit-events", "arn:aws:events:us-east-1:111122223333:event-bus/ciam-audit", "bus"),),
+    # alert channels, log destinations, and the alarms and checks CloudWatch runs (observability)
+    "monitoring": MONITORING["source"],
     # compute groups: (name, binding role, server role, provider ref, image, size, min, desired, max, zones, tokens)
     "compute": (("asg-pf-engine", "compute-pf-engine", "pf-engine",
                  "arn:aws:autoscaling:us-east-1:111122223333:autoScalingGroup:6d4c1f0e-0000-4000-8000-00000000a001:"
@@ -130,6 +134,8 @@ TARGET = MappingProxyType({
     },
     "backup": None,   # deliberately missing: the demo's migration plan should catch it
     "discovery": None,   # deliberately missing too: the nodes' tcp.xml discovery is cloud-specific (S3 on AWS)
+    # alert channels, log destinations, alarms and checks Azure Monitor runs (planted: audit retention, no disk alarm)
+    "monitoring": MONITORING["target"],
     # planted: the domain's Communication Services identity isn't DKIM-verified yet and its DMARC is weaker; no bus
     # carries the identity audit stream
     "sending": (("mail-acs", "mail-sending", "example-aero.test",
@@ -152,6 +158,64 @@ TARGET = MappingProxyType({
                 ("am-2", "am", "am-2.az.internal.example-aero.test", "10.60.3.22", "2", "Standard_D2s_v5", IMG + "pingam-7.5.1-rhel9", "snet-am", AM_V),
                 ("idm-1", "idm", "idm-1.az.internal.example-aero.test", "10.60.6.21", "1", "Standard_D2s_v5", IMG + "pingidm-7.5.0-rhel9", "snet-idm", IDM_V),
                 ("ig-1", "ig", "ig-1.az.internal.example-aero.test", "10.60.10.21", "1", "Standard_D2s_v5", IMG + "pinggateway-2024.11.0-rhel9", "snet-ig", IG_V)],
+})
+# A warm standby on Google Cloud: production's directory replicas join it over a VPN, the rest stands ready. Network
+# and subnetworks belong to the landing zone's Shared VPC host project; the environment's own project holds the rest.
+PROJECT, HOST = "projects/example-aero-ciam-standby", "projects/example-aero-net"
+GIMG = "projects/example-aero-images/global/images/"
+STANDBY = MappingProxyType({
+    "stack": (("provider", "gcp"), ("directory", "pingds"), ("federation", "pingfederate"), ("access", "pingam"),
+              ("identity-management", "pingidm"), ("gateway", "pinggateway")),
+    "net": ("vpc", f"{HOST}/global/networks/ciam-standby", "10.70.0.0/16"), "pinned_priorities": True,
+    "subnets": [(f"subnet-{r}", f"subnet-{r}", f"{HOST}/regions/us-central1/subnetworks/ciam-standby-{r}", cidr, None)
+                for r, cidr in (("ds", "10.70.1.0/24"), ("pf", "10.70.2.0/24"), ("am", "10.70.3.0/24"),
+                                ("idm", "10.70.6.0/24"), ("ig", "10.70.10.0/24"))],
+    "services": [("svc-ldaps", "ds-ldaps-service", "ldap.id.example-aero.test", "id.example-aero.test",
+                  "ciam-standby-private", "ds", [1636], "10.70.1.100", None, "ds-ldaps-2026"),
+                 ("svc-sso", "pf-sso-service", "sso.example-aero.test", "example-aero.test",
+                  "example-aero-public", "pf-engine", [443], "198.51.100.90", "ciam-standby-sso", "sso-tls-2026"),
+                 ("svc-login", "am-service", "login.example-aero.test", "example-aero.test",
+                  "example-aero-public", "am", [443], "198.51.100.91", "ciam-standby-login", None),
+                 ("svc-apps", "ig-service", "apps.example-aero.test", "example-aero.test",
+                  "example-aero-public", "ig", [443], "198.51.100.92", "ciam-standby-apps", None)],
+    "fw": [("fw-pf-ds-svc", "fw-consumer-pf-ds-svc", ["10.70.2.0/24"], [1636], "ds", "pf-ds-svc", None),
+           ("fw-customer-portal", "fw-consumer-customer-portal-svc", ["10.30.8.0/24"], [1636], "ds", "customer-portal-svc", None),
+           ("fw-supplier-portal", "fw-consumer-supplier-portal-svc", ["10.31.2.0/24"], [1636], "ds", "supplier-portal-svc", None),
+           ("fw-idm-sync", "fw-consumer-idm-sync", ["10.70.6.0/24"], [1636], "ds", "idm-sync", None),
+           ("fw-replication", "fw-replication", ["10.70.1.0/24", "10.20.0.0/16"], [8989], "ds", None, None),
+           ("fw-admin", "fw-admin", ["10.70.9.0/28"], [4444], "ds", None, None),
+           ("fw-sso-public", "fw-sso-public", ["0.0.0.0/0"], [443], "pf-engine", None, None),
+           ("fw-login-public", "fw-login-public", ["0.0.0.0/0"], [443], "am", None, None),
+           ("fw-apps-public", "fw-apps-public", ["0.0.0.0/0"], [443], "ig", None, None)],
+    "egress": ("example-aero-ciam-standby/us-central1/ciam-standby-router/ciam-standby-nat", "203.0.113.150/32"),
+    "secret": lambda role: f"gcp-sm://{PROJECT}/secrets/{role}",
+    "key": (f"gcp-kms://{PROJECT}/locations/us-central1/keyRings/ciam/cryptoKeys/disk", None),
+    # the material production's replicas need is carried over, as the target's is
+    "key_facts": {
+        **{role: {"ciamMaterialFrom": f"cn=secret-{role},ou=bindings,{AWS}"}
+           for role in ("ds-deployment-id", "ds-deployment-password", "am-keystore", "idm-keystore",
+                        "pf-captcha-secret")},
+        "disk-encryption": {"ciamProtectionLevel": "hsm", "ciamAutoRotate": "TRUE"},
+    },
+    "backup": "gs://example-aero-ciam-standby-ds-backups",
+    "discovery_protocol": "TCPPING",       # no Cloud Storage protocol for PingFederate: the nodes are listed
+    "streams": (("audit-topic", "audit-events", f"{PROJECT}/topics/ciam-audit", "topic"),),
+    "monitoring": MONITORING["standby"],
+    "compute": (("mig-pf-engine", "compute-pf-engine", "pf-engine",
+                 f"{PROJECT}/regions/us-central1/instanceGroupManagers/ciam-pf-engine",
+                 GIMG + "pingfederate-12-1-4-rhel9", "n2-standard-2", 2, 2, 4, ("us-central1-a", "us-central1-b"),
+                 None),),
+    "interconnect": ("link-source", "Cloud VPN to AWS (landing-zone managed)", AWS, ["10.20.0.0/16"]),
+    "servers": [("ds-1", "ds", "ds-1.gcp.internal.example-aero.test", "10.70.1.11", "us-central1-a", "n2-standard-4", GIMG + "pingds-7-5-1-rhel9", "subnet-ds", DS_V),
+                ("ds-2", "ds", "ds-2.gcp.internal.example-aero.test", "10.70.1.12", "us-central1-b", "n2-standard-4", GIMG + "pingds-7-5-1-rhel9", "subnet-ds", DS_V),
+                ("pf-engine-1", "pf-engine", "pf-engine-1.gcp.internal.example-aero.test", "10.70.2.21", "us-central1-a", "n2-standard-2", GIMG + "pingfederate-12-1-4-rhel9", "subnet-pf", PF_V),
+                ("pf-engine-2", "pf-engine", "pf-engine-2.gcp.internal.example-aero.test", "10.70.2.22", "us-central1-b", "n2-standard-2", GIMG + "pingfederate-12-1-4-rhel9", "subnet-pf", PF_V),
+                ("pf-admin-1", "pf-admin", "pf-admin-1.gcp.internal.example-aero.test", "10.70.2.10", "us-central1-a", "n2-standard-2", GIMG + "pingfederate-12-1-4-rhel9", "subnet-pf", PF_V),
+                ("am-1", "am", "am-1.gcp.internal.example-aero.test", "10.70.3.21", "us-central1-a", "n2-standard-2", GIMG + "pingam-7-5-1-rhel9", "subnet-am", AM_V),
+                ("idm-1", "idm", "idm-1.gcp.internal.example-aero.test", "10.70.6.21", "us-central1-a", "n2-standard-2", GIMG + "pingidm-7-5-0-rhel9", "subnet-idm", IDM_V),
+                ("ig-1", "ig", "ig-1.gcp.internal.example-aero.test", "10.70.10.21", "us-central1-a", "n2-standard-2", GIMG + "pinggateway-2024-11-0-rhel9", "subnet-ig", IG_V)],
+    # what TCPPING lists: the clustered PingFederate nodes (the source's come from its node files)
+    "nodes": {"pf-engine-1": "CLUSTERED_ENGINE", "pf-engine-2": "CLUSTERED_ENGINE", "pf-admin-1": "CLUSTERED_CONSOLE"},
 })
 ALLOWLISTS = (
     ("mro-dc-egress-to-ldaps", "mro-analytics-team", "MRO data-center egress firewall", "consumer-egress",
@@ -197,8 +261,12 @@ def _bindings(file, env, p):
                     ciamStorageRef=p["backup"], ciamRetentionDays=35),) if p.get("backup") else ()),
             *((spec(file, b("pf-discovery"), ["top", "ciamBackupTarget"], cn="pf-discovery",
                     ciamBindingRole="pf-cluster-discovery", ciamStorageRef=p["discovery"],
-                    description="PingFederate cluster discovery (NATIVE_S3_PING / AZURE_PING storage)"),)
+                    description="PingFederate cluster discovery (NATIVE_S3_PING bucket)"),)
               if p.get("discovery") else ()),
+            *((spec(file, b("pf-discovery"), ["top", "pingfedClusterDiscovery"], cn="pf-discovery",
+                    ciamBindingRole="pf-cluster-discovery", pingfedDiscoveryProtocol=p["discovery_protocol"],
+                    description="PingFederate cluster discovery: the nodes listed (TCPPING)"),)
+              if p.get("discovery_protocol") else ()),
             *(spec(file, b(cn), ["top", "ciamComputeGroup"], cn=cn, ciamBindingRole=role, ciamTargetRole=target,
                    ciamProviderRef=ref, ciamImageRef=image, ciamInstanceSize=size, ciamMinSize=least,
                    ciamDesiredSize=runs, ciamMaxSize=most, ciamSpansZone=list(zones), ciamMetadataTokens=tokens)
@@ -208,6 +276,8 @@ def _bindings(file, env, p):
               for cn, role, domain, ref, dkim, spf, dmarc in p.get("sending") or ()),
             *(spec(file, b(cn), ["top", "ciamStreamBinding"], cn=cn, ciamBindingRole=role, ciamProviderRef=ref,
                    ciamStreamKind=kind) for cn, role, ref, kind in p.get("streams") or ()),
+            *(spec(file, b(cn), ["top", oc], cn=cn, ciamBindingRole=role, **attrs)
+              for oc, cn, role, attrs in p.get("monitoring") or ()),
             *((_interconnect(file, b, *p["interconnect"]),) if p.get("interconnect") else ()))
 
 
@@ -230,17 +300,20 @@ def _stack(file, env, p):
 
 
 def environment(file, env, p):
-    """An environment's bindings, its declared stack, then its servers (placed in bindings by role)."""
+    """An environment's bindings, its declared stack, then its servers (placed in bindings by role; a PingFederate
+    node's operational mode where the environment states it)."""
     b = lambda cn: f"cn={cn},ou=bindings,{env}"  # noqa: E731
+    nodes = p.get("nodes") or {}
     return (*_bindings(file, env, p), *_stack(file, env, p),
-            *(spec(file, f"cn={cn},{env}", ["top", "ciamServer"], cn=cn, ciamServerRole=role, ciamHostname=host,
-                   ciamPrivateIp=ip, ciamZone=zone, ciamInstanceSize=size, ciamImageRef=image, ciamSubnet=b(subnet),
-                   ciamProductVersion=version, ciamOwner=owner("ciam-platform"))
+            *(spec(file, f"cn={cn},{env}", ["top", "ciamServer", *(("pingfedNode",) if cn in nodes else ())], cn=cn,
+                   ciamServerRole=role, ciamHostname=host, ciamPrivateIp=ip, ciamZone=zone, ciamInstanceSize=size,
+                   ciamImageRef=image, ciamSubnet=b(subnet), ciamProductVersion=version,
+                   pingfedOperationalMode=nodes.get(cn), ciamOwner=owner("ciam-platform"))
               for cn, role, host, ip, zone, size, image, subnet, version in p["servers"]))
 
 
 def environments():
-    aws, az = "40-env-source", "45-env-target"
+    aws, az, gcp = "40-env-source", "45-env-target", "47-env-standby"
     return (spec(aws, f"cloud=source,{ENVS}", ["top", "ciamCloud"], cloud="source",
                  ciamCloudProvider="aws", ciamRegion="us-east-1", ciamCloudEnvironment="public", ciamLifecycle="active",
                  description="Primary hosting environment (AWS)"),
@@ -255,7 +328,14 @@ def environments():
             spec(az, AZ, ["top", "ciamEnvironment"], env="prod", ciamLifecycle="building",
                  ciamPlannedCutover=t("2027-01-15"), ciamJoinsDeploymentOf=AWS, ciamOwner=owner("ciam-platform"),
                  xDataResidency=RESIDENCY["target"]),
-            *environment(az, AZ, TARGET), *required_roles(az, AZ))
+            *environment(az, AZ, TARGET), *required_roles(az, AZ),
+            spec(gcp, f"cloud=standby,{ENVS}", ["top", "ciamCloud"], cloud="standby",
+                 ciamCloudProvider="gcp", ciamRegion="us-central1", ciamCloudEnvironment="public",
+                 ciamLifecycle="building", description="Warm standby (Google Cloud)"),
+            spec(gcp, GCP, ["top", "ciamEnvironment"], env="prod", ciamLifecycle="building",
+                 ciamJoinsDeploymentOf=AWS, ciamOwner=owner("ciam-platform"), xDataResidency=RESIDENCY["standby"],
+                 description="Warm standby of production: directory replicas join its deployment over a VPN"),
+            *environment(gcp, GCP, STANDBY))
 
 
 STAGE = f"env=stage,cloud=source,{ENVS}"

@@ -1,7 +1,7 @@
 """Shared names and builders for the Example Aero synthetic estate (a showcase and test fixture).
 
 Everything is fictional: company "Example Aero", partners "Skyline Air" and "Harbor MRO", documentation IP
-ranges (RFC 5737), the AWS documentation account 111122223333, and made-up resource ids.
+ranges (RFC 5737), the AWS documentation account 111122223333, and made-up resource ids and project names.
 """
 import hashlib
 from typing import NamedTuple
@@ -13,6 +13,7 @@ PEOPLE = f"ou=people,{USERS}"
 ENVS = f"ou=environments,{R}"
 AWS = f"env=prod,cloud=source,{ENVS}"
 AZ = f"env=prod,cloud=target,{ENVS}"
+GCP = f"env=prod,cloud=standby,{ENVS}"
 DECL = f"ou=declared,ou=config,{R}"
 OBS = f"ou=observed,ou=config,{R}"
 OWN = f"ou=owners,{R}"

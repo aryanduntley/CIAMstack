@@ -1185,6 +1185,172 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.288 NAME 'ciamConsumedBy' DESC 'Who
  reads a stream (a SIEM, a CRM, a team)' EQUALITY caseIgnoreMatch SYNTAX 1.3
  .6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-O
  RIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.289 NAME 'ciamProfiledEnvironment' D
+ ESC 'The environment whose user directory a data profile describes' EQUALIT
+ Y distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE 
+ X-PORTABILITY 'observed' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.290 NAME 'ciamEntryCount' DESC 'Entr
+ ies counted: all the profiled entries, or those directly under a branch' EQ
+ UALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-POR
+ TABILITY 'observed' X-VALUE-TYPE 'int' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.291 NAME 'ciamClassCount' DESC 'Entr
+ ies of one object class, as name=count (inetOrgPerson=812000)' EQUALITY cas
+ eIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'observed' 
+ X-VALUE-TYPE 'string' X-PATTERN '^[^=]+=[0-9]+$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.292 NAME 'ciamHashSchemeCount' DESC 
+ 'Password values hashed with one scheme, as SCHEME=count ({SSHA512} -> SSHA
+ 512; none: no scheme prefix, possibly clear text)' EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'observed' X-VALUE-TYPE
+  'string' X-PATTERN '^[^=]+=[0-9]+$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.293 NAME 'ciamLastLoginAge' DESC 'En
+ tries by time since their last login, as bucket=count (<30d, 30-90d, 90-365
+ d, 1-2y, >2y, never, unreadable)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4
+ .1.1466.115.121.1.15 X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-PATTE
+ RN '^[^=]+=[0-9]+$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.294 NAME 'ciamPasswordAge' DESC 'Ent
+ ries by time since their password last changed, as bucket=count (the same b
+ uckets)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PO
+ RTABILITY 'observed' X-VALUE-TYPE 'string' X-PATTERN '^[^=]+=[0-9]+$' X-ORI
+ GIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.295 NAME 'ciamLockedCount' DESC 'Ent
+ ries locked out (pwdAccountLockedTime, ...)' EQUALITY integerMatch SYNTAX 1
+ .3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-
+ TYPE 'int' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.296 NAME 'ciamDisabledCount' DESC 'E
+ ntries disabled by an administrator' EQUALITY integerMatch SYNTAX 1.3.6.1.4
+ .1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'in
+ t' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.297 NAME 'ciamPendingCount' DESC 'En
+ tries pending registration or activation' EQUALITY integerMatch SYNTAX 1.3.
+ 6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYP
+ E 'int' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.298 NAME 'ciamKbaCount' DESC 'Entrie
+ s holding knowledge-based authentication (challenge questions)' EQUALITY in
+ tegerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 
+ 'observed' X-VALUE-TYPE 'int' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.299 NAME 'ciamGroupCount' DESC 'Stat
+ ic groups (groupOfNames, groupOfUniqueNames, ...)' EQUALITY integerMatch SY
+ NTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'observed' X-
+ VALUE-TYPE 'int' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.300 NAME 'ciamEmptyGroupCount' DESC 
+ 'Static groups without members' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.14
+ 66.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'int' X-
+ ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.301 NAME 'ciamDanglingMemberCount' D
+ ESC 'Distinct member DNs groups name that are not among the profiled entrie
+ s' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE 
+ X-PORTABILITY 'observed' X-VALUE-TYPE 'int' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.302 NAME 'ciamLargestGroup' DESC 'Me
+ mbers of the largest static group' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1
+ .1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'int'
+  X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.303 NAME 'ciamLargestEntryBytes' DES
+ C 'Size of the largest entry (names and values)' EQUALITY integerMatch SYNT
+ AX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'observed' X-VA
+ LUE-TYPE 'int' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.304 NAME 'ciamHolderCount' DESC 'Ent
+ ries holding an attribute' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.11
+ 5.121.1.27 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'int' X-ORIGI
+ N 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.305 NAME 'ciamMostValues' DESC 'The 
+ most values one entry holds of an attribute' EQUALITY integerMatch SYNTAX 1
+ .3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-
+ TYPE 'int' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.306 NAME 'ciamLargestValueBytes' DES
+ C 'Size of the largest value of an attribute' EQUALITY integerMatch SYNTAX 
+ 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE
+ -TYPE 'int' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.307 NAME 'ciamProfiledAttribute' DES
+ C 'The ou=user-schema record describing a profiled attribute (absent: the r
+ ecord describes none)' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1
+ 466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'dn' X-
+ ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.308 NAME 'ciamProfiledBranch' DESC '
+ The container a branch profile counts the entries of: its DN with every RDN
+  that is not a container\27s masked (uid=*,ou=people,...); a pattern, not a
+  reference to an entry' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.11
+ 5.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-OR
+ IGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.309 NAME 'ciamSignal' DESC 'What an 
+ alert rule watches, named neutrally (replication-delay, ldaps-errors, login
+ -failures, cert-expiry, disk-free, heap-used, ...): each provider renders i
+ ts own metric or query' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.11
+ 5.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIG
+ IN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.310 NAME 'ciamComparison' DESC 'How 
+ an alert rule\27s signal is compared with its threshold' EQUALITY caseIgnor
+ eMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'int
+ ent' X-VALUE-TYPE 'enum:gt|ge|lt|le|eq|ne' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.311 NAME 'ciamThreshold' DESC 'The v
+ alue an alert rule compares its signal with, with its unit (5000 ms, 90 %, 
+ 10 /min)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SIN
+ GLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-PATTERN '^-?[0-9]+
+ (\5C.[0-9]+)?( ?[A-Za-z%/]+)?$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.312 NAME 'ciamEvaluationPeriod' DESC
+  'How long the condition must hold before an alert fires (5m)' EQUALITY cas
+ eIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILIT
+ Y 'intent' X-VALUE-TYPE 'string' X-PATTERN '^[0-9]+(s|m|h|d)$' X-ORIGIN 'op
+ sdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.313 NAME 'ciamAlertRole' DESC 'The b
+ inding role of the channel that delivers an alert in each environment (a to
+ pic, an action group, a paging service)' EQUALITY caseIgnoreMatch SYNTAX 1.
+ 3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYP
+ E 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.314 NAME 'ciamLogKind' DESC 'Which l
+ ogs a route carries: access, audit, error, admin, ...' EQUALITY caseIgnoreM
+ atch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TY
+ PE 'enum:access|audit|error|admin|debug|replication|transaction|other' X-OR
+ IGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.315 NAME 'ciamLogDestinationRole' DE
+ SC 'The binding role of what keeps a route\27s logs in each environment (a 
+ log group, a workspace, a SIEM index)' EQUALITY caseIgnoreMatch SYNTAX 1.3.
+ 6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 
+ 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.316 NAME 'ciamLegalHold' DESC 'Wheth
+ er logs are under legal hold: the source keeps them after a move, whatever 
+ their retention' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 
+ SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.317 NAME 'ciamCheckedService' DESC '
+ The binding role of the service name a synthetic check exercises (each envi
+ ronment its own name)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115
+ .121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGI
+ N 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.318 NAME 'ciamCanaryFlow' DESC 'What
+  a synthetic check does: load the login page, get a token, a SAML sign-in, 
+ an LDAP bind, a health probe' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1
+ 466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:log
+ in-page|oidc-token|saml-sso|ldap-bind|health|other' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.319 NAME 'ciamInterval' DESC 'How of
+ ten a synthetic check runs (5m)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.
+ 1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'strin
+ g' X-PATTERN '^[0-9]+(s|m|h|d)$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.320 NAME 'ciamFeedsAlert' DESC 'The 
+ alert rule a failing synthetic check fires' EQUALITY distinguishedNameMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'intent' X
+ -VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.321 NAME 'ciamChannelKind' DESC 'Wha
+ t delivers alerts in an environment: a topic, an action group, a paging ser
+ vice, ...' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SI
+ NGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'enum:topic|action-group|pa
+ ging-service|email|webhook|ticket|other' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.322 NAME 'ciamDestinationKind' DESC 
+ 'What keeps logs in an environment: a log group, a workspace, a SIEM index,
+  a bucket' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SI
+ NGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'enum:log-group|workspace|s
+ iem-index|bucket|other' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.323 NAME 'ciamRealizes' DESC 'The al
+ ert rule or canary (its name) an alarm or synthetic check a cloud runs real
+ izes' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-
+ VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.324 NAME 'ciamNotifies' DESC 'What a
+ n alarm a cloud runs notifies (the provider refs of its channels: topics, a
+ ction groups)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.1
+ 5 X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.325 NAME 'ciamMetric' DESC 'The metr
+ ic or query an alarm a cloud runs evaluates, as the provider names it (AWS/
+ EC2 CPUUtilization)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.1
+ 21.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN
+  'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef ) X-ORIGIN 'opsdir' )
@@ -1442,3 +1608,51 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.57 NAME 'ciamEventStream' DESC 'Ident
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.58 NAME 'ciamStreamBinding' DESC 'The
   queue, topic or bus that carries a stream in an environment' SUP ciamBindi
  ng STRUCTURAL MUST ciamProviderRef MAY ciamStreamKind X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.59 NAME 'ciamDataProfile' DESC 'The s
+ hape of an environment\27s user data, values-free: counts and distributions
+ ' SUP ciamObject STRUCTURAL MUST ( cn $ ciamProfiledEnvironment $ ciamCaptu
+ redAt $ ciamEntryCount ) MAY ( ciamHashSchemeCount $ ciamLastLoginAge $ cia
+ mPasswordAge $ ciamLockedCount $ ciamDisabledCount $ ciamPendingCount $ cia
+ mKbaCount $ ciamGroupCount $ ciamEmptyGroupCount $ ciamDanglingMemberCount 
+ $ ciamLargestGroup $ ciamLargestEntryBytes ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.60 NAME 'ciamBranchProfile' DESC 'Ent
+ ries directly under one container of the user directory, by object class' S
+ UP ciamObject STRUCTURAL MUST ( cn $ ciamProfiledBranch $ ciamEntryCount ) 
+ MAY ciamClassCount X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.61 NAME 'ciamAttributeProfile' DESC '
+ How one attribute is used in the user data: holders, most values, largest v
+ alue' SUP ciamObject STRUCTURAL MUST ( cn $ ciamLdapName $ ciamHolderCount 
+ ) MAY ( ciamMostValues $ ciamLargestValueBytes $ ciamProfiledAttribute ) X-
+ ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.62 NAME 'ciamAlertRule' DESC 'What th
+ e platform is watched for: a signal on a server role, the condition that fi
+ res, how severe, who it goes to, what to do' SUP ciamObject STRUCTURAL MUST
+  ( cn $ ciamSignal $ ciamAlertRole ) MAY ( ciamTargetRole $ ciamComparison 
+ $ ciamThreshold $ ciamEvaluationPeriod $ ciamSeverity $ ciamRunbookRef ) X-
+ ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.63 NAME 'ciamLogRoute' DESC 'Where a 
+ server role\27s logs go and how long they must be kept (an obligation: audi
+ t logs survive a move and the source\27s decommissioning)' SUP ciamObject S
+ TRUCTURAL MUST ( cn $ ciamLogKind $ ciamLogDestinationRole ) MAY ( ciamPubl
+ ishedBy $ ciamRetentionDays $ ciamLegalHold ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.64 NAME 'ciamCanary' DESC 'A syntheti
+ c check that signs in as a user would: what it exercises, how often, the se
+ cret role of its test credentials, the alert it fires' SUP ciamObject STRUC
+ TURAL MUST ( cn $ ciamCheckedService $ ciamCanaryFlow ) MAY ( ciamInterval 
+ $ ciamUsesRole $ ciamFeedsAlert ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.65 NAME 'ciamAlertChannel' DESC 'What
+  delivers alerts of a role in an environment (a topic, an action group, a p
+ aging service)' SUP ciamBinding STRUCTURAL MUST ciamChannelKind MAY ciamPro
+ viderRef X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.66 NAME 'ciamLogDestination' DESC 'Wh
+ at keeps logs of a role in an environment, and for how many days (0: kept i
+ ndefinitely)' SUP ciamBinding STRUCTURAL MUST ciamDestinationKind MAY ( cia
+ mProviderRef $ ciamRetentionDays ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.67 NAME 'ciamAlarmBinding' DESC 'An a
+ larm a cloud runs in an environment: the alert rule it realizes, what it ev
+ aluates, what it notifies' SUP ciamBinding STRUCTURAL MUST ciamProviderRef 
+ MAY ( ciamRealizes $ ciamNotifies $ ciamMetric ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.68 NAME 'ciamCanaryBinding' DESC 'A s
+ ynthetic check a cloud runs in an environment: the canary it realizes, how 
+ often' SUP ciamBinding STRUCTURAL MUST ciamProviderRef MAY ( ciamRealizes $
+  ciamInterval ) X-ORIGIN 'opsdir' )

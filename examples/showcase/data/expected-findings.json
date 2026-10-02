@@ -119,6 +119,20 @@
       "match": "Role `audit-events` is bound in source/prod but not in target/prod",
       "planted": "no bus carries the identity audit stream in the target",
       "cleared_by": null
+    },
+    {
+      "id": "B18",
+      "area": "Binding",
+      "match": "Role `alarm-disk-free` is bound in source/prod but not in target/prod",
+      "planted": "the target doesn't run the disk-space alarm CloudWatch runs (nobody described it: A36)",
+      "cleared_by": null
+    },
+    {
+      "id": "B19",
+      "area": "Logs",
+      "match": "Log route `audit-logs` must keep logs 400 days; target/prod's `audit-logs` keeps them 90",
+      "planted": "the target's audit workspace keeps logs 90 days, short of the 400-day obligation",
+      "cleared_by": null
     }
   ],
   "actions": [
@@ -323,6 +337,55 @@
       "area": "Mail",
       "match": "Sender `noreply@example-aero.test`: target/prod's DMARC policy for example-aero.test is quarantine",
       "planted": "the target's DMARC policy is weaker than the source's reject",
+      "cleared_by": null
+    },
+    {
+      "id": "A30",
+      "area": "Data",
+      "match": "24 password value(s) in source/prod are hashed with SSHA512",
+      "planted": "customers migrated from the old portal, and the legacy reports account, still hold salted SHA-512 hashes; every declared policy stores PBKDF2",
+      "cleared_by": null
+    },
+    {
+      "id": "A31",
+      "area": "Data",
+      "match": "attribute(s) in source/prod's user data have no ou=user-schema record",
+      "planted": "a CRM integration nobody recorded writes crmContactId on suppliers; cn has no PII class either",
+      "cleared_by": null
+    },
+    {
+      "id": "A32",
+      "area": "Data",
+      "match": "1 member DN(s) of source/prod's groups name entries that don't exist",
+      "planted": "the supplier approvers group still lists a supplier deleted last year",
+      "cleared_by": null
+    },
+    {
+      "id": "A33",
+      "area": "Data",
+      "match": "37 entries in source/prod hold challenge questions (KBA)",
+      "planted": "customers registered before 2022 still hold challenge answers",
+      "cleared_by": null
+    },
+    {
+      "id": "A34",
+      "area": "Alert",
+      "match": "Alert rule `login-failures` names no runbook",
+      "planted": "the login-failures rule pages without saying what to do",
+      "cleared_by": null
+    },
+    {
+      "id": "A35",
+      "area": "Logs",
+      "match": "Log route `audit-logs` is under legal hold",
+      "planted": "the audit logs are under legal hold: the source's log group must outlive decommissioning",
+      "cleared_by": null
+    },
+    {
+      "id": "A36",
+      "area": "Monitoring",
+      "match": "source/prod runs alarm `ds-disk-free`",
+      "planted": "CloudWatch runs a disk-space alarm no recorded rule describes",
       "cleared_by": null
     }
   ]

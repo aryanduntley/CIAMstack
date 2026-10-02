@@ -93,7 +93,9 @@ Adapter = NamedTuple("Adapter", [("name", str),
                                  ("products", tuple),                 # ((product, PEP 440 range), ...): the product
                                                                       # versions it renders and reads
                                  ("secret_patterns", tuple),          # SecretPatterns: its vendor's credential forms
-                                 ("importers", tuple)])               # Importers: the product exports it reads
+                                 ("importers", tuple),                # Importers: the product exports it reads
+                                 ("profile_terms", Optional[object])])  # what its directory attributes mean to the
+                                                                      # data profile (directory profile.Terms), or None
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

@@ -1,11 +1,14 @@
 """Minimal LDIF (RFC 2849) reader/writer: content records and change records, and LDIF files as captured settings
 (core.capture).
 
-Supports comments, line folding, base64 values (attr:: value), and changetype add/modify/delete.
+Supports comments, line folding, base64 values (attr:: value), and changetype add/modify/delete. content_entries reads
+directory data (an ldapsearch or export stream) lazily and tolerantly, for counting it without keeping it.
 """
 import base64
+import binascii
 import re
-from itertools import accumulate, groupby
+from itertools import accumulate, groupby, tee
+from operator import itemgetter
 from typing import NamedTuple
 
 from ..contract import Codec
@@ -176,3 +179,47 @@ def capture_encode(value, raw):
 
 
 CODEC = Codec(capture_split, _decode_value, capture_encode)
+
+
+# ------------------------------------------------------------------ directory data, streamed
+_DATA_LINE = re.compile(r"^([A-Za-z0-9][A-Za-z0-9;.-]*)(::|:<|:)\s?(.*)$")
+
+
+def _stream_logical(lines):
+    """Logical lines of an LDIF line stream, lazily: comments dropped, folded continuation lines joined."""
+    kept, again = tee(raw.rstrip("\r\n") for raw in lines if not raw.startswith("#"))
+    starts = accumulate(0 if raw.startswith(" ") else 1 for raw in kept)
+    return (g[0][1] + "".join(raw[1:] for _, raw in g[1:])
+            for g in (tuple(run) for _, run in groupby(zip(starts, again), key=itemgetter(0))))
+
+
+def _data_value(sep, raw):
+    if sep == ":<":
+        return b""                                       # a URL: never fetched
+    if sep == "::":
+        try:
+            return base64.b64decode(raw.strip())
+        except (binascii.Error, ValueError):
+            return b""
+    return raw
+
+
+def _data_entry(record):
+    parts = tuple(m.groups() for m in map(_DATA_LINE.match, record) if m)
+    if not parts or parts[0][0].lower() != "dn":
+        return None
+    dn = _data_value(parts[0][1], parts[0][2])
+    attrs = tuple((name.split(";", 1)[0], _data_value(sep, raw)) for name, sep, raw in parts[1:])
+    names = dict.fromkeys(n.lower() for n, _ in attrs)
+    return (dn.decode("utf-8", "replace") if isinstance(dn, bytes) else dn,
+            {n: tuple(v for a, v in attrs if a.lower() == n) for n in names})
+
+
+def content_entries(lines):
+    """(dn, {attribute: values}) of each entry in an LDIF line stream (ldapsearch output, an export), read lazily and
+    tolerantly: attribute names lowercase with options dropped (cn;lang-fr counts as cn), base64 values as bytes (never
+    decoded as text), URL values (:<) empty; records without a dn (version, ldapsearch's search and result lines) and
+    lines that aren't LDIF are skipped."""
+    records = (tuple(run) for filled, run in groupby(_stream_logical(lines), key=lambda line: bool(line.strip()))
+               if filled)
+    return (e for e in map(_data_entry, records) if e is not None)

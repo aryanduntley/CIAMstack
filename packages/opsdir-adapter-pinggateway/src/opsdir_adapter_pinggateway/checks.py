@@ -2,7 +2,7 @@
 signs users in as and the OpenID provider it trusts are in the record); a route to a fixed backend is an action."""
 
 from opsdir.core.directory import children, one, rdn_value
-from opsdir.core.environment import one_role
+from opsdir.core.environment import bound_nowhere
 from opsdir.core.findings import findings, merge_findings, responsible
 from opsdir.core.jsondata import held_json
 from opsdir.domains.federation.services import identity_services, integrations
@@ -30,7 +30,7 @@ def _route(ctx, r):
     return findings(
         blockers=[*((("Gateway", f"Route `{name}` can't sign users in: {'; '.join(why)}.", owner),) if why else ()),
                   *((("Gateway", f"Route `{name}` protects role `{role}`, which {ctx.dst.label} doesn't bind.", owner),)
-                    if role and one_role(ctx.dst, role) is None else ())],
+                    if bound_nowhere((role,), ctx.dst) else ())],
         actions=[("Gateway", f"Route `{name}` sends requests to a fixed backend from every environment (no backend "
                   f"role): confirm {ctx.dst.label} can reach it, or record the application's service name.", owner,
                   None)] if fixed and not role else [])

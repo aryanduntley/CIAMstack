@@ -1,5 +1,4 @@
 """Azure adapter: render an environment's infrastructure bindings as Terraform (hashicorp/azurerm ~> 4)."""
-from functools import reduce
 from itertools import chain
 
 from opsdir.core.directory import follow, one, rdn_value, values
@@ -7,7 +6,8 @@ from opsdir.core.environment import of_class, one_role, servers_with_role, subne
 from opsdir.core.manifest import header
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir.core.network import is_private
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir.domains.infrastructure.firewall import rule_priorities, rule_purpose
+from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
 
 RG = ref("data.azurerm_resource_group.main.name")
 LOC = ref("data.azurerm_resource_group.main.location")
@@ -31,24 +31,8 @@ def _subnet(s):
         ("name", sub), ("virtual_network_name", vnet), ("resource_group_name", RG)])
 
 
-def _rule_priorities(rules):
-    """NSG priorities are pinned in the directory (ciamRulePriority) so adding a rule never renumbers
-    existing ones. Unpinned rules get the next free slot, in rule order. Returns {dn: (priority, pinned)}."""
-    pinned = frozenset(int(one(f, "ciamRulePriority")) for f in rules if one(f, "ciamRulePriority"))
-
-    def assign(acc, fw):
-        assigned, used = acc
-        if one(fw, "ciamRulePriority"):
-            return {**assigned, fw.dn: (int(one(fw, "ciamRulePriority")), True)}, used
-        prio = next(p for p in range(100, 4097, 10) if p not in used)
-        return {**assigned, fw.dn: (prio, False)}, used | {prio}
-
-    return reduce(assign, rules, ({}, pinned))[0]
-
-
 def _security_rule(m, fw, prio, pinned):
-    consumer = follow(m.d, fw, "ciamAllowsConsumer")
-    why = f"consumer {rdn_value(consumer)}" if consumer else one(fw, "ciamBindingRole")
+    why = rule_purpose(m, fw)
     note = () if pinned else (
         f"# NOTE: {rdn_value(fw)} has no pinned ciamRulePriority; assigned {prio}. Pin it in the directory.",)
     return (*note, block("resource", ["azurerm_network_security_rule", tf_name(rdn_value(fw))], [
@@ -66,7 +50,7 @@ def _security_groups(m):
     """One network security group per server role; rules from the firewall bindings."""
     roles = sorted({one(s, "ciamServerRole") for s in m.servers})
     rules = of_class(m, "ciamFirewallRule")
-    prios = _rule_priorities(rules)
+    prios = rule_priorities(rules, 100, 10, 4096)
     return (*(block("resource", ["azurerm_network_security_group", tf_name(role)], [
                 ("name", f"nsg-ciam-{rdn_value(m.env)}-{role}"), ("location", LOC), ("resource_group_name", RG),
                 ("tags", {"ManagedBy": "opsdir"})]) for role in roles),
@@ -179,7 +163,7 @@ def render(m, services):
            *chain.from_iterable(_service(m, svc) for svc in of_class(m, "ciamServiceName")),
            *_key_vault_secrets(m))
     notes = "\n".join(_interconnect_note(m, ic) for ic in of_class(m, "ciamInterconnect"))
-    unbound = "".join(f"# UNBOUND: required role '{r}' has no binding in this environment\n" for r in m.unbound)
+    unbound = unbound_comments(m.unbound)
     main = header(m, "Azure infrastructure for the CIAM platform", HCL) + unbound + notes + "\n\n" \
         + "\n\n".join(out) + "\n"
     gov = (("environment", "usgovernment"),) if one(m.cloud, "ciamCloudEnvironment") == "usgovernment" else ()

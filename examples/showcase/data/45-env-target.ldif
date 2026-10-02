@@ -425,6 +425,69 @@ ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
 ciamSenderDomain: example-aero.test
 ciamSpfAuthorized: TRUE
 
+dn: cn=alerts-page,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlertChannel
+cn: alerts-page
+ciamBindingRole: alerts-page
+ciamChannelKind: action-group
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Insights/actionGroups/ag-ciam-page
+
+dn: cn=audit-logs,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogDestination
+cn: audit-logs
+ciamBindingRole: audit-logs
+ciamDestinationKind: workspace
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-cia
+ m-prod-audit
+ciamRetentionDays: 90
+
+dn: cn=ops-logs,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogDestination
+cn: ops-logs
+ciamBindingRole: ops-logs
+ciamDestinationKind: workspace
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-cia
+ m-prod-ops
+ciamRetentionDays: 30
+
+dn: cn=ds-replication-lag,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlarmBinding
+cn: ds-replication-lag
+ciamBindingRole: alarm-replication-lag
+ciamMetric: Microsoft.Compute/virtualMachines ReplicationDelay
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Insights/metricAlerts/ds-replication-l
+ ag
+ciamRealizes: replication-lag
+
+dn: cn=pf-login-failures,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlarmBinding
+cn: pf-login-failures
+ciamBindingRole: alarm-login-failures
+ciamMetric: log query
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Insights/scheduledQueryRules/pf-login-
+ failures
+ciamRealizes: login-failures
+
+dn: cn=sso-login,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCanaryBinding
+cn: sso-login
+ciamBindingRole: canary-sso-login
+ciamInterval: 5m
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Insights/webtests/sso-login
+ciamRealizes: sso-login
+
 dn: cn=link-source,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamInterconnect

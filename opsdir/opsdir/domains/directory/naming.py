@@ -7,5 +7,6 @@ OBSERVED = branch("observed", CONFIG)      # snapshots captured from live server
 USER_SCHEMA = branch("user-schema")
 CONSUMERS = branch("consumers")
 ACIS = branch("acis")
+DATA_PROFILE = branch("data-profile")   # the shape of each environment's user data, values-free
 
 DIRECTORY_SERVER_ROLE = "ds"               # ciamServerRole of servers that serve the user directory

@@ -1,0 +1,44 @@
+{
+  "issuer": "https://sso.example-aero.test",
+  "authorization_endpoint": "https://sso.example-aero.test/as/authorization.oauth2",
+  "token_endpoint": "https://sso.example-aero.test/as/token.oauth2",
+  "userinfo_endpoint": "https://sso.example-aero.test/idp/userinfo.openid",
+  "jwks_uri": "https://sso.example-aero.test/pf/JWKS",
+  "end_session_endpoint": "https://sso.example-aero.test/idp/startSLO.ping",
+  "scopes_supported": [
+    "openid",
+    "profile",
+    "email",
+    "offline_access",
+    "reports.read"
+  ],
+  "response_types_supported": [
+    "code"
+  ],
+  "grant_types_supported": [
+    "authorization_code",
+    "client_credentials",
+    "refresh_token"
+  ],
+  "subject_types_supported": [
+    "public"
+  ],
+  "id_token_signing_alg_values_supported": [
+    "RS256",
+    "PS256"
+  ],
+  "token_endpoint_auth_methods_supported": [
+    "none",
+    "client_secret_basic"
+  ],
+  "claims_supported": [
+    "email",
+    "entitlements",
+    "export_status",
+    "org",
+    "sub"
+  ],
+  "code_challenge_methods_supported": [
+    "S256"
+  ]
+}

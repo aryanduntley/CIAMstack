@@ -29,3 +29,14 @@ def read_state(text):
                                {k: v for k, v in (i.get("attributes") or {}).items() if k not in _sensitive_keys(i)})
                  for r in doc["resources"] if isinstance(r, dict)
                  for i in r.get("instances") or () if isinstance(i, dict)), None
+
+
+def blocks(v):
+    """A nested block of a resource's attributes as a list of objects: the state writes nested blocks as lists (a
+    single object, or nothing, is normalized)."""
+    return v if isinstance(v, list) else [v] if isinstance(v, dict) else []
+
+
+def first_block(v):
+    """The first object of a nested block ({} when there is none)."""
+    return next((b for b in blocks(v) if isinstance(b, dict)), {})

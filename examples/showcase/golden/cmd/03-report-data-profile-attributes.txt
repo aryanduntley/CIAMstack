@@ -1,0 +1,23 @@
+environment  attribute              holders  fill    most values  largest value  described
+-----------  ---------------------  -------  ------  -----------  -------------  ---------
+source/prod  appentitlement         240      94.1%   1            20             yes
+source/prod  challengeanswer        37       14.5%   1            8              yes
+source/prod  cn                     244      95.7%   1            22             no
+source/prod  companyid              240      94.1%   1            5              yes
+source/prod  crmcontactid           20       7.8%    1            9              no
+source/prod  dc                     1        0.4%    1            8              no
+source/prod  exportscreeningstatus  60       23.5%   1            7              yes
+source/prod  givenname              240      94.1%   1            8              yes
+source/prod  lastlogintime          209      82.0%   1            15             yes
+source/prod  mail                   240      94.1%   1            35             yes
+source/prod  member                 2        0.8%    3            75             no
+source/prod  objectclass            255      100.0%  5            20             no
+source/prod  ou                     5        2.0%    1            16             no
+source/prod  registrationstatus     240      94.1%   1            8              yes
+source/prod  sn                     241      94.5%   1            7              yes
+source/prod  soldtoaccount          60       23.5%   1            5              yes
+source/prod  telephonenumber        160      62.7%   1            11             yes
+source/prod  uid                    246      96.5%   1            12             yes
+source/prod  userpassword           246      96.5%   1            43             no
+(19 rows)
+exit 0

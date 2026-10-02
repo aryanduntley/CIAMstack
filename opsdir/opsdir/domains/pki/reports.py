@@ -1,12 +1,12 @@
 """Key reports, pure functions of a snapshot: where an environment keeps every key and secret (placement), how
 spread out each credential is (sprawl), and everything a rotation touches (rotation impact)."""
 from ...core.directory import follow, follow_all, get, is_a, one, rdn_value, referrers, values
-from ...core.environment import env_model
+from ...core.environment import env_model, environment_of
 from ...core.findings import owner_label, responsible
 from ...core.naming import env_label
 from .checks import CERTIFICATE_USE
 from .credentials import (all_material_bindings, binding_for, bindings_everywhere, certificates_keyed_by,
-                          credential_for_role, credentials, distinct_bindings, environment_of, linked_settings,
+                          credential_for_role, credentials, distinct_bindings, linked_settings,
                           material_bindings, rotate_by)
 
 KEYS_HEADERS = ("credential", "type", "role", "store", "reference", "protection", "auto-rotate", "rotate by",

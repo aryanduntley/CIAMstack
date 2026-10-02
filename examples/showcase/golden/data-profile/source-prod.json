@@ -1,0 +1,191 @@
+{
+  "format": "opsdir-data-profile/1",
+  "environment": "source/prod",
+  "captured": "20260920030000Z",
+  "entries": 255,
+  "branches": {
+    "dc=example-aero,dc=test": {
+      "entries": 1,
+      "classes": {
+        "domain": 1,
+        "top": 1
+      }
+    },
+    "dc=partners,dc=example-aero,dc=test": {
+      "entries": 3,
+      "classes": {
+        "organizationalUnit": 3,
+        "top": 3
+      }
+    },
+    "ou=customers,ou=people,dc=partners,dc=example-aero,dc=test": {
+      "entries": 181,
+      "classes": {
+        "exampleAeroPerson": 180,
+        "inetOrgPerson": 181,
+        "organizationalPerson": 181,
+        "person": 181,
+        "top": 181
+      }
+    },
+    "ou=groups,dc=partners,dc=example-aero,dc=test": {
+      "entries": 3,
+      "classes": {
+        "groupOfNames": 3,
+        "top": 3
+      }
+    },
+    "ou=people,dc=partners,dc=example-aero,dc=test": {
+      "entries": 2,
+      "classes": {
+        "organizationalUnit": 2,
+        "top": 2
+      }
+    },
+    "ou=service-accounts,dc=partners,dc=example-aero,dc=test": {
+      "entries": 5,
+      "classes": {
+        "account": 5,
+        "simpleSecurityObject": 5,
+        "top": 5
+      }
+    },
+    "ou=suppliers,ou=people,dc=partners,dc=example-aero,dc=test": {
+      "entries": 60,
+      "classes": {
+        "exampleAeroPerson": 60,
+        "inetOrgPerson": 60,
+        "organizationalPerson": 60,
+        "person": 60,
+        "top": 60
+      }
+    }
+  },
+  "attributes": {
+    "appentitlement": {
+      "holders": 240,
+      "most_values": 1,
+      "largest_bytes": 20
+    },
+    "challengeanswer": {
+      "holders": 37,
+      "most_values": 1,
+      "largest_bytes": 8
+    },
+    "cn": {
+      "holders": 244,
+      "most_values": 1,
+      "largest_bytes": 22
+    },
+    "companyid": {
+      "holders": 240,
+      "most_values": 1,
+      "largest_bytes": 5
+    },
+    "crmcontactid": {
+      "holders": 20,
+      "most_values": 1,
+      "largest_bytes": 9
+    },
+    "dc": {
+      "holders": 1,
+      "most_values": 1,
+      "largest_bytes": 8
+    },
+    "exportscreeningstatus": {
+      "holders": 60,
+      "most_values": 1,
+      "largest_bytes": 7
+    },
+    "givenname": {
+      "holders": 240,
+      "most_values": 1,
+      "largest_bytes": 8
+    },
+    "lastlogintime": {
+      "holders": 209,
+      "most_values": 1,
+      "largest_bytes": 15
+    },
+    "mail": {
+      "holders": 240,
+      "most_values": 1,
+      "largest_bytes": 35
+    },
+    "member": {
+      "holders": 2,
+      "most_values": 3,
+      "largest_bytes": 75
+    },
+    "objectclass": {
+      "holders": 255,
+      "most_values": 5,
+      "largest_bytes": 20
+    },
+    "ou": {
+      "holders": 5,
+      "most_values": 1,
+      "largest_bytes": 16
+    },
+    "registrationstatus": {
+      "holders": 240,
+      "most_values": 1,
+      "largest_bytes": 8
+    },
+    "sn": {
+      "holders": 241,
+      "most_values": 1,
+      "largest_bytes": 7
+    },
+    "soldtoaccount": {
+      "holders": 60,
+      "most_values": 1,
+      "largest_bytes": 5
+    },
+    "telephonenumber": {
+      "holders": 160,
+      "most_values": 1,
+      "largest_bytes": 11
+    },
+    "uid": {
+      "holders": 246,
+      "most_values": 1,
+      "largest_bytes": 12
+    },
+    "userpassword": {
+      "holders": 246,
+      "most_values": 1,
+      "largest_bytes": 43
+    }
+  },
+  "schemes": {
+    "PBKDF2-HMAC-SHA256": 217,
+    "PBKDF2-HMAC-SHA512": 5,
+    "SSHA512": 24
+  },
+  "last_login": {
+    "<30d": 9,
+    "30-90d": 14,
+    "90-365d": 70,
+    "1-2y": 83,
+    ">2y": 33,
+    "never": 37
+  },
+  "password_age": {
+    "<30d": 6,
+    "30-90d": 11,
+    "90-365d": 58,
+    "1-2y": 76,
+    ">2y": 89,
+    "never": 6
+  },
+  "locked": 6,
+  "disabled": 8,
+  "pending": 11,
+  "kba": 37,
+  "groups": 3,
+  "empty_groups": 1,
+  "largest_group": 3,
+  "dangling_members": 1,
+  "largest_entry": 566
+}

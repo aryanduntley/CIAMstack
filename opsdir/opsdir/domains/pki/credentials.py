@@ -7,7 +7,7 @@ private key (ciamKeyRole); captured config settings link to a binding by `role#a
 import datetime as dt
 
 from ...core.directory import children, fingerprint, get, gtime_date, is_a, one, subtree
-from ...core.environment import by_role, env_model
+from ...core.environment import by_role, env_model, environment_of
 from ...core.naming import branch
 from .naming import CERTIFICATES, CREDENTIALS
 
@@ -41,11 +41,6 @@ def material_bindings(m):
 def binding_for(m, credential):
     """Where the environment keeps a credential: its first material binding with the credential's role, or None."""
     return next((b for b in by_role(m, one(credential, "ciamBindingRole")) if holds_material(b)), None)
-
-
-def environment_of(b):
-    """The DN of the environment a binding belongs to."""
-    return b.dn.split(",ou=bindings,", 1)[1]
 
 
 def all_material_bindings(d):

@@ -20,4 +20,4 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamCloudEnvironment": ("public", "usgovernment")}, schema=None,
                   formats=(("terraform/*.tf", "hcl"),),
                   products=(),
-                  secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY, ARM))
+                  secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY, ARM), profile_terms=None)

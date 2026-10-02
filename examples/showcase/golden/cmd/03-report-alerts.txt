@@ -1,0 +1,6 @@
+alert rule       signal             on         fires when         severity  delivered by  runbooks     owner
+---------------  -----------------  ---------  -----------------  --------  ------------  -----------  -------------
+login-failures   login-failures     pf-engine  gt 50 /min for 5m  sev2      alerts-page                ciam-platform
+replication-lag  replication-delay  ds         gt 5000 ms for 5m  sev2      alerts-page   WI-CIAM-007  ciam-platform
+(2 rows)
+exit 0

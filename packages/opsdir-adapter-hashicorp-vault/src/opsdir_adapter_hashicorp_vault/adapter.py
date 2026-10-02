@@ -13,4 +13,4 @@ ADAPTER = Adapter(name="hashicorp-vault", kind="secret-store", applies=applies, 
                   secret_schemes={"vault": kv_command}, renders=None, neutral_label=None,
                   vocabulary={}, schema=None, formats=(),
                   products=(),
-                  secret_patterns=SECRET_PATTERNS, importers=())
+                  secret_patterns=SECRET_PATTERNS, importers=(), profile_terms=None)
