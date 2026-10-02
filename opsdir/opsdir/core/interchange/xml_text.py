@@ -10,6 +10,7 @@ import re
 from collections import Counter
 from functools import reduce
 from itertools import accumulate
+from types import MappingProxyType
 
 from ..contract import Codec
 from .lines import first_gap, line_col
@@ -21,7 +22,7 @@ _TOKEN = re.compile(
     r"|(?P<text>[^<]+)", re.DOTALL)
 _ATTR = re.compile(r"([^\s=/>]+)(\s*=\s*)(?:\"([^\"]*)\"|'([^']*)')")
 _ENTITY = re.compile(r"&(lt|gt|amp|quot|apos|#[0-9]+|#x[0-9a-fA-F]+);")
-_NAMED = {"lt": "<", "gt": ">", "amp": "&", "quot": '"', "apos": "'"}
+_NAMED = MappingProxyType({"lt": "<", "gt": ">", "amp": "&", "quot": '"', "apos": "'"})
 
 
 def _advance(stack, indexed):

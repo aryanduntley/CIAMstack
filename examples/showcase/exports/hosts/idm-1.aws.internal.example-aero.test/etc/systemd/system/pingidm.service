@@ -1,0 +1,12 @@
+[Unit]
+Description=idm
+After=network-online.target
+
+[Service]
+User=idm
+Restart=always
+ExecStart=/opt/openidm/startup.sh
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

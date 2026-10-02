@@ -1,5 +1,6 @@
-"""PingFederate plugin instances: password credential validators, IdP adapters, authentication selectors and access
-token managers, read from the Admin API into the record and rendered back for each environment. Pure.
+"""PingFederate plugin instances: password credential validators, IdP adapters, authentication selectors, access
+token managers, notification publishers and CAPTCHA providers, read from the Admin API into the record and rendered
+back for each environment. Pure.
 
 One pingfedPlugin entry per instance (cn: its id) under its kind's branch: the plugin it is (pluginDescriptorRef, as
 pingfedPluginType), the instance it inherits from (parentRef, as pingfedParent), the objects its settings name
@@ -10,33 +11,38 @@ each environment renders the reference of the instance's credential role there. 
 (its credential role, owners) is kept on import, and the rendered files import back unchanged.
 """
 import json
+from types import MappingProxyType
 from typing import NamedTuple
 
-from opsdir.core.directory import children, get, make_entry, one, rdn_value
-from opsdir.core.jsondata import canonical
+from opsdir.core.directory import children, get, make_entry, merged_attrs, one, rdn_value
+from opsdir.core.jsondata import canonical, held_json
 from opsdir.core.naming import rdn_safe
-from .naming import IDP_ADAPTERS, SELECTORS, TOKEN_MANAGERS, VALIDATORS, named
-from .objects import NOT_EXPORTED, links, merged_attrs, why_unresolved
+from .naming import (CAPTCHA_PROVIDERS, IDP_ADAPTERS, NOTIFICATION_PUBLISHERS, SELECTORS, TOKEN_MANAGERS, VALIDATORS,
+                     named)
+from .objects import NOT_EXPORTED, links, why_unresolved
 from .withheld import filled, withheld_settings
 
 Kind = NamedTuple("Kind", [("resource", str), ("base", str), ("output", str), ("label", str)])
-KINDS = {"validator": Kind("/passwordCredentialValidators", VALIDATORS, "password-credential-validators.json",
-                           "password credential validator"),
-         "idp-adapter": Kind("/idp/adapters", IDP_ADAPTERS, "idp-adapters.json", "IdP adapter"),
-         "selector": Kind("/authenticationSelectors", SELECTORS, "authentication-selectors.json",
-                          "authentication selector"),
-         "access-token-manager": Kind("/oauth/accessTokenManagers", TOKEN_MANAGERS, "access-token-managers.json",
-                                      "access token manager")}
+KINDS = MappingProxyType({
+    "validator": Kind("/passwordCredentialValidators", VALIDATORS, "password-credential-validators.json",
+                      "password credential validator"),
+    "idp-adapter": Kind("/idp/adapters", IDP_ADAPTERS, "idp-adapters.json", "IdP adapter"),
+    "selector": Kind("/authenticationSelectors", SELECTORS, "authentication-selectors.json", "authentication selector"),
+    "access-token-manager": Kind("/oauth/accessTokenManagers", TOKEN_MANAGERS, "access-token-managers.json",
+                                 "access token manager"),
+    "notification-publisher": Kind("/notificationPublishers", NOTIFICATION_PUBLISHERS, "notification-publishers.json",
+                                   "notification publisher"),
+    "captcha-provider": Kind("/captchaProviders", CAPTCHA_PROVIDERS, "captcha-providers.json", "CAPTCHA provider")})
 # settings fields whose value is another PingFederate object's id, by the field's name (PingFederate's own plugins;
 # verify against the target version, and add a custom plugin's fields here)
-REF_FIELDS = {"Password Credential Validator Instance": "validator", "LDAP Datastore": "datastore",
-              "JDBC Datastore": "datastore", "Adapter Instance": "idp-adapter",
-              "Certificate": "key-pair"}           # a JWT token manager's signing key pairs (its Certificates table)
+REF_FIELDS = MappingProxyType({"Password Credential Validator Instance": "validator", "LDAP Datastore": "datastore",
+                               "JDBC Datastore": "datastore", "Adapter Instance": "idp-adapter",
+                               "Certificate": "key-pair"})    # a JWT token manager's signing key pairs (Certificates)
 OWNED = ("cn", "pingfedPluginKind", "pingfedPluginType", "pingfedParent", "pingfedUses", "pingfedConfig",
          "pingfedWithheld")
 
 
-def _fields(settings):
+def settings_fields(settings):
     """Every settings field: the plain ones and those in the rows of its tables."""
     c = settings.get("configuration") if isinstance(settings.get("configuration"), dict) else {}
     rows = (r for t in c.get("tables") or () if isinstance(t, dict) for r in t.get("rows") or () if isinstance(r, dict))
@@ -46,7 +52,7 @@ def _fields(settings):
 
 def field_refs(settings):
     """(kind, id) of the objects an instance's settings fields name, each once."""
-    return tuple(dict.fromkeys((REF_FIELDS[f["name"]], f["value"]) for f in _fields(settings)
+    return tuple(dict.fromkeys((REF_FIELDS[f["name"]], f["value"]) for f in settings_fields(settings)
                                if f.get("name") in REF_FIELDS and isinstance(f.get("value"), str) and f["value"]))
 
 
@@ -90,7 +96,7 @@ def plugin_groups(d, found, patterns, exported):
 def plugin_view(m, entry):
     """A plugin instance as the Admin API takes it, for environment m (withheld values from its credential role)."""
     return {"id": rdn_value(entry), "pluginDescriptorRef": {"id": one(entry, "pingfedPluginType")},
-            **filled(m, entry, json.loads(one(entry, "pingfedConfig") or "{}"))}
+            **filled(m, entry, held_json(entry, "pingfedConfig"))}
 
 
 def plugin_files(m):

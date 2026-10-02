@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-adapter-gitlab-ci"
+version = "0.1.0"
+description = "opsdir delivery adapter for GitLab CI/CD: projects' .gitlab-ci.yml and pipeline schedules read as the platform's pipeline jobs (schedules, triggers, runners, environments, secrets by name)."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1", "pyyaml>=6"]
+
+[project.entry-points."opsdir.adapters"]
+gitlab-ci = "opsdir_adapter_gitlab_ci.adapter:ADAPTER"
+
+[tool.setuptools.packages.find]
+where = ["src"]

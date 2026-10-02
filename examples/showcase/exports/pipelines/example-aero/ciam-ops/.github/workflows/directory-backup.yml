@@ -1,0 +1,14 @@
+name: Directory backup (Example Aero, synthetic)
+on:
+  schedule:
+    - cron: "15 1 * * *"
+  workflow_dispatch:
+jobs:
+  backup:
+    runs-on: [self-hosted, ciam]
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./ops/scripts/backup-directory.sh --to s3://example-aero-ciam-prod-ds-backups
+        env:
+          DS_BACKUP_PASSWORD: ${{ secrets.DS_BACKUP_PASSWORD }}

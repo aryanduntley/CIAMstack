@@ -14,9 +14,11 @@ idm-hrdb-password       password       idm-hrdb-password       aws-sm   aws-sm:/
 idm-keystore            keystore       idm-keystore            aws-sm   aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/sta                                                                                                      ok
 ig-keystore             keystore       ig-keystore             aws-sm   aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/sta                                                                                                      ok
 pf-admin-password       password       pf-admin-password       aws-sm   aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/sta                                                                                                      ok
+pf-captcha-secret       api-token      pf-captcha-secret       aws-sm   aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/sta                                                                                                      ok
 pf-ds-bind-password     password       pf-ds-bind-password     aws-sm   aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/sta                                                                                                      ok
 pf-grants-db-password   password       pf-grants-db-password   aws-sm   aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/sta                                                                                                      ok
 pf-signing-key          private-key    pf-signing-key          aws-sm   aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/sta                                                                                                      ok
+pf-smtp-password        password       pf-smtp-password        aws-sm   aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/sta                                                                                                      ok
 sso-tls-keystore        keystore       sso-tls-keystore        aws-sm   aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/sta                                                                                                      ok
-(18 rows)
+(20 rows)
 exit 0

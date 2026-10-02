@@ -1,0 +1,37 @@
+[
+  {
+    "id": "smtp",
+    "pluginDescriptorRef": {
+      "id": "com.pingidentity.email.SmtpNotificationPlugin"
+    },
+    "configuration": {
+      "fields": [
+        {
+          "name": "From Address",
+          "value": "noreply@example-aero.test"
+        },
+        {
+          "name": "Email Server",
+          "value": "email-smtp.us-east-1.amazonaws.com"
+        },
+        {
+          "name": "SMTP Port",
+          "value": "587"
+        },
+        {
+          "name": "Encryption Method",
+          "value": "TLS"
+        },
+        {
+          "name": "Username",
+          "value": "AKIAEXAMPLESMTPUSER"
+        },
+        {
+          "name": "Password",
+          "value": "${secret:azkv://kv-ciam-prod/pf-smtp-password}"
+        }
+      ]
+    },
+    "name": "SES SMTP"
+  }
+]

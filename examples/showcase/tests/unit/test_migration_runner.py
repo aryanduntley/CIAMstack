@@ -7,6 +7,7 @@ from opsdir.cli import migrate_text
 from opsdir.connectors import migration
 from opsdir.connectors.registry import ADAPTER_VERSIONS, ADAPTERS
 from opsdir.domains.directory.drift import drift
+from example_estate.expected import EXPECTED
 from showcase_support import GOLDEN
 from support import read_tree
 
@@ -46,7 +47,9 @@ def test_a_missing_adapter_stops_the_run_before_planning(estate, as_of):
 
 def test_the_cli_text_and_exit_status(estate, as_of):
     text, files, status = migrate_text(estate["before"], SRC, DST, as_of, "out/m")
-    assert status == 1 and text.endswith("NOT READY (13 blockers, 21 actions); 58 target files, PLAN.md and "
+    planted = f"{len(EXPECTED['blockers'])} blockers, {len(EXPECTED['actions'])} actions"
+    rendered = sum(p.startswith("target/") for p in files)
+    assert status == 1 and text.endswith(f"NOT READY ({planted}); {rendered} target files, PLAN.md and "
                                          "3 request draft(s) in out/m")
     assert "PLAN.md" in files
 

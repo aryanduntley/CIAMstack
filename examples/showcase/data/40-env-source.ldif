@@ -439,6 +439,22 @@ ciamBindingRole: pf-grants-db-password
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/pf-grants-db-password
 
+dn: cn=secret-pf-smtp-password,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-smtp-password
+ciamBindingRole: pf-smtp-password
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /prod/pf-smtp-password
+
+dn: cn=secret-pf-captcha-secret,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-captcha-secret
+ciamBindingRole: pf-captcha-secret
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /prod/pf-captcha-secret
+
 dn: cn=key-disk,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamKeyRef
@@ -468,6 +484,42 @@ ciamBindingRole: pf-cluster-discovery
 ciamStorageRef: s3://example-aero-ciam-prod-pf-cluster
 description: PingFederate cluster discovery (NATIVE_S3_PING / AZURE_PING stora
  ge)
+
+dn: cn=asg-pf-engine,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamComputeGroup
+cn: asg-pf-engine
+ciamBindingRole: compute-pf-engine
+ciamDesiredSize: 2
+ciamImageRef: ami-0fedcba9876543210
+ciamInstanceSize: m6i.large
+ciamMaxSize: 4
+ciamMetadataTokens: TRUE
+ciamMinSize: 2
+ciamProviderRef: arn:aws:autoscaling:us-east-1:111122223333:autoScalingGroup:6
+ d4c1f0e-0000-4000-8000-00000000a001:autoScalingGroupName/ciam-prod-pf-engine
+ciamSpansZone: us-east-1a
+ciamSpansZone: us-east-1b
+ciamTargetRole: pf-engine
+
+dn: cn=mail-ses,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSendingIdentity
+cn: mail-ses
+ciamBindingRole: mail-sending
+ciamDkimVerified: TRUE
+ciamDmarcPolicy: reject
+ciamProviderRef: arn:aws:ses:us-east-1:111122223333:identity/example-aero.test
+ciamSenderDomain: example-aero.test
+ciamSpfAuthorized: TRUE
+
+dn: cn=audit-bus,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStreamBinding
+cn: audit-bus
+ciamBindingRole: audit-events
+ciamProviderRef: arn:aws:events:us-east-1:111122223333:event-bus/ciam-audit
+ciamStreamKind: bus
 
 dn: ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top

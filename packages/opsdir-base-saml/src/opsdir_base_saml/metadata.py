@@ -1,14 +1,16 @@
 """SAML 2.0 metadata (OASIS saml-metadata-2.0-os) from plain values: entity descriptors of a service provider and of
 an identity provider. The standard names live here once; products and the record supply the values."""
+from types import MappingProxyType
+
 from .xmltext import Comment, element
 
 MD = "urn:oasis:names:tc:SAML:2.0:metadata"
 PROTOCOL = "urn:oasis:names:tc:SAML:2.0:protocol"
 ATTRNAME_BASIC = "urn:oasis:names:tc:SAML:2.0:attrname-format:basic"
-NAMEID_FORMATS = {"unspecified": "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified",
-                  "emailAddress": "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
-                  "persistent": "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent",
-                  "transient": "urn:oasis:names:tc:SAML:2.0:nameid-format:transient"}
+NAMEID_FORMATS = MappingProxyType({"unspecified": "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified",
+                                   "emailAddress": "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
+                                   "persistent": "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent",
+                                   "transient": "urn:oasis:names:tc:SAML:2.0:nameid-format:transient"})
 DEFAULT_ACS_BINDING = "HTTP-POST"      # the Web Browser SSO profile's usual response binding
 DEFAULT_SSO_BINDING = "HTTP-Redirect"  # ... and its usual request binding
 

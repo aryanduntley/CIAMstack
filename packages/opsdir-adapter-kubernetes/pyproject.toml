@@ -5,10 +5,10 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "opsdir-adapter-kubernetes"
 version = "0.1.0"
-description = "opsdir adapter for Kubernetes: k8s-secret:// secret references."
+description = "opsdir adapter for Kubernetes: k8s-secret:// secret references and workloads read from manifests."
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["opsdir>=0.1"]
+dependencies = ["opsdir>=0.1", "pyyaml>=6"]
 
 [project.entry-points."opsdir.adapters"]
 kubernetes = "opsdir_adapter_kubernetes.adapter:ADAPTER"

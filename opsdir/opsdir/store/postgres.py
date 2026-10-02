@@ -12,7 +12,7 @@ from typing import Callable, NamedTuple
 
 import psycopg
 
-from ..core.directory import make_directory, norm_dn
+from ..core.directory import make_directory, norm_dn, within
 from ..core.interchange import ldif, rfc4512
 
 INSERT_ENTRY = "insert into entry (dn, object_classes, attrs, change_id) values (%s, %s, %s, %s)"
@@ -83,14 +83,9 @@ def split_record(canon, attrs):
     return classes, {c: [v for n, vals in canonical if n == c for v in vals] for c in dict.fromkeys(n for n, _ in canonical)}
 
 
-def _under(dn, branch):
-    n, b = norm_dn(dn), norm_dn(branch)
-    return n == b or n.endswith("," + b)
-
-
 def _on_path(dn, branch):
     """The entry is the branch, under it, or one of its ancestors (which must exist before it)."""
-    return _under(dn, branch) or _under(branch, dn)
+    return within(dn, branch) or within(branch, dn)
 
 
 def schema_phases(records, branch):
@@ -187,7 +182,7 @@ def rows_of_classes(conn, classes):
 
 
 def _touches(records, schema_sync):
-    return schema_sync is not None and any(_under(r.dn, schema_sync.branch) for r in records)
+    return schema_sync is not None and any(within(r.dn, schema_sync.branch) for r in records)
 
 
 def _insert_all(conn, change_id, records):

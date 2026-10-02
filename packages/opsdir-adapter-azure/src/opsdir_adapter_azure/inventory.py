@@ -19,14 +19,34 @@ From Terraform state (terraform.tfstate, format version 4; hashicorp/azurerm), m
   azurerm_storage_container                   -> storage azblob://<account>/<container> (role from its metadata key role)
   azurerm_nat_gateway (+ its public IPs and   -> egress (by name): its public addresses
     prefixes)
+  azurerm_linux_function_app,                 -> a job binding (what realizes a job: kind job, ciamJobBinding): the
+    azurerm_windows_function_app                 function app's ID, its runtime (language and version), and the
+    (+ azurerm_function_app_function)            schedules of its timer-triggered functions (NCRONTAB)
+  azurerm_linux_virtual_machine_scale_set,    -> compute group (kind compute, ciamComputeGroup): the server role it runs
+    azurerm_windows_virtual_machine_scale_set,   (tag Role), SKU, instances, zones, image; min/max from the
+    azurerm_orchestrated_virtual_machine_        autoscale setting that targets it (azurerm_monitor_autoscale_setting)
+    scale_set
+  azurerm_kubernetes_cluster (+ azurerm_     -> cluster (kind cluster, ciamCluster): version, add-ons it enables, node
+    kubernetes_cluster_node_pool)                pools (name: VM size, min-max), zones of its pools
+  azurerm_email_communication_service_       -> sending identity (kind sending, ciamSendingIdentity) for a domain: DKIM
+    domain (+ azurerm_dns_cname_record,          verified when the DKIM selectors its verification records name are
+    azurerm_dns_txt_record)                      published in Azure DNS, SPF authorizing it (include:
+                                                 spf.protection.outlook.com) and the DMARC policy, from the TXT records
+  azurerm_servicebus_queue / _topic,          -> stream carriers (kind stream, ciamStreamBinding): queue, topic, event
+    azurerm_eventhub, azurerm_eventgrid_topic    hub
 Roles of resources the record doesn't have come from their tags Role (or BindingRole), or for storage containers from
-their metadata (role). Subnets and individual security rules carry neither in Azure: their roles come from the
-environment's role map (roles.json, opsdir.core.inventory), and without one new ones are named in the notices.
+their metadata (role); a compute group's binding role is its tag BindingRole, else compute-<its tag Role>, and a
+cluster's its tag BindingRole or Role, else cluster. Subnets and individual security rules carry neither in Azure:
+their roles come from the environment's role map (roles.json, opsdir.core.inventory), and without one new ones are
+named in the notices.
 """
 from collections import Counter
 
 from opsdir.core.contract import Importer
-from opsdir.core.inventory import layout_import, per_file, resource
+from opsdir.core.inventory import (cluster_role, compute_roles, layout_import, of_types, per_file, resource,
+                                   tagged_role)
+from opsdir.core.sources import json_document
+from opsdir.domains.messaging.dns import dmarc_policy, spf_authorizes
 from opsdir_format_terraform.state import read_state
 
 PROVIDER = "azure"
@@ -42,12 +62,7 @@ def _tags(a):
 
 
 def _role(a):
-    t = _tags(a)
-    return t.get("Role") or t.get("BindingRole")
-
-
-def _of(found, *types):
-    return [a for t, a in found if t in types]
+    return tagged_role(_tags(a))
 
 
 def _first(xs):
@@ -74,14 +89,14 @@ def _networks(found):
     return tuple(resource("network", a.get("name"), {"ciamCidr": _first(a.get("address_space")),
                                                      "ciamResourceGroup": a.get("resource_group_name")},
                           name=_tags(a).get("Name") or a.get("name"), role=_role(a) or "network")
-                 for a in _of(found, "azurerm_virtual_network") if a.get("name"))
+                 for a in of_types(found, "azurerm_virtual_network") if a.get("name"))
 
 
 def _subnets(found):
     return tuple(resource("subnet", f"{a.get('virtual_network_name')}/{a.get('name')}",
                           {"ciamCidr": _first(a.get("address_prefixes")) or a.get("address_prefix")},
                           name=a.get("name"), role=_role(a))
-                 for a in _of(found, "azurerm_subnet") if a.get("name") and a.get("virtual_network_name"))
+                 for a in of_types(found, "azurerm_subnet") if a.get("name") and a.get("virtual_network_name"))
 
 
 def _nics(found):
@@ -91,7 +106,7 @@ def _nics(found):
         return next((c for c in configs if c.get("primary")), _first(configs)) or {}
     return {_low(n.get("id")): (primary(n).get("private_ip_address") or n.get("private_ip_address"),
                                 _subnet_ref(primary(n).get("subnet_id")))
-            for n in _of(found, "azurerm_network_interface") if n.get("id")}
+            for n in of_types(found, "azurerm_network_interface") if n.get("id")}
 
 
 def _vm_nics(vm):
@@ -123,25 +138,25 @@ def _servers(found):
                          "ciamHostname": _hostname(vm), "ciamProductVersion": _tags(vm).get("Product")},
                         links={"ciamSubnet": subnet}, name=_tags(vm).get("Name") or vm.get("name"),
                         role=_tags(vm).get("Role"))
-    return tuple(one_vm(vm) for vm in _of(found, *VMS))
+    return tuple(one_vm(vm) for vm in of_types(found, *VMS))
 
 
 def _nic_roles(found):
     """{NIC id (lower case): the Role tag of the VM using it}."""
-    return {n: _tags(vm)["Role"] for vm in _of(found, *VMS) if _tags(vm).get("Role") for n in _vm_nics(vm)}
+    return {n: _tags(vm)["Role"] for vm in of_types(found, *VMS) if _tags(vm).get("Role") for n in _vm_nics(vm)}
 
 
 def _dns_records(found):
     """(fqdn, zone, addresses, target resource id) of each A record, public and private."""
     return tuple((a.get("zone_name") if a.get("name") == "@" else f"{a.get('name')}.{a.get('zone_name')}",
                   a.get("zone_name"), tuple(a.get("records") or ()), _low(a.get("target_resource_id")))
-                 for a in _of(found, "azurerm_dns_a_record", "azurerm_private_dns_a_record")
+                 for a in of_types(found, "azurerm_dns_a_record", "azurerm_private_dns_a_record")
                  if a.get("name") and a.get("zone_name"))
 
 
 def _services(found):
     """A service per load balancer: its DNS name, zone, rule ports, the role behind its pools, its frontend."""
-    pips = {_low(p.get("id")): p for p in _of(found, "azurerm_public_ip")}
+    pips = {_low(p.get("id")): p for p in of_types(found, "azurerm_public_ip")}
     records, nic_roles = _dns_records(found), _nic_roles(found)
 
     def one_lb(lb):
@@ -149,11 +164,11 @@ def _services(found):
         pip = pips.get(_low(fe.get("public_ip_address_id")))
         ip = fe.get("private_ip_address") if not fe.get("public_ip_address_id") else (pip or {}).get("ip_address")
         record = next((r for r in records if (ip and ip in r[2]) or (pip and r[3] == _low(pip.get("id")))), None)
-        rules = [r for r in _of(found, "azurerm_lb_rule") if _low(r.get("loadbalancer_id")) == _low(lb.get("id"))]
-        pools = {_low(p.get("id")) for p in _of(found, "azurerm_lb_backend_address_pool")
+        rules = [r for r in of_types(found, "azurerm_lb_rule") if _low(r.get("loadbalancer_id")) == _low(lb.get("id"))]
+        pools = {_low(p.get("id")) for p in of_types(found, "azurerm_lb_backend_address_pool")
                  if _low(p.get("loadbalancer_id")) == _low(lb.get("id"))}
         roles = Counter(nic_roles.get(_low(a.get("network_interface_id")))
-                        for a in _of(found, "azurerm_network_interface_backend_address_pool_association")
+                        for a in of_types(found, "azurerm_network_interface_backend_address_pool_association")
                         if _low(a.get("backend_address_pool_id")) in pools
                         and nic_roles.get(_low(a.get("network_interface_id"))))
         return resource("service", lb.get("id"), {
@@ -164,16 +179,16 @@ def _services(found):
             "ciamFrontendIp": ip,
             "ciamProviderRef": (pip or {}).get("name")},
             name=lb.get("name"), role=_role(lb))
-    return tuple(one_lb(lb) for lb in _of(found, "azurerm_lb"))
+    return tuple(one_lb(lb) for lb in of_types(found, "azurerm_lb"))
 
 
 def _guarded_roles(found):
     """{NSG id (lower case): roles of the VMs it guards}, through NIC and subnet associations."""
     nics, nic_roles = _nics(found), _nic_roles(found)
     by_nic = [(_low(a.get("network_security_group_id")), nic_roles.get(_low(a.get("network_interface_id"))))
-              for a in _of(found, "azurerm_network_interface_security_group_association")]
+              for a in of_types(found, "azurerm_network_interface_security_group_association")]
     by_subnet = [(_low(a.get("network_security_group_id")), nic_roles.get(n))
-                 for a in _of(found, "azurerm_subnet_network_security_group_association")
+                 for a in of_types(found, "azurerm_subnet_network_security_group_association")
                  for n, (_, subnet) in nics.items() if subnet and subnet == _subnet_ref(a.get("subnet_id"))]
     pairs = [(g, r) for g, r in (*by_nic, *by_subnet) if r]
     return {g: tuple(r for g2, r in pairs if g2 == g) for g in dict.fromkeys(g for g, _ in pairs)}
@@ -206,11 +221,11 @@ def _ports(rule):
 
 def _firewall(found):
     """(firewall rules, notices): inbound allow rules of the security groups, by rule name."""
-    nsgs = {_low(g.get("id")): g for g in _of(found, "azurerm_network_security_group")}
+    nsgs = {_low(g.get("id")): g for g in of_types(found, "azurerm_network_security_group")}
     by_name = {(_low(g.get("resource_group_name")), _low(g.get("name"))): g for g in nsgs.values()}
     guarded = _guarded_roles(found)
     separate = [(by_name.get((_low(r.get("resource_group_name")), _low(r.get("network_security_group_name")))) or {}, r)
-                for r in _of(found, "azurerm_network_security_rule")]
+                for r in of_types(found, "azurerm_network_security_rule")]
     inline = [(g, r) for g in nsgs.values() for r in g.get("security_rule") or ()]
     allowed = [(g, r) for g, r in (*separate, *inline) if r.get("name")
                and _low(r.get("direction")) == "inbound" and _low(r.get("access")) == "allow"]
@@ -245,7 +260,7 @@ def _secrets(found):
     return tuple(resource("secret", f"azkv://{_vault(a)}/{a.get('name')}",
                           {"ciamRefUri": f"azkv://{_vault(a)}/{a.get('name')}"},
                           name=_tags(a).get("Name") or a.get("name"), role=_role(a))
-                 for a in _of(found, "azurerm_key_vault_secret") if _vault(a) and a.get("name"))
+                 for a in of_types(found, "azurerm_key_vault_secret") if _vault(a) and a.get("name"))
 
 
 def _key_url(url):
@@ -256,7 +271,7 @@ def _key_url(url):
 
 
 def _keys(found):
-    sets = {_key_url(s.get("key_vault_key_id")): s.get("id") for s in _of(found, "azurerm_disk_encryption_set")}
+    sets = {_key_url(s.get("key_vault_key_id")): s.get("id") for s in of_types(found, "azurerm_disk_encryption_set")}
 
     def one_key(a):
         vault, name = _vault(a), a.get("name")
@@ -268,7 +283,7 @@ def _keys(found):
             "ciamAutoRotate": ("TRUE" if policy.get("automatic") else "FALSE") if "rotation_policy" in a else None,
             "ciamProviderRef": sets.get((vault.lower(), name.lower()))},
             name=_tags(a).get("Name") or name, role=_role(a))
-    return tuple(one_key(a) for a in _of(found, "azurerm_key_vault_key") if _vault(a) and a.get("name"))
+    return tuple(one_key(a) for a in of_types(found, "azurerm_key_vault_key") if _vault(a) and a.get("name"))
 
 
 def _metadata_role(a):
@@ -283,23 +298,153 @@ def _storage(found):
     return tuple(resource("storage", a.get("id") or f"{account(a)}/{a.get('name')}",
                           {"ciamStorageRef": f"azblob://{account(a)}/{a.get('name')}"},
                           name=a.get("name"), role=_metadata_role(a))
-                 for a in _of(found, "azurerm_storage_container") if account(a) and a.get("name"))
+                 for a in of_types(found, "azurerm_storage_container") if account(a) and a.get("name"))
 
 
 def _egress(found):
     """NAT gateways by name, with the public addresses and prefixes associated with them."""
-    pips = {_low(p.get("id")): p.get("ip_address") for p in _of(found, "azurerm_public_ip")}
-    prefixes = {_low(p.get("id")): p.get("ip_prefix") for p in _of(found, "azurerm_public_ip_prefix")}
+    pips = {_low(p.get("id")): p.get("ip_address") for p in of_types(found, "azurerm_public_ip")}
+    prefixes = {_low(p.get("id")): p.get("ip_prefix") for p in of_types(found, "azurerm_public_ip_prefix")}
     addresses = [(_low(a.get("nat_gateway_id")), f"{pips[_low(a.get('public_ip_address_id'))]}/32")
-                 for a in _of(found, "azurerm_nat_gateway_public_ip_association")
+                 for a in of_types(found, "azurerm_nat_gateway_public_ip_association")
                  if pips.get(_low(a.get("public_ip_address_id")))]
     ranges = [(_low(a.get("nat_gateway_id")), prefixes[_low(a.get("public_ip_prefix_id"))])
-              for a in _of(found, "azurerm_nat_gateway_public_ip_prefix_association")
+              for a in of_types(found, "azurerm_nat_gateway_public_ip_prefix_association")
               if prefixes.get(_low(a.get("public_ip_prefix_id")))]
     return tuple(resource("egress", a.get("name"),
                           {"ciamCidr": sorted({c for g, c in (*addresses, *ranges) if g == _low(a.get("id"))})},
                           name=_tags(a).get("Name") or a.get("name"), role=_role(a))
-                 for a in _of(found, "azurerm_nat_gateway") if a.get("name"))
+                 for a in of_types(found, "azurerm_nat_gateway") if a.get("name"))
+
+
+FUNCTION_APPS = ("azurerm_linux_function_app", "azurerm_windows_function_app")
+
+
+def runtime(stack):
+    """A function app's runtime from its application stack ({"python_version": "3.11"} -> "python 3.11")."""
+    found = next(((k[:-len("_version")], v) for k, v in (stack or {}).items() if k.endswith("_version") and v), None)
+    return f"{found[0]} {found[1]}" if found else None
+
+
+def _timer_schedules(config_json):
+    config = json_document(config_json, dict) if isinstance(config_json, str) else (config_json or {})
+    return () if config is None else tuple(b.get("schedule") for b in config.get("bindings") or ()
+                 if isinstance(b, dict) and _low(b.get("type")) == "timertrigger" and b.get("schedule"))
+
+
+def _jobs(found):
+    """Function apps, each with the schedules of its timer-triggered functions."""
+    functions = [(_low(a.get("function_app_id")), _timer_schedules(a.get("config_json")))
+                 for a in of_types(found, "azurerm_function_app_function")]
+
+    def stack(a):
+        config = _first(a.get("site_config")) or {}
+        return _first(config.get("application_stack")) if isinstance(config, dict) else None
+    return tuple(resource("job", a.get("id"), {"ciamRuntime": runtime(stack(a)),
+                                               "ciamSchedule": sorted({s for app, ss in functions
+                                                                       if app == _low(a.get("id")) for s in ss})},
+                          name=_tags(a).get("Name") or a.get("name"), role=_role(a))
+                 for a in of_types(found, *FUNCTION_APPS) if a.get("id"))
+
+
+SCALE_SETS = ("azurerm_linux_virtual_machine_scale_set", "azurerm_windows_virtual_machine_scale_set",
+              "azurerm_orchestrated_virtual_machine_scale_set")
+# AKS add-ons, by the argument that enables each: (argument, add-on name)
+AKS_ADDONS = (("azure_policy_enabled", "azure-policy"), ("oms_agent", "oms-agent"),
+              ("key_vault_secrets_provider", "key-vault-secrets-provider"),
+              ("ingress_application_gateway", "ingress-application-gateway"),
+              ("workload_identity_enabled", "workload-identity"), ("oidc_issuer_enabled", "oidc-issuer"),
+              ("http_application_routing_enabled", "http-application-routing"),
+              ("open_service_mesh_enabled", "open-service-mesh"), ("microsoft_defender", "defender"))
+
+
+def _capacity(scale_set_id, found):
+    """(minimum, maximum) of the autoscale setting targeting a scale set, or (None, None)."""
+    setting = next((a for a in of_types(found, "azurerm_monitor_autoscale_setting")
+                    if _low(a.get("target_resource_id")) == _low(scale_set_id)), {})
+    cap = _first([c for p in setting.get("profile") or () for c in p.get("capacity") or ()]) or {}
+    return cap.get("minimum"), cap.get("maximum")
+
+
+def _compute(found):
+    """Virtual machine scale sets as compute groups."""
+    def group(a):
+        binding, target = compute_roles(_tags(a))
+        least, most = _capacity(a.get("id"), found)
+        return resource("compute", a.get("id") or a.get("name"), {
+            "ciamTargetRole": target, "ciamImageRef": _image(a), "ciamInstanceSize": a.get("sku") or a.get("sku_name"),
+            "ciamMinSize": least, "ciamMaxSize": most, "ciamDesiredSize": a.get("instances"),
+            "ciamSpansZone": sorted(a.get("zones") or ())}, name=a.get("name"), role=binding)
+    return tuple(group(a) for a in of_types(found, *SCALE_SETS) if a.get("id") or a.get("name"))
+
+
+def _enabled(value):
+    return value is True or (isinstance(value, list) and bool(value))
+
+
+def _pool(p):
+    return f"{p.get('name')}: {p.get('vm_size') or '?'}, {p.get('min_count') or p.get('node_count') or '?'}-" \
+           f"{p.get('max_count') or p.get('node_count') or '?'}"
+
+
+def _clusters(found):
+    """AKS clusters, their node pools and enabled add-ons."""
+    def cluster(c):
+        pools = (*(c.get("default_node_pool") or ()),
+                 *(p for p in of_types(found, "azurerm_kubernetes_cluster_node_pool")
+                   if _low(p.get("kubernetes_cluster_id")) == _low(c.get("id"))))
+        return resource("cluster", c.get("id") or c.get("name"), {
+            "ciamClusterVersion": c.get("kubernetes_version"),
+            "ciamClusterAddon": sorted(name for arg, name in AKS_ADDONS if _enabled(c.get(arg))),
+            "ciamNodePool": sorted(_pool(p) for p in pools),
+            "ciamSpansZone": sorted({z for p in pools for z in p.get("zones") or ()})},
+            name=c.get("name"), role=cluster_role(_tags(c)))
+    return tuple(cluster(c) for c in of_types(found, "azurerm_kubernetes_cluster") if c.get("id") or c.get("name"))
+
+
+ACS_SPF = "spf.protection.outlook.com"     # the SPF include that authorizes Azure Communication Services email
+STREAM_TYPES = (("azurerm_servicebus_queue", "queue"), ("azurerm_servicebus_topic", "topic"),
+                ("azurerm_eventhub", "event-hub"), ("azurerm_eventgrid_topic", "topic"))
+
+
+def _fqdn(record):
+    zone = (record.get("zone_name") or "").lower()
+    return zone if record.get("name") == "@" else f"{(record.get('name') or '').lower()}.{zone}"
+
+
+def _txt(found, name):
+    return tuple(v for r in of_types(found, "azurerm_dns_txt_record") if _fqdn(r) == name.lower()
+                 for rec in r.get("record") or () for v in ((rec.get("value"),) if isinstance(rec, dict) else ()) if v)
+
+
+def _dkim(domain, found):
+    """TRUE when every DKIM selector the domain's verification records name is a CNAME in Azure DNS, FALSE when one
+    isn't, None when the domain names none."""
+    records = _first(domain.get("verification_records")) or {}
+    selectors = [r.get("name") for key in ("dkim", "dkim2") for r in records.get(key) or () if r.get("name")]
+    if not selectors:
+        return None
+    zone = (domain.get("name") or "").lower()
+    published = {_fqdn(c) for c in of_types(found, "azurerm_dns_cname_record")}
+    return "TRUE" if all(f"{s.lower()}.{zone}" in published or s.lower() in published for s in selectors) else "FALSE"
+
+
+def _sending(found):
+    """Communication Services email domains (customer-managed) as sending identities."""
+    def identity(a):
+        domain = (a.get("name") or "").lower()
+        return resource("sending", a.get("id") or domain, {
+            "ciamSenderDomain": domain, "ciamDkimVerified": _dkim(a, found),
+            "ciamSpfAuthorized": spf_authorizes(_txt(found, domain), ACS_SPF),
+            "ciamDmarcPolicy": dmarc_policy(_txt(found, f"_dmarc.{domain}"))}, name=f"acs-{domain}", role=_role(a))
+    return tuple(identity(a) for a in of_types(found, "azurerm_email_communication_service_domain")
+                 if a.get("domain_management") != "AzureManaged" and a.get("name"))
+
+
+def _streams(found):
+    """Service Bus queues and topics, Event Hubs and Event Grid topics as stream carriers."""
+    return tuple(resource("stream", a.get("id"), {"ciamStreamKind": kind}, name=a.get("name"), role=_role(a))
+                 for t, kind in STREAM_TYPES for a in of_types(found, t) if a.get("id"))
 
 
 def pairs_resources(pairs):
@@ -307,7 +452,8 @@ def pairs_resources(pairs):
     (Terraform state as it is; CLI output normalized to the same attribute names, opsdir_adapter_azure.cli)."""
     rules, rule_notices = _firewall(pairs)
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *rules, *_secrets(pairs),
-             *_keys(pairs), *_storage(pairs), *_egress(pairs)), rule_notices)
+             *_keys(pairs), *_storage(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
+             *_sending(pairs), *_streams(pairs)), rule_notices)
 
 
 def state_resources(text):

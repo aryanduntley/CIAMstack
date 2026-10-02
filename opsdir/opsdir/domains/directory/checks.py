@@ -4,7 +4,7 @@ from ...core.findings import findings, owner_label, responsible
 from .drift import drift
 from .naming import ACIS, CONSUMERS
 
-TERMINAL = {"tested", "cutover"}
+TERMINAL = frozenset({"tested", "cutover"})
 
 
 def _consumer_blocker(d, dst, c):

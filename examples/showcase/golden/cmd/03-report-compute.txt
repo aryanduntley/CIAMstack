@@ -1,0 +1,6 @@
+environment  binding         role               runs                image                                                                   size             scale  zones                   metadata tokens
+-----------  --------------  -----------------  ------------------  ----------------------------------------------------------------------  ---------------  -----  ----------------------  ---------------
+source/prod  asg-pf-engine   compute-pf-engine  servers: pf-engine  ami-0fedcba9876543210                                                   m6i.large        2/2/4  us-east-1a, us-east-1b  yes
+target/prod  vmss-pf-engine  compute-pf-engine  servers: pf-engine  /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-  Standard_D2s_v5  2/2/4  1
+(2 rows)
+exit 0

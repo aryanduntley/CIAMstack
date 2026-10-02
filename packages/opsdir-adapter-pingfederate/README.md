@@ -8,7 +8,7 @@ Applies to environments with servers whose `ciamProductVersion` is PingFederate 
 - `saml/sp/`, `saml/partner-idp/`: every SAML partner's metadata as recorded; `oidc/clients/`: every OIDC client's registration metadata.
 - `saml/idp/<service>.xml`, `oidc/discovery/<service>.json`: the IdP metadata and OpenID provider metadata of the identity services its servers serve (`ciamTargetRole` `pf-engine` or `pf-admin`), with PingFederate's default endpoint paths (`/idp/SSO.saml2`, `/as/authorization.oauth2`, `/as/token.oauth2`, `/pf/JWKS`, ...).
 
-Per environment: `pingfederate/data-stores.json`, the data stores with that environment's hosts and secret references; the plugin instances (`password-credential-validators.json`, `idp-adapters.json`, `authentication-selectors.json`, `access-token-managers.json`); `cluster/discovery.xml`, the cluster's discovery; `other-resources.json`, the resources held as is (all below).
+Per environment: `pingfederate/data-stores.json`, the data stores with that environment's hosts and secret references; the plugin instances (`password-credential-validators.json`, `idp-adapters.json`, `authentication-selectors.json`, `access-token-managers.json`, `notification-publishers.json`, `captcha-providers.json`); `cluster/discovery.xml`, the cluster's discovery; `other-resources.json`, the resources held as is (all below).
 
 ## Reading PingFederate's configuration
 
@@ -25,7 +25,7 @@ The importer `pingfederate/bulk` reads the Admin API bulk export (and this adapt
 - **Key pairs** (`/keyPairs/signing`, `/keyPairs/sslServer`) and connection certificates become certificate facts, matched by fingerprint; facts the export doesn't give are kept. A key pair's certificate carries the id PingFederate knows the key pair by (auxiliary class `pingfedKeyPair`, `pingfedKeyPairId`): what token managers sign with.
 
 - **Data stores** (LDAP, JDBC, custom) become `pingfedDataStore` entries, below.
-- **Password credential validators, IdP adapters, authentication selectors, policy contracts, the default authentication policy and policy fragments** become entries too, below; so do **access token managers, OIDC policies and the authorization server's settings** (OAuth, below).
+- **Password credential validators, IdP adapters, authentication selectors, policy contracts, the default authentication policy and policy fragments** become entries too, below; so do **access token managers, OIDC policies and the authorization server's settings** (OAuth, below), and **notification publishers and CAPTCHA providers** (messaging, below).
 
 Integrations are matched by entity ID or client ID, data stores by id, and keep everything the export doesn't hold (owners, criticality, populations, claim transforms, certificate links the record makes, a data store's credential role). A client or connection the record didn't have is added and named in the notices, so it gets an owner. Client secrets, data store passwords and plugin secrets are never read. Every other resource type of the export is held as is (below), so nothing the export holds is left out. Two importers, so name the one you mean: `pingfederate/bulk` (the bulk export) and `pingfederate/node-files` (the nodes' own files).
 
@@ -66,6 +66,18 @@ The credential role is never guessed: an approved change sets it. The rendered f
 
 A key pair, like an IdP connection, is found by the id its certificate carries (`pingfedKeyPairId`); exactly one certificate may carry it. Not yet held: token manager attribute mappings (`/oauth/accessTokenMappings`), token exchange, an OAuth client's own token lifetimes and other settings beyond the standard registration.
 
+## Messaging: notification publishers and CAPTCHA providers
+
+Notification publishers (`/notificationPublishers`) and CAPTCHA providers (`/captchaProviders`) are plugin instances like the others (`pingfedPlugin` under `ou=notification-publishers` and `ou=captcha-providers`): their settings as the Admin API writes them, secrets withheld (the SMTP password, the CAPTCHA secret key), the credential role that holds them (`pingfedCredentialRole`), rendered back per environment. What they say about services outside the platform also becomes the core `messaging` domain's view of them, which the planner checks:
+
+| From | Recorded |
+|---|---|
+| an SMTP notification publisher's Email Server and SMTP Port | an external service of kind `smtp-relay` (`ciamEndpointHost`, `ciamPort`), found by its host, reached from `pf-engine`, using the publisher's credential role (`ciamUsesRole`) |
+| its From Address | a mail sender (`ciamSenderAddress`, `ciamSenderDomain`), found by its address, sent by that relay (`ciamSentBy`) |
+| a CAPTCHA provider | an external service of kind `captcha` named `captcha-<id>`, its vendor from the plugin type (Google reCAPTCHA, hCaptcha, Cloudflare Turnstile), using the provider's credential role |
+
+Their secrets never reach these entries. What the record adds (the domains a CAPTCHA allows, owners, a sender's sending role and bounce handling) is kept on import.
+
 ## Nodes and cluster discovery
 
 ```bash
@@ -84,7 +96,7 @@ One folder per node, named by the server's hostname (or its record name), holdin
 
 ## Resources held as is
 
-Every resource type of the bulk export not modeled above (`/serverSettings`, `/oauth/accessTokenMappings`, `/notificationPublishers`, `/captchaProviders`, administrative accounts, ...) is kept item by item: `pingfedResource` (cn: the item's id; `settings` for a resource that is one object; `item-<n>` otherwise) under `ou=<type, '/' as '.'>,ou=resources,ou=pingfederate`, with `pingfedResourceType`, its settings (secrets withheld) and a credential role. A type is imported as one group: items the export no longer has are removed. Each environment renders them as `pingfederate/other-resources.json`, in the bulk export's shape, which imports back through `pingfederate/bulk` unchanged. Notice: `held as is (not modeled): <type> (<items>)`.
+Every resource type of the bulk export not modeled above (`/serverSettings`, `/oauth/accessTokenMappings`, token processors and generators, local identity profiles, administrative accounts, ...) is kept item by item: `pingfedResource` (cn: the item's id; `settings` for a resource that is one object; `item-<n>` otherwise) under `ou=<type, '/' as '.'>,ou=resources,ou=pingfederate`, with `pingfedResourceType`, its settings (secrets withheld) and a credential role. A type is imported as one group: items the export no longer has are removed. Each environment renders them as `pingfederate/other-resources.json`, in the bulk export's shape, which imports back through `pingfederate/bulk` unchanged. Notice: `held as is (not modeled): <type> (<items>)`.
 
 **Planner check** (`check_data_stores`): a store with withheld credentials but no credential role, and a target or credential role the target environment doesn't bind, are blockers; a fixed host and an LDAP store without TLS are actions. **`check_references`:** a plugin instance, policy tree, fragment or OIDC policy that names an object the record doesn't have (an IdP connection or key pair no entry, or more than one, carries the id of) (PingFederate refuses such a configuration), and a plugin instance or held resource with withheld secrets but no credential role or one the target doesn't bind, are blockers. **`check_cluster`:** clustered nodes whose discovery nobody recorded, and a target discovery binding that is neither storage nor a service name, are blockers (a source binding the target lacks is the core's binding check); a different kind of discovery in the target (S3 to a blob container) is an action; a node's withheld secrets need a credential role the target binds.
 

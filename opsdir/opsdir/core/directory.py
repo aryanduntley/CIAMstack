@@ -31,6 +31,22 @@ def make_entry(dn, classes, attrs):
     return Entry(dn, norm_dn(dn), tuple(classes), _frozen((k, tuple(v)) for k, v in attrs.items()))
 
 
+def rdn_of(dn):
+    """The value of a DN's first RDN (ou=jobs,dc=x -> jobs)."""
+    return dn.split(",", 1)[0].split("=", 1)[1]
+
+
+def within(dn, base):
+    """Whether dn is base or an entry below it."""
+    n, b = norm_dn(dn), norm_dn(base)
+    return n == b or n.endswith("," + b)
+
+
+def ou_entry(dn):
+    """An organizationalUnit entry at dn, its ou the RDN's value: the container an importer adds when missing."""
+    return make_entry(dn, ("top", "organizationalUnit"), {"ou": (rdn_of(dn),)})
+
+
 def one(e, name, default=None):
     v = e.attrs.get(name)
     return v[0] if v else default
@@ -44,13 +60,33 @@ def is_a(e, oc):
     return oc in e.classes
 
 
+def gtime(at):
+    """GeneralizedTime text (UTC) of a datetime, as the record holds times (20261102000000Z); naive is taken as UTC."""
+    utc = at if at.tzinfo else at.replace(tzinfo=dt.timezone.utc)
+    return utc.astimezone(dt.timezone.utc).strftime("%Y%m%d%H%M%SZ")
+
+
+def gtime_of_iso(text):
+    """GeneralizedTime of an ISO 8601 time (Z allowed; no zone is UTC), or None when the text isn't one."""
+    try:
+        return gtime(dt.datetime.fromisoformat(str(text or "").replace("Z", "+00:00")))
+    except ValueError:
+        return None
+
+
+def fingerprint(v):
+    """A certificate fingerprint as the record writes it: uppercase hex pairs joined by colons."""
+    h = re.sub(r"[^0-9A-Fa-f]", "", v or "").upper()
+    return ":".join(h[i:i + 2] for i in range(0, len(h), 2))
+
+
 def gtime_date(gt):
     """Date part of a GeneralizedTime value (e.g. 20261102000000Z)."""
     return dt.datetime.strptime(gt[:8], "%Y%m%d").date()
 
 
 def rdn_value(e):
-    return e.dn.split(",", 1)[0].split("=", 1)[1]
+    return rdn_of(e.dn)
 
 
 def make_directory(type_rows, class_rows, entry_rows):
@@ -120,3 +156,10 @@ def referrers(d, target, attr=None):
     return ((name, e) for e in d.entries.values() for name, vals in e.attrs.items()
             if (attr is None or name == attr) and value_type(d, name) == "dn"
             and any(norm_dn(v) == t for v in vals))
+
+
+def merged_attrs(existing, owned, names):
+    """An imported entry's attributes: those an importer owns (names) replaced by owned (None values dropped), and
+    everything else the record holds on the entry (owners, a credential role, what operators add) kept."""
+    return {**{k: v for k, v in (existing.attrs.items() if existing else ()) if k not in names},
+            **{k: tuple(x for x in v if x is not None) for k, v in owned.items() if any(x is not None for x in v)}}

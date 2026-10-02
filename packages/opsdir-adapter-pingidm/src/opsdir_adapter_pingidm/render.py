@@ -11,22 +11,17 @@ The files follow IDM's conf/ layout but are not validated against a live IDM (mi
 doesn't bind renders as UNBOUND:<role>, and a withheld value no credential role supplies as ${withheld} (the planner
 blocks on both).
 """
-import json
 
 from opsdir.core.directory import children, one, rdn_value, values
 from opsdir.core.environment import bound, secret_placeholder
-from opsdir.core.jsondata import WITHHELD, with_value, with_values
+from opsdir.core.jsondata import WITHHELD, held_json, indented, with_value, with_values
 from .naming import CONNECTORS, MANAGED, MAPPINGS, SCHEDULES
 
 FORMATS = (("pingidm/conf/*.json", "json"),)
 
 
-def _json(value):
-    return json.dumps(value, indent=2) + "\n"
-
-
 def _config(e, attr="pingidmConfig"):
-    return json.loads(one(e, attr)) if one(e, attr) else {}
+    return held_json(e, attr)
 
 
 def _in_order(entries):
@@ -46,14 +41,14 @@ def sync_file(d):
 
 
 def schedule_files(d):
-    return {f"pingidm/conf/schedule-{rdn_value(s)}.json": _json({"enabled": one(s, "pingidmEnabled", "TRUE") == "TRUE",
+    return {f"pingidm/conf/schedule-{rdn_value(s)}.json": indented({"enabled": one(s, "pingidmEnabled", "TRUE") == "TRUE",
                                                                   **_config(s)})
             for s in children(d, SCHEDULES, "pingidmSchedule")}
 
 
 def render_neutral(d):
     """The deployment's environment-neutral files: managed objects, mappings, schedules."""
-    return {"pingidm/conf/managed.json": _json(managed_file(d)), "pingidm/conf/sync.json": _json(sync_file(d)),
+    return {"pingidm/conf/managed.json": indented(managed_file(d)), "pingidm/conf/sync.json": indented(sync_file(d)),
             **schedule_files(d)}
 
 
@@ -71,5 +66,5 @@ def provisioner(m, c):
 
 def render_env(m, services):
     """Every connector's provisioner file, for this environment."""
-    return {f"pingidm/conf/provisioner.openicf-{rdn_value(c)}.json": _json(provisioner(m, c))
+    return {f"pingidm/conf/provisioner.openicf-{rdn_value(c)}.json": indented(provisioner(m, c))
             for c in children(m.d, CONNECTORS, "pingidmConnector")}

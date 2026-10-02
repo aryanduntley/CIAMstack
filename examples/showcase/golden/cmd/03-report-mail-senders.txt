@@ -1,0 +1,5 @@
+sender                     address                    domain             sent by                             sending role  purposes                      bounces
+-------------------------  -------------------------  -----------------  ----------------------------------  ------------  ----------------------------  ----------------------------------------------------------------------
+noreply@example-aero.test  noreply@example-aero.test  example-aero.test  email-smtp.us-east-1.amazonaws.com  mail-sending  password-reset, registration  bounce and complaint notifications to the ciam-mail-events topic; suppression list on
+(1 rows)
+exit 0

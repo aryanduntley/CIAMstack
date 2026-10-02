@@ -1,0 +1,4 @@
+CHG-2011: modify cn=ds-nightly-export,ou=jobs,dc=ciam-ops
+CHG-2011: modify cn=pf-engine-pf-audit-ship,ou=jobs,dc=ciam-ops
+CHG-2011: modify cn=github-actions-ciam-ops-directory-backup,ou=jobs,dc=ciam-ops
+exit 0

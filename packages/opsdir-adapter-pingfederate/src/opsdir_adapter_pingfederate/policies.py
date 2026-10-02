@@ -16,11 +16,11 @@ no longer has is removed.
 """
 import json
 
-from opsdir.core.directory import children, get, make_entry, one, rdn_value
-from opsdir.core.jsondata import canonical
+from opsdir.core.directory import children, get, make_entry, merged_attrs, one, rdn_value
+from opsdir.core.jsondata import canonical, held_json
 from opsdir.core.naming import rdn_safe
 from .naming import CONTRACTS, DEFAULT_POLICY, FRAGMENTS, named
-from .objects import CONNECTION, NOT_EXPORTED, links, merged_attrs, why_unresolved
+from .objects import CONNECTION, NOT_EXPORTED, links, why_unresolved
 
 TREE_OWNED = ("cn", "pingfedPosition", "pingfedEnabled", "pingfedPolicyTree", "pingfedUses", "pingfedConfig")
 
@@ -123,10 +123,6 @@ def policy_groups(d, found, exported):
 
 
 # ------------------------------------------------------------------ render
-def _json(e, attr):
-    return json.loads(one(e, attr) or "{}")
-
-
 def _in_order(entries):
     return sorted(entries, key=lambda e: (int(one(e, "pingfedPosition", "0")), rdn_value(e)))
 
@@ -137,14 +133,14 @@ def policy_files(d):
     contracts = children(d, CONTRACTS, "pingfedPolicyContract")
     fragments = children(d, FRAGMENTS, "pingfedAuthPolicy")
     head = get(d, DEFAULT_POLICY)
-    policy = {**_json(head, "pingfedConfig"), "authnSelectionTrees": [
-        {"name": rdn_value(t), "enabled": one(t, "pingfedEnabled", "TRUE") == "TRUE", **_json(t, "pingfedConfig"),
-         "rootNode": _json(t, "pingfedPolicyTree")}
+    policy = {**held_json(head, "pingfedConfig"), "authnSelectionTrees": [
+        {"name": rdn_value(t), "enabled": one(t, "pingfedEnabled", "TRUE") == "TRUE", **held_json(t, "pingfedConfig"),
+         "rootNode": held_json(t, "pingfedPolicyTree")}
         for t in _in_order(children(d, DEFAULT_POLICY, "pingfedAuthPolicy"))]} if head is not None else None
-    out = {"authentication-policy-contracts.json": [{"id": rdn_value(c), **_json(c, "pingfedConfig")} for c in contracts]
+    out = {"authentication-policy-contracts.json": [{"id": rdn_value(c), **held_json(c, "pingfedConfig")} for c in contracts]
            if contracts else None,
            "authentication-policies.json": policy,
-           "authentication-policy-fragments.json": [{"id": rdn_value(f), **_json(f, "pingfedConfig"),
-                                                     "rootNode": _json(f, "pingfedPolicyTree")} for f in fragments]
+           "authentication-policy-fragments.json": [{"id": rdn_value(f), **held_json(f, "pingfedConfig"),
+                                                     "rootNode": held_json(f, "pingfedPolicyTree")} for f in fragments]
            if fragments else None}
     return {f"pingfederate/{p}": json.dumps(v, indent=2) + "\n" for p, v in out.items() if v is not None}

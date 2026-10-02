@@ -1,0 +1,6 @@
+service                             kind        vendor            endpoint                                used from  allowed domains                                 uses  contact
+----------------------------------  ----------  ----------------  --------------------------------------  ---------  ----------------------------------------------  ----  -------
+captcha-recaptcha                   captcha     Google reCAPTCHA                                          pf-engine  sso.example-aero.test, login.example-aero.test
+email-smtp.us-east-1.amazonaws.com  smtp-relay  Amazon SES        email-smtp.us-east-1.amazonaws.com:587  pf-engine
+(2 rows)
+exit 0

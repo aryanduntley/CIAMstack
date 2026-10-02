@@ -1,10 +1,10 @@
 """PingGateway planner checks: every route can work in the target (its backend role is bound there, the client it
 signs users in as and the OpenID provider it trusts are in the record); a route to a fixed backend is an action."""
-import json
 
 from opsdir.core.directory import children, one, rdn_value
 from opsdir.core.environment import one_role
 from opsdir.core.findings import findings, merge_findings, responsible
+from opsdir.core.jsondata import held_json
 from opsdir.domains.federation.services import identity_services, integrations
 from .naming import ROUTES
 from .routes import client_ids, issuers
@@ -12,7 +12,7 @@ from .routes import client_ids, issuers
 
 def route_problems(d, route):
     """Why a route can't sign users in anywhere: clients or OpenID providers the record doesn't have."""
-    config = json.loads(one(route, "pinggwConfig") or "{}")
+    config = held_json(route, "pinggwConfig")
     known_clients = {one(i, "ciamClientId") for i in integrations(d, "oidc-client")}
     known_issuers = {one(s, "ciamOidcIssuer") for s in identity_services(d) if one(s, "ciamOidcIssuer")}
     trusted = (*issuers(config), *((one(route, "pinggwIssuer"),) if one(route, "pinggwIssuer") else ()))
@@ -26,7 +26,7 @@ def _route(ctx, r):
     name, role = rdn_value(r), one(r, "pinggwBackendRole")
     owner = responsible(ctx.d, r, ctx.dst.env)
     why = route_problems(ctx.d, r)
-    fixed = "baseURI" in json.loads(one(r, "pinggwConfig") or "{}")
+    fixed = "baseURI" in held_json(r, "pinggwConfig")
     return findings(
         blockers=[*((("Gateway", f"Route `{name}` can't sign users in: {'; '.join(why)}.", owner),) if why else ()),
                   *((("Gateway", f"Route `{name}` protects role `{role}`, which {ctx.dst.label} doesn't bind.", owner),)

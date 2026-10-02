@@ -75,7 +75,7 @@ Imported = NamedTuple("Imported", [("containers", tuple), ("groups", tuple), ("n
 Services = NamedTuple("Services", [("secret_command", Callable)])
 
 Adapter = NamedTuple("Adapter", [("name", str),
-                                 ("kind", str),                       # provider | product | secret-store
+                                 ("kind", str),                       # provider | product | host | delivery | secret-store
                                  ("applies", Optional[Callable]),     # (EnvModel) -> bool, from directory data only;
                                                                       # None = declaration-only (see connectors.stack)
                                  ("required_roles", tuple),

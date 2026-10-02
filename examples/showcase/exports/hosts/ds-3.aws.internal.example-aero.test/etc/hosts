@@ -1,0 +1,3 @@
+127.0.0.1   localhost localhost.localdomain
+::1         localhost6
+10.20.3.11  ds-3.aws.internal.example-aero.test ds-3

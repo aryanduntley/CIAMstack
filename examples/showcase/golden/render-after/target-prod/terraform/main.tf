@@ -993,6 +993,10 @@ data "azurerm_key_vault_secrets" "kv_ciam_prod" {
       error_message = "Key Vault kv-ciam-prod has no secret pf-admin-password (role pf-admin-password)"
     }
     postcondition {
+      condition     = contains(self.names, "pf-captcha-secret")
+      error_message = "Key Vault kv-ciam-prod has no secret pf-captcha-secret (role pf-captcha-secret)"
+    }
+    postcondition {
       condition     = contains(self.names, "pf-ds-bind-password")
       error_message = "Key Vault kv-ciam-prod has no secret pf-ds-bind-password (role pf-ds-bind-password)"
     }
@@ -1003,6 +1007,10 @@ data "azurerm_key_vault_secrets" "kv_ciam_prod" {
     postcondition {
       condition     = contains(self.names, "pf-signing-key")
       error_message = "Key Vault kv-ciam-prod has no secret pf-signing-key (role pf-signing-key)"
+    }
+    postcondition {
+      condition     = contains(self.names, "pf-smtp-password")
+      error_message = "Key Vault kv-ciam-prod has no secret pf-smtp-password (role pf-smtp-password)"
     }
     postcondition {
       condition     = contains(self.names, "sso-tls-keystore")

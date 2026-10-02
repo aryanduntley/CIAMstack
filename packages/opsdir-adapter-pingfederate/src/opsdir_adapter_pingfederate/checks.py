@@ -2,11 +2,11 @@
 role the target binds); a data store with a fixed host, and a directory reached without TLS, are actions. Every plugin
 instance, authentication policy and OIDC policy names only objects the record has, and every plugin instance's
 withheld secrets come from a credential role the target binds."""
-import json
 
 from opsdir.core.directory import children, one, rdn_value, values
 from opsdir.core.environment import one_role
 from opsdir.core.findings import findings, merge_findings, responsible
+from opsdir.core.jsondata import held_json
 from .datastores import store_hosts
 from .generic import held_resources, resource_label
 from .naming import DATA_STORES, DEFAULT_POLICY, DISCOVERY_ROLE, FRAGMENTS, OIDC_POLICIES
@@ -18,7 +18,7 @@ from .policies import fragment_refs, node_refs
 
 
 def _config(e, attr="pingfedConfig"):
-    return json.loads(one(e, attr) or "{}")
+    return held_json(e, attr)
 
 
 def _credentials(ctx, e, what, owner):

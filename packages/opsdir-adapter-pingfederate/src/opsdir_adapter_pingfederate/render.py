@@ -19,6 +19,7 @@ an illustrative subset. It hasn't been validated against a live /pf-admin-api/v1
 target the Admin API or the PingFederate Terraform provider. Endpoint paths are PingFederate's defaults.
 """
 import json
+from types import MappingProxyType
 
 from opsdir.core.directory import children, get, one, rdn_value, values
 from opsdir.domains.federation.services import claims, identity_services, integrations_served
@@ -33,25 +34,27 @@ from .oauth import client_view, oauth_files
 from .plugins import plugin_files
 from .policies import policy_files
 
-USER_DIRECTORY = {"type": "LDAP_DATA_STORE", "id": "ciam-user-directory"}
+USER_DIRECTORY = MappingProxyType({"type": "LDAP_DATA_STORE", "id": "ciam-user-directory"})
 SAML_ENDPOINTS = SamlEndpoints(sso=(("HTTP-Redirect", "/idp/SSO.saml2"), ("HTTP-POST", "/idp/SSO.saml2")),
                                slo=(("HTTP-Redirect", "/idp/SLO.saml2"), ("HTTP-POST", "/idp/SLO.saml2")))
 OIDC_ENDPOINTS = OidcEndpoints(authorization="/as/authorization.oauth2", token="/as/token.oauth2",
                                userinfo="/idp/userinfo.openid", jwks="/pf/JWKS", end_session="/idp/startSLO.ping")
 # standard value → PingFederate Admin API name (verify extension grants against the target version)
-GRANT_TYPES = {"authorization_code": "AUTHORIZATION_CODE", "client_credentials": "CLIENT_CREDENTIALS",
-               "refresh_token": "REFRESH_TOKEN", "urn:ietf:params:oauth:grant-type:device_code": "DEVICE_CODE",
-               "urn:ietf:params:oauth:grant-type:token-exchange": "TOKEN_EXCHANGE",
-               "urn:ietf:params:oauth:grant-type:jwt-bearer": "EXTENSION",
-               "urn:ietf:params:oauth:grant-type:saml2-bearer": "EXTENSION"}
-CLIENT_AUTH = {"none": "NONE", "client_secret_basic": "SECRET", "client_secret_post": "SECRET",
-               "client_secret_jwt": "SECRET", "private_key_jwt": "PRIVATE_KEY_JWT", "tls_client_auth": "CLIENT_CERT",
-               "self_signed_tls_client_auth": "CLIENT_CERT"}
-BINDINGS = {"HTTP-POST": "POST", "HTTP-Redirect": "REDIRECT", "HTTP-Artifact": "ARTIFACT", "SOAP": "SOAP"}
+GRANT_TYPES = MappingProxyType({"authorization_code": "AUTHORIZATION_CODE", "client_credentials": "CLIENT_CREDENTIALS",
+                                "refresh_token": "REFRESH_TOKEN",
+                                "urn:ietf:params:oauth:grant-type:device_code": "DEVICE_CODE",
+                                "urn:ietf:params:oauth:grant-type:token-exchange": "TOKEN_EXCHANGE",
+                                "urn:ietf:params:oauth:grant-type:jwt-bearer": "EXTENSION",
+                                "urn:ietf:params:oauth:grant-type:saml2-bearer": "EXTENSION"})
+CLIENT_AUTH = MappingProxyType({"none": "NONE", "client_secret_basic": "SECRET", "client_secret_post": "SECRET",
+                                "client_secret_jwt": "SECRET", "private_key_jwt": "PRIVATE_KEY_JWT",
+                                "tls_client_auth": "CLIENT_CERT", "self_signed_tls_client_auth": "CLIENT_CERT"})
+BINDINGS = MappingProxyType({"HTTP-POST": "POST", "HTTP-Redirect": "REDIRECT", "HTTP-Artifact": "ARTIFACT",
+                             "SOAP": "SOAP"})
 
 
 def _fulfillment_entry(attr, transform):
-    base = {"source": USER_DIRECTORY, "value": attr}
+    base = {"source": dict(USER_DIRECTORY), "value": attr}
     return {**base, "x-opsdir-transform": transform} if transform else base
 
 
@@ -71,7 +74,7 @@ def _sp_connection(i, claims, owners, certs, refs):
                 "coreAttributes": [{"name": "SAML_SUBJECT"}],
                 "extendedAttributes": [{"name": n} for n, _, _ in claims]},
             "adapterMappings": [{"attributeContractFulfillment": {
-                "SAML_SUBJECT": {"source": USER_DIRECTORY, "value": "uid"}, **_fulfillment(claims)}}]},
+                "SAML_SUBJECT": {"source": dict(USER_DIRECTORY), "value": "uid"}, **_fulfillment(claims)}}]},
         "x-opsdir": {"mfaRequired": one(i, "ciamMfaRequired") == "TRUE",
                      "populations": list(values(i, "ciamPopulation")), "certificateFingerprints": list(certs)}}
 
@@ -105,9 +108,9 @@ def _idp_connection(i, claims, owners, certs, refs):
 
 
 # protocol type → (output file, resource builder)
-RESOURCES = {"saml2-sp": ("pingfederate/sp-connections.json", _sp_connection),
-             "oidc-client": ("pingfederate/oidc-clients.json", _oidc_client),
-             "saml2-idp": ("pingfederate/idp-connections.json", _idp_connection)}
+RESOURCES = MappingProxyType({"saml2-sp": ("pingfederate/sp-connections.json", _sp_connection),
+                              "oidc-client": ("pingfederate/oidc-clients.json", _oidc_client),
+                              "saml2-idp": ("pingfederate/idp-connections.json", _idp_connection)})
 
 
 def _resource(d, i):

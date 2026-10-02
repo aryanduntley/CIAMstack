@@ -1,0 +1,12 @@
+[Unit]
+Description=ig
+After=network-online.target
+
+[Service]
+User=ig
+Restart=always
+ExecStart=/opt/ig/bin/start.sh
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

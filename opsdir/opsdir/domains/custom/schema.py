@@ -55,6 +55,9 @@ ATTRIBUTES = (
                  'Fields a record of this type may carry'),
     AttributeDef(186, 'ciamSettingRef', 'dn', 'meta', False,
                  'Settings of captured config files (ou=config-files) where the value lives'),
+    AttributeDef(265, 'ciamCensusTerm', 'bool', 'meta', True,
+                 "The census looks for the field's values in files, whatever their type: a term operators want "
+                 "found wherever it is copied (an old brand or domain, an account ID, a bucket name)"),
 )
 CLASSES = (
     ClassDef(36, 'ciamCustomDefinition', 'ciamObject', 'ABSTRACT', ('cn', 'ciamDefinitionNumber'),
@@ -63,7 +66,7 @@ CLASSES = (
              'A field or record type an operator defines'),
     ClassDef(37, 'ciamFieldDefinition', 'ciamCustomDefinition', 'STRUCTURAL', ('ciamValueType', 'ciamPortability'),
              ('ciamMultiValued', 'ciamCarriedBy', 'ciamUnit', 'ciamExample', 'ciamDefaultValue', 'ciamMinValue',
-              'ciamMaxValue', 'ciamPattern', 'ciamMaxLength', 'ciamOverridable'),
+              'ciamMaxValue', 'ciamPattern', 'ciamMaxLength', 'ciamOverridable', 'ciamCensusTerm'),
              'Definition of a custom field'),
     ClassDef(38, 'ciamRecordTypeDefinition', 'ciamCustomDefinition', 'STRUCTURAL', (),
              ('ciamRecordKind', 'ciamParentType', 'ciamRequiredField', 'ciamOptionalField'),

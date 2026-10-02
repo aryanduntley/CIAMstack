@@ -44,6 +44,11 @@ The importer `azure/terraform-state` reads Terraform state (format version 4, `h
 | `azurerm_key_vault_key` (+ `azurerm_disk_encryption_set`) | key reference `azkv-key://<vault>/keys/<name>`: `hsm` for `*-HSM` key types else `software`; automatic rotation when the state has a rotation policy; the disk encryption set using the key (`ciamProviderRef`) | reference URI |
 | `azurerm_storage_container` | backup target `azblob://<account>/<container>` | storage reference |
 | `azurerm_nat_gateway` + public IP and prefix associations | egress: its public addresses | its name (`ciamProviderRef`) |
+| `azurerm_linux_function_app`, `azurerm_windows_function_app` (+ `azurerm_function_app_function`) | job binding (`ciamJobBinding`, the core automation domain): the function app's ID, its runtime (`python 3.11`, from the application stack or `linuxFxVersion`), and the NCRONTAB schedules of its timer-triggered functions; the job itself (`ou=jobs`) names the binding role (`ciamJobRole`) | its ID (`ciamProviderRef`) |
+| `azurerm_linux_virtual_machine_scale_set`, `azurerm_windows_virtual_machine_scale_set`, `azurerm_orchestrated_virtual_machine_scale_set` (+ the `azurerm_monitor_autoscale_setting` targeting it) | compute group (`ciamComputeGroup`, the core compute domain): the server role it runs (`ciamTargetRole`, its tag `Role`), SKU, instances, zones, image, min/max from the autoscale setting's capacity. Its binding role is its tag `BindingRole`, else `compute-<role>` | its ID (`ciamProviderRef`) |
+| `azurerm_kubernetes_cluster` (+ `azurerm_kubernetes_cluster_node_pool`) | cluster (`ciamCluster`): Kubernetes version, the add-ons it enables (Azure Policy, monitoring agent, Key Vault secrets provider, Application Gateway ingress, workload identity, OIDC issuer, HTTP application routing, Open Service Mesh, Defender), node pools (`name: VM size, min-max`), zones. Its binding role is its tag `BindingRole` or `Role`, else `cluster` | its ID (`ciamProviderRef`) |
+| `azurerm_email_communication_service_domain` (customer-managed; + `azurerm_dns_cname_record`, `azurerm_dns_txt_record`) | sending identity (`ciamSendingIdentity`, the core messaging domain) for a domain: DKIM verified when every selector its verification records name is a CNAME in Azure DNS, SPF authorizing Communication Services (`include:spf.protection.outlook.com`), the DMARC policy | its ID (`ciamProviderRef`) |
+| `azurerm_servicebus_queue`, `azurerm_servicebus_topic`, `azurerm_eventhub`, `azurerm_eventgrid_topic` | stream carrier (`ciamStreamBinding`); Service Bus queues and topics carry no tags, so their roles come from `roles.json` | its ID (`ciamProviderRef`) |
 
 **What changes.** What the state says replaces the record's values for what it covers; everything else on the entry (owner, rotation dates, consumers, …) is kept. An entry of a kind the state reports but that the state lacks is named ("in the record but not in what the cloud reports"); kinds the state doesn't report at all are left alone. An overlay environment leaves the bindings it inherits to its base.
 
@@ -92,6 +97,11 @@ for key in $(az keyvault key list --vault-name $KV --query '[].name' -o tsv); do
   az keyvault key rotation-policy show --vault-name $KV -n "$key" -o json  > "$out/kv-rotation-$key.json"
 done
 
+az functionapp list -g $RG -o json                                     > $out/functionapps.json
+for app in $(az functionapp list -g $RG --query '[].name' -o tsv); do
+  az functionapp function list -g $RG -n "$app" -o json                > "$out/functions-$app.json"   # timer schedules
+done
+
 opsdir import --dry-run azure/cli-inventory export/
 opsdir import --change CHG-… azure/cli-inventory export/
 ```
@@ -99,7 +109,7 @@ opsdir import --change CHG-… azure/cli-inventory export/
 The outputs are read into the same resources as Terraform state (the mapping is shared), so the tables above, what changes, roles and `roles.json` apply unchanged. A key's type comes from `key show` (`RSA-HSM` → `hsm`) and its automatic rotation from its rotation policy (a `Rotate` action); without those outputs the record's values are kept. NSG default rules (`AllowVnetInBound`, …) aren't read. Differences in scope:
 
 - **Network resources:** subnets, interfaces and VMs are read only inside the virtual networks `vnet list` returns; others are counted. Scope the other lists by resource group, as above.
-- **Account-wide listings** (Key Vault secrets and keys, storage containers) cover a whole vault or account: the ones the record doesn't have and nothing names a role for are counted with a few examples. Certificate-backed secrets and keys (`managed`) are skipped.
+- **Account-wide listings** (Key Vault secrets and keys, storage containers) cover a whole vault or account: the ones the record doesn't have and nothing names a role for are counted with a few examples. Certificate-backed secrets and keys (`managed`) are skipped. Function apps are listed per resource group and counted like the account-wide listings; their app settings are never read.
 - `keyvault secret list` never returns values; nothing reads `secret show` output. Items the importer doesn't recognize are counted per file and named.
 
 ## Reading an environment from its ARM or Bicep deployments
@@ -137,10 +147,10 @@ It adds no required roles, planner checks or schema of its own; the environment'
 
 - **Not yet run against a live subscription.** The Terraform and the importer follow the `hashicorp/azurerm` 4.x schema; `terraform validate`/`plan` against a real subscription is part of the testing plan (milestone 7.2).
 - **Linux only.** Servers render as Linux VMs with SSH keys; the importer reads Windows VMs but the renderer doesn't write them.
-- **What the importers can't see:** container metadata other than a role, the identity a disk encryption set uses, Key Vault access policies and RBAC, private endpoints, Application Gateway / Front Door (edge, milestone 4.8).
+- **What the importers can't see:** container metadata other than a role, the identity a disk encryption set uses, Key Vault access policies and RBAC, private endpoints, Application Gateway / Front Door (edge, milestone 4.8), scale sets and AKS clusters in CLI output and ARM/Bicep deployments (Terraform state only, for now).
 
 ## Tests
 
-`tests/test_azure.py` (registration, vocabulary, secret resolution), `tests/test_azure_state.py` (the state importer: round trip, drift, new resources and role sources, rules, services, secrets never read, layout), `tests/test_azure_cli.py` (the CLI importer: round trip over `az` output shapes, drift from `key show` and rotation policies, network scoping, counted listings, unrecognized items), `tests/test_azure_arm.py` (the ARM importer: round trip over a Bicep-style template and its deployment, drift, `resourceId()` links, secure parameters never read, what the deployment didn't produce, no deployment, the evaluator), `tests/test_azure_state_store.py` (state and CLI against Postgres: imported under an approved change, re-import changes nothing). The rendered Terraform is covered end to end by the showcase's golden outputs (`examples/showcase`, the target environment).
+`tests/test_azure.py` (registration, vocabulary, secret resolution), `tests/test_azure_state.py` (the state importer: round trip, drift, new resources and role sources, rules, services, secrets never read, layout), `tests/test_azure_cli.py` (the CLI importer: round trip over `az` output shapes, drift from `key show` and rotation policies, network scoping, counted listings, unrecognized items), `tests/test_azure_arm.py` (the ARM importer: round trip over a Bicep-style template and its deployment, drift, `resourceId()` links, secure parameters never read, what the deployment didn't produce, no deployment, the evaluator), `tests/test_azure_messaging.py` (an email domain verified or not by its DNS, SPF and DMARC; queues and topics as stream carriers), `tests/test_azure_compute.py` (a scale set with its autoscale capacity, an AKS cluster with its pools and enabled add-ons), `tests/test_azure_jobs.py` (a function app with its runtime and timer schedules from state, CLI output and an ARM template; app settings never read), `tests/test_azure_state_store.py` (state and CLI against Postgres: imported under an approved change, re-import changes nothing). The rendered Terraform is covered end to end by the showcase's golden outputs (`examples/showcase`, the target environment).
 
 Installing the package registers it with opsdir (entry point `opsdir.adapters`: `azure`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.

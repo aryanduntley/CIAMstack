@@ -9,30 +9,22 @@ Pure.
 
 The importer owns what it reads; what the record adds to a route (owners) is kept.
 """
-import json
 
 from opsdir.core.contract import Imported, Importer
-from opsdir.core.directory import get, make_entry, one
+from opsdir.core.directory import get, make_entry, one, ou_entry
 from opsdir.core.environment import UNBOUND, published_role
 from opsdir.core.formats import JSON
 from opsdir.core.jsondata import canonical, rendered_in_place, without_secrets
 from opsdir.core.naming import rdn_safe
-from opsdir.domains.configuration.naming import CONFIG_FILES, file_dn
-from opsdir.domains.configuration.record import file_entries
+from opsdir.core.sources import json_document
+from opsdir.domains.configuration.naming import CONFIG_FILES
+from opsdir.domains.configuration.record import captured_file
 from opsdir.domains.federation.services import integrations
 from .naming import PINGGATEWAY, ROUTES, SERVER_ROLES, route_dn
 from .routes import backend, client_ids, issuers
 
 OWNED = ("cn", "pinggwCondition", "pinggwBackendRole", "pinggwBackendScheme", "pinggwIntegration", "pinggwIssuer",
          "pinggwConfig", "pinggwWithheld")
-
-
-def _parse(text):
-    try:
-        value = json.loads(text)
-    except ValueError:
-        return None
-    return value if isinstance(value, dict) else None
 
 
 def _backend_role(d, route):
@@ -72,25 +64,21 @@ def _route(d, name, route, patterns):
 
 
 def _captured(path, text, patterns):
-    name = "ig." + path.replace("/", ".")
-    entries, notices = file_entries(JSON, text, name, f"pinggateway/{path}", patterns, SERVER_ROLES[0])
-    return (file_dn(name), entries), notices
-
-
-def _ou(dn):
-    return make_entry(dn, ("top", "organizationalUnit"), {"ou": (dn.split(",", 1)[0].split("=", 1)[1],)})
+    dn, entries, notices = captured_file(JSON, "ig", "pinggateway", path, text, patterns, SERVER_ROLES[0])
+    return (dn, entries), notices
 
 
 def read_config(files, d, patterns, at=None):
     """Imported from a gateway configuration directory."""
-    routes = tuple((p, _parse(t)) for p, t in sorted(files.items()) if p.startswith("routes/") and p.endswith(".json"))
+    routes = tuple((p, json_document(t, dict)) for p, t in sorted(files.items())
+                   if p.startswith("routes/") and p.endswith(".json"))
     named = tuple((r.get("name") or p[len("routes/"):-5], r) for p, r in routes if r is not None)
     parts = tuple(_route(d, name, r, patterns) for name, r in named if rdn_safe(name))
     captured = tuple(_captured(p, t, patterns) for p, t in sorted(files.items())
                      if p.startswith("config/") and p.endswith(".json"))
     other = sorted(p for p in files if not ((p.startswith("routes/") or p.startswith("config/")) and p.endswith(".json")))
     return Imported(
-        containers=tuple(_ou(dn) for dn in (PINGGATEWAY, ROUTES, CONFIG_FILES)),
+        containers=tuple(ou_entry(dn) for dn in (PINGGATEWAY, ROUTES, CONFIG_FILES)),
         groups=(*((dn, (entry,)) for dn, entry, _ in parts), *(g for g, _ in captured)),
         notices=(*(n for _, _, ns in parts for n in ns), *(n for _, ns in captured for n in ns),
                  *(f"not a JSON route: {p}" for p, r in routes if r is None),

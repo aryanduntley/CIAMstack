@@ -1,0 +1,12 @@
+[Unit]
+Description=pingfed
+After=network-online.target
+
+[Service]
+User=pingfed
+Restart=on-failure
+ExecStart=/opt/pingfederate/bin/run.sh
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

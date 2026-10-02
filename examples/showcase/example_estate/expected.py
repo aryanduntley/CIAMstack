@@ -1,8 +1,10 @@
 """What the tools should find: every problem planted in the estate, and how the migration planner reports it.
 The demo checks the planner against this list, so "NOT READY" reads as "found what was planted", not as a failure.
 """
+from types import MappingProxyType
 
-EXPECTED = {
+
+EXPECTED = MappingProxyType({
     "blockers": [
         ("B1", "Contract", "`ds-ldaps-service` changes name", "the target environment binds a new LDAPS name (landing-zone DNS default)", "CHG-2003"),
         ("B2", "Binding", "Role `backup-target`", "the target environment has no backup target", None),
@@ -22,6 +24,15 @@ EXPECTED = {
          "imported directory data store names no secret", "CHG-2005"),
         ("B13", "Binding", "Role `pf-cluster-discovery`",
          "the target binds no PingFederate cluster discovery: the nodes' tcp.xml uses S3 on AWS", None),
+        ("B14", "PingFederate", "Notification publisher `smtp` has withheld credentials but no credential role",
+         "imported SMTP publisher names no secret", "CHG-2005"),
+        ("B15", "PingFederate", "CAPTCHA provider `recaptcha` has withheld credentials but no credential role",
+         "imported CAPTCHA provider names no secret", "CHG-2005"),
+        ("B16", "Mail", "Sender `noreply@example-aero.test`: target/prod's sending identity for example-aero.test isn't "
+         "DKIM-verified", "the target's Communication Services domain isn't DKIM-verified yet: reset mail lands in spam",
+         None),
+        ("B17", "Binding", "Role `audit-events` is bound in source/prod but not in target/prod",
+         "no bus carries the identity audit stream in the target", None),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -52,8 +63,24 @@ EXPECTED = {
          "the grant database is reached at the same host everywhere", None),
         ("A21", "PingFederate", "Data store `user-directory` reaches a fixed host",
          "PingFederate's LDAP data store lists ds-1 by hostname next to the LDAPS service", None),
+        ("A22", "Job", "Job `ds-nightly-export` has no owner", "the MRO nightly export on ds-2's cron nobody owns",
+         "CHG-2011"),
+        ("A23", "Job", "Job `github-actions-ciam-ops-directory-backup` has no owner",
+         "the nightly directory backup pipeline nobody owns", "CHG-2011"),
+        ("A24", "Job", "Job `pf-engine-pf-audit-ship` has no owner",
+         "the PingFederate engines' audit shipping timer nobody owns", "CHG-2011"),
+        ("A25", "Host", "Servers of role `ds` pin 1 name(s) in /etc/hosts",
+         "ds-2 pins the legacy reports host to its address", None),
+        ("A26", "Host", "Servers of role `pf-engine` trust 1 certificate(s)",
+         "the engines' truststore adds the corporate root CA, which the record lacks", "CHG-2013"),
+        ("A27", "Host", "Servers of role `pf-admin` trust 1 certificate(s)",
+         "the admin node's truststore adds it too", "CHG-2013"),
+        ("A28", "Compute", "Compute group `vmss-pf-engine` (role `pf-engine`) in target/prod spans 1 zone(s)",
+         "the target's engine scale set sits in one zone; the source spreads them over two", None),
+        ("A29", "Mail", "Sender `noreply@example-aero.test`: target/prod's DMARC policy for example-aero.test is "
+         "quarantine", "the target's DMARC policy is weaker than the source's reject", None),
     ],
-}
+})
 
 KEYS = ("id", "area", "match", "planted", "cleared_by")
 

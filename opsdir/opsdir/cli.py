@@ -21,9 +21,11 @@
   opsdir import [--change CHG-…] ADAPTER[/IMPORTER] PATH [--dry-run] [--at YYYYMMDDhhmmssZ]
                                        read a product's export (a directory or a file) into the record with an
                                        adapter's importer; without --change (or with --dry-run) only lists the changes
-  opsdir census [--change CHG-…] PATH [--dry-run]
-                                       where the record's values (hostnames, addresses, DNs, fingerprints, ...) occur
-                                       in files: each file and line, secret material flagged by line, never stored
+  opsdir census [--change CHG-…] PATH [--dry-run] [--replace]
+                                       where the record's values (hostnames, addresses, DNs, fingerprints, census
+                                       terms operators define, ...) occur in files: each file and line, secret
+                                       material flagged by line, never stored; --replace: PATH is the whole census
+                                       (recorded files not under it are removed)
   opsdir export [-b base]              dump entries as LDIF (for Git review)
   opsdir history [DN]                  change history
   opsdir workspace create [--replace]  copy the live record (OPSDIR_DSN) into the migration workspace
@@ -38,6 +40,7 @@ import os
 import pathlib
 import re
 import sys
+from types import MappingProxyType
 
 from . import operations as ops
 from .connectors import migration, workspace
@@ -76,7 +79,9 @@ SUBCOMMANDS = (
                 (("--version",), {}), (("--format",), {}), (("--role",), {}), (("--deploy-path",), {}))),
     ("verify", ((("--root",), {}),)),
     ("census", ((("--change",), {}), (("path",), {}),
-                (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}))),
+                (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}),
+                (("--replace",), {"action": "store_true",
+                                  "help": "the scan is the whole census: recorded files not in it are removed"}))),
     ("import", ((("--change",), {}), (("importer",), {"help": "adapter[/importer]"}), (("path",), {}),
                 (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}),
                 (("--at",), {"help": "when the export was taken, YYYYMMDDhhmmssZ (UTC; default: now)"}))),
@@ -289,7 +294,7 @@ def _cmd_import(conn, a, as_of):
 
 def _cmd_census(conn, a, as_of):
     files, skipped = read_texts(a.path)
-    preview = ops.preview_census(conn, files)
+    preview = ops.preview_census(conn, files, a.replace)
     notes = (*(f"skipped (not UTF-8 text): {rel}" for rel in skipped), *preview.notices)
     if a.dry_run or not a.change:
         return _not_applied(notes, preview.changes, a.dry_run)
@@ -342,11 +347,12 @@ def _cmd_workspace(conn, a, as_of):
                       f"cutover: {len(r.lines)} change(s) applied to the live record; workspace re-copied"))
 
 
-COMMANDS = {"init": _cmd_init, "upgrade": _cmd_upgrade, "load": _cmd_load, "check": _cmd_check, "search": _cmd_search, "report": _cmd_report,
-            "render": _cmd_render, "plan": _cmd_plan, "migrate": _cmd_migrate, "modify": _cmd_modify, "export": _cmd_export,
-            "history": _cmd_history, "capture": _cmd_capture, "import": _cmd_import, "file": _cmd_file, "bundle": _cmd_bundle,
-            "verify": _cmd_verify, "census": _cmd_census,
-            "workspace": _cmd_workspace}
+COMMANDS = MappingProxyType({"init": _cmd_init, "upgrade": _cmd_upgrade, "load": _cmd_load, "check": _cmd_check,
+                             "search": _cmd_search, "report": _cmd_report, "render": _cmd_render, "plan": _cmd_plan,
+                             "migrate": _cmd_migrate, "modify": _cmd_modify, "export": _cmd_export,
+                             "history": _cmd_history, "capture": _cmd_capture, "import": _cmd_import, "file": _cmd_file,
+                             "bundle": _cmd_bundle, "verify": _cmd_verify, "census": _cmd_census,
+                             "workspace": _cmd_workspace})
 
 
 def parser():

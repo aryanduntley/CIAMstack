@@ -273,12 +273,12 @@ A DS-lineage directory (PingDS, not PingDirectory) often comes with the rest of 
 
 | Artifact | Where | Class | Datify | opsdir today |
 |---|---|---|---|---|
-| SMTP relay (SES / Exchange Online / on-prem relay), port, auth | PF notification publisher, DS SMTP config, portal apps | B + S | ● | — |
-| **Sender addresses** (e.g. a `portaladmin@…` address under an older brand) | PF / portal templates | **C** | ● **User-visible contract.** Changing it goes through the change process. | — |
-| SPF / DKIM / DMARC records for sender domains | DNS | B + C | ● New sending IPs or services must be added to SPF/DKIM **before** cutover, or reset emails get spam-foldered | — |
+| SMTP relay (SES / Exchange Online / on-prem relay), port, auth | PF notification publisher, DS SMTP config, portal apps | B + S | ● | ✔ `ciamExternalService` (kind `smtp-relay`: endpoint, port, the roles that use it, its credential role), the core `messaging` domain; **imported** from PingFederate's SMTP notification publisher |
+| **Sender addresses** (e.g. a `portaladmin@…` address under an older brand) | PF / portal templates | **C** | ● **User-visible contract.** Changing it goes through the change process. | ✔ `ciamMailSender` (address and domain as contract, the service that sends it, bounce handling); imported from the publisher's From address |
+| SPF / DKIM / DMARC records for sender domains | DNS | B + C | ● New sending IPs or services must be added to SPF/DKIM **before** cutover, or reset emails get spam-foldered | ✔ `ciamSendingIdentity` per environment (DKIM verified, SPF authorized, DMARC policy), **read** from SES identities + Route 53 and Communication Services domains + Azure DNS; the planner blocks a target identity that isn't verified |
 | Email templates (welcome, reset, registration) | PF templates / app | I | ◐ hash + string scan | — |
-| SMS / voice OTP provider (if any) | Twilio etc. | I + S | ● | — |
-| CAPTCHA site/secret keys, allowed domains | Google/hCaptcha console | I + S + C (domains) | ● **Allowed domains must include new hostnames** | — |
+| SMS / voice OTP provider (if any) | Twilio etc. | I + S | ● | ✔ `ciamExternalService` (kinds `sms`, `voice`: sender IDs, originating numbers as contract, country registrations, spend limit); no importer yet |
+| CAPTCHA site/secret keys, allowed domains | Google/hCaptcha console | I + S + C (domains) | ● **Allowed domains must include new hostnames** | ✔ `ciamExternalService` (kind `captcha`: vendor, allowed domains as contract, the secret's credential role); **imported** from PingFederate's CAPTCHA providers; the planner blocks target names the allowed domains don't cover |
 
 ---
 
@@ -310,24 +310,24 @@ A DS-lineage directory (PingDS, not PingDirectory) often comes with the rest of 
 | Artifact | Where | Class | Datify | opsdir today |
 |---|---|---|---|---|
 | Instances: type, AZ, ENI/private IP, tags | EC2 | B | ● | ✔ `ciamServer` |
-| AMI / golden image (CIS-hardened RHEL), image pipeline | EC2 Image Builder / Packer | B + I (baseline) | ● image ref · ◐ Packer template | ✔ `ciamImageRef` |
+| AMI / golden image (CIS-hardened RHEL), image pipeline | EC2 Image Builder / Packer | B + I (baseline) | ● image ref · ◐ Packer template | ✔ `ciamImageRef` (servers and compute groups); the image pipeline as `ciamImageBuild` on a compute group (by hand: Image Builder isn't read yet) |
 | EBS volumes: size, type, IOPS/throughput, encryption key | EC2 | B | ● DS db performance lives here | ~ |
 | Instance profile / IAM role | IAM | B | ● | — |
 | User data / cloud-init | Launch template | I + B | ● Rendered, never hand-written | ~ DS setup scripts rendered |
 | SSM: Parameter Store params, Patch Manager baselines, State Manager associations, Session Manager prefs, SSM documents | SSM | I + B + S | ● | — |
-| OS tuning: `/etc/security/limits.conf` (nofile for DS), `sysctl` (TCP keepalive, somaxconn), transparent huge pages | Host | I | ● One baseline per role | — |
-| systemd units (`opendj.service`, `pingfederate.service`), env files, restart policies | Host | I | ● | — |
-| **JDK**: vendor/version, `cacerts` truststore additions, `java.security` overrides | Host | I + cert facts | ● **Custom CA additions to cacerts are a classic silent failure** after a rebuild | — |
+| OS tuning: `/etc/security/limits.conf` (nofile for DS), `sysctl` (TCP keepalive, somaxconn), transparent huge pages | Host | I | ● One baseline per role | ✔ `ciamHostBaseline` (compute domain): `ciamOsLimit`, `ciamKernelSetting`, `ciamHugePages`, one baseline per role, **imported** from servers' files (`linux/baseline`); drift between servers named |
+| systemd units (`opendj.service`, `pingfederate.service`), env files, restart policies | Host | I | ● | ✔ `ciamServiceUnit` (user, restart policy); env files not read yet |
+| **JDK**: vendor/version, `cacerts` truststore additions, `java.security` overrides | Host | I + cert facts | ● **Custom CA additions to cacerts are a classic silent failure** after a rebuild | ✔ `ciamJdk`; truststore additions linked to `ciamCertificate` (`ciamTrustsCertificate`) or kept by fingerprint and **flagged by the planner** (`ciamTrustedFingerprint`); `java.security` not read yet |
 | Local service accounts, sudoers, SSH keys / authorized_keys | Host | I + S | ● accounts & sudo rules · ○ keys | — |
-| **Cron jobs & scripts** (backups, cleanups, cert checks, log shipping, reports) | `/etc/cron.*`, crontabs, `/opt/scripts` | I + B | ● **Hidden automation.** Every job is an entry with its purpose, schedule and owner. The script itself is ◐ (hash + repo). | — |
-| `/etc/hosts` entries | Host | B | ● **Pinned names are migration landmines.** Flag any. | — |
-| `resolv.conf` / search domains | Host | B | ● | — |
-| Host agents: EDR (CrowdStrike), vuln scanner (Tenable/Qualys), Splunk UF, CloudWatch agent, SSM agent | Host | I + B + S | ● Agent, version and config ref per role | — |
-| auditd rules, SELinux mode/policies, FIPS mode | Host | I | ● FIPS mode changes which crypto providers DS and PF may use | — |
+| **Cron jobs & scripts** (backups, cleanups, cert checks, log shipping, reports) | `/etc/cron.*`, crontabs, `/opt/scripts` | I + B | ● **Hidden automation.** Every job is an entry with its purpose, schedule and owner. The script itself is ◐ (hash + repo). | ✔ `ciamJob` (automation domain): cron and systemd timers **imported** from servers' files (`linux/jobs`), one job per server role, linked to the bundle it runs; serverless functions and AWS pipelines as per-environment `ciamJobBinding` from the cloud importers; CI pipelines **imported** (GitHub Actions, GitLab CI, Azure DevOps); `jobs` report; planner flags jobs the target can't run and jobs nobody owns |
+| `/etc/hosts` entries | Host | B | ● **Pinned names are migration landmines.** Flag any. | ✔ `ciamPinnedHost`: every pin is a planner action |
+| `resolv.conf` / search domains | Host | B | ● | ✔ `ciamSearchDomain` |
+| Host agents: EDR (CrowdStrike), vuln scanner (Tenable/Qualys), Splunk UF, CloudWatch agent, SSM agent | Host | I + B + S | ● Agent, version and config ref per role | ✔ `ciamHostAgent` (recognized from the package list: name and version); agent config refs not yet |
+| auditd rules, SELinux mode/policies, FIPS mode | Host | I | ● FIPS mode changes which crypto providers DS and PF may use | ✔ `ciamSelinuxMode`, `ciamFipsMode`; auditd rules not read yet |
 | logrotate configs | Host | I | ● | — |
 
 ### 11.2 Kubernetes style (EKS/AKS, if ForgeOps)
-Cluster version, node groups, namespaces, StatefulSets, PVCs & storage classes, ingress controller, cert-manager issuers, external-secrets / secret-agent, network policies, IRSA / workload identity, Helm releases. All ● and split I/B exactly like §8's ForgeOps row. **Today:** Kubernetes secrets as references (`k8s-secret://`, opsdir-adapter-kubernetes); workloads —.
+Cluster version, node groups, namespaces, StatefulSets, PVCs & storage classes, ingress controller, cert-manager issuers, external-secrets / secret-agent, network policies, IRSA / workload identity, Helm releases. All ● and split I/B exactly like §8's ForgeOps row. **Today:** Kubernetes secrets as references (`k8s-secret://`); clusters as bindings (`ciamCluster`: version, add-ons, node pools, zones) read from EKS and AKS Terraform state; workloads (`ciamWorkload`, compute domain: kind, namespace, replicas, images, storage size and class, service account and the workload-identity role it assumes, pod security, network policies, ingress hosts, secret names) and CronJobs (as jobs) **imported** from manifests (`kubernetes/workloads`, opsdir-adapter-kubernetes). Compute groups (autoscaling groups, scale sets) are bindings (`ciamComputeGroup`: image, size, scale, zones, metadata tokens). Not yet: operator custom resources (DS operator, secret agent, external-secrets), Helm releases as such, cert-manager issuers.
 
 ---
 
@@ -407,7 +407,7 @@ Result: "change this hostname" becomes a query that lists every file and every p
 | CloudFormation stacks (legacy) | AWS | O | ◐ Inventory, then retire | — |
 | Ansible: inventory, group_vars/host_vars, roles, playbooks, Vault-encrypted vars | Git | I + B + S | ● Inventory and vars come from opsdir. Roles are ◐. | — |
 | Packer templates, image pipeline | Git | I | ◐ | — |
-| CI/CD pipelines (Jenkins, GitHub Actions, Azure DevOps, GitLab): definitions, service connections, runners/agents | CI | I + B + S | ● Pipeline facts + credential refs. Self-hosted runner network location is a binding. | — |
+| CI/CD pipelines (Jenkins, GitHub Actions, Azure DevOps, GitLab): definitions, service connections, runners/agents | CI | I + B + S | ● Pipeline facts + credential refs. Self-hosted runner network location is a binding. | ~ `ciamJob` kind `pipeline`: schedules, triggers, runners, environments, secrets by name **imported** (packages `opsdir-adapter-github-actions`, `-gitlab-ci`, `-azure-devops`; AWS CodePipeline/CodeBuild by the AWS adapter as job bindings); service connections, runner network placement and Jenkins — |
 | Artifact repository (Artifactory/Nexus/S3): PingDS zip, PF zip, adapters, JDK, agents; checksums | Repo | I | ● Exact artifact coordinates + SHA-256 per product version | — |
 | Container registry (ECR/ACR) + image tags | Registry | B | ● | — |
 | Ping licenses & support entitlements (Backstage), Duo licensing, user-count limits | Vendor portals | M | ● expiry, limits, contract owner | — |
@@ -453,7 +453,7 @@ Result: "change this hostname" becomes a query that lists every file and every p
 | App teams (relying parties & LDAP binders) | Hostnames, bind DNs, client IDs, claim names | ● | ✔ `ciamConsumer`, `ciamIntegration` |
 | Network/firewall teams (ours and theirs) | Rules for our IPs | ● | ✔ `ciamExternalAllowlist` |
 | Supplier identity hubs | Federation config | ● | ~ |
-| SaaS vendors (MFA, CAPTCHA, email) | Keys, allowed domains, IPs | ● | — |
+| SaaS vendors (MFA, CAPTCHA, email) | Keys, allowed domains, IPs | ● | ✔ `ciamExternalService` (MFA, CAPTCHA, email, SMS vendors with contacts and allowed domains) |
 | Auditors | Evidence formats and cadences | ● | — |
 
 ---
@@ -491,7 +491,7 @@ Result: "change this hostname" becomes a query that lists every file and every p
 | Roadmap path | Closes | New classes / importers / renderers |
 |---|---|---|
 | **4. Importers** | the model is only as good as its data | ~~DS configuration~~ (done: `config.ldif` and archived configs → snapshots, or the declared configuration); ~~DS access-log miner~~ (done: JSON access logs → `ciamConsumer`, values-free); ~~PingFederate~~ (done: bulk export → integrations, claims, certificate facts; data stores checked; adapters, token managers, data stores and storage locations with path 5's PingFederate depth); ~~string census~~ (done, §15: `opsdir census` → `ciamScannedFile`/`ciamOccurrence`: file, server, lines, owning entry; secrets flagged by line); Terraform state, cloud CLI inventories and native IaC (AWS and Azure done: `*/terraform-state`, `*/cli-inventory`, `aws/cloudformation`, `azure/arm`; roles for what a cloud can't tag from `roles.json`) → bindings |
-| **5. Stack coverage** | §4, §9–§14, §17 | ~~PingFederate depth~~ (done, milestone 4.1, in the PingFederate package's own schema rather than `ciam*` classes: data stores, validators, adapters, selectors, token managers, policy contracts, authentication policies and fragments, OIDC policies, authorization server settings, links between them checked by the planner, nodes' files with `tcp.xml` discovery as a **binding**, every other resource held as is); hidden automation (`ciamJob`: cron, scheduled tasks, serverless functions, pipelines); host baseline and Kubernetes workloads (`ciamHostBaseline`); messaging and external services (`ciamMailSender`, `ciamExternalService`); data profile (`ou=data-profile`, values-free); observability intent (`ciamAlertRule`, `ciamLogRoute`, `ciamCanary`); platform IAM and admin plane; edge and traffic protection; network depth; data services, backup and DR; cloud governance, audit and cost |
+| **5. Stack coverage** | §4, §9–§14, §17 | ~~PingFederate depth~~ (done, milestone 4.1, in the PingFederate package's own schema rather than `ciam*` classes: data stores, validators, adapters, selectors, token managers, policy contracts, authentication policies and fragments, OIDC policies, authorization server settings, links between them checked by the planner, nodes' files with `tcp.xml` discovery as a **binding**, every other resource held as is); ~~hidden automation~~ (done, milestone 4.2: the core `automation` domain's `ciamJob` and `ciamJobBinding`; cron and timers from servers' files, Lambda / EventBridge / Scheduler / CodePipeline / CodeBuild and Azure Function Apps from the cloud importers, GitHub Actions / GitLab CI / Azure DevOps pipelines from their own packages); ~~host baseline and Kubernetes workloads~~ (done, milestone 4.3: the core `compute` domain's `ciamHostBaseline` per server role from servers' files, `ciamComputeGroup` and `ciamCluster` bindings from AWS and Azure state, `ciamWorkload` and CronJobs from Kubernetes manifests; the planner flags truststore additions the record lacks, pinned names, missing baselines, weaker target compute and workloads with nowhere to run); ~~messaging and external services~~ (done, milestone 4.4: the core `messaging` domain's `ciamExternalService`, `ciamMailSender`, `ciamSendingIdentity` and `ciamEventStream`/`ciamStreamBinding`; PingFederate's notification publishers and CAPTCHA providers, SES and Communication Services identities with their DNS, queues, topics and buses from AWS and Azure); data profile (`ou=data-profile`, values-free); observability intent (`ciamAlertRule`, `ciamLogRoute`, `ciamCanary`); platform IAM and admin plane; edge and traffic protection; network depth; data services, backup and DR; cloud governance, audit and cost |
 | **6. Renderers & targets** | working files for every covered target | PingFederate Admin API payloads / Terraform provider (replacing the illustrative subset), Kubernetes/ForgeOps overlays, config management and on-prem, observability rules, per-adapter round-trip tests (import → render → import), each cloud's native IaC alongside Terraform (ARM templates / Bicep for Azure, CloudFormation for AWS) |
 | **7. Conditional products & governance** | §6–§7, §18 | PingAccess, SiteMinder (XPSExport), cloud-managed identity services; vendor-neutral ITSM/CMDB, GRC, SIEM, PAM, PKI and firewall-manager integrations; the unknowns register (`ciamUnknown`: question, owner, blocking, answer) in the planner's verdict |
 | **8. Interfaces, validation & release** | operating it day to day | full CLI, a read-only LDAP front end or HTTP API, an MCP server for AI assistants, validation against real product instances, SPEC 1.0 with a registered OID arc |

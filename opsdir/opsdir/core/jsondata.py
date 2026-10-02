@@ -2,11 +2,17 @@
 Product adapters that keep a product's settings as JSON (journeys, connectors, policies) share these. Pure."""
 import json
 
+from .directory import one
 from .environment import UNBOUND
 from .secrets import withheld
 
 WITHHELD = "${withheld}"          # a withheld value nothing supplies: the deployment must
 RENDERED_IN_PLACE = ("${secret:", WITHHELD, UNBOUND)     # what opsdir renders where a value was withheld
+
+
+def indented(value):
+    """JSON text as a person reads it: indented by two, newline-terminated (what opsdir writes JSON files as)."""
+    return json.dumps(value, indent=2) + "\n"
 
 
 def canonical(value):
@@ -16,6 +22,12 @@ def canonical(value):
 
 def _never(value):
     return False
+
+
+def held_json(e, attr):
+    """The JSON value an entry's attribute holds (its canonical text); {} when the entry holds none."""
+    text = one(e, attr)
+    return json.loads(text) if text else {}
 
 
 def without_secrets(value, patterns, pointer="", sealed=_never):

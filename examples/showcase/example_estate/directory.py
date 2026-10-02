@@ -3,6 +3,8 @@
 (60-acis); and the production
 directory servers' own configuration files (exports/ds-config: each server's config.ldif, as PingDS writes it, with
 the planted drift, and an archived configuration), which the demo imports as observed snapshots."""
+from types import MappingProxyType
+
 from opsdir.core.interchange.ldif import write_entry
 
 from .common import ACI, CON, DECL, PEOPLE, US, USERS, chg, ou, owner, spec, t, ua
@@ -26,7 +28,7 @@ USER_ATTRIBUTES = (
 # OIDs under the RFC 5612 documentation PEN (sub-arc 2 = this fictional estate's user schema).
 ARC = "1.3.6.1.4.1.32473.2"
 STRING, GTIME = "1.3.6.1.4.1.1466.115.121.1.15", "1.3.6.1.4.1.1466.115.121.1.24"
-DEFINITIONS = {
+DEFINITIONS = MappingProxyType({
     "companyId": (f"{ARC}.1.1", STRING, "caseIgnoreMatch", None, None, "TRUE"),
     "soldToAccount": (f"{ARC}.1.2", STRING, "caseIgnoreMatch", None, None, None),
     "registrationStatus": (f"{ARC}.1.3", STRING, "caseIgnoreMatch", None, None, "TRUE"),
@@ -34,7 +36,7 @@ DEFINITIONS = {
     "challengeAnswer": (f"{ARC}.1.5", STRING, "caseExactMatch", None, None, None),
     "lastLoginTime": (f"{ARC}.1.6", GTIME, "generalizedTimeMatch", None, "generalizedTimeOrderingMatch", "TRUE"),
     "appEntitlement": (f"{ARC}.1.7", STRING, "caseIgnoreMatch", "caseIgnoreSubstringsMatch", None, None),
-}
+})
 # User object classes: (name, kind, OID or None for a standard class, superclass, MAY attributes, purpose)
 USER_CLASSES = (
     ("inetOrgPerson", "structural", None, None, (), "Structural class of every user entry"),

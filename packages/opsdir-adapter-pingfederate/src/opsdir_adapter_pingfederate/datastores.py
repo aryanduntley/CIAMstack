@@ -17,13 +17,13 @@ What the record adds to a data store (its credential role, owners) is kept on im
 import json
 import re
 
-from opsdir.core.directory import get, make_entry, one, rdn_value
+from opsdir.core.directory import get, make_entry, merged_attrs, one, rdn_value
 from opsdir.core.environment import UNBOUND, bound, published_role
-from opsdir.core.jsondata import canonical
+from opsdir.core.jsondata import canonical, held_json
 from opsdir.core.naming import rdn_safe
 from opsdir.domains.directory.consumers import consumer_by_bind_dn
 from .naming import DATA_STORES, named
-from .objects import merged_attrs
+
 from .withheld import filled, withheld_settings
 
 OUTPUT = "pingfederate/data-stores.json"
@@ -128,7 +128,7 @@ def data_store_view(m, store):
     withheld values as the reference of its credential role (UNBOUND:<role> or ${withheld} where nothing supplies
     one; the planner blocks on both)."""
     kind, role, port = one(store, "pingfedStoreType"), one(store, "pingfedTargetRole"), one(store, "pingfedPort")
-    config = json.loads(one(store, "pingfedConfig") or "{}")
+    config = held_json(store, "pingfedConfig")
     host = bound(m, role, "ciamFqdn") if role else None
     placed = _with_host(kind, config, f"{host}:{port}" if port else host) if host else config
     return {"type": kind, "id": rdn_value(store), **filled(m, store, placed)}

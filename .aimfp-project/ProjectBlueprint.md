@@ -1,8 +1,8 @@
 # CIAMstack - Project Blueprint
 
-**Version**: 1.5
-**Status**: Paths 1-4 completed; path 5 (Stack Coverage) next; Updates U.4 (package READMEs) open
-**Last Updated**: 2026-09-30
+**Version**: 1.9
+**Status**: Paths 1-4 completed; path 5 (Stack Coverage) in progress: 4.1-4.4 done (PingFederate depth, hidden automation, host baseline & Kubernetes workloads, messaging & external services), 4.5 next; Updates U.6 (shared helpers) and U.7 (deferred notes 352, 331) done, U.4 (package READMEs) open
+**Last Updated**: 2026-10-01
 **AIMFP Compliance**: Strict
 
 ---
@@ -15,7 +15,7 @@ CIAMstack is a platform-agnostic, data-centric suite that puts an entire identit
 
 ### Current Phase
 
-Paths 1-4 are complete (FP foundation incl. the product-only docs and management-first showcase; the platform-agnostic core; PingAM, PingIDM and PingGateway; importers). Path 4 importers: DS configuration (config.ldif + archived configs -> observed snapshots, or the declared configuration), DS access logs (-> consumers, values-free, with the `consumers` review report), PingFederate (bulk export -> integrations, claims, certificate facts; data stores checked), the string census (`opsdir census`), and the clouds for AWS and Azure alike: Terraform state, CLI inventories and native IaC (CloudFormation stacks; ARM templates and Bicep with their deployments), all through one neutral mapper (core/inventory.py: roles from tags, container metadata or a per-environment roles.json; account-wide listings counted; the record's value order kept) and one attribute mapping per provider. `import --dry-run` lists what each change sets; the showcase shows planted cloud drift that way. Path 5 (Stack Coverage) is next; its cloud milestones (4.3, 4.7-4.11) extend the cloud importers for the categories they model. Open alongside: U.4 (package READMEs to a common standard; Azure done). scripts/test.sh: 892 tests pass (unit + Postgres integration + showcase golden).
+Paths 1-4 are complete (FP foundation incl. the product-only docs and management-first showcase; the platform-agnostic core; PingAM, PingIDM and PingGateway; importers). Path 4 importers: DS configuration (config.ldif + archived configs -> observed snapshots, or the declared configuration), DS access logs (-> consumers, values-free, with the `consumers` review report), PingFederate (bulk export -> integrations, claims, certificate facts; data stores checked), the string census (`opsdir census`), and the clouds for AWS and Azure alike: Terraform state, CLI inventories and native IaC (CloudFormation stacks; ARM templates and Bicep with their deployments), all through one neutral mapper (core/inventory.py: roles from tags, container metadata or a per-environment roles.json; account-wide listings counted; the record's value order kept) and one attribute mapping per provider. `import --dry-run` lists what each change sets; the showcase shows planted cloud drift that way. Path 5 (Stack Coverage) is in progress. 4.1 PingFederate depth: the PingFederate package's own schema (arc .3.4) holds data stores, plugin instances (validators, adapters, selectors, token managers), policy contracts, authentication policy trees and fragments, OIDC policies, settings, nodes' facts, cluster discovery as a binding and every other resource held as is, with links checked by the planner (IdP connections and key pairs by the PingFederate id their integration or certificate carries, exactly one). 4.2 hidden automation: the core `automation` domain (`ciamJob`, `ciamJobBinding`, `jobs` report, planner check) fed by opsdir-adapter-linux (cron, systemd timers), the cloud adapters (Lambda/EventBridge/Scheduler/CodePipeline/CodeBuild, Azure Function Apps) and the CI packages opsdir-adapter-github-actions, -gitlab-ci, -azure-devops. 4.3 host baseline next; its cloud milestones (4.3, 4.7-4.11) extend the cloud importers for the categories they model. Open alongside: U.4 (package READMEs; Azure and AWS done). scripts/test.sh: 1011 tests pass (unit + Postgres integration + showcase golden).
 
 ### Goals
 
@@ -70,8 +70,9 @@ opsdir/              the core package (pyproject: opsdir), names no platform/pro
   opsdir/            core/ (records, standard + OID arcs, ldap_schema catalogue, formats, versions, interchange,
                      environment + overlays, capture, secrets, inventory: neutral cloud resources -> bindings)
                      store/ (Postgres: versioned migrations, governed writes, schema phases, re-validation)
-                     domains/{infrastructure,directory,federation,pki,governance,custom,configuration}
-                     (configuration: captured files, bundles, the census of values copied into files)
+                     domains/{infrastructure,directory,federation,pki,governance,custom,configuration,
+                     automation} (configuration: captured files, bundles, the census of values copied into files;
+                     automation: jobs, with the pipeline placement every CI package shares)
                      connectors/ (registry, schema, stack, render, plan, migration, workspace, reports) cli.py
   schema/            ciam-ops.schema.ldif (published export of the core + domain fragments; scripts/gen-schema.py)
   scripts/           dev-install.sh dev-env.sh gen-schema.py test.sh
@@ -87,6 +88,9 @@ packages/            installable packages; adapters register via opsdir.adapters
   clouds/stores      opsdir-adapter-aws and opsdir-adapter-azure (each imports Terraform state, its CLI's
                      output and its native IaC: CloudFormation / ARM-Bicep),
                      opsdir-adapter-hashicorp-vault, opsdir-adapter-kubernetes, opsdir-adapter-cyberark (PAM)
+  hosts/delivery     opsdir-adapter-linux (kind host: cron and systemd timers as jobs; host baseline in 4.3),
+                     opsdir-adapter-github-actions, opsdir-adapter-gitlab-ci, opsdir-adapter-azure-devops (kind
+                     delivery: pipelines as jobs); all declaration-only for now
   formats            opsdir-format-terraform (hcl; Terraform state reader)
 examples/showcase/   the fictional estate: example_estate/ data/ exports/ (product exports, generated DS configs
                      and access logs, census files, generated cloud state/CLI output with planted drift) changes/
@@ -147,8 +151,11 @@ Schema OIDs: each owner has an arc (PEN .1 core/domains, .2 showcase user schema
   3.4 string census, 3.5 cloud & IaC importers (AWS and Azure: Terraform state, CLI inventories, CloudFormation /
   ARM-Bicep; roles.json; showcase drift via --dry-run)
 
-### Path 5: Stack Coverage
-- PF depth, hidden automation, host baseline & Kubernetes workloads, messaging & external services, data profile, observability intent
+### Path 5: Stack Coverage - in progress
+- Done: 4.1 PingFederate depth, 4.2 hidden automation (jobs: hosts' schedulers, cloud functions and AWS pipelines,
+  GitHub Actions / GitLab CI / Azure DevOps)
+- Next: host baseline & Kubernetes workloads, messaging & external services, data profile, observability intent,
+  platform IAM, edge, network depth, data services/backup/DR, cloud governance
 
 ### Path 6: Renderers & Targets
 - PF renderer (real target), Kubernetes/ForgeOps, config management & on-prem, observability renderers, round-trip guarantees, cloud-native IaC renderers (ARM/Bicep, CloudFormation)
@@ -196,6 +203,26 @@ secret values in rendered Terraform state, completed).
 - **Change**: Path 4 closed with milestone 3.5: AWS and Azure read back from Terraform state, CLI output and native IaC (CloudFormation; ARM/Bicep with an ARM expression evaluator), one neutral mapper and one attribute mapping per provider; roles for what a cloud can't tag from container metadata or a per-environment roles.json (never a placeholder role: ciamBindingRole is required and is what migrations match on); `--dry-run` shows each modification; the showcase plants cloud drift. Updates path reopened: U.4 package READMEs to a common standard (Azure done), U.5 the Azure renderer no longer reads secret values into Terraform state (names-only existence checks).
 - **Rationale**: An existing platform, whatever its IaC, must load without hand-written LDIF and show how it differs from the record before anything is written; future sessions must not miss behavior, so each package documents itself to one standard.
 
+### Version 1.6 - 2026-10-01
+
+- **Change**: Milestones 4.1 (PingFederate depth) and 4.2 (hidden automation) done. PingFederate's own objects live in its package's schema (prefix pingfed) rather than STACK.md's planned ciam* classes; core helpers shared across products (bound/secret placeholders, consumer by bind DN, merged_attrs, server_named). New core domain `automation`; adapter kinds `host` and `delivery`; packages opsdir-adapter-linux, -github-actions, -gitlab-ci, -azure-devops (user: CI systems as modules, others added later).
+- **Rationale**: The core names no product; links between a product's objects are checked from the record alone; automation nobody owns breaks silently after a move, so every scheduler and CI system feeds one neutral job model the planner and reports read.
+
+### Version 1.7 - 2026-10-01
+
+- **Change**: Milestone U.6: a modularity audit (user, before 4.3) found small helpers re-written in many adapter packages; 16 public core helpers replace them, every module-level constant is read-only, and the package-authoring guide lists the helpers. No output changed (golden snapshot byte-identical) except PingFederate certificate times without a zone, now UTC instead of the machine's local time.
+- **Rationale**: Modularity is the key design constraint; 4.3 onward adds many more importers, which would otherwise copy the same helpers again.
+
+### Version 1.8 - 2026-10-01
+
+- **Change**: Milestone 4.3: new built-in core domain `compute`: `ciamHostBaseline` (one per server role: OS, Java runtime and truststore additions, limits, kernel settings, huge pages, FIPS/SELinux, agents, service units, pinned hosts, search domains), `ciamComputeGroup` and `ciamCluster` (per-environment bindings: autoscaling groups / scale sets, managed Kubernetes clusters), `ciamWorkload` (a server role run as containers); reports baselines/compute/workloads; planner checks. opsdir-adapter-linux `linux/baseline`; AWS and Azure read compute groups and EKS/AKS clusters from Terraform state; opsdir-adapter-kubernetes `kubernetes/workloads` (workloads and CronJobs as jobs). Compute groups and clusters are binding roles like any other (`compute-<role>`, `cluster` by default), so the target must bind what the source binds.
+- **Rationale**: What servers run beyond the product (custom CAs in the Java truststore, pinned names, kernel limits) breaks silently after a rebuild or a move; VMs and Kubernetes are both first-class realizations of the same server roles.
+
+### Version 1.9 - 2026-10-01
+
+- **Change**: U.7 (deferred notes): AWS firewall rules name ranges, all-ports and non-IPv4 sources instead of truncating (#352); operator-defined census terms (`ciamCensusTerm` on a field definition) and `census --replace` (#331). Milestone 4.4: new built-in core domain `messaging`: `ciamExternalService` (relays, email/SMS/voice providers, MFA, CAPTCHA: allowed domains as contract, the roles that use them, their credential roles), `ciamMailSender`, `ciamSendingIdentity` (binding: DKIM/SPF/DMARC), `ciamEventStream` + `ciamStreamBinding`; reports and planner checks; shared SPF/DMARC parsing. PingFederate notification publishers and CAPTCHA providers become plugin kinds read into it (#368 partly); AWS (SES + Route 53, SQS/SNS/EventBridge/Kinesis) and Azure (Communication Services + Azure DNS, Service Bus/Event Hubs/Event Grid) read sending identities and stream carriers. Deferred notes now name the milestone they're done with (#366 -> 4.10, #395 -> 5.6).
+- **Rationale**: Services outside the platform break silently at a move: a CAPTCHA that doesn't allow the new names, reset mail from an unverified domain landing in spam, audit events nobody carries. Census terms are operator data because nobody can list in advance what an estate needs found.
+
 ---
 
 ## 6. User Settings System
@@ -225,6 +252,7 @@ No preferences set yet.
 - **Roles, not names (R7)**: renderers resolve bindings by role; provider-specific settings (e.g. NSG priority) are pinned in data, never computed at render time.
 - **Adapters, not forks**: providers, compute styles and product lineages plug in through one importer/renderer contract selected by data.
 - **Self-contained technologies, explicit connectors**: each technology's schema fragment and parsers/renderers live together in its adapter package; code never mixes systems. Cross-technology behaviour (render composition, migration planning, cross-cutting reports) lives only in connectors.
+- **Shared helpers, not per-package copies**: anything two packages would write alike (tolerant parsing, files by folder, container entries, DN scope, GeneralizedTime, JSON as written and held, cloud role tags, CI environments, captured product files) is a public, tested core helper (`opsdir.core.sources`, `core.directory`, `core.jsondata`, `core.inventory`, the domains); packages keep only their product's vocabulary. Private helpers aren't in the tracking DB, so the code is searched for an idiom before one is written. Module-level tables are read-only.
 - **Refactor before expanding**: Stage 1 must keep rendered outputs byte-identical and the findings check passing.
 
 ### Constraints

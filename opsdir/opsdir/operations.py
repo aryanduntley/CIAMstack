@@ -131,10 +131,11 @@ def preview_bundle(conn, name, repo_path, kind, content, format_name=None, versi
     return Preview(name, tuple(changes), tuple(notices))
 
 
-def preview_census(conn, files):
+def preview_census(conn, files, replace=False):
     """Effect (reads the record): the change records recording where the record's values occur in files ({relative
-    path: text}), and notices (how many found, which files may hold secret material)."""
-    changes, notices = capturemod.census_changes(db.load_directory(conn), files)
+    path: text}), and notices (how many found, which files may hold secret material, which recorded files a replacing
+    scan removes)."""
+    changes, notices = capturemod.census_changes(db.load_directory(conn), files, replace=replace)
     return Preview("census", tuple(changes), tuple(notices))
 
 

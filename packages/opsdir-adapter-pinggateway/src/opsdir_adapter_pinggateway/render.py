@@ -7,13 +7,15 @@ The gateway's own settings (config.json, admin.json) are captured config files, 
 environment's captured files. The routes follow the gateway's JSON but are not validated against a live gateway.
 """
 import json
+from types import MappingProxyType
 
 from opsdir.core.directory import children, one, rdn_value, values
 from opsdir.core.environment import one_role
+from opsdir.core.jsondata import held_json
 from .naming import ROUTES
 
 FORMATS = (("pinggateway/routes/*.json", "json"),)
-DEFAULT_PORTS = {"https": "443", "http": "80"}
+DEFAULT_PORTS = MappingProxyType({"https": "443", "http": "80"})
 
 
 def backend_uri(m, route):
@@ -28,7 +30,7 @@ def backend_uri(m, route):
 
 
 def route_file(m, route):
-    config = json.loads(one(route, "pinggwConfig") or "{}")
+    config = held_json(route, "pinggwConfig")
     return {"name": rdn_value(route),
             **({"condition": one(route, "pinggwCondition")} if one(route, "pinggwCondition") else {}),
             **({"baseURI": backend_uri(m, route)} if one(route, "pinggwBackendRole") else {}), **config}

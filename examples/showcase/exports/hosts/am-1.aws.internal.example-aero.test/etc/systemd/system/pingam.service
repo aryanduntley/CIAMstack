@@ -1,0 +1,12 @@
+[Unit]
+Description=am
+After=network-online.target
+
+[Service]
+User=am
+Restart=always
+ExecStart=/opt/tomcat/bin/catalina.sh run
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

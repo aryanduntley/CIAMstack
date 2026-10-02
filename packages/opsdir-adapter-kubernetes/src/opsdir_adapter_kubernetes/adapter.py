@@ -1,6 +1,8 @@
-"""Kubernetes adapter: Kubernetes secrets as a secret store usable from any environment; it renders nothing itself."""
+"""Kubernetes adapter: Kubernetes secrets as a secret store usable from any environment, and the workloads clusters
+run read from their manifests (kubernetes/workloads); it renders nothing itself."""
 from opsdir.core.contract import Adapter
 from .secrets import secret_command
+from .workloads import WORKLOADS_IMPORTER
 
 
 def applies(m):
@@ -13,4 +15,4 @@ ADAPTER = Adapter(name="kubernetes", kind="secret-store", applies=applies, requi
                   secret_schemes={"k8s-secret": secret_command}, renders=None, neutral_label=None,
                   vocabulary={}, schema=None, formats=(),
                   products=(),
-                  secret_patterns=(), importers=())
+                  secret_patterns=(), importers=(WORKLOADS_IMPORTER,))

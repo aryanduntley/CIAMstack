@@ -1,0 +1,6 @@
+role ds: kernel setting 'net.core.somaxconn' differs between servers (ds-1: net.core.somaxconn=4096; ds-2: net.core.somaxconn=4096; ds-3: net.core.somaxconn=1024); recorded 'net.core.somaxconn=4096'
+role pf-admin: its servers' Java truststore adds 1 certificate(s) the record holds no certificate for (7A:3F:91:C2:5E:08:D4:6B:12:AF:E3:57:90:C8:1D:44:B6:2E:F9:03:8A:75:CC:61:0D:9E:43:B8:27:F5:6A:19): record them so a rebuilt server gets them
+role pf-engine: Java runtime differs between servers (pf-engine-1: temurin 17.0.11; pf-engine-2: temurin 17.0.12); recorded the first
+role pf-engine: its servers' Java truststore adds 1 certificate(s) the record holds no certificate for (7A:3F:91:C2:5E:08:D4:6B:12:AF:E3:57:90:C8:1D:44:B6:2E:F9:03:8A:75:CC:61:0D:9E:43:B8:27:F5:6A:19): record them so a rebuilt server gets them
+CHG-2012: 7 change(s) applied
+exit 0

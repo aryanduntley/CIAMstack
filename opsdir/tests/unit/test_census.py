@@ -23,8 +23,8 @@ def _row(dn, classes, **attrs):
     return dn, ("top", *classes), {k: [v] if isinstance(v, str) else list(v) for k, v in attrs.items()}
 
 
-def _record(*extra):
-    return make_directory(TYPES, {}, (
+def _record(*extra, types=TYPES):
+    return make_directory(types, {}, (
         _row(f"cn=ds-1,{SRC}", ("ciamServer",), cn="ds-1", ciamHostname="ds-1.src.example.test",
              ciamPrivateIp="10.20.1.1"),
         _row(f"cn=ds-1,{DST}", ("ciamServer",), cn="ds-1", ciamHostname="ds-1.dst.example.test",
@@ -116,3 +116,33 @@ def test_branches_excluded_are_not_looked_for():
                      ciamHostname="copy.example.test"))
     assert any(n.value == "copy.example.test" for n in needles(d))
     assert not any(n.value == "copy.example.test" for n in needles(d, ("ou=observed,ou=config,dc=ciam-ops",)))
+
+
+def _term(flag):
+    """The record with an operator-defined field holding the platform's old brand, flagged a census term or not."""
+    return _record(_row("cn=xFormerBrand,ou=custom-schema,dc=ciam-ops", ("ciamFieldDefinition",), cn="xFormerBrand",
+                        ciamValueType="string", ciamPortability="meta", ciamCarriedBy="ciamParty",
+                        **({"ciamCensusTerm": "TRUE"} if flag else {})),
+                   _row("cn=operator,ou=owners,dc=ciam-ops", ("ciamParty",), cn="operator",
+                        xFormerBrand="SkyHigh Airways"),
+                   types=(*TYPES, ("xFormerBrand", "string", "meta")))
+
+
+def test_operators_define_what_else_the_census_looks_for():
+    text = "# built for SkyHigh Airways in 2019\nbrand=SkyHigh Airways\nSkyHigh Airwaysx is not it\n"
+    assert _found(_term(True), text) == {("cn=operator", "xFormerBrand"): (1, 2)}
+    assert _found(_term(False), text) == {}                # not a census term: a meta value isn't looked for
+
+
+def test_a_replacing_scan_drops_files_it_did_not_see():
+    d = _record()
+    groups, _ = census_groups(d, FILES, GENERIC)
+    scanned = _after(d, groups)
+    kept = {"apps/web/app.properties": FILES["apps/web/app.properties"]}
+    groups_again, notices = census_groups(scanned, kept, GENERIC, replace=True)
+    assert [bool(entries) for _, entries in groups_again] == [True, False]   # the file seen, the one gone
+    assert "opt/sync.sh: no longer in the scan; removed from the census" in notices
+    changes = import_changes(scanned, Imported((), groups_again, ()))
+    assert {r.changetype for r in changes} == {"delete"} and len(changes) == len(groups[1][1])
+    plain, plain_notices = census_groups(scanned, kept, GENERIC)       # without replace nothing is removed
+    assert len(plain) == 1 and not any("removed from the census" in n for n in plain_notices)

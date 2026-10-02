@@ -6,9 +6,9 @@
 
 A product adapter supplies its endpoint paths (OidcEndpoints) and which services it serves.
 """
-import json
 
 from opsdir.core.directory import one, rdn_value
+from opsdir.core.jsondata import indented
 from opsdir.domains.federation.services import integrations_served, serves
 from .discovery import discovery_document
 from .registration import client_metadata
@@ -17,15 +17,11 @@ from .registration import client_metadata
 FORMATS = (("oidc/*.json", "json"),)       # the format of every file oidc_files renders
 
 
-def _json(value):
-    return json.dumps(value, indent=2) + "\n"
-
-
 def oidc_files(d, services, endpoints):
     """{path: JSON text}: every OIDC client the given identity services serve, and each of them that has an issuer
     (its discovery document reflects the clients it serves)."""
     clients = integrations_served(d, services, "oidc-client")
-    return {**{f"oidc/clients/{rdn_value(i)}.json": _json(client_metadata(i)) for i in clients},
+    return {**{f"oidc/clients/{rdn_value(i)}.json": indented(client_metadata(i)) for i in clients},
             **{f"oidc/discovery/{rdn_value(s)}.json":
-               _json(discovery_document(d, s, endpoints, tuple(c for c in clients if serves(s, c))))
+               indented(discovery_document(d, s, endpoints, tuple(c for c in clients if serves(s, c))))
                for s in services if one(s, "ciamOidcIssuer")}}

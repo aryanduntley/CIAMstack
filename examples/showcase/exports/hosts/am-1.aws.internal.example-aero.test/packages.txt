@@ -1,0 +1,6 @@
+falcon-sensor-7.10.0-16303.el9.x86_64
+splunkforwarder-9.2.1-78803f08aabb.x86_64
+amazon-ssm-agent-3.3.40.0-1.x86_64
+amazon-cloudwatch-agent-1.300034.0-1.x86_64
+openssl-3.0.7-27.el9.x86_64
+bash-5.1.8-9.el9.x86_64

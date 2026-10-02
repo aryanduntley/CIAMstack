@@ -1,5 +1,6 @@
 bundle           kind      version  format  repo path                                  deploy role  sha256
 ---------------  --------  -------  ------  -----------------------------------------  -----------  ----------------------------------------------------------------
 login-templates  template  2026.09  html    pingfederate/server/default/conf/template  pf-engine    5d649f2453f646aa1d3387676809eed6d908440ffb3c3905a811ec628d5b101a
-(1 rows)
+ops-scripts      script    2026.09          ops/scripts                                             dcb35445873807456fa4a47638d7bed5e3bbc6fe550fedb5ee11feffce76e42f
+(2 rows)
 exit 0

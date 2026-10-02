@@ -14,11 +14,11 @@ signs with are certificates carrying PingFederate's key pair id (pingfedKeyPairI
 """
 import json
 
-from opsdir.core.directory import children, get, make_entry, one, rdn_value, values
-from opsdir.core.jsondata import WITHHELD, canonical, with_values
+from opsdir.core.directory import children, get, make_entry, merged_attrs, one, rdn_value, values
+from opsdir.core.jsondata import WITHHELD, canonical, held_json, with_values
 from opsdir.core.naming import rdn_safe
 from .naming import AUTH_SERVER, OIDC_POLICIES, named
-from .objects import NOT_EXPORTED, links, merged_attrs, why_unresolved
+from .objects import NOT_EXPORTED, links, why_unresolved
 from .withheld import withheld_settings
 
 OWNED = ("cn", "pingfedUses", "pingfedConfig")
@@ -103,9 +103,9 @@ def oauth_files(d):
     """{pingfederate/<file>: text}: the OIDC policies and the authorization server's settings the record has."""
     policies = children(d, OIDC_POLICIES, "pingfedOidcPolicy")
     server = get(d, AUTH_SERVER)
-    out = {"oidc-policies.json": [{"id": rdn_value(p), **json.loads(one(p, "pingfedConfig") or "{}")}
+    out = {"oidc-policies.json": [{"id": rdn_value(p), **held_json(p, "pingfedConfig")}
                                   for p in policies] if policies else None,
-           "auth-server-settings.json": with_values(json.loads(one(server, "pingfedConfig") or "{}"),
+           "auth-server-settings.json": with_values(held_json(server, "pingfedConfig"),
                                                     values(server, "pingfedWithheld"), WITHHELD)
            if server is not None else None}
     return {f"pingfederate/{p}": json.dumps(v, indent=2) + "\n" for p, v in out.items() if v is not None}

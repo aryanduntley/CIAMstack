@@ -3,11 +3,13 @@ container the record refers to in them (any `extdn` value, such as an ACI target
 parent of a bind DN, a provisioning base). Containers are the standard entries their RDN type names:
 dc → domain, ou → organizationalUnit, o → organization. Environment-neutral; no user data.
 """
-from opsdir.core.directory import norm_dn, one, subtree, value_type
+from types import MappingProxyType
+
+from opsdir.core.directory import norm_dn, one, subtree, value_type, within
 from opsdir.core.interchange.ldif import write_entry
 from opsdir.domains.directory.naming import DECLARED
 
-CONTAINER_CLASSES = {"dc": "domain", "ou": "organizationalUnit", "o": "organization"}
+CONTAINER_CLASSES = MappingProxyType({"dc": "domain", "ou": "organizationalUnit", "o": "organization"})
 
 
 def naming_contexts(d):
@@ -26,11 +28,6 @@ def _lineage(dn):
     return tuple(",".join(parts[i:]).strip() for i in range(len(parts)))
 
 
-def _under(dn, base):
-    n, b = norm_dn(dn), norm_dn(base)
-    return n == b or n.endswith("," + b)
-
-
 def _referenced(d):
     return (v for e in d.entries.values() for name, vals in e.attrs.items() if value_type(d, name) == "extdn"
             for v in vals)
@@ -39,7 +36,7 @@ def _referenced(d):
 def _containers_up_to(dn, nc):
     """The containers from the naming context down to dn (dn's own entry only if it is a container), or () when a
     non-container lies in between (nothing below it can be created from the record)."""
-    chain = tuple(x for x in _lineage(dn) if _under(x, nc) and norm_dn(x) != norm_dn(nc))
+    chain = tuple(x for x in _lineage(dn) if within(x, nc) and norm_dn(x) != norm_dn(nc))
     if not chain:
         return ()
     inner = chain if _rdn(chain[0])[0] in CONTAINER_CLASSES else chain[1:]
@@ -49,7 +46,7 @@ def _containers_up_to(dn, nc):
 def tree(d):
     """Every entry to create, parents first: each naming context, then the containers the record refers to."""
     ncs = naming_contexts(d)
-    found = {norm_dn(x): x for v in _referenced(d) for nc in ncs if _under(v, nc) for x in _containers_up_to(v, nc)}
+    found = {norm_dn(x): x for v in _referenced(d) for nc in ncs if within(v, nc) for x in _containers_up_to(v, nc)}
     return (*ncs, *sorted(found.values(), key=lambda x: (x.count(","), norm_dn(x))))
 
 

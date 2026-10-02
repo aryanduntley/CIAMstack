@@ -7,12 +7,12 @@ import json
 from pathlib import Path
 
 from opsdir.connectors.importing import import_changes
-from opsdir.core.directory import get, make_directory, one, values
+from opsdir.core.directory import fingerprint, get, make_directory, one, values
 from opsdir.domains.directory.naming import CONSUMERS, USER_SCHEMA
 from opsdir.domains.federation.naming import IDENTITY_SERVICES, INTEGRATIONS
 from opsdir.domains.federation.services import identity_services
 from opsdir.domains.pki.naming import CERTIFICATES
-from opsdir_adapter_pingfederate.importer import fingerprint, read_export
+from opsdir_adapter_pingfederate.importer import read_export
 from opsdir_adapter_pingfederate.naming import DATA_STORES
 from opsdir_adapter_pingfederate.render import SERVER_ROLES, pingfederate_files
 

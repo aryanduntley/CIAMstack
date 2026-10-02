@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-adapter-linux"
+version = "0.1.0"
+description = "opsdir host adapter for Linux servers: cron entries and systemd timers read from the servers' own files as the platform's jobs."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1"]
+
+[project.entry-points."opsdir.adapters"]
+linux = "opsdir_adapter_linux.adapter:ADAPTER"
+
+[tool.setuptools.packages.find]
+where = ["src"]

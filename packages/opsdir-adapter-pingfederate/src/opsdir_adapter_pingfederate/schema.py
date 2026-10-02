@@ -24,9 +24,11 @@ ATTRIBUTES = (
                  'The other settings, as the Admin API writes them (values that may be secret withheld)'),
     AttributeDef(7, 'pingfedWithheld', 'string', 'meta', False,
                  'Settings withheld at import because they may be secret (JSON Pointer)'),
-    AttributeDef(8, 'pingfedPluginKind', 'enum:validator|idp-adapter|selector|access-token-manager', 'intent', True,
+    AttributeDef(8, 'pingfedPluginKind',
+                 'enum:validator|idp-adapter|selector|access-token-manager|notification-publisher|captcha-provider',
+                 'intent', True,
                  'What a plugin instance is: a password credential validator, an IdP adapter, an authentication '
-                 'selector, an access token manager'),
+                 'selector, an access token manager, a notification publisher, a CAPTCHA provider'),
     AttributeDef(9, 'pingfedPluginType', 'string', 'intent', True,
                  "The plugin an instance is (pluginDescriptorRef: its implementation's class name)"),
     AttributeDef(10, 'pingfedParent', 'dn', 'intent', True,

@@ -4,18 +4,15 @@ from opsdir.core.interchange.export import export_text
 from opsdir.core.interchange.ldif import parse, write_records
 from opsdir.core.naming import SUFFIX
 from opsdir.store.postgres import read_ldif_files
-from showcase_support import DATA, import_records
+from opsdir.core.directory import norm_dn
+from showcase_support import DATA, approved_attributes, approved_targets, import_records
 from support import build_directory, schema_for
 
 
 def test_the_showcase_changes_are_exactly_the_approved_ones(estate):
     records = diff(estate["before"], estate["after"])
-    assert [(r.changetype, r.dn.split(",")[0]) for r in records] == [
-        ("add", "cn=fw-mro-batch"), ("modify", "cn=grant-store"), ("modify", "cn=hrdb"), ("modify", "cn=ldap"),
-        ("modify", "cn=svc-ldaps"), ("modify", "cn=user-directory")]
-    assert {attr for _, attr, _ in records[4].mods} == {"ciamFqdn", "ciamDnsZone", "ciamChangeRef"}
-    assert {attr for _, attr, _ in records[3].mods} == {"pingidmCredentialRole", "ciamChangeRef"}
-    assert {attr for _, attr, _ in records[5].mods} == {"pingfedCredentialRole", "ciamChangeRef"}
+    assert {norm_dn(r.dn): r.changetype for r in records} == approved_targets()
+    assert all({attr for _, attr, _ in r.mods} == approved_attributes(r.dn) for r in records if r.changetype == "modify")
 
 
 def test_applying_a_change_set_to_its_base_gives_the_other_snapshot(estate):

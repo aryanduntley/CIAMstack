@@ -12,22 +12,24 @@
 
 The importer owns what it reads; what the record adds to its entries (a connector's credential role, owners) is kept.
 """
-import json
+
+from types import MappingProxyType
 
 from opsdir.core.contract import Imported, Importer
-from opsdir.core.directory import get, make_entry, one
+from opsdir.core.directory import get, make_entry, one, ou_entry
 from opsdir.core.environment import published_role
 from opsdir.core.formats import JAVA_PROPERTIES, JSON
 from opsdir.core.jsondata import canonical, rendered_in_place, without_secrets
 from opsdir.core.naming import rdn_safe
-from opsdir.domains.configuration.naming import CONFIG_FILES, file_dn
-from opsdir.domains.configuration.record import file_entries
+from opsdir.core.sources import json_document
+from opsdir.domains.configuration.naming import CONFIG_FILES
+from opsdir.domains.configuration.record import captured_file
 from opsdir.domains.directory.consumers import consumer_by_bind_dn
 from .naming import CONNECTORS, MANAGED, MAPPINGS, PINGIDM, SCHEDULES, SERVER_ROLES, named
 
 CONNECTOR_PREFIX, SCHEDULE_PREFIX = "conf/provisioner.openicf-", "conf/schedule-"
 STRUCTURED = ("conf/managed.json", "conf/sync.json")
-CAPTURED_FORMATS = {".json": JSON, ".properties": JAVA_PROPERTIES}
+CAPTURED_FORMATS = MappingProxyType({".json": JSON, ".properties": JAVA_PROPERTIES})
 CODE_DIRS = ("script/", "ui/", "bundle/", "connectors/")     # an IDM project's code and packages
 CODE_EXTENSIONS = (".js", ".groovy", ".py", ".sh", ".jar")
 
@@ -50,13 +52,6 @@ def _json_entry(dn, classes, owned, existing):
     attrs = {**kept, **{k: tuple(v) if isinstance(v, (list, tuple)) else (v,) for k, v in owned.items()
                         if v not in (None, "", [], ())}}
     return make_entry(dn, ("top", *classes), attrs)
-
-
-def _parse(text):
-    try:
-        return json.loads(text)
-    except ValueError:
-        return None
 
 
 # ------------------------------------------------------------------ managed objects, mappings, schedules
@@ -113,22 +108,21 @@ def _connector(d, name, data, patterns):
 # ------------------------------------------------------------------ composing
 def _captured(path, text, patterns):
     fmt = next((f for ext, f in CAPTURED_FORMATS.items() if path.endswith(ext)), None)
-    name = "idm." + path.replace("/", ".")
-    if fmt is None or not rdn_safe(name):
+    if fmt is None or not rdn_safe("idm." + path.replace("/", ".")):
         return None, (f"not imported (a format IDM config isn't captured in): {path}",)
-    entries, notices = file_entries(fmt, text, name, f"pingidm/{path}", patterns, SERVER_ROLES[0])
-    return (file_dn(name), entries), notices
+    dn, entries, notices = captured_file(fmt, "idm", "pingidm", path, text, patterns, SERVER_ROLES[0])
+    return (dn, entries), notices
 
 
 def _structured(d, files, patterns):
     """((scope, (entry,)), notices) for managed objects, connectors, mappings and schedules."""
-    managed = (_parse(files.get("conf/managed.json", "")) or {}).get("objects") or []
-    mappings = (_parse(files.get("conf/sync.json", "")) or {}).get("mappings") or []
-    connectors = tuple(_connector(d, p[len(CONNECTOR_PREFIX):-5], _parse(t) or {}, patterns)
+    managed = (json_document(files.get("conf/managed.json", "")) or {}).get("objects") or []
+    mappings = (json_document(files.get("conf/sync.json", "")) or {}).get("mappings") or []
+    connectors = tuple(_connector(d, p[len(CONNECTOR_PREFIX):-5], json_document(t) or {}, patterns)
                        for p, t in sorted(files.items()) if p.startswith(CONNECTOR_PREFIX) and p.endswith(".json"))
     parts = (*(_managed(d, n, o, patterns) for n, o in enumerate(managed) if rdn_safe(o.get("name") or "")),
              *(_mapping(d, n, m, patterns) for n, m in enumerate(mappings) if rdn_safe(m.get("name") or "")),
-             *(_schedule(d, p[len(SCHEDULE_PREFIX):-5], _parse(t) or {}, patterns)
+             *(_schedule(d, p[len(SCHEDULE_PREFIX):-5], json_document(t) or {}, patterns)
                for p, t in sorted(files.items()) if p.startswith(SCHEDULE_PREFIX) and p.endswith(".json")),
              *((dn, entry) for dn, entry, _ in connectors))
     return tuple((dn, (entry,)) for dn, entry in parts), tuple(n for _, _, ns in connectors for n in ns)
@@ -136,10 +130,6 @@ def _structured(d, files, patterns):
 
 def _is_structured(path):
     return path in STRUCTURED or path.startswith(CONNECTOR_PREFIX) or path.startswith(SCHEDULE_PREFIX)
-
-
-def _ou(dn):
-    return make_entry(dn, ("top", "organizationalUnit"), {"ou": (dn.split(",", 1)[0].split("=", 1)[1],)})
 
 
 def read_project(files, d, patterns, at=None):
@@ -150,7 +140,7 @@ def read_project(files, d, patterns, at=None):
     code = sorted(p for p in files if p.startswith(CODE_DIRS) or p.endswith(CODE_EXTENSIONS))
     other_files = sorted(p for p in files if not p.startswith("conf/") and p not in code)
     return Imported(
-        containers=tuple(_ou(dn) for dn in (PINGIDM, MANAGED, CONNECTORS, MAPPINGS, SCHEDULES, CONFIG_FILES)),
+        containers=tuple(ou_entry(dn) for dn in (PINGIDM, MANAGED, CONNECTORS, MAPPINGS, SCHEDULES, CONFIG_FILES)),
         groups=(*groups, *(g for g, _ in captured if g)),
         notices=(*notices, *(n for _, ns in captured for n in ns),
                  *(f"code, not config (record it as a bundle with `opsdir bundle`): {p}" for p in code),

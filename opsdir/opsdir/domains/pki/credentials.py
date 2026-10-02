@@ -6,12 +6,17 @@ private key (ciamKeyRole); captured config settings link to a binding by `role#a
 """
 import datetime as dt
 
-from ...core.directory import children, get, gtime_date, is_a, one, subtree
+from ...core.directory import children, fingerprint, get, gtime_date, is_a, one, subtree
 from ...core.environment import by_role, env_model
 from ...core.naming import branch
 from .naming import CERTIFICATES, CREDENTIALS
 
 HOLDS_MATERIAL = ("ciamSecretRef", "ciamKeyRef", "ciamCertificateRef")   # binding classes that hold key material
+
+
+def certificates_by_fingerprint(d):
+    """{fingerprint (as the record writes it): certificate} of every certificate the record holds."""
+    return {fingerprint(one(c, "ciamFingerprint")): c for c in children(d, CERTIFICATES, "ciamCertificate")}
 
 
 def credentials(d):

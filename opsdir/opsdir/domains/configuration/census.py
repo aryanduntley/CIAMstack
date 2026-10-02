@@ -1,7 +1,9 @@
 """The census: where the record's values are copied into files (config files, templates, scripts, exports). Pure.
 
 Every value the record holds that other systems copy (hostnames, IP addresses and networks, service names, bind and
-base DNs, URLs and entity IDs, certificate fingerprints, cloud resource IDs, client IDs) is a needle. A scanned file
+base DNs, URLs and entity IDs, certificate fingerprints, cloud resource IDs, client IDs) is a needle, and so is every
+value of a field an operator defines as a census term (ciamCensusTerm on its definition): whatever operators want
+found, which no fixed list can foresee (an old brand or domain, an account ID, a bucket name). A scanned file
 is recorded under ou=census with, under it, one occurrence per value found: the entry the value belongs to, the
 attribute, the lines. The values themselves are never copied into the census, and what in a file may be secret
 material is recorded by line and kind only. Changing a value then becomes a query: every file and line it is in.
@@ -11,7 +13,7 @@ import re
 from itertools import groupby
 from typing import NamedTuple
 
-from ...core.directory import children, get, make_entry, norm_dn, one, rdn_value, values
+from ...core.directory import children, get, make_entry, norm_dn, one, rdn_value, values, within
 from ...core.findings import findings, merge_findings, responsible
 from ...core.secrets import text_concerns
 from .naming import CENSUS
@@ -43,18 +45,26 @@ def _pattern(value, kind, attr):
     return re.compile(rf"(?<![\w.-]){re.escape(value)}(?![\w-]|\.\w)", re.I)
 
 
-def _looked_for(d, attr):
+def census_terms(d):
+    """The fields operators define as census terms: their definitions say ciamCensusTerm TRUE."""
+    return frozenset(one(e, "cn") for e in d.entries.values()
+                     if "ciamFieldDefinition" in e.classes and one(e, "ciamCensusTerm") == "TRUE")
+
+
+def _looked_for(d, attr, terms=frozenset()):
     t = d.types.get(attr) or {}
-    return attr in ATTRIBUTES or (t.get("value_type") in VALUE_TYPES and t.get("portability") in PORTABILITY)
+    return attr in ATTRIBUTES or attr in terms or \
+        (t.get("value_type") in VALUE_TYPES and t.get("portability") in PORTABILITY)
 
 
 def needles(d, exclude=()):
     """Every value of the record the census looks for; entries under the census itself and under the branches
     excluded (observations other systems don't copy, such as configuration snapshots) are left out."""
     skipped = tuple(norm_dn(b) for b in (CENSUS, *exclude))
+    terms = census_terms(d)
     return tuple(Needle(v, e.dn, attr, _pattern(v, (d.types.get(attr) or {}).get("value_type"), attr))
-                 for e in d.entries.values() if not any(e.norm == b or e.norm.endswith("," + b) for b in skipped)
-                 for attr, vals in e.attrs.items() if _looked_for(d, attr)
+                 for e in d.entries.values() if not any(within(e.norm, b) for b in skipped)
+                 for attr, vals in e.attrs.items() if _looked_for(d, attr, terms)
                  for v in vals if len(v) >= MIN_LENGTH)
 
 
@@ -103,17 +113,21 @@ def _server_of(d, path):
     return (named[0], rest) if len(named) == 1 else (None, path)
 
 
-def census_groups(d, files, patterns, exclude=()):
+def census_groups(d, files, patterns, exclude=(), replace=False):
     """((file DN, its entries), ...) and notices for every scanned file; exclude: branches whose values aren't looked
-    for."""
+    for. replace: the scan is the whole census, so a recorded file it didn't see is removed (its group is empty)."""
     all_needles = needles(d, exclude)
     placed = tuple((path, *_server_of(d, path)) for path in sorted(files))
     groups = tuple((file_dn(server.dn if server else None, rel),
                     scanned_entries(rel, files[path], server, all_needles, patterns)) for path, server, rel in placed)
     found = sum(len(entries) - 1 for _, entries in groups)
     concerned = [one(entries[0], "ciamRepoPath") for _, entries in groups if values(entries[0], "ciamConcern")]
-    return groups, (f"{len(groups)} file(s) scanned for {len(all_needles)} values of the record: {found} found",
-                    *(f"{p}: may hold secret material (see its concerns; nothing of it is stored)" for p in concerned))
+    seen = {norm_dn(dn) for dn, _ in groups}
+    gone = tuple(f for f in children(d, CENSUS, "ciamScannedFile") if f.norm not in seen) if replace else ()
+    return (*groups, *((f.dn, ()) for f in gone)), (
+        f"{len(groups)} file(s) scanned for {len(all_needles)} values of the record: {found} found",
+        *(f"{p}: may hold secret material (see its concerns; nothing of it is stored)" for p in concerned),
+        *(f"{one(f, 'ciamRepoPath')}: no longer in the scan; removed from the census" for f in gone))
 
 
 # ------------------------------------------------------------------ report and planner check

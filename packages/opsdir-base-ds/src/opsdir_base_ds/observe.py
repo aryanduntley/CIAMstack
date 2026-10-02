@@ -15,8 +15,9 @@ The entries are laid out as the declared configuration is (ou=backends, ou=passw
 an observed snapshot, or the declared configuration itself.
 """
 import re
+from types import MappingProxyType
 
-from opsdir.core.directory import make_entry, rdn_value
+from opsdir.core.directory import make_entry, ou_entry, rdn_value
 from opsdir.core.interchange.ldif import parse
 from opsdir.domains.directory.schema import ATTRIBUTES
 from opsdir.domains.directory.user_schema import attribute_records
@@ -62,10 +63,6 @@ def server_id(text):
 
 
 # ------------------------------------------------------------------ entries, as the record models them
-def _ou(base, name):
-    return make_entry(f"ou={name},{base}", ("top", "organizationalUnit"), {"ou": (name,)})
-
-
 def _safe(name):
     return bool(name) and not _DN_SPECIAL.search(name)
 
@@ -166,14 +163,14 @@ def config_entries(product, d, text, base, label):
              ("password-policies", _policy_entries(records, base, label)),
              ("connection-handlers", _handler_entries(product, records, base, label)),
              ("log-publishers", _publisher_entries(records, base, label)))
-    entries = tuple(e for name, (es, _) in parts for e in ((_ou(base, name), *es) if es else ()))
+    entries = tuple(e for name, (es, _) in parts for e in ((ou_entry(f"ou={name},{base}"), *es) if es else ()))
     return entries, tuple(n for _, (_, ns) in parts for n in ns)
 
 
 # the attributes config_entries sets on each kind of entry: everything else on a record entry is the operator's
-OWNED = {"organizationalUnit": ("ou",),
-         "ciamBackend": ("cn", "ciamBackendType", "ciamBaseDn"),
-         "ciamIndex": ("cn", "ciamIndexedAttribute", "ciamIndexType"),
-         "ciamPasswordPolicy": ("cn", "ciamStorageScheme", *(attr for attr, _ in POLICY_PROPS)),
-         "ciamConnectionHandler": ("cn", "ciamEnabled", "ciamListenPort"),
-         "ciamLogPublisher": ("cn", "ciamEnabled")}
+OWNED = MappingProxyType({"organizationalUnit": ("ou",),
+                          "ciamBackend": ("cn", "ciamBackendType", "ciamBaseDn"),
+                          "ciamIndex": ("cn", "ciamIndexedAttribute", "ciamIndexType"),
+                          "ciamPasswordPolicy": ("cn", "ciamStorageScheme", *(attr for attr, _ in POLICY_PROPS)),
+                          "ciamConnectionHandler": ("cn", "ciamEnabled", "ciamListenPort"),
+                          "ciamLogPublisher": ("cn", "ciamEnabled")})

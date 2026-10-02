@@ -18,8 +18,9 @@ servers' logs/ directories, in any layout.
 import re
 
 from opsdir.core.contract import Imported, Importer
-from opsdir.core.directory import get, make_entry, norm_dn, rdn_value
+from opsdir.core.directory import get, gtime, make_entry, norm_dn, ou_entry, rdn_value, within
 from opsdir.core.environment import server_location, server_named
+from opsdir.core.sources import by_folder
 from opsdir.domains.directory.drift import latest_snapshots
 from opsdir.domains.directory.naming import CONFIG, CONSUMERS, DECLARED, DIRECTORY_SERVER_ROLE, OBSERVED
 from .access_log import read_access_logs
@@ -27,14 +28,6 @@ from .observe import OWNED, config_entries, server_id
 
 ARCHIVED = re.compile(r"(?:^|/)archived-configs/config-(\d{14})Z(?:\.ldif)?$")
 BRANCHES = ("backends", "password-policies", "connection-handlers", "log-publishers")
-
-
-def _ou(dn):
-    return make_entry(dn, ("top", "organizationalUnit"), {"ou": (dn.split(",", 1)[0].split("=", 1)[1],)})
-
-
-def _stamp(at):
-    return at.strftime("%Y%m%d%H%M%SZ")
 
 
 # ------------------------------------------------------------------ which server a folder is
@@ -47,8 +40,7 @@ def _folders(files):
     """{folder: {path inside it: text}}: one folder per server, or '' when the export is one server's config/."""
     if "config.ldif" in files:
         return {"": files}
-    tops = sorted({p.split("/", 1)[0] for p in files if "/" in p})
-    return {t: {p.split("/", 1)[1]: text for p, text in files.items() if p.startswith(t + "/")} for t in tops}
+    return by_folder(files)
 
 
 def _config_file(inside):
@@ -95,7 +87,7 @@ def _unchanged(d, server, scope, entries):
     latest = {norm_dn(srv): snap for srv, snap in latest_snapshots(d).items()}.get(server.norm)
     if latest is None:
         return None
-    held = tuple(e for n, e in d.entries.items() if n == latest.norm or n.endswith("," + latest.norm))
+    held = tuple(e for n, e in d.entries.items() if within(n, latest.norm))
     return latest if _content(held, latest.dn) == _content(entries, scope) else None
 
 
@@ -103,7 +95,7 @@ def _current(product, d, server, text, at):
     """(groups, notices) for a server's config.ldif."""
     if at is None:
         return (), (f"{rdn_value(server)}: no import time given, so config.ldif can't be dated; not imported",)
-    scope, entries, notices = _snapshot(product, d, server, _stamp(at), text, "config.ldif, imported")
+    scope, entries, notices = _snapshot(product, d, server, gtime(at), text, "config.ldif, imported")
     same = _unchanged(d, server, scope, entries)
     if same is not None:
         return (), (*notices, f"{server_location(server)} {rdn_value(server)}: configuration unchanged since snapshot "
@@ -140,7 +132,7 @@ def snapshot_reader(product):
     """read(files, d, patterns, at) for the config importer of a DS-lineage product."""
     def read(files, d, patterns, at=None):
         results = tuple(_server_snapshots(product, d, folder, inside, at) for folder, inside in _folders(files).items())
-        return Imported(containers=(_ou(CONFIG), _ou(OBSERVED)),
+        return Imported(containers=(ou_entry(CONFIG), ou_entry(OBSERVED)),
                         groups=tuple(g for groups, _ in results for g in groups),
                         notices=(*(n for _, ns in results for n in ns),
                                  *(("no server folders found: put each server's config/ directory in a folder named "
@@ -169,9 +161,9 @@ def declared_reader(product):
         entries, notices = config_entries(product, d, files[configs[0]], DECLARED, configs[0])
         merged = tuple(_kept(d, e) for e in entries)
         scopes = tuple(f"ou={b},{DECLARED}" for b in BRANCHES)
-        groups = tuple((s, tuple(e for e in merged if e.norm == norm_dn(s) or e.norm.endswith("," + norm_dn(s))))
+        groups = tuple((s, tuple(e for e in merged if within(e.norm, s)))
                        for s in scopes)
-        return Imported(containers=(_ou(CONFIG), _ou(DECLARED)), groups=tuple(g for g in groups if g[1]),
+        return Imported(containers=(ou_entry(CONFIG), ou_entry(DECLARED)), groups=tuple(g for g in groups if g[1]),
                         notices=notices)
     return read
 
@@ -179,7 +171,7 @@ def declared_reader(product):
 def access_log_reader(files, d, patterns, at=None):
     """read(files, d, patterns, at) for the access-log importer: each consumer found its own group."""
     entries, notices = read_access_logs(files, d, patterns, at)
-    return Imported(containers=(_ou(CONSUMERS),), groups=tuple((e.dn, (e,)) for e in entries), notices=notices)
+    return Imported(containers=(ou_entry(CONSUMERS),), groups=tuple((e.dn, (e,)) for e in entries), notices=notices)
 
 
 def importers(product):

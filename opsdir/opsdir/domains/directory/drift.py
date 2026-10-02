@@ -3,7 +3,7 @@ from ...core.directory import children, get, norm_dn, one, rdn_value, subtree
 from .naming import DECLARED, OBSERVED
 
 # governance, and what a policy is for: not server configuration, so never observed
-IGNORE = {"ciamLastChanged", "ciamChangeRef", "ciamOwner", "description", "ciamPopulation"}
+IGNORE = frozenset({"ciamLastChanged", "ciamChangeRef", "ciamOwner", "description", "ciamPopulation"})
 DRIFT_HEADERS = ("server", "finding", "entry (relative to declared config)", "detail")
 
 

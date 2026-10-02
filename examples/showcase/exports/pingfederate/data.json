@@ -738,6 +738,76 @@
           }
         }
       ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/notificationPublishers",
+      "items": [
+        {
+          "id": "smtp",
+          "name": "SES SMTP",
+          "pluginDescriptorRef": {
+            "id": "com.pingidentity.email.SmtpNotificationPlugin"
+          },
+          "configuration": {
+            "fields": [
+              {
+                "name": "From Address",
+                "value": "noreply@example-aero.test"
+              },
+              {
+                "name": "Email Server",
+                "value": "email-smtp.us-east-1.amazonaws.com"
+              },
+              {
+                "name": "SMTP Port",
+                "value": "587"
+              },
+              {
+                "name": "Encryption Method",
+                "value": "TLS"
+              },
+              {
+                "name": "Username",
+                "value": "AKIAEXAMPLESMTPUSER"
+              },
+              {
+                "name": "Password",
+                "encryptedValue": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2Iiwia2lkIjoic3ludGhldGljIn0..synthetic"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "operationType": "SAVE",
+      "resourceType": "/captchaProviders",
+      "items": [
+        {
+          "id": "recaptcha",
+          "name": "reCAPTCHA v3",
+          "pluginDescriptorRef": {
+            "id": "com.pingidentity.captcha.recaptchav3.ReCaptchaV3Plugin"
+          },
+          "configuration": {
+            "fields": [
+              {
+                "name": "Site Key",
+                "value": "6LcEXAMPLEsyntheticSiteKey000000000000"
+              },
+              {
+                "name": "Secret Key",
+                "encryptedValue": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2Iiwia2lkIjoic3ludGhldGljIn0..synthetic2"
+              },
+              {
+                "name": "Pass Score Threshold",
+                "value": "0.5"
+              }
+            ]
+          }
+        }
+      ]
     }
   ]
 }

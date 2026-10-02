@@ -45,6 +45,11 @@ The importer `aws/terraform-state` reads Terraform state (format version 4, `has
 | `aws_kms_key` (+ `aws_kms_replica_key`) | key reference `aws-kms://<arn>`: rotation, replica regions | reference URI |
 | `aws_s3_bucket` | storage `s3://<bucket>` | storage reference |
 | `aws_nat_gateway` | egress: its public address (`/32`) | NAT gateway ID (`ciamProviderRef`) |
+| `aws_lambda_function`, `aws_codepipeline`, `aws_codebuild_project` (+ `aws_cloudwatch_event_rule` / `aws_cloudwatch_event_target`, `aws_scheduler_schedule`) | job binding (`ciamJobBinding`, the core automation domain): what realizes a job in the environment: its ARN, runtime (a build project's image), and the schedules the EventBridge rules and Scheduler schedules that target it run it on (a Lambda alias or version ARN counts as its function); the job itself (`ou=jobs`) names the binding role (`ciamJobRole`) | ARN (`ciamProviderRef`) |
+| `aws_autoscaling_group` (+ its `aws_launch_template`, directly or through a mixed instances policy) | compute group (`ciamComputeGroup`, the core compute domain): the server role it runs (`ciamTargetRole`, its tag `Role`), min/desired/max, the zones of its subnets (else its `availability_zones`), the template's image, instance type and whether the metadata service requires tokens (`http_tokens`: IMDSv2). Its binding role is its tag `BindingRole`, else `compute-<role>` | ARN (`ciamProviderRef`) |
+| `aws_eks_cluster` (+ `aws_eks_node_group`, `aws_eks_addon`) | cluster (`ciamCluster`): Kubernetes version, add-ons and versions, node groups (`name: instance types, min-max`), the zones of its subnets. Its binding role is its tag `BindingRole` or `Role`, else `cluster` | ARN (`ciamProviderRef`) |
+| `aws_sesv2_email_identity`, `aws_ses_domain_identity` (+ `aws_ses_domain_dkim`, the domain's `aws_route53_record` TXT records) | sending identity (`ciamSendingIdentity`, the core messaging domain) for a domain: DKIM verified (signing status `SUCCESS`), SPF authorizing SES (`include:amazonses.com`), the DMARC policy (`_dmarc` record). An identity for a single address isn't a domain's and is left out | ARN (`ciamProviderRef`) |
+| `aws_sqs_queue`, `aws_sns_topic`, `aws_cloudwatch_event_bus` (not the default bus), `aws_kinesis_stream` | stream carrier (`ciamStreamBinding`): what carries an event stream (`ou=event-streams` names its binding role, `ciamStreamRole`) | ARN (`ciamProviderRef`) |
 
 **What changes.** What the state says replaces the record's values for what it covers; everything else on the entry (owner, rotation dates, consumers, …) is kept. An entry of a kind the state reports but that the state lacks is named ("in the record but not in what the cloud reports"); kinds the state doesn't report at all are left alone. An overlay environment leaves the bindings it inherits to its base.
 
@@ -61,7 +66,9 @@ The importer fills in everything else from the state. Where the source names a r
 
 **Named, not recorded:** resource types that hold secret values or aren't modeled yet (`aws_secretsmanager_secret_version`, `aws_ssm_parameter`, `random_password`, `tls_private_key`, `aws_iam_access_key`, `aws_db_instance`), counted by type.
 
-**Skipped without a notice:** ingress rules whose source isn't an IPv4 CIDR (IPv6, a referenced security group, a prefix list), port `0`/`-1` (all ports), protocols other than `tcp`/`udp` (`ciamProtocol` stays unset), and egress rules.
+**Named, not recorded (security group rules):** a port range (`from_port` ≠ `to_port`) and a rule for all ports (`-1`, or `0`–`65535`), since `ciamPort` holds single ports; a source that isn't an IPv4 range (an IPv6 range, a referenced security group, a prefix list, the group itself). The rule's single IPv4 ports and sources are still recorded; a rule with no IPv4 source records nothing. The same from Terraform state, CLI output and CloudFormation.
+
+**Skipped without a notice:** protocols other than `tcp`/`udp` (`ciamProtocol` stays unset) and egress rules.
 
 **Secrets.** Secret values are never read: a Secrets Manager secret is recorded from its ARN alone, `aws_secretsmanager_secret_version` is skipped, and the reader drops whatever the state marks sensitive before anything sees it.
 
@@ -71,7 +78,7 @@ Where there is no Terraform state (or to check it against what the account actua
 
 ```bash
 out=export/source/prod; VPC=vpc-0a1b2c3d4e5f67890              # the environment's VPC scopes what is read
-mkdir -p $out/target-health $out/route53 $out/kms
+mkdir -p $out/target-health $out/route53 $out/kms $out/lambda-tags $out/event-targets
 aws ec2 describe-vpcs --vpc-ids $VPC                                   > $out/vpcs.json
 aws ec2 describe-subnets --filters Name=vpc-id,Values=$VPC             > $out/subnets.json
 aws ec2 describe-instances --filters Name=vpc-id,Values=$VPC           > $out/instances.json
@@ -97,18 +104,33 @@ for key in $(aws kms list-keys --query 'Keys[].KeyId' --output text); do
   aws kms get-key-rotation-status --key-id "$key"                      > "$out/kms/rotation-$key.json"
 done
 aws s3api list-buckets                                                 > $out/buckets.json
+aws lambda list-functions                                              > $out/functions.json
+for fn in $(aws lambda list-functions --query 'Functions[].FunctionArn' --output text); do
+  aws lambda list-tags --resource "$fn"                                > "$out/lambda-tags/${fn##*:}.json"   # named by function
+done
+aws events list-rules                                                  > $out/rules.json
+for rule in $(aws events list-rules --query 'Rules[].Name' --output text); do
+  aws events list-targets-by-rule --rule "$rule"                       > "$out/event-targets/$rule.json"     # named by rule
+done
+for s in $(aws scheduler list-schedules --query 'Schedules[].Name' --output text); do
+  aws scheduler get-schedule --name "$s"                               > "$out/schedule-$s.json"
+done
+for p in $(aws codepipeline list-pipelines --query 'pipelines[].name' --output text); do
+  aws codepipeline get-pipeline --name "$p"                            > "$out/pipeline-$p.json"
+done
+aws codebuild batch-get-projects --names $(aws codebuild list-projects --query 'projects' --output text) > $out/build-projects.json
 
 opsdir import --dry-run aws/cli-inventory export/
 opsdir import --change CHG-… aws/cli-inventory export/
 ```
 
-File names are free except two: `describe-target-health` and `list-resource-record-sets` don't say what they describe, so they are saved as `target-health/<target group name>.json` and `route53/<hosted zone ID>.json`. Every other output is recognized by its top-level key (`Vpcs`, `Subnets`, `Reservations`, `SecurityGroups`, `SecurityGroupRules`, `NatGateways`, `LoadBalancers`, `TagDescriptions`, `Listeners`, `TargetGroups`, `SecretList`, `KeyMetadata`, `KeyRotationEnabled`, `Buckets`); anything else is named and skipped. `roles.json` is the role map, never read as an output.
+File names are free except four: `describe-target-health`, `list-resource-record-sets`, `lambda list-tags` and `events list-targets-by-rule` don't say what they describe, so they are saved as `target-health/<target group name>.json`, `route53/<hosted zone ID>.json`, `lambda-tags/<function name>.json` and `event-targets/<rule name>.json`. Every other output is recognized by its top-level key (`Vpcs`, `Subnets`, `Reservations`, `SecurityGroups`, `SecurityGroupRules`, `NatGateways`, `LoadBalancers`, `TagDescriptions`, `Listeners`, `TargetGroups`, `SecretList`, `KeyMetadata`, `KeyRotationEnabled`, `Buckets`, `Functions`, `Rules`, `ScheduleExpression`, `pipeline`, `projects`); anything else is named and skipped. `roles.json` is the role map, never read as an output.
 
 The outputs are read into the same resources as Terraform state (the mapping is shared), so the table above, what changes, roles and `roles.json` apply unchanged. Separately listed rules (`describe-security-group-rules`) replace the inline permissions of their groups. What the CLI adds: a secret's last rotation (`ciamLastRotated`) and that rotation is off (`ciamAutoRotate: FALSE`), which state doesn't hold. Differences in scope:
 
 - **Network resources** (subnets, instances, security groups, load balancers, NAT gateways) are read only inside the VPCs `describe-vpcs` lists; others are counted. Terminated instances are skipped.
-- **Account-wide listings** (secrets, KMS keys, buckets) report far more than one environment: the ones the record doesn't have and nothing names a role for are counted with a few examples, not listed one by one. Name the ones that belong in `roles.json` (by ARN or name). Only customer managed KMS keys are read; AWS managed keys are counted.
-- `list-secrets` never returns secret values, and nothing reads `get-secret-value` output.
+- **Account-wide listings** (secrets, KMS keys, buckets, functions, pipelines, build projects) report far more than one environment: the ones the record doesn't have and nothing names a role for are counted with a few examples, not listed one by one. Name the ones that belong in `roles.json` (by ARN or name). Only customer managed KMS keys are read; AWS managed keys are counted.
+- `list-secrets` never returns secret values, and nothing reads `get-secret-value` output. Disabled EventBridge rules and Scheduler schedules are counted, not read. A function's environment variables are never read.
 
 ## Reading an environment from its CloudFormation stacks
 
@@ -126,7 +148,7 @@ opsdir import --dry-run aws/cloudformation export/
 
 The template says what each resource is declared with; the stack's resources give the IDs the record matches on (`vpc-…`, `i-…`, ARNs), so a stack without its resource listing is read for nothing and named, and so is a folder without a template. Values are resolved from the stack's parameters (else the template's defaults), pseudo parameters (`AWS::Region`, `AWS::AccountId`, … from the stack ID) and physical IDs: `Ref`, `Fn::Sub`, `Fn::Join`, `Fn::Select`, and `Fn::GetAtt` where it links resources (a Route 53 alias to its load balancer, a NAT gateway or load balancer to its Elastic IP's address). JSON and YAML templates are read, short tags (`!Ref`, `!Sub`, `!GetAtt`, …) included.
 
-What the stacks declare is read into the same resources as Terraform state (the mapping is shared: VPCs, subnets, instances, security groups and ingress rules, load balancers with listeners and target groups, alias records, Secrets Manager secrets with rotation schedules, KMS keys, S3 buckets, NAT gateways), so the table above, roles and `roles.json` apply unchanged. A KMS key's rotation is off unless the template sets `EnableKeyRotation`, as in CloudFormation. Named in the notices:
+What the stacks declare is read into the same resources as Terraform state (the mapping is shared: VPCs, subnets, instances, security groups and ingress rules, load balancers with listeners and target groups, alias records, Secrets Manager secrets with rotation schedules, KMS keys, S3 buckets, NAT gateways, Lambda functions, EventBridge rules and their targets (`Fn::GetAtt X.Arn` resolves to X's ARN), Scheduler schedules, CodePipeline pipelines, CodeBuild projects; ARNs built from the stack's partition, region and account), so the table above, roles and `roles.json` apply unchanged. A KMS key's rotation is off unless the template sets `EnableKeyRotation`, as in CloudFormation. Named in the notices:
 
 - functions that aren't evaluated (`Fn::If`, `Fn::ImportValue`, `Fn::FindInMap`, `Fn::Cidr`, …), counted per stack: the attributes computed with them keep the record's values;
 - resources without a physical ID (not created, failed, deleted) and resource types not read, counted;
@@ -151,12 +173,12 @@ It adds no required roles, planner checks or schema of its own; the environment'
 
 - **Not yet run against a live account.** The Terraform and the importers follow the `hashicorp/aws` 5.x schema and the AWS CLI's output shapes; `terraform validate`/`plan` and an import from a real account are part of the testing plan (milestone 7.2, which starts on AWS).
 - **Commercial partition only.** GovCloud and China (`aws-us-gov`, `aws-cn`) aren't in the vocabulary yet.
-- **Port ranges:** the importers read a rule's first port only (`from_port`; `to_port` is ignored), so a range comes in as its first port, without a notice. The renderer writes single ports only (`ciamPort` holds single ports).
+- **Port ranges** aren't recorded (`ciamPort` holds single ports): the importers name them; the renderer writes single ports only.
 - **Services are TCP network load balancers.** Application load balancers are read as services, but their TLS listeners, certificates and HTTP rules aren't recorded, and the renderer writes only TCP pass-through.
-- **What the importers can't see:** egress rules, sources other than IPv4 CIDRs, key pairs, IAM instance profiles and roles (milestone 4.7), Secrets Manager resource policies, KMS key policies and protection, bucket policies and encryption (4.10), CloudFront / WAF / API Gateway (edge, 4.8), databases (counted, 4.10).
+- **What the importers can't see:** egress rules, sources other than IPv4 CIDRs, key pairs, IAM instance profiles and roles (milestone 4.7), Image Builder pipelines (`ciamImageBuild` is recorded by hand), autoscaling groups and EKS clusters in CLI output and CloudFormation stacks (Terraform state only, for now), Secrets Manager resource policies, KMS key policies and protection, bucket policies and encryption (4.10), CloudFront / WAF / API Gateway (edge, 4.8), databases (counted, 4.10).
 
 ## Tests
 
-`tests/test_aws.py` (registration, vocabulary, secret resolution), `tests/test_aws_state.py` (the state importer: round trip, drift, new tagged and untagged resources, secrets and sensitive attributes never read, overlays, layout, a new binding keeps its provider reference, security group roles from their instances), `tests/test_aws_cli.py` (the CLI importer: round trip, facts state lacks, VPC scoping, counted account-wide listings, files placed by name, rules listed separately, `roles.json` never read as output, timestamps), `tests/test_aws_cloudformation.py` (round trip over two YAML/JSON stacks, drift, `GetAtt` and parameter links, resources not created, unknown files, secrets never read, a folder without a template, the resolver), `tests/test_aws_state_store.py` (state and CLI against Postgres: imported under an approved change, re-import changes nothing). The rendered Terraform is covered end to end by the showcase's golden outputs (`examples/showcase`, the source environment), and the importers by its cloud drift exports (`examples/showcase/exports/cloud/source`).
+`tests/test_aws.py` (registration, vocabulary, secret resolution), `tests/test_aws_state.py` (the state importer: round trip, drift, new tagged and untagged resources, secrets and sensitive attributes never read, overlays, layout, a new binding keeps its provider reference, security group roles from their instances), `tests/test_aws_cli.py` (the CLI importer: round trip, facts state lacks, VPC scoping, counted account-wide listings, files placed by name, rules listed separately, `roles.json` never read as output, timestamps), `tests/test_aws_cloudformation.py` (round trip over two YAML/JSON stacks, drift, `GetAtt` and parameter links, resources not created, unknown files, secrets never read, a folder without a template, the resolver), `tests/test_aws_compute.py` (an autoscaling group with its launch template, an untagged group, an EKS cluster with node groups and add-ons), `tests/test_aws_messaging.py` (an SES domain identity with SPF, DKIM and DMARC from its DNS; queues and buses as stream carriers), `tests/test_aws_firewall_notices.py` (port ranges, all-ports rules and non-IPv4 sources named from state, CLI output and CloudFormation), `tests/test_aws_jobs.py` (functions, pipelines and build projects with their schedules from state, CLI output and CloudFormation; a tagged function placed as a job binding), `tests/test_aws_state_store.py` (state and CLI against Postgres: imported under an approved change, re-import changes nothing). The rendered Terraform is covered end to end by the showcase's golden outputs (`examples/showcase`, the source environment), and the importers by its cloud drift exports (`examples/showcase/exports/cloud/source`).
 
 Installing the package registers it with opsdir (entry point `opsdir.adapters`: `aws`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.

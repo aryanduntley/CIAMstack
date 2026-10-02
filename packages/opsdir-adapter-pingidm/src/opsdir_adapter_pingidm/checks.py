@@ -1,11 +1,11 @@
 """PingIDM planner checks: the deployment holds together (every mapping reads and writes things the record has, every
 reconciliation schedule runs a mapping it has) and every connector can reach its system from the target (a target
 role and a credential role the target binds; a connector with a fixed host is an action)."""
-import json
 
 from opsdir.core.directory import children, one, rdn_value, values
 from opsdir.core.environment import one_role
 from opsdir.core.findings import findings, merge_findings, responsible
+from opsdir.core.jsondata import held_json
 from .naming import CONNECTORS, MANAGED, MAPPINGS, SCHEDULES
 
 
@@ -30,7 +30,7 @@ def deployment_problems(d):
     mappings = children(d, MAPPINGS, "pingidmMapping")
     names = {rdn_value(m) for m in mappings}
     ends = ((m, endpoint_problem(d, one(m, a))) for m in mappings for a in ("pingidmSource", "pingidmTarget"))
-    runs = ((s, json.loads(one(s, "pingidmConfig") or "{}").get("invokeContext") or {})
+    runs = ((s, held_json(s, "pingidmConfig").get("invokeContext") or {})
             for s in children(d, SCHEDULES, "pingidmSchedule"))
     return (*((m, why) for m, why in ends if why),
             *((s, f"it reconciles mapping {c.get('mapping')!r}, which the record doesn't have") for s, c in runs

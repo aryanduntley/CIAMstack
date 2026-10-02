@@ -29,32 +29,41 @@ matching Terraform resource, so the same mapping reads them as reads Terraform s
   kms get-key-rotation-status           KeyRotationEnabled        -> the key's rotation (the key from its KeyId, else
                                                                      the file name rotation-<key id>.json)
   s3api list-buckets                    Buckets                   -> aws_s3_bucket
-Network resources outside the listed VPCs are counted, not read; secrets, keys and buckets are account-wide, so the
-importer counts rather than lists the ones the record doesn't have and nothing names a role for.
+  lambda list-functions                 Functions                 -> aws_lambda_function
+  lambda list-tags                      Tags                      -> a function's tags; the output doesn't name the
+                                                                     function: save it as lambda-tags/<function>.json
+  events list-rules                     Rules                     -> aws_cloudwatch_event_rule (enabled rules)
+  events list-targets-by-rule           Targets                   -> aws_cloudwatch_event_target; the output doesn't
+                                                                     name its rule: save it as event-targets/<rule>.json
+  scheduler get-schedule                ScheduleExpression        -> aws_scheduler_schedule (enabled; one per file)
+  codepipeline get-pipeline             pipeline                  -> aws_codepipeline (its ARN from metadata)
+  codebuild batch-get-projects          projects                  -> aws_codebuild_project
+Network resources outside the listed VPCs are counted, not read; secrets, keys, buckets, functions, pipelines and build
+projects are account-wide, so the importer counts rather than lists the ones the record doesn't have and nothing names
+a role for.
 """
 import datetime as dt
-import json
 from collections import Counter
 
 from opsdir.core.contract import Importer
+from opsdir.core.directory import gtime
 from opsdir.core.inventory import layout_import
+from opsdir.core.sources import json_document
 from .inventory import PROVIDER, pairs_resources
 
 KEYS = ("Vpcs", "Subnets", "Reservations", "SecurityGroups", "SecurityGroupRules", "NatGateways", "LoadBalancers",
         "TagDescriptions", "Listeners", "TargetGroups", "TargetHealthDescriptions", "ResourceRecordSets", "SecretList",
-        "KeyMetadata", "KeyRotationEnabled", "Buckets")
+        "KeyMetadata", "KeyRotationEnabled", "Buckets", "Functions", "Rules", "Targets", "ScheduleExpression",
+        "pipeline", "projects", "Tags")         # Tags last: other outputs carry tags too
 IN_VPC = ("aws_subnet", "aws_instance", "aws_security_group", "aws_lb", "aws_nat_gateway")
-ACCOUNT_WIDE = ("secret", "key", "storage")
+ACCOUNT_WIDE = ("secret", "key", "storage", "job")
 
 
 def _outputs(texts):
     """((path, key, document) of each recognized output), notices for the rest."""
     def recognize(path, text):
-        try:
-            doc = json.loads(text)
-        except ValueError:
-            return None
-        return next(((path, k, doc) for k in KEYS if isinstance(doc, dict) and k in doc), None)
+        doc = json_document(text, dict) or {}
+        return next(((path, k, doc) for k in KEYS if k in doc), None)
     found = {p: recognize(p, t) for p, t in sorted(texts.items())}
     return (tuple(o for o in found.values() if o),
             tuple(f"{p}: not an AWS CLI output this importer reads; not read" for p, o in found.items() if not o))
@@ -81,8 +90,7 @@ def generalized_time(value):
                 else dt.datetime.fromisoformat(str(value).replace("Z", "+00:00")))
     except (TypeError, ValueError):
         return None
-    return (when if when.tzinfo else when.replace(tzinfo=dt.timezone.utc)).astimezone(dt.timezone.utc) \
-        .strftime("%Y%m%d%H%M%SZ")
+    return gtime(when)
 
 
 def _dns(name):
@@ -120,18 +128,31 @@ def _security_groups(outs):
     separate = any(k == "SecurityGroupRules" for _, k, _ in outs)
 
     def inline(g):
-        return [] if separate else [
-            {"from_port": p.get("FromPort"), "protocol": p.get("IpProtocol"), "cidr_blocks": [r.get("CidrIp")],
-             "description": r.get("Description") or ""}
-            for p in g.get("IpPermissions") or () for r in p.get("IpRanges") or () if r.get("CidrIp")]
+        """One Terraform-shaped ingress block per permission and description, every kind of source kept."""
+        def blocks(p):
+            sources = [*(("cidr_blocks", r.get("CidrIp"), r.get("Description")) for r in p.get("IpRanges") or ()),
+                       *(("ipv6_cidr_blocks", r.get("CidrIpv6"), r.get("Description")) for r in p.get("Ipv6Ranges") or ()),
+                       *(("security_groups", r.get("GroupId"), r.get("Description"))
+                         for r in p.get("UserIdGroupPairs") or ()),
+                       *(("prefix_list_ids", r.get("PrefixListId"), r.get("Description"))
+                         for r in p.get("PrefixListIds") or ())]
+            return [{"from_port": p.get("FromPort"), "to_port": p.get("ToPort"), "protocol": p.get("IpProtocol"),
+                     "description": desc or "",
+                     **{k: [v for kk, v, dd in sources if kk == k and (dd or "") == desc and v]
+                        for k in ("cidr_blocks", "ipv6_cidr_blocks", "security_groups", "prefix_list_ids")}}
+                    for desc in dict.fromkeys(d or "" for _, _, d in sources)]
+        return [] if separate else [b for p in g.get("IpPermissions") or () for b in blocks(p)]
     return [*(("aws_security_group", {"id": g.get("GroupId"), "name": g.get("GroupName"), "vpc_id": g.get("VpcId"),
                                       "tags": _tags(g.get("Tags")), "ingress": inline(g)})
               for g in _all(outs, "SecurityGroups")),
             *(("aws_vpc_security_group_ingress_rule", {
                 "security_group_rule_id": r.get("SecurityGroupRuleId"), "security_group_id": r.get("GroupId"),
-                "cidr_ipv4": r.get("CidrIpv4"), "from_port": r.get("FromPort"), "ip_protocol": r.get("IpProtocol"),
-                "description": r.get("Description") or "", "tags": _tags(r.get("Tags"))})
-              for r in _all(outs, "SecurityGroupRules") if not r.get("IsEgress") and r.get("CidrIpv4"))]
+                "cidr_ipv4": r.get("CidrIpv4"), "cidr_ipv6": r.get("CidrIpv6"),
+                "referenced_security_group_id": (r.get("ReferencedGroupInfo") or {}).get("GroupId"),
+                "prefix_list_id": r.get("PrefixListId"), "from_port": r.get("FromPort"), "to_port": r.get("ToPort"),
+                "ip_protocol": r.get("IpProtocol"), "description": r.get("Description") or "",
+                "tags": _tags(r.get("Tags"))})
+              for r in _all(outs, "SecurityGroupRules") if not r.get("IsEgress"))]
 
 
 def _load_balancers(outs):
@@ -215,6 +236,39 @@ def _keys(outs):
             if managed else ())
 
 
+def _enabled(item):
+    return item.get("State", "ENABLED") == "ENABLED"
+
+
+def _jobs(outs):
+    """(pairs, notices): functions, build projects and pipelines, and the enabled rules and schedules that start them."""
+    function_tags = {_stem(p): doc["Tags"] for p, k, doc in outs if k == "Tags" and isinstance(doc.get("Tags"), dict)}
+    rules = _all(outs, "Rules")
+    schedules = [doc for _, k, doc in outs if k == "ScheduleExpression"]
+    off = [r for r in rules if not _enabled(r)] + [s for s in schedules if not _enabled(s)]
+    return ([*(("aws_lambda_function", {"arn": f.get("FunctionArn"), "function_name": f.get("FunctionName"),
+                                        "runtime": f.get("Runtime"), "tags": function_tags.get(f.get("FunctionName"), {})})
+               for f in _all(outs, "Functions")),
+             *(("aws_cloudwatch_event_rule", {"name": r.get("Name"), "arn": r.get("Arn"),
+                                              "schedule_expression": r.get("ScheduleExpression")})
+               for r in rules if _enabled(r)),
+             *(("aws_cloudwatch_event_target", {"rule": _stem(p), "arn": t.get("Arn")})
+               for p, k, doc in outs if k == "Targets" for t in doc.get("Targets") or ()),
+             *(("aws_scheduler_schedule", {"name": s.get("Name"), "arn": s.get("Arn"),
+                                           "schedule_expression": s.get("ScheduleExpression"),
+                                           "target": {"arn": (s.get("Target") or {}).get("Arn")}})
+               for s in schedules if _enabled(s)),
+             *(("aws_codepipeline", {"arn": (doc.get("metadata") or {}).get("pipelineArn"),
+                                     "name": (doc.get("pipeline") or {}).get("name")})
+               for _, k, doc in outs if k == "pipeline"),
+             *(("aws_codebuild_project", {"arn": pr.get("arn"), "name": pr.get("name"),
+                                          "environment": {"image": (pr.get("environment") or {}).get("image")},
+                                          "tags": {t.get("key"): t.get("value") for t in pr.get("tags") or ()
+                                                   if isinstance(t, dict)}})
+               for pr in _all(outs, "projects"))],
+            (f"events/scheduler: {len(off)} disabled rule(s) or schedule(s) not read",) if off else ())
+
+
 def _scoped(pairs):
     """(pairs, notices): network resources inside the listed VPCs only, and the rules of the groups kept."""
     vpcs = {a.get("id") for t, a in pairs if t == "aws_vpc"}
@@ -239,10 +293,13 @@ def cli_resources(texts):
     outs, unknown = _outputs(texts)
     forwarding, target_notices = _forwarding(outs)
     keys, key_notices = _keys(outs)
+    jobs, job_notices = _jobs(outs)
     pairs, scope_notices = _scoped([*_network(outs), *_instances(outs), *_security_groups(outs),
                                     *_load_balancers(outs), *forwarding, *_records(outs), *_secrets(outs), *keys,
-                                    *(("aws_s3_bucket", {"bucket": b.get("Name")}) for b in _all(outs, "Buckets"))])
-    return pairs_resources(pairs), (*unknown, *target_notices, *key_notices, *scope_notices)
+                                    *(("aws_s3_bucket", {"bucket": b.get("Name")}) for b in _all(outs, "Buckets")),
+                                    *jobs])
+    resources, rule_notices = pairs_resources(pairs)
+    return resources, (*unknown, *target_notices, *key_notices, *job_notices, *scope_notices, *rule_notices)
 
 
 def read_cli_inventory(files, d, patterns, at=None):

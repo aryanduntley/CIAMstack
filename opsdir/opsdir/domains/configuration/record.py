@@ -90,6 +90,14 @@ def file_entries(fmt, text, name, repo_path, patterns, role=None, deploy_path=No
                                                                         f"reference: {loc}" for loc in held))
 
 
+def captured_file(fmt, prefix, folder, path, text, patterns, role=None):
+    """(DN, entries, notices) of a product's config file captured into the record: named prefix.path (slashes as
+    dots), its repository path folder/path. Product importers that keep files they don't model share this."""
+    name = f"{prefix}." + path.replace("/", ".")
+    entries, notices = file_entries(fmt, text, name, f"{folder}/{path}", patterns, role)
+    return file_dn(name), entries, notices
+
+
 def _linked(setting, m):
     role, attr = one(setting, "ciamValueFrom").split("#", 1)
     b = one_role(m, role)

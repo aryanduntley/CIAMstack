@@ -33,6 +33,12 @@ CHANGES = (
      "2026-09-23"),
     ("CHG-2009", "Census of the servers' and applications' files for values of the record", "approved",
      "CAB 2026-09-18", "2026-09-23"),
+    ("CHG-2010", "Import the platform's hidden automation (servers' schedulers, CI pipelines)", "approved",
+     "CAB 2026-09-18", "2026-09-23"),
+    ("CHG-2011", "Name the owners of the imported jobs", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2012", "Import the servers' host baselines", "approved", "CAB 2026-09-18", "2026-09-23"),
+    ("CHG-2013", "Record the corporate root CA the PingFederate servers trust", "approved", "CAB 2026-09-18",
+     "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

@@ -208,7 +208,8 @@ def test_stacks_that_match_the_record_change_nothing():
         "ciam-prod-network: Fn::Cidr (1) not evaluated; the attributes computed with them keep the record's values",
         "ciam-prod-network: resource types not read: AWS::EC2::VPCEndpoint (1)",
         "ciam-prod-app: Fn::If (1) not evaluated; the attributes computed with them keep the record's values",
-        "ciam-prod-app: resource types not read: AWS::Lambda::Function (1)"}
+        "main/prod: job rotate-fn (arn:aws:lambda:us-east-1:111122223333:function:rotate-fn) is not in the record and "
+        "names no role (tag it Role, name it in roles.json, or record it); not imported"}
 
 
 def test_a_changed_template_replaces_the_records_values():

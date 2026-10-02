@@ -419,10 +419,10 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.104 NAME 'ciamNotAfter' DESC 'Expire
  s' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGL
  E-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.105 NAME 'ciamCertPurpose' DESC 'Wha
- t the certificate is for' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.
- 115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:tls-ser
- ver|saml-signing|saml-encryption|jwt-signing|partner-signing' X-ORIGIN 'ops
- dir' )
+ t the certificate is for (ca: a certification authority a truststore adds)'
+  EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE
+  X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:tls-server|saml-signing|saml-enc
+ ryption|jwt-signing|partner-signing|ca' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.106 NAME 'ciamSubjectAltName' DESC '
  DNS names the certificate is valid for' EQUALITY caseIgnoreMatch SYNTAX 1.3
  .6.1.4.1.1466.115.121.1.26 X-PORTABILITY 'contract' X-VALUE-TYPE 'fqdn' X-O
@@ -888,6 +888,303 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.218 NAME 'ciamConcern' DESC 'What in
   the file may be secret material, by line (never the value)' EQUALITY caseI
  gnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'observed' X-
  VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.219 NAME 'ciamJobKind' DESC 'What a 
+ job is: a cron entry, a systemd timer, a scheduled task, a serverless funct
+ ion, a pipeline' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1
+ .15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:cron|timer|sched
+ uled-task|function|pipeline|other' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.220 NAME 'ciamSchedule' DESC 'When a
+  job runs, as its system writes it (a cron expression, rate(1 hour), OnCale
+ ndar=daily, ...)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.
+ 1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.221 NAME 'ciamTrigger' DESC 'What el
+ se starts a job: manual, push, pull-request, http, queue, event, boot, ...'
+  EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILIT
+ Y 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.222 NAME 'ciamCommand' DESC 'What a 
+ job runs (a command line, a handler, an entry point); never stored when it 
+ holds a secret' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.
+ 15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsd
+ ir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.223 NAME 'ciamRunsAs' DESC 'The acco
+ unt a job runs as (an OS user, a service account, a runner)' EQUALITY caseI
+ gnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 
+ 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.224 NAME 'ciamRuntime' DESC 'What a 
+ job runs in: a language runtime (python3.12), a runner image (ubuntu-24.04)
+ , ...' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE
+ -VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.225 NAME 'ciamJobRole' DESC 'The bin
+ ding role that realizes the job in each environment (its function, its pipe
+ line)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE
+ -VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.226 NAME 'ciamUsesRole' DESC 'A bind
+ ing role the job uses (a secret, a service name, a storage location): each 
+ environment binds it' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.
+ 121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.227 NAME 'ciamSecretName' DESC 'A se
+ cret the job expects by name in its own system (a CI secret, an environment
+  variable from a secret store): the name, never the value' EQUALITY caseIgn
+ oreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta' X-VALUE-
+ TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.228 NAME 'ciamCodeBundle' DESC 'The 
+ bundle holding the code the job runs' EQUALITY distinguishedNameMatch SYNTA
+ X 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE
+ -TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.229 NAME 'ciamRepoUrl' DESC 'The rep
+ ository a job is defined in' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.14
+ 66.115.121.1.26 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'url' X-ORIG
+ IN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.230 NAME 'ciamDeploysTo' DESC 'An en
+ vironment a pipeline deploys to, as its CI system names it' EQUALITY caseIg
+ noreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VAL
+ UE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.231 NAME 'ciamFoundOn' DESC 'A serve
+ r a job was found on' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.14
+ 66.115.121.1.12 X-PORTABILITY 'observed' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir
+ ' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.232 NAME 'ciamOs' DESC 'The operatin
+ g system a server role runs: distribution and version, as os-release names 
+ them' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-
+ VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.233 NAME 'ciamJdk' DESC 'The Java ru
+ ntime a server role runs: vendor and version' EQUALITY caseIgnoreMatch SYNT
+ AX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALU
+ E-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.234 NAME 'ciamTrustsCertificate' DES
+ C 'A certificate the role\27s Java truststore (cacerts) adds to the runtime
+ \27s own: lost silently when a server is rebuilt from a stock image' EQUALI
+ TY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILIT
+ Y 'intent' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.235 NAME 'ciamTrustedFingerprint' DE
+ SC 'SHA-256 fingerprint of a certificate the truststore adds that the recor
+ d holds no certificate for' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.146
+ 6.115.121.1.15 X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-ORIGIN 'ops
+ dir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.236 NAME 'ciamOsLimit' DESC 'A resou
+ rce limit, as limits.conf writes it: domain type item value (ds soft nofile
+  65536)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PO
+ RTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.237 NAME 'ciamKernelSetting' DESC 'A
+  kernel setting, as sysctl writes it: name=value' EQUALITY caseIgnoreMatch 
+ SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 's
+ tring' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.238 NAME 'ciamHugePages' DESC 'Trans
+ parent huge pages (directory servers and JVMs usually want never)' EQUALITY
+  caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTAB
+ ILITY 'intent' X-VALUE-TYPE 'enum:always|madvise|never' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.239 NAME 'ciamFipsMode' DESC 'Whethe
+ r the OS runs in FIPS mode: it decides which crypto providers the products 
+ may use' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-V
+ ALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.240 NAME 'ciamSelinuxMode' DESC 'SEL
+ inux mode' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SI
+ NGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:enforcing|permissive|d
+ isabled' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.241 NAME 'ciamHostAgent' DESC 'An ag
+ ent on the role\27s servers: name and version (an EDR sensor, a vulnerabili
+ ty scanner, a log forwarder, a cloud agent)' EQUALITY caseIgnoreMatch SYNTA
+ X 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string
+ ' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.242 NAME 'ciamServiceUnit' DESC 'A s
+ ervice unit of the role\27s servers: name, the user it runs as, its restart
+  policy' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PO
+ RTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.243 NAME 'ciamPinnedHost' DESC 'A na
+ me pinned in /etc/hosts: address and names. Pinned names are migration land
+ mines' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORT
+ ABILITY 'observed' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.244 NAME 'ciamSearchDomain' DESC 'A 
+ DNS search domain of the role\27s servers (resolv.conf)' EQUALITY caseIgnor
+ eMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'observed' X-VALU
+ E-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.245 NAME 'ciamImageBuild' DESC 'What
+  builds the image a compute group runs (an image pipeline, a recipe, a temp
+ late)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE
+ -VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.246 NAME 'ciamMinSize' DESC 'Fewest 
+ instances a compute group scales to' EQUALITY integerMatch SYNTAX 1.3.6.1.4
+ .1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'int
+ ' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.247 NAME 'ciamMaxSize' DESC 'Most in
+ stances a compute group scales to' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1
+ .1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'int' 
+ X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.248 NAME 'ciamDesiredSize' DESC 'Ins
+ tances a compute group runs' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.
+ 115.121.1.27 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'int' X-ORIG
+ IN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.249 NAME 'ciamSpansZone' DESC 'An av
+ ailability zone a compute group, a cluster or a node pool places instances 
+ in' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABI
+ LITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.250 NAME 'ciamMetadataTokens' DESC '
+ Whether the instance metadata service requires session tokens: without them
+  a request forged through the server reads its credentials' EQUALITY boolea
+ nMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'bind
+ ing' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.251 NAME 'ciamClusterVersion' DESC '
+ The Kubernetes version a cluster runs' EQUALITY caseIgnoreMatch SYNTAX 1.3.
+ 6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE
+  'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.252 NAME 'ciamClusterAddon' DESC 'An
+  add-on a managed cluster runs: name and version' EQUALITY caseIgnoreMatch 
+ SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE '
+ string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.253 NAME 'ciamNodePool' DESC 'A clus
+ ter\27s node pool: name: instance size, min-max nodes' EQUALITY caseIgnoreM
+ atch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-T
+ YPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.254 NAME 'ciamWorkloadKind' DESC 'Ho
+ w a workload runs: a StatefulSet, a Deployment, a DaemonSet' EQUALITY caseI
+ gnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 
+ 'intent' X-VALUE-TYPE 'enum:statefulset|deployment|daemonset|other' X-ORIGI
+ N 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.255 NAME 'ciamNamespace' DESC 'The K
+ ubernetes namespace a workload runs in' EQUALITY caseIgnoreMatch SYNTAX 1.3
+ .6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE
+  'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.256 NAME 'ciamContainerImage' DESC '
+ A container image a workload runs (repository and tag; sidecars included)' 
+ EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY
+  'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.257 NAME 'ciamStorageSize' DESC 'The
+  persistent storage each replica claims, as Kubernetes writes it (100Gi)' E
+ QUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X
+ -PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.258 NAME 'ciamStorageClass' DESC 'Th
+ e storage class a workload claims its storage from' EQUALITY caseIgnoreMatc
+ h SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' 
+ X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.259 NAME 'ciamServiceAccount' DESC '
+ The Kubernetes service account a workload runs as' EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X
+ -VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.260 NAME 'ciamIdentityRole' DESC 'Th
+ e binding role whose cloud identity a workload assumes (workload identity):
+  each environment binds it' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.146
+ 6.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-
+ ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.261 NAME 'ciamClusterRole' DESC 'The
+  binding role of the cluster a workload runs in' EQUALITY caseIgnoreMatch S
+ YNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-V
+ ALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.262 NAME 'ciamPodSecurity' DESC 'A s
+ ecurity fact of a workload\27s pods: runAsNonRoot, readOnlyRootFilesystem, 
+ privileged, level=restricted' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1
+ 466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'ops
+ dir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.263 NAME 'ciamNetworkPolicy' DESC 'A
+  network policy that selects a workload: its name and what it allows' EQUAL
+ ITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'int
+ ent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.264 NAME 'ciamIngressHost' DESC 'A h
+ ost name an ingress serves a workload at' EQUALITY caseIgnoreMatch SYNTAX 1
+ .3.6.1.4.1.1466.115.121.1.26 X-PORTABILITY 'contract' X-VALUE-TYPE 'fqdn' X
+ -ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.265 NAME 'ciamCensusTerm' DESC 'The 
+ census looks for the field\27s values in files, whatever their type: a term
+  operators want found wherever it is copied (an old brand or domain, an acc
+ ount ID, a bucket name)' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.
+ 121.1.7 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'bool' X-ORIGIN 'ops
+ dir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.266 NAME 'ciamServiceKind' DESC 'Wha
+ t an external service is: an SMTP relay, an email or SMS API, an MFA vendor
+ , CAPTCHA, ...' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.
+ 15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:smtp-relay|email-
+ api|sms|voice|mfa|captcha|push|other' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.267 NAME 'ciamVendor' DESC 'Who prov
+ ides an external service' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.
+ 115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-OR
+ IGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.268 NAME 'ciamEndpointHost' DESC 'Th
+ e host the platform reaches an external service at (an SMTP relay, an API);
+  an environment overrides it where it differs' EQUALITY caseIgnoreMatch SYN
+ TAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE X-PORTABILITY 'binding' X-VA
+ LUE-TYPE 'fqdn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.269 NAME 'ciamAllowedDomain' DESC 'A
+  domain an external service accepts the platform\27s requests from or for (
+ CAPTCHA allowed domains, a vendor\27s redirect allowlist): the public names
+  of the roles that use it must be among them, or the service stops working 
+ when they change' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.
+ 1.26 X-PORTABILITY 'contract' X-VALUE-TYPE 'fqdn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.270 NAME 'ciamReachedFrom' DESC 'A s
+ erver role whose servers use an external service (its egress, its public na
+ mes)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTA
+ BILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.271 NAME 'ciamSenderId' DESC 'An SMS
+  sender ID (alphanumeric or short code) a provider sends with' EQUALITY cas
+ eIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-
+ VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.272 NAME 'ciamOriginatingNumber' DES
+ C 'A number messages and calls come from: users and carriers know it' EQUAL
+ ITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'con
+ tract' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.273 NAME 'ciamRegisteredCountry' DES
+ C 'A country where sending is registered with carriers or regulators, and h
+ ow (US: 10DLC brand)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.
+ 121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.274 NAME 'ciamSpendLimit' DESC 'An e
+ xternal service\27s spend limit' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.
+ 1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string'
+  X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.275 NAME 'ciamSenderAddress' DESC 'T
+ he address mail is sent from: users see it, filters and allowlists hold it'
+  EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE
+  X-PORTABILITY 'contract' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.276 NAME 'ciamSenderDomain' DESC 'Th
+ e domain a sender sends as (and a sending identity is verified for)' EQUALI
+ TY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE X-PORT
+ ABILITY 'contract' X-VALUE-TYPE 'fqdn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.277 NAME 'ciamSentBy' DESC 'The exte
+ rnal service that sends a sender\27s mail' EQUALITY distinguishedNameMatch 
+ SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'intent' X-
+ VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.278 NAME 'ciamSendingRole' DESC 'The
+  binding role of a sender\27s sending identity in each environment' EQUALIT
+ Y caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTA
+ BILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.279 NAME 'ciamBounceHandling' DESC '
+ What happens to bounces and complaints (a mailbox, a queue, a suppression l
+ ist)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-
+ VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.280 NAME 'ciamMessagePurpose' DESC '
+ What a sender sends: password-reset, registration, mfa, notification, ...' 
+ EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY
+  'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.281 NAME 'ciamDkimVerified' DESC 'Wh
+ ether a sending identity\27s domain signs with DKIM keys the domain\27s DNS
+  publishes' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGL
+ E-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.282 NAME 'ciamSpfAuthorized' DESC 'W
+ hether the domain\27s SPF record authorizes a sending identity\27s service'
+  EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X-P
+ ORTABILITY 'binding' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.283 NAME 'ciamDmarcPolicy' DESC 'The
+  policy the domain\27s DMARC record asks receivers to apply' EQUALITY caseI
+ gnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 
+ 'binding' X-VALUE-TYPE 'enum:none|quarantine|reject' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.284 NAME 'ciamStreamKind' DESC 'What
+  carries an event stream: a queue, a topic, an event bus, an event hub, a w
+ ebhook, a log stream' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.
+ 121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:queue|topic
+ |bus|event-hub|webhook|log-stream|other' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.285 NAME 'ciamEventType' DESC 'A kin
+ d of identity event a stream carries (sign-in, registration, password-chang
+ e, ...)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PO
+ RTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.286 NAME 'ciamPublishedBy' DESC 'A s
+ erver role that publishes to a stream' EQUALITY caseIgnoreMatch SYNTAX 1.3.
+ 6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-OR
+ IGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.287 NAME 'ciamStreamRole' DESC 'The 
+ binding role of the queue, topic or bus that carries a stream in each envir
+ onment' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGL
+ E-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.288 NAME 'ciamConsumedBy' DESC 'Who 
+ reads a stream (a SIEM, a CRM, a team)' EQUALITY caseIgnoreMatch SYNTAX 1.3
+ .6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-O
+ RIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef ) X-ORIGIN 'opsdir' )
@@ -1036,7 +1333,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.37 NAME 'ciamFieldDefinition' DESC 'D
  efinition of a custom field' SUP ciamCustomDefinition STRUCTURAL MUST ( cia
  mValueType $ ciamPortability ) MAY ( ciamMultiValued $ ciamCarriedBy $ ciam
  Unit $ ciamExample $ ciamDefaultValue $ ciamMinValue $ ciamMaxValue $ ciamP
- attern $ ciamMaxLength $ ciamOverridable ) X-ORIGIN 'opsdir' )
+ attern $ ciamMaxLength $ ciamOverridable $ ciamCensusTerm ) X-ORIGIN 'opsdi
+ r' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.38 NAME 'ciamRecordTypeDefinition' DE
  SC 'Definition of a custom record type' SUP ciamCustomDefinition STRUCTURAL
   MAY ( ciamRecordKind $ ciamParentType $ ciamRequiredField $ ciamOptionalFi
@@ -1082,3 +1380,65 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.47 NAME 'ciamOccurrence' DESC 'A valu
  e of the record found in a scanned file: whose, which attribute, on which l
  ines' SUP ciamObject STRUCTURAL MUST ( cn $ ciamOccurrenceOf $ ciamOccurrin
  gAttr $ ciamLineNumber ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.48 NAME 'ciamJob' DESC 'A piece of th
+ e platform\27s automation: what runs, when, on what, with which secrets, fr
+ om which code' SUP ciamObject STRUCTURAL MUST ( cn $ ciamJobKind ) MAY ( ci
+ amSchedule $ ciamTrigger $ ciamCommand $ ciamRunsAs $ ciamRuntime $ ciamTar
+ getRole $ ciamJobRole $ ciamUsesRole $ ciamSecretName $ ciamCodeBundle $ ci
+ amRepoPath $ ciamRepoUrl $ ciamDeploysTo $ ciamFoundOn $ ciamCriticality ) 
+ X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.49 NAME 'ciamJobBinding' DESC 'Where 
+ an environment runs a job (a function, a pipeline): the provider\27s refere
+ nce for it' SUP ciamBinding STRUCTURAL MUST ciamProviderRef MAY ( ciamSched
+ ule $ ciamRuntime ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.50 NAME 'ciamHostBaseline' DESC 'What
+  a server role\27s servers run beyond its product: OS, Java runtime and tru
+ ststore additions, limits, kernel settings, agents, service units' SUP ciam
+ Object STRUCTURAL MUST ( cn $ ciamTargetRole ) MAY ( ciamOs $ ciamJdk $ cia
+ mTrustsCertificate $ ciamTrustedFingerprint $ ciamOsLimit $ ciamKernelSetti
+ ng $ ciamHugePages $ ciamFipsMode $ ciamSelinuxMode $ ciamHostAgent $ ciamS
+ erviceUnit $ ciamPinnedHost $ ciamSearchDomain $ ciamFoundOn ) X-ORIGIN 'op
+ sdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.51 NAME 'ciamComputeGroup' DESC 'Wher
+ e an environment runs a server role\27s instances as a group (an autoscalin
+ g group, a scale set): image, size, scale, zones' SUP ciamBinding STRUCTURA
+ L MUST ( ciamProviderRef $ ciamTargetRole ) MAY ( ciamImageRef $ ciamImageB
+ uild $ ciamInstanceSize $ ciamMinSize $ ciamMaxSize $ ciamDesiredSize $ cia
+ mSpansZone $ ciamMetadataTokens ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.52 NAME 'ciamCluster' DESC 'A managed
+  Kubernetes cluster an environment runs workloads in: version, add-ons, nod
+ e pools' SUP ciamBinding STRUCTURAL MUST ciamProviderRef MAY ( ciamClusterV
+ ersion $ ciamClusterAddon $ ciamNodePool $ ciamSpansZone ) X-ORIGIN 'opsdir
+ ' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.53 NAME 'ciamWorkload' DESC 'A server
+  role run as containers: how, where, with which storage, identity, security
+  and secrets' SUP ciamObject STRUCTURAL MUST ( cn $ ciamWorkloadKind $ ciam
+ TargetRole ) MAY ( ciamNamespace $ ciamReplicaCount $ ciamContainerImage $ 
+ ciamStorageSize $ ciamStorageClass $ ciamServiceAccount $ ciamIdentityRole 
+ $ ciamClusterRole $ ciamPodSecurity $ ciamNetworkPolicy $ ciamSecretName $ 
+ ciamIngressHost $ ciamRepoPath ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.54 NAME 'ciamExternalService' DESC 'A
+  service outside the platform it depends on: a mail relay or API, an SMS or
+  voice provider, an MFA vendor, CAPTCHA' SUP ciamObject STRUCTURAL MUST ( c
+ n $ ciamServiceKind ) MAY ( ciamVendor $ ciamEndpointHost $ ciamPort $ ciam
+ AllowedDomain $ ciamReachedFrom $ ciamUsesRole $ ciamSenderId $ ciamOrigina
+ tingNumber $ ciamRegisteredCountry $ ciamSpendLimit $ ciamPartnerContact $ 
+ ciamCriticality ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.55 NAME 'ciamMailSender' DESC 'An add
+ ress the platform sends mail from, what it sends and how' SUP ciamObject ST
+ RUCTURAL MUST ( cn $ ciamSenderAddress ) MAY ( ciamSenderDomain $ ciamSentB
+ y $ ciamSendingRole $ ciamBounceHandling $ ciamMessagePurpose ) X-ORIGIN 'o
+ psdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.56 NAME 'ciamSendingIdentity' DESC 'W
+ here an environment sends a domain\27s mail from (a cloud email service\27s
+  identity for the domain): its DKIM, SPF and DMARC facts' SUP ciamBinding S
+ TRUCTURAL MUST ciamSenderDomain MAY ( ciamProviderRef $ ciamDkimVerified $ 
+ ciamSpfAuthorized $ ciamDmarcPolicy ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.57 NAME 'ciamEventStream' DESC 'Ident
+ ity events the platform publishes: what carries them, which events, who pub
+ lishes and reads them' SUP ciamObject STRUCTURAL MUST ( cn $ ciamStreamKind
+  ) MAY ( ciamEventType $ ciamPublishedBy $ ciamStreamRole $ ciamConsumedBy 
+ $ ciamCriticality ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.58 NAME 'ciamStreamBinding' DESC 'The
+  queue, topic or bus that carries a stream in an environment' SUP ciamBindi
+ ng STRUCTURAL MUST ciamProviderRef MAY ciamStreamKind X-ORIGIN 'opsdir' )

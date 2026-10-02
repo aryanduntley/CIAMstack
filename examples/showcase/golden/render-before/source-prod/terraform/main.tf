@@ -714,6 +714,10 @@ data "aws_secretsmanager_secret" "pf_admin_password" {
   arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-admin-password"
 }
 
+data "aws_secretsmanager_secret" "pf_captcha_secret" {
+  arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-captcha-secret"
+}
+
 data "aws_secretsmanager_secret" "pf_ds_bind_password" {
   arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-ds-bind-password"
 }
@@ -724,6 +728,10 @@ data "aws_secretsmanager_secret" "pf_grants_db_password" {
 
 data "aws_secretsmanager_secret" "pf_signing_key" {
   arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-signing-key"
+}
+
+data "aws_secretsmanager_secret" "pf_smtp_password" {
+  arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-smtp-password"
 }
 
 data "aws_secretsmanager_secret" "sso_tls_keystore" {

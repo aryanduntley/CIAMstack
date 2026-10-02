@@ -1,0 +1,5 @@
+stream          kind  events                                                   published by   carried by    consumed by
+--------------  ----  -------------------------------------------------------  -------------  ------------  --------------------------
+identity-audit  bus   sign-in, sign-in-failure, password-change, registration  pf-engine, am  audit-events  SIEM (security operations)
+(1 rows)
+exit 0

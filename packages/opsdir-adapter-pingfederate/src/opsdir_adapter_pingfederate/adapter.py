@@ -24,7 +24,9 @@ def applies(m):
 ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required_roles=REQUIRED_ROLES,
                   render_neutral=render_neutral, render_env=render_env,
                   checks=(check_data_stores, check_references, check_cluster), ref_schemes=(),
-                  secret_schemes={}, renders="PingFederate data stores, plugin instances, cluster discovery and other resources for each environment",
+                  secret_schemes={},
+                  renders="PingFederate data stores, plugin instances, cluster discovery and other resources for each "
+                          "environment",
                   neutral_label="PingFederate",
                   vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES}, schema=FRAGMENT,
                   formats=(("pingfederate/*.json", "json"), ("pingfederate/cluster/*.xml", "xml"), *SAML_FORMATS,

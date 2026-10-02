@@ -11,12 +11,13 @@ anonymously. Filters carry fictional values the importer never reads."""
 import datetime as dt
 import json
 from itertools import chain
+from types import MappingProxyType
 
 from .common import PEOPLE, USERS
 from .directory import SERVERS
 
 DAYS = ("2026-09-20", "2026-09-21", "2026-09-22")
-SERVER_IPS = {"ds-1": "10.20.1.11", "ds-2": "10.20.2.11", "ds-3": "10.20.3.11"}
+SERVER_IPS = MappingProxyType({"ds-1": "10.20.1.11", "ds-2": "10.20.2.11", "ds-3": "10.20.3.11"})
 START_TLS = "1.3.6.1.4.1.1466.20037"
 # consumer bind DN (under the user directory) → (client addresses, transport, starting hour, operations per day,
 # attributes it asks for, unindexed searches per day, peak operations in one second)

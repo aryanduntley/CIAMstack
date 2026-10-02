@@ -12,6 +12,7 @@ of its own, so independently written packages never collide. Numbers are pinned 
 from position, so moving a definition between fragments of one arc never renumbers anything.
 """
 from collections import namedtuple
+from types import MappingProxyType
 from typing import NamedTuple
 
 from .interchange.ldif import fold
@@ -22,11 +23,12 @@ ARC = "1.3.6.1.4.1.32473.1"   # RFC 5612 documentation PEN; replace with a regis
 # Sub-arcs of the documentation PEN used in this repository: .1 the core and its domains (ARC), .2 the showcase's
 # user-directory schema, .3.<n> packages in this repository, .4 fields and record types operators define in the record.
 CUSTOM_ARC = "1.3.6.1.4.1.32473.4"
-SYNTAX = {"string": ".15", "int": ".27", "bool": ".7", "time": ".24", "dn": ".12", "extdn": ".12",
-          "cidr": ".15", "ip": ".15", "fqdn": ".26", "url": ".26", "port": ".27", "ref-uri": ".26", "json": ".15",
-          "vocab": ".15"}
-EQUALITY = {"int": "integerMatch", "port": "integerMatch", "bool": "booleanMatch", "time": "generalizedTimeMatch",
-            "dn": "distinguishedNameMatch", "extdn": "distinguishedNameMatch"}
+SYNTAX = MappingProxyType({"string": ".15", "int": ".27", "bool": ".7", "time": ".24", "dn": ".12", "extdn": ".12",
+                           "cidr": ".15", "ip": ".15", "fqdn": ".26", "url": ".26", "port": ".27", "ref-uri": ".26",
+                           "json": ".15", "vocab": ".15"})
+EQUALITY = MappingProxyType({"int": "integerMatch", "port": "integerMatch", "bool": "booleanMatch",
+                             "time": "generalizedTimeMatch", "dn": "distinguishedNameMatch",
+                             "extdn": "distinguishedNameMatch"})
 
 # number: pinned OID suffix under <arc>.1 (attributes) or <arc>.2 (classes) of the fragment that holds it
 # rules: ((X-extension, value), ...) the store enforces on every value, beyond the value type: X-MIN, X-MAX (int and

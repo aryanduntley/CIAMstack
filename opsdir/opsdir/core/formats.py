@@ -7,15 +7,12 @@ from fnmatch import fnmatchcase
 
 from .contract import Format
 from .interchange import ini, json_text, properties, xml_text
+from .jsondata import indented
 from .interchange.ldif import CODEC as LDIF_CODEC, parse, write_records
 
 
 def _ldif_records(text):
     return tuple(parse(text))
-
-
-def _json_text(value):
-    return json.dumps(value, indent=2) + "\n"
 
 
 def _format(name, title, media_type, extensions, comment, read=None, write=None, codec=None):
@@ -24,7 +21,7 @@ def _format(name, title, media_type, extensions, comment, read=None, write=None,
 
 LDIF = _format("ldif", "LDAP Data Interchange Format (RFC 2849)", "text/x-ldif", (".ldif",), ("#",),
                _ldif_records, write_records, LDIF_CODEC)
-JSON = _format("json", "JSON (RFC 8259)", "application/json", (".json",), (), json.loads, _json_text, json_text.CODEC)
+JSON = _format("json", "JSON (RFC 8259)", "application/json", (".json",), (), json.loads, indented, json_text.CODEC)
 XML = _format("xml", "XML", "application/xml", (".xml",), ("<!--", "-->"), codec=xml_text.CODEC)
 YAML = _format("yaml", "YAML", "application/yaml", (".yaml", ".yml"), ("#",))
 SHELL = _format("shell", "POSIX shell / bash script", "text/x-shellscript", (".sh",), ("#",))

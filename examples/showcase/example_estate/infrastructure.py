@@ -1,17 +1,19 @@
 """Infrastructure fixture data: the current AWS environment (40-env-source), its stage environment (42-env-source-
 stage: an overlay of production that shares its network and overrides a few values), the target environment being
 built (45-env-target, with planted gaps), and external allowlists that hold our addresses (80-external-allowlists)."""
+from types import MappingProxyType
+
 from .common import AWS, AZ, CON, DECL, ENVS, INTS, XA, cert, chg, owner, spec, t
 from .custom import RESIDENCY
 
 SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password", "ds-tls-keystore",
                 "sso-tls-keystore", "pf-signing-key", "pf-admin-password", "am-admin-password", "am-keystore",
                 "am-ds-bind-password", "idm-admin-password", "idm-keystore", "idm-ds-bind-password", "idm-hrdb-password",
-                "ig-keystore", "pf-ds-bind-password", "pf-grants-db-password")
+                "ig-keystore", "pf-ds-bind-password", "pf-grants-db-password", "pf-smtp-password", "pf-captcha-secret")
 DS_V, PF_V, AM_V, IDM_V, IG_V = "PingDS 7.5.1", "PingFederate 12.1.4", "PingAM 7.5.1", "PingIDM 7.5.0", "PingGateway 2024.11.0"
 IMG = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/"
 
-SOURCE = {
+SOURCE = MappingProxyType({
     "stack": (("provider", "aws"), ("directory", "pingds"), ("federation", "pingfederate"), ("access", "pingam"),
               ("identity-management", "pingidm"), ("gateway", "pinggateway")),
     "net": ("vpc", "vpc-0a1b2c3d4e5f67890", "10.20.0.0/16"),
@@ -60,6 +62,16 @@ SOURCE = {
     },
     "backup": "s3://example-aero-ciam-prod-ds-backups",
     "discovery": "s3://example-aero-ciam-prod-pf-cluster",   # where PingFederate's nodes find each other
+    # sending identities: (name, binding role, domain, provider ref, DKIM verified, SPF authorized, DMARC policy)
+    "sending": (("mail-ses", "mail-sending", "example-aero.test",
+                 "arn:aws:ses:us-east-1:111122223333:identity/example-aero.test", "TRUE", "TRUE", "reject"),),
+    # event stream carriers: (name, binding role, provider ref, kind)
+    "streams": (("audit-bus", "audit-events", "arn:aws:events:us-east-1:111122223333:event-bus/ciam-audit", "bus"),),
+    # compute groups: (name, binding role, server role, provider ref, image, size, min, desired, max, zones, tokens)
+    "compute": (("asg-pf-engine", "compute-pf-engine", "pf-engine",
+                 "arn:aws:autoscaling:us-east-1:111122223333:autoScalingGroup:6d4c1f0e-0000-4000-8000-00000000a001:"
+                 "autoScalingGroupName/ciam-prod-pf-engine", "ami-0fedcba9876543210", "m6i.large", 2, 2, 4,
+                 ("us-east-1a", "us-east-1b"), "TRUE"),),
     "servers": [("ds-1", "ds", "ds-1.aws.internal.example-aero.test", "10.20.1.11", "us-east-1a", "m6i.xlarge", "ami-0abcdef1234567890", "subnet-ds-a", DS_V),
                 ("ds-2", "ds", "ds-2.aws.internal.example-aero.test", "10.20.2.11", "us-east-1b", "m6i.xlarge", "ami-0abcdef1234567890", "subnet-ds-b", DS_V),
                 ("ds-3", "ds", "ds-3.aws.internal.example-aero.test", "10.20.3.11", "us-east-1c", "m6i.xlarge", "ami-0abcdef1234567890", "subnet-ds-c", DS_V),
@@ -70,8 +82,8 @@ SOURCE = {
                 ("am-2", "am", "am-2.aws.internal.example-aero.test", "10.20.8.21", "us-east-1b", "m6i.large", "ami-0a9b8c7d6e5f40321", "subnet-am-b", AM_V),
                 ("idm-1", "idm", "idm-1.aws.internal.example-aero.test", "10.20.6.21", "us-east-1a", "m6i.large", "ami-0b1c2d3e4f5a60987", "subnet-idm-a", IDM_V),
                 ("ig-1", "ig", "ig-1.aws.internal.example-aero.test", "10.20.10.21", "us-east-1a", "m6i.large", "ami-0c2d3e4f5a6b70123", "subnet-ig-a", IG_V)],
-}
-TARGET = {
+})
+TARGET = MappingProxyType({
     "stack": (("provider", "azure"), ("directory", "pingds"), ("federation", "pingfederate"), ("access", "pingam"),
               ("identity-management", "pingidm"), ("gateway", "pinggateway")),
     "net": ("vnet", "vnet-ciam-prod", "10.60.0.0/16"), "rg": "rg-ciam-prod", "pinned_priorities": True,
@@ -108,6 +120,7 @@ TARGET = {
         "ds-deployment-password": {"ciamMaterialFrom": f"cn=secret-ds-deployment-password,ou=bindings,{AWS}"},
         "am-keystore": {"ciamMaterialFrom": f"cn=secret-am-keystore,ou=bindings,{AWS}"},
         "idm-keystore": {"ciamMaterialFrom": f"cn=secret-idm-keystore,ou=bindings,{AWS}"},
+        "pf-captcha-secret": {"ciamMaterialFrom": f"cn=secret-pf-captcha-secret,ou=bindings,{AWS}"},
         "ds-root-password": {"ciamCopyRef": "cyberark://ciam-ops/CIAM-TARGET/ds-root-password"},
         "pf-admin-password": {"ciamAutoRotate": "FALSE"},
         "disk-encryption": {"ciamProtectionLevel": "software",
@@ -117,6 +130,17 @@ TARGET = {
     },
     "backup": None,   # deliberately missing: the demo's migration plan should catch it
     "discovery": None,   # deliberately missing too: the nodes' tcp.xml discovery is cloud-specific (S3 on AWS)
+    # planted: the domain's Communication Services identity isn't DKIM-verified yet and its DMARC is weaker; no bus
+    # carries the identity audit stream
+    "sending": (("mail-acs", "mail-sending", "example-aero.test",
+                 "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/"
+                 "Microsoft.Communication/emailServices/ecs-ciam-prod/domains/example-aero.test", "FALSE", "TRUE",
+                 "quarantine"),),
+    # planted: the engines' scale set sits in one zone (the source spreads them over two)
+    "compute": (("vmss-pf-engine", "compute-pf-engine", "pf-engine",
+                 "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/"
+                 "Microsoft.Compute/virtualMachineScaleSets/vmss-ciam-pf-engine", IMG + "pingfederate-12.1.4-rhel9",
+                 "Standard_D2s_v5", 2, 2, 4, ("1",), None),),
     "interconnect": ("link-source", "site-to-site VPN (landing-zone managed)", AWS, ["10.20.0.0/16"]),
     "servers": [("ds-1", "ds", "ds-1.az.internal.example-aero.test", "10.60.1.11", "1", "Standard_D4s_v5", IMG + "pingds-7.5.1-rhel9", "snet-ds", DS_V),
                 ("ds-2", "ds", "ds-2.az.internal.example-aero.test", "10.60.1.12", "2", "Standard_D4s_v5", IMG + "pingds-7.5.1-rhel9", "snet-ds", DS_V),
@@ -128,7 +152,7 @@ TARGET = {
                 ("am-2", "am", "am-2.az.internal.example-aero.test", "10.60.3.22", "2", "Standard_D2s_v5", IMG + "pingam-7.5.1-rhel9", "snet-am", AM_V),
                 ("idm-1", "idm", "idm-1.az.internal.example-aero.test", "10.60.6.21", "1", "Standard_D2s_v5", IMG + "pingidm-7.5.0-rhel9", "snet-idm", IDM_V),
                 ("ig-1", "ig", "ig-1.az.internal.example-aero.test", "10.60.10.21", "1", "Standard_D2s_v5", IMG + "pinggateway-2024.11.0-rhel9", "snet-ig", IG_V)],
-}
+})
 ALLOWLISTS = (
     ("mro-dc-egress-to-ldaps", "mro-analytics-team", "MRO data-center egress firewall", "consumer-egress",
      "ds-ldaps-service", ["10.20.1.100/32"], 21, "to-request", "mro-batch-export"),
@@ -175,6 +199,15 @@ def _bindings(file, env, p):
                     ciamBindingRole="pf-cluster-discovery", ciamStorageRef=p["discovery"],
                     description="PingFederate cluster discovery (NATIVE_S3_PING / AZURE_PING storage)"),)
               if p.get("discovery") else ()),
+            *(spec(file, b(cn), ["top", "ciamComputeGroup"], cn=cn, ciamBindingRole=role, ciamTargetRole=target,
+                   ciamProviderRef=ref, ciamImageRef=image, ciamInstanceSize=size, ciamMinSize=least,
+                   ciamDesiredSize=runs, ciamMaxSize=most, ciamSpansZone=list(zones), ciamMetadataTokens=tokens)
+              for cn, role, target, ref, image, size, least, runs, most, zones, tokens in p.get("compute") or ()),
+            *(spec(file, b(cn), ["top", "ciamSendingIdentity"], cn=cn, ciamBindingRole=role, ciamSenderDomain=domain,
+                   ciamProviderRef=ref, ciamDkimVerified=dkim, ciamSpfAuthorized=spf, ciamDmarcPolicy=dmarc)
+              for cn, role, domain, ref, dkim, spf, dmarc in p.get("sending") or ()),
+            *(spec(file, b(cn), ["top", "ciamStreamBinding"], cn=cn, ciamBindingRole=role, ciamProviderRef=ref,
+                   ciamStreamKind=kind) for cn, role, ref, kind in p.get("streams") or ()),
             *((_interconnect(file, b, *p["interconnect"]),) if p.get("interconnect") else ()))
 
 

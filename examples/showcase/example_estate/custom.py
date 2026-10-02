@@ -1,6 +1,8 @@
 """Custom definitions fixture data: fields and a record type the operator defines for the record itself
 (22-custom-schema), and records of that type (90-feature-flags). The fields are used on owners, environments and
 integrations elsewhere in the estate."""
+from types import MappingProxyType
+
 from .common import CUSTOM, FLAGS, owner, spec
 from .config import TOKEN_LIFETIME
 
@@ -38,9 +40,10 @@ RECORD_TYPES = (
 FEATURE_FLAGS = (("passkey-enrollment", "TRUE", 25, "Offer passkey enrollment after sign-in"),
                  ("legacy-kba-recovery", "FALSE", None, "Knowledge-based account recovery (being retired)"))
 # the values the estate's records carry: owner cost centers, environment residency, integration token lifetimes
-COST_CENTERS = {"ciam-platform": "CC-1001", "customer-portal-team": "CC-2040", "supplier-portal-team": "CC-2041"}
-RESIDENCY = {"source": "us", "target": "us"}
-TOKEN_LIFETIMES = {"tech-pubs": 60, "mobile-ops": 30}
+COST_CENTERS = MappingProxyType({"ciam-platform": "CC-1001", "customer-portal-team": "CC-2040",
+                                 "supplier-portal-team": "CC-2041"})
+RESIDENCY = MappingProxyType({"source": "us", "target": "us"})
+TOKEN_LIFETIMES = MappingProxyType({"tech-pubs": 60, "mobile-ops": 30})
 
 
 def definitions():

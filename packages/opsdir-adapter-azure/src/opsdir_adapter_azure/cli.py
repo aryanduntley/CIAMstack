@@ -23,9 +23,11 @@ of the matching hashicorp/azurerm resource, so the same mapping reads them as re
   az keyvault secret list               https://<vault>.vault.azure.net/secrets/<name>: never a value
   az keyvault key list / key show       https://<vault>.vault.azure.net/keys/<name>: key type from `key show`
   az keyvault key rotation-policy show  …/keys/<name>/rotationpolicy: whether the key rotates automatically
+  az functionapp list                   Microsoft.Web/sites (kind functionapp: runtime from siteConfig.linuxFxVersion)
+  az functionapp function list          Microsoft.Web/sites/functions (timer trigger schedules from config.bindings)
 Subnets, interfaces and VMs outside the listed virtual networks are counted, not read; secrets, keys and containers
-are listed per vault and account, so the importer counts rather than lists the ones the record doesn't have and nothing
-names a role for.
+are listed per vault and account, and function apps per resource group, so the importer counts rather than lists the
+ones the record doesn't have and nothing names a role for.
 """
 import json
 from collections import Counter
@@ -35,7 +37,7 @@ from opsdir.core.contract import Importer
 from opsdir.core.inventory import layout_import
 from .inventory import PROVIDER, arm_segment, pairs_resources
 
-ACCOUNT_WIDE = ("secret", "key", "storage")
+ACCOUNT_WIDE = ("secret", "key", "storage", "job")
 VAULT_HOSTS = (".vault.azure.net", ".vault.usgovcloudapi.net")
 
 
@@ -261,6 +263,26 @@ def _stores(items):
               for c in _of(items, "Microsoft.Storage/storageAccounts/blobServices/containers"))]
 
 
+def _fx_runtime(fx):
+    """"Python|3.11" (siteConfig.linuxFxVersion) -> {"python_version": "3.11"}, the Terraform application stack."""
+    lang, _, version = (fx or "").partition("|")
+    return {f"{lang.lower()}_version": version} if lang and version else {}
+
+
+def _functions(items):
+    """Function apps (Microsoft.Web/sites whose kind says functionapp) and their functions."""
+    apps = [a for a in _of(items, "Microsoft.Web/sites") if "functionapp" in _low(a.get("kind"))]
+    return [*(("azurerm_linux_function_app", {
+                "id": a.get("id"), "name": a.get("name"), "tags": a.get("tags") or {},
+                "site_config": [{"application_stack": [_fx_runtime((a.get("siteConfig") or {}).get("linuxFxVersion")
+                                                                   or a.get("linuxFxVersion"))]}]})
+              for a in apps),
+            *(("azurerm_function_app_function", {"id": f.get("id"), "name": f.get("name"),
+                                                 "function_app_id": (f.get("id") or "").rsplit("/functions/", 1)[0],
+                                                 "config_json": json.dumps(f.get("config") or {})})
+              for f in _of(items, "Microsoft.Web/sites/functions"))]
+
+
 def _unique(pairs):
     """Pairs without repeats (a subnet listed inside its network and on its own, an association seen from both ends)."""
     return list({(t, json.dumps(a, sort_keys=True)): (t, a) for t, a in pairs}.values())
@@ -292,7 +314,7 @@ def items_resources(items):
     flattened): also what ARM templates are read into (opsdir_adapter_azure.arm)."""
     pairs, scope_notices = _scoped(_unique([*_vnets(items), *_vms(items), *_nics(items), *_lbs(items),
                                             *_addresses(items), *_records(items), *_nsgs(items), *_nats(items),
-                                            *_vault_items(items), *_stores(items)]))
+                                            *_vault_items(items), *_stores(items), *_functions(items)]))
     resources, notices = pairs_resources(pairs)
     return resources, (*scope_notices, *notices)
 

@@ -25,13 +25,15 @@ REGISTRY = registry_ldif((*core_fragments(), FRAGMENT))
 SERVER = {"contactInfo": {"company": "Example"}, "rolesAndProtocols": {"oauthRole": {"enableOauth": True}}}
 MAPPINGS = [{"id": "default|jwt", "context": {"type": "DEFAULT"}, "accessTokenManagerRef": {"id": "jwt"}},
             {"id": "client-credentials", "context": {"type": "CLIENT_CREDENTIALS"}}]
-SMTP = {"id": "smtp", "name": "SMTP", "pluginDescriptorRef": {"id": "com.pingidentity.email.SmtpNotificationPlugin"},
-        "configuration": {"fields": [{"name": "Email Server", "value": "smtp.example.test"},
-                                     {"name": "Password", "encryptedValue": "eyJ..not-a-real-value"}]}}
+PROCESSOR = {"id": "jwt", "name": "JWT",
+             "pluginDescriptorRef": {"id": "org.sourceid.wstrust.processor.jwt.JWTTokenProcessor"},
+             "configuration": {"fields": [{"name": "Issuer", "value": "https://issuer.example.test"},
+                                          {"name": "Password", "encryptedValue": "eyJ..not-a-real-value"}]}}
 
 
 def export(mappings=MAPPINGS):
-    ops = (("/serverSettings", [SERVER]), ("/oauth/accessTokenMappings", mappings), ("/notificationPublishers", [SMTP]))
+    ops = (("/serverSettings", [SERVER]), ("/oauth/accessTokenMappings", mappings),
+           ("/idp/tokenProcessors", [PROCESSOR]))
     return {"data.json": json.dumps({"operations": [{"operationType": "SAVE", "resourceType": r, "items": items}
                                                      for r, items in ops]})}
 
@@ -57,7 +59,7 @@ def test_each_item_is_held_as_the_admin_api_writes_it(after):
     server = get(d, _dn("serverSettings", "settings"))
     assert (one(server, "pingfedResourceType"), json.loads(one(server, "pingfedConfig"))) == ("/serverSettings", SERVER)
     assert get(d, _dn("oauth.accessTokenMappings", "client-credentials")) is not None
-    assert "held as is (not modeled): /notificationPublishers (1), /oauth/accessTokenMappings (2), /serverSettings " \
+    assert "held as is (not modeled): /idp/tokenProcessors (1), /oauth/accessTokenMappings (2), /serverSettings " \
            "(1)" in notices
     assert not any(n.startswith("not read yet") for n in notices)
 
@@ -72,14 +74,14 @@ def test_an_id_that_cant_name_an_entry_is_named_not_held(after):
 
 def test_secrets_are_withheld_and_rendered_per_environment(after):
     d, notices = after
-    smtp = get(d, _dn("notificationPublishers", "smtp"))
-    assert values(smtp, "pingfedWithheld") == ("/configuration/fields/1/value",)
-    assert "/notificationPublishers smtp: its secrets are withheld; set pingfedCredentialRole to the secret role that " \
+    processor = get(d, _dn("idp.tokenProcessors", "jwt"))
+    assert values(processor, "pingfedWithheld") == ("/configuration/fields/1/value",)
+    assert "/idp/tokenProcessors jwt: its secrets are withheld; set pingfedCredentialRole to the secret role that " \
            "holds them" in notices
     assert "not-a-real-value" not in json.dumps([dict(e.attrs) for e in d.entries.values()])
     ops = json.loads(render_env(env_model(d, "alpha/prod"), None)["pingfederate/other-resources.json"])["operations"]
-    smtp_out = next(op for op in ops if op["resourceType"] == "/notificationPublishers")["items"][0]
-    assert smtp_out["configuration"]["fields"][1] == {"name": "Password", "value": "${withheld}"}
+    out = next(op for op in ops if op["resourceType"] == "/idp/tokenProcessors")["items"][0]
+    assert out["configuration"]["fields"][1] == {"name": "Password", "value": "${withheld}"}
 
 
 def test_what_it_renders_imports_back_unchanged():
@@ -100,5 +102,5 @@ def test_the_planner_blocks_withheld_secrets_without_a_credential_role():
     f = check_references(PlanContext(d, env_model(d, "alpha/prod"), env_model(d, "beta/prod"), None,
                                      dt.date(2026, 10, 1), {}, {}, ()))
     assert [t for _, t, _ in f.blockers] == [
-        "Resource `/notificationPublishers smtp` has withheld credentials but no credential role: nothing says which "
+        "Resource `/idp/tokenProcessors jwt` has withheld credentials but no credential role: nothing says which "
         "secret beta/prod gives it. Set pingfedCredentialRole."]

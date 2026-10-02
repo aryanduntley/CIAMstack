@@ -1,0 +1,40 @@
+# CHG-2013 (approved): record the corporate root CA the PingFederate servers' Java truststore adds, and link it from
+# their host baselines. A truststore addition the record doesn't hold is lost silently when a server is rebuilt from
+# a stock image; recorded, every environment's servers are built with it and its expiry is tracked.
+dn: cn=example-aero-corp-root-ca,ou=certificates,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamCertificate
+cn: example-aero-corp-root-ca
+ciamCertPurpose: ca
+ciamFingerprint: 7A:3F:91:C2:5E:08:D4:6B:12:AF:E3:57:90:C8:1D:44:B6:2E:F9:03:8A:75:CC:61:0D:9E:43:B8:27:F5:6A:19
+ciamSubject: CN=Example Aero Root CA
+ciamIssuer: CN=Example Aero Root CA
+ciamNotBefore: 20250303000000Z
+ciamNotAfter: 20450303000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamChangeRef: cn=CHG-2013,ou=changes,dc=ciam-ops
+
+dn: cn=pf-engine,ou=baselines,dc=ciam-ops
+changetype: modify
+add: ciamTrustsCertificate
+ciamTrustsCertificate: cn=example-aero-corp-root-ca,ou=certificates,dc=ciam-ops
+-
+delete: ciamTrustedFingerprint
+ciamTrustedFingerprint: 7A:3F:91:C2:5E:08:D4:6B:12:AF:E3:57:90:C8:1D:44:B6:2E:F9:03:8A:75:CC:61:0D:9E:43:B8:27:F5:6A:19
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2013,ou=changes,dc=ciam-ops
+-
+
+dn: cn=pf-admin,ou=baselines,dc=ciam-ops
+changetype: modify
+add: ciamTrustsCertificate
+ciamTrustsCertificate: cn=example-aero-corp-root-ca,ou=certificates,dc=ciam-ops
+-
+delete: ciamTrustedFingerprint
+ciamTrustedFingerprint: 7A:3F:91:C2:5E:08:D4:6B:12:AF:E3:57:90:C8:1D:44:B6:2E:F9:03:8A:75:CC:61:0D:9E:43:B8:27:F5:6A:19
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2013,ou=changes,dc=ciam-ops
+-

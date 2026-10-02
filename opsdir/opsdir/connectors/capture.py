@@ -4,7 +4,7 @@ the change records under an approved change."""
 from typing import NamedTuple
 
 from ..core.changeset import diff
-from ..core.directory import get, make_entry, one, subtree
+from ..core.directory import get, one, ou_entry, subtree
 from ..core.environment import as_seen
 from ..core.formats import format_by_extension
 import hashlib
@@ -46,8 +46,7 @@ def capture_changes(d, fmt, text, name, repo_path, role=None, deploy_path=None, 
 
 def _changes(d, branch_dn, dn, entries):
     """Change records turning the record's subtree at dn into entries (adding the branch when it is missing)."""
-    ou = branch_dn.split(",", 1)[0].split("=", 1)[1]
-    branch = () if get(d, branch_dn) else (make_entry(branch_dn, ("top", "organizationalUnit"), {"ou": (ou,)}),)
+    branch = () if get(d, branch_dn) else (ou_entry(branch_dn),)
     before = {e.norm: e for e in subtree(d, dn)} if get(d, dn) else {}
     after = {e.norm: e for e in (*branch, *entries)}
     return diff(d._replace(entries=before), d._replace(entries=after))
@@ -66,12 +65,13 @@ def bundle_changes(d, name, repo_path, kind, content, format_name=None, version=
         *(f"{name}: may hold secret material: {c}" for c in concerns))
 
 
-def census_changes(d, files, installed=ADAPTERS):
+def census_changes(d, files, installed=ADAPTERS, replace=False):
     """(change records, notices) recording where the record's values occur in files ({relative path: text}): each
     file's census entry made exactly what this scan found (an unchanged file changes nothing). Observed configuration
-    snapshots are not looked for: they repeat the declared values."""
-    groups, notices = census_groups(d, files, pattern_records(installed), exclude=(OBSERVED,))
-    branch = make_entry(CENSUS, ("top", "organizationalUnit"), {"ou": ("census",)})
+    snapshots are not looked for: they repeat the declared values. replace: the scan is the whole census; recorded
+    files it didn't see are removed."""
+    groups, notices = census_groups(d, files, pattern_records(installed), exclude=(OBSERVED,), replace=replace)
+    branch = ou_entry(CENSUS)
     return import_changes(d, Imported((branch,), groups, ())), notices
 
 

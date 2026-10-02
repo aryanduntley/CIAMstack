@@ -6,13 +6,14 @@ character with the whitespace around it; the value's raw text runs to the end of
 """
 import re
 from itertools import accumulate, groupby
+from types import MappingProxyType
 
 from ..contract import Codec
 from .lines import body_and_end, physical_lines
 
 _KEY = re.compile(r"([ \t\f]*)((?:\\.|[^=:\s\\])+)([ \t\f]*[=:]?[ \t\f]*)", re.DOTALL)
 _ESCAPE = re.compile(r"\\(u[0-9a-fA-F]{4}|\r?\n[ \t\f]*|.)", re.DOTALL)
-_ESCAPED = {"t": "\t", "n": "\n", "r": "\r", "f": "\f"}
+_ESCAPED = MappingProxyType({"t": "\t", "n": "\n", "r": "\r", "f": "\f"})
 
 
 def _continues(line):

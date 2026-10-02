@@ -1,0 +1,7 @@
+[Unit]
+Description=Ship PingFederate audit logs
+
+[Service]
+Type=oneshot
+User=pingfed
+ExecStart=/opt/scripts/ship-audit.sh /opt/pingfederate/log/audit.log

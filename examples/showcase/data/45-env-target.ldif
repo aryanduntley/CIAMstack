@@ -364,6 +364,22 @@ cn: secret-pf-grants-db-password
 ciamBindingRole: pf-grants-db-password
 ciamRefUri: azkv://kv-ciam-prod/pf-grants-db-password
 
+dn: cn=secret-pf-smtp-password,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-smtp-password
+ciamBindingRole: pf-smtp-password
+ciamRefUri: azkv://kv-ciam-prod/pf-smtp-password
+
+dn: cn=secret-pf-captcha-secret,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-captcha-secret
+ciamBindingRole: pf-captcha-secret
+ciamMaterialFrom: cn=secret-pf-captcha-secret,ou=bindings,env=prod,cloud=sourc
+ e,ou=environments,dc=ciam-ops
+ciamRefUri: azkv://kv-ciam-prod/pf-captcha-secret
+
 dn: cn=key-disk,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamKeyRef
@@ -377,6 +393,37 @@ ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
  roups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-pr
  od
 ciamRefUri: azkv-key://kv-ciam-prod/keys/disk-cmk
+
+dn: cn=vmss-pf-engine,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamComputeGroup
+cn: vmss-pf-engine
+ciamBindingRole: compute-pf-engine
+ciamDesiredSize: 2
+ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
+ ps/rg-ciam-images/providers/Microsoft.Compute/images/pingfederate-12.1.4-rhel
+ 9
+ciamInstanceSize: Standard_D2s_v5
+ciamMaxSize: 4
+ciamMinSize: 2
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Compute/virtualMachineScaleSets/vmss-c
+ iam-pf-engine
+ciamSpansZone: 1
+ciamTargetRole: pf-engine
+
+dn: cn=mail-acs,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSendingIdentity
+cn: mail-acs
+ciamBindingRole: mail-sending
+ciamDkimVerified: FALSE
+ciamDmarcPolicy: quarantine
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Communication/emailServices/ecs-ciam-p
+ rod/domains/example-aero.test
+ciamSenderDomain: example-aero.test
+ciamSpfAuthorized: TRUE
 
 dn: cn=link-source,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top

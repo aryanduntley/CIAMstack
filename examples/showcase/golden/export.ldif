@@ -11,6 +11,11 @@ objectClass: organizationalUnit
 ou: acis
 description: Access control instructions on the user directory
 
+dn: ou=baselines,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: baselines
+
 dn: ou=bundles,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -72,12 +77,22 @@ objectClass: organizationalUnit
 ou: environments
 description: Clouds, environments, servers and bindings
 
+dn: ou=event-streams,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: event-streams
+
 dn: ou=external-allowlists,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: external-allowlists
 description: Allowlists in consumer and partner systems that contain our addre
  sses
+
+dn: ou=external-services,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: external-services
 
 dn: ou=feature-flags,dc=ciam-ops
 objectClass: top
@@ -102,6 +117,16 @@ objectClass: top
 objectClass: organizationalUnit
 ou: integrations
 description: Federation integrations (SAML / OIDC) and their claim maps
+
+dn: ou=jobs,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: jobs
+
+dn: ou=mail-senders,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: mail-senders
 
 dn: ou=owners,dc=ciam-ops
 objectClass: top
@@ -269,6 +294,30 @@ ciamJustification: Supplier portal account lookup
 ciamOwner: cn=supplier-portal-team,ou=owners,dc=ciam-ops
 ciamReviewedOn: 20260302000000Z
 
+dn: cn=am,ou=baselines,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamHostBaseline
+cn: am
+ciamFipsMode: FALSE
+ciamFoundOn: cn=am-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+ciamHostAgent: falcon-sensor 7.10.0
+ciamHostAgent: splunkforwarder 9.2.1
+ciamHugePages: never
+ciamJdk: temurin 17.0.11
+ciamKernelSetting: net.core.somaxconn=4096
+ciamKernelSetting: net.ipv4.tcp_keepalive_time=600
+ciamOs: rhel 9.4
+ciamOsLimit: am soft nofile 65536
+ciamOsLimit: am hard nofile 65536
+ciamSearchDomain: aws.internal.example-aero.test
+ciamSearchDomain: example-aero.test
+ciamSelinuxMode: enforcing
+ciamServiceUnit: pingam.service: user am, restart always
+ciamTargetRole: am
+
 dn: cn=am-admin-password,ou=credentials,dc=ciam-ops
 objectClass: top
 objectClass: ciamCredential
@@ -350,6 +399,18 @@ ciamLdapSubstring: caseIgnoreSubstringsMatch
 ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: low
 ciamPurpose: Application entitlements (app:role)
+
+dn: cn=captcha-recaptcha,ou=external-services,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamExternalService
+cn: captcha-recaptcha
+ciamAllowedDomain: sso.example-aero.test
+ciamAllowedDomain: login.example-aero.test
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamReachedFrom: pf-engine
+ciamServiceKind: captcha
+ciamVendor: Google reCAPTCHA
 
 dn: cn=challengeAnswer,ou=user-schema,dc=ciam-ops
 objectClass: top
@@ -461,6 +522,43 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260923000000Z
 ciamTitle: Census of the servers' and applications' files for values of the re
  cord
+
+dn: cn=CHG-2010,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2010
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260923000000Z
+ciamTitle: Import the platform's hidden automation (servers' schedulers, CI pi
+ pelines)
+
+dn: cn=CHG-2011,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2011
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Name the owners of the imported jobs
+
+dn: cn=CHG-2012,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2012
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260923000000Z
+ciamTitle: Import the servers' host baselines
+
+dn: cn=CHG-2013,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2013
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the corporate root CA the PingFederate servers trust
 
 dn: cn=CHG-2040,ou=changes,dc=ciam-ops
 objectClass: top
@@ -608,6 +706,33 @@ ciamMaterialFormat: raw
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationDays: 365
 
+dn: cn=ds,ou=baselines,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamHostBaseline
+cn: ds
+ciamFipsMode: FALSE
+ciamFoundOn: cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamFoundOn: cn=ds-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamFoundOn: cn=ds-3,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+ciamHostAgent: falcon-sensor 7.10.0
+ciamHostAgent: splunkforwarder 9.2.1
+ciamHugePages: never
+ciamJdk: temurin 17.0.11
+ciamKernelSetting: net.core.somaxconn=4096
+ciamKernelSetting: net.ipv4.tcp_keepalive_time=600
+ciamOs: rhel 9.4
+ciamOsLimit: ds soft nofile 65536
+ciamOsLimit: ds hard nofile 65536
+ciamPinnedHost: 10.40.7.22 rpt-legacy.mro.example-aero.test rpt-legacy
+ciamSearchDomain: aws.internal.example-aero.test
+ciamSearchDomain: example-aero.test
+ciamSelinuxMode: enforcing
+ciamServiceUnit: pingds.service: user ds, restart always
+ciamTargetRole: ds
+
 dn: cn=ds-deployment-id,ou=credentials,dc=ciam-ops
 objectClass: top
 objectClass: ciamCredential
@@ -653,6 +778,21 @@ ciamRotationRunbook: cn=WI-CIAM-002,ou=runbooks,dc=ciam-ops
 ciamSubject: CN=ldap.id.example-aero.test
 ciamSubjectAltName: ldap.id.example-aero.test
 
+dn: cn=ds-nightly-export,ou=jobs,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamJob
+cn: ds-nightly-export
+ciamChangeRef: cn=CHG-2011,ou=changes,dc=ciam-ops
+ciamCodeBundle: cn=ops-scripts,ou=bundles,dc=ciam-ops
+ciamCommand: /opt/scripts/nightly-export.sh
+ciamFoundOn: cn=ds-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamJobKind: cron
+ciamOwner: cn=mro-analytics-team,ou=owners,dc=ciam-ops
+ciamRunsAs: mroexp
+ciamSchedule: 30 2 * * *
+ciamTargetRole: ds
+
 dn: cn=ds-root-password,ou=credentials,dc=ciam-ops
 objectClass: top
 objectClass: ciamCredential
@@ -682,12 +822,38 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationDays: 365
 ciamRotationRunbook: cn=WI-CIAM-002,ou=runbooks,dc=ciam-ops
 
+dn: cn=email-smtp.us-east-1.amazonaws.com,ou=external-services,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamExternalService
+cn: email-smtp.us-east-1.amazonaws.com
+ciamEndpointHost: email-smtp.us-east-1.amazonaws.com
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPort: 587
+ciamReachedFrom: pf-engine
+ciamServiceKind: smtp-relay
+ciamVendor: Amazon SES
+
 dn: cn=example-aero,ou=owners,dc=ciam-ops
 objectClass: top
 objectClass: ciamParty
 cn: example-aero
 ciamDisplayName: Example Aero
 ciamOwnerKind: operator
+
+dn: cn=example-aero-corp-root-ca,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: example-aero-corp-root-ca
+ciamCertPurpose: ca
+ciamChangeRef: cn=CHG-2013,ou=changes,dc=ciam-ops
+ciamFingerprint: 7A:3F:91:C2:5E:08:D4:6B:12:AF:E3:57:90:C8:1D:44:B6:2E:F9:03:8
+ A:75:CC:61:0D:9E:43:B8:27:F5:6A:19
+ciamIssuer: CN=Example Aero Root CA
+ciamNotAfter: 20450303000000Z
+ciamNotBefore: 20250303000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSubject: CN=Example Aero Root CA
 
 dn: cn=exampleAeroPerson,ou=user-schema,dc=ciam-ops
 objectClass: top
@@ -736,6 +902,22 @@ cn: fda3b4cba0f0ad02
 ciamOnServer: cn=ds-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamRepoPath: opt/scripts/nightly-export.sh
 ciamSha256: b0deff05a91717b60751d8acf4bfeb90280cc77b83632aedc54aa33710d29bb8
+
+dn: cn=github-actions-ciam-ops-directory-backup,ou=jobs,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamJob
+cn: github-actions-ciam-ops-directory-backup
+ciamChangeRef: cn=CHG-2011,ou=changes,dc=ciam-ops
+ciamDeploysTo: prod
+ciamJobKind: pipeline
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRepoPath: .github/workflows/directory-backup.yml
+ciamRepoUrl: https://github.com/example-aero/ciam-ops
+ciamRuntime: self-hosted, ciam
+ciamSchedule: 15 1 * * *
+ciamSecretName: DS_BACKUP_PASSWORD
+ciamTrigger: manual
 
 dn: cn=givenName,ou=user-schema,dc=ciam-ops
 objectClass: top
@@ -799,6 +981,46 @@ ciamRecordedCidr: 203.0.113.10/32
 ciamRecordedCidr: 203.0.113.200/32
 ciamRefersToRole: pf-egress
 ciamRequestStatus: done
+
+dn: cn=identity-audit,ou=event-streams,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamEventStream
+cn: identity-audit
+ciamConsumedBy: SIEM (security operations)
+ciamEventType: sign-in
+ciamEventType: sign-in-failure
+ciamEventType: password-change
+ciamEventType: registration
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPublishedBy: pf-engine
+ciamPublishedBy: am
+ciamStreamKind: bus
+ciamStreamRole: audit-events
+
+dn: cn=idm,ou=baselines,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamHostBaseline
+cn: idm
+ciamFipsMode: FALSE
+ciamFoundOn: cn=idm-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+ciamHostAgent: falcon-sensor 7.10.0
+ciamHostAgent: splunkforwarder 9.2.1
+ciamHugePages: never
+ciamJdk: temurin 17.0.11
+ciamKernelSetting: net.core.somaxconn=4096
+ciamKernelSetting: net.ipv4.tcp_keepalive_time=600
+ciamOs: rhel 9.4
+ciamOsLimit: idm soft nofile 65536
+ciamOsLimit: idm hard nofile 65536
+ciamSearchDomain: aws.internal.example-aero.test
+ciamSearchDomain: example-aero.test
+ciamSelinuxMode: enforcing
+ciamServiceUnit: pingidm.service: user idm, restart always
+ciamTargetRole: idm
 
 dn: cn=idm-admin-password,ou=credentials,dc=ciam-ops
 objectClass: top
@@ -896,6 +1118,30 @@ ciamSkeleton:: ewogICAgImF1ZGl0U2VydmljZUNvbmZpZyI6IHsKICAgICAgICAiaGFuZGxlckZ
  AgICAgICBdCiAgICB9LAogICAgImV2ZW50VG9waWNzIjogewogICAgICAgICJhdXRoZW50aWNhdGl
  vbiI6IHt9LAogICAgICAgICJzeW5jIjoge30sCiAgICAgICAgInJlY29uIjoge30KICAgIH0KfQo=
 ciamTargetRole: idm
+
+dn: cn=ig,ou=baselines,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamHostBaseline
+cn: ig
+ciamFipsMode: FALSE
+ciamFoundOn: cn=ig-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+ciamHostAgent: falcon-sensor 7.10.0
+ciamHostAgent: splunkforwarder 9.2.1
+ciamHugePages: never
+ciamJdk: temurin 17.0.11
+ciamKernelSetting: net.core.somaxconn=4096
+ciamKernelSetting: net.ipv4.tcp_keepalive_time=600
+ciamOs: rhel 9.4
+ciamOsLimit: ig soft nofile 65536
+ciamOsLimit: ig hard nofile 65536
+ciamSearchDomain: aws.internal.example-aero.test
+ciamSearchDomain: example-aero.test
+ciamSelinuxMode: enforcing
+ciamServiceUnit: pinggateway.service: user ig, restart always
+ciamTargetRole: ig
 
 dn: cn=ig-keystore,ou=credentials,dc=ciam-ops
 objectClass: top
@@ -1111,6 +1357,34 @@ cn: network-security
 ciamOwnerKind: team
 mail: netsec@example-aero.test
 
+dn: cn=noreply@example-aero.test,ou=mail-senders,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamMailSender
+cn: noreply@example-aero.test
+ciamBounceHandling: bounce and complaint notifications to the ciam-mail-events
+  topic; suppression list on
+ciamMessagePurpose: password-reset
+ciamMessagePurpose: registration
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSenderAddress: noreply@example-aero.test
+ciamSenderDomain: example-aero.test
+ciamSendingRole: mail-sending
+ciamSentBy: cn=email-smtp.us-east-1.amazonaws.com,ou=external-services,dc=ciam
+ -ops
+
+dn: cn=ops-scripts,ou=bundles,dc=ciam-ops
+objectClass: top
+objectClass: ciamBundle
+cn: ops-scripts
+ciamBundleKind: script
+ciamBundleVersion: 2026.09
+ciamDeployPath: /opt/scripts
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRepoPath: ops/scripts
+ciamSha256: dcb35445873807456fa4a47638d7bed5e3bbc6fe550fedb5ee11feffce76e42f
+description: Operations scripts the servers' jobs run
+
 dn: cn=partner-portal,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamIntegration
@@ -1156,6 +1430,33 @@ description: Offer passkey enrollment after sign-in
 xFlagEnabled: TRUE
 xRolloutPercent: 25
 
+dn: cn=pf-admin,ou=baselines,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamHostBaseline
+cn: pf-admin
+ciamChangeRef: cn=CHG-2013,ou=changes,dc=ciam-ops
+ciamFipsMode: FALSE
+ciamFoundOn: cn=pf-admin-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+ciamHostAgent: falcon-sensor 7.10.0
+ciamHostAgent: splunkforwarder 9.2.1
+ciamHugePages: never
+ciamJdk: temurin 17.0.11
+ciamKernelSetting: net.core.somaxconn=4096
+ciamKernelSetting: net.ipv4.tcp_keepalive_time=600
+ciamOs: rhel 9.4
+ciamOsLimit: pingfed soft nofile 65536
+ciamOsLimit: pingfed hard nofile 65536
+ciamSearchDomain: aws.internal.example-aero.test
+ciamSearchDomain: example-aero.test
+ciamSelinuxMode: enforcing
+ciamServiceUnit: pingfederate.service: user pingfed, restart on-failure
+ciamTargetRole: pf-admin
+ciamTrustsCertificate: cn=example-aero-corp-root-ca,ou=certificates,dc=ciam-op
+ s
+
 dn: cn=pf-admin-password,ou=credentials,dc=ciam-ops
 objectClass: top
 objectClass: ciamCredential
@@ -1169,6 +1470,21 @@ ciamMaterialFormat: text
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationDays: 30
 ciamUsedIn: cn=run.properties,ou=config-files,dc=ciam-ops
+
+dn: cn=pf-captcha-secret,ou=credentials,dc=ciam-ops
+objectClass: top
+objectClass: ciamCredential
+cn: pf-captcha-secret
+ciamBindingRole: pf-captcha-secret
+ciamContinuity: carry-over
+ciamContinuityReason: reCAPTCHA's secret key belongs to the site key the vendo
+ r issued; a new environment keeps the same pair
+ciamCredentialType: api-token
+ciamExportable: TRUE
+ciamKeyUsage: authentication
+ciamMaterialFormat: text
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRotationDays: 365
 
 dn: cn=pf-ds-bind-password,ou=credentials,dc=ciam-ops
 objectClass: top
@@ -1209,6 +1525,50 @@ ciamReviewedOn: 20260302000000Z
 ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
 ciamTlsOnly: TRUE
 ciamUnindexedSearchesPerDay: 0
+
+dn: cn=pf-engine,ou=baselines,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamHostBaseline
+cn: pf-engine
+ciamChangeRef: cn=CHG-2013,ou=changes,dc=ciam-ops
+ciamFipsMode: FALSE
+ciamFoundOn: cn=pf-engine-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamFoundOn: cn=pf-engine-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+ciamHostAgent: falcon-sensor 7.10.0
+ciamHostAgent: splunkforwarder 9.2.1
+ciamHugePages: never
+ciamJdk: temurin 17.0.11
+ciamKernelSetting: net.core.somaxconn=4096
+ciamKernelSetting: net.ipv4.tcp_keepalive_time=600
+ciamOs: rhel 9.4
+ciamOsLimit: pingfed soft nofile 65536
+ciamOsLimit: pingfed hard nofile 65536
+ciamSearchDomain: aws.internal.example-aero.test
+ciamSearchDomain: example-aero.test
+ciamSelinuxMode: enforcing
+ciamServiceUnit: pingfederate.service: user pingfed, restart on-failure
+ciamTargetRole: pf-engine
+ciamTrustsCertificate: cn=example-aero-corp-root-ca,ou=certificates,dc=ciam-op
+ s
+
+dn: cn=pf-engine-pf-audit-ship,ou=jobs,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamJob
+cn: pf-engine-pf-audit-ship
+ciamChangeRef: cn=CHG-2011,ou=changes,dc=ciam-ops
+ciamCodeBundle: cn=ops-scripts,ou=bundles,dc=ciam-ops
+ciamCommand: /opt/scripts/ship-audit.sh /opt/pingfederate/log/audit.log
+ciamFoundOn: cn=pf-engine-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamFoundOn: cn=pf-engine-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamJobKind: timer
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRunsAs: pingfed
+ciamSchedule: OnCalendar=*:0/15
+ciamTargetRole: pf-engine
 
 dn: cn=pf-grants-db-password,ou=credentials,dc=ciam-ops
 objectClass: top
@@ -1257,6 +1617,19 @@ ciamKeyUsage: signing
 ciamMaterialFormat: pkcs12
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationDays: 730
+
+dn: cn=pf-smtp-password,ou=credentials,dc=ciam-ops
+objectClass: top
+objectClass: ciamCredential
+cn: pf-smtp-password
+ciamBindingRole: pf-smtp-password
+ciamContinuity: per-environment
+ciamCredentialType: password
+ciamExportable: TRUE
+ciamKeyUsage: authentication
+ciamMaterialFormat: text
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRotationDays: 90
 
 dn: cn=registrationStatus,ou=user-schema,dc=ciam-ops
 objectClass: top
@@ -1713,6 +2086,11 @@ objectClass: top
 objectClass: organizationalUnit
 ou: authentication-policies
 
+dn: ou=captcha-providers,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: captcha-providers
+
 dn: ou=connectors,ou=pingidm,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -1753,6 +2131,11 @@ dn: ou=mappings,ou=pingidm,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: mappings
+
+dn: ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: notification-publishers
 
 dn: ou=observed,ou=config,dc=ciam-ops
 objectClass: top
@@ -2112,6 +2495,14 @@ ciamLocator: /data/coreOAuth2Config/issueRefreshToken
 ciamSettingRaw: true
 ciamSettingValue: true
 
+dn: cn=b255dcc0522655fe,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: b255dcc0522655fe
+ciamLineNumber: 7
+ciamOccurrenceOf: cn=captcha-recaptcha,ou=external-services,dc=ciam-ops
+ciamOccurringAttr: ciamAllowedDomain
+
 dn: cn=b4d42125ac974fb4,cn=run.properties,ou=config-files,dc=ciam-ops
 objectClass: top
 objectClass: ciamConfigSetting
@@ -2440,6 +2831,20 @@ pingfedPluginType: org.sourceid.saml20.domain.LDAPUsernamePasswordCredentialVa
  lidator
 pingfedUses: cn=user-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
 
+dn: cn=recaptcha,ou=captcha-providers,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: pingfedPlugin
+cn: recaptcha
+ciamChangeRef: cn=CHG-2005,ou=changes,dc=ciam-ops
+pingfedConfig: {"configuration":{"fields":[{"name":"Site Key","value":"6LcEXAM
+ PLEsyntheticSiteKey000000000000"},{"name":"Secret Key","value":null},{"name":
+ "Pass Score Threshold","value":"0.5"}]},"name":"reCAPTCHA v3"}
+pingfedCredentialRole: pf-captcha-secret
+pingfedPluginKind: captcha-provider
+pingfedPluginType: com.pingidentity.captcha.recaptchav3.ReCaptchaV3Plugin
+pingfedWithheld: /configuration/fields/1/value
+
 dn: cn=reconcile-hr,ou=schedules,ou=pingidm,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -2457,6 +2862,22 @@ objectClass: pingidmManagedObject
 cn: role
 pingidmPosition: 1
 pingidmSchema: {"properties":{"name":{"type":"string"}},"type":"object"}
+
+dn: cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: pingfedPlugin
+cn: smtp
+ciamChangeRef: cn=CHG-2005,ou=changes,dc=ciam-ops
+pingfedConfig: {"configuration":{"fields":[{"name":"From Address","value":"nor
+ eply@example-aero.test"},{"name":"Email Server","value":"email-smtp.us-east-1
+ .amazonaws.com"},{"name":"SMTP Port","value":"587"},{"name":"Encryption Metho
+ d","value":"TLS"},{"name":"Username","value":"AKIAEXAMPLESMTPUSER"},{"name":"
+ Password","value":null}]},"name":"SES SMTP"}
+pingfedCredentialRole: pf-smtp-password
+pingfedPluginKind: notification-publisher
+pingfedPluginType: com.pingidentity.email.SmtpNotificationPlugin
+pingfedWithheld: /configuration/fields/5/value
 
 dn: cn=storage,ou=settings,ou=pingfederate,dc=ciam-ops
 objectClass: top
@@ -3523,6 +3944,31 @@ cn: appEntitlement
 ciamIndexType: equality
 ciamIndexedAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
 
+dn: cn=asg-pf-engine,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamComputeGroup
+cn: asg-pf-engine
+ciamBindingRole: compute-pf-engine
+ciamDesiredSize: 2
+ciamImageRef: ami-0fedcba9876543210
+ciamInstanceSize: m6i.large
+ciamMaxSize: 4
+ciamMetadataTokens: TRUE
+ciamMinSize: 2
+ciamProviderRef: arn:aws:autoscaling:us-east-1:111122223333:autoScalingGroup:6
+ d4c1f0e-0000-4000-8000-00000000a001:autoScalingGroupName/ciam-prod-pf-engine
+ciamSpansZone: us-east-1a
+ciamSpansZone: us-east-1b
+ciamTargetRole: pf-engine
+
+dn: cn=audit-bus,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStreamBinding
+cn: audit-bus
+ciamBindingRole: audit-events
+ciamProviderRef: arn:aws:events:us-east-1:111122223333:event-bus/ciam-audit
+ciamStreamKind: bus
+
 dn: cn=backup,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamBackupTarget
@@ -4204,6 +4650,30 @@ ciamIndexType: equality
 ciamIndexedAttribute: cn=mail,ou=user-schema,dc=ciam-ops
 ciamLastChanged: 20260614000000Z
 
+dn: cn=mail-acs,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSendingIdentity
+cn: mail-acs
+ciamBindingRole: mail-sending
+ciamDkimVerified: FALSE
+ciamDmarcPolicy: quarantine
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Communication/emailServices/ecs-ciam-p
+ rod/domains/example-aero.test
+ciamSenderDomain: example-aero.test
+ciamSpfAuthorized: TRUE
+
+dn: cn=mail-ses,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSendingIdentity
+cn: mail-ses
+ciamBindingRole: mail-sending
+ciamDkimVerified: TRUE
+ciamDmarcPolicy: reject
+ciamProviderRef: arn:aws:ses:us-east-1:111122223333:identity/example-aero.test
+ciamSenderDomain: example-aero.test
+ciamSpfAuthorized: TRUE
+
 dn: cn=partner-portal-access,cn=partner-apps,ou=partners,ou=policy-sets,ou=pingam,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -4607,6 +5077,31 @@ ciamBindingRole: pf-admin-password
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /stage/pf-admin-password
 
+dn: cn=secret-pf-captcha-secret,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-captcha-secret
+ciamBindingRole: pf-captcha-secret
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /prod/pf-captcha-secret
+
+dn: cn=secret-pf-captcha-secret,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-captcha-secret
+ciamBindingRole: pf-captcha-secret
+ciamMaterialFrom: cn=secret-pf-captcha-secret,ou=bindings,env=prod,cloud=sourc
+ e,ou=environments,dc=ciam-ops
+ciamRefUri: azkv://kv-ciam-prod/pf-captcha-secret
+
+dn: cn=secret-pf-captcha-secret,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-captcha-secret
+ciamBindingRole: pf-captcha-secret
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /stage/pf-captcha-secret
+
 dn: cn=secret-pf-ds-bind-password,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
@@ -4676,6 +5171,29 @@ cn: secret-pf-signing-key
 ciamBindingRole: pf-signing-key
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /stage/pf-signing-key
+
+dn: cn=secret-pf-smtp-password,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-smtp-password
+ciamBindingRole: pf-smtp-password
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /prod/pf-smtp-password
+
+dn: cn=secret-pf-smtp-password,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-smtp-password
+ciamBindingRole: pf-smtp-password
+ciamRefUri: azkv://kv-ciam-prod/pf-smtp-password
+
+dn: cn=secret-pf-smtp-password,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-smtp-password
+ciamBindingRole: pf-smtp-password
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /stage/pf-smtp-password
 
 dn: cn=secret-sso-tls-keystore,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -5098,6 +5616,24 @@ objectClass: ciamBackend
 cn: userData
 ciamBackendType: je
 ciamBaseDn: dc=partners,dc=example-aero,dc=test
+
+dn: cn=vmss-pf-engine,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamComputeGroup
+cn: vmss-pf-engine
+ciamBindingRole: compute-pf-engine
+ciamDesiredSize: 2
+ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
+ ps/rg-ciam-images/providers/Microsoft.Compute/images/pingfederate-12.1.4-rhel
+ 9
+ciamInstanceSize: Standard_D2s_v5
+ciamMaxSize: 4
+ciamMinSize: 2
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Compute/virtualMachineScaleSets/vmss-c
+ iam-pf-engine
+ciamSpansZone: 1
+ciamTargetRole: pf-engine
 
 dn: cn=vnet,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top

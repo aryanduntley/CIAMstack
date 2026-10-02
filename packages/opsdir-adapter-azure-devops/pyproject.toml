@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-adapter-azure-devops"
+version = "0.1.0"
+description = "opsdir delivery adapter for Azure DevOps Pipelines: repositories' YAML pipelines read as the platform's pipeline jobs (schedules, triggers, pools, environments, secrets by name)."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1", "pyyaml>=6"]
+
+[project.entry-points."opsdir.adapters"]
+azure-devops = "opsdir_adapter_azure_devops.adapter:ADAPTER"
+
+[tool.setuptools.packages.find]
+where = ["src"]

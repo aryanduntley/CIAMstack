@@ -19,14 +19,33 @@ From Terraform state (terraform.tfstate, format version 4), managed resources an
   aws_kms_key (+ aws_kms_replica_key)         -> key reference aws-kms://<arn>, rotation, replica regions
   aws_s3_bucket                               -> storage s3://<bucket>
   aws_nat_gateway                             -> egress: its public address
-Roles of resources the record doesn't have come from their tags Role (or BindingRole).
+  aws_lambda_function, aws_codepipeline,      -> job bindings (what realizes a job: kind job, ciamJobBinding): the
+    aws_codebuild_project                        ARN, runtime (a build project's image), and the schedules
+  + aws_cloudwatch_event_rule/_target,           EventBridge rules and Scheduler schedules start it on (a Lambda
+    aws_scheduler_schedule                       alias or version ARN counts as its function)
+  aws_autoscaling_group (+ its               -> compute group (kind compute, ciamComputeGroup): the server role it runs
+    aws_launch_template)                         (tag Role), min/desired/max, zones (its subnets' or its own), the
+                                                 template's image, instance type and whether the metadata service
+                                                 requires tokens (http_tokens required: IMDSv2)
+  aws_eks_cluster (+ aws_eks_node_group,     -> cluster (kind cluster, ciamCluster): version, add-ons, node pools
+    aws_eks_addon)                               (name: instance types, min-max), zones of its subnets
+  aws_sesv2_email_identity,                   -> sending identity (kind sending, ciamSendingIdentity) for a domain: DKIM
+    aws_ses_domain_identity (+ the domain's     verified (DKIM signing status SUCCESS), SPF authorizing SES (include:
+    Route 53 TXT records)                        amazonses.com) and the DMARC policy, from the domain's TXT records
+  aws_sqs_queue, aws_sns_topic,               -> stream carriers (kind stream, ciamStreamBinding): queue, topic, bus,
+    aws_cloudwatch_event_bus,                    log stream
+    aws_kinesis_stream
+Roles of resources the record doesn't have come from their tags Role (or BindingRole). A compute group's binding role
+is its tag BindingRole, else compute-<its tag Role>; a cluster's is its tag BindingRole or Role, else cluster.
 """
 import re
 from collections import Counter
 from functools import reduce
 
 from opsdir.core.contract import Importer
-from opsdir.core.inventory import layout_import, per_file, resource
+from opsdir.core.inventory import (cluster_role, compute_roles, layout_import, of_types, per_file, resource,
+                                   tagged_role)
+from opsdir.domains.messaging.dns import dmarc_policy, spf_authorizes
 from opsdir_format_terraform.state import read_state
 
 PROVIDER = "aws"
@@ -41,22 +60,17 @@ def _tags(a):
 
 
 def _role(a):
-    t = _tags(a)
-    return t.get("Role") or t.get("BindingRole")
-
-
-def _of(found, *types):
-    return [a for t, a in found if t in types]
+    return tagged_role(_tags(a))
 
 
 def _networks(found):
     return tuple(resource("network", a.get("id"), {"ciamCidr": a.get("cidr_block")}, name=_tags(a).get("Name"),
-                          role=_role(a) or "network") for a in _of(found, "aws_vpc"))
+                          role=_role(a) or "network") for a in of_types(found, "aws_vpc"))
 
 
 def _subnets(found):
     return tuple(resource("subnet", a.get("id"), {"ciamCidr": a.get("cidr_block"), "ciamZone": a.get("availability_zone")},
-                          name=_tags(a).get("Name"), role=_role(a)) for a in _of(found, "aws_subnet"))
+                          name=_tags(a).get("Name"), role=_role(a)) for a in of_types(found, "aws_subnet"))
 
 
 def _servers(found):
@@ -67,21 +81,21 @@ def _servers(found):
                            "ciamProductVersion": _tags(a).get("Product")},
                           links={"ciamSubnet": a.get("subnet_id")}, name=_tags(a).get("Name") or a.get("id"),
                           role=_tags(a).get("Role"))
-                 for a in _of(found, "aws_instance"))
+                 for a in of_types(found, "aws_instance"))
 
 
 def _services(found):
     """A service per load balancer: its DNS name (the Route 53 alias, or its tag Service), ports, targets' role."""
-    instances = {a.get("id"): _tags(a).get("Role") for a in _of(found, "aws_instance")}
-    eips = {a.get("allocation_id") or a.get("id"): a.get("public_ip") for a in _of(found, "aws_eip")}
-    groups = {a.get("arn"): a for a in _of(found, "aws_lb_target_group")}
-    records = _of(found, "aws_route53_record")
+    instances = {a.get("id"): _tags(a).get("Role") for a in of_types(found, "aws_instance")}
+    eips = {a.get("allocation_id") or a.get("id"): a.get("public_ip") for a in of_types(found, "aws_eip")}
+    groups = {a.get("arn"): a for a in of_types(found, "aws_lb_target_group")}
+    records = of_types(found, "aws_route53_record")
 
     def one_lb(lb):
         alias = next((r for r in records for al in r.get("alias") or () if al.get("name") == lb.get("dns_name")), None)
-        listeners = [ls for ls in _of(found, "aws_lb_listener") if ls.get("load_balancer_arn") == lb.get("arn")]
+        listeners = [ls for ls in of_types(found, "aws_lb_listener") if ls.get("load_balancer_arn") == lb.get("arn")]
         forwarded = {act.get("target_group_arn") for ls in listeners for act in ls.get("default_action") or ()}
-        roles = Counter(instances.get(att.get("target_id")) for att in _of(found, "aws_lb_target_group_attachment")
+        roles = Counter(instances.get(att.get("target_id")) for att in of_types(found, "aws_lb_target_group_attachment")
                         if att.get("target_group_arn") in forwarded and instances.get(att.get("target_id")))
         mappings = lb.get("subnet_mapping") or ()
         private = next((m.get("private_ipv4_address") for m in mappings if m.get("private_ipv4_address")), None)
@@ -96,7 +110,7 @@ def _services(found):
                 (m.get("public_ip") for m in mappings if m.get("public_ip")), None),
             "ciamProviderRef": None if lb.get("internal") else allocation},
             name=lb.get("name"), role=_role(lb))
-    return tuple(one_lb(lb) for lb in _of(found, "aws_lb", "aws_alb"))
+    return tuple(one_lb(lb) for lb in of_types(found, "aws_lb", "aws_alb"))
 
 
 def _target_role(sg, members):
@@ -106,31 +120,57 @@ def _target_role(sg, members):
         (sg.get("name") or "").rsplit("-", 1)[-1] or None
 
 
+def _port(rule):
+    """(the rule's single port or None, why not when it isn't one): a range and all ports aren't single ports."""
+    low, high, proto = rule.get("from_port"), rule.get("to_port"), str(rule.get("protocol") or "")
+    if proto == "-1" or low in (None, -1, "-1") or str(low) == "0" and str(high) in ("0", "65535", "None"):
+        return None, "all ports"
+    if high not in (None, "") and str(high) != str(low):
+        return None, f"port range {low}-{high}"
+    return str(low), None
+
+
+def _other_sources(rule):
+    """The rule's sources that aren't IPv4 ranges: IPv6 ranges, security groups, prefix lists."""
+    return (*(f"IPv6 range {c}" for c in (rule.get("ipv6_cidr_blocks") or ()) or
+              ((rule.get("cidr_ipv6"),) if rule.get("cidr_ipv6") else ())),
+            *(f"security group {g}" for g in (rule.get("security_groups") or ()) or
+              ((rule.get("referenced_security_group_id"),) if rule.get("referenced_security_group_id") else ())),
+            *(f"prefix list {p}" for p in (rule.get("prefix_list_ids") or ()) or
+              ((rule.get("prefix_list_id"),) if rule.get("prefix_list_id") else ())),
+            *(("its own security group",) if rule.get("self") is True else ()))
+
+
 def _firewall(found):
-    """Firewall rules: ingress rules of the security groups, grouped into the record's rules by name."""
-    groups = {a.get("id"): a for a in _of(found, "aws_security_group")}
+    """(firewall rules, notices): ingress rules of the security groups, grouped into the record's rules by name. The
+    record holds IPv4 sources and single ports: ranges, all-ports rules and other sources are named, not recorded."""
+    groups = {a.get("id"): a for a in of_types(found, "aws_security_group")}
     members = reduce(lambda acc, i: {**acc, **{g: (*acc.get(g, ()), _tags(i)["Role"])
                                                 for g in i.get("vpc_security_group_ids") or ()}},
-                     (i for i in _of(found, "aws_instance") if _tags(i).get("Role")), {})
-    separate = [(groups.get(r.get("security_group_id")) or {}, r.get("cidr_ipv4"), r.get("from_port"),
-                 r.get("ip_protocol"), r.get("description") or "", _tags(r).get("Name"), _role(r),
+                     (i for i in of_types(found, "aws_instance") if _tags(i).get("Role")), {})
+    separate = [(groups.get(r.get("security_group_id")) or {}, (r.get("cidr_ipv4"),),
+                 {**r, "protocol": r.get("ip_protocol")}, _tags(r).get("Name"), _role(r),
                  r.get("security_group_rule_id") or r.get("id"))
-                for r in _of(found, "aws_vpc_security_group_ingress_rule")]
-    inline = [(sg, cidr, rule.get("from_port"), rule.get("protocol"), rule.get("description") or "", None, None,
-               f"{sg.get('id')}#{i}")
-              for sg in groups.values() for i, rule in enumerate(sg.get("ingress") or ())
-              for cidr in rule.get("cidr_blocks") or ()]
-    named = [(_name_of(desc, tag, ref), sg, cidr, port, proto, role)
-             for sg, cidr, port, proto, desc, tag, role, ref in (*separate, *inline)]
+                for r in of_types(found, "aws_vpc_security_group_ingress_rule")]
+    inline = [(sg, tuple(rule.get("cidr_blocks") or ()), rule, None, None, f"{sg.get('id')}#{i}")
+              for sg in groups.values() for i, rule in enumerate(sg.get("ingress") or ())]
+    rules = [(_name_of(rule.get("description") or "", tag, ref), sg, tuple(c for c in cidrs if c), rule, role)
+             for sg, cidrs, rule, tag, role, ref in (*separate, *inline)]
+    named = [(n, sg, cidr, _port(rule)[0], str(rule.get("protocol") or ""), role)
+             for n, sg, cidrs, rule, role in rules for cidr in cidrs]
     names = list(dict.fromkeys(n for n, *_ in named))
+    notices = (*(f"security group rule {n}: {why}, not a single port; not recorded" for n, why in
+                 dict.fromkeys((n, _port(rule)[1]) for n, _, cidrs, rule, _ in rules if cidrs and _port(rule)[1])),
+               *(f"security group rule {n}: source {s} is not an IPv4 address range; not recorded"
+                 for n, _, _, rule, _ in rules for s in _other_sources(rule)))
     return tuple(resource("firewall", name, {
                      "ciamSourceCidr": sorted({cidr for n, _, cidr, *_ in named if n == name and cidr}),
-                     "ciamPort": sorted({str(port) for n, _, _, port, *_ in named if n == name and port and int(port) > 0}),
+                     "ciamPort": sorted({port for n, _, _, port, *_ in named if n == name and port}, key=int),
                      "ciamProtocol": next((p for n, *_, p, _ in named if n == name and p in ("tcp", "udp")), None),
                      "ciamTargetRole": next((_target_role(sg, members) for n, sg, *_ in named if n == name and sg),
                                             None)},
                           name=name, role=next((r for n, *_, r in named if n == name and r), None))
-                 for name in names)
+                 for name in names), notices
 
 
 def _name_of(description, tag, ref):
@@ -139,7 +179,7 @@ def _name_of(description, tag, ref):
 
 
 def _secrets(found):
-    rotation = {a.get("secret_id"): a for a in _of(found, "aws_secretsmanager_secret_rotation")}
+    rotation = {a.get("secret_id"): a for a in of_types(found, "aws_secretsmanager_secret_rotation")}
     return tuple(resource("secret", a.get("arn"), {
                      "ciamRefUri": f"aws-sm://{a.get('arn')}",
                      "ciamAutoRotate": "TRUE" if a.get("arn") in rotation or a.get("id") in rotation else
@@ -148,37 +188,173 @@ def _secrets(found):
                      "ciamRotationFunction": (rotation.get(a.get("arn")) or rotation.get(a.get("id")) or {})
                      .get("rotation_lambda_arn")},
                           name=_tags(a).get("Name") or a.get("name"), role=_role(a))
-                 for a in _of(found, "aws_secretsmanager_secret") if a.get("arn"))
+                 for a in of_types(found, "aws_secretsmanager_secret") if a.get("arn"))
 
 
 def _keys(found):
-    replicas = [a for a in _of(found, "aws_kms_replica_key")]
+    replicas = [a for a in of_types(found, "aws_kms_replica_key")]
     return tuple(resource("key", a.get("arn"), {
                      "ciamRefUri": f"aws-kms://{a.get('arn')}",
                      "ciamAutoRotate": {True: "TRUE", False: "FALSE"}.get(a.get("enable_key_rotation")),
                      "ciamReplicaRegion": sorted({r.get("arn", "").split(":")[3] for r in replicas
                                                   if r.get("primary_key_arn") == a.get("arn") and r.get("arn")})},
                           name=_tags(a).get("Name") or a.get("key_id"), role=_role(a))
-                 for a in _of(found, "aws_kms_key") if a.get("arn"))
+                 for a in of_types(found, "aws_kms_key") if a.get("arn"))
 
 
 def _storage(found):
     return tuple(resource("storage", a.get("arn") or a.get("bucket"), {"ciamStorageRef": f"s3://{a.get('bucket')}"},
                           name=a.get("bucket"), role=_role(a))
-                 for a in _of(found, "aws_s3_bucket") if a.get("bucket"))
+                 for a in of_types(found, "aws_s3_bucket") if a.get("bucket"))
 
 
 def _egress(found):
     return tuple(resource("egress", a.get("id"), {"ciamCidr": f"{a.get('public_ip')}/32" if a.get("public_ip") else None},
                           name=_tags(a).get("Name") or a.get("id"), role=_role(a))
-                 for a in _of(found, "aws_nat_gateway") if a.get("id"))
+                 for a in of_types(found, "aws_nat_gateway") if a.get("id"))
+
+
+def base_arn(arn):
+    """A Lambda function's ARN without its version or alias qualifier; any other ARN as it is."""
+    parts = (arn or "").split(":")
+    return ":".join(parts[:7]) if len(parts) > 7 and parts[2] == "lambda" and parts[5] == "function" else arn
+
+
+def _blocks(v):
+    return v if isinstance(v, list) else [v] if isinstance(v, dict) else []
+
+
+def _jobs(found):
+    """Functions, pipelines and build projects, each with the schedules EventBridge rules and Scheduler run it on."""
+    rules = {a.get("name"): a.get("schedule_expression") for a in of_types(found, "aws_cloudwatch_event_rule")}
+    started = [*((base_arn(t.get("arn")), rules.get(t.get("rule"))) for t in of_types(found, "aws_cloudwatch_event_target")),
+               *((base_arn(b.get("arn")), a.get("schedule_expression")) for a in of_types(found, "aws_scheduler_schedule")
+                 for b in _blocks(a.get("target")))]
+
+    def schedules(arn):
+        return sorted({when for target, when in started if target == arn and when})
+
+    def image(a):
+        return next((b.get("image") for b in _blocks(a.get("environment")) if b.get("image")), None)
+    return (*(resource("job", a.get("arn"), {"ciamRuntime": a.get("runtime"), "ciamSchedule": schedules(a.get("arn"))},
+                       name=a.get("function_name"), role=_role(a)) for a in of_types(found, "aws_lambda_function")
+              if a.get("arn")),
+            *(resource("job", a.get("arn"), {"ciamSchedule": schedules(a.get("arn"))}, name=a.get("name"),
+                       role=_role(a)) for a in of_types(found, "aws_codepipeline") if a.get("arn")),
+            *(resource("job", a.get("arn"), {"ciamRuntime": image(a), "ciamSchedule": schedules(a.get("arn"))},
+                       name=a.get("name"), role=_role(a)) for a in of_types(found, "aws_codebuild_project") if a.get("arn")))
+
+
+def _asg_tags(a):
+    """An autoscaling group's tags: its tag blocks (key, value) and any tags map."""
+    return {**{t.get("key"): t.get("value") for t in _blocks(a.get("tag")) if t.get("key")}, **_tags(a)}
+
+
+def _template_of(a, templates):
+    ref = next((t for t in (*_blocks(a.get("launch_template")),
+                            *(lt for p in _blocks(a.get("mixed_instances_policy"))
+                              for spec in _blocks(p.get("launch_template"))
+                              for lt in _blocks(spec.get("launch_template_specification")))) if t), {})
+    return templates.get(ref.get("id")) or templates.get(ref.get("name")) or \
+        templates.get(ref.get("launch_template_id")) or templates.get(ref.get("launch_template_name")) or {}
+
+
+def _tokens(template):
+    tokens = next((m.get("http_tokens") for m in _blocks(template.get("metadata_options")) if m.get("http_tokens")),
+                  None)
+    return {"required": "TRUE", "optional": "FALSE"}.get(tokens)
+
+
+def _zones_of(subnet_ids, zones_by_subnet):
+    return sorted({zones_by_subnet[s] for s in subnet_ids or () if zones_by_subnet.get(s)})
+
+
+def _compute(found):
+    """Autoscaling groups as compute groups, with what their launch template says."""
+    templates = {k: t for t in of_types(found, "aws_launch_template") for k in (t.get("id"), t.get("name")) if k}
+    zones = {s.get("id"): s.get("availability_zone") for s in of_types(found, "aws_subnet")}
+
+    def group(a):
+        template = _template_of(a, templates)
+        binding, target = compute_roles(_asg_tags(a))
+        return resource("compute", a.get("arn") or a.get("name"), {
+            "ciamTargetRole": target, "ciamImageRef": template.get("image_id"),
+            "ciamInstanceSize": template.get("instance_type"), "ciamMinSize": a.get("min_size"),
+            "ciamMaxSize": a.get("max_size"), "ciamDesiredSize": a.get("desired_capacity"),
+            "ciamSpansZone": _zones_of(a.get("vpc_zone_identifier"), zones)
+            or sorted(a.get("availability_zones") or ()),
+            "ciamMetadataTokens": _tokens(template)}, name=a.get("name"), role=binding)
+    return tuple(group(a) for a in of_types(found, "aws_autoscaling_group") if a.get("arn") or a.get("name"))
+
+
+def _clusters(found):
+    """EKS clusters, their node groups and add-ons."""
+    zones = {s.get("id"): s.get("availability_zone") for s in of_types(found, "aws_subnet")}
+
+    def pool(n):
+        scale = next(iter(_blocks(n.get("scaling_config"))), {})
+        return (f"{n.get('node_group_name')}: {', '.join(n.get('instance_types') or ()) or '?'}, "
+                f"{scale.get('min_size', '?')}-{scale.get('max_size', '?')}")
+
+    def cluster(c):
+        name = c.get("name")
+        subnets = [s for v in _blocks(c.get("vpc_config")) for s in v.get("subnet_ids") or ()]
+        return resource("cluster", c.get("arn") or name, {
+            "ciamClusterVersion": c.get("version"),
+            "ciamClusterAddon": sorted(f"{a.get('addon_name')} {a.get('addon_version') or ''}".strip()
+                                       for a in of_types(found, "aws_eks_addon") if a.get("cluster_name") == name),
+            "ciamNodePool": sorted(pool(n) for n in of_types(found, "aws_eks_node_group")
+                                   if n.get("cluster_name") == name),
+            "ciamSpansZone": _zones_of(subnets, zones)}, name=name, role=cluster_role(_tags(c)))
+    return tuple(cluster(c) for c in of_types(found, "aws_eks_cluster") if c.get("arn") or c.get("name"))
+
+
+SES_SPF = "amazonses.com"          # the SPF include that authorizes Amazon SES
+STREAM_TYPES = (("aws_sqs_queue", "queue"), ("aws_sns_topic", "topic"), ("aws_cloudwatch_event_bus", "bus"),
+                ("aws_kinesis_stream", "log-stream"))
+
+
+def _txt(found, name):
+    """The TXT values Route 53 holds for a name (with or without its trailing dot)."""
+    wanted = name.lower().rstrip(".")
+    return tuple(v for r in of_types(found, "aws_route53_record") if str(r.get("type")).upper() == "TXT"
+                 and (r.get("name") or "").lower().rstrip(".") == wanted for v in r.get("records") or ())
+
+
+def _dkim(identity, found, domain):
+    status = next((b.get("status") for b in _blocks(identity.get("dkim_signing_attributes")) if b.get("status")), None)
+    if status:
+        return "TRUE" if str(status).upper() == "SUCCESS" else "FALSE"
+    return "TRUE" if any((a.get("domain") or "").lower() == domain for a in of_types(found, "aws_ses_domain_dkim")) \
+        else None
+
+
+def _sending(found):
+    """SES domain identities as sending identities, with what the domain's DNS says of SPF and DMARC."""
+    def identity(a):
+        domain = (a.get("email_identity") or a.get("domain") or "").lower()
+        return resource("sending", a.get("arn") or domain, {
+            "ciamSenderDomain": domain, "ciamDkimVerified": _dkim(a, found, domain),
+            "ciamSpfAuthorized": spf_authorizes(_txt(found, domain), SES_SPF),
+            "ciamDmarcPolicy": dmarc_policy(_txt(found, f"_dmarc.{domain}"))}, name=f"ses-{domain}", role=_role(a))
+    return tuple(identity(a) for a in of_types(found, "aws_sesv2_email_identity", "aws_ses_domain_identity")
+                 if "@" not in (a.get("email_identity") or a.get("domain") or "@"))
+
+
+def _streams(found):
+    """Queues, topics, event buses and data streams as stream carriers (the default event bus left out)."""
+    return tuple(resource("stream", a.get("arn"), {"ciamStreamKind": kind}, name=a.get("name"), role=_role(a))
+                 for t, kind in STREAM_TYPES for a in of_types(found, t)
+                 if a.get("arn") and not (t == "aws_cloudwatch_event_bus" and a.get("name") == "default"))
 
 
 def pairs_resources(pairs):
-    """The resources of (Terraform resource type, attributes) pairs: what every AWS source is read into (Terraform state
-    as it is; CLI inventories normalized to the same attribute names, opsdir_adapter_aws.cli)."""
-    return (*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *_firewall(pairs),
-            *_secrets(pairs), *_keys(pairs), *_storage(pairs), *_egress(pairs))
+    """(resources, notices) of (Terraform resource type, attributes) pairs: what every AWS source is read into
+    (Terraform state as it is; CLI output and CloudFormation normalized to the same attribute names)."""
+    rules, rule_notices = _firewall(pairs)
+    return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *rules, *_secrets(pairs),
+             *_keys(pairs), *_storage(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
+             *_sending(pairs), *_streams(pairs)), rule_notices)
 
 
 def state_resources(text):
@@ -188,8 +364,9 @@ def state_resources(text):
         return (), (problem,)
     pairs = [(r.type, r.attributes) for r in found]
     skipped = Counter(t for t, _ in pairs if t in SKIPPED)
-    return (pairs_resources(pairs),
-            tuple(f"{t} ({n}): not read (holds secret values, or isn't modeled yet)" for t, n in sorted(skipped.items())))
+    resources, notices = pairs_resources(pairs)
+    return (resources, (*notices, *(f"{t} ({n}): not read (holds secret values, or isn't modeled yet)"
+                                    for t, n in sorted(skipped.items()))))
 
 
 # ------------------------------------------------------------------ the importer

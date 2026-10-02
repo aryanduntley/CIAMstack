@@ -22,14 +22,15 @@ Terraform resource and read by the same mapping (opsdir_adapter_aws.inventory.pa
   is never read), AWS::KMS::Key (+ ReplicaKey), AWS::S3::Bucket
 Resources that weren't created (no physical ID, deleted, failed) are skipped; other resource types are counted.
 """
-import json
 import re
 from collections import Counter
+from types import MappingProxyType
 
 import yaml
 
 from opsdir.core.contract import Importer
 from opsdir.core.inventory import layout_import
+from opsdir.core.sources import json_document, parsed
 from .inventory import PROVIDER, pairs_resources
 
 READ = ("AWS::EC2::VPC", "AWS::EC2::Subnet", "AWS::EC2::Instance", "AWS::EC2::SecurityGroup",
@@ -37,7 +38,8 @@ READ = ("AWS::EC2::VPC", "AWS::EC2::Subnet", "AWS::EC2::Instance", "AWS::EC2::Se
         "AWS::ElasticLoadBalancingV2::LoadBalancer", "AWS::ElasticLoadBalancingV2::Listener",
         "AWS::ElasticLoadBalancingV2::TargetGroup", "AWS::Route53::RecordSet", "AWS::Route53::RecordSetGroup",
         "AWS::SecretsManager::Secret", "AWS::SecretsManager::RotationSchedule", "AWS::KMS::Key",
-        "AWS::KMS::ReplicaKey", "AWS::S3::Bucket")
+        "AWS::KMS::ReplicaKey", "AWS::S3::Bucket", "AWS::Lambda::Function", "AWS::Events::Rule",
+        "AWS::Scheduler::Schedule", "AWS::CodePipeline::Pipeline", "AWS::CodeBuild::Project")
 EVALUATED = ("Ref", "Fn::Sub", "Fn::Join", "Fn::Select", "Fn::GetAtt")
 NOT_CREATED = ("CREATE_FAILED", "DELETE_COMPLETE", "DELETE_IN_PROGRESS", "DELETE_FAILED")
 ACCOUNT_WIDE = ("secret", "key", "storage")
@@ -66,14 +68,8 @@ yaml.add_multi_constructor("!", _short_tag, Loader=_TemplateLoader)
 
 def read_document(text):
     """A JSON or CloudFormation YAML document (short tags included); None when it is neither."""
-    try:
-        return json.loads(text)
-    except ValueError:
-        pass
-    try:
-        return yaml.load(text, Loader=_TemplateLoader)
-    except yaml.YAMLError:
-        return None
+    doc = json_document(text)
+    return doc if doc is not None else parsed(lambda t: yaml.load(t, Loader=_TemplateLoader), text, (yaml.YAMLError,))
 
 
 # ------------------------------------------------------------------ a stack
@@ -223,18 +219,28 @@ def _instances(declared, names):
             for _, t, p, _, pid in declared if t == "AWS::EC2::Instance"]
 
 
+def _ingress(i):
+    """A security group's inline ingress rule as the Terraform block (every kind of source kept)."""
+    def given(key):
+        return [i.get(key)] if i.get(key) else []
+    return {"from_port": i.get("FromPort"), "to_port": i.get("ToPort"), "protocol": i.get("IpProtocol"),
+            "description": i.get("Description") or "", "cidr_blocks": given("CidrIp"),
+            "ipv6_cidr_blocks": given("CidrIpv6"), "security_groups": given("SourceSecurityGroupId"),
+            "prefix_list_ids": given("SourcePrefixListId")}
+
+
 def _security_groups(declared):
     return [*(("aws_security_group", {"id": pid, "name": p.get("GroupName"), "vpc_id": p.get("VpcId"),
                                       "tags": _tags(p.get("Tags")),
-                                      "ingress": [{"from_port": i.get("FromPort"), "protocol": i.get("IpProtocol"),
-                                                   "cidr_blocks": [i.get("CidrIp")], "description": i.get("Description") or ""}
-                                                  for i in p.get("SecurityGroupIngress") or () if i.get("CidrIp")]})
+                                      "ingress": [_ingress(i) for i in p.get("SecurityGroupIngress") or ()]})
               for _, t, p, _, pid in declared if t == "AWS::EC2::SecurityGroup"),
-            *(("aws_vpc_security_group_ingress_rule", {"security_group_rule_id": pid, "security_group_id": p.get("GroupId"),
-                                                       "cidr_ipv4": p.get("CidrIp"), "from_port": p.get("FromPort"),
-                                                       "ip_protocol": p.get("IpProtocol"),
-                                                       "description": p.get("Description") or ""})
-              for _, t, p, _, pid in declared if t == "AWS::EC2::SecurityGroupIngress" and p.get("CidrIp"))]
+            *(("aws_vpc_security_group_ingress_rule", {
+                "security_group_rule_id": pid, "security_group_id": p.get("GroupId"), "cidr_ipv4": p.get("CidrIp"),
+                "cidr_ipv6": p.get("CidrIpv6"), "referenced_security_group_id": p.get("SourceSecurityGroupId"),
+                "prefix_list_id": p.get("SourcePrefixListId"), "from_port": p.get("FromPort"),
+                "to_port": p.get("ToPort"), "ip_protocol": p.get("IpProtocol"),
+                "description": p.get("Description") or ""})
+              for _, t, p, _, pid in declared if t == "AWS::EC2::SecurityGroupIngress")]
 
 
 def _egress(declared, names):
@@ -304,6 +310,40 @@ def _keys(declared, names):
               for _, t, p, _, pid in declared if t == "AWS::KMS::ReplicaKey" and arn(pid))]
 
 
+# job resources: (Terraform type, ARN service, ARN resource part from the physical ID)
+JOB_TYPES = MappingProxyType({"AWS::Lambda::Function": ("aws_lambda_function", "lambda", "function:{}"),
+                              "AWS::CodePipeline::Pipeline": ("aws_codepipeline", "codepipeline", "{}"),
+                              "AWS::CodeBuild::Project": ("aws_codebuild_project", "codebuild", "project/{}")})
+
+
+def _jobs(declared, names):
+    """Functions, pipelines and build projects (their ARNs built from the stack's partition, region and account), and
+    the enabled EventBridge rules and Scheduler schedules that start them (a Fn::GetAtt X.Arn target is X's ARN)."""
+    where = (names.get("AWS::Partition"), names.get("AWS::Region"), names.get("AWS::AccountId"))
+    arns = {lg: f"arn:{where[0]}:{JOB_TYPES[t][1]}:{where[1]}:{where[2]}:{JOB_TYPES[t][2].format(pid)}"
+            for lg, t, _, _, pid in declared if t in JOB_TYPES and all(where)}
+
+    def target(raw, resolved):
+        found = _getatt(raw)
+        return arns.get(found[0]) if found and found[1] == "Arn" else resolved
+
+    def attrs(lg, t, p, pid):
+        given = {"function_name": pid} if t == "AWS::Lambda::Function" else {"name": pid}
+        return {**given, "arn": arns.get(lg), "runtime": p.get("Runtime"), "tags": _tags(p.get("Tags")),
+                "environment": {"image": (p.get("Environment") or {}).get("Image")}}
+    enabled = [(lg, t, p, raw, pid) for lg, t, p, raw, pid in declared if p.get("State", "ENABLED") == "ENABLED"]
+    return [*((JOB_TYPES[t][0], attrs(lg, t, p, pid)) for lg, t, p, _, pid in declared if t in JOB_TYPES),
+            *(("aws_cloudwatch_event_rule", {"name": pid, "schedule_expression": p.get("ScheduleExpression")})
+              for _, t, p, _, pid in enabled if t == "AWS::Events::Rule"),
+            *(("aws_cloudwatch_event_target", {"rule": pid, "arn": target(r.get("Arn"), t_.get("Arn"))})
+              for _, t, p, raw, pid in enabled if t == "AWS::Events::Rule"
+              for r, t_ in zip(raw.get("Targets") or (), p.get("Targets") or ())),
+            *(("aws_scheduler_schedule", {"name": pid, "schedule_expression": p.get("ScheduleExpression"),
+                                          "target": {"arn": target((raw.get("Target") or {}).get("Arn"),
+                                                                   (p.get("Target") or {}).get("Arn"))}})
+              for _, t, p, raw, pid in enabled if t == "AWS::Scheduler::Schedule")]
+
+
 def stack_pairs(stack, resources, template):
     """((Terraform resource type, attributes) pairs, notices) of one stack."""
     names = _context(stack, resources, template)
@@ -315,7 +355,7 @@ def stack_pairs(stack, resources, template):
     label = stack.get("StackName") or "stack"
     return ([*_network(declared), *_instances(declared, names), *_security_groups(declared), *_egress(declared, names),
              *_load_balancers(declared, names), *_forwarding(declared), *_records(declared), *_secrets(declared),
-             *_keys(declared, names),
+             *_keys(declared, names), *_jobs(declared, names),
              *(("aws_s3_bucket", {"bucket": pid}) for _, t, _, _, pid in declared if t == "AWS::S3::Bucket")],
             (*((f"{label}: {', '.join(f'{fn} ({n})' for fn, n in sorted(_unevaluated(template).items()))} not "
                 f"evaluated; the attributes computed with them keep the record's values",) if _unevaluated(template) else ()),
@@ -331,9 +371,9 @@ def cloudformation_resources(texts):
     missing = [f or "." for f, s in stacks.items() if not s.get("template")]
     read = [stack_pairs(s.get("stack") or {}, s.get("resources") or [], s["template"])
             for s in stacks.values() if isinstance(s.get("template"), dict)]
-    resources, notices = pairs_resources([p for pairs, _ in read for p in pairs]), [n for _, ns in read for n in ns]
+    resources, rule_notices = pairs_resources([p for pairs, _ in read for p in pairs])
     return resources, (*unknown, *(f"{f}: no template (get-template output or the template file); stack not read"
-                                   for f in missing), *notices)
+                                   for f in missing), *(n for _, ns in read for n in ns), *rule_notices)
 
 
 def read_cloudformation(files, d, patterns, at=None):

@@ -1,7 +1,7 @@
 """Importing a product's own export into the record: the adapter's importer reads the files; here what it yields
 becomes change records (pure). The CLI reads the files and applies the change records under an approved change."""
 from ..core.changeset import diff
-from ..core.directory import get, norm_dn, subtree
+from ..core.directory import get, subtree, within
 from .registry import ADAPTERS, pattern_records
 
 
@@ -22,8 +22,7 @@ def importer_named(spec, installed=ADAPTERS):
 
 
 def _outside(scope, entries):
-    s = norm_dn(scope)
-    return [e.dn for e in entries if e.norm != s and not e.norm.endswith("," + s)]
+    return [e.dn for e in entries if not within(e.norm, scope)]
 
 
 def import_changes(d, imported):

@@ -186,6 +186,11 @@
       "format": "json",
       "sha256": "0e524f18a93aa510c329fd7394991ddab3f666fbf16476c487c54a6175265e5e"
     },
+    "pingfederate/captcha-providers.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "6bd2bc029fc6507f5904ea54be6d9afd8f98a3c804a8adc8cce5cb806b08d81e"
+    },
     "pingfederate/data-stores.json": {
       "scope": "environment-specific",
       "format": "json",
@@ -200,6 +205,11 @@
       "scope": "environment-neutral",
       "format": "json",
       "sha256": "23f5a0a78e550a31fe3724e180f479e965295fa0b7c8f743cca973e59657a214"
+    },
+    "pingfederate/notification-publishers.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "617050909a8ad390d4894f06a879f272b5f66a94e41b29ba345dd25db44f7205"
     },
     "pingfederate/oidc-clients.json": {
       "scope": "environment-neutral",
@@ -289,7 +299,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "4f065306331495e56ec1f1aec0bcc375ba2c8a3707be69e15d3f5cb115618b7b"
+      "sha256": "9cbd1475d9b212df8786090423443ce2a981fe218ceff61e05a45cc7c0ee237b"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

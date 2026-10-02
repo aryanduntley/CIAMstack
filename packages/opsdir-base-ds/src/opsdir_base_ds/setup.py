@@ -1,12 +1,13 @@
 """What every DS-lineage setup script is built from: the user backend, the listener ports, the directory servers of
 an environment, and secret references turned into run-time lookups. Each product writes its own script from these."""
+from types import MappingProxyType
 from typing import NamedTuple
 
 from opsdir.core.directory import children, one, rdn_value, subtree
 from opsdir.core.environment import secret, servers_with_role
 from opsdir.domains.directory.naming import DECLARED as DECL, DIRECTORY_SERVER_ROLE
 
-DEFAULT_PORTS = {"LDAP": 1389, "LDAPS": 1636, "HTTPS": 8443}
+DEFAULT_PORTS = MappingProxyType({"LDAP": 1389, "LDAPS": 1636, "HTTPS": 8443})
 
 # One server's script inputs: the server entry, the user backend, {handler record name: port},
 # replication bootstrap hosts, {secret role: shell expression}

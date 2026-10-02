@@ -2,6 +2,8 @@
 files), and a bundle it deploys as it is (96-bundles). The PingFederate engines' run.properties takes its host name
 from each environment's SSO service name and its admin password from the environment's secret reference (withheld at
 capture); xTokenLifetimeMinutes lives in the default token manager's settings."""
+from types import MappingProxyType
+
 from opsdir.connectors.registry import secret_patterns
 from opsdir.core.contract import SecretPattern
 from opsdir.core.formats import JAVA_PROPERTIES, JSON
@@ -31,9 +33,12 @@ FILES = (
     ("default-atm.json", JSON, "pingfederate/server/default/data/atm/default-atm.json", "pf-engine", TOKEN_MANAGER,
      {}),
 )
-LOGIN_TEMPLATES = {"html.form.login.template.html": b"<!DOCTYPE html>\n<html><body><form>Sign in</form></body></html>\n",
-                   "assets/example-aero.css": b"body { font-family: sans-serif; }\n"}
+LOGIN_TEMPLATES = MappingProxyType({
+    "html.form.login.template.html": b"<!DOCTYPE html>\n<html><body><form>Sign in</form></body></html>\n",
+    "assets/example-aero.css": b"body { font-family: sans-serif; }\n"})
 TOKEN_LIFETIME = setting_dn("default-atm.json", "/lifetimeMinutes")     # where xTokenLifetimeMinutes lives
+OPS_SCRIPTS = MappingProxyType({"nightly-export.sh": b"#!/bin/sh\n# MRO nightly export\n",
+                                "ship-audit.sh": b"#!/bin/sh\n# audit shipping\n"})
 
 
 def _patterns():
@@ -59,6 +64,10 @@ def config_files():
 def bundles():
     entry = bundle_entries("login-templates", "pingfederate/server/default/conf/template", "template",
                            content_digest(LOGIN_TEMPLATES), "html", "2026.09", "pf-engine")
+    scripts = bundle_entries("ops-scripts", "ops/scripts", "script", content_digest(OPS_SCRIPTS), None, "2026.09",
+                             None, "/opt/scripts")
     return (ou("96-bundles", "bundles", desc="Code, scripts, templates and packages deployed as they are"),
             _spec("96-bundles", entry, {"ciamOwner": owner("ciam-platform"),
-                                        "description": "Branded sign-in pages"}))
+                                        "description": "Branded sign-in pages"}),
+            _spec("96-bundles", scripts, {"ciamOwner": owner("ciam-platform"),
+                                          "description": "Operations scripts the servers' jobs run"}))

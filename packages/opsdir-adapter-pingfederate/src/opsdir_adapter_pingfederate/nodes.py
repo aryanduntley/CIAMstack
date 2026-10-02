@@ -18,30 +18,34 @@ it is a binding: the environment binds role pf-cluster-discovery to a storage lo
 azblob://account/container) or a service name, and pingfederate/cluster/discovery.xml renders the matching protocol
 element, the one each node's tcp.xml takes in place of TCPPING.
 """
+from types import MappingProxyType
 import xml.etree.ElementTree as ET
 from xml.sax.saxutils import quoteattr
 
 from opsdir.core.contract import Imported, Importer
-from opsdir.core.directory import get, make_entry, one, rdn_value, subtree
+from opsdir.core.directory import get, make_entry, merged_attrs, one, ou_entry, rdn_value, subtree
 from opsdir.core.environment import env_model, one_role, secret_placeholder, server_named
 from opsdir.core.interchange.properties import decode, split
 from opsdir.core.jsondata import canonical
-from .naming import DISCOVERY_KEY_ROLE, DISCOVERY_ROLE, SERVER_ROLES, STORAGE
-from .objects import merged_attrs
+from opsdir.core.sources import by_folder
+from .naming import DISCOVERY_KEY_ROLE, DISCOVERY_ROLE, SERVER_ROLES, SETTINGS, STORAGE
+
 from .withheld import withheld_settings
 
 RUN_PROPERTIES, TCP_XML = "bin/run.properties", "server/default/conf/tcp.xml"
 HIVEMODULE = "server/default/conf/META-INF/hivemodule.xml"
 MODES = ("CLUSTERED_CONSOLE", "CLUSTERED_ENGINE", "STANDALONE")
 # run.properties ports, by what the node listens for
-LISTENERS = {"pf.http.port": "runtime-http", "pf.https.port": "runtime", "pf.secondary.https.port": "runtime-secondary",
-             "pf.admin.https.port": "admin", "pf.cluster.bind.port": "cluster",
-             "pf.cluster.failure.detection.bind.port": "cluster-failure-detection"}
+LISTENERS = MappingProxyType({"pf.http.port": "runtime-http", "pf.https.port": "runtime",
+                              "pf.secondary.https.port": "runtime-secondary", "pf.admin.https.port": "admin",
+                              "pf.cluster.bind.port": "cluster",
+                              "pf.cluster.failure.detection.bind.port": "cluster-failure-detection"})
 # JGroups discovery protocols (the element's last name part) -> the kind of place the members are found in
-PROTOCOLS = {"TCPPING": "static", "NATIVE_S3_PING": "s3", "S3_PING": "s3", "AZURE_PING": "azure-blob",
-             "DNS_PING": "dns", "JDBC_PING": "jdbc", "FILE_PING": "file", "KUBE_PING": "kubernetes"}
+PROTOCOLS = MappingProxyType({"TCPPING": "static", "NATIVE_S3_PING": "s3", "S3_PING": "s3", "AZURE_PING": "azure-blob",
+                              "DNS_PING": "dns", "JDBC_PING": "jdbc", "FILE_PING": "file", "KUBE_PING": "kubernetes"})
 # hivemodule.xml service points -> what they keep (verify against the target version)
-STORAGE_POINTS = {"ClientManager": "clients", "AccessGrantManager": "grants", "SessionStorageManager": "sessions"}
+STORAGE_POINTS = MappingProxyType({"ClientManager": "clients", "AccessGrantManager": "grants",
+                                   "SessionStorageManager": "sessions"})
 NODE_OWNED = ("pingfedOperationalMode", "pingfedNodeTags", "pingfedListener", "pingfedDiscovery", "pingfedConfig",
               "pingfedWithheld")
 
@@ -134,11 +138,6 @@ def node_entries(d, server, files, patterns):
     return (node, *(e for e in subtree(d, server.dn) if e.norm != server.norm)), notices
 
 
-def _folders(files):
-    tops = sorted({p.split("/", 1)[0] for p in files if "/" in p})
-    return {t: {p.split("/", 1)[1]: text for p, text in files.items() if p.startswith(t + "/")} for t in tops}
-
-
 def storage_entry(d, kept):
     """The storage settings entry: which store backs clients, grants and sessions."""
     owned = {"cn": ("storage",), "pingfedConfig": (canonical(kept),)}
@@ -148,13 +147,13 @@ def storage_entry(d, kept):
 
 def read_node_files(files, d, patterns, at=None):
     """Imported: each PingFederate node's run.properties, tcp.xml and hivemodule.xml."""
-    folders = _folders(files)
+    folders = by_folder(files)
     placed = [(f, *server_named(d, f, SERVER_ROLES, "PingFederate server")) for f in folders]
     nodes = [(s, node_entries(d, s, folders[f], patterns)) for f, s, _ in placed if s is not None]
     stores = [(f, storage(folders[f][HIVEMODULE])) for f in folders if HIVEMODULE in folders[f]]
     kept = next((st for _, st in stores if st), None)
     return Imported(
-        containers=(make_entry(STORAGE.split(",", 1)[1], ("top", "organizationalUnit"), {"ou": ("settings",)}),),
+        containers=(ou_entry(SETTINGS),),
         groups=(*((s.dn, entries) for s, (entries, _) in nodes),
                 *(((STORAGE, (storage_entry(d, kept),)),) if kept else ())),
         notices=(*(why for _, s, why in placed if s is None), *(n for _, (_, ns) in nodes for n in ns),

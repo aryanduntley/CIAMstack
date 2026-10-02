@@ -1,0 +1,4 @@
+127.0.0.1   localhost localhost.localdomain
+::1         localhost6
+10.20.2.11  ds-2.aws.internal.example-aero.test ds-2
+10.40.7.22   rpt-legacy.mro.example-aero.test rpt-legacy

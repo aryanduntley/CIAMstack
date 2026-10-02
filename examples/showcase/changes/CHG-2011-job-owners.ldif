@@ -1,0 +1,28 @@
+# CHG-2011 (approved): name who owns the imported jobs. Automation nobody owns breaks silently after a move; the
+# MRO export is MRO analytics', the audit shipping and the directory backup are the platform team's.
+dn: cn=ds-nightly-export,ou=jobs,dc=ciam-ops
+changetype: modify
+replace: ciamOwner
+ciamOwner: cn=mro-analytics-team,ou=owners,dc=ciam-ops
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2011,ou=changes,dc=ciam-ops
+-
+
+dn: cn=pf-engine-pf-audit-ship,ou=jobs,dc=ciam-ops
+changetype: modify
+replace: ciamOwner
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2011,ou=changes,dc=ciam-ops
+-
+
+dn: cn=github-actions-ciam-ops-directory-backup,ou=jobs,dc=ciam-ops
+changetype: modify
+replace: ciamOwner
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2011,ou=changes,dc=ciam-ops
+-

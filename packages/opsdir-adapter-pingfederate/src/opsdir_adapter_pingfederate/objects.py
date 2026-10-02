@@ -9,6 +9,8 @@ integration of the federation domain and a key pair is a certificate of the PKI 
 names it), found by the id it carries (pingfedConnectionId, pingfedKeyPairId): that id, not the entry's name, is the
 durable link, and exactly one entry may carry it (an id two entries claim resolves to neither, and is named).
 """
+from types import MappingProxyType
+
 from opsdir.core.directory import children, get, one
 from opsdir.core.naming import rdn_safe
 from opsdir.domains.federation.services import integrations
@@ -18,15 +20,16 @@ from .naming import BASES, named
 CONNECTION = "idp-connection"     # the kind of reference an IdP connection is
 KEY_PAIR = "key-pair"             # ... and one of PingFederate's key pairs (its certificate)
 # what the record names otherwise carries PingFederate's id for it: (the entries that may, the attribute)
-CARRIERS = {CONNECTION: (lambda d: integrations(d, "saml2-idp"), "pingfedConnectionId"),
-            KEY_PAIR: (lambda d: children(d, CERTIFICATES, "ciamCertificate"), "pingfedKeyPairId")}
+CARRIERS = MappingProxyType({CONNECTION: (lambda d: integrations(d, "saml2-idp"), "pingfedConnectionId"),
+                             KEY_PAIR: (lambda d: children(d, CERTIFICATES, "ciamCertificate"), "pingfedKeyPairId")})
 # why a reference resolves to nothing: in a plan, and on import
 NOT_RECORDED = "the record doesn't have: PingFederate refuses the configuration until it is recorded"
 NOT_EXPORTED = "neither the export nor the record has"
-LABELS = {"datastore": "data store", "validator": "password credential validator", "idp-adapter": "IdP adapter",
-          "selector": "authentication selector", "contract": "policy contract", "fragment": "policy fragment",
-          "access-token-manager": "access token manager", "oidc-policy": "OIDC policy", CONNECTION: "IdP connection",
-          KEY_PAIR: "key pair"}
+LABELS = MappingProxyType({"datastore": "data store", "validator": "password credential validator",
+                           "idp-adapter": "IdP adapter", "selector": "authentication selector",
+                           "contract": "policy contract", "fragment": "policy fragment",
+                           "access-token-manager": "access token manager", "oidc-policy": "OIDC policy",
+                           CONNECTION: "IdP connection", KEY_PAIR: "key pair"})
 
 
 def ref_dn(kind, ref_id):
@@ -77,10 +80,3 @@ def why_unresolved(d, kind, ref_id, absent):
                 f"({', '.join(dn.split(',', 1)[0].split('=', 1)[1] for dn in held)}): exactly one may carry its id, so "
                 "the record must give it to one")
     return f"{describe(kind, ref_id)}, which {absent}"
-
-
-def merged_attrs(existing, owned, names):
-    """An imported entry's attributes: what the import owns (names) replaced by owned (None values dropped), everything
-    the record adds to the entry (owners, a credential role) kept."""
-    return {**{k: v for k, v in (existing.attrs.items() if existing else ()) if k not in names},
-            **{k: tuple(x for x in v if x is not None) for k, v in owned.items() if any(x is not None for x in v)}}

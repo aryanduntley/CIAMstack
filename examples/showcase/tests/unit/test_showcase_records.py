@@ -4,7 +4,8 @@ import json
 
 import pytest
 
-from opsdir.connectors.registry import ADAPTERS, definition_files, ref_schemes, schema_fragments, secret_command
+from opsdir.connectors.registry import (ADAPTERS, KIND_ORDER, definition_files, ref_schemes, schema_fragments,
+                                       secret_command)
 from opsdir.core.directory import get
 from opsdir.core.environment import env_model
 from opsdir.core.findings import owner_label, responsible
@@ -51,7 +52,7 @@ def test_registry_composition():
     assert all(f.is_file() for f in files)
     schemes = ref_schemes()
     assert len(schemes) == len(set(schemes)) and {"aws-sm", "vault"} <= set(schemes)
-    assert all(a.kind in ("provider", "product", "secret-store") for a in ADAPTERS)
+    assert all(a.kind in KIND_ORDER for a in ADAPTERS)
 
 
 @pytest.mark.parametrize("uri, command", [

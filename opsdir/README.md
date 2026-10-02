@@ -30,7 +30,8 @@ On a machine whose global pip config sets `user = true`, pip refuses it inside a
 ./opsdir.sh import [--change CHG-…] ADAPTER[/IMPORTER] PATH [--dry-run] [--at TIME]   # read a product's export into the record
 ./opsdir.sh capture --change CHG-… FILE       # hold a config file in the record (settings, whole, or a reference)
 ./opsdir.sh file NAME [--env CLOUD/ENV]       # rebuild a captured file from the record
-./opsdir.sh census --change CHG-… PATH        # where the record's values occur in files (secrets flagged, not stored)
+./opsdir.sh census --change CHG-… PATH        # where the record's values occur in files (secrets flagged, not stored);
+                                              # --replace: PATH is the whole census
 ./opsdir.sh search -b BASE 'FILTER' [ATTR...] # RFC 4515 search, as LDIF or a table of attributes
 ./opsdir.sh report NAME [DN]          # portability, unowned, blast-radius DN, and every domain's reports (consumers,
                                       # keys ENV, drift, ...); dates as of --as-of
@@ -122,6 +123,12 @@ opsdir/                      the package (names no platform, product, vendor or 
                              protocols' standard vocabulary (grant types, auth methods, bindings, NameID formats)
     pki/                     certificates and their expiry
     governance/              owners (including the operator), changes, incidents, runbooks
+    configuration/           config files held setting by setting, bundles, the string census
+    automation/              jobs: cron, timers, scheduled tasks, functions, pipelines (what runs, when, where, owner)
+    compute/                 host baselines per server role, compute groups and clusters per environment, workloads
+                             (server roles run as containers)
+    messaging/               external services (mail relays, SMS, MFA vendors, CAPTCHA), mail senders and sending
+                             identities, identity event streams
     custom/                  fields and record types operators define as entries, composed into the store's schema
   connectors/                the only code that joins parts: registry (discovers domains and adapters through entry
                              points), schema (the store's schema: code fragments + the record's custom definitions),
@@ -150,6 +157,21 @@ An adapter is one cloud provider, product or secret store. It lives in its own i
 3. Tests in the package's `tests/` (the repository-root `pytest.ini` collects them).
 4. The format of every file it renders, `formats=(("ds/*.ldif", "ldif"), ...)`, and the product versions it supports, `products=(("SomeProduct", ">=7,<9"),)`. A format the core doesn't register (a product's own syntax, HCL, ...) is registered by the package that brings it, as a `Format` (`opsdir.core.contract`) under `[project.entry-points."opsdir.formats"]`.
 5. Optionally, schema definitions of its own: `schema=fragment(attributes, classes, arc, origin)` (`opsdir.core.standard`), numbered under an OID arc the package owns, so packages written independently never collide. The store composes them on `upgrade`; the core's published schema file holds only the core and its domains.
+6. Shared helpers instead of its own copies. Before writing a helper, look for it in the core:
+
+   | Need | Use |
+   |---|---|
+   | Parse an imported file without raising (a file that isn't the format is named, not an error) | `opsdir.core.sources`: `json_document(text, kind)`, `parsed(loader, text, errors, kind)` for any other parser (a YAML loader: the core depends on none) |
+   | An import's files by folder (one per server, repository, project) | `opsdir.core.sources`: `by_folder(files)`, `folders(files, roots)`, `under(files, root)` |
+   | A container entry, a DN's RDN value, a DN at or below a base | `opsdir.core.directory`: `ou_entry(dn)`, `rdn_of(dn)`, `within(dn, base)` |
+   | Times as the record holds them (GeneralizedTime, UTC) | `opsdir.core.directory`: `gtime(datetime)`, `gtime_of_iso(text)` |
+   | JSON written as files, JSON an attribute holds, values that may be secret | `opsdir.core.jsondata`: `indented`, `canonical`, `held_json(entry, attr)`, `without_secrets`, `with_values`, `rendered_in_place` |
+   | Entries an importer re-imports (owned attributes replaced, the rest kept) | `opsdir.core.directory`: `merged_attrs(existing, owned, names)` |
+   | A product's config file kept as captured settings | `opsdir.domains.configuration.record`: `captured_file(fmt, prefix, folder, path, text, patterns, role)` |
+   | Cloud inventory: resources, role tags, role map, layout | `opsdir.core.inventory`: `resource`, `tagged_role(tags)`, `of_types(found, *types)`, `layout_import`, `per_file` |
+   | CI pipelines as jobs | `opsdir.domains.automation.pipelines`: `FoundPipeline`, `pipeline_groups`, `environment_name` |
+
+   Anything two packages would write alike belongs in the core (or an `opsdir-base-*` library), public and tested. Module-level tables are read-only (`MappingProxyType`, tuples, `frozenset`).
 
 Installing the package is all it takes: nothing in the core changes. Products build on the standard bases rather than repeat them: a directory adapter renders the standard LDAP files (`opsdir-adapter-ldap`) and a DS-lineage product the lineage's files (`opsdir-base-ds`); a federation adapter renders SAML metadata and OIDC documents at its own endpoint paths (`opsdir-base-saml`, `opsdir-base-oidc`) and maps the standard vocabulary to its API's names. Packages that register an adapter are named `opsdir-adapter-*`, libraries `opsdir-base-*`, formatters `opsdir-format-*`. A new vendor-neutral part of the stack is added the same way as a `Domain` (schema fragment with new, never-reused OID numbers, SQL views, checks, reports, vocabulary, an `order`), registered under `[project.entry-points."opsdir.domains"]`.
 

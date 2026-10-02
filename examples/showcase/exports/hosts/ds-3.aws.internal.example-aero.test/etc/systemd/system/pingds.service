@@ -1,0 +1,12 @@
+[Unit]
+Description=ds
+After=network-online.target
+
+[Service]
+User=ds
+Restart=always
+ExecStart=/opt/ds/bin/start-ds --nodetach
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

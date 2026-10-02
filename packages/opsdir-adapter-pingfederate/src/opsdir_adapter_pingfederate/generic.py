@@ -1,5 +1,5 @@
 """PingFederate resources held as is: every resource of the Admin API bulk export the adapter doesn't model
-(/serverSettings, /oauth/accessTokenMappings, /notificationPublishers, /captchaProviders, ...) is kept item by item,
+(/serverSettings, /oauth/accessTokenMappings, token processors and generators, ...) is kept item by item,
 as the Admin API writes it, so nothing the export holds is left out. Pure.
 
   ou=<resource type, '/' as '.'>,ou=resources,ou=pingfederate     one container per resource type
@@ -13,11 +13,11 @@ role, so a render imports back through the same importer unchanged.
 """
 import json
 
-from opsdir.core.directory import children, get, make_entry, one, rdn_value
-from opsdir.core.jsondata import canonical
+from opsdir.core.directory import children, get, make_entry, merged_attrs, one, ou_entry, rdn_value
+from opsdir.core.jsondata import canonical, held_json
 from opsdir.core.naming import rdn_safe
 from .naming import RESOURCES, named
-from .objects import merged_attrs
+
 from .withheld import filled, withheld_settings
 
 OUTPUT = "pingfederate/other-resources.json"
@@ -50,7 +50,7 @@ def resource_group(d, resource_type, items, patterns):
                  "pingfedWithheld": held}
         return make_entry(dn, ("top", "ciamObject", "pingfedResource"), merged_attrs(get(d, dn), owned, OWNED))
     entries = [entry(name, i) for name, i in usable]
-    container = get(d, base) or make_entry(base, ("top", "organizationalUnit"), {"ou": (slug,)})
+    container = get(d, base) or ou_entry(base)
     return (base, (container, *entries)), \
         (*(f"{resource_type}: an item named {name!r} can't name an entry, or another has the name; not held"
            for name, i in zip(names, items) if (name, i) not in usable),
@@ -78,7 +78,7 @@ def resources_file(m):
     held = held_resources(m.d)
     types = list(dict.fromkeys(one(r, "pingfedResourceType") for r in held))
     ops = [{"operationType": "SAVE", "resourceType": t,
-            "items": [filled(m, r, json.loads(one(r, "pingfedConfig") or "{}"))
+            "items": [filled(m, r, held_json(r, "pingfedConfig"))
                       for r in held if one(r, "pingfedResourceType") == t]} for t in types]
     return {OUTPUT: json.dumps({"operations": ops}, indent=2) + "\n"} if ops else {}
 

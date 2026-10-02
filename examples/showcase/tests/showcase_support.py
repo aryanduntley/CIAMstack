@@ -10,6 +10,7 @@ from opsdir import operations as ops
 from opsdir.cli import import_time, read_texts
 from opsdir.connectors.capture import census_changes
 from opsdir.connectors.importing import preview_import
+from opsdir.core.directory import norm_dn
 from opsdir.store.postgres import read_ldif_files
 from support import build_directory, schema_for
 
@@ -20,7 +21,9 @@ SCRIPTS = SHOWCASE / "scripts"
 # the approved changes the showcase applies, in order: (change id, LDIF file)
 APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ldif"),
             ("CHG-2003", SHOWCASE / "changes" / "CHG-2003-stable-ldaps-name.ldif"),
-            ("CHG-2005", SHOWCASE / "changes" / "CHG-2005-credential-roles.ldif"))
+            ("CHG-2005", SHOWCASE / "changes" / "CHG-2005-credential-roles.ldif"),
+            ("CHG-2011", SHOWCASE / "changes" / "CHG-2011-job-owners.ldif"),
+            ("CHG-2013", SHOWCASE / "changes" / "CHG-2013-corporate-ca.ldif"))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken)
 IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", None),
            ("CHG-2004", "pingidm", SHOWCASE / "exports" / "idm", None),
@@ -28,7 +31,10 @@ IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", None),
            ("CHG-2006", "pingds/config", SHOWCASE / "exports" / "ds-config", "20260920030000Z"),
            ("CHG-2007", "pingds/access-log", SHOWCASE / "exports" / "ds-access-logs", None),
            ("CHG-2008", "pingfederate/bulk", SHOWCASE / "exports" / "pingfederate", None),
-           ("CHG-2008", "pingfederate/node-files", SHOWCASE / "exports" / "pingfederate-nodes", None))
+           ("CHG-2008", "pingfederate/node-files", SHOWCASE / "exports" / "pingfederate-nodes", None),
+           ("CHG-2010", "linux/jobs", SHOWCASE / "exports" / "hosts", None),
+           ("CHG-2010", "github-actions/workflows", SHOWCASE / "exports" / "pipelines", None),
+           ("CHG-2012", "linux/baseline", SHOWCASE / "exports" / "hosts", None))
 # then the census of files that copy the record's values (change id, directory)
 CENSUS = ("CHG-2009", SHOWCASE / "exports" / "census")
 
@@ -70,6 +76,25 @@ def fixture_directory(changes=()):
     schema = schema_for(records)
     return build_directory(schema, records, (*import_records(schema, records),
                                              *read_ldif_files([path for _, path in changes])))
+
+
+def approved_records():
+    """Effect (reads files): the change records of every approved change (APPROVED), in order."""
+    return read_ldif_files([path for _, path in APPROVED])
+
+
+def approved_targets():
+    """Effect (reads files): {normalized DN: change type} of every entry the approved changes touch, as one change set
+    has it (an entry added and then modified is an add; an entry two changes modify is one modify). What tests of
+    change sets expect, so adding an approved change to the showcase needs no test edits."""
+    records = approved_records()
+    return {n: next(r.changetype for r in records if norm_dn(r.dn) == n)
+            for n in dict.fromkeys(norm_dn(r.dn) for r in records)}
+
+
+def approved_attributes(dn):
+    """Effect (reads files): the attributes the approved changes modify on one entry."""
+    return {attr for r in approved_records() if norm_dn(r.dn) == norm_dn(dn) for _, attr, _ in r.mods}
 
 
 def run_snapshot(dsn, out):

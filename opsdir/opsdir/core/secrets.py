@@ -80,10 +80,11 @@ def redact(text, patterns):
 
 
 # ------------------------------------------------------------------ importers: names, randomness, whole texts
-_SECRET_WORDS = {"password", "passwd", "pwd", "passphrase", "secret", "token", "credential", "credentials", "pin"}
-_SECRET_PAIRS = {("api", "key"), ("private", "key"), ("access", "key"), ("secret", "key"), ("client", "secret"),
-                 ("master", "key")}
-_NOT_A_SECRET = {"", "true", "false", "yes", "no", "on", "off", "null", "none"}
+_SECRET_WORDS = frozenset({"password", "passwd", "pwd", "passphrase", "secret", "token", "credential", "credentials",
+                           "pin"})
+_SECRET_PAIRS = frozenset({("api", "key"), ("private", "key"), ("access", "key"), ("secret", "key"),
+                           ("client", "secret"), ("master", "key")})
+_NOT_A_SECRET = frozenset({"", "true", "false", "yes", "no", "on", "off", "null", "none"})
 _PLACEHOLDER = re.compile(r"^\s*(\$\{.*\}|\{\{.*\}\}|%[^%]+%|<[^>]*>|@[^@]+@|[a-z][a-z0-9+.-]*://\S+)\s*$", re.I)
 _TOKEN = re.compile(r"[A-Za-z0-9+/=_-]{32,}")
 _ASSIGNMENT = re.compile(r"([A-Za-z][A-Za-z0-9_.-]*)[\"']?\s*[:=]\s*[\"']?([^\s\"',;]+)")

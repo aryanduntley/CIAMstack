@@ -7,8 +7,9 @@ from ...core.naming import env_label
 from .credentials import binding_for, credentials, environment_of, material_bindings
 from .naming import CERTIFICATES
 
-# attributes through which an entry depends on a certificate (integrations; service names presenting it)
-CERTIFICATE_USE = ("ciamUsesCertificate", "ciamTlsCertificate")
+# attributes through which an entry depends on a certificate (integrations; service names presenting it; host
+# baselines whose truststore adds it)
+CERTIFICATE_USE = ("ciamUsesCertificate", "ciamTlsCertificate", "ciamTrustsCertificate")
 
 
 def _certificate_action(d, as_of, c):

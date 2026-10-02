@@ -1,13 +1,20 @@
 Expected findings check (after changes)
-  blockers planted 13   expected now  7   detected  7   missed 0   unexpected 0
+  blockers planted 17   expected now  9   detected  9   missed 0   unexpected 0
            B1   cleared by CHG-2003: the target environment binds a new LDAPS name (landing-zone DNS default) → gone
            B4   cleared by CHG-2001: no target firewall rule for the MRO export → gone
            B9   cleared by CHG-2005: imported HR database connector names no secret → gone
            B10  cleared by CHG-2005: imported directory connector names no secret → gone
            B11  cleared by CHG-2005: imported grant database store names no secret → gone
            B12  cleared by CHG-2005: imported directory data store names no secret → gone
-  actions  planted 21   expected now 20   detected 20   missed 0   unexpected 0
+           B14  cleared by CHG-2005: imported SMTP publisher names no secret → gone
+           B15  cleared by CHG-2005: imported CAPTCHA provider names no secret → gone
+  actions  planted 29   expected now 23   detected 23   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
+           A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
+           A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone
+           A24  cleared by CHG-2011: the PingFederate engines' audit shipping timer nobody owns → gone
+           A26  cleared by CHG-2013: the engines' truststore adds the corporate root CA, which the record lacks → gone
+           A27  cleared by CHG-2013: the admin node's truststore adds it too → gone
   RESULT: PASS. The planner found every planted problem and nothing else. 'NOT READY' is the correct verdict
           for this deliberately broken environment.
 exit 0

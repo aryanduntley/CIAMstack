@@ -11,6 +11,11 @@ this module places them.
   key       -> ciamKeyRef           matched by reference URI
   storage   -> ciamBackupTarget     matched by storage reference
   egress    -> ciamEgress           matched by provider ref (the NAT gateway)
+  job       -> ciamJobBinding       matched by provider ref (a function, a pipeline: what realizes a job)
+  compute   -> ciamComputeGroup     matched by provider ref (an autoscaling group, a scale set)
+  cluster   -> ciamCluster          matched by provider ref (a managed Kubernetes cluster)
+  sending   -> ciamSendingIdentity  matched by provider ref (an email sending identity for a domain)
+  stream    -> ciamStreamBinding    matched by provider ref (a queue, topic or bus carrying an event stream)
 What a source says replaces the record's value for the attributes it gives; the rest of the entry is kept. A resource
 the record doesn't have is added only when the source names its role (a tag), and is named otherwise: a role can't be
 guessed. A binding an overlay inherits from its base is left to the base environment.
@@ -23,10 +28,11 @@ itself, the source's is kept.
 import json
 import re
 from functools import reduce
+from types import MappingProxyType
 from typing import Mapping, NamedTuple, Optional
 
 from .contract import Imported
-from .directory import children, get, make_entry, one, rdn_value
+from .directory import children, get, make_entry, one, ou_entry, rdn_value
 from .environment import env_dn
 from .overlays import lineage
 
@@ -35,10 +41,12 @@ from .overlays import lineage
 Resource = NamedTuple("Resource", [("kind", str), ("ref", str), ("attrs", Mapping), ("links", Mapping),
                                    ("name", Optional[str]), ("role", Optional[str])])
 
-CLASSES = {"network": "ciamNetwork", "subnet": "ciamSubnetBinding", "server": "ciamServer",
-           "service": "ciamServiceName", "firewall": "ciamFirewallRule", "secret": "ciamSecretRef",
-           "key": "ciamKeyRef", "storage": "ciamBackupTarget", "egress": "ciamEgress"}
-BY_REF = ("network", "subnet", "egress")       # kinds the record matches by the provider's reference
+CLASSES = MappingProxyType({"network": "ciamNetwork", "subnet": "ciamSubnetBinding", "server": "ciamServer",
+                            "service": "ciamServiceName", "firewall": "ciamFirewallRule", "secret": "ciamSecretRef",
+                            "key": "ciamKeyRef", "storage": "ciamBackupTarget", "egress": "ciamEgress",
+                            "job": "ciamJobBinding", "compute": "ciamComputeGroup", "cluster": "ciamCluster",
+                            "sending": "ciamSendingIdentity", "stream": "ciamStreamBinding"})
+BY_REF = ("network", "subnet", "egress", "job", "compute", "cluster", "sending", "stream")   # matched by provider ref
 ROLE_MAP = "roles.json"                         # <cloud>/<env>/roles.json: roles for what a cloud can't tag
 _UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
 
@@ -97,10 +105,11 @@ def _match(r, entries):
 
 
 # what a new entry of each kind must have (its class's required attributes, beyond cn and its role)
-REQUIRED = {"network": ("ciamCidr",), "subnet": ("ciamCidr",), "server": ("ciamHostname", "ciamSubnet"),
-            "service": ("ciamFqdn", "ciamTargetRole", "ciamPort"), "firewall": ("ciamSourceCidr", "ciamPort",
-                                                                             "ciamTargetRole"),
-            "secret": ("ciamRefUri",), "key": ("ciamRefUri",), "storage": ("ciamStorageRef",), "egress": ("ciamCidr",)}
+REQUIRED = MappingProxyType({
+    "network": ("ciamCidr",), "subnet": ("ciamCidr",), "server": ("ciamHostname", "ciamSubnet"),
+    "service": ("ciamFqdn", "ciamTargetRole", "ciamPort"), "firewall": ("ciamSourceCidr", "ciamPort", "ciamTargetRole"),
+    "secret": ("ciamRefUri",), "key": ("ciamRefUri",), "storage": ("ciamStorageRef",), "egress": ("ciamCidr",),
+    "job": (), "compute": ("ciamTargetRole",), "cluster": (), "sending": ("ciamSenderDomain",), "stream": ()})
 
 
 def _entry(dn, r, held, links, name):
@@ -195,8 +204,30 @@ def _environments(files, suffix):
             tuple(p for p in found if p not in placed))
 
 
+def tagged_role(tags):
+    """The role a cloud resource's tags name: Role, else BindingRole (None when it has neither)."""
+    return tags.get("Role") or tags.get("BindingRole")
+
+
+def compute_roles(tags):
+    """(binding role, server role) a compute group's tags name: the server role it runs is its tag Role, its binding
+    role its tag BindingRole, else compute-<server role> (so every cloud's group for a role binds the same role)."""
+    target = tags.get("Role")
+    return tags.get("BindingRole") or (f"compute-{target}" if target else None), target
+
+
+def cluster_role(tags):
+    """The binding role a managed cluster's tags name (BindingRole, else Role), else cluster."""
+    return tagged_role(tags) or "cluster"
+
+
+def of_types(found, *types):
+    """The attributes of each found (resource type, attributes) pair of one of types, in order."""
+    return tuple(a for t, a in found if t in types)
+
+
 def _bindings_container(spec):
-    return make_entry(f"ou=bindings,{env_dn(spec)}", ("top", "organizationalUnit"), {"ou": ("bindings",)})
+    return ou_entry(f"ou=bindings,{env_dn(spec)}")
 
 
 def read_role_map(text):

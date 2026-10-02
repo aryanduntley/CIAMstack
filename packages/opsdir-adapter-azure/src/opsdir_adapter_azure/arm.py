@@ -26,12 +26,13 @@ from collections import Counter
 
 from opsdir.core.contract import Importer
 from opsdir.core.inventory import layout_import
+from opsdir.core.sources import json_document
 from .cli import items_resources, kind_of
 from .inventory import PROVIDER, arm_segment
 
 EVALUATED = ("parameters", "variables", "concat", "format", "resourceId", "subscription", "resourceGroup", "equals",
              "if", "toLower", "toUpper", "string", "replace", "split", "first", "last")
-ACCOUNT_WIDE = ("secret", "key", "storage")
+ACCOUNT_WIDE = ("secret", "key", "storage", "job")
 READ_TYPES = ("microsoft.network/virtualnetworks", "microsoft.network/virtualnetworks/subnets",
               "microsoft.compute/virtualmachines", "microsoft.network/networkinterfaces",
               "microsoft.network/loadbalancers", "microsoft.network/publicipaddresses",
@@ -39,7 +40,7 @@ READ_TYPES = ("microsoft.network/virtualnetworks", "microsoft.network/virtualnet
               "microsoft.network/networksecuritygroups", "microsoft.network/networksecuritygroups/securityrules",
               "microsoft.network/natgateways", "microsoft.compute/diskencryptionsets",
               "microsoft.storage/storageaccounts/blobservices/containers", "microsoft.keyvault/vaults/secrets",
-              "microsoft.keyvault/vaults/keys")
+              "microsoft.keyvault/vaults/keys", "microsoft.web/sites", "microsoft.web/sites/functions")
 PLACEHOLDER = ("unknown-subscription", "unknown-group")   # IDs without a deployment: links within it still resolve
 SUB_RESOURCES = ("subnets", "ipConfigurations", "frontendIPConfigurations", "backendAddressPools",
                  "loadBalancingRules", "probes", "securityRules")
@@ -242,12 +243,6 @@ def _items(template, ctx, produced):
 # ------------------------------------------------------------------ a deployment folder
 def _documents(texts):
     """({folder: {"template": …, "deployment": …, "parameters": …}}, notices): each folder's documents by shape."""
-    def load(text):
-        try:
-            return json.loads(text)
-        except ValueError:
-            return None
-
     def kind(doc):
         if not isinstance(doc, dict):
             return None
@@ -259,7 +254,7 @@ def _documents(texts):
         if "/deployments/" in str(doc.get("id", "")).lower() and isinstance(doc.get("properties"), dict):
             return "deployment"
         return None
-    found = [(p.rsplit("/", 1)[0] if "/" in p else "", p, load(t)) for p, t in sorted(texts.items())]
+    found = [(p.rsplit("/", 1)[0] if "/" in p else "", p, json_document(t)) for p, t in sorted(texts.items())]
     typed = [(f, p, kind(doc), doc) for f, p, doc in found]
     folders = dict.fromkeys(f for f, _, k, _ in typed if k)
     return ({f: {k: doc for f2, _, k, doc in typed if f2 == f and k} for f in folders},

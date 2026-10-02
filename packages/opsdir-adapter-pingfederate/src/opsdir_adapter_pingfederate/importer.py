@@ -32,46 +32,53 @@ role) is kept. Where PingFederate's names are coarser than the standard ones (SE
 methods), the record's value is kept when it is one of them. Client secrets and data store passwords are never read.
 Adapters, token managers, policies and where clients, grants and sessions are stored are named, read later.
 """
-import datetime as dt
-import json
 import re
 from functools import reduce
+from types import MappingProxyType
 
 from opsdir.core.contract import Imported, Importer
-from opsdir.core.directory import children, get, make_entry, norm_dn, one, rdn_value, subtree, values
+from opsdir.core.directory import (fingerprint, get, gtime_of_iso, make_entry, norm_dn, one, ou_entry,
+                                   rdn_value, subtree, values, within)
+from opsdir.core.sources import json_document
 from opsdir.domains.directory.user_schema import attribute_records
 from opsdir.domains.federation.naming import INTEGRATIONS
 from opsdir.domains.federation.services import identity_services, integrations
+from opsdir.domains.messaging.naming import EXTERNAL_SERVICES, MAIL_SENDERS
+from opsdir.domains.pki.credentials import certificates_by_fingerprint
 from opsdir.domains.pki.naming import CERTIFICATES
 from .datastores import data_store_groups
-from .naming import (CONTRACTS, DATA_STORES, FRAGMENTS, IDP_ADAPTERS, OIDC_POLICIES, PINGFEDERATE, POLICIES,
-                     SELECTORS, SETTINGS, TOKEN_MANAGERS, VALIDATORS)
+from .naming import (CAPTCHA_PROVIDERS, CONTRACTS, DATA_STORES, FRAGMENTS, IDP_ADAPTERS, NOTIFICATION_PUBLISHERS,
+                     OIDC_POLICIES, PINGFEDERATE, POLICIES, SELECTORS, SETTINGS, TOKEN_MANAGERS, VALIDATORS)
 from .generic import resource_groups
 from .naming import RESOURCES as RESOURCES_BRANCH, STORAGE
 from .oauth import client_links, oauth_groups
+from .messaging import messaging_groups
 from .objects import CONNECTION, KEY_PAIR, ref_dn
 from .plugins import KINDS, plugin_groups
 from .policies import policy_groups
 from .naming import SERVER_ROLES
 from .render import BINDINGS, CLIENT_AUTH, GRANT_TYPES
 
-RESOURCES = {"/idp/spConnections": "sp", "/sp/idpConnections": "idp", "/oauth/clients": "client",
-             "/keyPairs/signing": "signing", "/keyPairs/sslServer": "ssl", "/dataStores": "datastore",
-             **{k.resource: kind for kind, k in KINDS.items()}, "/authenticationPolicyContracts": "contract",
-             "/authenticationPolicies/default": "policy", "/authenticationPolicies/fragments": "fragment",
-             "/oauth/openIdConnect/policies": "oidc-policy", "/oauth/authServerSettings": "auth-server"}
-RENDERED = {"sp-connections.json": "sp", "idp-connections.json": "idp", "oidc-clients.json": "client",
-            "data-stores.json": "datastore", **{k.output: kind for kind, k in KINDS.items()},
-            "authentication-policy-contracts.json": "contract", "authentication-policies.json": "policy",
-            "authentication-policy-fragments.json": "fragment", "oidc-policies.json": "oidc-policy",
-            "auth-server-settings.json": "auth-server"}
+RESOURCES = MappingProxyType({
+    "/idp/spConnections": "sp", "/sp/idpConnections": "idp", "/oauth/clients": "client",
+    "/keyPairs/signing": "signing", "/keyPairs/sslServer": "ssl", "/dataStores": "datastore",
+    **{k.resource: kind for kind, k in KINDS.items()}, "/authenticationPolicyContracts": "contract",
+    "/authenticationPolicies/default": "policy", "/authenticationPolicies/fragments": "fragment",
+    "/oauth/openIdConnect/policies": "oidc-policy", "/oauth/authServerSettings": "auth-server"})
+RENDERED = MappingProxyType({
+    "sp-connections.json": "sp", "idp-connections.json": "idp", "oidc-clients.json": "client",
+    "data-stores.json": "datastore", **{k.output: kind for kind, k in KINDS.items()},
+    "authentication-policy-contracts.json": "contract", "authentication-policies.json": "policy",
+    "authentication-policy-fragments.json": "fragment", "oidc-policies.json": "oidc-policy",
+    "auth-server-settings.json": "auth-server"})
 # the kinds of objects other objects name by id (opsdir_adapter_pingfederate.objects)
 NAMED_KINDS = ("datastore", *KINDS, "contract", "fragment", "oidc-policy")
-KEY_ROLES = {"signing": ("saml-signing", "pf-signing-key"), "ssl": ("tls-server", "sso-tls-keystore")}
-OWNED = {"saml2-sp": ("ciamProtocolType", "ciamEntityId", "ciamAcsUrl", "ciamSamlBinding"),
-         "saml2-idp": ("ciamProtocolType", "ciamEntityId"),
-         "oidc-client": ("ciamProtocolType", "ciamClientId", "ciamRedirectUri", "ciamGrantType", "ciamPkceRequired",
-                         "ciamTokenAuthMethod", "ciamScope")}
+KEY_ROLES = MappingProxyType({"signing": ("saml-signing", "pf-signing-key"), "ssl": ("tls-server", "sso-tls-keystore")})
+OWNED = MappingProxyType({
+    "saml2-sp": ("ciamProtocolType", "ciamEntityId", "ciamAcsUrl", "ciamSamlBinding"),
+    "saml2-idp": ("ciamProtocolType", "ciamEntityId"),
+    "oidc-client": ("ciamProtocolType", "ciamClientId", "ciamRedirectUri", "ciamGrantType", "ciamPkceRequired",
+                    "ciamTokenAuthMethod", "ciamScope")})
 _UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
 
 
@@ -82,20 +89,13 @@ def _inverse(mapping):
 PF_GRANTS, PF_AUTH, PF_BINDINGS = _inverse(GRANT_TYPES), _inverse(CLIENT_AUTH), _inverse(BINDINGS)
 # where one PingFederate name stands for several standard ones and the record says nothing yet: the standard's default
 # (RFC 7591 section 2: client_secret_basic when a client doesn't say; RFC 8705: tls_client_auth, PKI-bound)
-DEFAULTS = {"SECRET": "client_secret_basic", "CLIENT_CERT": "tls_client_auth"}
+DEFAULTS = MappingProxyType({"SECRET": "client_secret_basic", "CLIENT_CERT": "tls_client_auth"})
 
 
 # ------------------------------------------------------------------ reading the export
-def _json(text):
-    try:
-        return json.loads(text)
-    except ValueError:
-        return None
-
-
 def resources(files):
     """({kind: items}, {resource type not modeled: items}, PingFederate version, unreadable paths) from the export."""
-    parsed = {p: _json(t) for p, t in files.items() if p.endswith(".json")}
+    parsed = {p: json_document(t) for p, t in files.items() if p.endswith(".json")}
     bulk = [op for doc in parsed.values() if isinstance(doc, dict)
             for op in doc.get("operations") or () if isinstance(op, dict)]
     rendered = [(RENDERED[p.rsplit("/", 1)[-1]], item) for p, doc in parsed.items()
@@ -111,21 +111,6 @@ def resources(files):
             next((doc["metadata"].get("pfVersion") for doc in parsed.values()
                   if isinstance(doc, dict) and isinstance(doc.get("metadata"), dict)), None),
             tuple(p for p, doc in parsed.items() if doc is None))
-
-
-# ------------------------------------------------------------------ values
-def fingerprint(v):
-    """A fingerprint as the record writes it: uppercase hex pairs joined by colons."""
-    h = re.sub(r"[^0-9A-Fa-f]", "", v or "").upper()
-    return ":".join(h[i:i + 2] for i in range(0, len(h), 2))
-
-
-def _gtime(v):
-    try:
-        return dt.datetime.fromisoformat((v or "").replace("Z", "+00:00")).astimezone(dt.timezone.utc) \
-            .strftime("%Y%m%d%H%M%SZ")
-    except ValueError:
-        return None
 
 
 def _name(v, taken):
@@ -146,12 +131,12 @@ def _standard(pf_values, table, held):
 # ------------------------------------------------------------------ certificates
 def _cert_facts(view):
     """Certificate facts from a PingFederate certificate or key pair view (None without fingerprint or expiry)."""
-    fp, expires = fingerprint(view.get("sha256Fingerprint")), _gtime(view.get("expires"))
+    fp, expires = fingerprint(view.get("sha256Fingerprint")), gtime_of_iso(view.get("expires"))
     if not fp or not expires:
         return None
     subject, issuer = view.get("subjectDN"), view.get("issuerDN")
     return {"ciamFingerprint": (fp,), "ciamNotAfter": (expires,),
-            "ciamNotBefore": tuple(filter(None, (_gtime(view.get("validFrom")),))),
+            "ciamNotBefore": tuple(filter(None, (gtime_of_iso(view.get("validFrom")),))),
             "ciamSubject": tuple(filter(None, (subject,))),
             "ciamIssuer": ("self-signed",) if issuer and issuer == subject else tuple(filter(None, (issuer,))),
             "ciamSubjectAltName": tuple(view.get("subjectAlternativeNames") or ())}
@@ -175,7 +160,7 @@ def certificate_entries(d, found):
     """{fingerprint: certificate entry} for PingFederate's own key pairs (carrying the key pair's id: pingfedKeyPair)
     and the certificates of its connections (a partner identity provider's signing certificates; a service provider's
     own signing or encryption certificates)."""
-    held = {fingerprint(one(c, "ciamFingerprint")): c for c in children(d, CERTIFICATES, "ciamCertificate")}
+    held = certificates_by_fingerprint(d)
     views = (*((kp, *KEY_ROLES[kind], f"pf-{kp.get('id')}", kp.get("id")) for kind in ("signing", "ssl")
                for kp in found[kind]),
              *((c.get("certView") or {}, "partner-signing", None, f"{conn.get('id') or conn.get('name')}-signing", None)
@@ -232,7 +217,7 @@ def _claims(d, dn, held, contract, fulfillment, user_attrs, label):
                                    if source[n].get("x-opsdir-transform") else {})})
                     for n, attr in placed if attr is not None and not _UNSAFE.search(n)
                     for cdn in (f"cn={n},{base}",))
-    container = old.get(norm_dn(base)) or make_entry(base, ("top", "organizationalUnit"), {"ou": ("claims",)})
+    container = old.get(norm_dn(base)) or ou_entry(base)
     missing = [f"{n} ({source[n].get('value') or 'no source attribute'})" for n, attr in placed if attr is None]
     return ((container, *entries) if entries else ()), \
         ((f"{label}: claims from values the record has no user-schema record for, not recorded: "
@@ -274,7 +259,7 @@ def _others(d, dn, held, replaced):
     mine = {e.norm for e in replaced}
     claims_base = norm_dn(f"ou=claims,{dn}")
     return tuple(e for e in (subtree(d, dn) if held else ()) if e.norm != norm_dn(dn) and e.norm not in mine
-                 and not (replaced and (e.norm == claims_base or e.norm.endswith("," + claims_base))))
+                 and not (replaced and within(e.norm, claims_base)))
 
 
 def _idp(d, idp, certs, held, dn, name, served):
@@ -356,19 +341,24 @@ def read_export(files, d, patterns, at=None):
     policies, policy_notices = policy_groups(d, found, exported)
     oauth, oauth_notices = oauth_groups(d, found, patterns, exported)
     held, held_notices = resource_groups(d, unread, patterns)
+    messages, message_notices = messaging_groups(d, found)
     nothing = not any(found.values()) and not unread
     branches = (*((VALIDATORS,) if found["validator"] else ()), *((IDP_ADAPTERS,) if found["idp-adapter"] else ()),
                 *((SELECTORS,) if found["selector"] else ()), *((CONTRACTS,) if found["contract"] else ()),
                 *((POLICIES,) if found["policy"] else ()), *((FRAGMENTS,) if found["fragment"] else ()),
                 *((TOKEN_MANAGERS,) if found["access-token-manager"] else ()),
+                *((NOTIFICATION_PUBLISHERS,) if found["notification-publisher"] else ()),
+                *((CAPTCHA_PROVIDERS,) if found["captcha-provider"] else ()),
+                *((EXTERNAL_SERVICES,) if messages else ()),
+                *((MAIL_SENDERS,) if any(dn.endswith(MAIL_SENDERS) for dn, _ in messages) else ()),
                 *((OIDC_POLICIES,) if found["oidc-policy"] else ()), *((SETTINGS,) if found["auth-server"] else ()),
                 *((RESOURCES_BRANCH,) if unread else ()))
     return Imported(
-        containers=tuple(make_entry(b, ("top", "organizationalUnit"), {"ou": (b.split(",", 1)[0].split("=", 1)[1],)})
-                         for b in (INTEGRATIONS, CERTIFICATES, PINGFEDERATE, DATA_STORES, *branches)),
-        groups=(*((c.dn, (c,)) for c in certs.values()), *groups, *stores, *plugins, *policies, *oauth, *held),
+        containers=tuple(ou_entry(b) for b in (INTEGRATIONS, CERTIFICATES, PINGFEDERATE, DATA_STORES, *branches)),
+        groups=(*((c.dn, (c,)) for c in certs.values()), *groups, *stores, *plugins, *policies, *oauth, *held,
+                *messages),
         notices=(*((f"exported from PingFederate {version}",) if version else ()), *notices, *store_notices,
-                 *plugin_notices, *policy_notices, *oauth_notices,
+                 *plugin_notices, *policy_notices, *oauth_notices, *message_notices,
                  *held_notices,
                  *(("where PingFederate keeps OAuth clients, grants and sessions is set in its nodes' hivemodule.xml, not "
                     "the Admin API: import the nodes' files with pingfederate/node-files",)

@@ -91,6 +91,34 @@
       "match": "Role `pf-cluster-discovery`",
       "planted": "the target binds no PingFederate cluster discovery: the nodes' tcp.xml uses S3 on AWS",
       "cleared_by": null
+    },
+    {
+      "id": "B14",
+      "area": "PingFederate",
+      "match": "Notification publisher `smtp` has withheld credentials but no credential role",
+      "planted": "imported SMTP publisher names no secret",
+      "cleared_by": "CHG-2005"
+    },
+    {
+      "id": "B15",
+      "area": "PingFederate",
+      "match": "CAPTCHA provider `recaptcha` has withheld credentials but no credential role",
+      "planted": "imported CAPTCHA provider names no secret",
+      "cleared_by": "CHG-2005"
+    },
+    {
+      "id": "B16",
+      "area": "Mail",
+      "match": "Sender `noreply@example-aero.test`: target/prod's sending identity for example-aero.test isn't DKIM-verified",
+      "planted": "the target's Communication Services domain isn't DKIM-verified yet: reset mail lands in spam",
+      "cleared_by": null
+    },
+    {
+      "id": "B17",
+      "area": "Binding",
+      "match": "Role `audit-events` is bound in source/prod but not in target/prod",
+      "planted": "no bus carries the identity audit stream in the target",
+      "cleared_by": null
     }
   ],
   "actions": [
@@ -239,6 +267,62 @@
       "area": "PingFederate",
       "match": "Data store `user-directory` reaches a fixed host",
       "planted": "PingFederate's LDAP data store lists ds-1 by hostname next to the LDAPS service",
+      "cleared_by": null
+    },
+    {
+      "id": "A22",
+      "area": "Job",
+      "match": "Job `ds-nightly-export` has no owner",
+      "planted": "the MRO nightly export on ds-2's cron nobody owns",
+      "cleared_by": "CHG-2011"
+    },
+    {
+      "id": "A23",
+      "area": "Job",
+      "match": "Job `github-actions-ciam-ops-directory-backup` has no owner",
+      "planted": "the nightly directory backup pipeline nobody owns",
+      "cleared_by": "CHG-2011"
+    },
+    {
+      "id": "A24",
+      "area": "Job",
+      "match": "Job `pf-engine-pf-audit-ship` has no owner",
+      "planted": "the PingFederate engines' audit shipping timer nobody owns",
+      "cleared_by": "CHG-2011"
+    },
+    {
+      "id": "A25",
+      "area": "Host",
+      "match": "Servers of role `ds` pin 1 name(s) in /etc/hosts",
+      "planted": "ds-2 pins the legacy reports host to its address",
+      "cleared_by": null
+    },
+    {
+      "id": "A26",
+      "area": "Host",
+      "match": "Servers of role `pf-engine` trust 1 certificate(s)",
+      "planted": "the engines' truststore adds the corporate root CA, which the record lacks",
+      "cleared_by": "CHG-2013"
+    },
+    {
+      "id": "A27",
+      "area": "Host",
+      "match": "Servers of role `pf-admin` trust 1 certificate(s)",
+      "planted": "the admin node's truststore adds it too",
+      "cleared_by": "CHG-2013"
+    },
+    {
+      "id": "A28",
+      "area": "Compute",
+      "match": "Compute group `vmss-pf-engine` (role `pf-engine`) in target/prod spans 1 zone(s)",
+      "planted": "the target's engine scale set sits in one zone; the source spreads them over two",
+      "cleared_by": null
+    },
+    {
+      "id": "A29",
+      "area": "Mail",
+      "match": "Sender `noreply@example-aero.test`: target/prod's DMARC policy for example-aero.test is quarantine",
+      "planted": "the target's DMARC policy is weaker than the source's reject",
       "cleared_by": null
     }
   ]

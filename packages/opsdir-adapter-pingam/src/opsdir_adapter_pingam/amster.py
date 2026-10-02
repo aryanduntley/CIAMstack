@@ -10,14 +10,14 @@ entityId}, "data": {...}}) read into the record. Pure.
 A realm's entities are imported only when the record has the realm: an identity service with pingamRealmPath. Values
 that may be secret are withheld and named (client secrets are never read); the environment supplies them.
 """
-import json
 
 from opsdir.core.contract import Imported, Importer
-from opsdir.core.directory import make_entry, one, subtree
+from opsdir.core.directory import make_entry, one, ou_entry, rdn_of, subtree
 from opsdir.core.formats import JSON
 from opsdir.core.jsondata import canonical, without_secrets
-from opsdir.domains.configuration.naming import CONFIG_FILES, file_dn
-from opsdir.domains.configuration.record import file_entries
+from opsdir.core.sources import json_document
+from opsdir.domains.configuration.naming import CONFIG_FILES
+from opsdir.domains.configuration.record import captured_file
 from opsdir.domains.federation.naming import INTEGRATIONS
 from opsdir.domains.federation.schema import GRANT_TYPES, TOKEN_AUTH_METHODS
 from opsdir.domains.federation.services import integrations
@@ -33,11 +33,8 @@ OWNED_CLIENT_ATTRS = ("ciamProtocolType", "ciamClientId", "ciamRedirectUri", "ci
 
 # ------------------------------------------------------------------ reading the export
 def _parse(text):
-    try:
-        value = json.loads(text)
-    except ValueError:
-        return None
-    return value if isinstance(value, dict) and isinstance(value.get("metadata"), dict) \
+    value = json_document(text, dict)
+    return value if value is not None and isinstance(value.get("metadata"), dict) \
         and isinstance(value.get("data"), dict) else None
 
 
@@ -149,9 +146,7 @@ def _policy(set_dn, data, patterns):
 
 # ------------------------------------------------------------------ everything else: captured config files
 def _captured(path, text, patterns):
-    name = "am." + path.replace("/", ".")
-    entries, notices = file_entries(JSON, text, name, f"am/{path}", patterns, SERVER_ROLES[0])
-    return file_dn(name), entries, notices
+    return captured_file(JSON, "am", "am", path, text, patterns, SERVER_ROLES[0])
 
 
 # ------------------------------------------------------------------ composing
@@ -181,19 +176,15 @@ def _in_realm(d, service, path, found, files, patterns):
                if kind not in READ_AS and data.get("_id") not in used))
     unsafe = [data.get("_id") for _, _, kind, data in mine if kind in ("OAuth2Clients", "AuthTree", "Applications")
               and not dn_safe(data.get("_id") or "")]
-    kept = tuple(p for p in parts if dn_safe(p[0].split(",", 1)[0].split("=", 1)[1]))
+    kept = tuple(p for p in parts if dn_safe(rdn_of(p[0])))
     return (tuple((scope, entries) for scope, entries, _ in kept),
             (*(n for _, _, notices in kept for n in notices),
              *(f"{path}: {name!r} can't be a record name (it holds a DN special character); not imported"
                for name in unsafe)))
 
 
-def _ou(dn):
-    return make_entry(dn, ("top", "organizationalUnit"), {"ou": (dn.split(",", 1)[0].split("=", 1)[1],)})
-
-
 def _containers(d, services):
-    return tuple(_ou(dn) for dn in (PINGAM, JOURNEYS, POLICY_SETS, INTEGRATIONS, CONFIG_FILES,
+    return tuple(ou_entry(dn) for dn in (PINGAM, JOURNEYS, POLICY_SETS, INTEGRATIONS, CONFIG_FILES,
                                    *(realm_container(b, one(s, "cn")) for s in services for b in (JOURNEYS, POLICY_SETS))))
 
 

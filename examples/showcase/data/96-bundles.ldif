@@ -18,3 +18,15 @@ ciamRepoPath: pingfederate/server/default/conf/template
 ciamSha256: 5d649f2453f646aa1d3387676809eed6d908440ffb3c3905a811ec628d5b101a
 ciamTargetRole: pf-engine
 description: Branded sign-in pages
+
+dn: cn=ops-scripts,ou=bundles,dc=ciam-ops
+objectClass: top
+objectClass: ciamBundle
+cn: ops-scripts
+ciamBundleKind: script
+ciamBundleVersion: 2026.09
+ciamDeployPath: /opt/scripts
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRepoPath: ops/scripts
+ciamSha256: dcb35445873807456fa4a47638d7bed5e3bbc6fe550fedb5ee11feffce76e42f
+description: Operations scripts the servers' jobs run

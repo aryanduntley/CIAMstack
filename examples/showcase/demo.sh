@@ -29,6 +29,11 @@ od import --change CHG-2008 pingfederate/bulk exports/pingfederate
 od import --change CHG-2008 pingfederate/node-files exports/pingfederate-nodes
 echo "-- where the record's values are copied into files (the census): each file and line; secrets flagged, not stored"
 od census --change CHG-2009 exports/census
+echo "-- the platform's hidden automation: servers' cron and timers, CI pipelines"
+od import --change CHG-2010 linux/jobs exports/hosts
+od import --change CHG-2010 github-actions/workflows exports/pipelines
+echo "-- what the servers run beyond the products: each role's host baseline, from the same servers' files"
+od import --change CHG-2012 linux/baseline exports/hosts
 echo "-- each environment's declared stack against the installed adapters"; od check
 echo "-- what each kind of value is: intent, contract, binding, secret reference, observed, meta"; od report portability
 
@@ -53,6 +58,11 @@ step "4. The record extended by its operators, and the files it holds"
 echo "-- custom fields and record types";    od report custom
 echo "-- config files held in the record";   od report capture
 echo "-- bundles deployed as they are";      od report bundles
+echo "-- jobs: what runs, when, where, who owns it"; od report jobs
+echo "-- host baselines: OS, Java and its truststore additions, limits, agents, per server role"; od report baselines
+echo "-- compute groups and clusters, per environment"; od report compute
+echo "-- outside services, the addresses mail comes from, where identity events go"
+od report external-services; od report mail-senders; od report event-streams
 echo "-- run.properties rebuilt from the record for production"; od file run.properties --env source/prod
 
 step "5. Drift and hygiene"
@@ -97,6 +107,8 @@ rm -rf out/before && cp -r out/target-prod out/before
 od modify --change CHG-2001 changes/CHG-2001-mro-firewall-target.ldif
 od modify --change CHG-2003 changes/CHG-2003-stable-ldaps-name.ldif
 od modify --change CHG-2005 changes/CHG-2005-credential-roles.ldif
+od modify --change CHG-2011 changes/CHG-2011-job-owners.ldif
+od modify --change CHG-2013 changes/CHG-2013-corporate-ca.ldif
 od history
 od render target/prod >/dev/null
 diff -ru out/before/terraform out/target-prod/terraform

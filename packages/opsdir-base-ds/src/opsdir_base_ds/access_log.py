@@ -19,14 +19,14 @@ recorded, unless the record already names it as a consumer. What the record says
 """
 import datetime as dt
 import ipaddress
-import json
 import re
 from collections import Counter
 from functools import reduce
 from itertools import groupby
 from typing import NamedTuple
 
-from opsdir.core.directory import children, make_entry, norm_dn, one
+from opsdir.core.directory import children, gtime, make_entry, norm_dn, one
+from opsdir.core.sources import json_document
 from opsdir.domains.directory.naming import CONSUMERS
 from .observe import user_attributes
 
@@ -46,14 +46,6 @@ Op = NamedTuple("Op", [("identity", str), ("kind", str), ("source", str), ("tls"
 
 
 # ------------------------------------------------------------------ reading the log
-def _json(line):
-    try:
-        v = json.loads(line)
-    except ValueError:
-        return None
-    return v if isinstance(v, dict) else None
-
-
 def _time(v):
     try:
         return dt.datetime.fromisoformat((v or "").replace("Z", "+00:00")).astimezone(dt.timezone.utc)
@@ -63,7 +55,7 @@ def _time(v):
 
 def _events(files):
     """(connection key, event) of every DJ-LDAP event, in file order; and the lines that aren't JSON events."""
-    parsed = tuple((path, _json(line)) for path in sorted(files) if LOG_FILE.search(path)
+    parsed = tuple((path, json_document(line, dict)) for path in sorted(files) if LOG_FILE.search(path)
                    for line in files[path].splitlines() if line.strip())
     events = tuple(((path.rsplit("/", 1)[0] if "/" in path else "", (e.get("request") or {}).get("connId")), e)
                    for path, e in parsed if e and str(e.get("eventName", "")).startswith("DJ-LDAP"))
@@ -112,10 +104,6 @@ def operations(files):
 
 
 # ------------------------------------------------------------------ what one identity did
-def _gtime(at):
-    return at.strftime("%Y%m%d%H%M%SZ")
-
-
 def _sources(addresses):
     """Client addresses as CIDRs: a /24 (IPv4) or /64 (IPv6) when several addresses share it, else the address."""
     ips = sorted({ipaddress.ip_address(a) for a in addresses if _is_ip(a)}, key=lambda ip: (ip.version, ip))
@@ -156,8 +144,8 @@ def observed(ops, days, user_attrs):
              "ciamUnindexedSearchesPerDay": (str(round(sum(o.unindexed for o in ops) / days)),),
              "ciamTlsOnly": ("TRUE" if all(o.tls for o in ops) else "FALSE",),
              "ciamPeakOpsPerSec": (str(_peak(ops)),),
-             "ciamFirstSeen": (_gtime(min(o.at for o in ops)),),
-             "ciamLastSeen": (_gtime(max(o.at for o in ops)),)}
+             "ciamFirstSeen": (gtime(min(o.at for o in ops)),),
+             "ciamLastSeen": (gtime(max(o.at for o in ops)),)}
     return ({k: v for k, v in attrs.items() if v},
             tuple(n for n in names if n.lower() not in user_attrs), any(a in ALL_ATTRS for o in ops for a in o.attrs))
 

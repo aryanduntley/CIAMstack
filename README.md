@@ -12,7 +12,7 @@ It is built for the ForgeRock/Ping stack on AWS and Azure today, and nothing in 
 
 - **Load what you have.** Describe the platform as LDIF (`opsdir load`), or read a product's own export straight in: directory servers' configuration (`config.ldif` and its archived versions) and access logs (which applications bind, from where, reading what), a PingFederate bulk export, AWS and Azure Terraform state, CLI output, CloudFormation stacks or ARM/Bicep deployments, a PingAM Amster export, a PingIDM project, a PingGateway configuration (`opsdir import`). Secret values found along the way are withheld and reported, never stored.
 - **Hold your config files, not just point at them.** `opsdir capture` keeps a configuration file setting by setting and `opsdir file` rebuilds it for any environment; `opsdir bundle` records code, scripts and templates by repo path and SHA-256, and `opsdir verify` checks them against a checkout.
-- **Find where values are copied.** `opsdir census` scans servers' and applications' files (scripts, configs, `/etc/hosts`, templates) for the values the record holds (hostnames, addresses, service names, bind and base DNs, URLs, fingerprints, cloud resource IDs) and records each file and line, pointing at the entry the value belongs to. Secret material in them is flagged by line, never stored.
+- **Find where values are copied.** `opsdir census` scans servers' and applications' files (scripts, configs, `/etc/hosts`, templates) for the values the record holds (hostnames, addresses, service names, bind and base DNs, URLs, fingerprints, cloud resource IDs) and for terms you define (a field marked as a census term: an old brand or domain, an account ID, a bucket name), and records each file and line, pointing at the entry the value belongs to. Secret material in them is flagged by line, never stored. `--replace` makes a scan the whole census, dropping files no longer there.
 - **Know who depends on what.** Applications that bind to the directory, federation partners and their claims, the ACIs each one relies on, the certificates and keys behind them, and other parties' allowlists that hold your addresses are all entries with owners.
 
 ### Answer operational questions in seconds
@@ -28,6 +28,9 @@ It is built for the ForgeRock/Ping stack on AWS and Azure today, and nothing in 
 | Which applications use the directory, and what should we check about each? | `opsdir report consumers` |
 | Which runbooks are out of date? What does nobody own? | `opsdir report stale`, `opsdir report unowned` |
 | How does stage differ from production, and why? | `opsdir report overrides` |
+| What hidden automation runs (cron, timers, functions, pipelines), and who owns it? | `opsdir report jobs` |
+| Which outside services does the platform depend on, which addresses does it send mail from, and where do its events go? | `opsdir report external-services`, `opsdir report mail-senders`, `opsdir report event-streams` |
+| What do the servers run beyond the products (OS, Java truststore additions, limits, agents), and on what compute or cluster? | `opsdir report baselines`, `opsdir report compute`, `opsdir report workloads` |
 | Which files copy this server's hostname (or any value), on which lines? | `opsdir report census [<DN>]` |
 | Anything else | `opsdir search -b <base> '<LDAP filter>'` |
 
@@ -74,8 +77,13 @@ Adapters are separate installable packages. Installing one registers it with the
 **Secret stores** (resolved at run time; values never reach the database or a rendered file)
 - AWS Secrets Manager and KMS (in `opsdir-adapter-aws`), Azure Key Vault (in `opsdir-adapter-azure`).
 - `opsdir-adapter-hashicorp-vault`: `vault://` references, resolved with the Vault CLI.
-- `opsdir-adapter-kubernetes`: `k8s-secret://` references, resolved with `kubectl`.
+- `opsdir-adapter-kubernetes`: `k8s-secret://` references, resolved with `kubectl`; also **imports Kubernetes manifests** as workloads (below).
 - `opsdir-adapter-cyberark`: `cyberark://` references, resolved with the Credential Provider SDK.
+
+**Hosts, clusters and CI** (what runs beyond the products)
+- `opsdir-adapter-linux`: **imports Linux servers' own files**: their crontabs and systemd timers as jobs, and each server role's host baseline (OS, Java runtime and the certificates its truststore adds, limits, kernel settings, FIPS and SELinux modes, agents, service units, names pinned in `/etc/hosts`).
+- `opsdir-adapter-kubernetes`: **imports manifests** (`kubectl get -o yaml`, rendered Helm or Kustomize) as workloads (a server role run as containers: replicas, images, storage, workload identity, pod security, network policies, ingress hosts, secret names) and CronJobs as jobs. EKS and AKS clusters and autoscaling groups / scale sets are read by the cloud adapters.
+- `opsdir-adapter-github-actions`, `opsdir-adapter-gitlab-ci`, `opsdir-adapter-azure-devops`: **import CI pipeline definitions** as jobs (schedules, triggers, runners, environments, the secrets they name).
 
 **Formats**
 - `opsdir-format-terraform`: HCL laid out like `terraform fmt`, shared by the cloud adapters.
@@ -99,11 +107,11 @@ The [showcase](examples/showcase/README.md) walks through all of the above on a 
 
 ## Where it stands
 
-**Working and tested (842 tests):** the governed store with versioned schema upgrades and full history; every report, search and guardrail above; rendering for every adapter listed; the directory-configuration, access-log, PingFederate, PingAM, PingIDM, PingGateway and AWS Terraform-state importers; the census of values copied into files; overlays and overrides; keys and secrets across five secret stores; captured files and bundles; custom fields and record types; migration workspaces, the planner and the migration runner in both directions. The rendered Terraform passes `terraform validate` against the AWS and Azure provider schemas.
+**Working and tested (1081 tests):** the governed store with versioned schema upgrades and full history; every report, search and guardrail above; rendering for every adapter listed; the directory-configuration, access-log, PingFederate, PingAM, PingIDM and PingGateway importers, the AWS and Azure importers (Terraform state, CLI output, native templates), the Linux host, Kubernetes manifest and CI pipeline importers; the census of values copied into files; overlays and overrides; keys and secrets across five secret stores; captured files and bundles; custom fields and record types; migration workspaces, the planner and the migration runner in both directions. The rendered Terraform passes `terraform validate` against the AWS and Azure provider schemas.
 
 **Not yet verified:** rendered product configuration against real product instances (PingDS `dsconfig`/`setup`, PingFederate Admin API payloads, which are an illustrative subset today, PingAM, PingIDM, PingGateway), and `terraform plan` against real accounts. See [what's verified](examples/showcase/README.md#whats-verified-and-what-isnt).
 
-**Next:** stack coverage (path 5): PingFederate depth, hidden automation, host baselines and Kubernetes workloads, and the rest of the cloud estate (IAM, edge, data and backup, governance). What is covered and what is still a gap, subsystem by subsystem: [`documentation/STACK.md`](documentation/STACK.md) §21.
+**Next:** stack coverage (path 5), after PingFederate depth, hidden automation, host baselines and Kubernetes workloads: messaging and external services, the data profile, observability intent, and the rest of the cloud estate (IAM, edge, data and backup, governance). What is covered and what is still a gap, subsystem by subsystem: [`documentation/STACK.md`](documentation/STACK.md) §21.
 
 ## Documentation
 

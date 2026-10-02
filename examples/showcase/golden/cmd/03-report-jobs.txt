@@ -1,0 +1,7 @@
+job                                       kind      schedule            runs on                     owner  code         uses                       found on
+----------------------------------------  --------  ------------------  --------------------------  -----  -----------  -------------------------  ------------------------
+ds-nightly-export                         cron      30 2 * * *          servers: ds                        ops-scripts                             ds-2
+github-actions-ciam-ops-directory-backup  pipeline  15 1 * * *; manual  runners: self-hosted, ciam                      secret DS_BACKUP_PASSWORD
+pf-engine-pf-audit-ship                   timer     OnCalendar=*:0/15   servers: pf-engine                 ops-scripts                             pf-engine-1, pf-engine-2
+(3 rows)
+exit 0

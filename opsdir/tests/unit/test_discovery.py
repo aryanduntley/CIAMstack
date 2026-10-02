@@ -47,4 +47,4 @@ def test_adapter_of_unknown_kind_is_refused():
 
 def test_installed_core_registers_its_domains():
     assert [d.name for d in DOMAINS] == ["infrastructure", "directory", "federation", "pki", "governance",
-                                         "configuration", "custom"]
+                                         "configuration", "automation", "compute", "messaging", "custom"]
