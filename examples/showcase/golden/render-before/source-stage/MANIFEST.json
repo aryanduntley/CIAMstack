@@ -29,6 +29,11 @@
     }
   ],
   "files": {
+    "access/evaluate.sh": {
+      "scope": "environment-specific",
+      "format": "shell",
+      "sha256": "025c90dbb5d5e78c4559e37a7a4a54fef6afe6e7193109378da2cdd286792b8c"
+    },
     "am/global/Realms/partners.json": {
       "scope": "environment-neutral",
       "format": "json",
@@ -315,10 +320,20 @@
       "format": "xml",
       "sha256": "6bb13c0304722ca9b2942a2ef00ea6fd2648469d599edcdd4c48e099f6b80d37"
     },
+    "terraform/landing-zone/main.tf": {
+      "scope": "landing-zone",
+      "format": "hcl",
+      "sha256": "8466096c125f70c954fb9b607202d0bfd6f7d3c8dd41bf5797e5c0a4aadcaeac"
+    },
+    "terraform/landing-zone/providers.tf": {
+      "scope": "landing-zone",
+      "format": "hcl",
+      "sha256": "b1c0550b5062ad5254d3c3cc48010c6a85a07c4775a2bf496aecd02aba1fa6dc"
+    },
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "d088f2cceef41e721cb1e5deb2a694d69b81724ca272e72c5c128113c55dd6e8"
+      "sha256": "782bd853a76e26e18ccda9f1554eb18b3328f95c860824f5528d01460b49a2d7"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

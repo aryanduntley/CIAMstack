@@ -22,4 +22,4 @@ ADAPTER = Adapter(name="pingds", kind="product", applies=applies, required_roles
                   vocabulary={}, schema=None,
                   formats=(*LINEAGE_FORMATS, ("ds/setup-*.sh", "shell")),
                   products=(("PingDS", ">=7,<9"),),
-                  secret_patterns=(), importers=importers(PINGDS), profile_terms=TERMS)
+                  secret_patterns=(), importers=importers(PINGDS), profile_terms=TERMS, access=None)

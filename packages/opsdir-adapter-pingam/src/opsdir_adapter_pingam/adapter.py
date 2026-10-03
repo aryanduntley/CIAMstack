@@ -25,4 +25,4 @@ ADAPTER = Adapter(name="pingam", kind="product", applies=applies, required_roles
                   vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES}, schema=FRAGMENT,
                   formats=(*FORMATS, *SAML_FORMATS, *OIDC_FORMATS),
                   products=(("PingAM", ">=7,<9"), ("ForgeRock AM", ">=7,<8")),
-                  secret_patterns=SECRET_PATTERNS, importers=(AMSTER,), profile_terms=None)
+                  secret_patterns=SECRET_PATTERNS, importers=(AMSTER,), profile_terms=None, access=None)

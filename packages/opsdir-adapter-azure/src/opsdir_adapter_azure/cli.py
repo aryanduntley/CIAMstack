@@ -25,6 +25,8 @@ of the matching hashicorp/azurerm resource, so the same mapping reads them as re
   az keyvault key rotation-policy show  …/keys/<name>/rotationpolicy: whether the key rotates automatically
   az functionapp list                   Microsoft.Web/sites (kind functionapp: runtime from siteConfig.linuxFxVersion)
   az functionapp function list          Microsoft.Web/sites/functions (timer trigger schedules from config.bindings)
+  access control: identities, role assignments and definitions, PIM, deny assignments, access policies, policy
+  assignments, bastions                 see cli_iam.py (az rest output, {"value": [...]}, is read item by item)
 Subnets, interfaces and VMs outside the listed virtual networks are counted, not read; secrets, keys and containers
 are listed per vault and account, and function apps per resource group, so the importer counts rather than lists the
 ones the record doesn't have and nothing names a role for.
@@ -35,9 +37,10 @@ from functools import reduce
 
 from opsdir.core.contract import Importer
 from opsdir.core.inventory import layout_import
+from .cli_iam import iam_items
 from .inventory import PROVIDER, arm_segment, pairs_resources
 
-ACCOUNT_WIDE = ("secret", "key", "storage", "job")
+ACCOUNT_WIDE = ("secret", "key", "storage", "job", "identity")
 VAULT_HOSTS = (".vault.azure.net", ".vault.usgovcloudapi.net")
 
 
@@ -79,6 +82,8 @@ def _items(texts):
             doc = json.loads(text)
         except ValueError:
             return None
+        if isinstance(doc, dict) and isinstance(doc.get("value"), list):
+            return doc["value"]                                         # az rest: {"value": [...]}
         return doc if isinstance(doc, list) else [doc]
     docs = {p: parse(t) for p, t in sorted(texts.items())}
     kinds = {p: [(kind_of(i), i) for i in doc] for p, doc in docs.items() if doc is not None}
@@ -314,7 +319,8 @@ def items_resources(items):
     flattened): also what ARM templates are read into (opsdir_adapter_azure.arm)."""
     pairs, scope_notices = _scoped(_unique([*_vnets(items), *_vms(items), *_nics(items), *_lbs(items),
                                             *_addresses(items), *_records(items), *_nsgs(items), *_nats(items),
-                                            *_vault_items(items), *_stores(items), *_functions(items)]))
+                                            *_vault_items(items), *_stores(items), *_functions(items),
+                                            *iam_items(items)]))
     resources, notices = pairs_resources(pairs)
     return resources, (*scope_notices, *notices)
 

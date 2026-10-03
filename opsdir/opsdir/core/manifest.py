@@ -14,7 +14,10 @@ def header(m, what, fmt):
 
 
 def _scope(p, neutral, scopes):
-    return scopes.get(p) or ("environment-neutral" if p in neutral else "environment-specific")
+    """A file's scope: as its renderer says (captured files), environment-neutral, a landing zone's (any folder named
+    landing-zone: applied by whoever keeps the landing zone, not the platform), else environment-specific."""
+    return scopes.get(p) or ("environment-neutral" if p in neutral else
+                             "landing-zone" if "landing-zone" in p.split("/")[:-1] else "environment-specific")
 
 
 def _override(o):

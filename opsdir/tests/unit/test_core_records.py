@@ -36,7 +36,7 @@ def test_branch_names():
 
 def _adapter(renders, neutral_label):
     return Adapter("x", "product", None, (), None, None, (), (), {}, renders, neutral_label, {}, None, (), (), (), (),
-                   None)
+                   None, None)
 
 
 def test_render_summary_reads_like_a_sentence():

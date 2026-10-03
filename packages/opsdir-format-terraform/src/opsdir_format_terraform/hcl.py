@@ -1,6 +1,7 @@
 """Terraform HCL formatting: names, expressions and blocks laid out like `terraform fmt`.
 A format library: it knows HCL, not any cloud provider or product.
 """
+import json
 import re
 from itertools import groupby
 from typing import NamedTuple
@@ -66,6 +67,11 @@ def block(kind, labels, body, indent=0):
 
 def ref(expr):
     return "${" + expr + "}"
+
+
+def jsonencoded(v):
+    """A JSON document as a Terraform jsonencode() expression (JSON's objects and arrays are HCL expressions)."""
+    return ref("jsonencode(" + json.dumps(v, indent=2).replace("\n", "\n  ") + ")")
 
 
 def unbound_comments(roles):

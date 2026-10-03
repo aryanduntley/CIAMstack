@@ -6,6 +6,7 @@ from types import MappingProxyType
 
 from .common import AWS, AZ, CON, DECL, ENVS, GCP, INTS, XA, cert, chg, owner, spec, t
 from .custom import RESIDENCY
+from .access import ACCESS
 from .observability import MONITORING
 
 SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password", "ds-tls-keystore",
@@ -71,6 +72,8 @@ SOURCE = MappingProxyType({
     "streams": (("audit-bus", "audit-events", "arn:aws:events:us-east-1:111122223333:event-bus/ciam-audit", "bus"),),
     # alert channels, log destinations, and the alarms and checks CloudWatch runs (observability)
     "monitoring": MONITORING["source"],
+    # the cloud identities the principals act as, the guardrails over it, the ways operators come in (access)
+    "access": ACCESS["source"],
     # compute groups: (name, binding role, server role, provider ref, image, size, min, desired, max, zones, tokens)
     "compute": (("asg-pf-engine", "compute-pf-engine", "pf-engine",
                  "arn:aws:autoscaling:us-east-1:111122223333:autoScalingGroup:6d4c1f0e-0000-4000-8000-00000000a001:"
@@ -136,6 +139,7 @@ TARGET = MappingProxyType({
     "discovery": None,   # deliberately missing too: the nodes' tcp.xml discovery is cloud-specific (S3 on AWS)
     # alert channels, log destinations, alarms and checks Azure Monitor runs (planted: audit retention, no disk alarm)
     "monitoring": MONITORING["target"],
+    "access": ACCESS["target"],
     # planted: the domain's Communication Services identity isn't DKIM-verified yet and its DMARC is weaker; no bus
     # carries the identity audit stream
     "sending": (("mail-acs", "mail-sending", "example-aero.test",
@@ -201,6 +205,7 @@ STANDBY = MappingProxyType({
     "discovery_protocol": "TCPPING",       # no Cloud Storage protocol for PingFederate: the nodes are listed
     "streams": (("audit-topic", "audit-events", f"{PROJECT}/topics/ciam-audit", "topic"),),
     "monitoring": MONITORING["standby"],
+    "access": ACCESS["standby"],
     "compute": (("mig-pf-engine", "compute-pf-engine", "pf-engine",
                  f"{PROJECT}/regions/us-central1/instanceGroupManagers/ciam-pf-engine",
                  GIMG + "pingfederate-12-1-4-rhel9", "n2-standard-2", 2, 2, 4, ("us-central1-a", "us-central1-b"),
@@ -277,7 +282,7 @@ def _bindings(file, env, p):
             *(spec(file, b(cn), ["top", "ciamStreamBinding"], cn=cn, ciamBindingRole=role, ciamProviderRef=ref,
                    ciamStreamKind=kind) for cn, role, ref, kind in p.get("streams") or ()),
             *(spec(file, b(cn), ["top", oc], cn=cn, ciamBindingRole=role, **attrs)
-              for oc, cn, role, attrs in p.get("monitoring") or ()),
+              for oc, cn, role, attrs in (*(p.get("monitoring") or ()), *(p.get("access") or ()))),
             *((_interconnect(file, b, *p["interconnect"]),) if p.get("interconnect") else ()))
 
 

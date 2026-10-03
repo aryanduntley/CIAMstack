@@ -37,6 +37,7 @@ alike; resource names (projects/<p>/...) are the provider refs, self links read 
   google_monitoring_alert_policy              -> alarm: the metric its first condition filters on, the channels it
                                                  notifies, the alert rule it realizes (label realizes)
   google_monitoring_uptime_check_config       -> synthetic check: its period, the canary it realizes
+  IAM: service accounts and members' grants, deny policies, organization policies, IAP tunnels: see iam.py
 Roles of resources the record doesn't have come from their labels role (or bindingrole); label values are lowercase,
 as the record's roles are. A compute group's binding role is label bindingrole, else compute-<label role>; a
 cluster's bindingrole or role, else cluster; an alarm's or check's, else alarm-<realizes> or canary-<realizes>.
@@ -49,6 +50,7 @@ from opsdir_adapter_gcp.health_checks import is_probe_rule
 from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, layout_import, of_types, per_file,
                                    realization_roles, resource, tagged_role)
 from opsdir_format_terraform.state import blocks, first_block, read_state
+from .iam import iam_resources
 
 PROVIDER = "gcp"
 
@@ -374,10 +376,11 @@ def pairs_resources(pairs):
     """(resources, notices) of (Terraform resource type, attributes) pairs: what every Google Cloud source is read into
     (Terraform state as it is; inventories normalized to the same attribute names)."""
     rules, rule_notices = _firewall(pairs)
+    iam, iam_notices = iam_resources(pairs)
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *rules, *_secrets(pairs),
              *_keys(pairs), *_storage(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
-             *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs), *_canaries(pairs)),
-            rule_notices)
+             *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs), *_canaries(pairs),
+             *iam), (*rule_notices, *iam_notices))
 
 
 def state_resources(text):
@@ -397,7 +400,7 @@ def read_terraform_state(files, d, patterns, at=None):
     """Imported: each environment's servers and bindings from the Google Cloud Terraform states under
     <cloud>/<env>/."""
     return layout_import(files, d, PROVIDER, "Google Cloud", per_file(state_resources), ".tfstate", "Terraform state",
-                         "terraform.tfstate")
+                         "terraform.tfstate", summarize=("identity",))   # groups, users, service agents: counted
 
 
 TERRAFORM_STATE = Importer("terraform-state", "Google Cloud Terraform state (terraform.tfstate) under <cloud>/<env>/, "

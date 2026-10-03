@@ -513,6 +513,100 @@ ciamProviderRef: projects/example-aero-ciam-standby/uptimeCheckConfigs/sso-log
  in
 ciamRealizes: sso-login
 
+dn: cn=identity-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-pf
+ciamBindingRole: identity-pf
+ciamGrant: roles/secretmanager.secretAccessor on projects/example-aero-ciam-st
+ andby
+ciamGrant: roles/logging.logWriter on projects/example-aero-ciam-standby
+ciamIdentityKind: service-account
+ciamProviderRef: ciam-standby-pf@example-aero-ciam-standby.iam.gserviceaccount
+ .com
+
+dn: cn=identity-ds,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-ds
+ciamBindingRole: identity-ds
+ciamGrant: roles/secretmanager.secretAccessor on projects/example-aero-ciam-st
+ andby
+ciamGrant: roles/storage.objectCreator on projects/_/buckets/example-aero-ciam
+ -standby-ds-backups
+ciamGrant: roles/cloudkms.cryptoKeyEncrypterDecrypter on projects/example-aero
+ -ciam-standby/locations/us-central1/keyRings/ciam
+ciamGrant: roles/logging.logWriter on projects/example-aero-ciam-standby
+ciamIdentityKind: service-account
+ciamProviderRef: ciam-standby-ds@example-aero-ciam-standby.iam.gserviceaccount
+ .com
+
+dn: cn=identity-ci,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-ci
+ciamBindingRole: identity-ci
+ciamGrant: roles/secretmanager.secretVersionAdder on projects/example-aero-cia
+ m-standby
+ciamGrant: roles/compute.loadBalancerAdmin on projects/example-aero-ciam-stand
+ by
+ciamGrant: roles/dns.admin on projects/example-aero-ciam-standby
+ciamIdentityKind: federated
+ciamProviderRef: ciam-standby-deploy@example-aero-ciam-standby.iam.gserviceacc
+ ount.com
+ciamTrustedBy: https://token.actions.githubusercontent.com repo:example-aero/c
+ iam-ops:environment:standby
+
+dn: cn=identity-admins,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-admins
+ciamBindingRole: identity-admins
+ciamGrant: roles/secretmanager.admin on projects/example-aero-ciam-standby
+ciamGrant: roles/cloudkms.admin on projects/example-aero-ciam-standby
+ciamGrant: roles/logging.viewer on projects/example-aero-ciam-standby
+ciamIdentityKind: group
+ciamProviderRef: ciam-admins@example-aero.test
+
+dn: cn=identity-break-glass,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-break-glass
+ciamBindingRole: identity-break-glass
+ciamGrant: roles/owner on projects/example-aero-ciam-standby
+ciamIdentityKind: user
+ciamProviderRef: breakglass@example-aero.test
+
+dn: cn=org-guardrails,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamGuardrail
+cn: org-guardrails
+ciamBindingRole: org-guardrails
+ciamDenies: region-escape
+ciamDenies: public-storage
+ciamDenies: audit-log-disable
+ciamDenies: service-account-keys
+ciamDenies: key-deletion
+ciamGuardrailKind: org-constraint
+ciamOwner: cn=cloud-landing-zone,ou=owners,dc=ciam-ops
+ciamProviderRef: projects/example-aero-ciam-standby/policies
+
+dn: cn=operator-sso,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAccessPath
+cn: operator-sso
+ciamAccessKind: workforce-sso
+ciamBindingRole: operator-sso
+ciamProviderRef: https://accounts.google.com/o/saml2?idpid=C0example
+
+dn: cn=operator-console,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAccessPath
+cn: operator-console
+ciamAccessKind: iap
+ciamBindingRole: operator-console
+ciamProviderRef: projects/example-aero-ciam-standby/iap_tunnel
+
 dn: cn=link-source,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamInterconnect

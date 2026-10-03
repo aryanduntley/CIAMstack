@@ -14,8 +14,9 @@ From Terraform state (terraform.tfstate, format version 4), managed resources an
                                                  instances in the security group, else its tag Role, else the last
                                                  part of its name (ciam-<env>-<role>)
   aws_secretsmanager_secret (+ its rotation)  -> secret reference aws-sm://<arn>, rotation (and, from the CLI, whether
-                                                 rotation is off and when it last ran); its value is never read
-                                                 (aws_secretsmanager_secret_version is skipped)
+                                                 rotation is off and when it last ran), the role of the customer
+                                                 managed key that encrypts it (kms_key_id: ciamEncryptedByRole); its
+                                                 value is never read (aws_secretsmanager_secret_version is skipped)
   aws_kms_key (+ aws_kms_replica_key)         -> key reference aws-kms://<arn>, rotation, replica regions
   aws_s3_bucket                               -> storage s3://<bucket>
   aws_nat_gateway                             -> egress: its public address
@@ -43,6 +44,7 @@ From Terraform state (terraform.tfstate, format version 4), managed resources an
                                                  realizes (tag Realizes)
   aws_synthetics_canary                       -> synthetic check (kind canary, ciamCanaryBinding): its rate as an
                                                  interval, the canary it realizes (tag Realizes)
+  IAM: roles, resource policies, permission sets, control policies, access paths: see iam.py
 Roles of resources the record doesn't have come from their tags Role (or BindingRole). A compute group's binding role
 is its tag BindingRole, else compute-<its tag Role>; a cluster's is its tag BindingRole or Role, else cluster; an
 alarm's or synthetic check's, else alarm-<Realizes> or canary-<Realizes>.
@@ -56,6 +58,7 @@ from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, l
                                    realization_roles, resource, tagged_role)
 from opsdir.domains.messaging.dns import dmarc_policy, spf_authorizes
 from opsdir_format_terraform.state import blocks, read_state
+from .iam import iam_resources
 
 PROVIDER = "aws"
 
@@ -189,6 +192,7 @@ def _name_of(description, tag, ref):
 
 def _secrets(found):
     rotation = {a.get("secret_id"): a for a in of_types(found, "aws_secretsmanager_secret_rotation")}
+    keys = {k: a.get("arn") for a in of_types(found, "aws_kms_key") for k in (a.get("key_id"), a.get("arn")) if k}
     return tuple(resource("secret", a.get("arn"), {
                      "ciamRefUri": f"aws-sm://{a.get('arn')}",
                      "ciamAutoRotate": "TRUE" if a.get("arn") in rotation or a.get("id") in rotation else
@@ -196,6 +200,7 @@ def _secrets(found):
                      "ciamLastRotated": a.get("last_rotated"),
                      "ciamRotationFunction": (rotation.get(a.get("arn")) or rotation.get(a.get("id")) or {})
                      .get("rotation_lambda_arn")},
+                          links={"ciamEncryptedByRole": keys.get(a.get("kms_key_id"))},
                           name=_tags(a).get("Name") or a.get("name"), role=_role(a))
                  for a in of_types(found, "aws_secretsmanager_secret") if a.get("arn"))
 
@@ -415,10 +420,11 @@ def pairs_resources(pairs):
     """(resources, notices) of (Terraform resource type, attributes) pairs: what every AWS source is read into
     (Terraform state as it is; CLI output and CloudFormation normalized to the same attribute names)."""
     rules, rule_notices = _firewall(pairs)
+    iam, iam_notices = iam_resources(pairs)
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *rules, *_secrets(pairs),
              *_keys(pairs), *_storage(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
-             *_canaries(pairs)), rule_notices)
+             *_canaries(pairs), *iam), (*rule_notices, *iam_notices))
 
 
 def state_resources(text):
@@ -437,7 +443,7 @@ def state_resources(text):
 def read_terraform_state(files, d, patterns, at=None):
     """Imported: each environment's servers and bindings from the AWS Terraform states under <cloud>/<env>/."""
     return layout_import(files, d, PROVIDER, "AWS", per_file(state_resources), ".tfstate", "Terraform state",
-                         "terraform.tfstate")
+                         "terraform.tfstate", summarize=("identity",))   # groups, users, service agents: counted
 
 
 TERRAFORM_STATE = Importer("terraform-state", "AWS Terraform state (terraform.tfstate) under <cloud>/<env>/, as the "

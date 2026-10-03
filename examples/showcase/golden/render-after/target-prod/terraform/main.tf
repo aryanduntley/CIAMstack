@@ -247,6 +247,72 @@ resource "azurerm_network_security_rule" "fw_supplier_portal" {
   network_security_group_name = azurerm_network_security_group.ds.name
 }
 
+# NOTE: principal pingds: write-storage backup-target: role `backup-target` has no binding in this environment
+
+resource "azurerm_user_assigned_identity" "identity_ds" {
+  name                = "id-ciam-prod-ds"
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = data.azurerm_resource_group.main.location
+  tags = {
+    Principal = "pingds"
+    Role      = "identity-ds"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "azurerm_role_assignment" "identity_ds_read_secret_ds_root_password" {
+  scope                = "${data.azurerm_key_vault.kv_ciam_prod.id}/secrets/ds-root-password"
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.identity_ds.principal_id
+}
+
+resource "azurerm_role_assignment" "identity_ds_use_key_disk_encryption" {
+  scope                = "${data.azurerm_key_vault.kv_ciam_prod.id}/keys/disk-cmk"
+  role_definition_name = "Key Vault Crypto User"
+  principal_id         = azurerm_user_assigned_identity.identity_ds.principal_id
+}
+
+resource "azurerm_role_assignment" "identity_ds_write_logs_audit_logs" {
+  scope                = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-ciam-prod-audit"
+  role_definition_name = "Monitoring Metrics Publisher"
+  principal_id         = azurerm_user_assigned_identity.identity_ds.principal_id
+}
+
+resource "azurerm_user_assigned_identity" "identity_pf" {
+  name                = "id-ciam-prod-pf"
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = data.azurerm_resource_group.main.location
+  tags = {
+    Principal = "pingfederate"
+    Role      = "identity-pf"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "azurerm_role_assignment" "identity_pf_read_secret_pf_admin_password" {
+  scope                = "${data.azurerm_key_vault.kv_ciam_prod.id}/secrets/pf-admin-password"
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.identity_pf.principal_id
+}
+
+resource "azurerm_role_assignment" "identity_pf_read_secret_pf_ds_bind_password" {
+  scope                = "${data.azurerm_key_vault.kv_ciam_prod.id}/secrets/pf-ds-bind-password"
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.identity_pf.principal_id
+}
+
+resource "azurerm_role_assignment" "identity_pf_read_secret_pf_signing_key" {
+  scope                = "${data.azurerm_key_vault.kv_ciam_prod.id}/secrets/pf-signing-key"
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.identity_pf.principal_id
+}
+
+resource "azurerm_role_assignment" "identity_pf_write_logs_audit_logs" {
+  scope                = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-ciam-prod-audit"
+  role_definition_name = "Monitoring Metrics Publisher"
+  principal_id         = azurerm_user_assigned_identity.identity_pf.principal_id
+}
+
 resource "azurerm_network_interface" "am_1" {
   name                = "nic-am-1"
   location            = data.azurerm_resource_group.main.location
@@ -371,6 +437,10 @@ resource "azurerm_linux_virtual_machine" "ds_1" {
     storage_account_type   = "Premium_LRS"
     disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
   }
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.identity_ds.id]
+  }
   tags = {
     Role      = "ds"
     Hostname  = "ds-1.az.internal.example-aero.test"
@@ -415,6 +485,10 @@ resource "azurerm_linux_virtual_machine" "ds_2" {
     storage_account_type   = "Premium_LRS"
     disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
   }
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.identity_ds.id]
+  }
   tags = {
     Role      = "ds"
     Hostname  = "ds-2.az.internal.example-aero.test"
@@ -458,6 +532,10 @@ resource "azurerm_linux_virtual_machine" "ds_3" {
     caching                = "ReadWrite"
     storage_account_type   = "Premium_LRS"
     disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
+  }
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.identity_ds.id]
   }
   tags = {
     Role      = "ds"
@@ -635,6 +713,10 @@ resource "azurerm_linux_virtual_machine" "pf_engine_1" {
     storage_account_type   = "Premium_LRS"
     disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
   }
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.identity_pf.id]
+  }
   tags = {
     Role      = "pf-engine"
     Hostname  = "pf-engine-1.az.internal.example-aero.test"
@@ -678,6 +760,10 @@ resource "azurerm_linux_virtual_machine" "pf_engine_2" {
     caching                = "ReadWrite"
     storage_account_type   = "Premium_LRS"
     disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
+  }
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.identity_pf.id]
   }
   tags = {
     Role      = "pf-engine"

@@ -83,12 +83,15 @@ ATTRIBUTES = (
                  'The binding in another environment whose material this one holds (carried over, not regenerated)'),
     AttributeDef(207, 'ciamHoldsCertificate', 'dn', 'binding', True,
                  'The certificate a certificate store entry holds'),
+    AttributeDef(341, 'ciamEncryptedByRole', 'string', 'binding', True,
+                 "The binding role of the key that encrypts a secret in its store (a customer managed key): who reads "
+                 "or writes the secret may also need to use that key"),
 )
 KEY_SERVICE = ('ciamProtectionLevel', 'ciamAutoRotate', 'ciamRotationFunction', 'ciamReplicaRegion', 'ciamKeyUser',
                'ciamKeyAdmin', 'ciamLastRotated', 'ciamCopyRef', 'ciamMaterialFrom')
 CLASSES = (
     ClassDef(10, 'ciamSecretRef', 'ciamBinding', 'STRUCTURAL', ('ciamRefUri',),
-             KEY_SERVICE,
+             (*KEY_SERVICE, 'ciamEncryptedByRole'),
              'Reference to a secret'),
     ClassDef(11, 'ciamKeyRef', 'ciamBinding', 'STRUCTURAL', ('ciamRefUri',),
              KEY_SERVICE,

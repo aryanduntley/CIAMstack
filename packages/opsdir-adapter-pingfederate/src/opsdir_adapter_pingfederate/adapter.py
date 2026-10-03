@@ -34,4 +34,4 @@ ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required
                   formats=(("pingfederate/*.json", "json"), ("pingfederate/cluster/*.properties", "java-properties"),
                            *SAML_FORMATS, *OIDC_FORMATS),
                   products=(("PingFederate", ">=11,<13"),),
-                  secret_patterns=SECRET_PATTERNS, importers=(BULK, NODE_FILES), profile_terms=None)
+                  secret_patterns=SECRET_PATTERNS, importers=(BULK, NODE_FILES), profile_terms=None, access=None)

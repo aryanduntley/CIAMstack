@@ -1351,6 +1351,100 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.325 NAME 'ciamMetric' DESC 'The metr
  EC2 CPUUtilization)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.1
  21.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN
   'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.326 NAME 'ciamPermits' DESC 'What a 
+ permission set allows: a verb on a binding role (read-secret pf-admin-passw
+ ord, use-key disk-encryption, write-storage backup-target); each environmen
+ t\27s binding of the role is the resource' EQUALITY caseIgnoreMatch SYNTAX 
+ 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' 
+ X-PATTERN '^(read-secret|write-secret|use-key|manage-key|read-storage|write
+ -storage|publish-stream|consume-stream|write-logs|read-logs|manage) [a-z0-9
+ ][a-z0-9-]*$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.327 NAME 'ciamPrincipalKind' DESC 'W
+ hat acts: a workload (servers of a role, a compute group, a Kubernetes work
+ load, a job), a deployer (a CI pipeline), an operator role, a break-glass a
+ ccount, a service' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121
+ .1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:workload|deplo
+ yer|operator|break-glass|service' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.328 NAME 'ciamHoldsSet' DESC 'A perm
+ ission set a principal holds' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.
+ 1.4.1.1466.115.121.1.12 X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X-ORIGIN '
+ opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.329 NAME 'ciamCondition' DESC 'A con
+ dition on what a principal may do, stated neutrally (mfa, source-network 10
+ .20.9.0/28, approval, business-hours)' EQUALITY caseIgnoreMatch SYNTAX 1.3.
+ 6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-OR
+ IGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.330 NAME 'ciamReviewIntervalDays' DE
+ SC 'How often a principal\27s access must be reviewed, in days (365 when no
+ t stated)' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGL
+ E-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'int' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.331 NAME 'ciamLastTested' DESC 'When
+  a break-glass procedure was last exercised end to end' EQUALITY generalize
+ dTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE X-PORTABILITY 
+ 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.332 NAME 'ciamIdentityKind' DESC 'Wh
+ at realizes a principal in an environment: a role (IAM role, instance profi
+ le), a managed identity, a service account, a federated trust, a permission
+  set, a group' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.1
+ 5 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'enum:role|managed-iden
+ tity|service-account|federated|permission-set|group|user|other' X-ORIGIN 'o
+ psdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.333 NAME 'ciamGrant' DESC 'What the 
+ cloud grants an identity, in its own terms: \27<action or role> on <resourc
+ e>\27, with \27 (resource policy)\27 when a resource\27s policy grants it r
+ ather than the identity\27s' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.14
+ 66.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'ops
+ dir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.334 NAME 'ciamTrustedBy' DESC 'Who m
+ ay act as an identity or come in by a path: a service (ec2.amazonaws.com), 
+ an OIDC issuer and subject (a CI pipeline), a Kubernetes service account (n
+ amespace/name), an identity provider' EQUALITY caseIgnoreMatch SYNTAX 1.3.6
+ .1.4.1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-OR
+ IGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.335 NAME 'ciamGuardrailKind' DESC 'W
+ hat an organization guardrail is: a service or resource control policy, a p
+ olicy or deny assignment, an organization policy constraint' EQUALITY caseI
+ gnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 
+ 'binding' X-VALUE-TYPE 'enum:service-control|resource-control|policy-assign
+ ment|deny-assignment|org-constraint|other' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.336 NAME 'ciamDenies' DESC 'What a g
+ uardrail prevents, named neutrally (region-escape, public-storage, audit-lo
+ g-disable, service-account-keys, metadata-v1, root-use, key-deletion)' EQUA
+ LITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'bi
+ nding' X-VALUE-TYPE 'string' X-PATTERN '^[a-z0-9][a-z0-9-]*$' X-ORIGIN 'ops
+ dir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.337 NAME 'ciamAccessKind' DESC 'How 
+ operators come in: workforce single sign-on, a session manager, a bastion, 
+ identity-aware proxy forwarding, a VPN, just-in-time elevation' EQUALITY ca
+ seIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILI
+ TY 'binding' X-VALUE-TYPE 'enum:workforce-sso|session|bastion|iap|vpn|jit-e
+ levation|other' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.338 NAME 'ciamDenial' DESC 'An expli
+ cit deny over an identity (its own policies, a resource\27s, a deny assignm
+ ent or policy) or every identity under a guardrail, in the cloud\27s terms:
+  \27<action> on <resource>\27; an action \27!<pattern>\27 denies every acti
+ on but those (NotAction); \27 (if <condition>)\27 when conditional' EQUALIT
+ Y caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'bindi
+ ng' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.339 NAME 'ciamBoundary' DESC 'A ceil
+ ing on what an identity (a permissions boundary) or every identity under a 
+ guardrail (a service or resource control policy\27s allows) may be granted,
+  in the cloud\27s terms: \27<action> on <resource>\27; when any is recorded
+ , a grant outside every one is not effective' EQUALITY caseIgnoreMatch SYNT
+ AX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'stri
+ ng' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.340 NAME 'ciamEvaluated' DESC 'A clo
+ ud evaluator\27s verdict on one of an identity\27s permissions: \27<verb> <
+ role>: allowed|denied|unknown (<evaluator> <YYYY-MM-DD>)\27, preferred over
+  evaluating the recorded policies' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.
+ 4.1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-PATTE
+ RN '^[a-z-]+ [a-z0-9][a-z0-9-]*: (allowed|denied|unknown) \5C(.+\5C)$' X-OR
+ IGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.341 NAME 'ciamEncryptedByRole' DESC 
+ 'The binding role of the key that encrypts a secret in its store (a custome
+ r managed key): who reads or writes the secret may also need to use that ke
+ y' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VAL
+ UE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef ) X-ORIGIN 'opsdir' )
@@ -1387,7 +1481,7 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.10 NAME 'ciamSecretRef' DESC 'Referen
  ce to a secret' SUP ciamBinding STRUCTURAL MUST ciamRefUri MAY ( ciamProtec
  tionLevel $ ciamAutoRotate $ ciamRotationFunction $ ciamReplicaRegion $ cia
  mKeyUser $ ciamKeyAdmin $ ciamLastRotated $ ciamCopyRef $ ciamMaterialFrom 
- ) X-ORIGIN 'opsdir' )
+ $ ciamEncryptedByRole ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.11 NAME 'ciamKeyRef' DESC 'Reference 
  to an encryption key' SUP ciamBinding STRUCTURAL MUST ciamRefUri MAY ( ciam
  ProtectionLevel $ ciamAutoRotate $ ciamRotationFunction $ ciamReplicaRegion
@@ -1656,3 +1750,29 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.68 NAME 'ciamCanaryBinding' DESC 'A s
  ynthetic check a cloud runs in an environment: the canary it realizes, how 
  often' SUP ciamBinding STRUCTURAL MUST ciamProviderRef MAY ( ciamRealizes $
   ciamInterval ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.69 NAME 'ciamPermissionSet' DESC 'Wha
+ t may be done, as verbs on binding roles: the same set means each environme
+ nt\27s own resources' SUP ciamObject STRUCTURAL MUST ( cn $ ciamPermits ) X
+ -ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.70 NAME 'ciamPrincipal' DESC 'Who or 
+ what acts on the platform: the binding role of the identity each environmen
+ t gives it, the permission sets it holds, the server role that runs as it, 
+ its conditions and reviews; a break-glass account\27s credential role, proc
+ edure and last test' SUP ciamObject STRUCTURAL MUST ( cn $ ciamPrincipalKin
+ d $ ciamIdentityRole ) MAY ( ciamHoldsSet $ ciamTargetRole $ ciamCondition 
+ $ ciamReviewedOn $ ciamReviewIntervalDays $ ciamUsesRole $ ciamRunbookRef $
+  ciamLastTested ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.71 NAME 'ciamIdentityBinding' DESC 'T
+ he cloud identity a principal acts as in an environment, what the cloud gra
+ nts it and who may act as it' SUP ciamBinding STRUCTURAL MUST ciamProviderR
+ ef MAY ( ciamIdentityKind $ ciamGrant $ ciamTrustedBy $ ciamDenial $ ciamBo
+ undary $ ciamEvaluated ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.72 NAME 'ciamGuardrail' DESC 'An orga
+ nization guardrail over an environment and what it prevents (kept by the la
+ nding zone)' SUP ciamBinding STRUCTURAL MUST ciamGuardrailKind MAY ( ciamPr
+ oviderRef $ ciamDenies $ ciamDenial $ ciamBoundary ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.73 NAME 'ciamAccessPath' DESC 'How op
+ erators come into an environment: single sign-on, a session manager, a bast
+ ion, a proxy, just-in-time elevation' SUP ciamBinding STRUCTURAL MUST ciamA
+ ccessKind MAY ( ciamProviderRef $ ciamTrustedBy $ ciamGrant ) X-ORIGIN 'ops
+ dir' )

@@ -1,2 +1,2 @@
-rendered 60 files for env=prod,cloud=standby,ou=environments,dc=ciam-ops (gcp) → <OUT>/render-before/standby-prod
+rendered 63 files for env=prod,cloud=standby,ou=environments,dc=ciam-ops (gcp) → <OUT>/render-before/standby-prod
 exit 0

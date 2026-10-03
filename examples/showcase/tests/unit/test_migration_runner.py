@@ -49,8 +49,9 @@ def test_the_cli_text_and_exit_status(estate, as_of):
     text, files, status = migrate_text(estate["before"], SRC, DST, as_of, "out/m")
     planted = f"{len(EXPECTED['blockers'])} blockers, {len(EXPECTED['actions'])} actions"
     rendered = sum(p.startswith("target/") for p in files)
-    assert status == 1 and text.endswith(f"NOT READY ({planted}); {rendered} target files, PLAN.md and "
-                                         "3 request draft(s) in out/m")
+    drafts = sum(p.startswith("requests/") for p in files)
+    assert status == 1 and drafts and text.endswith(f"NOT READY ({planted}); {rendered} target files, PLAN.md and "
+                                                    f"{drafts} request draft(s) in out/m")
     assert "PLAN.md" in files
 
 

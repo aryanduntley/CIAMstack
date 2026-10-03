@@ -590,6 +590,140 @@ ciamProviderRef: arn:aws:synthetics:us-east-1:111122223333:canary:ciam-sso-log
  in
 ciamRealizes: sso-login
 
+dn: cn=identity-pf,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-pf
+ciamBindingRole: identity-pf
+ciamGrant: secretsmanager:GetSecretValue on arn:aws:secretsmanager:us-east-1:1
+ 11122223333:secret:ciam/prod/*
+ciamGrant: logs:PutLogEvents on arn:aws:logs:us-east-1:111122223333:log-group:
+ /ciam/prod/audit:*
+ciamGrant: logs:CreateLogStream on arn:aws:logs:us-east-1:111122223333:log-gro
+ up:/ciam/prod/audit:*
+ciamIdentityKind: role
+ciamProviderRef: arn:aws:iam::111122223333:role/ciam-prod-pf
+ciamTrustedBy: ec2.amazonaws.com
+
+dn: cn=identity-ds,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-ds
+ciamBindingRole: identity-ds
+ciamGrant: secretsmanager:GetSecretValue on arn:aws:secretsmanager:us-east-1:1
+ 11122223333:secret:ciam/prod/ds-root-password-??????
+ciamGrant: s3:* on *
+ciamGrant: logs:PutLogEvents on arn:aws:logs:us-east-1:111122223333:log-group:
+ /ciam/prod/audit:*
+ciamGrant: logs:CreateLogStream on arn:aws:logs:us-east-1:111122223333:log-gro
+ up:/ciam/prod/audit:*
+ciamGrant: kms:Decrypt on arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd1
+ 2ab34cd56ef1234567890ab
+ciamGrant: kms:Encrypt on arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd1
+ 2ab34cd56ef1234567890ab
+ciamGrant: kms:GenerateDataKey on arn:aws:kms:us-east-1:111122223333:key/mrk-1
+ 234abcd12ab34cd56ef1234567890ab
+ciamIdentityKind: role
+ciamProviderRef: arn:aws:iam::111122223333:role/ciam-prod-ds
+ciamTrustedBy: ec2.amazonaws.com
+
+dn: cn=identity-idm,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-idm
+ciamBindingRole: identity-idm
+ciamGrant: secretsmanager:GetSecretValue on arn:aws:secretsmanager:us-east-1:1
+ 11122223333:secret:ciam/prod/idm-*
+ciamIdentityKind: role
+ciamProviderRef: arn:aws:iam::111122223333:role/ciam-prod-idm
+ciamTrustedBy: ec2.amazonaws.com
+
+dn: cn=identity-ci,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-ci
+ciamBindingRole: identity-ci
+ciamGrant: secretsmanager:PutSecretValue on arn:aws:secretsmanager:us-east-1:1
+ 11122223333:secret:ciam/prod/pf-admin-password-??????
+ciamGrant: elasticloadbalancing:ModifyListener on arn:aws:elasticloadbalancing
+ :*:*:listener/net/ciam-prod-svc-sso/*
+ciamGrant: elasticloadbalancing:RegisterTargets on arn:aws:elasticloadbalancin
+ g:*:*:targetgroup/ciam-prod-svc-sso-*
+ciamGrant: elasticloadbalancing:DeregisterTargets on arn:aws:elasticloadbalanc
+ ing:*:*:targetgroup/ciam-prod-svc-sso-*
+ciamGrant: route53:ChangeResourceRecordSets on arn:aws:route53:::hostedzone/Z0
+ EXAMPLE2PUBLIC
+ciamIdentityKind: federated
+ciamProviderRef: arn:aws:iam::111122223333:role/ciam-prod-deploy
+ciamTrustedBy: https://token.actions.githubusercontent.com repo:example-aero/c
+ iam-ops:environment:prod
+
+dn: cn=identity-admins,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-admins
+ciamBindingRole: identity-admins
+ciamGrant: secretsmanager:PutSecretValue on arn:aws:secretsmanager:us-east-1:1
+ 11122223333:secret:ciam/prod/pf-admin-password-??????
+ciamGrant: secretsmanager:UpdateSecret on arn:aws:secretsmanager:us-east-1:111
+ 122223333:secret:ciam/prod/pf-admin-password-??????
+ciamGrant: secretsmanager:RotateSecret on arn:aws:secretsmanager:us-east-1:111
+ 122223333:secret:ciam/prod/pf-admin-password-??????
+ciamGrant: secretsmanager:DeleteSecret on arn:aws:secretsmanager:us-east-1:111
+ 122223333:secret:ciam/prod/pf-admin-password-??????
+ciamGrant: kms:DescribeKey on arn:aws:kms:us-east-1:111122223333:key/mrk-1234a
+ bcd12ab34cd56ef1234567890ab
+ciamGrant: kms:EnableKeyRotation on arn:aws:kms:us-east-1:111122223333:key/mrk
+ -1234abcd12ab34cd56ef1234567890ab
+ciamGrant: kms:PutKeyPolicy on arn:aws:kms:us-east-1:111122223333:key/mrk-1234
+ abcd12ab34cd56ef1234567890ab
+ciamGrant: logs:GetLogEvents on arn:aws:logs:us-east-1:111122223333:log-group:
+ /ciam/prod/audit:*
+ciamGrant: logs:FilterLogEvents on arn:aws:logs:us-east-1:111122223333:log-gro
+ up:/ciam/prod/audit:*
+ciamIdentityKind: permission-set
+ciamProviderRef: 9a4f7c2e-0000-4000-8000-0000000000a1
+
+dn: cn=identity-break-glass,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-break-glass
+ciamBindingRole: identity-break-glass
+ciamIdentityKind: role
+ciamProviderRef: arn:aws:iam::111122223333:role/ciam-prod-break-glass
+ciamTrustedBy: arn:aws:iam::111122223333:root
+
+dn: cn=org-guardrails,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamGuardrail
+cn: org-guardrails
+ciamBindingRole: org-guardrails
+ciamDenies: region-escape
+ciamDenies: audit-log-disable
+ciamDenies: key-deletion
+ciamGuardrailKind: service-control
+ciamOwner: cn=cloud-landing-zone,ou=owners,dc=ciam-ops
+ciamProviderRef: arn:aws:organizations::111122223333:policy/o-exampleaero1/ser
+ vice_control_policy/p-ciamfence1
+
+dn: cn=operator-sso,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAccessPath
+cn: operator-sso
+ciamAccessKind: workforce-sso
+ciamBindingRole: operator-sso
+ciamProviderRef: arn:aws:sso:::instance/ssoins-72231a2b3c4d5e6f
+ciamTrustedBy: d-9067a1b2c3
+
+dn: cn=operator-console,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAccessPath
+cn: operator-console
+ciamAccessKind: session
+ciamBindingRole: operator-console
+ciamProviderRef: arn:aws:ssm:us-east-1:111122223333:document/SSM-SessionManage
+ rRunShell
+
 dn: ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit

@@ -1,0 +1,8 @@
+[
+  {
+    "name": "projects/481516234200/locations/global/workloadIdentityPools/ciam-prod-ci/providers/github",
+    "oidc": {
+      "issuerUri": "https://token.actions.githubusercontent.com"
+    }
+  }
+]

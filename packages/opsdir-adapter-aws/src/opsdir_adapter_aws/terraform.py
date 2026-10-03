@@ -1,4 +1,6 @@
-"""AWS adapter: render an environment's infrastructure bindings as Terraform (hashicorp/aws ~> 5)."""
+"""AWS adapter: render an environment's infrastructure bindings as Terraform (hashicorp/aws ~> 5). Each workload
+principal its servers run as gets an IAM role EC2 may assume, a least-privilege policy from its permissions (the AWS
+permission table, opsdir_adapter_aws.access) and an instance profile on those servers."""
 import ipaddress
 from itertools import chain
 
@@ -8,7 +10,12 @@ from opsdir.core.manifest import header
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir.core.network import is_private
 from opsdir.domains.infrastructure.firewall import rule_purpose
+from opsdir.domains.access.evaluations import evaluation_files
+from opsdir.domains.access.workloads import identity_of, workload_identities
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
+from .access import ACCESS
+from .identities import EC2_TRUST, notes, role
+from .landing import render_landing
 
 
 def _network(m):
@@ -36,14 +43,24 @@ def _ingress_rules(m, fw):
         for i, cidr in enumerate(values(fw, "ciamSourceCidr")) for port in values(fw, "ciamPort"))
 
 
-def _instance(m, s, kms):
+def _identity(m, w):
+    """A workload principal's IAM role EC2 may assume, its least-privilege policy and its instance profile."""
+    n = tf_name(w.identity_role)
+    return (*notes(w), *role(m, w, EC2_TRUST),
+            block("resource", ["aws_iam_instance_profile", n], [("name", w.name),
+                                                                 ("role", ref(f"aws_iam_role.{n}.name"))]))
+
+
+def _instance(m, s, kms, identities=()):
     role = one(s, "ciamServerRole")
     key = (("kms_key_id", kms.split("://", 1)[1]) if kms
            else ("#", "UNBOUND: no disk-encryption key binding in this environment"))
+    w = identity_of(identities, role)
     return block("resource", ["aws_instance", tf_name(rdn_value(s))], [
         ("ami", one(s, "ciamImageRef")), ("instance_type", one(s, "ciamInstanceSize")),
         ("subnet_id", ref(f"data.aws_subnet.{tf_name(rdn_value(subnet_of(m, s)))}.id")),
         ("private_ip", one(s, "ciamPrivateIp")),
+        *((("iam_instance_profile", ref(f"aws_iam_instance_profile.{tf_name(w.identity_role)}.name")),) if w else ()),
         ("vpc_security_group_ids", [ref(f"aws_security_group.{tf_name(role)}.id")]),
         ("root_block_device", Block((("encrypted", True), key))),
         ("tags", {"Name": rdn_value(s), "Role": role, "Hostname": one(s, "ciamHostname"),
@@ -105,8 +122,9 @@ def _references(m):
 
 
 def render(m, services):
-    kms = secret(m, "disk-encryption")
-    out = (*_network(m), *_security_groups(m), *(_instance(m, s, kms) for s in m.servers),
+    kms, identities = secret(m, "disk-encryption"), workload_identities(m, ACCESS)
+    out = (*_network(m), *_security_groups(m), *chain.from_iterable(_identity(m, w) for w in identities),
+           *(_instance(m, s, kms, identities) for s in m.servers),
            *chain.from_iterable(_service(m, svc) for svc in of_class(m, "ciamServiceName")), *_references(m))
     unbound = unbound_comments(m.unbound)
     main = header(m, "AWS infrastructure for the CIAM platform", HCL) + unbound + "\n" + "\n\n".join(out) + "\n"
@@ -115,4 +133,5 @@ def render(m, services):
             ("aws", {"source": "hashicorp/aws", "version": "~> 5.0"}),)))]),
         block("provider", ["aws"], [("region", one(m.cloud, "ciamRegion"))]),
     ]) + "\n"
-    return {"terraform/providers.tf": providers, "terraform/main.tf": main}
+    return {"terraform/providers.tf": providers, "terraform/main.tf": main, **render_landing(m),
+            **evaluation_files(m, ACCESS, "AWS")}

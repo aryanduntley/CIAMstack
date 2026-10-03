@@ -1,8 +1,8 @@
 # CIAMstack - Project Blueprint
 
-**Version**: 1.10
-**Status**: Paths 1-4 completed; path 5 (Stack Coverage) in progress: 4.1-4.4 done (PingFederate depth, hidden automation, host baseline & Kubernetes workloads, messaging & external services), 4.5 next; Updates U.6 (shared helpers) and U.7 (deferred notes 352, 331) done, U.4 (package READMEs) open
-**Last Updated**: 2026-10-01
+**Version**: 1.11
+**Status**: Paths 1-4 completed; path 5 (Stack Coverage) in progress: 4.1-4.7 and 4.12 done (PingFederate depth, hidden automation, host baseline & Kubernetes workloads, messaging & external services, data profile, observability, platform IAM & admin plane, Google Cloud), 4.8 next; Updates U.6 (shared helpers) and U.7 (deferred notes 352, 331) done, U.4 (package READMEs) open
+**Last Updated**: 2026-10-02
 **AIMFP Compliance**: Strict
 
 ---
@@ -164,7 +164,13 @@ Schema OIDs: each owner has an arc (PEN .1 core/domains, .2 showcase user schema
   (Shared VPC data sources, network-tag firewall rules, CMEK/Shielded VM, passthrough LBs with health-check rules),
   gcp/terraform-state and gcp/cli-inventory (Cloud Asset Inventory + gcloud) through one mapping; showcase
   standby/prod on Google Cloud. From now on every cloud milestone covers AWS, Azure and GCP (2026-10-02)
-- Next: platform IAM (4.7), edge (4.8), network depth (4.9, with the GCP firewall model as a per-environment choice:
+- Done also: 4.7 platform IAM and admin plane (core domain `access`: permission sets and principals as intent;
+  identity bindings with grants, denials, ceilings, trust and evaluator verdicts; guardrails; access paths; neutral
+  permissions mapped per cloud; least-privilege workload identities; terraform/landing-zone/ for its owners (CI OIDC
+  trust, workforce access, guardrails) with planner requests; IAM read from Terraform state and CLI output on all
+  three clouds; effective access allowed/denied/unknown; access/evaluate.sh for the AWS simulator and Google's
+  Policy Troubleshooter; showcase principals, identities and planted access findings) (2026-10-02)
+- Next: edge (4.8), network depth (4.9, with the GCP firewall model as a per-environment choice:
   network tags or firewall policies with secure tags), data services/backup/DR (4.10), cloud governance (4.11)
 
 ### Path 6: Renderers & Targets
@@ -245,6 +251,11 @@ secret values in rendered Terraform state, completed).
 - **Change**: Milestone 4.12 Google Cloud: new package opsdir-adapter-gcp (module 42): vocabulary gcp/public; references gcp-sm (global and regional, resolved with gcloud), gcp-kms, gcp-cert, gs; credential patterns (service account key, API key, OAuth client secret); Terraform renderer (hashicorp/google ~> 8; health-check probe rules, EXTERNAL named ports, all_ports past five, backends by self_link, after a Codex review verified against Google's docs); importers gcp/terraform-state and gcp/cli-inventory (Cloud Asset Inventory list/export as JSON or JSON lines + gcloud, read once per resource, project numbers read as IDs, get-health for LB membership) through one pairs mapping. Core: `core.sources.json_records`, `core.network.is_private` limited to private-use ranges (U.9: the showcase's public frontends had been rendered private on AWS and Azure). Showcase: `standby/prod`, a warm standby on Google Cloud (47-env-standby; TCPPING discovery; drift via gcp/cli-inventory).
 - **Rationale**: a first launch covering the three major clouds; every later cloud milestone now spans AWS, Azure and Google Cloud. The firewall model (network tags vs secure tags) is a per-environment choice scheduled in 4.9 (user decision, note 441).
 
+
+### Version 1.11 - 2026-10-02
+
+- **Change**: Milestone 4.7 platform IAM and admin plane: new built-in core domain `access` (permission sets of `<verb> <binding role>`, principals with kind, identity role, conditions, reviews and break-glass facts; bindings `ciamIdentityBinding`, `ciamGuardrail`, `ciamAccessPath`; reports principals, identities, guardrails, access-paths). Contract: `Permission` rows and `AccessModel` (permissions, escalations, covers, resource, optional evaluator) per cloud adapter. Grants are recorded in each cloud's terms with suffixes for resource policies, conditions and eligibility; denials, ceilings and evaluator verdicts beside them; effective access is allowed, denied or unknown following each cloud's evaluation order. Renderers: least-privilege workload identities in the platform's Terraform; `terraform/landing-zone/` (CI OIDC trust, workforce access, guardrails) for the landing zone's owners, with planner requests for what the target lacks; `access/evaluate.sh` for the AWS policy simulator and Google's Policy Troubleshooter. Importers: IAM from Terraform state and CLI output on AWS, Azure and Google Cloud (roles and policies, resource policies, control policies, Identity Center; managed identities, role assignments, custom roles, PIM, deny assignments, access policies, policy assignments; IAM policies at every level, custom roles, workload identity pools, deny and organization policies). Showcase: principals, identities in all three environments, the landing zone's state, eight planted access findings.
+- **Rationale**: user decisions (notes #451, #455): permissions neutral and mapped; workloads rendered and the landing zone rendered for its owners; import from state and CLI on every cloud; tri-state evaluation with cloud evaluators as optional evidence, so what can't be told is a verification, not a guess.
 ---
 
 ## 6. User Settings System

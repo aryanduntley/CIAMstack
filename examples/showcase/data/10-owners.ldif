@@ -53,6 +53,14 @@ cn: network-security
 ciamOwnerKind: team
 mail: netsec@example-aero.test
 
+dn: cn=cloud-landing-zone,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: cloud-landing-zone
+ciamDisplayName: Cloud landing zone team
+ciamOwnerKind: team
+mail: landing-zone@example-aero.test
+
 dn: cn=skyline-air,ou=owners,dc=ciam-ops
 objectClass: top
 objectClass: ciamParty

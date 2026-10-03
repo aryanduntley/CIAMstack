@@ -163,6 +163,70 @@ resource "google_compute_firewall" "fw_supplier_portal" {
   target_tags   = ["ciam-prod-ds"]
 }
 
+resource "google_service_account" "identity_ds" {
+  account_id   = "ciam-standby-ds"
+  display_name = "pingds (identity-ds)"
+}
+
+resource "google_secret_manager_secret_iam_member" "identity_ds_read_secret_ds_root_password" {
+  project   = "example-aero-ciam-standby"
+  secret_id = "ds-root-password"
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.identity_ds.email}"
+}
+
+resource "google_kms_crypto_key_iam_member" "identity_ds_use_key_disk_encryption" {
+  crypto_key_id = "projects/example-aero-ciam-standby/locations/us-central1/keyRings/ciam/cryptoKeys/disk"
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:${google_service_account.identity_ds.email}"
+}
+
+resource "google_project_iam_member" "identity_ds_write_logs_audit_logs" {
+  # granted on the project: the narrowest scope Google Cloud allows for it
+  project = "example-aero-ciam-standby"
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.identity_ds.email}"
+}
+
+resource "google_storage_bucket_iam_member" "identity_ds_write_storage_backup_target" {
+  bucket = "example-aero-ciam-standby-ds-backups"
+  role   = "roles/storage.objectCreator"
+  member = "serviceAccount:${google_service_account.identity_ds.email}"
+}
+
+resource "google_service_account" "identity_pf" {
+  account_id   = "ciam-standby-pf"
+  display_name = "pingfederate (identity-pf)"
+}
+
+resource "google_secret_manager_secret_iam_member" "identity_pf_read_secret_pf_admin_password" {
+  project   = "example-aero-ciam-standby"
+  secret_id = "pf-admin-password"
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.identity_pf.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "identity_pf_read_secret_pf_ds_bind_password" {
+  project   = "example-aero-ciam-standby"
+  secret_id = "pf-ds-bind-password"
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.identity_pf.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "identity_pf_read_secret_pf_signing_key" {
+  project   = "example-aero-ciam-standby"
+  secret_id = "pf-signing-key"
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.identity_pf.email}"
+}
+
+resource "google_project_iam_member" "identity_pf_write_logs_audit_logs" {
+  # granted on the project: the narrowest scope Google Cloud allows for it
+  project = "example-aero-ciam-standby"
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.identity_pf.email}"
+}
+
 resource "google_compute_instance" "am_1" {
   name         = "am-1"
   machine_type = "n2-standard-2"
@@ -217,6 +281,10 @@ resource "google_compute_instance" "ds_1" {
     enable_vtpm                 = true
     enable_integrity_monitoring = true
   }
+  service_account {
+    email  = google_service_account.identity_ds.email
+    scopes = ["cloud-platform"]
+  }
   metadata = {
     enable-oslogin = "TRUE"
     ciam-role      = "ds"
@@ -249,6 +317,10 @@ resource "google_compute_instance" "ds_2" {
     enable_secure_boot          = true
     enable_vtpm                 = true
     enable_integrity_monitoring = true
+  }
+  service_account {
+    email  = google_service_account.identity_ds.email
+    scopes = ["cloud-platform"]
   }
   metadata = {
     enable-oslogin = "TRUE"
@@ -382,6 +454,10 @@ resource "google_compute_instance" "pf_engine_1" {
     enable_vtpm                 = true
     enable_integrity_monitoring = true
   }
+  service_account {
+    email  = google_service_account.identity_pf.email
+    scopes = ["cloud-platform"]
+  }
   metadata = {
     enable-oslogin = "TRUE"
     ciam-role      = "pf-engine"
@@ -414,6 +490,10 @@ resource "google_compute_instance" "pf_engine_2" {
     enable_secure_boot          = true
     enable_vtpm                 = true
     enable_integrity_monitoring = true
+  }
+  service_account {
+    email  = google_service_account.identity_pf.email
+    scopes = ["cloud-platform"]
   }
   metadata = {
     enable-oslogin = "TRUE"

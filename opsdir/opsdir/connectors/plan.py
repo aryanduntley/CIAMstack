@@ -13,7 +13,8 @@ import datetime as dt
 from typing import NamedTuple, Optional
 
 from ..core.contract import PlanContext
-from ..core.directory import children, follow, get, gtime_date, one, rdn_value, values
+from .access import access_check
+from ..core.directory import children, date_of, follow, get, one, rdn_value, values
 from ..core.environment import EnvModel, one_role, of_class
 from ..core.findings import findings, merge_findings, owner_label, responsible
 from ..core.naming import env_label
@@ -26,7 +27,8 @@ from .render import assemble, render_parts
 
 Plan = NamedTuple("Plan", [("src", EnvModel), ("dst", EnvModel), ("cutover", Optional[dt.date]),
                            ("as_of", dt.date), ("blockers", tuple), ("actions", tuple), ("ok", tuple),
-                           ("requests", tuple),          # ((party entry, ((allowlist, new, role, by), …)), …)
+                           ("requests", tuple),          # ((party entry, ((allowlist, new, role, by), …)), …);
+                                                         # allowlist None: a landing-zone item, new its text
                            ("target_files", dict),
                            ("target_summary", str)])     # what the target renders to, in words (from its adapters)
 
@@ -150,11 +152,12 @@ def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS):
     """Plan moving src to dst with the installed adapters: render both, run every check, collect the findings."""
     src, src_adapters, src_neutral, src_specific = render_parts(d, src_spec, installed)
     dst, adapters, dst_neutral, dst_specific = render_parts(d, dst_spec, installed)
-    cutover = gtime_date(one(dst.env, "ciamPlannedCutover")) if one(dst.env, "ciamPlannedCutover") else None
+    cutover = date_of(dst.env, "ciamPlannedCutover")
     dst_files = assemble(dst, adapters, dst_neutral, dst_specific)
     ctx = PlanContext(d, src, dst, cutover, as_of, assemble(src, src_adapters, src_neutral, src_specific), dst_files,
                       tuple(src_neutral))
-    f = merge_findings([run_check(check, ctx) for check in checks(adapters, domains)])
+    f = merge_findings([*(run_check(check, ctx) for check in checks(adapters, domains)),
+                        run_check(access_check(src_adapters, adapters), ctx)])
     return Plan(src, dst, cutover, as_of, f.blockers, f.actions, f.ok, _group_requests(f.requests), dst_files,
                 render_summary(adapters))
 
@@ -184,11 +187,27 @@ def to_markdown(p):
     return "\n".join(lines)
 
 
+def _landing_draft(p, mgr, asks, platform, signer):
+    """A request to whoever keeps the target's landing zone: what it should set up there before cutover."""
+    return (f"To: {rdn_value(mgr)} <{one(mgr, 'mail', 'n/a')}>",
+            f"Subject: Landing zone changes needed for {p.dst.label}" + (f" before {p.cutover}" if p.cutover else ""),
+            "",
+            "Hello,", "",
+            f"We are moving {platform} to {p.dst.label}" + (f"; planned cutover is {p.cutover}." if p.cutover else ".")
+            + " Please set up the following in the landing zone you keep (the rendered terraform/landing-zone/ files "
+            "hold what we can describe):", "",
+            *(f"- {text}" + (f" Needed by {by}." if by else "") for _, text, _, by in asks),
+            "", "Thank you,", signer, "", "_Generated from the operations directory._")
+
+
 def _request_draft(p, mgr, items):
     names_stable = not any(b[0] == "Contract" for b in p.blockers)
     org = operator(p.dst.d)
     platform = f"the {display_name(org)} external identity platform" if org else "our external identity platform"
     signer = next((display_name(get(p.dst.d, o)) for o in values(p.dst.env, "ciamOwner")), "The platform team")
+    asks, items = [i for i in items if i[0] is None], [i for i in items if i[0] is not None]
+    if not items:
+        return "\n".join(_landing_draft(p, mgr, asks, platform, signer)) + "\n"
     lines = (f"To: {rdn_value(mgr)} <{one(mgr, 'mail', 'n/a')}>",
              f"Subject: Allowlist update needed before {p.cutover} "
              f"({display_name(org) + ' ' if org else ''}identity platform move)", "",
@@ -202,6 +221,8 @@ def _request_draft(p, mgr, items):
                f"(currently allowlisted: {', '.join(values(xa, 'ciamRecordedCidr'))}). Needed by {by}."
                for xa, new, role, by in items),
              "", "Please keep the existing entries until we confirm cutover; we'll tell you when they can go.",
+             *(("", "Also, in the landing zone you keep:", "",
+                *(f"- {text}" + (f" Needed by {by}." if by else "") for _, text, _, by in asks)) if asks else ()),
              "", "Thank you,", signer, "",
              f"_Generated from the operations directory; entries {', '.join(rdn_value(x[0]) for x in items)}._")
     return "\n".join(lines) + "\n"

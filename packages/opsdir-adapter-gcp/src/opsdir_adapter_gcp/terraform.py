@@ -7,7 +7,10 @@ group rules back by. Instances carry their role and product exactly in metadata 
 allow only lowercase), which the importers read back. Each service name is a passthrough network load balancer
 (internal for a private frontend address) over the role's servers in zonal instance groups, with a Cloud DNS record
 and a firewall rule admitting Google Cloud's health-check probes.
-Secrets are named, never read: the Secret Manager data sources hold metadata, not versions.
+Secrets are named, never read: the Secret Manager data sources hold metadata, not versions. Each workload principal
+the servers run as gets a service account on those instances (scope cloud-platform: IAM decides) and resource-level IAM
+members from its permissions (the Google Cloud permission table, opsdir_adapter_gcp.access): on the secret, the key,
+the bucket, the topic; log writes on the project, the narrowest Google Cloud allows.
 """
 import re
 from itertools import chain
@@ -17,17 +20,18 @@ from opsdir.core.environment import of_class, one_role, secret, servers_with_rol
 from opsdir.core.manifest import header
 from opsdir.core.network import is_private
 from opsdir.domains.infrastructure.firewall import rule_priorities, rule_purpose
+from opsdir.domains.access.evaluations import evaluation_files
+from opsdir.domains.access.workloads import identity_of, workload_identities
+from opsdir_adapter_gcp.access import ACCESS
 from opsdir_adapter_gcp.health_checks import probe_ranges
+from opsdir_adapter_gcp.identities import identity, project_of
+from opsdir_adapter_gcp.landing import render_landing
 from opsdir_adapter_gcp.inventory import name_parts
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
 
 NETWORK = ref("data.google_compute_network.main.self_link")
 REGION = ref("var.region")
-
-
-def _project(path):
-    return (("project", path["projects"]),) if "projects" in path else ()
 
 
 def _tag(m, role):
@@ -43,7 +47,7 @@ def _network(m):
     net = one_role(m, "network")
     path = name_parts(one(net, "ciamProviderRef"))
     return (block("data", ["google_compute_network", "main"],
-                  [("name", path.get("networks", one(net, "ciamProviderRef"))), *_project(path)]),
+                  [("name", path.get("networks", one(net, "ciamProviderRef"))), *project_of(path)]),
             *(_subnet(m, s) for s in of_class(m, "ciamSubnetBinding")))
 
 
@@ -51,7 +55,7 @@ def _subnet(m, s):
     path = name_parts(one(s, "ciamProviderRef"))
     return block("data", ["google_compute_subnetwork", tf_name(rdn_value(s))], [
         ("name", path.get("subnetworks", one(s, "ciamProviderRef"))),
-        ("region", path.get("regions", one(m.cloud, "ciamRegion"))), *_project(path)])
+        ("region", path.get("regions", one(m.cloud, "ciamRegion"))), *project_of(path)])
 
 
 def _firewall_rule(m, fw, prio, pinned):
@@ -72,8 +76,9 @@ def _firewall(m):
     return tuple(chain.from_iterable(_firewall_rule(m, fw, *prios[fw.dn]) for fw in rules))
 
 
-def _instance(m, s, kms):
+def _instance(m, s, kms, identities=()):
     role = one(s, "ciamServerRole")
+    w = identity_of(identities, role)
     key = (("kms_key_self_link", kms.split("://", 1)[1]) if kms
            else ("#", "UNBOUND: no disk-encryption key binding in this environment"))
     return block("resource", ["google_compute_instance", tf_name(rdn_value(s))], [
@@ -85,6 +90,8 @@ def _instance(m, s, kms):
             ("network_ip", one(s, "ciamPrivateIp"))))),
         ("shielded_instance_config", Block((("enable_secure_boot", True), ("enable_vtpm", True),
                                             ("enable_integrity_monitoring", True)))),
+        *((("service_account", Block((("email", ref(f"google_service_account.{tf_name(w.identity_role)}.email")),
+                                      ("scopes", ["cloud-platform"])))),) if w else ()),
         ("metadata", {"enable-oslogin": "TRUE", "ciam-role": role, "ciam-product": one(s, "ciamProductVersion", "")}),
         ("labels", {"role": _label(role), "product": _label(one(s, "ciamProductVersion")),
                     "managed_by": "opsdir"})])
@@ -166,7 +173,7 @@ def _secret(b):
     return block("data", ["google_secret_manager_regional_secret" if regional else "google_secret_manager_secret",
                           tf_name(one(b, "ciamBindingRole"))], [
         ("#", "metadata only: no secret version (value) enters Terraform state"),
-        ("secret_id", path.get("secrets")), *_project(path),
+        ("secret_id", path.get("secrets")), *project_of(path),
         *((("location", path["locations"]),) if regional else ())])
 
 
@@ -184,8 +191,9 @@ def _references(m):
 
 
 def render(m, services):
-    kms = secret(m, "disk-encryption")
-    out = (*_network(m), *_firewall(m), *(_instance(m, s, kms) for s in m.servers),
+    kms, identities = secret(m, "disk-encryption"), workload_identities(m, ACCESS)
+    out = (*_network(m), *_firewall(m), *chain.from_iterable(identity(m, w) for w in identities),
+           *(_instance(m, s, kms, identities) for s in m.servers),
            *chain.from_iterable(_service(m, svc) for svc in of_class(m, "ciamServiceName")), *_references(m))
     main = header(m, "Google Cloud infrastructure for the CIAM platform", HCL) + unbound_comments(m.unbound) + "\n" \
         + "\n\n".join(out) + "\n"
@@ -196,4 +204,5 @@ def render(m, services):
         block("variable", ["project_id"], [("type", ref("string"))]),
         block("variable", ["region"], [("type", ref("string")), ("default", one(m.cloud, "ciamRegion"))]),
     ]) + "\n"
-    return {"terraform/providers.tf": providers, "terraform/main.tf": main}
+    return {"terraform/providers.tf": providers, "terraform/main.tf": main, **render_landing(m),
+            **evaluation_files(m, ACCESS, "Google Cloud")}

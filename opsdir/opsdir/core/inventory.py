@@ -20,9 +20,14 @@ this module places them.
   logs      -> ciamLogDestination   matched by provider ref (a log group, a workspace)
   alarm     -> ciamAlarmBinding     matched by provider ref (an alarm the cloud runs: the alert rule it realizes)
   canary    -> ciamCanaryBinding    matched by provider ref (a synthetic check the cloud runs)
+  identity  -> ciamIdentityBinding  matched by provider ref, else by the identity's short name (an IAM role's name, a
+                                    resource ID's last segment, a service account's account id)
+  guardrail -> ciamGuardrail        matched by provider ref (a control policy, a policy assignment, a constraint)
+  access    -> ciamAccessPath       matched by provider ref (single sign-on, a bastion, a proxy)
 What a source says replaces the record's value for the attributes it gives; the rest of the entry is kept. A resource
 the record doesn't have is added only when the source names its role (a tag), and is named otherwise: a role can't be
-guessed. A binding an overlay inherits from its base is left to the base environment.
+guessed. A binding an overlay inherits from its base is left to the base environment. A link to another resource
+names its entry (a DN), or for a role link (ciamEncryptedByRole) the binding role that entry has.
 
 Sources are laid out one folder per environment, <cloud>/<env>/ (layout_import); the cloud adapter says what it reads
 there and parses each file. A role map beside them, <cloud>/<env>/roles.json ({provider ref or name: role}), gives roles
@@ -51,9 +56,11 @@ CLASSES = MappingProxyType({"network": "ciamNetwork", "subnet": "ciamSubnetBindi
                             "job": "ciamJobBinding", "compute": "ciamComputeGroup", "cluster": "ciamCluster",
                             "sending": "ciamSendingIdentity", "stream": "ciamStreamBinding",
                             "channel": "ciamAlertChannel", "logs": "ciamLogDestination", "alarm": "ciamAlarmBinding",
-                            "canary": "ciamCanaryBinding"})
+                            "canary": "ciamCanaryBinding", "identity": "ciamIdentityBinding",
+                            "guardrail": "ciamGuardrail", "access": "ciamAccessPath"})
 BY_REF = ("network", "subnet", "egress", "job", "compute", "cluster", "sending", "stream", "channel", "logs", "alarm",
-          "canary")                                                                       # matched by provider ref
+          "canary", "identity", "guardrail", "access")                                    # matched by provider ref
+ROLE_LINKS = frozenset({"ciamEncryptedByRole"})           # links that name the linked binding's role, not its DN
 ROLE_MAP = "roles.json"                         # <cloud>/<env>/roles.json: roles for what a cloud can't tag
 _UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
 
@@ -99,11 +106,19 @@ def _held(d, dn):
     return own, bases
 
 
+def short_name(ref):
+    """An identity's short name from its provider ref: an IAM role's name, a resource ID's last segment, a service
+    account's account id (lowercase)."""
+    return (ref or "").rsplit("/", 1)[-1].split("@", 1)[0].lower() or None
+
+
 def _match(r, entries):
     oc = CLASSES[r.kind]
     candidates = [e for e in entries if oc in e.classes]
     key = _resource_key(r)
     found = next((e for e in candidates if key and _key(e, r.kind) == key), None)
+    if found is None and r.kind == "identity" and short_name(r.ref):
+        found = next((e for e in candidates if short_name(one(e, "ciamProviderRef")) == short_name(r.ref)), None)
     if found is not None or r.kind != "server":
         return found
     host, ip = (r.attrs.get("ciamHostname") or (None,))[0], (r.attrs.get("ciamPrivateIp") or (None,))[0]
@@ -117,11 +132,13 @@ REQUIRED = MappingProxyType({
     "service": ("ciamFqdn", "ciamTargetRole", "ciamPort"), "firewall": ("ciamSourceCidr", "ciamPort", "ciamTargetRole"),
     "secret": ("ciamRefUri",), "key": ("ciamRefUri",), "storage": ("ciamStorageRef",), "egress": ("ciamCidr",),
     "job": (), "compute": ("ciamTargetRole",), "cluster": (), "sending": ("ciamSenderDomain",), "stream": (),
-    "channel": ("ciamChannelKind",), "logs": ("ciamDestinationKind",), "alarm": (), "canary": ()})
+    "channel": ("ciamChannelKind",), "logs": ("ciamDestinationKind",), "alarm": (), "canary": (), "identity": (),
+    "guardrail": ("ciamGuardrailKind",), "access": ("ciamAccessKind",)})
 
 
 def _entry(dn, r, held, links, name):
-    given = {**r.attrs, **{attr: (links[ref],) for attr, ref in r.links.items() if ref in links},
+    given = {**r.attrs, **{attr: (links[attr in ROLE_LINKS][ref],) for attr, ref in r.links.items()
+                           if ref in links[attr in ROLE_LINKS]},
              **({"ciamProviderRef": (r.ref,)} if r.kind in BY_REF and r.ref else {})}
     if held is not None:
         same = {k: held.attrs[k] for k, v in given.items() if k in held.attrs and set(v) == set(held.attrs[k])}
@@ -164,11 +181,16 @@ def environment_groups(d, spec, resources, summarize=()):
     ordered = sorted(resources, key=lambda r: (r.kind not in ("network", "subnet"), r.kind, r.ref))
     placed = reduce(_placed(own, bases), ordered, ())
     new = [(r, name) for r, held, inh, name in placed if held is None and inh is None]
-    links = {**{r.ref: (held or inh).dn for r, held, inh, _ in placed if held or inh},
-             **{r.ref: _new_dn(dn, r, name) for r, name in new if r.role}}
+    dns = {**{r.ref: (held or inh).dn for r, held, inh, _ in placed if held or inh},
+           **{r.ref: _new_dn(dn, r, name) for r, name in new if r.role}}
+    roles = {**{r.ref: role for r, held, inh, _ in placed if held or inh
+                for role in (one(held or inh, "ciamBindingRole"),) if role},
+             **{r.ref: r.role for r, _ in new if r.role}}
+    links = {False: dns, True: roles}                                    # by whether the link is a role link
     incomplete = {id(r): [a for a in REQUIRED[r.kind] if a not in r.attrs and a not in r.links]
                   for r, _ in new if r.role}
-    unresolved = {id(r): [a for a, ref in r.links.items() if ref not in links] for r, _ in new if r.role}
+    unresolved = {id(r): [a for a, ref in r.links.items() if ref not in links[a in ROLE_LINKS]
+                          and a not in ROLE_LINKS] for r, _ in new if r.role}
     added = [(r, name) for r, name in new if r.role and not incomplete[id(r)] and not unresolved[id(r)]]
     entries = (*(_entry(held.dn, r, held, links, name) for r, held, inh, name in placed if held is not None),
                *(_entry(_new_dn(dn, r, name), r, None, links, name) for r, name in added))

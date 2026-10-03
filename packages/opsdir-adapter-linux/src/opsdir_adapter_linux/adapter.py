@@ -8,4 +8,4 @@ from .jobs import JOBS_IMPORTER
 ADAPTER = Adapter(name="linux", kind="host", applies=None, required_roles=(), render_neutral=None, render_env=None,
                   checks=(), ref_schemes=(), secret_schemes={}, renders=None, neutral_label=None, vocabulary={},
                   schema=None, formats=(), products=(), secret_patterns=(),
-                  importers=(JOBS_IMPORTER, BASELINE_IMPORTER), profile_terms=None)
+                  importers=(JOBS_IMPORTER, BASELINE_IMPORTER), profile_terms=None, access=None)

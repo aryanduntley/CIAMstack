@@ -59,3 +59,15 @@ ciamLastValidated: 20260315000000Z
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamTitle: Onboard a SAML application
 ciamVersion: 1.0
+
+dn: cn=WI-CIAM-012,ou=runbooks,dc=ciam-ops
+objectClass: top
+objectClass: ciamRunbook
+cn: WI-CIAM-012
+ciamAppliesTo: cn=secret-ds-root-password,ou=bindings,env=prod,cloud=source,ou
+ =environments,dc=ciam-ops
+ciamDocUrl: https://wiki.example-aero.test/ciam/WI-CIAM-012
+ciamLastValidated: 20251103000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamTitle: Use the break-glass account (directory root)
+ciamVersion: 1.0

@@ -19,6 +19,8 @@ mapping reads them as reads Terraform state (opsdir_adapter_gcp.inventory.pairs_
   gcloud scheduler jobs list, gcloud builds triggers list, gcloud container clusters list, gcloud pubsub topics list,
   gcloud monitoring channels|policies|uptime list, gcloud logging buckets list      by their resource names and shapes
   gcloud projects describe <project>            project numbers (in Secret Manager's and others' names) read as IDs
+  IAM: IAM and organization policies (asset export --content-type=iam-policy / org-policy, search-all-iam-policies),
+  service accounts, custom roles, pool providers, deny policies, Policy Troubleshooter's verdicts: see cli_iam.py
 Subnetworks and instances outside the listed networks are counted, not read. Search results (`gcloud asset
 search-all-resources`) carry no resource data and are named, not read; so are asset types the mapping doesn't model
 (node pools and 1st-gen CloudFunction assets are read from their cluster's and Function's assets).
@@ -33,9 +35,10 @@ from types import MappingProxyType
 from opsdir.core.contract import Importer
 from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_records
+from .cli_iam import KINDS as IAM_KINDS, iam_kind, iam_pairs
 from .inventory import PROVIDER, name_parts, pairs_resources, resource_id
 
-ACCOUNT_WIDE = ("secret", "key", "storage", "job", "stream", "channel", "logs", "alarm", "canary")
+ACCOUNT_WIDE = ("secret", "key", "storage", "job", "stream", "channel", "logs", "alarm", "canary", "identity")
 METADATA = ("ciam-role", "ciam-product")         # the instance metadata the mapping reads; never startup scripts
 # Cloud Asset Inventory asset types and gcloud's compute kinds -> what an item is
 KINDS = MappingProxyType({
@@ -118,12 +121,15 @@ def kind_of(item):
     (None, item) when unrecognized and ('asset:<type>', item) for an asset type the mapping doesn't model."""
     if not isinstance(item, dict):
         return None, item
+    if iam_kind(item):
+        return iam_kind(item), item
     asset_type = item.get("assetType") or item.get("asset_type")
     if asset_type:
         data = (item.get("resource") or {}).get("data")
         if data is None:
             return "search", item
-        return ("covered" if asset_type in COVERED else KINDS.get(asset_type, f"asset:{asset_type}")), data
+        return ("covered" if asset_type in COVERED
+                else KINDS.get(asset_type) or IAM_KINDS.get(asset_type) or f"asset:{asset_type}"), data
     return KINDS.get(item.get("kind")) or _shape(item), item
 
 
@@ -434,14 +440,14 @@ def _scoped(pairs):
                   for t, n in sorted(counted.items())))
 
 
-def cli_resources(texts):
+def cli_resources(texts, at=None):
     """(resources, notices) of an environment's Cloud Asset Inventory and gcloud outputs ({path within the folder:
-    text})."""
+    text}); at dates Policy Troubleshooter's verdicts among them (the import's time)."""
     items, unknown = _items(texts)
     pairs, number_notices = _project_ids([*_networks(items), *_instances(items), *_firewalls(items),
                                           *_load_balancing(items), *_egress(items), *_compute_groups(items),
                                           *_references(items), *_automation(items), *_clusters(items),
-                                          *_monitoring(items)], items)
+                                          *_monitoring(items), *iam_pairs(items, at)], items)
     pairs, scope_notices = _scoped(pairs)
     resources, notices = pairs_resources(pairs)
     return resources, (*unknown, *number_notices, *scope_notices, *notices)
@@ -450,8 +456,9 @@ def cli_resources(texts):
 def read_cli_inventory(files, d, patterns, at=None):
     """Imported: each environment's servers and bindings from the Cloud Asset Inventory and gcloud outputs under
     <cloud>/<env>/."""
-    return layout_import(files, d, PROVIDER, "Google Cloud", cli_resources, (".json", ".jsonl"),
-                         "Cloud Asset Inventory or gcloud output", "assets.json", summarize=ACCOUNT_WIDE)
+    return layout_import(files, d, PROVIDER, "Google Cloud", lambda texts: cli_resources(texts, at),
+                         (".json", ".jsonl"), "Cloud Asset Inventory or gcloud output", "assets.json",
+                         summarize=ACCOUNT_WIDE)
 
 
 CLI_INVENTORY = Importer("cli-inventory", "Cloud Asset Inventory (gcloud asset list/export --content-type=resource) "

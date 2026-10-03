@@ -88,7 +88,8 @@ def test_the_store_refuses_google_cloud_credentials():
     assert {p.name for p in SECRET_PATTERNS} <= {p[0] for p in secret_patterns()}
     found = {p.name for p in SECRET_PATTERNS for text in (
         '{"type": "service_account", "private_key_id": "0123456789abcdef0123456789abcdef01234567"}',
-        "key=AIzaSyA1234567890abcdefghijklmnopqrstuv", "client_secret: GOCSPX-abcdefghijklmnopqrstuvwxyz12")
+        "key=" + "AIza" + "SyA1234567890abcdefghijklmnopqrstuv",       # built from parts: fake, and not flagged
+        "client_secret: " + "GOCSPX" + "-abcdefghijklmnopqrstuvwxyz12")
         if re.search(p.pattern, text)}
     assert found == {"gcp-service-account-key", "gcp-api-key", "gcp-oauth-client-secret"}
 

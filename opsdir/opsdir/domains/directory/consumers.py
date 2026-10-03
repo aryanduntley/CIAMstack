@@ -2,7 +2,7 @@
 operators recorded, and what to check about it. A pure function of a snapshot, dated (ages are as of a day)."""
 import datetime as dt
 
-from ...core.directory import children, follow_all, get, gtime_date, one, rdn_value, referrers, values
+from ...core.directory import children, date_of, follow_all, get, one, rdn_value, referrers, values
 from .naming import CONSUMERS
 
 CONSUMERS_HEADERS = ("consumer", "bind DN", "owner", "criticality", "status", "TLS only", "sources", "unindexed/day",
@@ -18,17 +18,13 @@ def consumer_by_bind_dn(d, bind_dn):
                  if bind_dn and (one(c, "ciamBindDn") or "").lower() == bind_dn.lower()), None)
 
 
-def _date(v):
-    return gtime_date(v) if v else None
-
-
 def _owners(d, c):
     return ", ".join(rdn_value(get(d, o)) for o in values(c, "ciamOwner") if get(d, o))
 
 
 def to_check(d, c, as_of):
     """What an operator should look at for one consumer, as short phrases."""
-    seen, reviewed = _date(one(c, "ciamLastSeen")), _date(one(c, "ciamReviewedOn"))
+    seen, reviewed = date_of(c, "ciamLastSeen"), date_of(c, "ciamReviewedOn")
     sensitive = [one(a, "ciamLdapName") for a in follow_all(d, c, "ciamAttrRead")
                  if a is not None and one(a, "ciamPiiClass") == "high"]
     unindexed = int(one(c, "ciamUnindexedSearchesPerDay", "0") or 0)
@@ -52,6 +48,6 @@ def consumer_rows(d, dn=None, as_of=None):
     return [(one(c, "cn"), one(c, "ciamBindDn", ""), _owners(d, c), one(c, "ciamCriticality", ""),
              one(c, "ciamMigrationStatus", ""), {"TRUE": "yes", "FALSE": "no"}.get(one(c, "ciamTlsOnly"), ""),
              ", ".join(values(c, "ciamObservedSource")), one(c, "ciamUnindexedSearchesPerDay", ""),
-             one(c, "ciamPeakOpsPerSec", ""), str(_date(one(c, "ciamLastSeen")) or ""),
-             str(_date(one(c, "ciamReviewedOn")) or ""), to_check(d, c, day))
+             one(c, "ciamPeakOpsPerSec", ""), str(date_of(c, "ciamLastSeen") or ""),
+             str(date_of(c, "ciamReviewedOn") or ""), to_check(d, c, day))
             for c in children(d, CONSUMERS, "ciamConsumer")]

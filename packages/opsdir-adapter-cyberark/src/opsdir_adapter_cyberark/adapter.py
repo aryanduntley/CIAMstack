@@ -14,4 +14,4 @@ ADAPTER = Adapter(name="cyberark", kind="secret-store", applies=applies, require
                   secret_schemes={"cyberark": password_command}, renders=None, neutral_label=None,
                   vocabulary={}, schema=None, formats=(),
                   products=(),
-                  secret_patterns=(), importers=(), profile_terms=None)
+                  secret_patterns=(), importers=(), profile_terms=None, access=None)

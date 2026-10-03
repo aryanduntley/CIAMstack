@@ -296,10 +296,20 @@
       "format": "xml",
       "sha256": "6bb13c0304722ca9b2942a2ef00ea6fd2648469d599edcdd4c48e099f6b80d37"
     },
+    "terraform/landing-zone/main.tf": {
+      "scope": "landing-zone",
+      "format": "hcl",
+      "sha256": "c753d77c2c9c53b0215157edd9bd1b7955ce247dd498640c6ae045650359e194"
+    },
+    "terraform/landing-zone/providers.tf": {
+      "scope": "landing-zone",
+      "format": "hcl",
+      "sha256": "76a825f4a9f60e1e01d13ced2abe88360ce93eeee577195fb2bc40eca34056a5"
+    },
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "1db71b8576493e2e7c400ce44396c6a5384de21c23151c9ab6a5ba962dc49a04"
+      "sha256": "c202cf5d542241120cc29aa9236b91f5b3e6c746428180a4c862eb7bd3f36799"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

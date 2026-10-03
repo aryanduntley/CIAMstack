@@ -19,6 +19,7 @@ Per environment, `terraform/providers.tf` (`hashicorp/azurerm ~> 4.0`; `subscrip
 | Servers | NIC (static private address in the server's subnet), NSG association, `azurerm_linux_virtual_machine` (size, zone, `source_image_id`, SSH key only; OS disk `Premium_LRS` encrypted with the `disk-encryption` binding's disk encryption set, `ciamProviderRef`, else an `UNBOUND` comment; tags `Role`, `Hostname`, `Product`, `ManagedBy`) |
 | Service names | Standard load balancer: an internal frontend (static `ciamFrontendIp` in the first target's subnet, zones 1–3) or the public IP named by the service's `ciamProviderRef`; a backend pool of the servers with the target role; a TCP probe and rule per `ciamPort`; an A record in `ciamDnsZone` (private DNS for an internal address) |
 | Secret references (`azkv://<vault>/<name>`) | Per vault: `data` Key Vault and its secret names (`azurerm_key_vault_secrets`), with a postcondition per secret, so a missing secret fails the plan with its role. Names only: `azurerm_key_vault_secret` would copy each value into Terraform state, so it is never rendered |
+| Workload principals (core `access` domain: kind `workload`, `ciamTargetRole` a server role here) | Per principal: `azurerm_user_assigned_identity` (named by its identity binding's provider ref, else `ciam-<env>-<server role>`) set on the role's VMs (`identity { type = "UserAssigned" }`), and one `azurerm_role_assignment` per permission from the access table below at the narrowest scope: the secret or key in its vault (`${data.azurerm_key_vault.<v>.id}/secrets/<name>`, Key Vault's RBAC model), the storage container, the resource a stream's or log destination's provider ref names; `data` vaults and storage accounts the scopes need; a permission that can't be granted is a `# NOTE` |
 | Interconnects; required roles without a binding | Comments: the landing zone provides interconnects; `# UNBOUND: required role …` |
 
 Not rendered: egress (NAT gateways), backup targets (`azblob://`), Key Vault keys and disk encryption sets (referenced by ID, not created), Windows VMs.
@@ -53,6 +54,11 @@ The importer `azure/terraform-state` reads Terraform state (format version 4, `h
 | `azurerm_log_analytics_workspace` | log destination (`ciamLogDestination`): `workspace`, its retention in days; a log route's `ciamLogDestinationRole` names it | its ID (`ciamProviderRef`) |
 | `azurerm_monitor_metric_alert`, `azurerm_monitor_scheduled_query_rules_alert_v2` | alarm the cloud runs (`ciamAlarmBinding`): what it evaluates (`ciamMetric`: metric namespace and name, or `log query`), the action groups it notifies (`ciamNotifies`), the alert rule it realizes (tag `Realizes`). Its binding role is its tag `Role` or `BindingRole`, else `alarm-<Realizes>`; untagged alerts are named, not recorded | its ID (`ciamProviderRef`) |
 | `azurerm_application_insights_standard_web_test` | synthetic check the cloud runs (`ciamCanaryBinding`): its frequency as an interval (`5m`), the canary it realizes (tag `Realizes`); binding role else `canary-<Realizes>` | its ID (`ciamProviderRef`) |
+| `azurerm_user_assigned_identity` (+ `azurerm_federated_identity_credential`) | identity binding (kind `managed-identity`, `federated` when a federated credential trusts it: `<issuer URL> <subject>`); role from its tag `Role` | its ID, else its name |
+| `azurerm_role_assignment`, `azurerm_pim_active_role_assignment`, `azurerm_pim_eligible_role_assignment` | the principal's grants: `<role> on <scope>`, ` (if <condition>)` for an ABAC condition, ` (eligible)` for a PIM eligible assignment; a custom role (`azurerm_role_definition`) as its actions and data actions with its notActions excluded (`a!b`); a role known only by its definition ID takes its name from a `data azurerm_role_definition` in the state, else the ID is kept (named). A principal that isn't a managed identity here is an identity of its own (kind `group`, `user` or `other` by `principal_type`; its object id as provider ref, as the landing zone names an operator's group) | (on the identity) / object id |
+| `azurerm_key_vault` `access_policy`, `azurerm_key_vault_access_policy` | grants on the vault (` (resource policy)`), each permission as the data action Key Vault's RBAC names for it (`Get` secret: `Microsoft.KeyVault/vaults/secrets/getSecret/action`, `UnwrapKey`: `…/keys/unwrap/action`, …) | (on the identity, by object id) |
+| `azurerm_subscription_policy_assignment`, `_resource_group_`, `_management_group_`, `azurerm_policy_assignment` | a guardrail per scope (kind `policy-assignment`; role `guardrail-policy-<scope name>`): what its assignments prevent (`ciamDenies`), by the built-in definitions the renderer assigns | `<scope>/providers/Microsoft.Authorization/policyAssignments` |
+| `azurerm_bastion_host` | access path `bastion` (tag `Role`, else `access-bastion`) | its ID |
 
 **What changes.** What the state says replaces the record's values for what it covers; everything else on the entry (owner, rotation dates, consumers, …) is kept. An entry of a kind the state reports but that the state lacks is named ("in the record but not in what the cloud reports"); kinds the state doesn't report at all are left alone. An overlay environment leaves the bindings it inherits to its base.
 
@@ -69,6 +75,8 @@ The importer `azure/terraform-state` reads Terraform state (format version 4, `h
 The importer fills in everything else from the state. Where the source names a role itself, the source's is kept; map entries that disagree with it or match nothing, and a malformed map, are named in the notices. Without a role the resource is named in the notices with what the state says about it ("tag it Role, name it in roles.json, or record it"). A new entry also needs its class's required attributes (a server its hostname and subnet, a service its DNS name, target role and ports, …); one that lacks them is named.
 
 **Named, not recorded:** source service tags (`VirtualNetwork`, `AzureLoadBalancer`, …) since they aren't address ranges; port ranges (`ciamPort` holds single ports); deny and outbound rules; resource types that hold secret values or aren't modeled yet (`random_password`, `tls_private_key`, `azurerm_key_vault_certificate`, database servers), counted by type.
+
+**Identities, guardrails and access paths.** An identity binding is matched by its provider ref, else by the identity's short name (an IAM role's name, a resource ID's last segment, a service account's account id), so a record that names an identity by its short name takes the full reference from the state. Grants, denials and ceilings are written in the cloud's own terms (`ciamGrant`, `ciamDenial`, `ciamBoundary`: `<action or role> on <resource>`, then ` (resource policy)`, ` (if <condition>)`, ` (eligible)`; parentheses in a condition become brackets; `p!a|b` is what `p` matches but `a` and `b`, `!a|b` every action but those), and the planner evaluates them (see Access below). Groups, users and other principals the state names without a role (a role map names them, as for any resource) are counted in one notice, not listed one by one. Deny assignments are created by Azure itself (deployment stacks, managed applications), never by Terraform: the CLI inventory reads them.
 
 **Secrets.** Secret values are never read: a Key Vault secret is recorded from its vault and name alone, and the reader drops whatever the state marks sensitive before anything sees it.
 
@@ -106,6 +114,20 @@ for app in $(az functionapp list -g $RG --query '[].name' -o tsv); do
   az functionapp function list -g $RG -n "$app" -o json                > "$out/functions-$app.json"   # timer schedules
 done
 
+# access control: identities, assignments (inherited and through groups), roles, PIM, deny assignments, policies
+az identity list                                                        > $out/identities.json
+for id in $(az identity list --query '[].[name,resourceGroup]' -o tsv | tr '\t' ':'); do
+  az identity federated-credential list --identity-name "${id%%:*}" -g "${id##*:}" > "$out/federated-${id%%:*}.json"
+done
+az role assignment list --all --include-inherited --include-groups      > $out/role-assignments.json
+az role definition list                                                 > $out/role-definitions.json
+SUB=$(az account show --query id -o tsv)
+az rest --url "https://management.azure.com/subscriptions/$SUB/providers/Microsoft.Authorization/roleEligibilityScheduleInstances?api-version=2020-10-01" > $out/pim-eligible.json
+az rest --url "https://management.azure.com/subscriptions/$SUB/providers/Microsoft.Authorization/denyAssignments?api-version=2022-04-01" > $out/deny-assignments.json
+for kv in $(az keyvault list --query '[].name' -o tsv); do az keyvault show -n "$kv" > "$out/vault-$kv.json"; done
+az policy assignment list                                               > $out/policy-assignments.json
+az network bastion list                                                 > $out/bastions.json
+
 opsdir import --dry-run azure/cli-inventory export/
 opsdir import --change CHG-… azure/cli-inventory export/
 ```
@@ -115,6 +137,8 @@ The outputs are read into the same resources as Terraform state (the mapping is 
 - **Network resources:** subnets, interfaces and VMs are read only inside the virtual networks `vnet list` returns; others are counted. Scope the other lists by resource group, as above.
 - **Account-wide listings** (Key Vault secrets and keys, storage containers) cover a whole vault or account: the ones the record doesn't have and nothing names a role for are counted with a few examples. Certificate-backed secrets and keys (`managed`) are skipped. Function apps are listed per resource group and counted like the account-wide listings; their app settings are never read.
 - `keyvault secret list` never returns values; nothing reads `secret show` output. Items the importer doesn't recognize are counted per file and named.
+
+**Access control** is read as from Terraform state (`opsdir_adapter_azure.cli_iam`), and what Terraform never creates besides: deny assignments (Azure's own, from deployment stacks and managed applications), denials on the principals they name (everyone, `00000000-…`, less the excluded). `az rest` prints `{"value": [...]}`; its items are read. `--include-inherited` adds the assignments at the subscription and above, `--include-groups` those through groups. Built-in role definitions name the roles PIM assignments use by ID; custom ones are expanded. Azure has no evaluator for any principal (its permissions API answers for the caller only), so no `access/evaluate.sh` is rendered.
 
 ## Reading an environment from its ARM or Bicep deployments
 
@@ -134,6 +158,32 @@ Expressions are evaluated where they depend only on what the deployment knows: p
 
 Each resource the template declares (nested child resources included; `existing` references and resources whose condition is false excluded; when the deployment is given, only those it produced) is given its ARM ID and read like the CLI's output of the same resource, so the tables above, roles and `roles.json` apply unchanged. Without `az deployment group show` the subscription and resource group are unknown: links within the template still resolve, but disk encryption sets aren't read (their ID is what the record keeps for the key). Named in the notices: functions not evaluated, resources that couldn't be named (loops over `copyIndex()`), declared resources the deployment didn't produce, and resource types not read.
 
+## Landing zone
+
+What the platform needs from the organization rather than its own Terraform is rendered per environment into `terraform/landing-zone/` (its own root: `providers.tf`, `main.tf`) for whoever keeps the landing zone: the header names them (the owners of the environment's guardrails, else of its cloud, else of the environment) and the MANIFEST marks the files `landing-zone`. Nothing is rendered when the environment needs nothing from one. When the target lacks a guardrail's prevention or a way in the source has, the planner drafts a request to that owner (`requests/<owner>.md`).
+
+| From the record | Rendered as |
+|---|---|
+| Deployer principals whose identity binding trusts an OIDC issuer (`ciamTrustedBy`: `<issuer URL> <subject>`) | `azurerm_user_assigned_identity` per deployer with an `azurerm_federated_identity_credential` (that issuer and subject, audience `api://AzureADTokenExchange`) and its role assignments |
+| Operator principals whose identity binding names an Entra group (its object id) | `azurerm_role_assignment` per permission to the group at the narrowest scope; eligible instead (`azurerm_pim_eligible_role_assignment`, activated when needed, renewed yearly) when the principal's `ciamCondition` says `jit` |
+| Guardrails' denials (`ciamDenies`) | `azurerm_subscription_policy_assignment` of a built-in definition, by ID: `region-escape` Allowed locations (`e56962a6-…`, the cloud's region), `public-storage` Storage account public access should be disallowed (`4fa4b6c0-…`, Deny), `key-deletion` Key vaults should have deletion protection enabled (`0b60c0b2-…`, Deny), `audit-log-disable` Do not allow deletion of resource types on diagnostic settings (`78460a36-…`; it blocks deleting them, not changing them: Azure has no built-in for that). `service-account-keys`, `metadata-v1`, `root-use` don't apply on Azure (`# NOTE`) |
+
+## Access: what permissions mean on Azure
+
+Permissions are recorded neutrally (the core `access` domain: permission sets of `<verb> <binding role>`, held by principals); this table says what each verb on a binding of a class means here. The renderer grants the first alternative of each requirement. The planner (`opsdir plan`) judges each permission of an identity that records what the cloud gives it, following the cloud's evaluation order: **denied** when an unconditional explicit deny matches (`ciamDenial`: the identity's own policies, a resource's policy, a deny assignment or policy, or a guardrail's) or a ceiling doesn't allow it (`ciamBoundary`: a permissions boundary, a control policy's allows); **allowed** when an unconditional grant (`ciamGrant`) matches; **unknown** when the only grant is conditional (`(if …)`) or eligible but not active (`(eligible)`), or a conditional deny matches, since what decides it wasn't imported. A cloud evaluator's verdict recorded on the identity (`ciamEvaluated`) wins. In the target, a permission denied or not granted is a blocker (with what denies it) and an unknown one an action to verify; grants no permission explains, wildcard grants and escalations no permission explains are actions.
+
+| Verb | Binding | Built-in roles (any of) |
+|---|---|---|
+| `read-secret` / `write-secret` | secret (`azkv://`) | Key Vault Secrets User, Secrets Officer, Administrator / Secrets Officer, Administrator |
+| `use-key` / `manage-key` | key (`azkv-key://`) | Key Vault Crypto User, Crypto Service Encryption User, Crypto Officer, Administrator / Crypto Officer, Administrator |
+| `read-storage` / `write-storage` | backup target (`azblob://`) | Storage Blob Data Reader, Contributor, Owner / Contributor, Owner |
+| `publish-stream` | stream: event hub, queue, topic | Azure Event Hubs Data Sender (Owner); Azure Service Bus Data Sender (Owner); EventGrid Data Sender (an Event Grid topic) |
+| `consume-stream` | stream: event hub, queue | Azure Event Hubs Data Receiver (Owner); Azure Service Bus Data Receiver (Owner) |
+| `write-logs` / `read-logs` | log destination | Monitoring Metrics Publisher (on the data collection rule: broad) / Log Analytics Reader, Monitoring Reader (broad) |
+| `manage` | secret / service name / scale set | Key Vault Secrets Officer, Administrator / Network Contributor on the renderer's `lb-ciam-<env>-<service>` + DNS Zone Contributor or Private DNS Zone Contributor on its zone (broad) / Virtual Machine Contributor (broad) |
+
+A role assigned at a parent scope (the vault, the storage account, a resource group, the subscription) covers what is under it; the record doesn't hold which resource group or subscription a vault is in, so those are taken to cover it. **Escalation** roles and actions: Owner, User Access Administrator, Role Based Access Control Administrator, Key Vault Contributor (on access-policy vaults it can grant itself data access), `Microsoft.Authorization/roleAssignments/write`, `Microsoft.Authorization/*`. Deny assignments (created by Azure, e.g. deployment stacks; listed with the `denyAssignments` REST API) are denials; a role assignment's ABAC `condition` makes it conditional; a PIM role that is only eligible is unknown until activated; a custom role is read through its definition (actions, notActions, dataActions, notDataActions). After the built-in roles, each requirement also names the (data) action those roles carry (`Microsoft.KeyVault/vaults/secrets/getSecret/action` for `read-secret`, `…/blobs/write` for `write-storage`, `Microsoft.Insights/Telemetry/Write` for `write-logs`, …), so a custom role's actions or a vault access policy can meet it and a deny of that action denies it. Azure has no evaluator for any principal (its permissions API answers for the caller only), so Azure is evaluated from the imported assignments. Key Vault secrets need nothing of a key on the reader's side.
+
 ## References and vocabulary it owns
 
 | Scheme | Form | Resolved |
@@ -151,10 +201,18 @@ It adds no required roles, planner checks or schema of its own; the environment'
 
 - **Not yet run against a live subscription.** The Terraform and the importer follow the `hashicorp/azurerm` 4.x schema; `terraform validate`/`plan` against a real subscription is part of the testing plan (milestone 7.2).
 - **Linux only.** Servers render as Linux VMs with SSH keys; the importer reads Windows VMs but the renderer doesn't write them.
-- **What the importers can't see:** container metadata other than a role, the identity a disk encryption set uses, Key Vault access policies and RBAC, private endpoints, Application Gateway / Front Door (edge, milestone 4.8), scale sets and AKS clusters, and the monitoring above (action groups, workspaces, alerts, web tests), in CLI output and ARM/Bicep deployments (Terraform state only, for now).
+- **What the importers can't see:** container metadata other than a role, the identity a disk encryption set uses, role assignments and Key Vault access policies in CLI output and ARM/Bicep deployments (Terraform state only, for now), private endpoints, Application Gateway / Front Door (edge, milestone 4.8), scale sets and AKS clusters, and the monitoring above (action groups, workspaces, alerts, web tests), in CLI output and ARM/Bicep deployments (Terraform state only, for now).
 
 ## Tests
 
 `tests/test_azure.py` (registration, vocabulary, secret resolution), `tests/test_azure_state.py` (the state importer: round trip, drift, new resources and role sources, rules, services, secrets never read, layout), `tests/test_azure_cli.py` (the CLI importer: round trip over `az` output shapes, drift from `key show` and rotation policies, network scoping, counted listings, unrecognized items), `tests/test_azure_arm.py` (the ARM importer: round trip over a Bicep-style template and its deployment, drift, `resourceId()` links, secure parameters never read, what the deployment didn't produce, no deployment, the evaluator), `tests/test_azure_messaging.py` (an email domain verified or not by its DNS, SPF and DMARC; queues and topics as stream carriers), `tests/test_azure_observability.py` (action groups as alert channels, workspaces with their retention, metric and log-query alerts and standard web tests with what they realize), `tests/test_azure_compute.py` (a scale set with its autoscale capacity, an AKS cluster with its pools and enabled add-ons), `tests/test_azure_jobs.py` (a function app with its runtime and timer schedules from state, CLI output and an ARM template; app settings never read), `tests/test_azure_state_store.py` (state and CLI against Postgres: imported under an approved change, re-import changes nothing). The rendered Terraform is covered end to end by the showcase's golden outputs (`examples/showcase`, the target environment).
+
+`tests/test_azure_cli_iam.py`: access control from the CLI and `az rest`: a federated identity, conditional and custom-role assignments, PIM named by its own output, an everyone deny assignment with an exclusion, vault access policies, policy assignments, a bastion.
+
+`tests/test_azure_iam.py`: access control from state: a managed identity's federated trust and assignments (an ABAC condition), a custom role's actions with its notActions excluded, a group's PIM eligibility (its role named from the data source, else by ID), Key Vault access policies as data actions, policy assignments with what they prevent, a bastion; the planner's verdicts from what was imported.
+
+`tests/test_azure_landing.py`: the landing zone: a deployer's OIDC trust and permissions, an operator group's access, the guardrails, the owner in the header, nothing rendered without need.
+
+`tests/test_azure_access.py`: the Azure access table: a Key Vault secret by vault, secret or parent scope (not another vault, not Reader), a storage container, roles that assign access. `tests/test_azure_identities.py`: a workload's managed identity and role assignments at the narrowest scope, Event Grid's sender role, the data sources scopes need.
 
 Installing the package registers it with opsdir (entry point `opsdir.adapters`: `azure`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.

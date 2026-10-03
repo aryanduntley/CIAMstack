@@ -1,5 +1,6 @@
 """Google Cloud adapter: applies to environments in clouds whose ciamCloudProvider is gcp."""
 from opsdir.core.contract import Adapter
+from .access import ACCESS
 from .cli import CLI_INVENTORY
 from .inventory import TERRAFORM_STATE
 from .secrets import SECRET_PATTERNS, secret_manager_command
@@ -18,6 +19,7 @@ ADAPTER = Adapter(name="gcp", kind="provider", applies=applies, required_roles=(
                   secret_schemes={"gcp-sm": secret_manager_command}, renders="Terraform for the target cloud",
                   neutral_label=None,
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamCloudEnvironment": ("public",)}, schema=None,
-                  formats=(("terraform/*.tf", "hcl"),),
+                  formats=(("terraform/*.tf", "hcl"), ("access/*.sh", "shell")),
                   products=(),
-                  secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY), profile_terms=None)
+                  secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY), profile_terms=None,
+                  access=ACCESS)

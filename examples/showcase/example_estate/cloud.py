@@ -7,6 +7,9 @@ so each export matches it except for the drift planted here, which `opsdir impor
     - a hand-opened security group rule, "temporary vendor access", 10.99.0.0/16 to LDAPS
     - the disk key's automatic rotation switched off
     - a CloudWatch alarm someone added in the console (ds-cpu-high), untagged: named, not recorded
+    - PingFederate's role given secretsmanager:ListSecrets on everything in the console
+  source/prod, the landing zone's Terraform state (landing-zone.tfstate): the pipeline's OIDC role, the admins'
+    permission set, the break-glass role, whose AWS managed policy (AdministratorAccess) a state doesn't hold: named
   target/prod, Azure CLI output (az … -o json), with a role map:
     - fw-idm-sync's NSG priority changed in the portal (130 -> 400)
     - ds-3 resized (Standard_D4s_v5 -> Standard_D8s_v5)
@@ -15,11 +18,14 @@ so each export matches it except for the drift planted here, which `opsdir impor
     - ds-2 resized in the console (n2-standard-4 -> n2-standard-8; the instance list carries it)
     - an SSH rule for IAP opened by hand (35.235.240.0/20 to port 22): named, not recorded (no role)
     - Secret Manager names secrets by project number; `gcloud projects describe` reads them as the project ID
+    - IAM as the inventory exports it (iam-policy, by project number), the service accounts and the pipeline's pool
+      provider: as recorded, but for a service account nobody recorded (ciam-servers): counted
 """
 import hashlib
 import json
 import re
 
+from .access import ACCT, AWS_IDENTITIES, GCP_IDENTITIES, GITHUB, PRINCIPAL_ROWS
 from .common import AWS, AZ, GCP
 from .infrastructure import HOST, PROJECT, SECRET_ROLES, SOURCE, STANDBY, TARGET
 from .observability import MONITORING
@@ -168,13 +174,82 @@ def _drifted_source(p, subnets, groups):
                 "description": "temporary vendor access"})]
 
 
+# ------------------------------------------------------------------ source/prod: IAM, the platform's and the landing zone's
+LANDING = ("identity-ci", "identity-admins", "identity-break-glass")      # kept by the landing zone, not the platform
+
+
+def _policy(*statements):
+    return json.dumps({"Version": "2012-10-17", "Statement": list(statements)})
+
+
+def _allows(grants):
+    """A policy's statements from the record's grants ('<action> on <resource>')."""
+    return [{"Effect": "Allow", "Action": a, "Resource": r} for a, _, r in (g.partition(" on ") for g in grants)]
+
+
+def _trust(trusted):
+    def one(who):
+        if who.startswith("https://"):
+            issuer, subject = who.split(" ", 1)
+            host = issuer.split("://", 1)[1]
+            return {"Effect": "Allow", "Action": "sts:AssumeRoleWithWebIdentity",
+                    "Principal": {"Federated": f"{ACCT}:oidc-provider/{host}"},
+                    "Condition": {"StringEquals": {f"{host}:aud": "sts.amazonaws.com"},
+                                  "StringLike": {f"{host}:sub": subject}}}
+        if who.endswith(".amazonaws.com"):
+            return {"Effect": "Allow", "Action": "sts:AssumeRole", "Principal": {"Service": who}}
+        return {"Effect": "Allow", "Action": "sts:AssumeRole", "Principal": {"AWS": who},
+                "Condition": {"Bool": {"aws:MultiFactorAuthPresent": "true"}}}
+    return _policy(*(one(w) for w in trusted))
+
+
+def _role(cn, ref, trusted, grants, extra=(), managed=()):
+    name = ref.rsplit("/", 1)[1]
+    return _res("managed", "aws_iam_role", name, {
+        "arn": ref, "name": name, "assume_role_policy": _trust(trusted), "tags": {"Role": cn},
+        "inline_policy": [{"name": "ciam", "policy": _policy(*_allows(grants), *extra)}] if grants or extra else [],
+        "managed_policy_arns": list(managed)})
+
+
+def _source_iam():
+    """The platform's workload roles, PingFederate's with the grant someone added in the console."""
+    console = ({"Effect": "Allow", "Action": "secretsmanager:ListSecrets", "Resource": "*"},)
+    return [_role(cn, ref, trusted, grants, console if cn == "identity-pf" else ())
+            for cn, kind, ref, trusted, grants in AWS_IDENTITIES if cn not in LANDING]
+
+
+def landing_zone_state():
+    """The landing zone's Terraform state: the pipeline's OIDC provider and role, the admins' permission set, the
+    break-glass role (its AWS managed policy isn't in a state)."""
+    rows = {cn: (kind, ref, trusted, grants) for cn, kind, ref, trusted, grants in AWS_IDENTITIES}
+    ps = "arn:aws:sso:::permissionSet/ssoins-72231a2b3c4d5e6f/ps-ciamadmins01"
+    _, ci_ref, ci_trust, ci_grants = rows["identity-ci"]
+    _, group, _, admin_grants = rows["identity-admins"]
+    _, bg_ref, bg_trust, _ = rows["identity-break-glass"]
+    resources = [
+        _res("managed", "aws_iam_openid_connect_provider", "github", {
+            "arn": f"{ACCT}:oidc-provider/token.actions.githubusercontent.com",
+            "url": "https://token.actions.githubusercontent.com", "client_id_list": ["sts.amazonaws.com"]}),
+        _role("identity-ci", ci_ref, ci_trust, ci_grants),
+        _res("managed", "aws_ssoadmin_permission_set", "ciam_admins", {
+            "arn": ps, "name": "ciam-admins", "session_duration": "PT4H", "tags": {"Role": "identity-admins"}}),
+        _res("managed", "aws_ssoadmin_permission_set_inline_policy", "ciam_admins", {
+            "permission_set_arn": ps, "inline_policy": _policy(*_allows(admin_grants))}),
+        _res("managed", "aws_ssoadmin_account_assignment", "ciam_admins", {
+            "permission_set_arn": ps, "principal_id": group, "principal_type": "GROUP", "target_id": ACCOUNT,
+            "target_type": "AWS_ACCOUNT"}),
+        _role("identity-break-glass", bg_ref, bg_trust, (), managed=("arn:aws:iam::aws:policy/AdministratorAccess",))]
+    return _dumps({"version": 4, "terraform_version": "1.9.5", "serial": 31, "lineage": "7a1d-ciam-landing-zone",
+                   "outputs": {}, "resources": resources})
+
+
 def source_state():
     """The source environment's Terraform state (format version 4), with the planted drift."""
     p = SOURCE
     subnets, instances, groups = _source_ids(p)
     resources = [*_aws_network(p, subnets), *_aws_servers(p, subnets, instances, groups, {"pf-engine-2": "m6i.xlarge"}),
                  *_aws_firewall(p, groups), *_aws_services(p, instances), *_aws_keys(p, rotation=False),
-                 *_aws_monitoring(), *_drifted_source(p, subnets, groups)]
+                 *_aws_monitoring(), *_drifted_source(p, subnets, groups), *_source_iam()]
     return _dumps({"version": 4, "terraform_version": "1.9.5", "serial": 214, "lineage": "5e0c-ciam-prod",
                    "outputs": {}, "resources": resources})
 
@@ -458,7 +533,10 @@ def standby_inventory():
                                                            "selfLink": f"{GAPI}/{ref}"})
               for _, _, ref, cidr, _ in p["subnets"]),
             *records]
+    iam, providers = _gcp_iam()
     return {"assets.jsonl": "".join(json.dumps(a, sort_keys=False) + "\n" for a in exported),
+            "iam-policies.jsonl": "".join(json.dumps(a, sort_keys=False) + "\n" for a in iam),
+            "pool-providers.json": _dumps(providers),
             "host-network.json": _dumps(host),
             "project.json": _dumps({"projectId": PROJECT.split("/")[1], "projectNumber": NUMBER,
                                     "name": PROJECT.split("/")[1], "lifecycleState": "ACTIVE"}),
@@ -466,9 +544,42 @@ def standby_inventory():
             **{f"health/{name}.json": _dumps(doc) for name, doc in health.items()}}
 
 
+def _gcp_iam():
+    """The standby's IAM policies as `gcloud asset export --content-type=iam-policy` writes them (by project number),
+    its service accounts and the pipeline's pool provider: as the record holds them."""
+    numbered = PROJECT.replace(PROJECT.split("/")[1], NUMBER)
+    prefix = {"service-account": "serviceAccount", "federated": "serviceAccount", "group": "group", "user": "user"}
+
+    def full(resource):
+        if resource.startswith("projects/_/buckets/"):
+            return f"//storage.googleapis.com/{resource.rsplit('/', 1)[1]}", "storage.googleapis.com/Bucket"
+        if "/keyRings/" in resource:
+            return f"//cloudkms.googleapis.com/{resource.replace(PROJECT, numbered)}", "cloudkms.googleapis.com/KeyRing"
+        return f"//cloudresourcemanager.googleapis.com/{numbered}", "cloudresourcemanager.googleapis.com/Project"
+    bindings = {}
+    for cn, kind, ref, _, grants in GCP_IDENTITIES:
+        for role, _, resource in (g.partition(" on ") for g in grants):
+            bindings.setdefault(resource, {}).setdefault(role, []).append(f"{prefix[kind]}:{ref}")
+    shown = {role: f"{cn} ({role})" for cn, _, role, *_ in PRINCIPAL_ROWS}
+    accounts = [(cn, ref) for cn, kind, ref, _, _ in GCP_IDENTITIES if kind in ("service-account", "federated")]
+    pool = f"projects/{NUMBER}/locations/global/workloadIdentityPools/ciam-prod-ci"
+    ci = next((ref, trusted[0].split(" ", 1)[1]) for cn, _, ref, trusted, _ in GCP_IDENTITIES if cn == "identity-ci")
+    return ([*({"name": full(r)[0], "assetType": full(r)[1],
+                "iamPolicy": {"bindings": [{"role": role, "members": members} for role, members in roles.items()]}}
+               for r, roles in bindings.items()),
+             {"name": f"//iam.googleapis.com/{numbered}/serviceAccounts/{ci[0]}",
+              "assetType": "iam.googleapis.com/ServiceAccount",
+              "iamPolicy": {"bindings": [{"role": "roles/iam.workloadIdentityUser",
+                                          "members": [f"principal://iam.googleapis.com/{pool}/subject/{ci[1]}"]}]}},
+             *(_asset("iam.googleapis.com/ServiceAccount", {"email": ref, "name": f"{PROJECT}/serviceAccounts/{ref}",
+                                                            "displayName": shown.get(cn)}) for cn, ref in accounts)],
+            [{"name": f"{pool}/providers/github", "oidc": {"issuerUri": GITHUB}}])
+
+
 def cloud_exports():
     """{path under exports/cloud/: text}: what each cloud reports its environment runs."""
     source, target, standby = (dn.split(",")[1].split("=")[1] for dn in (AWS, AZ, GCP))
     return {f"{source}/prod/terraform.tfstate": source_state(),
+            f"{source}/prod/landing-zone.tfstate": landing_zone_state(),
             **{f"{target}/prod/{name}": _dumps(doc) for name, doc in target_inventory().items()},
             **{f"{standby}/prod/{name}": text for name, text in standby_inventory().items()}}

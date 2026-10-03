@@ -488,6 +488,109 @@ ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
  roups/rg-ciam-prod/providers/Microsoft.Insights/webtests/sso-login
 ciamRealizes: sso-login
 
+dn: cn=identity-pf,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-pf
+ciamBindingRole: identity-pf
+ciamGrant: Key Vault Secrets User on /subscriptions/00000000-0000-0000-0000-00
+ 0000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.KeyVault/vaults/kv
+ -ciam-prod
+ciamGrant: Monitoring Metrics Publisher on /subscriptions/00000000-0000-0000-0
+ 000-000000000000/resourceGroups/rg-ciam-prod
+ciamIdentityKind: managed-identity
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities
+ /id-ciam-prod-pf
+
+dn: cn=identity-ds,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-ds
+ciamBindingRole: identity-ds
+ciamGrant: Key Vault Secrets User on /subscriptions/00000000-0000-0000-0000-00
+ 0000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.KeyVault/vaults/kv
+ -ciam-prod
+ciamGrant: Key Vault Crypto User on /subscriptions/00000000-0000-0000-0000-000
+ 000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.KeyVault/vaults/kv-
+ ciam-prod
+ciamGrant: Monitoring Metrics Publisher on /subscriptions/00000000-0000-0000-0
+ 000-000000000000/resourceGroups/rg-ciam-prod
+ciamIdentityKind: managed-identity
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities
+ /id-ciam-prod-ds
+
+dn: cn=identity-ci,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-ci
+ciamBindingRole: identity-ci
+ciamGrant: Key Vault Secrets Officer on /subscriptions/00000000-0000-0000-0000
+ -000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.KeyVault/vaults
+ /kv-ciam-prod
+ciamGrant: Network Contributor on /subscriptions/00000000-0000-0000-0000-00000
+ 0000000/resourceGroups/rg-ciam-prod
+ciamGrant: DNS Zone Contributor on /subscriptions/00000000-0000-0000-0000-0000
+ 00000000/resourceGroups/rg-ciam-prod
+ciamIdentityKind: federated
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities
+ /id-ciam-prod-deploy
+ciamTrustedBy: https://token.actions.githubusercontent.com repo:example-aero/c
+ iam-ops:environment:target-prod
+
+dn: cn=identity-admins,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-admins
+ciamBindingRole: identity-admins
+ciamGrant: Key Vault Administrator on /subscriptions/00000000-0000-0000-0000-0
+ 00000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.KeyVault/vaults/k
+ v-ciam-prod (eligible)
+ciamGrant: Log Analytics Reader on /subscriptions/00000000-0000-0000-0000-0000
+ 00000000/resourceGroups/rg-ciam-prod
+ciamIdentityKind: group
+ciamProviderRef: 5b2c0000-0000-4000-8000-0000000000a1
+
+dn: cn=identity-break-glass,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-break-glass
+ciamBindingRole: identity-break-glass
+ciamIdentityKind: user
+ciamProviderRef: 7e1d0000-0000-4000-8000-0000000000b9
+
+dn: cn=org-guardrails,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamGuardrail
+cn: org-guardrails
+ciamBindingRole: org-guardrails
+ciamDenies: region-escape
+ciamDenies: public-storage
+ciamDenies: key-deletion
+ciamGuardrailKind: policy-assignment
+ciamOwner: cn=cloud-landing-zone,ou=owners,dc=ciam-ops
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/providers
+ /Microsoft.Authorization/policyAssignments
+
+dn: cn=operator-sso,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAccessPath
+cn: operator-sso
+ciamAccessKind: workforce-sso
+ciamBindingRole: operator-sso
+ciamProviderRef: https://login.microsoftonline.com/example-aero.test
+
+dn: cn=operator-console,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAccessPath
+cn: operator-console
+ciamAccessKind: bastion
+ciamBindingRole: operator-console
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Network/bastionHosts/bas-ciam-prod
+
 dn: cn=link-source,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamInterconnect

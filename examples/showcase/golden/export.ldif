@@ -154,6 +154,11 @@ objectClass: organizationalUnit
 ou: owners
 description: Teams, partners and vendors
 
+dn: ou=permission-sets,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: permission-sets
+
 dn: ou=pingam,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -173,6 +178,11 @@ dn: ou=pingidm,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: pingidm
+
+dn: ou=principals,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: principals
 
 dn: ou=runbooks,dc=ciam-ops
 objectClass: top
@@ -457,6 +467,20 @@ ciamPublishedBy: pf-engine
 ciamPublishedBy: pf-admin
 ciamRetentionDays: 400
 
+dn: cn=break-glass-root,ou=principals,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamPrincipal
+cn: break-glass-root
+ciamCondition: mfa
+ciamIdentityRole: identity-break-glass
+ciamLastTested: 20251103000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrincipalKind: break-glass
+ciamReviewedOn: 20260301000000Z
+ciamRunbookRef: cn=WI-CIAM-012,ou=runbooks,dc=ciam-ops
+ciamUsesRole: ds-root-password
+
 dn: cn=captcha-recaptcha,ou=external-services,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -636,6 +660,30 @@ ciamChangeStatus: applied
 ciamPlannedAt: 20260906000000Z
 ciamTitle: Allow target DS subnet on the replication port
 
+dn: cn=ciam-admins,ou=principals,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamPrincipal
+cn: ciam-admins
+ciamCondition: mfa
+ciamCondition: jit
+ciamHoldsSet: cn=platform-admin,ou=permission-sets,dc=ciam-ops
+ciamIdentityRole: identity-admins
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrincipalKind: operator
+ciamReviewedOn: 20250630000000Z
+
+dn: cn=ciam-ops-ci,ou=principals,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamPrincipal
+cn: ciam-ops-ci
+ciamHoldsSet: cn=release,ou=permission-sets,dc=ciam-ops
+ciamIdentityRole: identity-ci
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrincipalKind: deployer
+ciamReviewedOn: 20260415000000Z
+
 dn: cn=ciam-platform,ou=owners,dc=ciam-ops
 objectClass: top
 objectClass: ciamParty
@@ -644,6 +692,14 @@ ciamDisplayName: CIAM platform team
 ciamOwnerKind: team
 mail: ciam-platform@example-aero.test
 xCostCenter: CC-1001
+
+dn: cn=cloud-landing-zone,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: cloud-landing-zone
+ciamDisplayName: Cloud landing zone team
+ciamOwnerKind: team
+mail: landing-zone@example-aero.test
 
 dn: cn=companyId,ou=user-schema,dc=ciam-ops
 objectClass: top
@@ -872,6 +928,18 @@ ciamKeyUsage: administration
 ciamMaterialFormat: text
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationDays: 90
+
+dn: cn=ds-runtime,ou=permission-sets,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamPermissionSet
+cn: ds-runtime
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPermits: read-secret ds-root-password
+ciamPermits: use-key disk-encryption
+ciamPermits: write-storage backup-target
+ciamPermits: write-logs audit-logs
+description: What the directory servers read and write
 
 dn: cn=ds-tls-keystore,ou=credentials,dc=ciam-ops
 objectClass: top
@@ -1664,6 +1732,18 @@ ciamMaterialFormat: text
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationDays: 180
 
+dn: cn=pf-runtime,ou=permission-sets,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamPermissionSet
+cn: pf-runtime
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPermits: read-secret pf-admin-password
+ciamPermits: read-secret pf-signing-key
+ciamPermits: read-secret pf-ds-bind-password
+ciamPermits: write-logs audit-logs
+description: What PingFederate's servers read and write
+
 dn: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 objectClass: top
 objectClass: ciamCertificate
@@ -1712,6 +1792,41 @@ ciamMaterialFormat: text
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationDays: 90
 
+dn: cn=pingds,ou=principals,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamPrincipal
+cn: pingds
+ciamHoldsSet: cn=ds-runtime,ou=permission-sets,dc=ciam-ops
+ciamIdentityRole: identity-ds
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrincipalKind: workload
+ciamReviewedOn: 20260601000000Z
+ciamTargetRole: ds
+
+dn: cn=pingfederate,ou=principals,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamPrincipal
+cn: pingfederate
+ciamHoldsSet: cn=pf-runtime,ou=permission-sets,dc=ciam-ops
+ciamIdentityRole: identity-pf
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrincipalKind: workload
+ciamReviewedOn: 20260601000000Z
+ciamTargetRole: pf-engine
+
+dn: cn=platform-admin,ou=permission-sets,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamPermissionSet
+cn: platform-admin
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPermits: manage pf-admin-password
+ciamPermits: manage-key disk-encryption
+ciamPermits: read-logs audit-logs
+description: What the platform admins manage
+
 dn: cn=registrationStatus,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
@@ -1724,6 +1839,16 @@ ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: none
 ciamPurpose: Registration workflow state (pending / approved / active / disabl
  ed)
+
+dn: cn=release,ou=permission-sets,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamPermissionSet
+cn: release
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPermits: write-secret pf-admin-password
+ciamPermits: manage pf-sso-service
+description: What the ciam-ops pipeline changes when it releases
 
 dn: cn=replication-lag,ou=alert-rules,dc=ciam-ops
 objectClass: top
@@ -2128,6 +2253,18 @@ ciamDocUrl: https://wiki.example-aero.test/ciam/WI-CIAM-010
 ciamLastValidated: 20260315000000Z
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamTitle: Onboard a SAML application
+ciamVersion: 1.0
+
+dn: cn=WI-CIAM-012,ou=runbooks,dc=ciam-ops
+objectClass: top
+objectClass: ciamRunbook
+cn: WI-CIAM-012
+ciamAppliesTo: cn=secret-ds-root-password,ou=bindings,env=prod,cloud=source,ou
+ =environments,dc=ciam-ops
+ciamDocUrl: https://wiki.example-aero.test/ciam/WI-CIAM-012
+ciamLastValidated: 20251103000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamTitle: Use the break-glass account (directory root)
 ciamVersion: 1.0
 
 dn: cn=xCostCenter,ou=custom-schema,dc=ciam-ops
@@ -5337,6 +5474,204 @@ cn: HTTPS
 ciamEnabled: TRUE
 ciamListenPort: 8443
 
+dn: cn=identity-admins,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-admins
+ciamBindingRole: identity-admins
+ciamGrant: secretsmanager:PutSecretValue on arn:aws:secretsmanager:us-east-1:1
+ 11122223333:secret:ciam/prod/pf-admin-password-??????
+ciamGrant: secretsmanager:UpdateSecret on arn:aws:secretsmanager:us-east-1:111
+ 122223333:secret:ciam/prod/pf-admin-password-??????
+ciamGrant: secretsmanager:RotateSecret on arn:aws:secretsmanager:us-east-1:111
+ 122223333:secret:ciam/prod/pf-admin-password-??????
+ciamGrant: secretsmanager:DeleteSecret on arn:aws:secretsmanager:us-east-1:111
+ 122223333:secret:ciam/prod/pf-admin-password-??????
+ciamGrant: kms:DescribeKey on arn:aws:kms:us-east-1:111122223333:key/mrk-1234a
+ bcd12ab34cd56ef1234567890ab
+ciamGrant: kms:EnableKeyRotation on arn:aws:kms:us-east-1:111122223333:key/mrk
+ -1234abcd12ab34cd56ef1234567890ab
+ciamGrant: kms:PutKeyPolicy on arn:aws:kms:us-east-1:111122223333:key/mrk-1234
+ abcd12ab34cd56ef1234567890ab
+ciamGrant: logs:GetLogEvents on arn:aws:logs:us-east-1:111122223333:log-group:
+ /ciam/prod/audit:*
+ciamGrant: logs:FilterLogEvents on arn:aws:logs:us-east-1:111122223333:log-gro
+ up:/ciam/prod/audit:*
+ciamIdentityKind: permission-set
+ciamProviderRef: 9a4f7c2e-0000-4000-8000-0000000000a1
+
+dn: cn=identity-admins,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-admins
+ciamBindingRole: identity-admins
+ciamGrant: roles/secretmanager.admin on projects/example-aero-ciam-standby
+ciamGrant: roles/cloudkms.admin on projects/example-aero-ciam-standby
+ciamGrant: roles/logging.viewer on projects/example-aero-ciam-standby
+ciamIdentityKind: group
+ciamProviderRef: ciam-admins@example-aero.test
+
+dn: cn=identity-admins,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-admins
+ciamBindingRole: identity-admins
+ciamGrant: Key Vault Administrator on /subscriptions/00000000-0000-0000-0000-0
+ 00000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.KeyVault/vaults/k
+ v-ciam-prod (eligible)
+ciamGrant: Log Analytics Reader on /subscriptions/00000000-0000-0000-0000-0000
+ 00000000/resourceGroups/rg-ciam-prod
+ciamIdentityKind: group
+ciamProviderRef: 5b2c0000-0000-4000-8000-0000000000a1
+
+dn: cn=identity-break-glass,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-break-glass
+ciamBindingRole: identity-break-glass
+ciamIdentityKind: role
+ciamProviderRef: arn:aws:iam::111122223333:role/ciam-prod-break-glass
+ciamTrustedBy: arn:aws:iam::111122223333:root
+
+dn: cn=identity-break-glass,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-break-glass
+ciamBindingRole: identity-break-glass
+ciamGrant: roles/owner on projects/example-aero-ciam-standby
+ciamIdentityKind: user
+ciamProviderRef: breakglass@example-aero.test
+
+dn: cn=identity-break-glass,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-break-glass
+ciamBindingRole: identity-break-glass
+ciamIdentityKind: user
+ciamProviderRef: 7e1d0000-0000-4000-8000-0000000000b9
+
+dn: cn=identity-ci,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-ci
+ciamBindingRole: identity-ci
+ciamGrant: secretsmanager:PutSecretValue on arn:aws:secretsmanager:us-east-1:1
+ 11122223333:secret:ciam/prod/pf-admin-password-??????
+ciamGrant: elasticloadbalancing:ModifyListener on arn:aws:elasticloadbalancing
+ :*:*:listener/net/ciam-prod-svc-sso/*
+ciamGrant: elasticloadbalancing:RegisterTargets on arn:aws:elasticloadbalancin
+ g:*:*:targetgroup/ciam-prod-svc-sso-*
+ciamGrant: elasticloadbalancing:DeregisterTargets on arn:aws:elasticloadbalanc
+ ing:*:*:targetgroup/ciam-prod-svc-sso-*
+ciamGrant: route53:ChangeResourceRecordSets on arn:aws:route53:::hostedzone/Z0
+ EXAMPLE2PUBLIC
+ciamIdentityKind: federated
+ciamProviderRef: arn:aws:iam::111122223333:role/ciam-prod-deploy
+ciamTrustedBy: https://token.actions.githubusercontent.com repo:example-aero/c
+ iam-ops:environment:prod
+
+dn: cn=identity-ci,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-ci
+ciamBindingRole: identity-ci
+ciamGrant: roles/secretmanager.secretVersionAdder on projects/example-aero-cia
+ m-standby
+ciamGrant: roles/compute.loadBalancerAdmin on projects/example-aero-ciam-stand
+ by
+ciamGrant: roles/dns.admin on projects/example-aero-ciam-standby
+ciamIdentityKind: federated
+ciamProviderRef: ciam-standby-deploy@example-aero-ciam-standby.iam.gserviceacc
+ ount.com
+ciamTrustedBy: https://token.actions.githubusercontent.com repo:example-aero/c
+ iam-ops:environment:standby
+
+dn: cn=identity-ci,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-ci
+ciamBindingRole: identity-ci
+ciamGrant: Key Vault Secrets Officer on /subscriptions/00000000-0000-0000-0000
+ -000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.KeyVault/vaults
+ /kv-ciam-prod
+ciamGrant: Network Contributor on /subscriptions/00000000-0000-0000-0000-00000
+ 0000000/resourceGroups/rg-ciam-prod
+ciamGrant: DNS Zone Contributor on /subscriptions/00000000-0000-0000-0000-0000
+ 00000000/resourceGroups/rg-ciam-prod
+ciamIdentityKind: federated
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities
+ /id-ciam-prod-deploy
+ciamTrustedBy: https://token.actions.githubusercontent.com repo:example-aero/c
+ iam-ops:environment:target-prod
+
+dn: cn=identity-ds,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-ds
+ciamBindingRole: identity-ds
+ciamGrant: secretsmanager:GetSecretValue on arn:aws:secretsmanager:us-east-1:1
+ 11122223333:secret:ciam/prod/ds-root-password-??????
+ciamGrant: s3:* on *
+ciamGrant: logs:PutLogEvents on arn:aws:logs:us-east-1:111122223333:log-group:
+ /ciam/prod/audit:*
+ciamGrant: logs:CreateLogStream on arn:aws:logs:us-east-1:111122223333:log-gro
+ up:/ciam/prod/audit:*
+ciamGrant: kms:Decrypt on arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd1
+ 2ab34cd56ef1234567890ab
+ciamGrant: kms:Encrypt on arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd1
+ 2ab34cd56ef1234567890ab
+ciamGrant: kms:GenerateDataKey on arn:aws:kms:us-east-1:111122223333:key/mrk-1
+ 234abcd12ab34cd56ef1234567890ab
+ciamIdentityKind: role
+ciamProviderRef: arn:aws:iam::111122223333:role/ciam-prod-ds
+ciamTrustedBy: ec2.amazonaws.com
+
+dn: cn=identity-ds,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-ds
+ciamBindingRole: identity-ds
+ciamGrant: roles/secretmanager.secretAccessor on projects/example-aero-ciam-st
+ andby
+ciamGrant: roles/storage.objectCreator on projects/_/buckets/example-aero-ciam
+ -standby-ds-backups
+ciamGrant: roles/cloudkms.cryptoKeyEncrypterDecrypter on projects/example-aero
+ -ciam-standby/locations/us-central1/keyRings/ciam
+ciamGrant: roles/logging.logWriter on projects/example-aero-ciam-standby
+ciamIdentityKind: service-account
+ciamProviderRef: ciam-standby-ds@example-aero-ciam-standby.iam.gserviceaccount
+ .com
+
+dn: cn=identity-ds,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-ds
+ciamBindingRole: identity-ds
+ciamGrant: Key Vault Secrets User on /subscriptions/00000000-0000-0000-0000-00
+ 0000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.KeyVault/vaults/kv
+ -ciam-prod
+ciamGrant: Key Vault Crypto User on /subscriptions/00000000-0000-0000-0000-000
+ 000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.KeyVault/vaults/kv-
+ ciam-prod
+ciamGrant: Monitoring Metrics Publisher on /subscriptions/00000000-0000-0000-0
+ 000-000000000000/resourceGroups/rg-ciam-prod
+ciamIdentityKind: managed-identity
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities
+ /id-ciam-prod-ds
+
+dn: cn=identity-idm,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-idm
+ciamBindingRole: identity-idm
+ciamGrant: secretsmanager:GetSecretValue on arn:aws:secretsmanager:us-east-1:1
+ 11122223333:secret:ciam/prod/idm-*
+ciamIdentityKind: role
+ciamProviderRef: arn:aws:iam::111122223333:role/ciam-prod-idm
+ciamTrustedBy: ec2.amazonaws.com
+
 dn: cn=identity-management,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamStackComponent
@@ -5366,6 +5701,48 @@ ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
  s/opsdir-adapter-pingidm
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: identity-management
+
+dn: cn=identity-pf,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-pf
+ciamBindingRole: identity-pf
+ciamGrant: secretsmanager:GetSecretValue on arn:aws:secretsmanager:us-east-1:1
+ 11122223333:secret:ciam/prod/*
+ciamGrant: logs:PutLogEvents on arn:aws:logs:us-east-1:111122223333:log-group:
+ /ciam/prod/audit:*
+ciamGrant: logs:CreateLogStream on arn:aws:logs:us-east-1:111122223333:log-gro
+ up:/ciam/prod/audit:*
+ciamIdentityKind: role
+ciamProviderRef: arn:aws:iam::111122223333:role/ciam-prod-pf
+ciamTrustedBy: ec2.amazonaws.com
+
+dn: cn=identity-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-pf
+ciamBindingRole: identity-pf
+ciamGrant: roles/secretmanager.secretAccessor on projects/example-aero-ciam-st
+ andby
+ciamGrant: roles/logging.logWriter on projects/example-aero-ciam-standby
+ciamIdentityKind: service-account
+ciamProviderRef: ciam-standby-pf@example-aero-ciam-standby.iam.gserviceaccount
+ .com
+
+dn: cn=identity-pf,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityBinding
+cn: identity-pf
+ciamBindingRole: identity-pf
+ciamGrant: Key Vault Secrets User on /subscriptions/00000000-0000-0000-0000-00
+ 0000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.KeyVault/vaults/kv
+ -ciam-prod
+ciamGrant: Monitoring Metrics Publisher on /subscriptions/00000000-0000-0000-0
+ 000-000000000000/resourceGroups/rg-ciam-prod
+ciamIdentityKind: managed-identity
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities
+ /id-ciam-prod-pf
 
 dn: cn=Json File-Based Access Logger,ou=log-publishers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
@@ -5587,6 +5964,57 @@ ciamSpansZone: us-central1-a
 ciamSpansZone: us-central1-b
 ciamTargetRole: pf-engine
 
+dn: cn=operator-console,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAccessPath
+cn: operator-console
+ciamAccessKind: session
+ciamBindingRole: operator-console
+ciamProviderRef: arn:aws:ssm:us-east-1:111122223333:document/SSM-SessionManage
+ rRunShell
+
+dn: cn=operator-console,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAccessPath
+cn: operator-console
+ciamAccessKind: iap
+ciamBindingRole: operator-console
+ciamProviderRef: projects/example-aero-ciam-standby/iap_tunnel
+
+dn: cn=operator-console,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAccessPath
+cn: operator-console
+ciamAccessKind: bastion
+ciamBindingRole: operator-console
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Network/bastionHosts/bas-ciam-prod
+
+dn: cn=operator-sso,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAccessPath
+cn: operator-sso
+ciamAccessKind: workforce-sso
+ciamBindingRole: operator-sso
+ciamProviderRef: arn:aws:sso:::instance/ssoins-72231a2b3c4d5e6f
+ciamTrustedBy: d-9067a1b2c3
+
+dn: cn=operator-sso,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAccessPath
+cn: operator-sso
+ciamAccessKind: workforce-sso
+ciamBindingRole: operator-sso
+ciamProviderRef: https://accounts.google.com/o/saml2?idpid=C0example
+
+dn: cn=operator-sso,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAccessPath
+cn: operator-sso
+ciamAccessKind: workforce-sso
+ciamBindingRole: operator-sso
+ciamProviderRef: https://login.microsoftonline.com/example-aero.test
+
 dn: cn=ops-logs,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamLogDestination
@@ -5617,6 +6045,46 @@ ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
  roups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-cia
  m-prod-ops
 ciamRetentionDays: 30
+
+dn: cn=org-guardrails,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamGuardrail
+cn: org-guardrails
+ciamBindingRole: org-guardrails
+ciamDenies: region-escape
+ciamDenies: audit-log-disable
+ciamDenies: key-deletion
+ciamGuardrailKind: service-control
+ciamOwner: cn=cloud-landing-zone,ou=owners,dc=ciam-ops
+ciamProviderRef: arn:aws:organizations::111122223333:policy/o-exampleaero1/ser
+ vice_control_policy/p-ciamfence1
+
+dn: cn=org-guardrails,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamGuardrail
+cn: org-guardrails
+ciamBindingRole: org-guardrails
+ciamDenies: region-escape
+ciamDenies: public-storage
+ciamDenies: audit-log-disable
+ciamDenies: service-account-keys
+ciamDenies: key-deletion
+ciamGuardrailKind: org-constraint
+ciamOwner: cn=cloud-landing-zone,ou=owners,dc=ciam-ops
+ciamProviderRef: projects/example-aero-ciam-standby/policies
+
+dn: cn=org-guardrails,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamGuardrail
+cn: org-guardrails
+ciamBindingRole: org-guardrails
+ciamDenies: region-escape
+ciamDenies: public-storage
+ciamDenies: key-deletion
+ciamGuardrailKind: policy-assignment
+ciamOwner: cn=cloud-landing-zone,ou=owners,dc=ciam-ops
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/providers
+ /Microsoft.Authorization/policyAssignments
 
 dn: cn=partner-portal-access,cn=partner-apps,ou=partners,ou=policy-sets,ou=pingam,dc=ciam-ops
 objectClass: top

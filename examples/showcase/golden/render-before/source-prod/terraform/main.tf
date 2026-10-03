@@ -231,6 +231,165 @@ resource "aws_vpc_security_group_ingress_rule" "fw_supplier_portal_0_1636" {
   description       = "consumer supplier-portal-svc (fw-supplier-portal)"
 }
 
+resource "aws_iam_role" "identity_ds" {
+  name               = "ciam-prod-ds"
+  assume_role_policy = jsonencode({
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "ec2.amazonaws.com"
+        },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  })
+  tags = {
+    Principal = "pingds"
+    Role      = "identity-ds"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_iam_role_policy" "identity_ds" {
+  name   = "ciam-prod-ds-permissions"
+  role   = aws_iam_role.identity_ds.id
+  policy = jsonencode({
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "ReadSecretDsRootPassword",
+        "Effect": "Allow",
+        "Action": [
+          "secretsmanager:GetSecretValue"
+        ],
+        "Resource": [
+          "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/ds-root-password-??????"
+        ]
+      },
+      {
+        "Sid": "UseKeyDiskEncryption",
+        "Effect": "Allow",
+        "Action": [
+          "kms:Decrypt",
+          "kms:Encrypt",
+          "kms:GenerateDataKey"
+        ],
+        "Resource": [
+          "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
+        ]
+      },
+      {
+        "Sid": "WriteLogsAuditLogs",
+        "Effect": "Allow",
+        "Action": [
+          "logs:PutLogEvents",
+          "logs:CreateLogStream"
+        ],
+        "Resource": [
+          "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/audit:*",
+          "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/audit"
+        ]
+      },
+      {
+        "Sid": "WriteStorageBackupTarget",
+        "Effect": "Allow",
+        "Action": [
+          "s3:PutObject"
+        ],
+        "Resource": [
+          "arn:aws:s3:::example-aero-ciam-prod-ds-backups/*",
+          "arn:aws:s3:::example-aero-ciam-prod-ds-backups"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_instance_profile" "identity_ds" {
+  name = "ciam-prod-ds"
+  role = aws_iam_role.identity_ds.name
+}
+
+resource "aws_iam_role" "identity_pf" {
+  name               = "ciam-prod-pf"
+  assume_role_policy = jsonencode({
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "ec2.amazonaws.com"
+        },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  })
+  tags = {
+    Principal = "pingfederate"
+    Role      = "identity-pf"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_iam_role_policy" "identity_pf" {
+  name   = "ciam-prod-pf-permissions"
+  role   = aws_iam_role.identity_pf.id
+  policy = jsonencode({
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "ReadSecretPfAdminPassword",
+        "Effect": "Allow",
+        "Action": [
+          "secretsmanager:GetSecretValue"
+        ],
+        "Resource": [
+          "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-admin-password-??????"
+        ]
+      },
+      {
+        "Sid": "ReadSecretPfDsBindPassword",
+        "Effect": "Allow",
+        "Action": [
+          "secretsmanager:GetSecretValue"
+        ],
+        "Resource": [
+          "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-ds-bind-password-??????"
+        ]
+      },
+      {
+        "Sid": "ReadSecretPfSigningKey",
+        "Effect": "Allow",
+        "Action": [
+          "secretsmanager:GetSecretValue"
+        ],
+        "Resource": [
+          "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-signing-key-??????"
+        ]
+      },
+      {
+        "Sid": "WriteLogsAuditLogs",
+        "Effect": "Allow",
+        "Action": [
+          "logs:PutLogEvents",
+          "logs:CreateLogStream"
+        ],
+        "Resource": [
+          "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/audit:*",
+          "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/audit"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_instance_profile" "identity_pf" {
+  name = "ciam-prod-pf"
+  role = aws_iam_role.identity_pf.name
+}
+
 resource "aws_instance" "am_1" {
   ami                    = "ami-0a9b8c7d6e5f40321"
   instance_type          = "m6i.large"
@@ -274,6 +433,7 @@ resource "aws_instance" "ds_1" {
   instance_type          = "m6i.xlarge"
   subnet_id              = data.aws_subnet.subnet_ds_a.id
   private_ip             = "10.20.1.11"
+  iam_instance_profile   = aws_iam_instance_profile.identity_ds.name
   vpc_security_group_ids = [aws_security_group.ds.id]
   root_block_device {
     encrypted  = true
@@ -293,6 +453,7 @@ resource "aws_instance" "ds_2" {
   instance_type          = "m6i.xlarge"
   subnet_id              = data.aws_subnet.subnet_ds_b.id
   private_ip             = "10.20.2.11"
+  iam_instance_profile   = aws_iam_instance_profile.identity_ds.name
   vpc_security_group_ids = [aws_security_group.ds.id]
   root_block_device {
     encrypted  = true
@@ -312,6 +473,7 @@ resource "aws_instance" "ds_3" {
   instance_type          = "m6i.xlarge"
   subnet_id              = data.aws_subnet.subnet_ds_c.id
   private_ip             = "10.20.3.11"
+  iam_instance_profile   = aws_iam_instance_profile.identity_ds.name
   vpc_security_group_ids = [aws_security_group.ds.id]
   root_block_device {
     encrypted  = true
@@ -388,6 +550,7 @@ resource "aws_instance" "pf_engine_1" {
   instance_type          = "m6i.large"
   subnet_id              = data.aws_subnet.subnet_pf_a.id
   private_ip             = "10.20.4.21"
+  iam_instance_profile   = aws_iam_instance_profile.identity_pf.name
   vpc_security_group_ids = [aws_security_group.pf_engine.id]
   root_block_device {
     encrypted  = true
@@ -407,6 +570,7 @@ resource "aws_instance" "pf_engine_2" {
   instance_type          = "m6i.large"
   subnet_id              = data.aws_subnet.subnet_pf_b.id
   private_ip             = "10.20.5.21"
+  iam_instance_profile   = aws_iam_instance_profile.identity_pf.name
   vpc_security_group_ids = [aws_security_group.pf_engine.id]
   root_block_device {
     encrypted  = true

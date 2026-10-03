@@ -9,6 +9,7 @@ declares the roles it needs, what it renders, the planner checks it adds and the
 it can resolve; a package may also add schema definitions of its own (a fragment under its own OID arc). Both are
 plain records of data and functions; connectors compose them.
 """
+from collections import namedtuple
 from typing import Callable, Mapping, NamedTuple, Optional
 
 from .directory import Directory
@@ -74,6 +75,22 @@ Imported = NamedTuple("Imported", [("containers", tuple), ("groups", tuple), ("n
 # What connectors provide to adapters while rendering: secret_command(ref-uri) -> shell command that resolves it
 Services = NamedTuple("Services", [("secret_command", Callable)])
 
+# One row of a cloud's permission table: what a neutral verb (read-secret, use-key, ...) on a binding of a class
+# (ciamSecretRef, ciamKeyRef, ...; kind: a stream's kind, or None for any) needs in the cloud's terms. needs is a tuple
+# of requirements, each a tuple of alternatives (actions or roles; the first is what renderers grant); broad when the
+# cloud can't scope it to the one resource (log writes in some clouds), so a wider grant is expected, not a finding.
+# related: ((link attribute, needs), ...): what is also needed on the binding whose role the binding's link attribute
+# names, when it names one (a secret encrypted by a customer managed key: kms:Decrypt on that key).
+Permission = namedtuple("Permission", ("verb", "binding_class", "kind", "needs", "broad", "related"), defaults=((),))
+# What a cloud adapter knows about access: its permission table, the actions or roles that let an identity raise its
+# own access (patterns: iam:PassRole, roles/owner, ...), whether a granted resource covers a binding's resource
+# (covers(granted, binding) -> bool: equal, a parent scope, or a pattern), and the resource as the cloud names it
+# (resource(binding) -> str | None); and, when the cloud has an evaluator for any principal, the commands that ask it
+# about one permission (evaluator(m, identity binding, binding, row) -> (shell command, ...), each printing JSON;
+# () when it can't answer for that identity).
+AccessModel = namedtuple("AccessModel", ("permissions", "escalations", "covers", "resource", "evaluator"),
+                         defaults=(None,))
+
 Adapter = NamedTuple("Adapter", [("name", str),
                                  ("kind", str),                       # provider | product | host | delivery | secret-store
                                  ("applies", Optional[Callable]),     # (EnvModel) -> bool, from directory data only;
@@ -94,8 +111,10 @@ Adapter = NamedTuple("Adapter", [("name", str),
                                                                       # versions it renders and reads
                                  ("secret_patterns", tuple),          # SecretPatterns: its vendor's credential forms
                                  ("importers", tuple),                # Importers: the product exports it reads
-                                 ("profile_terms", Optional[object])])  # what its directory attributes mean to the
+                                 ("profile_terms", Optional[object]),  # what its directory attributes mean to the
                                                                       # data profile (directory profile.Terms), or None
+                                 ("access", Optional[object])])       # a cloud's AccessModel: what its actions and
+                                                                      # roles mean as neutral permissions, or None
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

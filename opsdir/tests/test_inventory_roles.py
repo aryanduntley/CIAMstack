@@ -43,3 +43,24 @@ def test_the_same_values_in_another_order_change_nothing():
                         name="fw-rep")
     ((_, (entry,)),), _ = environment_groups(d, "main/prod", (reported,))
     assert entry == get(d, rule) and values(entry, "ciamSourceCidr") == ("10.60.1.0/24", "10.20.0.0/16")
+
+
+def test_identities_match_by_short_name_and_role_links_name_the_linked_role():
+    env = "env=prod,cloud=main,ou=environments,dc=ciam-ops"
+    b = f"ou=bindings,{env}"
+    d = make_directory((), {}, (
+        ("cloud=main,ou=environments,dc=ciam-ops", ("top", "ciamCloud"), {"cloud": ["main"]}),
+        (env, ("top", "ciamEnvironment"), {"env": ["prod"]}),
+        (b, ("top", "organizationalUnit"), {"ou": ["bindings"]}),
+        (f"cn=pf,{b}", ("top", "ciamIdentityBinding"), {"cn": ["pf"], "ciamBindingRole": ["identity-pf"],
+                                                         "ciamProviderRef": ["ciam-prod-pf"]}),
+        (f"cn=key,{b}", ("top", "ciamKeyRef"), {"cn": ["key"], "ciamBindingRole": ["secrets-key"],
+                                                "ciamRefUri": ["aws-kms://k-1"]})))
+    groups, _ = environment_groups(d, "main/prod", (
+        resource("identity", "arn:aws:iam::1:role/ciam-prod-pf", {"ciamGrant": "s3:GetObject on b"}),
+        resource("key", "k-1", {"ciamRefUri": "aws-kms://k-1"}),
+        resource("secret", "s-1", {"ciamRefUri": "aws-sm://s-1"}, links={"ciamEncryptedByRole": "k-1"},
+                 name="s-1", role="app-password")))
+    placed = {e.dn: e for _, es in groups for e in es}
+    assert values(placed[f"cn=pf,{b}"], "ciamProviderRef") == ("arn:aws:iam::1:role/ciam-prod-pf",)
+    assert values(placed[f"cn=s-1,{b}"], "ciamEncryptedByRole") == ("secrets-key",)

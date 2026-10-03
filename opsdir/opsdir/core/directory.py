@@ -85,6 +85,12 @@ def gtime_date(gt):
     return dt.datetime.strptime(gt[:8], "%Y%m%d").date()
 
 
+def date_of(e, attr):
+    """The date of an entry's time attribute, or None when it holds none."""
+    v = one(e, attr)
+    return gtime_date(v) if v else None
+
+
 def rdn_value(e):
     return rdn_of(e.dn)
 

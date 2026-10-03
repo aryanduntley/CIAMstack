@@ -87,7 +87,7 @@ EXPORT = "\n".join(json.dumps(a) for a in (
                                                     "rrdatas": ["34.120.10.10"]},
            name=f"//dns.googleapis.com/{P}/managedZones/ciam-public/rrsets/sso.example.test./A"),
     _asset("container.googleapis.com/NodePool", {"name": "default"}),
-    _asset("iam.googleapis.com/ServiceAccount", {"email": "ciam@ciam-prod.iam.gserviceaccount.com"})))
+    _asset("compute.googleapis.com/Image", {"name": "ciam-base-2026-09"})))
 
 GROUP = f"{API}/{P}/zones/us-central1-a/instanceGroups/ciam-prod-svc-ldaps-us-central1-a"
 FILES = {
@@ -265,7 +265,7 @@ def test_what_cant_be_read_is_named_and_no_value_is_carried():
     resources, notices = cli_resources(FILES)
     assert {"notes.json: not JSON; not read",
             "other.json: 1 item(s) that aren't Cloud Asset Inventory or gcloud output this importer reads; not read",
-            "iam.googleapis.com/ServiceAccount (1): Cloud Asset Inventory assets of a type not read",
+            "compute.googleapis.com/Image (1): Cloud Asset Inventory assets of a type not read",
             "google_compute_instance (1): outside the listed networks (ciam-vpc); not read"} <= set(notices)
     assert any(n.startswith("search.json: 1 Cloud Asset Inventory search result(s)") for n in notices)
     assert "hunter2" not in repr(resources) and "pd-integration-key" not in repr(resources)

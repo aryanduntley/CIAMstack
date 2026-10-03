@@ -38,6 +38,8 @@ matching Terraform resource, so the same mapping reads them as reads Terraform s
   scheduler get-schedule                ScheduleExpression        -> aws_scheduler_schedule (enabled; one per file)
   codepipeline get-pipeline             pipeline                  -> aws_codepipeline (its ARN from metadata)
   codebuild batch-get-projects          projects                  -> aws_codebuild_project
+  IAM: get-account-authorization-details, key and bucket policies, resource policies, control policies, Identity
+  Center, the policy simulator's verdicts                         -> see cli_iam.py
 Network resources outside the listed VPCs are counted, not read; secrets, keys, buckets, functions, pipelines and build
 projects are account-wide, so the importer counts rather than lists the ones the record doesn't have and nothing names
 a role for.
@@ -49,14 +51,15 @@ from opsdir.core.contract import Importer
 from opsdir.core.directory import gtime
 from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_document
+from .cli_iam import KEYS as IAM_KEYS, iam_pairs
 from .inventory import PROVIDER, pairs_resources
 
 KEYS = ("Vpcs", "Subnets", "Reservations", "SecurityGroups", "SecurityGroupRules", "NatGateways", "LoadBalancers",
         "TagDescriptions", "Listeners", "TargetGroups", "TargetHealthDescriptions", "ResourceRecordSets", "SecretList",
         "KeyMetadata", "KeyRotationEnabled", "Buckets", "Functions", "Rules", "Targets", "ScheduleExpression",
-        "pipeline", "projects", "Tags")         # Tags last: other outputs carry tags too
+        "pipeline", "projects", *IAM_KEYS, "Tags")         # Tags last: other outputs carry tags too
 IN_VPC = ("aws_subnet", "aws_instance", "aws_security_group", "aws_lb", "aws_nat_gateway")
-ACCOUNT_WIDE = ("secret", "key", "storage", "job")
+ACCOUNT_WIDE = ("secret", "key", "storage", "job", "identity")
 
 
 def _outputs(texts):
@@ -209,6 +212,7 @@ def _secrets(outs):
     listed = _all(outs, "SecretList")
     return [*(("aws_secretsmanager_secret", {"arn": s.get("ARN"), "name": s.get("Name"), "tags": _tags(s.get("Tags")),
                                              "rotation_enabled": bool(s.get("RotationEnabled")),
+                                             "kms_key_id": s.get("KmsKeyId"),
                                              "last_rotated": generalized_time(s.get("LastRotatedDate"))})
               for s in listed),
             *(("aws_secretsmanager_secret_rotation", {"secret_id": s.get("ARN"),
@@ -288,24 +292,27 @@ def _scoped(pairs):
                 f"not read",) if rules else ())))
 
 
-def cli_resources(texts):
-    """(resources, notices) of an environment's AWS CLI outputs ({path within the folder: text})."""
+def cli_resources(texts, at=None):
+    """(resources, notices) of an environment's AWS CLI outputs ({path within the folder: text}); at dates the cloud
+    evaluator's verdicts among them (the import's time)."""
     outs, unknown = _outputs(texts)
+    iam, iam_notices = iam_pairs(outs, at)
     forwarding, target_notices = _forwarding(outs)
     keys, key_notices = _keys(outs)
     jobs, job_notices = _jobs(outs)
     pairs, scope_notices = _scoped([*_network(outs), *_instances(outs), *_security_groups(outs),
                                     *_load_balancers(outs), *forwarding, *_records(outs), *_secrets(outs), *keys,
                                     *(("aws_s3_bucket", {"bucket": b.get("Name")}) for b in _all(outs, "Buckets")),
-                                    *jobs])
+                                    *jobs, *iam])
     resources, rule_notices = pairs_resources(pairs)
-    return resources, (*unknown, *target_notices, *key_notices, *job_notices, *scope_notices, *rule_notices)
+    return resources, (*unknown, *target_notices, *key_notices, *job_notices, *iam_notices, *scope_notices,
+                       *rule_notices)
 
 
 def read_cli_inventory(files, d, patterns, at=None):
     """Imported: each environment's servers and bindings from the AWS CLI outputs under <cloud>/<env>/."""
-    return layout_import(files, d, PROVIDER, "AWS", cli_resources, ".json", "AWS CLI output", "vpcs.json",
-                         summarize=ACCOUNT_WIDE)
+    return layout_import(files, d, PROVIDER, "AWS", lambda texts: cli_resources(texts, at), ".json", "AWS CLI output",
+                         "vpcs.json", summarize=ACCOUNT_WIDE)
 
 
 CLI_INVENTORY = Importer("cli-inventory", "AWS CLI outputs (aws … --output json) under <cloud>/<env>/, as the "

@@ -11,6 +11,7 @@ PARTIES = (      # cn, kind, mail, contact url, display name
     ("tech-pubs-team", "team", "tech-pubs@example-aero.test", None, None),
     ("mobile-team", "team", "mobile@example-aero.test", None, None),
     ("network-security", "team", "netsec@example-aero.test", None, None),
+    ("cloud-landing-zone", "team", "landing-zone@example-aero.test", None, "Cloud landing zone team"),
     ("skyline-air", "partner", "identity-ops@skyline-air.example", "https://partners.skyline-air.example/it-requests", None),
     ("harbor-mro", "partner", "it-security@harbor-mro.example", "https://portal.harbor-mro.example/support", None),
     ("example-aero", "operator", None, None, "Example Aero"),
@@ -52,6 +53,8 @@ RUNBOOKS = (
     ("WI-CIAM-007", "Recover replication after a replica outage", "2026-08-01", [f"cn=topology,ou=replication,{DECL}"]),
     ("WI-CIAM-010", "Onboard a SAML application", "2026-03-15",
      [f"cn=customer-portal,{INTS}", f"cn=pf-signing-2025,{CERTS}"]),
+    ("WI-CIAM-012", "Use the break-glass account (directory root)", "2025-11-03",
+     [f"cn=secret-ds-root-password,ou=bindings,{AWS}"]),
 )
 
 

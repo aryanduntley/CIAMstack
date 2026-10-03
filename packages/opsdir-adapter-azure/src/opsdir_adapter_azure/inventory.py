@@ -42,6 +42,7 @@ From Terraform state (terraform.tfstate, format version 4; hashicorp/azurerm), m
     alert_v2                                     it realizes (tag Realizes)
   azurerm_application_insights_standard_     -> synthetic check (kind canary, ciamCanaryBinding): its frequency as an
     web_test                                     interval, the canary it realizes (tag Realizes)
+  access control: identities and their role assignments, access policies, policy assignments, bastions: see iam.py
 Roles of resources the record doesn't have come from their tags Role (or BindingRole), or for storage containers from
 their metadata (role); a compute group's binding role is its tag BindingRole, else compute-<its tag Role>, a
 cluster's its tag BindingRole or Role, else cluster, and an alarm's or synthetic check's, else alarm-<Realizes> or
@@ -57,6 +58,7 @@ from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, l
 from opsdir.core.sources import json_document
 from opsdir.domains.messaging.dns import dmarc_policy, spf_authorizes
 from opsdir_format_terraform.state import read_state
+from .iam import iam_resources
 
 PROVIDER = "azure"
 
@@ -508,10 +510,11 @@ def pairs_resources(pairs):
     """(resources, notices) of (Terraform resource type, attributes) pairs: what every Azure source is read into
     (Terraform state as it is; CLI output normalized to the same attribute names, opsdir_adapter_azure.cli)."""
     rules, rule_notices = _firewall(pairs)
+    iam, iam_notices = iam_resources(pairs)
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *rules, *_secrets(pairs),
              *_keys(pairs), *_storage(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
-             *_canaries(pairs)), rule_notices)
+             *_canaries(pairs), *iam), (*rule_notices, *iam_notices))
 
 
 def state_resources(text):
@@ -530,7 +533,7 @@ def state_resources(text):
 def read_terraform_state(files, d, patterns, at=None):
     """Imported: each environment's servers and bindings from the Azure Terraform states under <cloud>/<env>/."""
     return layout_import(files, d, PROVIDER, "Azure", per_file(state_resources), ".tfstate", "Terraform state",
-                         "terraform.tfstate")
+                         "terraform.tfstate", summarize=("identity",))   # groups, users, service agents: counted
 
 
 TERRAFORM_STATE = Importer("terraform-state", "Azure Terraform state (terraform.tfstate) under <cloud>/<env>/, as "

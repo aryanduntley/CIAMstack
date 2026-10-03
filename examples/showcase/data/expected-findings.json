@@ -133,6 +133,13 @@
       "match": "Log route `audit-logs` must keep logs 400 days; target/prod's `audit-logs` keeps them 90",
       "planted": "the target's audit workspace keeps logs 90 days, short of the 400-day obligation",
       "cleared_by": null
+    },
+    {
+      "id": "B20",
+      "area": "Binding",
+      "match": "Role `identity-idm` is bound in source/prod but not in target/prod",
+      "planted": "the target doesn't bind the IDM role the source runs (nobody records what acts as it: A39)",
+      "cleared_by": null
     }
   ],
   "actions": [
@@ -386,6 +393,62 @@
       "area": "Monitoring",
       "match": "source/prod runs alarm `ds-disk-free`",
       "planted": "CloudWatch runs a disk-space alarm no recorded rule describes",
+      "cleared_by": null
+    },
+    {
+      "id": "A37",
+      "area": "Access",
+      "match": "Principal `break-glass-root`: break-glass: last tested 2025-11-03",
+      "planted": "the break-glass procedure was last exercised over 180 days ago",
+      "cleared_by": null
+    },
+    {
+      "id": "A38",
+      "area": "Access",
+      "match": "Principal `ciam-admins`: review overdue",
+      "planted": "the platform admins' access review is over a year old",
+      "cleared_by": null
+    },
+    {
+      "id": "A39",
+      "area": "Access",
+      "match": "source/prod runs identity `identity-idm`",
+      "planted": "the source runs an IDM role nobody records as acting as it",
+      "cleared_by": null
+    },
+    {
+      "id": "A40",
+      "area": "Access",
+      "match": "Operators come into source/prod by session",
+      "planted": "operators reach the target's servers by a bastion; nothing records a session manager there",
+      "cleared_by": null
+    },
+    {
+      "id": "A41",
+      "area": "Access",
+      "match": "identity `identity-ds` is granted `s3:* on *`",
+      "planted": "the source's directory role may do anything in S3, wider than writing its backups",
+      "cleared_by": null
+    },
+    {
+      "id": "A42",
+      "area": "Access",
+      "match": "whether identity `identity-admins` may `manage pf-admin-password` can't be told",
+      "planted": "the target's admins hold Key Vault Administrator only as PIM-eligible",
+      "cleared_by": null
+    },
+    {
+      "id": "A43",
+      "area": "Access",
+      "match": "whether identity `identity-admins` may `manage-key disk-encryption` can't be told",
+      "planted": "the same eligible assignment covers the disk key",
+      "cleared_by": null
+    },
+    {
+      "id": "A44",
+      "area": "Guardrail",
+      "match": "guardrail `org-guardrails` prevents `audit-log-disable`",
+      "planted": "the target's policy assignments don't stop audit logs being disabled (a request to the landing zone team)",
       "cleared_by": null
     }
   ]

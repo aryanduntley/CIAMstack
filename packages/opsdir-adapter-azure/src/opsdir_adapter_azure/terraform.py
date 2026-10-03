@@ -1,4 +1,7 @@
-"""Azure adapter: render an environment's infrastructure bindings as Terraform (hashicorp/azurerm ~> 4)."""
+"""Azure adapter: render an environment's infrastructure bindings as Terraform (hashicorp/azurerm ~> 4). Each workload
+principal its servers run as gets a user-assigned managed identity on those VMs and role assignments from its
+permissions (the Azure permission table, opsdir_adapter_azure.access), each at the narrowest scope: the secret or key
+in its vault (Key Vault's RBAC model), the storage container, the resource a provider ref names."""
 from itertools import chain
 
 from opsdir.core.directory import follow, one, rdn_value, values
@@ -7,11 +10,11 @@ from opsdir.core.manifest import header
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir.core.network import is_private
 from opsdir.domains.infrastructure.firewall import rule_priorities, rule_purpose
+from opsdir.domains.access.workloads import identity_of, workload_identities
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
-
-RG = ref("data.azurerm_resource_group.main.name")
-LOC = ref("data.azurerm_resource_group.main.location")
-
+from .access import ACCESS
+from .identities import LOC, RG, identity, scope_data
+from .landing import render_landing
 
 def _record_name(fqdn, zone):
     return fqdn[: -len(zone) - 1] if fqdn.endswith("." + zone) else None
@@ -57,8 +60,9 @@ def _security_groups(m):
             *chain.from_iterable(_security_rule(m, fw, *prios[fw.dn]) for fw in rules))
 
 
-def _server(m, s, des):
+def _server(m, s, des, identities=()):
     n, role = tf_name(rdn_value(s)), one(s, "ciamServerRole")
+    w = identity_of(identities, role)
     encryption = (("disk_encryption_set_id", one(des, "ciamProviderRef")) if des and one(des, "ciamProviderRef")
                   else ("#", "UNBOUND: no disk-encryption binding in this environment"))
     return (block("resource", ["azurerm_network_interface", n], [
@@ -78,6 +82,8 @@ def _server(m, s, des):
                 ("source_image_id", one(s, "ciamImageRef")),
                 ("admin_ssh_key", Block((("username", "ciamadmin"), ("public_key", ref("var.admin_ssh_public_key"))))),
                 ("os_disk", Block((("caching", "ReadWrite"), ("storage_account_type", "Premium_LRS"), encryption))),
+                *((("identity", Block((("type", "UserAssigned"), ("identity_ids", [
+                    ref(f"azurerm_user_assigned_identity.{tf_name(w.identity_role)}.id")])))),) if w else ()),
                 ("tags", {"Role": role, "Hostname": one(s, "ciamHostname"),
                           "Product": one(s, "ciamProductVersion", ""), "ManagedBy": "opsdir"})]))
 
@@ -158,10 +164,11 @@ def _interconnect_note(m, ic):
 
 
 def render(m, services):
-    des = one_role(m, "disk-encryption")
-    out = (*_network(m), *_security_groups(m), *chain.from_iterable(_server(m, s, des) for s in m.servers),
+    des, identities = one_role(m, "disk-encryption"), workload_identities(m, ACCESS)
+    out = (*_network(m), *_security_groups(m), *chain.from_iterable(identity(m, w) for w in identities),
+           *chain.from_iterable(_server(m, s, des, identities) for s in m.servers),
            *chain.from_iterable(_service(m, svc) for svc in of_class(m, "ciamServiceName")),
-           *_key_vault_secrets(m))
+           *_key_vault_secrets(m), *scope_data(m, identities))
     notes = "\n".join(_interconnect_note(m, ic) for ic in of_class(m, "ciamInterconnect"))
     unbound = unbound_comments(m.unbound)
     main = header(m, "Azure infrastructure for the CIAM platform", HCL) + unbound + notes + "\n\n" \
@@ -175,4 +182,4 @@ def render(m, services):
         block("variable", ["subscription_id"], [("type", ref("string"))]),
         block("variable", ["admin_ssh_public_key"], [("type", ref("string"))]),
     ]) + "\n"
-    return {"terraform/providers.tf": providers, "terraform/main.tf": main}
+    return {"terraform/providers.tf": providers, "terraform/main.tf": main, **render_landing(m)}
