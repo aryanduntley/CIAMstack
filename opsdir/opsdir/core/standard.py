@@ -12,6 +12,7 @@ of its own, so independently written packages never collide. Numbers are pinned 
 from position, so moving a definition between fragments of one arc never renumbers anything.
 """
 from collections import namedtuple
+from functools import reduce
 from types import MappingProxyType
 from typing import NamedTuple
 
@@ -176,13 +177,28 @@ def _oid_order(item):
     return tuple(int(x) for x in item[0].split("."))
 
 
+def _superclasses_first(classes):
+    """(oid, class, origin) items in their order, except that a class follows its superclass when that is one of
+    them too (an LDAP server reads a schema top down)."""
+    by_name = {item[1].name: item for item in classes}
+
+    def place(acc, item):
+        if any(x[1].name == item[1].name for x in acc):
+            return acc
+        return (*place(acc, by_name[item[1].sup]), item) if item[1].sup in by_name else (*acc, item)
+
+    return reduce(place, classes, ())
+
+
 def _own_definitions(fragments):
-    """Every fragment's definitions as schema lines, in OID order: (attribute types, object classes)."""
+    """Every fragment's definitions as schema lines, in OID order (a class after its superclass): (attribute types,
+    object classes)."""
     problems = check_fragments(fragments)
     if problems:
         raise SystemExit("schema fragments do not compose: " + "; ".join(problems))
     attrs = sorted(((attribute_oid(f, a), a, f.origin) for f in fragments for a in f.attributes), key=_oid_order)
-    classes = sorted(((class_oid(f, c), c, f.origin) for f in fragments for c in f.classes), key=_oid_order)
+    classes = _superclasses_first(sorted(((class_oid(f, c), c, f.origin) for f in fragments for c in f.classes),
+                                         key=_oid_order))
     return (tuple(_own_attribute_line(oid, a, origin) for oid, a, origin in attrs),
             tuple(_class_line(oid, c.name, c.sup, c.kind, c.must, c.may, c.description, origin)
                   for oid, c, origin in classes))
@@ -193,7 +209,8 @@ def _subschema(definitions, header=()):
 
 
 def schema_ldif(fragments):
-    """The published schema: every fragment's definitions in OID order, and nothing the standards define."""
+    """The published schema: every fragment's definitions in OID order (a class after its superclass), and nothing the
+    standards define."""
     attrs, classes = _own_definitions(fragments)
     return _subschema((*attrs, *classes), HEADER)
 

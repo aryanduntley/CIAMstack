@@ -18,6 +18,8 @@ from opsdir.store.postgres import apply_mods, entry_rows, schema_rows, split_rec
 
 SCHEMA = SCHEMA_FILE
 REGISTRY = registry_ldif(core_fragments())      # the store's registry for the core and its domains
+SUPERS = {o["name"]: o["sup"] for o in schema_rows(REGISTRY)[1]}   # {object class: superclass}, as the store knows
+BARE = make_directory((), SUPERS, ())            # a directory with no entries: what a model needs to look up classes
 # the test database on the local dev server (README, Database); the integration suite drops its opsdir schema
 TEST_DSN = "host=localhost port=5432 user=opsdir password=testpass dbname=opsdir_test"
 TEST_WORKSPACE_DSN = "host=localhost port=5432 user=opsdir password=testpass dbname=opsdir_test_workspace"

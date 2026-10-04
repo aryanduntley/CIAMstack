@@ -4262,6 +4262,7 @@ pingfedOperationalMode: CLUSTERED_CONSOLE
 dn: cn=pf-admin-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
+objectClass: pingfedNode
 cn: pf-admin-1
 ciamHostname: pf-admin-1.az.internal.example-aero.test
 ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
@@ -4275,6 +4276,7 @@ ciamServerRole: pf-admin
 ciamSubnet: cn=snet-pf,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
  am-ops
 ciamZone: 1
+pingfedOperationalMode: CLUSTERED_CONSOLE
 
 dn: cn=pf-admin-s1,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -4335,6 +4337,7 @@ pingfedOperationalMode: CLUSTERED_ENGINE
 dn: cn=pf-engine-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
+objectClass: pingfedNode
 cn: pf-engine-1
 ciamHostname: pf-engine-1.az.internal.example-aero.test
 ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
@@ -4348,6 +4351,7 @@ ciamServerRole: pf-engine
 ciamSubnet: cn=snet-pf,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
  am-ops
 ciamZone: 1
+pingfedOperationalMode: CLUSTERED_ENGINE
 
 dn: cn=pf-engine-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -4393,6 +4397,7 @@ pingfedOperationalMode: CLUSTERED_ENGINE
 dn: cn=pf-engine-2,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
+objectClass: pingfedNode
 cn: pf-engine-2
 ciamHostname: pf-engine-2.az.internal.example-aero.test
 ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
@@ -4406,6 +4411,7 @@ ciamServerRole: pf-engine
 ciamSubnet: cn=snet-pf,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
  am-ops
 ciamZone: 2
+pingfedOperationalMode: CLUSTERED_ENGINE
 
 dn: cn=pf-engine-s1,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -5432,6 +5438,78 @@ ciamRulePriority: 170
 ciamSourceCidr: 10.40.12.0/24
 ciamTargetRole: ds
 
+dn: cn=fw-pf-cluster,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-pf-cluster
+ciamBindingRole: fw-pf-cluster
+ciamPort: 7600
+ciamPort: 7700
+ciamProtocol: tcp
+ciamSourceCidr: 10.20.4.0/24
+ciamSourceCidr: 10.20.5.0/24
+ciamTargetRole: pf-engine
+
+dn: cn=fw-pf-cluster,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-pf-cluster
+ciamBindingRole: fw-pf-cluster
+ciamPort: 7600
+ciamPort: 7700
+ciamProtocol: tcp
+ciamRulePriority: 190
+ciamSourceCidr: 10.70.2.0/24
+ciamTargetRole: pf-engine
+
+dn: cn=fw-pf-cluster,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-pf-cluster
+ciamBindingRole: fw-pf-cluster
+ciamPort: 7600
+ciamPort: 7700
+ciamProtocol: tcp
+ciamRulePriority: 190
+ciamSourceCidr: 10.60.2.0/24
+ciamTargetRole: pf-engine
+
+dn: cn=fw-pf-cluster-admin,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-pf-cluster-admin
+ciamBindingRole: fw-pf-cluster-admin
+ciamPort: 7600
+ciamPort: 7700
+ciamProtocol: tcp
+ciamSourceCidr: 10.20.4.0/24
+ciamSourceCidr: 10.20.5.0/24
+ciamTargetRole: pf-admin
+
+dn: cn=fw-pf-cluster-admin,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-pf-cluster-admin
+ciamBindingRole: fw-pf-cluster-admin
+ciamPort: 7600
+ciamPort: 7700
+ciamProtocol: tcp
+ciamRulePriority: 200
+ciamSourceCidr: 10.70.2.0/24
+ciamTargetRole: pf-admin
+
+dn: cn=fw-pf-cluster-admin,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-pf-cluster-admin
+ciamBindingRole: fw-pf-cluster-admin
+ciamPort: 7600
+ciamPort: 7700
+ciamProtocol: tcp
+ciamRulePriority: 200
+ciamSourceCidr: 10.60.2.0/24
+ciamTargetRole: pf-admin
+
 dn: cn=fw-pf-ds-svc,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
@@ -6292,7 +6370,7 @@ pingamPolicyConfig: {"actionValues":{"GET":true,"POST":true},"active":true,"co
 
 dn: cn=pf-discovery,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
-objectClass: ciamBackupTarget
+objectClass: ciamObjectStore
 cn: pf-discovery
 ciamBindingRole: pf-cluster-discovery
 ciamStorageRef: s3://example-aero-ciam-prod-pf-cluster
@@ -6308,7 +6386,7 @@ pingfedDiscoveryProtocol: TCPPING
 
 dn: cn=pf-discovery,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
-objectClass: ciamBackupTarget
+objectClass: ciamObjectStore
 cn: pf-discovery
 ciamBindingRole: pf-cluster-discovery
 ciamStorageRef: s3://example-aero-ciam-stage-pf-cluster
@@ -7549,6 +7627,33 @@ ciamOverrideValue: 5
 ciamOverrides: cn=tech-pubs,ou=integrations,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 description: short tokens to test refresh
+
+dn: cn=time,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamTimeSource
+cn: time
+ciamBindingRole: time-source
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamTimeKind: provider
+ciamTimeServer: 169.254.169.123
+
+dn: cn=time,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamTimeSource
+cn: time
+ciamBindingRole: time-source
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamTimeKind: provider
+ciamTimeServer: metadata.google.internal
+
+dn: cn=time,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamTimeSource
+cn: time
+ciamBindingRole: time-source
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamTimeKind: ptp
+ciamTimeServer: ptp:/dev/ptp_hyperv
 
 dn: cn=uid,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
 objectClass: top

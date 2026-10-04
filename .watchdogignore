@@ -33,3 +33,7 @@ opsdir/tests/capture_samples/
 
 # Documentation: not code, not tracked (user, 2026-09-28)
 *.md
+
+# Tests and test code: not tracked in the AIMFP DB (user, 2026-10-04, milestone U.11)
+tests/
+pytest.ini

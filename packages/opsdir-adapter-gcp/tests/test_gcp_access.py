@@ -5,9 +5,10 @@ from types import SimpleNamespace
 from opsdir.core.directory import make_entry
 from opsdir.domains.access.grants import escalating, grant_of, granted
 from opsdir_adapter_gcp.access import ACCESS
+from support import BARE
 
 P = "projects/ciam-prod"
-ENV = SimpleNamespace(bindings=(
+ENV = SimpleNamespace(d=BARE, bindings=(
     make_entry("cn=secret,ou=bindings,env=prod", ("top", "ciamSecretRef"),
                {"ciamBindingRole": ["pf-admin-password"], "ciamRefUri": [f"gcp-sm://{P}/secrets/pf-admin-password"]}),
     make_entry("cn=backup,ou=bindings,env=prod", ("top", "ciamBackupTarget"),
@@ -41,7 +42,7 @@ def test_roles_that_grant_access_or_impersonate():
 def test_managing_a_service_name_takes_its_load_balancer_and_zone():
     svc = make_entry("cn=svc-sso,ou=bindings,env=prod", ("top", "ciamServiceName"),
                      {"ciamBindingRole": ["pf-sso-service"], "ciamDnsZoneRef": ["example-aero-public"]})
-    env = SimpleNamespace(bindings=(svc,))
+    env = SimpleNamespace(d=BARE, bindings=(svc,))
     assert granted(ACCESS, env, "manage pf-sso-service", (grant_of(f"roles/compute.loadBalancerAdmin on {P}"),
                                                           grant_of(f"roles/dns.admin on {P}")))[0]
     assert not granted(ACCESS, env, "manage pf-sso-service", (grant_of(f"roles/compute.loadBalancerAdmin on {P}"),))[0]

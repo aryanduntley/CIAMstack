@@ -98,7 +98,14 @@ AccessModel = namedtuple("AccessModel", ("permissions", "escalations", "covers",
 # defaults; a policy's ciamEndpointPath says where an estate moved one.
 Endpoint = namedtuple("Endpoint", ("kind", "path", "server_role"))
 
-# An adapter's fields; an older adapter that names no endpoints declares none.
+# A port a product's servers listen on: server_role the role of the servers, port and protocol (tcp or udp), purpose in
+# words (LDAPS, replication, cluster), peers who connects: any of clients (consumers, directly or through service
+# names), peers (other servers of the same role), admin (the operators' ways in), and server roles by name. Products
+# derive them from the record where it says (a connection handler's port, a node's run.properties), else their
+# defaults; the connectors turn them into the ports matrix the firewall rules are checked against.
+Listener = namedtuple("Listener", ("server_role", "port", "protocol", "purpose", "peers"))
+
+# An adapter's fields; an older adapter that names no endpoints declares none, one that names no listeners None.
 Adapter = namedtuple("Adapter", (
     "name",
     "kind",                 # provider | product | host | delivery | secret-store
@@ -119,8 +126,9 @@ Adapter = namedtuple("Adapter", (
     "importers",            # Importers: the product exports it reads
     "profile_terms",        # what its directory attributes mean to the data profile (directory profile.Terms), or None
     "access",               # a cloud's AccessModel: what its actions and roles mean as neutral permissions, or None
-    "endpoints"),           # Endpoints: what its products serve that the edge protects, checks or never caches
-    defaults=((),))
+    "endpoints",            # Endpoints: what its products serve that the edge protects, checks or never caches
+    "listeners"),           # (EnvModel) -> Listeners: the ports its servers listen on in an environment, or None
+    defaults=((), None))
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

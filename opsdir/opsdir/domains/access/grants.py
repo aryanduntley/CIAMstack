@@ -22,7 +22,7 @@ import re
 from fnmatch import fnmatchcase
 from typing import NamedTuple
 
-from ...core.directory import is_a, one, rdn_value, values
+from ...core.directory import is_kind, one, rdn_value, values
 from ...core.environment import one_role
 
 ALLOWED, DENIED, UNKNOWN, NOT_GRANTED = "allowed", "denied", "unknown", "not granted"
@@ -74,11 +74,11 @@ def excluding(action, excluded):
     return f"{action}!{'|'.join(excluded)}" if excluded else action
 
 
-def rows_for(model, binding, verb):
-    """The table rows for a verb on a binding of its class (and its stream kind)."""
+def rows_for(d, model, binding, verb):
+    """The table rows for a verb on a binding of its class or a superclass (and its stream kind)."""
     kind = one(binding, "ciamStreamKind")
     return tuple(r for r in model.permissions
-                 if r.verb == verb and is_a(binding, r.binding_class) and r.kind in (None, kind))
+                 if r.verb == verb and is_kind(d, binding, r.binding_class) and r.kind in (None, kind))
 
 
 def _matching(model, binding, alts, grants):
@@ -97,7 +97,7 @@ def granted(model, m, permit, grants):
     it."""
     verb, _, role = permit.partition(" ")
     binding = one_role(m, role)
-    rows = rows_for(model, binding, verb) if binding is not None else ()
+    rows = rows_for(m.d, model, binding, verb) if binding is not None else ()
     if not rows:
         return None, ()
     served = [_serving(model, binding, r, grants) for r in rows]
@@ -173,7 +173,7 @@ def effective(model, m, permit, identity, guardrails=()):
         return Verdict(state, f"by {source.strip('()')}", ())
     verb, _, role = permit.partition(" ")
     binding = one_role(m, role)
-    rows = rows_for(model, binding, verb) if binding is not None else ()
+    rows = rows_for(m.d, model, binding, verb) if binding is not None else ()
     if not rows:
         return Verdict(None, "", ())
     limits = limits_of(identity, guardrails)

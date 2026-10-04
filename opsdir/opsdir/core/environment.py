@@ -7,7 +7,7 @@ An overlay environment's bindings, stack, declared roles and overrides include w
 """
 from typing import NamedTuple, Optional
 
-from .directory import Directory, Entry, children, follow, get, is_a, one, rdn_value, subtree
+from .directory import Directory, Entry, children, follow, get, is_kind, one, rdn_value, subtree
 from .naming import branch
 from .overlays import (apply_overrides, declared_roles, effective_bindings, effective_overrides, effective_stack,
                        lineage)
@@ -128,7 +128,8 @@ def bound_nowhere(roles, *models):
 
 
 def of_class(m, oc):
-    return tuple(b for b in m.bindings if is_a(b, oc))
+    """Environment m's bindings of an object class or one of its subclasses."""
+    return tuple(b for b in m.bindings if is_kind(m.d, b, oc))
 
 
 def servers_with_role(m, role):

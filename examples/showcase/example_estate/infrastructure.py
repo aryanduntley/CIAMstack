@@ -51,8 +51,12 @@ SOURCE = MappingProxyType({
            ("fw-admin", "fw-admin", ["10.20.9.0/28"], [4444], "ds", None, None),
            ("fw-sso-public", "fw-sso-public", ["0.0.0.0/0"], [443], "pf-engine", None, None),
            ("fw-login-public", "fw-login-public", ["0.0.0.0/0"], [443], "am", None, None),
-           ("fw-apps-public", "fw-apps-public", ["0.0.0.0/0"], [443], "ig", None, None)],
+           ("fw-apps-public", "fw-apps-public", ["0.0.0.0/0"], [443], "ig", None, None),
+           # the PingFederate nodes' cluster traffic (JGroups bind and failure-detection ports), engines and console
+           ("fw-pf-cluster", "fw-pf-cluster", ["10.20.4.0/24", "10.20.5.0/24"], [7600, 7700], "pf-engine", None, None),
+           ("fw-pf-cluster-admin", "fw-pf-cluster-admin", ["10.20.4.0/24", "10.20.5.0/24"], [7600, 7700], "pf-admin", None, None)],
     "egress": ("nat-0123456789abcdef0", "203.0.113.10/32"),
+    "time": (["169.254.169.123"], "provider"),        # Amazon Time Sync, the address every instance reaches
     "secret": lambda role: f"aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/{role}",
     "key": ("aws-kms://arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab", None),
     # what each store does for the material, by role (cloud key-service facts)
@@ -120,8 +124,12 @@ TARGET = MappingProxyType({
            ("fw-admin", "fw-admin", ["10.60.9.0/28"], [4444], "ds", None, None),
            ("fw-sso-public", "fw-sso-public", ["0.0.0.0/0"], [443], "pf-engine", None, None),
            ("fw-login-public", "fw-login-public", ["0.0.0.0/0"], [443], "am", None, None),
-           ("fw-apps-public", "fw-apps-public", ["0.0.0.0/0"], [443], "ig", None, None)],
+           ("fw-apps-public", "fw-apps-public", ["0.0.0.0/0"], [443], "ig", None, None),
+           # the PingFederate nodes' cluster traffic (JGroups bind and failure-detection ports), engines and console
+           ("fw-pf-cluster", "fw-pf-cluster", ["10.60.2.0/24"], [7600, 7700], "pf-engine", None, None),
+           ("fw-pf-cluster-admin", "fw-pf-cluster-admin", ["10.60.2.0/24"], [7600, 7700], "pf-admin", None, None)],
     "egress": ("natgw-ciam-prod", "203.0.113.200/32"),
+    "time": (["ptp:/dev/ptp_hyperv"], "ptp"),          # the Azure host's clock, as chrony reads it on Linux VMs
     "secret": lambda role: f"azkv://kv-ciam-prod/{role}",
     "key": ("azkv-key://kv-ciam-prod/keys/disk-cmk",
             "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"),
@@ -169,6 +177,8 @@ TARGET = MappingProxyType({
                 ("am-2", "am", "am-2.az.internal.example-aero.test", "10.60.3.22", "2", "Standard_D2s_v5", IMG + "pingam-7.5.1-rhel9", "snet-am", AM_V),
                 ("idm-1", "idm", "idm-1.az.internal.example-aero.test", "10.60.6.21", "1", "Standard_D2s_v5", IMG + "pingidm-7.5.0-rhel9", "snet-idm", IDM_V),
                 ("ig-1", "ig", "ig-1.az.internal.example-aero.test", "10.60.10.21", "1", "Standard_D2s_v5", IMG + "pinggateway-2024.11.0-rhel9", "snet-ig", IG_V)],
+    # the PingFederate nodes run clustered here too (what discovery they use is the planted gap, not whether)
+    "nodes": {"pf-engine-1": "CLUSTERED_ENGINE", "pf-engine-2": "CLUSTERED_ENGINE", "pf-admin-1": "CLUSTERED_CONSOLE"},
 })
 # A warm standby on Google Cloud: production's directory replicas join it over a VPN, the rest stands ready. Network
 # and subnetworks belong to the landing zone's Shared VPC host project; the environment's own project holds the rest.
@@ -197,8 +207,12 @@ STANDBY = MappingProxyType({
            ("fw-admin", "fw-admin", ["10.70.9.0/28"], [4444], "ds", None, None),
            ("fw-sso-public", "fw-sso-public", ["0.0.0.0/0"], [443], "pf-engine", None, None),
            ("fw-login-public", "fw-login-public", ["0.0.0.0/0"], [443], "am", None, None),
-           ("fw-apps-public", "fw-apps-public", ["0.0.0.0/0"], [443], "ig", None, None)],
+           ("fw-apps-public", "fw-apps-public", ["0.0.0.0/0"], [443], "ig", None, None),
+           # the PingFederate nodes' cluster traffic (JGroups bind and failure-detection ports), engines and console
+           ("fw-pf-cluster", "fw-pf-cluster", ["10.70.2.0/24"], [7600, 7700], "pf-engine", None, None),
+           ("fw-pf-cluster-admin", "fw-pf-cluster-admin", ["10.70.2.0/24"], [7600, 7700], "pf-admin", None, None)],
     "egress": ("example-aero-ciam-standby/us-central1/ciam-standby-router/ciam-standby-nat", "203.0.113.150/32"),
+    "time": (["metadata.google.internal"], "provider"),   # the Compute Engine metadata server's NTP
     "secret": lambda role: f"gcp-sm://{PROJECT}/secrets/{role}",
     "key": (f"gcp-kms://{PROJECT}/locations/us-central1/keyRings/ciam/cryptoKeys/disk", None),
     # the material production's replicas need is carried over, as the target's is
@@ -268,13 +282,16 @@ def _bindings(file, env, p):
               for i, (cn, role, cidrs, ports, trole, consumer, chg_) in enumerate(p["fw"])),
             spec(file, b("egress-pf"), ["top", "ciamEgress"], cn="egress-pf", ciamBindingRole="pf-egress",
                  ciamProviderRef=p["egress"][0], ciamCidr=p["egress"][1]),
+            *((spec(file, b("time"), ["top", "ciamTimeSource"], cn="time", ciamBindingRole="time-source",
+                    ciamTimeServer=p["time"][0], ciamTimeKind=p["time"][1], ciamOwner=owner("network-security")),)
+              if p.get("time") else ()),
             *(spec(file, b(f"secret-{role}"), ["top", "ciamSecretRef"], cn=f"secret-{role}", ciamBindingRole=role,
                    ciamRefUri=p["secret"](role), **p["key_facts"].get(role, {})) for role in SECRET_ROLES),
             spec(file, b("key-disk"), ["top", "ciamKeyRef"], cn="key-disk", ciamBindingRole="disk-encryption",
                  ciamRefUri=p["key"][0], ciamProviderRef=p["key"][1], **p["key_facts"].get("disk-encryption", {})),
             *((spec(file, b("backup"), ["top", "ciamBackupTarget"], cn="backup", ciamBindingRole="backup-target",
                     ciamStorageRef=p["backup"], ciamRetentionDays=35),) if p.get("backup") else ()),
-            *((spec(file, b("pf-discovery"), ["top", "ciamBackupTarget"], cn="pf-discovery",
+            *((spec(file, b("pf-discovery"), ["top", "ciamObjectStore"], cn="pf-discovery",
                     ciamBindingRole="pf-cluster-discovery", ciamStorageRef=p["discovery"],
                     description="PingFederate cluster discovery (NATIVE_S3_PING bucket)"),)
               if p.get("discovery") else ()),
@@ -400,7 +417,7 @@ def stage():
               for role in SECRET_ROLES),
             spec(file, f"cn=backup,{B}", ["top", "ciamBackupTarget"], cn="backup", ciamBindingRole="backup-target",
                  ciamStorageRef="s3://example-aero-ciam-stage-ds-backups", ciamRetentionDays=7),
-            spec(file, f"cn=pf-discovery,{B}", ["top", "ciamBackupTarget"], cn="pf-discovery",
+            spec(file, f"cn=pf-discovery,{B}", ["top", "ciamObjectStore"], cn="pf-discovery",
                  ciamBindingRole="pf-cluster-discovery",
                  ciamStorageRef="s3://example-aero-ciam-stage-pf-cluster",
                  description="Stage's own PingFederate cluster discovery: never prod's"),

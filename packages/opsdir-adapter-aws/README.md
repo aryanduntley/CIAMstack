@@ -83,7 +83,7 @@ The importer `aws/terraform-state` reads Terraform state (format version 4, `has
 | `aws_vpc_security_group_ingress_rule` and inline `ingress` of `aws_security_group` | firewall rule: IPv4 source CIDRs, ports, protocol (`tcp`/`udp`), grouped into the record's rules by the name their descriptions end with, `(fw-name)`, or their tag `Name`; target role from the instances in the group, else the group's tag `Role`, else its name's last part (`ciam-<env>-<role>`) | rule name |
 | `aws_secretsmanager_secret` (+ `aws_secretsmanager_secret_rotation`) | secret reference `aws-sm://<arn>`: automatic rotation and its function (`ciamRotationFunction`), last rotation when present, the role of the customer managed key that encrypts it (`kms_key_id`: `ciamEncryptedByRole`) | reference URI |
 | `aws_kms_key` (+ `aws_kms_replica_key`) | key reference `aws-kms://<arn>`: rotation, replica regions | reference URI |
-| `aws_s3_bucket` | storage `s3://<bucket>` | storage reference |
+| `aws_s3_bucket` | object store `s3://<bucket>` | storage reference |
 | `aws_nat_gateway` | egress: its public address (`/32`) | NAT gateway ID (`ciamProviderRef`) |
 | `aws_lambda_function`, `aws_codepipeline`, `aws_codebuild_project` (+ `aws_cloudwatch_event_rule` / `aws_cloudwatch_event_target`, `aws_scheduler_schedule`) | job binding (`ciamJobBinding`, the core automation domain): what realizes a job in the environment: its ARN, runtime (a build project's image), and the schedules the EventBridge rules and Scheduler schedules that target it run it on (a Lambda alias or version ARN counts as its function); the job itself (`ou=jobs`) names the binding role (`ciamJobRole`) | ARN (`ciamProviderRef`) |
 | `aws_autoscaling_group` (+ its `aws_launch_template`, directly or through a mixed instances policy) | compute group (`ciamComputeGroup`, the core compute domain): the server role it runs (`ciamTargetRole`, its tag `Role`), min/desired/max, the zones of its subnets (else its `availability_zones`), the template's image, instance type and whether the metadata service requires tokens (`http_tokens`: IMDSv2). Its binding role is its tag `BindingRole`, else `compute-<role>` | ARN (`ciamProviderRef`) |
@@ -299,7 +299,7 @@ Permissions are recorded neutrally (the core `access` domain: permission sets of
 |---|---|---|
 | `read-secret` / `write-secret` | secret (`aws-sm://`) | `secretsmanager:GetSecretValue` / `secretsmanager:PutSecretValue` |
 | `use-key` / `manage-key` | key (`aws-kms://`) | `kms:Decrypt`, `kms:Encrypt`, `kms:GenerateDataKey` / `kms:DescribeKey`, `kms:EnableKeyRotation`, `kms:PutKeyPolicy` |
-| `read-storage` / `write-storage` | backup target (`s3://`) | `s3:GetObject`, `s3:ListBucket` / `s3:PutObject` |
+| `read-storage` / `write-storage` | object store, backup targets included (`s3://`) | `s3:GetObject`, `s3:ListBucket` / `s3:PutObject` |
 | `publish-stream` | stream: topic, queue, bus, data stream | `sns:Publish`, `sqs:SendMessage`, `events:PutEvents`, `kinesis:PutRecords` |
 | `consume-stream` | stream: queue, data stream | `sqs:ReceiveMessage` + `sqs:DeleteMessage`, `kinesis:GetRecords` + `kinesis:GetShardIterator` |
 | `write-logs` / `read-logs` | log destination (log group ARN) | `logs:PutLogEvents` + `logs:CreateLogStream` / `logs:GetLogEvents` + `logs:FilterLogEvents` |

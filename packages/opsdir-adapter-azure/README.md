@@ -80,7 +80,7 @@ The importer `azure/terraform-state` reads Terraform state (format version 4, `h
 | `azurerm_network_security_rule` and inline `security_rule` of `azurerm_network_security_group` | firewall rule (inbound allow only): sources (`*`/`Internet` → `0.0.0.0/0`, a bare address → `/32`), ports, protocol, priority; target role from the VMs whose NICs or subnets the group guards, else the group's tag `Role`, else its name's last part | rule name |
 | `azurerm_key_vault_secret` | secret reference `azkv://<vault>/<name>` | reference URI |
 | `azurerm_key_vault_key` (+ `azurerm_disk_encryption_set`) | key reference `azkv-key://<vault>/keys/<name>`: `hsm` for `*-HSM` key types else `software`; automatic rotation when the state has a rotation policy; the disk encryption set using the key (`ciamProviderRef`) | reference URI |
-| `azurerm_storage_container` | backup target `azblob://<account>/<container>` | storage reference |
+| `azurerm_storage_container` | object store `azblob://<account>/<container>` | storage reference |
 | `azurerm_nat_gateway` + public IP and prefix associations | egress: its public addresses | its name (`ciamProviderRef`) |
 | `azurerm_linux_function_app`, `azurerm_windows_function_app` (+ `azurerm_function_app_function`) | job binding (`ciamJobBinding`, the core automation domain): the function app's ID, its runtime (`python 3.11`, from the application stack or `linuxFxVersion`), and the NCRONTAB schedules of its timer-triggered functions; the job itself (`ou=jobs`) names the binding role (`ciamJobRole`) | its ID (`ciamProviderRef`) |
 | `azurerm_linux_virtual_machine_scale_set`, `azurerm_windows_virtual_machine_scale_set`, `azurerm_orchestrated_virtual_machine_scale_set` (+ the `azurerm_monitor_autoscale_setting` targeting it) | compute group (`ciamComputeGroup`, the core compute domain): the server role it runs (`ciamTargetRole`, its tag `Role`), SKU, instances, zones, image, min/max from the autoscale setting's capacity. Its binding role is its tag `BindingRole`, else `compute-<role>` | its ID (`ciamProviderRef`) |
@@ -248,7 +248,7 @@ Permissions are recorded neutrally (the core `access` domain: permission sets of
 |---|---|---|
 | `read-secret` / `write-secret` | secret (`azkv://`) | Key Vault Secrets User, Secrets Officer, Administrator / Secrets Officer, Administrator |
 | `use-key` / `manage-key` | key (`azkv-key://`) | Key Vault Crypto User, Crypto Service Encryption User, Crypto Officer, Administrator / Crypto Officer, Administrator |
-| `read-storage` / `write-storage` | backup target (`azblob://`) | Storage Blob Data Reader, Contributor, Owner / Contributor, Owner |
+| `read-storage` / `write-storage` | object store, backup targets included (`azblob://`) | Storage Blob Data Reader, Contributor, Owner / Contributor, Owner |
 | `publish-stream` | stream: event hub, queue, topic | Azure Event Hubs Data Sender (Owner); Azure Service Bus Data Sender (Owner); EventGrid Data Sender (an Event Grid topic) |
 | `consume-stream` | stream: event hub, queue | Azure Event Hubs Data Receiver (Owner); Azure Service Bus Data Receiver (Owner) |
 | `write-logs` / `read-logs` | log destination | Monitoring Metrics Publisher (on the data collection rule: broad) / Log Analytics Reader, Monitoring Reader (broad) |

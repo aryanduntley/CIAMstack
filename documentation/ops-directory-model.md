@@ -51,7 +51,7 @@ dc=ciam-ops
 │           ├── ou=overrides                ciamOverride: an overridable value, per environment, with why
 │           └── ou=bindings                 ciamNetwork, ciamSubnetBinding, ciamServiceName, ciamFirewallRule,
 │                                           ciamEgress, ciamSecretRef, ciamKeyRef, ciamCertificateRef,
-│                                           ciamBackupTarget, ciamInterconnect
+│                                           ciamObjectStore (ciamBackupTarget), ciamInterconnect
 ├── ou=config
 │   ├── ou=declared                         desired directory configuration: backends, indexes, password policies,
 │   │                                       connection handlers, log publishers, replication topology

@@ -12,11 +12,12 @@ from opsdir.core.environment import joins
 from opsdir_base_ds.config import neutral_files
 from opsdir_base_ds.product import DsProduct
 from opsdir_base_ds.replication import REPLICATION_PORT, peer_ds_hosts
-from opsdir_base_ds.setup import port, setup_inputs
+from opsdir_base_ds.setup import ADMIN_PORT, port, setup_inputs
 
 PINGDS = DsProduct(
     name="PingDS", root_dn="uid=admin",
-    dsconfig_apply=("# Apply: dsconfig --hostname <ds> --port 4444 --bindDN uid=admin --bindPasswordFile <file> \\",
+    dsconfig_apply=(f"# Apply: dsconfig --hostname <ds> --port {ADMIN_PORT} --bindDN uid=admin "
+                    "--bindPasswordFile <file> \\",
                     "#          --usePkcs12TrustStore <truststore> --batchFilePath dsconfig.batch --no-prompt"),
     handler_names={}, builtin_policies=("Default Password Policy", "Root Password Policy"))
 SETUP_SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password")
@@ -44,7 +45,7 @@ ROOT_PASSWORD={x.secrets['ds-root-password']}
   --rootUserDn {PINGDS.root_dn} \\
   --rootUserPassword "$ROOT_PASSWORD" \\
   --hostname {one(s, 'ciamHostname')} \\
-  --adminConnectorPort 4444 \\
+  --adminConnectorPort {ADMIN_PORT} \\
   --ldapsPort {port(x.ports, 'LDAPS')} \\
   --httpsPort {port(x.ports, 'HTTPS')} \\
   --replicationPort {REPLICATION_PORT} \\

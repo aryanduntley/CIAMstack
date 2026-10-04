@@ -119,7 +119,9 @@ Target roles still unbound: `backup-target`
 - Header contract `client-address-sso` kept: `X-Forwarded-For` set by `pf-sso-service` in target/prod.
 - Header contract `partner-user` kept: `X-Partner-User` set by `ig` in target/prod.
 - `ldap.id.example-aero.test`'s TTL is 60 s: resolvers pick up the new answer within minutes of cutover.
+- source/prod: 12 flow(s) of the ports matrix get through.
+- target/prod: 12 flow(s) of the ports matrix get through.
 
 ## What the target renders to
 
-`opsdir render target/prod` produces 62 files from the same databases: Terraform for the target cloud, per-server DS setup scripts that join the existing deployment, PingFederate data stores, plugin instances, cluster discovery and other resources for each environment, gateway routes to each environment's applications, IDM connector configuration for each environment, and the environment-neutral PingAM/DS/PingFederate/PingIDM configuration.
+`opsdir render target/prod` produces 63 files from the same databases: Terraform for the target cloud, per-server DS setup scripts that join the existing deployment, PingFederate data stores, plugin instances, cluster discovery and other resources for each environment, gateway routes to each environment's applications, IDM connector configuration for each environment, and the environment-neutral PingAM/DS/PingFederate/PingIDM configuration.

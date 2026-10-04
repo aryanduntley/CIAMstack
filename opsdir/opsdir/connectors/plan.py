@@ -15,6 +15,7 @@ from typing import NamedTuple, Optional
 from ..core.contract import PlanContext
 from .access import access_check
 from .edge import edge_check
+from .network import network_check
 from ..core.directory import children, date_of, follow, get, one, rdn_value, values
 from ..core.environment import EnvModel, one_role, of_class
 from ..core.findings import findings, merge_findings, owner_label, responsible
@@ -160,7 +161,8 @@ def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS):
                       tuple(src_neutral))
     f = merge_findings([*(run_check(check, ctx) for check in checks(adapters, domains)),
                         run_check(access_check(src_adapters, adapters), ctx),
-                        run_check(edge_check(src_adapters, adapters), ctx)])
+                        run_check(edge_check(src_adapters, adapters), ctx),
+                        run_check(network_check(src_adapters, adapters), ctx)])
     return Plan(src, dst, cutover, as_of, f.blockers, f.actions, f.ok, _group_requests(f.requests), dst_files,
                 render_summary(adapters))
 

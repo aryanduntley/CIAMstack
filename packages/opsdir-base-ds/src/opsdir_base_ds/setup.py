@@ -8,6 +8,7 @@ from opsdir.core.environment import secret, servers_with_role
 from opsdir.domains.directory.naming import DECLARED as DECL, DIRECTORY_SERVER_ROLE
 
 DEFAULT_PORTS = MappingProxyType({"LDAP": 1389, "LDAPS": 1636, "HTTPS": 8443})
+ADMIN_PORT = 4444                  # the lineage's administration connector
 
 # One server's script inputs: the server entry, the user backend, {handler record name: port},
 # replication bootstrap hosts, {secret role: shell expression}

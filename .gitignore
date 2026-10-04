@@ -13,7 +13,6 @@ docs/
 .aimfp-project/logs/
 .aimfp-project/temp/
 .aimfp-project/watchdog/
-.aimfp-project/.state/
 .aimfp-project/.mcp-session-*
 .intercomm-aimfp/
 .claude/settings.local.json

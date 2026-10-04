@@ -35,7 +35,7 @@ def _grant(m, model, permit):
     """((permit, binding, row), None) when the cloud can grant a permit in m, else (None, why not)."""
     verb, _, role = permit.partition(" ")
     b = one_role(m, role)
-    rows = rows_for(model, b, verb) if b is not None else ()
+    rows = rows_for(m.d, model, b, verb) if b is not None else ()
     if b is None:
         return None, f"{permit}: role `{role}` has no binding in this environment"
     return ((permit, b, rows[0]), None) if rows else (None, f"{permit}: this cloud has no mapping for it")

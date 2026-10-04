@@ -6,6 +6,7 @@ from opsdir_base_saml.render import FORMATS as SAML_FORMATS
 from .checks import check_cluster, check_data_stores, check_references
 from .discovery import CHOICES
 from .importer import BULK
+from .listeners import listeners
 from .naming import SERVER_ROLES
 from .nodes import NODE_FILES
 from .render import ENDPOINTS, render_env, render_neutral
@@ -35,4 +36,4 @@ ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required
                            *SAML_FORMATS, *OIDC_FORMATS),
                   products=(("PingFederate", ">=11,<13"),),
                   secret_patterns=SECRET_PATTERNS, importers=(BULK, NODE_FILES), profile_terms=None, access=None,
-                  endpoints=ENDPOINTS)
+                  endpoints=ENDPOINTS, listeners=listeners)

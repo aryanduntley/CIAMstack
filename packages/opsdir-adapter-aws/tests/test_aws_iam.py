@@ -10,6 +10,7 @@ from opsdir_adapter_aws.access import ACCESS
 from opsdir_adapter_aws.guardrails import _statements
 from opsdir_adapter_aws.iam import iam_resources
 from opsdir_adapter_aws.inventory import read_terraform_state
+from support import BARE, SUPERS
 
 ACCT = "arn:aws:iam::111122223333"
 ROLE = f"{ACCT}:role/ciam-prod-pf"
@@ -119,7 +120,7 @@ def _row(dn, classes, **attrs):
 
 
 def _record():
-    return make_directory((), {}, (
+    return make_directory((), SUPERS, (
         _row("cloud=main,ou=environments,dc=ciam-ops", ("ciamCloud",), cloud="main", ciamCloudProvider="aws",
              ciamRegion="us-east-1"),
         _row(ENV, ("ciamEnvironment",), env="prod"),
@@ -144,7 +145,7 @@ def _imported(state):
     d = _record()
     imported = read_terraform_state({"main/prod/terraform.tfstate": state}, d, ())
     entries = {e.norm: e for _, es in imported.groups for e in es}
-    return SimpleNamespace(bindings=tuple(entries.values())), entries, imported.notices
+    return SimpleNamespace(d=BARE, bindings=tuple(entries.values())), entries, imported.notices
 
 
 def test_the_record_learns_the_identity_and_what_it_may_do():

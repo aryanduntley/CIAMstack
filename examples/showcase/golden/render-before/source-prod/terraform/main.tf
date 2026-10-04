@@ -159,6 +159,78 @@ resource "aws_vpc_security_group_ingress_rule" "fw_mro_batch_0_1636" {
   description       = "consumer mro-batch-export (fw-mro-batch)"
 }
 
+resource "aws_vpc_security_group_ingress_rule" "fw_pf_cluster_0_7600" {
+  security_group_id = aws_security_group.pf_engine.id
+  cidr_ipv4         = "10.20.4.0/24"
+  from_port         = 7600
+  to_port           = 7600
+  ip_protocol       = "tcp"
+  description       = "fw-pf-cluster (fw-pf-cluster)"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "fw_pf_cluster_0_7700" {
+  security_group_id = aws_security_group.pf_engine.id
+  cidr_ipv4         = "10.20.4.0/24"
+  from_port         = 7700
+  to_port           = 7700
+  ip_protocol       = "tcp"
+  description       = "fw-pf-cluster (fw-pf-cluster)"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "fw_pf_cluster_1_7600" {
+  security_group_id = aws_security_group.pf_engine.id
+  cidr_ipv4         = "10.20.5.0/24"
+  from_port         = 7600
+  to_port           = 7600
+  ip_protocol       = "tcp"
+  description       = "fw-pf-cluster (fw-pf-cluster)"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "fw_pf_cluster_1_7700" {
+  security_group_id = aws_security_group.pf_engine.id
+  cidr_ipv4         = "10.20.5.0/24"
+  from_port         = 7700
+  to_port           = 7700
+  ip_protocol       = "tcp"
+  description       = "fw-pf-cluster (fw-pf-cluster)"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "fw_pf_cluster_admin_0_7600" {
+  security_group_id = aws_security_group.pf_admin.id
+  cidr_ipv4         = "10.20.4.0/24"
+  from_port         = 7600
+  to_port           = 7600
+  ip_protocol       = "tcp"
+  description       = "fw-pf-cluster-admin (fw-pf-cluster-admin)"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "fw_pf_cluster_admin_0_7700" {
+  security_group_id = aws_security_group.pf_admin.id
+  cidr_ipv4         = "10.20.4.0/24"
+  from_port         = 7700
+  to_port           = 7700
+  ip_protocol       = "tcp"
+  description       = "fw-pf-cluster-admin (fw-pf-cluster-admin)"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "fw_pf_cluster_admin_1_7600" {
+  security_group_id = aws_security_group.pf_admin.id
+  cidr_ipv4         = "10.20.5.0/24"
+  from_port         = 7600
+  to_port           = 7600
+  ip_protocol       = "tcp"
+  description       = "fw-pf-cluster-admin (fw-pf-cluster-admin)"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "fw_pf_cluster_admin_1_7700" {
+  security_group_id = aws_security_group.pf_admin.id
+  cidr_ipv4         = "10.20.5.0/24"
+  from_port         = 7700
+  to_port           = 7700
+  ip_protocol       = "tcp"
+  description       = "fw-pf-cluster-admin (fw-pf-cluster-admin)"
+}
+
 resource "aws_vpc_security_group_ingress_rule" "fw_pf_ds_svc_0_1636" {
   security_group_id = aws_security_group.ds.id
   cidr_ipv4         = "10.20.4.0/24"

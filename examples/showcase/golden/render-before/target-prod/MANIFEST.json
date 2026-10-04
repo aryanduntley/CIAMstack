@@ -191,6 +191,11 @@
       "format": "json",
       "sha256": "efb486dfddd50774f26420c3e30a63b9d04c93f08e9c30a442185c36805e528c"
     },
+    "pingfederate/cluster/jgroups.properties": {
+      "scope": "environment-specific",
+      "format": "java-properties",
+      "sha256": "ebf232c163ecf0ed625961fbf64735969c963c3d36544e5bbcf85aca2169fe0d"
+    },
     "pingfederate/data-stores.json": {
       "scope": "environment-specific",
       "format": "json",
@@ -309,7 +314,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "95cbcb154928ac6f8c3feec770d905e63fb67fd37f28d819b06e628414a5b45e"
+      "sha256": "e39125d3ac7a5abdcd6a39760f41209689b4c6f72e96895c26502635ceba3263"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

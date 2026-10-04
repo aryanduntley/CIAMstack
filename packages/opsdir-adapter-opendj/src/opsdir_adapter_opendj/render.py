@@ -13,18 +13,17 @@ from opsdir.core.environment import joins
 from opsdir_base_ds.config import neutral_files
 from opsdir_base_ds.product import DsProduct
 from opsdir_base_ds.replication import REPLICATION_PORT, joined_ds_hosts
-from opsdir_base_ds.setup import directory_servers, port, setup_inputs
+from opsdir_base_ds.setup import ADMIN_PORT, directory_servers, port, setup_inputs
 
 OPENDJ = DsProduct(
     name="OpenDJ", root_dn="cn=Directory Manager",
-    dsconfig_apply=('# Apply: dsconfig --hostname <ds> --port 4444 --bindDN "cn=Directory Manager" '
+    dsconfig_apply=(f'# Apply: dsconfig --hostname <ds> --port {ADMIN_PORT} --bindDN "cn=Directory Manager" '
                     "--bindPasswordFile <file> \\",
                     "#          --trustStorePath <truststore> --batchFilePath dsconfig.batch --no-prompt"),
     handler_names={"LDAP": "LDAP Connection Handler", "LDAPS": "LDAPS Connection Handler",
                    "HTTPS": "HTTP Connection Handler"},
     builtin_policies=("Default Password Policy", "Root Password Policy"))
 SETUP_SECRET_ROLES = ("ds-root-password", "ds-replication-admin-password")
-ADMIN_PORT = 4444
 
 
 def replication_source(m, server):

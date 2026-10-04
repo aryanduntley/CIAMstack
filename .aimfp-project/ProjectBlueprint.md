@@ -1,7 +1,7 @@
 # CIAMstack - Project Blueprint
 
 **Version**: 1.11
-**Status**: Paths 1-4 completed; path 5 (Stack Coverage) in progress: 4.1-4.8 and 4.12 done (PingFederate depth, hidden automation, host baseline & Kubernetes workloads, messaging & external services, data profile, observability, platform IAM & admin plane, edge & traffic protection, Google Cloud), 4.9 next; Updates U.6 (shared helpers), U.7 (deferred notes 352, 331) and U.10 (interaction graph) done, U.4 (package READMEs) open
+**Status**: Paths 1-4 completed; path 5 (Stack Coverage) in progress: 4.1-4.8 and 4.12 done (PingFederate depth, hidden automation, host baseline & Kubernetes workloads, messaging & external services, data profile, observability, platform IAM & admin plane, edge & traffic protection, Google Cloud), 4.9 next; Updates U.6 (shared helpers), U.7 (deferred notes 352, 331), U.10 (interaction graph) and U.11 (tests not tracked) done, U.4 (package READMEs) open
 **Last Updated**: 2026-10-02
 **AIMFP Compliance**: Strict
 
@@ -193,7 +193,8 @@ Schema OIDs: each owner has an arc (PEN .1 core/domains, .2 showcase user schema
 Post-completion paths: Added Features (998), Updates (999; open: U.4 package READMEs to a common standard; U.5 no
 secret values in rendered Terraform state, completed; U.10 interaction graph matches the code, completed: every
 statically resolvable call recorded, calls inside untracked private helpers on their public caller, Python -> SQL
-trigger edges kept, plugin dispatch through the registry not recorded).
+trigger edges kept, plugin dispatch through the registry not recorded; U.11 test code is not tracked, completed:
+no files under tests/, no pytest.ini, no test -> production edges; .watchdogignore excludes them).
 
 ---
 

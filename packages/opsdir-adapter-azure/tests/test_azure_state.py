@@ -9,6 +9,7 @@ from opsdir.connectors.importing import import_changes
 from opsdir.core.directory import get, make_directory, one, values
 from opsdir_adapter_azure.inventory import read_terraform_state, state_resources
 from opsdir_format_terraform.state import read_state
+from support import SUPERS
 
 ENV = "env=prod,cloud=main,ou=environments,dc=ciam-ops"
 B = f"ou=bindings,{ENV}"
@@ -26,7 +27,7 @@ def _row(dn, classes, **attrs):
 
 
 def _record(*extra):
-    return make_directory((), {}, (
+    return make_directory((), SUPERS, (
         _row("cloud=main,ou=environments,dc=ciam-ops", ("ciamCloud",), cloud="main", ciamCloudProvider="azure",
              ciamRegion="eastus2"),
         _row("cloud=other,ou=environments,dc=ciam-ops", ("ciamCloud",), cloud="other", ciamCloudProvider="aws",

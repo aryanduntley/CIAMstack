@@ -237,6 +237,30 @@ ciamRulePriority: 180
 ciamSourceCidr: 0.0.0.0/0
 ciamTargetRole: ig
 
+dn: cn=fw-pf-cluster,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-pf-cluster
+ciamBindingRole: fw-pf-cluster
+ciamPort: 7600
+ciamPort: 7700
+ciamProtocol: tcp
+ciamRulePriority: 190
+ciamSourceCidr: 10.70.2.0/24
+ciamTargetRole: pf-engine
+
+dn: cn=fw-pf-cluster-admin,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-pf-cluster-admin
+ciamBindingRole: fw-pf-cluster-admin
+ciamPort: 7600
+ciamPort: 7700
+ciamProtocol: tcp
+ciamRulePriority: 200
+ciamSourceCidr: 10.70.2.0/24
+ciamTargetRole: pf-admin
+
 dn: cn=egress-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamEgress
@@ -245,6 +269,15 @@ ciamBindingRole: pf-egress
 ciamCidr: 203.0.113.150/32
 ciamProviderRef: example-aero-ciam-standby/us-central1/ciam-standby-router/cia
  m-standby-nat
+
+dn: cn=time,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamTimeSource
+cn: time
+ciamBindingRole: time-source
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamTimeKind: provider
+ciamTimeServer: metadata.google.internal
 
 dn: cn=secret-ds-deployment-id,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top

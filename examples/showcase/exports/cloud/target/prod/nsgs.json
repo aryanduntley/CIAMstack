@@ -125,6 +125,21 @@
           "443"
         ],
         "description": "fw-sso-public"
+      },
+      {
+        "name": "fw-pf-cluster",
+        "priority": 190,
+        "direction": "Inbound",
+        "access": "Allow",
+        "protocol": "Tcp",
+        "sourceAddressPrefixes": [
+          "10.60.2.0/24"
+        ],
+        "destinationPortRanges": [
+          "7600",
+          "7700"
+        ],
+        "description": "fw-pf-cluster"
       }
     ],
     "networkInterfaces": [
@@ -144,7 +159,23 @@
     "name": "nsg-ciam-prod-pf-admin",
     "type": "Microsoft.Network/networkSecurityGroups",
     "resourceGroup": "rg-ciam-prod",
-    "securityRules": [],
+    "securityRules": [
+      {
+        "name": "fw-pf-cluster-admin",
+        "priority": 200,
+        "direction": "Inbound",
+        "access": "Allow",
+        "protocol": "Tcp",
+        "sourceAddressPrefixes": [
+          "10.60.2.0/24"
+        ],
+        "destinationPortRanges": [
+          "7600",
+          "7700"
+        ],
+        "description": "fw-pf-cluster-admin"
+      }
+    ],
     "networkInterfaces": [
       {
         "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkInterfaces/nic-pf-admin-1"

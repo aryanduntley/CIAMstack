@@ -18,7 +18,7 @@ from opsdir.core.directory import is_a, one, rdn_of, rdn_value
 from opsdir.core.environment import environment_of
 from opsdir.domains.access.grants import covered
 
-SECRET, KEY, STORAGE, STREAM, LOGS = ("ciamSecretRef", "ciamKeyRef", "ciamBackupTarget", "ciamStreamBinding",
+SECRET, KEY, STORAGE, STREAM, LOGS = ("ciamSecretRef", "ciamKeyRef", "ciamObjectStore", "ciamStreamBinding",
                                       "ciamLogDestination")
 SERVICE, COMPUTE = "ciamServiceName", "ciamComputeGroup"
 VAULT_ADMIN = "Key Vault Administrator"

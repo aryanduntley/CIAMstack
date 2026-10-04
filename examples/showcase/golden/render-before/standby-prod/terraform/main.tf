@@ -113,6 +113,34 @@ resource "google_compute_firewall" "fw_login_public" {
   target_tags   = ["ciam-prod-am"]
 }
 
+resource "google_compute_firewall" "fw_pf_cluster" {
+  name        = "ciam-prod-fw-pf-cluster"
+  description = "fw-pf-cluster (fw-pf-cluster)"
+  network     = data.google_compute_network.main.self_link
+  direction   = "INGRESS"
+  priority    = 190
+  allow {
+    protocol = "tcp"
+    ports    = ["7600", "7700"]
+  }
+  source_ranges = ["10.70.2.0/24"]
+  target_tags   = ["ciam-prod-pf-engine"]
+}
+
+resource "google_compute_firewall" "fw_pf_cluster_admin" {
+  name        = "ciam-prod-fw-pf-cluster-admin"
+  description = "fw-pf-cluster-admin (fw-pf-cluster-admin)"
+  network     = data.google_compute_network.main.self_link
+  direction   = "INGRESS"
+  priority    = 200
+  allow {
+    protocol = "tcp"
+    ports    = ["7600", "7700"]
+  }
+  source_ranges = ["10.70.2.0/24"]
+  target_tags   = ["ciam-prod-pf-admin"]
+}
+
 resource "google_compute_firewall" "fw_pf_ds_svc" {
   name        = "ciam-prod-fw-pf-ds-svc"
   description = "consumer pf-ds-svc (fw-pf-ds-svc)"

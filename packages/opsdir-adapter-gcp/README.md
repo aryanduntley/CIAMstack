@@ -82,7 +82,7 @@ The importer `gcp/terraform-state` reads Terraform state (format version 4, `has
 | `google_compute_router_nat` (+ `google_compute_address`) | egress: its static addresses | its resource name |
 | `google_secret_manager_secret`, `google_secret_manager_regional_secret` | secret reference `gcp-sm://projects/<p>/[locations/<l>/]secrets/<name>`; automatic rotation when it has a rotation period (Secret Manager's rotation notifies; something must act on it) | reference URI |
 | `google_kms_crypto_key` | key reference `gcp-kms://<name>`: protection level (`SOFTWARE` → `software`, `HSM` → `hsm`, `HSM_SINGLE_TENANT` → `managed-hsm`, `EXTERNAL`/`EXTERNAL_VPC` → `external`), automatic rotation when it has a rotation period | reference URI |
-| `google_storage_bucket` | storage `gs://<bucket>` | storage reference |
+| `google_storage_bucket` | object store `gs://<bucket>` | storage reference |
 | `google_cloudfunctions2_function`, `google_cloudfunctions_function`, `google_cloud_run_v2_job`, `google_cloudbuild_trigger` (+ `google_cloud_scheduler_job`) | job binding: runtime, and the schedules of the Cloud Scheduler jobs whose HTTP or Pub/Sub target names it | its resource name |
 | `google_compute_region_instance_group_manager`, `google_compute_instance_group_manager` (+ autoscaler, instance template) | compute group: the role its template's labels name, machine type, image, target size, min/max from the autoscaler, zones. Binding role label `bindingrole`, else `compute-<role>` | its resource name |
 | `google_container_cluster` (+ `google_container_node_pool`) | cluster: version, the add-ons it enables (from `addons_config`, workload identity, Secret Manager), node pools (`name: machine type, min-max`), node locations. Binding role label `bindingrole` or `role`, else `cluster` | its resource name |
@@ -216,7 +216,7 @@ Permissions are recorded neutrally (the core `access` domain: permission sets of
 |---|---|---|
 | `read-secret` / `write-secret` | secret (`gcp-sm://`) | `roles/secretmanager.secretAccessor`, `secretmanager.admin` / `secretVersionAdder`, `secretVersionManager`, `admin` |
 | `use-key` / `manage-key` | key (`gcp-kms://`) | `roles/cloudkms.cryptoKeyEncrypterDecrypter`, `cryptoOperator` / `roles/cloudkms.admin` |
-| `read-storage` / `write-storage` | backup target (`gs://`) | `roles/storage.objectViewer`, `objectUser`, `objectAdmin` / `objectCreator`, `objectUser`, `objectAdmin` |
+| `read-storage` / `write-storage` | object store, backup targets included (`gs://`) | `roles/storage.objectViewer`, `objectUser`, `objectAdmin` / `objectCreator`, `objectUser`, `objectAdmin` |
 | `publish-stream` / `consume-stream` | stream: topic | `roles/pubsub.publisher`, `pubsub.editor` / `roles/pubsub.subscriber` |
 | `write-logs` / `read-logs` | log destination (log bucket) | `roles/logging.logWriter`, `logging.bucketWriter` / `logging.viewer`, `logging.privateLogViewer` (project-level: broad) |
 | `manage` | secret / service name / instance group | `roles/secretmanager.admin` / `roles/compute.loadBalancerAdmin` + `roles/dns.admin` (broad) / `roles/compute.instanceAdmin.v1` (broad) |

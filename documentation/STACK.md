@@ -481,7 +481,7 @@ Result: "change this hostname" becomes a query that lists every file and every p
 ## 21. Coverage today, and the build order
 
 **Modeled today (✔):**
-- **Where things run:** clouds and environments (overlays of other environments, per-environment overrides with why, declared stacks and required roles), servers, and bindings: networks, subnets, service names, firewall rules, egress, interconnects, secret, key and certificate references, backup targets.
+- **Where things run:** clouds and environments (overlays of other environments, per-environment overrides with why, declared stacks and required roles), servers, and bindings: networks, subnets, service names, firewall rules, egress, interconnects, secret, key and certificate references, object stores (backup targets among them).
 - **Directory:** backends, indexes, password policies, connection handlers, log publishers, replication topology, declared vs observed snapshots; the user directory's schema (every attribute and object class, standard or defined in the record); consumers and ACIs.
 - **Federation:** the platform's own identity services (base URL, entity ID, issuer), SAML and OIDC integrations with claim maps in the protocols' own vocabulary.
 - **Keys and secrets:** certificates (public facts), credentials with continuity, HSM, exportability and rotation facts, one per key or secret and bound per environment; secret stores AWS Secrets Manager/KMS, Azure Key Vault, Google Cloud Secret Manager/Cloud KMS, HashiCorp Vault, Kubernetes secrets, CyberArk.

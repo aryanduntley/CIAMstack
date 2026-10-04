@@ -149,17 +149,19 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.35 NAME 'ciamRefUri' DESC 'Reference
   caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE X-PORTAB
  ILITY 'secret-ref' X-VALUE-TYPE 'ref-uri' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.36 NAME 'ciamInterconnectKind' DESC 
- 'Cross-environment link type (VPN, dedicated circuit, peering)' EQUALITY ca
- seIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILI
- TY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+ 'Cross-environment link, in words (site-to-site VPN run by the landing zone
+ ); ciamLinkKind says which kind it is' EQUALITY caseIgnoreMatch SYNTAX 1.3.
+ 6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE
+  'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.37 NAME 'ciamPeerEnvironment' DESC '
  Environment at the other end of an interconnect' EQUALITY distinguishedName
  Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'bind
  ing' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
-attributeTypes: ( 1.3.6.1.4.1.32473.1.1.38 NAME 'ciamStorageRef' DESC 'Backu
- p storage location' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.12
- 1.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 
- 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.38 NAME 'ciamStorageRef' DESC 'Objec
+ t storage location (bucket or container URI, e.g. s3://bucket, azblob://acc
+ ount/container, gs://bucket)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1
+ 466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string'
+  X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.39 NAME 'ciamRetentionDays' DESC 'Re
  tention period in days' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.1
  21.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int' X-ORIGIN 'op
@@ -1649,6 +1651,182 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.384 NAME 'ciamEdgeSetting' DESC 'A s
  etting the edge runs that the policies\27 terms can\27t express, in the pro
  vider\27s own terms' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.1
  21.1.15 X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.385 NAME 'ciamSubnetRole' DESC 'Bind
+ ing role of a subnet this applies to' EQUALITY caseIgnoreMatch SYNTAX 1.3.6
+ .1.4.1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-OR
+ IGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.386 NAME 'ciamRoute' DESC 'A route: 
+ \27<destination> <target kind> [<target>] [for <server roles>]\27, the targ
+ et the binding role of what realizes it (0.0.0.0/0 nat pf-egress; 10.20.0.0
+ /16 vpn link-source)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.
+ 121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-PATTERN '^([0-9A-F
+ a-f:.]+/[0-9]+|[A-Za-z][A-Za-z0-9._-]*) (local|internet|egress-only|nat|tra
+ nsit|peering|vpn|endpoint|firewall|appliance|gateway-lb|none)( [^ ]+)?( for
+  [a-z0-9][a-z0-9-]*(,[a-z0-9][a-z0-9-]*)*)?$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.387 NAME 'ciamMainTable' DESC 'Wheth
+ er this is the network\27s main route table: subnets no other table names u
+ se it' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VAL
+ UE X-PORTABILITY 'binding' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.388 NAME 'ciamAclRule' DESC 'A state
+ less network ACL rule, evaluated in number order: \27<number> <allow|deny> 
+ <in|out> <protocol> <port|from-to|all> <cidr>\27 (100 allow in tcp 636 10.2
+ 0.0.0/16)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-
+ PORTABILITY 'binding' X-VALUE-TYPE 'string' X-PATTERN '^[0-9]+ (allow|deny)
+  (in|out) (tcp|udp|icmp|all) ([0-9]+(-[0-9]+)?|all) [0-9A-Fa-f:.]+/[0-9]+$'
+  X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.389 NAME 'ciamEphemeralPorts' DESC '
+ Port range the clients\27 return traffic uses (from-to; 1024-65535 when not
+  stated)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SIN
+ GLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-PATTERN '^[0-9]+-
+ [0-9]+$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.390 NAME 'ciamPrivateService' DESC '
+ What a private endpoint reaches: the secret store, keys, object storage, a 
+ database, logs, messaging, a registry, the provider\27s APIs' EQUALITY case
+ IgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY
+  'binding' X-VALUE-TYPE 'enum:secrets|keys|object-storage|database|logs|mes
+ saging|registry|apis|other' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.391 NAME 'ciamPrivateEndpointKind' D
+ ESC 'How: an endpoint the routes point at (gateway), an address in a subnet
+  (interface), one address for all of the provider\27s APIs, the provider\27
+ s service networks reached by peering, or a subnet setting' EQUALITY caseIg
+ noreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY '
+ binding' X-VALUE-TYPE 'enum:gateway|interface|all-apis|peered-service|subne
+ t-access' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.392 NAME 'ciamReachesRole' DESC 'Bin
+ ding role of what it reaches (a secret, key or object store binding)' EQUAL
+ ITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'bin
+ ding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.393 NAME 'ciamPrivateDns' DESC 'Whet
+ her the service\27s usual name resolves to the private endpoint inside the 
+ network' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-V
+ ALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.394 NAME 'ciamServiceAlias' DESC 'Th
+ e name other networks connect to an endpoint service by (service name, alia
+ s, attachment); it changes with the environment, so every consumer reconnec
+ ts' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VA
+ LUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.395 NAME 'ciamAllowedPrincipal' DESC
+  'An account, subscription or project allowed to connect (or approved autom
+ atically)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-
+ PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.396 NAME 'ciamAcceptanceRequired' DE
+ SC 'Whether each new connection waits for the operators to accept it' EQUAL
+ ITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABI
+ LITY 'binding' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.397 NAME 'ciamVisibleTo' DESC 'An ac
+ count, subscription or project that may discover the service (none recorded
+ : anyone who knows its name)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1
+ 466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'op
+ sdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.398 NAME 'ciamLinkKind' DESC 'What a
+ n interconnect is: network peering, a transit hub attachment, a site-to-sit
+ e VPN, a dedicated circuit, a managed hub connection' EQUALITY caseIgnoreMa
+ tch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'bindin
+ g' X-VALUE-TYPE 'enum:peering|transit|vpn|dedicated|hub' X-ORIGIN 'opsdir' 
+ )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.399 NAME 'ciamPeerGateway' DESC 'Add
+ ress of the other end (a VPN peer\27s gateway, a tunnel\27s outside address
+ )' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABIL
+ ITY 'binding' X-VALUE-TYPE 'ip' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.400 NAME 'ciamLocalAsn' DESC 'BGP au
+ tonomous system number on this side' EQUALITY integerMatch SYNTAX 1.3.6.1.4
+ .1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'int
+ ' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.401 NAME 'ciamPeerAsn' DESC 'BGP aut
+ onomous system number of the peer' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1
+ .1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'int' 
+ X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.402 NAME 'ciamAdvertisedCidr' DESC '
+ A range this side advertises over the link' EQUALITY caseIgnoreMatch SYNTAX
+  1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'cidr' 
+ X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.403 NAME 'ciamAcceptedCidr' DESC 'A 
+ range this side accepts from the peer' EQUALITY caseIgnoreMatch SYNTAX 1.3.
+ 6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'cidr' X-ORI
+ GIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.404 NAME 'ciamPeerAccepted' DESC 'Wh
+ ether the other side has accepted or configured its half (peering is two-si
+ ded)' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALU
+ E X-PORTABILITY 'binding' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.405 NAME 'ciamProxyKind' DESC 'What 
+ controls egress to named sites: a cloud firewall with domain rules, a manag
+ ed web proxy, a forward proxy the platform runs, a proxy service run by som
+ eone else' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SI
+ NGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'enum:firewall|web-proxy|fo
+ rward-proxy|service' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.406 NAME 'ciamProxyAddress' DESC 'Wh
+ ere clients send traffic to an explicit proxy (host:port)' EQUALITY caseIgn
+ oreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'b
+ inding' X-VALUE-TYPE 'string' X-PATTERN '^[A-Za-z0-9.-]+:[0-9]+$' X-ORIGIN 
+ 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.407 NAME 'ciamAllowedDestination' DE
+ SC 'A site the proxy or firewall lets traffic out to (host, or * and a doma
+ in)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTAB
+ ILITY 'binding' X-VALUE-TYPE 'string' X-PATTERN '^(\5C*\5C.)?[A-Za-z0-9]([A
+ -Za-z0-9-]*[A-Za-z0-9])?(\5C.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)+(:[0-9
+ ]+)?$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.408 NAME 'ciamDestination' DESC 'An 
+ outside site the platform must reach: a host name or \27*.\27 and a domain,
+  with a port when not 443' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466
+ .115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-P
+ ATTERN '^(\5C*\5C.)?[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\5C.[A-Za-z0-9](
+ [A-Za-z0-9-]*[A-Za-z0-9])?)+(:[0-9]+)?$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.409 NAME 'ciamSiteKind' DESC 'What t
+ he site serves: a partner\27s metadata, signing keys (JWKS), certificate st
+ atus (OCSP, CRL), an MFA or messaging vendor, vendor updates, a directory' 
+ EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE 
+ X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:partner-metadata|jwks|ocsp-crl|mf
+ a|messaging|vendor-update|directory|other' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.410 NAME 'ciamNeededByRole' DESC 'A 
+ server role that must reach it' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1
+ .1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'o
+ psdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.411 NAME 'ciamTimeServer' DESC 'A ti
+ me server the servers synchronize with (host or address; \27ptp:<device>\27
+  for a host clock)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.12
+ 1.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.412 NAME 'ciamTimeKind' DESC 'Where 
+ time comes from: the provider\27s own service, NTP servers, the host\27s cl
+ ock (PTP), servers the organization runs' EQUALITY caseIgnoreMatch SYNTAX 1
+ .3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-T
+ YPE 'enum:provider|ntp|ptp|internal' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.413 NAME 'ciamFlowScope' DESC 'What 
+ a flow log records: a whole network, subnets, interfaces, a transit attachm
+ ent, a security group' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115
+ .121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'enum:network|s
+ ubnet|interface|transit|security-group' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.414 NAME 'ciamFirewallModel' DESC 'H
+ ow the network\27s firewall rules are kept: as rules on the network (the de
+ fault) or in a policy attached to it, targeting servers by governed tags' E
+ QUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X
+ -PORTABILITY 'binding' X-VALUE-TYPE 'enum:rules|policy' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.415 NAME 'ciamPolicyScope' DESC 'Whe
+ ther a firewall policy is attached to the network or above it (an organizat
+ ion or folder; read, never rendered)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6
+ .1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 
+ 'enum:network|hierarchical' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.416 NAME 'ciamPolicyOrder' DESC 'Whi
+ ch the network evaluates first: its rules or its policy' EQUALITY caseIgnor
+ eMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'bin
+ ding' X-VALUE-TYPE 'enum:rules-first|policy-first' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.417 NAME 'ciamPolicyRole' DESC 'Bind
+ ing role of the firewall policy a rule belongs to' EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' 
+ X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.418 NAME 'ciamNatAllocation' DESC 'W
+ hether egress addresses are fixed (static) or picked by the provider (autom
+ atic: nothing a partner can allowlist)' EQUALITY caseIgnoreMatch SYNTAX 1.3
+ .6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYP
+ E 'enum:static|automatic' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.419 NAME 'ciamTagKeyRef' DESC 'Provi
+ der reference of the tag key a firewall policy targets servers by' EQUALITY
+  caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTAB
+ ILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.420 NAME 'ciamOpenWithinNetwork' DES
+ C 'Whether the network admits traffic between its own addresses unless a ru
+ le denies it (some providers\27 default rules do)' EQUALITY booleanMatch SY
+ NTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'binding' X-VA
+ LUE-TYPE 'bool' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef ) X-ORIGIN 'opsdir' )
@@ -1668,8 +1846,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.5 NAME 'ciamBinding' DESC 'Environmen
  t-specific binding of an abstract role' SUP ciamObject ABSTRACT MUST ( cn $
   ciamBindingRole ) MAY ciamProviderRef X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.6 NAME 'ciamNetwork' DESC 'Virtual ne
- twork' SUP ciamBinding STRUCTURAL MUST ciamCidr MAY ciamResourceGroup X-ORI
- GIN 'opsdir' )
+ twork' SUP ciamBinding STRUCTURAL MUST ciamCidr MAY ( ciamResourceGroup $ c
+ iamFirewallModel $ ciamOpenWithinNetwork ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.7 NAME 'ciamSubnetBinding' DESC 'Subn
  et' SUP ciamBinding STRUCTURAL MUST ciamCidr MAY ciamZone X-ORIGIN 'opsdir'
   )
@@ -1682,7 +1860,7 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.8 NAME 'ciamServiceName' DESC 'Stable
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.9 NAME 'ciamFirewallRule' DESC 'Inbou
  nd allow rule' SUP ciamBinding STRUCTURAL MUST ( ciamSourceCidr $ ciamPort 
  $ ciamTargetRole ) MAY ( ciamProtocol $ ciamAllowsConsumer $ ciamRulePriori
- ty ) X-ORIGIN 'opsdir' )
+ ty $ ciamPolicyRole ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.10 NAME 'ciamSecretRef' DESC 'Referen
  ce to a secret' SUP ciamBinding STRUCTURAL MUST ciamRefUri MAY ( ciamProtec
  tionLevel $ ciamAutoRotate $ ciamRotationFunction $ ciamReplicaRegion $ cia
@@ -1695,19 +1873,24 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.11 NAME 'ciamKeyRef' DESC 'Reference
  lFrom ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.12 NAME 'ciamEgress' DESC 'Outbound (
  NAT) addresses our services send from' SUP ciamBinding STRUCTURAL MUST ciam
- Cidr X-ORIGIN 'opsdir' )
+ Cidr MAY ( ciamNatAllocation $ ciamZone ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.13 NAME 'ciamExternalAllowlist' DESC 
  'An allowlist in someone else\27s system that contains our addresses' SUP c
  iamObject STRUCTURAL MUST ( cn $ ciamManagedBy $ ciamRefersToRole $ ciamRec
  ordedCidr $ ciamAllowlistDirection ) MAY ( ciamExternalSystem $ ciamLeadTim
  eDays $ ciamRequestStatus $ ciamAllowsConsumer ) X-ORIGIN 'opsdir' )
-objectClasses: ( 1.3.6.1.4.1.32473.1.2.14 NAME 'ciamBackupTarget' DESC 'Back
- up destination' SUP ciamBinding STRUCTURAL MUST ciamStorageRef MAY ciamRete
- ntionDays X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.81 NAME 'ciamObjectStore' DESC 'An ob
+ ject storage location (bucket or container) the stack uses; a backup target
+  is one with a retention' SUP ciamBinding STRUCTURAL MUST ciamStorageRef X-
+ ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.14 NAME 'ciamBackupTarget' DESC 'An o
+ bject store backups are written to, with their retention' SUP ciamObjectSto
+ re STRUCTURAL MAY ciamRetentionDays X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.15 NAME 'ciamInterconnect' DESC 'Link
   to another environment' SUP ciamBinding STRUCTURAL MUST ( ciamInterconnect
- Kind $ ciamPeerEnvironment $ ciamSourceCidr ) MAY ciamPort X-ORIGIN 'opsdir
- ' )
+ Kind $ ciamPeerEnvironment $ ciamSourceCidr ) MAY ( ciamPort $ ciamLinkKind
+  $ ciamPeerGateway $ ciamLocalAsn $ ciamPeerAsn $ ciamAdvertisedCidr $ ciam
+ AcceptedCidr $ ciamPeerAccepted $ ciamManagedBy ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.16 NAME 'ciamBackend' DESC 'DS backen
  d' SUP ciamObject STRUCTURAL MUST ( cn $ ciamBackendType $ ciamBaseDn ) X-O
  RIGIN 'opsdir' )
@@ -2021,3 +2204,41 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.80 NAME 'ciamEdgeService' DESC 'A web
  n front of service names, and what it runs' SUP ciamBinding STRUCTURAL MUST
   ciamEdgeKind MAY ( ciamServiceRole $ ciamProviderRef $ ciamEdgeFact $ ciam
  EdgeSetting ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.82 NAME 'ciamEgressDestination' DESC 
+ 'An outside site the platform must reach (partner metadata, signing keys, c
+ ertificate status, vendors)' SUP ciamObject STRUCTURAL MUST ( cn $ ciamDest
+ ination $ ciamSiteKind ) MAY ( ciamNeededByRole $ ciamPort ) X-ORIGIN 'opsd
+ ir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.83 NAME 'ciamRouteTable' DESC 'Routes
+ , and the subnets that use them' SUP ciamBinding STRUCTURAL MUST ciamRoute 
+ MAY ( ciamSubnetRole $ ciamMainTable $ ciamManagedBy ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.84 NAME 'ciamNetworkAcl' DESC 'A stat
+ eless network ACL on subnets: rules both ways, in number order' SUP ciamBin
+ ding STRUCTURAL MUST ciamAclRule MAY ( ciamSubnetRole $ ciamEphemeralPorts 
+ $ ciamManagedBy ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.85 NAME 'ciamPrivateEndpoint' DESC 'A
+  private way to a service the platform uses, so its traffic stays off the i
+ nternet' SUP ciamBinding STRUCTURAL MUST ciamPrivateService MAY ( ciamPriva
+ teEndpointKind $ ciamReachesRole $ ciamSubnetRole $ ciamDnsZone $ ciamPriva
+ teDns $ ciamManagedBy ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.86 NAME 'ciamEndpointService' DESC 'A
+  service name exposed privately to other networks or accounts, and who may 
+ connect' SUP ciamBinding STRUCTURAL MUST ciamServiceRole MAY ( ciamServiceA
+ lias $ ciamAllowedPrincipal $ ciamAllowsConsumer $ ciamAcceptanceRequired $
+  ciamVisibleTo ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.87 NAME 'ciamProxy' DESC 'What egress
+  to named sites passes, and the sites it allows' SUP ciamBinding STRUCTURAL
+  MUST ciamProxyKind MAY ( ciamProxyAddress $ ciamAllowedDestination $ ciamM
+ anagedBy ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.88 NAME 'ciamTimeSource' DESC 'Where 
+ the servers get their time (clock skew breaks SAML and replication)' SUP ci
+ amBinding STRUCTURAL MUST ciamTimeServer MAY ciamTimeKind X-ORIGIN 'opsdir'
+  )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.89 NAME 'ciamFlowLog' DESC 'A flow lo
+ g: what it records, where it goes, how long it is kept' SUP ciamBinding STR
+ UCTURAL MUST ciamFlowScope MAY ( ciamSubnetRole $ ciamLogDestinationRole $ 
+ ciamRetentionDays $ ciamManagedBy ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.90 NAME 'ciamFirewallPolicy' DESC 'A 
+ firewall policy attached to the network or above it; rules name it by its r
+ ole' SUP ciamBinding STRUCTURAL MUST ciamPolicyScope MAY ( ciamPolicyOrder 
+ $ ciamTagKeyRef $ ciamManagedBy ) X-ORIGIN 'opsdir' )

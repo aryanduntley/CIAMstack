@@ -20,7 +20,7 @@ from opsdir.core.environment import environment_of, one_role
 from opsdir.domains.access.evaluations import quoted
 from opsdir.domains.access.grants import ALLOWED, DENIED, UNKNOWN, covered
 
-SECRET, KEY, STORAGE, STREAM, LOGS = ("ciamSecretRef", "ciamKeyRef", "ciamBackupTarget", "ciamStreamBinding",
+SECRET, KEY, STORAGE, STREAM, LOGS = ("ciamSecretRef", "ciamKeyRef", "ciamObjectStore", "ciamStreamBinding",
                                       "ciamLogDestination")
 SERVICE, COMPUTE = "ciamServiceName", "ciamComputeGroup"
 ENCRYPTED_BY = "ciamEncryptedByRole"      # a secret under a customer managed key: that key is needed too

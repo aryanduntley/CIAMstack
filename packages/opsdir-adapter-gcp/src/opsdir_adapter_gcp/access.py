@@ -23,7 +23,7 @@ from opsdir.core.environment import environment_of
 from opsdir.domains.access.evaluations import quoted
 from opsdir.domains.access.grants import ALLOWED, DENIED, UNKNOWN, covered
 
-SECRET, KEY, STORAGE, STREAM, LOGS = ("ciamSecretRef", "ciamKeyRef", "ciamBackupTarget", "ciamStreamBinding",
+SECRET, KEY, STORAGE, STREAM, LOGS = ("ciamSecretRef", "ciamKeyRef", "ciamObjectStore", "ciamStreamBinding",
                                       "ciamLogDestination")
 SERVICE, COMPUTE = "ciamServiceName", "ciamComputeGroup"
 PERMISSIONS = (

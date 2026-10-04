@@ -7,6 +7,7 @@ from opsdir.core.directory import make_entry
 from opsdir.domains.access.workloads import WorkloadIdentity
 from opsdir_adapter_azure.access import PERMISSIONS
 from opsdir_adapter_azure.identities import identity as _identity, scope_data as _scope_data
+from support import BARE
 
 SECRET = make_entry("cn=secret,ou=bindings,env=prod", ("top", "ciamSecretRef"),
                     {"ciamBindingRole": ["pf-admin-password"], "ciamRefUri": ["azkv://kv-ciam-prod/pf-admin-password"]})
@@ -38,5 +39,5 @@ def test_an_identity_with_role_assignments_at_the_narrowest_scope():
 
 
 def test_the_scopes_data_sources_not_declared_already():
-    m = SimpleNamespace(bindings=(SECRET,))              # the secrets' vault is declared by the vault check
+    m = SimpleNamespace(d=BARE, bindings=(SECRET,))              # the secrets' vault is declared by the vault check
     assert [b.splitlines()[0] for b in _scope_data(m, (W,))] == ['data "azurerm_key_vault" "kv_ciam_keys" {']

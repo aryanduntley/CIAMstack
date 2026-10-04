@@ -9,6 +9,7 @@ from opsdir.connectors.importing import import_changes
 from opsdir.core.directory import get, make_directory, one
 from opsdir_adapter_azure.adapter import ADAPTER
 from opsdir_adapter_azure.cli import cli_resources, read_cli_inventory, vault_object
+from support import SUPERS
 
 ENV = "env=prod,cloud=main,ou=environments,dc=ciam-ops"
 B = f"ou=bindings,{ENV}"
@@ -26,7 +27,7 @@ def _row(dn, classes, **attrs):
 
 
 def _record():
-    return make_directory((), {}, (
+    return make_directory((), SUPERS, (
         _row("cloud=main,ou=environments,dc=ciam-ops", ("ciamCloud",), cloud="main", ciamCloudProvider="azure",
              ciamRegion="eastus2"),
         _row(ENV, ("ciamEnvironment",), env="prod"),

@@ -193,6 +193,36 @@ resource "azurerm_network_security_rule" "fw_mro_batch" {
   network_security_group_name = azurerm_network_security_group.ds.name
 }
 
+resource "azurerm_network_security_rule" "fw_pf_cluster" {
+  name                        = "fw-pf-cluster"
+  description                 = "fw-pf-cluster"
+  priority                    = 190
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_ranges     = ["7600", "7700"]
+  source_address_prefixes     = ["10.60.2.0/24"]
+  destination_address_prefix  = "*"
+  resource_group_name         = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.pf_engine.name
+}
+
+resource "azurerm_network_security_rule" "fw_pf_cluster_admin" {
+  name                        = "fw-pf-cluster-admin"
+  description                 = "fw-pf-cluster-admin"
+  priority                    = 200
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_ranges     = ["7600", "7700"]
+  source_address_prefixes     = ["10.60.2.0/24"]
+  destination_address_prefix  = "*"
+  resource_group_name         = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.pf_admin.name
+}
+
 resource "azurerm_network_security_rule" "fw_pf_ds_svc" {
   name                        = "fw-pf-ds-svc"
   description                 = "consumer pf-ds-svc"

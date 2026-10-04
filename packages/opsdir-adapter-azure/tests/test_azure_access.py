@@ -5,10 +5,11 @@ from types import SimpleNamespace
 from opsdir.core.directory import make_entry
 from opsdir.domains.access.grants import escalating, grant_of, granted
 from opsdir_adapter_azure.access import ACCESS
+from support import BARE
 
 RG = "/subscriptions/0000/resourceGroups/rg-ciam-prod"
 VAULT = f"{RG}/providers/Microsoft.KeyVault/vaults/kv-ciam-prod"
-ENV = SimpleNamespace(bindings=(
+ENV = SimpleNamespace(d=BARE, bindings=(
     make_entry("cn=secret,ou=bindings,env=prod", ("top", "ciamSecretRef"),
                {"ciamBindingRole": ["pf-admin-password"], "ciamRefUri": ["azkv://kv-ciam-prod/pf-admin-password"]}),
     make_entry("cn=backup,ou=bindings,env=prod", ("top", "ciamBackupTarget"),
@@ -39,7 +40,7 @@ def test_roles_that_assign_access():
 def test_managing_a_service_name_takes_its_load_balancer_and_zone():
     svc = make_entry("cn=svc-sso,ou=bindings,env=prod", ("top", "ciamServiceName"),
                      {"ciamBindingRole": ["pf-sso-service"], "ciamDnsZone": ["example-aero.test"]})
-    env = SimpleNamespace(bindings=(svc,))
+    env = SimpleNamespace(d=BARE, bindings=(svc,))
     net = f"{RG}/providers/Microsoft.Network"
     assert granted(ACCESS, env, "manage pf-sso-service", (grant_of(f"Network Contributor on {net}/loadBalancers/"
                                                                    "lb-ciam-prod-svc-sso"),

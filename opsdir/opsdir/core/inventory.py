@@ -9,7 +9,7 @@ this module places them.
   firewall  -> ciamFirewallRule     matched by the rule's name
   secret    -> ciamSecretRef        matched by reference URI (never a value)
   key       -> ciamKeyRef           matched by reference URI
-  storage   -> ciamBackupTarget     matched by storage reference
+  storage   -> ciamObjectStore      matched by storage reference (a backup target is one too)
   egress    -> ciamEgress           matched by provider ref (the NAT gateway)
   job       -> ciamJobBinding       matched by provider ref (a function, a pipeline: what realizes a job)
   compute   -> ciamComputeGroup     matched by provider ref (an autoscaling group, a scale set)
@@ -46,7 +46,7 @@ from types import MappingProxyType
 from typing import Mapping, NamedTuple, Optional
 
 from .contract import Imported
-from .directory import children, get, make_entry, one, ou_entry, rdn_value
+from .directory import children, get, is_kind, is_subclass, make_entry, one, ou_entry, rdn_value
 from .environment import env_dn
 from .overlays import lineage
 
@@ -57,7 +57,7 @@ Resource = NamedTuple("Resource", [("kind", str), ("ref", str), ("attrs", Mappin
 
 CLASSES = MappingProxyType({"network": "ciamNetwork", "subnet": "ciamSubnetBinding", "server": "ciamServer",
                             "service": "ciamServiceName", "firewall": "ciamFirewallRule", "secret": "ciamSecretRef",
-                            "key": "ciamKeyRef", "storage": "ciamBackupTarget", "egress": "ciamEgress",
+                            "key": "ciamKeyRef", "storage": "ciamObjectStore", "egress": "ciamEgress",
                             "job": "ciamJobBinding", "compute": "ciamComputeGroup", "cluster": "ciamCluster",
                             "sending": "ciamSendingIdentity", "stream": "ciamStreamBinding",
                             "channel": "ciamAlertChannel", "logs": "ciamLogDestination", "alarm": "ciamAlarmBinding",
@@ -134,9 +134,9 @@ def short_name(ref):
     return (ref or "").rsplit("/", 1)[-1].split("@", 1)[0].lower() or None
 
 
-def _match(r, entries):
+def _match(d, r, entries):
     oc = CLASSES[r.kind]
-    candidates = [e for e in entries if oc in e.classes]
+    candidates = [e for e in entries if is_kind(d, e, oc)]
     key = _resource_key(r)
     found = next((e for e in candidates if key and _key(e, r.kind) == key), None)
     if found is None and r.kind == "identity" and short_name(r.ref):
@@ -205,10 +205,10 @@ def _label(d, dn):
     return f"{parts.get('cloud')}/{parts.get('env')}"
 
 
-def _placed(own, bases):
+def _placed(d, own, bases):
     """((resource, own entry or None, inherited entry or None, name) for each resource), names never clashing."""
     def place(acc, r):
-        held, inherited = _match(r, own), _match(r, bases)
+        held, inherited = _match(d, r, own), _match(d, r, bases)
         taken = {rdn_value(e).lower() for e in own} | {name.lower() for *_, name in acc}
         base = _UNSAFE.sub("-", r.name or r.ref or r.kind).strip("-") or r.kind
         name = rdn_value(held) if held else next(n for n in (base, *(f"{base}-{i}" for i in range(2, 1000)))
@@ -226,7 +226,7 @@ def environment_groups(d, spec, resources, summarize=()):
         return (), (f"{spec}: no such environment in the record; nothing imported",)
     own, bases = _held(d, dn)
     ordered = sorted(resources, key=lambda r: (r.kind not in ("network", "subnet"), r.kind, r.ref))
-    first = reduce(_placed(own, bases), ordered, ())
+    first = reduce(_placed(d, own, bases), ordered, ())
     known = {**{r.ref: one(held or inh, "ciamBindingRole") for r, held, inh, _ in first if held or inh},
              **{r.ref: r.role for r, held, inh, _ in first if not (held or inh) and r.role}}
     placed = tuple((r._replace(role=_derived_role(r, known)) if not (held or inh) and r.role is None else r,
@@ -256,8 +256,9 @@ def environment_groups(d, spec, resources, summarize=()):
                *(f"{spec}: {r.kind} {r.name or r.ref} lacks {', '.join(incomplete[id(r)] + unresolved[id(r)])}; "
                  f"not imported" for r, _ in new if r.role and (incomplete[id(r)] or unresolved[id(r)])),
                *(f"{spec}: {r.kind} {name} added (role {r.role})" for r, name in added),
-               *(f"{spec}: {rdn_value(e)} ({next(c for c in e.classes if c in kinds)}) is in the record but not in "
-                 f"what the cloud reports" for e in own if e.norm not in reported and kinds & set(e.classes)))
+               *(f"{spec}: {rdn_value(e)} ({next(c for c in e.classes if any(is_subclass(d, c, k) for k in kinds))}) is in "
+                 f"the record but not in what the cloud reports"
+                 for e in own if e.norm not in reported and any(is_kind(d, e, k) for k in kinds)))
     return tuple((e.dn, (e,)) for e in entries), notices
 
 

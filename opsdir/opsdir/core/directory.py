@@ -131,6 +131,16 @@ def classes_with_supers(d, e):
     return frozenset(c for oc in e.classes for c in _lineage(d.supers, oc))
 
 
+def is_subclass(d, oc, of):
+    """Whether object class oc is `of` or one of its subclasses (as far as the directory's registry knows)."""
+    return of in _lineage(d.supers, oc)
+
+
+def is_kind(d, e, oc):
+    """Whether an entry is of an object class or one of its subclasses (a ciamBackupTarget is a ciamObjectStore)."""
+    return any(is_subclass(d, c, oc) for c in e.classes)
+
+
 def _in_scope(n, b, scope):
     if scope == "base":
         return n == b

@@ -64,7 +64,7 @@ def _questions(m, model, identity, who):
     def asked(permit):
         verb, _, role = permit.partition(" ")
         target = one_role(m, role)
-        rows = rows_for(model, target, verb) if target is not None else ()
+        rows = rows_for(m.d, model, target, verb) if target is not None else ()
         if not rows:
             return permit, ()
         return permit, tuple(model.evaluator(m, identity, target, rows[0]))

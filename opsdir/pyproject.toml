@@ -31,6 +31,7 @@ messaging = "opsdir.domains.messaging.domain:DOMAIN"
 observability = "opsdir.domains.observability.domain:DOMAIN"
 access = "opsdir.domains.access.domain:DOMAIN"
 edge = "opsdir.domains.edge.domain:DOMAIN"
+network = "opsdir.domains.network.domain:DOMAIN"
 
 # The standard file formats; packages register their own under the same group.
 [project.entry-points."opsdir.formats"]

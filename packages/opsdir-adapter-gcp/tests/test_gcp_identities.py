@@ -30,7 +30,7 @@ GRANTS = (("read-secret pf-admin-password", _binding("ciamSecretRef", "pf-admin-
            _row("use-key", "ciamKeyRef")),
           ("write-storage backup-target", _binding("ciamBackupTarget", "backup-target",
                                                    ciamStorageRef="gs://ciam-prod-ds-backups/ds"),
-           _row("write-storage", "ciamBackupTarget")),
+           _row("write-storage", "ciamObjectStore")),
           ("publish-stream audit-events", _binding("ciamStreamBinding", "audit-events", ciamStreamKind="topic",
                                                    ciamProviderRef=f"{P}/topics/ciam-audit"),
            next(r for r in PERMISSIONS if r.verb == "publish-stream")),

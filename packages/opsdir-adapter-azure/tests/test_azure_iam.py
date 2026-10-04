@@ -9,6 +9,7 @@ from opsdir.domains.access.grants import ALLOWED, UNKNOWN, effective
 from opsdir_adapter_azure.access import ACCESS
 from opsdir_adapter_azure.iam import iam_resources
 from opsdir_adapter_azure.inventory import read_terraform_state
+from support import BARE, SUPERS
 
 SUB = "/subscriptions/0000-1111"
 RG = f"{SUB}/resourceGroups/rg-ciam-prod"
@@ -106,7 +107,7 @@ def _row(dn, classes, **attrs):
 
 
 def _imported():
-    d = make_directory((), {}, (
+    d = make_directory((), SUPERS, (
         _row("cloud=main,ou=environments,dc=ciam-ops", ("ciamCloud",), cloud="main", ciamCloudProvider="azure",
              ciamRegion="eastus2"),
         _row(ENV, ("ciamEnvironment",), env="prod"),
@@ -122,7 +123,7 @@ def _imported():
     imported = read_terraform_state({"main/prod/terraform.tfstate": state}, d, ())
     entries = {**{e.norm: e for e in d.entries.values() if e.dn.lower().endswith(B.lower()) and e.dn != B},
                **{e.norm: e for _, es in imported.groups for e in es}}               # the record, then the import
-    env = SimpleNamespace(bindings=tuple(entries.values()))
+    env = SimpleNamespace(d=BARE, bindings=tuple(entries.values()))
     return env, {one(e, "ciamBindingRole"): e for e in env.bindings}
 
 

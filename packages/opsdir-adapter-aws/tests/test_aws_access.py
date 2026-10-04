@@ -5,10 +5,11 @@ from types import SimpleNamespace
 from opsdir.core.directory import make_entry
 from opsdir.domains.access.grants import effective, escalating, grant_of, granted
 from opsdir_adapter_aws.access import ACCESS
+from support import BARE
 
 SECRET = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-admin-password"
 TOPIC = "arn:aws:sns:us-east-1:111122223333:ciam-audit"
-ENV = SimpleNamespace(bindings=(
+ENV = SimpleNamespace(d=BARE, bindings=(
     make_entry("cn=secret,ou=bindings,env=prod", ("top", "ciamSecretRef"),
                {"ciamBindingRole": ["pf-admin-password"], "ciamRefUri": [f"aws-sm://{SECRET}"]}),
     make_entry("cn=backup,ou=bindings,env=prod", ("top", "ciamBackupTarget"),
@@ -42,7 +43,7 @@ def test_managing_a_service_name_and_a_secret_under_a_customer_key():
     svc = make_entry("cn=svc-sso,ou=bindings,env=prod", ("top", "ciamServiceName"),
                      {"ciamBindingRole": ["pf-sso-service"], "ciamDnsZoneRef": ["Z0EXAMPLE"]})
     lb = "arn:aws:elasticloadbalancing:us-east-1:111122223333"
-    env = SimpleNamespace(bindings=(svc,))
+    env = SimpleNamespace(d=BARE, bindings=(svc,))
     grants = tuple(grant_of(g) for g in (
         f"elasticloadbalancing:ModifyListener on {lb}:listener/net/ciam-prod-svc-sso/1/2",
         f"elasticloadbalancing:RegisterTargets on {lb}:targetgroup/ciam-prod-svc-sso-443/3",
@@ -57,5 +58,5 @@ def test_managing_a_service_name_and_a_secret_under_a_customer_key():
                      {"ciamBindingRole": ["secrets-key"], "ciamRefUri": ["aws-kms://arn:aws:kms:us-east-1:1:key/k"]})
     identity = make_entry("cn=id,ou=bindings,env=prod", ("top", "ciamIdentityBinding"),
                           {"ciamGrant": [f"secretsmanager:GetSecretValue on {SECRET}-AbCdEf"]})
-    v = effective(ACCESS, SimpleNamespace(bindings=(locked, key)), "read-secret ds-root-password", identity)
+    v = effective(ACCESS, SimpleNamespace(d=BARE, bindings=(locked, key)), "read-secret ds-root-password", identity)
     assert v.state == "not granted"                                       # kms:Decrypt on the key is missing

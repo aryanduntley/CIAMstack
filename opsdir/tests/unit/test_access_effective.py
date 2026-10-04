@@ -9,6 +9,7 @@ from opsdir.core.contract import AccessModel, Permission, PlanContext
 from opsdir.core.directory import make_entry, one
 from opsdir.domains.access.grants import (ALLOWED, DENIED, NOT_GRANTED, UNKNOWN, effective, excluding, grant_of,
                                           grant_text)
+from support import BARE
 
 
 def _covers(granted_resource, binding):
@@ -27,7 +28,7 @@ LOCKED = make_entry("cn=l,ou=bindings,env=prod", ("top", "ciamSecretRef"),
                      "ciamEncryptedByRole": ["secrets-key"]})
 KEY = make_entry("cn=k,ou=bindings,env=prod", ("top", "ciamKeyRef"),
                  {"ciamBindingRole": ["secrets-key"], "ciamRefUri": ["fake://alpha/keys/secrets"]})
-ENV = SimpleNamespace(bindings=(SECRET, LOCKED, KEY))
+ENV = SimpleNamespace(d=BARE, bindings=(SECRET, LOCKED, KEY))
 
 
 def _identity(**attrs):
@@ -105,6 +106,6 @@ def test_the_key_that_encrypts_a_secret_is_needed_too():
     assert _state(_identity(ciamGrant="sm:Get on alpha"), "read-secret locked-password")[0] == NOT_GRANTED
     assert _state(_identity(ciamGrant=("sm:Get on alpha", "kms:Decrypt on alpha/keys")),
                   "read-secret locked-password")[0] == ALLOWED
-    unbound = SimpleNamespace(bindings=(LOCKED,))
+    unbound = SimpleNamespace(d=BARE, bindings=(LOCKED,))
     v = effective(MODEL, unbound, "read-secret locked-password", _identity(ciamGrant="sm:Get on alpha"))
     assert (v.state, v.why) == (UNKNOWN, "the key `secrets-key` that encrypts it isn't bound in this environment")

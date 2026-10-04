@@ -10,6 +10,7 @@ from opsdir.domains.access.grants import ALLOWED, DENIED, UNKNOWN, effective
 from opsdir_adapter_gcp.access import ACCESS
 from opsdir_adapter_gcp.iam import iam_resources, permission_v1
 from opsdir_adapter_gcp.inventory import read_terraform_state
+from support import BARE, SUPERS
 
 P = "projects/ciam-prod"
 SECRET = f"{P}/secrets/pf-admin-password"
@@ -103,7 +104,7 @@ def _row(dn, classes, **attrs):
 
 
 def _env(*extra):
-    d = make_directory((), {}, (
+    d = make_directory((), SUPERS, (
         _row("cloud=main,ou=environments,dc=ciam-ops", ("ciamCloud",), cloud="main", ciamCloudProvider="gcp",
              ciamRegion="us-central1"),
         _row(ENV, ("ciamEnvironment",), env="prod"),
@@ -117,7 +118,7 @@ def _env(*extra):
     imported = read_terraform_state({"main/prod/terraform.tfstate": state}, d, ())
     entries = {**{e.norm: e for e in d.entries.values() if e.dn.lower().endswith(B.lower()) and e.dn != B},
                **{e.norm: e for _, es in imported.groups for e in es}}
-    env = SimpleNamespace(bindings=tuple(entries.values()))
+    env = SimpleNamespace(d=BARE, bindings=tuple(entries.values()))
     return env, {one(e, "ciamBindingRole"): e for e in env.bindings}, imported.notices
 
 
