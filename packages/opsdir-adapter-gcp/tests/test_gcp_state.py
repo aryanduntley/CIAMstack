@@ -184,7 +184,8 @@ def test_firewall_rules_by_name_with_what_cant_be_recorded_named():
 def test_a_forwarding_rule_is_a_service_named_by_its_dns_record():
     (svc,) = _of("service").values()
     assert svc.attrs == {"ciamFqdn": ("ldaps.gcp.example.test",), "ciamDnsZoneRef": ("ciam-private",),
-                         "ciamPort": ("1636",), "ciamTargetRole": ("ds",), "ciamFrontendIp": ("10.30.1.100",)}
+                         "ciamPort": ("1636",), "ciamTargetRole": ("ds",), "ciamFrontendIp": ("10.30.1.100",),
+                         "ciamEdgeFact": ("tls-mode passthrough",)}
 
 
 def test_references_egress_and_storage():

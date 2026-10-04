@@ -11,14 +11,15 @@ from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir.core.network import is_private
 from opsdir.domains.infrastructure.firewall import rule_priorities, rule_purpose
 from opsdir.domains.access.workloads import identity_of, workload_identities
+from opsdir.domains.edge.records import forwarders
+from opsdir.domains.edge.resolve import inspected, service_edge
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
 from .access import ACCESS
+from .dns import FORWARDING_RULESET, forwarding_rules, records, service_record
+from .edge import ddos_note, gateway_service
+from .frontdoor import endpoint, front_door
 from .identities import LOC, RG, identity, scope_data
 from .landing import render_landing
-
-def _record_name(fqdn, zone):
-    return fqdn[: -len(zone) - 1] if fqdn.endswith("." + zone) else None
-
 
 def _network(m):
     net = one_role(m, "network")
@@ -99,28 +100,48 @@ def _frontend(m, svc, n, ip, internal, targets):
             (("name", "frontend"), ("public_ip_address_id", ref(f"data.azurerm_public_ip.{n}.id"))))
 
 
-def _lb_port(n, port):
+def _probe_body(spec):
+    """The probe's protocol and settings from a service's traffic policy (a TCP connect without one)."""
+    h = spec.health if spec is not None else None
+    if h is None or h.protocol == "tcp":
+        return (("protocol", "Tcp"),) + ((("interval_in_seconds", h.interval),) if h and h.interval else ())
+    return (("protocol", h.protocol.capitalize()), ("request_path", h.path or "/"),
+            *((("interval_in_seconds", h.interval),) if h.interval else ()),
+            *((("number_of_probes", h.unhealthy),) if h.unhealthy else ()))
+
+
+def _lb_port(n, port, spec=None):
+    rule = (*((("idle_timeout_in_minutes", min(30, max(4, -(-spec.idle_timeout // 60)))),)
+              if spec is not None and spec.idle_timeout else ()),
+            *((("load_distribution", "SourceIP"),) if spec is not None and spec.stickiness == "source-ip" else ()))
     return (block("resource", ["azurerm_lb_probe", f"{n}_{port}"], [
                 ("name", f"tcp-{port}"), ("loadbalancer_id", ref(f"azurerm_lb.{n}.id")),
-                ("protocol", "Tcp"), ("port", int(port))]),
+                *_probe_body(spec)[:1], ("port", int(port)), *_probe_body(spec)[1:]]),
             block("resource", ["azurerm_lb_rule", f"{n}_{port}"], [
                 ("name", f"tcp-{port}"), ("loadbalancer_id", ref(f"azurerm_lb.{n}.id")), ("protocol", "Tcp"),
                 ("frontend_port", int(port)), ("backend_port", int(port)),
                 ("frontend_ip_configuration_name", "frontend"),
                 ("backend_address_pool_ids", [ref(f"azurerm_lb_backend_address_pool.{n}.id")]),
-                ("probe_id", ref(f"azurerm_lb_probe.{n}_{port}.id"))]))
+                ("probe_id", ref(f"azurerm_lb_probe.{n}_{port}.id")), *rule]))
 
 
-def _service(m, svc):
-    """A stable service name: load balancer, backend pool, probes and rules per port, and its DNS record."""
+def _service(m, svc, endpoints=()):
+    """A stable service name: load balancer, backend pool, probes and rules per port (an Application Gateway when its
+    traffic policy terminates TLS at the edge; opsdir_adapter_azure.edge), and its DNS record."""
     n = tf_name(rdn_value(svc))
     ip = one(svc, "ciamFrontendIp")
     internal = is_private(ip)
     targets = servers_with_role(m, one(svc, "ciamTargetRole"))
+    spec = service_edge(m, svc, endpoints)
+    cdn = spec is not None and spec.cdn
+    fronted = front_door(m, svc, spec, n) if cdn else ()
+    record = service_record(m.d, m, svc, n, endpoint(n) if cdn else None)
+    if spec is not None and spec.layer7:
+        return (*gateway_service(m, svc, spec, targets), *fronted, *record)
     data, fe = _frontend(m, svc, n, ip, internal, targets)
-    zone = one(svc, "ciamDnsZone")
-    rtype = "azurerm_private_dns_a_record" if internal else "azurerm_dns_a_record"
-    return (*data,
+    blind = ("# the protection policy's request inspection needs TLS terminated at the edge; not rendered",) \
+        if spec is not None and inspected(spec) and not cdn else ()
+    return (*data, *blind, *(ddos_note(spec) if spec is not None else ()),
             block("resource", ["azurerm_lb", n], [
                 ("name", f"lb-ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("location", LOC),
                 ("resource_group_name", RG), ("sku", "Standard"), ("frontend_ip_configuration", Block(fe)),
@@ -132,10 +153,7 @@ def _service(m, svc):
                 ("network_interface_id", ref(f"azurerm_network_interface.{tf_name(rdn_value(t))}.id")),
                 ("ip_configuration_name", "primary"),
                 ("backend_address_pool_id", ref(f"azurerm_lb_backend_address_pool.{n}.id"))]) for t in targets),
-            *chain.from_iterable(_lb_port(n, port) for port in values(svc, "ciamPort")),
-            block("resource", [rtype, n], [
-                ("name", _record_name(one(svc, "ciamFqdn"), zone)), ("zone_name", zone), ("resource_group_name", RG),
-                ("ttl", 300), ("records", [ip])]))
+            *chain.from_iterable(_lb_port(n, port, spec) for port in values(svc, "ciamPort")), *fronted, *record)
 
 
 def _key_vault_secrets(m):
@@ -164,10 +182,12 @@ def _interconnect_note(m, ic):
 
 
 def render(m, services):
+    endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     des, identities = one_role(m, "disk-encryption"), workload_identities(m, ACCESS)
     out = (*_network(m), *_security_groups(m), *chain.from_iterable(identity(m, w) for w in identities),
            *chain.from_iterable(_server(m, s, des, identities) for s in m.servers),
-           *chain.from_iterable(_service(m, svc) for svc in of_class(m, "ciamServiceName")),
+           *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
+           *records(m.d, m), *forwarding_rules(m),
            *_key_vault_secrets(m), *scope_data(m, identities))
     notes = "\n".join(_interconnect_note(m, ic) for ic in of_class(m, "ciamInterconnect"))
     unbound = unbound_comments(m.unbound)
@@ -181,5 +201,8 @@ def render(m, services):
                                         *gov]),
         block("variable", ["subscription_id"], [("type", ref("string"))]),
         block("variable", ["admin_ssh_public_key"], [("type", ref("string"))]),
+        *((block("variable", [FORWARDING_RULESET], [
+            ("description", "The landing zone's DNS forwarding ruleset the forwarding rules join"),
+            ("type", ref("string"))]),) if forwarders(m) else ()),
     ]) + "\n"
     return {"terraform/providers.tf": providers, "terraform/main.tf": main, **render_landing(m)}

@@ -5,7 +5,7 @@ from opsdir_base_oidc.render import FORMATS as OIDC_FORMATS
 from opsdir_base_saml.render import FORMATS as SAML_FORMATS
 from .amster import AMSTER
 from .checks import check_journeys
-from .realms import SERVER_ROLES
+from .realms import ENDPOINTS, SERVER_ROLES
 from .render import FORMATS, render_neutral
 from .schema import FRAGMENT
 
@@ -25,4 +25,5 @@ ADAPTER = Adapter(name="pingam", kind="product", applies=applies, required_roles
                   vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES}, schema=FRAGMENT,
                   formats=(*FORMATS, *SAML_FORMATS, *OIDC_FORMATS),
                   products=(("PingAM", ">=7,<9"), ("ForgeRock AM", ">=7,<8")),
-                  secret_patterns=SECRET_PATTERNS, importers=(AMSTER,), profile_terms=None, access=None)
+                  secret_patterns=SECRET_PATTERNS, importers=(AMSTER,), profile_terms=None, access=None,
+                  endpoints=ENDPOINTS)

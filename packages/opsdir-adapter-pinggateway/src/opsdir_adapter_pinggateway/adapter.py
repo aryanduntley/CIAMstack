@@ -3,7 +3,7 @@ from opsdir.core.contract import Adapter
 from opsdir.core.directory import one
 from .checks import check_routes
 from .gateway import GATEWAY_CONFIG
-from .naming import SERVER_ROLES
+from .naming import ENDPOINTS, SERVER_ROLES
 from .render import FORMATS, render_env
 from .schema import FRAGMENT
 
@@ -21,4 +21,5 @@ ADAPTER = Adapter(name="pinggateway", kind="product", applies=applies, required_
                   vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES}, schema=FRAGMENT,
                   formats=FORMATS,
                   products=(("PingGateway", ">=2023,<2027"), ("ForgeRock Identity Gateway", ">=7,<8")),
-                  secret_patterns=(), importers=(GATEWAY_CONFIG,), profile_terms=None, access=None)
+                  secret_patterns=(), importers=(GATEWAY_CONFIG,), profile_terms=None, access=None,
+                  endpoints=ENDPOINTS)

@@ -16,16 +16,51 @@ Per environment, `terraform/providers.tf` (`hashicorp/google ~> 8.0`; the projec
 | Subnet bindings: `ciamProviderRef` = `projects/<host>/regions/<region>/subnetworks/<name>` (or a name in the cloud's region) | `data google_compute_subnetwork` |
 | Firewall rules | `google_compute_firewall`, ingress allow, VPC-wide, targeting the network tag of the rule's target role (`ciam-<env>-<role>`); priority from `ciamRulePriority`. An unpinned rule takes the next free slot from 1000 (step 10) with a `# NOTE` asking for it to be pinned, so adding a rule never renumbers others (the same rule as Azure's NSG priorities, `opsdir.domains.infrastructure.firewall`) |
 | Servers | `google_compute_instance`: machine type, zone, hostname, the role's network tag, a boot disk from `ciamImageRef` encrypted with the `disk-encryption` binding's Cloud KMS key (`kms_key_self_link`, else an `UNBOUND` comment), the server's subnetwork and static address, Shielded VM (secure boot, vTPM, integrity monitoring), OS Login, labels `role`, `product`, `managed_by` |
-| Service names | A passthrough network load balancer: an unmanaged instance group per zone of the target role's servers, a regional TCP health check on the first port and a firewall rule admitting Google Cloud's health-check probes to the role's tag on that port (`35.191.0.0/16`; external also `209.85.152.0/22`, `209.85.204.0/22`), a regional backend service over the groups (by `self_link`, `CONNECTION` balancing), a forwarding rule (`INTERNAL` in the first target's subnetwork for a private `ciamFrontendIp`, else `EXTERNAL`; a public address named by the service's `ciamProviderRef` is read as `data google_compute_address`); a Cloud DNS record in the managed zone `ciamDnsZoneRef`. An `EXTERNAL` backend service names its port (`port_name` `ciam`, each group's `named_port`) and sets `capacity_scaler`; `INTERNAL` takes neither. A forwarding rule takes at most five ports: a service with more forwards all ports (`all_ports`, with a comment), and its firewall rules still admit only the service's |
+| Service names | A passthrough network load balancer: an unmanaged instance group per zone of the target role's servers, a regional TCP health check on the first port and a firewall rule admitting Google Cloud's health-check probes to the role's tag on that port (`35.191.0.0/16`; external also `209.85.152.0/22`, `209.85.204.0/22`), a regional backend service over the groups (by `self_link`, `CONNECTION` balancing), a forwarding rule (`INTERNAL` in the first target's subnetwork for a private `ciamFrontendIp`, else `EXTERNAL`; a public address named by the service's `ciamProviderRef` is read as `data google_compute_address`); a Cloud DNS record in the managed zone `ciamDnsZoneRef`. An `EXTERNAL` backend service names its port (`port_name` `ciam`, each group's `named_port`) and sets `capacity_scaler`; `INTERNAL` takes neither. A forwarding rule takes at most five ports: a service with more forwards all ports (`all_ports`, with a comment), and its firewall rules still admit only the service's. A service whose role a traffic or protection policy names (core `edge` domain) is tuned or replaced by it: see [Edge](#edge-traffic-and-protection-policies) |
 | Secret references (`gcp-sm://projects/<p>/secrets/<name>`, regional `…/locations/<l>/secrets/<name>`) | `data google_secret_manager_secret` (regional: `google_secret_manager_regional_secret`): metadata only, so a missing secret fails the plan and no value enters Terraform state (secret versions are never rendered) |
 | The `backup-target` binding (`gs://<bucket>`) | `data google_storage_bucket` `ds_backups` |
 | The `pf-egress` binding | A comment naming the Cloud NAT the landing zone provides |
 | Workload principals (core `access` domain: kind `workload`, `ciamTargetRole` a server role here) | Per principal: `google_service_account` (account id from its identity binding's provider ref, else `ciam-<env>-<server role>`, at most 30 characters) set on the role's instances with scope `cloud-platform` (IAM alone decides), and one resource-level IAM member per permission from the access table below: `google_secret_manager_secret_iam_member` (regional: `google_secret_manager_regional_secret_iam_member`), `google_kms_crypto_key_iam_member`, `google_storage_bucket_iam_member`, `google_pubsub_topic_iam_member`; log writes as `google_project_iam_member` on the log bucket's project (the narrowest scope Google Cloud allows); a permission that can't be granted is a `# NOTE` |
 | Required roles without a binding | `# UNBOUND: required role …` |
 
-Not rendered: networks, subnetworks, Cloud NAT and Cloud Routers, DNS managed zones (the landing zone creates them); Cloud KMS keys (referenced by resource name); egress firewall rules; instance service accounts and their roles (milestone 4.7); proxy (application) load balancers, certificate maps and Cloud Armor (milestone 4.8).
+Not rendered: networks, subnetworks, Cloud NAT and Cloud Routers, DNS managed zones (the landing zone creates them); Cloud KMS keys (referenced by resource name); egress firewall rules; instance service accounts and their roles (milestone 4.7); certificate maps (the target proxy names Certificate Manager certificates directly).
 
 PingFederate's cluster discovery on Google Cloud: Ping documents no Cloud Storage protocol, so a Google Cloud environment binds `pf-cluster-discovery` with `pingfedDiscoveryProtocol` `DNS_PING` (GKE) or `TCPPING` (VMs) (see the PingFederate adapter).
+
+## Edge: traffic and protection policies
+
+A service name whose role an `edge` traffic or protection policy names (`ou=edge-policies`) is rendered from it; one no policy names renders as above. Health paths, rate-limit targets and exclusions come from the endpoints the product adapters declare, unless a policy's `ciamEndpointPath` moves one.
+
+| From the policies | Rendered as |
+|---|---|
+| TLS mode `passthrough` (or none) | The passthrough load balancer above; its health check takes the policy's (`tcp`, `http`, `https` with `request_path`, interval, thresholds), its backend service `CLIENT_IP` affinity for `source-ip` stickiness and `ciamDrainSeconds`; `ciamDdosTier` beyond standard on an external one adds advanced network DDoS protection (`google_compute_region_security_policy` of type `CLOUD_ARMOR_NETWORK` with `ddos_protection` `ADVANCED`, and a `google_compute_network_edge_security_service`; Cloud Armor Enterprise) |
+| TLS mode `terminate` / `reencrypt` | A regional Application Load Balancer (`EXTERNAL_MANAGED`, Standard tier, or `INTERNAL_MANAGED` in the first target's subnetwork) beside the proxy-only subnet bound to role `subnet-edge` (without the binding, an `UNBOUND` comment): a regional SSL policy for (`ciamTlsMinVersion`, `ciamTlsProfile`), a target HTTPS proxy with the Certificate Manager certificate the environment holds (a `gcp-cert://` certificate reference), a URL map, a backend service over `HTTP` (terminate) or `HTTPS` (reencrypt) on the instance groups' named port with the policy's health check, `GENERATED_COOKIE` or `CLIENT_IP` affinity, `ciamIdleTimeoutSeconds` as `timeout_sec`, draining; firewall rules admitting the proxy-only subnet and the health checks (`35.191.0.0/16`, `130.211.0.0/22`) to the role's tag |
+| Protection policy with firewall rules, rate limits, address or country rules | A regional Cloud Armor policy on the backend service, one rule per address range (`SRC_IPS_V1`), country rule (`origin.region_code`; `allow` negated), rate limit (`throttle` on the endpoint paths as `request.path.matches`, by client address or header, the interval Cloud Armor allows at or above the policy's with the count scaled, `deny(429)` past it) and preconfigured WAF rule set; `detect` marks every rule `preview`. An exclusion is a `preconfigured_waf_config` exclusion on each of its category's rules |
+
+| TLS terms | SSL policy |
+|---|---|
+| modern / intermediate / compatible | profile `RESTRICTED` / `MODERN` / `COMPATIBLE`, `min_tls_version` `TLS_1_2` or `TLS_1_3` (exact) |
+
+| WAF category | Preconfigured rules |
+|---|---|
+| `core-rules` | `sqli`, `xss`, `lfi`, `rfi`, `rce`, `methodenforcement`, `scannerdetection`, `protocolattack`, `sessionfixation` (`-v33-stable`) |
+| `known-bad-inputs` | `cve-canary`, `java-v33-stable` |
+| `ip-reputation`, `bot-control`, `account-takeover`, `account-creation-fraud` | not rendered (a comment: threat intelligence and reCAPTCHA need Cloud Armor Enterprise and keys; no preconfigured rules for the others) |
+
+
+### DNS
+
+Nothing is rendered into a zone whose binding names `ciamManagedBy` (someone outside the platform runs it): a comment names them, and the plan drafts the request. A name that routes between environments (`ciamRoutingPolicy` `failover-primary` / `failover-secondary` / `weighted` on the service names of several environments) is answered from the environment holding the primary (a weighted set: the first by label), which renders every environment's answer; the others render a comment.
+
+| From the record | Rendered as |
+|---|---|
+| A service name | Its record set with `ciamTtlSeconds` (300 when not recorded); a weighted set, a `routing_policy` of `wrr` items (each environment's weight and address). A failover pair is a plain record with a comment: Cloud DNS's primary-backup policy over health-checked external endpoints is configured by hand |
+| DNS records | `google_dns_record_set` in the zone's managed zone (its `ciamProviderRef`, else a label of its name), type, TTL, values (TXT quoted) |
+| Outbound forwarders | Per domain a private `google_dns_managed_zone` on the network with a `forwarding_config` target per `ciamForwardTarget`. Inbound forwarders: a comment (a DNS server policy the landing zone keeps) |
+
+### CDN
+
+Cloud CDN belongs to Google's global external Application Load Balancer, so a protection policy with `ciamCdn` renders the service's load balancer global (whatever its TLS mode; a passthrough service keeps HTTPS to its servers): a global SSL policy, health check, backend service with `enable_cdn` and `cache_mode` `USE_ORIGIN_HEADERS` (the origin's `Cache-Control` decides: sign-in pages and tokens send `no-store`), URL map, target HTTPS proxy, a global forwarding rule on the reserved global address the service's `ciamProviderRef` names (`data google_compute_global_address`), the health-check firewall rule (no proxy-only subnet), and the protection policy as a global Cloud Armor policy, with Adaptive Protection (layer 7 DDoS defense) for `application-advanced`. The DNS record points at the global forwarding rule. A private address can't have a CDN: a comment.
 
 ## Reading an environment back from Terraform state
 
@@ -71,6 +106,21 @@ The importer `gcp/terraform-state` reads Terraform state (format version 4, `has
 
 **Secrets.** Secret values are never read: a Secret Manager secret is recorded from its project, location and name alone, and the reader drops whatever the state marks sensitive before anything sees it.
 
+### The edge, read back
+
+What the edge runs comes back in the edge domain's terms (`opsdir_adapter_gcp.edge_inventory`; only what someone chose, the TLS mode always kept):
+
+| Google Cloud resource | Record entry |
+|---|---|
+| forwarding rule (regional or global) and what it leads to | facts on its service name: `tls-mode` (passthrough when it names a backend service; terminate or reencrypt through a target HTTPS proxy and URL map), `tls-min` / `tls-profile` from the SSL policy, `health`, `stickiness`, `idle-timeout` (not 30), `drain` (not 0 or 300) |
+| `google_dns_record_set` holding its address | the service name's TTL; in a weighted round robin, `weighted` and its weight (the other answers named) |
+| backend service's security policy (+ its rules) | edge service `waf` (Cloud Armor): `waf-mode` (detect when every rule is a preview), `waf-category` from preconfigured rule sets, `rate-limit` from rules described `rate-<kind>`, `ip-rule`, `geo-rule`; Adaptive Protection as edge service `ddos application-advanced` |
+| backend service with `enable_cdn` | edge service `cdn` |
+| `CLOUD_ARMOR_NETWORK` policy with advanced protection | edge service `ddos network-advanced` (role from its labels) |
+| `google_dns_managed_zone` (a forwarding zone: a forwarder), other record sets | DNS zones, records (TXT unquoted), forwarders |
+
+Rules admitting only a proxy-only subnet (role `subnet-edge`), like those admitting only the health checks, belong to load balancers and are left out.
+
 ## Reading an environment from Cloud Asset Inventory and gcloud
 
 Where there is no Terraform state (or to check it against what the project actually runs), `gcp/cli-inventory` reads Cloud Asset Inventory and `gcloud … --format=json` output. Collect it once per environment, into one folder per `<cloud>/<env>`; file names are free (`.json`, or `.jsonl` for an export), because every item says what it is: an asset by its asset type, a compute item by its `kind`, the others by their resource names. The one exception is DNS: `gcloud dns record-sets list` doesn't print the zone, so each zone's record sets go in a file named after the zone (record sets in an asset export name their zone).
@@ -95,6 +145,12 @@ for zone in $(gcloud dns managed-zones list --project=$HOST --format='value(name
 done
 gcloud scheduler jobs list --location=$R --project=$P --format=json       > $out/scheduler.json
 gcloud beta monitoring channels list --project=$P --format=json           > $out/channels.json
+
+# the edge (also in the asset export): URL maps, HTTPS proxies, SSL and security policies, health checks, zones
+for kind in url-maps target-https-proxies ssl-policies health-checks security-policies; do
+  gcloud compute $kind list --project=$PROJECT --format=json > "$out/$kind.json"
+done
+gcloud dns managed-zones list --project=$HOST --format=json > $out/managed-zones.json
 
 # IAM: policies on every resource, the folders and organization above (inherited), accounts, roles, deny and org policies
 gcloud asset export --content-type=iam-policy --project=$P --output-path=gs://<bucket>/iam.json   # then copy it here, or:
@@ -184,12 +240,24 @@ It adds no required roles, planner checks or schema of its own; the environment'
 
 - **Not yet run against a live project.** The Terraform follows the `hashicorp/google` 8.x schema; `terraform validate`/`plan` against a real project is part of the testing plan (milestone 7.2).
 - **Linux only**, as on AWS and Azure.
+- **DNS failover** is a plain record with a comment (Cloud DNS's primary-backup policy is configured by hand).
+- **Edge.** Preconfigured WAF exclusions apply on every path; Adaptive Protection (global backend services) isn't rendered for the regional load balancer.
 - **Cloud Asset Inventory and `gcloud` shapes** follow Google's API references and the gcloud source (checked 2026-10-02); like the Terraform, the importer hasn't yet read a live project (milestone 7.2).
 - **Classic VPC firewall rules with network tags.** Google's direction for governed targeting is Cloud NGFW network firewall policies with secure tags (IAM-governed); network tags remain supported. The firewall model becomes a per-environment choice in milestone 4.9.
 
 ## Tests
 
+`tests/test_gcp_cli_edge.py`: the edge from gcloud output: a forwarding rule through proxy, URL map and backend service (SSL policy, health check, affinity, timeout, draining), Cloud Armor rules, managed zones and a forwarding zone, weighted routing with the other answer named.
+
+`tests/test_gcp_edge_state.py`: the edge read back from state: regional and global Application Load Balancers' facts with weighted routing, Cloud Armor, Cloud CDN and DDoS as edge services, zones, records and forwarding zones, the load balancers' firewall rules left out.
+
 `tests/test_gcp.py`: registration, vocabulary and reference schemes; secret references resolved with `gcloud` (global and regional); the credential forms the store refuses; the rendered Terraform for a small environment (network from a Shared VPC host project, firewall rules by tag with pinned and assigned priorities, instances with CMEK, Shielded VM and OS Login, an internal passthrough load balancer over two zones with its DNS record, backends by `self_link` and the health-check probe rule, an external one naming its port and forwarding all ports past five, Secret Manager secrets named, never read).
+
+`tests/test_gcp_cdn.py`: a global load balancer with Cloud CDN, global Cloud Armor and Adaptive Protection, a passthrough service keeping HTTPS to its servers, a private one refused, the record on the global forwarding rule.
+
+`tests/test_gcp_dns.py`: weighted round robin from the first answer, failover as a plain record, records in managed zones (TXT quoted), private forwarding zones.
+
+`tests/test_gcp_edge.py`: the edge: TLS terms as SSL policies and back, an Application Load Balancer beside the proxy-only subnet (certificate, scheme, affinity, timeout, firewall rules, Cloud Armor), what's unbound without the subnet or certificate, an internal one, Cloud Armor's rules (one exclusion per rule set, preview in detect mode, rate intervals), advanced network DDoS.
 
 `tests/test_gcp_cli_iam.py`: IAM from the inventory and gcloud: policies on a secret, a bucket (conditional), the IAP tunnel and a folder (a custom role), project numbers as IDs, a deny policy, an organization policy; Policy Troubleshooter's verdicts read back dated; the rendered `access/evaluate.sh` (not asked for a group).
 

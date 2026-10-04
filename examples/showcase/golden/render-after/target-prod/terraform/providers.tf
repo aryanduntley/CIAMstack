@@ -24,3 +24,8 @@ variable "subscription_id" {
 variable "admin_ssh_public_key" {
   type = string
 }
+
+variable "dns_forwarding_ruleset_id" {
+  description = "The landing zone's DNS forwarding ruleset the forwarding rules join"
+  type        = string
+}

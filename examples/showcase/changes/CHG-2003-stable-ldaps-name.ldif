@@ -11,3 +11,16 @@ ciamDnsZone: id.example-aero.test
 add: ciamChangeRef
 ciamChangeRef: cn=CHG-2003,ou=changes,dc=ciam-ops
 -
+
+# The private zone the stable name is published in, which the landing zone's default named id.cloud.
+dn: cn=zone-private,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: modify
+replace: ciamDnsZone
+ciamDnsZone: id.example-aero.test
+-
+replace: ciamProviderRef
+ciamProviderRef: id.example-aero.test
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2003,ou=changes,dc=ciam-ops
+-

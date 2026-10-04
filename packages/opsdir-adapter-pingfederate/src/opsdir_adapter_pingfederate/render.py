@@ -21,6 +21,7 @@ target the Admin API or the PingFederate Terraform provider. Endpoint paths are 
 import json
 from types import MappingProxyType
 
+from opsdir.core.contract import Endpoint
 from opsdir.core.directory import children, get, one, rdn_value, values
 from opsdir.domains.federation.services import claims, identity_services, integrations_served
 from opsdir_base_oidc.discovery import OidcEndpoints
@@ -51,6 +52,12 @@ CLIENT_AUTH = MappingProxyType({"none": "NONE", "client_secret_basic": "SECRET",
                                 "tls_client_auth": "CLIENT_CERT", "self_signed_tls_client_auth": "CLIENT_CERT"})
 BINDINGS = MappingProxyType({"HTTP-POST": "POST", "HTTP-Redirect": "REDIRECT", "HTTP-Artifact": "ARTIFACT",
                              "SOAP": "SOAP"})
+# What the edge treats specially (contract.Endpoint): sign-in and token from the endpoints above, SAML posts (the IdP's
+# and, as a service provider, its assertion consumer), self-service password reset, and the heartbeat
+ENDPOINTS = tuple(Endpoint(kind, path, "pf-engine") for kind, path in (
+    ("login", OIDC_ENDPOINTS.authorization), *(("login", p) for b, p in SAML_ENDPOINTS.sso if b == "HTTP-Redirect"),
+    ("token", OIDC_ENDPOINTS.token), *(("saml-post", p) for b, p in SAML_ENDPOINTS.sso if b == "HTTP-POST"),
+    ("saml-post", "/sp/ACS.saml2"), ("password-reset", "/ext/pwdreset/*"), ("health", "/pf/heartbeat.ping")))
 
 
 def _fulfillment_entry(attr, transform):

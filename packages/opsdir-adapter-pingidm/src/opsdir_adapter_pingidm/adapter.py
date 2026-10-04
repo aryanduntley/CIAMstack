@@ -2,7 +2,7 @@
 from opsdir.core.contract import Adapter
 from opsdir.core.directory import one
 from .checks import check_idm
-from .naming import SERVER_ROLES
+from .naming import ENDPOINTS, SERVER_ROLES
 from .project import IDM_PROJECT
 from .render import FORMATS, render_env, render_neutral
 from .schema import FRAGMENT
@@ -22,4 +22,5 @@ ADAPTER = Adapter(name="pingidm", kind="product", applies=applies, required_role
                   vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES}, schema=FRAGMENT,
                   formats=FORMATS,
                   products=(("PingIDM", ">=7,<9"), ("ForgeRock IDM", ">=7,<8")),
-                  secret_patterns=(), importers=(IDM_PROJECT,), profile_terms=None, access=None)
+                  secret_patterns=(), importers=(IDM_PROJECT,), profile_terms=None, access=None,
+                  endpoints=ENDPOINTS)

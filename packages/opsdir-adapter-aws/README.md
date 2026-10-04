@@ -17,13 +17,52 @@ Per environment, `terraform/providers.tf` (`hashicorp/aws ~> 5.0`; `region` from
 | One security group per server role | `aws_security_group` `ciam-<env>-<role>` in the VPC |
 | Firewall rules | `aws_vpc_security_group_ingress_rule`, one per source CIDR and port (`ciamSourceCidr` × `ciamPort`), in the target role's group; protocol `ciamProtocol` (default `tcp`); description `<consumer or binding role> (<rule name>)`, the suffix the importers group rules back by |
 | Servers | `aws_instance` (AMI `ciamImageRef`, `ciamInstanceSize`, the server's subnet, static `ciamPrivateIp`, its role's security group; encrypted root volume with the `disk-encryption` binding's KMS key, else an `UNBOUND` comment; tags `Name`, `Role`, `Hostname`, `Product`, `ManagedBy`) |
-| Service names | Network load balancer, internal when `ciamFrontendIp` is private: one subnet mapping per subnet holding a target, the frontend address pinned in its subnet; a public one takes the Elastic IP allocation named by the service's `ciamProviderRef`. Per `ciamPort`: a TCP target group with a TCP health check, an attachment per server with the target role, a TCP listener. A Route 53 alias A record in `ciamDnsZoneRef` (target health evaluated) |
+| Service names | Network load balancer, internal when `ciamFrontendIp` is private: one subnet mapping per subnet holding a target, the frontend address pinned in its subnet; a public one takes the Elastic IP allocation named by the service's `ciamProviderRef`. Per `ciamPort`: a TCP target group with a TCP health check, an attachment per server with the target role, a TCP listener. A Route 53 alias A record in `ciamDnsZoneRef` (target health evaluated). A service whose role a traffic or protection policy names (core `edge` domain) is tuned or replaced by it: see [Edge](#edge-traffic-and-protection-policies) |
 | Secret references (`aws-sm://<arn>`) | `data aws_secretsmanager_secret` per secret: metadata only, so a missing secret fails the plan and no value enters Terraform state (`aws_secretsmanager_secret_version` is never rendered) |
 | The `backup-target` binding; the `pf-egress` binding | `data aws_s3_bucket` `ds_backups`; `data aws_nat_gateway` `pf_egress` (when it has a `ciamProviderRef`) |
 | Workload principals (core `access` domain: kind `workload`, `ciamTargetRole` a server role here) | Per principal: `aws_iam_role` EC2 may assume (named by its identity binding's provider ref, else `ciam-<env>-<server role>`), an inline `aws_iam_role_policy` with one statement per permission from the access table below (the binding's resource: a secret's ARN with its six-character suffix `-??????`, a key's ARN, `arn:aws:s3:::<bucket>/<prefix>*` and the bucket, a stream's ARN, a log group's ARN and `:*`), an `aws_iam_instance_profile` set on the role's instances; a permission that can't be granted (role unbound here, or no row) is a `# NOTE` |
 | Required roles without a binding | `# UNBOUND: required role …` |
 
 Not rendered: the VPC, subnets, NAT gateways, buckets, Elastic IPs and Route 53 zones themselves (referenced, the landing zone creates them); KMS keys (referenced by ARN); egress security group rules; key pairs, IAM instance profiles and user data; application load balancers and TLS listeners (services are TCP pass-through).
+
+## Edge: traffic and protection policies
+
+A service name whose role an `edge` traffic or protection policy names (`ou=edge-policies`) is rendered from it; one no policy names renders as above. Health paths, rate-limit targets and exclusions come from the endpoints the product adapters declare (PingFederate, PingAM, PingIDM, PingGateway), unless a policy's `ciamEndpointPath` moves one.
+
+| From the policies | Rendered as |
+|---|---|
+| TLS mode `passthrough` (or none) | The network load balancer above; its target groups take the policy's health check (`tcp`, `http`, `https` with path, interval, thresholds), `source-ip` stickiness and `ciamDrainSeconds` as `deregistration_delay` |
+| TLS mode `terminate` / `reencrypt` | An application load balancer (`drop_invalid_header_fields`, `ciamIdleTimeoutSeconds` as `idle_timeout`) in the targets' subnets, with its own security group: clients in by the firewall rules admitting them to the target role on the service's ports, out to the servers' group, which admits it. Per port: an HTTPS listener with the ELB security policy for (`ciamTlsMinVersion`, `ciamTlsProfile`) and the ACM certificate the environment holds for the service's certificate (an `aws-acm://` certificate reference), an `HTTP` (terminate) or `HTTPS` (reencrypt) target group with the policy's health check (over HTTP/HTTPS), `lb_cookie` stickiness and draining. Its addresses are AWS's: a recorded `ciamFrontendIp` isn't kept (a comment says so) |
+| Protection policy with firewall rules, rate limits, address or country rules | A WAFv2 web ACL (regional) associated with the load balancer: address rules (`aws_wafv2_ip_set` per action and family), country rules (`geo_match_statement`; an `allow` blocks everything else), a rate-based rule per `ciamRateLimit` scoped to the endpoint paths (regular expressions; by client address or a header; the window AWS has, else 300 s with the limit scaled, at least 10), a managed rule group per `ciamWafCategory`. `ciamWafMode` `detect` counts instead of blocking. An exclusion keeps the excluded endpoints out of that group's scope (AWS can't skip one field) |
+| `ciamDdosTier` `network-advanced` / `application-advanced` | `aws_shield_protection` on the load balancer (needs the account's Shield Advanced subscription); application-advanced adds `aws_shield_application_layer_automatic_response` |
+
+| TLS terms | ELB security policy |
+|---|---|
+| 1.3, any profile | `ELBSecurityPolicy-TLS13-1-3-2021-06` |
+| 1.2 modern / intermediate / compatible | `ELBSecurityPolicy-TLS13-1-2-Res-2021-06` / `ELBSecurityPolicy-TLS13-1-2-2021-06` / `ELBSecurityPolicy-TLS13-1-2-Ext2-2021-06` (nearest; a comment says so) |
+
+| WAF category | Managed rule group |
+|---|---|
+| `core-rules`, `known-bad-inputs`, `ip-reputation`, `bot-control` | `AWSManagedRulesCommonRuleSet`, `AWSManagedRulesKnownBadInputsRuleSet`, `AWSManagedRulesAmazonIpReputationList`, `AWSManagedRulesBotControlRuleSet` (inspection level `COMMON`) |
+| `account-takeover` | `AWSManagedRulesATPRuleSet` with the first literal sign-in path as `login_path` (add its request inspection: the form's username and password fields); none literal: an `UNBOUND` comment |
+| `account-creation-fraud` | `AWSManagedRulesACFPRuleSet` with the first literal registration path |
+
+Known limits: request inspection on a passthrough service isn't rendered (a comment; the planner flags the policy); stickiness the load balancer type doesn't offer is a comment.
+
+
+### DNS
+
+Nothing is rendered into a zone whose binding names `ciamManagedBy` (someone outside the platform runs it): a comment names them, and the plan drafts the request. A name that routes between environments (`ciamRoutingPolicy` `failover-primary` / `failover-secondary` / `weighted` on the service names of several environments) is answered from the environment holding the primary (a weighted set: the first by label), which renders every environment's answer; the others render a comment.
+
+| From the record | Rendered as |
+|---|---|
+| A service name | Its Route 53 alias record (a recorded `ciamTtlSeconds` doesn't apply to an alias: a comment); routed, with `set_identifier` (the environment) and a failover or weighted routing policy, the other environments' answers as A records with their TTL, each with a TCP `aws_route53_health_check` on its address and first port |
+| DNS records (`ciamDnsRecord`) | `aws_route53_record` in the zone the record's name falls in (the zone binding's `ciamProviderRef`, public or private), type, `ciamTtlSeconds` (300 when not recorded), values; no zone bound: an `UNBOUND` comment |
+| Outbound forwarders (`ciamDnsForwarder`) | Per domain an `aws_route53_resolver_rule` (`FORWARD`, a `target_ip` per `ciamForwardTarget` on port 53) through `var.resolver_endpoint_id` (the landing zone's outbound Resolver endpoint; the variable is declared only when there are forwarders) and its association with the VPC. Inbound forwarders are the landing zone's inbound endpoint: a comment |
+
+### CDN
+
+A protection policy with `ciamCdn` puts a CloudFront distribution in front of the service: its origin is the service's load balancer (the ALB when TLS terminates at the edge, else the NLB, TLS then ending at CloudFront), over HTTPS with the viewer's `Host` forwarded (AWS's `Managed-AllViewer` origin request policy) and nothing cached (`Managed-CachingDisabled`: sign-in pages and tokens); the viewer certificate from ACM in us-east-1 (another region or none: an `UNBOUND` comment), `TLSv1.2_2021` minimum; the service's alias record points at the distribution. The protection policy's web ACL (and its IP sets) is created CloudFront-scoped through the provider alias `aws.us_east_1` (declared only when a CDN is used) and named by the distribution (`web_acl_id`); Shield protects the distribution. The ALB behind it admits only CloudFront's origin-facing prefix list and carries no web ACL or Shield of its own.
 
 ## Reading an environment back from Terraform state
 
@@ -84,6 +123,21 @@ The importer fills in everything else from the state. Where the source names a r
 
 **Secrets.** Secret values are never read: a Secrets Manager secret is recorded from its ARN alone, `aws_secretsmanager_secret_version` is skipped, and the reader drops whatever the state marks sensitive before anything sees it.
 
+### The edge, read back
+
+What the edge runs comes back in the edge domain's terms (`opsdir_adapter_aws.edge_inventory`), so the planner compares it with the policies (only what someone chose: AWS's defaults are left out, the TLS mode always kept):
+
+| AWS resource | Record entry |
+|---|---|
+| `aws_lb` (+ listeners, target groups) | facts on its service name (`ciamEdgeFact`): `tls-mode` (passthrough, terminate, reencrypt from the listeners' and target groups' protocols), `tls-min` / `tls-profile` (the listener's ELB policy through the TLS table; an unknown policy is a `ciamEdgeSetting`), an HTTP(S) `health` check, `stickiness`, `drain` (not 300), an ALB's `idle-timeout` (not 60) |
+| `aws_route53_record` aliasing the load balancer or its CloudFront distribution | the service name's DNS name, `ciamTtlSeconds` (60: the load balancer's), `ciamRoutingPolicy` / `ciamRoutingWeight`; a non-alias record answering for another environment of a routed name is named, not recorded |
+| `aws_wafv2_web_acl` (+ association, IP sets) | edge service `waf` (role `waf-<the fronted service's role>`): `waf-mode`, `waf-category` (managed groups the WAF table knows), `rate-limit` (rules named `rate-<kind>`), `ip-rule`, `geo-rule`; other rules and groups as settings |
+| `aws_shield_protection` (+ automatic response) | edge service `ddos`: `network-advanced`, `application-advanced` |
+| `aws_cloudfront_distribution` | edge service `cdn` of the load balancer it has for origin; its minimum protocol as a setting |
+| `aws_route53_zone`, other `aws_route53_record`s, `aws_route53_resolver_rule` (FORWARD) | DNS zones (public; private with VPC associations), records (name, type, TTL, values, routing), forwarders; roles `zone-<name>`, `record-<type>-<name>`, `forwarder-<domain>` unless tagged |
+
+An ALB's security group rules and the servers' rules admitting it belong to the load balancer: left out, like a firewall rule naming another security group.
+
 ## Reading an environment from the AWS CLI
 
 Where there is no Terraform state (or to check it against what the account actually runs), `aws/cli-inventory` reads the JSON the AWS CLI prints. Collect it once per environment, into one folder per `<cloud>/<env>`:
@@ -132,6 +186,27 @@ for p in $(aws codepipeline list-pipelines --query 'pipelines[].name' --output t
 done
 aws codebuild batch-get-projects --names $(aws codebuild list-projects --query 'projects' --output text) > $out/build-projects.json
 
+# the edge: attributes, web ACLs and what they protect, Shield, CloudFront, hosted zones, resolver rules
+mkdir -p $out/lb-attributes $out/tg-attributes $out/waf-resources
+for lb in $(aws elbv2 describe-load-balancers --query 'LoadBalancers[].[LoadBalancerArn,LoadBalancerName]' --output text | tr '\t' ','); do
+  aws elbv2 describe-load-balancer-attributes --load-balancer-arn "${lb%%,*}" > "$out/lb-attributes/${lb##*,}.json"
+done
+for tg in $(aws elbv2 describe-target-groups --query 'TargetGroups[].[TargetGroupArn,TargetGroupName]' --output text | tr '\t' ','); do
+  aws elbv2 describe-target-group-attributes --target-group-arn "${tg%%,*}" > "$out/tg-attributes/${tg##*,}.json"
+done
+for acl in $(aws wafv2 list-web-acls --scope REGIONAL --query 'WebACLs[].[Name,Id,ARN]' --output text | tr '\t' ','); do
+  IFS=, read -r name id arn <<< "$acl"
+  aws wafv2 get-web-acl --scope REGIONAL --name "$name" --id "$id" > "$out/web-acl-$name.json"
+  aws wafv2 list-resources-for-web-acl --web-acl-arn "$arn" > "$out/waf-resources/$name.json"
+done
+for set in $(aws wafv2 list-ip-sets --scope REGIONAL --query 'IPSets[].[Name,Id]' --output text | tr '\t' ','); do
+  aws wafv2 get-ip-set --scope REGIONAL --name "${set%%,*}" --id "${set##*,}" > "$out/ip-set-${set%%,*}.json"
+done
+aws shield list-protections > $out/protections.json 2>/dev/null || true      # needs Shield Advanced
+aws cloudfront list-distributions > $out/distributions.json                  # CloudFront web ACLs: --scope CLOUDFRONT --region us-east-1
+aws route53 list-hosted-zones > $out/hosted-zones.json
+aws route53resolver list-resolver-rules > $out/resolver-rules.json
+
 # IAM: roles and policies (AWS managed ones included), key and bucket policies, Identity Center, control policies
 mkdir -p $out/key-policy $out/bucket-policy $out/sso-inline $out/sso-managed $out/org
 ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
@@ -162,7 +237,7 @@ opsdir import --dry-run aws/cli-inventory export/
 opsdir import --change CHG-… aws/cli-inventory export/
 ```
 
-File names are free except four: `describe-target-health`, `list-resource-record-sets`, `lambda list-tags` and `events list-targets-by-rule` don't say what they describe, so they are saved as `target-health/<target group name>.json`, `route53/<hosted zone ID>.json`, `lambda-tags/<function name>.json` and `event-targets/<rule name>.json`. Every other output is recognized by its top-level key (`Vpcs`, `Subnets`, `Reservations`, `SecurityGroups`, `SecurityGroupRules`, `NatGateways`, `LoadBalancers`, `TagDescriptions`, `Listeners`, `TargetGroups`, `SecretList`, `KeyMetadata`, `KeyRotationEnabled`, `Buckets`, `Functions`, `Rules`, `ScheduleExpression`, `pipeline`, `projects`); anything else is named and skipped. `roles.json` is the role map, never read as an output.
+File names are free except these: `describe-target-health`, `list-resource-record-sets`, `lambda list-tags`, `events list-targets-by-rule`, `describe-load-balancer-attributes`, `describe-target-group-attributes` and `list-resources-for-web-acl` don't say what they describe, so they are saved as `target-health/<target group name>.json`, `route53/<hosted zone ID>.json`, `lambda-tags/<function name>.json`, `event-targets/<rule name>.json`, `lb-attributes/<load balancer name>.json`, `tg-attributes/<target group name>.json` and `waf-resources/<web ACL name>.json`. The edge outputs (`WebACL`, `IPSet`, `Protections`, `DistributionList`, `HostedZones`, `ResolverRules`) are read as the edge from state is (opsdir_adapter_aws.cli_edge); record sets are read whole (TTLs, values, routing), a zone's own NS and SOA left out. Every other output is recognized by its top-level key (`Vpcs`, `Subnets`, `Reservations`, `SecurityGroups`, `SecurityGroupRules`, `NatGateways`, `LoadBalancers`, `TagDescriptions`, `Listeners`, `TargetGroups`, `SecretList`, `KeyMetadata`, `KeyRotationEnabled`, `Buckets`, `Functions`, `Rules`, `ScheduleExpression`, `pipeline`, `projects`); anything else is named and skipped. `roles.json` is the role map, never read as an output.
 
 The outputs are read into the same resources as Terraform state (the mapping is shared), so the table above, what changes, roles and `roles.json` apply unchanged. Separately listed rules (`describe-security-group-rules`) replace the inline permissions of their groups. What the CLI adds: a secret's last rotation (`ciamLastRotated`) and that rotation is off (`ciamAutoRotate: FALSE`), which state doesn't hold. Differences in scope:
 
@@ -250,12 +325,22 @@ It adds no required roles, planner checks or schema of its own; the environment'
 - **Not yet run against a live account.** The Terraform and the importers follow the `hashicorp/aws` 5.x schema and the AWS CLI's output shapes; `terraform validate`/`plan` and an import from a real account are part of the testing plan (milestone 7.2, which starts on AWS).
 - **Commercial partition only.** GovCloud and China (`aws-us-gov`, `aws-cn`) aren't in the vocabulary yet.
 - **Port ranges** aren't recorded (`ciamPort` holds single ports): the importers name them; the renderer writes single ports only.
-- **Services are TCP network load balancers.** Application load balancers are read as services, but their TLS listeners, certificates and HTTP rules aren't recorded, and the renderer writes only TCP pass-through.
-- **What the importers can't see:** egress rules, sources other than IPv4 CIDRs, key pairs, IAM in CLI output and CloudFormation stacks (Terraform state only, for now), Image Builder pipelines (`ciamImageBuild` is recorded by hand), autoscaling groups and EKS clusters, and the monitoring above (log groups, alarms, canaries, alert topics), in CLI output and CloudFormation stacks (Terraform state only, for now), KMS key protection, bucket encryption (4.10), CloudFront / WAF / API Gateway (edge, 4.8), databases (counted, 4.10).
+- **Services without an edge policy are TCP network load balancers.** With one, the renderer writes an application load balancer, its web ACL and Shield protection (see Edge); reading their listeners, TLS policies, certificates, web ACLs and Shield back comes with milestone 4.8's importers. An ALB's addresses are AWS's: a recorded frontend address isn't kept.
+- **What the importers can't see:** egress rules, sources other than IPv4 CIDRs, key pairs, IAM in CLI output and CloudFormation stacks (Terraform state only, for now), Image Builder pipelines (`ciamImageBuild` is recorded by hand), autoscaling groups and EKS clusters, and the monitoring above (log groups, alarms, canaries, alert topics), in CLI output and CloudFormation stacks (Terraform state only, for now), KMS key protection, bucket encryption (4.10), CloudFront / WAF / API Gateway (edge importers, 4.8), databases (counted, 4.10).
 
 ## Tests
 
+`tests/test_aws_cli_edge.py`: the edge from CLI output: the same facts and edge services as from state (attributes by file name, web ACL rules in CLI shape, Shield, CloudFront, hosted zones, record sets with TTL and routing, resolver rules).
+
+`tests/test_aws_edge_state.py`: the edge read back from state: an ALB's facts equal to the policy that would render it, its web ACL, Shield and CloudFront as edge services named by the service they front, zones, records, a routed name's TTL and routing with the other environment's answer named, Resolver rules, the load balancer's own rules left out.
+
 `tests/test_aws.py` (registration, vocabulary, secret resolution), `tests/test_aws_state.py` (the state importer: round trip, drift, new tagged and untagged resources, secrets and sensitive attributes never read, overlays, layout, a new binding keeps its provider reference, security group roles from their instances), `tests/test_aws_cli.py` (the CLI importer: round trip, facts state lacks, VPC scoping, counted account-wide listings, files placed by name, rules listed separately, `roles.json` never read as output, timestamps), `tests/test_aws_cloudformation.py` (round trip over two YAML/JSON stacks, drift, `GetAtt` and parameter links, resources not created, unknown files, secrets never read, a folder without a template, the resolver), `tests/test_aws_compute.py` (an autoscaling group with its launch template, an untagged group, an EKS cluster with node groups and add-ons), `tests/test_aws_messaging.py` (an SES domain identity with SPF, DKIM and DMARC from its DNS; queues and buses as stream carriers), `tests/test_aws_observability.py` (a topic an alarm notifies as an alert channel, others as stream carriers; log groups with their retention, never-expire included; alarms and canaries with what they realize), `tests/test_aws_firewall_notices.py` (port ranges, all-ports rules and non-IPv4 sources named from state, CLI output and CloudFormation), `tests/test_aws_jobs.py` (functions, pipelines and build projects with their schedules from state, CLI output and CloudFormation; a tagged function placed as a job binding), `tests/test_aws_state_store.py` (state and CLI against Postgres: imported under an approved change, re-import changes nothing). The rendered Terraform is covered end to end by the showcase's golden outputs (`examples/showcase`, the source environment), and the importers by its cloud drift exports (`examples/showcase/exports/cloud/source`).
+
+`tests/test_aws_cdn.py`: a distribution over the load balancer with a CloudFront web ACL and Shield, the us-east-1 certificate rule, an ALB behind CloudFront admitting only CloudFront.
+
+`tests/test_aws_dns.py`: a failover pair answered from the primary's zone (alias, health-checked secondary), a weighted set, a name in someone else's zone, records in their zones, outbound forwarders as Resolver rules.
+
+`tests/test_aws_edge.py`: the edge: TLS terms as ELB policies and back, an ALB with listener policy, ACM certificate, target groups (health, stickiness, draining) and security groups, the unbound certificate, the web ACL (address, country, rate-based rules on endpoint paths, managed groups, an exclusion out of scope), detect mode, account takeover's sign-in path, rate windows and header keys, Shield, a passthrough target group's tuning.
 
 `tests/test_aws_cli_iam.py`: IAM from the CLI: authorization details (a URL-encoded trust, an AWS managed policy read), key and bucket policies by file, a secret's key, a control policy, Identity Center; the simulator's verdicts read back dated (the worst part, a missing context unknown, a role only simulated), preferred by the planner; the rendered `access/evaluate.sh`.
 

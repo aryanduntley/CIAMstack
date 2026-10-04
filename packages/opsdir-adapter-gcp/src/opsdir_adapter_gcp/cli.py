@@ -35,6 +35,7 @@ from types import MappingProxyType
 from opsdir.core.contract import Importer
 from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_records
+from .cli_edge import KINDS as EDGE_KINDS, backend_attributes, edge_pairs, record_routing
 from .cli_iam import KINDS as IAM_KINDS, iam_kind, iam_pairs
 from .inventory import PROVIDER, name_parts, pairs_resources, resource_id
 
@@ -68,6 +69,7 @@ KINDS = MappingProxyType({
     "monitoring.googleapis.com/AlertPolicy": "alert-policy",
     "monitoring.googleapis.com/UptimeCheckConfig": "uptime-check",
     "logging.googleapis.com/LogBucket": "log-bucket",
+    **EDGE_KINDS,
 })
 # asset types another asset already holds: a cluster its node pools, Function a 1st-gen CloudFunction
 COVERED = frozenset(("container.googleapis.com/NodePool", "cloudfunctions.googleapis.com/CloudFunction"))
@@ -190,7 +192,7 @@ def _self(d):
 def _networks(items):
     return [*(("google_compute_network", {"id": _self(d), "name": d.get("name")}) for d, _ in _of(items, "network")),
             *(("google_compute_subnetwork", {"id": _self(d), "name": d.get("name"),
-                                             "ip_cidr_range": d.get("ipCidrRange"),
+                                             "ip_cidr_range": d.get("ipCidrRange"), "purpose": d.get("purpose"),
                                              "network": resource_id(d.get("network"))})
               for d, _ in _of(items, "subnetwork"))]
 
@@ -239,19 +241,22 @@ def _groups(items):
 
 def _load_balancing(items):
     return [*(("google_compute_region_backend_service" if d.get("region") else "google_compute_backend_service",
-               {"id": _self(d), "name": d.get("name"),
+               {"id": _self(d), "name": d.get("name"), **backend_attributes(d),
                 "backend": [{"group": resource_id(b.get("group"))} for b in d.get("backends") or ()]})
               for d, _ in _of(items, "backend-service")),
-            *(("google_compute_forwarding_rule", {
+            *(("google_compute_forwarding_rule" if d.get("region") else "google_compute_global_forwarding_rule", {
                 "id": _self(d), "name": d.get("name"), "ip_address": d.get("IPAddress"), "ports": d.get("ports") or [],
                 "all_ports": d.get("allPorts"), "port_range": d.get("portRange"),
                 "load_balancing_scheme": d.get("loadBalancingScheme"),
-                "backend_service": resource_id(d.get("backendService")), "labels": d.get("labels") or {}})
+                "backend_service": resource_id(d.get("backendService")), "target": resource_id(d.get("target")),
+                "labels": d.get("labels") or {}})
               for d, _ in _of(items, "forwarding-rule")),
             *_groups(items),
             *(("google_dns_record_set", {"name": d.get("name"), "type": d.get("type"),
-                                         "rrdatas": d.get("rrdatas") or [], "managed_zone": _zone(p)})
-              for d, p in _of(items, "record-set"))]
+                                         "rrdatas": d.get("rrdatas") or [], "managed_zone": _zone(p),
+                                         **record_routing(d)})
+              for d, p in _of(items, "record-set")),
+            *edge_pairs(lambda kind: _of(items, kind))]
 
 
 def _egress(items):

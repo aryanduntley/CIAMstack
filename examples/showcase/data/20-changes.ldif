@@ -149,6 +149,16 @@ ciamPlannedAt: 20260923000000Z
 ciamTitle: Record the shape of the production user data (values-free data prof
  ile)
 
+dn: cn=CHG-2015,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2015
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Forward the AD domain to the domain controllers from the target env
+ ironment
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

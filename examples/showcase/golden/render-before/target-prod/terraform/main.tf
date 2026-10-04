@@ -25,6 +25,12 @@ data "azurerm_subnet" "snet_ds" {
   resource_group_name  = data.azurerm_resource_group.main.name
 }
 
+data "azurerm_subnet" "snet_edge" {
+  name                 = "snet-appgw"
+  virtual_network_name = "vnet-ciam-prod"
+  resource_group_name  = data.azurerm_resource_group.main.name
+}
+
 data "azurerm_subnet" "snet_idm" {
   name                 = "snet-idm"
   virtual_network_name = "vnet-ciam-prod"
@@ -807,13 +813,7 @@ resource "azurerm_lb_rule" "svc_apps_443" {
   probe_id                       = azurerm_lb_probe.svc_apps_443.id
 }
 
-resource "azurerm_dns_a_record" "svc_apps" {
-  name                = "apps"
-  zone_name           = "example-aero.test"
-  resource_group_name = data.azurerm_resource_group.main.name
-  ttl                 = 300
-  records             = ["198.51.100.79"]
-}
+# `apps.example-aero.test` is in a zone corporate-dns runs: not rendered here (the plan drafts the request to them)
 
 resource "azurerm_lb" "svc_ldaps" {
   name                = "lb-ciam-prod-svc-ldaps"
@@ -887,126 +887,330 @@ data "azurerm_public_ip" "svc_login" {
   resource_group_name = data.azurerm_resource_group.main.name
 }
 
-resource "azurerm_lb" "svc_login" {
-  name                = "lb-ciam-prod-svc-login"
-  location            = data.azurerm_resource_group.main.location
+resource "azurerm_web_application_firewall_policy" "svc_login" {
+  name                = "waf-ciam-prod-svc_login"
   resource_group_name = data.azurerm_resource_group.main.name
-  sku                 = "Standard"
+  location            = data.azurerm_resource_group.main.location
+  policy_settings {
+    enabled            = true
+    mode               = "Prevention"
+    request_body_check = true
+  }
+  custom_rules {
+    name                 = "ratelogin"
+    priority             = 1
+    rule_type            = "RateLimitRule"
+    rate_limit_duration  = "FiveMins"
+    rate_limit_threshold = 300
+    group_rate_limit_by  = "ClientAddr"
+    match_conditions {
+      match_variables {
+        variable_name = "RequestUri"
+      }
+      operator     = "Regex"
+      match_values = ["^/am/json/realms/[^?#]+/authenticate$"]
+    }
+    action = "Block"
+  }
+  custom_rules {
+    name                 = "ratetoken"
+    priority             = 2
+    rule_type            = "RateLimitRule"
+    rate_limit_duration  = "FiveMins"
+    rate_limit_threshold = 600
+    group_rate_limit_by  = "ClientAddr"
+    match_conditions {
+      match_variables {
+        variable_name = "RequestUri"
+      }
+      operator     = "Regex"
+      match_values = ["^/am/oauth2/access_token$", "^/am/oauth2/realms/[^?#]+/access_token$"]
+    }
+    action = "Block"
+  }
+  managed_rules {
+    # exclusions apply on every path, not only the endpoint kind named
+    exclusion {
+      match_variable          = "RequestArgNames"
+      selector                = "SAMLResponse"
+      selector_match_operator = "Equals"
+      excluded_rule_set {
+        type    = "Microsoft_DefaultRuleSet"
+        version = "2.1"
+      }
+    }
+    managed_rule_set {
+      type    = "Microsoft_DefaultRuleSet"
+      version = "2.1"
+    }
+    managed_rule_set {
+      type    = "Microsoft_BotManagerRuleSet"
+      version = "1.1"
+    }
+  }
+  tags = {
+    ManagedBy = "opsdir"
+  }
+}
+
+# DDoS network-advanced: DDoS Network Protection is a plan linked to the virtual network the landing zone keeps (or IP Protection on the public address): ask its owners
+
+resource "azurerm_application_gateway" "svc_login" {
+  name                = "agw-ciam-prod-svc-login"
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = data.azurerm_resource_group.main.location
+  zones               = ["1", "2", "3"]
+  sku {
+    name = "WAF_v2"
+    tier = "WAF_v2"
+  }
+  autoscale_configuration {
+    min_capacity = 2
+    max_capacity = 10
+  }
+  gateway_ip_configuration {
+    name      = "gateway"
+    subnet_id = data.azurerm_subnet.snet_edge.id
+  }
   frontend_ip_configuration {
     name                 = "frontend"
     public_ip_address_id = data.azurerm_public_ip.svc_login.id
   }
+  frontend_port {
+    name = "port-443"
+    port = 443
+  }
+  backend_address_pool {
+    name         = "servers"
+    ip_addresses = ["10.60.3.21", "10.60.3.22"]
+  }
+  backend_http_settings {
+    name                  = "servers-443"
+    port                  = 443
+    protocol              = "Https"
+    cookie_based_affinity = "Enabled"
+    request_timeout       = 30
+    host_name             = "login.example-aero.test"
+    # Application Gateway v2 validates the servers' certificates (chain and name)
+    probe_name = "health-443"
+  }
+  probe {
+    name                = "health-443"
+    protocol            = "Https"
+    host                = "login.example-aero.test"
+    path                = "/am/json/health/ready"
+    interval            = 30
+    timeout             = 30
+    unhealthy_threshold = 3
+    match {
+      status_code = ["200-399"]
+    }
+  }
+  http_listener {
+    name                           = "listener-443"
+    frontend_ip_configuration_name = "frontend"
+    frontend_port_name             = "port-443"
+    protocol                       = "Https"
+  }
+  request_routing_rule {
+    name                       = "route-443"
+    priority                   = 100
+    rule_type                  = "Basic"
+    http_listener_name         = "listener-443"
+    backend_address_pool_name  = "servers"
+    backend_http_settings_name = "servers-443"
+  }
+  # UNBOUND: no Key Vault certificate holds this service's certificate in this environment
+  ssl_policy {
+    policy_type = "Predefined"
+    policy_name = "AppGwSslPolicy20220101"
+  }
+  firewall_policy_id = azurerm_web_application_firewall_policy.svc_login.id
   tags = {
     Service   = "login.example-aero.test"
     ManagedBy = "opsdir"
   }
 }
 
-resource "azurerm_lb_backend_address_pool" "svc_login" {
-  name            = "servers"
-  loadbalancer_id = azurerm_lb.svc_login.id
-}
-
-resource "azurerm_network_interface_backend_address_pool_association" "svc_login_am_1" {
-  network_interface_id    = azurerm_network_interface.am_1.id
-  ip_configuration_name   = "primary"
-  backend_address_pool_id = azurerm_lb_backend_address_pool.svc_login.id
-}
-
-resource "azurerm_network_interface_backend_address_pool_association" "svc_login_am_2" {
-  network_interface_id    = azurerm_network_interface.am_2.id
-  ip_configuration_name   = "primary"
-  backend_address_pool_id = azurerm_lb_backend_address_pool.svc_login.id
-}
-
-resource "azurerm_lb_probe" "svc_login_443" {
-  name            = "tcp-443"
-  loadbalancer_id = azurerm_lb.svc_login.id
-  protocol        = "Tcp"
-  port            = 443
-}
-
-resource "azurerm_lb_rule" "svc_login_443" {
-  name                           = "tcp-443"
-  loadbalancer_id                = azurerm_lb.svc_login.id
-  protocol                       = "Tcp"
-  frontend_port                  = 443
-  backend_port                   = 443
-  frontend_ip_configuration_name = "frontend"
-  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.svc_login.id]
-  probe_id                       = azurerm_lb_probe.svc_login_443.id
-}
-
-resource "azurerm_dns_a_record" "svc_login" {
-  name                = "login"
-  zone_name           = "example-aero.test"
-  resource_group_name = data.azurerm_resource_group.main.name
-  ttl                 = 300
-  records             = ["198.51.100.78"]
-}
+# `login.example-aero.test` is in a zone corporate-dns runs: not rendered here (the plan drafts the request to them)
 
 data "azurerm_public_ip" "svc_sso" {
   name                = "pip-ciam-sso-prod"
   resource_group_name = data.azurerm_resource_group.main.name
 }
 
-resource "azurerm_lb" "svc_sso" {
-  name                = "lb-ciam-prod-svc-sso"
-  location            = data.azurerm_resource_group.main.location
+resource "azurerm_user_assigned_identity" "svc_sso_gateway" {
+  name                = "id-agw-ciam-prod-svc_sso"
   resource_group_name = data.azurerm_resource_group.main.name
-  sku                 = "Standard"
-  frontend_ip_configuration {
-    name                 = "frontend"
-    public_ip_address_id = data.azurerm_public_ip.svc_sso.id
+  location            = data.azurerm_resource_group.main.location
+}
+
+data "azurerm_key_vault" "svc_sso_tls" {
+  name                = "kv-ciam-prod"
+  resource_group_name = data.azurerm_resource_group.main.name
+}
+
+resource "azurerm_role_assignment" "svc_sso_gateway_certificate" {
+  scope                = data.azurerm_key_vault.svc_sso_tls.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.svc_sso_gateway.principal_id
+}
+
+resource "azurerm_web_application_firewall_policy" "svc_sso" {
+  name                = "waf-ciam-prod-svc_sso"
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = data.azurerm_resource_group.main.location
+  policy_settings {
+    enabled            = true
+    mode               = "Prevention"
+    request_body_check = true
+  }
+  custom_rules {
+    name                 = "ratelogin"
+    priority             = 1
+    rule_type            = "RateLimitRule"
+    rate_limit_duration  = "FiveMins"
+    rate_limit_threshold = 300
+    group_rate_limit_by  = "ClientAddr"
+    match_conditions {
+      match_variables {
+        variable_name = "RequestUri"
+      }
+      operator     = "Regex"
+      match_values = ["^/as/authorization\\.oauth2$", "^/idp/SSO\\.saml2$"]
+    }
+    action = "Block"
+  }
+  custom_rules {
+    name                 = "ratetoken"
+    priority             = 2
+    rule_type            = "RateLimitRule"
+    rate_limit_duration  = "FiveMins"
+    rate_limit_threshold = 600
+    group_rate_limit_by  = "ClientAddr"
+    match_conditions {
+      match_variables {
+        variable_name = "RequestUri"
+      }
+      operator     = "Regex"
+      match_values = ["^/as/token\\.oauth2$"]
+    }
+    action = "Block"
+  }
+  managed_rules {
+    # exclusions apply on every path, not only the endpoint kind named
+    exclusion {
+      match_variable          = "RequestArgNames"
+      selector                = "SAMLResponse"
+      selector_match_operator = "Equals"
+      excluded_rule_set {
+        type    = "Microsoft_DefaultRuleSet"
+        version = "2.1"
+      }
+    }
+    managed_rule_set {
+      type    = "Microsoft_DefaultRuleSet"
+      version = "2.1"
+    }
+    managed_rule_set {
+      type    = "Microsoft_BotManagerRuleSet"
+      version = "1.1"
+    }
   }
   tags = {
-    Service   = "sso.example-aero.test"
     ManagedBy = "opsdir"
   }
 }
 
-resource "azurerm_lb_backend_address_pool" "svc_sso" {
-  name            = "servers"
-  loadbalancer_id = azurerm_lb.svc_sso.id
-}
+# DDoS network-advanced: DDoS Network Protection is a plan linked to the virtual network the landing zone keeps (or IP Protection on the public address): ask its owners
 
-resource "azurerm_network_interface_backend_address_pool_association" "svc_sso_pf_engine_1" {
-  network_interface_id    = azurerm_network_interface.pf_engine_1.id
-  ip_configuration_name   = "primary"
-  backend_address_pool_id = azurerm_lb_backend_address_pool.svc_sso.id
-}
-
-resource "azurerm_network_interface_backend_address_pool_association" "svc_sso_pf_engine_2" {
-  network_interface_id    = azurerm_network_interface.pf_engine_2.id
-  ip_configuration_name   = "primary"
-  backend_address_pool_id = azurerm_lb_backend_address_pool.svc_sso.id
-}
-
-resource "azurerm_lb_probe" "svc_sso_443" {
-  name            = "tcp-443"
-  loadbalancer_id = azurerm_lb.svc_sso.id
-  protocol        = "Tcp"
-  port            = 443
-}
-
-resource "azurerm_lb_rule" "svc_sso_443" {
-  name                           = "tcp-443"
-  loadbalancer_id                = azurerm_lb.svc_sso.id
-  protocol                       = "Tcp"
-  frontend_port                  = 443
-  backend_port                   = 443
-  frontend_ip_configuration_name = "frontend"
-  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.svc_sso.id]
-  probe_id                       = azurerm_lb_probe.svc_sso_443.id
-}
-
-resource "azurerm_dns_a_record" "svc_sso" {
-  name                = "sso"
-  zone_name           = "example-aero.test"
+resource "azurerm_application_gateway" "svc_sso" {
+  name                = "agw-ciam-prod-svc-sso"
   resource_group_name = data.azurerm_resource_group.main.name
-  ttl                 = 300
-  records             = ["198.51.100.77"]
+  location            = data.azurerm_resource_group.main.location
+  zones               = ["1", "2", "3"]
+  sku {
+    name = "WAF_v2"
+    tier = "WAF_v2"
+  }
+  autoscale_configuration {
+    min_capacity = 2
+    max_capacity = 10
+  }
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.svc_sso_gateway.id]
+  }
+  gateway_ip_configuration {
+    name      = "gateway"
+    subnet_id = data.azurerm_subnet.snet_edge.id
+  }
+  frontend_ip_configuration {
+    name                 = "frontend"
+    public_ip_address_id = data.azurerm_public_ip.svc_sso.id
+  }
+  frontend_port {
+    name = "port-443"
+    port = 443
+  }
+  backend_address_pool {
+    name         = "servers"
+    ip_addresses = ["10.60.2.21", "10.60.2.22"]
+  }
+  backend_http_settings {
+    name                  = "servers-443"
+    port                  = 443
+    protocol              = "Https"
+    cookie_based_affinity = "Enabled"
+    request_timeout       = 30
+    host_name             = "sso.example-aero.test"
+    # Application Gateway v2 validates the servers' certificates (chain and name)
+    probe_name = "health-443"
+  }
+  probe {
+    name                = "health-443"
+    protocol            = "Https"
+    host                = "sso.example-aero.test"
+    path                = "/pf/heartbeat.ping"
+    interval            = 30
+    timeout             = 30
+    unhealthy_threshold = 3
+    match {
+      status_code = ["200-399"]
+    }
+  }
+  http_listener {
+    name                           = "listener-443"
+    frontend_ip_configuration_name = "frontend"
+    frontend_port_name             = "port-443"
+    protocol                       = "Https"
+    ssl_certificate_name           = "tls"
+  }
+  request_routing_rule {
+    name                       = "route-443"
+    priority                   = 100
+    rule_type                  = "Basic"
+    http_listener_name         = "listener-443"
+    backend_address_pool_name  = "servers"
+    backend_http_settings_name = "servers-443"
+  }
+  ssl_certificate {
+    name                = "tls"
+    key_vault_secret_id = "${data.azurerm_key_vault.svc_sso_tls.vault_uri}secrets/sso-tls-2026"
+  }
+  ssl_policy {
+    policy_type = "Predefined"
+    policy_name = "AppGwSslPolicy20220101"
+  }
+  firewall_policy_id = azurerm_web_application_firewall_policy.svc_sso.id
+  tags = {
+    Service   = "sso.example-aero.test"
+    ManagedBy = "opsdir"
+  }
+  depends_on = [azurerm_role_assignment.svc_sso_gateway_certificate]
 }
+
+# `sso.example-aero.test` is in a zone corporate-dns runs: not rendered here (the plan drafts the request to them)
 
 data "azurerm_key_vault" "kv_ciam_prod" {
   name                = "kv-ciam-prod"

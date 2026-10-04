@@ -38,7 +38,7 @@ def _record():
              ciamInstanceSize="m6i.xlarge", ciamImageRef="ami-0abc", ciamProductVersion="PingDS 7.5.1"),
         _row(f"cn=svc-ldaps,{B}", ("ciamServiceName",), cn="svc-ldaps", ciamBindingRole="ds-ldaps-service",
              ciamFqdn="ldap.example.test", ciamTargetRole="ds", ciamPort="1636", ciamFrontendIp="10.20.1.100",
-             ciamDnsZoneRef="Z0PRIVATE"),
+             ciamDnsZoneRef="Z0PRIVATE", ciamEdgeFact="tls-mode passthrough", ciamTtlSeconds="60"),
         _row(f"cn=fw-app,{B}", ("ciamFirewallRule",), cn="fw-app", ciamBindingRole="fw-consumer-app",
              ciamSourceCidr=["10.30.0.0/24"], ciamPort="1636", ciamProtocol="tcp", ciamTargetRole="ds"),
         _row(f"cn=secret-root,{B}", ("ciamSecretRef",), cn="secret-root", ciamBindingRole="ds-root-password",

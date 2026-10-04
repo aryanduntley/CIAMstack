@@ -12,6 +12,7 @@ PARTIES = (      # cn, kind, mail, contact url, display name
     ("mobile-team", "team", "mobile@example-aero.test", None, None),
     ("network-security", "team", "netsec@example-aero.test", None, None),
     ("cloud-landing-zone", "team", "landing-zone@example-aero.test", None, "Cloud landing zone team"),
+    ("corporate-dns", "team", "dns@example-aero.test", "https://servicedesk.example-aero.test/dns", "Corporate DNS team"),
     ("skyline-air", "partner", "identity-ops@skyline-air.example", "https://partners.skyline-air.example/it-requests", None),
     ("harbor-mro", "partner", "it-security@harbor-mro.example", "https://portal.harbor-mro.example/support", None),
     ("example-aero", "operator", None, None, "Example Aero"),
@@ -42,6 +43,8 @@ CHANGES = (
      "2026-09-24"),
     ("CHG-2014", "Record the shape of the production user data (values-free data profile)", "approved",
      "CAB 2026-09-18", "2026-09-23"),
+    ("CHG-2015", "Forward the AD domain to the domain controllers from the target environment", "approved",
+     "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

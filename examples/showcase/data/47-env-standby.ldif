@@ -607,6 +607,36 @@ ciamAccessKind: iap
 ciamBindingRole: operator-console
 ciamProviderRef: projects/example-aero-ciam-standby/iap_tunnel
 
+dn: cn=fwd-corp-ad,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDnsForwarder
+cn: fwd-corp-ad
+ciamBindingRole: forwarder-corp.example-aero.internal
+ciamForwardDirection: outbound
+ciamForwardDomain: corp.example-aero.internal
+ciamForwardTarget: 10.40.0.53
+ciamForwardTarget: 10.40.0.54
+ciamProviderRef: projects/example-aero-ciam-standby/managedZones/fwd-corp-ad
+
+dn: cn=cert-sso-tls,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificateRef
+cn: cert-sso-tls
+ciamBindingRole: sso-tls-certificate
+ciamHoldsCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+ciamRefUri: gcp-cert://projects/example-aero-ciam-standby/locations/us-central
+ 1/certificates/sso-tls-2026
+
+dn: cn=subnet-edge,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: subnet-edge
+ciamBindingRole: subnet-edge
+ciamCidr: 10.70.250.0/23
+ciamProviderRef: projects/example-aero-net/regions/us-central1/subnetworks/cia
+ m-standby-proxy
+description: The proxy-only subnet the load balancers run in
+
 dn: cn=link-source,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamInterconnect

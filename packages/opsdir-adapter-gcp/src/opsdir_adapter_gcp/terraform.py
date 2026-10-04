@@ -12,7 +12,6 @@ the servers run as gets a service account on those instances (scope cloud-platfo
 members from its permissions (the Google Cloud permission table, opsdir_adapter_gcp.access): on the secret, the key,
 the bucket, the topic; log writes on the project, the narrowest Google Cloud allows.
 """
-import re
 from itertools import chain
 
 from opsdir.core.directory import one, rdn_value, values
@@ -22,25 +21,19 @@ from opsdir.core.network import is_private
 from opsdir.domains.infrastructure.firewall import rule_priorities, rule_purpose
 from opsdir.domains.access.evaluations import evaluation_files
 from opsdir.domains.access.workloads import identity_of, workload_identities
+from opsdir.domains.edge.resolve import inspected, service_edge
 from opsdir_adapter_gcp.access import ACCESS
+from opsdir_adapter_gcp.dns import forwarding_zones, records, service_record
+from opsdir_adapter_gcp.edge import application_lb, network_ddos
 from opsdir_adapter_gcp.health_checks import probe_ranges
 from opsdir_adapter_gcp.identities import identity, project_of
 from opsdir_adapter_gcp.landing import render_landing
 from opsdir_adapter_gcp.inventory import name_parts
+from opsdir_adapter_gcp.names import NETWORK, REGION, label, network_tag
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
 
-NETWORK = ref("data.google_compute_network.main.self_link")
-REGION = ref("var.region")
-
-
-def _tag(m, role):
-    return f"ciam-{rdn_value(m.env)}-{role}"
-
-
-def _label(v):
-    """A label value as Google Cloud allows it (lowercase letters, digits, - and _; 63 characters)."""
-    return re.sub(r"[^a-z0-9_-]", "-", (v or "").lower())[:63]
+_tag, _label = network_tag, label
 
 
 def _network(m):
@@ -121,7 +114,21 @@ def _health_check_rule(m, svc, n, name, scheme, port):
         ("source_ranges", list(probe_ranges(scheme))), ("target_tags", [_tag(m, one(svc, "ciamTargetRole"))])])
 
 
-def _service(m, svc):
+def _l4_tuning(spec):
+    """(health check body, backend service settings) from a passthrough service's traffic policy."""
+    if spec is None:
+        return None, ()
+    h = spec.health
+    check = (*((("check_interval_sec", h.interval),) if h.interval else ()),
+             *((("healthy_threshold", h.healthy),) if h.healthy else ()),
+             *((("unhealthy_threshold", h.unhealthy),) if h.unhealthy else ()))
+    kind = ((f"{h.protocol}_health_check", ((("request_path", h.path or "/"),))),) if h.protocol != "tcp" else ()
+    affinity = (("session_affinity", "CLIENT_IP"),) if spec.stickiness == "source-ip" else ()
+    drain = (("connection_draining_timeout_sec", spec.drain),) if spec.drain is not None else ()
+    return (check, kind), (*affinity, *drain)
+
+
+def _service(m, svc, endpoints=()):
     """A stable service name: a passthrough network load balancer over the role's servers (zonal instance groups,
     a regional backend service with a TCP health check and the firewall rule its probes need, a forwarding rule) and
     its Cloud DNS record. An EXTERNAL backend service names its port (port_name, each group's named_port) and scales
@@ -132,7 +139,10 @@ def _service(m, svc):
     scheme = "INTERNAL" if internal else "EXTERNAL"
     targets = servers_with_role(m, one(svc, "ciamTargetRole"))
     data, address = _frontend(svc, n, ip, internal)
-    named = () if internal else (("named_port", Block((("name", "ciam"), ("port", int(ports[0]))))),)
+    spec = service_edge(m, svc, endpoints)
+    cdn = spec is not None and spec.cdn
+    layer7 = spec is not None and (spec.layer7 or cdn)         # Cloud CDN is an Application Load Balancer's
+    named = () if internal and not layer7 else (("named_port", Block((("name", "ciam"), ("port", int(ports[0]))))),)
     groups = tuple(block("resource", ["google_compute_instance_group", f"{n}_{tf_name(zone)}"], [
         ("name", f"{name}-{zone}"), ("zone", zone),
         ("instances", [ref(f"google_compute_instance.{tf_name(rdn_value(t))}.self_link")
@@ -140,18 +150,27 @@ def _service(m, svc):
     placement = ((("network", NETWORK), ("subnetwork", ref(
         f"data.google_compute_subnetwork.{tf_name(rdn_value(subnet_of(m, targets[0])))}.self_link")))
         if internal and targets else ())
+    record = service_record(m.d, m, svc, n, cdn)
+    if layer7:
+        return (*groups, *application_lb(m, svc, spec, tuple(f"{n}_{tf_name(z)}" for z in _zones(targets)),
+                                         (data, address), placement[1:]), *record)
+    (check, kind), tuning = _l4_tuning(spec) if spec is not None else ((None, ()), ())
+    health = kind[0] if kind else ("tcp_health_check", ())
+    blind = ("# the protection policy's request inspection needs TLS terminated at the edge; not rendered",) \
+        if spec is not None and inspected(spec) else ()
     capacity = () if internal else (("capacity_scaler", 1.0),)
     forwarded = ((("ports", ports),) if len(ports) <= 5 else
                  (("#", "more than five ports: all are forwarded; the firewall rules admit only the service's"),
                   ("all_ports", True)))
-    return (*data, *groups,
+    return (*data, *blind, *groups,
             block("resource", ["google_compute_region_health_check", n], [
-                ("name", name), ("region", REGION), ("tcp_health_check", Block((("port", int(ports[0])),)))]),
+                ("name", name), ("region", REGION), *(check or ()),
+                (health[0], Block((("port", int(ports[0])), *health[1])))]),
             _health_check_rule(m, svc, n, name, scheme, ports[0]),
             block("resource", ["google_compute_region_backend_service", n], [
                 ("name", name), ("region", REGION), ("load_balancing_scheme", scheme), ("protocol", "TCP"),
                 *((("port_name", "ciam"),) if not internal else ()),
-                ("health_checks", [ref(f"google_compute_region_health_check.{n}.id")]),
+                ("health_checks", [ref(f"google_compute_region_health_check.{n}.id")]), *tuning,
                 *(("backend", Block((
                     ("group", ref(f"google_compute_instance_group.{n}_{tf_name(zone)}.self_link")),
                     ("balancing_mode", "CONNECTION"), *capacity)))
@@ -161,10 +180,7 @@ def _service(m, svc):
                 *forwarded, ("ip_address", address),
                 ("backend_service", ref(f"google_compute_region_backend_service.{n}.id")), *placement,
                 ("labels", {"service": _label(one(svc, "ciamFqdn")), "managed_by": "opsdir"})]),
-            block("resource", ["google_dns_record_set", n], [
-                ("managed_zone", one(svc, "ciamDnsZoneRef") or _label(one(svc, "ciamDnsZone"))),
-                ("name", f"{one(svc, 'ciamFqdn')}."), ("type", "A"), ("ttl", 300),
-                ("rrdatas", [ref(f"google_compute_forwarding_rule.{n}.ip_address")])]))
+            *(network_ddos(m, n, spec) if spec is not None and not internal else ()), *record)
 
 
 def _secret(b):
@@ -191,10 +207,12 @@ def _references(m):
 
 
 def render(m, services):
+    endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     kms, identities = secret(m, "disk-encryption"), workload_identities(m, ACCESS)
     out = (*_network(m), *_firewall(m), *chain.from_iterable(identity(m, w) for w in identities),
            *(_instance(m, s, kms, identities) for s in m.servers),
-           *chain.from_iterable(_service(m, svc) for svc in of_class(m, "ciamServiceName")), *_references(m))
+           *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
+           *records(m.d, m), *forwarding_zones(m), *_references(m))
     main = header(m, "Google Cloud infrastructure for the CIAM platform", HCL) + unbound_comments(m.unbound) + "\n" \
         + "\n\n".join(out) + "\n"
     providers = header(m, "Providers and inputs", HCL) + "\n" + "\n\n".join([

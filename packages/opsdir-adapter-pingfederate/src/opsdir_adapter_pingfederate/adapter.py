@@ -8,7 +8,7 @@ from .discovery import CHOICES
 from .importer import BULK
 from .naming import SERVER_ROLES
 from .nodes import NODE_FILES
-from .render import render_env, render_neutral
+from .render import ENDPOINTS, render_env, render_neutral
 from .schema import FRAGMENT
 
 PRODUCT = "PingFederate"
@@ -34,4 +34,5 @@ ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required
                   formats=(("pingfederate/*.json", "json"), ("pingfederate/cluster/*.properties", "java-properties"),
                            *SAML_FORMATS, *OIDC_FORMATS),
                   products=(("PingFederate", ">=11,<13"),),
-                  secret_patterns=SECRET_PATTERNS, importers=(BULK, NODE_FILES), profile_terms=None, access=None)
+                  secret_patterns=SECRET_PATTERNS, importers=(BULK, NODE_FILES), profile_terms=None, access=None,
+                  endpoints=ENDPOINTS)

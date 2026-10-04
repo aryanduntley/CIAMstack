@@ -72,8 +72,9 @@ Importer = NamedTuple("Importer", [("name", str), ("description", str), ("read",
 # DN, entries that should exist in that subtree), ...), each replacing the record's subtree at its scope; notices.
 Imported = NamedTuple("Imported", [("containers", tuple), ("groups", tuple), ("notices", tuple)])
 
-# What connectors provide to adapters while rendering: secret_command(ref-uri) -> shell command that resolves it
-Services = NamedTuple("Services", [("secret_command", Callable)])
+# What connectors provide to adapters while rendering: secret_command(ref-uri) -> shell command that resolves it;
+# endpoints: the installed adapters' Endpoints (what the edge aims health checks, rate limits and exclusions at)
+Services = NamedTuple("Services", [("secret_command", Callable), ("endpoints", tuple)])
 
 # One row of a cloud's permission table: what a neutral verb (read-secret, use-key, ...) on a binding of a class
 # (ciamSecretRef, ciamKeyRef, ...; kind: a stream's kind, or None for any) needs in the cloud's terms. needs is a tuple
@@ -91,30 +92,35 @@ Permission = namedtuple("Permission", ("verb", "binding_class", "kind", "needs",
 AccessModel = namedtuple("AccessModel", ("permissions", "escalations", "covers", "resource", "evaluator"),
                          defaults=(None,))
 
-Adapter = NamedTuple("Adapter", [("name", str),
-                                 ("kind", str),                       # provider | product | host | delivery | secret-store
-                                 ("applies", Optional[Callable]),     # (EnvModel) -> bool, from directory data only;
-                                                                      # None = declaration-only (see connectors.stack)
-                                 ("required_roles", tuple),
-                                 ("render_neutral", Optional[Callable]),  # (Directory) -> {path: text}, same everywhere
-                                 ("render_env", Optional[Callable]),      # (EnvModel, Services) -> {path: text}
-                                 ("checks", tuple),                   # planner checks: (PlanContext) -> Findings
-                                 ("ref_schemes", tuple),              # ref-uri schemes it owns (secrets, keys, storage)
-                                 ("secret_schemes", Mapping),         # ref-uri scheme -> (rest of uri) -> shell command
-                                 ("renders", Optional[str]),          # what its environment-specific output is, in words
-                                 ("neutral_label", Optional[str]),    # short name of its environment-neutral config
-                                 ("vocabulary", Mapping),             # {vocab attribute: values it defines}
-                                 ("schema", Optional[object]),        # its SchemaFragment (own OID arc), or None
-                                 ("formats", tuple),                  # ((path glob, format name), ...): the format
-                                                                      # of every file it renders (first match wins)
-                                 ("products", tuple),                 # ((product, PEP 440 range), ...): the product
-                                                                      # versions it renders and reads
-                                 ("secret_patterns", tuple),          # SecretPatterns: its vendor's credential forms
-                                 ("importers", tuple),                # Importers: the product exports it reads
-                                 ("profile_terms", Optional[object]),  # what its directory attributes mean to the
-                                                                      # data profile (directory profile.Terms), or None
-                                 ("access", Optional[object])])       # a cloud's AccessModel: what its actions and
-                                                                      # roles mean as neutral permissions, or None
+# An endpoint a product serves that the edge treats specially: kind is one of the edge domain's endpoint kinds (login,
+# token, password-reset, registration, saml-post, health), path a URL path where '*' stands for one or more path
+# segments (/am/json/realms/*/authenticate), server_role the role of the servers serving it. Products declare their
+# defaults; a policy's ciamEndpointPath says where an estate moved one.
+Endpoint = namedtuple("Endpoint", ("kind", "path", "server_role"))
+
+# An adapter's fields; an older adapter that names no endpoints declares none.
+Adapter = namedtuple("Adapter", (
+    "name",
+    "kind",                 # provider | product | host | delivery | secret-store
+    "applies",              # (EnvModel) -> bool, from directory data only; None = declaration-only (connectors.stack)
+    "required_roles",
+    "render_neutral",       # (Directory) -> {path: text}, same everywhere
+    "render_env",           # (EnvModel, Services) -> {path: text}
+    "checks",               # planner checks: (PlanContext) -> Findings
+    "ref_schemes",          # ref-uri schemes it owns (secrets, keys, storage)
+    "secret_schemes",       # ref-uri scheme -> (rest of uri) -> shell command
+    "renders",              # what its environment-specific output is, in words
+    "neutral_label",        # short name of its environment-neutral config
+    "vocabulary",           # {vocab attribute: values it defines}
+    "schema",               # its SchemaFragment (own OID arc), or None
+    "formats",              # ((path glob, format name), ...): the format of every file it renders (first match wins)
+    "products",             # ((product, PEP 440 range), ...): the product versions it renders and reads
+    "secret_patterns",      # SecretPatterns: its vendor's credential forms
+    "importers",            # Importers: the product exports it reads
+    "profile_terms",        # what its directory attributes mean to the data profile (directory profile.Terms), or None
+    "access",               # a cloud's AccessModel: what its actions and roles mean as neutral permissions, or None
+    "endpoints"),           # Endpoints: what its products serve that the edge protects, checks or never caches
+    defaults=((),))
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

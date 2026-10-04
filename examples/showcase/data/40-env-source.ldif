@@ -120,11 +120,13 @@ cn: svc-ldaps
 ciamBindingRole: ds-ldaps-service
 ciamDnsZone: id.example-aero.test
 ciamDnsZoneRef: Z0EXAMPLE1PRIVATE
+ciamEdgeFact: tls-mode passthrough
 ciamFqdn: ldap.id.example-aero.test
 ciamFrontendIp: 10.20.1.100
 ciamPort: 1636
 ciamTargetRole: ds
 ciamTlsCertificate: cn=ds-ldaps-2026,ou=certificates,dc=ciam-ops
+ciamTtlSeconds: 60
 
 dn: cn=svc-sso,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -133,12 +135,14 @@ cn: svc-sso
 ciamBindingRole: pf-sso-service
 ciamDnsZone: example-aero.test
 ciamDnsZoneRef: Z0EXAMPLE2PUBLIC
+ciamEdgeFact: tls-mode passthrough
 ciamFqdn: sso.example-aero.test
 ciamFrontendIp: 198.51.100.20
 ciamPort: 443
 ciamProviderRef: eipalloc-0a1b2c3d4e5f60001
 ciamTargetRole: pf-engine
 ciamTlsCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+ciamTtlSeconds: 3600
 
 dn: cn=svc-login,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -147,11 +151,13 @@ cn: svc-login
 ciamBindingRole: am-service
 ciamDnsZone: example-aero.test
 ciamDnsZoneRef: Z0EXAMPLE2PUBLIC
+ciamEdgeFact: tls-mode passthrough
 ciamFqdn: login.example-aero.test
 ciamFrontendIp: 198.51.100.21
 ciamPort: 443
 ciamProviderRef: eipalloc-0a1b2c3d4e5f60003
 ciamTargetRole: am
+ciamTtlSeconds: 3600
 
 dn: cn=svc-apps,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -160,11 +166,14 @@ cn: svc-apps
 ciamBindingRole: ig-service
 ciamDnsZone: example-aero.test
 ciamDnsZoneRef: Z0EXAMPLE2PUBLIC
+ciamEdgeFact: tls-mode passthrough
+ciamEdgeFact: stickiness source-ip
 ciamFqdn: apps.example-aero.test
 ciamFrontendIp: 198.51.100.22
 ciamPort: 443
 ciamProviderRef: eipalloc-0a1b2c3d4e5f60005
 ciamTargetRole: ig
+ciamTtlSeconds: 3600
 
 dn: cn=fw-pf-ds-svc,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -723,6 +732,46 @@ ciamAccessKind: session
 ciamBindingRole: operator-console
 ciamProviderRef: arn:aws:ssm:us-east-1:111122223333:document/SSM-SessionManage
  rRunShell
+
+dn: cn=zone-public,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDnsZoneBinding
+cn: zone-public
+ciamBindingRole: zone-example-aero.test
+ciamDnsZone: example-aero.test
+ciamManagedBy: cn=corporate-dns,ou=owners,dc=ciam-ops
+ciamZoneVisibility: public
+description: The company's public zone, on the corporate DNS team's Infoblox
+
+dn: cn=zone-private,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDnsZoneBinding
+cn: zone-private
+ciamBindingRole: private-zone
+ciamDnsZone: id.example-aero.test
+ciamProviderRef: Z0EXAMPLE1PRIVATE
+ciamZoneVisibility: private
+description: Where the LDAPS name is published, for the platform's networks
+
+dn: cn=fwd-corp-ad,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDnsForwarder
+cn: fwd-corp-ad
+ciamBindingRole: forwarder-corp.example-aero.internal
+ciamForwardDirection: outbound
+ciamForwardDomain: corp.example-aero.internal
+ciamForwardTarget: 10.40.0.53
+ciamForwardTarget: 10.40.0.54
+ciamProviderRef: rslvr-rr-0a1b2c3d4e5f60001
+
+dn: cn=cert-sso-tls,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificateRef
+cn: cert-sso-tls
+ciamBindingRole: sso-tls-certificate
+ciamHoldsCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+ciamRefUri: aws-acm://arn:aws:acm:us-east-1:111122223333:certificate/7f3e9d21-
+ 0000-4000-8000-0000000000a1
 
 dn: ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top

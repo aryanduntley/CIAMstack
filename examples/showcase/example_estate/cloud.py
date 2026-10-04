@@ -1,6 +1,9 @@
 """What the clouds report the environments run (pure: builds text). Generated from the same fixture data as the record,
 so each export matches it except for the drift planted here, which `opsdir import --dry-run` shows:
 
+  Every environment's public names are on the corporate DNS team's Infoblox, so neither Route 53 nor Azure DNS holds
+  them (the load balancers' Service tags name them); the source's gateway load balancer sticks by source address, and
+  the source forwards the AD domain by a Resolver rule.
   source/prod, AWS Terraform state (terraform.tfstate):
     - pf-engine-2 resized in the console (m6i.large -> m6i.xlarge)
     - an untagged bastion instance nobody recorded
@@ -95,14 +98,20 @@ def _aws_service(p, instances, cn, fqdn, zref, trole, ports, ip, pref):
 
     def group(port):
         return f"arn:aws:elasticloadbalancing:{REGION}:{ACCOUNT}:targetgroup/ciam-prod-{cn}-{port}/{_hex(cn, port, n=16)}"
+    sticky = "stickiness source-ip" in (p.get("service_attrs") or {}).get(cn, {}).get("ciamEdgeFact", ())
     return [_res("managed", "aws_lb", cn, {"arn": arn, "name": f"ciam-prod-{cn}", "internal": internal,
-                                           "dns_name": dns, "subnet_mapping": [
+                                           "load_balancer_type": "network", "dns_name": dns,
+                                           "tags": {"Service": fqdn, "ManagedBy": "opsdir"}, "subnet_mapping": [
                                                {"private_ipv4_address": ip} if internal else {"allocation_id": pref}]}),
             *(() if internal else (_res("data", "aws_eip", cn, {"allocation_id": pref, "public_ip": ip}),)),
-            _res("managed", "aws_route53_record", cn, {"name": fqdn, "zone_id": zref, "type": "A",
-                                                       "alias": [{"name": dns, "zone_id": "Z26RNL4JYFTOTI"}]}),
+            # the public names are on the corporate DNS team's Infoblox: Route 53 holds the private one only
+            *((_res("managed", "aws_route53_record", cn, {"name": fqdn, "zone_id": zref, "type": "A",
+                                                          "alias": [{"name": dns, "zone_id": "Z26RNL4JYFTOTI"}]}),)
+              if internal else ()),
             *(r for port in ports for r in (
-                _res("managed", "aws_lb_target_group", f"{cn}_{port}", {"arn": group(port), "port": port}),
+                _res("managed", "aws_lb_target_group", f"{cn}_{port}", {
+                    "arn": group(port), "port": port,
+                    **({"stickiness": [{"type": "source_ip", "enabled": True}]} if sticky else {})}),
                 _res("managed", "aws_lb_listener", f"{cn}_{port}", {
                     "load_balancer_arn": arn, "port": port,
                     "default_action": [{"type": "forward", "target_group_arn": group(port)}]}),
@@ -243,13 +252,22 @@ def landing_zone_state():
                    "outputs": {}, "resources": resources})
 
 
+def _aws_dns(p):
+    """The Resolver rules forwarding the environment's queries (the AD domain to the domain controllers)."""
+    return [_res("managed", "aws_route53_resolver_rule", attrs["ciamProviderRef"], {
+                "id": attrs["ciamProviderRef"], "name": cn, "rule_type": "FORWARD",
+                "domain_name": f"{attrs['ciamForwardDomain']}.",
+                "target_ip": [{"ip": ip, "port": 53} for ip in attrs["ciamForwardTarget"]]})
+            for oc, cn, _, attrs in p["edge"] if oc == "ciamDnsForwarder"]
+
+
 def source_state():
     """The source environment's Terraform state (format version 4), with the planted drift."""
     p = SOURCE
     subnets, instances, groups = _source_ids(p)
     resources = [*_aws_network(p, subnets), *_aws_servers(p, subnets, instances, groups, {"pf-engine-2": "m6i.xlarge"}),
                  *_aws_firewall(p, groups), *_aws_services(p, instances), *_aws_keys(p, rotation=False),
-                 *_aws_monitoring(), *_drifted_source(p, subnets, groups), *_source_iam()]
+                 *_aws_monitoring(), *_drifted_source(p, subnets, groups), *_source_iam(), *_aws_dns(p)]
     return _dumps({"version": 4, "terraform_version": "1.9.5", "serial": 214, "lineage": "5e0c-ciam-prod",
                    "outputs": {}, "resources": resources})
 
@@ -264,10 +282,16 @@ def _subnet_id(ref):
     return f"{NET}/virtualNetworks/{vnet}/subnets/{sub}"
 
 
+def _edge_subnets(p):
+    """(binding name, role, provider ref, CIDR, zone) of the environment's edge subnets (the gateways', the proxies')."""
+    return [(cn, role, attrs["ciamProviderRef"], attrs["ciamCidr"], None)
+            for oc, cn, role, attrs in p["edge"] if oc == "ciamSubnetBinding"]
+
+
 def _azure_network(p, extra_subnet):
     vnet = p["net"][1]
     subnets = [{"id": _subnet_id(ref), "name": ref.split("/")[1], "addressPrefix": cidr}
-               for _, _, ref, cidr, _ in p["subnets"]]
+               for _, _, ref, cidr, _ in (*p["subnets"], *_edge_subnets(p))]
     return [{"id": f"{NET}/virtualNetworks/{vnet}", "name": vnet, "type": "Microsoft.Network/virtualNetworks",
              "resourceGroup": p["rg"], "location": "eastus2", "addressSpace": {"addressPrefixes": [p["net"][2]]},
              "subnets": [*subnets, extra_subnet]}]
@@ -352,12 +376,12 @@ def target_inventory():
     p = TARGET
     mgmt = {"id": _subnet_id(f"{p['net'][1]}/snet-mgmt"), "name": "snet-mgmt", "addressPrefix": "10.60.9.0/28"}
     vms, nics = _azure_servers(p, {"ds-3": "Standard_D8s_v5"})
-    lbs, ips, public, private = _azure_services(p)
+    lbs, ips, _, private = _azure_services(p)         # the public names are on the corporate DNS team's Infoblox
     nat_ip = {"id": f"{NET}/publicIPAddresses/pip-natgw-ciam-prod", "name": "pip-natgw-ciam-prod",
               "ipAddress": p["egress"][1][:-3], "type": "Microsoft.Network/publicIPAddresses"}
     secrets, keys, key_show, sets = _azure_vault(p)
     return {"vnets.json": _azure_network(p, mgmt), "vms.json": vms, "nics.json": nics, "lbs.json": lbs,
-            "public-ips.json": [*ips, nat_ip], "dns-example-aero.test.json": public,
+            "public-ips.json": [*ips, nat_ip],
             "private-dns-id.cloud.example-aero.test.json": private,
             "nsgs.json": _azure_nsgs(p, {"fw-idm-sync": 400}),
             "nat-gateways.json": [{"id": f"{NET}/natGateways/{p['egress'][0]}", "name": p["egress"][0],
@@ -530,8 +554,10 @@ def standby_inventory():
             *(_asset("compute.googleapis.com/Subnetwork", {"kind": "compute#subnetwork", "name": ref.rsplit("/", 1)[1],
                                                            "ipCidrRange": cidr, "network": f"{GAPI}/{p['net'][1]}",
                                                            "region": f"{GAPI}/{HOST}/regions/us-central1",
-                                                           "selfLink": f"{GAPI}/{ref}"})
-              for _, _, ref, cidr, _ in p["subnets"]),
+                                                           "selfLink": f"{GAPI}/{ref}",
+                                                           **({"purpose": "REGIONAL_MANAGED_PROXY"}
+                                                              if role == "subnet-edge" else {})})
+              for _, role, ref, cidr, _ in (*p["subnets"], *_edge_subnets(p))),
             *records]
     iam, providers = _gcp_iam()
     return {"assets.jsonl": "".join(json.dumps(a, sort_keys=False) + "\n" for a in exported),

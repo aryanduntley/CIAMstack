@@ -88,6 +88,7 @@ cap 08-apply-chg-2003 od modify --change CHG-2003 changes/CHG-2003-stable-ldaps-
 cap 08-apply-chg-2005 od modify --change CHG-2005 changes/CHG-2005-credential-roles.ldif
 cap 08-apply-chg-2011 od modify --change CHG-2011 changes/CHG-2011-job-owners.ldif
 cap 08-apply-chg-2013 od modify --change CHG-2013 changes/CHG-2013-corporate-ca.ldif
+cap 08-apply-chg-2015 od modify --change CHG-2015 changes/CHG-2015-target-ad-forwarder.ldif
 od history 2>&1 | sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}/<TIMESTAMP>        /' \
   > "$OUT/cmd/09-history.txt"
 

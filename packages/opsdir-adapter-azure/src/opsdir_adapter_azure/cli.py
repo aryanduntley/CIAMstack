@@ -25,6 +25,8 @@ of the matching hashicorp/azurerm resource, so the same mapping reads them as re
   az keyvault key rotation-policy show  …/keys/<name>/rotationpolicy: whether the key rotates automatically
   az functionapp list                   Microsoft.Web/sites (kind functionapp: runtime from siteConfig.linuxFxVersion)
   az functionapp function list          Microsoft.Web/sites/functions (timer trigger schedules from config.bindings)
+  the edge: application gateways, WAF policies, Front Door, DDoS plans, Traffic Manager, DNS zones and record sets of
+  every type, forwarding rules            see cli_edge.py
   access control: identities, role assignments and definitions, PIM, deny assignments, access policies, policy
   assignments, bastions                 see cli_iam.py (az rest output, {"value": [...]}, is read item by item)
 Subnets, interfaces and VMs outside the listed virtual networks are counted, not read; secrets, keys and containers
@@ -37,6 +39,7 @@ from functools import reduce
 
 from opsdir.core.contract import Importer
 from opsdir.core.inventory import layout_import
+from .cli_edge import edge_items
 from .cli_iam import iam_items
 from .inventory import PROVIDER, arm_segment, pairs_resources
 
@@ -170,8 +173,13 @@ def _lbs(items):
                {"network_interface_id": _nic_of(c.get("id")), "backend_address_pool_id": p.get("id")})
               for lb in lbs for p in lb.get("backendAddressPools") or () for c in p.get("backendIPConfigurations") or ()
               if _nic_of(c.get("id"))),
-            *(("azurerm_lb_rule", {"loadbalancer_id": lb.get("id"), "frontend_port": r.get("frontendPort")})
-              for lb in lbs for r in lb.get("loadBalancingRules") or ())]
+            *(("azurerm_lb_rule", {"loadbalancer_id": lb.get("id"), "frontend_port": r.get("frontendPort"),
+                                   "load_distribution": r.get("loadDistribution"),
+                                   "idle_timeout_in_minutes": r.get("idleTimeoutInMinutes")})
+              for lb in lbs for r in lb.get("loadBalancingRules") or ()),
+            *(("azurerm_lb_probe", {"loadbalancer_id": lb.get("id"), "protocol": p.get("protocol"),
+                                    "request_path": p.get("requestPath")})
+              for lb in lbs for p in lb.get("probes") or ())]
 
 
 def _addresses(items):
@@ -185,7 +193,7 @@ def _records(items):
     def one(r, zone_key, type_):
         fqdn = _low(r.get("fqdn")).rstrip(".")
         zone = arm_segment(r.get("id"), zone_key) or (fqdn[len(r.get("name", "")) + 1:] if r.get("name") != "@" else fqdn)
-        return (type_, {"name": r.get("name"), "zone_name": _low(zone),
+        return (type_, {"name": r.get("name"), "zone_name": _low(zone), "ttl": r.get("ttl") or r.get("TTL"),
                         "records": [a.get("ipv4Address") for a in r.get("aRecords") or r.get("ARecords") or ()],
                         "target_resource_id": _id(r.get("targetResource"))})
     return [*(one(r, "dnszones", "azurerm_dns_a_record") for r in _of(items, "Microsoft.Network/dnszones/A")),
@@ -320,7 +328,7 @@ def items_resources(items):
     pairs, scope_notices = _scoped(_unique([*_vnets(items), *_vms(items), *_nics(items), *_lbs(items),
                                             *_addresses(items), *_records(items), *_nsgs(items), *_nats(items),
                                             *_vault_items(items), *_stores(items), *_functions(items),
-                                            *iam_items(items)]))
+                                            *iam_items(items), *edge_items(items)]))
     resources, notices = pairs_resources(pairs)
     return resources, (*scope_notices, *notices)
 

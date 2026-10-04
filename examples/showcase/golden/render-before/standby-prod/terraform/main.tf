@@ -19,6 +19,12 @@ data "google_compute_subnetwork" "subnet_ds" {
   project = "example-aero-net"
 }
 
+data "google_compute_subnetwork" "subnet_edge" {
+  name    = "ciam-standby-proxy"
+  region  = "us-central1"
+  project = "example-aero-net"
+}
+
 data "google_compute_subnetwork" "subnet_idm" {
   name    = "ciam-standby-idm"
   region  = "us-central1"
@@ -652,11 +658,6 @@ resource "google_dns_record_set" "svc_ldaps" {
   rrdatas      = [google_compute_forwarding_rule.svc_ldaps.ip_address]
 }
 
-data "google_compute_address" "svc_login" {
-  name   = "ciam-standby-login"
-  region = var.region
-}
-
 resource "google_compute_instance_group" "svc_login_us_central1_a" {
   name      = "ciam-prod-svc-login-us-central1-a"
   zone      = "us-central1-a"
@@ -667,12 +668,38 @@ resource "google_compute_instance_group" "svc_login_us_central1_a" {
   }
 }
 
+data "google_compute_address" "svc_login" {
+  name   = "ciam-standby-login"
+  region = var.region
+}
+
+resource "google_compute_region_ssl_policy" "svc_login" {
+  name            = "ciam-prod-svc-login"
+  region          = var.region
+  profile         = "MODERN"
+  min_tls_version = "TLS_1_2"
+}
+
 resource "google_compute_region_health_check" "svc_login" {
   name   = "ciam-prod-svc-login"
   region = var.region
-  tcp_health_check {
-    port = 443
+  https_health_check {
+    port         = 443
+    request_path = "/am/json/health/ready"
   }
+}
+
+resource "google_compute_firewall" "svc_login_proxies" {
+  name        = "ciam-prod-svc-login-proxies"
+  description = "Load balancer proxies for svc-login"
+  network     = data.google_compute_network.main.self_link
+  direction   = "INGRESS"
+  allow {
+    protocol = "tcp"
+    ports    = ["443"]
+  }
+  source_ranges = ["10.70.250.0/23"]
+  target_tags   = ["ciam-prod-am"]
 }
 
 resource "google_compute_firewall" "svc_login_health_checks" {
@@ -684,32 +711,325 @@ resource "google_compute_firewall" "svc_login_health_checks" {
     protocol = "tcp"
     ports    = ["443"]
   }
-  source_ranges = ["35.191.0.0/16", "209.85.152.0/22", "209.85.204.0/22"]
+  source_ranges = ["35.191.0.0/16", "130.211.0.0/22"]
   target_tags   = ["ciam-prod-am"]
 }
 
+# not rendered: bot-control needs reCAPTCHA keys (bot management)
+
+resource "google_compute_region_security_policy" "svc_login" {
+  name   = "ciam-prod-svc_login"
+  region = var.region
+  type   = "CLOUD_ARMOR"
+}
+
+resource "google_compute_region_security_policy_rule" "svc_login_1000" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_login.name
+  priority        = 1000
+  action          = "throttle"
+  match {
+    expr {
+      expression = "request.path.matches('^/am/json/realms/[^?#]+/authenticate$')"
+    }
+  }
+  description = "rate-login"
+  rate_limit_options {
+    conform_action = "allow"
+    exceed_action  = "deny(429)"
+    enforce_on_key = "IP"
+    rate_limit_threshold {
+      count        = 300
+      interval_sec = 300
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_login_1010" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_login.name
+  priority        = 1010
+  action          = "throttle"
+  match {
+    expr {
+      expression = "request.path.matches('^/am/oauth2/access_token$') || request.path.matches('^/am/oauth2/realms/[^?#]+/access_token$')"
+    }
+  }
+  description = "rate-token"
+  rate_limit_options {
+    conform_action = "allow"
+    exceed_action  = "deny(429)"
+    enforce_on_key = "IP"
+    rate_limit_threshold {
+      count        = 600
+      interval_sec = 300
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_login_1020" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_login.name
+  priority        = 1020
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('sqli-v33-stable')"
+    }
+  }
+  # exclusions apply on every path, not only the endpoint kind named
+  preconfigured_waf_config {
+    exclusion {
+      target_rule_set = "sqli-v33-stable"
+      request_query_param {
+        operator = "EQUALS"
+        value    = "SAMLResponse"
+      }
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_login_1030" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_login.name
+  priority        = 1030
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('xss-v33-stable')"
+    }
+  }
+  # exclusions apply on every path, not only the endpoint kind named
+  preconfigured_waf_config {
+    exclusion {
+      target_rule_set = "xss-v33-stable"
+      request_query_param {
+        operator = "EQUALS"
+        value    = "SAMLResponse"
+      }
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_login_1040" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_login.name
+  priority        = 1040
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('lfi-v33-stable')"
+    }
+  }
+  # exclusions apply on every path, not only the endpoint kind named
+  preconfigured_waf_config {
+    exclusion {
+      target_rule_set = "lfi-v33-stable"
+      request_query_param {
+        operator = "EQUALS"
+        value    = "SAMLResponse"
+      }
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_login_1050" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_login.name
+  priority        = 1050
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('rfi-v33-stable')"
+    }
+  }
+  # exclusions apply on every path, not only the endpoint kind named
+  preconfigured_waf_config {
+    exclusion {
+      target_rule_set = "rfi-v33-stable"
+      request_query_param {
+        operator = "EQUALS"
+        value    = "SAMLResponse"
+      }
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_login_1060" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_login.name
+  priority        = 1060
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('rce-v33-stable')"
+    }
+  }
+  # exclusions apply on every path, not only the endpoint kind named
+  preconfigured_waf_config {
+    exclusion {
+      target_rule_set = "rce-v33-stable"
+      request_query_param {
+        operator = "EQUALS"
+        value    = "SAMLResponse"
+      }
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_login_1070" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_login.name
+  priority        = 1070
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('methodenforcement-v33-stable')"
+    }
+  }
+  # exclusions apply on every path, not only the endpoint kind named
+  preconfigured_waf_config {
+    exclusion {
+      target_rule_set = "methodenforcement-v33-stable"
+      request_query_param {
+        operator = "EQUALS"
+        value    = "SAMLResponse"
+      }
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_login_1080" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_login.name
+  priority        = 1080
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('scannerdetection-v33-stable')"
+    }
+  }
+  # exclusions apply on every path, not only the endpoint kind named
+  preconfigured_waf_config {
+    exclusion {
+      target_rule_set = "scannerdetection-v33-stable"
+      request_query_param {
+        operator = "EQUALS"
+        value    = "SAMLResponse"
+      }
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_login_1090" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_login.name
+  priority        = 1090
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('protocolattack-v33-stable')"
+    }
+  }
+  # exclusions apply on every path, not only the endpoint kind named
+  preconfigured_waf_config {
+    exclusion {
+      target_rule_set = "protocolattack-v33-stable"
+      request_query_param {
+        operator = "EQUALS"
+        value    = "SAMLResponse"
+      }
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_login_1100" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_login.name
+  priority        = 1100
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('sessionfixation-v33-stable')"
+    }
+  }
+  # exclusions apply on every path, not only the endpoint kind named
+  preconfigured_waf_config {
+    exclusion {
+      target_rule_set = "sessionfixation-v33-stable"
+      request_query_param {
+        operator = "EQUALS"
+        value    = "SAMLResponse"
+      }
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_login_1110" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_login.name
+  priority        = 1110
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('cve-canary')"
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_login_1120" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_login.name
+  priority        = 1120
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('java-v33-stable')"
+    }
+  }
+}
+
 resource "google_compute_region_backend_service" "svc_login" {
-  name                  = "ciam-prod-svc-login"
-  region                = var.region
-  load_balancing_scheme = "EXTERNAL"
-  protocol              = "TCP"
-  port_name             = "ciam"
-  health_checks         = [google_compute_region_health_check.svc_login.id]
+  name                    = "ciam-prod-svc-login"
+  region                  = var.region
+  load_balancing_scheme   = "EXTERNAL_MANAGED"
+  protocol                = "HTTPS"
+  port_name               = "ciam"
+  health_checks           = [google_compute_region_health_check.svc_login.id]
+  session_affinity        = "GENERATED_COOKIE"
+  affinity_cookie_ttl_sec = 3600
+  security_policy         = google_compute_region_security_policy.svc_login.self_link
   backend {
     group           = google_compute_instance_group.svc_login_us_central1_a.self_link
-    balancing_mode  = "CONNECTION"
+    balancing_mode  = "UTILIZATION"
     capacity_scaler = 1.0
   }
+}
+
+resource "google_compute_region_url_map" "svc_login" {
+  name            = "ciam-prod-svc-login"
+  region          = var.region
+  default_service = google_compute_region_backend_service.svc_login.id
+}
+
+resource "google_compute_region_target_https_proxy" "svc_login" {
+  name    = "ciam-prod-svc-login"
+  region  = var.region
+  url_map = google_compute_region_url_map.svc_login.id
+  # UNBOUND: no Certificate Manager certificate holds this service's certificate here
+  ssl_policy = google_compute_region_ssl_policy.svc_login.id
 }
 
 resource "google_compute_forwarding_rule" "svc_login" {
   name                  = "ciam-prod-svc-login"
   region                = var.region
-  load_balancing_scheme = "EXTERNAL"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
   ip_protocol           = "TCP"
-  ports                 = ["443"]
+  port_range            = "443"
   ip_address            = data.google_compute_address.svc_login.address
-  backend_service       = google_compute_region_backend_service.svc_login.id
+  network               = data.google_compute_network.main.self_link
+  network_tier          = "STANDARD"
+  target                = google_compute_region_target_https_proxy.svc_login.id
   labels = {
     service    = "login-example-aero-test"
     managed_by = "opsdir"
@@ -722,11 +1042,6 @@ resource "google_dns_record_set" "svc_login" {
   type         = "A"
   ttl          = 300
   rrdatas      = [google_compute_forwarding_rule.svc_login.ip_address]
-}
-
-data "google_compute_address" "svc_sso" {
-  name   = "ciam-standby-sso"
-  region = var.region
 }
 
 resource "google_compute_instance_group" "svc_sso_us_central1_a" {
@@ -749,12 +1064,38 @@ resource "google_compute_instance_group" "svc_sso_us_central1_b" {
   }
 }
 
+data "google_compute_address" "svc_sso" {
+  name   = "ciam-standby-sso"
+  region = var.region
+}
+
+resource "google_compute_region_ssl_policy" "svc_sso" {
+  name            = "ciam-prod-svc-sso"
+  region          = var.region
+  profile         = "MODERN"
+  min_tls_version = "TLS_1_2"
+}
+
 resource "google_compute_region_health_check" "svc_sso" {
   name   = "ciam-prod-svc-sso"
   region = var.region
-  tcp_health_check {
-    port = 443
+  https_health_check {
+    port         = 443
+    request_path = "/pf/heartbeat.ping"
   }
+}
+
+resource "google_compute_firewall" "svc_sso_proxies" {
+  name        = "ciam-prod-svc-sso-proxies"
+  description = "Load balancer proxies for svc-sso"
+  network     = data.google_compute_network.main.self_link
+  direction   = "INGRESS"
+  allow {
+    protocol = "tcp"
+    ports    = ["443"]
+  }
+  source_ranges = ["10.70.250.0/23"]
+  target_tags   = ["ciam-prod-pf-engine"]
 }
 
 resource "google_compute_firewall" "svc_sso_health_checks" {
@@ -766,37 +1107,330 @@ resource "google_compute_firewall" "svc_sso_health_checks" {
     protocol = "tcp"
     ports    = ["443"]
   }
-  source_ranges = ["35.191.0.0/16", "209.85.152.0/22", "209.85.204.0/22"]
+  source_ranges = ["35.191.0.0/16", "130.211.0.0/22"]
   target_tags   = ["ciam-prod-pf-engine"]
 }
 
+# not rendered: bot-control needs reCAPTCHA keys (bot management)
+
+resource "google_compute_region_security_policy" "svc_sso" {
+  name   = "ciam-prod-svc_sso"
+  region = var.region
+  type   = "CLOUD_ARMOR"
+}
+
+resource "google_compute_region_security_policy_rule" "svc_sso_1000" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_sso.name
+  priority        = 1000
+  action          = "throttle"
+  match {
+    expr {
+      expression = "request.path.matches('^/as/authorization\\.oauth2$') || request.path.matches('^/idp/SSO\\.saml2$')"
+    }
+  }
+  description = "rate-login"
+  rate_limit_options {
+    conform_action = "allow"
+    exceed_action  = "deny(429)"
+    enforce_on_key = "IP"
+    rate_limit_threshold {
+      count        = 300
+      interval_sec = 300
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_sso_1010" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_sso.name
+  priority        = 1010
+  action          = "throttle"
+  match {
+    expr {
+      expression = "request.path.matches('^/as/token\\.oauth2$')"
+    }
+  }
+  description = "rate-token"
+  rate_limit_options {
+    conform_action = "allow"
+    exceed_action  = "deny(429)"
+    enforce_on_key = "IP"
+    rate_limit_threshold {
+      count        = 600
+      interval_sec = 300
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_sso_1020" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_sso.name
+  priority        = 1020
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('sqli-v33-stable')"
+    }
+  }
+  # exclusions apply on every path, not only the endpoint kind named
+  preconfigured_waf_config {
+    exclusion {
+      target_rule_set = "sqli-v33-stable"
+      request_query_param {
+        operator = "EQUALS"
+        value    = "SAMLResponse"
+      }
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_sso_1030" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_sso.name
+  priority        = 1030
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('xss-v33-stable')"
+    }
+  }
+  # exclusions apply on every path, not only the endpoint kind named
+  preconfigured_waf_config {
+    exclusion {
+      target_rule_set = "xss-v33-stable"
+      request_query_param {
+        operator = "EQUALS"
+        value    = "SAMLResponse"
+      }
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_sso_1040" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_sso.name
+  priority        = 1040
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('lfi-v33-stable')"
+    }
+  }
+  # exclusions apply on every path, not only the endpoint kind named
+  preconfigured_waf_config {
+    exclusion {
+      target_rule_set = "lfi-v33-stable"
+      request_query_param {
+        operator = "EQUALS"
+        value    = "SAMLResponse"
+      }
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_sso_1050" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_sso.name
+  priority        = 1050
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('rfi-v33-stable')"
+    }
+  }
+  # exclusions apply on every path, not only the endpoint kind named
+  preconfigured_waf_config {
+    exclusion {
+      target_rule_set = "rfi-v33-stable"
+      request_query_param {
+        operator = "EQUALS"
+        value    = "SAMLResponse"
+      }
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_sso_1060" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_sso.name
+  priority        = 1060
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('rce-v33-stable')"
+    }
+  }
+  # exclusions apply on every path, not only the endpoint kind named
+  preconfigured_waf_config {
+    exclusion {
+      target_rule_set = "rce-v33-stable"
+      request_query_param {
+        operator = "EQUALS"
+        value    = "SAMLResponse"
+      }
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_sso_1070" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_sso.name
+  priority        = 1070
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('methodenforcement-v33-stable')"
+    }
+  }
+  # exclusions apply on every path, not only the endpoint kind named
+  preconfigured_waf_config {
+    exclusion {
+      target_rule_set = "methodenforcement-v33-stable"
+      request_query_param {
+        operator = "EQUALS"
+        value    = "SAMLResponse"
+      }
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_sso_1080" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_sso.name
+  priority        = 1080
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('scannerdetection-v33-stable')"
+    }
+  }
+  # exclusions apply on every path, not only the endpoint kind named
+  preconfigured_waf_config {
+    exclusion {
+      target_rule_set = "scannerdetection-v33-stable"
+      request_query_param {
+        operator = "EQUALS"
+        value    = "SAMLResponse"
+      }
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_sso_1090" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_sso.name
+  priority        = 1090
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('protocolattack-v33-stable')"
+    }
+  }
+  # exclusions apply on every path, not only the endpoint kind named
+  preconfigured_waf_config {
+    exclusion {
+      target_rule_set = "protocolattack-v33-stable"
+      request_query_param {
+        operator = "EQUALS"
+        value    = "SAMLResponse"
+      }
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_sso_1100" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_sso.name
+  priority        = 1100
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('sessionfixation-v33-stable')"
+    }
+  }
+  # exclusions apply on every path, not only the endpoint kind named
+  preconfigured_waf_config {
+    exclusion {
+      target_rule_set = "sessionfixation-v33-stable"
+      request_query_param {
+        operator = "EQUALS"
+        value    = "SAMLResponse"
+      }
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_sso_1110" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_sso.name
+  priority        = 1110
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('cve-canary')"
+    }
+  }
+}
+
+resource "google_compute_region_security_policy_rule" "svc_sso_1120" {
+  region          = var.region
+  security_policy = google_compute_region_security_policy.svc_sso.name
+  priority        = 1120
+  action          = "deny(403)"
+  match {
+    expr {
+      expression = "evaluatePreconfiguredWaf('java-v33-stable')"
+    }
+  }
+}
+
 resource "google_compute_region_backend_service" "svc_sso" {
-  name                  = "ciam-prod-svc-sso"
-  region                = var.region
-  load_balancing_scheme = "EXTERNAL"
-  protocol              = "TCP"
-  port_name             = "ciam"
-  health_checks         = [google_compute_region_health_check.svc_sso.id]
+  name                    = "ciam-prod-svc-sso"
+  region                  = var.region
+  load_balancing_scheme   = "EXTERNAL_MANAGED"
+  protocol                = "HTTPS"
+  port_name               = "ciam"
+  health_checks           = [google_compute_region_health_check.svc_sso.id]
+  session_affinity        = "GENERATED_COOKIE"
+  affinity_cookie_ttl_sec = 3600
+  security_policy         = google_compute_region_security_policy.svc_sso.self_link
   backend {
     group           = google_compute_instance_group.svc_sso_us_central1_a.self_link
-    balancing_mode  = "CONNECTION"
+    balancing_mode  = "UTILIZATION"
     capacity_scaler = 1.0
   }
   backend {
     group           = google_compute_instance_group.svc_sso_us_central1_b.self_link
-    balancing_mode  = "CONNECTION"
+    balancing_mode  = "UTILIZATION"
     capacity_scaler = 1.0
   }
+}
+
+resource "google_compute_region_url_map" "svc_sso" {
+  name            = "ciam-prod-svc-sso"
+  region          = var.region
+  default_service = google_compute_region_backend_service.svc_sso.id
+}
+
+resource "google_compute_region_target_https_proxy" "svc_sso" {
+  name                             = "ciam-prod-svc-sso"
+  region                           = var.region
+  url_map                          = google_compute_region_url_map.svc_sso.id
+  certificate_manager_certificates = ["projects/example-aero-ciam-standby/locations/us-central1/certificates/sso-tls-2026"]
+  ssl_policy                       = google_compute_region_ssl_policy.svc_sso.id
 }
 
 resource "google_compute_forwarding_rule" "svc_sso" {
   name                  = "ciam-prod-svc-sso"
   region                = var.region
-  load_balancing_scheme = "EXTERNAL"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
   ip_protocol           = "TCP"
-  ports                 = ["443"]
+  port_range            = "443"
   ip_address            = data.google_compute_address.svc_sso.address
-  backend_service       = google_compute_region_backend_service.svc_sso.id
+  network               = data.google_compute_network.main.self_link
+  network_tier          = "STANDARD"
+  target                = google_compute_region_target_https_proxy.svc_sso.id
   labels = {
     service    = "sso-example-aero-test"
     managed_by = "opsdir"
@@ -809,6 +1443,26 @@ resource "google_dns_record_set" "svc_sso" {
   type         = "A"
   ttl          = 300
   rrdatas      = [google_compute_forwarding_rule.svc_sso.ip_address]
+}
+
+resource "google_dns_managed_zone" "fwd_corp_ad_0" {
+  name        = "ciam-prod-fwd-corp-ad-0"
+  dns_name    = "corp.example-aero.internal."
+  visibility  = "private"
+  description = "Forwards corp.example-aero.internal (fwd-corp-ad)"
+  private_visibility_config {
+    networks {
+      network_url = data.google_compute_network.main.self_link
+    }
+  }
+  forwarding_config {
+    target_name_servers {
+      ipv4_address = "10.40.0.53"
+    }
+    target_name_servers {
+      ipv4_address = "10.40.0.54"
+    }
+  }
 }
 
 data "google_secret_manager_secret" "am_admin_password" {

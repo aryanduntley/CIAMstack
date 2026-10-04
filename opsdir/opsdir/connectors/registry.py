@@ -180,4 +180,5 @@ def secret_command(uri, installed=ADAPTERS):
 
 def services(installed=ADAPTERS):
     """What connectors provide to adapters while rendering, resolved against the installed adapters."""
-    return Services(secret_command=partial(secret_command, installed=installed))
+    return Services(secret_command=partial(secret_command, installed=installed),
+                    endpoints=tuple(e for a in installed for e in a.endpoints))

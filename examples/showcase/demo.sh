@@ -123,6 +123,7 @@ od modify --change CHG-2003 changes/CHG-2003-stable-ldaps-name.ldif
 od modify --change CHG-2005 changes/CHG-2005-credential-roles.ldif
 od modify --change CHG-2011 changes/CHG-2011-job-owners.ldif
 od modify --change CHG-2013 changes/CHG-2013-corporate-ca.ldif
+od modify --change CHG-2015 changes/CHG-2015-target-ad-forwarder.ldif
 od history
 od render target/prod >/dev/null
 diff -ru out/before/terraform out/target-prod/terraform

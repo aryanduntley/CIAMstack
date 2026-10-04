@@ -7,6 +7,7 @@ from types import MappingProxyType
 from .common import AWS, AZ, CON, DECL, ENVS, GCP, INTS, XA, cert, chg, owner, spec, t
 from .custom import RESIDENCY
 from .access import ACCESS
+from .edge import EDGE, SERVICE_ATTRS
 from .observability import MONITORING
 
 SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password", "ds-tls-keystore",
@@ -31,6 +32,8 @@ SOURCE = MappingProxyType({
                 ("subnet-ig-a", "subnet-ig", "subnet-0e99fa00b11c22d3a", "10.20.10.0/24", "us-east-1a")],
     "services": [("svc-ldaps", "ds-ldaps-service", "ldap.id.example-aero.test", "id.example-aero.test",
                   "Z0EXAMPLE1PRIVATE", "ds", [1636], "10.20.1.100", None, "ds-ldaps-2026"),
+                 # the public names are on the corporate DNS team's Infoblox (edge: zone-public); Route 53's public
+                 # zone (the pipeline may change it) delegates them there
                  ("svc-sso", "pf-sso-service", "sso.example-aero.test", "example-aero.test",
                   "Z0EXAMPLE2PUBLIC", "pf-engine", [443], "198.51.100.20", "eipalloc-0a1b2c3d4e5f60001", "sso-tls-2026"),
                  ("svc-login", "am-service", "login.example-aero.test", "example-aero.test",
@@ -74,6 +77,8 @@ SOURCE = MappingProxyType({
     "monitoring": MONITORING["source"],
     # the cloud identities the principals act as, the guardrails over it, the ways operators come in (access)
     "access": ACCESS["source"],
+    # DNS zones, forwarders, the SSO certificate in the cloud's store, edge subnets; what the source's edge runs (edge)
+    "edge": EDGE["source"], "service_attrs": SERVICE_ATTRS["source"],
     # compute groups: (name, binding role, server role, provider ref, image, size, min, desired, max, zones, tokens)
     "compute": (("asg-pf-engine", "compute-pf-engine", "pf-engine",
                  "arn:aws:autoscaling:us-east-1:111122223333:autoScalingGroup:6d4c1f0e-0000-4000-8000-00000000a001:"
@@ -140,6 +145,8 @@ TARGET = MappingProxyType({
     # alert channels, log destinations, alarms and checks Azure Monitor runs (planted: audit retention, no disk alarm)
     "monitoring": MONITORING["target"],
     "access": ACCESS["target"],
+    # DNS zones, forwarders, the SSO certificate in the cloud's store, edge subnets; what the source's edge runs (edge)
+    "edge": EDGE["target"], "service_attrs": SERVICE_ATTRS["target"],
     # planted: the domain's Communication Services identity isn't DKIM-verified yet and its DMARC is weaker; no bus
     # carries the identity audit stream
     "sending": (("mail-acs", "mail-sending", "example-aero.test",
@@ -206,6 +213,8 @@ STANDBY = MappingProxyType({
     "streams": (("audit-topic", "audit-events", f"{PROJECT}/topics/ciam-audit", "topic"),),
     "monitoring": MONITORING["standby"],
     "access": ACCESS["standby"],
+    # DNS zones, forwarders, the SSO certificate in the cloud's store, edge subnets; what the source's edge runs (edge)
+    "edge": EDGE["standby"], "service_attrs": SERVICE_ATTRS["standby"],
     "compute": (("mig-pf-engine", "compute-pf-engine", "pf-engine",
                  f"{PROJECT}/regions/us-central1/instanceGroupManagers/ciam-pf-engine",
                  GIMG + "pingfederate-12-1-4-rhel9", "n2-standard-2", 2, 2, 4, ("us-central1-a", "us-central1-b"),
@@ -248,7 +257,8 @@ def _bindings(file, env, p):
                    ciamCidr=cidr, ciamZone=zone) for cn, role, ref, cidr, zone in p["subnets"]),
             *(spec(file, b(cn), ["top", "ciamServiceName"], cn=cn, ciamBindingRole=role, ciamFqdn=fqdn,
                    ciamDnsZone=zone, ciamDnsZoneRef=zref, ciamTargetRole=trole, ciamPort=ports, ciamFrontendIp=ip,
-                   ciamProviderRef=pref, ciamTlsCertificate=cert(tls)[0] if tls else None)
+                   ciamProviderRef=pref, ciamTlsCertificate=cert(tls)[0] if tls else None,
+                   **(p.get("service_attrs") or {}).get(cn, {}))
               for cn, role, fqdn, zone, zref, trole, ports, ip, pref, tls in p["services"]),
             *(spec(file, b(cn), ["top", "ciamFirewallRule"], cn=cn, ciamBindingRole=role, ciamSourceCidr=cidrs,
                    ciamPort=ports, ciamTargetRole=trole, ciamProtocol="tcp",
@@ -282,7 +292,8 @@ def _bindings(file, env, p):
             *(spec(file, b(cn), ["top", "ciamStreamBinding"], cn=cn, ciamBindingRole=role, ciamProviderRef=ref,
                    ciamStreamKind=kind) for cn, role, ref, kind in p.get("streams") or ()),
             *(spec(file, b(cn), ["top", oc], cn=cn, ciamBindingRole=role, **attrs)
-              for oc, cn, role, attrs in (*(p.get("monitoring") or ()), *(p.get("access") or ()))),
+              for oc, cn, role, attrs in (*(p.get("monitoring") or ()), *(p.get("access") or ()),
+                                          *(p.get("edge") or ()))),
             *((_interconnect(file, b, *p["interconnect"]),) if p.get("interconnect") else ()))
 
 

@@ -19,9 +19,9 @@ matching Terraform resource, so the same mapping reads them as reads Terraform s
   elbv2 describe-target-health          TargetHealthDescriptions  -> aws_lb_target_group_attachment; the output doesn't
                                                                      name its target group: save it as
                                                                      target-health/<target group name>.json
-  route53 list-resource-record-sets     ResourceRecordSets        -> aws_route53_record (alias records); the output
-                                                                     doesn't name its zone: save it as
-                                                                     route53/<hosted zone ID>.json
+  route53 list-resource-record-sets     ResourceRecordSets        -> aws_route53_record (alias and other records,
+                                                                     TTLs, routing); the output doesn't name its zone:
+                                                                     save it as route53/<hosted zone ID>.json
   secretsmanager list-secrets           SecretList                -> aws_secretsmanager_secret (+ rotation, last
                                                                      rotated); values are never listed
   kms describe-key                      KeyMetadata               -> aws_kms_key (+ aws_kms_replica_key), customer
@@ -38,6 +38,8 @@ matching Terraform resource, so the same mapping reads them as reads Terraform s
   scheduler get-schedule                ScheduleExpression        -> aws_scheduler_schedule (enabled; one per file)
   codepipeline get-pipeline             pipeline                  -> aws_codepipeline (its ARN from metadata)
   codebuild batch-get-projects          projects                  -> aws_codebuild_project
+  The edge: load balancer and target group attributes, web ACLs, Shield, CloudFront, hosted zones, resolver rules:
+                                                                  see cli_edge.py
   IAM: get-account-authorization-details, key and bucket policies, resource policies, control policies, Identity
   Center, the policy simulator's verdicts                         -> see cli_iam.py
 Network resources outside the listed VPCs are counted, not read; secrets, keys, buckets, functions, pipelines and build
@@ -51,13 +53,14 @@ from opsdir.core.contract import Importer
 from opsdir.core.directory import gtime
 from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_document
+from .cli_edge import KEYS as EDGE_KEYS, attributes, edge_pairs, record_attributes
 from .cli_iam import KEYS as IAM_KEYS, iam_pairs
 from .inventory import PROVIDER, pairs_resources
 
 KEYS = ("Vpcs", "Subnets", "Reservations", "SecurityGroups", "SecurityGroupRules", "NatGateways", "LoadBalancers",
         "TagDescriptions", "Listeners", "TargetGroups", "TargetHealthDescriptions", "ResourceRecordSets", "SecretList",
         "KeyMetadata", "KeyRotationEnabled", "Buckets", "Functions", "Rules", "Targets", "ScheduleExpression",
-        "pipeline", "projects", *IAM_KEYS, "Tags")         # Tags last: other outputs carry tags too
+        "pipeline", "projects", *IAM_KEYS, *EDGE_KEYS, "Tags")   # Tags last: other outputs carry tags too
 IN_VPC = ("aws_subnet", "aws_instance", "aws_security_group", "aws_lb", "aws_nat_gateway")
 ACCOUNT_WIDE = ("secret", "key", "storage", "job", "identity")
 
@@ -163,8 +166,11 @@ def _load_balancers(outs):
     lbs = _all(outs, "LoadBalancers")
     addresses = [(z.get("SubnetId"), a) for lb in lbs for z in lb.get("AvailabilityZones") or ()
                  for a in (z.get("LoadBalancerAddresses") or ())]
+    settings = attributes(outs, "lb-attributes")
     return [*(("aws_lb", {"arn": lb.get("LoadBalancerArn"), "name": lb.get("LoadBalancerName"),
                           "internal": lb.get("Scheme") == "internal", "dns_name": _dns(lb.get("DNSName")),
+                          "load_balancer_type": lb.get("Type"), "security_groups": lb.get("SecurityGroups") or [],
+                          "idle_timeout": settings.get(lb.get("LoadBalancerName"), {}).get("idle_timeout.timeout_seconds"),
                           "vpc_id": lb.get("VpcId"), "tags": tags.get(lb.get("LoadBalancerArn"), {}),
                           "subnet_mapping": [{"subnet_id": z.get("SubnetId"),
                                               "private_ipv4_address": a.get("PrivateIPv4Address"),
@@ -185,12 +191,24 @@ def _forwarding(outs):
     def forwards(action):
         return action.get("TargetGroupArn") or next(
             (t.get("TargetGroupArn") for t in (action.get("ForwardConfig") or {}).get("TargetGroups") or ()), None)
+    settings = attributes(outs, "tg-attributes")
+
+    def stickiness(name):
+        a = settings.get(name, {})
+        return [{"enabled": a.get("stickiness.enabled") == "true", "type": a.get("stickiness.type"),
+                 "cookie_duration": a.get("stickiness.lb_cookie.duration_seconds")}] if a else []
     return ([*(("aws_lb_listener", {"load_balancer_arn": ls.get("LoadBalancerArn"), "port": ls.get("Port"),
+                                    "protocol": ls.get("Protocol"), "ssl_policy": ls.get("SslPolicy"),
                                     "default_action": [{"type": a.get("Type"), "target_group_arn": forwards(a)}
                                                        for a in ls.get("DefaultActions") or ()]})
                for ls in _all(outs, "Listeners")),
-             *(("aws_lb_target_group", {"arn": g.get("TargetGroupArn"), "name": g.get("TargetGroupName"),
-                                        "port": g.get("Port")}) for g in groups),
+             *(("aws_lb_target_group", {
+                 "arn": g.get("TargetGroupArn"), "name": g.get("TargetGroupName"), "port": g.get("Port"),
+                 "protocol": g.get("Protocol"),
+                 "health_check": [{"protocol": g.get("HealthCheckProtocol"), "path": g.get("HealthCheckPath")}],
+                 "stickiness": stickiness(g.get("TargetGroupName")),
+                 "deregistration_delay": settings.get(g.get("TargetGroupName"), {}).get(
+                     "deregistration_delay.timeout_seconds")}) for g in groups),
              *(("aws_lb_target_group_attachment", {"target_group_arn": by_name[name],
                                                    "target_id": (t.get("Target") or {}).get("Id")})
                for _, name, doc in health if name in by_name for t in doc.get("TargetHealthDescriptions") or ())],
@@ -200,12 +218,15 @@ def _forwarding(outs):
 
 
 def _records(outs):
-    """Alias records of each zone's listing, the zone from the file name (route53/<hosted zone ID>.json)."""
+    """Each zone's record sets (aliases, and the others with their TTLs, values and routing), the zone from the file
+    name (route53/<hosted zone ID>.json); a zone's own NS and SOA records are the zone's, not read."""
     return [("aws_route53_record", {"name": _dns(r.get("Name")), "zone_id": _stem(p), "type": r.get("Type"),
+                                    **record_attributes(r),
                                     "alias": [{"name": _dns(r["AliasTarget"].get("DNSName")),
-                                               "zone_id": r["AliasTarget"].get("HostedZoneId")}]})
+                                               "zone_id": r["AliasTarget"].get("HostedZoneId")}]
+                                    if r.get("AliasTarget") else []})
             for p, k, doc in outs if k == "ResourceRecordSets"
-            for r in doc.get("ResourceRecordSets") or () if r.get("AliasTarget")]
+            for r in doc.get("ResourceRecordSets") or () if r.get("Type") not in ("NS", "SOA")]
 
 
 def _secrets(outs):
@@ -303,7 +324,7 @@ def cli_resources(texts, at=None):
     pairs, scope_notices = _scoped([*_network(outs), *_instances(outs), *_security_groups(outs),
                                     *_load_balancers(outs), *forwarding, *_records(outs), *_secrets(outs), *keys,
                                     *(("aws_s3_bucket", {"bucket": b.get("Name")}) for b in _all(outs, "Buckets")),
-                                    *jobs, *iam])
+                                    *jobs, *iam, *edge_pairs(outs, _dns)])
     resources, rule_notices = pairs_resources(pairs)
     return resources, (*unknown, *target_notices, *key_notices, *job_notices, *iam_notices, *scope_notices,
                        *rule_notices)

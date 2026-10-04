@@ -46,6 +46,8 @@ import re
 from collections import Counter
 
 from opsdir.core.contract import Importer
+from opsdir_adapter_gcp.edge_inventory import (FORWARDING, backend_of, dns_resources, edge_services, ref_key,
+                                               proxy_subnets, service_dns, service_facts)
 from opsdir_adapter_gcp.health_checks import is_probe_rule
 from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, layout_import, of_types, per_file,
                                    realization_roles, resource, tagged_role)
@@ -152,10 +154,12 @@ def _ports(rule):
 def _firewall(found):
     """(firewall rules, notices): ingress allow rules, named by their descriptions' (fw-name) when their name is the
     rendered ciam-<env>-<fw-name> (a description that just ends in parentheses names nothing), else their name; rules
-    admitting only Google Cloud's health-check probes belong to load balancers and are left out."""
-    tag_roles = _tag_roles(found)
+    admitting only Google Cloud's health-check probes, or only a proxy-only subnet, belong to load balancers and are
+    left out."""
+    tag_roles, proxies = _tag_roles(found), proxy_subnets(found)
     rules = [r for r in of_types(found, "google_compute_firewall")
-             if r.get("name") and not is_probe_rule(r.get("source_ranges"))]
+             if r.get("name") and not is_probe_rule(r.get("source_ranges"))
+             and not (r.get("source_ranges") and set(r.get("source_ranges")) <= proxies)]
 
     def name(r):
         m = _RULE_NAME.search(r.get("description") or "")
@@ -186,28 +190,40 @@ def _rule_ports(fr):
 
 
 def _services(found):
-    """A service per forwarding rule: the Cloud DNS name holding its address, its ports (a one-port range read as
-    its port; none from wider ranges or a rule forwarding all ports), its instances' role."""
-    backends = {resource_id(b.get("id")): b for b in of_types(found, "google_compute_region_backend_service",
-                                                              "google_compute_backend_service")}
+    """A service per forwarding rule (regional or global): the Cloud DNS name holding its address (its TTL and weighted
+    routing), its ports (a one-port range read as its port; none from wider ranges or a rule forwarding all ports), its
+    instances' role, and what its edge runs."""
     groups = {resource_id(g.get("id")): g for g in of_types(found, "google_compute_instance_group")}
     roles = {resource_id(a.get("id")): _server_role(a) for a in of_types(found, "google_compute_instance")}
-    records = of_types(found, "google_dns_record_set")
 
     def one_rule(fr):
-        backend = backends.get(resource_id(fr.get("backend_service"))) or {}
+        backend = backend_of(found, fr)[0] or {}
         members = [resource_id(i) for b in blocks(backend.get("backend"))
                    for i in (groups.get(resource_id(b.get("group"))) or {}).get("instances") or ()]
         found_roles = Counter(roles[i] for i in members if roles.get(i))
         ip = fr.get("ip_address")
-        record = next((r for r in records if r.get("type") == "A" and ip in (r.get("rrdatas") or ())), None)
+        dns, record, _ = service_dns(found, ip)
+        facts, settings = service_facts(found, fr)
         return resource("service", resource_id(fr.get("id")), {
             "ciamFqdn": (record or {}).get("name", "").rstrip(".") or None,
             "ciamDnsZoneRef": (record or {}).get("managed_zone"),
             "ciamPort": sorted({str(p) for p in _rule_ports(fr)}, key=int),
             "ciamTargetRole": found_roles.most_common(1)[0][0] if found_roles else None,
-            "ciamFrontendIp": ip}, name=fr.get("name"), role=_role(fr))
-    return tuple(one_rule(fr) for fr in of_types(found, "google_compute_forwarding_rule") if fr.get("id"))
+            "ciamFrontendIp": ip, "ciamEdgeFact": facts, "ciamEdgeSetting": settings, **dns},
+            name=fr.get("name"), role=_role(fr))
+    return tuple(one_rule(fr) for fr in of_types(found, *FORWARDING) if fr.get("id"))
+
+
+def _edge(found):
+    """The edge services, zones, records and forwarders, and notices for the other environments' answers."""
+    rules = [fr for fr in of_types(found, *FORWARDING) if fr.get("id")]
+    served = {key: resource_id(fr.get("id")) for fr in rules for b in (backend_of(found, fr)[0],) if b
+              for key in (ref_key(b.get("id")), ref_key(b.get("self_link"))) if key}
+    answers = [(fr.get("ip_address"), service_dns(found, fr.get("ip_address"))) for fr in rules]
+    zones, records, forwarders = dns_resources(found, {id(r) for _, (_, r, _) in answers if r is not None})
+    return ((*edge_services(found, served), *zones, *records, *forwarders),
+            tuple(f"Cloud DNS answer {a} answers for another environment of the name {ip} serves: not recorded here"
+                  for ip, (_, _, others) in answers for a in others))
 
 
 def _egress(found):
@@ -377,10 +393,11 @@ def pairs_resources(pairs):
     (Terraform state as it is; inventories normalized to the same attribute names)."""
     rules, rule_notices = _firewall(pairs)
     iam, iam_notices = iam_resources(pairs)
+    edge, edge_notices = _edge(pairs)
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *rules, *_secrets(pairs),
              *_keys(pairs), *_storage(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
              *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs), *_canaries(pairs),
-             *iam), (*rule_notices, *iam_notices))
+             *iam, *edge), (*rule_notices, *iam_notices, *edge_notices))
 
 
 def state_resources(text):

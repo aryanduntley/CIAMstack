@@ -226,7 +226,8 @@ def test_a_service_from_its_forwarding_rule_backends_health_and_zone_file():
         ("443",), ("sso.example.test",), ("ciam-public",))
     svc = services["ciam-prod-svc-ldaps"]
     assert svc.attrs == {"ciamFqdn": ("ldaps.gcp.example.test",), "ciamDnsZoneRef": ("ciam-private",),
-                         "ciamPort": ("1636",), "ciamTargetRole": ("ds",), "ciamFrontendIp": ("10.30.1.100",)}
+                         "ciamPort": ("1636",), "ciamTargetRole": ("ds",), "ciamFrontendIp": ("10.30.1.100",),
+                         "ciamEdgeFact": ("tls-mode passthrough",), "ciamTtlSeconds": ("300",)}
 
 
 def test_references_with_project_numbers_read_as_ids():

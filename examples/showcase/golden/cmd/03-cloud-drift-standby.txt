@@ -3,5 +3,17 @@ standby/prod: 1 identity resource(s) not in the record and naming no role, e.g. 
 target/prod: not a Google Cloud environment in the record; not imported
 modify cn=ds-2,env=prod,cloud=standby,ou=environments,dc=ciam-ops
     replace ciamInstanceSize: n2-standard-8
-1 change(s) (not applied)
+modify cn=svc-apps,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+    replace ciamEdgeFact: tls-mode passthrough
+    replace ciamTtlSeconds: 300
+modify cn=svc-ldaps,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+    replace ciamEdgeFact: tls-mode passthrough
+    replace ciamTtlSeconds: 300
+modify cn=svc-login,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+    replace ciamEdgeFact: tls-mode passthrough
+    replace ciamTtlSeconds: 300
+modify cn=svc-sso,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+    replace ciamEdgeFact: tls-mode passthrough
+    replace ciamTtlSeconds: 300
+5 change(s) (not applied)
 exit 0

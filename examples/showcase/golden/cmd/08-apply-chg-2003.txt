@@ -1,2 +1,3 @@
 CHG-2003: modify cn=svc-ldaps,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2003: modify cn=zone-private,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 exit 0

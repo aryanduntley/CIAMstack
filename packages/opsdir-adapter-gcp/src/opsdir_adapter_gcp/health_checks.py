@@ -1,13 +1,15 @@
-"""Google Cloud's health-check probe sources for passthrough network load balancers (docs.cloud.google.com,
+"""Google Cloud's health-check probe sources for its load balancers (docs.cloud.google.com,
 load-balancing/docs/health-check-concepts). A firewall rule admitting them belongs to a load balancer, not to the
 record's firewall rules: the renderer adds one per service and the importers leave them out."""
 
 _PROBES = {"INTERNAL": ("35.191.0.0/16",),
-           "EXTERNAL": ("35.191.0.0/16", "209.85.152.0/22", "209.85.204.0/22")}
+           "EXTERNAL": ("35.191.0.0/16", "209.85.152.0/22", "209.85.204.0/22"),
+           "MANAGED": ("35.191.0.0/16", "130.211.0.0/22")}       # application (proxy) load balancers
 
 
 def probe_ranges(scheme):
-    """The probe source ranges for a load balancing scheme (INTERNAL or EXTERNAL, backend-service based)."""
+    """The probe source ranges for a load balancing scheme (INTERNAL or EXTERNAL, backend-service based; MANAGED,
+    application load balancers)."""
     return _PROBES[scheme]
 
 

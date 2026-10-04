@@ -58,6 +58,8 @@ from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, l
 from opsdir.core.sources import json_document
 from opsdir.domains.messaging.dns import dmarc_policy, spf_authorizes
 from opsdir_format_terraform.state import read_state
+from .edge_inventory import (dns_resources, edge_services, fqdn, frontdoor_endpoints, frontdoor_origins,
+                             gateway_facts, lb_facts, traffic_routing)
 from .iam import iam_resources
 
 PROVIDER = "azure"
@@ -157,24 +159,48 @@ def _nic_roles(found):
     return {n: _tags(vm)["Role"] for vm in of_types(found, *VMS) if _tags(vm).get("Role") for n in _vm_nics(vm)}
 
 
-def _dns_records(found):
-    """(fqdn, zone, addresses, target resource id) of each A record, public and private."""
-    return tuple((a.get("zone_name") if a.get("name") == "@" else f"{a.get('name')}.{a.get('zone_name')}",
-                  a.get("zone_name"), tuple(a.get("records") or ()), _low(a.get("target_resource_id")))
-                 for a in of_types(found, "azurerm_dns_a_record", "azurerm_private_dns_a_record")
-                 if a.get("name") and a.get("zone_name"))
+def answer_record(found, ip, pip_id):
+    """The DNS record answering for a frontend: an A record holding its address (or naming its public IP), else a
+    CNAME to the Front Door endpoint whose origin it is, else a CNAME to the Traffic Manager profile routing to it."""
+    a = next((r for r in of_types(found, "azurerm_dns_a_record", "azurerm_private_dns_a_record")
+              if (ip and ip in (r.get("records") or ())) or (pip_id and _low(r.get("target_resource_id")) == pip_id)),
+             None)
+    if a is not None or not ip:
+        return a
+    profile = frontdoor_origins(found).get(ip)
+    endpoint = {p: host for host, p in frontdoor_endpoints(found).items()}.get(profile)
+    _, _, manager = traffic_routing(found, ip)
+    targets = {t for t in (endpoint, (manager or {}).get("fqdn")) if t}
+    return next((r for r in of_types(found, "azurerm_dns_cname_record") if (r.get("record") or "").rstrip(".") in
+                 targets), None)
+
+
+def _frontend_of(fe, pips):
+    """(address, public IP) of a frontend IP configuration."""
+    pip = pips.get(_low(fe.get("public_ip_address_id")))
+    return (fe.get("private_ip_address") if not fe.get("public_ip_address_id") else (pip or {}).get("ip_address")), pip
+
+
+def _service(kind_ref, name, role, found, ip, pip, ports, roles, facts, settings, tags):
+    record = answer_record(found, ip, _low((pip or {}).get("id")))
+    routed, _, _ = traffic_routing(found, ip)
+    return resource("service", kind_ref, {
+        "ciamFqdn": fqdn(record) if record else tags.get("Service"),
+        "ciamDnsZone": (record or {}).get("zone_name"),
+        "ciamPort": ports, "ciamTargetRole": roles.most_common(1)[0][0] if roles else None, "ciamFrontendIp": ip,
+        "ciamProviderRef": (pip or {}).get("name"), "ciamTtlSeconds": (record or {}).get("ttl"),
+        "ciamEdgeFact": facts, "ciamEdgeSetting": settings, **routed}, name=name, role=role)
 
 
 def _services(found):
-    """A service per load balancer: its DNS name, zone, rule ports, the role behind its pools, its frontend."""
+    """A service per load balancer and per Application Gateway: its DNS name, zone and TTL, ports, the role behind it,
+    its frontend, and what its edge runs."""
     pips = {_low(p.get("id")): p for p in of_types(found, "azurerm_public_ip")}
-    records, nic_roles = _dns_records(found), _nic_roles(found)
+    nic_roles, nics = _nic_roles(found), _nics(found)
+    roles_by_ip = {ip: nic_roles[n] for n, (ip, _) in nics.items() if n in nic_roles and ip}
 
     def one_lb(lb):
-        fe = _first(lb.get("frontend_ip_configuration")) or {}
-        pip = pips.get(_low(fe.get("public_ip_address_id")))
-        ip = fe.get("private_ip_address") if not fe.get("public_ip_address_id") else (pip or {}).get("ip_address")
-        record = next((r for r in records if (ip and ip in r[2]) or (pip and r[3] == _low(pip.get("id")))), None)
+        ip, pip = _frontend_of(_first(lb.get("frontend_ip_configuration")) or {}, pips)
         rules = [r for r in of_types(found, "azurerm_lb_rule") if _low(r.get("loadbalancer_id")) == _low(lb.get("id"))]
         pools = {_low(p.get("id")) for p in of_types(found, "azurerm_lb_backend_address_pool")
                  if _low(p.get("loadbalancer_id")) == _low(lb.get("id"))}
@@ -182,15 +208,37 @@ def _services(found):
                         for a in of_types(found, "azurerm_network_interface_backend_address_pool_association")
                         if _low(a.get("backend_address_pool_id")) in pools
                         and nic_roles.get(_low(a.get("network_interface_id"))))
-        return resource("service", lb.get("id"), {
-            "ciamFqdn": record[0] if record else _tags(lb).get("Service"),
-            "ciamDnsZone": record[1] if record else None,
-            "ciamPort": sorted({str(r.get("frontend_port")) for r in rules if r.get("frontend_port")}),
-            "ciamTargetRole": roles.most_common(1)[0][0] if roles else None,
-            "ciamFrontendIp": ip,
-            "ciamProviderRef": (pip or {}).get("name")},
-            name=lb.get("name"), role=_role(lb))
-    return tuple(one_lb(lb) for lb in of_types(found, "azurerm_lb"))
+        facts, settings = lb_facts(lb, found)
+        return _service(lb.get("id"), lb.get("name"), _role(lb), found, ip, pip,
+                        sorted({str(r.get("frontend_port")) for r in rules if r.get("frontend_port")}), roles,
+                        facts, settings, _tags(lb))
+
+    def one_gateway(gw):
+        ip, pip = _frontend_of(_first(gw.get("frontend_ip_configuration")) or {}, pips)
+        roles = Counter(roles_by_ip[a] for p in gw.get("backend_address_pool") or ()
+                        for a in p.get("ip_addresses") or () if a in roles_by_ip)
+        facts, settings = gateway_facts(gw)
+        return _service(gw.get("id"), gw.get("name"), _role(gw), found, ip, pip,
+                        sorted({str(p.get("port")) for p in gw.get("frontend_port") or () if p.get("port")}), roles,
+                        facts, settings, _tags(gw))
+    return (*(one_lb(lb) for lb in of_types(found, "azurerm_lb")),
+            *(one_gateway(gw) for gw in of_types(found, "azurerm_application_gateway")))
+
+
+def _edge(found, services):
+    """The edge services, zones, records and forwarders, and notices for the other environments' answers."""
+    by_address = {s.attrs["ciamFrontendIp"][0]: s.ref for s in services if "ciamFrontendIp" in s.attrs}
+    gateways = {_low(g.get("firewall_policy_id")): g.get("id") for g in of_types(found, "azurerm_application_gateway")
+                if g.get("firewall_policy_id")}
+    pips = {_low(p.get("id")): p for p in of_types(found, "azurerm_public_ip")}
+    frontends = [_frontend_of(_first(x.get("frontend_ip_configuration")) or {}, pips)
+                 for x in of_types(found, "azurerm_lb", "azurerm_application_gateway")]
+    served = {id(r) for ip, pip in frontends for r in (answer_record(found, ip, _low((pip or {}).get("id"))),) if r}
+    zones, records, forwarders = dns_resources(found, served)
+    others = [(ip, t) for ip, _ in frontends for t in traffic_routing(found, ip)[1]]
+    return ((*edge_services(found, by_address, gateways), *zones, *records, *forwarders),
+            tuple(f"Traffic Manager endpoint {t} answers for another environment of the name {ip} serves: not recorded "
+                  "here" for ip, t in others))
 
 
 def _guarded_roles(found):
@@ -511,10 +559,12 @@ def pairs_resources(pairs):
     (Terraform state as it is; CLI output normalized to the same attribute names, opsdir_adapter_azure.cli)."""
     rules, rule_notices = _firewall(pairs)
     iam, iam_notices = iam_resources(pairs)
-    return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *rules, *_secrets(pairs),
+    services = _services(pairs)
+    edge, edge_notices = _edge(pairs, services)
+    return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *services, *rules, *_secrets(pairs),
              *_keys(pairs), *_storage(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
-             *_canaries(pairs), *iam), (*rule_notices, *iam_notices))
+             *_canaries(pairs), *iam, *edge), (*rule_notices, *iam_notices, *edge_notices))
 
 
 def state_resources(text):

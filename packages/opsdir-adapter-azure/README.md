@@ -17,12 +17,49 @@ Per environment, `terraform/providers.tf` (`hashicorp/azurerm ~> 4.0`; `subscrip
 | One network security group per server role | `azurerm_network_security_group` `nsg-ciam-<env>-<role>` |
 | Firewall rules | `azurerm_network_security_rule`, inbound allow; priority from `ciamRulePriority`. An unpinned rule takes the next free slot (100, 110, …) with a `# NOTE` asking for it to be pinned, so adding a rule never renumbers others |
 | Servers | NIC (static private address in the server's subnet), NSG association, `azurerm_linux_virtual_machine` (size, zone, `source_image_id`, SSH key only; OS disk `Premium_LRS` encrypted with the `disk-encryption` binding's disk encryption set, `ciamProviderRef`, else an `UNBOUND` comment; tags `Role`, `Hostname`, `Product`, `ManagedBy`) |
-| Service names | Standard load balancer: an internal frontend (static `ciamFrontendIp` in the first target's subnet, zones 1–3) or the public IP named by the service's `ciamProviderRef`; a backend pool of the servers with the target role; a TCP probe and rule per `ciamPort`; an A record in `ciamDnsZone` (private DNS for an internal address) |
+| Service names | Standard load balancer: an internal frontend (static `ciamFrontendIp` in the first target's subnet, zones 1–3) or the public IP named by the service's `ciamProviderRef`; a backend pool of the servers with the target role; a TCP probe and rule per `ciamPort`; an A record in `ciamDnsZone` (private DNS for an internal address). A service whose role a traffic or protection policy names (core `edge` domain) is tuned or replaced by it: see [Edge](#edge-traffic-and-protection-policies) |
 | Secret references (`azkv://<vault>/<name>`) | Per vault: `data` Key Vault and its secret names (`azurerm_key_vault_secrets`), with a postcondition per secret, so a missing secret fails the plan with its role. Names only: `azurerm_key_vault_secret` would copy each value into Terraform state, so it is never rendered |
 | Workload principals (core `access` domain: kind `workload`, `ciamTargetRole` a server role here) | Per principal: `azurerm_user_assigned_identity` (named by its identity binding's provider ref, else `ciam-<env>-<server role>`) set on the role's VMs (`identity { type = "UserAssigned" }`), and one `azurerm_role_assignment` per permission from the access table below at the narrowest scope: the secret or key in its vault (`${data.azurerm_key_vault.<v>.id}/secrets/<name>`, Key Vault's RBAC model), the storage container, the resource a stream's or log destination's provider ref names; `data` vaults and storage accounts the scopes need; a permission that can't be granted is a `# NOTE` |
 | Interconnects; required roles without a binding | Comments: the landing zone provides interconnects; `# UNBOUND: required role …` |
 
 Not rendered: egress (NAT gateways), backup targets (`azblob://`), Key Vault keys and disk encryption sets (referenced by ID, not created), Windows VMs.
+
+## Edge: traffic and protection policies
+
+A service name whose role an `edge` traffic or protection policy names (`ou=edge-policies`) is rendered from it; one no policy names renders as above. Health paths, rate-limit targets and exclusions come from the endpoints the product adapters declare, unless a policy's `ciamEndpointPath` moves one.
+
+| From the policies | Rendered as |
+|---|---|
+| TLS mode `passthrough` (or none) | The Standard load balancer above; its probes take the policy's health check (`Tcp`, `Http`, `Https` with `request_path`, interval, failed probes), its rules `ciamIdleTimeoutSeconds` (4–30 minutes) and `SourceIP` distribution for `source-ip` stickiness |
+| TLS mode `terminate` / `reencrypt` | An Application Gateway v2 (zones 1–3, autoscaling 2–10) in the subnet bound to role `subnet-edge` (Application Gateway needs its own subnet; without the binding, an `UNBOUND` comment): the public IP named by the service's `ciamProviderRef` or the static private `ciamFrontendIp`; a backend pool of the servers' addresses; per port a listener with the predefined TLS policy for (`ciamTlsMinVersion`, `ciamTlsProfile`) and the certificate the environment keeps in Key Vault (an `azkv-cert://<vault>/<name>` certificate reference, read through the gateway's own user-assigned identity granted `Key Vault Secrets User` on the vault), backend settings over `Http` (terminate) or `Https` (reencrypt, host name the service's) with cookie affinity, request timeout, draining and a probe (the policy's health check, status 200–399) |
+| Protection policy with firewall rules, rate limits, address or country rules | SKU `WAF_v2` and an `azurerm_web_application_firewall_policy` (mode `Prevention`, `Detection` for `detect`): custom rules for addresses (`IPMatch`), countries (`GeoMatch`; `allow` negated), rate limits (`RateLimitRule` on the endpoint paths as regular expressions, by client address, one or five minutes with the threshold scaled), the Default Rule Set 2.1 and Bot Manager 1.1 by category, exclusions by request argument, header or cookie name |
+| `ciamDdosTier` `network-advanced` / `application-advanced` | A comment: DDoS Network Protection is a plan linked to the virtual network the landing zone keeps (or IP Protection on the public address) |
+
+| TLS terms | Predefined policy |
+|---|---|
+| 1.2 modern / intermediate / compatible | `AppGwSslPolicy20220101S` / `AppGwSslPolicy20220101` / `AppGwSslPolicy20170401S` (nearest) |
+| 1.3, any profile | `AppGwSslPolicy20220101S` (nearest: no predefined policy is TLS 1.3 only) |
+
+| WAF category | Managed rule set |
+|---|---|
+| `core-rules`, `known-bad-inputs` | `Microsoft_DefaultRuleSet` 2.1 |
+| `bot-control`, `ip-reputation` | `Microsoft_BotManagerRuleSet` 1.1 |
+| `account-takeover`, `account-creation-fraud` | none (a comment names them) |
+
+
+### DNS
+
+Nothing is rendered into a zone whose binding names `ciamManagedBy` (someone outside the platform runs it): a comment names them, and the plan drafts the request. A name that routes between environments (`ciamRoutingPolicy` `failover-primary` / `failover-secondary` / `weighted` on the service names of several environments) is answered from the environment holding the primary (a weighted set: the first by label), which renders every environment's answer; the others render a comment.
+
+| From the record | Rendered as |
+|---|---|
+| A service name | Its A record with `ciamTtlSeconds` (300 when not recorded); routed, an `azurerm_traffic_manager_profile` (`Priority` for a failover pair, `Weighted` for a weighted set; TTL; TCP monitoring on the first port), every environment's address an `azurerm_traffic_manager_external_endpoint` (priority by order, or weight), and a CNAME to the profile (Azure DNS has no failover of its own). Traffic Manager answers public names only: a routed private name keeps one private record (a comment) |
+| DNS records | `azurerm_dns_<type>_record` (A, AAAA, CNAME, TXT, MX, SRV, CAA, NS) or `azurerm_private_dns_<type>_record` in a private zone (no CAA or NS there: a comment), relative name (`@` for the apex), TTL; MX, SRV and CAA values taken apart into their record blocks |
+| Outbound forwarders | Per domain an `azurerm_private_dns_resolver_forwarding_rule` in `var.dns_forwarding_ruleset_id` (the landing zone's ruleset; declared only when there are forwarders), a target per `ciamForwardTarget`. Inbound forwarders: a comment (the resolver's inbound endpoint) |
+
+### CDN
+
+A protection policy with `ciamCdn` puts Front Door in front of the service (`Premium_AzureFrontDoor` when it inspects requests, else Standard): profile, endpoint, an origin group probing the policy's health check, the origin (the Application Gateway when TLS terminates at the edge, else the Standard load balancer, TLS then ending at Front Door; by its public address, with the service name as host header and the origin's certificate name checked), the service name as a custom domain (the certificate the environment keeps in Key Vault as a Front Door secret, else a managed certificate; TLS 1.2 minimum) validated by a `_dnsauth` TXT record, a route sending everything over HTTPS without caching. The protection policy becomes a Front Door firewall policy (custom IP, country and rate-limit rules, the Default Rule Set and Bot Manager, exclusions by post argument, query argument, header or cookie name) attached to the domain by a security policy; the gateway behind it keeps no WAF policy (`Standard_v2`). The service's DNS name is a CNAME to the endpoint. Front Door's service principal needs `Key Vault Secrets User` on the vault and the origins should admit only Front Door (service tag `AzureFrontDoor.Backend`): both the landing zone's. A private origin needs Private Link: a comment.
 
 ## Reading an environment back from Terraform state
 
@@ -80,6 +117,20 @@ The importer fills in everything else from the state. Where the source names a r
 
 **Secrets.** Secret values are never read: a Key Vault secret is recorded from its vault and name alone, and the reader drops whatever the state marks sensitive before anything sees it.
 
+### The edge, read back
+
+What the edge runs comes back in the edge domain's terms (`opsdir_adapter_azure.edge_inventory`; only what someone chose, the TLS mode always kept):
+
+| Azure resource | Record entry |
+|---|---|
+| `azurerm_lb` (rules, probes) | facts on its service name: `tls-mode passthrough`, an HTTP(S) probe as `health`, `SourceIP` distribution as `stickiness source-ip`, an idle timeout other than 4 minutes |
+| `azurerm_application_gateway` | a service name (DNS name from the record answering for its frontend, listener ports, the role of the servers its pools hold) with `tls-mode` terminate/reencrypt, `tls-min` / `tls-profile` from its predefined policy, `health`, `stickiness cookie`, `idle-timeout` (not 30), `drain` |
+| the service's DNS answer | an A record holding its address, a CNAME to the Front Door endpoint fronting it, or a CNAME to the Traffic Manager profile routing to it: TTL, and from Traffic Manager the routing (priority: primary/secondary; weight); the profile's other endpoints are named |
+| `azurerm_web_application_firewall_policy`, `azurerm_cdn_frontdoor_firewall_policy` | edge services `waf` (`waf-mode`, `waf-category` from the managed rule sets, `rate-limit` from custom rules named `rate<kind>`, `ip-rule`, `geo-rule`; exclusions and others as settings) of the gateway using it or the service the Front Door fronts |
+| `azurerm_cdn_frontdoor_profile` (+ origin) | edge service `cdn` of the service whose public address its origin names |
+| `azurerm_network_ddos_protection_plan` | edge service `ddos` (`network-advanced`; role from its tags) |
+| `azurerm_dns_zone`, `azurerm_private_dns_zone`, other `azurerm_(private_)dns_<type>_record`s, `azurerm_private_dns_resolver_forwarding_rule` | DNS zones, records (MX, SRV, CAA values joined), forwarders |
+
 ## Reading an environment from the Azure CLI
 
 Where there is no Terraform state (or to check it against what the subscription actually runs), `azure/cli-inventory` reads the JSON the Azure CLI prints. Collect it once per environment, into one folder per `<cloud>/<env>`; file names are free, because every item says what it is (its ARM `type`, or for Key Vault its URL):
@@ -97,10 +148,10 @@ az network nsg list -g $RG -o json                          > $out/nsgs.json
 az network nat gateway list -g $RG -o json                  > $out/nat-gateways.json
 az disk-encryption-set list -g $RG -o json                  > $out/disk-encryption-sets.json
 for zone in $(az network dns zone list -g $RG --query '[].name' -o tsv); do
-  az network dns record-set a list -g $RG -z "$zone" -o json          > "$out/dns-$zone.json"
+  az network dns record-set list -g $RG -z "$zone" -o json            > "$out/dns-$zone.json"     # every type
 done
 for zone in $(az network private-dns zone list -g $RG --query '[].name' -o tsv); do
-  az network private-dns record-set a list -g $RG -z "$zone" -o json  > "$out/private-dns-$zone.json"
+  az network private-dns record-set list -g $RG -z "$zone" -o json    > "$out/private-dns-$zone.json"
 done
 az storage container-rm list --storage-account $SA -g $RG -o json     > $out/containers.json   # with metadata
 az keyvault secret list --vault-name $KV -o json                      > $out/kv-secrets.json   # names, never values
@@ -112,6 +163,27 @@ done
 az functionapp list -g $RG -o json                                     > $out/functionapps.json
 for app in $(az functionapp list -g $RG --query '[].name' -o tsv); do
   az functionapp function list -g $RG -n "$app" -o json                > "$out/functions-$app.json"   # timer schedules
+done
+
+# the edge: gateways, WAF policies, Front Door, DDoS plans, Traffic Manager, DNS zones, forwarding rules
+az network application-gateway list -g $RG -o json            > $out/gateways.json
+az network application-gateway waf-policy list -g $RG -o json > $out/waf-policies.json
+az network ddos-protection list -g $RG -o json                > $out/ddos.json
+az network traffic-manager profile list -g $RG -o json        > $out/traffic-manager.json
+az network dns zone list -g $RG -o json                       > $out/dns-zones.json
+az network private-dns zone list -g $RG -o json               > $out/private-dns-zones.json
+az afd profile list -g $RG -o json                            > $out/afd-profiles.json
+for p in $(az afd profile list -g $RG --query '[].name' -o tsv); do
+  az afd endpoint list -g $RG --profile-name "$p" -o json        > "$out/afd-$p-endpoints.json"
+  az afd security-policy list -g $RG --profile-name "$p" -o json > "$out/afd-$p-security-policies.json"
+  az afd origin-group list -g $RG --profile-name "$p" -o json    > "$out/afd-$p-origin-groups.json"
+  for g in $(az afd origin-group list -g $RG --profile-name "$p" --query '[].name' -o tsv); do
+    az afd origin list -g $RG --profile-name "$p" --origin-group-name "$g" -o json > "$out/afd-$p-$g-origins.json"
+  done
+done
+az network front-door waf-policy list -g $RG -o json          > $out/front-door-waf.json
+for rs in $(az dns-resolver forwarding-ruleset list -g $RG --query '[].name' -o tsv); do
+  az dns-resolver forwarding-rule list -g $RG --ruleset-name "$rs" -o json > "$out/forwarding-rules-$rs.json"
 done
 
 # access control: identities, assignments (inherited and through groups), roles, PIM, deny assignments, policies
@@ -201,11 +273,22 @@ It adds no required roles, planner checks or schema of its own; the environment'
 
 - **Not yet run against a live subscription.** The Terraform and the importer follow the `hashicorp/azurerm` 4.x schema; `terraform validate`/`plan` against a real subscription is part of the testing plan (milestone 7.2).
 - **Linux only.** Servers render as Linux VMs with SSH keys; the importer reads Windows VMs but the renderer doesn't write them.
-- **What the importers can't see:** container metadata other than a role, the identity a disk encryption set uses, role assignments and Key Vault access policies in CLI output and ARM/Bicep deployments (Terraform state only, for now), private endpoints, Application Gateway / Front Door (edge, milestone 4.8), scale sets and AKS clusters, and the monitoring above (action groups, workspaces, alerts, web tests), in CLI output and ARM/Bicep deployments (Terraform state only, for now).
+- **Edge.** Application Gateway WAF exclusions apply on every path, not only the endpoint kind a policy names; a rate limit keyed by a header is grouped by client address; Application Gateway v2 validates the servers' certificates (chain and name) whatever `ciamBackendValidation` says; DDoS Network Protection isn't rendered (the landing zone's virtual network).
+- **What the importers can't see:** container metadata other than a role, the identity a disk encryption set uses, role assignments and Key Vault access policies in CLI output and ARM/Bicep deployments (Terraform state only, for now), private endpoints, Application Gateway / Front Door (read back with milestone 4.8's importers), scale sets and AKS clusters, and the monitoring above (action groups, workspaces, alerts, web tests), in CLI output and ARM/Bicep deployments (Terraform state only, for now).
 
 ## Tests
 
+`tests/test_azure_cli_edge.py`: the edge from CLI output: a gateway with its WAF policy, Front Door, a DDoS plan, DNS zones and record sets of several types (a service's CNAME, the apex NS left to the zone), forwarding rules: the same facts and edge services as from state.
+
+`tests/test_azure_edge_state.py`: the edge read back from state: an Application Gateway's facts, a load balancer routed by Traffic Manager, WAF policies, Front Door and a DDoS plan as edge services, zones, records and forwarding rules.
+
 `tests/test_azure.py` (registration, vocabulary, secret resolution), `tests/test_azure_state.py` (the state importer: round trip, drift, new resources and role sources, rules, services, secrets never read, layout), `tests/test_azure_cli.py` (the CLI importer: round trip over `az` output shapes, drift from `key show` and rotation policies, network scoping, counted listings, unrecognized items), `tests/test_azure_arm.py` (the ARM importer: round trip over a Bicep-style template and its deployment, drift, `resourceId()` links, secure parameters never read, what the deployment didn't produce, no deployment, the evaluator), `tests/test_azure_messaging.py` (an email domain verified or not by its DNS, SPF and DMARC; queues and topics as stream carriers), `tests/test_azure_observability.py` (action groups as alert channels, workspaces with their retention, metric and log-query alerts and standard web tests with what they realize), `tests/test_azure_compute.py` (a scale set with its autoscale capacity, an AKS cluster with its pools and enabled add-ons), `tests/test_azure_jobs.py` (a function app with its runtime and timer schedules from state, CLI output and an ARM template; app settings never read), `tests/test_azure_state_store.py` (state and CLI against Postgres: imported under an approved change, re-import changes nothing). The rendered Terraform is covered end to end by the showcase's golden outputs (`examples/showcase`, the target environment).
+
+`tests/test_azure_cdn.py`: Front Door over the gateway with its firewall policy and Key Vault certificate, Standard over the load balancer with a managed certificate, a private origin, the gateway behind keeping no WAF.
+
+`tests/test_azure_dns.py`: routing as Traffic Manager from the primary (priority and weighted, CNAME), records by type and zone visibility, outbound forwarders as ruleset rules.
+
+`tests/test_azure_edge.py`: the edge: TLS terms as predefined policies and back, a gateway in the edge subnet with its Key Vault certificate through its identity, probe, affinity, draining and WAF policy, what's unbound without the subnet or certificate, a private frontend, the WAF policy's custom and managed rules and exclusions, what Azure lacks, DDoS asked of the landing zone.
 
 `tests/test_azure_cli_iam.py`: access control from the CLI and `az rest`: a federated identity, conditional and custom-role assignments, PIM named by its own output, an everyone deny assignment with an exclusion, vault access policies, policy assignments, a bastion.
 

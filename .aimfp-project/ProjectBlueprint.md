@@ -1,7 +1,7 @@
 # CIAMstack - Project Blueprint
 
 **Version**: 1.11
-**Status**: Paths 1-4 completed; path 5 (Stack Coverage) in progress: 4.1-4.7 and 4.12 done (PingFederate depth, hidden automation, host baseline & Kubernetes workloads, messaging & external services, data profile, observability, platform IAM & admin plane, Google Cloud), 4.8 next; Updates U.6 (shared helpers) and U.7 (deferred notes 352, 331) done, U.4 (package READMEs) open
+**Status**: Paths 1-4 completed; path 5 (Stack Coverage) in progress: 4.1-4.8 and 4.12 done (PingFederate depth, hidden automation, host baseline & Kubernetes workloads, messaging & external services, data profile, observability, platform IAM & admin plane, edge & traffic protection, Google Cloud), 4.9 next; Updates U.6 (shared helpers), U.7 (deferred notes 352, 331) and U.10 (interaction graph) done, U.4 (package READMEs) open
 **Last Updated**: 2026-10-02
 **AIMFP Compliance**: Strict
 
@@ -170,7 +170,15 @@ Schema OIDs: each owner has an arc (PEN .1 core/domains, .2 showcase user schema
   trust, workforce access, guardrails) with planner requests; IAM read from Terraform state and CLI output on all
   three clouds; effective access allowed/denied/unknown; access/evaluate.sh for the AWS simulator and Google's
   Policy Troubleshooter; showcase principals, identities and planted access findings) (2026-10-02)
-- Next: edge (4.8), network depth (4.9, with the GCP firewall model as a per-environment choice:
+- Done also: 4.8 edge & traffic protection (core domain `edge`: traffic and protection policies, header contracts and
+  the endpoints products declare as intent; DNS zones (with who runs them), records with TTLs and routing, forwarders
+  and edge services as bindings; what load balancers, WAFs, DDoS protection and CDNs run read back as facts; layer 7
+  load balancers that re-encrypt where a policy terminates TLS, WAF/Cloud Armor, Shield/DDoS plans, CloudFront /
+  Front Door / Cloud CDN, Route 53 / Azure DNS / Cloud DNS rendered from whatever the record holds; planner checks
+  for unstated/missing behaviour, spoofable headers, sensitive endpoints, TTL lowering dated before cutover and
+  drafted requests to the zone keeper; importers from state and CLI on all three clouds; showcase edge story with
+  planted findings and approved change CHG-2015) (2026-10-03)
+- Next: network depth (4.9, with the GCP firewall model as a per-environment choice:
   network tags or firewall policies with secure tags), data services/backup/DR (4.10), cloud governance (4.11)
 
 ### Path 6: Renderers & Targets
@@ -183,7 +191,9 @@ Schema OIDs: each owner has an arc (PEN .1 core/domains, .2 showcase user schema
 - Management interfaces, validation against real products (first an existing AWS platform, then a staging move AWS -> Azure; validation/ folder), SPEC 1.0, docs & showcase, AI interface (MCP server, incl. a consumer verification tool)
 
 Post-completion paths: Added Features (998), Updates (999; open: U.4 package READMEs to a common standard; U.5 no
-secret values in rendered Terraform state, completed).
+secret values in rendered Terraform state, completed; U.10 interaction graph matches the code, completed: every
+statically resolvable call recorded, calls inside untracked private helpers on their public caller, Python -> SQL
+trigger edges kept, plugin dispatch through the registry not recorded).
 
 ---
 

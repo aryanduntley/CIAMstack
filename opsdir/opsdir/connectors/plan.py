@@ -14,6 +14,7 @@ from typing import NamedTuple, Optional
 
 from ..core.contract import PlanContext
 from .access import access_check
+from .edge import edge_check
 from ..core.directory import children, date_of, follow, get, one, rdn_value, values
 from ..core.environment import EnvModel, one_role, of_class
 from ..core.findings import findings, merge_findings, owner_label, responsible
@@ -28,7 +29,8 @@ from .render import assemble, render_parts
 Plan = NamedTuple("Plan", [("src", EnvModel), ("dst", EnvModel), ("cutover", Optional[dt.date]),
                            ("as_of", dt.date), ("blockers", tuple), ("actions", tuple), ("ok", tuple),
                            ("requests", tuple),          # ((party entry, ((allowlist, new, role, by), …)), …);
-                                                         # allowlist None: a landing-zone item, new its text
+                                                         # allowlist None: an item in a system the party keeps, new
+                                                         # its text, role its topic (None: the landing zone; dns)
                            ("target_files", dict),
                            ("target_summary", str)])     # what the target renders to, in words (from its adapters)
 
@@ -157,7 +159,8 @@ def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS):
     ctx = PlanContext(d, src, dst, cutover, as_of, assemble(src, src_adapters, src_neutral, src_specific), dst_files,
                       tuple(src_neutral))
     f = merge_findings([*(run_check(check, ctx) for check in checks(adapters, domains)),
-                        run_check(access_check(src_adapters, adapters), ctx)])
+                        run_check(access_check(src_adapters, adapters), ctx),
+                        run_check(edge_check(src_adapters, adapters), ctx)])
     return Plan(src, dst, cutover, as_of, f.blockers, f.actions, f.ok, _group_requests(f.requests), dst_files,
                 render_summary(adapters))
 
@@ -187,16 +190,35 @@ def to_markdown(p):
     return "\n".join(lines)
 
 
+# What a party keeps that a request asks it to change (the topic of an item with no allowlist): (subject, where)
+_TOPICS = {None: ("Landing zone changes", "in the landing zone you keep (the rendered terraform/landing-zone/ files "
+                  "hold what we can describe)"),
+           "dns": ("DNS changes", "in the DNS zones you run")}
+
+
+def _asks(asks):
+    """((topic, items), ...) of a request's items with no allowlist, by topic in _TOPICS order."""
+    return tuple((topic, items) for topic in _TOPICS
+                 for items in ([a for a in asks if a[2] == topic],) if items)
+
+
+def _ask_lines(items):
+    return tuple(f"- {text}" + (f" Needed by {by}." if by else "") for _, text, _, by in items)
+
+
 def _landing_draft(p, mgr, asks, platform, signer):
-    """A request to whoever keeps the target's landing zone: what it should set up there before cutover."""
+    """A request to a party keeping systems the target relies on (its landing zone, DNS zones it runs): what to set up
+    or change there before cutover."""
+    (topic, first), *more = _asks(asks)
+    subject, where = _TOPICS[topic]
     return (f"To: {rdn_value(mgr)} <{one(mgr, 'mail', 'n/a')}>",
-            f"Subject: Landing zone changes needed for {p.dst.label}" + (f" before {p.cutover}" if p.cutover else ""),
+            f"Subject: {subject} needed for {p.dst.label}" + (f" before {p.cutover}" if p.cutover else ""),
             "",
             "Hello,", "",
             f"We are moving {platform} to {p.dst.label}" + (f"; planned cutover is {p.cutover}." if p.cutover else ".")
-            + " Please set up the following in the landing zone you keep (the rendered terraform/landing-zone/ files "
-            "hold what we can describe):", "",
-            *(f"- {text}" + (f" Needed by {by}." if by else "") for _, text, _, by in asks),
+            + f" Please set up the following {where}:", "",
+            *_ask_lines(first),
+            *(line for t, items in more for line in ("", f"Also, {_TOPICS[t][1]}:", "", *_ask_lines(items))),
             "", "Thank you,", signer, "", "_Generated from the operations directory._")
 
 
@@ -221,8 +243,8 @@ def _request_draft(p, mgr, items):
                f"(currently allowlisted: {', '.join(values(xa, 'ciamRecordedCidr'))}). Needed by {by}."
                for xa, new, role, by in items),
              "", "Please keep the existing entries until we confirm cutover; we'll tell you when they can go.",
-             *(("", "Also, in the landing zone you keep:", "",
-                *(f"- {text}" + (f" Needed by {by}." if by else "") for _, text, _, by in asks)) if asks else ()),
+             *(line for t, group in _asks(asks)
+               for line in ("", f"Also, {_TOPICS[t][1].split(' (')[0]}:", "", *_ask_lines(group))),
              "", "Thank you,", signer, "",
              f"_Generated from the operations directory; entries {', '.join(rdn_value(x[0]) for x in items)}._")
     return "\n".join(lines) + "\n"

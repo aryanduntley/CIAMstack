@@ -61,6 +61,15 @@ ciamDisplayName: Cloud landing zone team
 ciamOwnerKind: team
 mail: landing-zone@example-aero.test
 
+dn: cn=corporate-dns,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: corporate-dns
+ciamContactUrl: https://servicedesk.example-aero.test/dns
+ciamDisplayName: Corporate DNS team
+ciamOwnerKind: team
+mail: dns@example-aero.test
+
 dn: cn=skyline-air,ou=owners,dc=ciam-ops
 objectClass: top
 objectClass: ciamParty

@@ -36,7 +36,7 @@ def _record():
              ciamInstanceSize="Standard_D4s_v5", ciamImageRef=IMG),
         _row(f"cn=svc-ldaps,{B}", ("ciamServiceName",), cn="svc-ldaps", ciamBindingRole="ds-ldaps-service",
              ciamFqdn="ldap.id.example.test", ciamDnsZone="id.example.test", ciamTargetRole="ds", ciamPort="1636",
-             ciamFrontendIp="10.60.1.100"),
+             ciamFrontendIp="10.60.1.100", ciamEdgeFact="tls-mode passthrough", ciamTtlSeconds="300"),
         _row(f"cn=fw-app,{B}", ("ciamFirewallRule",), cn="fw-app", ciamBindingRole="fw-consumer-app",
              ciamSourceCidr=["10.30.0.0/24"], ciamPort="1636", ciamProtocol="tcp", ciamTargetRole="ds",
              ciamRulePriority="100"),

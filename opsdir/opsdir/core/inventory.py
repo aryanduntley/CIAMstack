@@ -24,6 +24,11 @@ this module places them.
                                     resource ID's last segment, a service account's account id)
   guardrail -> ciamGuardrail        matched by provider ref (a control policy, a policy assignment, a constraint)
   access    -> ciamAccessPath       matched by provider ref (single sign-on, a bastion, a proxy)
+  edge      -> ciamEdgeService      matched by provider ref (a web application firewall, a CDN, DDoS protection); a
+                                    new one without a role takes '<its kind>-<role of the service it fronts>'
+  zone      -> ciamDnsZoneBinding   matched by the zone's name
+  record    -> ciamDnsRecord        matched by the record's name and type
+  forwarder -> ciamDnsForwarder     matched by the domains it forwards
 What a source says replaces the record's value for the attributes it gives; the rest of the entry is kept. A resource
 the record doesn't have is added only when the source names its role (a tag), and is named otherwise: a role can't be
 guessed. A binding an overlay inherits from its base is left to the base environment. A link to another resource
@@ -57,10 +62,11 @@ CLASSES = MappingProxyType({"network": "ciamNetwork", "subnet": "ciamSubnetBindi
                             "sending": "ciamSendingIdentity", "stream": "ciamStreamBinding",
                             "channel": "ciamAlertChannel", "logs": "ciamLogDestination", "alarm": "ciamAlarmBinding",
                             "canary": "ciamCanaryBinding", "identity": "ciamIdentityBinding",
-                            "guardrail": "ciamGuardrail", "access": "ciamAccessPath"})
+                            "guardrail": "ciamGuardrail", "access": "ciamAccessPath", "edge": "ciamEdgeService",
+                            "zone": "ciamDnsZoneBinding", "record": "ciamDnsRecord", "forwarder": "ciamDnsForwarder"})
 BY_REF = ("network", "subnet", "egress", "job", "compute", "cluster", "sending", "stream", "channel", "logs", "alarm",
-          "canary", "identity", "guardrail", "access")                                    # matched by provider ref
-ROLE_LINKS = frozenset({"ciamEncryptedByRole"})           # links that name the linked binding's role, not its DN
+          "canary", "identity", "guardrail", "access", "edge")                            # matched by provider ref
+ROLE_LINKS = frozenset({"ciamEncryptedByRole", "ciamServiceRole"})   # links naming the linked binding's role, not DN
 ROLE_MAP = "roles.json"                         # <cloud>/<env>/roles.json: roles for what a cloud can't tag
 _UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
 
@@ -83,7 +89,21 @@ def _key(e, kind):
         return one(e, "ciamStorageRef")
     if kind == "service":
         return (one(e, "ciamFqdn") or "").lower()
+    if kind in ("zone", "record", "forwarder"):
+        return _dns_key(kind, e.attrs)
     return rdn_value(e).lower()
+
+
+def _dns_key(kind, attrs):
+    """What a DNS zone, record or forwarder is matched by: its zone name; its name and type; the domains it
+    forwards."""
+    def names(attr):
+        return tuple(sorted(v.lower().rstrip(".") for v in attrs.get(attr) or ()))
+    if kind == "zone":
+        return "|".join(names("ciamDnsZone")) or None
+    if kind == "record":
+        return "|".join((*names("ciamRecordName"), *(attrs.get("ciamRecordType") or ()))) or None
+    return "|".join(names("ciamForwardDomain")) or None
 
 
 def _resource_key(r):
@@ -95,6 +115,8 @@ def _resource_key(r):
         return (r.attrs.get("ciamStorageRef") or (None,))[0]
     if r.kind == "service":
         return ((r.attrs.get("ciamFqdn") or ("",))[0]).lower()
+    if r.kind in ("zone", "record", "forwarder"):
+        return _dns_key(r.kind, r.attrs)
     return (r.name or "").lower()
 
 
@@ -133,7 +155,32 @@ REQUIRED = MappingProxyType({
     "secret": ("ciamRefUri",), "key": ("ciamRefUri",), "storage": ("ciamStorageRef",), "egress": ("ciamCidr",),
     "job": (), "compute": ("ciamTargetRole",), "cluster": (), "sending": ("ciamSenderDomain",), "stream": (),
     "channel": ("ciamChannelKind",), "logs": ("ciamDestinationKind",), "alarm": (), "canary": (), "identity": (),
-    "guardrail": ("ciamGuardrailKind",), "access": ("ciamAccessKind",)})
+    "guardrail": ("ciamGuardrailKind",), "access": ("ciamAccessKind",), "edge": ("ciamEdgeKind",),
+    "zone": ("ciamDnsZone", "ciamZoneVisibility"), "record": ("ciamRecordName", "ciamRecordType"),
+    "forwarder": ("ciamForwardDomain", "ciamForwardTarget")})
+
+
+def zone_role(zone):
+    """The binding role a DNS zone takes when its source names none, the same in every environment."""
+    return f"zone-{zone.lower().rstrip('.')}" if zone else None
+
+
+def record_role(name, record_type):
+    """The binding role a DNS record takes when its source names none."""
+    return f"record-{record_type.lower()}-{name.lower().rstrip('.')}" if name and record_type else None
+
+
+def forwarder_role(domains):
+    """The binding role a DNS forwarder takes when its source names none: by the first domain it forwards."""
+    first = sorted(d.lower().rstrip(".") for d in domains or () if d)
+    return f"forwarder-{first[0]}" if first else None
+
+
+def _derived_role(r, roles):
+    """A new edge service's role from the role of the service it fronts ('<kind>-<service role>'), or None."""
+    fronted = roles.get(r.links.get("ciamServiceRole"))
+    return f"{r.attrs['ciamEdgeKind'][0]}-{fronted}" if r.kind == "edge" and fronted and "ciamEdgeKind" in r.attrs \
+        else None
 
 
 def _entry(dn, r, held, links, name):
@@ -179,7 +226,11 @@ def environment_groups(d, spec, resources, summarize=()):
         return (), (f"{spec}: no such environment in the record; nothing imported",)
     own, bases = _held(d, dn)
     ordered = sorted(resources, key=lambda r: (r.kind not in ("network", "subnet"), r.kind, r.ref))
-    placed = reduce(_placed(own, bases), ordered, ())
+    first = reduce(_placed(own, bases), ordered, ())
+    known = {**{r.ref: one(held or inh, "ciamBindingRole") for r, held, inh, _ in first if held or inh},
+             **{r.ref: r.role for r, held, inh, _ in first if not (held or inh) and r.role}}
+    placed = tuple((r._replace(role=_derived_role(r, known)) if not (held or inh) and r.role is None else r,
+                    held, inh, name) for r, held, inh, name in first)
     new = [(r, name) for r, held, inh, name in placed if held is None and inh is None]
     dns = {**{r.ref: (held or inh).dn for r, held, inh, _ in placed if held or inh},
            **{r.ref: _new_dn(dn, r, name) for r, name in new if r.role}}

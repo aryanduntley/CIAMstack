@@ -165,9 +165,9 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.39 NAME 'ciamRetentionDays' DESC 'Re
  21.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int' X-ORIGIN 'op
  sdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.40 NAME 'ciamManagedBy' DESC 'Party 
- that operates the external allowlist' EQUALITY distinguishedNameMatch SYNTA
- X 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-T
- YPE 'dn' X-ORIGIN 'opsdir' )
+ that operates it outside the platform (an external allowlist, a DNS zone)' 
+ EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE
+ -VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.41 NAME 'ciamExternalSystem' DESC 'W
  here the allowlist lives (partner firewall, app egress policy, SaaS IP list
  )' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VAL
@@ -1445,6 +1445,210 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.341 NAME 'ciamEncryptedByRole' DESC
  r managed key): who reads or writes the secret may also need to use that ke
  y' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VAL
  UE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.342 NAME 'ciamServiceRole' DESC 'Bin
+ ding role of a service name this applies to (each environment binds its own
+ )' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABIL
+ ITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.343 NAME 'ciamTlsMode' DESC 'How the
+  load balancer handles TLS: passthrough to the servers (layer 4), or termin
+ ate at the edge and send on in clear (terminate) or encrypted again (reencr
+ ypt); only layer 7 can inspect requests' EQUALITY caseIgnoreMatch SYNTAX 1.
+ 3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYP
+ E 'enum:passthrough|terminate|reencrypt' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.344 NAME 'ciamTlsMinVersion' DESC 'L
+ owest TLS version the edge accepts from clients' EQUALITY caseIgnoreMatch S
+ YNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-V
+ ALUE-TYPE 'enum:1.2|1.3' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.345 NAME 'ciamTlsProfile' DESC 'Ciph
+ er profile the edge offers (modern, intermediate, compatible); each cloud r
+ enders its nearest named policy' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.
+ 1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:
+ modern|intermediate|compatible' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.346 NAME 'ciamBackendValidation' DES
+ C 'What the edge checks of the servers\27 certificates when it re-encrypts:
+  nothing, a trusted root, or a trusted root and the name' EQUALITY caseIgno
+ reMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'in
+ tent' X-VALUE-TYPE 'enum:none|trusted-roots|san-match' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.347 NAME 'ciamHealthProtocol' DESC '
+ How the load balancer checks a server is healthy' EQUALITY caseIgnoreMatch 
+ SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-
+ VALUE-TYPE 'enum:tcp|http|https' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.348 NAME 'ciamHealthPath' DESC 'Path
+  of an HTTP health check, when not the product\27s declared health endpoint
+ ' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALU
+ E X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-PATTERN '^/[^ ]*$' X-ORIGI
+ N 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.349 NAME 'ciamHealthIntervalSeconds'
+  DESC 'Seconds between health checks' EQUALITY integerMatch SYNTAX 1.3.6.1.
+ 4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int
+ ' X-MIN '1' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.350 NAME 'ciamHealthyThreshold' DESC
+  'Consecutive passed checks before a server takes traffic' EQUALITY integer
+ Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'inte
+ nt' X-VALUE-TYPE 'int' X-MIN '1' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.351 NAME 'ciamUnhealthyThreshold' DE
+ SC 'Consecutive failed checks before a server stops taking traffic' EQUALIT
+ Y integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABIL
+ ITY 'intent' X-VALUE-TYPE 'int' X-MIN '1' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.352 NAME 'ciamStickiness' DESC 'Whet
+ her a client keeps reaching the same server: no, by source address, or by a
+  cookie' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SING
+ LE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:none|source-ip|cookie' X
+ -ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.353 NAME 'ciamStickinessSeconds' DES
+ C 'How long stickiness lasts' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466
+ .115.121.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int' X-MIN 
+ '1' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.354 NAME 'ciamIdleTimeoutSeconds' DE
+ SC 'Seconds an idle connection is kept open' EQUALITY integerMatch SYNTAX 1
+ .3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TY
+ PE 'int' X-MIN '1' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.355 NAME 'ciamDrainSeconds' DESC 'Se
+ conds a server leaving the pool keeps its open connections' EQUALITY intege
+ rMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'int
+ ent' X-VALUE-TYPE 'int' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.356 NAME 'ciamWafMode' DESC 'Whether
+  the web application firewall only counts what its rules match (detect) or 
+ blocks it' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SI
+ NGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:detect|block' X-ORIGIN
+  'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.357 NAME 'ciamWafCategory' DESC 'A c
+ ategory of managed rules the web application firewall applies' EQUALITY cas
+ eIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-
+ VALUE-TYPE 'enum:core-rules|known-bad-inputs|ip-reputation|bot-control|acco
+ unt-takeover|account-creation-fraud' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.358 NAME 'ciamRateLimit' DESC 'A rat
+ e limit on an endpoint kind: \27<kind> <requests>/<seconds>s per <ip|header
+ :Name>\27 (token 100/300s per ip)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.
+ 4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-PATTER
+ N '^(login|token|password-reset|registration|saml-post|health) [0-9]+/[0-9]
+ +s per (ip|header:[A-Za-z0-9-]+)$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.359 NAME 'ciamIpRule' DESC 'Addresse
+ s always allowed or refused: \27allow|deny <cidr>\27' EQUALITY caseIgnoreMa
+ tch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYP
+ E 'string' X-PATTERN '^(allow|deny) [0-9A-Fa-f:.]+/[0-9]+$' X-ORIGIN 'opsdi
+ r' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.360 NAME 'ciamGeoRule' DESC 'Countri
+ es allowed or refused: \27allow|deny <ISO 3166 codes>\27' EQUALITY caseIgno
+ reMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE
+ -TYPE 'string' X-PATTERN '^(allow|deny) [A-Z]{2}( [A-Z]{2})*$' X-ORIGIN 'op
+ sdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.361 NAME 'ciamWafExclusion' DESC 'A 
+ field a managed rule category must not inspect on an endpoint kind (SAML po
+ sts, token requests trip generic rules): \27<category> on <kind> <body|quer
+ y|header|cookie>:<name>\27' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.146
+ 6.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-PATTERN '^(co
+ re-rules|known-bad-inputs|ip-reputation|bot-control|account-takeover|accoun
+ t-creation-fraud) on (login|token|password-reset|registration|saml-post|hea
+ lth) (body|query|header|cookie):[A-Za-z0-9_.-]+$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.362 NAME 'ciamDdosTier' DESC 'DDoS p
+ rotection beyond the provider\27s standard: network-advanced (the addresses
+ ), application-advanced (layer 7 too)' EQUALITY caseIgnoreMatch SYNTAX 1.3.
+ 6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 
+ 'enum:standard|network-advanced|application-advanced' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.363 NAME 'ciamCdn' DESC 'Whether a C
+ DN serves these service names (sign-in, token and password endpoints are ne
+ ver cached)' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SING
+ LE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.364 NAME 'ciamEndpointPath' DESC 'Wh
+ ere an endpoint lives on these services when not where its product declares
+  it: \27<kind> <path>\27 (token /oauth/token)' EQUALITY caseIgnoreMatch SYN
+ TAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'stri
+ ng' X-PATTERN '^(login|token|password-reset|registration|saml-post|health) 
+ /[^ ]*$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.365 NAME 'ciamHeaderName' DESC 'HTTP
+  header an application or product trusts. Must stay the same across migrati
+ ons' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-V
+ ALUE X-PORTABILITY 'contract' X-VALUE-TYPE 'string' X-PATTERN '^[A-Za-z0-9]
+ [A-Za-z0-9_-]*$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.366 NAME 'ciamHeaderKind' DESC 'What
+  a header carries: who the user is (header-based sign-on), the client\27s a
+ ddress, the scheme or host the client used' EQUALITY caseIgnoreMatch SYNTAX
+  1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-
+ TYPE 'enum:identity|client-ip|forwarded-proto|forwarded-host|other' X-ORIGI
+ N 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.367 NAME 'ciamSetByRole' DESC 'Who s
+ ets a header: a server role (a gateway, a proxy) or a service name\27s bind
+ ing role (its load balancer)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1
+ 466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' 
+ X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.368 NAME 'ciamTrustedByRole' DESC 'A
+  server role that trusts a header' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.
+ 4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN
+  'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.369 NAME 'ciamTrustedByConsumer' DES
+ C 'A consumer that trusts a header' EQUALITY distinguishedNameMatch SYNTAX 
+ 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X-OR
+ IGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.370 NAME 'ciamHeaderValue' DESC 'Wha
+ t a header\27s value comes from (claim sub, attribute uid, the client\27s a
+ ddress)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SING
+ LE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.371 NAME 'ciamStripsInbound' DESC 'W
+ hether the setter removes the header from incoming requests, so a client ca
+ nnot supply it' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 S
+ INGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.372 NAME 'ciamZoneVisibility' DESC '
+ Whether a DNS zone answers the internet or only the networks linked to it' 
+ EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE 
+ X-PORTABILITY 'binding' X-VALUE-TYPE 'enum:public|private' X-ORIGIN 'opsdir
+ ' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.373 NAME 'ciamRecordName' DESC 'Name
+  of a DNS record' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.
+ 1.26 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'fqdn' X-ORIGIN 'ops
+ dir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.374 NAME 'ciamRecordType' DESC 'Type
+  of a DNS record' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.
+ 1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'enum:A|AAAA|CNAME|T
+ XT|MX|SRV|CAA|NS' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.375 NAME 'ciamRecordValue' DESC 'A v
+ alue a DNS record answers with' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1
+ .1466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN '
+ opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.376 NAME 'ciamTtlSeconds' DESC 'How 
+ long resolvers may cache a DNS answer, in seconds (lowered before a cutover
+ )' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE 
+ X-PORTABILITY 'binding' X-VALUE-TYPE 'int' X-MIN '0' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.377 NAME 'ciamRoutingPolicy' DESC 'H
+ ow a DNS name chooses among answers: one answer, the primary or secondary o
+ f a health-checked failover pair, or a weighted share' EQUALITY caseIgnoreM
+ atch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'bindi
+ ng' X-VALUE-TYPE 'enum:simple|failover-primary|failover-secondary|weighted'
+  X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.378 NAME 'ciamRoutingWeight' DESC 'S
+ hare of answers a weighted record gets' EQUALITY integerMatch SYNTAX 1.3.6.
+ 1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE '
+ int' X-MIN '0' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.379 NAME 'ciamForwardDomain' DESC 'A
+  domain whose queries are forwarded to other resolvers (a conditional forwa
+ rder)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 X-PORT
+ ABILITY 'binding' X-VALUE-TYPE 'fqdn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.380 NAME 'ciamForwardTarget' DESC 'A
+  resolver queries are forwarded to' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1
+ .4.1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'ip' X-ORIGIN '
+ opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.381 NAME 'ciamForwardDirection' DESC
+  'outbound: the environment\27s queries for the domains go to the targets; 
+ inbound: other networks\27 queries come in to the environment' EQUALITY cas
+ eIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILIT
+ Y 'binding' X-VALUE-TYPE 'enum:outbound|inbound' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.382 NAME 'ciamEdgeKind' DESC 'What a
+ n edge service is: a web application firewall, a CDN, DDoS protection, an A
+ PI gateway, a reverse proxy' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.14
+ 66.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'enum:waf
+ |cdn|ddos|api-gateway|reverse-proxy' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.383 NAME 'ciamEdgeFact' DESC 'What t
+ he edge runs, read back in the policies\27 terms: \27<key> <value>\27 (tls-
+ min 1.2, waf-category core-rules, rate-limit token 100/300s per ip, health 
+ https /pf/heartbeat.ping)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466
+ .115.121.1.15 X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-PATTERN '^(t
+ ls-mode|tls-min|tls-profile|backend-validation|health|stickiness|idle-timeo
+ ut|drain|waf-mode|waf-category|rate-limit|ip-rule|geo-rule|ddos|cdn) [^ ].*
+ $' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.384 NAME 'ciamEdgeSetting' DESC 'A s
+ etting the edge runs that the policies\27 terms can\27t express, in the pro
+ vider\27s own terms' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.1
+ 21.1.15 X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef ) X-ORIGIN 'opsdir' )
@@ -1470,9 +1674,11 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.7 NAME 'ciamSubnetBinding' DESC 'Subn
  et' SUP ciamBinding STRUCTURAL MUST ciamCidr MAY ciamZone X-ORIGIN 'opsdir'
   )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.8 NAME 'ciamServiceName' DESC 'Stable
-  service name + load balancer' SUP ciamBinding STRUCTURAL MUST ( ciamFqdn $
-  ciamTargetRole $ ciamPort ) MAY ( ciamDnsZone $ ciamDnsZoneRef $ ciamFront
- endIp $ ciamTlsCertificate ) X-ORIGIN 'opsdir' )
+  service name + load balancer (its DNS answer, and what the load balancer r
+ uns)' SUP ciamBinding STRUCTURAL MUST ( ciamFqdn $ ciamTargetRole $ ciamPor
+ t ) MAY ( ciamDnsZone $ ciamDnsZoneRef $ ciamFrontendIp $ ciamTlsCertificat
+ e $ ciamTtlSeconds $ ciamRoutingPolicy $ ciamRoutingWeight $ ciamEdgeFact $
+  ciamEdgeSetting ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.9 NAME 'ciamFirewallRule' DESC 'Inbou
  nd allow rule' SUP ciamBinding STRUCTURAL MUST ( ciamSourceCidr $ ciamPort 
  $ ciamTargetRole ) MAY ( ciamProtocol $ ciamAllowsConsumer $ ciamRulePriori
@@ -1776,3 +1982,42 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.73 NAME 'ciamAccessPath' DESC 'How op
  ion, a proxy, just-in-time elevation' SUP ciamBinding STRUCTURAL MUST ciamA
  ccessKind MAY ( ciamProviderRef $ ciamTrustedBy $ ciamGrant ) X-ORIGIN 'ops
  dir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.74 NAME 'ciamTrafficPolicy' DESC 'How
+  traffic reaches the servers behind service names: TLS handling and level, 
+ health checks, stickiness, timeouts' SUP ciamObject STRUCTURAL MUST ( cn $ 
+ ciamServiceRole $ ciamTlsMode ) MAY ( ciamTlsMinVersion $ ciamTlsProfile $ 
+ ciamBackendValidation $ ciamHealthProtocol $ ciamHealthPath $ ciamHealthInt
+ ervalSeconds $ ciamHealthyThreshold $ ciamUnhealthyThreshold $ ciamStickine
+ ss $ ciamStickinessSeconds $ ciamIdleTimeoutSeconds $ ciamDrainSeconds $ ci
+ amEndpointPath ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.75 NAME 'ciamProtectionPolicy' DESC '
+ What protects service names: web application firewall rules and rate limits
+ , address and country rules, DDoS protection, a CDN' SUP ciamObject STRUCTU
+ RAL MUST ( cn $ ciamServiceRole ) MAY ( ciamWafMode $ ciamWafCategory $ cia
+ mRateLimit $ ciamIpRule $ ciamGeoRule $ ciamWafExclusion $ ciamDdosTier $ c
+ iamCdn $ ciamEndpointPath ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.76 NAME 'ciamHeaderContract' DESC 'A 
+ header someone sets and applications or products trust: header-based sign-o
+ n, the client address behind a proxy' SUP ciamObject STRUCTURAL MUST ( cn $
+  ciamHeaderName $ ciamHeaderKind $ ciamSetByRole ) MAY ( ciamTrustedByRole 
+ $ ciamTrustedByConsumer $ ciamHeaderValue $ ciamStripsInbound ) X-ORIGIN 'o
+ psdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.77 NAME 'ciamDnsZoneBinding' DESC 'A 
+ DNS zone the environment publishes in, and who runs it when not the platfor
+ m' SUP ciamBinding STRUCTURAL MUST ( ciamDnsZone $ ciamZoneVisibility ) MAY
+  ( ciamProviderRef $ ciamManagedBy ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.78 NAME 'ciamDnsRecord' DESC 'A DNS r
+ ecord beyond the service names (verification, mail, delegation), with its T
+ TL and routing' SUP ciamBinding STRUCTURAL MUST ( ciamRecordName $ ciamReco
+ rdType ) MAY ( ciamRecordValue $ ciamTtlSeconds $ ciamRoutingPolicy $ ciamR
+ outingWeight $ ciamDnsZone $ ciamProviderRef ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.79 NAME 'ciamDnsForwarder' DESC 'A co
+ nditional forwarder or resolver rule: the domains it forwards and the resol
+ vers it forwards to' SUP ciamBinding STRUCTURAL MUST ( ciamForwardDomain $ 
+ ciamForwardTarget ) MAY ( ciamForwardDirection $ ciamProviderRef ) X-ORIGIN
+  'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.80 NAME 'ciamEdgeService' DESC 'A web
+  application firewall, CDN, DDoS protection, API gateway or reverse proxy i
+ n front of service names, and what it runs' SUP ciamBinding STRUCTURAL MUST
+  ciamEdgeKind MAY ( ciamServiceRole $ ciamProviderRef $ ciamEdgeFact $ ciam
+ EdgeSetting ) X-ORIGIN 'opsdir' )

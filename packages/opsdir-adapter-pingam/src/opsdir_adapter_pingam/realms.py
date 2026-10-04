@@ -1,5 +1,6 @@
 """AM realms as identity services, and where a realm's things are: its endpoint paths, its directory in an Amster
 export. Pure."""
+from opsdir.core.contract import Endpoint
 from opsdir.core.directory import is_a, one
 from opsdir.domains.federation.services import identity_services
 
@@ -8,6 +9,12 @@ SERVER_ROLES = ("am",)               # ciamServerRole / ciamTargetRole values th
 SUCCESS_NODE = "70e691a5-1e33-4ac3-a356-e7b6d60d92e0"      # AM's static nodes that end a journey
 FAILURE_NODE = "e301438c-0bd0-429c-ab0c-66126501069a"
 STATIC_NODES = (SUCCESS_NODE, FAILURE_NODE)
+# What the edge treats specially (contract.Endpoint), in any realm ('*'): journeys (sign-in, password reset and
+# registration all run through authenticate), tokens, the hosted IdP's SAML posts, readiness
+ENDPOINTS = tuple(Endpoint(kind, path, "am") for kind, path in (
+    ("login", "/am/json/realms/*/authenticate"), ("token", "/am/oauth2/access_token"),
+    ("token", "/am/oauth2/realms/*/access_token"), ("saml-post", "/am/SSOPOST/metaAlias/*"),
+    ("health", "/am/json/health/ready")))
 
 
 def realm_path(service):

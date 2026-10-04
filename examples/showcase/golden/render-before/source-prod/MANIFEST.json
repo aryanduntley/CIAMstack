@@ -317,12 +317,12 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "0be764351eaffd1913ded6b1c49a62b0ee62c0eb65fa5c7a003c6375924a1129"
+      "sha256": "73e3a8c46b6f6f7ac506d0bb45723e40f517f889ab3cbb6499ec74e1ecea32ac"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "946d8e0976325822eed184c015743cf07484026e624c8870b1affecadb35911e"
+      "sha256": "1958ee8570a1d3615302c3bb45c125ac398ff671045fbfcd91c2acc7a57fae7e"
     }
   }
 }

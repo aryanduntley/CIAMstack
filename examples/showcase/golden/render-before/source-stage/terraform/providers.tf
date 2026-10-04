@@ -14,3 +14,8 @@ terraform {
 provider "aws" {
   region = "us-east-1"
 }
+
+variable "resolver_endpoint_id" {
+  description = "The landing zone's outbound Route 53 Resolver endpoint the forwarding rules use"
+  type        = string
+}

@@ -58,6 +58,8 @@ from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, l
                                    realization_roles, resource, tagged_role)
 from opsdir.domains.messaging.dns import dmarc_policy, spf_authorizes
 from opsdir_format_terraform.state import blocks, read_state
+from .edge_inventory import (aliased_names, dns_resources, edge_services, lb_facts, lb_security_groups,
+                             service_dns)
 from .iam import iam_resources
 
 PROVIDER = "aws"
@@ -104,9 +106,11 @@ def _services(found):
     records = of_types(found, "aws_route53_record")
 
     def one_lb(lb):
-        alias = next((r for r in records for al in r.get("alias") or () if al.get("name") == lb.get("dns_name")), None)
+        names = aliased_names(found, lb)
+        alias = next((r for r in records for al in r.get("alias") or () if al.get("name") in names), None)
         listeners = [ls for ls in of_types(found, "aws_lb_listener") if ls.get("load_balancer_arn") == lb.get("arn")]
         forwarded = {act.get("target_group_arn") for ls in listeners for act in ls.get("default_action") or ()}
+        facts, settings = lb_facts(lb, listeners, [groups[g] for g in sorted(forwarded) if g in groups])
         roles = Counter(instances.get(att.get("target_id")) for att in of_types(found, "aws_lb_target_group_attachment")
                         if att.get("target_group_arn") in forwarded and instances.get(att.get("target_id")))
         mappings = lb.get("subnet_mapping") or ()
@@ -120,9 +124,18 @@ def _services(found):
             "ciamTargetRole": roles.most_common(1)[0][0] if roles else None,
             "ciamFrontendIp": private if lb.get("internal") else eips.get(allocation) or next(
                 (m.get("public_ip") for m in mappings if m.get("public_ip")), None),
-            "ciamProviderRef": None if lb.get("internal") else allocation},
+            "ciamProviderRef": None if lb.get("internal") else allocation,
+            "ciamEdgeFact": facts, "ciamEdgeSetting": settings, **(service_dns(alias) if alias else {})},
             name=lb.get("name"), role=_role(lb))
     return tuple(one_lb(lb) for lb in of_types(found, "aws_lb", "aws_alb"))
+
+
+def _served(found):
+    """The Route 53 records that are the environment's service names (aliases of its load balancers or of their
+    CloudFront distributions), by identity."""
+    names = {n for lb in of_types(found, "aws_lb", "aws_alb") for n in aliased_names(found, lb)}
+    return {id(r) for r in of_types(found, "aws_route53_record") for al in r.get("alias") or ()
+            if al.get("name") in names}
 
 
 def _target_role(sg, members):
@@ -142,12 +155,14 @@ def _port(rule):
     return str(low), None
 
 
-def _other_sources(rule):
-    """The rule's sources that aren't IPv4 ranges: IPv6 ranges, security groups, prefix lists."""
+def _other_sources(rule, balancers=frozenset()):
+    """The rule's sources that aren't IPv4 ranges: IPv6 ranges, security groups (a load balancer's is the load
+    balancer's own path to its servers, not named), prefix lists."""
     return (*(f"IPv6 range {c}" for c in (rule.get("ipv6_cidr_blocks") or ()) or
               ((rule.get("cidr_ipv6"),) if rule.get("cidr_ipv6") else ())),
             *(f"security group {g}" for g in (rule.get("security_groups") or ()) or
-              ((rule.get("referenced_security_group_id"),) if rule.get("referenced_security_group_id") else ())),
+              ((rule.get("referenced_security_group_id"),) if rule.get("referenced_security_group_id") else ())
+              if g not in balancers),
             *(f"prefix list {p}" for p in (rule.get("prefix_list_ids") or ()) or
               ((rule.get("prefix_list_id"),) if rule.get("prefix_list_id") else ())),
             *(("its own security group",) if rule.get("self") is True else ()))
@@ -156,14 +171,16 @@ def _other_sources(rule):
 def _firewall(found):
     """(firewall rules, notices): ingress rules of the security groups, grouped into the record's rules by name. The
     record holds IPv4 sources and single ports: ranges, all-ports rules and other sources are named, not recorded."""
-    groups = {a.get("id"): a for a in of_types(found, "aws_security_group")}
+    balancers = lb_security_groups(found)
+    groups = {a.get("id"): a for a in of_types(found, "aws_security_group") if a.get("id") not in balancers}
     members = reduce(lambda acc, i: {**acc, **{g: (*acc.get(g, ()), _tags(i)["Role"])
                                                 for g in i.get("vpc_security_group_ids") or ()}},
                      (i for i in of_types(found, "aws_instance") if _tags(i).get("Role")), {})
     separate = [(groups.get(r.get("security_group_id")) or {}, (r.get("cidr_ipv4"),),
                  {**r, "protocol": r.get("ip_protocol")}, _tags(r).get("Name"), _role(r),
                  r.get("security_group_rule_id") or r.get("id"))
-                for r in of_types(found, "aws_vpc_security_group_ingress_rule")]
+                for r in of_types(found, "aws_vpc_security_group_ingress_rule")
+                if r.get("security_group_id") not in balancers]
     inline = [(sg, tuple(rule.get("cidr_blocks") or ()), rule, None, None, f"{sg.get('id')}#{i}")
               for sg in groups.values() for i, rule in enumerate(sg.get("ingress") or ())]
     rules = [(_name_of(rule.get("description") or "", tag, ref), sg, tuple(c for c in cidrs if c), rule, role)
@@ -174,7 +191,7 @@ def _firewall(found):
     notices = (*(f"security group rule {n}: {why}, not a single port; not recorded" for n, why in
                  dict.fromkeys((n, _port(rule)[1]) for n, _, cidrs, rule, _ in rules if cidrs and _port(rule)[1])),
                *(f"security group rule {n}: source {s} is not an IPv4 address range; not recorded"
-                 for n, _, _, rule, _ in rules for s in _other_sources(rule)))
+                 for n, _, _, rule, _ in rules for s in _other_sources(rule, balancers)))
     return tuple(resource("firewall", name, {
                      "ciamSourceCidr": sorted({cidr for n, _, cidr, *_ in named if n == name and cidr}),
                      "ciamPort": sorted({port for n, _, _, port, *_ in named if n == name and port}, key=int),
@@ -421,10 +438,12 @@ def pairs_resources(pairs):
     (Terraform state as it is; CLI output and CloudFormation normalized to the same attribute names)."""
     rules, rule_notices = _firewall(pairs)
     iam, iam_notices = iam_resources(pairs)
+    zones, records, forwarders, dns_notices = dns_resources(pairs, _served(pairs))
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *rules, *_secrets(pairs),
              *_keys(pairs), *_storage(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
-             *_canaries(pairs), *iam), (*rule_notices, *iam_notices))
+             *_canaries(pairs), *iam, *edge_services(pairs), *zones, *records, *forwarders),
+            (*rule_notices, *iam_notices, *dns_notices))
 
 
 def state_resources(text):

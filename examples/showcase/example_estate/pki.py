@@ -43,6 +43,9 @@ CREDENTIALS = (
      "WI-CIAM-002"),
     ("sso-tls-keystore", "keystore", "RSA", 2048, ["tls"], "pkcs12", None, "TRUE", 365, "per-environment", None, None,
      None),
+    # the same certificate in each cloud's certificate store, for the edge's listeners (edge: sso-tls-certificate)
+    ("sso-tls-certificate", "private-key", "RSA", 2048, ["tls"], "pkcs12", None, "TRUE", 365, "per-environment",
+     None, None, None),
     ("pf-signing-key", "private-key", "RSA", 2048, ["signing"], "pkcs12", None, "TRUE", 730, "carry-over",
      "partners and applications trust its certificate; a new key means new metadata for every one of them", None,
      None),

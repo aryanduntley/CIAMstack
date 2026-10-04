@@ -86,6 +86,11 @@ objectClass: top
 objectClass: organizationalUnit
 ou: data-profile
 
+dn: ou=edge-policies,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: edge-policies
+
 dn: ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -114,6 +119,11 @@ objectClass: top
 objectClass: organizationalUnit
 ou: feature-flags
 description: Feature switches of the login experience (a custom record type)
+
+dn: ou=header-contracts,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: header-contracts
 
 dn: ou=identity-services,dc=ciam-ops
 objectClass: top
@@ -651,6 +661,16 @@ ciamPlannedAt: 20260923000000Z
 ciamTitle: Record the shape of the production user data (values-free data prof
  ile)
 
+dn: cn=CHG-2015,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2015
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Forward the AD domain to the domain controllers from the target env
+ ironment
+
 dn: cn=CHG-2040,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange
@@ -693,6 +713,34 @@ ciamOwnerKind: team
 mail: ciam-platform@example-aero.test
 xCostCenter: CC-1001
 
+dn: cn=client-address-login,ou=header-contracts,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamHeaderContract
+cn: client-address-login
+ciamHeaderKind: client-ip
+ciamHeaderName: X-Forwarded-For
+ciamHeaderValue: the client's address
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSetByRole: am-service
+ciamStripsInbound: TRUE
+ciamTrustedByRole: am
+description: The client's address PingAM uses for its journeys' risk nodes
+
+dn: cn=client-address-sso,ou=header-contracts,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamHeaderContract
+cn: client-address-sso
+ciamHeaderKind: client-ip
+ciamHeaderName: X-Forwarded-For
+ciamHeaderValue: the client's address
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSetByRole: pf-sso-service
+ciamStripsInbound: TRUE
+ciamTrustedByRole: pf-engine
+description: The client's address PingFederate uses for risk and audit
+
 dn: cn=cloud-landing-zone,ou=owners,dc=ciam-ops
 objectClass: top
 objectClass: ciamParty
@@ -712,6 +760,15 @@ ciamLdapSingleValue: TRUE
 ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: none
 ciamPurpose: Link to the customer / supplier organization record
+
+dn: cn=corporate-dns,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: corporate-dns
+ciamContactUrl: https://servicedesk.example-aero.test/dns
+ciamDisplayName: Corporate DNS team
+ciamOwnerKind: team
+mail: dns@example-aero.test
 
 dn: cn=customer-portal,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -1355,6 +1412,17 @@ ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.24
 ciamPiiClass: low
 ciamPurpose: Inactivity detection for lifecycle cleanup
 
+dn: cn=ldaps-passthrough,ou=edge-policies,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamTrafficPolicy
+cn: ldaps-passthrough
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamServiceRole: ds-ldaps-service
+ciamTlsMode: passthrough
+description: LDAPS passes through to the directory servers, which present its 
+ certificate
+
 dn: cn=legacy-kba-recovery,ou=feature-flags,dc=ciam-ops
 objectClass: top
 objectClass: xFeatureFlag
@@ -1549,6 +1617,20 @@ ciamScope: profile
 ciamScope: email
 ciamServedBy: cn=partners,ou=identity-services,dc=ciam-ops
 ciamTokenAuthMethod: private_key_jwt
+
+dn: cn=partner-user,ou=header-contracts,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamHeaderContract
+cn: partner-user
+ciamHeaderKind: identity
+ciamHeaderName: X-Partner-User
+ciamHeaderValue: claim sub
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSetByRole: ig
+ciamTrustedByRole: partner-portal
+description: The partner portal trusts the gateway's header for who the partne
+ r user is
 
 dn: cn=partners,ou=identity-services,dc=ciam-ops
 objectClass: top
@@ -1896,6 +1978,41 @@ ciamSkeleton:: IyBQaW5nRmVkZXJhdGUgZW5naW5lIHJ1bi5wcm9wZXJ0aWVzIChFeGFtcGxlIEF
  9CnBmLmxvZy5ldmVudGRldGFpbD0ke+6AgHBmLmxvZy5ldmVudGRldGFpbO6AgX0K
 ciamTargetRole: pf-engine
 
+dn: cn=sign-on-edge,ou=edge-policies,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamTrafficPolicy
+cn: sign-on-edge
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamServiceRole: pf-sso-service
+ciamServiceRole: am-service
+ciamStickiness: cookie
+ciamStickinessSeconds: 3600
+ciamTlsMinVersion: 1.2
+ciamTlsMode: reencrypt
+ciamTlsProfile: intermediate
+description: Sign-on terminates TLS at the edge (the firewall inspects it) and
+  re-encrypts to the servers
+
+dn: cn=sign-on-protection,ou=edge-policies,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamProtectionPolicy
+cn: sign-on-protection
+ciamDdosTier: network-advanced
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRateLimit: login 300/300s per ip
+ciamRateLimit: token 600/300s per ip
+ciamServiceRole: pf-sso-service
+ciamServiceRole: am-service
+ciamWafCategory: core-rules
+ciamWafCategory: known-bad-inputs
+ciamWafCategory: bot-control
+ciamWafExclusion: core-rules on saml-post body:SAMLResponse
+ciamWafMode: block
+description: What protects sign-on: managed rules, bots, sign-in and token rat
+ e limits
+
 dn: cn=skyline-air,ou=owners,dc=ciam-ops
 objectClass: top
 objectClass: ciamParty
@@ -2053,6 +2170,21 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamSubject: CN=sso.example-aero.test
 ciamSubjectAltName: sso.example-aero.test
 pingfedKeyPairId: sso-tls-2026
+
+dn: cn=sso-tls-certificate,ou=credentials,dc=ciam-ops
+objectClass: top
+objectClass: ciamCredential
+cn: sso-tls-certificate
+ciamBindingRole: sso-tls-certificate
+ciamContinuity: per-environment
+ciamCredentialType: private-key
+ciamExportable: TRUE
+ciamKeyAlgorithm: RSA
+ciamKeySize: 2048
+ciamKeyUsage: tls
+ciamMaterialFormat: pkcs12
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRotationDays: 365
 
 dn: cn=sso-tls-keystore,ou=credentials,dc=ciam-ops
 objectClass: top
@@ -4811,6 +4943,32 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 description: every production-grade environment keeps directory backups (RPO 2
  4 h)
 
+dn: cn=cert-sso-tls,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificateRef
+cn: cert-sso-tls
+ciamBindingRole: sso-tls-certificate
+ciamHoldsCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+ciamRefUri: aws-acm://arn:aws:acm:us-east-1:111122223333:certificate/7f3e9d21-
+ 0000-4000-8000-0000000000a1
+
+dn: cn=cert-sso-tls,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificateRef
+cn: cert-sso-tls
+ciamBindingRole: sso-tls-certificate
+ciamHoldsCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+ciamRefUri: gcp-cert://projects/example-aero-ciam-standby/locations/us-central
+ 1/certificates/sso-tls-2026
+
+dn: cn=cert-sso-tls,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificateRef
+cn: cert-sso-tls
+ciamBindingRole: sso-tls-certificate
+ciamHoldsCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+ciamRefUri: azkv-cert://kv-ciam-prod/sso-tls-2026
+
 dn: cn=companyId,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
@@ -5415,6 +5573,42 @@ ciamProtocol: tcp
 ciamRulePriority: 120
 ciamSourceCidr: 10.31.2.0/24
 ciamTargetRole: ds
+
+dn: cn=fwd-corp-ad,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDnsForwarder
+cn: fwd-corp-ad
+ciamBindingRole: forwarder-corp.example-aero.internal
+ciamForwardDirection: outbound
+ciamForwardDomain: corp.example-aero.internal
+ciamForwardTarget: 10.40.0.53
+ciamForwardTarget: 10.40.0.54
+ciamProviderRef: rslvr-rr-0a1b2c3d4e5f60001
+
+dn: cn=fwd-corp-ad,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDnsForwarder
+cn: fwd-corp-ad
+ciamBindingRole: forwarder-corp.example-aero.internal
+ciamForwardDirection: outbound
+ciamForwardDomain: corp.example-aero.internal
+ciamForwardTarget: 10.40.0.53
+ciamForwardTarget: 10.40.0.54
+ciamProviderRef: projects/example-aero-ciam-standby/managedZones/fwd-corp-ad
+
+dn: cn=fwd-corp-ad,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDnsForwarder
+cn: fwd-corp-ad
+ciamBindingRole: forwarder-corp.example-aero.internal
+ciamChangeRef: cn=CHG-2015,ou=changes,dc=ciam-ops
+ciamForwardDirection: outbound
+ciamForwardDomain: corp.example-aero.internal
+ciamForwardTarget: 10.40.0.53
+ciamForwardTarget: 10.40.0.54
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Network/dnsForwardingRulesets/dfrs-cia
+ m-prod/forwardingRules/corp-ad
 
 dn: cn=gateway,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -6885,6 +7079,15 @@ ciamBindingRole: subnet-ds
 ciamCidr: 10.60.1.0/24
 ciamProviderRef: vnet-ciam-prod/snet-ds
 
+dn: cn=snet-edge,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: snet-edge
+ciamBindingRole: subnet-edge
+ciamCidr: 10.60.250.0/24
+ciamProviderRef: vnet-ciam-prod/snet-appgw
+description: The Application Gateways' own subnet
+
 dn: cn=snet-idm,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSubnetBinding
@@ -7009,6 +7212,16 @@ ciamCidr: 10.20.3.0/24
 ciamProviderRef: subnet-0a11b22c33d44e55c
 ciamZone: us-east-1c
 
+dn: cn=subnet-edge,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: subnet-edge
+ciamBindingRole: subnet-edge
+ciamCidr: 10.70.250.0/23
+ciamProviderRef: projects/example-aero-net/regions/us-central1/subnetworks/cia
+ m-standby-proxy
+description: The proxy-only subnet the load balancers run in
+
 dn: cn=subnet-idm,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSubnetBinding
@@ -7119,11 +7332,14 @@ cn: svc-apps
 ciamBindingRole: ig-service
 ciamDnsZone: example-aero.test
 ciamDnsZoneRef: Z0EXAMPLE2PUBLIC
+ciamEdgeFact: tls-mode passthrough
+ciamEdgeFact: stickiness source-ip
 ciamFqdn: apps.example-aero.test
 ciamFrontendIp: 198.51.100.22
 ciamPort: 443
 ciamProviderRef: eipalloc-0a1b2c3d4e5f60005
 ciamTargetRole: ig
+ciamTtlSeconds: 3600
 
 dn: cn=svc-apps,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
@@ -7170,11 +7386,13 @@ cn: svc-ldaps
 ciamBindingRole: ds-ldaps-service
 ciamDnsZone: id.example-aero.test
 ciamDnsZoneRef: Z0EXAMPLE1PRIVATE
+ciamEdgeFact: tls-mode passthrough
 ciamFqdn: ldap.id.example-aero.test
 ciamFrontendIp: 10.20.1.100
 ciamPort: 1636
 ciamTargetRole: ds
 ciamTlsCertificate: cn=ds-ldaps-2026,ou=certificates,dc=ciam-ops
+ciamTtlSeconds: 60
 
 dn: cn=svc-ldaps,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
@@ -7220,11 +7438,13 @@ cn: svc-login
 ciamBindingRole: am-service
 ciamDnsZone: example-aero.test
 ciamDnsZoneRef: Z0EXAMPLE2PUBLIC
+ciamEdgeFact: tls-mode passthrough
 ciamFqdn: login.example-aero.test
 ciamFrontendIp: 198.51.100.21
 ciamPort: 443
 ciamProviderRef: eipalloc-0a1b2c3d4e5f60003
 ciamTargetRole: am
+ciamTtlSeconds: 3600
 
 dn: cn=svc-login,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
@@ -7271,12 +7491,14 @@ cn: svc-sso
 ciamBindingRole: pf-sso-service
 ciamDnsZone: example-aero.test
 ciamDnsZoneRef: Z0EXAMPLE2PUBLIC
+ciamEdgeFact: tls-mode passthrough
 ciamFqdn: sso.example-aero.test
 ciamFrontendIp: 198.51.100.20
 ciamPort: 443
 ciamProviderRef: eipalloc-0a1b2c3d4e5f60001
 ciamTargetRole: pf-engine
 ciamTlsCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+ciamTtlSeconds: 3600
 
 dn: cn=svc-sso,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
@@ -7409,6 +7631,47 @@ ciamBindingRole: network
 ciamCidr: 10.70.0.0/16
 ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
 ciamProviderRef: projects/example-aero-net/global/networks/ciam-standby
+
+dn: cn=zone-private,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDnsZoneBinding
+cn: zone-private
+ciamBindingRole: private-zone
+ciamDnsZone: id.example-aero.test
+ciamProviderRef: Z0EXAMPLE1PRIVATE
+ciamZoneVisibility: private
+description: Where the LDAPS name is published, for the platform's networks
+
+dn: cn=zone-private,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDnsZoneBinding
+cn: zone-private
+ciamBindingRole: private-zone
+ciamChangeRef: cn=CHG-2003,ou=changes,dc=ciam-ops
+ciamDnsZone: id.example-aero.test
+ciamProviderRef: id.example-aero.test
+ciamZoneVisibility: private
+description: Where the LDAPS name is published, for the platform's networks
+
+dn: cn=zone-public,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDnsZoneBinding
+cn: zone-public
+ciamBindingRole: zone-example-aero.test
+ciamDnsZone: example-aero.test
+ciamManagedBy: cn=corporate-dns,ou=owners,dc=ciam-ops
+ciamZoneVisibility: public
+description: The company's public zone, on the corporate DNS team's Infoblox
+
+dn: cn=zone-public,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDnsZoneBinding
+cn: zone-public
+ciamBindingRole: zone-example-aero.test
+ciamDnsZone: example-aero.test
+ciamManagedBy: cn=corporate-dns,ou=owners,dc=ciam-ops
+ciamZoneVisibility: public
+description: The company's public zone, on the corporate DNS team's Infoblox
 
 dn: cn=appEntitlement,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top

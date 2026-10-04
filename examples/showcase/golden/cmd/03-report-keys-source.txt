@@ -19,6 +19,7 @@ pf-ds-bind-password     password       pf-ds-bind-password     aws-sm   aws-sm:/
 pf-grants-db-password   password       pf-grants-db-password   aws-sm   aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/pro                                                                                                       ok
 pf-signing-key          private-key    pf-signing-key          aws-sm   aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/pro                                                  arn:aws:iam::111122223333:role/ciam-pf-admin         ok
 pf-smtp-password        password       pf-smtp-password        aws-sm   aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/pro                                                                                                       ok
+sso-tls-certificate     private-key    sso-tls-certificate     aws-acm  aws-acm://arn:aws:acm:us-east-1:111122223333:certificate/7f3e9d21-0000                                                                                                       ok
 sso-tls-keystore        keystore       sso-tls-keystore        aws-sm   aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/pro                                                                                                       ok
-(20 rows)
+(21 rows)
 exit 0

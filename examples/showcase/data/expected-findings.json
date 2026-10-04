@@ -140,6 +140,13 @@
       "match": "Role `identity-idm` is bound in source/prod but not in target/prod",
       "planted": "the target doesn't bind the IDM role the source runs (nobody records what acts as it: A39)",
       "cleared_by": null
+    },
+    {
+      "id": "B21",
+      "area": "Binding",
+      "match": "Role `forwarder-corp.example-aero.internal` is bound in source/prod but not in target/prod",
+      "planted": "the source forwards the AD domain to the domain controllers; nothing in the target does",
+      "cleared_by": "CHG-2015"
     }
   ],
   "actions": [
@@ -449,6 +456,90 @@
       "area": "Guardrail",
       "match": "guardrail `org-guardrails` prevents `audit-log-disable`",
       "planted": "the target's policy assignments don't stop audit logs being disabled (a request to the landing zone team)",
+      "cleared_by": null
+    },
+    {
+      "id": "A45",
+      "area": "Edge",
+      "match": "source/prod runs `stickiness source-ip` in front of `ig-service`",
+      "planted": "the gateway's source load balancer keeps clients on one server by source address, which no policy states",
+      "cleared_by": null
+    },
+    {
+      "id": "A46",
+      "area": "Edge",
+      "match": "Clients can send header `X-Partner-User` themselves",
+      "planted": "the gateway doesn't strip the partner user header from incoming requests",
+      "cleared_by": null
+    },
+    {
+      "id": "A47",
+      "area": "Edge",
+      "match": "`am-service` changes from TLS passthrough",
+      "planted": "login moves to a TLS-terminating gateway: PingAM must trust its X-Forwarded-For",
+      "cleared_by": null
+    },
+    {
+      "id": "A48",
+      "area": "Edge",
+      "match": "`pf-sso-service` changes from TLS passthrough",
+      "planted": "sso moves to a TLS-terminating gateway: PingFederate must trust its X-Forwarded-For",
+      "cleared_by": null
+    },
+    {
+      "id": "A49",
+      "area": "DNS",
+      "match": "Lower the TTL of `apps.example-aero.test`",
+      "planted": "the corporate DNS team's 3600 s TTL",
+      "cleared_by": null
+    },
+    {
+      "id": "A50",
+      "area": "DNS",
+      "match": "Lower the TTL of `login.example-aero.test`",
+      "planted": "the corporate DNS team's 3600 s TTL",
+      "cleared_by": null
+    },
+    {
+      "id": "A51",
+      "area": "DNS",
+      "match": "Lower the TTL of `sso.example-aero.test`",
+      "planted": "the corporate DNS team's 3600 s TTL",
+      "cleared_by": null
+    },
+    {
+      "id": "A52",
+      "area": "DNS",
+      "match": "corporate-dns runs zone `example-aero.test`: ask them to point `apps.example-aero.test`",
+      "planted": "the public zone is on the corporate DNS team's Infoblox (a request drafted to them)",
+      "cleared_by": null
+    },
+    {
+      "id": "A53",
+      "area": "DNS",
+      "match": "corporate-dns runs zone `example-aero.test`: ask them to point `login.example-aero.test`",
+      "planted": "the same zone",
+      "cleared_by": null
+    },
+    {
+      "id": "A54",
+      "area": "DNS",
+      "match": "corporate-dns runs zone `example-aero.test`: ask them to point `sso.example-aero.test`",
+      "planted": "the same zone",
+      "cleared_by": null
+    },
+    {
+      "id": "A55",
+      "area": "DNS",
+      "match": "source/prod has private zone `id.example-aero.test`",
+      "planted": "the target publishes LDAPS in the landing zone's default private zone (B1)",
+      "cleared_by": "CHG-2003"
+    },
+    {
+      "id": "A56",
+      "area": "Edge",
+      "match": "sets no rate limit on password-reset",
+      "planted": "PingFederate's self-service password reset has no rate limit; the policy limits sign-in and tokens",
       "cleared_by": null
     }
   ]

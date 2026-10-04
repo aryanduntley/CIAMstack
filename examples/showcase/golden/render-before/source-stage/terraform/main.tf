@@ -502,16 +502,7 @@ resource "aws_lb_listener" "svc_apps_443" {
   }
 }
 
-resource "aws_route53_record" "svc_apps" {
-  zone_id = "Z0EXAMPLE2PUBLIC"
-  name    = "apps.stage.example-aero.test"
-  type    = "A"
-  alias {
-    name                   = aws_lb.svc_apps.dns_name
-    zone_id                = aws_lb.svc_apps.zone_id
-    evaluate_target_health = true
-  }
-}
+# `apps.stage.example-aero.test` is in a zone corporate-dns runs: not rendered here (the plan drafts the request to them)
 
 resource "aws_lb" "svc_ldaps" {
   name               = "ciam-stage-svc-ldaps"
@@ -565,14 +556,50 @@ resource "aws_route53_record" "svc_ldaps" {
   }
 }
 
-resource "aws_lb" "svc_login" {
-  name               = "ciam-stage-svc-login"
-  internal           = false
-  load_balancer_type = "network"
-  subnet_mapping {
-    subnet_id     = data.aws_subnet.subnet_am_a.id
-    allocation_id = "eipalloc-0a1b2c3d4e5f60004"
+resource "aws_security_group" "svc_login_alb" {
+  name        = "ciam-stage-svc-login-alb"
+  description = "CIAM login.stage.example-aero.test load balancer (source/stage)"
+  vpc_id      = data.aws_vpc.main.id
+  tags = {
+    ManagedBy = "opsdir"
   }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "svc_login_alb_fw_login_public_0_443" {
+  security_group_id = aws_security_group.svc_login_alb.id
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+  description       = "clients (fw-login-public)"
+}
+
+resource "aws_vpc_security_group_egress_rule" "svc_login_alb_to_servers_443" {
+  security_group_id            = aws_security_group.svc_login_alb.id
+  referenced_security_group_id = aws_security_group.am.id
+  from_port                    = 443
+  to_port                      = 443
+  ip_protocol                  = "tcp"
+  description                  = "to the servers"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "svc_login_servers_from_alb_443" {
+  security_group_id            = aws_security_group.am.id
+  referenced_security_group_id = aws_security_group.svc_login_alb.id
+  from_port                    = 443
+  to_port                      = 443
+  ip_protocol                  = "tcp"
+  description                  = "from the login.stage.example-aero.test load balancer"
+}
+
+resource "aws_lb" "svc_login" {
+  # an ALB's addresses are AWS's: frontend address 198.51.100.31 isn't kept
+  name                       = "ciam-stage-svc-login"
+  internal                   = false
+  load_balancer_type         = "application"
+  security_groups            = [aws_security_group.svc_login_alb.id]
+  subnets                    = [data.aws_subnet.subnet_am_a.id]
+  drop_invalid_header_fields = true
   tags = {
     Service   = "login.stage.example-aero.test"
     ManagedBy = "opsdir"
@@ -582,11 +609,18 @@ resource "aws_lb" "svc_login" {
 resource "aws_lb_target_group" "svc_login_443" {
   name        = "ciam-stage-svc-login-443"
   port        = 443
-  protocol    = "TCP"
+  protocol    = "HTTPS"
   vpc_id      = data.aws_vpc.main.id
   target_type = "instance"
   health_check {
-    protocol = "TCP"
+    protocol = "HTTPS"
+    path     = "/am/json/health/ready"
+    matcher  = "200"
+  }
+  stickiness {
+    type            = "lb_cookie"
+    enabled         = true
+    cookie_duration = 3600
   }
 }
 
@@ -599,32 +633,252 @@ resource "aws_lb_target_group_attachment" "svc_login_443_am_s1" {
 resource "aws_lb_listener" "svc_login_443" {
   load_balancer_arn = aws_lb.svc_login.arn
   port              = 443
-  protocol          = "TCP"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  # UNBOUND: no ACM certificate holds this service's certificate in this environment
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.svc_login_443.arn
   }
 }
 
-resource "aws_route53_record" "svc_login" {
-  zone_id = "Z0EXAMPLE2PUBLIC"
-  name    = "login.stage.example-aero.test"
-  type    = "A"
-  alias {
-    name                   = aws_lb.svc_login.dns_name
-    zone_id                = aws_lb.svc_login.zone_id
-    evaluate_target_health = true
+resource "aws_wafv2_web_acl" "svc_login" {
+  name  = "ciam-stage-svc_login"
+  scope = "REGIONAL"
+  default_action {
+    allow {
+    }
+  }
+  rule {
+    name     = "rate-login"
+    priority = 0
+    action {
+      block {
+      }
+    }
+    statement {
+      rate_based_statement {
+        limit                 = 300
+        evaluation_window_sec = 300
+        aggregate_key_type    = "IP"
+        scope_down_statement {
+          regex_match_statement {
+            regex_string = "^/am/json/realms/[^?#]+/authenticate$"
+            field_to_match {
+              uri_path {
+              }
+            }
+            text_transformation {
+              priority = 0
+              type     = "NONE"
+            }
+          }
+        }
+      }
+    }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      sampled_requests_enabled   = true
+      metric_name                = "svc_login-rate-login"
+    }
+  }
+  rule {
+    name     = "rate-token"
+    priority = 1
+    action {
+      block {
+      }
+    }
+    statement {
+      rate_based_statement {
+        limit                 = 600
+        evaluation_window_sec = 300
+        aggregate_key_type    = "IP"
+        scope_down_statement {
+          or_statement {
+            statement {
+              regex_match_statement {
+                regex_string = "^/am/oauth2/access_token$"
+                field_to_match {
+                  uri_path {
+                  }
+                }
+                text_transformation {
+                  priority = 0
+                  type     = "NONE"
+                }
+              }
+            }
+            statement {
+              regex_match_statement {
+                regex_string = "^/am/oauth2/realms/[^?#]+/access_token$"
+                field_to_match {
+                  uri_path {
+                  }
+                }
+                text_transformation {
+                  priority = 0
+                  type     = "NONE"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      sampled_requests_enabled   = true
+      metric_name                = "svc_login-rate-token"
+    }
+  }
+  rule {
+    name     = "core-rules"
+    priority = 2
+    override_action {
+      none {
+      }
+    }
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesCommonRuleSet"
+        vendor_name = "AWS"
+        scope_down_statement {
+          not_statement {
+            statement {
+              regex_match_statement {
+                regex_string = "^/am/SSOPOST/metaAlias/[^?#]+$"
+                field_to_match {
+                  uri_path {
+                  }
+                }
+                text_transformation {
+                  priority = 0
+                  type     = "NONE"
+                }
+              }
+            }
+          }
+        }
+        # exclusions: AWS can't skip one field of a managed group, so these endpoints are out of its scope
+      }
+    }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      sampled_requests_enabled   = true
+      metric_name                = "svc_login-core-rules"
+    }
+  }
+  rule {
+    name     = "known-bad-inputs"
+    priority = 3
+    override_action {
+      none {
+      }
+    }
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesKnownBadInputsRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      sampled_requests_enabled   = true
+      metric_name                = "svc_login-known-bad-inputs"
+    }
+  }
+  rule {
+    name     = "bot-control"
+    priority = 4
+    override_action {
+      none {
+      }
+    }
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesBotControlRuleSet"
+        vendor_name = "AWS"
+        managed_rule_group_configs {
+          aws_managed_rules_bot_control_rule_set {
+            inspection_level = "COMMON"
+          }
+        }
+      }
+    }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      sampled_requests_enabled   = true
+      metric_name                = "svc_login-bot-control"
+    }
+  }
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    sampled_requests_enabled   = true
+    metric_name                = "svc_login-web-acl"
+  }
+  tags = {
+    ManagedBy = "opsdir"
   }
 }
 
-resource "aws_lb" "svc_sso" {
-  name               = "ciam-stage-svc-sso"
-  internal           = false
-  load_balancer_type = "network"
-  subnet_mapping {
-    subnet_id     = data.aws_subnet.subnet_pf_a.id
-    allocation_id = "eipalloc-0a1b2c3d4e5f60002"
+resource "aws_wafv2_web_acl_association" "svc_login" {
+  resource_arn = aws_lb.svc_login.arn
+  web_acl_arn  = aws_wafv2_web_acl.svc_login.arn
+}
+
+resource "aws_shield_protection" "svc_login" {
+  # needs the account's Shield Advanced subscription
+  name         = "svc_login"
+  resource_arn = aws_lb.svc_login.arn
+}
+
+# `login.stage.example-aero.test` is in a zone corporate-dns runs: not rendered here (the plan drafts the request to them)
+
+resource "aws_security_group" "svc_sso_alb" {
+  name        = "ciam-stage-svc-sso-alb"
+  description = "CIAM sso.stage.example-aero.test load balancer (source/stage)"
+  vpc_id      = data.aws_vpc.main.id
+  tags = {
+    ManagedBy = "opsdir"
   }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "svc_sso_alb_fw_sso_public_0_443" {
+  security_group_id = aws_security_group.svc_sso_alb.id
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+  description       = "clients (fw-sso-public)"
+}
+
+resource "aws_vpc_security_group_egress_rule" "svc_sso_alb_to_servers_443" {
+  security_group_id            = aws_security_group.svc_sso_alb.id
+  referenced_security_group_id = aws_security_group.pf_engine.id
+  from_port                    = 443
+  to_port                      = 443
+  ip_protocol                  = "tcp"
+  description                  = "to the servers"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "svc_sso_servers_from_alb_443" {
+  security_group_id            = aws_security_group.pf_engine.id
+  referenced_security_group_id = aws_security_group.svc_sso_alb.id
+  from_port                    = 443
+  to_port                      = 443
+  ip_protocol                  = "tcp"
+  description                  = "from the sso.stage.example-aero.test load balancer"
+}
+
+resource "aws_lb" "svc_sso" {
+  # an ALB's addresses are AWS's: frontend address 198.51.100.30 isn't kept
+  name                       = "ciam-stage-svc-sso"
+  internal                   = false
+  load_balancer_type         = "application"
+  security_groups            = [aws_security_group.svc_sso_alb.id]
+  subnets                    = [data.aws_subnet.subnet_pf_a.id]
+  drop_invalid_header_fields = true
   tags = {
     Service   = "sso.stage.example-aero.test"
     ManagedBy = "opsdir"
@@ -634,11 +888,18 @@ resource "aws_lb" "svc_sso" {
 resource "aws_lb_target_group" "svc_sso_443" {
   name        = "ciam-stage-svc-sso-443"
   port        = 443
-  protocol    = "TCP"
+  protocol    = "HTTPS"
   vpc_id      = data.aws_vpc.main.id
   target_type = "instance"
   health_check {
-    protocol = "TCP"
+    protocol = "HTTPS"
+    path     = "/pf/heartbeat.ping"
+    matcher  = "200"
+  }
+  stickiness {
+    type            = "lb_cookie"
+    enabled         = true
+    cookie_duration = 3600
   }
 }
 
@@ -651,22 +912,246 @@ resource "aws_lb_target_group_attachment" "svc_sso_443_pf_engine_s1" {
 resource "aws_lb_listener" "svc_sso_443" {
   load_balancer_arn = aws_lb.svc_sso.arn
   port              = 443
-  protocol          = "TCP"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  # UNBOUND: no ACM certificate holds this service's certificate in this environment
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.svc_sso_443.arn
   }
 }
 
-resource "aws_route53_record" "svc_sso" {
-  zone_id = "Z0EXAMPLE2PUBLIC"
-  name    = "sso.stage.example-aero.test"
-  type    = "A"
-  alias {
-    name                   = aws_lb.svc_sso.dns_name
-    zone_id                = aws_lb.svc_sso.zone_id
-    evaluate_target_health = true
+resource "aws_wafv2_web_acl" "svc_sso" {
+  name  = "ciam-stage-svc_sso"
+  scope = "REGIONAL"
+  default_action {
+    allow {
+    }
   }
+  rule {
+    name     = "rate-login"
+    priority = 0
+    action {
+      block {
+      }
+    }
+    statement {
+      rate_based_statement {
+        limit                 = 300
+        evaluation_window_sec = 300
+        aggregate_key_type    = "IP"
+        scope_down_statement {
+          or_statement {
+            statement {
+              regex_match_statement {
+                regex_string = "^/as/authorization\\.oauth2$"
+                field_to_match {
+                  uri_path {
+                  }
+                }
+                text_transformation {
+                  priority = 0
+                  type     = "NONE"
+                }
+              }
+            }
+            statement {
+              regex_match_statement {
+                regex_string = "^/idp/SSO\\.saml2$"
+                field_to_match {
+                  uri_path {
+                  }
+                }
+                text_transformation {
+                  priority = 0
+                  type     = "NONE"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      sampled_requests_enabled   = true
+      metric_name                = "svc_sso-rate-login"
+    }
+  }
+  rule {
+    name     = "rate-token"
+    priority = 1
+    action {
+      block {
+      }
+    }
+    statement {
+      rate_based_statement {
+        limit                 = 600
+        evaluation_window_sec = 300
+        aggregate_key_type    = "IP"
+        scope_down_statement {
+          regex_match_statement {
+            regex_string = "^/as/token\\.oauth2$"
+            field_to_match {
+              uri_path {
+              }
+            }
+            text_transformation {
+              priority = 0
+              type     = "NONE"
+            }
+          }
+        }
+      }
+    }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      sampled_requests_enabled   = true
+      metric_name                = "svc_sso-rate-token"
+    }
+  }
+  rule {
+    name     = "core-rules"
+    priority = 2
+    override_action {
+      none {
+      }
+    }
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesCommonRuleSet"
+        vendor_name = "AWS"
+        scope_down_statement {
+          not_statement {
+            statement {
+              or_statement {
+                statement {
+                  regex_match_statement {
+                    regex_string = "^/idp/SSO\\.saml2$"
+                    field_to_match {
+                      uri_path {
+                      }
+                    }
+                    text_transformation {
+                      priority = 0
+                      type     = "NONE"
+                    }
+                  }
+                }
+                statement {
+                  regex_match_statement {
+                    regex_string = "^/sp/ACS\\.saml2$"
+                    field_to_match {
+                      uri_path {
+                      }
+                    }
+                    text_transformation {
+                      priority = 0
+                      type     = "NONE"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        # exclusions: AWS can't skip one field of a managed group, so these endpoints are out of its scope
+      }
+    }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      sampled_requests_enabled   = true
+      metric_name                = "svc_sso-core-rules"
+    }
+  }
+  rule {
+    name     = "known-bad-inputs"
+    priority = 3
+    override_action {
+      none {
+      }
+    }
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesKnownBadInputsRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      sampled_requests_enabled   = true
+      metric_name                = "svc_sso-known-bad-inputs"
+    }
+  }
+  rule {
+    name     = "bot-control"
+    priority = 4
+    override_action {
+      none {
+      }
+    }
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesBotControlRuleSet"
+        vendor_name = "AWS"
+        managed_rule_group_configs {
+          aws_managed_rules_bot_control_rule_set {
+            inspection_level = "COMMON"
+          }
+        }
+      }
+    }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      sampled_requests_enabled   = true
+      metric_name                = "svc_sso-bot-control"
+    }
+  }
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    sampled_requests_enabled   = true
+    metric_name                = "svc_sso-web-acl"
+  }
+  tags = {
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_wafv2_web_acl_association" "svc_sso" {
+  resource_arn = aws_lb.svc_sso.arn
+  web_acl_arn  = aws_wafv2_web_acl.svc_sso.arn
+}
+
+resource "aws_shield_protection" "svc_sso" {
+  # needs the account's Shield Advanced subscription
+  name         = "svc_sso"
+  resource_arn = aws_lb.svc_sso.arn
+}
+
+# `sso.stage.example-aero.test` is in a zone corporate-dns runs: not rendered here (the plan drafts the request to them)
+
+resource "aws_route53_resolver_rule" "fwd_corp_ad_0" {
+  name                 = "ciam-stage-fwd-corp-ad-0"
+  domain_name          = "corp.example-aero.internal"
+  rule_type            = "FORWARD"
+  resolver_endpoint_id = var.resolver_endpoint_id
+  target_ip {
+    ip   = "10.40.0.53"
+    port = 53
+  }
+  target_ip {
+    ip   = "10.40.0.54"
+    port = 53
+  }
+  tags = {
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_route53_resolver_rule_association" "fwd_corp_ad_0" {
+  resolver_rule_id = aws_route53_resolver_rule.fwd_corp_ad_0.id
+  vpc_id           = data.aws_vpc.main.id
 }
 
 data "aws_secretsmanager_secret" "am_admin_password" {

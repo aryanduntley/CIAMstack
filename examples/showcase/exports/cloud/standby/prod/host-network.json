@@ -87,6 +87,22 @@
     }
   },
   {
+    "name": "//compute.googleapis.com/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-proxy",
+    "assetType": "compute.googleapis.com/Subnetwork",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "kind": "compute#subnetwork",
+        "name": "ciam-standby-proxy",
+        "ipCidrRange": "10.70.250.0/23",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby",
+        "region": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1",
+        "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-net/regions/us-central1/subnetworks/ciam-standby-proxy",
+        "purpose": "REGIONAL_MANAGED_PROXY"
+      }
+    }
+  },
+  {
     "name": "//dns.googleapis.com/projects/example-aero-net/managedZones/ciam-standby-private/rrsets/ldap.id.example-aero.test./A",
     "assetType": "dns.googleapis.com/ResourceRecordSet",
     "resource": {
