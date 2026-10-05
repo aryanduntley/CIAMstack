@@ -323,17 +323,22 @@
     "terraform/landing-zone/main.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "8466096c125f70c954fb9b607202d0bfd6f7d3c8dd41bf5797e5c0a4aadcaeac"
+      "sha256": "8a5e530e42b2835da10c4d4b60145727af1b7bb3ab5b6947f6f6109853eaf053"
+    },
+    "terraform/landing-zone/network.tf": {
+      "scope": "landing-zone",
+      "format": "hcl",
+      "sha256": "7ac9d7fad8348fb6f8deb870f4464b5177ae74f70010e4f2bd50b38bc43ad05f"
     },
     "terraform/landing-zone/providers.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "b1c0550b5062ad5254d3c3cc48010c6a85a07c4775a2bf496aecd02aba1fa6dc"
+      "sha256": "29852d15ad91b2cd61499df1cf993253926bbe56c1f4e20c4e96ea0be615fcc0"
     },
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "77befe1bb48a674ba71b7131d3c317a017701f811b2e8349f25b2058954456b4"
+      "sha256": "08fd35c3b7614821f421071a7ac14c1b824440595290be2c31ca277a5e808078"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

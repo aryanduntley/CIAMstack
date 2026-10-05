@@ -75,3 +75,17 @@ def test_a_policy_every_server_already_has_is_set_not_created():
     assert ('set-password-policy-prop --policy-name "Default Password Policy" --set default-password-storage-scheme:'
             'PBKDF2-HMAC-SHA256 --set password-attribute:userPassword --set lockout-failure-count:5') in batch
     assert 'create-password-policy --policy-name "customers" --type password-policy' in batch
+
+
+def test_a_target_that_doesn_t_join_gets_the_fix_declaring_it():
+    from opsdir.core.directory import make_entry
+    from opsdir_base_ds.replication import check_joins
+    src = SimpleNamespace(dn="env=prod,cloud=a,ou=environments,dc=ciam-ops", label="a/prod")
+    d = make_directory((), {}, ())
+    dst = SimpleNamespace(dn="env=prod,cloud=b,ou=environments,dc=ciam-ops", label="b/prod", d=d,
+                          env=make_entry("env=prod,cloud=b,ou=environments,dc=ciam-ops", ("ciamEnvironment",), {}))
+    found = check_joins(d, src, dst, "joins", "doesn't join")
+    (fix,) = found.fixes
+    assert (fix.key, fix.records[0].dn, fix.records[0].mods) == (
+        "replication:joins", dst.dn, (("replace", "ciamJoinsDeploymentOf", (src.dn,)),))
+    assert fix.risks[0].startswith("If b/prod is meant as a fresh topology")

@@ -11,7 +11,9 @@ durable link, and exactly one entry may carry it (an id two entries claim resolv
 """
 from types import MappingProxyType
 
+from opsdir.core.changeset import delete_values
 from opsdir.core.directory import children, get, one
+from opsdir.core.findings import Fix, Option
 from opsdir.core.naming import rdn_safe
 from opsdir.domains.federation.services import integrations
 from opsdir.domains.pki.naming import CERTIFICATES
@@ -68,6 +70,24 @@ def links(d, refs, exported):
 def missing(d, refs):
     """(kind, id) of the objects named that the record doesn't have (or has more than one of)."""
     return tuple((k, i) for k, i in refs if record_dn(d, k, i) is None)
+
+
+def claim_fix(d, kind, ref_id):
+    """The Fix giving an id several entries claim to exactly one: an option per claimant, keeping the id there and
+    deleting it from the others; None when fewer than two claim it."""
+    held = claimants(d, kind, ref_id) if kind in CARRIERS else ()
+    if len(held) < 2:
+        return None
+    attr = CARRIERS[kind][1]
+
+    def name(dn):
+        return dn.split(",", 1)[0].split("=", 1)[1]
+    options = tuple(Option(name(keep), f"keep it on `{name(keep)}`",
+                           tuple(delete_values(get(d, dn), attr, (ref_id,)) for dn in held if dn != keep), ())
+                    for keep in held)
+    return Fix(f"claimants:{kind}:{ref_id}", "PingFederate", f"Give {describe(kind, ref_id)} to exactly one entry",
+               (), (), (f"The others lose the id: if PingFederate really uses one of them for this {LABELS[kind]}, "
+                    "choose that one.",), options)
 
 
 def why_unresolved(d, kind, ref_id, absent):

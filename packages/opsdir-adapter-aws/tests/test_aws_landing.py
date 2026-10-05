@@ -56,9 +56,9 @@ def test_ci_trust_and_workforce_access_for_the_landing_zone():
     out = render_landing(m)["terraform/landing-zone/main.tf"]
     assert "kept by landing-zone" in out and "not by the platform's pipeline" in out
     assert 'resource "aws_iam_openid_connect_provider" "token_actions_githubusercontent_com"' in out
-    assert '"Action": "sts:AssumeRoleWithWebIdentity"' in out and 'name               = "ciam-prod-deploy"' in out
-    assert '"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"' in out
-    assert '"token.actions.githubusercontent.com:sub": "repo:example-aero/ciam-ops:environment:prod"' in out
+    assert '"Action" : "sts:AssumeRoleWithWebIdentity"' in out and 'name = "ciam-prod-deploy"' in out
+    assert '"token.actions.githubusercontent.com:aud" : "sts.amazonaws.com"' in out
+    assert '"token.actions.githubusercontent.com:sub" : "repo:example-aero/ciam-ops:environment:prod"' in out
     assert '"secretsmanager:GetSecretValue"' in out
     assert 'resource "aws_ssoadmin_permission_set" "admin_sso"' in out
     assert 'name             = "ciam-prod-ops-admins"' in out and 'principal_type     = "GROUP"' in out
@@ -80,7 +80,7 @@ def test_guardrails_as_service_control_policies():
     files = render_landing(env_model(build_directory(REGISTRY, tuple(parse(_records(guardrail)))), "aws/prod"))
     out = files["terraform/landing-zone/main.tf"]
     assert 'resource "aws_organizations_policy" "baseline"' in out and 'type        = "SERVICE_CONTROL_POLICY"' in out
-    assert '"aws:RequestedRegion": [' in out and '"us-east-1"' in out and '"Sid": "DenyRoot"' in out
+    assert '"aws:RequestedRegion" : [' in out and '"us-east-1"' in out and '"Sid" : "DenyRoot"' in out
     assert "# NOTE: guardrail baseline: public-storage: AWS's mechanism is the Organizations S3 policy type" in out
     assert 'target_id = var.guardrail_target_id' in out
     assert 'variable "guardrail_target_id"' in files["terraform/landing-zone/providers.tf"]

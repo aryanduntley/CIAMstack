@@ -5,9 +5,11 @@ ciamBindingRole is the credential's holds its material in that environment. Cert
 private key (ciamKeyRole); captured config settings link to a binding by `role#attribute` (ciamValueFrom).
 """
 import datetime as dt
+import re
 
 from ...core.directory import children, fingerprint, get, gtime_date, is_a, one, subtree
 from ...core.environment import by_role, env_model, environment_of
+from ...core.findings import choice_fix
 from ...core.naming import branch
 from .naming import CERTIFICATES, CREDENTIALS
 
@@ -79,3 +81,37 @@ def rotate_by(credential, binding):
     or None when either is not recorded."""
     days, last = one(credential, "ciamRotationDays") if credential else None, one(binding, "ciamLastRotated")
     return gtime_date(last) + dt.timedelta(days=int(days)) if days and last else None
+
+
+# words every credential's name may hold, which say nothing about which system it is for
+GENERIC = frozenset({"password", "passwd", "secret", "store", "keystore", "key", "keys", "bind", "admin", "data",
+                     "cert", "token", "credential", "credentials"})
+
+
+def _words(text):
+    return {w for w in re.split(r"[^a-z0-9]+", text.lower()) if len(w) >= 3 and w not in GENERIC}
+
+
+def name_match(names, role):
+    """Whether a role's name shares a word with any of names (one word's first four letters, or one inside the
+    other: grants and grant, recaptcha and captcha); a hint, never a choice."""
+    return any(a[:4] == b[:4] or a in b or b in a for n in names for a in _words(n) for b in _words(role))
+
+
+def credential_role_fix(src, dst, entry, attr, what, key, names=()):
+    """The Fix naming the secret role an entry's withheld credentials come from (attr): one option per secret
+    reference role environment dst binds, never picked for anyone, since the wrong role renders a working-looking
+    reference to another system's credential. Roles whose name shares a word with names (the entry's) come first and
+    say so; an option src doesn't bind says its render then lacks it. None when dst binds no secret reference."""
+    def own_risks(role):
+        return () if by_role(src, role) else (f"{src.label} binds no `{role}`: its render then lacks the secret.",)
+    roles = sorted({one(b, "ciamBindingRole") for b in dst.bindings if is_a(b, "ciamSecretRef")},
+                   key=lambda r: (not name_match(names, r), r))
+    return choice_fix(key, "Credentials", f"Name the secret role {what} takes its withheld credentials from", entry,
+                      attr, [(r, f"`{r}` ({one(by_role(dst, r)[0], 'ciamRefUri')} in {dst.label})"
+                                 + (", its name matches" if name_match(names, r) else ""), own_risks(r))
+                             for r in roles],
+                      (f"Make sure the chosen secret holds this credential in every environment's store (the record "
+                       "holds only the reference).",),
+                      ("A person chooses: the record can't tell which secret holds the credential (a matching name "
+                       "is a hint, not proof).",))

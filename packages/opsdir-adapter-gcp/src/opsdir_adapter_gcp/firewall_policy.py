@@ -82,9 +82,9 @@ def _binding(s):
         ("tag_value", tag_value(one(s, "ciamServerRole"))), ("location", zone)])
 
 
-def _rule(m, n, prio, direction, action, match, targets, description, name=None):
+def _rule(m, n, prio, direction, action, match, targets, description, name=None, policy=None):
     return block("resource", ["google_compute_network_firewall_policy_rule", n], [
-        ("firewall_policy", policy_ref(m)), *network_project(m), ("priority", prio), ("direction", direction),
+        ("firewall_policy", policy or policy_ref(m)), *network_project(m), ("priority", prio), ("direction", direction),
         ("action", action), *((("rule_name", name),) if name else ()), ("description", description),
         ("match", Block(match)), *(("target_secure_tags", Block((("name", t),))) for t in targets)])
 
@@ -132,11 +132,12 @@ def health_check_rule(m, svc, n, ranges, port, kind="health_checks"):
         f"{what} {rdn_value(svc)}")
 
 
-def egress_rules(m, proxy):
-    """An egress firewall's allowlist as the policy's egress rules for every role's tag value: the sites by name
+def egress_rules(m, proxy, targets=None, policy=None):
+    """An egress firewall's allowlist as the policy's egress rules for every role's tag value (or the targets given;
+    none: every instance of the network) in the environment's policy (or the policy given): the sites by name
     (wildcard domains can't be FQDN objects: said), the ranges the stack reaches privately, then everything else
     denied."""
-    targets = tuple(tag_value(r) for r in roles(m))
+    targets = tuple(tag_value(r) for r in roles(m)) if targets is None else targets
     n = tf_name(rdn_value(proxy))
     sites = tuple((port, tuple(h for h in hosts if not h.startswith("*.")),
                    tuple(h for h in hosts if h.startswith("*."))) for port, hosts in allowlist(proxy))
@@ -145,14 +146,15 @@ def egress_rules(m, proxy):
               for h in w),
             *(_rule(m, f"{n}_sites_{port}", EGRESS + i, "EGRESS", "allow", (
                 ("dest_fqdns", list(named)), _layer4("tcp", (port,))), targets,
-                f"Sites the CIAM platform reaches on {port} ({rdn_value(proxy)})")
+                f"Sites the CIAM platform reaches on {port} ({rdn_value(proxy)})", policy=policy)
               for i, (port, named, _) in enumerate(sites) if named),
             *((_rule(m, f"{n}_private", EGRESS + len(sites), "EGRESS", "allow", (
                 ("dest_ip_ranges", list(private)), _layer4("all")), targets,
-                "What the CIAM platform reaches privately (its network, interconnects, private endpoints)"),)
+                "What the CIAM platform reaches privately (its network, interconnects, private endpoints)",
+                policy=policy),)
               if private else ()),
             _rule(m, f"{n}_deny", DENY, "EGRESS", "deny", (("dest_ip_ranges", ["0.0.0.0/0"]), _layer4("all")),
-                  targets, f"Other egress to the internet ({rdn_value(proxy)} allows only its sites)"))
+                  targets, f"Other egress to the internet ({rdn_value(proxy)} allows only its sites)", policy=policy))
 
 
 def policy_firewall(m):

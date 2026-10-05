@@ -109,6 +109,12 @@ def value_type(d, name):
     return t["value_type"] if t else None
 
 
+def portability(d, name):
+    """An attribute's portability class (intent, contract, binding, secret-ref, observed, meta), None when unknown."""
+    t = d.types.get(name)
+    return t["portability"] if t else None
+
+
 def get(d, dn):
     return d.entries.get(norm_dn(dn))
 

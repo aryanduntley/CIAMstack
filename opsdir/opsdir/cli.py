@@ -9,6 +9,15 @@
   opsdir render ENV [-o dir]           e.g. prod environment of a cloud: CLOUD/ENV (default out/ here)
   opsdir plan FROM TO [-o dir]         migration plan + change-request drafts for external parties
   opsdir migrate FROM TO [-o dir]      check both stacks, plan, render the target; exit 1 unless ready
+  opsdir fix list FROM TO              the record changes the plan's findings offer (assisted fixes)
+  opsdir fix show FROM TO KEY          one fix: the change records, the steps outside the record, what it could hide
+  opsdir fix propose FROM TO KEY --change CHG-… [--option O] [--input K=V …] [--title T]
+                                       record it as change CHG-… with status proposed, for a person to approve
+                                       (a fix that is a choice needs --option: one of those `fix show` lists; one
+                                       that takes inputs, --input for each it needs: repeat a key for several values,
+                                       K= leaves the attribute out)
+  opsdir fix apply FROM TO KEY --change CHG-… [--option O] [--input K=V …]   apply it under an approved change
+  opsdir fix approved --change CHG-…   apply the records a proposed change holds, once approved (marks it applied)
   opsdir modify --change CHG-… FILE    apply LDIF change records under an approved change
   opsdir capture --change CHG-… FILE [--name N] [--repo-path P] [--format F] [--role R] [--deploy-path D]
                                        hold a config file in the record (setting by setting; whole when it can't be
@@ -47,12 +56,13 @@ import sys
 from types import MappingProxyType
 
 from . import operations as ops
-from .connectors import migration, workspace
+from .connectors import fixes as fixmod, migration, workspace
 from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS
 from .connectors.stack import STATUS_HEADERS
 from .core.changeset import describe
 from .core import search as ldap_search
 from .core.directory import values
+from .core.findings import fix_inputs
 from .core.interchange import ldif
 from .core.interchange.export import export_text  # noqa: F401  (callers import it from here)
 from .core.naming import SUFFIX
@@ -71,6 +81,11 @@ SUBCOMMANDS = (
     ("render", ((("env",), {}), (("-o", "--out"), {}))),
     ("plan", ((("src",), {}), (("dst",), {}), (("-o", "--out"), {}))),
     ("migrate", ((("src",), {}), (("dst",), {}), (("-o", "--out"), {}))),
+    ("fix", ((("action",), {"choices": ["list", "show", "propose", "apply", "approved"]}), (("src",), {"nargs": "?"}),
+             (("dst",), {"nargs": "?"}), (("key",), {"nargs": "?"}), (("--change",), {}), (("--title",), {}),
+             (("--option",), {"help": "the choice, for a fix that offers options"}),
+             (("--input",), {"action": "append", "default": [], "metavar": "KEY=VALUE",
+                             "help": "a value a fix takes (repeat a key for several values; KEY= for none)"}))),
     ("modify", ((("--change",), {"required": True}), (("file",), {}))),
     ("capture", ((("--change",), {"required": True}), (("file",), {}), (("--name",), {}), (("--repo-path",), {}),
                  (("--format",), {}), (("--role",), {}), (("--deploy-path",), {}),
@@ -293,6 +308,83 @@ def _not_applied(notes, changes, dry_run):
                       f"{len(changes)} change(s) (not applied{'' if dry_run else '; give --change to apply'})"))
 
 
+def _given(pairs):
+    """{key: values} from KEY=VALUE arguments (a key repeated gives several values; KEY= none)."""
+    bad = [p for p in pairs if "=" not in p]
+    if bad:
+        raise SystemExit(f"--input {bad[0]}: give KEY=VALUE")
+    split = [p.split("=", 1) for p in pairs]
+    return {k: tuple(v for key, v in split if key == k and v) for k in dict.fromkeys(k for k, _ in split)}
+
+
+def _input_lines(records):
+    return tuple(f"  {i.key}: {i.label}" + (f" (default: {' | '.join(i.default)})" if i.default else "")
+                 + (f" (e.g. {' | '.join(i.example)})" if i.example and i.example != i.default else "")
+                 + (f" (matching {i.pattern})" if i.pattern else "") for i in fix_inputs(records))
+
+
+def _record_lines(r):
+    """A change record for review: a modify as describe gives it, an add with the attributes it sets."""
+    return describe(r) if r.changetype != "add" else (
+        f"add {r.dn}", *(f"    {k}: {' | '.join(v)}" for k, v in r.attrs.items() if k != "objectClass"))
+
+
+def _fix_lines(fix):
+    return (f"{fix.key} ({fix.area}): {fix.title}",
+            *(("", *(x for r in fixmod.previewed(fix.records) for x in _record_lines(r))) if fix.records else ()),
+            *(("", "Give (--input KEY=VALUE):", *_input_lines(fix.records)) if fix_inputs(fix.records) else ()),
+            *(("", "Choose one (--option):", *(line for o in fix.options for line in (
+                f"  {o.key}: {o.label}",
+                *(f"      {x}" for r in fixmod.previewed(o.records) for x in _record_lines(r)),
+                *(("      give (--input KEY=VALUE):", *(f"    {x}" for x in _input_lines(o.records)))
+                  if fix_inputs(o.records) else ()),
+                *(f"      risk: {k}" for k in o.risks)))) if fix.options else ()),
+            *(("", "Outside the record:", *(f"  - {m}" for m in fix.manual)) if fix.manual else ()),
+            *(("", "What it could hide:", *(f"  - {r}" for r in fix.risks)) if fix.risks else ()))
+
+
+def _fix_size(f):
+    """What a fix changes, for the list: its options, or its records and the inputs they take."""
+    inputs = fix_inputs(f.records)
+    return f"{len(f.options)} options" if f.options else \
+        f"{len(f.records)}" + (f" ({len(inputs)} input{'s' if len(inputs) > 1 else ''})" if inputs else "")
+
+
+def _cmd_fix(conn, a, as_of):
+    needs = {"list": ("src", "dst"), "show": ("src", "dst", "key"), "propose": ("src", "dst", "key", "change"),
+             "apply": ("src", "dst", "key", "change"), "approved": ("change",)}[a.action]
+    missing = [n for n in needs if not getattr(a, n)]
+    if missing:
+        raise SystemExit(f"opsdir fix {a.action} needs {', '.join(missing)}")
+    if a.action == "approved":
+        r = ops.apply_proposed(conn, a.change)
+        return f"{a.change}: {len(r.lines) - 1} change(s) applied; marked applied"
+    found = ops.fixes(conn, a.src, a.dst, as_of)
+    if a.action == "list":
+        return format_table([(f.key, f.area, _fix_size(f),
+                              len(f.manual), f.title) for f in found],
+                            ("key", "area", "records", "manual steps", "what it does"))
+    try:
+        fix = fixmod.find_fix(found, a.key)
+    except ValueError as e:
+        raise SystemExit(str(e)) from None
+    if a.action == "show":
+        return "\n".join(_fix_lines(fix))
+    given = _given(a.input)
+    try:
+        picked = fixmod.chosen(fix, a.option, given)
+    except ValueError as e:
+        raise SystemExit(str(e)) from None
+    if a.action == "propose":
+        try:
+            ops.propose_fix(conn, a.src, a.dst, as_of, a.key, a.change, a.title, a.option, given)
+        except ValueError as e:
+            raise SystemExit(str(e)) from None
+        return f"{a.change}: proposed ({len(picked.records)} change(s) held for approval)"
+    r = ops.apply_fix(conn, a.src, a.dst, as_of, a.key, a.change, a.option, given)
+    return f"{a.change}: {len(r.lines)} change(s) applied"
+
+
 def _cmd_import(conn, a, as_of):
     files, skipped = read_texts(a.path)
     preview = ops.preview_import(conn, a.importer, files, import_time(a.at))
@@ -383,7 +475,7 @@ def _cmd_workspace(conn, a, as_of):
 
 COMMANDS = MappingProxyType({"init": _cmd_init, "upgrade": _cmd_upgrade, "load": _cmd_load, "check": _cmd_check,
                              "search": _cmd_search, "report": _cmd_report, "render": _cmd_render, "plan": _cmd_plan,
-                             "migrate": _cmd_migrate, "modify": _cmd_modify, "export": _cmd_export,
+                             "migrate": _cmd_migrate, "fix": _cmd_fix, "modify": _cmd_modify, "export": _cmd_export,
                              "history": _cmd_history, "capture": _cmd_capture, "import": _cmd_import, "file": _cmd_file,
                              "bundle": _cmd_bundle, "verify": _cmd_verify, "census": _cmd_census,
                              "data-profile": _cmd_data_profile, "workspace": _cmd_workspace})

@@ -148,6 +148,14 @@ EXPECTED = MappingProxyType({
          "the target's Private Link Service allows the portal's Azure subscription, not its AWS account", None),
         ("A59", "Egress", "doesn't allow `email-smtp.us-east-1.amazonaws.com`",
          "the hub firewall in the target doesn't allow the mail relay the platform sends through", None),
+        *((f"A{60 + i}", "Egress proxy", f"so `{role}` must be told",
+           f"the target's outside traffic goes through the hub's forward proxy; {what}", None)
+          for i, (role, what) in enumerate((
+              ("am", "PingAM's HTTP client and JVM options don't name it"),
+              ("pf-engine", "the engines' captured run.properties lacks the proxy keys (a fix links them)"),
+              ("pf-admin", "the admin node's run.properties and revocation checking don't name it"),
+              ("ig", "PingGateway's ProxyOptions and JVM options don't name it"),
+              ("idm", "PingIDM's boot.properties and JVM options don't name it")))),
     ],
 })
 

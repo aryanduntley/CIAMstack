@@ -11,3 +11,8 @@ opsdir adapter for PingAM (ForgeRock AM): realms, OAuth2/OIDC clients, SAML, aut
 - **Required roles**: `subnet-am`, `am-service`, `am-admin-password`, `am-keystore`, `am-ds-bind-password`. Server role: `am`. Products: PingAM 7–8, ForgeRock AM 7.
 
 Installing the package registers it with opsdir (entry point `opsdir.adapters`: `pingam`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.
+
+## Egress through an explicit proxy
+
+When an environment's egress passes a proxy clients must be told about (a `ciamProxy` with `ciamProxyAddress` that isn't a firewall), PingAM needs its HTTP client's advanced server properties `org.forgerock.openam.httpclienthandler.system.proxy.uri` (`http://<host>:<port>`, which takes precedence over the JVM's proxy) and `org.forgerock.openam.httpclienthandler.system.nonProxyHosts` (comma-separated), and the standard Java proxy properties in its container's JVM options (`JAVA_OPTS`, setenv.sh) for what doesn't use that client. The record holds neither place, so the planner names what to set.
+

@@ -1,0 +1,33 @@
+egress-proxy:pf-engine:bin/run.properties (Egress proxy): Link `http.proxyHost`, `http.proxyPort`, `https.proxyHost`, `https.proxyPort`, `http.nonProxyHosts` in `pf-engine`'s bin/run.properties (run.properties) to `egress-proxy`'s proxy
+
+add cn=0c6f1abb828f023a,cn=run.properties,ou=config-files,dc=ciam-ops
+    cn: 0c6f1abb828f023a
+    ciamLocator: http.proxyHost
+    ciamValueFrom: egress-proxy#proxy:host
+add cn=43d5184a8fa2ac0d,cn=run.properties,ou=config-files,dc=ciam-ops
+    cn: 43d5184a8fa2ac0d
+    ciamLocator: http.proxyPort
+    ciamValueFrom: egress-proxy#proxy:port
+add cn=c730a6d91919d459,cn=run.properties,ou=config-files,dc=ciam-ops
+    cn: c730a6d91919d459
+    ciamLocator: https.proxyHost
+    ciamValueFrom: egress-proxy#proxy:host
+add cn=defc8ab40088af7d,cn=run.properties,ou=config-files,dc=ciam-ops
+    cn: defc8ab40088af7d
+    ciamLocator: https.proxyPort
+    ciamValueFrom: egress-proxy#proxy:port
+add cn=2faa077dcd26f82d,cn=run.properties,ou=config-files,dc=ciam-ops
+    cn: 2faa077dcd26f82d
+    ciamLocator: http.nonProxyHosts
+    ciamValueFrom: egress-proxy#proxy:bypass
+modify cn=run.properties,ou=config-files,dc=ciam-ops
+    replace ciamSkeleton: # PingFederate engine run.properties (Example Aero, synthetic)
+pf.operational.mode=${pf.operationa…
+
+Outside the record:
+  - Deploy the rebuilt pingfederate/bin/run.properties to `pf-engine`'s servers in target/prod.
+
+What it could hide:
+  - Every environment receiving pingfederate/bin/run.properties gets these settings; where it binds no `egress-proxy` they render empty (no proxy).
+  - If a product importer also reads this file into its own entries, re-importing from servers that don't run the new file yet takes the values back.
+exit 0

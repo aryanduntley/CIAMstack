@@ -304,16 +304,16 @@ resource "aws_vpc_security_group_ingress_rule" "fw_supplier_portal_0_1636" {
 }
 
 resource "aws_iam_role" "identity_ds" {
-  name               = "ciam-prod-ds"
+  name = "ciam-prod-ds"
   assume_role_policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
+    "Version" : "2012-10-17",
+    "Statement" : [
       {
-        "Effect": "Allow",
-        "Principal": {
-          "Service": "ec2.amazonaws.com"
+        "Effect" : "Allow",
+        "Principal" : {
+          "Service" : "ec2.amazonaws.com"
         },
-        "Action": "sts:AssumeRole"
+        "Action" : "sts:AssumeRole"
       }
     ]
   })
@@ -325,52 +325,52 @@ resource "aws_iam_role" "identity_ds" {
 }
 
 resource "aws_iam_role_policy" "identity_ds" {
-  name   = "ciam-prod-ds-permissions"
-  role   = aws_iam_role.identity_ds.id
+  name = "ciam-prod-ds-permissions"
+  role = aws_iam_role.identity_ds.id
   policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
+    "Version" : "2012-10-17",
+    "Statement" : [
       {
-        "Sid": "ReadSecretDsRootPassword",
-        "Effect": "Allow",
-        "Action": [
+        "Sid" : "ReadSecretDsRootPassword",
+        "Effect" : "Allow",
+        "Action" : [
           "secretsmanager:GetSecretValue"
         ],
-        "Resource": [
+        "Resource" : [
           "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/ds-root-password-??????"
         ]
       },
       {
-        "Sid": "UseKeyDiskEncryption",
-        "Effect": "Allow",
-        "Action": [
+        "Sid" : "UseKeyDiskEncryption",
+        "Effect" : "Allow",
+        "Action" : [
           "kms:Decrypt",
           "kms:Encrypt",
           "kms:GenerateDataKey"
         ],
-        "Resource": [
+        "Resource" : [
           "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
         ]
       },
       {
-        "Sid": "WriteLogsAuditLogs",
-        "Effect": "Allow",
-        "Action": [
+        "Sid" : "WriteLogsAuditLogs",
+        "Effect" : "Allow",
+        "Action" : [
           "logs:PutLogEvents",
           "logs:CreateLogStream"
         ],
-        "Resource": [
+        "Resource" : [
           "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/audit:*",
           "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/audit"
         ]
       },
       {
-        "Sid": "WriteStorageBackupTarget",
-        "Effect": "Allow",
-        "Action": [
+        "Sid" : "WriteStorageBackupTarget",
+        "Effect" : "Allow",
+        "Action" : [
           "s3:PutObject"
         ],
-        "Resource": [
+        "Resource" : [
           "arn:aws:s3:::example-aero-ciam-prod-ds-backups/*",
           "arn:aws:s3:::example-aero-ciam-prod-ds-backups"
         ]
@@ -385,16 +385,16 @@ resource "aws_iam_instance_profile" "identity_ds" {
 }
 
 resource "aws_iam_role" "identity_pf" {
-  name               = "ciam-prod-pf"
+  name = "ciam-prod-pf"
   assume_role_policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
+    "Version" : "2012-10-17",
+    "Statement" : [
       {
-        "Effect": "Allow",
-        "Principal": {
-          "Service": "ec2.amazonaws.com"
+        "Effect" : "Allow",
+        "Principal" : {
+          "Service" : "ec2.amazonaws.com"
         },
-        "Action": "sts:AssumeRole"
+        "Action" : "sts:AssumeRole"
       }
     ]
   })
@@ -406,49 +406,49 @@ resource "aws_iam_role" "identity_pf" {
 }
 
 resource "aws_iam_role_policy" "identity_pf" {
-  name   = "ciam-prod-pf-permissions"
-  role   = aws_iam_role.identity_pf.id
+  name = "ciam-prod-pf-permissions"
+  role = aws_iam_role.identity_pf.id
   policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
+    "Version" : "2012-10-17",
+    "Statement" : [
       {
-        "Sid": "ReadSecretPfAdminPassword",
-        "Effect": "Allow",
-        "Action": [
+        "Sid" : "ReadSecretPfAdminPassword",
+        "Effect" : "Allow",
+        "Action" : [
           "secretsmanager:GetSecretValue"
         ],
-        "Resource": [
+        "Resource" : [
           "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-admin-password-??????"
         ]
       },
       {
-        "Sid": "ReadSecretPfDsBindPassword",
-        "Effect": "Allow",
-        "Action": [
+        "Sid" : "ReadSecretPfDsBindPassword",
+        "Effect" : "Allow",
+        "Action" : [
           "secretsmanager:GetSecretValue"
         ],
-        "Resource": [
+        "Resource" : [
           "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-ds-bind-password-??????"
         ]
       },
       {
-        "Sid": "ReadSecretPfSigningKey",
-        "Effect": "Allow",
-        "Action": [
+        "Sid" : "ReadSecretPfSigningKey",
+        "Effect" : "Allow",
+        "Action" : [
           "secretsmanager:GetSecretValue"
         ],
-        "Resource": [
+        "Resource" : [
           "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-signing-key-??????"
         ]
       },
       {
-        "Sid": "WriteLogsAuditLogs",
-        "Effect": "Allow",
-        "Action": [
+        "Sid" : "WriteLogsAuditLogs",
+        "Effect" : "Allow",
+        "Action" : [
           "logs:PutLogEvents",
           "logs:CreateLogStream"
         ],
-        "Resource": [
+        "Resource" : [
           "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/audit:*",
           "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/audit"
         ]

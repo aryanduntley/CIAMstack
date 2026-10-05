@@ -34,10 +34,10 @@ def _estate(env, extra):
             *extra)
 
 
-def model(alpha=(), beta=(), tree=()):
-    """(directory, alpha model, beta model) with the given records added."""
+def model(alpha=(), beta=(), tree=(), changes=()):
+    """(directory, alpha model, beta model) with the given records added, then the change records applied."""
     d = build_directory(REGISTRY, tuple(parse("\n".join((mini_estate.LDIF, *tree, *_estate(ALPHA, alpha),
-                                                         *_estate(BETA, beta))))))
+                                                         *_estate(BETA, beta))))), tuple(changes))
     return d, env_model(d, "alpha/prod"), env_model(d, "beta/prod")
 
 

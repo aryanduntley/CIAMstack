@@ -7,6 +7,7 @@ import json
 
 import pytest
 
+from opsdir.connectors.fixes import chosen
 from opsdir.connectors.importing import preview_import
 from opsdir.connectors.registry import core_fragments
 from opsdir.core.contract import PlanContext
@@ -255,9 +256,15 @@ def test_an_idp_connection_id_two_integrations_claim_resolves_to_neither():
                         "ciamProtocolType: saml2-idp\nciamEntityId: https://copy.example/okta\n"
                         "pingfedConnectionId: acme-okta\n"))
     d, _, _ = imported((*SET_DUO_ROLE, *claim))
+    found = plan(d, "alpha/prod")
     assert "Authentication policy `Partners` names IdP connection `acme-okta`, which 2 entries claim (acme-copy, " \
            "acme-okta): exactly one may carry its id, so the record must give it to one." in \
-        [t for _, t, _ in plan(d, "alpha/prod").blockers]
+        [t for _, t, _ in found.blockers]
+    (fix,) = [x for x in found.fixes if x.key == "claimants:idp-connection:acme-okta"]
+    assert [(o.key, o.label) for o in fix.options] == [("acme-copy", "keep it on `acme-copy`"),
+                                                       ("acme-okta", "keep it on `acme-okta`")]
+    kept, _, _ = imported((*SET_DUO_ROLE, *claim, *chosen(fix, "acme-okta").records))
+    assert not any("entries claim" in t for _, t, _ in plan(kept, "alpha/prod").blockers)
 
 
 def test_an_idp_connection_the_record_names_differently_still_resolves():

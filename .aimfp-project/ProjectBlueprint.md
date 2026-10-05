@@ -1,8 +1,8 @@
 # CIAMstack - Project Blueprint
 
-**Version**: 1.11
-**Status**: Paths 1-4 completed; path 5 (Stack Coverage) in progress: 4.1-4.8 and 4.12 done (PingFederate depth, hidden automation, host baseline & Kubernetes workloads, messaging & external services, data profile, observability, platform IAM & admin plane, edge & traffic protection, Google Cloud), 4.9 next; Updates U.6 (shared helpers), U.7 (deferred notes 352, 331), U.10 (interaction graph) and U.11 (tests not tracked) done, U.4 (package READMEs) open
-**Last Updated**: 2026-10-02
+**Version**: 1.12
+**Status**: Paths 1-4 completed; path 5 (Stack Coverage) in progress: 4.1-4.8 and 4.12 done (PingFederate depth, hidden automation, host baseline & Kubernetes workloads, messaging & external services, data profile, observability, platform IAM & admin plane, edge & traffic protection, Google Cloud); 4.9 network depth in progress (domain, renders, importers, landing-zone plumbing, explicit proxies, assisted fixes with exact and option-based fixers done; docs and network reports in the demo open); Updates U.6, U.7, U.10, U.11 done, U.4 (package READMEs) open
+**Last Updated**: 2026-10-05
 **AIMFP Compliance**: Strict
 
 ---
@@ -178,8 +178,15 @@ Schema OIDs: each owner has an arc (PEN .1 core/domains, .2 showcase user schema
   for unstated/missing behaviour, spoofable headers, sensitive endpoints, TTL lowering dated before cutover and
   drafted requests to the zone keeper; importers from state and CLI on all three clouds; showcase edge story with
   planted findings and approved change CHG-2015) (2026-10-03)
-- Next: network depth (4.9, with the GCP firewall model as a per-environment choice:
-  network tags or firewall policies with secure tags), data services/backup/DR (4.10), cloud governance (4.11)
+- In progress: 4.9 network depth (core domain `network`: outside sites, route tables, NACLs, private endpoints,
+  endpoint services, proxies, time sources, flow logs, firewall policies; ports matrix from adapter-declared
+  listeners; stack renders of private endpoints, endpoint services, egress FQDN rules and the GCP policy firewall
+  model; importers on all three clouds; the network plumbing rendered into terraform/landing-zone/[<party>/] per
+  keeper with import blocks and requests for what isn't built; explicit egress proxies: products declare their
+  proxy settings, requests to proxy keepers; assisted fixes (findings offer record changes, proposed as a change
+  for a person to approve, applied unchanged; CLI `opsdir fix`, the same operations for the future MCP server);
+  local tools/ with Terraform validating every rendered root) (2026-10-05)
+- Next: data services/backup/DR (4.10), cloud governance (4.11)
 
 ### Path 6: Renderers & Targets
 - PF renderer (real target), Kubernetes/ForgeOps, config management & on-prem, observability renderers, round-trip guarantees, cloud-native IaC renderers (ARM/Bicep, CloudFormation)
@@ -267,6 +274,11 @@ no files under tests/, no pytest.ini, no test -> production edges; .watchdogigno
 
 - **Change**: Milestone 4.7 platform IAM and admin plane: new built-in core domain `access` (permission sets of `<verb> <binding role>`, principals with kind, identity role, conditions, reviews and break-glass facts; bindings `ciamIdentityBinding`, `ciamGuardrail`, `ciamAccessPath`; reports principals, identities, guardrails, access-paths). Contract: `Permission` rows and `AccessModel` (permissions, escalations, covers, resource, optional evaluator) per cloud adapter. Grants are recorded in each cloud's terms with suffixes for resource policies, conditions and eligibility; denials, ceilings and evaluator verdicts beside them; effective access is allowed, denied or unknown following each cloud's evaluation order. Renderers: least-privilege workload identities in the platform's Terraform; `terraform/landing-zone/` (CI OIDC trust, workforce access, guardrails) for the landing zone's owners, with planner requests for what the target lacks; `access/evaluate.sh` for the AWS policy simulator and Google's Policy Troubleshooter. Importers: IAM from Terraform state and CLI output on AWS, Azure and Google Cloud (roles and policies, resource policies, control policies, Identity Center; managed identities, role assignments, custom roles, PIM, deny assignments, access policies, policy assignments; IAM policies at every level, custom roles, workload identity pools, deny and organization policies). Showcase: principals, identities in all three environments, the landing zone's state, eight planted access findings.
 - **Rationale**: user decisions (notes #451, #455): permissions neutral and mapped; workloads rendered and the landing zone rendered for its owners; import from state and CLI on every cloud; tri-state evaluation with cloud evaluators as optional evidence, so what can't be told is a verification, not a guess.
+
+### Version 1.12 - 2026-10-05
+
+- **Change**: Milestone 4.9 network depth, in progress (tasks 141-152). Core domain `network` (schema attrs 385-420, classes 82-90) with reports and planner checks; `Adapter.listeners` (ports matrix) and `Adapter.proxy_settings` (explicit egress proxies; `ProxySetting` with a derived link). Stack renders: private endpoints, endpoint services, egress FQDN rules, the GCP network-policy firewall model with secure tags. Importers read it all back on AWS, Azure and Google Cloud from every source. Network plumbing (NAT, route tables, NACLs, interconnects, flow logs; private endpoints and egress firewalls kept elsewhere) renders into `terraform/landing-zone/` for the landing zone's owner and `terraform/landing-zone/<party>/` for each other keeper, existing items adopted with import blocks; the planner drafts requests for what isn't built and asks proxy keepers for missing sites. Assisted fixes: findings carry `Fix` (change records, manual steps, risks); a proposed change holds its records (`ciamChangeRecords`) until a person approves it; `opsdir fix list|show|propose|apply|approved`; derived links (`ciamValueFrom: role#proxy:host`, computed per environment, empty where unbound) keep shared captured files free of one environment's literals; `Codec.add` places a new setting. First fixers: ports gaps, the stable service name, DS joins, target parity values, stray rules, endpoint-service acceptance; fixes that are a choice offer options (`--option`): secret roles for withheld credentials (never picked; name matches first), claimed PingFederate ids, overrides. Local `tools/` (gitignored): Terraform fetched and signature-verified; `validate-terraform.sh` and the `terraform` test marker check every rendered root (it found and fixed jsonencode spacing, fmt alignment and an Azure scope).
+- **Rationale**: user decisions (notes 1767, 1778, 1782, 1792, 1794): plumbing is the landing zone's and each keeper's, adopted rather than recreated; requests ask only for what isn't built; product proxy settings are checked and fixed as links, never literals in shared files; fixes are structured operations data so an AI can propose them and only a person approves; installs stay local to the project and removable.
 ---
 
 ## 6. User Settings System
@@ -298,6 +310,8 @@ No preferences set yet.
 - **Self-contained technologies, explicit connectors**: each technology's schema fragment and parsers/renderers live together in its adapter package; code never mixes systems. Cross-technology behaviour (render composition, migration planning, cross-cutting reports) lives only in connectors.
 - **Shared helpers, not per-package copies**: anything two packages would write alike (tolerant parsing, files by folder, container entries, DN scope, GeneralizedTime, JSON as written and held, cloud role tags, CI environments, captured product files) is a public, tested core helper (`opsdir.core.sources`, `core.directory`, `core.jsondata`, `core.inventory`, the domains); packages keep only their product's vocabulary. Private helpers aren't in the tracking DB, so the code is searched for an idiom before one is written. Module-level tables are read-only.
 - **Refactor before expanding**: Stage 1 must keep rendered outputs byte-identical and the findings check passing.
+- **Fixes are proposals, never silent**: a check that knows the exact record change offers it as data (`Fix`); an operator or an AI proposes it as a change, a person approves, the store enforces. Fixes never write secret values, observed facts, attestations or a party's confirmation.
+- **Shared files link, never copy**: a captured file is shared by every environment with a server role, so per-environment values in it are links (`role#attribute`, or derived `role#kind:name`), never one environment's literal.
 
 ### Constraints
 

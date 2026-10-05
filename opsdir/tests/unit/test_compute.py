@@ -98,6 +98,17 @@ def test_the_planner_names_what_a_rebuild_loses_and_weaker_target_compute():
         "Compute group `web-group` (role `web`) in beta/prod scales to at most 2 instance(s); alpha/prod runs 3."]
 
 
+def test_weaker_target_compute_offers_fixes_that_clear_it():
+    f = check_hosts(context(directory()))
+    assert [(x.key, [r.mods for r in x.records]) for x in f.fixes] == [
+        ("metadata-tokens:web-group", [(("replace", "ciamMetadataTokens", ("TRUE",)),)]),
+        ("max-size:web-group", [(("replace", "ciamMaxSize", ("3",)),)])]
+    fixed = build_directory(REGISTRY, tuple(parse(mini_estate.LDIF + "\n" + RECORDS)),
+                            tuple(r for x in f.fixes for r in x.records))
+    after = check_hosts(context(fixed))
+    assert after.fixes == () and not any("session tokens" in t or "scales to" in t for _, t, _, _ in after.actions)
+
+
 def test_nothing_is_asked_of_a_record_without_baselines_or_compute():
     d = build_directory(REGISTRY, tuple(parse(mini_estate.LDIF)))
     assert check_hosts(context(d)) == check_workloads(context(d)) == findings()

@@ -1,16 +1,19 @@
 """Network planner checks: egress partners allowlist (fixed, public, and where the routes send traffic), private
 endpoints that reach nothing or stop answering the usual name, endpoint-service consumers who must reconnect,
 interconnects whose networks overlap or whose other side isn't in place, outside sites the egress proxy or firewall
-doesn't allow, time sources and flow logs. What the target doesn't bind at all is the core role check's blocker; these
+doesn't allow, time sources and flow logs, and the plumbing the target's keepers still have to build (a request to
+each). What the target doesn't bind at all is the core role check's blocker; these
 look at what each binding says."""
 import ipaddress
 
+from ...core.changeset import add_values, delete_values, set_values
 from ...core.directory import children, get, is_kind, one, rdn_value, values
 from ...core.environment import of_class, one_role
-from ...core.findings import findings, merge_findings, owner_label, responsible
+from ...core.findings import Fix, findings, merge_findings, owner_label, responsible
 from ...core.naming import env_label
 from ...core.network import is_private
 from ..infrastructure.naming import EXTERNAL_ALLOWLISTS
+from .plumbing import plumbing_requests, plumbing_unasked
 from .routing import allows, default_routes, required_sites
 
 
@@ -50,21 +53,33 @@ def check_egress(ctx):
 def check_private_endpoints(ctx):
     """Private endpoints that reach a role their environment doesn't bind, and ones the target keeps without private
     DNS where the source had it (clients using the service's usual name would go to its public endpoint)."""
-    actions = []
+    actions, fixes = [], []
     for m in (ctx.src, ctx.dst):
         bound = {one(b, "ciamBindingRole") for b in m.bindings}
+        dangling = [(p, r) for p in of_class(m, "ciamPrivateEndpoint") for r in values(p, "ciamReachesRole")
+                    if r not in bound]
         actions += [("Private endpoints", f"{m.label}: private endpoint `{rdn_value(p)}` reaches `{r}`, which "
-                     f"{m.label} doesn't bind.", responsible(ctx.d, p, m.env), None)
-                    for p in of_class(m, "ciamPrivateEndpoint") for r in values(p, "ciamReachesRole") if r not in bound]
+                     f"{m.label} doesn't bind.", responsible(ctx.d, p, m.env), None) for p, r in dangling]
+        fixes += [Fix(f"reaches:{m.label}:{rdn_value(p)}:{r}", "Private endpoints",
+                      f"Stop `{rdn_value(p)}` reaching `{r}` in {m.label}",
+                      (delete_values(p, "ciamReachesRole", (r,)),), (),
+                      (f"If {m.label} should bind `{r}` (a secret or store it really uses), bind it instead.",))
+                  for p, r in dangling]
     dst = _by_role(ctx.dst, "ciamPrivateEndpoint")
+    lost = [(role, p) for role, p in sorted(_by_role(ctx.src, "ciamPrivateEndpoint").items())
+            if role in dst and one(p, "ciamPrivateDns") == "TRUE" and one(dst[role], "ciamPrivateDns") != "TRUE"]
     actions += [("Private endpoints", f"{ctx.src.label}'s private endpoint `{rdn_value(p)}` answers the "
                  f"{one(p, 'ciamPrivateService')} service's usual name inside the network; {ctx.dst.label}'s "
                  f"(`{rdn_value(dst[role])}`) doesn't, so clients using that name reach the public endpoint: turn on "
                  "private DNS, or point them at the endpoint's own name.", responsible(ctx.d, dst[role], ctx.dst.env),
-                 ctx.cutover)
-                for role, p in sorted(_by_role(ctx.src, "ciamPrivateEndpoint").items())
-                if role in dst and one(p, "ciamPrivateDns") == "TRUE" and one(dst[role], "ciamPrivateDns") != "TRUE"]
-    return findings(actions=actions)
+                 ctx.cutover) for role, p in lost]
+    dns = [Fix(f"private-dns:{role}", "Private endpoints", f"Turn on private DNS for `{rdn_value(dst[role])}` in "
+                 f"{ctx.dst.label}, as {ctx.src.label}'s has it", (set_values(dst[role], "ciamPrivateDns", ("TRUE",)),),
+                 (f"Apply the rendered private endpoint in {ctx.dst.label} (its keeper's root when someone else keeps "
+                  "it).",),
+                 ("Clients that use the endpoint's own name keep working; ones resolving the service's usual name "
+                  "start reaching the endpoint instead of the public service.",)) for role, _ in lost]
+    return findings(actions=actions, fixes=[*fixes, *dns])
 
 
 # ------------------------------------------------------------------ endpoint services
@@ -81,7 +96,7 @@ def _reconnects(ctx, e, t):
 def check_endpoint_services(ctx):
     """Endpoint services across the move: consumers reconnect to the target's name, principals the target no longer
     allows, and target services anyone who knows their name may connect to unaccepted."""
-    actions, dst = [], _by_role(ctx.dst, "ciamEndpointService")
+    actions, fixes, dst = [], [], _by_role(ctx.dst, "ciamEndpointService")
     for role, e in sorted(_by_role(ctx.src, "ciamEndpointService").items()):
         t = dst.get(role)
         if t is None:
@@ -92,12 +107,27 @@ def check_endpoint_services(ctx):
         actions += [("Endpoint services", f"{ctx.src.label} allows {', '.join(f'`{p}`' for p in lost)} to connect to "
                      f"`{rdn_value(e)}`; {ctx.dst.label}'s `{rdn_value(t)}` doesn't: allow them, or confirm they no "
                      "longer connect.", responsible(ctx.d, t, ctx.dst.env), ctx.cutover)] if lost else []
+        fixes += [Fix(f"endpoint-principals:{role}", "Endpoint services",
+                      f"Allow {', '.join(f'`{p}`' for p in lost)} to connect to `{rdn_value(t)}` in {ctx.dst.label}",
+                      (add_values(t, "ciamAllowedPrincipal", lost),),
+                      (f"Apply the rendered endpoint service in {ctx.dst.label}.",),
+                      (f"Allows exactly what {ctx.src.label} allows; a principal that no longer connects stays "
+                       "allowed.",))
+                  ] if lost and ctx.src.provider == ctx.dst.provider else []    # another cloud's principals can't be
     actions += [("Endpoint services", f"{ctx.dst.label}: anyone who knows `{rdn_value(t)}`'s name may connect without "
                  "being accepted (no visibility restriction recorded, acceptance not required): restrict who sees it, "
                  "or require acceptance.", responsible(ctx.d, t, ctx.dst.env), None)
                 for t in of_class(ctx.dst, "ciamEndpointService")
                 if not values(t, "ciamVisibleTo") and one(t, "ciamAcceptanceRequired") != "TRUE"]
-    return findings(actions=actions)
+    fixes += [Fix(f"acceptance:{rdn_value(t)}", "Endpoint services", f"Require acceptance of each new connection to "
+                  f"`{rdn_value(t)}` in {ctx.dst.label}", (set_values(t, "ciamAcceptanceRequired", ("TRUE",)),),
+                  (f"Apply the rendered endpoint service in {ctx.dst.label}; accept each consumer's connection when it "
+                   "asks.",),
+                  ("Consumers that connect unaccepted today wait for an operator after cutover; restricting who may "
+                   "see the service (ciamVisibleTo) is the other way.",))
+              for t in of_class(ctx.dst, "ciamEndpointService")
+              if not values(t, "ciamVisibleTo") and one(t, "ciamAcceptanceRequired") != "TRUE"]
+    return findings(actions=actions, fixes=fixes)
 
 
 # ------------------------------------------------------------------ interconnects
@@ -131,10 +161,18 @@ def check_interconnects(ctx):
 
 
 # ------------------------------------------------------------------ outside sites
+def site_request(m, proxy, site):
+    """The text asking whoever keeps a proxy or firewall to let environment m's egress out to a site."""
+    roles = ", ".join(f"`{r}`" for r in site.needed_by)
+    return (f"Allow `{site.host}` ({site.kind}) through `{rdn_value(proxy)}` ({one(proxy, 'ciamProxyKind')}) for "
+            f"{m.label}" + (f": {roles} reach it" if roles else "") + ".")
+
+
 def check_sites(ctx):
-    """Outside sites the platform must reach that the target's egress proxy or firewall doesn't allow, and firewalls
-    with domain rules no default route sends egress through (their rules aren't enforced)."""
-    sites, actions = required_sites(ctx.d), []
+    """Outside sites the platform must reach that the target's egress proxy or firewall doesn't allow (a request to
+    the party that keeps it, when one is recorded), and firewalls with domain rules no default route sends egress
+    through (their rules aren't enforced)."""
+    sites, actions, requests = required_sites(ctx.d), [], []
     for p in of_class(ctx.dst, "ciamProxy"):
         missing = [s for s in sites if not allows(p, s)]
         owner = responsible(ctx.d, p, ctx.dst.env)
@@ -142,13 +180,16 @@ def check_sites(ctx):
                      "doesn't allow " + ", ".join(f"`{s.host}` ({s.kind})" for s in missing) + ": allow them before "
                      "cutover, or what the platform fetches there fails (metadata, signing keys, certificate status, "
                      "vendors).", owner, ctx.cutover)] if missing else []
+        party = get(ctx.d, one(p, "ciamManagedBy")) if one(p, "ciamManagedBy") else None
+        requests += [(party, None, site_request(ctx.dst, p, s), "network", ctx.cutover)
+                     for s in missing] if party is not None else []
         role = one(p, "ciamBindingRole")
         unrouted = one(p, "ciamProxyKind") == "firewall" and default_routes(ctx.dst) and not any(
             r.kind in ("firewall", "appliance") and r.target == role for _, r in default_routes(ctx.dst))
         actions += [("Egress", f"{ctx.dst.label}: no route sends internet egress through `{rdn_value(p)}`, so its "
                      "domain rules aren't enforced: route the subnets' default route through it.", owner,
                      ctx.cutover)] if unrouted else []
-    return findings(actions=actions)
+    return findings(actions=actions, requests=requests)
 
 
 # ------------------------------------------------------------------ time and flow logs
@@ -165,14 +206,32 @@ def check_flow_logs(ctx):
     """Flow logs the target keeps for less time than the source, and flow logs sent to a role their environment
     doesn't bind."""
     dst = _by_role(ctx.dst, "ciamFlowLog")
+    short = [(role, e) for role, e in sorted(_by_role(ctx.src, "ciamFlowLog").items())
+             if role in dst and one(e, "ciamRetentionDays") and one(dst[role], "ciamRetentionDays")
+             and int(one(dst[role], "ciamRetentionDays")) < int(one(e, "ciamRetentionDays"))]
     shorter = [("Flow logs", f"`{rdn_value(dst[role])}` keeps flow logs {one(dst[role], 'ciamRetentionDays')} days in "
                 f"{ctx.dst.label}; {ctx.src.label} keeps them {one(e, 'ciamRetentionDays')}.",
-                responsible(ctx.d, dst[role], ctx.dst.env), None)
-               for role, e in sorted(_by_role(ctx.src, "ciamFlowLog").items())
-               if role in dst and one(e, "ciamRetentionDays") and one(dst[role], "ciamRetentionDays")
-               and int(one(dst[role], "ciamRetentionDays")) < int(one(e, "ciamRetentionDays"))]
+                responsible(ctx.d, dst[role], ctx.dst.env), None) for role, e in short]
+    fixes = [Fix(f"flow-log-retention:{role}", "Flow logs", f"Keep `{rdn_value(dst[role])}`'s flow logs "
+                 f"{one(e, 'ciamRetentionDays')} days in {ctx.dst.label}, as {ctx.src.label} does",
+                 (set_values(dst[role], "ciamRetentionDays", (one(e, "ciamRetentionDays"),)),),
+                 (f"Apply the rendered flow log in {ctx.dst.label}'s landing zone (its keeper's root).",),
+                 (f"Carries {ctx.src.label}'s retention over; if {ctx.dst.label} keeps them shorter on purpose (cost, "
+                  "a policy), keep the action open instead.",)) for role, e in short]
     nowhere = [("Flow logs", f"{m.label}: flow log `{rdn_value(e)}` goes to `{one(e, 'ciamLogDestinationRole')}`, "
                 f"which {m.label} doesn't bind.", responsible(ctx.d, e, m.env), None)
                for m in (ctx.src, ctx.dst) for e in of_class(m, "ciamFlowLog")
                if one(e, "ciamLogDestinationRole") and one_role(m, one(e, "ciamLogDestinationRole")) is None]
-    return merge_findings([findings(actions=shorter), findings(actions=nowhere)])
+    return merge_findings([findings(actions=shorter, fixes=fixes), findings(actions=nowhere)])
+
+
+# ------------------------------------------------------------------ plumbing the keepers build
+def check_plumbing(ctx):
+    """The target's plumbing not built yet (no provider ref): a request to each keeper, rendered in their root; an
+    action when the record names no one to ask."""
+    unasked = [("Network", f"{ctx.dst.label}: {len(k.bindings)} plumbing items in `{k.folder}/` are kept by "
+                f"{k.name}, but no party is recorded to ask for them: record the landing zone's owner (or "
+                "ciamManagedBy).",
+                responsible(ctx.d, ctx.dst.env), ctx.cutover) for k in plumbing_unasked(ctx.dst)]
+    return findings(actions=unasked, requests=[(party, None, text, "network", by)
+                                               for party, text, by in plumbing_requests(ctx.dst, ctx.cutover)])

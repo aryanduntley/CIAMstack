@@ -9,6 +9,7 @@ accepts (an approved change record). Effects are the store's; everything else is
 from typing import NamedTuple
 
 from .connectors import capture as capturemod, importing, migration, plan as planmod, profiling, reports, workspace
+from .connectors import fixes as fixmod
 from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, schema_sync, store_parts
 from .connectors.render import render_env
 from .connectors.stack import STATUS_HEADERS, stack_rows
@@ -109,6 +110,39 @@ def migrate(conn, src, dst, as_of):
     """Effect (reads the record): check both stacks, plan and render the target."""
     r = migration.run(db.load_directory(conn), src, dst, as_of, ADAPTERS, ADAPTER_VERSIONS)
     return Migrated(r, migration.output_files(r))
+
+
+# ------------------------------------------------------------------ assisted fixes
+def fixes(conn, src, dst, as_of):
+    """Effect (reads the record): the record changes the plan's findings offer (core.findings.Fix), each with its
+    change records, the steps outside the record and what it could hide. Against the workspace connection they are the
+    workspace's (reaching the live record at cutover)."""
+    return planmod.plan(db.load_directory(conn), src, dst, as_of).fixes
+
+
+def propose_fix(conn, src, dst, as_of, key, change_id, title=None, option=None, inputs=None):
+    """Effect: record a fix (its option chosen, when it offers a choice, and its inputs given, {key: values}) as change
+    change_id with status proposed, holding the records it applies, for a person to approve (what an AI may do).
+    Nothing else is written; ValueError when the store would refuse the records (a value of the wrong type, two
+    values for a SINGLE-VALUE attribute, an attribute the entry's classes don't allow): a proposal applies as held."""
+    fix = fixmod.chosen(fixmod.find_fix(fixes(conn, src, dst, as_of), key), option, inputs)
+    problems = db.record_problems(conn, fix.records)
+    if problems:
+        raise ValueError(f"fix {key}: the store would refuse its records: " + "; ".join(problems))
+    return modify(conn, (fixmod.proposal(fix, change_id, title),), change_id)
+
+
+def apply_fix(conn, src, dst, as_of, key, change_id, option=None, inputs=None):
+    """Effect: apply a fix's records (its option chosen, when it offers a choice, and its inputs given, {key: values})
+    under an approved change."""
+    fix = fixmod.chosen(fixmod.find_fix(fixes(conn, src, dst, as_of), key), option, inputs)
+    return modify(conn, fix.records, change_id)
+
+
+def apply_proposed(conn, change_id):
+    """Effect: apply the records a proposed change holds once a person approved it, and mark it applied."""
+    records, applied = fixmod.proposed_records(db.load_directory(conn), change_id)
+    return modify(conn, (*records, applied), change_id)
 
 
 # ------------------------------------------------------------------ config files

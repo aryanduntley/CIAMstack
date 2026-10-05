@@ -21,20 +21,7 @@ from .frontdoor import endpoint, front_door
 from .identities import LOC, RG, identity, scope_data
 from .landing import render_landing
 from .network import render_network
-
-def _network(m):
-    net = one_role(m, "network")
-    return (block("data", ["azurerm_resource_group", "main"], [("name", one(net, "ciamResourceGroup"))]),
-            block("data", ["azurerm_virtual_network", "main"],
-                  [("name", one(net, "ciamProviderRef")), ("resource_group_name", RG)]),
-            *(_subnet(s) for s in of_class(m, "ciamSubnetBinding")))
-
-
-def _subnet(s):
-    vnet, sub = one(s, "ciamProviderRef").split("/", 1)
-    return block("data", ["azurerm_subnet", tf_name(rdn_value(s))], [
-        ("name", sub), ("virtual_network_name", vnet), ("resource_group_name", RG)])
-
+from .plumbing import network_data
 
 def _security_rule(m, fw, prio, pinned):
     why = rule_purpose(m, fw)
@@ -185,7 +172,7 @@ def _interconnect_note(m, ic):
 def render(m, services):
     endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     des, identities = one_role(m, "disk-encryption"), workload_identities(m, ACCESS)
-    out = (*_network(m), *_security_groups(m), *chain.from_iterable(identity(m, w) for w in identities),
+    out = (*network_data(m), *_security_groups(m), *chain.from_iterable(identity(m, w) for w in identities),
            *chain.from_iterable(_server(m, s, des, identities) for s in m.servers),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *records(m.d, m), *forwarding_rules(m),

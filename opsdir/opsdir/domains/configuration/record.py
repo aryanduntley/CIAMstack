@@ -12,11 +12,13 @@ accepts it (the store's own guard applies regardless).
 """
 import hashlib
 import re
+from functools import reduce
 
 from ...core.capture import Captured, Slot, attempt_capture, render_captured
 from ...core.directory import children, is_a, make_entry, one
 from ...core.environment import one_role
 from ...core.secrets import text_concerns, withheld
+from ..network.proxies import derived
 from .naming import CONFIG_FILES, file_dn, setting_dn, setting_rdn
 
 # A setting's place in a skeleton: MARK_OPEN locator MARK_CLOSE. Private-use characters no config file contains,
@@ -98,9 +100,44 @@ def captured_file(fmt, prefix, folder, path, text, patterns, role=None):
     return file_dn(name), entries, notices
 
 
+VALUE_ATTRS = ("ciamSettingValue", "ciamValueFrom")
+
+
+def setting_attrs(value=None, link=None):
+    """A setting's value attributes: a link (ciamValueFrom, role#attribute or role#kind:name) or a literal."""
+    return {"ciamValueFrom": (link,)} if link else {"ciamSettingValue": (value,)} if value else {}
+
+
+def revalued(setting, attrs):
+    """A setting entry with its value attributes replaced by attrs (setting_attrs); its raw text kept, so a changed
+    value is written in the original's style."""
+    kept = {k: v for k, v in setting.attrs.items() if k not in VALUE_ATTRS}
+    return make_entry(setting.dn, setting.classes, {**kept, **attrs})
+
+
+def added_settings(fmt, file_entry, new):
+    """(the file entry with each new setting's place appended to its layout, the new setting entries) for new:
+    ((locator, value attributes), ...); None when the file isn't held setting by setting or its format can't place a
+    new setting (codec.add)."""
+    add = fmt.codec.add if fmt.codec is not None else None
+    if add is None or one(file_entry, "ciamCaptureLevel") != "settings":
+        return None
+
+    def append(text, locator):
+        before, after = add(text, locator)
+        return text + before + MARK_OPEN + locator + MARK_CLOSE + after
+    skeleton = reduce(append, (loc for loc, _ in new), one(file_entry, "ciamSkeleton"))
+    name = one(file_entry, "cn")
+    return (make_entry(file_entry.dn, file_entry.classes, {**file_entry.attrs, "ciamSkeleton": (skeleton,)}),
+            tuple(make_entry(setting_dn(name, loc), ("top", "ciamConfigSetting"),
+                             {"cn": (setting_rdn(loc),), "ciamLocator": (loc,), **attrs}) for loc, attrs in new))
+
+
 def _linked(setting, m):
     role, attr = one(setting, "ciamValueFrom").split("#", 1)
     b = one_role(m, role)
+    if ":" in attr:            # a value derived from the binding (role#proxy:host); empty where m doesn't bind it
+        return derived(m, b, attr) if b is not None else ""
     if b is None:
         raise ValueError(f"{one(setting, 'ciamLocator')}: {m.label} binds no {role}")
     if is_a(b, "ciamSecretRef") or is_a(b, "ciamKeyRef"):

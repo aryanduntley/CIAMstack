@@ -6,16 +6,19 @@ landing.py) use them. Pure.
 """
 import re
 
-from opsdir.core.directory import one
-from opsdir.core.environment import of_class
+from opsdir.core.directory import is_a, one, rdn_of, rdn_value
+from opsdir.core.environment import environment_of, of_class
 from opsdir_format_terraform.hcl import block, ref, tf_name
 
 RG = ref("data.azurerm_resource_group.main.name")
 LOC = ref("data.azurerm_resource_group.main.location")
+GROUP = "${data.azurerm_resource_group.main.id}"        # the start of a resource ID in the environment's group
 
 
 def scope(b):
-    """(the narrowest scope a role assignment on a binding's resource takes, the data source it needs or None)."""
+    """(the narrowest scope a role assignment on a binding's resource takes, the data source it needs or None): a
+    secret or key in its vault, a storage container, the resource ID a provider ref is; a service name's load balancer
+    and a scale set named by its ref, by their IDs in the environment's resource group."""
     uri, storage = one(b, "ciamRefUri", ""), one(b, "ciamStorageRef", "")
     if uri.startswith(("azkv://", "azkv-key://")):
         vault, _, rest = uri.split("://", 1)[1].partition("/")
@@ -26,7 +29,15 @@ def scope(b):
         account, _, container = storage[9:].partition("/")
         return (f"${{data.azurerm_storage_account.{tf_name(account)}.id}}/blobServices/default/containers/{container}",
                 ("azurerm_storage_account", account))
-    return one(b, "ciamProviderRef"), None
+    ref_ = one(b, "ciamProviderRef", "")
+    if ref_.startswith("/subscriptions/"):
+        return ref_, None
+    if is_a(b, "ciamServiceName"):                  # the load balancer the renderer names for it
+        return (f"{GROUP}/providers/Microsoft.Network/loadBalancers/"
+                f"lb-ciam-{rdn_of(environment_of(b))}-{rdn_value(b)}", None)
+    if is_a(b, "ciamComputeGroup") and ref_:        # a scale set named by its ref
+        return f"{GROUP}/providers/Microsoft.Compute/virtualMachineScaleSets/{ref_}", None
+    return ref_, None
 
 
 def notes(w):

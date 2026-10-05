@@ -731,9 +731,11 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.181 NAME 'ciamSettingRaw' DESC 'The
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.182 NAME 'ciamValueFrom' DESC 'Where
   the value comes from instead of a literal: role#attribute, a binding of th
  e environment the file is rendered for (a secret reference renders as ${sec
- ret:<ref-uri>})' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1
- .15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-PATTERN '^[
- A-Za-z0-9._-]+#[A-Za-z][A-Za-z0-9-]*$' X-ORIGIN 'opsdir' )
+ ret:<ref-uri>}), or role#kind:name, a value derived from that binding (prox
+ y:host, proxy:port, proxy:bypass, ...)' EQUALITY caseIgnoreMatch SYNTAX 1.3
+ .6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE
+  'string' X-PATTERN '^[A-Za-z0-9._-]+#[A-Za-z][A-Za-z0-9-]*(:[a-z][a-z0-9-]
+ *)?$' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.183 NAME 'ciamSecretRequired' DESC '
  The value was withheld at capture: it must come from a secret reference (ci
  amValueFrom)' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SIN
@@ -1827,6 +1829,12 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.420 NAME 'ciamOpenWithinNetwork' DES
  le denies it (some providers\27 default rules do)' EQUALITY booleanMatch SY
  NTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'binding' X-VA
  LUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.421 NAME 'ciamChangeRecords' DESC 'T
+ he LDIF change records a proposed change applies once approved (an assisted
+  fix, from an operator or an AI): what the approver reviews and what is app
+ lied, unchanged' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1
+ .15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdi
+ r' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef ) X-ORIGIN 'opsdir' )
@@ -1948,9 +1956,9 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.29 NAME 'ciamRunbook' DESC 'Work inst
  ruction' SUP ciamObject STRUCTURAL MUST ( cn $ ciamTitle $ ciamLastValidate
  d ) MAY ( ciamVersion $ ciamAppliesTo $ ciamDocUrl ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.30 NAME 'ciamChange' DESC 'Change rec
- ord (mirrored from ITSM)' SUP ciamObject STRUCTURAL MUST ( cn $ ciamTitle $
-  ciamChangeStatus ) MAY ( ciamApprovedBy $ ciamPlannedAt ) X-ORIGIN 'opsdir
- ' )
+ ord (mirrored from ITSM; a proposed one may carry the records it applies)' 
+ SUP ciamObject STRUCTURAL MUST ( cn $ ciamTitle $ ciamChangeStatus ) MAY ( 
+ ciamApprovedBy $ ciamPlannedAt $ ciamChangeRecords ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.31 NAME 'ciamIncident' DESC 'Incident
   / postmortem' SUP ciamObject STRUCTURAL MUST ( cn $ ciamTitle $ ciamOpened
  At ) MAY ( ciamSeverity $ ciamInvolved $ ciamRootCause ) X-ORIGIN 'opsdir' 

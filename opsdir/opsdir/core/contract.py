@@ -55,7 +55,9 @@ Format = NamedTuple("Format", [("name", str), ("title", str), ("media_type", str
 # split(text) -> the file as a tuple of literal text (str) and settings ((locator, raw), where raw is the setting's
 # text exactly as it appears in the file); decode(raw) -> the setting's value; encode(value, raw) -> the text that
 # writes a changed value, in the style of the original raw text (its quoting, its type). Locators are unique in a file.
-Codec = NamedTuple("Codec", [("split", Callable), ("decode", Callable), ("encode", Callable)])
+# add(text, locator) -> (before, after): the literal text around a new setting's place when a setting is appended to a
+# file's text (its own line, key and separator); None for a format that can't place a new setting on its own.
+Codec = namedtuple("Codec", ("split", "decode", "encode", "add"), defaults=(None,))
 
 # A form secret material takes (a private key block, a vendor's access key, ...): the store refuses any value that
 # matches, so no write can put a secret in the record (SPEC R4). pattern is a regular expression in the dialect Python
@@ -105,7 +107,17 @@ Endpoint = namedtuple("Endpoint", ("kind", "path", "server_role"))
 # defaults; the connectors turn them into the ports matrix the firewall rules are checked against.
 Listener = namedtuple("Listener", ("server_role", "port", "protocol", "purpose", "peers"))
 
-# An adapter's fields; an older adapter that names no endpoints declares none, one that names no listeners None.
+# A setting a product needs so its outside traffic goes through an environment's explicit proxy (network.proxies):
+# server_role the servers that need it, place where it is set (a file, an admin setting, the JVM options) in words,
+# file the path a captured file of that place ends with (None when the place isn't a file), locator the setting's
+# name (its locator in that file), value what it must say, link the value derived from the proxy binding it is (a
+# network.proxies derivation: proxy:host, proxy:bypass, ...; None for a literal the same everywhere). The connectors
+# compare them with the captured files the environment receives, and offer to add or link them (core.findings.Fix).
+ProxySetting = namedtuple("ProxySetting", ("server_role", "place", "file", "locator", "value", "link"),
+                          defaults=(None,))
+
+# An adapter's fields; an older adapter that names no endpoints declares none, one that names no listeners or proxy
+# settings None.
 Adapter = namedtuple("Adapter", (
     "name",
     "kind",                 # provider | product | host | delivery | secret-store
@@ -127,8 +139,9 @@ Adapter = namedtuple("Adapter", (
     "profile_terms",        # what its directory attributes mean to the data profile (directory profile.Terms), or None
     "access",               # a cloud's AccessModel: what its actions and roles mean as neutral permissions, or None
     "endpoints",            # Endpoints: what its products serve that the edge protects, checks or never caches
-    "listeners"),           # (EnvModel) -> Listeners: the ports its servers listen on in an environment, or None
-    defaults=((), None))
+    "listeners",            # (EnvModel) -> Listeners: the ports its servers listen on in an environment, or None
+    "proxy_settings"),      # (EnvModel, ProxySettings) -> ProxySettings its servers need for an explicit proxy, or None
+    defaults=((), None, None))
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

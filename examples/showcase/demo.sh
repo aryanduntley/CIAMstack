@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Walk-through of operating an identity platform from the opsdir record, on a fictional estate.
 #   ./demo.sh                 run everything (output under out/)
-#   TERRAFORM=/path/terraform ./demo.sh   also run terraform fmt/validate on the rendered code
+#   TERRAFORM=/path/terraform ./demo.sh   run terraform fmt/validate on the rendered code with that terraform
+#                                          (default: tools/bin/terraform when opsdir/scripts/fetch-tools.sh fetched it)
 set -uo pipefail
 cd "$(dirname "$0")"                           # the showcase; outputs go to out/ here
 CORE=$(cd ../../opsdir && pwd)
@@ -107,15 +108,21 @@ od render target/prod
 for f in ds/dsconfig.batch ds/acis.ldif pingfederate/sp-connections.json pingfederate/oidc-clients.json pingfederate/idp-connections.json; do
   cmp -s "out/source-prod/$f" "out/target-prod/$f" && echo "identical in both environments: $f" || echo "DIFFERS: $f"
 done
-if [ -n "${TERRAFORM:-}" ]; then
-  for e in source-prod target-prod standby-prod; do
-    "$TERRAFORM" -chdir="out/$e/terraform" fmt -check >/dev/null && echo "terraform fmt ok: $e"
-    ( cd "out/$e/terraform" && "$TERRAFORM" init -backend=false -input=false >/dev/null && "$TERRAFORM" validate -no-color )
-  done
+TERRAFORM=${TERRAFORM:-$(cd ../.. && pwd)/tools/bin/terraform}  # the local one (opsdir/scripts/fetch-tools.sh)
+if [ -x "$TERRAFORM" ]; then
+  echo "-- every rendered Terraform root (stack, landing zone, each keeper's), checked by terraform fmt and validate"
+  TERRAFORM=$TERRAFORM "$CORE/scripts/validate-terraform.sh" out/source-prod out/target-prod out/standby-prod
 fi
 echo "-- the plan (before changes). The estate is deliberately broken; blockers are planted problems the planner must find."
 od plan source/prod target/prod | sed -n '1,8p'
 "$PY" scripts/check-findings.py before
+echo "-- fixes the findings offer: record changes to propose (for a person to approve) or apply under a change"
+od fix list source/prod target/prod
+od fix show source/prod target/prod egress-proxy:pf-engine:bin/run.properties
+echo "-- a fix that is a choice: which secret holds PingFederate's SMTP password is never guessed; a person picks"
+od fix show source/prod target/prod credential-role:notification-publishers/smtp | sed -n '1,12p'
+echo "-- a fix that takes inputs: the target's backup bucket is the operator's to give (the source's is only the example)"
+od fix show source/prod target/prod binding:backup-target
 echo "-- approved changes are entries; re-render and diff"
 rm -rf out/before && cp -r out/target-prod out/before
 od modify --change CHG-2001 changes/CHG-2001-mro-firewall-target.ldif

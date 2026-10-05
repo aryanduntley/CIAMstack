@@ -33,25 +33,11 @@ from opsdir_adapter_gcp.landing import render_landing
 from opsdir_adapter_gcp.names import name_parts
 from opsdir_adapter_gcp.names import NETWORK, REGION, label, network_tag
 from opsdir_adapter_gcp.network import render_network
+from opsdir_adapter_gcp.plumbing import network_data
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
 
 _tag, _label = network_tag, label
-
-
-def _network(m):
-    net = one_role(m, "network")
-    path = name_parts(one(net, "ciamProviderRef"))
-    return (block("data", ["google_compute_network", "main"],
-                  [("name", path.get("networks", one(net, "ciamProviderRef"))), *project_of(path)]),
-            *(_subnet(m, s) for s in of_class(m, "ciamSubnetBinding")))
-
-
-def _subnet(m, s):
-    path = name_parts(one(s, "ciamProviderRef"))
-    return block("data", ["google_compute_subnetwork", tf_name(rdn_value(s))], [
-        ("name", path.get("subnetworks", one(s, "ciamProviderRef"))),
-        ("region", path.get("regions", one(m.cloud, "ciamRegion"))), *project_of(path)])
 
 
 def _firewall_rule(m, fw, prio, pinned):
@@ -220,7 +206,7 @@ def _references(m):
 def render(m, services):
     endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     kms, identities = secret(m, "disk-encryption"), workload_identities(m, ACCESS)
-    out = (*_network(m), *_firewall(m), *chain.from_iterable(identity(m, w) for w in identities),
+    out = (*network_data(m), *_firewall(m), *chain.from_iterable(identity(m, w) for w in identities),
            *(_instance(m, s, kms, identities) for s in m.servers),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *records(m.d, m), *forwarding_zones(m), *_references(m))

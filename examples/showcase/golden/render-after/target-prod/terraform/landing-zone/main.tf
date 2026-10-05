@@ -35,7 +35,7 @@ resource "azurerm_federated_identity_credential" "identity_ci" {
 }
 
 resource "azurerm_role_assignment" "identity_ci_manage_pf_sso_service" {
-  scope                = "pip-ciam-sso-prod"
+  scope                = "${data.azurerm_resource_group.main.id}/providers/Microsoft.Network/loadBalancers/lb-ciam-prod-svc-sso"
   role_definition_name = "Network Contributor"
   principal_id         = azurerm_user_assigned_identity.identity_ci.principal_id
 }
@@ -101,9 +101,9 @@ resource "azurerm_subscription_policy_assignment" "org_guardrails_region_escape"
   name                 = "ciam-prod-region-escape"
   policy_definition_id = "/providers/Microsoft.Authorization/policyDefinitions/e56962a6-4747-49cd-b67b-bf8b01975c4c"
   subscription_id      = data.azurerm_subscription.current.id
-  parameters           = jsonencode({
-    "listOfAllowedLocations": {
-      "value": [
+  parameters = jsonencode({
+    "listOfAllowedLocations" : {
+      "value" : [
         "eastus2"
       ]
     }
@@ -114,9 +114,9 @@ resource "azurerm_subscription_policy_assignment" "org_guardrails_public_storage
   name                 = "ciam-prod-public-storage"
   policy_definition_id = "/providers/Microsoft.Authorization/policyDefinitions/4fa4b6c0-31ca-4c0d-b10d-24b96f62a751"
   subscription_id      = data.azurerm_subscription.current.id
-  parameters           = jsonencode({
-    "effect": {
-      "value": "Deny"
+  parameters = jsonencode({
+    "effect" : {
+      "value" : "Deny"
     }
   })
 }
@@ -125,9 +125,9 @@ resource "azurerm_subscription_policy_assignment" "org_guardrails_key_deletion" 
   name                 = "ciam-prod-key-deletion"
   policy_definition_id = "/providers/Microsoft.Authorization/policyDefinitions/0b60c0b2-2dc2-4e1c-b5c9-abbed971de53"
   subscription_id      = data.azurerm_subscription.current.id
-  parameters           = jsonencode({
-    "effect": {
-      "value": "Deny"
+  parameters = jsonencode({
+    "effect" : {
+      "value" : "Deny"
     }
   })
 }

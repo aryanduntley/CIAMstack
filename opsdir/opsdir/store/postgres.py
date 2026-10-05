@@ -130,6 +130,24 @@ def apply_mods(canon, classes, attrs, mods):
     return reduce(lambda entry, mod: _apply_mod(canon, entry, mod), mods, (list(classes), dict(attrs)))
 
 
+def _after(canon, rows, r):
+    n = norm_dn(r.dn)
+    if r.changetype == "add":
+        return {**rows, n: (r.dn, *split_record(canon, r.attrs))}
+    if r.changetype == "delete" or n not in rows:      # a modify of no entry: refused when applied
+        return {k: v for k, v in rows.items() if k != n}
+    dn, classes, attrs = rows[n]
+    return {**rows, n: (dn, *apply_mods(canon, classes, attrs, r.mods))}
+
+
+def entries_after(canon, current, records):
+    """(dn, object classes, attrs) of each entry the change records leave, applied in order to current ({normalized
+    dn: (dn, object classes, attrs)}, the entries they touch as stored); deleted entries are not among them."""
+    touched = {norm_dn(r.dn) for r in records}
+    return tuple(v for k, v in reduce(lambda acc, r: _after(canon, acc, r), records, dict(current)).items()
+                 if k in touched)
+
+
 # ------------------------------------------------------------------ effects: execute prepared work
 def registry_counts(conn):
     """Effect: (attribute types, object classes) in the registry."""
@@ -223,6 +241,19 @@ def _apply_record(conn, canon, change_id, r):
     else:
         raise SystemExit(f"unsupported changetype {r.changetype}")
     return f"{r.changetype} {r.dn}"
+
+
+def record_problems(conn, records):
+    """Effect (reads the record): what the store would refuse in the entries change records leave (entry_problem:
+    value types, SINGLE-VALUE, vocabularies, value rules, the classes' attributes, the secret guard), without writing
+    anything; empty when it would take them. References and governance are checked when they are applied."""
+    records = tuple(records)
+    rows = conn.execute("select dn_norm, dn, object_classes, attrs from entry where dn_norm = any(%s)",
+                        (list({norm_dn(r.dn) for r in records}),)).fetchall()
+    after = entries_after(_canon(conn), {n: (dn, classes, attrs) for n, dn, classes, attrs in rows}, records)
+    found = (conn.execute("select entry_problem(%s, %s, %s::jsonb)", (dn, classes, json.dumps(attrs))).fetchone()[0]
+             for dn, classes, attrs in after)
+    return tuple(p for p in found if p)
 
 
 def _apply_all(conn, change_id, records):

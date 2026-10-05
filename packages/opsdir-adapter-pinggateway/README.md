@@ -9,3 +9,8 @@ opsdir adapter for PingGateway (ForgeRock Identity Gateway): the routes that pro
 - **Required roles**: `subnet-ig`, `ig-service`, `ig-keystore`. Server role: `ig`. Products: PingGateway 2023–2026, ForgeRock Identity Gateway 7.
 
 The routes follow the gateway's JSON but are not yet validated against a live gateway. Installing the package registers it with opsdir (entry point `opsdir.adapters`: `pinggateway`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.
+
+## Egress through an explicit proxy
+
+When an environment's egress passes a proxy clients must be told about (a `ciamProxy` with `ciamProxyAddress` that isn't a firewall), PingGateway needs `config.json`'s heap object named `ProxyOptions` (the default of every `ClientHandler` and `ReverseProxyHandler`) as `SystemProxyOptions`, and the standard Java proxy properties in the JVM options it starts with. The JVM's proxy is used, not a `CustomProxyOptions` URI, because only it honours the hosts reached directly: the routes' own backends stay off the proxy. The record can't confirm either, so the planner names what to set.
+

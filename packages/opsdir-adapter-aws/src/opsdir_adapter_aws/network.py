@@ -18,7 +18,8 @@ SERVICES = {"secrets": "secretsmanager", "keys": "kms", "object-storage": "s3", 
 GATEWAY_SERVICES = ("s3", "dynamodb")
 
 
-def _tags(b):
+def binding_tags(b):
+    """The tags a rendered binding carries: its name and role (what the importers read it back by), opsdir's mark."""
     return {"Name": rdn_value(b), "Role": one(b, "ciamBindingRole"), "ManagedBy": "opsdir"}
 
 
@@ -54,7 +55,7 @@ def _interface(m, p, n, service):
                 *((("subnet_ids", [ref(f"data.aws_subnet.{tf_name(rdn_value(s))}.id") for s in found]),) if found
                   else (("#", "UNBOUND: the endpoint names no subnet this environment binds"),)),
                 ("security_group_ids", [ref(f"aws_security_group.{n}_endpoint.id")]),
-                ("private_dns_enabled", one(p, "ciamPrivateDns") == "TRUE"), ("tags", _tags(p))]))
+                ("private_dns_enabled", one(p, "ciamPrivateDns") == "TRUE"), ("tags", binding_tags(p))]))
 
 
 def _gateway(m, p, n, service):
@@ -68,7 +69,7 @@ def _gateway(m, p, n, service):
         ("vpc_endpoint_type", "Gateway"),
         ("route_table_ids", list(tables)) if tables
         else ("#", "UNBOUND: no route table with a provider ref carries the endpoint's subnets"),
-        ("tags", _tags(p))]),)
+        ("tags", binding_tags(p))]),)
 
 
 def private_endpoint(m, p):
@@ -102,7 +103,7 @@ def endpoint_service(m, e, svc, endpoints=()):
     return (block("resource", ["aws_vpc_endpoint_service", tf_name(rdn_value(e))], [
         ("acceptance_required", one(e, "ciamAcceptanceRequired") == "TRUE"),
         ("network_load_balancer_arns", [ref(f"aws_lb.{tf_name(rdn_value(svc))}.arn")]),
-        ("allowed_principals", values(e, "ciamAllowedPrincipal")), ("tags", _tags(e))]),)
+        ("allowed_principals", values(e, "ciamAllowedPrincipal")), ("tags", binding_tags(e))]),)
 
 
 def _domain(host):
@@ -134,7 +135,7 @@ def domain_rules(m, proxy):
                 ("description", f"Sites the CIAM platform reaches ({m.label})"),
                 ("rule_group", Block((("rule_variables", Block((("ip_sets", home),))),
                                       ("rules_source", Block((("rules_source_list", domains),)))))),
-                ("tags", {**_tags(proxy), **({"FirewallPolicy": policy} if policy else {})})]))
+                ("tags", {**binding_tags(proxy), **({"FirewallPolicy": policy} if policy else {})})]))
 
 
 def render_network(m, endpoints=()):

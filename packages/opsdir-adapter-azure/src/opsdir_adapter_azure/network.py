@@ -23,7 +23,8 @@ SUBRESOURCES = {"secrets": ("vault", "privatelink.vaultcore.azure.net"),
                 "registry": ("registry", "privatelink.azurecr.io")}
 
 
-def _tags(b):
+def binding_tags(b):
+    """The tags a rendered binding carries: its role (what the importers read it back by) and opsdir's mark."""
     return {"Role": one(b, "ciamBindingRole"), "ManagedBy": "opsdir"}
 
 
@@ -62,7 +63,7 @@ def _endpoint(m, p, name, target, group, sub):
             ("is_manual_connection", False)))),
         *((("ip_configuration", Block((("name", "primary"), ("private_ip_address", ip), ("subresource_name", group),
                                         ("member_name", "default")))),) if ip else ()),
-        *dns, ("tags", _tags(p))])
+        *dns, ("tags", binding_tags(p))])
 
 
 def private_endpoint(m, p):
@@ -108,7 +109,7 @@ def link_service(m, e, svc, endpoints=()):
         *((("visibility_subscription_ids", values(e, "ciamVisibleTo")),) if values(e, "ciamVisibleTo") else ()),
         *((("auto_approval_subscription_ids", values(e, "ciamAllowedPrincipal")),)
           if values(e, "ciamAllowedPrincipal") and not manual else ()),
-        ("tags", _tags(e))]),)
+        ("tags", binding_tags(e))]),)
 
 
 WEB = {80: "Http", 443: "Https"}     # what application rules can match: web traffic by its host name

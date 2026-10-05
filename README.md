@@ -109,7 +109,7 @@ opsdir/opsdir.sh --help           # the CLI, against the local dev database
 opsdir/scripts/test.sh            # every test: core, packages, showcase; unit + integration
 ```
 
-The [showcase](examples/showcase/README.md) walks through all of the above on a fictional company's platform (PingDS, PingFederate, PingAM, PingIDM and PingGateway on AWS, with a stage overlay, and a warm standby being built on Google Cloud), then plans moving production to a second environment on Azure. Its problems are planted on purpose, and the tests check that the planner finds every one. Terraform is optional (`TERRAFORM=/path/to/terraform examples/showcase/demo.sh` adds `fmt` + `validate`).
+The [showcase](examples/showcase/README.md) walks through all of the above on a fictional company's platform (PingDS, PingFederate, PingAM, PingIDM and PingGateway on AWS, with a stage overlay, and a warm standby being built on Google Cloud), then plans moving production to a second environment on Azure. Its problems are planted on purpose, and the tests check that the planner finds every one. Terraform is optional: `opsdir/scripts/fetch-tools.sh` puts a verified copy in the gitignored `tools/` folder, after which the demo and the test suite also check every rendered root with `terraform fmt` and `validate`.
 
 ## Where it stands
 

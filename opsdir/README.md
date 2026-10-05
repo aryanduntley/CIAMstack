@@ -103,6 +103,42 @@ The live record is what you operate from. To prepare a move without touching it,
 
 The workspace remembers the live snapshot it was copied from. At cutover, if the live record changed other entries meanwhile, the workspace's changes still apply (a three-way merge); if both changed the same entry, the cutover is refused and names it. The changes are applied in one transaction under the approved change, through every rule of the store.
 
+## Assisted fixes
+
+When a planner check knows the exact record change that resolves a finding, the finding offers it as a fix: the LDIF change records, the steps outside the record that go with it (a deploy, a live change, a party's confirmation) and what applying it could hide. `PLAN.md` lists the fixes offered; nothing is applied without a change.
+
+```bash
+opsdir fix list FROM TO                          # the fixes the plan offers
+opsdir fix show FROM TO KEY                      # one fix: change records, manual steps, risks
+opsdir fix propose FROM TO KEY --change CHG-… [--option O] [--input K=V …]   # record it as a proposed change, for a person to approve
+opsdir fix apply FROM TO KEY --change CHG-… [--option O] [--input K=V …]     # apply it under an approved change
+opsdir fix approved --change CHG-…               # once a proposed change is approved: apply its records, mark it applied
+```
+
+The fixes offered so far, each the exact record change for its finding:
+
+| Finding | Fix |
+|---|---|
+| A service name changes between the environments (R9) | the target binds the stable name (and its zone) |
+| Server roles can't reach each other's ports in the target (ports matrix) | exactly the uncovered ranges, on the matching firewall rule or a new one |
+| A product isn't told about the target's explicit egress proxy | the captured file's settings, linked to the proxy binding's derived values |
+| The target's directory servers don't join the source's replication | `ciamJoinsDeploymentOf` on the target environment |
+| Private DNS, endpoint-service principals (same provider), flow-log or log-route retention, metadata tokens, compute group size weaker in the target | the source's (or the obligation's) value on the target binding |
+| A firewall rule opens ports nothing listens on | the stray ports dropped (the rule deleted when all are) |
+| An endpoint service anyone may connect to unaccepted | acceptance required |
+| A private endpoint reaches a role its environment doesn't bind | that role dropped from it |
+
+Some fixes are a choice, and offer options instead of one change (`fix show` lists them; `propose` and `apply` need `--option`): the secret role a withheld credential comes from (PingFederate data stores, plugins, resources and nodes; PingIDM connectors: one option per secret role the target binds, those whose name matches the object's first, never picked for anyone), which entry keeps a PingFederate id several claim, and an override that makes the environments differ (run the source's value, or the shared one; only the target's own overrides are changed, an inherited one gets a target override instead).
+
+Some fixes take inputs: values only the operator knows, such as a provider reference, a DNS name or a bucket. `fix show` shows each input in the records as `<key>` and lists it with an example (the source's value, where there is one), any default, and the pattern its values must match. `propose` and `apply` refuse until every input without a default is given with `--input KEY=VALUE`. Repeat a key to give it several values; `KEY=` leaves the attribute out. An input is a reference or a name, never a secret, and the proposal holds the records with the values filled in.
+
+| Finding | Fix (inputs) |
+|---|---|
+| A role the source binds isn't bound in the target | the source's bindings of the role copied under the target's bindings. Intent and meta values are copied. Binding and secret-reference values, and DNs inside the source environment, are inputs (the source's value as the example, never as a default: copied, it would point at the source's resources). Contract values, and references to something outside the environment (a consumer), default to the source's. Dates and observed facts are left out. With several bindings of the role, each input's key starts with the binding's name (`backup-a.ciamStorageRef`). |
+| PingFederate's cluster discovery isn't recorded, uses a protocol the adapter doesn't render, or lacks what its protocol needs | the `pf-cluster-discovery` binding: an option per rendered protocol (the source's: the one its nodes run, when they all agree). NATIVE_S3_PING takes the bucket (`ciamStorageRef`, `s3://…`) and DNS_PING the DNS name (`ciamFqdn`); TCPPING takes nothing. A binding of another class (an object store) is replaced by a `pingfedClusterDiscovery` binding of the same name. |
+
+Proposing writes only the change record (status `proposed`, its records in `ciamChangeRecords`), which is what an AI may do through the operations layer; the store refuses the records themselves under a change nobody approved. With `--workspace` the fixes are the workspace's and reach the live record at cutover. Fixes never carry secret values, never edit observed facts or attestations (grants read from a cloud, test results, review dates), and a fix to a captured file links its settings to bindings (`ciamValueFrom`), since the file is shared by every environment with the role.
+
 ## Architecture
 
 ```
@@ -136,7 +172,8 @@ opsdir/                      the package (names no platform, product, vendor or 
                              migration (runner), workspace (copy, diff, cutover), reports, sql (cross-domain views)
   cli.py                     thin orchestrator
 schema/ciam-ops.schema.ldif  the published RFC 4512 schema of the core and its domains (scripts/gen-schema.py)
-scripts/                     dev-install.sh, dev-env.sh (local defaults), gen-schema.py, test.sh
+scripts/                     dev-install.sh, dev-env.sh (local defaults), gen-schema.py, test.sh, fetch-tools.sh,
+                             validate-terraform.sh
 tests/                       core tests: unit (no database) and integration; mini_estate.py = a two-environment
                              estate and a fake provider adapter, so the core is tested without any real adapter
 ```
@@ -184,6 +221,11 @@ opsdir/scripts/test.sh                                   # everything: unit + in
 opsdir/.venv/bin/python -m pytest                        # unit tests only, no database
 opsdir/.venv/bin/python -m pytest -m integration         # integration tests only (skipped if unreachable)
 opsdir/.venv/bin/python -m pytest opsdir/tests           # the core alone
+opsdir/scripts/fetch-tools.sh                            # once: Terraform into tools/ (gitignored), verified
+opsdir/.venv/bin/python -m pytest -m terraform           # rendered Terraform checked by terraform fmt + validate
+opsdir/scripts/validate-terraform.sh [tree ...]          # the same on any render output (default: the golden renders)
 ```
+
+Third-party tools the tests run on rendered output live in `tools/` at the repository root: one gitignored folder per machine, fetched by `scripts/fetch-tools.sh` (Terraform's zip checked against HashiCorp's signed checksums) and removed by deleting it. The `terraform` tests check every Terraform root of the showcase's golden renders and a sample with every kind of network plumbing on each cloud (`examples/showcase/tests/terraform/`); they are skipped when `tools/bin/terraform` is absent and run by `scripts/test.sh` when it is there (the first run downloads the providers into `tools/`).
 
 The core's tests use a mini estate and a fake adapter, and pass with no adapter package installed. The integration tests create, upgrade and refuse schemas against Postgres (they drop and rebuild the `opsdir` schema in the test databases). End-to-end behaviour with real adapters and golden outputs is tested by the showcase.

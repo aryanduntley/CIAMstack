@@ -121,6 +121,12 @@ def test_logs_kept_less_long_in_the_target_block():
     assert [t for _, t, _, _ in f.actions] == [
         "Log route `audit` is under legal hold: alpha/prod's `audit-logs` must outlive the source's decommissioning. "
         "Keep it, or move what it holds, before deleting the source."]
+    (fix,) = f.fixes
+    assert (fix.key, fix.title) == ("log-retention:audit", "Keep beta/prod's `audit-logs` logs 365 days, as log route "
+                                                           "`audit` requires")
+    assert fix.records[0].mods == (("replace", "ciamRetentionDays", ("365",)),)
+    fixed = build_directory(REGISTRY, tuple(parse(mini_estate.LDIF + "\n" + "\n".join(BASE))), fix.records)
+    assert _plan(fixed, check_logs).blockers == ()
 
 
 def test_nothing_to_watch_finds_nothing_and_a_sound_setup_says_so():

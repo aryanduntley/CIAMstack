@@ -8,6 +8,11 @@ We are moving the Example Aero external identity platform to target/prod; planne
 - A guardrail preventing `audit-log-disable` (as source/prod's `org-guardrails` does). Needed by 2027-01-15.
 - A way for operators to come in by session (as source/prod's `operator-console`). Needed by 2027-01-15.
 
+Also, in the network you keep (where an item is rendered as Terraform, its root is named):
+
+- Everything you keep for target/prod is rendered in `terraform/landing-zone/` (what already exists carries import blocks, so you can adopt it into your state). Needed by 2027-01-15.
+- site-to-site VPN (landing-zone managed) `link-source` to source/prod: to set up (`terraform/landing-zone/network.tf`). Needed by 2027-01-15.
+
 Thank you,
 CIAM platform team
 

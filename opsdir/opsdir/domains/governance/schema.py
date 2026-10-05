@@ -32,14 +32,17 @@ ATTRIBUTES = (
                  'Contact / escalation link'),
     AttributeDef(124, 'ciamDisplayName', 'string', 'meta', True,
                  'Name used in correspondence (the organization operating the platform, a team)'),
+    AttributeDef(421, 'ciamChangeRecords', 'string', 'meta', True,
+                 'The LDIF change records a proposed change applies once approved (an assisted fix, from an '
+                 'operator or an AI): what the approver reviews and what is applied, unchanged'),
 )
 CLASSES = (
     ClassDef(29, 'ciamRunbook', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamLastValidated'),
              ('ciamVersion', 'ciamAppliesTo', 'ciamDocUrl'),
              'Work instruction'),
     ClassDef(30, 'ciamChange', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamChangeStatus'),
-             ('ciamApprovedBy', 'ciamPlannedAt'),
-             'Change record (mirrored from ITSM)'),
+             ('ciamApprovedBy', 'ciamPlannedAt', 'ciamChangeRecords'),
+             'Change record (mirrored from ITSM; a proposed one may carry the records it applies)'),
     ClassDef(31, 'ciamIncident', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamOpenedAt'),
              ('ciamSeverity', 'ciamInvolved', 'ciamRootCause'),
              'Incident / postmortem'),

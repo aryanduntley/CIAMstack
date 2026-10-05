@@ -8,22 +8,22 @@ resource "aws_iam_openid_connect_provider" "token_actions_githubusercontent_com"
 }
 
 resource "aws_iam_role" "identity_ci" {
-  name               = "ciam-prod-deploy"
+  name = "ciam-prod-deploy"
   assume_role_policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
+    "Version" : "2012-10-17",
+    "Statement" : [
       {
-        "Effect": "Allow",
-        "Action": "sts:AssumeRoleWithWebIdentity",
-        "Principal": {
-          "Federated": "${aws_iam_openid_connect_provider.token_actions_githubusercontent_com.arn}"
+        "Effect" : "Allow",
+        "Action" : "sts:AssumeRoleWithWebIdentity",
+        "Principal" : {
+          "Federated" : "${aws_iam_openid_connect_provider.token_actions_githubusercontent_com.arn}"
         },
-        "Condition": {
-          "StringEquals": {
-            "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+        "Condition" : {
+          "StringEquals" : {
+            "token.actions.githubusercontent.com:aud" : "sts.amazonaws.com"
           },
-          "StringLike": {
-            "token.actions.githubusercontent.com:sub": "repo:example-aero/ciam-ops:environment:prod"
+          "StringLike" : {
+            "token.actions.githubusercontent.com:sub" : "repo:example-aero/ciam-ops:environment:prod"
           }
         }
       }
@@ -37,21 +37,21 @@ resource "aws_iam_role" "identity_ci" {
 }
 
 resource "aws_iam_role_policy" "identity_ci" {
-  name   = "ciam-prod-deploy-permissions"
-  role   = aws_iam_role.identity_ci.id
+  name = "ciam-prod-deploy-permissions"
+  role = aws_iam_role.identity_ci.id
   policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
+    "Version" : "2012-10-17",
+    "Statement" : [
       {
-        "Sid": "ManagePfSsoService",
-        "Effect": "Allow",
-        "Action": [
+        "Sid" : "ManagePfSsoService",
+        "Effect" : "Allow",
+        "Action" : [
           "elasticloadbalancing:ModifyListener",
           "elasticloadbalancing:RegisterTargets",
           "elasticloadbalancing:DeregisterTargets",
           "route53:ChangeResourceRecordSets"
         ],
-        "Resource": [
+        "Resource" : [
           "arn:aws:elasticloadbalancing:*:*:loadbalancer/net/ciam-prod-svc-sso/*",
           "arn:aws:elasticloadbalancing:*:*:listener/net/ciam-prod-svc-sso/*",
           "arn:aws:elasticloadbalancing:*:*:targetgroup/ciam-prod-svc-sso-*",
@@ -59,12 +59,12 @@ resource "aws_iam_role_policy" "identity_ci" {
         ]
       },
       {
-        "Sid": "WriteSecretPfAdminPassword",
-        "Effect": "Allow",
-        "Action": [
+        "Sid" : "WriteSecretPfAdminPassword",
+        "Effect" : "Allow",
+        "Action" : [
           "secretsmanager:PutSecretValue"
         ],
-        "Resource": [
+        "Resource" : [
           "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-admin-password-??????"
         ]
       }
@@ -85,42 +85,42 @@ resource "aws_ssoadmin_permission_set" "identity_admins" {
 resource "aws_ssoadmin_permission_set_inline_policy" "identity_admins" {
   instance_arn       = tolist(data.aws_ssoadmin_instances.sso.arns)[0]
   permission_set_arn = aws_ssoadmin_permission_set.identity_admins.arn
-  inline_policy      = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
+  inline_policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
       {
-        "Sid": "ManagePfAdminPassword",
-        "Effect": "Allow",
-        "Action": [
+        "Sid" : "ManagePfAdminPassword",
+        "Effect" : "Allow",
+        "Action" : [
           "secretsmanager:PutSecretValue",
           "secretsmanager:UpdateSecret",
           "secretsmanager:RotateSecret",
           "secretsmanager:DeleteSecret"
         ],
-        "Resource": [
+        "Resource" : [
           "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-admin-password-??????"
         ]
       },
       {
-        "Sid": "ManageKeyDiskEncryption",
-        "Effect": "Allow",
-        "Action": [
+        "Sid" : "ManageKeyDiskEncryption",
+        "Effect" : "Allow",
+        "Action" : [
           "kms:DescribeKey",
           "kms:EnableKeyRotation",
           "kms:PutKeyPolicy"
         ],
-        "Resource": [
+        "Resource" : [
           "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
         ]
       },
       {
-        "Sid": "ReadLogsAuditLogs",
-        "Effect": "Allow",
-        "Action": [
+        "Sid" : "ReadLogsAuditLogs",
+        "Effect" : "Allow",
+        "Action" : [
           "logs:GetLogEvents",
           "logs:FilterLogEvents"
         ],
-        "Resource": [
+        "Resource" : [
           "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/audit:*",
           "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/audit"
         ]
@@ -142,14 +142,14 @@ resource "aws_organizations_policy" "org_guardrails" {
   name        = "ciam-prod-org-guardrails"
   type        = "SERVICE_CONTROL_POLICY"
   description = "Prevents region-escape, audit-log-disable, key-deletion (source/prod)"
-  content     = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
+  content = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
       {
-        "Effect": "Deny",
-        "Resource": "*",
-        "Sid": "DenyOutsideRegion",
-        "NotAction": [
+        "Effect" : "Deny",
+        "Resource" : "*",
+        "Sid" : "DenyOutsideRegion",
+        "NotAction" : [
           "a4b:*",
           "acm:*",
           "aws-marketplace-management:*",
@@ -193,19 +193,19 @@ resource "aws_organizations_policy" "org_guardrails" {
           "wafv2:*",
           "wellarchitected:*"
         ],
-        "Condition": {
-          "StringNotEquals": {
-            "aws:RequestedRegion": [
+        "Condition" : {
+          "StringNotEquals" : {
+            "aws:RequestedRegion" : [
               "us-east-1"
             ]
           }
         }
       },
       {
-        "Effect": "Deny",
-        "Resource": "*",
-        "Sid": "DenyCloudTrailChanges",
-        "Action": [
+        "Effect" : "Deny",
+        "Resource" : "*",
+        "Sid" : "DenyCloudTrailChanges",
+        "Action" : [
           "cloudtrail:DeleteTrail",
           "cloudtrail:PutEventSelectors",
           "cloudtrail:StopLogging",
@@ -213,10 +213,10 @@ resource "aws_organizations_policy" "org_guardrails" {
         ]
       },
       {
-        "Effect": "Deny",
-        "Resource": "*",
-        "Sid": "DenyKeyDeletion",
-        "Action": [
+        "Effect" : "Deny",
+        "Resource" : "*",
+        "Sid" : "DenyKeyDeletion",
+        "Action" : [
           "kms:ScheduleKeyDeletion",
           "kms:DeleteAlias",
           "kms:DeleteCustomKeyStore",

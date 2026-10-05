@@ -21,10 +21,10 @@ def _rendered(grants, notes=()):
 
 def test_a_role_with_its_least_privilege_policy_and_instance_profile():
     out = _rendered((("read-secret pf-admin-password", BINDING, ROW),))
-    assert 'resource "aws_iam_role" "identity_pf_engine"' in out and '"Service": "ec2.amazonaws.com"' in out
-    assert '"Sid": "ReadSecretPfAdminPassword"' in out and '"secretsmanager:GetSecretValue"' in out
+    assert 'resource "aws_iam_role" "identity_pf_engine"' in out and '"Service" : "ec2.amazonaws.com"' in out
+    assert '"Sid" : "ReadSecretPfAdminPassword"' in out and '"secretsmanager:GetSecretValue"' in out
     assert f'"{SECRET}-??????"' in out and f'"{SECRET}"' not in out
-    assert 'role   = aws_iam_role.identity_pf_engine.id' in out
+    assert 'role = aws_iam_role.identity_pf_engine.id' in out
     assert 'resource "aws_iam_instance_profile" "identity_pf_engine"' in out
 
 
@@ -39,8 +39,8 @@ def test_a_secret_under_a_customer_key_also_gets_that_key_through_secrets_manage
                                                                  {"ciamRegion": ["us-east-1"]}))
     out = "\n".join(_identity(m, WorkloadIdentity("pf-engine", "identity-pf-engine", "pf-engine", "ciam-prod-pf-engine",
                                                   (("read-secret ds-root-password", locked, ROW),), ())))
-    assert '"Sid": "ReadSecretDsRootPasswordKey"' in out and '"kms:Decrypt"' in out and f'"{key_arn}"' in out
-    assert '"kms:ViaService": "secretsmanager.us-east-1.amazonaws.com"' in out
+    assert '"Sid" : "ReadSecretDsRootPasswordKey"' in out and '"kms:Decrypt"' in out and f'"{key_arn}"' in out
+    assert '"kms:ViaService" : "secretsmanager.us-east-1.amazonaws.com"' in out
 
 
 def test_what_cant_be_granted_is_a_note_and_no_empty_policy_is_written():

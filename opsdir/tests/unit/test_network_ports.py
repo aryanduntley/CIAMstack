@@ -114,7 +114,7 @@ def test_target_gaps_between_roles_block_and_source_gaps_are_questions():
 
 def test_no_listeners_no_findings():
     d, alpha, beta = model()
-    assert _plan(d, alpha, beta, (SimpleNamespace(listeners=None),)) == ((), (), (), ())
+    assert _plan(d, alpha, beta, (SimpleNamespace(listeners=None),)) == ((), (), (), (), ())
 
 
 def test_a_network_open_within_itself_admits_its_own_roles():

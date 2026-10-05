@@ -3,6 +3,7 @@ from opsdir.core.contract import Adapter
 from opsdir.core.directory import one
 from .checks import check_idm
 from .listeners import listeners
+from .proxy import proxy_settings
 from .naming import ENDPOINTS, SERVER_ROLES
 from .project import IDM_PROJECT
 from .render import FORMATS, render_env, render_neutral
@@ -24,4 +25,5 @@ ADAPTER = Adapter(name="pingidm", kind="product", applies=applies, required_role
                   formats=FORMATS,
                   products=(("PingIDM", ">=7,<9"), ("ForgeRock IDM", ">=7,<8")),
                   secret_patterns=(), importers=(IDM_PROJECT,), profile_terms=None, access=None,
-                  endpoints=ENDPOINTS, listeners=listeners)
+                  endpoints=ENDPOINTS, listeners=listeners,
+                  proxy_settings=proxy_settings)

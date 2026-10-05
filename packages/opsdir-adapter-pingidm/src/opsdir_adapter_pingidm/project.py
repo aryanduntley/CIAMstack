@@ -31,6 +31,9 @@ CONNECTOR_PREFIX, SCHEDULE_PREFIX = "conf/provisioner.openicf-", "conf/schedule-
 STRUCTURED = ("conf/managed.json", "conf/sync.json")
 CAPTURED_FORMATS = MappingProxyType({".json": JSON, ".properties": JAVA_PROPERTIES})
 CODE_DIRS = ("script/", "ui/", "bundle/", "connectors/")     # an IDM project's code and packages
+# outside conf/, the settings IDM resolves its configuration's &{...} expressions from (resolver/boot.properties:
+# ports, hosts, the HTTP client's proxy), captured like conf/ files
+RESOLVER = "resolver/"
 CODE_EXTENSIONS = (".js", ".groovy", ".py", ".sh", ".jar")
 
 
@@ -135,10 +138,11 @@ def _is_structured(path):
 def read_project(files, d, patterns, at=None):
     """Imported from an IDM project directory."""
     groups, notices = _structured(d, files, patterns)
-    other = sorted(p for p in files if p.startswith("conf/") and not _is_structured(p))
+    other = sorted(p for p in files if (p.startswith("conf/") and not _is_structured(p))
+                   or (p.startswith(RESOLVER) and p.endswith(".properties")))
     captured = tuple(_captured(p, files[p], patterns) for p in other)
     code = sorted(p for p in files if p.startswith(CODE_DIRS) or p.endswith(CODE_EXTENSIONS))
-    other_files = sorted(p for p in files if not p.startswith("conf/") and p not in code)
+    other_files = sorted(p for p in files if not p.startswith("conf/") and p not in code and p not in other)
     return Imported(
         containers=tuple(ou_entry(dn) for dn in (PINGIDM, MANAGED, CONNECTORS, MAPPINGS, SCHEDULES, CONFIG_FILES)),
         groups=(*groups, *(g for g, _ in captured if g)),

@@ -3,7 +3,8 @@ shares (a routed path to the source, the replication port open to each new repli
 source's replication deployment or topology is product knowledge: each product adds that check."""
 from opsdir.core.directory import children, follow, one, rdn_value, values
 from opsdir.core.environment import joins, of_class, one_role, servers_with_role
-from opsdir.core.findings import findings, merge_findings, responsible
+from opsdir.core.changeset import set_values
+from opsdir.core.findings import Fix, findings, merge_findings, responsible
 from opsdir.core.network import covers
 from opsdir.domains.directory.naming import DIRECTORY_SERVER_ROLE
 
@@ -29,7 +30,18 @@ def check_joins(d, src, dst, joined_text, missing_text):
     joined = joins(dst)
     if joined and joined.dn.lower() == src.dn.lower():
         return findings(ok=[joined_text])
-    return findings(blockers=[("Replication", missing_text, responsible(d, dst.env))])
+    return findings(blockers=[("Replication", missing_text, responsible(d, dst.env))], fixes=[joins_fix(src, dst)])
+
+
+def joins_fix(src, dst):
+    """The Fix declaring that the target's directory servers join the source's replication (ciamJoinsDeploymentOf on
+    the target environment), so its setup scripts bootstrap from the source's servers."""
+    return Fix("replication:joins", "Replication", f"Declare that {dst.label} joins {src.label}'s replication",
+               (set_values(dst.env, "ciamJoinsDeploymentOf", (src.dn,)),),
+               (f"Set up {dst.label}'s directory servers with the rendered setup scripts, which then join "
+                f"{src.label}'s servers (replication must reach them: the interconnect and port checks say so).",),
+               (f"If {dst.label} is meant as a fresh topology (export and import), joining is wrong, and applying "
+                "this silences the warning that a fresh topology can't read data encrypted with the source's keys.",))
 
 
 def _check_interconnect(d, src, dst):

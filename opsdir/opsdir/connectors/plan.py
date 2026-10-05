@@ -12,13 +12,16 @@ that fails never passes silently or hides the others: its failure is a blocker n
 import datetime as dt
 from typing import NamedTuple, Optional
 
+from ..core.changeset import set_values
 from ..core.contract import PlanContext
 from .access import access_check
 from .edge import edge_check
 from .network import network_check
+from .proxies import proxy_check
 from ..core.directory import children, date_of, follow, get, one, rdn_value, values
-from ..core.environment import EnvModel, one_role, of_class
-from ..core.findings import findings, merge_findings, owner_label, responsible
+from ..core.environment import EnvModel, by_role, environment_of, one_role, of_class
+from ..core.findings import (Fix, bindings_container, findings, merge_findings, owner_label, responsible,
+                             templated_entry)
 from ..core.naming import env_label
 from ..core.overlays import override_differences
 from ..domains.directory.domain import consumers_of_role
@@ -31,9 +34,11 @@ Plan = NamedTuple("Plan", [("src", EnvModel), ("dst", EnvModel), ("cutover", Opt
                            ("as_of", dt.date), ("blockers", tuple), ("actions", tuple), ("ok", tuple),
                            ("requests", tuple),          # ((party entry, ((allowlist, new, role, by), …)), …);
                                                          # allowlist None: an item in a system the party keeps, new
-                                                         # its text, role its topic (None: the landing zone; dns)
+                                                         # its text, role its topic (None: landing zone;
+                                                         # dns; network)
                            ("target_files", dict),
-                           ("target_summary", str)])     # what the target renders to, in words (from its adapters)
+                           ("target_summary", str),      # what the target renders to, in words (from its adapters)
+                           ("fixes", tuple)])            # core.findings.Fix: record changes the findings offer
 
 
 # ------------------------------------------------------------------ cross-domain checks
@@ -66,7 +71,23 @@ def _contract(ctx, svc):
     return findings(blockers=[("Contract", f"`{role}` changes name `{a}` → `{b}`. Every consumer would have to "
                                f"reconfigure ({', '.join(users)}), and certificate(s) {', '.join(certs) or '-'} "
                                f"don't cover the new name. Fix: bind the stable name `{a}` in {ctx.dst.label}.",
-                               responsible(ctx.d, t, ctx.dst.env))])
+                               responsible(ctx.d, t, ctx.dst.env))],
+                    fixes=[contract_fix(ctx.src.label, ctx.dst.label, svc, t)])
+
+
+def contract_fix(src_label, dst_label, svc, t):
+    """The Fix binding a source service name's stable name (and its DNS zone, when the target's is another) on the
+    target's binding of the role."""
+    role, a, zone = one(svc, "ciamBindingRole"), one(svc, "ciamFqdn"), one(svc, "ciamDnsZone")
+    rezoned = zone is not None and zone != one(t, "ciamDnsZone")
+    return Fix(f"contract:{role}", "Contract", f"Bind the stable name `{a}` for `{role}` in {dst_label}",
+               (set_values(t, "ciamFqdn", (a,)), *((set_values(t, "ciamDnsZone", (zone,)),) if rezoned else ())),
+               (f"Publish `{a}` in {dst_label}'s DNS for the target's load balancer (the DNS checks date the TTL "
+                "lowering before cutover).",
+                *((f"Bind zone `{zone}` in {dst_label} (its provider reference, ciamDnsZoneRef, names the zone "
+                   "there).",) if rezoned and one(t, "ciamDnsZoneRef") else ())),
+               (f"Assumes {dst_label} may use `{a}`: control of its DNS zone and a certificate covering it. If the "
+                f"rename is deliberate, the consumers change instead, not {src_label}'s name.",))
 
 
 def _check_contracts(ctx):
@@ -74,24 +95,43 @@ def _check_contracts(ctx):
     return merge_findings([_contract(ctx, svc) for svc in of_class(ctx.src, "ciamServiceName")])
 
 
+def binding_fix(d, src_label, dst, role, sources):
+    """The Fix binding a role the target lacks like the source's bindings of it (sources) do: each one's entry under
+    the target's bindings, what is bound to the source's place given for the target's (core.findings.templated_entry;
+    with several bindings, each input's key starts with the binding's name and a dot)."""
+    several = len(sources) > 1
+    return Fix(f"binding:{role}", "Binding", f"Bind `{role}` in {dst.label} like {src_label} does",
+               (*bindings_container(d, dst.dn),
+                *(templated_entry(d, b, f"{b.dn.split(',', 1)[0]},ou=bindings,{dst.dn}", environment_of(b),
+                                  f"{rdn_value(b)}." if several else "") for b in sources)),
+               (f"Create what the inputs name in {dst.label} (or find it there): the binding records the place, it "
+                "doesn't build it.",),
+               (f"Copies {src_label}'s intent and meta values: if {dst.label} should differ, edit the proposal "
+                "before approving it.",))
+
+
 def _missing_role(ctx, role):
-    consumer = follow(ctx.d, one_role(ctx.src, role), "ciamAllowsConsumer")
+    sources = by_role(ctx.src, role)
+    consumer = follow(ctx.d, sources[0], "ciamAllowsConsumer")
+    fix = binding_fix(ctx.d, ctx.src.label, ctx.dst, role, sources)
     if not consumer:
-        return ("Binding", f"Role `{role}` is bound in {ctx.src.label} but not in {ctx.dst.label}.",
-                responsible(ctx.d, ctx.dst.env))
+        return findings(blockers=[("Binding", f"Role `{role}` is bound in {ctx.src.label} but not in {ctx.dst.label}.",
+                                   responsible(ctx.d, ctx.dst.env))], fixes=[fix])
     unowned = "" if one(consumer, "ciamOwner") else \
         " Nobody owns it: decide whether to migrate or retire it before cutover."
-    return ("Binding", f"Consumer `{rdn_value(consumer)}` (status {one(consumer, 'ciamMigrationStatus')}) is "
-            f"allowed in {ctx.src.label} but has no firewall rule in {ctx.dst.label}.{unowned}",
-            owner_label(ctx.d, consumer))
+    return findings(blockers=[("Binding", f"Consumer `{rdn_value(consumer)}` (status "
+                               f"{one(consumer, 'ciamMigrationStatus')}) is allowed in {ctx.src.label} but has no "
+                               f"firewall rule in {ctx.dst.label}.{unowned}", owner_label(ctx.d, consumer))],
+                    fixes=[fix])
 
 
 def _check_roles(ctx):
-    """Every role bound in the source must be bound in the target."""
+    """Every role bound in the source must be bound in the target; each one it lacks offers the fix binding it like
+    the source does, the target's own values given."""
     src_roles = {one(b, "ciamBindingRole") for b in ctx.src.bindings}
     dst_roles = {one(b, "ciamBindingRole") for b in ctx.dst.bindings}
-    return findings(blockers=[_missing_role(ctx, r) for r in sorted(src_roles - dst_roles)],
-                    ok=[f"New in {ctx.dst.label}: `{r}`." for r in sorted(dst_roles - src_roles)])
+    return merge_findings([*(_missing_role(ctx, r) for r in sorted(src_roles - dst_roles)),
+                           findings(ok=[f"New in {ctx.dst.label}: `{r}`." for r in sorted(dst_roles - src_roles)])])
 
 
 def _declared_why(ctx, role):
@@ -162,9 +202,10 @@ def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS):
     f = merge_findings([*(run_check(check, ctx) for check in checks(adapters, domains)),
                         run_check(access_check(src_adapters, adapters), ctx),
                         run_check(edge_check(src_adapters, adapters), ctx),
-                        run_check(network_check(src_adapters, adapters), ctx)])
+                        run_check(network_check(src_adapters, adapters), ctx),
+                        run_check(proxy_check(adapters), ctx)])
     return Plan(src, dst, cutover, as_of, f.blockers, f.actions, f.ok, _group_requests(f.requests), dst_files,
-                render_summary(adapters))
+                render_summary(adapters), tuple({x.key: x for x in f.fixes}.values()))
 
 
 # ------------------------------------------------------------------ output
@@ -185,6 +226,9 @@ def to_markdown(p):
              *([f"| {a} | {t} | {o} |" for a, t, o in p.blockers] or ["| - | none | - |"]),
              "", "## Actions (dated)", "", "| Area | Action | Owner | Do by |", "|---|---|---|---|",
              *(f"| {a} | {t} | {o} | {b or ''} |" for a, t, o, b in sorted(p.actions, key=_action_order)),
+             *(("", "## Fixes offered", "",
+                "Record changes these findings can make (`opsdir fix show FROM TO KEY`; propose or apply them under a "
+                "change):", "", *(f"- `{f.key}`: {f.title}" for f in p.fixes)) if p.fixes else ()),
              "", "## Already in place", "", *(f"- {x}" for x in p.ok),
              "", "## What the target renders to", "",
              f"`opsdir render {p.dst.label}` produces {len(p.target_files)} files from the same databases: "
@@ -195,7 +239,9 @@ def to_markdown(p):
 # What a party keeps that a request asks it to change (the topic of an item with no allowlist): (subject, where)
 _TOPICS = {None: ("Landing zone changes", "in the landing zone you keep (the rendered terraform/landing-zone/ files "
                   "hold what we can describe)"),
-           "dns": ("DNS changes", "in the DNS zones you run")}
+           "dns": ("DNS changes", "in the DNS zones you run"),
+           "network": ("Network changes", "in the network you keep (where an item is rendered as Terraform, its "
+                       "root is named)")}
 
 
 def _asks(asks):

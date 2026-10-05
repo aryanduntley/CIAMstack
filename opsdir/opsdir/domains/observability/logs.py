@@ -8,7 +8,8 @@ must keep them at least as long as the route requires.
 """
 from ...core.directory import children, one, rdn_value, values
 from ...core.environment import bound_nowhere, one_role
-from ...core.findings import findings, merge_findings, responsible
+from ...core.changeset import set_values
+from ...core.findings import Fix, findings, merge_findings, responsible
 from .naming import LOG_ROUTES
 
 LOG_HEADERS = ("log route", "logs", "from", "kept by", "keep (days)", "legal hold")
@@ -50,6 +51,12 @@ def _route(ctx, r):
                   *((("Logs", f"Log route `{name}` must keep logs {need} days; {ctx.dst.label}'s `{role}` keeps them "
                       f"{have}. Raise its retention before cutover.", owner),)
                     if need and _short(have, need) else ())],
+        fixes=[Fix(f"log-retention:{name}", "Logs", f"Keep {ctx.dst.label}'s `{role}` logs {need} days, as log route "
+                   f"`{name}` requires", (set_values(dst, "ciamRetentionDays", (str(need),)),),
+                   (f"Raise the retention of {ctx.dst.label}'s `{role}` where it is provisioned (its rendered "
+                    "configuration, or by hand where nothing renders it).",),
+                   ("A cloud import that reads the destination back before its retention is raised takes the value "
+                    "back.",))] if need and _short(have, need) and dst is not None else [],
         actions=[*((("Logs", f"Log route `{name}` must keep logs {need} days; {ctx.dst.label}'s `{role}` records no "
                      "retention. Record what it is provisioned with.", owner, None),)
                    if need and dst is not None and have is None else ()),

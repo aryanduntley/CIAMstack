@@ -562,6 +562,41 @@
       "match": "doesn't allow `email-smtp.us-east-1.amazonaws.com`",
       "planted": "the hub firewall in the target doesn't allow the mail relay the platform sends through",
       "cleared_by": null
+    },
+    {
+      "id": "A60",
+      "area": "Egress proxy",
+      "match": "so `am` must be told",
+      "planted": "the target's outside traffic goes through the hub's forward proxy; PingAM's HTTP client and JVM options don't name it",
+      "cleared_by": null
+    },
+    {
+      "id": "A61",
+      "area": "Egress proxy",
+      "match": "so `pf-engine` must be told",
+      "planted": "the target's outside traffic goes through the hub's forward proxy; the engines' captured run.properties lacks the proxy keys (a fix links them)",
+      "cleared_by": null
+    },
+    {
+      "id": "A62",
+      "area": "Egress proxy",
+      "match": "so `pf-admin` must be told",
+      "planted": "the target's outside traffic goes through the hub's forward proxy; the admin node's run.properties and revocation checking don't name it",
+      "cleared_by": null
+    },
+    {
+      "id": "A63",
+      "area": "Egress proxy",
+      "match": "so `ig` must be told",
+      "planted": "the target's outside traffic goes through the hub's forward proxy; PingGateway's ProxyOptions and JVM options don't name it",
+      "cleared_by": null
+    },
+    {
+      "id": "A64",
+      "area": "Egress proxy",
+      "match": "so `idm` must be told",
+      "planted": "the target's outside traffic goes through the hub's forward proxy; PingIDM's boot.properties and JVM options don't name it",
+      "cleared_by": null
     }
   ]
 }

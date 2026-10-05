@@ -6,11 +6,12 @@ In the target a gap between server roles blocks the cutover (replication, cluste
 fail); in the source it is a question for the record (the rule may exist and not be recorded). Firewall rules that
 open a port no installed product listens on are named for review.
 """
+from ..core.changeset import add_values, delete_entry, delete_values, new_entry
 from ..core.contract import directory_report
 from ..core.directory import one, rdn_value, values
-from ..core.findings import findings, merge_findings, responsible
-from ..domains.network.ports import (BLOCKED, OPEN, PORTS_HEADERS, UNCOVERED, flow_status, flows, ports_rows,
-                                     stray_rules)
+from ..core.findings import Fix, findings, merge_findings, responsible
+from ..domains.network.ports import (BLOCKED, OPEN, PORTS_HEADERS, UNCOVERED, admitting, flow_status, flows,
+                                     ports_rows, stray_ports, stray_rules)
 from .registry import ADAPTERS, environment, environment_specs
 
 
@@ -39,6 +40,40 @@ def _gap_text(m, lst, sources, reasons):
             f"{'; '.join(reasons)}.")
 
 
+def ports_fix(m, flow):
+    """The Fix admitting exactly the ranges of a flow between server roles that no firewall rule covers: added to the
+    rule that already admits the port to the role, else a new rule; None when nothing is uncovered or the flow comes
+    from clients or admins."""
+    rules, uncovered = admitting(m, flow)
+    if flow.source in ("clients", "admin") or not uncovered:
+        return None
+    lst, cidrs = flow.listener, ", ".join(uncovered)
+    cn = f"fw-{flow.source}-to-{lst.server_role}-{lst.port}"
+    record = (add_values(rules[0], "ciamSourceCidr", uncovered) if rules else
+              new_entry(f"cn={cn},ou=bindings,{m.dn}", ("top", "ciamFirewallRule"), {
+                  "cn": (cn,), "ciamBindingRole": (cn,), "ciamSourceCidr": uncovered, "ciamPort": (str(lst.port),),
+                  "ciamTargetRole": (lst.server_role,), "ciamProtocol": (lst.protocol,)}))
+    return Fix(f"ports:{lst.server_role}:{lst.port}:from-{flow.source}", "Ports",
+               f"Admit {cidrs} (`{flow.source}`) to `{lst.server_role}` on {lst.protocol} {lst.port} ({lst.purpose})"
+               + (f" in rule `{rdn_value(rules[0])}`" if rules else f" in a new rule `{cn}`"), (record,),
+               (f"Apply {m.label}'s rendered firewall rules (the platform's Terraform).",),
+               (f"Admits exactly {cidrs}, the ranges `{flow.source}`'s servers sit in; if they shouldn't reach "
+                f"`{lst.server_role}` on {lst.port}, what to change is the product's listener, not the rule.",))
+
+
+def stray_fix(m, listeners, fw):
+    """The Fix closing what a rule opens that nothing listens on: the stray ports dropped from it, or the rule
+    deleted when all of its ports are."""
+    stray = stray_ports(m, listeners, fw)
+    whole = len(stray) == len(values(fw, "ciamPort"))
+    return Fix(f"stray-rule:{rdn_value(fw)}", "Ports",
+               f"Close {'rule' if whole else 'ports ' + ', '.join(stray) + ' of rule'} `{rdn_value(fw)}` in {m.label}",
+               (delete_entry(fw) if whole else delete_values(fw, "ciamPort", stray),),
+               (f"Apply {m.label}'s rendered firewall rules (the platform's Terraform).",),
+               ("If something the record doesn't know listens there (a product or agent no adapter declares), it "
+                "loses its traffic: record that listener instead.",))
+
+
 def _environment(ctx, m, declared, target):
     gaps = _gaps(m, declared)
     owner = responsible(ctx.d, m.env)
@@ -60,7 +95,9 @@ def _environment(ctx, m, declared, target):
                         "Close them, or record what listens there.", owner, None))
     flowing = sum(1 for f in flows(m, declared) if flow_status(m, f)[0] == OPEN)
     ok = [f"{m.label}: {flowing} flow(s) of the ports matrix get through."] if flowing and not gaps else []
-    return findings(blockers=blockers, actions=actions, ok=ok)
+    fixes = [*(x for f, status, _ in gaps if target and status == UNCOVERED for x in (ports_fix(m, f),) if x),
+             *(stray_fix(m, declared, fw) for fw in stray if target)]
+    return findings(blockers=blockers, actions=actions, ok=ok, fixes=fixes)
 
 
 def network_check(src_adapters, dst_adapters):

@@ -7,7 +7,8 @@ network, the egress firewall and the sites it lets the servers reach, and the st
            the supplier portal's account connects to, and an AWS Network Firewall the stack keeps, whose domain
            allowlist it renders
   target   Azure: a private endpoint to the Key Vault (the hub's privatelink zone), a Private Link Service on the LDAPS
-           load balancer, and the hub's Azure Firewall, which the network team keeps
+           load balancer, the hub's Azure Firewall, which the network team keeps, and the hub's forward proxy (an
+           explicit proxy: the products must be told about it)
   standby  Google Cloud: the network firewall policy model (secure tags), a Private Service Connect endpoint for
            Google's APIs, and the stack's own egress rules in the policy
 
@@ -16,6 +17,9 @@ Planted for the planner to find:
     another name (not recorded yet) and allows the portal's Azure subscription, not its AWS account: the portal must
     create an endpoint to it and be accepted before cutover
   - the hub firewall in the target doesn't allow the mail relay the platform sends through
+  - the target's outside traffic goes through the hub's forward proxy, but the products' configuration doesn't say
+    so: PingFederate's captured run.properties lacks the proxy keys (a fix links them to the proxy binding), and the
+    other products' places are named
 """
 from .common import owner
 
@@ -60,6 +64,9 @@ NETWORK = {
         ("ciamProxy", "egress-firewall", "egress-firewall",
          {"ciamProxyKind": "firewall", "ciamAllowedDestination": list(SITES[1:]), "ciamProviderRef": HUB_FIREWALL,
           "ciamManagedBy": NETWORK_TEAM[0], "ciamOwner": NETWORK_TEAM}),
+        ("ciamProxy", "hub-proxy", "egress-proxy",
+         {"ciamProxyKind": "forward-proxy", "ciamProxyAddress": "proxy.hub.example-aero.test:3128",
+          "ciamAllowedDestination": list(SITES), "ciamManagedBy": NETWORK_TEAM[0], "ciamOwner": NETWORK_TEAM}),
     ),
     "standby": (
         ("ciamFirewallPolicy", "fw-policy", "firewall-policy",

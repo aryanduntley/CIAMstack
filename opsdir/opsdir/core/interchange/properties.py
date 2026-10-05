@@ -66,4 +66,11 @@ def split(text):
     return tuple(p for group in _logical(physical_lines(text)) for p in _parts(group))
 
 
-CODEC = Codec(split, decode, encode)
+def add(text, locator):
+    """(before, after) a new setting's raw text when appended to a file's text: on its own line, its key escaped,
+    '=' as the separator."""
+    key = re.sub(r"([=:\s\\#!])", r"\\\1", locator)
+    return ("" if not text or text.endswith("\n") else "\n") + f"{key}=", "\n"
+
+
+CODEC = Codec(split, decode, encode, add)

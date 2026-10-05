@@ -9,7 +9,8 @@ A runnable example of opsdir with real adapter packages. The estate is **Example
 ```bash
 ../../opsdir/scripts/dev-install.sh      # once: the core and the adapter packages
 ./demo.sh                                # the whole walk-through against the local dev database; outputs in out/
-TERRAFORM=/path/to/terraform ./demo.sh   # plus terraform fmt + validate on the rendered Terraform
+../../opsdir/scripts/fetch-tools.sh     # optional, once: Terraform into tools/ (gitignored); demo.sh then also runs
+                                         # terraform fmt + validate on every rendered root (or TERRAFORM=/path/terraform)
 ```
 
 `demo.sh` regenerates `data/` and the directory servers' exports, rebuilds the dev database (`opsdir init`, then `load data/*.ldif`), reads the product exports and the directory servers' configuration and access logs in, asks the record questions, shows the guardrails rejecting bad writes, renders each environment, then plans the move to the second environment, applies the approved changes and plans again.

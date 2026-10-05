@@ -7,12 +7,13 @@ from opsdir.core.directory import children, one, rdn_value, values
 from opsdir.core.environment import bound_nowhere, one_role
 from opsdir.core.findings import findings, merge_findings, responsible
 from opsdir.core.jsondata import held_json
+from opsdir.domains.pki.credentials import credential_role_fix
 from .datastores import store_hosts
-from .discovery import CHOICES, RENDERED, binding_protocol, clustered, lacks, where
+from .discovery import CHOICES, RENDERED, binding_protocol, clustered, discovery_fix, lacks, where
 from .generic import held_resources, resource_label
 from .naming import DATA_STORES, DEFAULT_POLICY, DISCOVERY_ROLE, FRAGMENTS, OIDC_POLICIES
 from .oauth import oidc_policy_refs
-from .objects import NOT_RECORDED, missing, why_unresolved
+from .objects import NOT_RECORDED, claim_fix, missing, why_unresolved
 from .plugins import KINDS, plugin_refs
 from .policies import fragment_refs, node_refs
 
@@ -22,13 +23,19 @@ def _config(e, attr="pingfedConfig"):
 
 
 def _credentials(ctx, e, what, owner):
-    """Blockers: withheld values nothing names a secret for, and roles the target doesn't bind."""
+    """Blockers: withheld values nothing names a secret for (with the fix choosing the secret role), and roles the
+    target doesn't bind."""
     credential = one(e, "pingfedCredentialRole")
     unbound = bound_nowhere((one(e, "pingfedTargetRole"), credential), ctx.dst)
-    return (*((("PingFederate", f"{what} has withheld credentials but no credential role: nothing says which secret "
-                f"{ctx.dst.label} gives it. Set pingfedCredentialRole.", owner),)
-              if values(e, "pingfedWithheld") and not credential else ()),
-            *(("PingFederate", f"{what} needs role `{r}`, which {ctx.dst.label} doesn't bind.", owner) for r in unbound))
+    unnamed = bool(values(e, "pingfedWithheld")) and not credential
+    fix = credential_role_fix(ctx.src, ctx.dst, e, "pingfedCredentialRole", what,
+                              f"credential-role:{e.dn.split(',')[1].split('=', 1)[1]}/{rdn_value(e)}",
+                              (rdn_value(e), one(e, "pingfedPluginKind") or "")) if unnamed else None
+    return findings(blockers=(
+        *((("PingFederate", f"{what} has withheld credentials but no credential role: nothing says which secret "
+            f"{ctx.dst.label} gives it. Set pingfedCredentialRole.", owner),) if unnamed else ()),
+        *(("PingFederate", f"{what} needs role `{r}`, which {ctx.dst.label} doesn't bind.", owner) for r in unbound)),
+        fixes=(fix,) if fix else ())
 
 
 def _data_store(ctx, s):
@@ -41,7 +48,7 @@ def _data_store(ctx, s):
                  if fixed else ()),
                *((("PingFederate", f"Data store `{name}` connects to the directory without TLS: turn on LDAPS or "
                    "StartTLS.", owner, None),) if plain else ()))
-    return findings(blockers=_credentials(ctx, s, f"Data store `{name}`", owner), actions=actions)
+    return merge_findings([_credentials(ctx, s, f"Data store `{name}`", owner), findings(actions=actions)])
 
 
 def check_data_stores(ctx):
@@ -57,17 +64,21 @@ def check_data_stores(ctx):
 
 
 def _named(ctx, e, what, refs):
+    """Blockers for the objects an entry names that the record doesn't have (or several entries claim), with the fix
+    giving a claimed id to one entry."""
     owner = responsible(ctx.d, e, ctx.dst.env)
-    return tuple(("PingFederate", f"{what} names {why_unresolved(ctx.d, k, i, NOT_RECORDED)}.", owner)
-                 for k, i in missing(ctx.d, refs))
+    absent = missing(ctx.d, refs)
+    return findings(blockers=[("PingFederate", f"{what} names {why_unresolved(ctx.d, k, i, NOT_RECORDED)}.", owner)
+                              for k, i in absent],
+                    fixes=[x for k, i in absent for x in (claim_fix(ctx.d, k, i),) if x])
 
 
 def _plugin(ctx, p):
     kind = one(p, "pingfedPluginKind")
     label = KINDS[kind].label
     what = f"{label[0].upper()}{label[1:]} `{rdn_value(p)}`"
-    return findings(blockers=(*_named(ctx, p, what, plugin_refs(kind, _config(p))),
-                              *_credentials(ctx, p, what, responsible(ctx.d, p, ctx.dst.env))))
+    return merge_findings([_named(ctx, p, what, plugin_refs(kind, _config(p))),
+                           _credentials(ctx, p, what, responsible(ctx.d, p, ctx.dst.env))])
 
 
 def check_references(ctx):
@@ -82,19 +93,24 @@ def check_references(ctx):
         return findings()
     parts = merge_findings([
         *(_plugin(ctx, p) for p in plugins),
-        *(findings(blockers=_named(ctx, t, f"Authentication policy `{rdn_value(t)}`",
-                                   node_refs(_config(t, "pingfedPolicyTree")))) for t in trees),
-        *(findings(blockers=_named(ctx, f, f"Policy fragment `{rdn_value(f)}`",
-                                   fragment_refs({**_config(f), "rootNode": _config(f, "pingfedPolicyTree")})))
-          for f in fragments),
-        *(findings(blockers=_named(ctx, o, f"OIDC policy `{rdn_value(o)}`", oidc_policy_refs(_config(o))))
-          for o in oidc),
-        *(findings(blockers=_credentials(ctx, r, resource_label(r), responsible(ctx.d, r, ctx.dst.env))) for r in held)])
+        *(_named(ctx, t, f"Authentication policy `{rdn_value(t)}`", node_refs(_config(t, "pingfedPolicyTree")))
+          for t in trees),
+        *(_named(ctx, f, f"Policy fragment `{rdn_value(f)}`",
+                 fragment_refs({**_config(f), "rootNode": _config(f, "pingfedPolicyTree")})) for f in fragments),
+        *(_named(ctx, o, f"OIDC policy `{rdn_value(o)}`", oidc_policy_refs(_config(o))) for o in oidc),
+        *(_credentials(ctx, r, resource_label(r), responsible(ctx.d, r, ctx.dst.env)) for r in held)])
     if parts.blockers:
         return parts
     return parts._replace(ok=(*parts.ok, f"PingFederate's {len(plugins)} plugin instance(s), {len(trees)} authentication "
                                          f"policy tree(s) and {len(oidc)} OIDC policy(-ies) name only what the record "
                                          "has."))
+
+
+def _running(nodes):
+    """The protocols to offer binding the source's discovery with: the one its nodes all report using, when the
+    adapter renders it, else every one it renders."""
+    running = {p for n in nodes for p in values(n, "pingfedDiscovery")}
+    return tuple(running) if len(running) == 1 and running <= set(CHOICES) else CHOICES
 
 
 def _discovery(ctx, nodes, src, dst, owner):
@@ -106,15 +122,17 @@ def _discovery(ctx, nodes, src, dst, owner):
         return findings(blockers=[("PingFederate", f"PingFederate's cluster ({len(nodes)} clustered node(s) in "
                                    f"{ctx.src.label}) has no recorded discovery, so nothing says how its members "
                                    f"find each other in {ctx.dst.label}: bind role `{DISCOVERY_ROLE}` in both and "
-                                   f"{choose}.", owner)])
+                                   f"{choose}.", owner)],
+                        fixes=[discovery_fix(ctx.src, None, _running(nodes)), discovery_fix(ctx.dst, None, CHOICES)])
     if dst_p is None or dst_p.support != RENDERED:
         why = f"{dst_p.name}, {dst_p.about}" if dst_p else "no protocol and nothing that implies one"
         return findings(blockers=[("PingFederate", f"{ctx.dst.label}'s `{DISCOVERY_ROLE}` binding uses {why}: "
-                                   f"{choose}.", owner)])
+                                   f"{choose}.", owner)], fixes=[discovery_fix(ctx.dst, dst, CHOICES)])
     lack = lacks(dst_p, dst)
     if lack:
         return findings(blockers=[("PingFederate", f"{ctx.dst.label}'s `{DISCOVERY_ROLE}` binding uses {dst_p.name}, "
-                                   f"which needs {lack}.", owner)])
+                                   f"which needs {lack}.", owner)],
+                        fixes=[discovery_fix(ctx.dst, dst, (dst_p.name,))])
     if src_p and src_p.name != dst_p.name:
         return findings(actions=[("PingFederate", f"PingFederate's cluster discovery changes from {src_p.name} "
                                   f"({where(src)}) to {dst_p.name} ({where(dst)}): put the lines of "
@@ -135,5 +153,5 @@ def check_cluster(ctx):
         return findings()
     owner = responsible(ctx.d, ctx.dst.env)
     return merge_findings([_discovery(ctx, nodes, src, dst, owner),
-                           findings(blockers=[b for n in nodes for b in _credentials(
-                               ctx, n, f"PingFederate node `{rdn_value(n)}`", responsible(ctx.d, n, ctx.dst.env))])])
+                           *(_credentials(ctx, n, f"PingFederate node `{rdn_value(n)}`",
+                                          responsible(ctx.d, n, ctx.dst.env)) for n in nodes)])

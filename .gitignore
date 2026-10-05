@@ -41,6 +41,10 @@ htmlcov/
 .nox/
 .ipynb_checkpoints/
 
+# ------------------------------------------------------------------ local third-party tools (opsdir/scripts/fetch-tools.sh)
+# Terraform and other tools the tests run on rendered output, downloaded per machine; delete the folder to remove them.
+/tools/
+
 # ------------------------------------------------------------------ Terraform (when validating rendered output)
 .terraform/
 .terraform.lock.hcl

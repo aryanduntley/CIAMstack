@@ -38,12 +38,13 @@ def hcl(v, indent=0):
 
 
 def _single_line(kv):
-    return kv[0] != "#" and not isinstance(kv[1], (Block, dict))
+    return kv[0] != "#" and not isinstance(kv[1], (Block, dict)) and "\n" not in hcl(kv[1])
 
 
 def _key_widths(body):
     """Like `terraform fmt`: '=' is aligned within runs of single-line attributes. Blocks, comments
-    and multi-line values break a run. Returns {body index: key width} for run members."""
+    and multi-line values (a dict, a jsonencode() document) break a run. Returns {body index: key width} for run
+    members."""
     runs = [tuple(g) for single, g in groupby(enumerate(body), key=lambda ikv: _single_line(ikv[1])) if single]
     return {i: max(len(k) for _, (k, _) in run) for run in runs for i, _ in run}
 
@@ -69,9 +70,15 @@ def ref(expr):
     return "${" + expr + "}"
 
 
+def import_block(address, id_):
+    """An import block adopting an existing object into the resource at address (type.name) by its provider id."""
+    return block("import", [], [("to", ref(address)), ("id", id_)])
+
+
 def jsonencoded(v):
-    """A JSON document as a Terraform jsonencode() expression (JSON's objects and arrays are HCL expressions)."""
-    return ref("jsonencode(" + json.dumps(v, indent=2).replace("\n", "\n  ") + ")")
+    """A JSON document as a Terraform jsonencode() expression (JSON's objects and arrays are HCL expressions), keys
+    and values spaced as `terraform fmt` writes them ("key" : value)."""
+    return ref("jsonencode(" + json.dumps(v, indent=2, separators=(",", " : ")).replace("\n", "\n  ") + ")")
 
 
 def unbound_comments(roles):

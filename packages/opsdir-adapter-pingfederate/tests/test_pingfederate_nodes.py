@@ -8,6 +8,7 @@ import json
 
 import pytest
 
+from opsdir.connectors.fixes import chosen
 from opsdir.connectors.importing import preview_import
 from opsdir.connectors.registry import core_fragments
 from opsdir.core.contract import PlanContext
@@ -220,3 +221,53 @@ def test_the_planner_flags_a_change_of_protocol_an_unsupported_one_and_discovery
         "PingFederate's cluster (2 clustered node(s) in alpha/prod) has no recorded discovery, so nothing says how "
         "its members find each other in beta/prod: bind role `pf-cluster-discovery` in both and choose "
         "pingfedDiscoveryProtocol (TCPPING, NATIVE_S3_PING, DNS_PING).")
+
+
+def _discovery_fixes(d):
+    return {f.key: f for f in plan(d).fixes if f.key.startswith("discovery:")}
+
+
+def _fixed(fixes, extra="", discovery=True):
+    """The record after importing the node files, then applying the fixes' records."""
+    d, changes, _ = imported(extra=extra, discovery=discovery)
+    return build_directory(REGISTRY, records(extra, discovery), (*changes, *(r for f in fixes for r in f.records)))
+
+
+def test_discovery_nobody_recorded_is_bound_with_the_protocol_the_nodes_run_and_a_choice_for_the_target():
+    unrecorded, _, _ = imported(discovery=False)
+    fixes = _discovery_fixes(unrecorded)
+    alpha, beta = fixes["discovery:alpha/prod"], fixes["discovery:beta/prod"]
+    assert (alpha.title, alpha.options) == ("Bind PingFederate's cluster discovery in alpha/prod: NATIVE_S3_PING", ())
+    assert [o.key for o in beta.options] == ["TCPPING", "NATIVE_S3_PING", "DNS_PING"]
+    with pytest.raises(ValueError, match="needs values: --input ciamStorageRef=… \\(e.g. s3://pf-cluster-discovery\\)"):
+        chosen(alpha)
+    with pytest.raises(ValueError, match="ciamStorageRef=alpha-pf-cluster doesn't match"):
+        chosen(alpha, given={"ciamStorageRef": ("alpha-pf-cluster",)})
+    picked = (chosen(alpha, given={"ciamStorageRef": ("s3://alpha-pf-cluster",)}),
+              chosen(beta, "DNS_PING", {"ciamFqdn": ("pf-cluster.beta.example.test",)}))
+    d = _fixed(picked, discovery=False)
+    assert get(d, f"cn=pf-discovery,ou=bindings,{BETA}").attrs["pingfedDiscoveryProtocol"] == ("DNS_PING",)
+    assert plan(d).blockers == plan(imported()[0]).blockers and _discovery_fixes(d) == {}
+    assert [t for _, t, _, _ in plan(d).actions][0].startswith(
+        "PingFederate's cluster discovery changes from NATIVE_S3_PING (s3://alpha-pf-cluster) to DNS_PING")
+
+
+def test_an_unsupported_or_incomplete_target_binding_is_fixed_in_place():
+    blob, _, _ = imported(extra=BETA_BLOB)
+    fix = _discovery_fixes(blob)["discovery:beta/prod"]
+    tcp = chosen(fix, "TCPPING")
+    assert [(r.changetype, r.dn) for r in tcp.records] == [          # an object store: replaced by a discovery binding
+        ("delete", f"cn=pf-discovery,ou=bindings,{BETA}"), ("add", f"cn=pf-discovery,ou=bindings,{BETA}")]
+    d = _fixed((tcp,), BETA_BLOB)
+    assert get(d, f"cn=pf-discovery,ou=bindings,{BETA}").classes == ("top", "pingfedClusterDiscovery")
+    assert _discovery_fixes(d) == {}
+    nameless = _chosen(BETA, "DNS_PING")
+    fix = _discovery_fixes(imported(extra=nameless)[0])["discovery:beta/prod"]
+    named = chosen(fix, given={"ciamFqdn": ("pf.beta.example.test",)})
+    assert named.records[0].mods == (("replace", "pingfedDiscoveryProtocol", ("DNS_PING",)),
+                                     ("replace", "ciamFqdn", ("pf.beta.example.test",)))
+    assert _discovery_fixes(_fixed((named,), nameless)) == {}
+    s3 = chosen(_discovery_fixes(imported(extra=_chosen(BETA, "AZURE_PING", "x.example.test"))[0])[
+        "discovery:beta/prod"], "NATIVE_S3_PING", {"ciamStorageRef": ("s3://beta-pf",)})
+    assert s3.records[0].mods == (("replace", "pingfedDiscoveryProtocol", ("NATIVE_S3_PING",)),   # the DNS name: gone
+                                  ("replace", "ciamStorageRef", ("s3://beta-pf",)), ("delete", "ciamFqdn", ()))

@@ -166,6 +166,22 @@ def test_the_egress_firewall_must_allow_the_sites_and_be_routed_through():
     assert not allows(narrow.bindings[-1], required_sites(model(tree=SITES)[0])[1])   # a host doesn't cover *.ocsp
 
 
+def test_a_proxy_someone_else_keeps_gets_a_request_for_each_site_it_lacks():
+    proxy = entry(BETA, "squid", "ciamProxy", ciamBindingRole="squid", ciamProxyKind="forward-proxy",
+                  ciamProxyAddress="proxy.corp.example:3128", ciamAllowedDestination="duosecurity.example",
+                  ciamManagedBy="cn=hr-app,ou=owners,dc=ciam-ops")
+    d, alpha, beta = model(beta=(proxy,), tree=(*SITES, *OWNERS[0:1], OWNERS[2]))
+    found = check_sites(context(d, alpha, beta, CUTOVER))
+    assert [(party.dn, allowlist, text, topic, by) for party, allowlist, text, topic, by in found.requests] == [
+        ("cn=hr-app,ou=owners,dc=ciam-ops", None, f"Allow `{host}` ({kind}) through `squid` (forward-proxy) for "
+         f"beta/prod{why}.", "network", CUTOVER)
+        for host, kind, why in (("*.ocsp.example:80", "ocsp-crl", ""),
+                                ("metadata.partner.example", "partner-metadata", ": `web` reach it"))]
+    kept = entry(BETA, "squid", "ciamProxy", ciamBindingRole="squid", ciamProxyKind="forward-proxy",
+                 ciamAllowedDestination="duosecurity.example")
+    assert check_sites(context(*model(beta=(kept,), tree=SITES), CUTOVER)).requests == ()   # no one else to ask
+
+
 def test_time_source_recorded_somewhere():
     d, alpha, beta = model()
     assert _texts(check_time(context(d, alpha, beta)).actions) == [

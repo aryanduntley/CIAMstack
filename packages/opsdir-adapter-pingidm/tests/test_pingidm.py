@@ -1,5 +1,6 @@
 """The PingIDM adapter: registered and chosen from data; an IDM project imported (managed objects, connectors linked
-to the directory's service name and consumer record, mappings, schedules; other conf/ files captured; scripts named
+to the directory's service name and consumer record, mappings, schedules; other conf/ files and resolver/ properties
+captured; scripts named
 as code; credentials withheld); the record rendered back (connectors per environment), which imports again with no
 change; and the planner's findings about what the deployment or the target lacks."""
 import datetime as dt
@@ -9,6 +10,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from opsdir.connectors.fixes import chosen
 from opsdir.connectors.importing import preview_import
 from opsdir.connectors.registry import ADAPTERS, core_fragments
 from opsdir.core.contract import PlanContext
@@ -121,6 +123,18 @@ def test_mappings_schedules_and_the_rest_of_conf(after):
     assert "code, not config (record it as a bundle with `opsdir bundle`): script/onCreate-user.js" in notices
 
 
+def test_resolver_properties_are_captured_too_and_other_files_named():
+    boot = "openidm.port.http=8080\nopenidm.http.client.proxy.useSystem=true\nopenidm.keystore.password=changeit\n"
+    d, _, notices = imported(files={**files_of(PROJECT), "resolver/boot.properties": boot, "logs/idm.log": "x"})
+    f = get(d, "cn=idm.resolver.boot.properties,ou=config-files,dc=ciam-ops")
+    assert (one(f, "ciamRepoPath"), one(f, "ciamFormat"), one(f, "ciamTargetRole")) == (
+        "pingidm/resolver/boot.properties", "java-properties", "idm")
+    assert "idm.resolver.boot.properties: value withheld, needs a secret reference: openidm.keystore.password" \
+        in notices
+    assert "not IDM configuration, not imported: logs/idm.log" in notices
+    assert not any("resolver/boot.properties" in n and "not imported" in n for n in notices)
+
+
 def test_connectors_render_per_environment(after):
     d, _ = after
     d = build_directory(REGISTRY, records(), (*imported()[1], *SET_ROLE))
@@ -158,6 +172,16 @@ def test_the_planner_names_what_the_target_or_the_deployment_lacks():
     assert [t for _, t, _, _ in f.actions] == [
         "Connector `hrdb` reaches a fixed host from every environment (no target role): confirm beta/prod can reach "
         "it, or record the system's service name."]
+    assert f.fixes == ()                                                  # the target binds no secret to offer
+    secret = tuple(parse("dn: cn=idm-ds,ou=bindings,env=prod,cloud=beta,ou=environments,dc=ciam-ops\n"
+                         "changetype: add\nobjectClass: top\nobjectClass: ciamSecretRef\ncn: idm-ds\n"
+                         "ciamBindingRole: idm-ds-bind-password\nciamRefUri: fake://idm-ds\n"))
+    fixes = plan(imported(secret)[0]).fixes
+    assert [(x.key, [o.key for o in x.options]) for x in fixes] == [
+        ("credential-role:connector/hrdb", ["idm-ds-bind-password"]),
+        ("credential-role:connector/ldap", ["idm-ds-bind-password"])]
+    ldap = chosen(fixes[1], "idm-ds-bind-password").records
+    assert not any("`ldap` has withheld credentials" in t for _, t, _ in plan(imported((*secret, *ldap))[0]).blockers)
     broken = parse(f"dn: {named(MAPPINGS, 'hr_managedUser')}\nchangetype: modify\nreplace: pingidmTarget\n"
                    "pingidmTarget: managed/person\n-\n")
     d2, _, _ = imported(broken)

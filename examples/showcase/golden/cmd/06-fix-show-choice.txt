@@ -1,0 +1,67 @@
+credential-role:notification-publishers/smtp (Credentials): Name the secret role Notification publisher `smtp` takes its withheld credentials from
+
+Choose one (--option):
+  pf-smtp-password: `pf-smtp-password` (azkv://kv-ciam-prod/pf-smtp-password in target/prod), its name matches
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: pf-smtp-password
+  am-admin-password: `am-admin-password` (azkv://kv-ciam-prod/am-admin-password in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: am-admin-password
+  am-ds-bind-password: `am-ds-bind-password` (azkv://kv-ciam-prod/am-ds-bind-password in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: am-ds-bind-password
+  am-keystore: `am-keystore` (azkv://kv-ciam-prod/am-keystore in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: am-keystore
+  ds-deployment-id: `ds-deployment-id` (azkv://kv-ciam-prod/ds-deployment-id in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: ds-deployment-id
+  ds-deployment-password: `ds-deployment-password` (azkv://kv-ciam-prod/ds-deployment-password in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: ds-deployment-password
+  ds-root-password: `ds-root-password` (azkv://kv-ciam-prod/ds-root-password in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: ds-root-password
+  ds-tls-keystore: `ds-tls-keystore` (azkv://kv-ciam-prod/ds-tls-keystore in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: ds-tls-keystore
+  idm-admin-password: `idm-admin-password` (azkv://kv-ciam-prod/idm-admin-password in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: idm-admin-password
+  idm-ds-bind-password: `idm-ds-bind-password` (azkv://kv-ciam-prod/idm-ds-bind-password in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: idm-ds-bind-password
+  idm-hrdb-password: `idm-hrdb-password` (azkv://kv-ciam-prod/idm-hrdb-password in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: idm-hrdb-password
+  idm-keystore: `idm-keystore` (azkv://kv-ciam-prod/idm-keystore in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: idm-keystore
+  ig-keystore: `ig-keystore` (azkv://kv-ciam-prod/ig-keystore in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: ig-keystore
+  pf-admin-password: `pf-admin-password` (azkv://kv-ciam-prod/pf-admin-password in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: pf-admin-password
+  pf-captcha-secret: `pf-captcha-secret` (azkv://kv-ciam-prod/pf-captcha-secret in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: pf-captcha-secret
+  pf-ds-bind-password: `pf-ds-bind-password` (azkv://kv-ciam-prod/pf-ds-bind-password in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: pf-ds-bind-password
+  pf-grants-db-password: `pf-grants-db-password` (azkv://kv-ciam-prod/pf-grants-db-password in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: pf-grants-db-password
+  pf-signing-key: `pf-signing-key` (azkv://kv-ciam-prod/pf-signing-key in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: pf-signing-key
+  sso-tls-keystore: `sso-tls-keystore` (azkv://kv-ciam-prod/sso-tls-keystore in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: sso-tls-keystore
+
+Outside the record:
+  - Make sure the chosen secret holds this credential in every environment's store (the record holds only the reference).
+
+What it could hide:
+  - A person chooses: the record can't tell which secret holds the credential (a matching name is a hint, not proof).
+exit 0

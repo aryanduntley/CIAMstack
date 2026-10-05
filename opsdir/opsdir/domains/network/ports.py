@@ -88,15 +88,20 @@ def via_service(m, binding_role, purpose, peers, port=None):
                  for p in ((str(port),) if port else values(b, "ciamPort")))
 
 
-def stray_rules(m, listeners):
-    """Environment m's firewall rules for a role whose products declare listeners, on a port and protocol none of them
-    declares and no service name sends traffic to: open ports nothing is known to listen on."""
+def stray_ports(m, listeners, fw):
+    """The ports a firewall rule of environment m opens to a role whose products declare listeners that none of them
+    declares and no service name sends traffic to (in the rule's order; () for a role nothing declares)."""
+    if one(fw, "ciamTargetRole") not in {lst.server_role for lst in listeners}:
+        return ()
     declared = {(lst.server_role, str(lst.port), lst.protocol) for lst in listeners} | \
         {(one(s, "ciamTargetRole"), p, "tcp") for s in of_class(m, "ciamServiceName") for p in values(s, "ciamPort")}
-    roles = {lst.server_role for lst in listeners}
-    return tuple(fw for fw in of_class(m, "ciamFirewallRule") if one(fw, "ciamTargetRole") in roles
-                 and any((one(fw, "ciamTargetRole"), p, one(fw, "ciamProtocol") or "tcp") not in declared
-                         for p in values(fw, "ciamPort")))
+    return tuple(p for p in values(fw, "ciamPort")
+                 if (one(fw, "ciamTargetRole"), p, one(fw, "ciamProtocol") or "tcp") not in declared)
+
+
+def stray_rules(m, listeners):
+    """Environment m's firewall rules opening ports nothing is known to listen on (stray_ports)."""
+    return tuple(fw for fw in of_class(m, "ciamFirewallRule") if stray_ports(m, listeners, fw))
 
 
 def _ports(text):

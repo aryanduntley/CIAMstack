@@ -7,6 +7,7 @@ from .checks import check_cluster, check_data_stores, check_references
 from .discovery import CHOICES
 from .importer import BULK
 from .listeners import listeners
+from .proxy import proxy_settings
 from .naming import SERVER_ROLES
 from .nodes import NODE_FILES
 from .render import ENDPOINTS, render_env, render_neutral
@@ -36,4 +37,5 @@ ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required
                            *SAML_FORMATS, *OIDC_FORMATS),
                   products=(("PingFederate", ">=11,<13"),),
                   secret_patterns=SECRET_PATTERNS, importers=(BULK, NODE_FILES), profile_terms=None, access=None,
-                  endpoints=ENDPOINTS, listeners=listeners)
+                  endpoints=ENDPOINTS, listeners=listeners,
+                  proxy_settings=proxy_settings)

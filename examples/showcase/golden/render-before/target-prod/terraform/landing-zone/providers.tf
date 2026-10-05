@@ -21,3 +21,8 @@ variable "subscription_id" {
   type        = string
   description = "The subscription prod runs in"
 }
+
+variable "egress_pf_ip_0" {
+  type        = string
+  description = "The public IP resource (Standard, static) with address 203.0.113.200/32 NAT gateway egress-pf sends from"
+}

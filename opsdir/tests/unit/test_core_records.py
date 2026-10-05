@@ -11,7 +11,8 @@ from opsdir.core.network import covers, is_private
 def test_findings_merge_concatenates_each_column_in_order():
     a = findings(blockers=[("A", "a", "o")], ok=["fine"])
     b = findings(actions=[("B", "b", "o", None)], ok=["also"], requests=[("r",)])
-    assert merge_findings([a, b]) == Findings((("A", "a", "o"),), (("B", "b", "o", None),), ("fine", "also"), (("r",),))
+    assert merge_findings([a, b]) == Findings((("A", "a", "o"),), (("B", "b", "o", None),), ("fine", "also"),
+                                              (("r",),), ())
     assert merge_findings([]) == findings()
 
 

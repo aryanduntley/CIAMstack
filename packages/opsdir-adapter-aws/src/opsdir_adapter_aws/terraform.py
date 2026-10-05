@@ -22,13 +22,7 @@ from .edge import US_EAST_1, alb_service, health_check, shield, stickiness
 from .identities import EC2_TRUST, notes, role
 from .landing import render_landing
 from .network import render_network
-
-
-def _network(m):
-    net = one_role(m, "network")
-    return (block("data", ["aws_vpc", "main"], [("id", one(net, "ciamProviderRef"))]),
-            *(block("data", ["aws_subnet", tf_name(rdn_value(s))], [("id", one(s, "ciamProviderRef"))])
-              for s in of_class(m, "ciamSubnetBinding")))
+from .plumbing import network_data
 
 
 def _security_groups(m):
@@ -146,7 +140,7 @@ def _fronted(m, endpoints):
 def render(m, services):
     endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     kms, identities = secret(m, "disk-encryption"), workload_identities(m, ACCESS)
-    out = (*_network(m), *_security_groups(m), *chain.from_iterable(_identity(m, w) for w in identities),
+    out = (*network_data(m), *_security_groups(m), *chain.from_iterable(_identity(m, w) for w in identities),
            *(_instance(m, s, kms, identities) for s in m.servers),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *records(m.d, m), *resolver_rules(m), *_references(m))

@@ -77,6 +77,10 @@ cap 05-render-stage   od render source/stage   -o "$OUT/render-before/source-sta
 cap 05-render-standby od render standby/prod   -o "$OUT/render-before/standby-prod"
 cap 06-plan-before od plan source/prod target/prod -o "$OUT/plan-before"
 cap 06-check-before "$PY" scripts/check-findings.py before
+cap 06-fix-list od fix list source/prod target/prod
+cap 06-fix-show od fix show source/prod target/prod egress-proxy:pf-engine:bin/run.properties
+cap 06-fix-show-choice od fix show source/prod target/prod credential-role:notification-publishers/smtp
+cap 06-fix-show-inputs od fix show source/prod target/prod binding:backup-target
 
 cap 07-reject-unapproved   od modify --change CHG-2002 changes/rejected/CHG-2002-unapproved.ldif
 cap 07-reject-cert-in-use  od modify --change CHG-2001 changes/rejected/delete-cert-in-use.ldif

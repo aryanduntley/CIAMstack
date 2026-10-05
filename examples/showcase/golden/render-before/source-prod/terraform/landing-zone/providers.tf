@@ -6,7 +6,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 5.10"
     }
   }
 }
@@ -23,4 +23,9 @@ variable "account_id" {
 variable "guardrail_target_id" {
   type        = string
   description = "The organizational unit or account the guardrails attach to"
+}
+
+variable "egress_pf_subnet_id" {
+  type        = string
+  description = "The public subnet NAT gateway egress-pf sits in"
 }

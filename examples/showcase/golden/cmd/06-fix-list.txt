@@ -1,0 +1,21 @@
+key                                           area          records       manual steps  what it does
+--------------------------------------------  ------------  ------------  ------------  ----------------------------------------------------------------------
+contract:ds-ldaps-service                     Contract      2             1             Bind the stable name `ldap.id.example-aero.test` for `ds-ldaps-service` in target/prod
+binding:alarm-disk-free                       Binding       1 (4 inputs)  1             Bind `alarm-disk-free` in target/prod like source/prod does
+binding:audit-events                          Binding       1 (1 input)   1             Bind `audit-events` in target/prod like source/prod does
+binding:backup-target                         Binding       1 (1 input)   1             Bind `backup-target` in target/prod like source/prod does
+binding:forwarder-corp.example-aero.internal  Binding       1 (4 inputs)  1             Bind `forwarder-corp.example-aero.internal` in target/prod like source/prod does
+binding:fw-consumer-legacy-rptuser            Binding       1 (2 inputs)  1             Bind `fw-consumer-legacy-rptuser` in target/prod like source/prod does
+binding:fw-consumer-mro-batch-export          Binding       1 (2 inputs)  1             Bind `fw-consumer-mro-batch-export` in target/prod like source/prod does
+binding:identity-idm                          Binding       1 (4 inputs)  1             Bind `identity-idm` in target/prod like source/prod does
+binding:pf-cluster-discovery                  Binding       1 (1 input)   1             Bind `pf-cluster-discovery` in target/prod like source/prod does
+credential-role:data-stores/grant-store       Credentials   19 options    1             Name the secret role Data store `grant-store` takes its withheld credentials from
+credential-role:data-stores/user-directory    Credentials   19 options    1             Name the secret role Data store `user-directory` takes its withheld credentials from
+credential-role:notification-publishers/smtp  Credentials   19 options    1             Name the secret role Notification publisher `smtp` takes its withheld credentials from
+credential-role:captcha-providers/recaptcha   Credentials   19 options    1             Name the secret role CAPTCHA provider `recaptcha` takes its withheld credentials from
+credential-role:connector/hrdb                Credentials   19 options    1             Name the secret role Connector `hrdb` takes its withheld credentials from
+credential-role:connector/ldap                Credentials   19 options    1             Name the secret role Connector `ldap` takes its withheld credentials from
+log-retention:audit-logs                      Logs          1             1             Keep target/prod's `audit-logs` logs 400 days, as log route `audit-logs` requires
+egress-proxy:pf-engine:bin/run.properties     Egress proxy  6             1             Link `http.proxyHost`, `http.proxyPort`, `https.proxyHost`, `https.proxyPort`, `http.nonProxyHosts` in `pf-engine`'s bin/run.properties (run.properties) to `egress-proxy`'s proxy
+(17 rows)
+exit 0

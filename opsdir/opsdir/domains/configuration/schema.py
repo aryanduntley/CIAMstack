@@ -30,8 +30,9 @@ ATTRIBUTES = (
                  "The setting's text exactly as the file wrote it when captured (its quoting and type are kept)"),
     AttributeDef(182, 'ciamValueFrom', 'string', 'intent', True,
                  "Where the value comes from instead of a literal: role#attribute, a binding of the environment the "
-                 "file is rendered for (a secret reference renders as ${secret:<ref-uri>})",
-                 (("X-PATTERN", "^[A-Za-z0-9._-]+#[A-Za-z][A-Za-z0-9-]*$"),)),
+                 "file is rendered for (a secret reference renders as ${secret:<ref-uri>}), or role#kind:name, a "
+                 "value derived from that binding (proxy:host, proxy:port, proxy:bypass, ...)",
+                 (("X-PATTERN", "^[A-Za-z0-9._-]+#[A-Za-z][A-Za-z0-9-]*(:[a-z][a-z0-9-]*)?$"),)),
     AttributeDef(183, 'ciamSecretRequired', 'bool', 'meta', True,
                  'The value was withheld at capture: it must come from a secret reference (ciamValueFrom)'),
     AttributeDef(184, 'ciamBundleKind', 'enum:code|script|template|package|dashboard|other', 'meta', True,

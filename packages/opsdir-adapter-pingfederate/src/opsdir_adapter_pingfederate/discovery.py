@@ -18,8 +18,11 @@ from types import MappingProxyType
 from typing import Callable, NamedTuple, Optional
 import xml.etree.ElementTree as ET
 
-from opsdir.core.directory import one
+from opsdir.core.changeset import delete_entry, new_entry
+from opsdir.core.directory import is_a, one, rdn_value, values
 from opsdir.core.environment import one_role
+from opsdir.core.findings import Fix, Input, Option, bindings_container
+from opsdir.core.interchange.ldif import LdifRecord
 from opsdir.core.interchange.properties import decode, encode, split
 from .naming import DISCOVERY_ROLE
 
@@ -106,6 +109,52 @@ def lacks(protocol, b):
 def where(b):
     """What a discovery binding names, for messages."""
     return one(b, "ciamStorageRef") or one(b, "ciamFqdn") or "the clustered nodes"
+
+
+# ------------------------------------------------------------------ fixes
+_NEEDS = MappingProxyType({   # what a protocol's binding needs -> (attribute, the Input giving it)
+    "s3": ("ciamStorageRef", Input("ciamStorageRef", "the S3 bucket the nodes find each other in", (),
+                                   ("s3://pf-cluster-discovery",), r"s3://[a-z0-9][a-z0-9.-]{1,61}[a-z0-9](/\S*)?")),
+    "dns": ("ciamFqdn", Input("ciamFqdn", "the DNS name whose A records are the nodes (a headless service on "
+                                          "Kubernetes)", (), ("pingfederate-cluster.ciam.svc.cluster.local",)))})
+
+
+def _attrs(protocol):
+    needed = _NEEDS.get(protocol.needs)
+    return {"pingfedDiscoveryProtocol": (protocol.name,), **({needed[0]: (needed[1],)} if needed else {})}
+
+
+def _records(m, b, protocol):
+    """The records binding environment m's discovery with protocol: a new binding when it has none, the binding's
+    protocol and what it needs set on a pingfedClusterDiscovery, else (a binding of another class, an object store) the
+    binding replaced by one, under its name, its owners kept."""
+    if b is not None and is_a(b, "pingfedClusterDiscovery"):
+        stale = [a for a, _ in _NEEDS.values() if a in b.attrs and a not in _attrs(protocol)]
+        return (LdifRecord(b.dn, "modify", {}, (*(("replace", a, v) for a, v in _attrs(protocol).items()),
+                                                 *(("delete", a, ()) for a in stale))),)
+    cn = rdn_value(b) if b is not None else "pf-discovery"
+    owners = {"ciamOwner": values(b, "ciamOwner")} if b is not None and values(b, "ciamOwner") else {}
+    return (*bindings_container(m.d, m.dn), *((delete_entry(b),) if b is not None else ()),
+            new_entry(f"cn={cn},ou=bindings,{m.dn}", ("top", "pingfedClusterDiscovery"),
+                      {"cn": (cn,), "ciamBindingRole": (DISCOVERY_ROLE,), **owners, **_attrs(protocol),
+                       "description": (f"PingFederate cluster discovery ({protocol.name})",)}))
+
+
+def discovery_fix(m, b, protocols):
+    """The Fix binding environment m's PingFederate cluster discovery (b: its pf-cluster-discovery binding, or None)
+    with one of protocols (names): an option each when there are several, the values a protocol needs (the bucket,
+    the DNS name) as inputs; None when protocols is empty."""
+    rendered = tuple(PROTOCOLS[n] for n in protocols if n in PROTOCOLS and PROTOCOLS[n].support == RENDERED)
+    if not rendered:
+        return None
+    key, title = f"discovery:{m.label}", f"Bind PingFederate's cluster discovery in {m.label}"
+    manual = (f"Put the lines of {m.label}'s pingfederate/cluster/jgroups.properties in each node's "
+              "bin/jgroups.properties, and create what the binding names (the bucket and the nodes' access to it, "
+              "the DNS records) if it isn't there.",)
+    if len(rendered) == 1:
+        return Fix(key, "PingFederate", f"{title}: {rendered[0].name}", _records(m, b, rendered[0]), manual, ())
+    return Fix(key, "PingFederate", title, (), manual, (), tuple(
+        Option(p.name, f"{p.name}: {p.about}", _records(m, b, p), ()) for p in rendered))
 
 
 # ------------------------------------------------------------------ what a node uses

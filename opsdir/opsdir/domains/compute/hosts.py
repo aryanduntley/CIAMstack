@@ -9,7 +9,8 @@ runs servers of without a recorded baseline, and a target's compute that is less
 """
 from ...core.directory import children, get, is_a, one, rdn_value, values
 from ...core.environment import environment_of, servers_with_role
-from ...core.findings import findings, merge_findings, responsible
+from ...core.changeset import set_values
+from ...core.findings import Fix, findings, merge_findings, responsible
 from ...core.naming import env_label
 from .naming import BASELINES
 
@@ -112,14 +113,25 @@ def _group(ctx, t):
     runs = max((int(one(s, "ciamDesiredSize")) for s in source if (one(s, "ciamDesiredSize") or "").isdigit()),
                default=0)
     most = one(t, "ciamMaxSize")
-    return findings(actions=(
+    tokens = one(t, "ciamMetadataTokens") == "FALSE"
+    capped = bool(most and most.isdigit() and int(most) < runs)
+    apply = (f"Apply {ctx.dst.label}'s rendered compute group `{rdn_value(t)}`.",)
+    reread = ("A cloud import that reads the group back before the change is applied takes the value back.",)
+    fixes = (*((Fix(f"metadata-tokens:{rdn_value(t)}", "Compute", f"Require session tokens for {name}'s instance "
+                    "metadata", (set_values(t, "ciamMetadataTokens", ("TRUE",)),), apply,
+                    ("Software on the servers that reads instance metadata without a session token stops getting "
+                     "answers.", *reread)),) if tokens else ()),
+             *((Fix(f"max-size:{rdn_value(t)}", "Compute", f"Let {name} scale to {runs} instance(s), as "
+                    f"{ctx.src.label} runs", (set_values(t, "ciamMaxSize", (str(runs),)),), apply, reread),)
+               if capped else ()))
+    return findings(fixes=fixes, actions=(
         *(((("Compute", f"{name} lets the instance metadata service answer without session tokens: a request "
              "forged through a server reads its credentials. Require session tokens.", owner, None),)
-           if one(t, "ciamMetadataTokens") == "FALSE" else ())),
+           if tokens else ())),
         *(((("Compute", f"{name} spans {len(_zones(t))} zone(s); {ctx.src.label} spreads the role over {spread}.",
              owner, None),) if _zones(t) and len(_zones(t)) < spread else ())),
         *(((("Compute", f"{name} scales to at most {most} instance(s); {ctx.src.label} runs {runs}.", owner, None),)
-           if most and most.isdigit() and int(most) < runs else ()))))
+           if capped else ()))))
 
 
 def check_hosts(ctx):

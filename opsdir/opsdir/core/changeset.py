@@ -21,6 +21,31 @@ def _delete(e):
     return LdifRecord(e.dn, "delete", {}, ())
 
 
+def set_values(entry, attr, values):
+    """The modify record replacing an attribute's values on an entry."""
+    return LdifRecord(entry.dn, "modify", {}, (("replace", attr, tuple(values)),))
+
+
+def add_values(entry, attr, values):
+    """The modify record adding values to an attribute of an entry."""
+    return LdifRecord(entry.dn, "modify", {}, (("add", attr, tuple(values)),))
+
+
+def delete_values(entry, attr, values):
+    """The modify record deleting values of an attribute of an entry."""
+    return LdifRecord(entry.dn, "modify", {}, (("delete", attr, tuple(values)),))
+
+
+def delete_entry(entry):
+    """The delete record of an entry."""
+    return LdifRecord(entry.dn, "delete", {}, ())
+
+
+def new_entry(dn, classes, attrs):
+    """The add record of a new entry with its object classes and attributes."""
+    return LdifRecord(dn, "add", {"objectClass": tuple(classes), **{k: tuple(v) for k, v in attrs.items()}}, ())
+
+
 def entry_mods(old, new):
     """The modify operations that turn one entry into the other (empty when they are equal)."""
     classes = (("replace", "objectClass", tuple(new.classes)),) if set(old.classes) != set(new.classes) else ()

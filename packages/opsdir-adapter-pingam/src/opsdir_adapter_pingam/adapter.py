@@ -6,6 +6,7 @@ from opsdir_base_saml.render import FORMATS as SAML_FORMATS
 from .amster import AMSTER
 from .checks import check_journeys
 from .listeners import listeners
+from .proxy import proxy_settings
 from .realms import ENDPOINTS, SERVER_ROLES
 from .render import FORMATS, render_neutral
 from .schema import FRAGMENT
@@ -27,4 +28,5 @@ ADAPTER = Adapter(name="pingam", kind="product", applies=applies, required_roles
                   formats=(*FORMATS, *SAML_FORMATS, *OIDC_FORMATS),
                   products=(("PingAM", ">=7,<9"), ("ForgeRock AM", ">=7,<8")),
                   secret_patterns=SECRET_PATTERNS, importers=(AMSTER,), profile_terms=None, access=None,
-                  endpoints=ENDPOINTS, listeners=listeners)
+                  endpoints=ENDPOINTS, listeners=listeners,
+                  proxy_settings=proxy_settings)

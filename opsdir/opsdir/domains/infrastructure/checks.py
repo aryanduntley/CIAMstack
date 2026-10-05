@@ -2,9 +2,10 @@
 our addresses)."""
 import datetime as dt
 
-from ...core.directory import children, follow, is_a, one, rdn_value, values
+from ...core.changeset import delete_entry, new_entry, set_values
+from ...core.directory import children, follow, get, is_a, one, rdn_value, values
 from ...core.environment import one_role
-from ...core.findings import findings, merge_findings, responsible
+from ...core.findings import Fix, Option, findings, merge_findings, responsible
 from ...core.network import covers
 from ...core.overlays import override_differences
 from .naming import EXTERNAL_ALLOWLISTS
@@ -91,11 +92,39 @@ def _override_action(ctx, dn, attr, sv, dv, s, t):
             responsible(ctx.d, t, s, ctx.dst.env), None)
 
 
+def _owns(m, entry):
+    """Whether an override is environment m's own (not inherited from the environment it overlays)."""
+    return entry is not None and entry.dn.lower().endswith("," + m.dn.lower())
+
+
+def override_fix(ctx, dn, attr, sv, dv, s, t):
+    """The Fix aligning one attribute the overrides make differ: run what the source runs (the target's own override
+    deleted, set to the source's values, or created, never an inherited one changed), or, when both override it, run
+    the shared value; a person chooses, since the difference may be meant."""
+    own, home = _owns(ctx.dst, t), f"ou=overrides,{ctx.dst.dn}"
+    created = (*((new_entry(home, ("top", "organizationalUnit"), {"ou": ("overrides",)}),)
+                 if get(ctx.d, home) is None else ()),
+               new_entry(f"cn={rdn_value(s or t)},{home}", ("top", "ciamOverride"), {
+                   "cn": (rdn_value(s or t),), "ciamOverrides": (dn,), "ciamOverrideAttribute": (attr,),
+                   "ciamOverrideValue": tuple(sv), "description": (f"as {ctx.src.label} runs it",)}))
+    like_source = ((delete_entry(t),) if own and s is None else
+                   (set_values(t, "ciamOverrideValue", sv),) if own else created)
+    options = (Option("source", f"run {_shown(sv)}, as {ctx.src.label} does", like_source, ()),
+               *((Option("shared", "run the shared value (the target's override deleted)", (delete_entry(t),),
+                         (f"{ctx.src.label} still runs its own override, so they keep differing.",)),)
+                 if own and s is not None else ()))
+    return Fix(f"override:{dn.split(',', 1)[0].split('=', 1)[1]}:{attr}", "Overrides",
+               f"Align `{attr}` of `{dn}` in {ctx.dst.label}", (), (f"Render {ctx.dst.label} again.",),
+               ("The difference may be meant (an override's description says why): aligning erases it.",), options)
+
+
 def check_overrides(ctx):
-    """Where the two environments' overrides make them run different values of shared intent: one action each."""
+    """Where the two environments' overrides make them run different values of shared intent: one action each, with
+    the fix aligning it (a choice)."""
     diffs = override_differences(ctx.d, ctx.src.overrides, ctx.dst.overrides)
     if not diffs:
         both = (ctx.src.overrides or ctx.dst.overrides)
         return findings(ok=[f"{ctx.src.label} and {ctx.dst.label} run the same values of shared intent "
                             f"({len(ctx.dst.overrides)} override(s) in {ctx.dst.label})."] if both else [])
-    return findings(actions=[_override_action(ctx, *row) for row in diffs])
+    return findings(actions=[_override_action(ctx, *row) for row in diffs],
+                    fixes=[override_fix(ctx, *row) for row in diffs])

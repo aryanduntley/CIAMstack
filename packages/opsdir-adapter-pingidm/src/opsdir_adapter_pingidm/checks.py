@@ -6,6 +6,7 @@ from opsdir.core.directory import children, one, rdn_value, values
 from opsdir.core.environment import bound_nowhere
 from opsdir.core.findings import findings, merge_findings, responsible
 from opsdir.core.jsondata import held_json
+from opsdir.domains.pki.credentials import credential_role_fix
 from .naming import CONNECTORS, MANAGED, MAPPINGS, SCHEDULES
 
 
@@ -49,7 +50,10 @@ def _connector(ctx, c):
     actions = () if target else (("IDM", f"Connector `{name}` reaches a fixed host from every environment (no target "
                                   f"role): confirm {ctx.dst.label} can reach it, or record the system's service name.",
                                   owner, None),)
-    return findings(blockers=blockers, actions=actions)
+    fix = credential_role_fix(ctx.src, ctx.dst, c, "pingidmCredentialRole", f"Connector `{name}`",
+                              f"credential-role:connector/{name}", (name,)) \
+        if values(c, "pingidmWithheld") and not credential else None
+    return findings(blockers=blockers, actions=actions, fixes=(fix,) if fix else ())
 
 
 def check_idm(ctx):
