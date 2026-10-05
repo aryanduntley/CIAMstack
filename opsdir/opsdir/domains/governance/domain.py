@@ -1,8 +1,9 @@
 """Governance domain: owners (parties), change records, incidents and work instructions."""
 from pathlib import Path
 
-from ...core.contract import Domain, sql_report
+from ...core.contract import Domain, directory_report, sql_report
 from ...core.directory import children, one, rdn_value
+from .imports import IMPORT_HEADERS, import_rows
 from .naming import OWNERS
 from .schema import FRAGMENT
 
@@ -21,5 +22,6 @@ def operator(d):
 
 
 DOMAIN = Domain(name="governance", schema=FRAGMENT, required_roles=(), sql=(Path(__file__).parent / "sql" / "governance.sql",),
-                reports={"stale": sql_report(STALE_HEADERS, STALE_SQL)}, checks=(), order=50,
+                reports={"stale": sql_report(STALE_HEADERS, STALE_SQL),
+                         "imports": directory_report(IMPORT_HEADERS, import_rows)}, checks=(), order=50,
                 vocabulary={})

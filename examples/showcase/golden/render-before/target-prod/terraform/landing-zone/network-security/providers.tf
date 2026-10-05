@@ -21,3 +21,18 @@ variable "subscription_id" {
   type        = string
   description = "The subscription prod runs in"
 }
+
+variable "network_watcher_name" {
+  type        = string
+  description = "The Network Watcher of the network's region"
+}
+
+variable "network_watcher_resource_group" {
+  type        = string
+  description = "The resource group of that Network Watcher"
+}
+
+variable "flow_logs_storage_account_id" {
+  type        = string
+  description = "The storage account flow logs are written to (traffic analytics reads them into the workspace)"
+}

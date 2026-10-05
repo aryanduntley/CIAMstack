@@ -47,6 +47,12 @@ def store_hosts(store):
     return tuple(h for h in found.group(2).split(",") if h) if found else ()
 
 
+def store_host(store):
+    """The one host (without its port) a data store reaches, None when it reaches none or several."""
+    hosts = {_endpoint(h)[0] for h in store_hosts(store)}
+    return hosts.pop() if len(hosts) == 1 else None
+
+
 def _role_of(d, host):
     return host[len(UNBOUND):] if host.startswith(UNBOUND) else published_role(d, host)
 

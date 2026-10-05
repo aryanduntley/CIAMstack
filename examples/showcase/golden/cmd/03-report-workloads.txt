@@ -1,0 +1,4 @@
+workload  kind  role  cluster  namespace  replicas  images  storage  identity  pod security  network policies  secrets  hosts
+--------  ----  ----  -------  ---------  --------  ------  -------  --------  ------------  ----------------  -------  -----
+(0 rows)
+exit 0

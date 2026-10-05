@@ -1,0 +1,16 @@
+importer                  environment  scopes  read at          change
+------------------------  -----------  ------  ---------------  --------
+github-actions/workflows  shared       1       20260920030000Z  CHG-2010
+ldap/data-profile         shared       1       20260920030000Z  CHG-2014
+linux/baseline            shared       6       20260920030000Z  CHG-2012
+linux/jobs                shared       2       20260920030000Z  CHG-2010
+pingam/amster             shared       4       20260920030000Z  CHG-2004
+pingds/access-log         shared       6       20260920030000Z  CHG-2007
+pingds/config             shared       4       20260920030000Z  CHG-2006
+pingfederate/bulk         shared       28      20260920030000Z  CHG-2008
+pingfederate/node-files   shared       1       20260920030000Z  CHG-2008
+pingfederate/node-files   source/prod  3       20260920030000Z  CHG-2008
+pinggateway/config        shared       3       20260920030000Z  CHG-2004
+pingidm/project           shared       8       20260920030000Z  CHG-2004
+(12 rows)
+exit 0

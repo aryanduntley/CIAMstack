@@ -49,7 +49,7 @@ dc=ciam-ops
 │           ├── cn=<server>                 ciamServer: role, hostname, zone, size, image, product version
 │           ├── ou=stack                    ciamStackComponent (role -> adapter + version range), ciamRequiredRole
 │           ├── ou=overrides                ciamOverride: an overridable value, per environment, with why
-│           └── ou=bindings                 ciamNetwork, ciamSubnetBinding, ciamServiceName, ciamFirewallRule,
+│           └── ou=bindings                 ciamNetwork, ciamSubnetBinding, ciamServiceName, ciamExternalHost, ciamFirewallRule,
 │                                           ciamEgress, ciamSecretRef, ciamKeyRef, ciamCertificateRef,
 │                                           ciamObjectStore (ciamBackupTarget), ciamInterconnect
 ├── ou=config

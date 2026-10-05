@@ -147,6 +147,13 @@
       "match": "Role `forwarder-corp.example-aero.internal` is bound in source/prod but not in target/prod",
       "planted": "the source forwards the AD domain to the domain controllers; nothing in the target does",
       "cleared_by": "CHG-2015"
+    },
+    {
+      "id": "B22",
+      "area": "Binding",
+      "match": "Role `acl-ds` is bound in source/prod but not in target/prod",
+      "planted": "the source's network ACL on the directory subnet has no counterpart in the target (Azure has none: its NSGs do that work); decide, and record why",
+      "cleared_by": null
     }
   ],
   "actions": [
@@ -596,6 +603,20 @@
       "area": "Egress proxy",
       "match": "so `idm` must be told",
       "planted": "the target's outside traffic goes through the hub's forward proxy; PingIDM's boot.properties and JVM options don't name it",
+      "cleared_by": null
+    },
+    {
+      "id": "A65",
+      "area": "Flow logs",
+      "match": "`flow-vnet` keeps flow logs 14 days in target/prod",
+      "planted": "the target's flow log (still to be built by the network team) keeps 14 days; the source keeps 30",
+      "cleared_by": null
+    },
+    {
+      "id": "A66",
+      "area": "Egress",
+      "match": "no route sends internet egress through `egress-firewall`",
+      "planted": "the target's route table sends internet traffic straight to the NAT gateway, around the hub firewall whose domain rules the stack relies on",
       "cleared_by": null
     }
   ]

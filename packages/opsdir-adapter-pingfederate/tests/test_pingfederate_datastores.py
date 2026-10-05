@@ -6,6 +6,7 @@ import json
 
 import pytest
 
+from opsdir.connectors.fixes import chosen
 from opsdir.connectors.importing import preview_import
 from opsdir.connectors.registry import ADAPTERS, core_fragments
 from opsdir.core.contract import PlanContext
@@ -205,6 +206,23 @@ def test_the_planner_names_what_the_target_lacks():
         "Data store `legacy` reaches a fixed host from every environment (no target role): confirm beta/prod can "
         "reach it, or record the system's service name.",
         "Data store `legacy` connects to the directory without TLS: turn on LDAPS or StartTLS."]
+
+
+def test_a_fixed_host_is_recorded_as_an_external_system_and_the_next_import_names_its_role():
+    d, _, _ = imported(SET_ROLE)
+    fix = next(f for f in plan(d).fixes if f.key == "external-host:data-stores/legacy")
+    with pytest.raises(ValueError, match="needs values: --input role=… \\(e.g. old-ds\\)"):
+        chosen(fix)
+    recorded = chosen(fix, given={"role": ("legacy-directory",)}).records
+    assert recorded[-1].attrs == {"objectClass": ("top", "ciamExternalHost"),
+                                  "cn": ("ext-old-ds-corp-example-test",), "ciamFqdn": ("old-ds.corp.example.test",),
+                                  "ciamBindingRole": ("legacy-directory",)}
+    again, changes, _ = imported((*SET_ROLE, *recorded))
+    store = get(build_directory(REGISTRY, records(), (*changes, *SET_ROLE, *recorded,
+                                                      *preview_import(again, "pingfederate/bulk", export(),
+                                                                      (ADAPTER,))[0])), LEGACY)
+    assert (one(store, "pingfedTargetRole"), one(store, "pingfedPort")) == ("legacy-directory", "389")
+    assert "hostnames" not in _config(store)
 
 
 def test_stores_the_target_can_serve_are_ok():

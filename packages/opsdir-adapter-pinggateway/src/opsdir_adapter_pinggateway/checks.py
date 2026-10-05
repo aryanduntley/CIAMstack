@@ -6,8 +6,9 @@ from opsdir.core.environment import bound_nowhere
 from opsdir.core.findings import findings, merge_findings, responsible
 from opsdir.core.jsondata import held_json
 from opsdir.domains.federation.services import identity_services, integrations
+from opsdir.domains.infrastructure.external import external_host_fix
 from .naming import ROUTES
-from .routes import client_ids, issuers
+from .routes import backend, client_ids, issuers
 
 
 def route_problems(d, route):
@@ -26,14 +27,19 @@ def _route(ctx, r):
     name, role = rdn_value(r), one(r, "pinggwBackendRole")
     owner = responsible(ctx.d, r, ctx.dst.env)
     why = route_problems(ctx.d, r)
-    fixed = "baseURI" in held_json(r, "pinggwConfig")
+    config = held_json(r, "pinggwConfig")
+    fixed = "baseURI" in config
+    found = backend(config) if fixed and not role else None
+    fix = external_host_fix(ctx.src, found[1], f"route `{name}`", f"external-host:route/{name}", "pinggateway/config",
+                            found[2]) if found and found[1] else None
     return findings(
         blockers=[*((("Gateway", f"Route `{name}` can't sign users in: {'; '.join(why)}.", owner),) if why else ()),
                   *((("Gateway", f"Route `{name}` protects role `{role}`, which {ctx.dst.label} doesn't bind.", owner),)
                     if bound_nowhere((role,), ctx.dst) else ())],
         actions=[("Gateway", f"Route `{name}` sends requests to a fixed backend from every environment (no backend "
                   f"role): confirm {ctx.dst.label} can reach it, or record the application's service name.", owner,
-                  None)] if fixed and not role else [])
+                  None)] if fixed and not role else [],
+        fixes=[fix] if fix else [])
 
 
 def check_routes(ctx):

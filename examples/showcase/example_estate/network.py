@@ -12,6 +12,10 @@ network, the egress firewall and the sites it lets the servers reach, and the st
   standby  Google Cloud: the network firewall policy model (secure tags), a Private Service Connect endpoint for
            Google's APIs, and the stack's own egress rules in the policy
 
+The plumbing under them: each environment's route table (the servers' subnets out through the NAT gateway, the hub
+firewall, the default internet gateway) and flow log (to the ops log destination), and the source's network ACL on
+the directory subnet (anything from the VPC, LDAPS and replies from anywhere).
+
 Planted for the planner to find:
   - the supplier portal connects to LDAPS through the source's endpoint service; the target's Private Link Service has
     another name (not recorded yet) and allows the portal's Azure subscription, not its AWS account: the portal must
@@ -20,6 +24,10 @@ Planted for the planner to find:
   - the target's outside traffic goes through the hub's forward proxy, but the products' configuration doesn't say
     so: PingFederate's captured run.properties lacks the proxy keys (a fix links them to the proxy binding), and the
     other products' places are named
+  - the target's route table and flow log are the network team's to build (none exists yet): requests to them; its
+    route sends internet traffic straight to the NAT gateway, around the hub firewall whose domain rules the stack
+    relies on; its flow log keeps 14 days where the source keeps 30 (a fix carries the source's over); the source's
+    network ACL has no counterpart in the target (Azure has none: the target's NSGs do its work)
 """
 from .common import owner
 
@@ -33,8 +41,20 @@ AZ_NET = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-
 STANDBY_POLICY = "projects/example-aero-net/global/firewallPolicies/ciam-prod-fw-policy"
 HUB_FIREWALL = ("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-hub-net/providers/"
                 "Microsoft.Network/firewallPolicies/fwp-hub")
+SERVER_SUBNETS = ["subnet-ds", "subnet-pf", "subnet-am", "subnet-idm", "subnet-ig"]
+DS_ACL = ["100 allow in all all 10.20.0.0/16", "110 allow in tcp 1636 0.0.0.0/0",
+          "120 allow in tcp 1024-65535 0.0.0.0/0", "100 allow out all all 0.0.0.0/0"]
 NETWORK = {
     "source": (
+        ("ciamRouteTable", "rt-private", "routes-private",
+         {"ciamRoute": ["0.0.0.0/0 nat pf-egress"], "ciamSubnetRole": SERVER_SUBNETS, "ciamMainTable": "FALSE",
+          "ciamOwner": NETWORK_TEAM, "ciamProviderRef": "rtb-0a1b2c3d4e5f60021"}),
+        ("ciamNetworkAcl", "acl-ds", "acl-ds",
+         {"ciamAclRule": DS_ACL, "ciamSubnetRole": "subnet-ds", "ciamOwner": NETWORK_TEAM,
+          "ciamProviderRef": "acl-0a1b2c3d4e5f60031"}),
+        ("ciamFlowLog", "flow-vpc", "flow-logs",
+         {"ciamFlowScope": "network", "ciamLogDestinationRole": "ops-logs", "ciamRetentionDays": "30",
+          "ciamOwner": NETWORK_TEAM, "ciamProviderRef": "fl-0a1b2c3d4e5f60041"}),
         ("ciamPrivateEndpoint", "pe-secrets", "private-secrets",
          {"ciamPrivateService": "secrets", "ciamPrivateEndpointKind": "interface",
           "ciamReachesRole": ["pf-admin-password", "pf-signing-key", "ds-root-password"],
@@ -50,6 +70,12 @@ NETWORK = {
           "ciamProviderRef": "arn:aws:network-firewall:us-east-1:111122223333:firewall-policy/ciam-prod-egress"}),
     ),
     "target": (
+        ("ciamRouteTable", "rt-private", "routes-private",
+         {"ciamRoute": ["0.0.0.0/0 nat pf-egress"], "ciamSubnetRole": SERVER_SUBNETS,
+          "ciamManagedBy": NETWORK_TEAM[0], "ciamOwner": NETWORK_TEAM}),
+        ("ciamFlowLog", "flow-vnet", "flow-logs",
+         {"ciamFlowScope": "network", "ciamLogDestinationRole": "ops-logs", "ciamRetentionDays": "14",
+          "ciamManagedBy": NETWORK_TEAM[0], "ciamOwner": NETWORK_TEAM}),
         ("ciamPrivateEndpoint", "pe-secrets", "private-secrets",
          {"ciamPrivateService": "secrets", "ciamPrivateEndpointKind": "interface",
           "ciamReachesRole": ["pf-admin-password", "pf-signing-key", "ds-root-password"],
@@ -69,6 +95,11 @@ NETWORK = {
           "ciamAllowedDestination": list(SITES), "ciamManagedBy": NETWORK_TEAM[0], "ciamOwner": NETWORK_TEAM}),
     ),
     "standby": (
+        ("ciamRouteTable", "routes", "routes-private",
+         {"ciamRoute": ["0.0.0.0/0 internet"], "ciamOwner": NETWORK_TEAM}),
+        ("ciamFlowLog", "flow-subnets", "flow-logs",
+         {"ciamFlowScope": "subnet", "ciamSubnetRole": SERVER_SUBNETS, "ciamLogDestinationRole": "ops-logs",
+          "ciamRetentionDays": "30", "ciamOwner": NETWORK_TEAM}),
         ("ciamFirewallPolicy", "fw-policy", "firewall-policy",
          {"ciamPolicyScope": "network", "ciamPolicyOrder": "policy-first", "ciamOwner": NETWORK_TEAM,
           "ciamProviderRef": STANDBY_POLICY}),

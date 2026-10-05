@@ -1,7 +1,7 @@
 # CIAMstack - Project Blueprint
 
-**Version**: 1.12
-**Status**: Paths 1-4 completed; path 5 (Stack Coverage) in progress: 4.1-4.8 and 4.12 done (PingFederate depth, hidden automation, host baseline & Kubernetes workloads, messaging & external services, data profile, observability, platform IAM & admin plane, edge & traffic protection, Google Cloud); 4.9 network depth in progress (domain, renders, importers, landing-zone plumbing, explicit proxies, assisted fixes with exact and option-based fixers done; docs and network reports in the demo open); Updates U.6, U.7, U.10, U.11 done, U.4 (package READMEs) open
+**Version**: 1.13
+**Status**: Paths 1-4 completed; path 5 (Stack Coverage) in progress: 4.1-4.9 and 4.12 done (PingFederate depth, hidden automation, host baseline & Kubernetes workloads, messaging & external services, data profile, observability, platform IAM & admin plane, edge & traffic protection, network depth, Google Cloud); 4.10 and 4.11 next; Updates U.6, U.7, U.10, U.11 done, U.4 (package READMEs) open
 **Last Updated**: 2026-10-05
 **AIMFP Compliance**: Strict
 
@@ -178,14 +178,14 @@ Schema OIDs: each owner has an arc (PEN .1 core/domains, .2 showcase user schema
   for unstated/missing behaviour, spoofable headers, sensitive endpoints, TTL lowering dated before cutover and
   drafted requests to the zone keeper; importers from state and CLI on all three clouds; showcase edge story with
   planted findings and approved change CHG-2015) (2026-10-03)
-- In progress: 4.9 network depth (core domain `network`: outside sites, route tables, NACLs, private endpoints,
-  endpoint services, proxies, time sources, flow logs, firewall policies; ports matrix from adapter-declared
-  listeners; stack renders of private endpoints, endpoint services, egress FQDN rules and the GCP policy firewall
-  model; importers on all three clouds; the network plumbing rendered into terraform/landing-zone/[<party>/] per
-  keeper with import blocks and requests for what isn't built; explicit egress proxies: products declare their
-  proxy settings, requests to proxy keepers; assisted fixes (findings offer record changes, proposed as a change
-  for a person to approve, applied unchanged; CLI `opsdir fix`, the same operations for the future MCP server);
-  local tools/ with Terraform validating every rendered root) (2026-10-05)
+- Done: 4.9 network depth (core domain `network`: outside sites, route tables, NACLs, private endpoints, endpoint
+  services, proxies, time sources, flow logs, firewall policies; ports matrix from adapter-declared listeners; stack
+  renders and importers on all three clouds; the network plumbing rendered into terraform/landing-zone/[<party>/] per
+  keeper with import blocks and requests; explicit egress proxies; assisted fixes (exact, options, inputs,
+  prerequisites, verify-after; CLI `opsdir fix`, the same operations for the future MCP server); import conflicts
+  decided by the operator and import runs recorded; ciamExternalHost for systems reached but not run; local tools/
+  with Terraform validating every rendered root; the showcase's full network story and every report in the demo)
+  (2026-10-05)
 - Next: data services/backup/DR (4.10), cloud governance (4.11)
 
 ### Path 6: Renderers & Targets
@@ -279,6 +279,12 @@ no files under tests/, no pytest.ini, no test -> production edges; .watchdogigno
 
 - **Change**: Milestone 4.9 network depth, in progress (tasks 141-152). Core domain `network` (schema attrs 385-420, classes 82-90) with reports and planner checks; `Adapter.listeners` (ports matrix) and `Adapter.proxy_settings` (explicit egress proxies; `ProxySetting` with a derived link). Stack renders: private endpoints, endpoint services, egress FQDN rules, the GCP network-policy firewall model with secure tags. Importers read it all back on AWS, Azure and Google Cloud from every source. Network plumbing (NAT, route tables, NACLs, interconnects, flow logs; private endpoints and egress firewalls kept elsewhere) renders into `terraform/landing-zone/` for the landing zone's owner and `terraform/landing-zone/<party>/` for each other keeper, existing items adopted with import blocks; the planner drafts requests for what isn't built and asks proxy keepers for missing sites. Assisted fixes: findings carry `Fix` (change records, manual steps, risks); a proposed change holds its records (`ciamChangeRecords`) until a person approves it; `opsdir fix list|show|propose|apply|approved`; derived links (`ciamValueFrom: role#proxy:host`, computed per environment, empty where unbound) keep shared captured files free of one environment's literals; `Codec.add` places a new setting. First fixers: ports gaps, the stable service name, DS joins, target parity values, stray rules, endpoint-service acceptance; fixes that are a choice offer options (`--option`): secret roles for withheld credentials (never picked; name matches first), claimed PingFederate ids, overrides. Local `tools/` (gitignored): Terraform fetched and signature-verified; `validate-terraform.sh` and the `terraform` test marker check every rendered root (it found and fixed jsonencode spacing, fmt alignment and an Azure scope).
 - **Rationale**: user decisions (notes 1767, 1778, 1782, 1792, 1794): plumbing is the landing zone's and each keeper's, adopted rather than recreated; requests ask only for what isn't built; product proxy settings are checked and fixed as links, never literals in shared files; fixes are structured operations data so an AI can propose them and only a person approves; installs stay local to the project and removable.
+---
+
+### Version 1.13 - 2026-10-05
+
+- **Change**: Milestone 4.9 network depth completed (tasks 153-159). Assisted fixes gain inputs (`core.findings.Input` placeholders filled from `--input KEY=VALUE`; proposals checked by the store's own `entry_problem` before they're held), prerequisites (`Fix.requires`: an import run covering the entries, of an export taken after anyone else last changed them) and verify-after (`ciamVerifyPending` set by a fix, cleared by the confirming import). New fixers: templated bindings for roles the target lacks, PingFederate cluster discovery per protocol, firewall priority pins (Azure, GCP), TTL lowering, fixed hosts recorded as `ciamExternalHost` (new infrastructure class 92; `published_role` matches it). Imports: conflicts (a value the record holds that the import would replace or remove) are decided with `--take`/`--keep`, never assumed; applied imports record `ciamImportRun` entries under `ou=imports` (`opsdir report imports`). Showcase: route tables, flow logs and a NACL with matching exports; every domain report in the demo and snapshot.
+- **Rationale**: user decisions (notes 1794, 1805, 1808, 1811): the operator decides wherever the live system and the record disagree (as with override options); proof of a prerequisite is import runs as data; systems the platform reaches but doesn't run are named per environment, not forced into service names.
 ---
 
 ## 6. User Settings System

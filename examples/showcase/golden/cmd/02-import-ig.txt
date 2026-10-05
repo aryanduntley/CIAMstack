@@ -2,5 +2,5 @@ route partner-portal: its backend is no service name in the record, so it goes t
 ig.config.admin.json: 2 settings
 ig.config.config.json: 4 settings
 not gateway configuration, not imported: README.md
-CHG-2004: 11 change(s) applied
+CHG-2004: 12 change(s) applied, the import run among them
 exit 0

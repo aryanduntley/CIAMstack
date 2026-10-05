@@ -309,12 +309,12 @@
     "terraform/landing-zone/network-security/network.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "7eee07c3f0296f8dbcc54590f037178f19bdde80fb31c225ecea2b71a68cc0ce"
+      "sha256": "484b59e41cc40f119c4de1eff8993ae4f45faf5b27a30a312a234b58892ae2bf"
     },
     "terraform/landing-zone/network-security/providers.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "76a825f4a9f60e1e01d13ced2abe88360ce93eeee577195fb2bc40eca34056a5"
+      "sha256": "c90bce5cb90ac9d7378a5ee9bc4ef2c3326ea07aeb834fee28814e47636eafd1"
     },
     "terraform/landing-zone/network.tf": {
       "scope": "landing-zone",

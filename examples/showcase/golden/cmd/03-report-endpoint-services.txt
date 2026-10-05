@@ -1,0 +1,6 @@
+environment  binding     service           name                                                     allowed                               consumers            acceptance  visible to
+-----------  ----------  ----------------  -------------------------------------------------------  ------------------------------------  -------------------  ----------  ------------------------------------
+source/prod  ldaps-link  ds-ldaps-service  com.amazonaws.vpce.us-east-1.vpce-svc-0a1b2c3d4e5f67890  arn:aws:iam::444455556666:root        supplier-portal-svc  required    anyone with the name
+target/prod  ldaps-link  ds-ldaps-service                                                           55555555-6666-7777-8888-999999999999  supplier-portal-svc  required    55555555-6666-7777-8888-999999999999
+(2 rows)
+exit 0

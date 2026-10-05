@@ -9,8 +9,9 @@ Pure: the operations apply what this returns.
 """
 import re
 
-from ..core.directory import get, one
+from ..core.directory import get, gtime_at, one, values, within
 from ..core.findings import filled_records, fix_inputs
+from ..domains.governance.imports import runs_covering
 from ..core.interchange.ldif import LdifRecord, parse, write_records
 from ..domains.governance.naming import CHANGES
 
@@ -72,6 +73,30 @@ def chosen(fix, option=None, given=None):
 def previewed(records):
     """Change records for review before their inputs are given: each Input shown as <key>."""
     return filled_records(records, {i.key: (f"<{i.key}>",) for i in fix_inputs(records)})
+
+
+def _covering(d, entries):
+    """The newest import run one of whose scopes holds each of entries, or None."""
+    runs = runs_covering(d, entries[0]) if entries else ()
+    return next((r for r in runs if all(any(within(e, s) for s in values(r, "ciamImportScope")) for e in entries)),
+                None)
+
+
+def unmet(fix, d, last_change):
+    """What a fix still waits for, in words (empty: nothing): each of its Requirements no import run meets, the run
+    covering its entries missing or of an export taken before the last change anyone else made to them.
+    last_change(dns, excluded change ids) -> the time of that change, or None (the store's history)."""
+    def waiting(r):
+        run = _covering(d, r.entries)
+        if run is None:
+            return f"{r.why}: import what it changes first (no import has read it back)"
+        changes = tuple(c.split(",", 1)[0].split("=", 1)[1] for c in values(run, "ciamChangeRef"))
+        changed, read = last_change(r.entries, changes), gtime_at(one(run, "ciamImportedAt"))
+        if changed is None or read >= changed:
+            return None
+        return (f"{r.why}: import it again first ({one(run, 'ciamImporter')} last read it from an export of "
+                f"{one(run, 'ciamImportedAt')}, before the record changed there on {changed:%Y-%m-%d %H:%M} UTC)")
+    return tuple(w for w in map(waiting, fix.requires) if w)
 
 
 def change_dn(change_id):

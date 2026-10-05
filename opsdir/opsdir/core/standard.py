@@ -105,10 +105,13 @@ CORE_ATTRIBUTES = (
                  'Identity populations served'),
     AttributeDef(172, 'ciamFormat', 'vocab', 'meta', True,
                  'File format or language of something recorded (one of the registered formats)'),
+    AttributeDef(425, 'ciamVerifyPending', 'string', 'meta', False,
+                 'An attribute whose value the record holds ahead of the live system, awaiting an import to confirm '
+                 'it: "<attribute> <adapter>" (the adapter whose import confirms it; "<attribute>" alone: any)'),
 )
 CORE_CLASSES = (
     ClassDef(1, 'ciamObject', 'top', 'ABSTRACT', (),
-             ('description', 'ciamOwner', 'ciamLastChanged', 'ciamChangeRef'),
+             ('description', 'ciamOwner', 'ciamLastChanged', 'ciamChangeRef', 'ciamVerifyPending'),
              'Base of every operations-directory entry'),
 )
 CORE = fragment(CORE_ATTRIBUTES, CORE_CLASSES)

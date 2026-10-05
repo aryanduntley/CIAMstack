@@ -1,2 +1,2 @@
-CHG-2008: 4 change(s) applied
+CHG-2008: 6 change(s) applied, the import run among them
 exit 0

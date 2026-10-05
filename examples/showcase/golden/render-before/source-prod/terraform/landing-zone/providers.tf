@@ -29,3 +29,8 @@ variable "egress_pf_subnet_id" {
   type        = string
   description = "The public subnet NAT gateway egress-pf sits in"
 }
+
+variable "flow_logs_role_arn" {
+  type        = string
+  description = "The IAM role flow logs deliver to CloudWatch Logs with"
+}

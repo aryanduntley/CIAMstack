@@ -28,6 +28,8 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2004  insert  cn=5e1d0c9b-0006-4a6b-8c7d-9e0f1a2b3c4d,cn=PartnerLogin,ou=partners,ou=journeys,ou=pingam,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  cn=5e1d0c9b-0007-4a6b-8c7d-9e0f1a2b3c4d,cn=PartnerLogin,ou=partners,ou=journeys,ou=pingam,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  cn=partner-portal-access,cn=partner-apps,ou=partners,ou=policy-sets,ou=pingam,dc=ciam-ops
+<TIMESTAMP>          CHG-2004  insert  ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2004  insert  cn=pingam.amster.shared,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  ou=pingidm,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  cn=idm.conf.audit.json,ou=config-files,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  ou=connectors,ou=pingidm,dc=ciam-ops
@@ -43,6 +45,7 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2004  insert  cn=reconcile-hr,ou=schedules,ou=pingidm,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  cn=role,ou=managed-objects,ou=pingidm,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  cn=user,ou=managed-objects,ou=pingidm,dc=ciam-ops
+<TIMESTAMP>          CHG-2004  insert  cn=pingidm.project.shared,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  ou=pinggateway,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  cn=ig.config.admin.json,ou=config-files,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  cn=ig.config.config.json,ou=config-files,dc=ciam-ops
@@ -54,6 +57,7 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2004  insert  cn=d82debf6eb335a9d,cn=ig.config.config.json,ou=config-files,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  cn=fbf19b7efd8b212b,cn=ig.config.config.json,ou=config-files,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  cn=partner-portal,ou=routes,ou=pinggateway,dc=ciam-ops
+<TIMESTAMP>          CHG-2004  insert  cn=pinggateway.config.shared,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2006  insert  snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 <TIMESTAMP>          CHG-2006  insert  snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
 <TIMESTAMP>          CHG-2006  insert  snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
@@ -154,12 +158,14 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2006  insert  cn=uid,cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
 <TIMESTAMP>          CHG-2006  insert  cn=uid,cn=userData,ou=backends,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 <TIMESTAMP>          CHG-2006  insert  cn=uid,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
+<TIMESTAMP>          CHG-2006  insert  cn=pingds.config.shared,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2007  update  cn=customer-portal-svc,ou=consumers,dc=ciam-ops
 <TIMESTAMP>          CHG-2007  update  cn=idm-sync,ou=consumers,dc=ciam-ops
 <TIMESTAMP>          CHG-2007  update  cn=legacy-rptuser,ou=consumers,dc=ciam-ops
 <TIMESTAMP>          CHG-2007  update  cn=mro-batch-export,ou=consumers,dc=ciam-ops
 <TIMESTAMP>          CHG-2007  update  cn=pf-ds-svc,ou=consumers,dc=ciam-ops
 <TIMESTAMP>          CHG-2007  update  cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
+<TIMESTAMP>          CHG-2007  insert  cn=pingds.access-log.shared,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=reports-api,ou=integrations,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  ou=access-token-managers,ou=pingfederate,dc=ciam-ops
@@ -196,14 +202,19 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2008  update  cn=skyline-air-federation,ou=integrations,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  update  cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  update  cn=tech-pubs,ou=integrations,dc=ciam-ops
+<TIMESTAMP>          CHG-2008  insert  cn=pingfederate.bulk.shared,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=storage,ou=settings,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  update  cn=pf-admin-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  update  cn=pf-engine-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  update  cn=pf-engine-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2008  insert  cn=pingfederate.node-files.source.prod,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2008  insert  cn=pingfederate.node-files.shared,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2010  insert  ou=jobs,dc=ciam-ops
 <TIMESTAMP>          CHG-2010  insert  cn=ds-nightly-export,ou=jobs,dc=ciam-ops
 <TIMESTAMP>          CHG-2010  insert  cn=pf-engine-pf-audit-ship,ou=jobs,dc=ciam-ops
+<TIMESTAMP>          CHG-2010  insert  cn=linux.jobs.shared,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2010  insert  cn=github-actions-ciam-ops-directory-backup,ou=jobs,dc=ciam-ops
+<TIMESTAMP>          CHG-2010  insert  cn=github-actions.workflows.shared,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2012  insert  ou=baselines,dc=ciam-ops
 <TIMESTAMP>          CHG-2012  insert  cn=am,ou=baselines,dc=ciam-ops
 <TIMESTAMP>          CHG-2012  insert  cn=ds,ou=baselines,dc=ciam-ops
@@ -211,6 +222,7 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2012  insert  cn=ig,ou=baselines,dc=ciam-ops
 <TIMESTAMP>          CHG-2012  insert  cn=pf-admin,ou=baselines,dc=ciam-ops
 <TIMESTAMP>          CHG-2012  insert  cn=pf-engine,ou=baselines,dc=ciam-ops
+<TIMESTAMP>          CHG-2012  insert  cn=linux.baseline.shared,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2014  insert  ou=data-profile,dc=ciam-ops
 <TIMESTAMP>          CHG-2014  insert  cn=source-prod,ou=data-profile,dc=ciam-ops
 <TIMESTAMP>          CHG-2014  insert  ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
@@ -241,6 +253,7 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2014  insert  cn=telephonenumber,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
 <TIMESTAMP>          CHG-2014  insert  cn=uid,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
 <TIMESTAMP>          CHG-2014  insert  cn=userpassword,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
+<TIMESTAMP>          CHG-2014  insert  cn=ldap.data-profile.shared,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2009  insert  ou=census,dc=ciam-ops
 <TIMESTAMP>          CHG-2009  insert  cn=483017ca92ce3ac8,ou=census,dc=ciam-ops
 <TIMESTAMP>          CHG-2009  insert  cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
@@ -293,4 +306,4 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2013  update  cn=pf-engine,ou=baselines,dc=ciam-ops
 <TIMESTAMP>          CHG-2013  update  cn=pf-admin,ou=baselines,dc=ciam-ops
 <TIMESTAMP>          CHG-2015  insert  cn=fwd-corp-ad,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
-(293 rows)
+(306 rows)

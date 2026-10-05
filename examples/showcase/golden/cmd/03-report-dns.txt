@@ -1,0 +1,26 @@
+environment   name                             type              answers                     ttl   routing  zone                        visibility / run by
+------------  -------------------------------  ----------------  --------------------------  ----  -------  --------------------------  ----------------------
+source/prod   example-aero.test                zone                                                                                     public / corporate-dns
+source/prod   id.example-aero.test             zone              Z0EXAMPLE1PRIVATE                                                      private
+source/prod   apps.example-aero.test           A                 198.51.100.22               3600           example-aero.test
+source/prod   corp.example-aero.internal       forward outbound  10.40.0.53, 10.40.0.54
+source/prod   ldap.id.example-aero.test        A                 10.20.1.100                 60             id.example-aero.test
+source/prod   login.example-aero.test          A                 198.51.100.21               3600           example-aero.test
+source/prod   sso.example-aero.test            A                 198.51.100.20               3600           example-aero.test
+source/stage  apps.stage.example-aero.test     A                 198.51.100.32                              example-aero.test
+source/stage  ldap.stage.id.example-aero.test  A                 10.20.1.150                                id.example-aero.test
+source/stage  login.stage.example-aero.test    A                 198.51.100.31                              example-aero.test
+source/stage  sso.stage.example-aero.test      A                 198.51.100.30                              example-aero.test
+standby/prod  apps.example-aero.test           A                 198.51.100.92                              example-aero.test
+standby/prod  corp.example-aero.internal       forward outbound  10.40.0.53, 10.40.0.54
+standby/prod  ldap.id.example-aero.test        A                 10.70.1.100                                id.example-aero.test
+standby/prod  login.example-aero.test          A                 198.51.100.91                              example-aero.test
+standby/prod  sso.example-aero.test            A                 198.51.100.90                              example-aero.test
+target/prod   example-aero.test                zone                                                                                     public / corporate-dns
+target/prod   id.cloud.example-aero.test       zone              id.cloud.example-aero.test                                             private
+target/prod   apps.example-aero.test           A                 198.51.100.79                              example-aero.test
+target/prod   ldap.id.cloud.example-aero.test  A                 10.60.1.100                                id.cloud.example-aero.test
+target/prod   login.example-aero.test          A                 198.51.100.78                              example-aero.test
+target/prod   sso.example-aero.test            A                 198.51.100.77                              example-aero.test
+(22 rows)
+exit 0

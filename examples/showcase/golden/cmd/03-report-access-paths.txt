@@ -1,0 +1,10 @@
+environment   path              kind           trusted by    grants  provider ref
+------------  ----------------  -------------  ------------  ------  ----------------------------------------------------------------------
+source/prod   operator-console  session                              arn:aws:ssm:us-east-1:111122223333:document/SSM-SessionManagerRunShell
+source/prod   operator-sso      workforce-sso  d-9067a1b2c3          arn:aws:sso:::instance/ssoins-72231a2b3c4d5e6f
+standby/prod  operator-console  iap                                  projects/example-aero-ciam-standby/iap_tunnel
+standby/prod  operator-sso      workforce-sso                        https://accounts.google.com/o/saml2?idpid=C0example
+target/prod   operator-console  bastion                              /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/bastionHosts/bas-ciam-prod
+target/prod   operator-sso      workforce-sso                        https://login.microsoftonline.com/example-aero.test
+(6 rows)
+exit 0

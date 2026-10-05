@@ -47,6 +47,72 @@ data "azurerm_subnet" "snet_pf" {
   resource_group_name  = data.azurerm_resource_group.main.name
 }
 
+data "azurerm_log_analytics_workspace" "ops_logs" {
+  name                = "law-ciam-prod-ops"
+  resource_group_name = "rg-ciam-prod"
+}
+
+resource "azurerm_route_table" "rt_private" {
+  name                = "rt-ciam-prod-rt-private"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  # 0.0.0.0/0 nat: not a next hop in Azure (subnets reach it without a route); not rendered
+  tags = {
+    Role      = "routes-private"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "azurerm_subnet_route_table_association" "rt_private_snet_ds" {
+  subnet_id      = data.azurerm_subnet.snet_ds.id
+  route_table_id = azurerm_route_table.rt_private.id
+}
+
+resource "azurerm_subnet_route_table_association" "rt_private_snet_pf" {
+  subnet_id      = data.azurerm_subnet.snet_pf.id
+  route_table_id = azurerm_route_table.rt_private.id
+}
+
+resource "azurerm_subnet_route_table_association" "rt_private_snet_am" {
+  subnet_id      = data.azurerm_subnet.snet_am.id
+  route_table_id = azurerm_route_table.rt_private.id
+}
+
+resource "azurerm_subnet_route_table_association" "rt_private_snet_idm" {
+  subnet_id      = data.azurerm_subnet.snet_idm.id
+  route_table_id = azurerm_route_table.rt_private.id
+}
+
+resource "azurerm_subnet_route_table_association" "rt_private_snet_ig" {
+  subnet_id      = data.azurerm_subnet.snet_ig.id
+  route_table_id = azurerm_route_table.rt_private.id
+}
+
+resource "azurerm_network_watcher_flow_log" "flow_vnet" {
+  name                 = "fl-ciam-prod-flow-vnet"
+  network_watcher_name = var.network_watcher_name
+  resource_group_name  = var.network_watcher_resource_group
+  target_resource_id   = data.azurerm_virtual_network.main.id
+  storage_account_id   = var.flow_logs_storage_account_id
+  enabled              = true
+  version              = 2
+  retention_policy {
+    enabled = true
+    days    = 14
+  }
+  traffic_analytics {
+    enabled               = true
+    workspace_id          = data.azurerm_log_analytics_workspace.ops_logs.workspace_id
+    workspace_region      = data.azurerm_log_analytics_workspace.ops_logs.location
+    workspace_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-ciam-prod-ops"
+    interval_in_minutes   = 10
+  }
+  tags = {
+    Role      = "flow-logs"
+    ManagedBy = "opsdir"
+  }
+}
+
 resource "azurerm_firewall_policy_rule_collection_group" "egress_firewall_sites" {
   name               = "ciam-prod-sites"
   firewall_policy_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-hub-net/providers/Microsoft.Network/firewallPolicies/fwp-hub"

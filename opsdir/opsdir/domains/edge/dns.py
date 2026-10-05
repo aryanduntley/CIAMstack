@@ -11,9 +11,10 @@ role the target doesn't bind at all is the planner's role check's blocker).
 import datetime as dt
 import math
 
+from ...core.changeset import set_values
 from ...core.directory import get, one, rdn_value, subtree, values
 from ...core.environment import environment_of, of_class
-from ...core.findings import findings, responsible
+from ...core.findings import Fix, awaiting_import, findings, pending, responsible
 from ...core.naming import branch, env_label
 
 DNS_HEADERS = ("environment", "name", "type", "answers", "ttl", "routing", "zone", "visibility / run by")
@@ -73,22 +74,44 @@ def _names(m, types=None):
             **{((one(s, "ciamFqdn") or "").lower(), "A"): s for s in of_class(m, "ciamServiceName")}}
 
 
+def ttl_fix(ctx, name, b, by):
+    """The Fix lowering a changing name's TTL in the source to LOWERED_TTL, marked as set ahead of the live record
+    until an import by the source's cloud adapter confirms it."""
+    return Fix(f"ttl:{name}", "DNS", f"Lower the TTL of `{name}` in {ctx.src.label} to {LOWERED_TTL} s",
+               (set_values(b, "ciamTtlSeconds", (str(LOWERED_TTL),)),
+                awaiting_import(b, "ciamTtlSeconds", ctx.src.provider)),
+               (f"Apply {ctx.src.label}'s rendered DNS (or have the zone's keeper lower it) by "
+                f"{by or 'cutover less the old TTL'}; raise it again after cutover.",
+                f"Import {ctx.src.label} again: until an import confirms the live TTL, the DNS check reports it "
+                "awaiting verification."),
+               ("The record says the TTL is low before resolvers see it: only the import that confirms it shows the "
+                "live record changed.",))
+
+
 def _ttl(ctx, name, b, new):
-    """(actions, ok, ask) for one name whose answer changes: lowering its TTL in the source in time."""
+    """(actions, ok, ask, fixes) for one name whose answer changes: lowering its TTL in the source in time; a TTL the
+    record lowered that no import confirmed yet is still an action."""
     ttl, owner = one(b, "ciamTtlSeconds"), responsible(ctx.d, b, ctx.src.env)
     if ttl is None:
         by = lower_by(ctx.cutover, TTL_CEILING)
         return ((("DNS", f"`{name}` changes answer at cutover ({answer(b) or '?'} → {new}) and {ctx.src.label} doesn't "
                   f"record its TTL: make sure it is at most {TTL_CEILING} s, or lower it to {LOWERED_TTL} s, by "
                   f"{by or 'two days before cutover'}.", owner, by),), (),
-                f"make sure its TTL is at most {TTL_CEILING} s" + (f" by {by}" if by else ""))
+                f"make sure its TTL is at most {TTL_CEILING} s" + (f" by {by}" if by else ""),
+                (ttl_fix(ctx, name, b, by),))
+    if int(ttl) <= TTL_CEILING and "ciamTtlSeconds" in (attr for attr, _ in pending(b)):
+        by = lower_by(ctx.cutover, TTL_CEILING)
+        return ((("DNS", f"`{name}`'s TTL is {ttl} s in the record, set ahead of the live record: apply "
+                  f"{ctx.src.label}'s rendered DNS and import {ctx.src.label} again to confirm it"
+                  + (f" by {by}." if by else "."), owner, by),), (), "", ())
     if int(ttl) <= TTL_CEILING:
-        return (), (f"`{name}`'s TTL is {ttl} s: resolvers pick up the new answer within minutes of cutover.",), ""
+        return (), (f"`{name}`'s TTL is {ttl} s: resolvers pick up the new answer within minutes of cutover.",), "", ()
     by = lower_by(ctx.cutover, int(ttl))
     return ((("DNS", f"Lower the TTL of `{name}` in {ctx.src.label} from {ttl} s to {LOWERED_TTL} s by "
               f"{by or 'cutover less the old TTL'}, so resolvers pick up its new answer ({new}) at cutover; restore "
               "it after.", owner, by),), (),
-            f"lower its TTL from {ttl} s to {LOWERED_TTL} s" + (f" by {by}" if by else ""))
+            f"lower its TTL from {ttl} s to {LOWERED_TTL} s" + (f" by {by}" if by else ""),
+            (ttl_fix(ctx, name, b, by),))
 
 
 def _changing(ctx):
@@ -120,13 +143,14 @@ def _forwarded(m, direction):
 
 def check_dns(ctx):
     """Changing answers' TTLs and zones run by others; forwarders, records and private zones the target lacks."""
-    actions, ok, requests = [], [], []
+    actions, ok, requests, fixes = [], [], [], []
     for name, b, new in _changing(ctx):
-        a, o, ask = _ttl(ctx, name, b, new)
+        a, o, ask, f = _ttl(ctx, name, b, new)
         za, zr = _zone_request(ctx, name, b, new, ask)
         actions += [*a, *za]
         ok += o
         requests += zr
+        fixes += f
     owner = responsible(ctx.d, ctx.dst.env)
     # what the target doesn't bind at all is the role check's blocker; these name a role it binds differently
     bound = {one(b, "ciamBindingRole") for b in ctx.dst.bindings}
@@ -152,4 +176,4 @@ def check_dns(ctx):
                 for z in of_class(ctx.src, "ciamDnsZoneBinding")
                 if one(z, "ciamZoneVisibility") == "private" and (one(z, "ciamDnsZone") or "").lower() not in dst_zones
                 and one(z, "ciamBindingRole") in bound]
-    return findings(actions=actions, ok=ok, requests=requests)
+    return findings(actions=actions, ok=ok, requests=requests, fixes=fixes)

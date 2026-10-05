@@ -1,0 +1,7 @@
+environment   table       subnets                                                 destination  target kind  target     for
+------------  ----------  ------------------------------------------------------  -----------  -----------  ---------  ---
+source/prod   rt-private  subnet-ds, subnet-pf, subnet-am, subnet-idm, subnet-ig  0.0.0.0/0    nat          pf-egress
+standby/prod  routes                                                              0.0.0.0/0    internet
+target/prod   rt-private  subnet-ds, subnet-pf, subnet-am, subnet-idm, subnet-ig  0.0.0.0/0    nat          pf-egress
+(3 rows)
+exit 0

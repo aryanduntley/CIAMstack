@@ -1,0 +1,4 @@
+conflict cn=key-disk,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops|ciamAutoRotate: record TRUE -> live FALSE
+conflict cn=pf-engine-2,env=prod,cloud=source,ou=environments,dc=ciam-ops|ciamInstanceSize: record m6i.large -> live m6i.xlarge
+2 conflict(s) undecided: take the live value or keep the record's for each (--take KEY, --keep KEY, or all): cn=key-disk,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops|ciamAutoRotate, cn=pf-engine-2,env=prod,cloud=source,ou=environments,dc=ciam-ops|ciamInstanceSize
+exit 1

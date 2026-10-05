@@ -683,6 +683,29 @@ ciamProviderRef: projects/example-aero-net/regions/us-central1/subnetworks/cia
  m-standby-proxy
 description: The proxy-only subnet the load balancers run in
 
+dn: cn=routes,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamRouteTable
+cn: routes
+ciamBindingRole: routes-private
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamRoute: 0.0.0.0/0 internet
+
+dn: cn=flow-subnets,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFlowLog
+cn: flow-subnets
+ciamBindingRole: flow-logs
+ciamFlowScope: subnet
+ciamLogDestinationRole: ops-logs
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamRetentionDays: 30
+ciamSubnetRole: subnet-ds
+ciamSubnetRole: subnet-pf
+ciamSubnetRole: subnet-am
+ciamSubnetRole: subnet-idm
+ciamSubnetRole: subnet-ig
+
 dn: cn=fw-policy,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallPolicy

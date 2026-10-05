@@ -11,5 +11,5 @@ notification publisher SES SMTP: its secrets are withheld; set pingfedCredential
 CAPTCHA provider reCAPTCHA v3: its secrets are withheld; set pingfedCredentialRole to the secret role that holds them
 held as is (not modeled): /serverSettings (1)
 where PingFederate keeps OAuth clients, grants and sessions is set in its nodes' hivemodule.xml, not the Admin API: import the nodes' files with pingfederate/node-files
-CHG-2008: 36 change(s) applied
+CHG-2008: 37 change(s) applied, the import run among them
 exit 0

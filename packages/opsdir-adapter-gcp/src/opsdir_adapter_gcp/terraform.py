@@ -31,7 +31,7 @@ from opsdir_adapter_gcp.health_checks import probe_ranges
 from opsdir_adapter_gcp.identities import identity, project_of
 from opsdir_adapter_gcp.landing import render_landing
 from opsdir_adapter_gcp.names import name_parts
-from opsdir_adapter_gcp.names import NETWORK, REGION, label, network_tag
+from opsdir_adapter_gcp.names import NETWORK, PRIORITIES, REGION, label, network_tag
 from opsdir_adapter_gcp.network import render_network
 from opsdir_adapter_gcp.plumbing import network_data
 from opsdir_format_terraform.format import FORMAT as HCL
@@ -58,7 +58,7 @@ def _firewall(m):
     if firewall_model(m) == "policy":
         return policy_firewall(m)
     rules = of_class(m, "ciamFirewallRule")
-    prios = rule_priorities(rules, 1000, 10, 65535)
+    prios = rule_priorities(rules, *PRIORITIES)
     return tuple(chain.from_iterable(_firewall_rule(m, fw, *prios[fw.dn]) for fw in rules))
 
 

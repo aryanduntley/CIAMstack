@@ -104,4 +104,24 @@ import {
   id = "example-aero-ciam-standby/us-central1/ciam-standby-router/ciam-standby-nat"
 }
 
+resource "google_compute_route" "routes_0" {
+  name             = "ciam-prod-routes-0"
+  project          = "example-aero-net"
+  network          = data.google_compute_network.main.self_link
+  dest_range       = "0.0.0.0/0"
+  priority         = 1000
+  next_hop_gateway = "default-internet-gateway"
+  description      = "0.0.0.0/0 internet (routes)"
+}
+
 # link-source: Cloud VPN to AWS (landing-zone managed): what kind of link it is isn't recorded (ciamLinkKind). Not rendered.
+
+# flow-subnets: subnetwork subnet-ds logs its flows to Cloud Logging, routed to ops-logs (projects/example-aero-ciam-standby/locations/global/buckets/ciam-ops), kept 30 days there: set its log_config (aggregation_interval INTERVAL_5_SEC, flow_sampling 0.5, metadata INCLUDE_ALL_METADATA) where the subnetwork is defined
+
+# flow-subnets: subnetwork subnet-pf logs its flows to Cloud Logging, routed to ops-logs (projects/example-aero-ciam-standby/locations/global/buckets/ciam-ops), kept 30 days there: set its log_config (aggregation_interval INTERVAL_5_SEC, flow_sampling 0.5, metadata INCLUDE_ALL_METADATA) where the subnetwork is defined
+
+# flow-subnets: subnetwork subnet-am logs its flows to Cloud Logging, routed to ops-logs (projects/example-aero-ciam-standby/locations/global/buckets/ciam-ops), kept 30 days there: set its log_config (aggregation_interval INTERVAL_5_SEC, flow_sampling 0.5, metadata INCLUDE_ALL_METADATA) where the subnetwork is defined
+
+# flow-subnets: subnetwork subnet-idm logs its flows to Cloud Logging, routed to ops-logs (projects/example-aero-ciam-standby/locations/global/buckets/ciam-ops), kept 30 days there: set its log_config (aggregation_interval INTERVAL_5_SEC, flow_sampling 0.5, metadata INCLUDE_ALL_METADATA) where the subnetwork is defined
+
+# flow-subnets: subnetwork subnet-ig logs its flows to Cloud Logging, routed to ops-logs (projects/example-aero-ciam-standby/locations/global/buckets/ciam-ops), kept 30 days there: set its log_config (aggregation_interval INTERVAL_5_SEC, flow_sampling 0.5, metadata INCLUDE_ALL_METADATA) where the subnetwork is defined

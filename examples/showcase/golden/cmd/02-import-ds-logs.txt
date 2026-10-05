@@ -1,4 +1,4 @@
 8 identities only authenticated (binds, e.g. end users whose passwords were checked); not recorded
 9 anonymous operations (no bound identity); not attributed
-CHG-2007: 6 change(s) applied
+CHG-2007: 7 change(s) applied, the import run among them
 exit 0

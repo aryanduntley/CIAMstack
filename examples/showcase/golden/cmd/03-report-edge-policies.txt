@@ -1,0 +1,7 @@
+service role      traffic policy     tls                          backend validation  health  stickiness   protection policy   waf                                              rate limits                                   ddos              cdn
+----------------  -----------------  ---------------------------  ------------------  ------  -----------  ------------------  -----------------------------------------------  --------------------------------------------  ----------------  ---
+am-service        sign-on-edge       reencrypt ≥1.2 intermediate                              cookie 3600  sign-on-protection  block core-rules, known-bad-inputs, bot-control  login 300/300s per ip; token 600/300s per ip  network-advanced
+ds-ldaps-service  ldaps-passthrough  passthrough
+pf-sso-service    sign-on-edge       reencrypt ≥1.2 intermediate                              cookie 3600  sign-on-protection  block core-rules, known-bad-inputs, bot-control  login 300/300s per ip; token 600/300s per ip  network-advanced
+(3 rows)
+exit 0

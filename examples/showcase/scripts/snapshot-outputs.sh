@@ -37,28 +37,29 @@ rm "$OUT/cmd/.generated-before"
 
 cap 01-init od init
 cap 02-load od load data/*.ldif
-cap 02-import od import --change CHG-2004 pingam exports/amster
-cap 02-import-idm od import --change CHG-2004 pingidm exports/idm
-cap 02-import-ig od import --change CHG-2004 pinggateway exports/ig
+cap 02-import od import --change CHG-2004 --at 20260920030000Z pingam exports/amster
+cap 02-import-idm od import --change CHG-2004 --at 20260920030000Z pingidm exports/idm
+cap 02-import-ig od import --change CHG-2004 --at 20260920030000Z pinggateway exports/ig
 cap 02-import-ds od import --change CHG-2006 --at 20260920030000Z pingds/config exports/ds-config
-cap 02-import-ds-logs od import --change CHG-2007 pingds/access-log exports/ds-access-logs
-cap 02-import-pf od import --change CHG-2008 pingfederate/bulk exports/pingfederate
-cap 02-import-pf-nodes od import --change CHG-2008 pingfederate/node-files exports/pingfederate-nodes
-cap 02-import-jobs od import --change CHG-2010 linux/jobs exports/hosts
-cap 02-import-pipelines od import --change CHG-2010 github-actions/workflows exports/pipelines
-cap 02-import-baselines od import --change CHG-2012 linux/baseline exports/hosts
+cap 02-import-ds-logs od import --change CHG-2007 --at 20260920030000Z pingds/access-log exports/ds-access-logs
+cap 02-import-pf od import --change CHG-2008 --at 20260920030000Z pingfederate/bulk exports/pingfederate
+cap 02-import-pf-nodes od import --change CHG-2008 --at 20260920030000Z pingfederate/node-files exports/pingfederate-nodes
+cap 02-import-jobs od import --change CHG-2010 --at 20260920030000Z linux/jobs exports/hosts
+cap 02-import-pipelines od import --change CHG-2010 --at 20260920030000Z github-actions/workflows exports/pipelines
+cap 02-import-baselines od import --change CHG-2012 --at 20260920030000Z linux/baseline exports/hosts
 cap 02-data-profile od data-profile --env source/prod --at 20260920030000Z --term last-login=lastLoginTime \
   --term kba=challengeAnswer --term pending=registrationStatus=pending --term disabled=registrationStatus=disabled \
   -o "$OUT/data-profile/source-prod.json" exports/ds-data/source-prod.ldif
-cap 02-import-data-profile od import --change CHG-2014 ldap/data-profile "$OUT/data-profile"
+cap 02-import-data-profile od import --change CHG-2014 --at 20260920030000Z ldap/data-profile "$OUT/data-profile"
 cap 02-census od census --change CHG-2009 exports/census
 cap 02-check od check
-for r in portability expiring credentials pii drift stale unowned custom capture bundles consumers census jobs baselines compute external-services mail-senders event-streams data-profile data-profile-attributes alerts log-routes canaries monitors; do cap "03-report-$r" od report "$r"; done
+for r in portability expiring credentials pii drift stale unowned custom capture bundles consumers census jobs baselines compute external-services mail-senders event-streams data-profile data-profile-attributes alerts log-routes canaries monitors imports user-schema routes private-endpoints endpoint-services egress-sites dns edge-policies edge-services header-contracts identities principals guardrails access-paths workloads; do cap "03-report-$r" od report "$r"; done
 # the stale report dates a dependency's change from history: a change this run imports is dated the day it runs
 sed -i -e "s/$(date +%F)/<RUN-DATE>/g" -e "s/$(date -u +%F)/<RUN-DATE>/g" "$OUT/cmd/03-report-stale.txt"
 cap 03-cloud-drift-source od import --dry-run aws/terraform-state exports/cloud
 cap 03-cloud-drift-target od import --dry-run azure/cli-inventory exports/cloud
 cap 03-cloud-drift-standby od import --dry-run gcp/cli-inventory exports/cloud
+cap 03-import-undecided od import --change CHG-2004 --at 20260920030000Z aws/terraform-state exports/cloud
 cap 03-report-blast-radius od report blast-radius "$BLAST"
 cap 03-report-keys-source od report keys source/prod
 cap 03-report-keys-target od report keys target/prod

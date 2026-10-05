@@ -23,6 +23,9 @@ from .landing import render_landing
 from .network import render_network
 from .plumbing import network_data
 
+PRIORITIES = (100, 10, 4096)        # NSG rule priorities: first slot, step, last (pinned ones kept)
+
+
 def _security_rule(m, fw, prio, pinned):
     why = rule_purpose(m, fw)
     note = () if pinned else (
@@ -42,7 +45,7 @@ def _security_groups(m):
     """One network security group per server role; rules from the firewall bindings."""
     roles = sorted({one(s, "ciamServerRole") for s in m.servers})
     rules = of_class(m, "ciamFirewallRule")
-    prios = rule_priorities(rules, 100, 10, 4096)
+    prios = rule_priorities(rules, *PRIORITIES)
     return (*(block("resource", ["azurerm_network_security_group", tf_name(role)], [
                 ("name", f"nsg-ciam-{rdn_value(m.env)}-{role}"), ("location", LOC), ("resource_group_name", RG),
                 ("tags", {"ManagedBy": "opsdir"})]) for role in roles),

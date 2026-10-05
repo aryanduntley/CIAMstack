@@ -41,6 +41,9 @@ EXPECTED = MappingProxyType({
          "the target doesn't bind the IDM role the source runs (nobody records what acts as it: A39)", None),
         ("B21", "Binding", "Role `forwarder-corp.example-aero.internal` is bound in source/prod but not in target/prod",
          "the source forwards the AD domain to the domain controllers; nothing in the target does", "CHG-2015"),
+        ("B22", "Binding", "Role `acl-ds` is bound in source/prod but not in target/prod",
+         "the source's network ACL on the directory subnet has no counterpart in the target (Azure has none: its "
+         "NSGs do that work); decide, and record why", None),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -156,6 +159,11 @@ EXPECTED = MappingProxyType({
               ("pf-admin", "the admin node's run.properties and revocation checking don't name it"),
               ("ig", "PingGateway's ProxyOptions and JVM options don't name it"),
               ("idm", "PingIDM's boot.properties and JVM options don't name it")))),
+        ("A65", "Flow logs", "`flow-vnet` keeps flow logs 14 days in target/prod",
+         "the target's flow log (still to be built by the network team) keeps 14 days; the source keeps 30", None),
+        ("A66", "Egress", "no route sends internet egress through `egress-firewall`",
+         "the target's route table sends internet traffic straight to the NAT gateway, around the hub firewall whose "
+         "domain rules the stack relies on", None),
     ],
 })
 

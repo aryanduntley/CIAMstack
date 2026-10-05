@@ -1,6 +1,7 @@
 standby/prod: firewall allow-iap-ssh (ciamSourceCidr 35.235.240.0/20, ciamPort 22) is not in the record and names no role (tag it Role, name it in roles.json, or record it); not imported
 standby/prod: 1 identity resource(s) not in the record and naming no role, e.g. ciam-servers (tag them Role, name them in roles.json, or record them); not imported
 target/prod: not a Google Cloud environment in the record; not imported
+conflict cn=ds-2,env=prod,cloud=standby,ou=environments,dc=ciam-ops|ciamInstanceSize: record n2-standard-4 -> live n2-standard-8
 modify cn=ds-2,env=prod,cloud=standby,ou=environments,dc=ciam-ops
     replace ciamInstanceSize: n2-standard-8
 modify cn=svc-apps,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops

@@ -6,6 +6,7 @@ never text for a terminal; reading and writing files on disk and presenting resu
 write is previewable: its change records are computed first (preview_*), and applied only under a change id the store
 accepts (an approved change record). Effects are the store's; everything else is the connectors' and domains'.
 """
+import datetime as dt
 from typing import NamedTuple
 
 from .connectors import capture as capturemod, importing, migration, plan as planmod, profiling, reports, workspace
@@ -120,12 +121,22 @@ def fixes(conn, src, dst, as_of):
     return planmod.plan(db.load_directory(conn), src, dst, as_of).fixes
 
 
+def _ready(conn, fix):
+    """Effect (reads the record and its history): the fix, once what it requires happened (a fresh import of what it
+    changes); ValueError saying what it still waits for."""
+    waiting = fixmod.unmet(fix, db.load_directory(conn), lambda dns, excluded: db.last_change(conn, dns, excluded))
+    if waiting:
+        raise ValueError(f"fix {fix.key} waits: " + "; ".join(waiting))
+    return fix
+
+
 def propose_fix(conn, src, dst, as_of, key, change_id, title=None, option=None, inputs=None):
     """Effect: record a fix (its option chosen, when it offers a choice, and its inputs given, {key: values}) as change
     change_id with status proposed, holding the records it applies, for a person to approve (what an AI may do).
-    Nothing else is written; ValueError when the store would refuse the records (a value of the wrong type, two
-    values for a SINGLE-VALUE attribute, an attribute the entry's classes don't allow): a proposal applies as held."""
-    fix = fixmod.chosen(fixmod.find_fix(fixes(conn, src, dst, as_of), key), option, inputs)
+    Nothing else is written; ValueError when what the fix requires hasn't happened (a fresh import first) or the store
+    would refuse the records (a value of the wrong type, two values for a SINGLE-VALUE attribute, an attribute the
+    entry's classes don't allow): a proposal applies as held."""
+    fix = _ready(conn, fixmod.chosen(fixmod.find_fix(fixes(conn, src, dst, as_of), key), option, inputs))
     problems = db.record_problems(conn, fix.records)
     if problems:
         raise ValueError(f"fix {key}: the store would refuse its records: " + "; ".join(problems))
@@ -134,8 +145,8 @@ def propose_fix(conn, src, dst, as_of, key, change_id, title=None, option=None, 
 
 def apply_fix(conn, src, dst, as_of, key, change_id, option=None, inputs=None):
     """Effect: apply a fix's records (its option chosen, when it offers a choice, and its inputs given, {key: values})
-    under an approved change."""
-    fix = fixmod.chosen(fixmod.find_fix(fixes(conn, src, dst, as_of), key), option, inputs)
+    under an approved change; ValueError when what it requires hasn't happened (a fresh import first)."""
+    fix = _ready(conn, fixmod.chosen(fixmod.find_fix(fixes(conn, src, dst, as_of), key), option, inputs))
     return modify(conn, fix.records, change_id)
 
 
@@ -182,11 +193,19 @@ def data_profile(lines, label, as_of, captured, definitions=()):
 
 
 def preview_import(conn, spec, files, at=None):
-    """Effect (reads the record): the change records importing a product's export would apply, and the importer's
-    notices (what it withheld, what it couldn't place). spec: 'adapter[/importer]'; files: {relative path: text};
-    at: when the import runs (a UTC datetime), for importers that date what they observe."""
-    changes, notices = importing.preview_import(db.load_directory(conn), spec, files, at=at)
-    return Preview(spec, tuple(changes), tuple(notices))
+    """Effect (reads the record): what importing a product's export would do (connectors.importing.ImportPlan): the
+    change records, the importer's notices (what it withheld, what it couldn't place), the conflicts with what the
+    record holds, and the scopes it reads. spec: 'adapter[/importer]'; files: {relative path: text}; at: when the
+    export was taken (a UTC datetime; default now), for importers that date what they observe and for the import run."""
+    at = at or dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
+    return importing.import_plan(db.load_directory(conn), spec, files, at=at)
+
+
+def apply_import(conn, plan, change_id, take=(), keep=()):
+    """Effect: apply an import (preview_import) under an approved change: each conflict decided, the live value taken
+    or the record's kept (keys, or 'all'; ValueError while any is undecided), and an import run recorded for each
+    scope it read (domains.governance.imports), even when nothing else changed."""
+    return modify(conn, importing.import_records(db.load_directory(conn), plan, change_id, take, keep), change_id)
 
 
 def apply_preview(conn, preview, change_id):

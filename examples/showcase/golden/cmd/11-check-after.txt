@@ -1,5 +1,5 @@
 Expected findings check (after changes)
-  blockers planted 21   expected now 12   detected 12   missed 0   unexpected 0
+  blockers planted 22   expected now 13   detected 13   missed 0   unexpected 0
            B1   cleared by CHG-2003: the target environment binds a new LDAPS name (landing-zone DNS default) → gone
            B4   cleared by CHG-2001: no target firewall rule for the MRO export → gone
            B9   cleared by CHG-2005: imported HR database connector names no secret → gone
@@ -9,7 +9,7 @@ Expected findings check (after changes)
            B14  cleared by CHG-2005: imported SMTP publisher names no secret → gone
            B15  cleared by CHG-2005: imported CAPTCHA provider names no secret → gone
            B21  cleared by CHG-2015: the source forwards the AD domain to the domain controllers; nothing in the target does → gone
-  actions  planted 64   expected now 57   detected 57   missed 0   unexpected 0
+  actions  planted 66   expected now 59   detected 59   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone

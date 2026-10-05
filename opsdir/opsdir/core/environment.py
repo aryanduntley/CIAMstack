@@ -77,9 +77,10 @@ def with_required_roles(m, required_roles):
 
 
 def published_role(d, host):
-    """The binding role of the service name some environment publishes at this host (case-insensitive), or None:
-    how an importer turns a host in a product's configuration into a role each environment binds."""
-    names = (b for b in subtree(d, branch("environments"), "ciamServiceName")
+    """The binding role of the service name some environment publishes at this host, or of the external system it
+    reaches there (ciamExternalHost) (case-insensitive), or None: how an importer turns a host in a product's
+    configuration into a role each environment binds."""
+    names = (b for oc in ("ciamServiceName", "ciamExternalHost") for b in subtree(d, branch("environments"), oc)
              if host and (one(b, "ciamFqdn") or "").lower() == host.lower())
     return next((one(b, "ciamBindingRole") for b in names), None)
 

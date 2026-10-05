@@ -1,0 +1,9 @@
+principal         kind         identity role         server role  permission sets  permits                                                                 conditions  owner          reviewed    to check
+----------------  -----------  --------------------  -----------  ---------------  ----------------------------------------------------------------------  ----------  -------------  ----------  ------------------------------------------------
+break-glass-root  break-glass  identity-break-glass                                                                                                        mfa         ciam-platform  2026-03-01  break-glass: last tested 2025-11-03
+ciam-admins       operator     identity-admins                    platform-admin   manage pf-admin-password, manage-key disk-encryption, read-logs audit-  mfa, jit    ciam-platform  2025-06-30  review overdue (last 2025-06-30, every 365 days)
+ciam-ops-ci       deployer     identity-ci                        release          manage pf-sso-service, write-secret pf-admin-password                               ciam-platform  2026-04-15
+pingds            workload     identity-ds           ds           ds-runtime       read-secret ds-root-password, use-key disk-encryption, write-logs audi              ciam-platform  2026-06-01
+pingfederate      workload     identity-pf           pf-engine    pf-runtime       read-secret pf-admin-password, read-secret pf-ds-bind-password, read-s              ciam-platform  2026-06-01
+(5 rows)
+exit 0

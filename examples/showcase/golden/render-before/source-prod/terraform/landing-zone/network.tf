@@ -61,3 +61,178 @@ import {
   to = aws_nat_gateway.egress_pf
   id = "nat-0123456789abcdef0"
 }
+
+resource "aws_route_table" "rt_private" {
+  vpc_id = data.aws_vpc.main.id
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.egress_pf.id
+  }
+  tags = {
+    Name      = "rt-private"
+    Role      = "routes-private"
+    ManagedBy = "opsdir"
+  }
+}
+
+import {
+  to = aws_route_table.rt_private
+  id = "rtb-0a1b2c3d4e5f60021"
+}
+
+resource "aws_route_table_association" "rt_private_subnet_ds_a" {
+  subnet_id      = data.aws_subnet.subnet_ds_a.id
+  route_table_id = aws_route_table.rt_private.id
+}
+
+import {
+  to = aws_route_table_association.rt_private_subnet_ds_a
+  id = "subnet-0a11b22c33d44e55a/rtb-0a1b2c3d4e5f60021"
+}
+
+resource "aws_route_table_association" "rt_private_subnet_ds_b" {
+  subnet_id      = data.aws_subnet.subnet_ds_b.id
+  route_table_id = aws_route_table.rt_private.id
+}
+
+import {
+  to = aws_route_table_association.rt_private_subnet_ds_b
+  id = "subnet-0a11b22c33d44e55b/rtb-0a1b2c3d4e5f60021"
+}
+
+resource "aws_route_table_association" "rt_private_subnet_ds_c" {
+  subnet_id      = data.aws_subnet.subnet_ds_c.id
+  route_table_id = aws_route_table.rt_private.id
+}
+
+import {
+  to = aws_route_table_association.rt_private_subnet_ds_c
+  id = "subnet-0a11b22c33d44e55c/rtb-0a1b2c3d4e5f60021"
+}
+
+resource "aws_route_table_association" "rt_private_subnet_pf_a" {
+  subnet_id      = data.aws_subnet.subnet_pf_a.id
+  route_table_id = aws_route_table.rt_private.id
+}
+
+import {
+  to = aws_route_table_association.rt_private_subnet_pf_a
+  id = "subnet-0f66e77d88c99b00a/rtb-0a1b2c3d4e5f60021"
+}
+
+resource "aws_route_table_association" "rt_private_subnet_pf_b" {
+  subnet_id      = data.aws_subnet.subnet_pf_b.id
+  route_table_id = aws_route_table.rt_private.id
+}
+
+import {
+  to = aws_route_table_association.rt_private_subnet_pf_b
+  id = "subnet-0f66e77d88c99b00b/rtb-0a1b2c3d4e5f60021"
+}
+
+resource "aws_route_table_association" "rt_private_subnet_am_a" {
+  subnet_id      = data.aws_subnet.subnet_am_a.id
+  route_table_id = aws_route_table.rt_private.id
+}
+
+import {
+  to = aws_route_table_association.rt_private_subnet_am_a
+  id = "subnet-0c77d88e99fa00b1a/rtb-0a1b2c3d4e5f60021"
+}
+
+resource "aws_route_table_association" "rt_private_subnet_am_b" {
+  subnet_id      = data.aws_subnet.subnet_am_b.id
+  route_table_id = aws_route_table.rt_private.id
+}
+
+import {
+  to = aws_route_table_association.rt_private_subnet_am_b
+  id = "subnet-0c77d88e99fa00b1b/rtb-0a1b2c3d4e5f60021"
+}
+
+resource "aws_route_table_association" "rt_private_subnet_idm_a" {
+  subnet_id      = data.aws_subnet.subnet_idm_a.id
+  route_table_id = aws_route_table.rt_private.id
+}
+
+import {
+  to = aws_route_table_association.rt_private_subnet_idm_a
+  id = "subnet-0d88e99fa00b11c2a/rtb-0a1b2c3d4e5f60021"
+}
+
+resource "aws_route_table_association" "rt_private_subnet_ig_a" {
+  subnet_id      = data.aws_subnet.subnet_ig_a.id
+  route_table_id = aws_route_table.rt_private.id
+}
+
+import {
+  to = aws_route_table_association.rt_private_subnet_ig_a
+  id = "subnet-0e99fa00b11c22d3a/rtb-0a1b2c3d4e5f60021"
+}
+
+resource "aws_network_acl" "acl_ds" {
+  vpc_id     = data.aws_vpc.main.id
+  subnet_ids = [data.aws_subnet.subnet_ds_a.id, data.aws_subnet.subnet_ds_b.id, data.aws_subnet.subnet_ds_c.id]
+  ingress {
+    rule_no    = 100
+    action     = "allow"
+    protocol   = "-1"
+    cidr_block = "10.20.0.0/16"
+    from_port  = 0
+    to_port    = 0
+  }
+  egress {
+    rule_no    = 100
+    action     = "allow"
+    protocol   = "-1"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 0
+    to_port    = 0
+  }
+  ingress {
+    rule_no    = 110
+    action     = "allow"
+    protocol   = "tcp"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 1636
+    to_port    = 1636
+  }
+  ingress {
+    rule_no    = 120
+    action     = "allow"
+    protocol   = "tcp"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 1024
+    to_port    = 65535
+  }
+  tags = {
+    Name      = "acl-ds"
+    Role      = "acl-ds"
+    ManagedBy = "opsdir"
+  }
+}
+
+import {
+  to = aws_network_acl.acl_ds
+  id = "acl-0a1b2c3d4e5f60031"
+}
+
+# flow-vpc: kept 30 days, the retention of ops-logs (not set here)
+
+resource "aws_flow_log" "flow_vpc" {
+  vpc_id               = data.aws_vpc.main.id
+  traffic_type         = "ALL"
+  log_destination_type = "cloud-watch-logs"
+  log_destination      = "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/access"
+  iam_role_arn         = var.flow_logs_role_arn
+  tags = {
+    Name      = "flow-vpc"
+    Role      = "flow-logs"
+    ManagedBy = "opsdir"
+  }
+}
+
+import {
+  to = aws_flow_log.flow_vpc
+  id = "fl-0a1b2c3d4e5f60041"
+}

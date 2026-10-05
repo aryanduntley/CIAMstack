@@ -1,0 +1,5 @@
+site                                kind       needed by  allowed by
+----------------------------------  ---------  ---------  ----------------------------------------------------------------------
+email-smtp.us-east-1.amazonaws.com  messaging  pf-engine  source/prod: egress-firewall, standby/prod: egress-firewall, target/prod: hub-proxy
+(1 rows)
+exit 0

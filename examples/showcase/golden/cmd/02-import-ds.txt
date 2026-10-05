@@ -2,5 +2,5 @@ source/prod ds-1: backend userData: indexes on attributes with no user-schema re
 source/prod ds-2: backend userData: indexes on attributes with no user-schema record, not recorded: aci, entryUUID, objectClass
 source/prod ds-2: backend userData: indexes on attributes with no user-schema record, not recorded: aci, entryUUID, objectClass
 source/prod ds-3: backend userData: indexes on attributes with no user-schema record, not recorded: aci, entryUUID, objectClass
-CHG-2006: 100 change(s) applied
+CHG-2006: 101 change(s) applied, the import run among them
 exit 0

@@ -238,7 +238,8 @@ def _source_iam():
 
 def landing_zone_state():
     """The landing zone's Terraform state: the pipeline's OIDC provider and role, the admins' permission set, the
-    break-glass role (its AWS managed policy isn't in a state)."""
+    break-glass role (its AWS managed policy isn't in a state), and the network plumbing it keeps (route table,
+    network ACL, flow log)."""
     rows = {cn: (kind, ref, trusted, grants) for cn, kind, ref, trusted, grants in AWS_IDENTITIES}
     ps = "arn:aws:sso:::permissionSet/ssoins-72231a2b3c4d5e6f/ps-ciamadmins01"
     _, ci_ref, ci_trust, ci_grants = rows["identity-ci"]
@@ -256,7 +257,9 @@ def landing_zone_state():
         _res("managed", "aws_ssoadmin_account_assignment", "ciam_admins", {
             "permission_set_arn": ps, "principal_id": group, "principal_type": "GROUP", "target_id": ACCOUNT,
             "target_type": "AWS_ACCOUNT"}),
-        _role("identity-break-glass", bg_ref, bg_trust, (), managed=("arn:aws:iam::aws:policy/AdministratorAccess",))]
+        _role("identity-break-glass", bg_ref, bg_trust, (), managed=("arn:aws:iam::aws:policy/AdministratorAccess",)),
+        *(r for oc, cn, role, a in SOURCE["network"]
+          for r in _aws_plumbing(SOURCE, oc, cn, a, {"Name": cn, "Role": role, "ManagedBy": "opsdir"}))]
     return _dumps({"version": 4, "terraform_version": "1.9.5", "serial": 31, "lineage": "7a1d-ciam-landing-zone",
                    "outputs": {}, "resources": resources})
 
@@ -284,6 +287,42 @@ def _domain_list(sites):
     """An allowlist as a Network Firewall domain list's targets: hosts without ports, *.example as .example."""
     hosts = (site.rsplit(":", 1)[0] if site.rsplit(":", 1)[-1].isdigit() else site for site in sites)
     return list(dict.fromkeys(h[1:] if h.startswith("*.") else h for h in hosts))
+
+
+def _acl_entry(rule):
+    """An aws_network_acl ingress/egress block of a ciamAclRule ('<number> <action> <in|out> <protocol> <ports>
+    <cidr>')."""
+    number, action, _, protocol, ports, cidr = rule.split(" ")
+    low, _, high = ("0-0" if ports == "all" else ports).partition("-")
+    return {"rule_no": int(number), "action": action, "protocol": "-1" if protocol == "all" else protocol,
+            "from_port": int(low), "to_port": int(high or low), "cidr_block": cidr}
+
+
+def _aws_plumbing(p, oc, cn, a, tags):
+    """The landing zone's plumbing as Terraform state: a route table and its subnet associations, a network ACL, a
+    flow log to the ops log group."""
+    if oc == "ciamRouteTable":
+        (dest, _, _), = (r.split(" ") for r in a["ciamRoute"])       # out through the NAT gateway (pf-egress)
+        nat = p["egress"][0]
+        return [_res("managed", "aws_route_table", cn, {
+                    "id": a["ciamProviderRef"], "vpc_id": p["net"][1], "tags": tags,
+                    "route": [{"cidr_block": dest, "nat_gateway_id": nat}]}),
+                *(_res("managed", "aws_route_table_association", f"{cn}_{i}", {
+                    "id": f"rtbassoc-0{_hex('assoc', cn, subnet, n=16)}", "route_table_id": a["ciamProviderRef"],
+                    "subnet_id": subnet}) for i, subnet in enumerate(_by_role(p["subnets"], a["ciamSubnetRole"])))]
+    if oc == "ciamNetworkAcl":
+        rules = [r.split(" ") for r in a["ciamAclRule"]]
+        return [_res("managed", "aws_network_acl", cn, {
+            "id": a["ciamProviderRef"], "vpc_id": p["net"][1], "tags": tags,
+            "subnet_ids": _by_role(p["subnets"], a["ciamSubnetRole"]),
+            "ingress": [_acl_entry(" ".join(r)) for r in rules if r[2] == "in"],
+            "egress": [_acl_entry(" ".join(r)) for r in rules if r[2] == "out"]})]
+    if oc == "ciamFlowLog":
+        return [_res("managed", "aws_flow_log", cn, {
+            "id": a["ciamProviderRef"], "vpc_id": p["net"][1], "traffic_type": "ALL", "tags": tags,
+            "log_destination_type": "cloud-watch-logs",
+            "log_destination": f"arn:aws:logs:{REGION}:{ACCOUNT}:log-group:/ciam/prod/access"})]
+    return []
 
 
 def _aws_network_depth(p):

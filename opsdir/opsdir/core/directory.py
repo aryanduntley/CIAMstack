@@ -66,6 +66,11 @@ def gtime(at):
     return utc.astimezone(dt.timezone.utc).strftime("%Y%m%d%H%M%SZ")
 
 
+def gtime_at(gt):
+    """The UTC datetime of GeneralizedTime text (20261102000000Z): gtime's inverse; ValueError when it isn't one."""
+    return dt.datetime.strptime(gt, "%Y%m%d%H%M%SZ").replace(tzinfo=dt.timezone.utc)
+
+
 def gtime_of_iso(text):
     """GeneralizedTime of an ISO 8601 time (Z allowed; no zone is UTC), or None when the text isn't one."""
     try:

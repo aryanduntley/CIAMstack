@@ -131,6 +131,11 @@ objectClass: organizationalUnit
 ou: identity-services
 description: The platform's own identity provider / OpenID provider
 
+dn: ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: imports
+
 dn: ou=incidents,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -1111,6 +1116,17 @@ ciamSchedule: 15 1 * * *
 ciamSecretName: DS_BACKUP_PASSWORD
 ciamTrigger: manual
 
+dn: cn=github-actions.workflows.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: github-actions.workflows.shared
+ciamChangeRef: cn=CHG-2010,ou=changes,dc=ciam-ops
+ciamImportScope: cn=github-actions-ciam-ops-directory-backup,ou=jobs,dc=ciam-o
+ ps
+ciamImportedAt: 20260920030000Z
+ciamImporter: github-actions/workflows
+
 dn: cn=givenName,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
@@ -1412,6 +1428,16 @@ ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.24
 ciamPiiClass: low
 ciamPurpose: Inactivity detection for lifecycle cleanup
 
+dn: cn=ldap.data-profile.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: ldap.data-profile.shared
+ciamChangeRef: cn=CHG-2014,ou=changes,dc=ciam-ops
+ciamImportScope: cn=source-prod,ou=data-profile,dc=ciam-ops
+ciamImportedAt: 20260920030000Z
+ciamImporter: ldap/data-profile
+
 dn: cn=ldaps-passthrough,ou=edge-policies,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -1453,6 +1479,32 @@ ciamPeakOpsPerSec: 3
 ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
 ciamTlsOnly: FALSE
 ciamUnindexedSearchesPerDay: 12
+
+dn: cn=linux.baseline.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: linux.baseline.shared
+ciamChangeRef: cn=CHG-2012,ou=changes,dc=ciam-ops
+ciamImportScope: cn=am,ou=baselines,dc=ciam-ops
+ciamImportScope: cn=ds,ou=baselines,dc=ciam-ops
+ciamImportScope: cn=idm,ou=baselines,dc=ciam-ops
+ciamImportScope: cn=ig,ou=baselines,dc=ciam-ops
+ciamImportScope: cn=pf-admin,ou=baselines,dc=ciam-ops
+ciamImportScope: cn=pf-engine,ou=baselines,dc=ciam-ops
+ciamImportedAt: 20260920030000Z
+ciamImporter: linux/baseline
+
+dn: cn=linux.jobs.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: linux.jobs.shared
+ciamChangeRef: cn=CHG-2010,ou=changes,dc=ciam-ops
+ciamImportScope: cn=ds-nightly-export,ou=jobs,dc=ciam-ops
+ciamImportScope: cn=pf-engine-pf-audit-ship,ou=jobs,dc=ciam-ops
+ciamImportedAt: 20260920030000Z
+ciamImporter: linux/jobs
 
 dn: cn=login-failures,ou=alert-rules,dc=ciam-ops
 objectClass: top
@@ -1874,6 +1926,21 @@ ciamMaterialFormat: text
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationDays: 90
 
+dn: cn=pingam.amster.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: pingam.amster.shared
+ciamChangeRef: cn=CHG-2004,ou=changes,dc=ciam-ops
+ciamImportScope: cn=partner-portal,ou=integrations,dc=ciam-ops
+ciamImportScope: cn=PartnerLogin,ou=partners,ou=journeys,ou=pingam,dc=ciam-ops
+ciamImportScope: cn=partner-apps,ou=partners,ou=policy-sets,ou=pingam,dc=ciam-
+ ops
+ciamImportScope: cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json
+ ,ou=config-files,dc=ciam-ops
+ciamImportedAt: 20260920030000Z
+ciamImporter: pingam/amster
+
 dn: cn=pingds,ou=principals,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -1886,6 +1953,38 @@ ciamPrincipalKind: workload
 ciamReviewedOn: 20260601000000Z
 ciamTargetRole: ds
 
+dn: cn=pingds.access-log.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: pingds.access-log.shared
+ciamChangeRef: cn=CHG-2007,ou=changes,dc=ciam-ops
+ciamImportScope: cn=idm-sync,ou=consumers,dc=ciam-ops
+ciamImportScope: cn=mro-batch-export,ou=consumers,dc=ciam-ops
+ciamImportScope: cn=pf-ds-svc,ou=consumers,dc=ciam-ops
+ciamImportScope: cn=customer-portal-svc,ou=consumers,dc=ciam-ops
+ciamImportScope: cn=legacy-rptuser,ou=consumers,dc=ciam-ops
+ciamImportScope: cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
+ciamImportedAt: 20260920030000Z
+ciamImporter: pingds/access-log
+
+dn: cn=pingds.config.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: pingds.config.shared
+ciamChangeRef: cn=CHG-2006,ou=changes,dc=ciam-ops
+ciamImportScope: snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,d
+ c=ciam-ops
+ciamImportScope: snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,d
+ c=ciam-ops
+ciamImportScope: snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,d
+ c=ciam-ops
+ciamImportScope: snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,d
+ c=ciam-ops
+ciamImportedAt: 20260920030000Z
+ciamImporter: pingds/config
+
 dn: cn=pingfederate,ou=principals,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -1897,6 +1996,104 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrincipalKind: workload
 ciamReviewedOn: 20260601000000Z
 ciamTargetRole: pf-engine
+
+dn: cn=pingfederate.bulk.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: pingfederate.bulk.shared
+ciamChangeRef: cn=CHG-2008,ou=changes,dc=ciam-ops
+ciamImportScope: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
+ciamImportScope: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+ciamImportScope: cn=harbor-mro-idp-signing,ou=certificates,dc=ciam-ops
+ciamImportScope: cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops
+ciamImportScope: cn=customer-portal-sp-signing,ou=certificates,dc=ciam-ops
+ciamImportScope: cn=supplier-portal-sp-signing,ou=certificates,dc=ciam-ops
+ciamImportScope: cn=customer-portal,ou=integrations,dc=ciam-ops
+ciamImportScope: cn=supplier-portal,ou=integrations,dc=ciam-ops
+ciamImportScope: cn=harbor-mro-federation,ou=integrations,dc=ciam-ops
+ciamImportScope: cn=skyline-air-federation,ou=integrations,dc=ciam-ops
+ciamImportScope: cn=mobile-ops,ou=integrations,dc=ciam-ops
+ciamImportScope: cn=tech-pubs,ou=integrations,dc=ciam-ops
+ciamImportScope: cn=reports-api,ou=integrations,dc=ciam-ops
+ciamImportScope: cn=user-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
+ciamImportScope: cn=grant-store,ou=data-stores,ou=pingfederate,dc=ciam-ops
+ciamImportScope: cn=pcv-customers,ou=credential-validators,ou=pingfederate,dc=
+ ciam-ops
+ciamImportScope: cn=htmlform,ou=idp-adapters,ou=pingfederate,dc=ciam-ops
+ciamImportScope: cn=default-jwt,ou=access-token-managers,ou=pingfederate,dc=ci
+ am-ops
+ciamImportScope: cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-op
+ s
+ciamImportScope: cn=recaptcha,ou=captcha-providers,ou=pingfederate,dc=ciam-ops
+ciamImportScope: cn=default-apc,ou=policy-contracts,ou=pingfederate,dc=ciam-op
+ s
+ciamImportScope: cn=default,ou=authentication-policies,ou=pingfederate,dc=ciam
+ -ops
+ciamImportScope: cn=default-oidc,ou=oidc-policies,ou=pingfederate,dc=ciam-ops
+ciamImportScope: cn=oauth-auth-server,ou=settings,ou=pingfederate,dc=ciam-ops
+ciamImportScope: ou=serverSettings,ou=resources,ou=pingfederate,dc=ciam-ops
+ciamImportScope: cn=email-smtp.us-east-1.amazonaws.com,ou=external-services,dc
+ =ciam-ops
+ciamImportScope: cn=noreply@example-aero.test,ou=mail-senders,dc=ciam-ops
+ciamImportScope: cn=captcha-recaptcha,ou=external-services,dc=ciam-ops
+ciamImportedAt: 20260920030000Z
+ciamImporter: pingfederate/bulk
+
+dn: cn=pingfederate.node-files.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: pingfederate.node-files.shared
+ciamChangeRef: cn=CHG-2008,ou=changes,dc=ciam-ops
+ciamImportScope: cn=storage,ou=settings,ou=pingfederate,dc=ciam-ops
+ciamImportedAt: 20260920030000Z
+ciamImporter: pingfederate/node-files
+
+dn: cn=pingfederate.node-files.source.prod,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: pingfederate.node-files.source.prod
+ciamChangeRef: cn=CHG-2008,ou=changes,dc=ciam-ops
+ciamImportScope: cn=pf-admin-1,env=prod,cloud=source,ou=environments,dc=ciam-o
+ ps
+ciamImportScope: cn=pf-engine-1,env=prod,cloud=source,ou=environments,dc=ciam-
+ ops
+ciamImportScope: cn=pf-engine-2,env=prod,cloud=source,ou=environments,dc=ciam-
+ ops
+ciamImportedAt: 20260920030000Z
+ciamImporter: pingfederate/node-files
+
+dn: cn=pinggateway.config.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: pinggateway.config.shared
+ciamChangeRef: cn=CHG-2004,ou=changes,dc=ciam-ops
+ciamImportScope: cn=partner-portal,ou=routes,ou=pinggateway,dc=ciam-ops
+ciamImportScope: cn=ig.config.admin.json,ou=config-files,dc=ciam-ops
+ciamImportScope: cn=ig.config.config.json,ou=config-files,dc=ciam-ops
+ciamImportedAt: 20260920030000Z
+ciamImporter: pinggateway/config
+
+dn: cn=pingidm.project.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: pingidm.project.shared
+ciamChangeRef: cn=CHG-2004,ou=changes,dc=ciam-ops
+ciamImportScope: cn=user,ou=managed-objects,ou=pingidm,dc=ciam-ops
+ciamImportScope: cn=role,ou=managed-objects,ou=pingidm,dc=ciam-ops
+ciamImportScope: cn=hr_managedUser,ou=mappings,ou=pingidm,dc=ciam-ops
+ciamImportScope: cn=managedUser_systemLdapAccount,ou=mappings,ou=pingidm,dc=ci
+ am-ops
+ciamImportScope: cn=reconcile-hr,ou=schedules,ou=pingidm,dc=ciam-ops
+ciamImportScope: cn=hrdb,ou=connectors,ou=pingidm,dc=ciam-ops
+ciamImportScope: cn=ldap,ou=connectors,ou=pingidm,dc=ciam-ops
+ciamImportScope: cn=idm.conf.audit.json,ou=config-files,dc=ciam-ops
+ciamImportedAt: 20260920030000Z
+ciamImporter: pingidm/project
 
 dn: cn=platform-admin,ou=permission-sets,dc=ciam-ops
 objectClass: top
@@ -4823,6 +5020,19 @@ ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: access
 
+dn: cn=acl-ds,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamNetworkAcl
+cn: acl-ds
+ciamAclRule: 100 allow in all all 10.20.0.0/16
+ciamAclRule: 110 allow in tcp 1636 0.0.0.0/0
+ciamAclRule: 120 allow in tcp 1024-65535 0.0.0.0/0
+ciamAclRule: 100 allow out all all 0.0.0.0/0
+ciamBindingRole: acl-ds
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamProviderRef: acl-0a1b2c3d4e5f60031
+ciamSubnetRole: subnet-ds
+
 dn: cn=alerts-page,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamAlertChannel
@@ -5287,6 +5497,43 @@ objectClass: top
 objectClass: ciamLogPublisher
 cn: File-Based Error Logger
 ciamEnabled: TRUE
+
+dn: cn=flow-subnets,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFlowLog
+cn: flow-subnets
+ciamBindingRole: flow-logs
+ciamFlowScope: subnet
+ciamLogDestinationRole: ops-logs
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamRetentionDays: 30
+ciamSubnetRole: subnet-ds
+ciamSubnetRole: subnet-pf
+ciamSubnetRole: subnet-am
+ciamSubnetRole: subnet-idm
+ciamSubnetRole: subnet-ig
+
+dn: cn=flow-vnet,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFlowLog
+cn: flow-vnet
+ciamBindingRole: flow-logs
+ciamFlowScope: network
+ciamLogDestinationRole: ops-logs
+ciamManagedBy: cn=network-security,ou=owners,dc=ciam-ops
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamRetentionDays: 14
+
+dn: cn=flow-vpc,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFlowLog
+cn: flow-vpc
+ciamBindingRole: flow-logs
+ciamFlowScope: network
+ciamLogDestinationRole: ops-logs
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamProviderRef: fl-0a1b2c3d4e5f60041
+ciamRetentionDays: 30
 
 dn: cn=fw-admin,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -6661,6 +6908,43 @@ objectClass: top
 objectClass: ciamPasswordPolicy
 cn: Root Password Policy
 ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=routes,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamRouteTable
+cn: routes
+ciamBindingRole: routes-private
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamRoute: 0.0.0.0/0 internet
+
+dn: cn=rt-private,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamRouteTable
+cn: rt-private
+ciamBindingRole: routes-private
+ciamMainTable: FALSE
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamProviderRef: rtb-0a1b2c3d4e5f60021
+ciamRoute: 0.0.0.0/0 nat pf-egress
+ciamSubnetRole: subnet-ds
+ciamSubnetRole: subnet-pf
+ciamSubnetRole: subnet-am
+ciamSubnetRole: subnet-idm
+ciamSubnetRole: subnet-ig
+
+dn: cn=rt-private,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamRouteTable
+cn: rt-private
+ciamBindingRole: routes-private
+ciamManagedBy: cn=network-security,ou=owners,dc=ciam-ops
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamRoute: 0.0.0.0/0 nat pf-egress
+ciamSubnetRole: subnet-ds
+ciamSubnetRole: subnet-pf
+ciamSubnetRole: subnet-am
+ciamSubnetRole: subnet-idm
+ciamSubnetRole: subnet-ig
 
 dn: cn=secret-am-admin-password,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top

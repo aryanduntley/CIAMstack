@@ -11,8 +11,10 @@ from opsdir.connectors.fixes import chosen, find_fix, previewed, proposal
 from opsdir.connectors.plan import _check_roles
 from opsdir.core.changeset import new_entry, set_values
 from opsdir.core.directory import Directory, make_entry
+from opsdir.core.environment import published_role
 from opsdir.core.findings import Fix, Input, Option, filled_records, fix_inputs, templated_entry
 from opsdir.core.interchange.ldif import LdifRecord
+from opsdir.domains.infrastructure.external import external_host_fix
 from network_fixtures import ALPHA, BETA, context, entry, model
 
 HOST = make_entry(f"cn=h,ou=bindings,{BETA}", ("ciamThing",), {})
@@ -144,3 +146,17 @@ def test_two_different_inputs_may_not_share_a_key():
     clash = FIX._replace(records=(*FIX.records, set_values(HOST, "ciamOther", (NAME._replace(label="another"),))))
     with pytest.raises(ValueError, match="has two different inputs named name"):
         chosen(clash, given={"name": ("n",), "bucket": ("s3://b",)})
+
+
+def test_an_external_host_is_recorded_under_a_role_the_operator_gives():
+    d, alpha, _ = model()
+    fix = external_host_fix(alpha, "hr.corp.example.test", "connector `hr`", "external-host:connector/hr",
+                            "product/importer", 8443)
+    assert [i.key for i in fix_inputs(fix.records)] == ["role"] and fix_inputs(fix.records)[0].example == ("hr",)
+    (add,) = chosen(fix, given={"role": ("hr-database",)}).records
+    assert (add.dn, add.attrs["ciamPort"], add.attrs["ciamBindingRole"]) == (
+        f"cn=ext-hr-corp-example-test,ou=bindings,{ALPHA}", ("8443",), ("hr-database",))
+    with pytest.raises(ValueError, match="role=HR doesn't match"):
+        chosen(fix, given={"role": ("HR",)})
+    d, _, _ = model(changes=(add,))
+    assert published_role(d, "HR.corp.example.test") == "hr-database"

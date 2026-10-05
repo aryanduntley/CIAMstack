@@ -4,5 +4,5 @@ connector ldap: its credentials are withheld; set pingidmCredentialRole to the s
 idm.conf.audit.json: 2 settings
 code, not config (record it as a bundle with `opsdir bundle`): script/onCreate-user.js
 not IDM configuration, not imported: README.md
-CHG-2004: 15 change(s) applied
+CHG-2004: 16 change(s) applied, the import run among them
 exit 0

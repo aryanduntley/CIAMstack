@@ -27,7 +27,8 @@ On a machine whose global pip config sets `user = true`, pip refuses it inside a
 ./opsdir.sh load FILE.ldif...         # load LDIF content under change BOOTSTRAP
 ./opsdir.sh check [CLOUD/ENV...]      # each environment's declared stack vs the installed adapters
 ./opsdir.sh modify --change CHG-… FILE.ldif   # apply LDIF change records under an approved change
-./opsdir.sh import [--change CHG-…] ADAPTER[/IMPORTER] PATH [--dry-run] [--at TIME]   # read a product's export into the record
+./opsdir.sh import [--change CHG-…] ADAPTER[/IMPORTER] PATH [--dry-run] [--at TIME] [--take K|all] [--keep K|all]
+                                      # read a product's export into the record (conflicts decided: below)
 ./opsdir.sh capture --change CHG-… FILE       # hold a config file in the record (settings, whole, or a reference)
 ./opsdir.sh file NAME [--env CLOUD/ENV]       # rebuild a captured file from the record
 ./opsdir.sh census --change CHG-… PATH        # where the record's values occur in files (secrets flagged, not stored);
@@ -103,6 +104,18 @@ The live record is what you operate from. To prepare a move without touching it,
 
 The workspace remembers the live snapshot it was copied from. At cutover, if the live record changed other entries meanwhile, the workspace's changes still apply (a three-way merge); if both changed the same entry, the cutover is refused and names it. The changes are applied in one transaction under the approved change, through every rule of the store.
 
+## Imports and conflicts
+
+An importer reads a product's export or a cloud's inventory and turns it into change records (`--dry-run` lists them and applies nothing: that is how drift is read). Adding what the record lacks, such as an entry, an attribute, a value or an object class, just goes in. An import that would replace or remove something the record holds means the live system and the record disagree. Neither side is assumed to be right. Each such disagreement is a **conflict**, listed with a key, the record's value and the live value:
+
+```
+conflict cn=key-disk,ou=bindings,env=prod,cloud=source,…|ciamAutoRotate: record TRUE -> live FALSE
+```
+
+An applied import is refused until every conflict is decided. `--take KEY` lets the live value in. `--keep KEY` keeps the record's: that change is left out, so the record still renders its own value and the next import shows the conflict again. Either flag also takes `all`.
+
+Every applied import also records an **import run** for each scope it read, under `ou=imports`: the importer, the scope, when the export was taken (`--at`, default now) and the change. There is one entry per importer and scope, replaced by the next run; history keeps the earlier ones. A dry run records nothing. `opsdir report imports` lists when each part of the record was last read back. Fixes that must not act on a stale picture of the live system check these runs.
+
 ## Assisted fixes
 
 When a planner check knows the exact record change that resolves a finding, the finding offers it as a fix: the LDIF change records, the steps outside the record that go with it (a deploy, a live change, a party's confirmation) and what applying it could hide. `PLAN.md` lists the fixes offered; nothing is applied without a change.
@@ -135,7 +148,12 @@ Some fixes take inputs: values only the operator knows, such as a provider refer
 | Finding | Fix (inputs) |
 |---|---|
 | A role the source binds isn't bound in the target | the source's bindings of the role copied under the target's bindings. Intent and meta values are copied. Binding and secret-reference values, and DNs inside the source environment, are inputs (the source's value as the example, never as a default: copied, it would point at the source's resources). Contract values, and references to something outside the environment (a consumer), default to the source's. Dates and observed facts are left out. With several bindings of the role, each input's key starts with the binding's name (`backup-a.ciamStorageRef`). |
+| A product reaches a fixed host from every environment (a PingFederate data store with one host, a PingIDM connector's `host`, a PingGateway route's base URI) | the host recorded as the source's `ciamExternalHost` (a system the platform reaches but doesn't run) of a role the operator gives (`role`, never guessed; the port too for a route). Importing the product again names the role instead of the host, and the target then gets the core's binding fix for the role |
 | PingFederate's cluster discovery isn't recorded, uses a protocol the adapter doesn't render, or lacks what its protocol needs | the `pf-cluster-discovery` binding: an option per rendered protocol (the source's: the one its nodes run, when they all agree). NATIVE_S3_PING takes the bucket (`ciamStorageRef`, `s3://…`) and DNS_PING the DNS name (`ciamFqdn`); TCPPING takes nothing. A binding of another class (an object store) is replaced by a `pingfedClusterDiscovery` binding of the same name. |
+
+Some fixes wait for something to happen first, and `fix show` lists it under "First". Pinning firewall priorities is one: rules a provider orders by number (Azure network security groups, Google Cloud firewall rules and policy rules) render a free slot when they have no pinned `ciamRulePriority`. A slot free in the record may already be held by a live rule the record lacks. So the planner's action for unpinned rules offers a fix (`priorities:<environment>`) that pins the slots the render assigns, but `propose` and `apply` refuse it until an import run covers those rules from an export taken after their last change. Changes under `BOOTSTRAP` don't count, and neither do changes made by that import itself. The refusal says what to import.
+
+Some fixes change the record ahead of the live system. The record then says something the live system doesn't do yet, so such a fix also marks the value as awaiting verification (`ciamVerifyPending`: the attribute, and the adapter whose import confirms it). The check that offered the fix keeps reporting the value until an import by that adapter covers the entry. If the live value matches, the import clears the mark. If it differs, that's a conflict: taking the live value clears the mark, and keeping the record's leaves it. The first such fix lowers a changing name's TTL in the source to 60 s (`ttl:<name>`).
 
 Proposing writes only the change record (status `proposed`, its records in `ciamChangeRecords`), which is what an AI may do through the operations layer; the store refuses the records themselves under a change nobody approved. With `--workspace` the fixes are the workspace's and reach the live record at cutover. Fixes never carry secret values, never edit observed facts or attestations (grants read from a cloud, test results, review dates), and a fix to a captured file links its settings to bindings (`ciamValueFrom`), since the file is shared by every environment with the role.
 

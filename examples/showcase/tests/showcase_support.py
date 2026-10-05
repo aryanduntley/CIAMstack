@@ -10,7 +10,7 @@ import subprocess
 from opsdir import operations as ops
 from opsdir.cli import import_time, read_texts
 from opsdir.connectors.capture import census_changes
-from opsdir.connectors.importing import preview_import
+from opsdir.connectors import importing
 from opsdir.core.directory import norm_dn
 from opsdir.store.postgres import read_ldif_files
 from support import build_directory, schema_for
@@ -26,17 +26,18 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2011", SHOWCASE / "changes" / "CHG-2011-job-owners.ldif"),
             ("CHG-2013", SHOWCASE / "changes" / "CHG-2013-corporate-ca.ldif"),
             ("CHG-2015", SHOWCASE / "changes" / "CHG-2015-target-ad-forwarder.ldif"))
-# the product exports the demo imports right after loading: (change id, importer, export directory, when taken)
-IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", None),
-           ("CHG-2004", "pingidm", SHOWCASE / "exports" / "idm", None),
-           ("CHG-2004", "pinggateway", SHOWCASE / "exports" / "ig", None),
+# the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
+# night before, all of them)
+IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", "20260920030000Z"),
+           ("CHG-2004", "pingidm", SHOWCASE / "exports" / "idm", "20260920030000Z"),
+           ("CHG-2004", "pinggateway", SHOWCASE / "exports" / "ig", "20260920030000Z"),
            ("CHG-2006", "pingds/config", SHOWCASE / "exports" / "ds-config", "20260920030000Z"),
-           ("CHG-2007", "pingds/access-log", SHOWCASE / "exports" / "ds-access-logs", None),
-           ("CHG-2008", "pingfederate/bulk", SHOWCASE / "exports" / "pingfederate", None),
-           ("CHG-2008", "pingfederate/node-files", SHOWCASE / "exports" / "pingfederate-nodes", None),
-           ("CHG-2010", "linux/jobs", SHOWCASE / "exports" / "hosts", None),
-           ("CHG-2010", "github-actions/workflows", SHOWCASE / "exports" / "pipelines", None),
-           ("CHG-2012", "linux/baseline", SHOWCASE / "exports" / "hosts", None))
+           ("CHG-2007", "pingds/access-log", SHOWCASE / "exports" / "ds-access-logs", "20260920030000Z"),
+           ("CHG-2008", "pingfederate/bulk", SHOWCASE / "exports" / "pingfederate", "20260920030000Z"),
+           ("CHG-2008", "pingfederate/node-files", SHOWCASE / "exports" / "pingfederate-nodes", "20260920030000Z"),
+           ("CHG-2010", "linux/jobs", SHOWCASE / "exports" / "hosts", "20260920030000Z"),
+           ("CHG-2010", "github-actions/workflows", SHOWCASE / "exports" / "pipelines", "20260920030000Z"),
+           ("CHG-2012", "linux/baseline", SHOWCASE / "exports" / "hosts", "20260920030000Z"))
 # then the production user data's profile, as `opsdir data-profile` writes it from ldapsearch output: (change id,
 # environment, LDIF, when read, the estate's terms)
 PROFILE = ("CHG-2014", "source/prod", SHOWCASE / "exports" / "ds-data" / "source-prod.ldif", "20260920030000Z",
@@ -68,21 +69,22 @@ def import_records(schema, records):
     (PROFILE) into the loaded estate makes, one after the other (each import sees what the ones before it added, as in
     the store), then the census's."""
     def step(done, imported):
-        _, spec, files, at = imported
-        return (*done, *preview_import(build_directory(schema, records, done), spec, files,
-                                       at=import_time(at) if at else None)[0])
+        change_id, spec, files, at = imported
+        d = build_directory(schema, records, done)
+        plan = importing.import_plan(d, spec, files, at=import_time(at))
+        return (*done, *importing.import_records(d, plan, change_id))
     imported = reduce(step, (*((c, s, export_files(root), at) for c, s, root, at in IMPORTS),
-                             (PROFILE[0], "ldap/data-profile", profile_files(), None)), ())
+                             (PROFILE[0], "ldap/data-profile", profile_files(), PROFILE[3])), ())
     return (*imported, *census_changes(build_directory(schema, records, imported), export_files(CENSUS[1]))[0])
 
 
 def import_exports(conn):
     """Effect: import the product exports (IMPORTS) and the data profile (PROFILE) into a store that holds the loaded
     estate, then take the census (CENSUS), as the demo does."""
-    return [*(ops.apply_preview(conn, ops.preview_import(conn, spec, export_files(root),
-                                                         import_time(at) if at else None), change_id)
+    return [*(ops.apply_import(conn, ops.preview_import(conn, spec, export_files(root), import_time(at)), change_id)
               for change_id, spec, root, at in IMPORTS),
-            ops.apply_preview(conn, ops.preview_import(conn, "ldap/data-profile", profile_files()), PROFILE[0]),
+            ops.apply_import(conn, ops.preview_import(conn, "ldap/data-profile", profile_files(),
+                                                      import_time(PROFILE[3])), PROFILE[0]),
             ops.apply_preview(conn, ops.preview_census(conn, export_files(CENSUS[1])), CENSUS[0])]
 
 

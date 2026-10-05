@@ -232,6 +232,21 @@ def test_changing_names_ttls_zones_others_run_and_what_the_target_lacks():
     assert lower_by(CUTOVER, 172800) == dt.date(2026, 10, 29) and lower_by(None, 60) is None
 
 
+def test_a_ttl_fix_lowers_it_ahead_of_the_live_record_until_an_import_confirms_it():
+    ctx = _ctx(_record())
+    fixes = {f.key: f for f in check_dns(ctx).fixes}
+    assert sorted(fixes) == ["ttl:ldap.example.test", "ttl:login.example.test"]      # legacy's 120 s is low already
+    fix = fixes["ttl:login.example.test"]
+    lower, mark = fix.records
+    assert lower.mods == (("replace", "ciamTtlSeconds", ("60",)),)
+    assert mark.mods == (("add", "ciamVerifyPending", (f"ciamTtlSeconds {ctx.src.provider}",)),)
+    lowered = build_directory(REGISTRY, tuple(parse(mini_estate.LDIF + "\n" + "\n".join(BASE))), fix.records)
+    texts = _texts(check_dns(_ctx(lowered)).actions)
+    assert ("`login.example.test`'s TTL is 60 s in the record, set ahead of the live record: apply alpha/prod's "
+            "rendered DNS and import alpha/prod again to confirm it by 2026-10-30.") in texts
+    assert "ttl:login.example.test" not in {f.key for f in check_dns(_ctx(lowered)).fixes}
+
+
 def test_the_dns_report_and_the_zone_keepers_request_draft():
     d = _record()
     rows = dns_rows(d)

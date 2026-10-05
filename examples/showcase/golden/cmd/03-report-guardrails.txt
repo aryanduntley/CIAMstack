@@ -1,0 +1,7 @@
+environment   guardrail       kind               denies                                                                  provider ref
+------------  --------------  -----------------  ----------------------------------------------------------------------  ----------------------------------------------------------------------
+source/prod   org-guardrails  service-control    region-escape, audit-log-disable, key-deletion                          arn:aws:organizations::111122223333:policy/o-exampleaero1/service_control_policy/p-ciamfence1
+standby/prod  org-guardrails  org-constraint     region-escape, public-storage, audit-log-disable, service-account-keys  projects/example-aero-ciam-standby/policies
+target/prod   org-guardrails  policy-assignment  region-escape, public-storage, key-deletion                             /subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Authorization/policyAssignments
+(3 rows)
+exit 0

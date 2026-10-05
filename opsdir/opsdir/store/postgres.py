@@ -256,6 +256,13 @@ def record_problems(conn, records):
     return tuple(p for p in found if p)
 
 
+def last_change(conn, dns, excluded=()):
+    """Effect (reads history): when any of the entries at dns last changed under a change other than BOOTSTRAP (the
+    record as first loaded) and the excluded change ids; None when none did."""
+    return conn.execute("select max(at) from entry_history where norm_dn(dn) = any(%s) and change_id <> all(%s)",
+                        ([norm_dn(dn) for dn in dns], ["BOOTSTRAP", *excluded])).fetchone()[0]
+
+
 def _apply_all(conn, change_id, records):
     canon = _canon(conn)
     return [_apply_record(conn, canon, change_id, r) for r in records]

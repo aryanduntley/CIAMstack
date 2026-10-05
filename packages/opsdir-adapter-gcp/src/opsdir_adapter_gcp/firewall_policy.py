@@ -13,7 +13,7 @@ from opsdir.domains.infrastructure.firewall import rule_priorities, rule_purpose
 from opsdir.domains.network.stack import allowlist, network_policy, owned, private_ranges
 from opsdir_adapter_gcp.identities import project_of
 from opsdir_adapter_gcp.names import name_parts
-from opsdir_adapter_gcp.names import MANAGED, NETWORK
+from opsdir_adapter_gcp.names import MANAGED, NETWORK, PRIORITIES
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 
 POLICY = "network_policy"
@@ -104,7 +104,7 @@ def ingress_rules(m):
     """The record's inbound rules as the policy's rules (priorities pinned like the VPC rules'), targeting the role's
     tag value; a comment for a rule a hierarchical policy holds."""
     rules = of_class(m, "ciamFirewallRule")
-    prios = rule_priorities(rules, 1000, 10, 65535)
+    prios = rule_priorities(rules, *PRIORITIES)
     out = []
     for fw in rules:
         prio, pinned = prios[fw.dn]

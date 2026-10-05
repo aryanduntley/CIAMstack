@@ -8,6 +8,7 @@ from opsdir_format_terraform.hcl import ref
 
 NETWORK = ref("data.google_compute_network.main.self_link")
 REGION = ref("var.region")
+PRIORITIES = (1000, 10, 65535)        # firewall rule and policy rule priorities: first slot, step, last
 MANAGED = "Managed by opsdir"         # what a resource the platform's own Terraform made says (where labels can't)
 _SELF_LINK = re.compile(r"^(?:https:)?//[^/]+/(?:(?:[a-z]+/)?(?:v\d+[a-z0-9]*|beta|alpha)/)?")
 

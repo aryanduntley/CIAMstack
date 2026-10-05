@@ -807,6 +807,45 @@ ciamHoldsCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 ciamRefUri: aws-acm://arn:aws:acm:us-east-1:111122223333:certificate/7f3e9d21-
  0000-4000-8000-0000000000a1
 
+dn: cn=rt-private,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamRouteTable
+cn: rt-private
+ciamBindingRole: routes-private
+ciamMainTable: FALSE
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamProviderRef: rtb-0a1b2c3d4e5f60021
+ciamRoute: 0.0.0.0/0 nat pf-egress
+ciamSubnetRole: subnet-ds
+ciamSubnetRole: subnet-pf
+ciamSubnetRole: subnet-am
+ciamSubnetRole: subnet-idm
+ciamSubnetRole: subnet-ig
+
+dn: cn=acl-ds,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamNetworkAcl
+cn: acl-ds
+ciamAclRule: 100 allow in all all 10.20.0.0/16
+ciamAclRule: 110 allow in tcp 1636 0.0.0.0/0
+ciamAclRule: 120 allow in tcp 1024-65535 0.0.0.0/0
+ciamAclRule: 100 allow out all all 0.0.0.0/0
+ciamBindingRole: acl-ds
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamProviderRef: acl-0a1b2c3d4e5f60031
+ciamSubnetRole: subnet-ds
+
+dn: cn=flow-vpc,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFlowLog
+cn: flow-vpc
+ciamBindingRole: flow-logs
+ciamFlowScope: network
+ciamLogDestinationRole: ops-logs
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamProviderRef: fl-0a1b2c3d4e5f60041
+ciamRetentionDays: 30
+
 dn: cn=pe-secrets,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamPrivateEndpoint

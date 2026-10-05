@@ -3,7 +3,7 @@ from collections import namedtuple
 from itertools import chain
 from typing import NamedTuple
 
-from .changeset import new_entry, set_values
+from .changeset import add_values, new_entry, set_values
 
 from .directory import get, portability, rdn_value, value_type, values, within
 from .naming import branch
@@ -14,7 +14,13 @@ from .naming import branch
 # record that go with it (a live change, a party's confirmation); risks: what applying it could hide.
 # options: when the fix is a choice (which secret role, which claimant to keep), each Option's records instead of the
 # fix's own; nothing is proposed or applied without one being chosen (connectors.fixes.chosen).
-Fix = namedtuple("Fix", ("key", "area", "title", "records", "manual", "risks", "options"), defaults=((),))
+# requires: Requirements, what must have happened first (a fresh import of what it changes); nothing is proposed or
+# applied before they are met (connectors.fixes.unmet).
+Fix = namedtuple("Fix", ("key", "area", "title", "records", "manual", "risks", "options", "requires"),
+                 defaults=((), ()))
+# Before a fix: an import whose run covers every one of entries (DNs), of an export taken after the last change anyone
+# made to them other than that import (the live system read since the record last changed there); why: in words.
+Requirement = NamedTuple("Requirement", [("entries", tuple), ("why", str)])
 # One choice a fix offers: key (what to pass to choose it), label (it in words), records, risks of its own.
 Option = NamedTuple("Option", [("key", str), ("label", str), ("records", tuple), ("risks", tuple)])
 # A value the operator gives (a provider reference, a DNS name, a bucket): it stands in a record's values (an add's
@@ -31,6 +37,18 @@ def choice_fix(key, area, title, entry, attr, choices, manual=(), risks=()):
     options = tuple(Option(value, label, (set_values(entry, attr, (value,)),), tuple(own))
                     for value, label, own in choices)
     return Fix(key, area, title, (), tuple(manual), tuple(risks), options) if options else None
+
+
+# ------------------------------------------------------------------ verify after
+def awaiting_import(entry, attr, adapter=None):
+    """The record marking an attribute of an entry as set ahead of the live system (ciamVerifyPending), until an import
+    by adapter (any, when None) confirms it: what a fix whose change holds only once the live system follows adds."""
+    return add_values(entry, "ciamVerifyPending", (f"{attr} {adapter}" if adapter else attr,))
+
+
+def pending(e):
+    """(attribute, adapter or None) for each value of an entry set ahead of the live system."""
+    return tuple((v.split(" ", 1)[0], v.split(" ", 1)[1] if " " in v else None) for v in values(e, "ciamVerifyPending"))
 
 
 # ------------------------------------------------------------------ inputs

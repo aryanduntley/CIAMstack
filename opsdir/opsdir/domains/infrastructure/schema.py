@@ -163,6 +163,10 @@ CLASSES = (
              ('cn', 'ciamOverrides', 'ciamOverrideAttribute', 'ciamOverrideValue'),
              (),
              "An environment's own value for one overridable attribute of a shared entry; the description says why"),
+    ClassDef(92, 'ciamExternalHost', 'ciamBinding', 'STRUCTURAL', ('ciamFqdn',), ('ciamPort', 'ciamManagedBy'),
+             "A system the platform reaches but doesn't run (a database, a corporate directory), as this environment "
+             "reaches it: its host name (and port); products name its role, so each environment renders its own "
+             "host"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

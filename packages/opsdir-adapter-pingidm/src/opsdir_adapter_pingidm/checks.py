@@ -6,6 +6,7 @@ from opsdir.core.directory import children, one, rdn_value, values
 from opsdir.core.environment import bound_nowhere
 from opsdir.core.findings import findings, merge_findings, responsible
 from opsdir.core.jsondata import held_json
+from opsdir.domains.infrastructure.external import external_host_fix
 from opsdir.domains.pki.credentials import credential_role_fix
 from .naming import CONNECTORS, MANAGED, MAPPINGS, SCHEDULES
 
@@ -53,7 +54,10 @@ def _connector(ctx, c):
     fix = credential_role_fix(ctx.src, ctx.dst, c, "pingidmCredentialRole", f"Connector `{name}`",
                               f"credential-role:connector/{name}", (name,)) \
         if values(c, "pingidmWithheld") and not credential else None
-    return findings(blockers=blockers, actions=actions, fixes=(fix,) if fix else ())
+    host = None if target else (held_json(c, "pingidmConfig").get("configurationProperties") or {}).get("host")
+    named = external_host_fix(ctx.src, host, f"connector `{name}`", f"external-host:connector/{name}",
+                              "pingidm/project") if isinstance(host, str) and host else None
+    return findings(blockers=blockers, actions=actions, fixes=tuple(f for f in (fix, named) if f))
 
 
 def check_idm(ctx):

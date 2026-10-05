@@ -16,30 +16,30 @@ step "1. The record: the whole platform as governed entries in one database"
 "$PY" scripts/gen-synthetic.py
 od init && od load data/*.ldif
 echo "-- the partner realm's PingAM configuration, read from its Amster export (approved change CHG-2004)"
-od import --change CHG-2004 pingam exports/amster
+od import --change CHG-2004 --at 20260920030000Z pingam exports/amster
 echo "-- the partner identity sync's PingIDM project (same change)"
-od import --change CHG-2004 pingidm exports/idm
+od import --change CHG-2004 --at 20260920030000Z pingidm exports/idm
 echo "-- the partner portal's PingGateway routes (same change)"
-od import --change CHG-2004 pinggateway exports/ig
+od import --change CHG-2004 --at 20260920030000Z pinggateway exports/ig
 echo "-- what the production directory servers actually run: each one's config.ldif (and ds-2's archived one)"
 od import --change CHG-2006 --at 20260920030000Z pingds/config exports/ds-config
 echo "-- who uses the directory: consumers found in its access logs (values-free; end users only counted)"
-od import --change CHG-2007 pingds/access-log exports/ds-access-logs
+od import --change CHG-2007 --at 20260920030000Z pingds/access-log exports/ds-access-logs
 echo "-- PingFederate's configuration, from its Admin API bulk export (a client the record didn't have is found)"
-od import --change CHG-2008 pingfederate/bulk exports/pingfederate
-od import --change CHG-2008 pingfederate/node-files exports/pingfederate-nodes
+od import --change CHG-2008 --at 20260920030000Z pingfederate/bulk exports/pingfederate
+od import --change CHG-2008 --at 20260920030000Z pingfederate/node-files exports/pingfederate-nodes
 echo "-- where the record's values are copied into files (the census): each file and line; secrets flagged, not stored"
 od census --change CHG-2009 exports/census
 echo "-- the platform's hidden automation: servers' cron and timers, CI pipelines"
-od import --change CHG-2010 linux/jobs exports/hosts
-od import --change CHG-2010 github-actions/workflows exports/pipelines
+od import --change CHG-2010 --at 20260920030000Z linux/jobs exports/hosts
+od import --change CHG-2010 --at 20260920030000Z github-actions/workflows exports/pipelines
 echo "-- what the servers run beyond the products: each role's host baseline, from the same servers' files"
-od import --change CHG-2012 linux/baseline exports/hosts
+od import --change CHG-2012 --at 20260920030000Z linux/baseline exports/hosts
 echo "-- the shape of the production user data, values-free: ldapsearch output read once, counts written (no database)"
 od data-profile --env source/prod --at 20260920030000Z --term last-login=lastLoginTime --term kba=challengeAnswer \
   --term pending=registrationStatus=pending --term disabled=registrationStatus=disabled \
   -o out/data-profile/source-prod.json exports/ds-data/source-prod.ldif
-od import --change CHG-2014 ldap/data-profile out/data-profile
+od import --change CHG-2014 --at 20260920030000Z ldap/data-profile out/data-profile
 echo "-- each environment's declared stack against the installed adapters"; od check
 echo "-- what each kind of value is: intent, contract, binding, secret reference, observed, meta"; od report portability
 
@@ -52,6 +52,14 @@ echo "-- the consumers to review: what they do, who owns them, what to check"; o
 echo "-- the shape of the user data: size, password schemes, idle accounts, group health"; od report data-profile
 echo "-- what the platform is watched for, where its logs go, and what each cloud runs of it"
 od report alerts; od report log-routes; od report monitors
+echo "-- the user directory's attributes: what each is for, its privacy class, standard or defined here"
+od report user-schema
+echo "-- the network: routes, private endpoints, endpoint services, and the sites egress lets the servers reach"
+od report routes; od report private-endpoints; od report endpoint-services; od report egress-sites
+echo "-- the edge: DNS, traffic and protection policies, what each load balancer runs, header contracts"
+od report dns; od report edge-policies; od report edge-services; od report header-contracts
+echo "-- who may act on the platform: identities, principals, guardrails, the paths to each permission"
+od report identities; od report principals; od report guardrails; od report access-paths
 echo "-- what changing ds-1 touches in files: its hostname and address, copied where"
 od report census "cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops"
 echo "-- LDAP filter search: consumers not yet tested against the second environment"
@@ -78,6 +86,10 @@ step "5. Drift and hygiene"
 echo "-- config drift (declared vs observed)"; od report drift
 echo "-- what the source cloud runs against the record: its Terraform state (--dry-run: nothing is applied)"
 od import --dry-run aws/terraform-state exports/cloud
+echo "-- applied, it waits for a decision on each conflict: take the live value or keep the record's (nothing applied)"
+od import --change CHG-2004 --at 20260920030000Z aws/terraform-state exports/cloud
+echo "-- when each part of the record was last read back from the live system"
+od report imports
 echo "-- the second environment, from the Azure CLI (roles.json gives the new subnet its role)"
 od import --dry-run azure/cli-inventory exports/cloud
 echo "-- the warm standby, from a Cloud Asset Inventory export and gcloud (project numbers read as its ID)"

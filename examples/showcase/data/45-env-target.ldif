@@ -662,6 +662,31 @@ ciamCidr: 10.60.250.0/24
 ciamProviderRef: vnet-ciam-prod/snet-appgw
 description: The Application Gateways' own subnet
 
+dn: cn=rt-private,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamRouteTable
+cn: rt-private
+ciamBindingRole: routes-private
+ciamManagedBy: cn=network-security,ou=owners,dc=ciam-ops
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamRoute: 0.0.0.0/0 nat pf-egress
+ciamSubnetRole: subnet-ds
+ciamSubnetRole: subnet-pf
+ciamSubnetRole: subnet-am
+ciamSubnetRole: subnet-idm
+ciamSubnetRole: subnet-ig
+
+dn: cn=flow-vnet,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFlowLog
+cn: flow-vnet
+ciamBindingRole: flow-logs
+ciamFlowScope: network
+ciamLogDestinationRole: ops-logs
+ciamManagedBy: cn=network-security,ou=owners,dc=ciam-ops
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamRetentionDays: 14
+
 dn: cn=pe-secrets,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamPrivateEndpoint

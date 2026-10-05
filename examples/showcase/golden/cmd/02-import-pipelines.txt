@@ -1,2 +1,2 @@
-CHG-2010: 1 change(s) applied
+CHG-2010: 2 change(s) applied, the import run among them
 exit 0

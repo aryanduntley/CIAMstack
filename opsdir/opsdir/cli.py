@@ -27,9 +27,12 @@
                                        record code, scripts, templates or a package (a file or a directory under the
                                        repo checkout R) by repo path and SHA-256; its content is not stored
   opsdir verify [--root R]             bundles and captured files against a repo checkout (exit 1 if anything differs)
-  opsdir import [--change CHG-…] ADAPTER[/IMPORTER] PATH [--dry-run] [--at YYYYMMDDhhmmssZ]
-                                       read a product's export (a directory or a file) into the record with an
+  opsdir import [--change CHG-…] ADAPTER[/IMPORTER] PATH [--dry-run] [--at YYYYMMDDhhmmssZ] [--take K|all]
+                [--keep K|all]         read a product's export (a directory or a file) into the record with an
                                        adapter's importer; without --change (or with --dry-run) only lists the changes
+                                       and conflicts (values the record holds that the import would replace or
+                                       remove): each is decided, the live value taken or the record's kept; an
+                                       applied import records when each scope it read was last imported
   opsdir data-profile --env CLOUD/ENV [LDIF] [--term NAME=ATTRIBUTE[=VALUE]]... [--at YYYYMMDDhhmmssZ] [-o FILE]
                                        the shape of a directory's user data, values-free: reads LDIF (ldapsearch
                                        output or an export; default standard input) once and writes counts only, for
@@ -61,7 +64,7 @@ from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS
 from .connectors.stack import STATUS_HEADERS
 from .core.changeset import describe
 from .core import search as ldap_search
-from .core.directory import values
+from .core.directory import gtime_at, values
 from .core.findings import fix_inputs
 from .core.interchange import ldif
 from .core.interchange.export import export_text  # noqa: F401  (callers import it from here)
@@ -103,7 +106,11 @@ SUBCOMMANDS = (
                                   "help": "the scan is the whole census: recorded files not in it are removed"}))),
     ("import", ((("--change",), {}), (("importer",), {"help": "adapter[/importer]"}), (("path",), {}),
                 (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}),
-                (("--at",), {"help": "when the export was taken, YYYYMMDDhhmmssZ (UTC; default: now)"}))),
+                (("--at",), {"help": "when the export was taken, YYYYMMDDhhmmssZ (UTC; default: now)"}),
+                (("--take",), {"action": "append", "default": [], "metavar": "KEY",
+                               "help": "a conflict where the live value goes in (KEY as listed, or all)"}),
+                (("--keep",), {"action": "append", "default": [], "metavar": "KEY",
+                               "help": "a conflict where the record's value stays (KEY as listed, or all)"}))),
     ("data-profile", ((("--env",), {"required": True, "help": "CLOUD/ENV whose directory the data is from"}),
                       (("path",), {"nargs": "?", "default": "-", "help": "LDIF to read (default: standard input)"}),
                       (("--at",), {"help": "when the data was read, YYYYMMDDhhmmssZ (UTC; default: now)"}),
@@ -297,7 +304,7 @@ def import_time(text=None):
     if text is None:
         return dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
     try:
-        return dt.datetime.strptime(text, "%Y%m%d%H%M%SZ").replace(tzinfo=dt.timezone.utc)
+        return gtime_at(text)
     except ValueError:
         raise SystemExit(f"--at {text}: give the time as YYYYMMDDhhmmssZ (UTC), e.g. 20260930141500Z") from None
 
@@ -339,6 +346,9 @@ def _fix_lines(fix):
                 *(("      give (--input KEY=VALUE):", *(f"    {x}" for x in _input_lines(o.records)))
                   if fix_inputs(o.records) else ()),
                 *(f"      risk: {k}" for k in o.risks)))) if fix.options else ()),
+            *(("", "First (propose and apply wait for it):", *(f"  - {r.why}: an import of what it changes, taken "
+                                                                "after the last change to it" for r in fix.requires))
+              if fix.requires else ()),
             *(("", "Outside the record:", *(f"  - {m}" for m in fix.manual)) if fix.manual else ()),
             *(("", "What it could hide:", *(f"  - {r}" for r in fix.risks)) if fix.risks else ()))
 
@@ -381,18 +391,31 @@ def _cmd_fix(conn, a, as_of):
         except ValueError as e:
             raise SystemExit(str(e)) from None
         return f"{a.change}: proposed ({len(picked.records)} change(s) held for approval)"
-    r = ops.apply_fix(conn, a.src, a.dst, as_of, a.key, a.change, a.option, given)
+    try:
+        r = ops.apply_fix(conn, a.src, a.dst, as_of, a.key, a.change, a.option, given)
+    except ValueError as e:
+        raise SystemExit(str(e)) from None
     return f"{a.change}: {len(r.lines)} change(s) applied"
+
+
+def _conflict_lines(conflicts):
+    """Each conflict an import has with the record: its key, what the record holds and what the live system has."""
+    def shown(vals):
+        return " | ".join(vals) or "nothing"
+    return tuple(f"conflict {c.key}: record {shown(c.held)} -> live {shown(c.live)}" for c in conflicts)
 
 
 def _cmd_import(conn, a, as_of):
     files, skipped = read_texts(a.path)
-    preview = ops.preview_import(conn, a.importer, files, import_time(a.at))
-    notes = (*(f"skipped (not UTF-8 text): {rel}" for rel in skipped), *preview.notices)
+    plan = ops.preview_import(conn, a.importer, files, import_time(a.at))
+    notes = (*(f"skipped (not UTF-8 text): {rel}" for rel in skipped), *plan.notices, *_conflict_lines(plan.conflicts))
     if a.dry_run or not a.change:
-        return _not_applied(notes, preview.changes, a.dry_run)
-    r = ops.apply_preview(conn, preview, a.change)
-    return "\n".join((*notes, f"{a.change}: {len(r.lines)} change(s) applied" if r.lines else "no changes"))
+        return _not_applied(notes, plan.changes, a.dry_run)
+    try:
+        r = ops.apply_import(conn, plan, a.change, a.take, a.keep)
+    except ValueError as e:
+        raise SystemExit("\n".join((*_conflict_lines(plan.conflicts), str(e)))) from None
+    return "\n".join((*notes, f"{a.change}: {len(r.lines)} change(s) applied, the import run among them"))
 
 
 def _cmd_census(conn, a, as_of):

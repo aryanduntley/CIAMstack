@@ -328,12 +328,12 @@
     "terraform/landing-zone/network.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "7ac9d7fad8348fb6f8deb870f4464b5177ae74f70010e4f2bd50b38bc43ad05f"
+      "sha256": "d34cae1583a895e27688b32b057e30fd1e122853eac5539b0f9cddbcc0137a74"
     },
     "terraform/landing-zone/providers.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "29852d15ad91b2cd61499df1cf993253926bbe56c1f4e20c4e96ea0be615fcc0"
+      "sha256": "aac64e0af5b1b71d052927af21f79f4f4acac96c6c7d1d2071b3c79d690217fe"
     },
     "terraform/main.tf": {
       "scope": "environment-specific",

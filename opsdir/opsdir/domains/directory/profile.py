@@ -36,7 +36,7 @@ from operator import itemgetter
 from types import MappingProxyType
 from typing import Mapping, NamedTuple, Optional
 
-from ...core.directory import children, gtime, gtime_date, make_entry, norm_dn, one, ou_entry, values
+from ...core.directory import children, gtime, gtime_at, gtime_date, make_entry, norm_dn, one, ou_entry, values
 from ...core.environment import env_dn
 from ...core.findings import findings, responsible
 from ...core.jsondata import indented
@@ -336,8 +336,7 @@ def read_profile(text):
     why = "not a JSON object" if doc is None else _problem(doc)
     if why:
         return None, why
-    return ProfileFile(doc["environment"], dt.datetime.strptime(doc["captured"], "%Y%m%d%H%M%SZ").replace(
-        tzinfo=dt.timezone.utc), Profile(
+    return ProfileFile(doc["environment"], gtime_at(doc["captured"]), Profile(
         entries=doc["entries"],
         branches=_frozen({b: BranchStat(s["entries"], _frozen(s["classes"])) for b, s in doc["branches"].items()}),
         attributes=_frozen({a: AttributeStat(*(s[f] for f in AttributeStat._fields))

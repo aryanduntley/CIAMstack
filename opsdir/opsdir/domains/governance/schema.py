@@ -35,6 +35,14 @@ ATTRIBUTES = (
     AttributeDef(421, 'ciamChangeRecords', 'string', 'meta', True,
                  'The LDIF change records a proposed change applies once approved (an assisted fix, from an '
                  'operator or an AI): what the approver reviews and what is applied, unchanged'),
+    AttributeDef(422, 'ciamImporter', 'string', 'meta', True,
+                 'The importer an import run used, as adapter/importer'),
+    AttributeDef(423, 'ciamImportScope', 'extdn', 'meta', False,
+                 'The parts of the record an import run read back (bindings of an environment, a product\'s '
+                 'objects): what it made match the live system (DNs, not references: a run never holds what it read '
+                 'in place)'),
+    AttributeDef(424, 'ciamImportedAt', 'time', 'meta', True,
+                 'When the export an import run read was taken (the live system as of then)'),
 )
 CLASSES = (
     ClassDef(29, 'ciamRunbook', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamLastValidated'),
@@ -49,6 +57,11 @@ CLASSES = (
     ClassDef(32, 'ciamParty', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamOwnerKind'),
              ('mail', 'ciamContactUrl', 'ciamDisplayName'),
              'Team, partner, vendor, or the operator of the platform'),
+    ClassDef(91, 'ciamImportRun', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamImporter', 'ciamImportScope',
+                                                               'ciamImportedAt'), (),
+             'The last import by one importer of one environment (or of what environments share): when the live '
+             'system was read back, what it read and under which change (ciamChangeRef); what a fix that needs a '
+             'fresh read checks'),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)
