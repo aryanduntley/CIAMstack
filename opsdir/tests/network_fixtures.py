@@ -1,4 +1,5 @@
-"""Two environments of the mini estate with servers in subnets (ds-1, ds-2 in subnet-ds; web-1 in subnet-web), for
+"""Two environments of the mini estate with servers in subnets (ds-1, ds-2 in subnet-ds; web-1 in subnet-web; all in
+zone-a), for
 the network domain's tests: each test adds the bindings it is about (as LDIF records) to alpha, beta or the tree."""
 import datetime as dt
 from types import SimpleNamespace
@@ -28,7 +29,7 @@ def _estate(env, extra):
     return (entry(env, "subnet-ds", "ciamSubnetBinding", ciamBindingRole="subnet-ds", ciamCidr="10.1.1.0/24"),
             entry(env, "subnet-web", "ciamSubnetBinding", ciamBindingRole="subnet-web", ciamCidr="10.1.2.0/24"),
             *(entry(env, n, "ciamServer", ciamServerRole=r, ciamHostname=f"{n}.example.test",
-                    ciamSubnet=f"cn={s},ou=bindings,{env}")
+                    ciamSubnet=f"cn={s},ou=bindings,{env}", ciamZone="zone-a")
               for n, r, s in (("ds-1", "ds", "subnet-ds"), ("ds-2", "ds", "subnet-ds"), ("web-1", "web", "subnet-web"))),
             *extra)
 

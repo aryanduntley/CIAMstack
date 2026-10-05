@@ -7,7 +7,7 @@ landing.py) use them. Pure.
 import re
 
 from opsdir.core.directory import one
-from opsdir_adapter_gcp.inventory import name_parts
+from opsdir_adapter_gcp.names import name_parts
 from opsdir_format_terraform.hcl import block, ref, tf_name
 
 

@@ -22,6 +22,12 @@ def parse_route(text):
     return Route(dest, kind, target, tuple(scope.removeprefix(" for ").split(",")) if scope else ())
 
 
+def route_text(route):
+    """A Route as a ciamRoute value (the inverse of parse_route): '<destination> <kind> [<target>] [for <roles>]'."""
+    return " ".join((route.destination, route.kind, *((route.target,) if route.target else ()),
+                     *(("for", ",".join(route.roles)) if route.roles else ())))
+
+
 def routes(m):
     """((route table, Route), ...) of environment m, in table order."""
     return tuple((t, r) for t in of_class(m, "ciamRouteTable") for r in map(parse_route, values(t, "ciamRoute")) if r)

@@ -22,14 +22,17 @@ from opsdir.domains.infrastructure.firewall import rule_priorities, rule_purpose
 from opsdir.domains.access.evaluations import evaluation_files
 from opsdir.domains.access.workloads import identity_of, workload_identities
 from opsdir.domains.edge.resolve import inspected, service_edge
+from opsdir.domains.network.stack import firewall_model
 from opsdir_adapter_gcp.access import ACCESS
 from opsdir_adapter_gcp.dns import forwarding_zones, records, service_record
 from opsdir_adapter_gcp.edge import application_lb, network_ddos
+from opsdir_adapter_gcp.firewall_policy import health_check_rule, policy_firewall
 from opsdir_adapter_gcp.health_checks import probe_ranges
 from opsdir_adapter_gcp.identities import identity, project_of
 from opsdir_adapter_gcp.landing import render_landing
-from opsdir_adapter_gcp.inventory import name_parts
+from opsdir_adapter_gcp.names import name_parts
 from opsdir_adapter_gcp.names import NETWORK, REGION, label, network_tag
+from opsdir_adapter_gcp.network import render_network
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
 
@@ -64,6 +67,10 @@ def _firewall_rule(m, fw, prio, pinned):
 
 
 def _firewall(m):
+    """The record's inbound rules: VPC firewall rules by network tag, or a network firewall policy's rules by secure
+    tag (opsdir_adapter_gcp.firewall_policy) when the network's firewall model is policy."""
+    if firewall_model(m) == "policy":
+        return policy_firewall(m)
     rules = of_class(m, "ciamFirewallRule")
     prios = rule_priorities(rules, 1000, 10, 65535)
     return tuple(chain.from_iterable(_firewall_rule(m, fw, *prios[fw.dn]) for fw in rules))
@@ -106,7 +113,10 @@ def _frontend(svc, n, ip, internal):
 
 def _health_check_rule(m, svc, n, name, scheme, port):
     """The firewall rule admitting Google Cloud's health-check probes to the service's servers on its checked port:
-    part of the load balancer, not one of the record's rules (the importers leave it out)."""
+    part of the load balancer, not one of the record's rules (the importers leave it out). A policy rule under the
+    policy model."""
+    if firewall_model(m) == "policy":
+        return health_check_rule(m, svc, n, probe_ranges(scheme), port)
     return block("resource", ["google_compute_firewall", f"{n}_health_checks"], [
         ("name", f"{name}-health-checks"), ("description", f"Google Cloud health checks for {rdn_value(svc)}"),
         ("network", NETWORK), ("direction", "INGRESS"),
@@ -152,8 +162,9 @@ def _service(m, svc, endpoints=()):
         if internal and targets else ())
     record = service_record(m.d, m, svc, n, cdn)
     if layer7:
+        admit = health_check_rule if firewall_model(m) == "policy" else None
         return (*groups, *application_lb(m, svc, spec, tuple(f"{n}_{tf_name(z)}" for z in _zones(targets)),
-                                         (data, address), placement[1:]), *record)
+                                         (data, address), placement[1:], admit), *record)
     (check, kind), tuning = _l4_tuning(spec) if spec is not None else ((None, ()), ())
     health = kind[0] if kind else ("tcp_health_check", ())
     blind = ("# the protection policy's request inspection needs TLS terminated at the edge; not rendered",) \
@@ -212,7 +223,7 @@ def render(m, services):
     out = (*_network(m), *_firewall(m), *chain.from_iterable(identity(m, w) for w in identities),
            *(_instance(m, s, kms, identities) for s in m.servers),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
-           *records(m.d, m), *forwarding_zones(m), *_references(m))
+           *render_network(m, endpoints), *records(m.d, m), *forwarding_zones(m), *_references(m))
     main = header(m, "Google Cloud infrastructure for the CIAM platform", HCL) + unbound_comments(m.unbound) + "\n" \
         + "\n\n".join(out) + "\n"
     providers = header(m, "Providers and inputs", HCL) + "\n" + "\n\n".join([

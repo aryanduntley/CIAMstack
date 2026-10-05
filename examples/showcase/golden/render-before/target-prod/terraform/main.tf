@@ -1242,6 +1242,57 @@ resource "azurerm_application_gateway" "svc_sso" {
 
 # `sso.example-aero.test` is in a zone corporate-dns runs: not rendered here (the plan drafts the request to them)
 
+# Egress firewall 'egress-firewall' is kept by network-security; its allowlist is rendered in their root, not here.
+
+data "azurerm_key_vault" "pe_secrets_kv_ciam_prod" {
+  name                = "kv-ciam-prod"
+  resource_group_name = data.azurerm_resource_group.main.name
+}
+
+resource "azurerm_private_endpoint" "pe_secrets" {
+  name                = "pe-ciam-prod-pe-secrets"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  subnet_id           = data.azurerm_subnet.snet_pf.id
+  private_service_connection {
+    name                           = "pe-secrets"
+    private_connection_resource_id = data.azurerm_key_vault.pe_secrets_kv_ciam_prod.id
+    subresource_names              = ["vault"]
+    is_manual_connection           = false
+  }
+  ip_configuration {
+    name               = "primary"
+    private_ip_address = "10.60.2.50"
+    subresource_name   = "vault"
+    member_name        = "default"
+  }
+  private_dns_zone_group {
+    name                 = "default"
+    private_dns_zone_ids = ["/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-hub-dns/providers/Microsoft.Network/privateDnsZones/privatelink.vaultcore.azure.net"]
+  }
+  tags = {
+    Role      = "private-secrets"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "azurerm_private_link_service" "ldaps_link" {
+  name                                        = "pls-ciam-prod-ldaps-link"
+  location                                    = data.azurerm_resource_group.main.location
+  resource_group_name                         = data.azurerm_resource_group.main.name
+  load_balancer_frontend_ip_configuration_ids = [azurerm_lb.svc_ldaps.frontend_ip_configuration[0].id]
+  nat_ip_configuration {
+    name      = "primary"
+    primary   = true
+    subnet_id = data.azurerm_subnet.snet_ds.id
+  }
+  visibility_subscription_ids = ["55555555-6666-7777-8888-999999999999"]
+  tags = {
+    Role      = "ldaps-endpoint-service"
+    ManagedBy = "opsdir"
+  }
+}
+
 data "azurerm_key_vault" "kv_ciam_prod" {
   name                = "kv-ciam-prod"
   resource_group_name = data.azurerm_resource_group.main.name

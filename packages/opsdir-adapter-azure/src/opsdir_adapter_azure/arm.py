@@ -28,7 +28,9 @@ from opsdir.core.contract import Importer
 from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_document
 from .cli import items_resources, kind_of
-from .inventory import PROVIDER, arm_segment
+from .cli_network import TYPES as NETWORK_TYPES
+from .arm_ids import arm_segment
+from .inventory import PROVIDER
 
 EVALUATED = ("parameters", "variables", "concat", "format", "resourceId", "subscription", "resourceGroup", "equals",
              "if", "toLower", "toUpper", "string", "replace", "split", "first", "last")
@@ -40,10 +42,12 @@ READ_TYPES = ("microsoft.network/virtualnetworks", "microsoft.network/virtualnet
               "microsoft.network/networksecuritygroups", "microsoft.network/networksecuritygroups/securityrules",
               "microsoft.network/natgateways", "microsoft.compute/diskencryptionsets",
               "microsoft.storage/storageaccounts/blobservices/containers", "microsoft.keyvault/vaults/secrets",
-              "microsoft.keyvault/vaults/keys", "microsoft.web/sites", "microsoft.web/sites/functions")
+              "microsoft.keyvault/vaults/keys", "microsoft.web/sites", "microsoft.web/sites/functions",
+              *(t.lower() for t in NETWORK_TYPES))
 PLACEHOLDER = ("unknown-subscription", "unknown-group")   # IDs without a deployment: links within it still resolve
 SUB_RESOURCES = ("subnets", "ipConfigurations", "frontendIPConfigurations", "backendAddressPools",
-                 "loadBalancingRules", "probes", "securityRules")
+                 "loadBalancingRules", "probes", "securityRules", "routes", "privateLinkServiceConnections",
+                 "manualPrivateLinkServiceConnections", "privateDnsZoneConfigs")
 _UNKNOWN = ("<unknown>",)          # what an expression is when it depends on something the deployment doesn't know
 _TOKEN = re.compile(r"\s*(?:(\d+)|'((?:[^']|'')*)'|([A-Za-z_][A-Za-z0-9_]*)|(\S))")
 _CALL = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)\s*\(")

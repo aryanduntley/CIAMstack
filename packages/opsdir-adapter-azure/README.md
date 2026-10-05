@@ -61,6 +61,18 @@ Nothing is rendered into a zone whose binding names `ciamManagedBy` (someone out
 
 A protection policy with `ciamCdn` puts Front Door in front of the service (`Premium_AzureFrontDoor` when it inspects requests, else Standard): profile, endpoint, an origin group probing the policy's health check, the origin (the Application Gateway when TLS terminates at the edge, else the Standard load balancer, TLS then ending at Front Door; by its public address, with the service name as host header and the origin's certificate name checked), the service name as a custom domain (the certificate the environment keeps in Key Vault as a Front Door secret, else a managed certificate; TLS 1.2 minimum) validated by a `_dnsauth` TXT record, a route sending everything over HTTPS without caching. The protection policy becomes a Front Door firewall policy (custom IP, country and rate-limit rules, the Default Rule Set and Bot Manager, exclusions by post argument, query argument, header or cookie name) attached to the domain by a security policy; the gateway behind it keeps no WAF policy (`Standard_v2`). The service's DNS name is a CNAME to the endpoint. Front Door's service principal needs `Key Vault Secrets User` on the vault and the origins should admit only Front Door (service tag `AzureFrontDoor.Backend`): both the landing zone's. A private origin needs Private Link: a comment.
 
+### Network depth
+
+What the core `network` domain records and the stack keeps itself (no `ciamManagedBy`) renders into the platform's root; what someone else keeps (the hub's firewall, the landing zone's endpoints) is a comment naming them, rendered in their root. Nothing recorded, nothing rendered (`opsdir_adapter_azure.network`).
+
+| Record | Renders as |
+|---|---|
+| `ciamPrivateEndpoint` (kind `interface`) | An `azurerm_private_endpoint` per resource its `ciamReachesRole` bindings name: a provider ref that is a resource id as is, the Key Vault of an `azkv://` secret or `azkv-key://` key, the storage account of an `azblob://` container (`data` sources named for the endpoint). Subresource by service: `vault` (secrets, keys), `blob` (object storage), `namespace` (messaging), `registry`; in the first subnet its `ciamSubnetRole` names, a static address from `ciamFrontendIp`, a `private_dns_zone_group` on the zone `ciamDnsZoneRef` names when `ciamPrivateDns` (no zone ref: an `UNBOUND` comment naming the `privatelink.*` zone) |
+| Other kinds or services | A comment (gateway endpoints and service endpoints aren't Azure private endpoints; a database or logs need the target's resource id and subresource) |
+| `ciamEndpointService` | An `azurerm_private_link_service` on the Standard load balancer frontend of the service name `ciamServiceRole` names, its NAT address in the subnet `ciamSubnetRole` names, `visibility_subscription_ids` from `ciamVisibleTo`, `auto_approval_subscription_ids` from `ciamAllowedPrincipal` unless `ciamAcceptanceRequired`. A service on an Application Gateway (its own private link configuration) is a comment |
+| `ciamProxy` kind `firewall` the stack keeps | An `azurerm_firewall_policy_rule_collection_group` in the Firewall policy its `ciamProviderRef` names, from the network's range: application rules per web port (`Http` on 80, where certificate status is fetched; `Https` on 443), network rules by FQDN for other ports (they need the policy's DNS proxy) |
+| Other proxies | A comment: their allowlist is kept there |
+
 ## Reading an environment back from Terraform state
 
 ```bash
@@ -131,12 +143,27 @@ What the edge runs comes back in the edge domain's terms (`opsdir_adapter_azure.
 | `azurerm_network_ddos_protection_plan` | edge service `ddos` (`network-advanced`; role from its tags) |
 | `azurerm_dns_zone`, `azurerm_private_dns_zone`, other `azurerm_(private_)dns_<type>_record`s, `azurerm_private_dns_resolver_forwarding_rule` | DNS zones, records (MX, SRV, CAA values joined), forwarders |
 
+### The network depth, read back
+
+What the network carries beyond virtual networks, subnets and NSGs comes back in the network domain's terms (`opsdir_adapter_azure.network_inventory`; CLI and ARM items normalize to the same names: `cli_network.py`). Matching is by provider ref (the ARM ID); a new one needs its tag `Role`, or a role in `roles.json` for what Azure can't tag (peerings); an untagged subnet flow log takes `flow-logs-<subnet role>`.
+
+| Azure resource | Record entry |
+|---|---|
+| `azurerm_route_table` (+ `azurerm_route`, `azurerm_subnet_route_table_association`) | route table: routes `<prefix or service tag> <kind> [<target>]`: `VirtualAppliance` an appliance at its address, or `firewall` when the address is an Azure Firewall's (its policy the target); `VirtualNetworkGateway` vpn, `VnetLocal` local, `Internet`, `None`; the associated subnets |
+| `azurerm_private_endpoint` | private endpoint (interface): what its subresource reaches (`vault`: secrets, `blob`, `namespace`, `registry`), its subnet, its static address, the private DNS zone group's zone (private DNS) |
+| `azurerm_private_link_service` | endpoint service: the load balancer whose frontend it exposes, its alias, the subscriptions it is visible to and approves automatically (none: acceptance required), its NAT subnet |
+| `azurerm_firewall_policy_rule_collection_group` (+ `azurerm_firewall_policy`, `azurerm_firewall`) | egress firewall (proxy kind `firewall`) under its policy: the sites its application rules (HTTP 80, HTTPS) and FQDN network rules allow, with their ports (443 implicit) |
+| `azurerm_virtual_network_peering`, `azurerm_virtual_network_gateway_connection` (+ local and virtual network gateways), `azurerm_virtual_hub_connection` | interconnect depth: peering (the CLI's `peeringState`: connected; its other side the environment whose network binding is the remote virtual network, else a tag `PeerEnvironment`), VPN or ExpressRoute with the peer's gateway, BGP numbers and the ranges it routes to, hub |
+| `azurerm_network_watcher_flow_log` | flow log: scope (virtual network, subnet, interface), retention, the workspace traffic analytics sends it to; an NSG's flow logs are named (they retire on 2027-09-30) |
+| `azurerm_nat_gateway` | its egress binding's `ciamNatAllocation`: `static` (Standard public addresses) |
+
 ## Reading an environment from the Azure CLI
 
 Where there is no Terraform state (or to check it against what the subscription actually runs), `azure/cli-inventory` reads the JSON the Azure CLI prints. Collect it once per environment, into one folder per `<cloud>/<env>`; file names are free, because every item says what it is (its ARM `type`, or for Key Vault its URL):
 
 ```bash
 out=export/target/prod; RG=rg-ciam-prod; KV=kv-ciam-prod; SA=stciamprod    # the environment's resource group scopes it
+VNET=vnet-ciam-prod; LOCATION=eastus2                                         # its virtual network and region
 mkdir -p $out
 az network vnet list -g $RG -o json                         > $out/vnets.json
 az vm list -d -g $RG -o json                                > $out/vms.json          # -d adds private addresses
@@ -185,6 +212,25 @@ az network front-door waf-policy list -g $RG -o json          > $out/front-door-
 for rs in $(az dns-resolver forwarding-ruleset list -g $RG --query '[].name' -o tsv); do
   az dns-resolver forwarding-rule list -g $RG --ruleset-name "$rs" -o json > "$out/forwarding-rules-$rs.json"
 done
+
+# the network depth: route tables, private endpoints and link services, firewalls, links, flow logs
+az network route-table list -g $RG -o json                    > $out/route-tables.json
+az network private-endpoint list -g $RG -o json               > $out/private-endpoints.json
+for pe in $(az network private-endpoint list -g $RG --query '[].name' -o tsv); do
+  az network private-endpoint dns-zone-group list -g $RG --endpoint-name "$pe" -o json > "$out/pe-zones-$pe.json"
+done
+az network private-link-service list -g $RG -o json           > $out/private-link-services.json
+az network firewall list -o json                              > $out/firewalls.json
+az network firewall policy list -o json                       > $out/firewall-policies.json
+for fp in $(az network firewall policy list --query '[].[resourceGroup,name]' -o tsv | tr '\t' ','); do
+  az network firewall policy rule-collection-group list -g "${fp%%,*}" --policy-name "${fp##*,}" -o json \
+    > "$out/rule-collection-groups-${fp##*,}.json"
+done
+az network vnet peering list -g $RG --vnet-name "$VNET" -o json > $out/peerings.json
+az network vpn-connection list -g $RG -o json                 > $out/vpn-connections.json
+az network local-gateway list -g $RG -o json                  > $out/local-gateways.json
+az network vnet-gateway list -g $RG -o json                   > $out/vnet-gateways.json
+az network watcher flow-log list --location "$LOCATION" -o json > $out/flow-logs.json
 
 # access control: identities, assignments (inherited and through groups), roles, PIM, deny assignments, policies
 az identity list                                                        > $out/identities.json
@@ -298,4 +344,9 @@ It adds no required roles, planner checks or schema of its own; the environment'
 
 `tests/test_azure_access.py`: the Azure access table: a Key Vault secret by vault, secret or parent scope (not another vault, not Reader), a storage container, roles that assign access. `tests/test_azure_identities.py`: a workload's managed identity and role assignments at the narrowest scope, Event Grid's sender role, the data sources scopes need.
 
+`tests/test_azure_network.py`: the network depth the stack keeps: one private endpoint per vault reached with its DNS zone group, a static address, a storage account and a missing zone, a resource id used as is, what Azure doesn't reach this way, a Private Link Service on the load balancer (visibility, auto-approval or acceptance, NAT subnet; not on an Application Gateway), the egress firewall's application rules per web port and network rules by FQDN for others, nothing rendered without records.
+
+`tests/test_azure_network_state.py`: the network depth read back from state, the CLI and ARM: route tables (an Azure Firewall's address as the firewall), private endpoints (zone, static address), Private Link Services (acceptance from auto-approval), the Firewall policy's sites with their ports, peering state, VPN depth, VNet flow logs (an NSG's named).
+
 Installing the package registers it with opsdir (entry point `opsdir.adapters`: `azure`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.
+

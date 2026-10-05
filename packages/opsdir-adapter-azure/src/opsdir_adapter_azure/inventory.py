@@ -58,6 +58,8 @@ from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, l
 from opsdir.core.sources import json_document
 from opsdir.domains.messaging.dns import dmarc_policy, spf_authorizes
 from opsdir_format_terraform.state import read_state
+from .arm_ids import arm_segment, subnet_ref
+from .network_inventory import network_resources
 from .edge_inventory import (dns_resources, edge_services, fqdn, frontdoor_endpoints, frontdoor_origins,
                              gateway_facts, lb_facts, traffic_routing)
 from .iam import iam_resources
@@ -86,18 +88,6 @@ def _low(x):
     return (x or "").lower()
 
 
-def arm_segment(arm_id, after):
-    """The ARM ID segment following `after` (case-insensitive): arm_segment('/…/vaults/kv-1', 'vaults') == 'kv-1'."""
-    parts = (arm_id or "").split("/")
-    return next((parts[i + 1] for i, p in enumerate(parts[:-1]) if p.lower() == after.lower()), None)
-
-
-def _subnet_ref(arm_id):
-    """<virtual network>/<subnet> of a subnet's ARM ID, the record's provider reference for it."""
-    vnet, sub = arm_segment(arm_id, "virtualNetworks"), arm_segment(arm_id, "subnets")
-    return f"{vnet}/{sub}" if vnet and sub else None
-
-
 def _networks(found):
     return tuple(resource("network", a.get("name"), {"ciamCidr": _first(a.get("address_space")),
                                                      "ciamResourceGroup": a.get("resource_group_name")},
@@ -118,7 +108,7 @@ def _nics(found):
         configs = nic.get("ip_configuration") or ()
         return next((c for c in configs if c.get("primary")), _first(configs)) or {}
     return {_low(n.get("id")): (primary(n).get("private_ip_address") or n.get("private_ip_address"),
-                                _subnet_ref(primary(n).get("subnet_id")))
+                                subnet_ref(primary(n).get("subnet_id")))
             for n in of_types(found, "azurerm_network_interface") if n.get("id")}
 
 
@@ -248,7 +238,7 @@ def _guarded_roles(found):
               for a in of_types(found, "azurerm_network_interface_security_group_association")]
     by_subnet = [(_low(a.get("network_security_group_id")), nic_roles.get(n))
                  for a in of_types(found, "azurerm_subnet_network_security_group_association")
-                 for n, (_, subnet) in nics.items() if subnet and subnet == _subnet_ref(a.get("subnet_id"))]
+                 for n, (_, subnet) in nics.items() if subnet and subnet == subnet_ref(a.get("subnet_id"))]
     pairs = [(g, r) for g, r in (*by_nic, *by_subnet) if r]
     return {g: tuple(r for g2, r in pairs if g2 == g) for g in dict.fromkeys(g for g, _ in pairs)}
 
@@ -361,7 +351,8 @@ def _storage(found):
 
 
 def _egress(found):
-    """NAT gateways by name, with the public addresses and prefixes associated with them."""
+    """NAT gateways by name, with the public addresses and prefixes associated with them (Standard public addresses:
+    static)."""
     pips = {_low(p.get("id")): p.get("ip_address") for p in of_types(found, "azurerm_public_ip")}
     prefixes = {_low(p.get("id")): p.get("ip_prefix") for p in of_types(found, "azurerm_public_ip_prefix")}
     addresses = [(_low(a.get("nat_gateway_id")), f"{pips[_low(a.get('public_ip_address_id'))]}/32")
@@ -370,8 +361,10 @@ def _egress(found):
     ranges = [(_low(a.get("nat_gateway_id")), prefixes[_low(a.get("public_ip_prefix_id"))])
               for a in of_types(found, "azurerm_nat_gateway_public_ip_prefix_association")
               if prefixes.get(_low(a.get("public_ip_prefix_id")))]
+    def cidrs(nat):
+        return sorted({c for g, c in (*addresses, *ranges) if g == _low(nat.get("id"))})
     return tuple(resource("egress", a.get("name"),
-                          {"ciamCidr": sorted({c for g, c in (*addresses, *ranges) if g == _low(a.get("id"))})},
+                          {"ciamCidr": cidrs(a), "ciamNatAllocation": "static" if cidrs(a) else None},
                           name=_tags(a).get("Name") or a.get("name"), role=_role(a))
                  for a in of_types(found, "azurerm_nat_gateway") if a.get("name"))
 
@@ -561,10 +554,11 @@ def pairs_resources(pairs):
     iam, iam_notices = iam_resources(pairs)
     services = _services(pairs)
     edge, edge_notices = _edge(pairs, services)
+    network, network_notices = network_resources(pairs)
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *services, *rules, *_secrets(pairs),
              *_keys(pairs), *_storage(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
-             *_canaries(pairs), *iam, *edge), (*rule_notices, *iam_notices, *edge_notices))
+             *_canaries(pairs), *iam, *edge, *network), (*rule_notices, *iam_notices, *edge_notices, *network_notices))
 
 
 def state_resources(text):

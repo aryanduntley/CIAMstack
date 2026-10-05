@@ -3382,6 +3382,9 @@ ciamDropsRole: fw-consumer-supplier-portal-svc
 ciamDropsRole: fw-consumer-mro-batch-export
 ciamDropsRole: fw-consumer-legacy-rptuser
 ciamDropsRole: fw-consumer-idm-sync
+ciamDropsRole: ldaps-endpoint-service
+ciamDropsRole: private-secrets
+ciamDropsRole: egress-firewall
 ciamLifecycle: active
 ciamOverlayOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
@@ -5134,12 +5137,58 @@ ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
  ag
 ciamRealizes: replication-lag
 
+dn: cn=egress-firewall,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamProxy
+cn: egress-firewall
+ciamAllowedDestination: email-smtp.us-east-1.amazonaws.com:587
+ciamAllowedDestination: metadata.skyline-air.test
+ciamAllowedDestination: sso.harbor-mro.test
+ciamAllowedDestination: ocsp.example-ca.test:80
+ciamAllowedDestination: crl.example-ca.test:80
+ciamBindingRole: egress-firewall
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamProviderRef: arn:aws:network-firewall:us-east-1:111122223333:firewall-poli
+ cy/ciam-prod-egress
+ciamProxyKind: firewall
+
+dn: cn=egress-firewall,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamProxy
+cn: egress-firewall
+ciamAllowedDestination: email-smtp.us-east-1.amazonaws.com:587
+ciamAllowedDestination: metadata.skyline-air.test
+ciamAllowedDestination: sso.harbor-mro.test
+ciamAllowedDestination: ocsp.example-ca.test:80
+ciamAllowedDestination: crl.example-ca.test:80
+ciamBindingRole: egress-firewall
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamProviderRef: projects/example-aero-net/global/firewallPolicies/ciam-prod-f
+ w-policy
+ciamProxyKind: firewall
+
+dn: cn=egress-firewall,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamProxy
+cn: egress-firewall
+ciamAllowedDestination: metadata.skyline-air.test
+ciamAllowedDestination: sso.harbor-mro.test
+ciamAllowedDestination: ocsp.example-ca.test:80
+ciamAllowedDestination: crl.example-ca.test:80
+ciamBindingRole: egress-firewall
+ciamManagedBy: cn=network-security,ou=owners,dc=ciam-ops
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-hub-net/providers/Microsoft.Network/firewallPolicies/fwp-hub
+ciamProxyKind: firewall
+
 dn: cn=egress-pf,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamEgress
 cn: egress-pf
 ciamBindingRole: pf-egress
 ciamCidr: 203.0.113.10/32
+ciamNatAllocation: static
 ciamProviderRef: nat-0123456789abcdef0
 
 dn: cn=egress-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
@@ -5148,6 +5197,7 @@ objectClass: ciamEgress
 cn: egress-pf
 ciamBindingRole: pf-egress
 ciamCidr: 203.0.113.150/32
+ciamNatAllocation: static
 ciamProviderRef: example-aero-ciam-standby/us-central1/ciam-standby-router/cia
  m-standby-nat
 
@@ -5157,6 +5207,7 @@ objectClass: ciamEgress
 cn: egress-pf
 ciamBindingRole: pf-egress
 ciamCidr: 203.0.113.200/32
+ciamNatAllocation: static
 ciamProviderRef: natgw-ciam-prod
 
 dn: cn=federation,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
@@ -5252,6 +5303,7 @@ objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-admin
 ciamBindingRole: fw-admin
+ciamPolicyRole: firewall-policy
 ciamPort: 4444
 ciamProtocol: tcp
 ciamRulePriority: 150
@@ -5284,6 +5336,7 @@ objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-apps-public
 ciamBindingRole: fw-apps-public
+ciamPolicyRole: firewall-policy
 ciamPort: 443
 ciamProtocol: tcp
 ciamRulePriority: 180
@@ -5318,6 +5371,7 @@ objectClass: ciamFirewallRule
 cn: fw-customer-portal
 ciamAllowsConsumer: cn=customer-portal-svc,ou=consumers,dc=ciam-ops
 ciamBindingRole: fw-consumer-customer-portal-svc
+ciamPolicyRole: firewall-policy
 ciamPort: 1636
 ciamProtocol: tcp
 ciamRulePriority: 110
@@ -5353,6 +5407,7 @@ objectClass: ciamFirewallRule
 cn: fw-idm-sync
 ciamAllowsConsumer: cn=idm-sync,ou=consumers,dc=ciam-ops
 ciamBindingRole: fw-consumer-idm-sync
+ciamPolicyRole: firewall-policy
 ciamPort: 1636
 ciamProtocol: tcp
 ciamRulePriority: 130
@@ -5397,6 +5452,7 @@ objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-login-public
 ciamBindingRole: fw-login-public
+ciamPolicyRole: firewall-policy
 ciamPort: 443
 ciamProtocol: tcp
 ciamRulePriority: 170
@@ -5455,6 +5511,7 @@ objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-pf-cluster
 ciamBindingRole: fw-pf-cluster
+ciamPolicyRole: firewall-policy
 ciamPort: 7600
 ciamPort: 7700
 ciamProtocol: tcp
@@ -5491,6 +5548,7 @@ objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-pf-cluster-admin
 ciamBindingRole: fw-pf-cluster-admin
+ciamPolicyRole: firewall-policy
 ciamPort: 7600
 ciamPort: 7700
 ciamProtocol: tcp
@@ -5529,6 +5587,7 @@ objectClass: ciamFirewallRule
 cn: fw-pf-ds-svc
 ciamAllowsConsumer: cn=pf-ds-svc,ou=consumers,dc=ciam-ops
 ciamBindingRole: fw-consumer-pf-ds-svc
+ciamPolicyRole: firewall-policy
 ciamPort: 1636
 ciamProtocol: tcp
 ciamRulePriority: 100
@@ -5546,6 +5605,17 @@ ciamProtocol: tcp
 ciamRulePriority: 100
 ciamSourceCidr: 10.60.2.0/24
 ciamTargetRole: ds
+
+dn: cn=fw-policy,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallPolicy
+cn: fw-policy
+ciamBindingRole: firewall-policy
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamPolicyOrder: policy-first
+ciamPolicyScope: network
+ciamProviderRef: projects/example-aero-net/global/firewallPolicies/ciam-prod-f
+ w-policy
 
 dn: cn=fw-replication,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -5566,6 +5636,7 @@ objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-replication
 ciamBindingRole: fw-replication
+ciamPolicyRole: firewall-policy
 ciamPort: 8989
 ciamProtocol: tcp
 ciamRulePriority: 140
@@ -5600,6 +5671,7 @@ objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-sso-public
 ciamBindingRole: fw-sso-public
+ciamPolicyRole: firewall-policy
 ciamPort: 443
 ciamProtocol: tcp
 ciamRulePriority: 160
@@ -5634,6 +5706,7 @@ objectClass: ciamFirewallRule
 cn: fw-supplier-portal
 ciamAllowsConsumer: cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
 ciamBindingRole: fw-consumer-supplier-portal-svc
+ciamPolicyRole: firewall-policy
 ciamPort: 1636
 ciamProtocol: tcp
 ciamRulePriority: 120
@@ -6140,6 +6213,35 @@ cn: LDAPS
 ciamEnabled: TRUE
 ciamListenPort: 1636
 
+dn: cn=ldaps-link,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamEndpointService
+cn: ldaps-link
+ciamAcceptanceRequired: TRUE
+ciamAllowedPrincipal: arn:aws:iam::444455556666:root
+ciamAllowsConsumer: cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
+ciamBindingRole: ldaps-endpoint-service
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamProviderRef: vpce-svc-0a1b2c3d4e5f67890
+ciamServiceAlias: com.amazonaws.vpce.us-east-1.vpce-svc-0a1b2c3d4e5f67890
+ciamServiceRole: ds-ldaps-service
+
+dn: cn=ldaps-link,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamEndpointService
+cn: ldaps-link
+ciamAcceptanceRequired: TRUE
+ciamAllowedPrincipal: 55555555-6666-7777-8888-999999999999
+ciamAllowsConsumer: cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
+ciamBindingRole: ldaps-endpoint-service
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Network/privateLinkServices/pls-ciam-p
+ rod-ldaps-link
+ciamServiceRole: ds-ldaps-service
+ciamSubnetRole: subnet-ds
+ciamVisibleTo: 55555555-6666-7777-8888-999999999999
+
 dn: cn=LDIF,ou=connection-handlers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamConnectionHandler
@@ -6368,6 +6470,44 @@ pingamPolicyConfig: {"actionValues":{"GET":true,"POST":true},"active":true,"co
  signed in with a one-time code may use the partner portal","resources":["http
  s://partners.example-aero.test/*"],"subject":{"type":"AuthenticatedUsers"}}
 
+dn: cn=pe-secrets,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamPrivateEndpoint
+cn: pe-secrets
+ciamBindingRole: private-secrets
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamPrivateDns: TRUE
+ciamPrivateEndpointKind: interface
+ciamPrivateService: secrets
+ciamProviderRef: vpce-0a1b2c3d4e5f60011
+ciamReachesRole: pf-admin-password
+ciamReachesRole: pf-signing-key
+ciamReachesRole: ds-root-password
+ciamSubnetRole: subnet-ds
+ciamSubnetRole: subnet-pf
+
+dn: cn=pe-secrets,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamPrivateEndpoint
+cn: pe-secrets
+ciamBindingRole: private-secrets
+ciamDnsZone: privatelink.vaultcore.azure.net
+ciamDnsZoneRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGr
+ oups/rg-hub-dns/providers/Microsoft.Network/privateDnsZones/privatelink.vault
+ core.azure.net
+ciamFrontendIp: 10.60.2.50
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamPrivateDns: TRUE
+ciamPrivateEndpointKind: interface
+ciamPrivateService: secrets
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Network/privateEndpoints/pe-ciam-prod-
+ pe-secrets
+ciamReachesRole: pf-admin-password
+ciamReachesRole: pf-signing-key
+ciamReachesRole: ds-root-password
+ciamSubnetRole: subnet-pf
+
 dn: cn=pf-discovery,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamObjectStore
@@ -6453,6 +6593,18 @@ ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
  s/opsdir-adapter-azure
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: provider
+
+dn: cn=psc-apis,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamPrivateEndpoint
+cn: psc-apis
+ciamBindingRole: private-apis
+ciamFrontendIp: 10.70.255.5
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamPrivateDns: TRUE
+ciamPrivateEndpointKind: all-apis
+ciamPrivateService: apis
+ciamProviderRef: projects/example-aero-net/global/forwardingRules/pscapis
 
 dn: cn=registrationStatus,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
@@ -7734,6 +7886,7 @@ objectClass: ciamNetwork
 cn: vpc
 ciamBindingRole: network
 ciamCidr: 10.70.0.0/16
+ciamFirewallModel: policy
 ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
 ciamProviderRef: projects/example-aero-net/global/networks/ciam-standby
 

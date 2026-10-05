@@ -25,7 +25,7 @@ from urllib.parse import unquote
 from opsdir.core.inventory import short_name
 from opsdir.domains.access.evaluations import evaluations_by_identity
 from .access import troubleshooter_verdict
-from .inventory import resource_id
+from .names import resource_id
 
 EVALUATOR = "gcp-policy-troubleshooter"
 KINDS = {"iam.googleapis.com/ServiceAccount": "service-account", "iam.googleapis.com/Role": "custom-role",

@@ -48,7 +48,7 @@ def _record():
         _row(f"cn=backup,{B}", ("ciamBackupTarget",), cn="backup", ciamBindingRole="backup-target",
              ciamStorageRef="s3://ciam-backups"),
         _row(f"cn=egress,{B}", ("ciamEgress",), cn="egress", ciamBindingRole="pf-egress", ciamCidr="203.0.113.10/32",
-             ciamProviderRef=NAT)))
+             ciamProviderRef=NAT, ciamNatAllocation="static")))
 
 
 NETWORK = """
@@ -77,6 +77,8 @@ Resources:
   Endpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties: {VpcId: !Ref Vpc, ServiceName: com.amazonaws.us-east-1.s3}
+  Igw:
+    Type: AWS::EC2::InternetGateway
 """
 
 APP = """
@@ -207,7 +209,9 @@ def test_stacks_that_match_the_record_change_nothing():
     assert len(imported.groups) == 9 and not import_changes(d, imported), imported.notices
     assert set(imported.notices) == {
         "ciam-prod-network: Fn::Cidr (1) not evaluated; the attributes computed with them keep the record's values",
-        "ciam-prod-network: resource types not read: AWS::EC2::VPCEndpoint (1)",
+        "ciam-prod-network: resource types not read: AWS::EC2::InternetGateway (1)",
+        "main/prod: private-endpoint vpce-0abc (vpce-0abc) is not in the record and names no role (tag it Role, name it "
+        "in roles.json, or record it); not imported",
         "ciam-prod-app: Fn::If (1) not evaluated; the attributes computed with them keep the record's values",
         "main/prod: job rotate-fn (arn:aws:lambda:us-east-1:111122223333:function:rotate-fn) is not in the record and "
         "names no role (tag it Role, name it in roles.json, or record it); not imported"}

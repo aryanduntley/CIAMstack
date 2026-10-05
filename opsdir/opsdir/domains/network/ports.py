@@ -113,6 +113,14 @@ def acl_rules(acl):
                         key=lambda r: r.number))
 
 
+def acl_rule_text(number, action, direction, protocol, ports, cidr):
+    """One network ACL rule as a ciamAclRule value (the inverse of acl_rules): ports a (from, to) pair, (0, 65535) for
+    all; protocol tcp, udp, icmp or all."""
+    lo, hi = ports
+    span = "all" if protocol == "all" or (lo, hi) == (0, 65535) else str(lo) if lo == hi else f"{lo}-{hi}"
+    return f"{number} {action} {direction} {protocol} {span} {cidr}"
+
+
 def _net(c):
     return ipaddress.ip_network(c, strict=False)
 

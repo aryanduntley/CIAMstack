@@ -541,6 +541,27 @@
       "match": "sets no rate limit on password-reset",
       "planted": "PingFederate's self-service password reset has no rate limit; the policy limits sign-in and tokens",
       "cleared_by": null
+    },
+    {
+      "id": "A57",
+      "area": "Endpoint services",
+      "match": "Consumer `supplier-portal-svc` connects to `ldaps-link` privately",
+      "planted": "the supplier portal reaches LDAPS through the source's endpoint service; the target's has another name",
+      "cleared_by": null
+    },
+    {
+      "id": "A58",
+      "area": "Endpoint services",
+      "match": "source/prod allows `arn:aws:iam::444455556666:root` to connect to `ldaps-link`",
+      "planted": "the target's Private Link Service allows the portal's Azure subscription, not its AWS account",
+      "cleared_by": null
+    },
+    {
+      "id": "A59",
+      "area": "Egress",
+      "match": "doesn't allow `email-smtp.us-east-1.amazonaws.com`",
+      "planted": "the hub firewall in the target doesn't allow the mail relay the platform sends through",
+      "cleared_by": null
     }
   ]
 }

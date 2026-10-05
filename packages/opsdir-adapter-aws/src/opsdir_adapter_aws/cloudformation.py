@@ -19,7 +19,8 @@ Terraform resource and read by the same mapping (opsdir_adapter_aws.inventory.pa
   AWS::EC2::VPC, AWS::EC2::Subnet, AWS::EC2::Instance, AWS::EC2::SecurityGroup (+ SecurityGroupIngress),
   AWS::EC2::NatGateway, AWS::EC2::EIP, AWS::ElasticLoadBalancingV2::LoadBalancer (+ Listener, TargetGroup with its
   Targets), AWS::Route53::RecordSet (+ RecordSetGroup), AWS::SecretsManager::Secret (+ RotationSchedule; SecretString
-  is never read), AWS::KMS::Key (+ ReplicaKey), AWS::S3::Bucket
+  is never read), AWS::KMS::Key (+ ReplicaKey), AWS::S3::Bucket; the network depth (route tables, network ACLs, VPC
+  endpoints and endpoint services, peering, transit and VPN, flow logs, Network Firewall): cloudformation_network.py
 Resources that weren't created (no physical ID, deleted, failed) are skipped; other resource types are counted.
 """
 import re
@@ -31,6 +32,7 @@ import yaml
 from opsdir.core.contract import Importer
 from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_document, parsed
+from .cloudformation_network import NETWORK_TYPES, network_stack_pairs
 from .inventory import PROVIDER, pairs_resources
 
 READ = ("AWS::EC2::VPC", "AWS::EC2::Subnet", "AWS::EC2::Instance", "AWS::EC2::SecurityGroup",
@@ -39,7 +41,7 @@ READ = ("AWS::EC2::VPC", "AWS::EC2::Subnet", "AWS::EC2::Instance", "AWS::EC2::Se
         "AWS::ElasticLoadBalancingV2::TargetGroup", "AWS::Route53::RecordSet", "AWS::Route53::RecordSetGroup",
         "AWS::SecretsManager::Secret", "AWS::SecretsManager::RotationSchedule", "AWS::KMS::Key",
         "AWS::KMS::ReplicaKey", "AWS::S3::Bucket", "AWS::Lambda::Function", "AWS::Events::Rule",
-        "AWS::Scheduler::Schedule", "AWS::CodePipeline::Pipeline", "AWS::CodeBuild::Project")
+        "AWS::Scheduler::Schedule", "AWS::CodePipeline::Pipeline", "AWS::CodeBuild::Project", *NETWORK_TYPES)
 EVALUATED = ("Ref", "Fn::Sub", "Fn::Join", "Fn::Select", "Fn::GetAtt")
 NOT_CREATED = ("CREATE_FAILED", "DELETE_COMPLETE", "DELETE_IN_PROGRESS", "DELETE_FAILED")
 ACCOUNT_WIDE = ("secret", "key", "storage")
@@ -356,7 +358,8 @@ def stack_pairs(stack, resources, template):
     return ([*_network(declared), *_instances(declared, names), *_security_groups(declared), *_egress(declared, names),
              *_load_balancers(declared, names), *_forwarding(declared), *_records(declared), *_secrets(declared),
              *_keys(declared, names), *_jobs(declared, names),
-             *(("aws_s3_bucket", {"bucket": pid}) for _, t, _, _, pid in declared if t == "AWS::S3::Bucket")],
+             *(("aws_s3_bucket", {"bucket": pid}) for _, t, _, _, pid in declared if t == "AWS::S3::Bucket"),
+             *network_stack_pairs(declared)],
             (*((f"{label}: {', '.join(f'{fn} ({n})' for fn, n in sorted(_unevaluated(template).items()))} not "
                 f"evaluated; the attributes computed with them keep the record's values",) if _unevaluated(template) else ()),
              *((f"{label}: {len(not_created)} resource(s) without a physical ID (not created, or no stack resources "

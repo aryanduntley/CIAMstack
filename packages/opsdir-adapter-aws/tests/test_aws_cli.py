@@ -50,7 +50,7 @@ def _record():
         _row(f"cn=backup,{B}", ("ciamBackupTarget",), cn="backup", ciamBindingRole="backup-target",
              ciamStorageRef="s3://ciam-backups"),
         _row(f"cn=egress,{B}", ("ciamEgress",), cn="egress", ciamBindingRole="pf-egress", ciamCidr="203.0.113.10/32",
-             ciamProviderRef=NAT)))
+             ciamProviderRef=NAT, ciamNatAllocation="static")))
 
 
 def _tags(**kv):

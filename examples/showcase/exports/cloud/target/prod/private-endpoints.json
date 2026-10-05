@@ -1,0 +1,38 @@
+[
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/privateEndpoints/pe-ciam-prod-pe-secrets",
+    "name": "pe-ciam-prod-pe-secrets",
+    "type": "Microsoft.Network/privateEndpoints",
+    "tags": {
+      "Role": "private-secrets",
+      "ManagedBy": "opsdir"
+    },
+    "subnet": {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-pf"
+    },
+    "privateLinkServiceConnections": [
+      {
+        "name": "pe-secrets",
+        "privateLinkServiceId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.KeyVault/vaults/kv-ciam-prod",
+        "groupIds": [
+          "vault"
+        ]
+      }
+    ],
+    "ipConfigurations": [
+      {
+        "name": "primary",
+        "privateIPAddress": "10.60.2.50"
+      }
+    ]
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/privateEndpoints/pe-ciam-prod-pe-secrets/privateDnsZoneGroups/default",
+    "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+    "privateDnsZoneConfigs": [
+      {
+        "privateDnsZoneId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-hub-dns/providers/Microsoft.Network/privateDnsZones/privatelink.vaultcore.azure.net"
+      }
+    ]
+  }
+]

@@ -29,6 +29,8 @@ of the matching hashicorp/azurerm resource, so the same mapping reads them as re
   every type, forwarding rules            see cli_edge.py
   access control: identities, role assignments and definitions, PIM, deny assignments, access policies, policy
   assignments, bastions                 see cli_iam.py (az rest output, {"value": [...]}, is read item by item)
+  the network depth: route tables, private endpoints, Private Link Services, firewalls and their policies' rule
+  collection groups, peering, VPN and hub connections, flow logs     see cli_network.py
 Subnets, interfaces and VMs outside the listed virtual networks are counted, not read; secrets, keys and containers
 are listed per vault and account, and function apps per resource group, so the importer counts rather than lists the
 ones the record doesn't have and nothing names a role for.
@@ -41,7 +43,9 @@ from opsdir.core.contract import Importer
 from opsdir.core.inventory import layout_import
 from .cli_edge import edge_items
 from .cli_iam import iam_items
-from .inventory import PROVIDER, arm_segment, pairs_resources
+from .cli_network import network_items
+from .arm_ids import arm_segment
+from .inventory import PROVIDER, pairs_resources
 
 ACCOUNT_WIDE = ("secret", "key", "storage", "job", "identity")
 VAULT_HOSTS = (".vault.azure.net", ".vault.usgovcloudapi.net")
@@ -328,7 +332,7 @@ def items_resources(items):
     pairs, scope_notices = _scoped(_unique([*_vnets(items), *_vms(items), *_nics(items), *_lbs(items),
                                             *_addresses(items), *_records(items), *_nsgs(items), *_nats(items),
                                             *_vault_items(items), *_stores(items), *_functions(items),
-                                            *iam_items(items), *edge_items(items)]))
+                                            *iam_items(items), *edge_items(items), *network_items(items)]))
     resources, notices = pairs_resources(pairs)
     return resources, (*scope_notices, *notices)
 

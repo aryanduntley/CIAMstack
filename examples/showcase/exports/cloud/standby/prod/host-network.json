@@ -7,7 +7,665 @@
       "data": {
         "kind": "compute#network",
         "name": "ciam-standby",
-        "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby"
+        "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby",
+        "networkFirewallPolicyEnforcementOrder": "BEFORE_CLASSIC_FIREWALL"
+      }
+    }
+  },
+  {
+    "name": "//compute.googleapis.com/projects/example-aero-net/global/firewallPolicies/ciam-prod-fw-policy",
+    "assetType": "compute.googleapis.com/NetworkFirewallPolicy",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "kind": "compute#firewallPolicy",
+        "name": "ciam-prod-fw-policy",
+        "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/firewallPolicies/ciam-prod-fw-policy",
+        "rules": [
+          {
+            "priority": 100,
+            "direction": "INGRESS",
+            "action": "allow",
+            "ruleName": "fw-pf-ds-svc",
+            "description": "fw-consumer-pf-ds-svc",
+            "targetSecureTags": [
+              {
+                "name": "tagValues/11622324"
+              }
+            ],
+            "match": {
+              "srcIpRanges": [
+                "10.70.2.0/24"
+              ],
+              "layer4Configs": [
+                {
+                  "ipProtocol": "tcp",
+                  "ports": [
+                    "1636"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "priority": 110,
+            "direction": "INGRESS",
+            "action": "allow",
+            "ruleName": "fw-customer-portal",
+            "description": "fw-consumer-customer-portal-svc",
+            "targetSecureTags": [
+              {
+                "name": "tagValues/11622324"
+              }
+            ],
+            "match": {
+              "srcIpRanges": [
+                "10.30.8.0/24"
+              ],
+              "layer4Configs": [
+                {
+                  "ipProtocol": "tcp",
+                  "ports": [
+                    "1636"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "priority": 120,
+            "direction": "INGRESS",
+            "action": "allow",
+            "ruleName": "fw-supplier-portal",
+            "description": "fw-consumer-supplier-portal-svc",
+            "targetSecureTags": [
+              {
+                "name": "tagValues/11622324"
+              }
+            ],
+            "match": {
+              "srcIpRanges": [
+                "10.31.2.0/24"
+              ],
+              "layer4Configs": [
+                {
+                  "ipProtocol": "tcp",
+                  "ports": [
+                    "1636"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "priority": 130,
+            "direction": "INGRESS",
+            "action": "allow",
+            "ruleName": "fw-idm-sync",
+            "description": "fw-consumer-idm-sync",
+            "targetSecureTags": [
+              {
+                "name": "tagValues/11622324"
+              }
+            ],
+            "match": {
+              "srcIpRanges": [
+                "10.70.6.0/24"
+              ],
+              "layer4Configs": [
+                {
+                  "ipProtocol": "tcp",
+                  "ports": [
+                    "1636"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "priority": 140,
+            "direction": "INGRESS",
+            "action": "allow",
+            "ruleName": "fw-replication",
+            "description": "fw-replication",
+            "targetSecureTags": [
+              {
+                "name": "tagValues/11622324"
+              }
+            ],
+            "match": {
+              "srcIpRanges": [
+                "10.70.1.0/24",
+                "10.20.0.0/16"
+              ],
+              "layer4Configs": [
+                {
+                  "ipProtocol": "tcp",
+                  "ports": [
+                    "8989"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "priority": 150,
+            "direction": "INGRESS",
+            "action": "allow",
+            "ruleName": "fw-admin",
+            "description": "fw-admin",
+            "targetSecureTags": [
+              {
+                "name": "tagValues/11622324"
+              }
+            ],
+            "match": {
+              "srcIpRanges": [
+                "10.70.9.0/28"
+              ],
+              "layer4Configs": [
+                {
+                  "ipProtocol": "tcp",
+                  "ports": [
+                    "4444"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "priority": 160,
+            "direction": "INGRESS",
+            "action": "allow",
+            "ruleName": "fw-sso-public",
+            "description": "fw-sso-public",
+            "targetSecureTags": [
+              {
+                "name": "tagValues/11441770"
+              }
+            ],
+            "match": {
+              "srcIpRanges": [
+                "0.0.0.0/0"
+              ],
+              "layer4Configs": [
+                {
+                  "ipProtocol": "tcp",
+                  "ports": [
+                    "443"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "priority": 170,
+            "direction": "INGRESS",
+            "action": "allow",
+            "ruleName": "fw-login-public",
+            "description": "fw-login-public",
+            "targetSecureTags": [
+              {
+                "name": "tagValues/1002685"
+              }
+            ],
+            "match": {
+              "srcIpRanges": [
+                "0.0.0.0/0"
+              ],
+              "layer4Configs": [
+                {
+                  "ipProtocol": "tcp",
+                  "ports": [
+                    "443"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "priority": 180,
+            "direction": "INGRESS",
+            "action": "allow",
+            "ruleName": "fw-apps-public",
+            "description": "fw-apps-public",
+            "targetSecureTags": [
+              {
+                "name": "tagValues/567827"
+              }
+            ],
+            "match": {
+              "srcIpRanges": [
+                "0.0.0.0/0"
+              ],
+              "layer4Configs": [
+                {
+                  "ipProtocol": "tcp",
+                  "ports": [
+                    "443"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "priority": 190,
+            "direction": "INGRESS",
+            "action": "allow",
+            "ruleName": "fw-pf-cluster",
+            "description": "fw-pf-cluster",
+            "targetSecureTags": [
+              {
+                "name": "tagValues/11441770"
+              }
+            ],
+            "match": {
+              "srcIpRanges": [
+                "10.70.2.0/24"
+              ],
+              "layer4Configs": [
+                {
+                  "ipProtocol": "tcp",
+                  "ports": [
+                    "7600",
+                    "7700"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "priority": 200,
+            "direction": "INGRESS",
+            "action": "allow",
+            "ruleName": "fw-pf-cluster-admin",
+            "description": "fw-pf-cluster-admin",
+            "targetSecureTags": [
+              {
+                "name": "tagValues/7652945"
+              }
+            ],
+            "match": {
+              "srcIpRanges": [
+                "10.70.2.0/24"
+              ],
+              "layer4Configs": [
+                {
+                  "ipProtocol": "tcp",
+                  "ports": [
+                    "7600",
+                    "7700"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "priority": 70000,
+            "direction": "INGRESS",
+            "action": "allow",
+            "description": "Google Cloud health checks for svc-ldaps",
+            "targetSecureTags": [
+              {
+                "name": "tagValues/11622324"
+              }
+            ],
+            "match": {
+              "srcIpRanges": [
+                "35.191.0.0/16"
+              ],
+              "layer4Configs": [
+                {
+                  "ipProtocol": "tcp",
+                  "ports": [
+                    "1636"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "priority": 70001,
+            "direction": "INGRESS",
+            "action": "allow",
+            "description": "Google Cloud health checks for svc-sso",
+            "targetSecureTags": [
+              {
+                "name": "tagValues/11441770"
+              }
+            ],
+            "match": {
+              "srcIpRanges": [
+                "35.191.0.0/16",
+                "209.85.152.0/22",
+                "209.85.204.0/22"
+              ],
+              "layer4Configs": [
+                {
+                  "ipProtocol": "tcp",
+                  "ports": [
+                    "443"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "priority": 70002,
+            "direction": "INGRESS",
+            "action": "allow",
+            "description": "Google Cloud health checks for svc-login",
+            "targetSecureTags": [
+              {
+                "name": "tagValues/1002685"
+              }
+            ],
+            "match": {
+              "srcIpRanges": [
+                "35.191.0.0/16",
+                "209.85.152.0/22",
+                "209.85.204.0/22"
+              ],
+              "layer4Configs": [
+                {
+                  "ipProtocol": "tcp",
+                  "ports": [
+                    "443"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "priority": 70003,
+            "direction": "INGRESS",
+            "action": "allow",
+            "description": "Google Cloud health checks for svc-apps",
+            "targetSecureTags": [
+              {
+                "name": "tagValues/567827"
+              }
+            ],
+            "match": {
+              "srcIpRanges": [
+                "35.191.0.0/16",
+                "209.85.152.0/22",
+                "209.85.204.0/22"
+              ],
+              "layer4Configs": [
+                {
+                  "ipProtocol": "tcp",
+                  "ports": [
+                    "443"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "priority": 80000,
+            "direction": "EGRESS",
+            "action": "allow",
+            "targetSecureTags": [
+              {
+                "name": "tagValues/1002685"
+              },
+              {
+                "name": "tagValues/11622324"
+              },
+              {
+                "name": "tagValues/13400145"
+              },
+              {
+                "name": "tagValues/567827"
+              },
+              {
+                "name": "tagValues/7652945"
+              },
+              {
+                "name": "tagValues/11441770"
+              }
+            ],
+            "match": {
+              "destFqdns": [
+                "ocsp.example-ca.test",
+                "crl.example-ca.test"
+              ],
+              "layer4Configs": [
+                {
+                  "ipProtocol": "tcp",
+                  "ports": [
+                    "80"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "priority": 80001,
+            "direction": "EGRESS",
+            "action": "allow",
+            "targetSecureTags": [
+              {
+                "name": "tagValues/1002685"
+              },
+              {
+                "name": "tagValues/11622324"
+              },
+              {
+                "name": "tagValues/13400145"
+              },
+              {
+                "name": "tagValues/567827"
+              },
+              {
+                "name": "tagValues/7652945"
+              },
+              {
+                "name": "tagValues/11441770"
+              }
+            ],
+            "match": {
+              "destFqdns": [
+                "metadata.skyline-air.test",
+                "sso.harbor-mro.test"
+              ],
+              "layer4Configs": [
+                {
+                  "ipProtocol": "tcp",
+                  "ports": [
+                    "443"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "priority": 80002,
+            "direction": "EGRESS",
+            "action": "allow",
+            "targetSecureTags": [
+              {
+                "name": "tagValues/1002685"
+              },
+              {
+                "name": "tagValues/11622324"
+              },
+              {
+                "name": "tagValues/13400145"
+              },
+              {
+                "name": "tagValues/567827"
+              },
+              {
+                "name": "tagValues/7652945"
+              },
+              {
+                "name": "tagValues/11441770"
+              }
+            ],
+            "match": {
+              "destFqdns": [
+                "email-smtp.us-east-1.amazonaws.com"
+              ],
+              "layer4Configs": [
+                {
+                  "ipProtocol": "tcp",
+                  "ports": [
+                    "587"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "priority": 2147483000,
+            "direction": "EGRESS",
+            "action": "deny",
+            "targetSecureTags": [
+              {
+                "name": "tagValues/1002685"
+              },
+              {
+                "name": "tagValues/11622324"
+              },
+              {
+                "name": "tagValues/13400145"
+              },
+              {
+                "name": "tagValues/567827"
+              },
+              {
+                "name": "tagValues/7652945"
+              },
+              {
+                "name": "tagValues/11441770"
+              }
+            ],
+            "match": {
+              "destIpRanges": [
+                "0.0.0.0/0"
+              ],
+              "layer4Configs": [
+                {
+                  "ipProtocol": "all"
+                }
+              ]
+            }
+          }
+        ],
+        "associations": [
+          {
+            "name": "ciam-prod-fw-policy",
+            "attachmentTarget": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "//cloudresourcemanager.googleapis.com/tagValues/1002685",
+    "assetType": "cloudresourcemanager.googleapis.com/TagValue",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "name": "tagValues/1002685",
+        "shortName": "am",
+        "parent": "tagKeys/281474976710656"
+      }
+    }
+  },
+  {
+    "name": "//cloudresourcemanager.googleapis.com/tagValues/11622324",
+    "assetType": "cloudresourcemanager.googleapis.com/TagValue",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "name": "tagValues/11622324",
+        "shortName": "ds",
+        "parent": "tagKeys/281474976710656"
+      }
+    }
+  },
+  {
+    "name": "//cloudresourcemanager.googleapis.com/tagValues/13400145",
+    "assetType": "cloudresourcemanager.googleapis.com/TagValue",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "name": "tagValues/13400145",
+        "shortName": "idm",
+        "parent": "tagKeys/281474976710656"
+      }
+    }
+  },
+  {
+    "name": "//cloudresourcemanager.googleapis.com/tagValues/567827",
+    "assetType": "cloudresourcemanager.googleapis.com/TagValue",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "name": "tagValues/567827",
+        "shortName": "ig",
+        "parent": "tagKeys/281474976710656"
+      }
+    }
+  },
+  {
+    "name": "//cloudresourcemanager.googleapis.com/tagValues/7652945",
+    "assetType": "cloudresourcemanager.googleapis.com/TagValue",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "name": "tagValues/7652945",
+        "shortName": "pf-admin",
+        "parent": "tagKeys/281474976710656"
+      }
+    }
+  },
+  {
+    "name": "//cloudresourcemanager.googleapis.com/tagValues/11441770",
+    "assetType": "cloudresourcemanager.googleapis.com/TagValue",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "name": "tagValues/11441770",
+        "shortName": "pf-engine",
+        "parent": "tagKeys/281474976710656"
+      }
+    }
+  },
+  {
+    "name": "//compute.googleapis.com/projects/example-aero-net/global/addresses/ciam-prod-psc-apis",
+    "assetType": "compute.googleapis.com/GlobalAddress",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "kind": "compute#address",
+        "name": "ciam-prod-psc-apis",
+        "address": "10.70.255.5",
+        "purpose": "PRIVATE_SERVICE_CONNECT",
+        "addressType": "INTERNAL",
+        "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/addresses/ciam-prod-psc-apis",
+        "labels": {
+          "role": "private-apis",
+          "managed_by": "opsdir"
+        }
+      }
+    }
+  },
+  {
+    "name": "//compute.googleapis.com/projects/example-aero-net/global/forwardingRules/pscapis",
+    "assetType": "compute.googleapis.com/GlobalForwardingRule",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "kind": "compute#forwardingRule",
+        "name": "pscapis",
+        "target": "all-apis",
+        "IPAddress": "10.70.255.5",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby",
+        "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/forwardingRules/pscapis"
       }
     }
   },

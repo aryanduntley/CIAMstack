@@ -29,10 +29,25 @@ this module places them.
   zone      -> ciamDnsZoneBinding   matched by the zone's name
   record    -> ciamDnsRecord        matched by the record's name and type
   forwarder -> ciamDnsForwarder     matched by the domains it forwards
-What a source says replaces the record's value for the attributes it gives; the rest of the entry is kept. A resource
-the record doesn't have is added only when the source names its role (a tag), and is named otherwise: a role can't be
-guessed. A binding an overlay inherits from its base is left to the base environment. A link to another resource
-names its entry (a DN), or for a role link (ciamEncryptedByRole) the binding role that entry has.
+  route-table      -> ciamRouteTable       matched by provider ref (a route table; Google Cloud's routes of a network)
+  acl              -> ciamNetworkAcl       matched by provider ref (a stateless network ACL)
+  private-endpoint -> ciamPrivateEndpoint  matched by provider ref (a VPC endpoint, a private endpoint, a PSC endpoint)
+  endpoint-service -> ciamEndpointService  matched by provider ref (an endpoint service, a Private Link Service, a
+                                           service attachment)
+  proxy            -> ciamProxy            matched by provider ref (a firewall with domain rules, a web proxy)
+  flow-log         -> ciamFlowLog          matched by provider ref (a flow log, a subnet's flow log setting); a new
+                                           one without a role takes 'flow-logs-<role of its subnet>'
+  firewall-policy  -> ciamFirewallPolicy   matched by provider ref (a network or hierarchical firewall policy)
+  interconnect     -> ciamInterconnect     matched by provider ref (a peering, a transit attachment, a VPN); its other
+                                           side's environment is the one whose network binding has the peer network's
+                                           provider ref (else a tag PeerEnvironment: <cloud>/<env>; a new link needs one)
+What a source says replaces the record's value for the attributes it gives; the rest of the entry is kept (the same
+values in another order, or an allowlist a source reports without the ports it can't express, change nothing). A
+resource the record doesn't have is added only when the source names its role (a tag), and is named otherwise: a role
+can't be guessed. A binding an overlay inherits from its base is left to the base environment. A link to another
+resource names its entry (a DN), or for a role link (ciamEncryptedByRole, ciamSubnetRole, ...) the binding role that
+entry has; a link may name several resources (a route table's subnets). A route's target, written as the provider's
+reference (0.0.0.0/0 nat nat-0abc), becomes the role of the binding with that reference when the source reports it.
 
 Sources are laid out one folder per environment, <cloud>/<env>/ (layout_import); the cloud adapter says what it reads
 there and parses each file. A role map beside them, <cloud>/<env>/roles.json ({provider ref or name: role}), gives roles
@@ -46,7 +61,7 @@ from types import MappingProxyType
 from typing import Mapping, NamedTuple, Optional
 
 from .contract import Imported
-from .directory import children, get, is_kind, is_subclass, make_entry, one, ou_entry, rdn_value
+from .directory import children, get, is_kind, is_subclass, make_entry, norm_dn, one, ou_entry, rdn_value
 from .environment import env_dn
 from .overlays import lineage
 
@@ -63,10 +78,25 @@ CLASSES = MappingProxyType({"network": "ciamNetwork", "subnet": "ciamSubnetBindi
                             "channel": "ciamAlertChannel", "logs": "ciamLogDestination", "alarm": "ciamAlarmBinding",
                             "canary": "ciamCanaryBinding", "identity": "ciamIdentityBinding",
                             "guardrail": "ciamGuardrail", "access": "ciamAccessPath", "edge": "ciamEdgeService",
-                            "zone": "ciamDnsZoneBinding", "record": "ciamDnsRecord", "forwarder": "ciamDnsForwarder"})
+                            "zone": "ciamDnsZoneBinding", "record": "ciamDnsRecord", "forwarder": "ciamDnsForwarder",
+                            "route-table": "ciamRouteTable", "acl": "ciamNetworkAcl",
+                            "private-endpoint": "ciamPrivateEndpoint", "endpoint-service": "ciamEndpointService",
+                            "proxy": "ciamProxy", "flow-log": "ciamFlowLog", "firewall-policy": "ciamFirewallPolicy",
+                            "interconnect": "ciamInterconnect"})
 BY_REF = ("network", "subnet", "egress", "job", "compute", "cluster", "sending", "stream", "channel", "logs", "alarm",
-          "canary", "identity", "guardrail", "access", "edge")                            # matched by provider ref
-ROLE_LINKS = frozenset({"ciamEncryptedByRole", "ciamServiceRole"})   # links naming the linked binding's role, not DN
+          "canary", "identity", "guardrail", "access", "edge", "route-table", "acl", "private-endpoint",
+          "endpoint-service", "proxy", "flow-log", "firewall-policy", "interconnect")    # matched by provider ref
+# links naming the linked binding's role, not its DN, and the kind of resource each names (two kinds may share a
+# provider ref: a firewall policy and the egress allowlist it enforces)
+ROLE_KINDS = MappingProxyType({"ciamEncryptedByRole": "key", "ciamServiceRole": "service", "ciamSubnetRole": "subnet",
+                               "ciamPolicyRole": "firewall-policy", "ciamLogDestinationRole": "logs"})
+ROLE_LINKS = frozenset(ROLE_KINDS)
+PEER = "ciamPeerEnvironment"         # an interconnect's link to its other side's network (its environment is the value)
+ROUTE_TARGET = 2                     # the token of a ciamRoute value naming its target (a role, else a provider ref)
+# attributes whose values may carry a port a source can't express (a firewall's domain list): when the source reports
+# none, the record's values with their ports are the same as the source's without
+PORTED = frozenset({"ciamAllowedDestination"})
+_PORT = re.compile(r":[0-9]+$")
 ROLE_MAP = "roles.json"                         # <cloud>/<env>/roles.json: roles for what a cloud can't tag
 _UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
 
@@ -157,7 +187,10 @@ REQUIRED = MappingProxyType({
     "channel": ("ciamChannelKind",), "logs": ("ciamDestinationKind",), "alarm": (), "canary": (), "identity": (),
     "guardrail": ("ciamGuardrailKind",), "access": ("ciamAccessKind",), "edge": ("ciamEdgeKind",),
     "zone": ("ciamDnsZone", "ciamZoneVisibility"), "record": ("ciamRecordName", "ciamRecordType"),
-    "forwarder": ("ciamForwardDomain", "ciamForwardTarget")})
+    "forwarder": ("ciamForwardDomain", "ciamForwardTarget"), "route-table": ("ciamRoute",), "acl": ("ciamAclRule",),
+    "private-endpoint": ("ciamPrivateService",), "endpoint-service": ("ciamServiceRole",),
+    "proxy": ("ciamProxyKind",), "flow-log": ("ciamFlowScope",), "firewall-policy": ("ciamPolicyScope",),
+    "interconnect": ("ciamInterconnectKind", "ciamPeerEnvironment", "ciamSourceCidr")})
 
 
 def zone_role(zone):
@@ -176,19 +209,71 @@ def forwarder_role(domains):
     return f"forwarder-{first[0]}" if first else None
 
 
+def _first_ref(link):
+    return link[0] if isinstance(link, tuple) and link else link if isinstance(link, str) else None
+
+
 def _derived_role(r, roles):
-    """A new edge service's role from the role of the service it fronts ('<kind>-<service role>'), or None."""
-    fronted = roles.get(r.links.get("ciamServiceRole"))
-    return f"{r.attrs['ciamEdgeKind'][0]}-{fronted}" if r.kind == "edge" and fronted and "ciamEdgeKind" in r.attrs \
-        else None
+    """A new resource's role from the role of what it links to, when its source names none: an edge service's from the
+    service it fronts ('<kind>-<service role>'), a flow log's from its subnet ('flow-logs-<subnet role>'); else None."""
+    if r.kind == "edge":
+        fronted = roles.get(_first_ref(r.links.get("ciamServiceRole")))
+        return f"{r.attrs['ciamEdgeKind'][0]}-{fronted}" if fronted and "ciamEdgeKind" in r.attrs else None
+    if r.kind == "flow-log":
+        subnet = roles.get(_first_ref(r.links.get("ciamSubnetRole")))
+        return f"flow-logs-{subnet}" if subnet else None
+    return None
+
+
+def _peer(d, dn, r):
+    """An interconnect with the environment on its other side: a link naming the peer network's provider ref (or
+    candidates: a peering names both of its networks, a network its full and short name) is read as the environment,
+    outside dn's lineage, whose network binding has that ref (case aside: Azure's IDs ignore it); a tag the source
+    gives (ciamPeerEnvironment) wins. Other resources as they are."""
+    if r.kind != "interconnect" or PEER not in r.links:
+        return r
+    refs = {x.lower() for x in (r.links[PEER] if isinstance(r.links[PEER], tuple) else (r.links[PEER],))}
+    mine = {norm_dn(e.dn) for e in lineage(d, get(d, dn))}
+    found = {e.dn.split(",ou=bindings,", 1)[1] for e in d.entries.values()
+             if is_kind(d, e, "ciamNetwork") and (one(e, "ciamProviderRef") or "").lower() in refs
+             and ",ou=bindings," in e.dn
+             and norm_dn(e.dn.split(",ou=bindings,", 1)[1]) not in mine}
+    given = {} if PEER in r.attrs or len(found) != 1 else {PEER: tuple(found)}
+    return r._replace(attrs={**r.attrs, **given}, links={k: v for k, v in r.links.items() if k != PEER})
+
+
+def _resolved(links, attr, ref):
+    """The DNs (or, for a role link, the roles of the entries of its kind) a link names: one ref, or a tuple of them;
+    those the source doesn't report are left out."""
+    table = {x: role for (kind, x), role in links["kinds"].items() if kind == ROLE_KINDS[attr]} \
+        if attr in ROLE_LINKS else links[False]
+    return tuple(dict.fromkeys(table[x] for x in (ref if isinstance(ref, tuple) else (ref,)) if x in table))
+
+
+def _route_targets(routes, roles):
+    """Route values with a target written as a provider ref replaced by the role of the binding with that ref."""
+    def one_route(text):
+        tokens = text.split(" ")
+        return " ".join((*tokens[:ROUTE_TARGET], roles[tokens[ROUTE_TARGET]], *tokens[ROUTE_TARGET + 1:])) \
+            if len(tokens) > ROUTE_TARGET and tokens[ROUTE_TARGET] in roles else text
+    return tuple(one_route(v) for v in routes)
+
+
+def _same(attr, reported, recorded):
+    """Whether a source's values are the record's: the same set, or for a ported attribute reported without any port,
+    the same set once the record's ports are left out."""
+    if set(reported) == set(recorded):
+        return True
+    return attr in PORTED and not any(_PORT.search(v) for v in reported) and \
+        {v.lower() for v in reported} == {_PORT.sub("", v).lower() for v in recorded}
 
 
 def _entry(dn, r, held, links, name):
-    given = {**r.attrs, **{attr: (links[attr in ROLE_LINKS][ref],) for attr, ref in r.links.items()
-                           if ref in links[attr in ROLE_LINKS]},
-             **({"ciamProviderRef": (r.ref,)} if r.kind in BY_REF and r.ref else {})}
+    linked = {attr: v for attr, ref in r.links.items() for v in (_resolved(links, attr, ref),) if v}
+    routes = {"ciamRoute": _route_targets(r.attrs["ciamRoute"], links[True])} if "ciamRoute" in r.attrs else {}
+    given = {**r.attrs, **routes, **linked, **({"ciamProviderRef": (r.ref,)} if r.kind in BY_REF and r.ref else {})}
     if held is not None:
-        same = {k: held.attrs[k] for k, v in given.items() if k in held.attrs and set(v) == set(held.attrs[k])}
+        same = {k: held.attrs[k] for k, v in given.items() if k in held.attrs and _same(k, v, held.attrs[k])}
         return make_entry(held.dn, held.classes, {**{k: v for k, v in held.attrs.items() if k not in given}, **given,
                                                   **same})             # the same values in another order: no change
     role = {"ciamServerRole": (r.role,)} if r.kind == "server" else {"ciamBindingRole": (r.role,)}
@@ -225,7 +310,8 @@ def environment_groups(d, spec, resources, summarize=()):
     if get(d, dn) is None:
         return (), (f"{spec}: no such environment in the record; nothing imported",)
     own, bases = _held(d, dn)
-    ordered = sorted(resources, key=lambda r: (r.kind not in ("network", "subnet"), r.kind, r.ref))
+    ordered = sorted((_peer(d, dn, r) for r in resources), key=lambda r: (r.kind not in ("network", "subnet"), r.kind,
+                                                                         r.ref))
     first = reduce(_placed(d, own, bases), ordered, ())
     known = {**{r.ref: one(held or inh, "ciamBindingRole") for r, held, inh, _ in first if held or inh},
              **{r.ref: r.role for r, held, inh, _ in first if not (held or inh) and r.role}}
@@ -237,11 +323,14 @@ def environment_groups(d, spec, resources, summarize=()):
     roles = {**{r.ref: role for r, held, inh, _ in placed if held or inh
                 for role in (one(held or inh, "ciamBindingRole"),) if role},
              **{r.ref: r.role for r, _ in new if r.role}}
-    links = {False: dns, True: roles}                                    # by whether the link is a role link
+    kinds = {**{(r.kind, r.ref): role for r, held, inh, _ in placed if held or inh
+                for role in (one(held or inh, "ciamBindingRole"),) if role},
+             **{(r.kind, r.ref): r.role for r, _ in new if r.role}}
+    links = {False: dns, True: roles, "kinds": kinds}       # DN links; role links by ref (routes) and by kind
     incomplete = {id(r): [a for a in REQUIRED[r.kind] if a not in r.attrs and a not in r.links]
                   for r, _ in new if r.role}
-    unresolved = {id(r): [a for a, ref in r.links.items() if ref not in links[a in ROLE_LINKS]
-                          and a not in ROLE_LINKS] for r, _ in new if r.role}
+    unresolved = {id(r): [a for a, ref in r.links.items() if not _resolved(links, a, ref) and a not in ROLE_LINKS]
+                  for r, _ in new if r.role}
     added = [(r, name) for r, name in new if r.role and not incomplete[id(r)] and not unresolved[id(r)]]
     entries = (*(_entry(held.dn, r, held, links, name) for r, held, inh, name in placed if held is not None),
                *(_entry(_new_dn(dn, r, name), r, None, links, name) for r, name in added))
@@ -284,6 +373,12 @@ def _environments(files, suffix):
     placed = {p: "/".join(p.split("/")[:2]) for p in found if p.count("/") >= 2}
     return ({spec: tuple(p for p in found if placed.get(p) == spec) for spec in dict.fromkeys(placed.values())},
             tuple(p for p in found if p not in placed))
+
+
+def peer_environment(tags):
+    """The DN of the environment on the other side of a link, from its tag PeerEnvironment (<cloud>/<env>), or None."""
+    spec = tags.get("PeerEnvironment") or ""
+    return env_dn(spec) if spec.count("/") == 1 else None
 
 
 def tagged_role(tags):

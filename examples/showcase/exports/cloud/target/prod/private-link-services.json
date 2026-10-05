@@ -1,0 +1,33 @@
+[
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/privateLinkServices/pls-ciam-prod-ldaps-link",
+    "name": "pls-ciam-prod-ldaps-link",
+    "type": "Microsoft.Network/privateLinkServices",
+    "tags": {
+      "Role": "ldaps-endpoint-service",
+      "ManagedBy": "opsdir"
+    },
+    "alias": "pls-ciam-prod-ldaps-link.4581ab57.eastus2.azure.privatelinkservice",
+    "loadBalancerFrontendIpConfigurations": [
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/loadBalancers/lb-ciam-prod-svc-ldaps/frontendIPConfigurations/frontend"
+      }
+    ],
+    "ipConfigurations": [
+      {
+        "name": "primary",
+        "subnet": {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-ds"
+        }
+      }
+    ],
+    "visibility": {
+      "subscriptions": [
+        "55555555-6666-7777-8888-999999999999"
+      ]
+    },
+    "autoApproval": {
+      "subscriptions": []
+    }
+  }
+]

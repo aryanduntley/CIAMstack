@@ -64,6 +64,19 @@ Nothing is rendered into a zone whose binding names `ciamManagedBy` (someone out
 
 A protection policy with `ciamCdn` puts a CloudFront distribution in front of the service: its origin is the service's load balancer (the ALB when TLS terminates at the edge, else the NLB, TLS then ending at CloudFront), over HTTPS with the viewer's `Host` forwarded (AWS's `Managed-AllViewer` origin request policy) and nothing cached (`Managed-CachingDisabled`: sign-in pages and tokens); the viewer certificate from ACM in us-east-1 (another region or none: an `UNBOUND` comment), `TLSv1.2_2021` minimum; the service's alias record points at the distribution. The protection policy's web ACL (and its IP sets) is created CloudFront-scoped through the provider alias `aws.us_east_1` (declared only when a CDN is used) and named by the distribution (`web_acl_id`); Shield protects the distribution. The ALB behind it admits only CloudFront's origin-facing prefix list and carries no web ACL or Shield of its own.
 
+### Network depth
+
+What the core `network` domain records and the stack keeps itself (no `ciamManagedBy`) renders into the platform's root; what someone else keeps (a hub firewall, the landing zone's endpoints) is a comment naming them, rendered in their root. Nothing recorded, nothing rendered (`opsdir_adapter_aws.network`).
+
+| Record | Renders as |
+|---|---|
+| `ciamPrivateEndpoint` kind `interface` | `aws_vpc_endpoint` `Interface` to `com.amazonaws.<region>.<service>` (`secrets` Secrets Manager, `keys` KMS, `object-storage` S3, `logs` CloudWatch Logs, `messaging` SNS, `registry` ECR API) in the subnets its `ciamSubnetRole` names, `private_dns_enabled` from `ciamPrivateDns`, with its own security group admitting the network's range on 443 |
+| kind `gateway` | `aws_vpc_endpoint` `Gateway` (S3, DynamoDB only; others a comment) on the route tables (`ciamRouteTable` provider refs) naming its subnets, the main table for subnets none names; every recorded table when it names no subnets |
+| A service, database or kind AWS has no endpoint for | A comment (a database is reached at its own private address) |
+| `ciamEndpointService` | `aws_vpc_endpoint_service` on the network load balancer of the service name `ciamServiceRole` names: `allowed_principals` from `ciamAllowedPrincipal`, `acceptance_required` from `ciamAcceptanceRequired`. A service whose traffic policy puts it on an ALB can't be exposed (an endpoint service needs an NLB): a comment |
+| `ciamProxy` kind `firewall` the stack keeps | An `aws_networkfirewall_rule_group` (`STATEFUL`, `rules_source_list` `ALLOWLIST` on `TLS_SNI` and `HTTP_HOST`, `*.example` as `.example`, `HOME_NET` the network's range) and a comment to reference it from the firewall policy its `ciamProviderRef` names. A domain list matches web traffic only: sites on other ports (a mail relay on 587) are named in a comment, decided by the policy's other rules |
+| Other proxies (a forward proxy, a proxy service) | A comment: their allowlist is kept there |
+
 ## Reading an environment back from Terraform state
 
 ```bash
@@ -138,6 +151,21 @@ What the edge runs comes back in the edge domain's terms (`opsdir_adapter_aws.ed
 
 An ALB's security group rules and the servers' rules admitting it belong to the load balancer: left out, like a firewall rule naming another security group.
 
+### The network depth, read back
+
+What the network carries beyond VPCs, subnets and security groups comes back in the network domain's terms (`opsdir_adapter_aws.network_inventory`; the CLI and CloudFormation readers normalize to the same Terraform names: `cli_network.py`, `cloudformation_network.py`). Matching is by provider ref; a new one needs its tag `Role`.
+
+| AWS resource | Record entry |
+|---|---|
+| `aws_route_table` (+ `aws_route`, `_association`, `aws_main_route_table_association`, `aws_default_route_table`) | route table: routes `<destination> <kind> <target>` (a CIDR or prefix list; the target a NAT gateway, transit gateway, peering, VPN gateway, gateway endpoint, a Network Firewall's endpoint (kind `firewall`, its firewall policy the target), a Gateway Load Balancer endpoint, an interface or appliance), read as the role of the binding with that ref when the source reports it; the associated subnets; whether it is the main table. The CLI's local route and default ACL rule are left out, as state leaves them |
+| `aws_network_acl` (+ `_rule`, `_association`, `aws_default_network_acl`) | network ACL: rules `<number> <allow\|deny> <in\|out> <protocol> <ports> <cidr>` in number order (IPv6 entries named, not recorded); the subnets |
+| `aws_vpc_endpoint` (Interface, Gateway) | private endpoint: what it reaches (the service name's last part), kind, subnets, private DNS; its security groups are the endpoint's, left out of the firewall rules. Gateway Load Balancer endpoints are routing, not private endpoints |
+| `aws_vpc_endpoint_service` (+ `_allowed_principal`) | endpoint service: the service name of the load balancer it exposes, its name for consumers, the principals allowed, acceptance |
+| `aws_networkfirewall_rule_group` with a domain list (+ `_firewall_policy`, `_firewall`) | egress firewall (proxy kind `firewall`): the sites its `ALLOWLIST` domain lists allow (`.example` as `*.example`) under its firewall policy (the rule group's tag `FirewallPolicy`, as rendered, else the policy referencing it). A domain list holds no ports: the record's sites with ports (`ocsp.example:80`) are the same as the list's without them |
+| `aws_vpc_peering_connection`, `aws_ec2_transit_gateway_vpc_attachment`, `aws_vpn_connection` (+ customer and VPN gateways) | interconnect depth: kind, whether the other side accepted, a VPN's peer gateway and BGP numbers; a peering's other side is the environment whose network binding is one of its two VPCs (the one that isn't this environment's), else its tag `PeerEnvironment: <cloud>/<env>`; a new link needs one of them |
+| `aws_flow_log` | flow log: scope (VPC, subnet, interface, transit), the log group it writes to and its retention; untagged, a subnet's takes the role `flow-logs-<subnet role>` |
+| `aws_nat_gateway` | its egress binding's `ciamNatAllocation`: `static` for a public NAT gateway's Elastic IP |
+
 ## Reading an environment from the AWS CLI
 
 Where there is no Terraform state (or to check it against what the account actually runs), `aws/cli-inventory` reads the JSON the AWS CLI prints. Collect it once per environment, into one folder per `<cloud>/<env>`:
@@ -206,6 +234,31 @@ aws shield list-protections > $out/protections.json 2>/dev/null || true      # n
 aws cloudfront list-distributions > $out/distributions.json                  # CloudFront web ACLs: --scope CLOUDFRONT --region us-east-1
 aws route53 list-hosted-zones > $out/hosted-zones.json
 aws route53resolver list-resolver-rules > $out/resolver-rules.json
+
+# the network depth: route tables, network ACLs, endpoints and endpoint services, links, flow logs, Network Firewall
+aws ec2 describe-route-tables --filters Name=vpc-id,Values=$VPC                   > $out/route-tables.json
+aws ec2 describe-network-acls --filters Name=vpc-id,Values=$VPC                   > $out/network-acls.json
+aws ec2 describe-vpc-endpoints --filters Name=vpc-id,Values=$VPC                  > $out/vpc-endpoints.json
+aws ec2 describe-vpc-endpoint-service-configurations                             > $out/endpoint-services.json
+mkdir -p $out/service-permissions
+for s in $(aws ec2 describe-vpc-endpoint-service-configurations --query 'ServiceConfigurations[].ServiceId' --output text); do
+  aws ec2 describe-vpc-endpoint-service-permissions --service-id "$s"            > "$out/service-permissions/$s.json"
+done
+aws ec2 describe-vpc-peering-connections                                         > $out/peering.json
+aws ec2 describe-transit-gateway-vpc-attachments --filters Name=vpc-id,Values=$VPC > $out/tgw-attachments.json
+aws ec2 describe-vpn-connections                                                 > $out/vpn-connections.json
+aws ec2 describe-customer-gateways                                               > $out/customer-gateways.json
+aws ec2 describe-vpn-gateways                                                    > $out/vpn-gateways.json
+aws ec2 describe-flow-logs                                                       > $out/flow-logs.json
+for arn in $(aws network-firewall list-rule-groups --scope ACCOUNT --query 'RuleGroups[].Arn' --output text); do
+  aws network-firewall describe-rule-group --rule-group-arn "$arn"                > "$out/rule-group-${arn##*/}.json"
+done
+for arn in $(aws network-firewall list-firewall-policies --query 'FirewallPolicies[].Arn' --output text); do
+  aws network-firewall describe-firewall-policy --firewall-policy-arn "$arn"      > "$out/firewall-policy-${arn##*/}.json"
+done
+for arn in $(aws network-firewall list-firewalls --query 'Firewalls[].FirewallArn' --output text); do
+  aws network-firewall describe-firewall --firewall-arn "$arn"                    > "$out/firewall-${arn##*/}.json"
+done
 
 # IAM: roles and policies (AWS managed ones included), key and bucket policies, Identity Center, control policies
 mkdir -p $out/key-policy $out/bucket-policy $out/sso-inline $out/sso-managed $out/org
@@ -350,4 +403,9 @@ It adds no required roles, planner checks or schema of its own; the environment'
 
 `tests/test_aws_access.py`: the AWS access table: a secret by its suffixed ARN or a pattern (not a longer name, not the bare ARN), objects in a bucket (reading also needs `s3:ListBucket`), a topic by stream kind, escalation actions. `tests/test_aws_identities.py`: a workload's IAM role, least-privilege policy and instance profile; notes for what can't be granted.
 
+`tests/test_aws_network.py`: the network depth the stack keeps: an interface endpoint with its security group and private DNS, a gateway endpoint on its subnets' and the main route tables, what AWS has no endpoint for, an endpoint service on an L4 service's NLB and not an ALB, the egress firewall's domain list (web traffic only), what others keep named, nothing rendered without records.
+
+`tests/test_aws_network_state.py`: the network depth read back: route tables (targets as provider refs, a Network Firewall endpoint as the firewall, gateway endpoints, main table), network ACLs (IPv6 named), VPC endpoints and their security groups left out of the rules, endpoint services, the egress firewall's domain list under its policy, peering, transit and VPN depth, flow logs; the CLI (local route and rule 32767 left out) and CloudFormation reading the same.
+
 Installing the package registers it with opsdir (entry point `opsdir.adapters`: `aws`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.
+

@@ -42,6 +42,8 @@ matching Terraform resource, so the same mapping reads them as reads Terraform s
                                                                   see cli_edge.py
   IAM: get-account-authorization-details, key and bucket policies, resource policies, control policies, Identity
   Center, the policy simulator's verdicts                         -> see cli_iam.py
+  The network depth: route tables, network ACLs, VPC endpoints and endpoint services, peering, transit and VPN, flow
+  logs, Network Firewall rule groups, policies and firewalls      -> see cli_network.py
 Network resources outside the listed VPCs are counted, not read; secrets, keys, buckets, functions, pipelines and build
 projects are account-wide, so the importer counts rather than lists the ones the record doesn't have and nothing names
 a role for.
@@ -55,13 +57,15 @@ from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_document
 from .cli_edge import KEYS as EDGE_KEYS, attributes, edge_pairs, record_attributes
 from .cli_iam import KEYS as IAM_KEYS, iam_pairs
+from .cli_network import KEYS as NETWORK_KEYS, network_pairs
 from .inventory import PROVIDER, pairs_resources
 
 KEYS = ("Vpcs", "Subnets", "Reservations", "SecurityGroups", "SecurityGroupRules", "NatGateways", "LoadBalancers",
         "TagDescriptions", "Listeners", "TargetGroups", "TargetHealthDescriptions", "ResourceRecordSets", "SecretList",
         "KeyMetadata", "KeyRotationEnabled", "Buckets", "Functions", "Rules", "Targets", "ScheduleExpression",
-        "pipeline", "projects", *IAM_KEYS, *EDGE_KEYS, "Tags")   # Tags last: other outputs carry tags too
-IN_VPC = ("aws_subnet", "aws_instance", "aws_security_group", "aws_lb", "aws_nat_gateway")
+        "pipeline", "projects", *IAM_KEYS, *EDGE_KEYS, *NETWORK_KEYS, "Tags")   # Tags last: others carry tags too
+IN_VPC = ("aws_subnet", "aws_instance", "aws_security_group", "aws_lb", "aws_nat_gateway", "aws_route_table",
+          "aws_network_acl", "aws_vpc_endpoint", "aws_ec2_transit_gateway_vpc_attachment")
 ACCOUNT_WIDE = ("secret", "key", "storage", "job", "identity")
 
 
@@ -324,7 +328,7 @@ def cli_resources(texts, at=None):
     pairs, scope_notices = _scoped([*_network(outs), *_instances(outs), *_security_groups(outs),
                                     *_load_balancers(outs), *forwarding, *_records(outs), *_secrets(outs), *keys,
                                     *(("aws_s3_bucket", {"bucket": b.get("Name")}) for b in _all(outs, "Buckets")),
-                                    *jobs, *iam, *edge_pairs(outs, _dns)])
+                                    *jobs, *iam, *edge_pairs(outs, _dns), *network_pairs(outs)])
     resources, rule_notices = pairs_resources(pairs)
     return resources, (*unknown, *target_notices, *key_notices, *job_notices, *iam_notices, *scope_notices,
                        *rule_notices)

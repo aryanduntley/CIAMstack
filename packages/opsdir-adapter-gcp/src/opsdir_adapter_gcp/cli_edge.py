@@ -11,7 +11,7 @@ Global and regional resources are told apart by whether the item names a region.
 """
 from types import MappingProxyType
 
-from .inventory import resource_id
+from .names import resource_id
 
 KINDS = MappingProxyType({
     **{f"compute.googleapis.com/{p}{t}": kind for t, kind in (

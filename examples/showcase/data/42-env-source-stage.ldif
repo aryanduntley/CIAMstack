@@ -9,6 +9,9 @@ ciamDropsRole: fw-consumer-supplier-portal-svc
 ciamDropsRole: fw-consumer-mro-batch-export
 ciamDropsRole: fw-consumer-legacy-rptuser
 ciamDropsRole: fw-consumer-idm-sync
+ciamDropsRole: ldaps-endpoint-service
+ciamDropsRole: private-secrets
+ciamDropsRole: egress-firewall
 ciamLifecycle: active
 ciamOverlayOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops

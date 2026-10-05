@@ -68,7 +68,7 @@ def _record(*extra):
         _row(f"cn=backup,{B}", ("ciamBackupTarget",), cn="backup", ciamBindingRole="backup-target",
              ciamStorageRef="azblob://stciamprod/ds-backups", ciamRetentionDays="35"),
         _row(f"cn=egress-pf,{B}", ("ciamEgress",), cn="egress-pf", ciamBindingRole="pf-egress",
-             ciamCidr="203.0.113.200/32", ciamProviderRef="natgw-ciam-prod"),
+             ciamCidr="203.0.113.200/32", ciamProviderRef="natgw-ciam-prod", ciamNatAllocation="static"),
         *extra))
 
 

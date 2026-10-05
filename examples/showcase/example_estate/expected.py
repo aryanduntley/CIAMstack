@@ -141,6 +141,13 @@ EXPECTED = MappingProxyType({
          "the target publishes LDAPS in the landing zone's default private zone (B1)", "CHG-2003"),
         ("A56", "Edge", "sets no rate limit on password-reset",
          "PingFederate's self-service password reset has no rate limit; the policy limits sign-in and tokens", None),
+        ("A57", "Endpoint services", "Consumer `supplier-portal-svc` connects to `ldaps-link` privately",
+         "the supplier portal reaches LDAPS through the source's endpoint service; the target's has another name",
+         None),
+        ("A58", "Endpoint services", "source/prod allows `arn:aws:iam::444455556666:root` to connect to `ldaps-link`",
+         "the target's Private Link Service allows the portal's Azure subscription, not its AWS account", None),
+        ("A59", "Egress", "doesn't allow `email-smtp.us-east-1.amazonaws.com`",
+         "the hub firewall in the target doesn't allow the mail relay the platform sends through", None),
     ],
 })
 

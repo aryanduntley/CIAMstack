@@ -1,4 +1,4 @@
-3 file(s) scanned for 347 values of the record: 32 found
+3 file(s) scanned for 359 values of the record: 32 found
 apps/customer-portal/application.properties: may hold secret material (see its concerns; nothing of it is stored)
 CHG-2009: 36 change(s) applied
 exit 0

@@ -2219,13 +2219,14 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.84 NAME 'ciamNetworkAcl' DESC 'A stat
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.85 NAME 'ciamPrivateEndpoint' DESC 'A
   private way to a service the platform uses, so its traffic stays off the i
  nternet' SUP ciamBinding STRUCTURAL MUST ciamPrivateService MAY ( ciamPriva
- teEndpointKind $ ciamReachesRole $ ciamSubnetRole $ ciamDnsZone $ ciamPriva
- teDns $ ciamManagedBy ) X-ORIGIN 'opsdir' )
+ teEndpointKind $ ciamReachesRole $ ciamSubnetRole $ ciamFrontendIp $ ciamDn
+ sZone $ ciamDnsZoneRef $ ciamPrivateDns $ ciamManagedBy ) X-ORIGIN 'opsdir'
+  )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.86 NAME 'ciamEndpointService' DESC 'A
   service name exposed privately to other networks or accounts, and who may 
  connect' SUP ciamBinding STRUCTURAL MUST ciamServiceRole MAY ( ciamServiceA
  lias $ ciamAllowedPrincipal $ ciamAllowsConsumer $ ciamAcceptanceRequired $
-  ciamVisibleTo ) X-ORIGIN 'opsdir' )
+  ciamVisibleTo $ ciamSubnetRole ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.87 NAME 'ciamProxy' DESC 'What egress
   to named sites passes, and the sites it allows' SUP ciamBinding STRUCTURAL
   MUST ciamProxyKind MAY ( ciamProxyAddress $ ciamAllowedDestination $ ciamM

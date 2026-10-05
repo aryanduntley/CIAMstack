@@ -43,158 +43,337 @@ data "google_compute_subnetwork" "subnet_pf" {
   project = "example-aero-net"
 }
 
-resource "google_compute_firewall" "fw_admin" {
-  name        = "ciam-prod-fw-admin"
-  description = "fw-admin (fw-admin)"
-  network     = data.google_compute_network.main.self_link
-  direction   = "INGRESS"
-  priority    = 150
-  allow {
-    protocol = "tcp"
-    ports    = ["4444"]
-  }
-  source_ranges = ["10.70.9.0/28"]
-  target_tags   = ["ciam-prod-ds"]
+# The network evaluates its policy first: network_firewall_policy_enforcement_order = BEFORE_CLASSIC_FIREWALL on its network (the landing zone keeps it)
+
+# The network's project is example-aero-net: the policy, its rules and the tag key live there, so the deployer needs rights in it
+
+# Binding the tag values to the instances needs roles/resourcemanager.tagUser on them for the deployer (an access request)
+
+resource "google_compute_network_firewall_policy" "network_policy" {
+  name        = "ciam-prod-fw-policy"
+  project     = "example-aero-net"
+  description = "CIAM firewall policy (standby/prod): rules target the servers' secure tags"
 }
 
-resource "google_compute_firewall" "fw_apps_public" {
-  name        = "ciam-prod-fw-apps-public"
-  description = "fw-apps-public (fw-apps-public)"
-  network     = data.google_compute_network.main.self_link
-  direction   = "INGRESS"
-  priority    = 180
-  allow {
-    protocol = "tcp"
-    ports    = ["443"]
-  }
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["ciam-prod-ig"]
+resource "google_compute_network_firewall_policy_association" "network_policy" {
+  name              = "ciam-prod-fw-policy"
+  project           = "example-aero-net"
+  attachment_target = data.google_compute_network.main.self_link
+  firewall_policy   = google_compute_network_firewall_policy.network_policy.id
 }
 
-resource "google_compute_firewall" "fw_customer_portal" {
-  name        = "ciam-prod-fw-customer-portal"
-  description = "consumer customer-portal-svc (fw-customer-portal)"
-  network     = data.google_compute_network.main.self_link
-  direction   = "INGRESS"
-  priority    = 110
-  allow {
-    protocol = "tcp"
-    ports    = ["1636"]
+resource "google_tags_tag_key" "server_role" {
+  parent      = "projects/example-aero-net"
+  short_name  = "ciam-prod-role"
+  description = "CIAM server role (standby/prod): what the firewall policy's rules target. Managed by opsdir"
+  purpose     = "GCE_FIREWALL"
+  purpose_data = {
+    network = "example-aero-net/ciam-standby"
   }
-  source_ranges = ["10.30.8.0/24"]
-  target_tags   = ["ciam-prod-ds"]
 }
 
-resource "google_compute_firewall" "fw_idm_sync" {
-  name        = "ciam-prod-fw-idm-sync"
-  description = "consumer idm-sync (fw-idm-sync)"
-  network     = data.google_compute_network.main.self_link
-  direction   = "INGRESS"
-  priority    = 130
-  allow {
-    protocol = "tcp"
-    ports    = ["1636"]
-  }
-  source_ranges = ["10.70.6.0/24"]
-  target_tags   = ["ciam-prod-ds"]
+resource "google_tags_tag_value" "am" {
+  parent      = google_tags_tag_key.server_role.id
+  short_name  = "am"
+  description = "CIAM am servers (standby/prod)"
 }
 
-resource "google_compute_firewall" "fw_login_public" {
-  name        = "ciam-prod-fw-login-public"
-  description = "fw-login-public (fw-login-public)"
-  network     = data.google_compute_network.main.self_link
-  direction   = "INGRESS"
-  priority    = 170
-  allow {
-    protocol = "tcp"
-    ports    = ["443"]
-  }
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["ciam-prod-am"]
+resource "google_tags_tag_value" "ds" {
+  parent      = google_tags_tag_key.server_role.id
+  short_name  = "ds"
+  description = "CIAM ds servers (standby/prod)"
 }
 
-resource "google_compute_firewall" "fw_pf_cluster" {
-  name        = "ciam-prod-fw-pf-cluster"
-  description = "fw-pf-cluster (fw-pf-cluster)"
-  network     = data.google_compute_network.main.self_link
-  direction   = "INGRESS"
-  priority    = 190
-  allow {
-    protocol = "tcp"
-    ports    = ["7600", "7700"]
-  }
-  source_ranges = ["10.70.2.0/24"]
-  target_tags   = ["ciam-prod-pf-engine"]
+resource "google_tags_tag_value" "idm" {
+  parent      = google_tags_tag_key.server_role.id
+  short_name  = "idm"
+  description = "CIAM idm servers (standby/prod)"
 }
 
-resource "google_compute_firewall" "fw_pf_cluster_admin" {
-  name        = "ciam-prod-fw-pf-cluster-admin"
-  description = "fw-pf-cluster-admin (fw-pf-cluster-admin)"
-  network     = data.google_compute_network.main.self_link
-  direction   = "INGRESS"
-  priority    = 200
-  allow {
-    protocol = "tcp"
-    ports    = ["7600", "7700"]
-  }
-  source_ranges = ["10.70.2.0/24"]
-  target_tags   = ["ciam-prod-pf-admin"]
+resource "google_tags_tag_value" "ig" {
+  parent      = google_tags_tag_key.server_role.id
+  short_name  = "ig"
+  description = "CIAM ig servers (standby/prod)"
 }
 
-resource "google_compute_firewall" "fw_pf_ds_svc" {
-  name        = "ciam-prod-fw-pf-ds-svc"
-  description = "consumer pf-ds-svc (fw-pf-ds-svc)"
-  network     = data.google_compute_network.main.self_link
-  direction   = "INGRESS"
-  priority    = 100
-  allow {
-    protocol = "tcp"
-    ports    = ["1636"]
-  }
-  source_ranges = ["10.70.2.0/24"]
-  target_tags   = ["ciam-prod-ds"]
+resource "google_tags_tag_value" "pf_admin" {
+  parent      = google_tags_tag_key.server_role.id
+  short_name  = "pf-admin"
+  description = "CIAM pf-admin servers (standby/prod)"
 }
 
-resource "google_compute_firewall" "fw_replication" {
-  name        = "ciam-prod-fw-replication"
-  description = "fw-replication (fw-replication)"
-  network     = data.google_compute_network.main.self_link
-  direction   = "INGRESS"
-  priority    = 140
-  allow {
-    protocol = "tcp"
-    ports    = ["8989"]
-  }
-  source_ranges = ["10.70.1.0/24", "10.20.0.0/16"]
-  target_tags   = ["ciam-prod-ds"]
+resource "google_tags_tag_value" "pf_engine" {
+  parent      = google_tags_tag_key.server_role.id
+  short_name  = "pf-engine"
+  description = "CIAM pf-engine servers (standby/prod)"
 }
 
-resource "google_compute_firewall" "fw_sso_public" {
-  name        = "ciam-prod-fw-sso-public"
-  description = "fw-sso-public (fw-sso-public)"
-  network     = data.google_compute_network.main.self_link
-  direction   = "INGRESS"
-  priority    = 160
-  allow {
-    protocol = "tcp"
-    ports    = ["443"]
-  }
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["ciam-prod-pf-engine"]
+resource "google_tags_location_tag_binding" "am_1" {
+  parent    = "//compute.googleapis.com/projects/${var.project_id}/zones/us-central1-a/instances/${google_compute_instance.am_1.instance_id}"
+  tag_value = google_tags_tag_value.am.id
+  location  = "us-central1-a"
 }
 
-resource "google_compute_firewall" "fw_supplier_portal" {
-  name        = "ciam-prod-fw-supplier-portal"
-  description = "consumer supplier-portal-svc (fw-supplier-portal)"
-  network     = data.google_compute_network.main.self_link
-  direction   = "INGRESS"
-  priority    = 120
-  allow {
-    protocol = "tcp"
-    ports    = ["1636"]
+resource "google_tags_location_tag_binding" "ds_1" {
+  parent    = "//compute.googleapis.com/projects/${var.project_id}/zones/us-central1-a/instances/${google_compute_instance.ds_1.instance_id}"
+  tag_value = google_tags_tag_value.ds.id
+  location  = "us-central1-a"
+}
+
+resource "google_tags_location_tag_binding" "ds_2" {
+  parent    = "//compute.googleapis.com/projects/${var.project_id}/zones/us-central1-b/instances/${google_compute_instance.ds_2.instance_id}"
+  tag_value = google_tags_tag_value.ds.id
+  location  = "us-central1-b"
+}
+
+resource "google_tags_location_tag_binding" "idm_1" {
+  parent    = "//compute.googleapis.com/projects/${var.project_id}/zones/us-central1-a/instances/${google_compute_instance.idm_1.instance_id}"
+  tag_value = google_tags_tag_value.idm.id
+  location  = "us-central1-a"
+}
+
+resource "google_tags_location_tag_binding" "ig_1" {
+  parent    = "//compute.googleapis.com/projects/${var.project_id}/zones/us-central1-a/instances/${google_compute_instance.ig_1.instance_id}"
+  tag_value = google_tags_tag_value.ig.id
+  location  = "us-central1-a"
+}
+
+resource "google_tags_location_tag_binding" "pf_admin_1" {
+  parent    = "//compute.googleapis.com/projects/${var.project_id}/zones/us-central1-a/instances/${google_compute_instance.pf_admin_1.instance_id}"
+  tag_value = google_tags_tag_value.pf_admin.id
+  location  = "us-central1-a"
+}
+
+resource "google_tags_location_tag_binding" "pf_engine_1" {
+  parent    = "//compute.googleapis.com/projects/${var.project_id}/zones/us-central1-a/instances/${google_compute_instance.pf_engine_1.instance_id}"
+  tag_value = google_tags_tag_value.pf_engine.id
+  location  = "us-central1-a"
+}
+
+resource "google_tags_location_tag_binding" "pf_engine_2" {
+  parent    = "//compute.googleapis.com/projects/${var.project_id}/zones/us-central1-b/instances/${google_compute_instance.pf_engine_2.instance_id}"
+  tag_value = google_tags_tag_value.pf_engine.id
+  location  = "us-central1-b"
+}
+
+resource "google_compute_network_firewall_policy_rule" "fw_admin" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 150
+  direction       = "INGRESS"
+  action          = "allow"
+  rule_name       = "fw-admin"
+  description     = "fw-admin"
+  match {
+    src_ip_ranges = ["10.70.9.0/28"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["4444"]
+    }
   }
-  source_ranges = ["10.31.2.0/24"]
-  target_tags   = ["ciam-prod-ds"]
+  target_secure_tags {
+    name = google_tags_tag_value.ds.id
+  }
+}
+
+resource "google_compute_network_firewall_policy_rule" "fw_apps_public" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 180
+  direction       = "INGRESS"
+  action          = "allow"
+  rule_name       = "fw-apps-public"
+  description     = "fw-apps-public"
+  match {
+    src_ip_ranges = ["0.0.0.0/0"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["443"]
+    }
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.ig.id
+  }
+}
+
+resource "google_compute_network_firewall_policy_rule" "fw_customer_portal" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 110
+  direction       = "INGRESS"
+  action          = "allow"
+  rule_name       = "fw-customer-portal"
+  description     = "consumer customer-portal-svc"
+  match {
+    src_ip_ranges = ["10.30.8.0/24"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["1636"]
+    }
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.ds.id
+  }
+}
+
+resource "google_compute_network_firewall_policy_rule" "fw_idm_sync" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 130
+  direction       = "INGRESS"
+  action          = "allow"
+  rule_name       = "fw-idm-sync"
+  description     = "consumer idm-sync"
+  match {
+    src_ip_ranges = ["10.70.6.0/24"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["1636"]
+    }
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.ds.id
+  }
+}
+
+resource "google_compute_network_firewall_policy_rule" "fw_login_public" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 170
+  direction       = "INGRESS"
+  action          = "allow"
+  rule_name       = "fw-login-public"
+  description     = "fw-login-public"
+  match {
+    src_ip_ranges = ["0.0.0.0/0"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["443"]
+    }
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.am.id
+  }
+}
+
+resource "google_compute_network_firewall_policy_rule" "fw_pf_cluster" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 190
+  direction       = "INGRESS"
+  action          = "allow"
+  rule_name       = "fw-pf-cluster"
+  description     = "fw-pf-cluster"
+  match {
+    src_ip_ranges = ["10.70.2.0/24"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["7600", "7700"]
+    }
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.pf_engine.id
+  }
+}
+
+resource "google_compute_network_firewall_policy_rule" "fw_pf_cluster_admin" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 200
+  direction       = "INGRESS"
+  action          = "allow"
+  rule_name       = "fw-pf-cluster-admin"
+  description     = "fw-pf-cluster-admin"
+  match {
+    src_ip_ranges = ["10.70.2.0/24"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["7600", "7700"]
+    }
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.pf_admin.id
+  }
+}
+
+resource "google_compute_network_firewall_policy_rule" "fw_pf_ds_svc" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 100
+  direction       = "INGRESS"
+  action          = "allow"
+  rule_name       = "fw-pf-ds-svc"
+  description     = "consumer pf-ds-svc"
+  match {
+    src_ip_ranges = ["10.70.2.0/24"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["1636"]
+    }
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.ds.id
+  }
+}
+
+resource "google_compute_network_firewall_policy_rule" "fw_replication" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 140
+  direction       = "INGRESS"
+  action          = "allow"
+  rule_name       = "fw-replication"
+  description     = "fw-replication"
+  match {
+    src_ip_ranges = ["10.70.1.0/24", "10.20.0.0/16"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["8989"]
+    }
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.ds.id
+  }
+}
+
+resource "google_compute_network_firewall_policy_rule" "fw_sso_public" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 160
+  direction       = "INGRESS"
+  action          = "allow"
+  rule_name       = "fw-sso-public"
+  description     = "fw-sso-public"
+  match {
+    src_ip_ranges = ["0.0.0.0/0"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["443"]
+    }
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.pf_engine.id
+  }
+}
+
+resource "google_compute_network_firewall_policy_rule" "fw_supplier_portal" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 120
+  direction       = "INGRESS"
+  action          = "allow"
+  rule_name       = "fw-supplier-portal"
+  description     = "consumer supplier-portal-svc"
+  match {
+    src_ip_ranges = ["10.31.2.0/24"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["1636"]
+    }
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.ds.id
+  }
 }
 
 resource "google_service_account" "identity_ds" {
@@ -564,17 +743,23 @@ resource "google_compute_region_health_check" "svc_apps" {
   }
 }
 
-resource "google_compute_firewall" "svc_apps_health_checks" {
-  name        = "ciam-prod-svc-apps-health-checks"
-  description = "Google Cloud health checks for svc-apps"
-  network     = data.google_compute_network.main.self_link
-  direction   = "INGRESS"
-  allow {
-    protocol = "tcp"
-    ports    = ["443"]
+resource "google_compute_network_firewall_policy_rule" "svc_apps_health_checks" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 70000
+  direction       = "INGRESS"
+  action          = "allow"
+  description     = "Google Cloud health checks for svc-apps"
+  match {
+    src_ip_ranges = ["35.191.0.0/16", "209.85.152.0/22", "209.85.204.0/22"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["443"]
+    }
   }
-  source_ranges = ["35.191.0.0/16", "209.85.152.0/22", "209.85.204.0/22"]
-  target_tags   = ["ciam-prod-ig"]
+  target_secure_tags {
+    name = google_tags_tag_value.ig.id
+  }
 }
 
 resource "google_compute_region_backend_service" "svc_apps" {
@@ -633,17 +818,23 @@ resource "google_compute_region_health_check" "svc_ldaps" {
   }
 }
 
-resource "google_compute_firewall" "svc_ldaps_health_checks" {
-  name        = "ciam-prod-svc-ldaps-health-checks"
-  description = "Google Cloud health checks for svc-ldaps"
-  network     = data.google_compute_network.main.self_link
-  direction   = "INGRESS"
-  allow {
-    protocol = "tcp"
-    ports    = ["1636"]
+resource "google_compute_network_firewall_policy_rule" "svc_ldaps_health_checks" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 70001
+  direction       = "INGRESS"
+  action          = "allow"
+  description     = "Google Cloud health checks for svc-ldaps"
+  match {
+    src_ip_ranges = ["35.191.0.0/16"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["1636"]
+    }
   }
-  source_ranges = ["35.191.0.0/16"]
-  target_tags   = ["ciam-prod-ds"]
+  target_secure_tags {
+    name = google_tags_tag_value.ds.id
+  }
 }
 
 resource "google_compute_region_backend_service" "svc_ldaps" {
@@ -717,30 +908,42 @@ resource "google_compute_region_health_check" "svc_login" {
   }
 }
 
-resource "google_compute_firewall" "svc_login_proxies" {
-  name        = "ciam-prod-svc-login-proxies"
-  description = "Load balancer proxies for svc-login"
-  network     = data.google_compute_network.main.self_link
-  direction   = "INGRESS"
-  allow {
-    protocol = "tcp"
-    ports    = ["443"]
+resource "google_compute_network_firewall_policy_rule" "svc_login_proxies" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 75002
+  direction       = "INGRESS"
+  action          = "allow"
+  description     = "Load balancer proxies for svc-login"
+  match {
+    src_ip_ranges = ["10.70.250.0/23"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["443"]
+    }
   }
-  source_ranges = ["10.70.250.0/23"]
-  target_tags   = ["ciam-prod-am"]
+  target_secure_tags {
+    name = google_tags_tag_value.am.id
+  }
 }
 
-resource "google_compute_firewall" "svc_login_health_checks" {
-  name        = "ciam-prod-svc-login-health-checks"
-  description = "Google Cloud health checks for svc-login"
-  network     = data.google_compute_network.main.self_link
-  direction   = "INGRESS"
-  allow {
-    protocol = "tcp"
-    ports    = ["443"]
+resource "google_compute_network_firewall_policy_rule" "svc_login_health_checks" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 70002
+  direction       = "INGRESS"
+  action          = "allow"
+  description     = "Google Cloud health checks for svc-login"
+  match {
+    src_ip_ranges = ["35.191.0.0/16", "130.211.0.0/22"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["443"]
+    }
   }
-  source_ranges = ["35.191.0.0/16", "130.211.0.0/22"]
-  target_tags   = ["ciam-prod-am"]
+  target_secure_tags {
+    name = google_tags_tag_value.am.id
+  }
 }
 
 # not rendered: bot-control needs reCAPTCHA keys (bot management)
@@ -1113,30 +1316,42 @@ resource "google_compute_region_health_check" "svc_sso" {
   }
 }
 
-resource "google_compute_firewall" "svc_sso_proxies" {
-  name        = "ciam-prod-svc-sso-proxies"
-  description = "Load balancer proxies for svc-sso"
-  network     = data.google_compute_network.main.self_link
-  direction   = "INGRESS"
-  allow {
-    protocol = "tcp"
-    ports    = ["443"]
+resource "google_compute_network_firewall_policy_rule" "svc_sso_proxies" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 75003
+  direction       = "INGRESS"
+  action          = "allow"
+  description     = "Load balancer proxies for svc-sso"
+  match {
+    src_ip_ranges = ["10.70.250.0/23"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["443"]
+    }
   }
-  source_ranges = ["10.70.250.0/23"]
-  target_tags   = ["ciam-prod-pf-engine"]
+  target_secure_tags {
+    name = google_tags_tag_value.pf_engine.id
+  }
 }
 
-resource "google_compute_firewall" "svc_sso_health_checks" {
-  name        = "ciam-prod-svc-sso-health-checks"
-  description = "Google Cloud health checks for svc-sso"
-  network     = data.google_compute_network.main.self_link
-  direction   = "INGRESS"
-  allow {
-    protocol = "tcp"
-    ports    = ["443"]
+resource "google_compute_network_firewall_policy_rule" "svc_sso_health_checks" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 70003
+  direction       = "INGRESS"
+  action          = "allow"
+  description     = "Google Cloud health checks for svc-sso"
+  match {
+    src_ip_ranges = ["35.191.0.0/16", "130.211.0.0/22"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["443"]
+    }
   }
-  source_ranges = ["35.191.0.0/16", "130.211.0.0/22"]
-  target_tags   = ["ciam-prod-pf-engine"]
+  target_secure_tags {
+    name = google_tags_tag_value.pf_engine.id
+  }
 }
 
 # not rendered: bot-control needs reCAPTCHA keys (bot management)
@@ -1471,6 +1686,198 @@ resource "google_dns_record_set" "svc_sso" {
   type         = "A"
   ttl          = 300
   rrdatas      = [google_compute_forwarding_rule.svc_sso.ip_address]
+}
+
+# private DNS: the landing zone's private googleapis.com zone answers 10.70.255.5 for 'psc-apis'
+
+resource "google_compute_global_address" "psc_apis" {
+  name         = "ciam-prod-psc-apis"
+  project      = "example-aero-net"
+  purpose      = "PRIVATE_SERVICE_CONNECT"
+  address_type = "INTERNAL"
+  network      = data.google_compute_network.main.self_link
+  address      = "10.70.255.5"
+  labels = {
+    role       = "private-apis"
+    managed_by = "opsdir"
+  }
+}
+
+resource "google_compute_global_forwarding_rule" "psc_apis" {
+  name                  = "pscapis"
+  project               = "example-aero-net"
+  target                = "all-apis"
+  network               = data.google_compute_network.main.self_link
+  ip_address            = google_compute_global_address.psc_apis.id
+  load_balancing_scheme = ""
+}
+
+resource "google_compute_network_firewall_policy_rule" "egress_firewall_sites_80" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 80000
+  direction       = "EGRESS"
+  action          = "allow"
+  description     = "Sites the CIAM platform reaches on 80 (egress-firewall)"
+  match {
+    dest_fqdns = ["ocsp.example-ca.test", "crl.example-ca.test"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["80"]
+    }
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.am.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.ds.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.idm.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.ig.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.pf_admin.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.pf_engine.id
+  }
+}
+
+resource "google_compute_network_firewall_policy_rule" "egress_firewall_sites_443" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 80001
+  direction       = "EGRESS"
+  action          = "allow"
+  description     = "Sites the CIAM platform reaches on 443 (egress-firewall)"
+  match {
+    dest_fqdns = ["metadata.skyline-air.test", "sso.harbor-mro.test"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["443"]
+    }
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.am.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.ds.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.idm.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.ig.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.pf_admin.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.pf_engine.id
+  }
+}
+
+resource "google_compute_network_firewall_policy_rule" "egress_firewall_sites_587" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 80002
+  direction       = "EGRESS"
+  action          = "allow"
+  description     = "Sites the CIAM platform reaches on 587 (egress-firewall)"
+  match {
+    dest_fqdns = ["email-smtp.us-east-1.amazonaws.com"]
+    layer4_configs {
+      ip_protocol = "tcp"
+      ports       = ["587"]
+    }
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.am.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.ds.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.idm.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.ig.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.pf_admin.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.pf_engine.id
+  }
+}
+
+resource "google_compute_network_firewall_policy_rule" "egress_firewall_private" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 80003
+  direction       = "EGRESS"
+  action          = "allow"
+  description     = "What the CIAM platform reaches privately (its network, interconnects, private endpoints)"
+  match {
+    dest_ip_ranges = ["10.20.0.0/16", "10.70.0.0/16", "10.70.255.5/32"]
+    layer4_configs {
+      ip_protocol = "all"
+    }
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.am.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.ds.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.idm.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.ig.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.pf_admin.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.pf_engine.id
+  }
+}
+
+resource "google_compute_network_firewall_policy_rule" "egress_firewall_deny" {
+  firewall_policy = google_compute_network_firewall_policy.network_policy.name
+  project         = "example-aero-net"
+  priority        = 2147483000
+  direction       = "EGRESS"
+  action          = "deny"
+  description     = "Other egress to the internet (egress-firewall allows only its sites)"
+  match {
+    dest_ip_ranges = ["0.0.0.0/0"]
+    layer4_configs {
+      ip_protocol = "all"
+    }
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.am.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.ds.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.idm.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.ig.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.pf_admin.id
+  }
+  target_secure_tags {
+    name = google_tags_tag_value.pf_engine.id
+  }
 }
 
 resource "google_dns_managed_zone" "fwd_corp_ad_0" {

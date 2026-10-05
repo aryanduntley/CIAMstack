@@ -3,10 +3,10 @@ ask for more than a TCP passthrough. A service name whose TLS terminates at the 
 Balancer (external or internal managed, beside the proxy-only subnet the environment binds to role subnet-edge): a
 forwarding rule to a target HTTPS proxy with the TLS policy (an SSL policy) and the Certificate Manager certificate the
 environment holds, a URL map, a backend service over HTTP or HTTPS with the policy's health check, session affinity,
-timeout and draining, and the firewall rules admitting the proxies and the health checks. Its protection policy is a
-Cloud Armor policy on the backend service: preconfigured WAF rules, rate limits aimed at the products' endpoints,
-address and country rules, exclusions. Advanced network DDoS protection is a network policy with an edge security
-service. Pure.
+timeout and draining, and the firewall rules admitting the proxies and the health checks (policy rules under the
+policy firewall model). Its protection policy is a Cloud Armor policy on the backend service: preconfigured WAF rules,
+rate limits aimed at the products' endpoints, address and country rules, exclusions. Advanced network DDoS protection
+is a network policy with an edge security service. Pure.
 
 Known limits: a preconfigured rule's exclusions apply to every path; IP reputation needs Cloud Armor Enterprise's
 threat intelligence; bot management needs reCAPTCHA keys; account takeover and account creation fraud have no
@@ -142,9 +142,13 @@ def _affinity(spec):
     return (("session_affinity", "CLIENT_IP"),) if spec.stickiness == "source-ip" else ()
 
 
-def _firewall(m, svc, n, name, port, proxies):
+def _firewall(m, svc, n, name, port, proxies, admit=None):
     """The rules admitting the proxies (the proxy-only subnet; none for a global load balancer, whose front ends
-    connect from the health-check ranges) and the health checks to the servers."""
+    connect from the health-check ranges) and the health checks to the servers: VPC firewall rules by network tag, or
+    the rules admit builds (a firewall policy's, by secure tag: firewall_policy.health_check_rule)."""
+    if admit is not None:
+        return (*((admit(m, svc, n, (proxies,), port, "proxies"),) if proxies else ()),
+                admit(m, svc, n, probe_ranges("MANAGED"), port))
     target = [network_tag(m, one(svc, "ciamTargetRole"))]
     return (*((block("resource", ["google_compute_firewall", f"{n}_proxies"], [
                 ("name", f"{name}-proxies"), ("description", f"Load balancer proxies for {rdn_value(svc)}"),
@@ -167,12 +171,13 @@ def _global_address(svc, n, ip):
             ref(f"data.google_compute_global_address.{n}.address"))
 
 
-def application_lb(m, svc, spec, groups, frontend, placement):
+def application_lb(m, svc, spec, groups, frontend, placement, admit=None):
     """An Application Load Balancer for a service name whose TLS terminates at the edge, and the Cloud Armor policy
     its protection policy asks for: regional, beside the proxy-only subnet; global when a CDN fronts it (Cloud CDN is
     the global load balancer's), with the CDN on its backend service. groups: the terraform names of its instance
     groups (with named port "ciam"); frontend: (data sources, address) of a regional one; placement: the regional
-    forwarding rule's subnetwork when internal."""
+    forwarding rule's subnetwork when internal; admit: what builds the rules admitting the proxies and probes when they
+    aren't VPC firewall rules (m, svc, n, ranges, port[, kind] -> rule)."""
     n, name = tf_name(rdn_value(svc)), f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"
     ip, port = one(svc, "ciamFrontendIp"), values(svc, "ciamPort")[0]
     internal = bool(ip) and is_private(ip)
@@ -206,7 +211,7 @@ def application_lb(m, svc, spec, groups, frontend, placement):
             block("resource", [kind("ssl_policy"), n], [
                 ("name", name), *_where(world), ("profile", profile), ("min_tls_version", version)]),
             _health_check(n, name, spec, port, world),
-            *_firewall(m, svc, n, name, port, None if world else one(edge[0], "ciamCidr")),
+            *_firewall(m, svc, n, name, port, None if world else one(edge[0], "ciamCidr"), admit),
             *(armor(m, n, spec, world) if waf else ()),
             block("resource", [kind("backend_service"), n], [
                 ("name", name), *_where(world), ("load_balancing_scheme", scheme),

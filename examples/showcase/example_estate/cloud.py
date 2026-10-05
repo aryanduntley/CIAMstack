@@ -17,6 +17,11 @@ so each export matches it except for the drift planted here, which `opsdir impor
     - fw-idm-sync's NSG priority changed in the portal (130 -> 400)
     - ds-3 resized (Standard_D4s_v5 -> Standard_D8s_v5)
     - a management subnet added in the portal, snet-mgmt; roles.json gives it the role subnet-mgmt
+    - the LDAPS Private Link Service's alias, which the record doesn't hold yet (the supplier portal connects by it)
+  Each environment's network depth as the stack's own Terraform made it: the source's Secrets Manager endpoint, LDAPS
+  endpoint service and egress firewall domain list; the target's Key Vault private endpoint and LDAPS Private Link
+  Service; the standby's network firewall policy (the record's rules by secure tag, probe rules, the egress allowlist),
+  its tag values, the network's enforcement order and the Private Service Connect endpoint for Google's APIs.
   standby/prod, Cloud Asset Inventory (an export, JSON lines) and gcloud output (--format=json):
     - ds-2 resized in the console (n2-standard-4 -> n2-standard-8; the instance list carries it)
     - an SSH rule for IAP opened by hand (35.235.240.0/20 to port 22): named, not recorded (no role)
@@ -89,9 +94,13 @@ def _aws_firewall(p, groups):
               for cn, role, cidrs, ports, trole, consumer, _ in p["fw"] for i, cidr in enumerate(cidrs) for port in ports)]
 
 
+def _lb_arn(cn):
+    return f"arn:aws:elasticloadbalancing:{REGION}:{ACCOUNT}:loadbalancer/net/ciam-prod-{cn}/{_hex(cn, n=16)}"
+
+
 def _aws_service(p, instances, cn, fqdn, zref, trole, ports, ip, pref):
     """A network load balancer, its Elastic IP (public) or private address, alias record, listeners and targets."""
-    arn = f"arn:aws:elasticloadbalancing:{REGION}:{ACCOUNT}:loadbalancer/net/ciam-prod-{cn}/{_hex(cn, n=16)}"
+    arn = _lb_arn(cn)
     dns = f"ciam-prod-{cn}-{_hex(cn, n=8)}.elb.{REGION}.amazonaws.com"
     internal = pref is None
     targets = [s[0] for s in p["servers"] if s[1] == trole]
@@ -261,13 +270,64 @@ def _aws_dns(p):
             for oc, cn, _, attrs in p["edge"] if oc == "ciamDnsForwarder"]
 
 
+def _by_role(rows, roles):
+    """Provider refs of the (binding name, role, ref, ...) rows whose role is one of roles."""
+    wanted = roles if isinstance(roles, list) else [roles]
+    return [ref for _, role, ref, *_ in rows if role in wanted]
+
+
+def _service_named(p, role):
+    return next(cn for cn, r, *_ in p["services"] if r == role)
+
+
+def _domain_list(sites):
+    """An allowlist as a Network Firewall domain list's targets: hosts without ports, *.example as .example."""
+    hosts = (site.rsplit(":", 1)[0] if site.rsplit(":", 1)[-1].isdigit() else site for site in sites)
+    return list(dict.fromkeys(h[1:] if h.startswith("*.") else h for h in hosts))
+
+
+def _aws_network_depth(p):
+    """What the stack's own Terraform made of its network depth: the Secrets Manager endpoint and its security group,
+    the LDAPS endpoint service, the egress firewall's domain list."""
+    out = []
+    for oc, cn, role, a in p["network"]:
+        tags = {"Name": cn, "Role": role, "ManagedBy": "opsdir"}
+        if oc == "ciamPrivateEndpoint":
+            group = f"sg-0{_hex('endpoint', cn, n=16)}"
+            out += [_res("managed", "aws_security_group", f"{cn}_endpoint", {
+                        "id": group, "name": f"ciam-prod-{cn}", "vpc_id": p["net"][1], "tags": {"ManagedBy": "opsdir"},
+                        "ingress": [{"cidr_blocks": [p["net"][2]], "from_port": 443, "to_port": 443,
+                                     "protocol": "tcp", "description": f"the network to {cn}"}]}),
+                    _res("managed", "aws_vpc_endpoint", cn, {
+                        "id": a["ciamProviderRef"], "vpc_id": p["net"][1], "vpc_endpoint_type": "Interface",
+                        "service_name": f"com.amazonaws.{REGION}.secretsmanager",
+                        "subnet_ids": _by_role(p["subnets"], a["ciamSubnetRole"]),
+                        "private_dns_enabled": a["ciamPrivateDns"] == "TRUE", "security_group_ids": [group],
+                        "tags": tags})]
+        elif oc == "ciamEndpointService":
+            out.append(_res("managed", "aws_vpc_endpoint_service", cn, {
+                "id": a["ciamProviderRef"], "service_name": a["ciamServiceAlias"],
+                "acceptance_required": a["ciamAcceptanceRequired"] == "TRUE",
+                "allowed_principals": [a["ciamAllowedPrincipal"]],
+                "network_load_balancer_arns": [_lb_arn(_service_named(p, a["ciamServiceRole"]))], "tags": tags}))
+        elif oc == "ciamProxy":
+            out.append(_res("managed", "aws_networkfirewall_rule_group", f"{cn}_domains", {
+                "arn": f"arn:aws:network-firewall:{REGION}:{ACCOUNT}:stateful-rulegroup/ciam-prod-{cn}-domains",
+                "tags": {**tags, "FirewallPolicy": a["ciamProviderRef"]},
+                "rule_group": [{"rules_source": [{"rules_source_list": [{
+                    "generated_rules_type": "ALLOWLIST", "target_types": ["TLS_SNI", "HTTP_HOST"],
+                    "targets": _domain_list(a["ciamAllowedDestination"])}]}]}]}))
+    return out
+
+
 def source_state():
     """The source environment's Terraform state (format version 4), with the planted drift."""
     p = SOURCE
     subnets, instances, groups = _source_ids(p)
     resources = [*_aws_network(p, subnets), *_aws_servers(p, subnets, instances, groups, {"pf-engine-2": "m6i.xlarge"}),
                  *_aws_firewall(p, groups), *_aws_services(p, instances), *_aws_keys(p, rotation=False),
-                 *_aws_monitoring(), *_drifted_source(p, subnets, groups), *_source_iam(), *_aws_dns(p)]
+                 *_aws_monitoring(), *_drifted_source(p, subnets, groups), *_source_iam(), *_aws_dns(p),
+                 *_aws_network_depth(p)]
     return _dumps({"version": 4, "terraform_version": "1.9.5", "serial": 214, "lineage": "5e0c-ciam-prod",
                    "outputs": {}, "resources": resources})
 
@@ -371,6 +431,35 @@ def _azure_vault(p):
               "activeKey": {"keyUrl": f"{url}/keys/{key_name}/4f1e"}}])
 
 
+def _azure_network_depth(p):
+    """(private endpoints, Private Link Services) as the Azure CLI lists them: the Key Vault endpoint with its DNS zone
+    group, the LDAPS Private Link Service (its alias, which the record doesn't hold yet)."""
+    endpoints, links = [], []
+    for oc, cn, role, a in p["network"]:
+        if oc == "ciamPrivateEndpoint":
+            subnet = _by_role(p["subnets"], a["ciamSubnetRole"])[0]
+            endpoints += [{"id": a["ciamProviderRef"], "name": a["ciamProviderRef"].rsplit("/", 1)[1],
+                           "type": "Microsoft.Network/privateEndpoints", "tags": {"Role": role, "ManagedBy": "opsdir"},
+                           "subnet": {"id": _subnet_id(subnet)},
+                           "privateLinkServiceConnections": [{
+                               "name": cn, "privateLinkServiceId": f"{RG}/providers/Microsoft.KeyVault/vaults/kv-ciam-prod",
+                               "groupIds": ["vault"]}],
+                           "ipConfigurations": [{"name": "primary", "privateIPAddress": a["ciamFrontendIp"]}]},
+                          {"id": f"{a['ciamProviderRef']}/privateDnsZoneGroups/default",
+                           "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+                           "privateDnsZoneConfigs": [{"privateDnsZoneId": a["ciamDnsZoneRef"]}]}]
+        elif oc == "ciamEndpointService":
+            lb = f"{NET}/loadBalancers/lb-ciam-prod-{_service_named(p, a['ciamServiceRole'])}"
+            links.append({"id": a["ciamProviderRef"], "name": a["ciamProviderRef"].rsplit("/", 1)[1],
+                          "type": "Microsoft.Network/privateLinkServices", "tags": {"Role": role, "ManagedBy": "opsdir"},
+                          "alias": f"pls-ciam-prod-{cn}.{_hex('alias', cn, n=8)}.eastus2.azure.privatelinkservice",
+                          "loadBalancerFrontendIpConfigurations": [{"id": f"{lb}/frontendIPConfigurations/frontend"}],
+                          "ipConfigurations": [{"name": "primary", "subnet": {
+                              "id": _subnet_id(_by_role(p["subnets"], a["ciamSubnetRole"])[0])}}],
+                          "visibility": {"subscriptions": [a["ciamVisibleTo"]]}, "autoApproval": {"subscriptions": []}})
+    return endpoints, links
+
+
 def target_inventory():
     """{file name: text} of the target environment's Azure CLI output and role map, with the planted drift."""
     p = TARGET
@@ -389,6 +478,7 @@ def target_inventory():
                                    "publicIpAddresses": [{"id": nat_ip["id"]}]}],
             "disk-encryption-sets.json": sets, "kv-secrets.json": secrets, "kv-keys.json": keys,
             "kv-key-disk-cmk.json": key_show,
+            "private-endpoints.json": _azure_network_depth(p)[0], "private-link-services.json": _azure_network_depth(p)[1],
             "roles.json": {f"{p['net'][1]}/snet-mgmt": "subnet-mgmt"}}
 
 
@@ -427,23 +517,84 @@ def _gcp_instance(server, full, resized):
                                    "subnetwork": f"{GAPI}/{subnets[subnet]}"}]}
 
 
+def _probe_ranges(ip):
+    return ["35.191.0.0/16"] if ip.startswith("10.") else ["35.191.0.0/16", "209.85.152.0/22", "209.85.204.0/22"]
+
+
 def _gcp_firewalls(p):
-    """The rendered rules (pinned priorities, '(name)' descriptions), each service's health-check probe rule, and the
-    rule opened by hand."""
+    """The rendered rules (pinned priorities, '(name)' descriptions) and each service's health-check probe rule (in the
+    network firewall policy instead under the policy model: _gcp_policy), and the rule opened by hand."""
     network = f"{GAPI}/{p['net'][1]}"
-    return [*({"kind": "compute#firewall", "name": f"ciam-prod-{cn}", "description": f"{role} ({cn})",
+    policy = p.get("firewall_model") == "policy"
+    return [*(() if policy else ({"kind": "compute#firewall", "name": f"ciam-prod-{cn}", "description": f"{role} ({cn})",
                "network": network, "direction": "INGRESS", "priority": 100 + 10 * i, "sourceRanges": cidrs,
                "targetTags": [f"ciam-prod-{trole}"], "allowed": [{"IPProtocol": "tcp", "ports": [str(x) for x in ports]}]}
-              for i, (cn, role, cidrs, ports, trole, _, _) in enumerate(p["fw"])),
-            *({"kind": "compute#firewall", "name": f"ciam-prod-{cn}-health-checks", "network": network,
-               "description": f"Google Cloud health checks for {cn}", "direction": "INGRESS", "priority": 1000,
-               "sourceRanges": ["35.191.0.0/16"] if ip.startswith("10.") else
-               ["35.191.0.0/16", "209.85.152.0/22", "209.85.204.0/22"],
-               "targetTags": [f"ciam-prod-{trole}"], "allowed": [{"IPProtocol": "tcp", "ports": [str(ports[0])]}]}
-              for cn, _, _, _, _, trole, ports, ip, _, _ in p["services"]),
+              for i, (cn, role, cidrs, ports, trole, _, _) in enumerate(p["fw"]))),
+            *(() if policy else ({"kind": "compute#firewall", "name": f"ciam-prod-{cn}-health-checks",
+                                  "network": network, "description": f"Google Cloud health checks for {cn}",
+                                  "direction": "INGRESS", "priority": 1000, "sourceRanges": _probe_ranges(ip),
+                                  "targetTags": [f"ciam-prod-{trole}"],
+                                  "allowed": [{"IPProtocol": "tcp", "ports": [str(ports[0])]}]}
+                                 for cn, _, _, _, _, trole, ports, ip, _, _ in p["services"])),
             {"kind": "compute#firewall", "name": "allow-iap-ssh", "description": "IAP SSH for the vendor (temporary)",
              "network": network, "direction": "INGRESS", "priority": 900, "sourceRanges": ["35.235.240.0/20"],
              "targetTags": ["ciam-prod-ds"], "allowed": [{"IPProtocol": "tcp", "ports": ["22"]}]}]
+
+
+def _tag_value(p, role):
+    """The tag value (tagValues/...) the standby's servers of a role are bound to."""
+    return f"tagValues/{int(_hex('tag', role, n=6), 16)}"
+
+
+def _sites_by_port(sites):
+    """((port, hosts), ...) of an allowlist, 443 when a site names no port."""
+    split = [(int(x.rsplit(":", 1)[1]) if x.rsplit(":", 1)[-1].isdigit() else 443,
+              x.rsplit(":", 1)[0] if x.rsplit(":", 1)[-1].isdigit() else x) for x in sites]
+    return tuple((port, [h for q, h in split if q == port]) for port in sorted({q for q, _ in split}))
+
+
+def _gcp_policy(p):
+    """The network firewall policy (in the host project) as gcloud describes it: the record's rules and the probe
+    rules by secure tag, the egress allowlist with everything else to the internet denied; the tag values per role."""
+    (_, _, _, policy), = [x for x in p["network"] if x[0] == "ciamFirewallPolicy"]
+    (proxy,) = [a for oc, _, _, a in p["network"] if oc == "ciamProxy"]
+    roles = sorted({s[1] for s in p["servers"]})
+    every = [{"name": _tag_value(p, r)} for r in roles]
+    ingress = [{"priority": 100 + 10 * i, "direction": "INGRESS", "action": "allow", "ruleName": cn,
+                "description": role, "targetSecureTags": [{"name": _tag_value(p, trole)}],
+                "match": {"srcIpRanges": cidrs, "layer4Configs": [{"ipProtocol": "tcp", "ports": [str(x) for x in ports]}]}}
+               for i, (cn, role, cidrs, ports, trole, _, _) in enumerate(p["fw"])]
+    probes = [{"priority": 70000 + i, "direction": "INGRESS", "action": "allow",
+               "description": f"Google Cloud health checks for {cn}", "targetSecureTags": [{"name": _tag_value(p, trole)}],
+               "match": {"srcIpRanges": _probe_ranges(ip), "layer4Configs": [{"ipProtocol": "tcp", "ports": [str(ports[0])]}]}}
+              for i, (cn, _, _, _, _, trole, ports, ip, _, _) in enumerate(p["services"])]
+    egress = [*({"priority": 80000 + i, "direction": "EGRESS", "action": "allow", "targetSecureTags": every,
+                 "match": {"destFqdns": hosts, "layer4Configs": [{"ipProtocol": "tcp", "ports": [str(port)]}]}}
+                for i, (port, hosts) in enumerate(_sites_by_port(proxy["ciamAllowedDestination"]))),
+              {"priority": 2147483000, "direction": "EGRESS", "action": "deny", "targetSecureTags": every,
+               "match": {"destIpRanges": ["0.0.0.0/0"], "layer4Configs": [{"ipProtocol": "all"}]}}]
+    return [_asset("compute.googleapis.com/NetworkFirewallPolicy", {
+                "kind": "compute#firewallPolicy", "name": policy["ciamProviderRef"].rsplit("/", 1)[1],
+                "selfLink": f"{GAPI}/{policy['ciamProviderRef']}", "rules": [*ingress, *probes, *egress],
+                "associations": [{"name": "ciam-prod-fw-policy", "attachmentTarget": f"{GAPI}/{p['net'][1]}"}]}),
+            *(_asset("cloudresourcemanager.googleapis.com/TagValue",
+                     {"name": _tag_value(p, r), "shortName": r, "parent": "tagKeys/281474976710656"},
+                     name=f"//cloudresourcemanager.googleapis.com/{_tag_value(p, r)}") for r in roles)]
+
+
+def _gcp_google_apis(p):
+    """The Private Service Connect endpoint for Google's APIs, in the host project."""
+    (a,) = [a for oc, _, _, a in p["network"] if oc == "ciamPrivateEndpoint"]
+    (role,) = [r for oc, _, r, _ in p["network"] if oc == "ciamPrivateEndpoint"]
+    address = f"{GAPI}/{HOST}/global/addresses/ciam-prod-psc-apis"
+    return [_asset("compute.googleapis.com/GlobalAddress", {
+                "kind": "compute#address", "name": "ciam-prod-psc-apis", "address": a["ciamFrontendIp"],
+                "purpose": "PRIVATE_SERVICE_CONNECT", "addressType": "INTERNAL", "selfLink": address,
+                "labels": {"role": role, "managed_by": "opsdir"}}),
+            _asset("compute.googleapis.com/GlobalForwardingRule", {
+                "kind": "compute#forwardingRule", "name": a["ciamProviderRef"].rsplit("/", 1)[1], "target": "all-apis",
+                "IPAddress": a["ciamFrontendIp"], "network": f"{GAPI}/{p['net'][1]}",
+                "selfLink": f"{GAPI}/{a['ciamProviderRef']}"})]
 
 
 def _gcp_services(p):
@@ -550,7 +701,9 @@ def standby_inventory():
                 _asset("iam.googleapis.com/ServiceAccount", {"name": f"{PROJECT}/serviceAccounts/ciam-servers@"
                                                                      "example-aero-ciam-standby.iam.gserviceaccount.com"})]
     host = [_asset("compute.googleapis.com/Network", {"kind": "compute#network", "name": p["net"][1].rsplit("/", 1)[1],
-                                                      "selfLink": f"{GAPI}/{p['net'][1]}"}),
+                                                      "selfLink": f"{GAPI}/{p['net'][1]}",
+                                                      "networkFirewallPolicyEnforcementOrder": "BEFORE_CLASSIC_FIREWALL"}),
+            *_gcp_policy(p), *_gcp_google_apis(p),
             *(_asset("compute.googleapis.com/Subnetwork", {"kind": "compute#subnetwork", "name": ref.rsplit("/", 1)[1],
                                                            "ipCidrRange": cidr, "network": f"{GAPI}/{p['net'][1]}",
                                                            "region": f"{GAPI}/{HOST}/regions/us-central1",

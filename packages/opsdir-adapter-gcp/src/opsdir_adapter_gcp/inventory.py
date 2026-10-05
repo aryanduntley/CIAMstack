@@ -53,29 +53,17 @@ from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, l
                                    realization_roles, resource, tagged_role)
 from opsdir_format_terraform.state import blocks, first_block, read_state
 from .iam import iam_resources
+from .names import name_parts, resource_id
+from .network_inventory import google_apis_endpoint, network_resources
 
 PROVIDER = "gcp"
 
 SKIPPED = ("google_secret_manager_secret_version", "google_secret_manager_regional_secret_version", "random_password",
            "tls_private_key", "google_service_account_key", "google_sql_database_instance", "google_sql_user")
-_SELF_LINK = re.compile(r"^(?:https:)?//[^/]+/(?:(?:[a-z]+/)?(?:v\d+[a-z0-9]*|beta|alpha)/)?")
 _RULE_NAME = re.compile(r"\(([A-Za-z0-9._-]+)\)\s*$")
 PROTECTION = {"SOFTWARE": "software", "HSM": "hsm", "HSM_SINGLE_TENANT": "managed-hsm", "EXTERNAL": "external",
               "EXTERNAL_VPC": "external"}
 CHANNEL_KINDS = (("pagerduty", "paging-service"), ("email", "email"), ("pubsub", "topic"), ("webhook", "webhook"))
-
-
-def resource_id(v):
-    """A Google Cloud resource name from an id, a self link (https://<api host>/[<api>/]v1/projects/...) or a Cloud
-    Asset Inventory full resource name (//<service>.googleapis.com/projects/...)."""
-    return _SELF_LINK.sub("", v) if v else v
-
-
-def name_parts(resource_name):
-    """{collection: id} of a Google Cloud resource name (projects/p/regions/r/subnetworks/s; 'global' dropped); {}
-    when it isn't one."""
-    tokens = [t for t in resource_id(resource_name or "").split("/") if t != "global"]
-    return dict(zip(tokens[::2], tokens[1::2])) if tokens and len(tokens) % 2 == 0 else {}
 
 
 def _labels(a):
@@ -211,7 +199,7 @@ def _services(found):
             "ciamTargetRole": found_roles.most_common(1)[0][0] if found_roles else None,
             "ciamFrontendIp": ip, "ciamEdgeFact": facts, "ciamEdgeSetting": settings, **dns},
             name=fr.get("name"), role=_role(fr))
-    return tuple(one_rule(fr) for fr in of_types(found, *FORWARDING) if fr.get("id"))
+    return tuple(one_rule(fr) for fr in of_types(found, *FORWARDING) if fr.get("id") and not google_apis_endpoint(fr))
 
 
 def _edge(found):
@@ -226,11 +214,16 @@ def _edge(found):
                   for ip, (_, _, others) in answers for a in others))
 
 
+ALLOCATION = {"MANUAL_ONLY": "static", "AUTO_ONLY": "automatic"}
+
+
 def _egress(found):
+    """Cloud NAT: its static addresses; whether they are fixed (MANUAL_ONLY) or Google's to pick (AUTO_ONLY)."""
     addresses = {resource_id(a.get("id")): a.get("address") for a in of_types(found, "google_compute_address")}
     return tuple(resource("egress", resource_id(a.get("id")), {
         "ciamCidr": [f"{addresses[resource_id(n)]}/32" for n in a.get("nat_ips") or ()
-                     if addresses.get(resource_id(n))]}, name=a.get("name"), role=_role(a))
+                     if addresses.get(resource_id(n))],
+        "ciamNatAllocation": ALLOCATION.get(a.get("nat_ip_allocate_option"))}, name=a.get("name"), role=_role(a))
         for a in of_types(found, "google_compute_router_nat") if a.get("id"))
 
 
@@ -394,10 +387,13 @@ def pairs_resources(pairs):
     rules, rule_notices = _firewall(pairs)
     iam, iam_notices = iam_resources(pairs)
     edge, edge_notices = _edge(pairs)
+    instances = {key: _server_role(a) for a in of_types(pairs, "google_compute_instance") if _server_role(a)
+                 for key in (resource_id(a.get("id")), str(a.get("instance_id") or "")) if key}
+    network, network_notices = network_resources(pairs, instances, _tag_roles(pairs), proxy_subnets(pairs))
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *rules, *_secrets(pairs),
              *_keys(pairs), *_storage(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
              *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs), *_canaries(pairs),
-             *iam, *edge), (*rule_notices, *iam_notices, *edge_notices))
+             *iam, *edge, *network), (*rule_notices, *iam_notices, *edge_notices, *network_notices))
 
 
 def state_resources(text):

@@ -5,6 +5,8 @@ modify cn=ds-3,env=prod,cloud=target,ou=environments,dc=ciam-ops
     replace ciamInstanceSize: Standard_D8s_v5
 modify cn=fw-idm-sync,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
     replace ciamRulePriority: 400
+modify cn=ldaps-link,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+    replace ciamServiceAlias: pls-ciam-prod-ldaps-link.4581ab57.eastus2.azure.privatelinkservice
 modify cn=svc-apps,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
     replace ciamEdgeFact: tls-mode passthrough
 modify cn=svc-ldaps,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
@@ -13,5 +15,5 @@ modify cn=svc-login,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-op
     replace ciamEdgeFact: tls-mode passthrough
 modify cn=svc-sso,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
     replace ciamEdgeFact: tls-mode passthrough
-7 change(s) (not applied)
+8 change(s) (not applied)
 exit 0

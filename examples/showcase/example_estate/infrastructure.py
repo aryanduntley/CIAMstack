@@ -8,6 +8,7 @@ from .common import AWS, AZ, CON, DECL, ENVS, GCP, INTS, XA, cert, chg, owner, s
 from .custom import RESIDENCY
 from .access import ACCESS
 from .edge import EDGE, SERVICE_ATTRS
+from .network import NETWORK
 from .observability import MONITORING
 
 SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password", "ds-tls-keystore",
@@ -83,6 +84,7 @@ SOURCE = MappingProxyType({
     "access": ACCESS["source"],
     # DNS zones, forwarders, the SSO certificate in the cloud's store, edge subnets; what the source's edge runs (edge)
     "edge": EDGE["source"], "service_attrs": SERVICE_ATTRS["source"],
+    "network": NETWORK["source"],
     # compute groups: (name, binding role, server role, provider ref, image, size, min, desired, max, zones, tokens)
     "compute": (("asg-pf-engine", "compute-pf-engine", "pf-engine",
                  "arn:aws:autoscaling:us-east-1:111122223333:autoScalingGroup:6d4c1f0e-0000-4000-8000-00000000a001:"
@@ -155,6 +157,7 @@ TARGET = MappingProxyType({
     "access": ACCESS["target"],
     # DNS zones, forwarders, the SSO certificate in the cloud's store, edge subnets; what the source's edge runs (edge)
     "edge": EDGE["target"], "service_attrs": SERVICE_ATTRS["target"],
+    "network": NETWORK["target"],
     # planted: the domain's Communication Services identity isn't DKIM-verified yet and its DMARC is weaker; no bus
     # carries the identity audit stream
     "sending": (("mail-acs", "mail-sending", "example-aero.test",
@@ -229,6 +232,7 @@ STANDBY = MappingProxyType({
     "access": ACCESS["standby"],
     # DNS zones, forwarders, the SSO certificate in the cloud's store, edge subnets; what the source's edge runs (edge)
     "edge": EDGE["standby"], "service_attrs": SERVICE_ATTRS["standby"],
+    "network": NETWORK["standby"], "firewall_model": "policy",   # rules by secure tag, in a network policy
     "compute": (("mig-pf-engine", "compute-pf-engine", "pf-engine",
                  f"{PROJECT}/regions/us-central1/instanceGroupManagers/ciam-pf-engine",
                  GIMG + "pingfederate-12-1-4-rhel9", "n2-standard-2", 2, 2, 4, ("us-central1-a", "us-central1-b"),
@@ -266,7 +270,7 @@ def _bindings(file, env, p):
     return (spec(file, B, ["top", "organizationalUnit"], ou="bindings"),
             spec(file, b(p["net"][0]), ["top", "ciamNetwork"], cn=p["net"][0], ciamBindingRole="network",
                  ciamProviderRef=p["net"][1], ciamCidr=p["net"][2], ciamResourceGroup=p.get("rg"),
-                 ciamOwner=owner("network-security")),
+                 ciamFirewallModel=p.get("firewall_model"), ciamOwner=owner("network-security")),
             *(spec(file, b(cn), ["top", "ciamSubnetBinding"], cn=cn, ciamBindingRole=role, ciamProviderRef=ref,
                    ciamCidr=cidr, ciamZone=zone) for cn, role, ref, cidr, zone in p["subnets"]),
             *(spec(file, b(cn), ["top", "ciamServiceName"], cn=cn, ciamBindingRole=role, ciamFqdn=fqdn,
@@ -277,11 +281,12 @@ def _bindings(file, env, p):
             *(spec(file, b(cn), ["top", "ciamFirewallRule"], cn=cn, ciamBindingRole=role, ciamSourceCidr=cidrs,
                    ciamPort=ports, ciamTargetRole=trole, ciamProtocol="tcp",
                    ciamRulePriority=100 + 10 * i if p.get("pinned_priorities") else None,
+                   ciamPolicyRole="firewall-policy" if p.get("firewall_model") == "policy" else None,
                    ciamAllowsConsumer=f"cn={consumer},{CON}" if consumer else None,
                    ciamChangeRef=chg(chg_) if chg_ else None)
               for i, (cn, role, cidrs, ports, trole, consumer, chg_) in enumerate(p["fw"])),
             spec(file, b("egress-pf"), ["top", "ciamEgress"], cn="egress-pf", ciamBindingRole="pf-egress",
-                 ciamProviderRef=p["egress"][0], ciamCidr=p["egress"][1]),
+                 ciamProviderRef=p["egress"][0], ciamCidr=p["egress"][1], ciamNatAllocation="static"),
             *((spec(file, b("time"), ["top", "ciamTimeSource"], cn="time", ciamBindingRole="time-source",
                     ciamTimeServer=p["time"][0], ciamTimeKind=p["time"][1], ciamOwner=owner("network-security")),)
               if p.get("time") else ()),
@@ -310,7 +315,7 @@ def _bindings(file, env, p):
                    ciamStreamKind=kind) for cn, role, ref, kind in p.get("streams") or ()),
             *(spec(file, b(cn), ["top", oc], cn=cn, ciamBindingRole=role, **attrs)
               for oc, cn, role, attrs in (*(p.get("monitoring") or ()), *(p.get("access") or ()),
-                                          *(p.get("edge") or ()))),
+                                          *(p.get("edge") or ()), *(p.get("network") or ()))),
             *((_interconnect(file, b, *p["interconnect"]),) if p.get("interconnect") else ()))
 
 
@@ -387,8 +392,10 @@ STAGE_SERVERS = (("ds-s1", "ds", "10.20.1.31", "us-east-1a", "subnet-ds-a", "ami
                  ("am-s1", "am", "10.20.7.31", "us-east-1a", "subnet-am-a", "ami-0a9b8c7d6e5f40321", AM_V),
                  ("idm-s1", "idm", "10.20.6.31", "us-east-1a", "subnet-idm-a", "ami-0b1c2d3e4f5a60987", IDM_V),
                  ("ig-s1", "ig", "10.20.10.31", "us-east-1a", "subnet-ig-a", "ami-0c2d3e4f5a6b70123", IG_V))
-# consumers reach production only
-STAGE_DROPS = tuple(role for _, role, *_ in SOURCE["fw"] if role.startswith("fw-consumer-") and role != "fw-consumer-pf-ds-svc")
+# consumers reach production only (its firewall rules, its LDAPS endpoint service); the private endpoint and the egress
+# firewall are the shared VPC's, kept by production's root
+STAGE_DROPS = (*(role for _, role, *_ in SOURCE["fw"] if role.startswith("fw-consumer-") and role != "fw-consumer-pf-ds-svc"),
+               "ldaps-endpoint-service", "private-secrets", "egress-firewall")
 # (name, overridden entry, attribute, value, why)
 STAGE_OVERRIDES = (
     ("replicas", f"cn=topology,ou=replication,{DECL}", "ciamReplicaCount", 1, "stage runs one directory replica"),

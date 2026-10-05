@@ -14,7 +14,7 @@ Per environment, `terraform/providers.tf` (`hashicorp/google ~> 8.0`; the projec
 |---|---|
 | The `network` binding: `ciamProviderRef` (the network's resource name, `projects/<host>/global/networks/<name>`, or its name) | `data google_compute_network` `main`, in the host project the name gives (Shared VPC): the landing zone owns it |
 | Subnet bindings: `ciamProviderRef` = `projects/<host>/regions/<region>/subnetworks/<name>` (or a name in the cloud's region) | `data google_compute_subnetwork` |
-| Firewall rules | `google_compute_firewall`, ingress allow, VPC-wide, targeting the network tag of the rule's target role (`ciam-<env>-<role>`); priority from `ciamRulePriority`. An unpinned rule takes the next free slot from 1000 (step 10) with a `# NOTE` asking for it to be pinned, so adding a rule never renumbers others (the same rule as Azure's NSG priorities, `opsdir.domains.infrastructure.firewall`) |
+| Firewall rules | `google_compute_firewall`, ingress allow, VPC-wide, targeting the network tag of the rule's target role (`ciam-<env>-<role>`); network firewall policy rules by secure tag instead under the `policy` firewall model (see [Network depth](#network-depth)); priority from `ciamRulePriority`. An unpinned rule takes the next free slot from 1000 (step 10) with a `# NOTE` asking for it to be pinned, so adding a rule never renumbers others (the same rule as Azure's NSG priorities, `opsdir.domains.infrastructure.firewall`) |
 | Servers | `google_compute_instance`: machine type, zone, hostname, the role's network tag, a boot disk from `ciamImageRef` encrypted with the `disk-encryption` binding's Cloud KMS key (`kms_key_self_link`, else an `UNBOUND` comment), the server's subnetwork and static address, Shielded VM (secure boot, vTPM, integrity monitoring), OS Login, labels `role`, `product`, `managed_by` |
 | Service names | A passthrough network load balancer: an unmanaged instance group per zone of the target role's servers, a regional TCP health check on the first port and a firewall rule admitting Google Cloud's health-check probes to the role's tag on that port (`35.191.0.0/16`; external also `209.85.152.0/22`, `209.85.204.0/22`), a regional backend service over the groups (by `self_link`, `CONNECTION` balancing), a forwarding rule (`INTERNAL` in the first target's subnetwork for a private `ciamFrontendIp`, else `EXTERNAL`; a public address named by the service's `ciamProviderRef` is read as `data google_compute_address`); a Cloud DNS record in the managed zone `ciamDnsZoneRef`. An `EXTERNAL` backend service names its port (`port_name` `ciam`, each group's `named_port`) and sets `capacity_scaler`; `INTERNAL` takes neither. A forwarding rule takes at most five ports: a service with more forwards all ports (`all_ports`, with a comment), and its firewall rules still admit only the service's. A service whose role a traffic or protection policy names (core `edge` domain) is tuned or replaced by it: see [Edge](#edge-traffic-and-protection-policies) |
 | Secret references (`gcp-sm://projects/<p>/secrets/<name>`, regional `…/locations/<l>/secrets/<name>`) | `data google_secret_manager_secret` (regional: `google_secret_manager_regional_secret`): metadata only, so a missing secret fails the plan and no value enters Terraform state (secret versions are never rendered) |
@@ -61,6 +61,19 @@ Nothing is rendered into a zone whose binding names `ciamManagedBy` (someone out
 ### CDN
 
 Cloud CDN belongs to Google's global external Application Load Balancer, so a protection policy with `ciamCdn` renders the service's load balancer global (whatever its TLS mode; a passthrough service keeps HTTPS to its servers): a global SSL policy, health check, backend service with `enable_cdn` and `cache_mode` `USE_ORIGIN_HEADERS` (the origin's `Cache-Control` decides: sign-in pages and tokens send `no-store`), URL map, target HTTPS proxy, a global forwarding rule on the reserved global address the service's `ciamProviderRef` names (`data google_compute_global_address`), the health-check firewall rule (no proxy-only subnet), and the protection policy as a global Cloud Armor policy, with Adaptive Protection (layer 7 DDoS defense) for `application-advanced`. The DNS record points at the global forwarding rule. A private address can't have a CDN: a comment.
+
+### Network depth
+
+What the core `network` domain records and the stack keeps itself (no `ciamManagedBy`) renders into the platform's root; what someone else keeps is a comment naming them, rendered in their root. Nothing recorded, nothing rendered (`opsdir_adapter_gcp.network`, `opsdir_adapter_gcp.firewall_policy`).
+
+| Record | Renders as |
+|---|---|
+| `ciamFirewallModel` `policy` on the `network` binding | A network firewall policy instead of VPC firewall rules, in the network's project (a Shared VPC's host project; the deployer needs rights there): `google_compute_network_firewall_policy` and its association with the network (unless the network policy, `ciamFirewallPolicy` scope `network`, is kept by someone else: its `ciamProviderRef` then names it), a tag key with purpose `GCE_FIREWALL` for the network (or the one `ciamTagKeyRef` names) and a value per server role bound to each instance (`google_tags_location_tag_binding`; the deployer needs the Tag User role on the values, an access request). The record's rules become policy rules targeting the role's tag value (priorities pinned as before); rules a hierarchical policy holds (`ciamPolicyRole`) are read, never rendered. The health-check and proxy rules of load balancers follow the model. `ciamPolicyOrder` is the network's `network_firewall_policy_enforcement_order` (the landing zone's): a comment |
+| `ciamPrivateEndpoint` kind `all-apis` | Private Service Connect for Google's APIs in the network's project: a global internal address (`PRIVATE_SERVICE_CONNECT`, `ciamFrontendIp`) and a global forwarding rule to `all-apis` (its name 1-20 lowercase letters and digits); with `ciamPrivateDns`, a comment for the landing zone's `googleapis.com` zone |
+| Kinds `subnet-access`, `peered-service`, `gateway`, `interface` | A comment: Private Google Access and private services access are the landing zone's subnet and network settings; Google Cloud has no gateway endpoints; an endpoint to a published service needs its service attachment |
+| `ciamEndpointService` | A `google_compute_service_attachment` on the internal passthrough forwarding rule of the service name `ciamServiceRole` names, NAT subnets from `ciamSubnetRole` (PSC subnets the landing zone keeps), `ACCEPT_MANUAL` with a consumer accept list per `ciamAllowedPrincipal` (a project, or a network URL) when `ciamAcceptanceRequired`, else `ACCEPT_AUTOMATIC`. A public or application load balancer: a comment |
+| `ciamProxy` kind `firewall` the stack keeps | Under the policy model, egress rules for every role's tag value: `dest_fqdns` per port (a wildcard domain can't be an FQDN object: a comment), the ranges the stack reaches privately (its network, its interconnects', its private endpoints' addresses), then a deny of all other egress at the lowest priority. Under the rules model a comment: FQDN rules exist only in network firewall policies |
+| Other proxies | A comment: their allowlist is kept there |
 
 ## Reading an environment back from Terraform state
 
@@ -121,6 +134,24 @@ What the edge runs comes back in the edge domain's terms (`opsdir_adapter_gcp.ed
 
 Rules admitting only a proxy-only subnet (role `subnet-edge`), like those admitting only the health checks, belong to load balancers and are left out.
 
+### The network depth, read back
+
+What the network carries beyond networks, subnetworks and VPC firewall rules comes back in the network domain's terms (`opsdir_adapter_gcp.network_inventory`; Cloud Asset Inventory and gcloud items normalize to the same names: `cli_network.py`). Matching is by provider ref (the resource name); a new one needs its label `role`, or a role in `roles.json`. What Google Cloud can't label takes a role by convention, the same in every environment: a network's routes `routes`, a peering `peering-<peer network name>`, a subnetwork's flow logs `flow-logs-<subnet role>`.
+
+| Google Cloud resource | Record entry |
+|---|---|
+| `google_compute_network_firewall_policy_rule` | firewall rules under the policy model: ingress allow rules by rule name, sources, single ports, priority, the policy they belong to (`ciamPolicyRole`), the role of the instances their target secure tag values are bound to (else the value's short name); probe and proxy-only-subnet rules are the load balancers'; egress allow rules naming sites (`dest_fqdns`) are the policy's egress allowlist |
+| `google_compute_network_firewall_policy` (+ association) | firewall policy (scope network); the network's `network_firewall_policy_enforcement_order` as its `ciamPolicyOrder`; the egress allowlist as a proxy kind `firewall` with the policy's name as its provider ref |
+| `google_compute_firewall_policy` (+ rules) | firewall policy (scope hierarchical): read, never rendered; its rules counted, not recorded |
+| `google_compute_route` | one route table per network (Google Cloud's routes are network-wide): `<destination> <kind> [<target>] [for <roles>]`, the roles those of the instances carrying the route's network tags |
+| `google_compute_global_address` (`PRIVATE_SERVICE_CONNECT`) + global forwarding rule to `all-apis` / `vpc-sc` | private endpoint `all-apis` (the forwarding rule its provider ref, the address its frontend, the address's label `role`); not a service name |
+| `google_compute_service_attachment` | endpoint service: the forwarding rule it exposes, its URI for consumers, the projects and networks accepted, acceptance, its PSC NAT subnets |
+| `google_compute_network_peering`, `google_compute_vpn_tunnel` (+ router and router peer), `google_compute_interconnect_attachment` | interconnect depth: peering (`ACTIVE`: accepted; its other side the environment whose network binding is the peer network), VPN (peer address, BGP numbers), dedicated |
+| a subnetwork's `log_config` | flow log (scope subnet) |
+| `google_compute_router_nat` | its egress binding's `ciamNatAllocation`: `MANUAL_ONLY` static, `AUTO_ONLY` automatic (nothing a partner can allowlist) |
+
+A tag key the platform's own Terraform made (its description says `Managed by opsdir`, or its short name is the render's `ciam-<env>-role`) isn't read into `ciamTagKeyRef` (the render would then stop making it); a firewall tag key someone else made for the environment's network (`purpose_data.network`) is the network policy's `ciamTagKeyRef`, which the render references instead of creating one (several such keys are named: which one is the record's to say). A VPN's other side comes from its label-free tag `PeerEnvironment` only: the record holds no gateways to match `peer_gcp_gateway` against, and a peer's address isn't evidence of an environment.
+
 ## Reading an environment from Cloud Asset Inventory and gcloud
 
 Where there is no Terraform state (or to check it against what the project actually runs), `gcp/cli-inventory` reads Cloud Asset Inventory and `gcloud … --format=json` output. Collect it once per environment, into one folder per `<cloud>/<env>`; file names are free (`.json`, or `.jsonl` for an export), because every item says what it is: an asset by its asset type, a compute item by its `kind`, the others by their resource names. The one exception is DNS: `gcloud dns record-sets list` doesn't print the zone, so each zone's record sets go in a file named after the zone (record sets in an asset export name their zone).
@@ -151,6 +182,20 @@ for kind in url-maps target-https-proxies ssl-policies health-checks security-po
   gcloud compute $kind list --project=$PROJECT --format=json > "$out/$kind.json"
 done
 gcloud dns managed-zones list --project=$HOST --format=json > $out/managed-zones.json
+
+# the network depth: network and hierarchical firewall policies, routes, attachments, tunnels, tag values and bindings
+gcloud compute network-firewall-policies list --project=$HOST --format='value(name)' | while read -r fp; do
+  gcloud compute network-firewall-policies describe "$fp" --global --project=$HOST --format=json > "$out/policy-$fp.json"
+done
+gcloud compute routes list --project=$HOST --format=json                  > $out/routes.json
+gcloud compute service-attachments list --project=$P --format=json        > $out/service-attachments.json
+gcloud compute vpn-tunnels list --project=$HOST --format=json             > $out/vpn-tunnels.json
+gcloud resource-manager tags values list --parent=tagKeys/KEY --format=json  > $out/tag-values.json
+gcloud compute instances list --project=$P --format='value(name,zone.basename(),id)' |
+  while read -r name zone id; do
+    gcloud resource-manager tags bindings list --location=$zone --format=json \
+      --parent=//compute.googleapis.com/projects/$P/zones/$zone/instances/$id > "$out/tag-bindings-$name.json"
+  done
 
 # IAM: policies on every resource, the folders and organization above (inherited), accounts, roles, deny and org policies
 gcloud asset export --content-type=iam-policy --project=$P --output-path=gs://<bucket>/iam.json   # then copy it here, or:
@@ -243,7 +288,7 @@ It adds no required roles, planner checks or schema of its own; the environment'
 - **DNS failover** is a plain record with a comment (Cloud DNS's primary-backup policy is configured by hand).
 - **Edge.** Preconfigured WAF exclusions apply on every path; Adaptive Protection (global backend services) isn't rendered for the regional load balancer.
 - **Cloud Asset Inventory and `gcloud` shapes** follow Google's API references and the gcloud source (checked 2026-10-02); like the Terraform, the importer hasn't yet read a live project (milestone 7.2).
-- **Classic VPC firewall rules with network tags.** Google's direction for governed targeting is Cloud NGFW network firewall policies with secure tags (IAM-governed); network tags remain supported. The firewall model becomes a per-environment choice in milestone 4.9.
+- **Firewall model.** Classic VPC firewall rules with network tags stay the default; an environment chooses network firewall policies with secure tags (IAM-governed targeting) with `ciamFirewallModel` `policy`. The importers read both (see [The network depth, read back](#the-network-depth-read-back)); hierarchical policies are read, never rendered.
 
 ## Tests
 
@@ -271,4 +316,9 @@ It adds no required roles, planner checks or schema of its own; the environment'
 
 `tests/test_gcp_state.py`: the Terraform state importer: networks, subnetworks, servers with their exact role and product, firewall rules by name (probe rules left out; what can't be recorded named), a forwarding rule as a service named by its DNS record, secrets, keys, storage, jobs, compute groups, clusters, monitoring; drift found and recorded.
 
+`tests/test_gcp_network.py`: the policy firewall model (policy and association in the network's project, tag key and values, instance tag bindings, rules by secure tag, a recorded tag key and a policy someone else keeps, hierarchical rules read only, probe and proxy rules following the model), the rules model unchanged, a PSC endpoint for Google's APIs, what the landing zone keeps, a service attachment with its accept lists, the egress allowlist ending in a deny, nothing rendered without records.
+
+`tests/test_gcp_network_state.py`: the policy firewall model read back (rules by secure tag as the bound role's, probe rules left out, the egress allowlist, the enforcement order, hierarchical rules counted), routes as a network-wide table, PSC for Google's APIs as a private endpoint and not a service, service attachments, peering and VPN depth, subnet flow logs, Cloud NAT's allocation; Cloud Asset Inventory and gcloud reading the same.
+
 Installing the package registers it with opsdir (entry point `opsdir.adapters`: `gcp`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.
+

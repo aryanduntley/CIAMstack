@@ -1358,6 +1358,85 @@ resource "aws_shield_protection" "svc_sso" {
 
 # `sso.example-aero.test` is in a zone corporate-dns runs: not rendered here (the plan drafts the request to them)
 
+# Private endpoint 'pe-secrets' to secrets (reaches pf-admin-password, pf-signing-key, ds-root-password)
+
+resource "aws_security_group" "pe_secrets_endpoint" {
+  name        = "ciam-prod-pe-secrets"
+  description = "CIAM private endpoint pe-secrets (source/prod)"
+  vpc_id      = data.aws_vpc.main.id
+  tags = {
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "pe_secrets_endpoint_0" {
+  security_group_id = aws_security_group.pe_secrets_endpoint.id
+  cidr_ipv4         = "10.20.0.0/16"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+  description       = "the network to pe-secrets"
+}
+
+resource "aws_vpc_endpoint" "pe_secrets" {
+  vpc_id              = data.aws_vpc.main.id
+  service_name        = "com.amazonaws.us-east-1.secretsmanager"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = [data.aws_subnet.subnet_ds_a.id, data.aws_subnet.subnet_ds_b.id, data.aws_subnet.subnet_ds_c.id, data.aws_subnet.subnet_pf_a.id, data.aws_subnet.subnet_pf_b.id]
+  security_group_ids  = [aws_security_group.pe_secrets_endpoint.id]
+  private_dns_enabled = true
+  tags = {
+    Name      = "pe-secrets"
+    Role      = "private-secrets"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_vpc_endpoint_service" "ldaps_link" {
+  acceptance_required        = true
+  network_load_balancer_arns = [aws_lb.svc_ldaps.arn]
+  allowed_principals         = ["arn:aws:iam::444455556666:root"]
+  tags = {
+    Name      = "ldaps-link"
+    Role      = "ldaps-endpoint-service"
+    ManagedBy = "opsdir"
+  }
+}
+
+# Egress firewall 'egress-firewall': reference this rule group from its firewall policy (arn:aws:network-firewall:us-east-1:111122223333:firewall-policy/ciam-prod-egress) (stateful_rule_group_reference)
+
+# A domain list matches TLS SNI and HTTP Host only: email-smtp.us-east-1.amazonaws.com:587 isn't web traffic, so the policy's other stateful rules decide it
+
+resource "aws_networkfirewall_rule_group" "egress_firewall_domains" {
+  name        = "ciam-prod-egress-firewall-domains"
+  type        = "STATEFUL"
+  capacity    = 100
+  description = "Sites the CIAM platform reaches (source/prod)"
+  rule_group {
+    rule_variables {
+      ip_sets {
+        key = "HOME_NET"
+        ip_set {
+          definition = ["10.20.0.0/16"]
+        }
+      }
+    }
+    rules_source {
+      rules_source_list {
+        generated_rules_type = "ALLOWLIST"
+        target_types         = ["TLS_SNI", "HTTP_HOST"]
+        targets              = ["ocsp.example-ca.test", "crl.example-ca.test", "metadata.skyline-air.test", "sso.harbor-mro.test", "email-smtp.us-east-1.amazonaws.com"]
+      }
+    }
+  }
+  tags = {
+    Name           = "egress-firewall"
+    Role           = "egress-firewall"
+    ManagedBy      = "opsdir"
+    FirewallPolicy = "arn:aws:network-firewall:us-east-1:111122223333:firewall-policy/ciam-prod-egress"
+  }
+}
+
 resource "aws_route53_resolver_rule" "fwd_corp_ad_0" {
   name                 = "ciam-prod-fwd-corp-ad-0"
   domain_name          = "corp.example-aero.internal"

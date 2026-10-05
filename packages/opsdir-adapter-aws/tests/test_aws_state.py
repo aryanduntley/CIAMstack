@@ -51,7 +51,7 @@ def _record(*extra):
         _row(f"cn=backup,{B}", ("ciamBackupTarget",), cn="backup", ciamBindingRole="backup-target",
              ciamStorageRef="s3://ciam-backups", ciamRetentionDays="35"),
         _row(f"cn=egress,{B}", ("ciamEgress",), cn="egress", ciamBindingRole="pf-egress", ciamCidr="203.0.113.10/32",
-             ciamProviderRef=NAT),
+             ciamProviderRef=NAT, ciamNatAllocation="static"),
         *extra))
 
 

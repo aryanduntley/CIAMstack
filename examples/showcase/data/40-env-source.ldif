@@ -327,6 +327,7 @@ objectClass: ciamEgress
 cn: egress-pf
 ciamBindingRole: pf-egress
 ciamCidr: 203.0.113.10/32
+ciamNatAllocation: static
 ciamProviderRef: nat-0123456789abcdef0
 
 dn: cn=time,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
@@ -805,6 +806,50 @@ ciamBindingRole: sso-tls-certificate
 ciamHoldsCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 ciamRefUri: aws-acm://arn:aws:acm:us-east-1:111122223333:certificate/7f3e9d21-
  0000-4000-8000-0000000000a1
+
+dn: cn=pe-secrets,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamPrivateEndpoint
+cn: pe-secrets
+ciamBindingRole: private-secrets
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamPrivateDns: TRUE
+ciamPrivateEndpointKind: interface
+ciamPrivateService: secrets
+ciamProviderRef: vpce-0a1b2c3d4e5f60011
+ciamReachesRole: pf-admin-password
+ciamReachesRole: pf-signing-key
+ciamReachesRole: ds-root-password
+ciamSubnetRole: subnet-ds
+ciamSubnetRole: subnet-pf
+
+dn: cn=ldaps-link,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamEndpointService
+cn: ldaps-link
+ciamAcceptanceRequired: TRUE
+ciamAllowedPrincipal: arn:aws:iam::444455556666:root
+ciamAllowsConsumer: cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
+ciamBindingRole: ldaps-endpoint-service
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamProviderRef: vpce-svc-0a1b2c3d4e5f67890
+ciamServiceAlias: com.amazonaws.vpce.us-east-1.vpce-svc-0a1b2c3d4e5f67890
+ciamServiceRole: ds-ldaps-service
+
+dn: cn=egress-firewall,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamProxy
+cn: egress-firewall
+ciamAllowedDestination: email-smtp.us-east-1.amazonaws.com:587
+ciamAllowedDestination: metadata.skyline-air.test
+ciamAllowedDestination: sso.harbor-mro.test
+ciamAllowedDestination: ocsp.example-ca.test:80
+ciamAllowedDestination: crl.example-ca.test:80
+ciamBindingRole: egress-firewall
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamProviderRef: arn:aws:network-firewall:us-east-1:111122223333:firewall-poli
+ cy/ciam-prod-egress
+ciamProxyKind: firewall
 
 dn: ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top

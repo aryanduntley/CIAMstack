@@ -58,6 +58,7 @@ from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, l
                                    realization_roles, resource, tagged_role)
 from opsdir.domains.messaging.dns import dmarc_policy, spf_authorizes
 from opsdir_format_terraform.state import blocks, read_state
+from .network_inventory import endpoint_security_groups, network_resources
 from .edge_inventory import (aliased_names, dns_resources, edge_services, lb_facts, lb_security_groups,
                              service_dns)
 from .iam import iam_resources
@@ -171,7 +172,7 @@ def _other_sources(rule, balancers=frozenset()):
 def _firewall(found):
     """(firewall rules, notices): ingress rules of the security groups, grouped into the record's rules by name. The
     record holds IPv4 sources and single ports: ranges, all-ports rules and other sources are named, not recorded."""
-    balancers = lb_security_groups(found)
+    balancers = lb_security_groups(found) | endpoint_security_groups(found)    # theirs, not the record's rules
     groups = {a.get("id"): a for a in of_types(found, "aws_security_group") if a.get("id") not in balancers}
     members = reduce(lambda acc, i: {**acc, **{g: (*acc.get(g, ()), _tags(i)["Role"])
                                                 for g in i.get("vpc_security_group_ids") or ()}},
@@ -240,7 +241,10 @@ def _storage(found):
 
 
 def _egress(found):
-    return tuple(resource("egress", a.get("id"), {"ciamCidr": f"{a.get('public_ip')}/32" if a.get("public_ip") else None},
+    """NAT gateways: a public one's Elastic IP is a fixed address (static allocation); a private one has none."""
+    return tuple(resource("egress", a.get("id"), {
+                              "ciamCidr": f"{a.get('public_ip')}/32" if a.get("public_ip") else None,
+                              "ciamNatAllocation": "static" if a.get("public_ip") else None},
                           name=_tags(a).get("Name") or a.get("id"), role=_role(a))
                  for a in of_types(found, "aws_nat_gateway") if a.get("id"))
 
@@ -439,11 +443,12 @@ def pairs_resources(pairs):
     rules, rule_notices = _firewall(pairs)
     iam, iam_notices = iam_resources(pairs)
     zones, records, forwarders, dns_notices = dns_resources(pairs, _served(pairs))
+    network, network_notices = network_resources(pairs)
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *rules, *_secrets(pairs),
              *_keys(pairs), *_storage(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
-             *_canaries(pairs), *iam, *edge_services(pairs), *zones, *records, *forwarders),
-            (*rule_notices, *iam_notices, *dns_notices))
+             *_canaries(pairs), *iam, *edge_services(pairs), *zones, *records, *forwarders, *network),
+            (*rule_notices, *iam_notices, *dns_notices, *network_notices))
 
 
 def state_resources(text):

@@ -14,7 +14,7 @@ hashicorp/azurerm attribute names the shared mapping reads (opsdir_adapter_azure
     az network private-dns record-set list
   az dns-resolver forwarding-rule list           Microsoft.Network/dnsForwardingRulesets/forwardingRules
 """
-from .inventory import arm_segment
+from .arm_ids import arm_segment
 
 RECORD_TYPES = ("A", "AAAA", "CNAME", "TXT", "MX", "SRV", "CAA", "NS")
 

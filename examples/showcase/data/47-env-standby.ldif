@@ -32,6 +32,7 @@ objectClass: ciamNetwork
 cn: vpc
 ciamBindingRole: network
 ciamCidr: 10.70.0.0/16
+ciamFirewallModel: policy
 ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
 ciamProviderRef: projects/example-aero-net/global/networks/ciam-standby
 
@@ -139,6 +140,7 @@ objectClass: ciamFirewallRule
 cn: fw-pf-ds-svc
 ciamAllowsConsumer: cn=pf-ds-svc,ou=consumers,dc=ciam-ops
 ciamBindingRole: fw-consumer-pf-ds-svc
+ciamPolicyRole: firewall-policy
 ciamPort: 1636
 ciamProtocol: tcp
 ciamRulePriority: 100
@@ -151,6 +153,7 @@ objectClass: ciamFirewallRule
 cn: fw-customer-portal
 ciamAllowsConsumer: cn=customer-portal-svc,ou=consumers,dc=ciam-ops
 ciamBindingRole: fw-consumer-customer-portal-svc
+ciamPolicyRole: firewall-policy
 ciamPort: 1636
 ciamProtocol: tcp
 ciamRulePriority: 110
@@ -163,6 +166,7 @@ objectClass: ciamFirewallRule
 cn: fw-supplier-portal
 ciamAllowsConsumer: cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
 ciamBindingRole: fw-consumer-supplier-portal-svc
+ciamPolicyRole: firewall-policy
 ciamPort: 1636
 ciamProtocol: tcp
 ciamRulePriority: 120
@@ -175,6 +179,7 @@ objectClass: ciamFirewallRule
 cn: fw-idm-sync
 ciamAllowsConsumer: cn=idm-sync,ou=consumers,dc=ciam-ops
 ciamBindingRole: fw-consumer-idm-sync
+ciamPolicyRole: firewall-policy
 ciamPort: 1636
 ciamProtocol: tcp
 ciamRulePriority: 130
@@ -186,6 +191,7 @@ objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-replication
 ciamBindingRole: fw-replication
+ciamPolicyRole: firewall-policy
 ciamPort: 8989
 ciamProtocol: tcp
 ciamRulePriority: 140
@@ -198,6 +204,7 @@ objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-admin
 ciamBindingRole: fw-admin
+ciamPolicyRole: firewall-policy
 ciamPort: 4444
 ciamProtocol: tcp
 ciamRulePriority: 150
@@ -209,6 +216,7 @@ objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-sso-public
 ciamBindingRole: fw-sso-public
+ciamPolicyRole: firewall-policy
 ciamPort: 443
 ciamProtocol: tcp
 ciamRulePriority: 160
@@ -220,6 +228,7 @@ objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-login-public
 ciamBindingRole: fw-login-public
+ciamPolicyRole: firewall-policy
 ciamPort: 443
 ciamProtocol: tcp
 ciamRulePriority: 170
@@ -231,6 +240,7 @@ objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-apps-public
 ciamBindingRole: fw-apps-public
+ciamPolicyRole: firewall-policy
 ciamPort: 443
 ciamProtocol: tcp
 ciamRulePriority: 180
@@ -242,6 +252,7 @@ objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-pf-cluster
 ciamBindingRole: fw-pf-cluster
+ciamPolicyRole: firewall-policy
 ciamPort: 7600
 ciamPort: 7700
 ciamProtocol: tcp
@@ -254,6 +265,7 @@ objectClass: top
 objectClass: ciamFirewallRule
 cn: fw-pf-cluster-admin
 ciamBindingRole: fw-pf-cluster-admin
+ciamPolicyRole: firewall-policy
 ciamPort: 7600
 ciamPort: 7700
 ciamProtocol: tcp
@@ -267,6 +279,7 @@ objectClass: ciamEgress
 cn: egress-pf
 ciamBindingRole: pf-egress
 ciamCidr: 203.0.113.150/32
+ciamNatAllocation: static
 ciamProviderRef: example-aero-ciam-standby/us-central1/ciam-standby-router/cia
  m-standby-nat
 
@@ -669,6 +682,44 @@ ciamCidr: 10.70.250.0/23
 ciamProviderRef: projects/example-aero-net/regions/us-central1/subnetworks/cia
  m-standby-proxy
 description: The proxy-only subnet the load balancers run in
+
+dn: cn=fw-policy,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallPolicy
+cn: fw-policy
+ciamBindingRole: firewall-policy
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamPolicyOrder: policy-first
+ciamPolicyScope: network
+ciamProviderRef: projects/example-aero-net/global/firewallPolicies/ciam-prod-f
+ w-policy
+
+dn: cn=psc-apis,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamPrivateEndpoint
+cn: psc-apis
+ciamBindingRole: private-apis
+ciamFrontendIp: 10.70.255.5
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamPrivateDns: TRUE
+ciamPrivateEndpointKind: all-apis
+ciamPrivateService: apis
+ciamProviderRef: projects/example-aero-net/global/forwardingRules/pscapis
+
+dn: cn=egress-firewall,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamProxy
+cn: egress-firewall
+ciamAllowedDestination: email-smtp.us-east-1.amazonaws.com:587
+ciamAllowedDestination: metadata.skyline-air.test
+ciamAllowedDestination: sso.harbor-mro.test
+ciamAllowedDestination: ocsp.example-ca.test:80
+ciamAllowedDestination: crl.example-ca.test:80
+ciamBindingRole: egress-firewall
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamProviderRef: projects/example-aero-net/global/firewallPolicies/ciam-prod-f
+ w-policy
+ciamProxyKind: firewall
 
 dn: cn=link-source,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top

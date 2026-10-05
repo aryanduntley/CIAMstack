@@ -19,6 +19,8 @@ mapping reads them as reads Terraform state (opsdir_adapter_gcp.inventory.pairs_
   gcloud scheduler jobs list, gcloud builds triggers list, gcloud container clusters list, gcloud pubsub topics list,
   gcloud monitoring channels|policies|uptime list, gcloud logging buckets list      by their resource names and shapes
   gcloud projects describe <project>            project numbers (in Secret Manager's and others' names) read as IDs
+  the network depth: network and hierarchical firewall policies, routes, service attachments, VPN tunnels,
+  interconnect attachments, tag values and bindings: see cli_network.py
   IAM: IAM and organization policies (asset export --content-type=iam-policy / org-policy, search-all-iam-policies),
   service accounts, custom roles, pool providers, deny policies, Policy Troubleshooter's verdicts: see cli_iam.py
 Subnetworks and instances outside the listed networks are counted, not read. Search results (`gcloud asset
@@ -37,7 +39,9 @@ from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_records
 from .cli_edge import KINDS as EDGE_KINDS, backend_attributes, edge_pairs, record_routing
 from .cli_iam import KINDS as IAM_KINDS, iam_kind, iam_pairs
-from .inventory import PROVIDER, name_parts, pairs_resources, resource_id
+from .cli_network import KINDS as NETWORK_KINDS, network_pairs, network_shape
+from .inventory import PROVIDER, pairs_resources
+from .names import name_parts, resource_id
 
 ACCOUNT_WIDE = ("secret", "key", "storage", "job", "stream", "channel", "logs", "alarm", "canary", "identity")
 METADATA = ("ciam-role", "ciam-product")         # the instance metadata the mapping reads; never startup scripts
@@ -69,7 +73,7 @@ KINDS = MappingProxyType({
     "monitoring.googleapis.com/AlertPolicy": "alert-policy",
     "monitoring.googleapis.com/UptimeCheckConfig": "uptime-check",
     "logging.googleapis.com/LogBucket": "log-bucket",
-    **EDGE_KINDS,
+    **EDGE_KINDS, **NETWORK_KINDS,
 })
 # asset types another asset already holds: a cluster its node pools, Function a 1st-gen CloudFunction
 COVERED = frozenset(("container.googleapis.com/NodePool", "cloudfunctions.googleapis.com/CloudFunction"))
@@ -102,6 +106,8 @@ def _shape(item):
         return "scheduler-job" if "schedule" in item else "run-job"
     if found:
         return found
+    if network_shape(item):
+        return network_shape(item)
     if "projectId" in item and "projectNumber" in item:
         return "project"
     if "backend" in item and "healthStatus" in (item.get("status") or {}):
@@ -190,10 +196,15 @@ def _self(d):
 
 # ------------------------------------------------------------------ compute
 def _networks(items):
-    return [*(("google_compute_network", {"id": _self(d), "name": d.get("name")}) for d, _ in _of(items, "network")),
+    order = "network_firewall_policy_enforcement_order"
+    return [*(("google_compute_network", {"id": _self(d), "name": d.get("name"),
+                                          order: d.get("networkFirewallPolicyEnforcementOrder")})
+              for d, _ in _of(items, "network")),
             *(("google_compute_subnetwork", {"id": _self(d), "name": d.get("name"),
                                              "ip_cidr_range": d.get("ipCidrRange"), "purpose": d.get("purpose"),
-                                             "network": resource_id(d.get("network"))})
+                                             "network": resource_id(d.get("network")),
+                                             "log_config": [{"enable": True}]
+                                             if (d.get("logConfig") or {}).get("enable") else []})
               for d, _ in _of(items, "subnetwork"))]
 
 
@@ -206,7 +217,7 @@ def _instances(items):
         metadata = {i.get("key"): i.get("value") for i in (d.get("metadata") or {}).get("items") or ()
                     if i.get("key") in METADATA}
         return ("google_compute_instance", {
-            "id": _self(d), "name": d.get("name"), "zone": _last(d.get("zone")),
+            "id": _self(d), "name": d.get("name"), "zone": _last(d.get("zone")), "instance_id": d.get("id"),
             "machine_type": _last(d.get("machineType")), "hostname": d.get("hostname"),
             "tags": (d.get("tags") or {}).get("items") or [], "labels": d.get("labels") or {}, "metadata": metadata,
             "boot_disk": [{"initialize_params": [{"image": images.get(resource_id(boot.get("source")))}]}],
@@ -264,7 +275,8 @@ def _egress(items):
         where = name_parts(_self(router))
         return ("google_compute_router_nat", {
             "id": f"{where.get('projects')}/{where.get('regions')}/{router.get('name')}/{n.get('name')}",
-            "name": n.get("name"), "nat_ips": [resource_id(a) for a in n.get("natIps") or ()]})
+            "name": n.get("name"), "nat_ips": [resource_id(a) for a in n.get("natIps") or ()],
+            "nat_ip_allocate_option": n.get("natIpAllocateOption")})
     return [*(("google_compute_address", {"id": _self(d), "name": d.get("name"), "address": d.get("address")})
               for d, _ in _of(items, "address")),
             *(nat(d, n) for d, _ in _of(items, "router") for n in d.get("nats") or ())]
@@ -452,7 +464,8 @@ def cli_resources(texts, at=None):
     pairs, number_notices = _project_ids([*_networks(items), *_instances(items), *_firewalls(items),
                                           *_load_balancing(items), *_egress(items), *_compute_groups(items),
                                           *_references(items), *_automation(items), *_clusters(items),
-                                          *_monitoring(items), *iam_pairs(items, at)], items)
+                                          *_monitoring(items), *iam_pairs(items, at),
+                                          *network_pairs(lambda kind: _of(items, kind))], items)
     pairs, scope_notices = _scoped(pairs)
     resources, notices = pairs_resources(pairs)
     return resources, (*unknown, *number_notices, *scope_notices, *notices)

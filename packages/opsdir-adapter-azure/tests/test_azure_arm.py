@@ -49,7 +49,7 @@ def _record():
         _row(f"cn=backup,{B}", ("ciamBackupTarget",), cn="backup", ciamBindingRole="backup-target",
              ciamStorageRef="azblob://stciamprod/ds-backups"),
         _row(f"cn=egress-pf,{B}", ("ciamEgress",), cn="egress-pf", ciamBindingRole="pf-egress",
-             ciamCidr="203.0.113.200/32", ciamProviderRef="natgw-ciam-prod")))
+             ciamCidr="203.0.113.200/32", ciamProviderRef="natgw-ciam-prod", ciamNatAllocation="static")))
 
 
 def _template(size="Standard_D4s_v5", kty="RSA"):

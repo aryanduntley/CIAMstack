@@ -257,6 +257,7 @@ objectClass: ciamEgress
 cn: egress-pf
 ciamBindingRole: pf-egress
 ciamCidr: 203.0.113.200/32
+ciamNatAllocation: static
 ciamProviderRef: natgw-ciam-prod
 
 dn: cn=time,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
@@ -660,6 +661,59 @@ ciamBindingRole: subnet-edge
 ciamCidr: 10.60.250.0/24
 ciamProviderRef: vnet-ciam-prod/snet-appgw
 description: The Application Gateways' own subnet
+
+dn: cn=pe-secrets,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamPrivateEndpoint
+cn: pe-secrets
+ciamBindingRole: private-secrets
+ciamDnsZone: privatelink.vaultcore.azure.net
+ciamDnsZoneRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGr
+ oups/rg-hub-dns/providers/Microsoft.Network/privateDnsZones/privatelink.vault
+ core.azure.net
+ciamFrontendIp: 10.60.2.50
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamPrivateDns: TRUE
+ciamPrivateEndpointKind: interface
+ciamPrivateService: secrets
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Network/privateEndpoints/pe-ciam-prod-
+ pe-secrets
+ciamReachesRole: pf-admin-password
+ciamReachesRole: pf-signing-key
+ciamReachesRole: ds-root-password
+ciamSubnetRole: subnet-pf
+
+dn: cn=ldaps-link,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamEndpointService
+cn: ldaps-link
+ciamAcceptanceRequired: TRUE
+ciamAllowedPrincipal: 55555555-6666-7777-8888-999999999999
+ciamAllowsConsumer: cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
+ciamBindingRole: ldaps-endpoint-service
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Network/privateLinkServices/pls-ciam-p
+ rod-ldaps-link
+ciamServiceRole: ds-ldaps-service
+ciamSubnetRole: subnet-ds
+ciamVisibleTo: 55555555-6666-7777-8888-999999999999
+
+dn: cn=egress-firewall,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamProxy
+cn: egress-firewall
+ciamAllowedDestination: metadata.skyline-air.test
+ciamAllowedDestination: sso.harbor-mro.test
+ciamAllowedDestination: ocsp.example-ca.test:80
+ciamAllowedDestination: crl.example-ca.test:80
+ciamBindingRole: egress-firewall
+ciamManagedBy: cn=network-security,ou=owners,dc=ciam-ops
+ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-hub-net/providers/Microsoft.Network/firewallPolicies/fwp-hub
+ciamProxyKind: firewall
 
 dn: cn=link-source,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
