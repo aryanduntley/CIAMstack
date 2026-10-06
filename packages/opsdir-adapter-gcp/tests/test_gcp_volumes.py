@@ -69,7 +69,7 @@ def test_a_snapshot_policy_is_a_resource_policy_with_its_schedule():
     for text in ('resource "google_compute_resource_policy" "snapshots_daily"', 'name = "ciam-prod-snapshots-daily"',
                  'daily_schedule { days_in_cycle = 1 start_time = "03:00" }', "max_retention_days = 7",
                  'on_source_disk_delete = "KEEP_AUTO_SNAPSHOTS"', 'storage_locations = ["us-east1"]',
-                 "guest_flush = false",
+                 "guest_flush = false", 'policy = "snapshots-daily" role = "snapshots-daily"',
                  'to = google_compute_resource_policy.snapshots_daily '
                  'id = "projects/p/regions/us-central1/resourcePolicies/ciam-prod-snapshots-daily"'):
         assert _flat(text) in out, text
@@ -106,7 +106,8 @@ SCHEDULE = ("google_compute_resource_policy", {
     "snapshot_schedule_policy": [{"schedule": [{"daily_schedule": [{"days_in_cycle": 1, "start_time": "03:00"}]}],
                                   "retention_policy": [{"max_retention_days": 7}],
                                   "snapshot_properties": [{"storage_locations": ["us-east1"], "guest_flush": False,
-                                                           "labels": {"role": "snapshots-daily"}}]}]})
+                                                           "labels": {"policy": "snapshots-daily",
+                                                                      "role": "snapshots-daily"}}]}]})
 POLICY_ON_DISK = ("google_compute_disk_resource_policy_attachment",
                   {"name": "ciam-prod-snapshots-daily", "disk": "ds-1-vol-ds-data", "zone": "us-central1-a"})
 POLICY_ON_BOOT = ("google_compute_disk_resource_policy_attachment",
@@ -131,7 +132,7 @@ def test_disks_boot_disks_and_schedules_are_read_back_from_state():
     policy = by[("snapshot-policy", ref)]
     assert policy.attrs == {"ciamRetentionDays": ("7",), "ciamSnapshotEveryHours": ("24",), "ciamSnapshotAt": ("03:00",),
                             "ciamCopyRegion": ("us-east1",), "ciamSnapshotConsistency": ("crash",)}
-    assert policy.role == "snapshots-daily"
+    assert policy.role == "snapshots-daily" and policy.name == "snapshots-daily"      # by its snapshots' label policy
 
 
 def test_the_asset_inventory_reads_the_same_and_names_an_unlabelled_data_disk():
@@ -165,5 +166,6 @@ def test_the_asset_inventory_reads_the_same_and_names_an_unlabelled_data_disk():
     assert by[("snapshot-policy", ref)].attrs == {"ciamRetentionDays": ("7",), "ciamSnapshotEveryHours": ("6",),
                                                    "ciamSnapshotAt": ("03:00",),
                                                    "ciamSnapshotConsistency": ("application",)}
+    assert by[("snapshot-policy", ref)].name == "ciam-prod-snapshots-daily"     # no label policy: its own name
     assert "disk scratch (ds-1) carries no label volume: which of the record's volumes it is can't be told; not " \
            "recorded" in notices

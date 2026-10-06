@@ -13,7 +13,8 @@ rendered as Terraform and read back. Pure.
   each snapshot policy the stack keeps: a google_compute_resource_policy with a snapshot schedule (daily every 24
   hours, hourly every 1 to 23, from ciamSnapshotAt on the hour), snapshots kept ciamRetentionDays (and kept when the
   disk is deleted), stored in the first ciamCopyRegion (one storage location: Google Cloud stores a snapshot where
-  it says, a copy elsewhere is a second schedule), the guest flushed first when application-consistent; attached to
+  it says, a copy elsewhere is a second schedule), the guest flushed first when application-consistent, its
+  snapshots labelled policy (the record's name: the schedule's own is ciam-<env>-<name>) and role; attached to
   each disk that follows it (boot disks by their instance's name) by google_compute_disk_resource_policy_attachment.
   One someone else keeps is a comment naming them; an adopted one an import block.
 Class to type: standard pd-standard, ssd pd-ssd, provisioned hyperdisk-balanced (TYPES; the reader also takes
@@ -25,7 +26,8 @@ normalized to it (cli.py: compute#disk, ResourcePolicy): google_compute_disk gro
 of the role their instances run (the most common size, type, IOPS and throughput; its key as its key role, the
 schedule its resource policies or attachments name as its snapshot policy), instances' boot_disk labelled volume as
 the role's boot volume, google_compute_resource_policy with a snapshot schedule as snapshot policies (hours,
-start, retention days, a storage location outside its region as its copy region, consistency). A disk attached to
+start, retention days, a storage location outside its region as its copy region, consistency), named by its
+snapshots' label policy, else its own name. A disk attached to
 the environment's instances without a volume label is named.
 """
 from collections import Counter
@@ -167,7 +169,8 @@ def _policy(m, p):
                     ("snapshot_properties", Block((
                         *((("storage_locations", [regions[0]]),) if regions else ()),
                         ("guest_flush", one(p, "ciamSnapshotConsistency") == "application"),
-                        ("labels", {"role": label(one(p, "ciamBindingRole")), "managed_by": "opsdir"})))))))]),
+                        ("labels", {"policy": label(rdn_value(p)), "role": label(one(p, "ciamBindingRole")),
+                                    "managed_by": "opsdir"})))))))]),
             *((import_block(f"google_compute_resource_policy.{n}", resource_id(one(p, "ciamProviderRef"))),)
               if adopted(p) else ()))
 
@@ -247,7 +250,7 @@ def _policies(pairs):
             "ciamSnapshotAt": (daily or hourly).get("start_time"),
             "ciamCopyRegion": [x for x in props.get("storage_locations") or () if x != region],
             "ciamSnapshotConsistency": "application" if props.get("guest_flush") is True else "crash"},
-            name=a.get("name"), role=labels.get("role")))
+            name=labels.get("policy") or a.get("name"), role=labels.get("role")))
         refs.update({ref_: ref_, a.get("name"): ref_})
     return tuple(out), refs
 

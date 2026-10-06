@@ -695,6 +695,15 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Give the target environment its directory backup target
 
+dn: cn=CHG-2018,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2018
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Make the target's directory data volume as large as production's
+
 dn: cn=CHG-2040,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange
@@ -3631,6 +3640,7 @@ ciamDropsRole: fw-consumer-idm-sync
 ciamDropsRole: ldaps-endpoint-service
 ciamDropsRole: private-secrets
 ciamDropsRole: egress-firewall
+ciamDropsRole: snapshots-daily
 ciamLifecycle: active
 ciamOverlayOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
@@ -7836,6 +7846,33 @@ ciamLockoutFailureCount: 0
 ciamPasswordHistoryCount: 0
 ciamStorageScheme: PBKDF2-HMAC-SHA512
 
+dn: cn=snapshots-daily,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSnapshotPolicy
+cn: snapshots-daily
+ciamBindingRole: snapshots-daily
+ciamCopyRegion: us-west-2
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamProviderRef: policy-0c1a2b3d4e5f60718
+ciamRetentionDays: 7
+ciamSnapshotAt: 03:00
+ciamSnapshotConsistency: crash
+ciamSnapshotEveryHours: 24
+
+dn: cn=snapshots-daily,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSnapshotPolicy
+cn: snapshots-daily
+ciamBindingRole: snapshots-daily
+ciamCopyRegion: us-east1
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamProviderRef: projects/example-aero-ciam-standby/regions/us-central1/resour
+ cePolicies/ciam-prod-snapshots-daily
+ciamRetentionDays: 7
+ciamSnapshotAt: 03:00
+ciamSnapshotConsistency: crash
+ciamSnapshotEveryHours: 24
+
 dn: cn=snet-am,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSubnetBinding
@@ -8421,6 +8458,68 @@ ciamCidr: 10.60.0.0/16
 ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
 ciamProviderRef: vnet-ciam-prod
 ciamResourceGroup: rg-ciam-prod
+
+dn: cn=vol-ds-data,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamVolume
+cn: vol-ds-data
+ciamBindingRole: volume-ds-data
+ciamEncryptedByRole: disk-encryption
+ciamIops: 6000
+ciamMountPath: /opt/ds/db
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSnapshotPolicyRole: snapshots-daily
+ciamTargetRole: ds
+ciamVolumeClass: provisioned
+ciamVolumeEncrypted: TRUE
+ciamVolumeKind: data
+ciamVolumeSizeGb: 500
+
+dn: cn=vol-ds-data,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamVolume
+cn: vol-ds-data
+ciamBindingRole: volume-ds-data
+ciamEncryptedByRole: disk-encryption
+ciamMountPath: /opt/ds/db
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSnapshotPolicyRole: snapshots-daily
+ciamTargetRole: ds
+ciamVolumeClass: ssd
+ciamVolumeEncrypted: TRUE
+ciamVolumeKind: data
+ciamVolumeSizeGb: 500
+
+dn: cn=vol-ds-data,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamVolume
+cn: vol-ds-data
+ciamBindingRole: volume-ds-data
+ciamChangeRef: cn=CHG-2018,ou=changes,dc=ciam-ops
+ciamEncryptedByRole: disk-encryption
+ciamIops: 6000
+ciamMountPath: /opt/ds/db
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamTargetRole: ds
+ciamThroughputMb: 250
+ciamVolumeClass: provisioned
+ciamVolumeEncrypted: TRUE
+ciamVolumeKind: data
+ciamVolumeSizeGb: 500
+
+dn: cn=vol-ds-data-stage,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamVolume
+cn: vol-ds-data-stage
+ciamBindingRole: volume-ds-data
+ciamEncryptedByRole: disk-encryption
+ciamMountPath: /opt/ds/db
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamTargetRole: ds
+ciamVolumeClass: ssd
+ciamVolumeEncrypted: TRUE
+ciamVolumeKind: data
+ciamVolumeSizeGb: 100
 
 dn: cn=vpc,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top

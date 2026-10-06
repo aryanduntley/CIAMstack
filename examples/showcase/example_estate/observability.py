@@ -8,7 +8,7 @@ Planted for the planner to find:
   - the source runs an alarm on disk space that realizes no recorded rule, and the target doesn't run it
   - the login-failures rule names no runbook
 """
-from .common import RB, R, owner, spec
+from .common import RB, R, ou, owner, spec
 
 FILE = "79-observability"
 RULES, ROUTES, CANARIES = f"ou=alert-rules,{R}", f"ou=log-routes,{R}", f"ou=canaries,{R}"
@@ -19,12 +19,8 @@ AZ_WORKSPACES = ("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGr
                  "Microsoft.OperationalInsights/workspaces/{}")
 
 
-def _ou(dn, name):
-    return spec(FILE, dn, ["top", "organizationalUnit"], ou=name)
-
-
 def entries():
-    return (_ou(RULES, "alert-rules"),
+    return (ou(FILE, "alert-rules"),
             spec(FILE, f"cn=replication-lag,{RULES}", ["top", "ciamObject", "ciamAlertRule"], cn="replication-lag",
                  ciamSignal="replication-delay", ciamTargetRole="ds", ciamComparison="gt", ciamThreshold="5000 ms",
                  ciamEvaluationPeriod="5m", ciamSeverity="sev2", ciamAlertRole="alerts-page",
@@ -33,7 +29,7 @@ def entries():
                  ciamSignal="login-failures", ciamTargetRole="pf-engine", ciamComparison="gt", ciamThreshold="50 /min",
                  ciamEvaluationPeriod="5m", ciamSeverity="sev2", ciamAlertRole="alerts-page",
                  ciamOwner=owner("ciam-platform")),
-            _ou(ROUTES, "log-routes"),
+            ou(FILE, "log-routes"),
             spec(FILE, f"cn=audit-logs,{ROUTES}", ["top", "ciamObject", "ciamLogRoute"], cn="audit-logs",
                  ciamLogKind=["audit", "admin"], ciamPublishedBy=["ds", "pf-engine", "pf-admin"],
                  ciamLogDestinationRole="audit-logs", ciamRetentionDays=400, ciamLegalHold="TRUE",
@@ -41,7 +37,7 @@ def entries():
             spec(FILE, f"cn=access-logs,{ROUTES}", ["top", "ciamObject", "ciamLogRoute"], cn="access-logs",
                  ciamLogKind="access", ciamPublishedBy=["ds", "pf-engine"], ciamLogDestinationRole="ops-logs",
                  ciamRetentionDays=30, ciamOwner=owner("ciam-platform")),
-            _ou(CANARIES, "canaries"),
+            ou(FILE, "canaries"),
             spec(FILE, f"cn=sso-login,{CANARIES}", ["top", "ciamObject", "ciamCanary"], cn="sso-login",
                  ciamCheckedService="pf-sso-service", ciamCanaryFlow="oidc-token", ciamInterval="5m",
                  ciamFeedsAlert=f"cn=login-failures,{RULES}", ciamOwner=owner("ciam-platform")))

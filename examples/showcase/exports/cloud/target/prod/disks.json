@@ -1,0 +1,83 @@
+[
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/disks/disk-ds-1-vol-ds-data",
+    "name": "disk-ds-1-vol-ds-data",
+    "type": "Microsoft.Compute/disks",
+    "location": "eastus2",
+    "zones": [
+      "1"
+    ],
+    "sku": {
+      "name": "PremiumV2_LRS"
+    },
+    "diskSizeGB": 256,
+    "diskIOPSReadWrite": 6000,
+    "diskMBpsReadWrite": 250,
+    "encryption": {
+      "type": "EncryptionAtRestWithCustomerKey",
+      "diskEncryptionSetId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
+    },
+    "managedBy": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/virtualMachines/ds-1",
+    "diskState": "Attached",
+    "tags": {
+      "Volume": "vol-ds-data",
+      "Role": "volume-ds-data",
+      "Server": "ds-1",
+      "ManagedBy": "opsdir"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/disks/disk-ds-2-vol-ds-data",
+    "name": "disk-ds-2-vol-ds-data",
+    "type": "Microsoft.Compute/disks",
+    "location": "eastus2",
+    "zones": [
+      "2"
+    ],
+    "sku": {
+      "name": "PremiumV2_LRS"
+    },
+    "diskSizeGB": 256,
+    "diskIOPSReadWrite": 6000,
+    "diskMBpsReadWrite": 250,
+    "encryption": {
+      "type": "EncryptionAtRestWithCustomerKey",
+      "diskEncryptionSetId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
+    },
+    "managedBy": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/virtualMachines/ds-2",
+    "diskState": "Attached",
+    "tags": {
+      "Volume": "vol-ds-data",
+      "Role": "volume-ds-data",
+      "Server": "ds-2",
+      "ManagedBy": "opsdir"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/disks/disk-ds-3-vol-ds-data",
+    "name": "disk-ds-3-vol-ds-data",
+    "type": "Microsoft.Compute/disks",
+    "location": "eastus2",
+    "zones": [
+      "3"
+    ],
+    "sku": {
+      "name": "PremiumV2_LRS"
+    },
+    "diskSizeGB": 256,
+    "diskIOPSReadWrite": 6000,
+    "diskMBpsReadWrite": 250,
+    "encryption": {
+      "type": "EncryptionAtRestWithCustomerKey",
+      "diskEncryptionSetId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
+    },
+    "managedBy": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/virtualMachines/ds-3",
+    "diskState": "Attached",
+    "tags": {
+      "Volume": "vol-ds-data",
+      "Role": "volume-ds-data",
+      "Server": "ds-3",
+      "ManagedBy": "opsdir"
+    }
+  }
+]

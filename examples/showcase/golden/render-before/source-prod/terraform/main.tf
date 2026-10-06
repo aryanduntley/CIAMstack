@@ -657,6 +657,131 @@ resource "aws_instance" "pf_engine_2" {
   }
 }
 
+# ds-1 mounts vol-ds-data at /opt/ds/db (its own configuration, not Terraform)
+
+resource "aws_ebs_volume" "ds_1_vol_ds_data" {
+  availability_zone = "us-east-1a"
+  size              = 500
+  type              = "io2"
+  iops              = 6000
+  encrypted         = true
+  kms_key_id        = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
+  tags = {
+    Name           = "ds-1-vol-ds-data"
+    Volume         = "vol-ds-data"
+    Role           = "volume-ds-data"
+    Server         = "ds-1"
+    SnapshotPolicy = "snapshots-daily"
+    ManagedBy      = "opsdir"
+  }
+}
+
+resource "aws_volume_attachment" "ds_1_vol_ds_data" {
+  device_name = "/dev/sdf"
+  volume_id   = aws_ebs_volume.ds_1_vol_ds_data.id
+  instance_id = aws_instance.ds_1.id
+}
+
+# ds-2 mounts vol-ds-data at /opt/ds/db (its own configuration, not Terraform)
+
+resource "aws_ebs_volume" "ds_2_vol_ds_data" {
+  availability_zone = "us-east-1b"
+  size              = 500
+  type              = "io2"
+  iops              = 6000
+  encrypted         = true
+  kms_key_id        = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
+  tags = {
+    Name           = "ds-2-vol-ds-data"
+    Volume         = "vol-ds-data"
+    Role           = "volume-ds-data"
+    Server         = "ds-2"
+    SnapshotPolicy = "snapshots-daily"
+    ManagedBy      = "opsdir"
+  }
+}
+
+resource "aws_volume_attachment" "ds_2_vol_ds_data" {
+  device_name = "/dev/sdf"
+  volume_id   = aws_ebs_volume.ds_2_vol_ds_data.id
+  instance_id = aws_instance.ds_2.id
+}
+
+# ds-3 mounts vol-ds-data at /opt/ds/db (its own configuration, not Terraform)
+
+resource "aws_ebs_volume" "ds_3_vol_ds_data" {
+  availability_zone = "us-east-1c"
+  size              = 500
+  type              = "io2"
+  iops              = 6000
+  encrypted         = true
+  kms_key_id        = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
+  tags = {
+    Name           = "ds-3-vol-ds-data"
+    Volume         = "vol-ds-data"
+    Role           = "volume-ds-data"
+    Server         = "ds-3"
+    SnapshotPolicy = "snapshots-daily"
+    ManagedBy      = "opsdir"
+  }
+}
+
+resource "aws_volume_attachment" "ds_3_vol_ds_data" {
+  device_name = "/dev/sdf"
+  volume_id   = aws_ebs_volume.ds_3_vol_ds_data.id
+  instance_id = aws_instance.ds_3.id
+}
+
+variable "dlm_execution_role_arn" {
+  type        = string
+  description = "The IAM role Data Lifecycle Manager snapshots with (AWSDataLifecycleManagerDefaultRole)"
+}
+
+resource "aws_dlm_lifecycle_policy" "snapshots_daily" {
+  description        = "CIAM snapshots snapshots-daily source prod"
+  execution_role_arn = var.dlm_execution_role_arn
+  state              = "ENABLED"
+  policy_details {
+    resource_types = ["VOLUME"]
+    target_tags = {
+      SnapshotPolicy = "snapshots-daily"
+    }
+    schedule {
+      name = "snapshots-daily"
+      create_rule {
+        interval      = 24
+        interval_unit = "HOURS"
+        times         = ["03:00"]
+      }
+      retain_rule {
+        interval      = 7
+        interval_unit = "DAYS"
+      }
+      copy_tags = true
+      cross_region_copy_rule {
+        target    = "us-west-2"
+        encrypted = true
+        cmk_arn   = "arn:aws:kms:us-west-2:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
+        copy_tags = true
+        retain_rule {
+          interval      = 7
+          interval_unit = "DAYS"
+        }
+      }
+    }
+  }
+  tags = {
+    Name      = "snapshots-daily"
+    Role      = "snapshots-daily"
+    ManagedBy = "opsdir"
+  }
+}
+
+import {
+  to = aws_dlm_lifecycle_policy.snapshots_daily
+  id = "policy-0c1a2b3d4e5f60718"
+}
+
 resource "aws_lb" "svc_apps" {
   name               = "ciam-prod-svc-apps"
   internal           = false

@@ -494,6 +494,34 @@ resource "azurerm_linux_virtual_machine" "ds_1" {
   }
 }
 
+# ds-1 mounts vol-ds-data at /opt/ds/db (its own configuration, not Terraform)
+
+resource "azurerm_managed_disk" "ds_1_vol_ds_data" {
+  name                   = "disk-ds-1-vol-ds-data"
+  location               = data.azurerm_resource_group.main.location
+  resource_group_name    = data.azurerm_resource_group.main.name
+  zone                   = "1"
+  storage_account_type   = "PremiumV2_LRS"
+  create_option          = "Empty"
+  disk_size_gb           = 500
+  disk_iops_read_write   = 6000
+  disk_mbps_read_write   = 250
+  disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
+  tags = {
+    Volume    = "vol-ds-data"
+    Role      = "volume-ds-data"
+    Server    = "ds-1"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "ds_1_vol_ds_data" {
+  managed_disk_id    = azurerm_managed_disk.ds_1_vol_ds_data.id
+  virtual_machine_id = azurerm_linux_virtual_machine.ds_1.id
+  lun                = 0
+  caching            = "None"
+}
+
 resource "azurerm_network_interface" "ds_2" {
   name                = "nic-ds-2"
   location            = data.azurerm_resource_group.main.location
@@ -542,6 +570,34 @@ resource "azurerm_linux_virtual_machine" "ds_2" {
   }
 }
 
+# ds-2 mounts vol-ds-data at /opt/ds/db (its own configuration, not Terraform)
+
+resource "azurerm_managed_disk" "ds_2_vol_ds_data" {
+  name                   = "disk-ds-2-vol-ds-data"
+  location               = data.azurerm_resource_group.main.location
+  resource_group_name    = data.azurerm_resource_group.main.name
+  zone                   = "2"
+  storage_account_type   = "PremiumV2_LRS"
+  create_option          = "Empty"
+  disk_size_gb           = 500
+  disk_iops_read_write   = 6000
+  disk_mbps_read_write   = 250
+  disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
+  tags = {
+    Volume    = "vol-ds-data"
+    Role      = "volume-ds-data"
+    Server    = "ds-2"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "ds_2_vol_ds_data" {
+  managed_disk_id    = azurerm_managed_disk.ds_2_vol_ds_data.id
+  virtual_machine_id = azurerm_linux_virtual_machine.ds_2.id
+  lun                = 0
+  caching            = "None"
+}
+
 resource "azurerm_network_interface" "ds_3" {
   name                = "nic-ds-3"
   location            = data.azurerm_resource_group.main.location
@@ -588,6 +644,34 @@ resource "azurerm_linux_virtual_machine" "ds_3" {
     Product   = "PingDS 7.5.1"
     ManagedBy = "opsdir"
   }
+}
+
+# ds-3 mounts vol-ds-data at /opt/ds/db (its own configuration, not Terraform)
+
+resource "azurerm_managed_disk" "ds_3_vol_ds_data" {
+  name                   = "disk-ds-3-vol-ds-data"
+  location               = data.azurerm_resource_group.main.location
+  resource_group_name    = data.azurerm_resource_group.main.name
+  zone                   = "3"
+  storage_account_type   = "PremiumV2_LRS"
+  create_option          = "Empty"
+  disk_size_gb           = 500
+  disk_iops_read_write   = 6000
+  disk_mbps_read_write   = 250
+  disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
+  tags = {
+    Volume    = "vol-ds-data"
+    Role      = "volume-ds-data"
+    Server    = "ds-3"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "ds_3_vol_ds_data" {
+  managed_disk_id    = azurerm_managed_disk.ds_3_vol_ds_data.id
+  virtual_machine_id = azurerm_linux_virtual_machine.ds_3.id
+  lun                = 0
+  caching            = "None"
 }
 
 resource "azurerm_network_interface" "idm_1" {

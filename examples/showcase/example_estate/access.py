@@ -12,7 +12,7 @@ Planted for the planner to find:
   - the target's guardrails don't stop audit logs being disabled; operators can't come in by a session manager there
   - in the target the admins' Key Vault rights are PIM-eligible only: whether they may manage the keys can't be told
 """
-from .common import RB, R, owner, spec, t
+from .common import RB, R, ou, owner, spec, t
 
 FILE = "80-access"
 SETS, PRINCIPALS = f"ou=permission-sets,{R}", f"ou=principals,{R}"
@@ -42,16 +42,12 @@ PRINCIPAL_ROWS = (
 GITHUB = "https://token.actions.githubusercontent.com"
 
 
-def _ou(dn, name):
-    return spec(FILE, dn, ["top", "organizationalUnit"], ou=name)
-
-
 def entries():
-    return (_ou(SETS, "permission-sets"),
+    return (ou(FILE, "permission-sets"),
             *(spec(FILE, f"cn={cn},{SETS}", ["top", "ciamObject", "ciamPermissionSet"], cn=cn, description=desc,
                    ciamPermits=list(permits), ciamOwner=owner("ciam-platform"))
               for cn, desc, permits in PERMISSION_SETS),
-            _ou(PRINCIPALS, "principals"),
+            ou(FILE, "principals"),
             *(spec(FILE, f"cn={cn},{PRINCIPALS}", ["top", "ciamObject", "ciamPrincipal"], cn=cn,
                    ciamPrincipalKind=kind, ciamIdentityRole=role, ciamTargetRole=target,
                    ciamHoldsSet=f"cn={held},{SETS}" if held else None, ciamCondition=list(conditions) or None,

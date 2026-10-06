@@ -1,0 +1,11 @@
+# CHG-2018 (approved): the target's directory data volume was set up from a sandbox template at 256 GB, where the
+# source's is 500 GB: what PingDS keeps on it wouldn't fit. Make it 500 GB, as production has it (the planner's exact
+# fix volume:volume-ds-data:ciamVolumeSizeGb). A disk grows in place; the file system on it is grown by hand
+# afterwards. Its snapshot policy stays open: Azure's scheduled disk snapshots are Azure Backup's (a Backup vault).
+dn: cn=vol-ds-data,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: modify
+replace: ciamVolumeSizeGb
+ciamVolumeSizeGb: 500
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2018,ou=changes,dc=ciam-ops

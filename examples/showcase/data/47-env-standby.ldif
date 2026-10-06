@@ -802,6 +802,35 @@ ciamRetentionDays: 14
 ciamSourceCidr: 10.70.2.0/24
 ciamZone: us-central1-a
 
+dn: cn=vol-ds-data,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamVolume
+cn: vol-ds-data
+ciamBindingRole: volume-ds-data
+ciamEncryptedByRole: disk-encryption
+ciamMountPath: /opt/ds/db
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSnapshotPolicyRole: snapshots-daily
+ciamTargetRole: ds
+ciamVolumeClass: ssd
+ciamVolumeEncrypted: TRUE
+ciamVolumeKind: data
+ciamVolumeSizeGb: 500
+
+dn: cn=snapshots-daily,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSnapshotPolicy
+cn: snapshots-daily
+ciamBindingRole: snapshots-daily
+ciamCopyRegion: us-east1
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamProviderRef: projects/example-aero-ciam-standby/regions/us-central1/resour
+ cePolicies/ciam-prod-snapshots-daily
+ciamRetentionDays: 7
+ciamSnapshotAt: 03:00
+ciamSnapshotConsistency: crash
+ciamSnapshotEveryHours: 24
+
 dn: cn=link-source,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamInterconnect

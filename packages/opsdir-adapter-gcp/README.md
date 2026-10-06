@@ -101,7 +101,7 @@ The core `data` domain's volumes (`ciamVolume`, each server role's disks) and sn
 | The role's boot volume | Each instance's `boot_disk`: `initialize_params` `size`, `type` (a provisioned boot disk is pd-ssd, said) and labels `volume`, `role`; `kms_key_self_link` from its key role (`ciamEncryptedByRole`, else the `disk-encryption` key). Without one, the boot disk is as before |
 | Each data volume of the role | Per instance: a `google_compute_disk` in its zone (size, type, `provisioned_iops` and `provisioned_throughput` where the type takes them, `disk_encryption_key`), labelled `volume`, `role`, `server`, `snapshot_policy`, and a `google_compute_attached_disk` with the volume as its device name; the instance mounts it at `ciamMountPath` itself (a comment) |
 | `ciamVolumeEncrypted` `FALSE`, an unbound key role | A comment: Google Cloud encrypts every disk at rest, with its own key when none is named |
-| `ciamSnapshotPolicy` the stack keeps | A `google_compute_resource_policy` `ciam-<env>-<name>` with a snapshot schedule: `daily_schedule` every 24 hours, `hourly_schedule` every 1 to 23 (more is a comment), from `ciamSnapshotAt` on the hour; `max_retention_days`, snapshots kept when the disk is deleted; `storage_locations` the first `ciamCopyRegion` (one location: more are a comment); `guest_flush` when application-consistent; an `import` block when its provider ref is recorded. Attached to each disk that follows it by `google_compute_disk_resource_policy_attachment` (a boot disk by its instance's name). One someone else keeps: a comment |
+| `ciamSnapshotPolicy` the stack keeps | A `google_compute_resource_policy` `ciam-<env>-<name>` with a snapshot schedule: `daily_schedule` every 24 hours, `hourly_schedule` every 1 to 23 (more is a comment), from `ciamSnapshotAt` on the hour; `max_retention_days`, snapshots kept when the disk is deleted; `storage_locations` the first `ciamCopyRegion` (one location: more are a comment); `guest_flush` when application-consistent; its snapshots labelled `policy` (the record's name) and `role`; an `import` block when its provider ref is recorded. Attached to each disk that follows it by `google_compute_disk_resource_policy_attachment` (a boot disk by its instance's name). One someone else keeps: a comment |
 
 ## Reading an environment back from Terraform state
 
@@ -198,7 +198,7 @@ A tag key the platform's own Terraform made (its description says `Managed by op
 |---|---|
 | `google_compute_disk` (+ `google_compute_attached_disk`), grouped by label `volume` | data volume of the role its instances run (an instance's boot disk: its role's boot volume): the most common size, class, IOPS and throughput, its key and the schedule its resource policies (or a policy attachment) name as roles |
 | An instance's `boot_disk` labelled `volume` (Terraform state, where no disk of its own is reported) | the role's boot volume |
-| `google_compute_resource_policy` with a snapshot schedule | snapshot policy: hours (daily is 24), start time, `max_retention_days`, a storage location outside its region as its copy region, consistency from `guest_flush` |
+| `google_compute_resource_policy` with a snapshot schedule | snapshot policy named by its snapshots' label `policy` (else its own name, `ciam-<env>-<name>` when rendered here): hours (daily is 24), start time, `max_retention_days`, a storage location outside its region as its copy region, consistency from `guest_flush` |
 
 A data disk the environment's instances use without a `volume` label is named.
 

@@ -533,6 +533,29 @@ resource "aws_instance" "pf_engine_s1" {
   }
 }
 
+# ds-s1 mounts vol-ds-data-stage at /opt/ds/db (its own configuration, not Terraform)
+
+resource "aws_ebs_volume" "ds_s1_vol_ds_data_stage" {
+  availability_zone = "us-east-1a"
+  size              = 100
+  type              = "gp3"
+  encrypted         = true
+  kms_key_id        = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
+  tags = {
+    Name      = "ds-s1-vol-ds-data-stage"
+    Volume    = "vol-ds-data-stage"
+    Role      = "volume-ds-data"
+    Server    = "ds-s1"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_volume_attachment" "ds_s1_vol_ds_data_stage" {
+  device_name = "/dev/sdf"
+  volume_id   = aws_ebs_volume.ds_s1_vol_ds_data_stage.id
+  instance_id = aws_instance.ds_s1.id
+}
+
 resource "aws_lb" "svc_apps" {
   name               = "ciam-stage-svc-apps"
   internal           = false

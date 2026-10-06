@@ -51,14 +51,20 @@ def egress_firewalls(m):
     return tuple(p for p in of_class(m, "ciamProxy") if owned(p) and one(p, "ciamProxyKind") == "firewall")
 
 
+def sites_by_port(destinations):
+    """((port, (host, ...)), ...) of allowlist destinations ('host' or 'host:port'; others skipped), grouped by port
+    (443 when a destination names none), ports ascending, hosts in the order given."""
+    parsed = tuple((int(port) if port else HTTPS, host)
+                   for host, port in (re.match(r"^(.*?)(?::([0-9]+))?$", d).groups()
+                                      for d in destinations if re.match(DESTINATION, d)))
+    return tuple((port, tuple(dict.fromkeys(h for p, h in parsed if p == port)))
+                 for port in sorted({p for p, _ in parsed}))
+
+
 def allowlist(proxy):
     """((port, (host, ...)), ...) of the sites a proxy or firewall lets egress out to, grouped by port (443 when a
     destination names none), ports ascending, hosts in record order."""
-    parsed = tuple((int(port) if port else HTTPS, host)
-                   for host, port in (re.match(r"^(.*?)(?::([0-9]+))?$", d).groups()
-                                      for d in values(proxy, "ciamAllowedDestination") if re.match(DESTINATION, d)))
-    return tuple((port, tuple(dict.fromkeys(h for p, h in parsed if p == port)))
-                 for port in sorted({p for p, _ in parsed}))
+    return sites_by_port(values(proxy, "ciamAllowedDestination"))
 
 
 def private_ranges(m):

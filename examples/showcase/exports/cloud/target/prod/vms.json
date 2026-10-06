@@ -16,7 +16,16 @@
     "storageProfile": {
       "imageReference": {
         "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingds-7.5.1-rhel9"
-      }
+      },
+      "dataDisks": [
+        {
+          "lun": 0,
+          "name": "disk-ds-1-vol-ds-data",
+          "managedDisk": {
+            "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/disks/disk-ds-1-vol-ds-data"
+          }
+        }
+      ]
     },
     "networkProfile": {
       "networkInterfaces": [
@@ -49,7 +58,16 @@
     "storageProfile": {
       "imageReference": {
         "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingds-7.5.1-rhel9"
-      }
+      },
+      "dataDisks": [
+        {
+          "lun": 0,
+          "name": "disk-ds-2-vol-ds-data",
+          "managedDisk": {
+            "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/disks/disk-ds-2-vol-ds-data"
+          }
+        }
+      ]
     },
     "networkProfile": {
       "networkInterfaces": [
@@ -82,7 +100,16 @@
     "storageProfile": {
       "imageReference": {
         "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingds-7.5.1-rhel9"
-      }
+      },
+      "dataDisks": [
+        {
+          "lun": 0,
+          "name": "disk-ds-3-vol-ds-data",
+          "managedDisk": {
+            "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/disks/disk-ds-3-vol-ds-data"
+          }
+        }
+      ]
     },
     "networkProfile": {
       "networkInterfaces": [

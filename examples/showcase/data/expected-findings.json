@@ -161,6 +161,20 @@
       "match": "Data store `corp-directory` has withheld credentials but no credential role",
       "planted": "imported corporate directory store names no secret",
       "cleared_by": "CHG-2005"
+    },
+    {
+      "id": "B24",
+      "area": "Volumes",
+      "match": "Volume `volume-ds-data` is 500 GB in source/prod but 256 GB in target/prod",
+      "planted": "the target's directory data volume came from a sandbox template: what PingDS keeps doesn't fit",
+      "cleared_by": "CHG-2018"
+    },
+    {
+      "id": "B25",
+      "area": "Binding",
+      "match": "Role `snapshots-daily` is bound in source/prod but not in target/prod",
+      "planted": "the target binds no snapshot policy (the volume check says what it loses: A72)",
+      "cleared_by": null
     }
   ],
   "actions": [
@@ -662,6 +676,13 @@
       "planted": "nothing copies the target's backups to another region; the source replicates to us-west-2",
       "cleared_by": null,
       "raised_by": "CHG-2017"
+    },
+    {
+      "id": "A72",
+      "area": "Volumes",
+      "match": "Volume `volume-ds-data` is snapshotted by `snapshots-daily`",
+      "planted": "the target snapshots nothing of the directory's data volume (Azure's scheduled disk snapshots are Azure Backup's: 4.10 task 5)",
+      "cleared_by": null
     }
   ]
 }

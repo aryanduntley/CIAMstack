@@ -1,0 +1,8 @@
+environment   volume          server role  kind  mount       size gb  class        iops  throughput  encrypted by     snapshot policy  every hours  at     retention days  copies to
+------------  --------------  -----------  ----  ----------  -------  -----------  ----  ----------  ---------------  ---------------  -----------  -----  --------------  ---------
+source/prod   volume-ds-data  ds           data  /opt/ds/db  500      provisioned  6000              disk-encryption  snapshots-daily  24           03:00  7               us-west-2
+source/stage  volume-ds-data  ds           data  /opt/ds/db  100      ssd                            disk-encryption
+standby/prod  volume-ds-data  ds           data  /opt/ds/db  500      ssd                            disk-encryption  snapshots-daily  24           03:00  7               us-east1
+target/prod   volume-ds-data  ds           data  /opt/ds/db  256      provisioned  6000  250         disk-encryption
+(4 rows)
+exit 0

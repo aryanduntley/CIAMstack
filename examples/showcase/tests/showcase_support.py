@@ -27,7 +27,8 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2013", SHOWCASE / "changes" / "CHG-2013-corporate-ca.ldif"),
             ("CHG-2015", SHOWCASE / "changes" / "CHG-2015-target-ad-forwarder.ldif"),
             ("CHG-2016", SHOWCASE / "changes" / "CHG-2016-grant-database-protection.ldif"),
-            ("CHG-2017", SHOWCASE / "changes" / "CHG-2017-target-backup-container.ldif"))
+            ("CHG-2017", SHOWCASE / "changes" / "CHG-2017-target-backup-container.ldif"),
+            ("CHG-2018", SHOWCASE / "changes" / "CHG-2018-target-directory-volume-size.ldif"))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
 # night before, all of them)
 IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", "20260920030000Z"),

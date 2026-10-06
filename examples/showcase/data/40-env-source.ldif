@@ -935,6 +935,35 @@ ciamSourceCidr: 10.20.4.0/24
 ciamSourceCidr: 10.20.5.0/24
 ciamSubnetRole: subnet-pf
 
+dn: cn=vol-ds-data,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamVolume
+cn: vol-ds-data
+ciamBindingRole: volume-ds-data
+ciamEncryptedByRole: disk-encryption
+ciamIops: 6000
+ciamMountPath: /opt/ds/db
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSnapshotPolicyRole: snapshots-daily
+ciamTargetRole: ds
+ciamVolumeClass: provisioned
+ciamVolumeEncrypted: TRUE
+ciamVolumeKind: data
+ciamVolumeSizeGb: 500
+
+dn: cn=snapshots-daily,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSnapshotPolicy
+cn: snapshots-daily
+ciamBindingRole: snapshots-daily
+ciamCopyRegion: us-west-2
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamProviderRef: policy-0c1a2b3d4e5f60718
+ciamRetentionDays: 7
+ciamSnapshotAt: 03:00
+ciamSnapshotConsistency: crash
+ciamSnapshotEveryHours: 24
+
 dn: ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit

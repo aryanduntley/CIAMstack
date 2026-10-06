@@ -10,6 +10,7 @@ binding:fw-consumer-legacy-rptuser              Binding       1 (2 inputs)  1   
 binding:fw-consumer-mro-batch-export            Binding       1 (2 inputs)  1             Bind `fw-consumer-mro-batch-export` in target/prod like source/prod does
 binding:identity-idm                            Binding       1 (4 inputs)  1             Bind `identity-idm` in target/prod like source/prod does
 binding:pf-cluster-discovery                    Binding       1 (1 input)   1             Bind `pf-cluster-discovery` in target/prod like source/prod does
+binding:snapshots-daily                         Binding       1 (2 inputs)  1             Bind `snapshots-daily` in target/prod like source/prod does
 credential-role:data-stores/corp-directory      Credentials   20 options    1             Name the secret role Data store `corp-directory` takes its withheld credentials from
 external-host:data-stores/corp-directory        Hosts         2 (1 input)   2             Record `dc1.corp.example-aero.test`, `dc2.corp.example-aero.test`, which data store `corp-directory` reaches, as source/prod's hosts of a role
 credential-role:data-stores/grant-store         Credentials   20 options    1             Name the secret role Data store `grant-store` takes its withheld credentials from
@@ -28,6 +29,8 @@ flow-log-retention:flow-logs                    Flow logs     1             1   
 database:pf-grants-db:ciamDbHighAvailability    Databases     1             1             Give `pf-grants-db` high availability in target/prod, as source/prod has it
 database:pf-grants-db:ciamDbDeletionProtection  Databases     1             1             Give `pf-grants-db` deletion protection in target/prod, as source/prod has it
 database:pf-grants-db:ciamRetentionDays         Databases     1             1             Keep `pf-grants-db`'s backups 14 days in target/prod, as source/prod does
+volume:volume-ds-data:ciamVolumeSizeGb          Volumes       1             1             Make `volume-ds-data` 500 GB in target/prod, as in source/prod
+volume:volume-ds-data:ciamSnapshotPolicyRole    Volumes       2 (2 inputs)  1             Snapshot `volume-ds-data` in target/prod with a policy like `snapshots-daily` of source/prod
 egress-proxy:pf-engine:bin/run.properties       Egress proxy  6             1             Link `http.proxyHost`, `http.proxyPort`, `https.proxyHost`, `https.proxyPort`, `http.nonProxyHosts` in `pf-engine`'s bin/run.properties (run.properties) to `egress-proxy`'s proxy
-(29 rows)
+(32 rows)
 exit 0

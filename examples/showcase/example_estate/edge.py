@@ -18,7 +18,7 @@ Planted for the planner to find:
   - the source forwards the AD domain to the domain controllers; the target has no forwarder (approved change CHG-2015
     adds it)
 """
-from .common import R, cert, owner, spec
+from .common import R, cert, ou, owner, spec
 
 FILE = "85-edge"
 POLICIES, HEADERS = f"ou=edge-policies,{R}", f"ou=header-contracts,{R}"
@@ -53,17 +53,13 @@ CONTRACTS = (
 )
 
 
-def _ou(dn, name):
-    return spec(FILE, dn, ["top", "organizationalUnit"], ou=name)
-
-
 def entries():
-    return (_ou(POLICIES, "edge-policies"),
+    return (ou(FILE, "edge-policies"),
             *(spec(FILE, f"cn={cn},{POLICIES}", ["top", "ciamObject", "ciamTrafficPolicy"], cn=cn, description=desc,
                    ciamOwner=owner("ciam-platform"), **attrs) for cn, desc, attrs in TRAFFIC),
             *(spec(FILE, f"cn={cn},{POLICIES}", ["top", "ciamObject", "ciamProtectionPolicy"], cn=cn,
                    description=desc, ciamOwner=owner("ciam-platform"), **attrs) for cn, desc, attrs in PROTECTION),
-            _ou(HEADERS, "header-contracts"),
+            ou(FILE, "header-contracts"),
             *(spec(FILE, f"cn={cn},{HEADERS}", ["top", "ciamObject", "ciamHeaderContract"], cn=cn, description=desc,
                    ciamOwner=owner("ciam-platform"), **attrs) for cn, desc, attrs in CONTRACTS))
 

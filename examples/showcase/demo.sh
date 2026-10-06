@@ -58,6 +58,8 @@ echo "-- the managed databases each environment runs: engine, version, availabil
 od report databases
 echo "-- the object stores: versioning, locks, keys, lifecycle, public access and copies of each environment's buckets"
 od report object-stores
+echo "-- the disks: each server role's volumes, their size, class, key and the snapshot policy that copies them"
+od report volumes
 echo "-- the network: routes, private endpoints, endpoint services, and the sites egress lets the servers reach"
 od report routes; od report private-endpoints; od report endpoint-services; od report egress-sites
 echo "-- the edge: DNS, traffic and protection policies, what each load balancer runs, header contracts"
@@ -149,6 +151,7 @@ od modify --change CHG-2013 changes/CHG-2013-corporate-ca.ldif
 od modify --change CHG-2015 changes/CHG-2015-target-ad-forwarder.ldif
 od modify --change CHG-2016 changes/CHG-2016-grant-database-protection.ldif
 od modify --change CHG-2017 changes/CHG-2017-target-backup-container.ldif
+od modify --change CHG-2018 changes/CHG-2018-target-directory-volume-size.ldif
 od history
 od render target/prod >/dev/null
 diff -ru out/before/terraform out/target-prod/terraform

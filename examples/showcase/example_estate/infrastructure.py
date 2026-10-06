@@ -8,6 +8,7 @@ from .common import AWS, AZ, CON, DECL, ENVS, GCP, INTS, XA, cert, chg, owner, s
 from .custom import RESIDENCY
 from .databases import DATABASES
 from .storage import BACKUP
+from .volumes import VOLUMES
 from .access import ACCESS
 from .edge import EDGE, SERVICE_ATTRS
 from .network import NETWORK
@@ -87,7 +88,7 @@ SOURCE = MappingProxyType({
     "access": ACCESS["source"],
     # DNS zones, forwarders, the SSO certificate in the cloud's store, edge subnets; what the source's edge runs (edge)
     "edge": EDGE["source"], "service_attrs": SERVICE_ATTRS["source"],
-    "network": NETWORK["source"], "databases": DATABASES["source"],
+    "network": NETWORK["source"], "databases": DATABASES["source"], "volumes": VOLUMES["source"],
     # compute groups: (name, binding role, server role, provider ref, image, size, min, desired, max, zones, tokens)
     "compute": (("asg-pf-engine", "compute-pf-engine", "pf-engine",
                  "arn:aws:autoscaling:us-east-1:111122223333:autoScalingGroup:6d4c1f0e-0000-4000-8000-00000000a001:"
@@ -161,7 +162,7 @@ TARGET = MappingProxyType({
     "access": ACCESS["target"],
     # DNS zones, forwarders, the SSO certificate in the cloud's store, edge subnets; what the source's edge runs (edge)
     "edge": EDGE["target"], "service_attrs": SERVICE_ATTRS["target"],
-    "network": NETWORK["target"], "databases": DATABASES["target"],
+    "network": NETWORK["target"], "databases": DATABASES["target"], "volumes": VOLUMES["target"],
     # planted: the domain's Communication Services identity isn't DKIM-verified yet and its DMARC is weaker; no bus
     # carries the identity audit stream
     "sending": (("mail-acs", "mail-sending", "example-aero.test",
@@ -237,7 +238,7 @@ STANDBY = MappingProxyType({
     # DNS zones, forwarders, the SSO certificate in the cloud's store, edge subnets; what the source's edge runs (edge)
     "edge": EDGE["standby"], "service_attrs": SERVICE_ATTRS["standby"],
     "network": NETWORK["standby"], "firewall_model": "policy",   # rules by secure tag, in a network policy
-    "databases": DATABASES["standby"],
+    "databases": DATABASES["standby"], "volumes": VOLUMES["standby"],
     "compute": (("mig-pf-engine", "compute-pf-engine", "pf-engine",
                  f"{PROJECT}/regions/us-central1/instanceGroupManagers/ciam-pf-engine",
                  GIMG + "pingfederate-12-1-4-rhel9", "n2-standard-2", 2, 2, 4, ("us-central1-a", "us-central1-b"),
@@ -322,7 +323,7 @@ def _bindings(file, env, p):
             *(spec(file, b(cn), ["top", oc], cn=cn, ciamBindingRole=role, **attrs)
               for oc, cn, role, attrs in (*(p.get("monitoring") or ()), *(p.get("access") or ()),
                                           *(p.get("edge") or ()), *(p.get("network") or ()),
-                                          *(p.get("databases") or ()))),
+                                          *(p.get("databases") or ()), *(p.get("volumes") or ()))),
             *((_interconnect(file, b, *p["interconnect"]),) if p.get("interconnect") else ()))
 
 
@@ -400,9 +401,9 @@ STAGE_SERVERS = (("ds-s1", "ds", "10.20.1.31", "us-east-1a", "subnet-ds-a", "ami
                  ("idm-s1", "idm", "10.20.6.31", "us-east-1a", "subnet-idm-a", "ami-0b1c2d3e4f5a60987", IDM_V),
                  ("ig-s1", "ig", "10.20.10.31", "us-east-1a", "subnet-ig-a", "ami-0c2d3e4f5a6b70123", IG_V))
 # consumers reach production only (its firewall rules, its LDAPS endpoint service); the private endpoint and the egress
-# firewall are the shared VPC's, kept by production's root
+# firewall are the shared VPC's, kept by production's root; stage's disks aren't snapshotted (stage is rebuilt)
 STAGE_DROPS = (*(role for _, role, *_ in SOURCE["fw"] if role.startswith("fw-consumer-") and role != "fw-consumer-pf-ds-svc"),
-               "ldaps-endpoint-service", "private-secrets", "egress-firewall")
+               "ldaps-endpoint-service", "private-secrets", "egress-firewall", "snapshots-daily")
 # (name, overridden entry, attribute, value, why)
 STAGE_OVERRIDES = (
     ("replicas", f"cn=topology,ou=replication,{DECL}", "ciamReplicaCount", 1, "stage runs one directory replica"),
@@ -436,7 +437,7 @@ def stage():
                  ciamStorageRef="s3://example-aero-ciam-stage-pf-cluster",
                  description="Stage's own PingFederate cluster discovery: never prod's"),
             *(spec(file, f"cn={cn},{B}", ["top", oc], cn=cn, ciamBindingRole=role, **attrs)
-              for oc, cn, role, attrs in DATABASES["stage"]),
+              for oc, cn, role, attrs in (*DATABASES["stage"], *VOLUMES["stage"])),
             spec(file, f"ou=overrides,{STAGE}", ["top", "organizationalUnit"], ou="overrides"),
             *(spec(file, f"cn={cn},ou=overrides,{STAGE}", ["top", "ciamOverride"], cn=cn, ciamOverrides=target,
                    ciamOverrideAttribute=attr, ciamOverrideValue=value, description=why, ciamOwner=owner("ciam-platform"))

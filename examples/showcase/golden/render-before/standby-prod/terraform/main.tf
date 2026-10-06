@@ -510,6 +510,37 @@ resource "google_compute_instance" "ds_1" {
   }
 }
 
+# ds-1 mounts vol-ds-data at /opt/ds/db (its own configuration, not Terraform)
+
+resource "google_compute_disk" "ds_1_vol_ds_data" {
+  name = "ds-1-vol-ds-data"
+  zone = "us-central1-a"
+  type = "pd-ssd"
+  size = 500
+  disk_encryption_key {
+    kms_key_self_link = "projects/example-aero-ciam-standby/locations/us-central1/keyRings/ciam/cryptoKeys/disk"
+  }
+  labels = {
+    volume          = "vol-ds-data"
+    role            = "volume-ds-data"
+    server          = "ds-1"
+    snapshot_policy = "snapshots-daily"
+    managed_by      = "opsdir"
+  }
+}
+
+resource "google_compute_attached_disk" "ds_1_vol_ds_data" {
+  disk        = google_compute_disk.ds_1_vol_ds_data.id
+  instance    = google_compute_instance.ds_1.id
+  device_name = "vol-ds-data"
+}
+
+resource "google_compute_disk_resource_policy_attachment" "ds_1_vol_ds_data" {
+  name = google_compute_resource_policy.snapshots_daily.name
+  disk = google_compute_disk.ds_1_vol_ds_data.name
+  zone = "us-central1-a"
+}
+
 resource "google_compute_instance" "ds_2" {
   name         = "ds-2"
   machine_type = "n2-standard-4"
@@ -545,6 +576,37 @@ resource "google_compute_instance" "ds_2" {
     product    = "pingds-7-5-1"
     managed_by = "opsdir"
   }
+}
+
+# ds-2 mounts vol-ds-data at /opt/ds/db (its own configuration, not Terraform)
+
+resource "google_compute_disk" "ds_2_vol_ds_data" {
+  name = "ds-2-vol-ds-data"
+  zone = "us-central1-b"
+  type = "pd-ssd"
+  size = 500
+  disk_encryption_key {
+    kms_key_self_link = "projects/example-aero-ciam-standby/locations/us-central1/keyRings/ciam/cryptoKeys/disk"
+  }
+  labels = {
+    volume          = "vol-ds-data"
+    role            = "volume-ds-data"
+    server          = "ds-2"
+    snapshot_policy = "snapshots-daily"
+    managed_by      = "opsdir"
+  }
+}
+
+resource "google_compute_attached_disk" "ds_2_vol_ds_data" {
+  disk        = google_compute_disk.ds_2_vol_ds_data.id
+  instance    = google_compute_instance.ds_2.id
+  device_name = "vol-ds-data"
+}
+
+resource "google_compute_disk_resource_policy_attachment" "ds_2_vol_ds_data" {
+  name = google_compute_resource_policy.snapshots_daily.name
+  disk = google_compute_disk.ds_2_vol_ds_data.name
+  zone = "us-central1-b"
 }
 
 resource "google_compute_instance" "idm_1" {
@@ -718,6 +780,38 @@ resource "google_compute_instance" "pf_engine_2" {
     product    = "pingfederate-12-1-4"
     managed_by = "opsdir"
   }
+}
+
+resource "google_compute_resource_policy" "snapshots_daily" {
+  name        = "ciam-prod-snapshots-daily"
+  region      = var.region
+  description = "CIAM snapshots snapshots-daily (standby/prod)"
+  snapshot_schedule_policy {
+    schedule {
+      daily_schedule {
+        days_in_cycle = 1
+        start_time    = "03:00"
+      }
+    }
+    retention_policy {
+      max_retention_days    = 7
+      on_source_disk_delete = "KEEP_AUTO_SNAPSHOTS"
+    }
+    snapshot_properties {
+      storage_locations = ["us-east1"]
+      guest_flush       = false
+      labels = {
+        policy     = "snapshots-daily"
+        role       = "snapshots-daily"
+        managed_by = "opsdir"
+      }
+    }
+  }
+}
+
+import {
+  to = google_compute_resource_policy.snapshots_daily
+  id = "projects/example-aero-ciam-standby/regions/us-central1/resourcePolicies/ciam-prod-snapshots-daily"
 }
 
 data "google_compute_address" "svc_apps" {

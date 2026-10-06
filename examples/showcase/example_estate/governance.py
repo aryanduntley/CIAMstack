@@ -49,6 +49,8 @@ CHANGES = (
      "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2017", "Give the target environment its directory backup target", "approved", "CAB 2026-09-18",
      "2026-09-24"),
+    ("CHG-2018", "Make the target's directory data volume as large as production's", "approved",
+     "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

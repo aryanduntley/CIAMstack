@@ -48,6 +48,10 @@ EXPECTED = MappingProxyType({
          "NSGs do that work); decide, and record why", None),
         ("B23", "PingFederate", "Data store `corp-directory` has withheld credentials but no credential role",
          "imported corporate directory store names no secret", "CHG-2005"),
+        ("B24", "Volumes", "Volume `volume-ds-data` is 500 GB in source/prod but 256 GB in target/prod",
+         "the target's directory data volume came from a sandbox template: what PingDS keeps doesn't fit", "CHG-2018"),
+        ("B25", "Binding", "Role `snapshots-daily` is bound in source/prod but not in target/prod",
+         "the target binds no snapshot policy (the volume check says what it loses: A72)", None),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -181,6 +185,9 @@ EXPECTED = MappingProxyType({
         ("A71", "Object stores", "Object store `backup-target` is copied to",
          "nothing copies the target's backups to another region; the source replicates to us-west-2", None,
          "CHG-2017"),
+        ("A72", "Volumes", "Volume `volume-ds-data` is snapshotted by `snapshots-daily`",
+         "the target snapshots nothing of the directory's data volume (Azure's scheduled disk snapshots are Azure "
+         "Backup's: 4.10 task 5)", None),
     ],
 })
 
