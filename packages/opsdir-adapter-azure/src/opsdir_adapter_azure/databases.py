@@ -8,6 +8,8 @@ Server (SQL Server is Azure SQL, a different offering): a comment.
   major version and MySQL's 5.7 or 8.0.21: Azure keeps the minor version current), SKU (ciamInstanceSize), storage,
   zone, a zone-redundant standby, backup retention; in the delegated subnet its first subnet role names, with the
   private DNS zone an input and no public access
+  a network security group named by its role on that subnet, admitting the ranges the record does (ciamSourceCidr)
+  to its port (ciamPort, else the engine's)
   the customer-managed key of its key role, through a user-assigned identity granted Key Vault Crypto Service
   Encryption User on the key
   the administrator password read from its credential role's Key Vault secret by an ephemeral resource and written
@@ -17,13 +19,15 @@ Server (SQL Server is Azure SQL, a different offering): a comment.
   an import block when its provider ref (its ARM ID) is recorded
 
 Read back from (azurerm type, attributes) pairs, Terraform state as it is or the CLI and ARM templates normalized to
-it (cli_database.py): the servers, their configurations and the locks on them. The administrator password
-(administrator_password) is never read.
+it (cli_database.py): the servers, their configurations and the locks on them, the ranges the inbound rules of the
+network security groups on their delegated subnets admit (database_security_groups keeps those out of the firewall
+rules). The administrator password (administrator_password) is never read.
 """
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import of_class
 from opsdir.core.inventory import of_types, resource, tagged_role
-from opsdir.domains.data.databases import major_version
+from opsdir.domains.data.naming import DEFAULT_PORTS
+from opsdir.domains.data.databases import database_port, major_version
 from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned, subnets
 from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
@@ -31,10 +35,11 @@ from .arm_ids import subnet_ref
 from .cmk import customer_key, key_ref, role_uri, vault_object
 from .identities import LOC, RG
 from .network import binding_tags
+from .nsg_rules import admitted_ranges
 
 SERVERS = {"postgresql": "azurerm_postgresql_flexible_server", "mysql": "azurerm_mysql_flexible_server"}
 ENGINES = {v: k for k, v in SERVERS.items()}
-PORTS = {"postgresql": 5432, "mysql": 3306}
+PORTS = {e: DEFAULT_PORTS[e] for e in ("postgresql", "mysql")}    # the engines Flexible Server runs
 TLS = "require_secure_transport"                         # both engines' parameter; on by default
 MYSQL_VERSIONS = {"5.7": "5.7", "8.0": "8.0.21"}
 _OFF = frozenset({"off", "0", "false"})
@@ -86,6 +91,25 @@ def _settings(b, engine):
     return {**params, TLS: "off"} if one(b, "ciamDbTlsRequired") == "FALSE" else params
 
 
+def _security_group(m, b, nets):
+    """The network security group named by the database's role on its delegated subnet, its rule admitting the ranges
+    the record does to its port."""
+    role, cidrs, port = one(b, "ciamBindingRole"), values(b, "ciamSourceCidr"), database_port(b)
+    nsg, name = tf_name(role), f"nsg-ciam-{rdn_value(m.env)}-{role}"
+    rule = (block("resource", ["azurerm_network_security_rule", f"{nsg}_clients"], [
+        ("name", f"{role}-clients"), ("description", f"clients of database {rdn_value(b)}"), ("priority", 100),
+        ("direction", "Inbound"), ("access", "Allow"), ("protocol", "Tcp"), ("source_port_range", "*"),
+        ("destination_port_ranges", [str(port)]), ("source_address_prefixes", list(cidrs)),
+        ("destination_address_prefix", "*"), ("resource_group_name", RG),
+        ("network_security_group_name", ref(f"azurerm_network_security_group.{nsg}.name"))]),) if cidrs else ()
+    return (block("resource", ["azurerm_network_security_group", nsg], [
+                ("name", name), ("location", LOC), ("resource_group_name", RG), ("tags", binding_tags(b))]),
+            *rule,
+            *((block("resource", ["azurerm_subnet_network_security_group_association", nsg], [
+                ("subnet_id", ref(f"data.azurerm_subnet.{tf_name(rdn_value(nets[0]))}.id")),
+                ("network_security_group_id", ref(f"azurerm_network_security_group.{nsg}.id"))]),) if nets else ()))
+
+
 def _database(m, b):
     n, cn, engine = tf_name(rdn_value(b)), rdn_value(b), one(b, "ciamDbEngine")
     kind = SERVERS.get(engine)
@@ -122,7 +146,7 @@ def _database(m, b):
             *((block("variable", [dns], [("type", ref("string")), ("description", (
                 f"The private DNS zone ID database {cn} registers in (privatelink.{engine}.database.azure.com)"))]),)
               if nets else ()),
-            *key_blocks, *pw_blocks, server, *settings, *lock,
+            *key_blocks, *pw_blocks, *_security_group(m, b, nets), server, *settings, *lock,
             *((import_block(f"{kind}.{n}", one(b, "ciamProviderRef")),) if adopted(b) else ()))
 
 
@@ -139,7 +163,22 @@ def _first(v):
     return v[0] if isinstance(v, list) and v else v if isinstance(v, dict) else {}
 
 
-def _server(kind, a, settings, locked):
+def _low(v):
+    return (v or "").lower()
+
+
+def database_security_groups(pairs):
+    """{network security group id (lower case): the delegated subnets (lower case) of the Flexible Servers it guards}:
+    theirs, not the firewall rules'."""
+    delegated = {_low(a.get("delegated_subnet_id")) for kind in SERVERS.values() for a in of_types(pairs, kind)
+                 if a.get("delegated_subnet_id")}
+    links = [(_low(a.get("network_security_group_id")), _low(a.get("subnet_id")))
+             for a in of_types(pairs, "azurerm_subnet_network_security_group_association")
+             if _low(a.get("subnet_id")) in delegated]
+    return {g: frozenset(s for g2, s in links if g2 == g) for g in dict.fromkeys(g for g, _ in links)}
+
+
+def _server(kind, a, settings, locked, admitted=()):
     engine = ENGINES[kind]
     own = settings.get((a.get("id") or "").lower(), {})
     tls = own.get(TLS)
@@ -154,18 +193,26 @@ def _server(kind, a, settings, locked):
         "ciamDbTlsRequired": "FALSE" if tls is not None and tls.lower() in _OFF else "TRUE",
         "ciamRetentionDays": retention, "ciamDbPointInTime": "TRUE" if retention else "FALSE",
         "ciamDbDeletionProtection": "TRUE" if (a.get("id") or "").lower() in locked else "FALSE",
-        "ciamDbParameter": sorted(f"{k}={v}" for k, v in own.items() if k != TLS)},
+        "ciamDbParameter": sorted(f"{k}={v}" for k, v in own.items() if k != TLS),
+        "ciamSourceCidr": sorted(set(admitted))},
         links={"ciamSubnetRole": subnet_ref(a.get("delegated_subnet_id")),
                "ciamEncryptedByRole": key_ref(_first(a.get("customer_managed_key")).get("key_vault_key_id"))},
         name=a.get("name"), role=tagged_role(a.get("tags") or {}))
 
 
 def database_resources(pairs):
-    """Database resources of (azurerm type, attributes) pairs: PostgreSQL and MySQL Flexible Servers."""
+    """Database resources of (azurerm type, attributes) pairs: PostgreSQL and MySQL Flexible Servers, with the ranges
+    the network security groups on their delegated subnets admit."""
+    guards = database_security_groups(pairs)
+    admitted = admitted_ranges(pairs, guards)
+
+    def ranges(a):
+        subnet = _low(a.get("delegated_subnet_id"))
+        return tuple(c for g, subnets in guards.items() if subnet in subnets for c in admitted.get(g, ()))
     configs = [((c.get("server_id") or "").lower(), c.get("name"), str(c.get("value")))
                for kind in SERVERS.values() for c in of_types(pairs, f"{kind}_configuration")]
     settings = {sid: {n: v for s, n, v in configs if s == sid} for sid in {s for s, _, _ in configs}}
     locked = {(lk.get("scope") or "").lower() for lk in of_types(pairs, "azurerm_management_lock")
               if lk.get("lock_level") in ("CanNotDelete", "ReadOnly")}
-    return tuple(_server(kind, a, settings, locked) for kind in SERVERS.values() for a in of_types(pairs, kind)
-                 if a.get("id") or a.get("name"))
+    return tuple(_server(kind, a, settings, locked, ranges(a)) for kind in SERVERS.values()
+                 for a in of_types(pairs, kind) if a.get("id") or a.get("name"))

@@ -120,6 +120,29 @@ def test_an_instance_is_read_back_from_state_without_its_password():
     assert not any("aws_db_instance" in n for n in notices)
 
 
+def test_the_ranges_it_admits_are_ingress_rules_on_its_security_group():
+    out = _render(KEY, entry(ALPHA, "db-grants", "ciamDatabase", **DB, ciamSourceCidr=("10.1.4.0/24", "10.1.5.0/24")))
+    assert 'resource "aws_vpc_security_group_ingress_rule" "pf_grants_db_1"' in out
+    for line in ("security_group_id = aws_security_group.pf_grants_db.id", 'cidr_ipv4         = "10.1.5.0/24"',
+                 "from_port         = 5432", 'description       = "clients of database db-grants (pf-grants-db)"'):
+        assert line in out, line
+    mysql = _render(entry(ALPHA, "db-m", "ciamDatabase", ciamBindingRole="m-db", ciamDbEngine="mysql",
+                          ciamSourceCidr="10.1.4.0/24"))
+    assert "from_port         = 3306" in mysql                  # the engine's default port
+
+
+def test_the_rules_on_its_security_group_are_its_ranges_not_firewall_rules():
+    group = ("aws_security_group", "db", {"id": "sg-db", "name": "ciam-prod-pf-grants-db", "ingress": []})
+    rule = ("aws_vpc_security_group_ingress_rule", "db", {
+        "security_group_rule_id": "sgr-1", "security_group_id": "sg-db", "cidr_ipv4": "10.1.4.0/24",
+        "from_port": 5432, "to_port": 5432, "ip_protocol": "tcp", "description": "clients of database db-grants"})
+    instance = {**INSTANCE, "vpc_security_group_ids": ["sg-db"]}
+    resources, _ = state_resources(_state(("aws_db_instance", "grants", instance), *GROUPS, group, rule))
+    (db,) = (r for r in resources if r.kind == "database")
+    assert db.attrs["ciamSourceCidr"] == ("10.1.4.0/24",)
+    assert not [r for r in resources if r.kind == "firewall"]
+
+
 def test_an_aurora_cluster_is_read_with_its_members():
     cluster = {"arn": "arn:aws:rds:us-east-1:1:cluster:db-sess", "cluster_identifier": "db-sess",
                "engine": "aurora-postgresql", "engine_version": "16.2", "endpoint": "db-sess.cluster-c1.rds.test",
@@ -148,7 +171,8 @@ def test_the_cli_outputs_read_the_same_and_ssm_parameters_are_not_read():
              "DBSubnetGroup": {"DBSubnetGroupName": "db-grants", "VpcId": "vpc-1",
                                "Subnets": [{"SubnetIdentifier": "subnet-1"}]},
              "DBParameterGroups": [{"DBParameterGroupName": "db-grants"}],
-             "MasterUserSecret": {"SecretArn": SECRET_ARN}, "TagList": [{"Key": "Role", "Value": "pf-grants-db"}]},
+             "MasterUserSecret": {"SecretArn": SECRET_ARN}, "TagList": [{"Key": "Role", "Value": "pf-grants-db"}],
+             "VpcSecurityGroups": [{"VpcSecurityGroupId": "sg-db", "Status": "active"}]},
             {"DBInstanceIdentifier": "elsewhere", "DBInstanceArn": "arn:x", "Engine": "mysql",
              "DBSubnetGroup": {"DBSubnetGroupName": "other", "VpcId": "vpc-9"}}]}),
         "rds-subnet-groups.json": json.dumps({"DBSubnetGroups": [
@@ -158,9 +182,15 @@ def test_the_cli_outputs_read_the_same_and_ssm_parameters_are_not_read():
             {"ParameterName": "log_min_duration_statement", "ParameterValue": "500", "Source": "user"},
             {"ParameterName": "rds.force_ssl", "ParameterValue": "1", "Source": "system"},
             {"ParameterName": "max_connections", "ParameterValue": "LEAST(...)", "Source": "engine-default"}]}),
+        "security-groups.json": json.dumps({"SecurityGroups": [
+            {"GroupId": "sg-db", "GroupName": "ciam-prod-pf-grants-db", "VpcId": "vpc-1", "IpPermissions": []}]}),
+        "security-group-rules.json": json.dumps({"SecurityGroupRules": [
+            {"SecurityGroupRuleId": "sgr-1", "GroupId": "sg-db", "IsEgress": False, "IpProtocol": "tcp",
+             "FromPort": 5432, "ToPort": 5432, "CidrIpv4": "10.1.4.0/24"}]}),
         "ssm.json": json.dumps({"Parameters": [{"Name": "/x", "Value": "s3cr3t"}]})}
     resources, notices = cli_resources(texts)
     (db,) = (r for r in resources if r.kind == "database")
+    assert db.attrs["ciamSourceCidr"] == ("10.1.4.0/24",) and not [r for r in resources if r.kind == "firewall"]
     assert (db.ref, db.attrs["ciamDbTlsRequired"], db.attrs["ciamDbParameter"]) == (
         ARN, ("TRUE",), ("log_min_duration_statement=500",))
     assert db.links["ciamSubnetRole"] == ("subnet-1", "subnet-2")

@@ -66,7 +66,8 @@ from .network_inventory import endpoint_security_groups, network_resources
 from .edge_inventory import (aliased_names, dns_resources, edge_services, lb_facts, lb_security_groups,
                              service_dns)
 from .iam import iam_resources
-from .databases import database_resources
+from .databases import database_resources, database_security_groups
+from .volumes import volume_resources
 from .storage import object_store_resources
 
 PROVIDER = "aws"
@@ -162,24 +163,33 @@ def _port(rule):
     return str(low), None
 
 
-def _other_sources(rule, balancers=frozenset()):
+def _other_sources(rule, claimed=frozenset()):
     """The rule's sources that aren't IPv4 ranges: IPv6 ranges, security groups (a load balancer's is the load
     balancer's own path to its servers, not named), prefix lists."""
     return (*(f"IPv6 range {c}" for c in (rule.get("ipv6_cidr_blocks") or ()) or
               ((rule.get("cidr_ipv6"),) if rule.get("cidr_ipv6") else ())),
             *(f"security group {g}" for g in (rule.get("security_groups") or ()) or
               ((rule.get("referenced_security_group_id"),) if rule.get("referenced_security_group_id") else ())
-              if g not in balancers),
+              if g not in claimed),
             *(f"prefix list {p}" for p in (rule.get("prefix_list_ids") or ()) or
               ((rule.get("prefix_list_id"),) if rule.get("prefix_list_id") else ())),
             *(("its own security group",) if rule.get("self") is True else ()))
 
 
-def _firewall(found):
-    """(firewall rules, notices): ingress rules of the security groups, grouped into the record's rules by name. The
-    record holds IPv4 sources and single ports: ranges, all-ports rules and other sources are named, not recorded."""
-    balancers = lb_security_groups(found) | endpoint_security_groups(found)    # theirs, not the record's rules
-    groups = {a.get("id"): a for a in of_types(found, "aws_security_group") if a.get("id") not in balancers}
+# what claims a security group, so its rules are its claimant's (a load balancer's, a VPC endpoint's, a database's),
+# not the record's firewall rules: each a function of the pairs -> the ids of the groups it claims
+CLAIMS = (lb_security_groups, endpoint_security_groups, database_security_groups)
+
+
+def _claimed(found):
+    return frozenset().union(*(claim(found) for claim in CLAIMS))
+
+
+def _firewall(found, claimed=frozenset()):
+    """(firewall rules, notices): ingress rules of the security groups other readers don't claim, grouped into the
+    record's rules by name. The record holds IPv4 sources and single ports: ranges, all-ports rules and other sources
+    are named, not recorded."""
+    groups = {a.get("id"): a for a in of_types(found, "aws_security_group") if a.get("id") not in claimed}
     members = reduce(lambda acc, i: {**acc, **{g: (*acc.get(g, ()), _tags(i)["Role"])
                                                 for g in i.get("vpc_security_group_ids") or ()}},
                      (i for i in of_types(found, "aws_instance") if _tags(i).get("Role")), {})
@@ -187,7 +197,7 @@ def _firewall(found):
                  {**r, "protocol": r.get("ip_protocol")}, _tags(r).get("Name"), _role(r),
                  r.get("security_group_rule_id") or r.get("id"))
                 for r in of_types(found, "aws_vpc_security_group_ingress_rule")
-                if r.get("security_group_id") not in balancers]
+                if r.get("security_group_id") not in claimed]
     inline = [(sg, tuple(rule.get("cidr_blocks") or ()), rule, None, None, f"{sg.get('id')}#{i}")
               for sg in groups.values() for i, rule in enumerate(sg.get("ingress") or ())]
     rules = [(_name_of(rule.get("description") or "", tag, ref), sg, tuple(c for c in cidrs if c), rule, role)
@@ -198,7 +208,7 @@ def _firewall(found):
     notices = (*(f"security group rule {n}: {why}, not a single port; not recorded" for n, why in
                  dict.fromkeys((n, _port(rule)[1]) for n, _, cidrs, rule, _ in rules if cidrs and _port(rule)[1])),
                *(f"security group rule {n}: source {s} is not an IPv4 address range; not recorded"
-                 for n, _, _, rule, _ in rules for s in _other_sources(rule, balancers)))
+                 for n, _, _, rule, _ in rules for s in _other_sources(rule, claimed)))
     return tuple(resource("firewall", name, {
                      "ciamSourceCidr": sorted({cidr for n, _, cidr, *_ in named if n == name and cidr}),
                      "ciamPort": sorted({port for n, _, _, port, *_ in named if n == name and port}, key=int),
@@ -440,16 +450,17 @@ def _streams(found):
 def pairs_resources(pairs):
     """(resources, notices) of (Terraform resource type, attributes) pairs: what every AWS source is read into
     (Terraform state as it is; CLI output and CloudFormation normalized to the same attribute names)."""
-    rules, rule_notices = _firewall(pairs)
+    rules, rule_notices = _firewall(pairs, _claimed(pairs))
     iam, iam_notices = iam_resources(pairs)
     zones, records, forwarders, dns_notices = dns_resources(pairs, _served(pairs))
     network, network_notices = network_resources(pairs)
+    volumes, volume_notices = volume_resources(pairs)
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *rules, *_secrets(pairs),
              *_keys(pairs), *object_store_resources(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
              *_canaries(pairs), *iam, *edge_services(pairs), *zones, *records, *forwarders, *network,
-             *database_resources(pairs)),
-            (*rule_notices, *iam_notices, *dns_notices, *network_notices))
+             *database_resources(pairs), *volumes),
+            (*rule_notices, *iam_notices, *dns_notices, *network_notices, *volume_notices))
 
 
 def state_resources(text):

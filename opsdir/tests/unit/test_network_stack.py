@@ -60,7 +60,7 @@ def test_only_the_stacks_own_firewalls_render_their_allowlist_and_other_proxies_
         "as cloud firewall rules.")
 
 
-def test_private_ranges_are_the_network_interconnects_and_endpoint_addresses():
+def test_private_ranges_are_the_network_interconnects_and_endpoint_addresses_and_ranges():
     m = _alpha(entry(ALPHA, "link", "ciamInterconnect", ciamBindingRole="link", ciamInterconnectKind="vpn",
                      ciamPeerEnvironment="env=prod,cloud=beta,ou=environments,dc=ciam-ops",
                      ciamSourceCidr="10.2.0.0/16"),
@@ -68,8 +68,10 @@ def test_private_ranges_are_the_network_interconnects_and_endpoint_addresses():
                      ciamPeerEnvironment="env=prod,cloud=beta,ou=environments,dc=ciam-ops",
                      ciamSourceCidr="10.3.0.0/16", ciamAcceptedCidr="10.3.1.0/24"),
                entry(ALPHA, "psc", "ciamPrivateEndpoint", ciamBindingRole="psc", ciamPrivateService="apis",
-                     ciamFrontendIp="10.255.0.5"))
-    assert private_ranges(m) == ("10.1.0.0/16", "10.2.0.0/16", "10.255.0.5/32", "10.3.1.0/24")
+                     ciamFrontendIp="10.255.0.5"),
+               entry(ALPHA, "psa", "ciamPrivateEndpoint", ciamBindingRole="psa", ciamPrivateService="database",
+                     ciamPrivateEndpointKind="peered-service", ciamCidr="10.71.0.0/20"))
+    assert private_ranges(m) == ("10.1.0.0/16", "10.2.0.0/16", "10.255.0.5/32", "10.3.1.0/24", "10.71.0.0/20")
 
 
 def test_the_firewall_model_defaults_to_rules_and_the_policy_is_the_networks():

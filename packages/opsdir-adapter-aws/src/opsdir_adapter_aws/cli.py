@@ -48,6 +48,8 @@ matching Terraform resource, so the same mapping reads them as reads Terraform s
   The network depth: route tables, network ACLs, VPC endpoints and endpoint services, peering, transit and VPN, flow
   logs, Network Firewall rule groups, policies and firewalls      -> see cli_network.py
   Managed databases: RDS instances, Aurora clusters, subnet groups, user-set parameters -> see cli_database.py
+  Disks and snapshots: EBS volumes (instances' root volumes on the instance), Lifecycle Manager policies saved as
+  dlm-policies/<policy id>.json                                   -> see cli_volume.py
 Network resources outside the listed VPCs are counted, not read; secrets, keys, buckets, functions, pipelines and build
 projects are account-wide, so the importer counts rather than lists the ones the record doesn't have and nothing names
 a role for.
@@ -60,6 +62,7 @@ from opsdir.core.directory import gtime
 from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_document
 from .cli_database import KEYS as DATABASE_KEYS, database_pairs
+from .cli_volume import DLM, KEYS as VOLUME_KEYS, is_dlm_output, root_devices, volume_pairs
 from .cli_storage import storage_folder, storage_pairs
 from .cli_edge import KEYS as EDGE_KEYS, attributes, edge_pairs, record_attributes
 from .cli_iam import KEYS as IAM_KEYS, iam_pairs
@@ -70,7 +73,7 @@ from .inventory import PROVIDER, pairs_resources
 KEYS = ("Vpcs", "Subnets", "Reservations", "SecurityGroups", "SecurityGroupRules", "NatGateways", "LoadBalancers",
         "TagDescriptions", "Listeners", "TargetGroups", "TargetHealthDescriptions", "ResourceRecordSets", "SecretList",
         "KeyMetadata", "KeyRotationEnabled", "Buckets", "Functions", "Rules", "Targets", "ScheduleExpression",
-        "pipeline", "projects", *IAM_KEYS, *EDGE_KEYS, *NETWORK_KEYS, *DATABASE_KEYS,
+        "pipeline", "projects", *IAM_KEYS, *EDGE_KEYS, *NETWORK_KEYS, *DATABASE_KEYS, *VOLUME_KEYS,
         "Tags")   # Tags last: others carry tags too
 IN_VPC = ("aws_subnet", "aws_instance", "aws_security_group", "aws_lb", "aws_nat_gateway", "aws_route_table",
           "aws_network_acl", "aws_vpc_endpoint", "aws_ec2_transit_gateway_vpc_attachment", "aws_db_instance",
@@ -85,6 +88,8 @@ def _outputs(texts):
         folder = storage_folder(path)
         if folder and doc is not None:
             return path, folder, doc                       # a bucket's settings: by the folder it is saved under
+        if is_dlm_output(path) and doc is not None:
+            return path, DLM, doc                          # a Lifecycle Manager policy: its key is IAM's too
         return next(((path, k, doc) for k in KEYS if k in (doc or {})), None)
     found = {p: recognize(p, t) for p, t in sorted(texts.items())}
     return (tuple(o for o in found.values() if o),
@@ -121,13 +126,16 @@ def _network(outs):
           for n in items(outs, "NatGateways") if n.get("State") not in ("deleting", "deleted", "failed"))]
 
 
-def _instances(outs):
+def _instances(outs, roots=None):
+    """The instances (terminated ones skipped), each with its root volume as root_block_device when listed."""
+    roots = roots or {}
     return [("aws_instance", {
                 "id": i.get("InstanceId"), "ami": i.get("ImageId"), "instance_type": i.get("InstanceType"),
                 "private_ip": i.get("PrivateIpAddress"), "private_dns": i.get("PrivateDnsName"),
                 "availability_zone": (i.get("Placement") or {}).get("AvailabilityZone"), "subnet_id": i.get("SubnetId"),
                 "vpc_id": i.get("VpcId"), "vpc_security_group_ids": [g.get("GroupId") for g in i.get("SecurityGroups") or ()],
-                "tags": tags_of(i.get("Tags"))})
+                "tags": tags_of(i.get("Tags")),
+                **({"root_block_device": [roots[i.get("InstanceId")]]} if i.get("InstanceId") in roots else {})})
             for r in items(outs, "Reservations") for i in r.get("Instances") or ()
             if (i.get("State") or {}).get("Name") not in ("terminated", "shutting-down")]
 
@@ -325,11 +333,11 @@ def cli_resources(texts, at=None):
     keys, key_notices = _keys(outs)
     jobs, job_notices = _jobs(outs)
     databases, database_notices = database_pairs(outs)
-    pairs, scope_notices = _scoped([*_network(outs), *_instances(outs), *_security_groups(outs),
+    pairs, scope_notices = _scoped([*_network(outs), *_instances(outs, root_devices(outs)), *_security_groups(outs),
                                     *_load_balancers(outs), *forwarding, *_records(outs), *_secrets(outs), *keys,
                                     *(("aws_s3_bucket", {"bucket": b.get("Name")}) for b in items(outs, "Buckets")),
                                     *jobs, *iam, *edge_pairs(outs, _dns), *network_pairs(outs), *databases,
-                                    *storage_pairs(outs)])
+                                    *storage_pairs(outs), *volume_pairs(outs)])
     resources, rule_notices = pairs_resources(pairs)
     return resources, (*unknown, *target_notices, *key_notices, *job_notices, *iam_notices, *database_notices,
                        *scope_notices, *rule_notices)

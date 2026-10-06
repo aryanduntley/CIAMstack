@@ -114,6 +114,15 @@ def test_egress_sites_by_name_the_private_ranges_then_deny(network):
     assert "name = google_tags_tag_value.ds.id" in out and "name = google_tags_tag_value.web.id" in out
 
 
+def test_the_egress_private_rule_admits_private_services_access(network):
+    network(ciamFirewallModel="policy")
+    out = _render(FIREWALL, entry(ALPHA, "psa", "ciamPrivateEndpoint", ciamBindingRole="private-services",
+                                  ciamPrivateService="database", ciamPrivateEndpointKind="peered-service",
+                                  ciamCidr="10.71.0.0/20", ciamManagedBy="cn=net,ou=owners,dc=ciam-ops"))
+    assert 'dest_ip_ranges = ["10.1.0.0/16", "10.71.0.0/20"]' in out
+    assert "Private endpoint 'psa' (database) is kept by" in out and "google_service_networking_connection" not in out
+
+
 def test_the_rules_model_has_no_fqdn_rules():
     out = _render(FIREWALL)
     assert "FQDN egress rules exist only in network firewall policies" in out

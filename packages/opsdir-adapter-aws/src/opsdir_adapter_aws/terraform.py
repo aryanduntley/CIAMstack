@@ -22,6 +22,7 @@ from .edge import US_EAST_1, alb_service, health_check, shield, stickiness
 from .identities import EC2_TRUST, notes, role
 from .landing import render_landing
 from .network import render_network
+from .volumes import render_snapshot_policies, root_block_device, server_volumes
 from .databases import render_databases
 from .storage import kept_buckets, render_object_stores
 from .plumbing import network_data
@@ -55,8 +56,6 @@ def _identity(m, w):
 
 def _instance(m, s, kms, identities=()):
     role = one(s, "ciamServerRole")
-    key = (("kms_key_id", kms.split("://", 1)[1]) if kms
-           else ("#", "UNBOUND: no disk-encryption key binding in this environment"))
     w = identity_of(identities, role)
     return block("resource", ["aws_instance", tf_name(rdn_value(s))], [
         ("ami", one(s, "ciamImageRef")), ("instance_type", one(s, "ciamInstanceSize")),
@@ -64,7 +63,7 @@ def _instance(m, s, kms, identities=()):
         ("private_ip", one(s, "ciamPrivateIp")),
         *((("iam_instance_profile", ref(f"aws_iam_instance_profile.{tf_name(w.identity_role)}.name")),) if w else ()),
         ("vpc_security_group_ids", [ref(f"aws_security_group.{tf_name(role)}.id")]),
-        ("root_block_device", Block((("encrypted", True), key))),
+        root_block_device(m, s, kms),
         ("tags", {"Name": rdn_value(s), "Role": role, "Hostname": one(s, "ciamHostname"),
                   "Product": one(s, "ciamProductVersion", ""), "ManagedBy": "opsdir"})])
 
@@ -146,6 +145,7 @@ def render(m, services):
     kms, identities = secret(m, "disk-encryption"), workload_identities(m, ACCESS)
     out = (*network_data(m), *_security_groups(m), *chain.from_iterable(_identity(m, w) for w in identities),
            *(_instance(m, s, kms, identities) for s in m.servers),
+           *chain.from_iterable(server_volumes(m, s) for s in m.servers), *render_snapshot_policies(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
            *resolver_rules(m), *_references(m))

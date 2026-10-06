@@ -1,7 +1,8 @@
-environment   endpoint    service  kind       reaches                                              subnets               private dns
-------------  ----------  -------  ---------  ---------------------------------------------------  --------------------  -----------
-source/prod   pe-secrets  secrets  interface  pf-admin-password, pf-signing-key, ds-root-password  subnet-ds, subnet-pf  yes
-standby/prod  psc-apis    apis     all-apis                                                                              yes
-target/prod   pe-secrets  secrets  interface  pf-admin-password, pf-signing-key, ds-root-password  subnet-pf             yes
-(3 rows)
+environment   endpoint      service   kind            reaches                                              subnets               private dns
+------------  ------------  --------  --------------  ---------------------------------------------------  --------------------  -----------
+source/prod   pe-secrets    secrets   interface       pf-admin-password, pf-signing-key, ds-root-password  subnet-ds, subnet-pf  yes
+standby/prod  psa-services  database  peered-service  pf-grants-db
+standby/prod  psc-apis      apis      all-apis                                                                                   yes
+target/prod   pe-secrets    secrets   interface       pf-admin-password, pf-signing-key, ds-root-password  subnet-pf             yes
+(4 rows)
 exit 0

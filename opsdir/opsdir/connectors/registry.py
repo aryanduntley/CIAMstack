@@ -14,6 +14,7 @@ from pathlib import Path
 from ..core.contract import Adapter, Domain, Format, SecretPattern, Services
 from ..core.directory import get, rdn_value, subtree
 from ..core.environment import env_model, with_required_roles
+from ..core.inventory import imports
 from ..core.naming import branch
 from ..core.secrets import CORE_OWNER, CORE_PATTERNS, dialect_problems
 from ..core.standard import CORE
@@ -144,6 +145,12 @@ def applicable(m, installed=ADAPTERS):
         raise SystemExit(f"{m.label} declares adapters that are not installed: "
                          f"{', '.join(c.adapter for c in missing)} (run `opsdir check`)")
     return declared_adapters(m, installed)
+
+
+def import_table(domains=DOMAINS):
+    """How the domains read cloud resources into the record (core.inventory.Imports): what an import's snapshot
+    carries."""
+    return imports(domains)
 
 
 def required_roles(adapters, domains=DOMAINS):

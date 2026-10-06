@@ -1688,6 +1688,8 @@ resource "google_dns_record_set" "svc_sso" {
   rrdatas      = [google_compute_forwarding_rule.svc_sso.ip_address]
 }
 
+# Private endpoint 'psa-services' (database) is kept by network-security; rendered in their root, not here.
+
 # private DNS: the landing zone's private googleapis.com zone answers 10.70.255.5 for 'psc-apis'
 
 resource "google_compute_global_address" "psc_apis" {
@@ -1822,7 +1824,7 @@ resource "google_compute_network_firewall_policy_rule" "egress_firewall_private"
   action          = "allow"
   description     = "What the CIAM platform reaches privately (its network, interconnects, private endpoints)"
   match {
-    dest_ip_ranges = ["10.20.0.0/16", "10.70.0.0/16", "10.70.255.5/32"]
+    dest_ip_ranges = ["10.20.0.0/16", "10.70.0.0/16", "10.70.255.5/32", "10.71.0.0/20"]
     layer4_configs {
       ip_protocol = "all"
     }
@@ -1879,6 +1881,8 @@ resource "google_compute_network_firewall_policy_rule" "egress_firewall_deny" {
     name = google_tags_tag_value.pf_engine.id
   }
 }
+
+# ciam-standby-pf-grants admits 10.70.2.0/24: Cloud SQL's private IP is in Google's service producer network, which this network's firewall rules don't reach; the private services access peering carries the traffic
 
 # ciam-standby-pf-grants: the Cloud SQL service agent (service-<project number>@gcp-sa-cloud-sql.iam.gserviceaccount.com) needs roles/cloudkms.cryptoKeyEncrypterDecrypter on its key
 

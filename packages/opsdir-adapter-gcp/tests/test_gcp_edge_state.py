@@ -7,6 +7,7 @@ import json
 
 from opsdir.core.directory import make_directory, one, values
 from opsdir_adapter_gcp.inventory import read_terraform_state, state_resources
+from support import imported_directory
 
 ENV = "env=prod,cloud=main,ou=environments,dc=ciam-ops"
 B = f"ou=bindings,{ENV}"
@@ -18,7 +19,7 @@ def _row(dn, classes, **attrs):
 
 
 def _record():
-    return make_directory((), {}, (
+    return imported_directory((), {}, (
         _row("cloud=main,ou=environments,dc=ciam-ops", ("ciamCloud",), cloud="main", ciamCloudProvider="gcp",
              ciamRegion="us-central1"),
         _row(ENV, ("ciamEnvironment",), env="prod"),

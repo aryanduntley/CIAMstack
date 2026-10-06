@@ -9,7 +9,7 @@ from opsdir.connectors.importing import import_changes
 from opsdir.core.directory import get, make_directory, one
 from opsdir_adapter_aws.adapter import ADAPTER
 from opsdir_adapter_aws.cli import cli_resources, generalized_time, read_cli_inventory
-from support import SUPERS
+from support import SUPERS, imported_directory
 
 ENV = "env=prod,cloud=main,ou=environments,dc=ciam-ops"
 B = f"ou=bindings,{ENV}"
@@ -25,7 +25,7 @@ def _row(dn, classes, **attrs):
 
 
 def _record():
-    return make_directory((), SUPERS, (
+    return imported_directory((), SUPERS, (
         _row("cloud=main,ou=environments,dc=ciam-ops", ("ciamCloud",), cloud="main", ciamCloudProvider="aws",
              ciamRegion="us-east-1"),
         _row(ENV, ("ciamEnvironment",), env="prod"),

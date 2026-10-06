@@ -931,6 +931,8 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPort: 5432
 ciamProviderRef: arn:aws:rds:us-east-1:111122223333:db:pf-grants
 ciamRetentionDays: 14
+ciamSourceCidr: 10.20.4.0/24
+ciamSourceCidr: 10.20.5.0/24
 ciamSubnetRole: subnet-pf
 
 dn: ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops

@@ -8,9 +8,10 @@ from functools import reduce
 import psycopg
 import pytest
 
-from opsdir.connectors.registry import core_fragments, schema_fragments
+from opsdir.connectors.registry import core_fragments, import_table, schema_fragments
 from opsdir.connectors.schema import composed_schema
 from opsdir.core.directory import make_directory, make_entry, norm_dn
+from opsdir.core.inventory import with_imports
 from opsdir.core.paths import SCHEMA_FILE
 from opsdir.core.standard import registry_ldif
 from opsdir.domains.custom.definitions import FIELD, RECORD_TYPE
@@ -69,8 +70,14 @@ def build_directory(schema_text, records, change_records=()):
     ats, ocs = schema_rows(schema_text)
     canon = {a["name"].lower(): a["name"] for a in ats}
     rows = reduce(lambda acc, r: apply_record(canon, acc, r), change_records, entry_rows(canon, records))
-    return make_directory([(a["name"], a["value_type"], a["portability"]) for a in ats],
-                          [(o["name"], o["sup"]) for o in ocs], rows)
+    return with_imports(make_directory([(a["name"], a["value_type"], a["portability"]) for a in ats],
+                                       [(o["name"], o["sup"]) for o in ocs], rows), import_table())
+
+
+def imported_directory(type_rows, class_rows, entry_rows):
+    """A snapshot from rows (core.directory.make_directory) carrying the installed domains' import kinds, as an import
+    reads it (connectors.importing attaches them)."""
+    return with_imports(make_directory(type_rows, class_rows, entry_rows), import_table())
 
 
 def integration_dsn(env):

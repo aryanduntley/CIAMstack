@@ -10,7 +10,7 @@ from opsdir_adapter_aws.access import ACCESS
 from opsdir_adapter_aws.guardrails import _statements
 from opsdir_adapter_aws.iam import iam_resources
 from opsdir_adapter_aws.inventory import read_terraform_state
-from support import BARE, SUPERS
+from support import BARE, SUPERS, imported_directory
 
 ACCT = "arn:aws:iam::111122223333"
 ROLE = f"{ACCT}:role/ciam-prod-pf"
@@ -120,7 +120,7 @@ def _row(dn, classes, **attrs):
 
 
 def _record():
-    return make_directory((), SUPERS, (
+    return imported_directory((), SUPERS, (
         _row("cloud=main,ou=environments,dc=ciam-ops", ("ciamCloud",), cloud="main", ciamCloudProvider="aws",
              ciamRegion="us-east-1"),
         _row(ENV, ("ciamEnvironment",), env="prod"),

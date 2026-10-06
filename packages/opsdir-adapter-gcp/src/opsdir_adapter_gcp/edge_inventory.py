@@ -19,7 +19,8 @@ reader normalizes to them). Pure.
 """
 import re
 
-from opsdir.core.inventory import forwarder_role, of_types, record_role, resource, zone_role
+from opsdir.core.inventory import of_types, resource
+from opsdir.domains.edge.imports import forwarder_role, record_role, zone_role
 from opsdir.domains.edge.resolve import endpoint_kind_named, rate_limit_fact, tls_level
 from opsdir_format_terraform.state import blocks, first_block
 from .edge import TLS_POLICIES, WAF_RULES

@@ -81,11 +81,23 @@ The core `data` domain's databases (`ciamDatabase`) the stack keeps render into 
 |---|---|
 | `ciamDatabase` (`postgresql`, `mysql`) | `azurerm_postgresql_flexible_server` / `azurerm_mysql_flexible_server`: `version` (PostgreSQL's major version; MySQL `5.7` or `8.0.21`: Azure keeps minor versions current, so a re-import records the major version), `sku_name` from `ciamInstanceSize`, `storage_mb` / `storage.size_gb` from `ciamDbStorageGb`, `zone`, a `ZoneRedundant` standby when `ciamDbHighAvailability` is `zone-redundant`, `backup_retention_days`; tags `Role`, `ManagedBy` |
 | `ciamSubnetRole` | `delegated_subnet_id` of the first subnet named, `private_dns_zone_id` an input (`<database>_private_dns_zone_id`, the `privatelink.<engine>.database.azure.com` zone), no public network access |
+| Its role, `ciamSourceCidr` | `azurerm_network_security_group` `nsg-ciam-<env>-<role>` on the delegated subnet (`azurerm_subnet_network_security_group_association`), with an inbound rule `<role>-clients` (priority 100) admitting the ranges to the database's port (`ciamPort`, else the engine's) |
 | `ciamEncryptedByRole` (an `azkv-key://` key) | `customer_managed_key` with the key (`data azurerm_key_vault_key`) through a user-assigned identity granted `Key Vault Crypto Service Encryption User` on the key |
 | `ciamDbCredentialRole` (an `azkv://` secret) | The administrator password read when applied by an `ephemeral azurerm_key_vault_secret` and written write-only (`administrator_password_wo`): no Terraform state holds it, and the record holds only the reference. The login is an input (`<database>_admin_login`) |
 | `ciamDbParameter`, `ciamDbTlsRequired` `FALSE` | A `…_flexible_server_configuration` per parameter, and `require_secure_transport` `off` (both engines require TLS by default) |
 | `ciamDbDeletionProtection` `TRUE` | An `azurerm_management_lock` `CanNotDelete` on the server |
 | `ciamProviderRef` recorded | An `import` block (the ARM ID): the server is adopted, not created |
+
+### Disks
+
+The core `data` domain's volumes (`ciamVolume`, each server role's disks) render into `main.tf` (`opsdir_adapter_azure.volumes`). Classes to types: `standard` Standard_LRS, `ssd` Premium_LRS, `provisioned` PremiumV2_LRS.
+
+| Record | Renders as |
+|---|---|
+| The role's boot volume | Each VM's `os_disk`: `disk_size_gb`, `storage_account_type` (an OS disk can't be PremiumV2/Ultra: Premium_LRS, said), the disk encryption set of its key role (`ciamEncryptedByRole`, else the `disk-encryption` binding's `ciamProviderRef`); the VM tagged `BootVolume` (what the readers find it by). Without one, `os_disk` is as before |
+| Each data volume of the role | Per VM: an `azurerm_managed_disk` (`Empty`) in the VM's zone with its size, type, `disk_iops_read_write` and `disk_mbps_read_write` (PremiumV2/Ultra only), disk encryption set, tags `Volume`, `Role`, `Server`, `SnapshotPolicy`; an `azurerm_virtual_machine_data_disk_attachment` at LUN 0, 1, … in the volumes' order, caching `None`; the VM mounts it at `ciamMountPath` itself (a comment) |
+| `ciamVolumeEncrypted` `FALSE`, a key role without a disk encryption set | A comment: Azure encrypts every managed disk at rest, with its own key when no disk encryption set is named |
+| `ciamSnapshotPolicy` | A comment: scheduled disk snapshots are Azure Backup's disk backup, in a Backup vault (4.10 task 5) |
 
 ## Reading an environment back from Terraform state
 
@@ -177,7 +189,18 @@ What the network carries beyond virtual networks, subnets and NSGs comes back in
 
 | Azure resource | Record entry |
 |---|---|
-| `azurerm_postgresql_flexible_server`, `azurerm_mysql_flexible_server` (+ their `_configuration`s, an `azurerm_management_lock` on them) | database: engine, version, service `flexible-server`, endpoint (`fqdn`) and the engine's port, SKU, storage, zone, `zone-redundant` with a `ZoneRedundant` standby, TLS from `require_secure_transport` (else on), retention and point-in-time restore (on while backups are kept), deletion protection from a `CanNotDelete` or `ReadOnly` lock, the other parameters set on it; its delegated subnet and customer-managed key as roles |
+| `azurerm_postgresql_flexible_server`, `azurerm_mysql_flexible_server` (+ their `_configuration`s, an `azurerm_management_lock` on them) | database: engine, version, service `flexible-server`, endpoint (`fqdn`) and the engine's port, SKU, storage, zone, `zone-redundant` with a `ZoneRedundant` standby, TLS from `require_secure_transport` (else on), retention and point-in-time restore (on while backups are kept), deletion protection from a `CanNotDelete` or `ReadOnly` lock, the other parameters set on it, the ranges the inbound allow rules of the NSG on its delegated subnet admit (`ciamSourceCidr`; that NSG isn't read as firewall rules); its delegated subnet and customer-managed key as roles |
+
+### Disks, read back
+
+`opsdir_adapter_azure.volumes` (CLI and ARM items normalize to the same names: `cli_disk.py`). Volumes are matched by name; a new one needs its tag `Role`.
+
+| Azure resource | Record entry |
+|---|---|
+| `azurerm_managed_disk` (+ `azurerm_virtual_machine_data_disk_attachment`), grouped by tag `Volume` | data volume of the role its VMs run: the most common size, class, IOPS and MB/s, the key of its disk encryption set as its key role |
+| A VM's `os_disk`, the VM tagged `BootVolume` | the role's boot volume, the same way |
+
+A data disk attached to one of the environment's VMs without a `Volume` tag is named. The CLI's `az disk list` gives the data disks (an OS disk is the VM's, from its `storageProfile`), `az vm list` the OS disks and the data disks' LUNs; an ARM template's `Microsoft.Compute/disks` read the same way.
 
 ## Reading an environment from the Azure CLI
 
@@ -259,6 +282,7 @@ az postgres flexible-server list -g $RG -o json               > $out/postgres-se
 for s in $(az postgres flexible-server list -g $RG --query '[].name' -o tsv); do
   az postgres flexible-server parameter list -g $RG --server-name "$s" -o json > "$out/postgres-parameters-$s.json"
 done
+az disk list -g $RG -o json                                   > $out/disks.json
 az mysql flexible-server list -g $RG -o json                  > $out/mysql-servers.json
 for s in $(az mysql flexible-server list -g $RG --query '[].name' -o tsv); do
   az mysql flexible-server parameter list -g $RG --server-name "$s" -o json > "$out/mysql-parameters-$s.json"
@@ -369,6 +393,7 @@ It adds no required roles, planner checks or schema of its own; the environment'
 - **Linux only.** Servers render as Linux VMs with SSH keys; the importer reads Windows VMs but the renderer doesn't write them.
 - **Edge.** Application Gateway WAF exclusions apply on every path, not only the endpoint kind a policy names; a rate limit keyed by a header is grouped by client address; Application Gateway v2 validates the servers' certificates (chain and name) whatever `ciamBackendValidation` says; DDoS Network Protection isn't rendered (the landing zone's virtual network).
 - **Databases someone else keeps** (`ciamManagedBy`) are named in a comment, not rendered into their keeper's root yet; SQL Server, Oracle and MariaDB have no Flexible Server and aren't rendered.
+- **Scale sets' disks:** the adapter doesn't render scale sets yet, so their volumes come from the record only, and a scale set's data disks aren't read into volumes yet. Snapshot schedules come with Azure Backup (4.10 task 5).
 - **What the importers can't see:** container metadata other than a role, the identity a disk encryption set uses, role assignments and Key Vault access policies in CLI output and ARM/Bicep deployments (Terraform state only, for now), private endpoints, Application Gateway / Front Door (read back with milestone 4.8's importers), scale sets and AKS clusters, and the monitoring above (action groups, workspaces, alerts, web tests), in CLI output and ARM/Bicep deployments (Terraform state only, for now).
 
 ## Tests
@@ -379,7 +404,9 @@ It adds no required roles, planner checks or schema of its own; the environment'
 
 `tests/test_azure.py` (registration, vocabulary, secret resolution), `tests/test_azure_state.py` (the state importer: round trip, drift, new resources and role sources, rules, services, secrets never read, layout), `tests/test_azure_cli.py` (the CLI importer: round trip over `az` output shapes, drift from `key show` and rotation policies, network scoping, counted listings, unrecognized items), `tests/test_azure_arm.py` (the ARM importer: round trip over a Bicep-style template and its deployment, drift, `resourceId()` links, secure parameters never read, what the deployment didn't produce, no deployment, the evaluator), `tests/test_azure_messaging.py` (an email domain verified or not by its DNS, SPF and DMARC; queues and topics as stream carriers), `tests/test_azure_observability.py` (action groups as alert channels, workspaces with their retention, metric and log-query alerts and standard web tests with what they realize), `tests/test_azure_compute.py` (a scale set with its autoscale capacity, an AKS cluster with its pools and enabled add-ons), `tests/test_azure_jobs.py` (a function app with its runtime and timer schedules from state, CLI output and an ARM template; app settings never read), `tests/test_azure_state_store.py` (state and CLI against Postgres: imported under an approved change, re-import changes nothing). The rendered Terraform is covered end to end by the showcase's golden outputs (`examples/showcase`, the target environment).
 
-`tests/test_azure_databases.py`: managed databases rendered (a PostgreSQL Flexible Server with its customer-managed key, write-only password from an ephemeral Key Vault read, parameters, lock and import block; MySQL storage and TLS off; engines it doesn't run and databases others keep named; no credential role or an unbound key said) and read back from state, the CLI (user-set parameters only, the lock) and an ARM template (its password parameter never evaluated).
+`tests/test_azure_volumes.py`: disks rendered (the boot volume as the os_disk with its disk encryption set and the VM's BootVolume tag, an OS disk that can't be PremiumV2, data volumes as managed disks attached at their LUNs, an unencrypted record and a key without a disk encryption set said, snapshot policies a comment) and read back from state, the CLI (OS disks from the VMs' storageProfile, data disks and LUNs) and an ARM template; untagged disks on the environment's VMs named.
+
+`tests/test_azure_databases.py`: managed databases rendered (a PostgreSQL Flexible Server with its customer-managed key, write-only password from an ephemeral Key Vault read, parameters, lock and import block; its role's NSG on the delegated subnet admitting its ranges; MySQL storage and TLS off; engines it doesn't run and databases others keep named; no credential role or an unbound key said) and read back from state (the rules of the NSG on its delegated subnet as its ranges, not firewall rules), the CLI (user-set parameters only, the lock) and an ARM template (its password parameter never evaluated).
 
 `tests/test_azure_cdn.py`: Front Door over the gateway with its firewall policy and Key Vault certificate, Standard over the load balancer with a managed certificate, a private origin, the gateway behind keeping no WAF.
 

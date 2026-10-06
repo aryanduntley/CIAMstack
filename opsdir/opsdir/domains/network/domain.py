@@ -6,6 +6,7 @@ ports they listen on (contract.Listener), from which the connectors derive the p
 from ...core.contract import Domain, directory_report
 from .checks import (check_egress, check_endpoint_services, check_flow_logs, check_interconnects,
                      check_plumbing, check_private_endpoints, check_sites, check_time)
+from .imports import IMPORT_KINDS, ROLE_LINKS
 from .reports import (ENDPOINT_SERVICE_HEADERS, PRIVATE_ENDPOINT_HEADERS, ROUTE_HEADERS, SITE_HEADERS,
                       endpoint_service_rows, private_endpoint_rows, route_rows, site_rows)
 from .schema import FRAGMENT
@@ -16,4 +17,5 @@ DOMAIN = Domain(name="network", schema=FRAGMENT, required_roles=(), sql=(),
                          "endpoint-services": directory_report(ENDPOINT_SERVICE_HEADERS, endpoint_service_rows),
                          "egress-sites": directory_report(SITE_HEADERS, site_rows)},
                 checks=(check_egress, check_private_endpoints, check_endpoint_services, check_interconnects,
-                        check_sites, check_time, check_flow_logs, check_plumbing), order=66, vocabulary={})
+                        check_sites, check_time, check_flow_logs, check_plumbing), order=66, vocabulary={},
+                import_kinds=IMPORT_KINDS, role_links=ROLE_LINKS)

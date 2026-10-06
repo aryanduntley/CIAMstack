@@ -6,13 +6,14 @@ from opsdir.core.directory import make_directory
 from opsdir.core.inventory import environment_groups, peer_environment, resource
 from opsdir.domains.network.ports import acl_rule_text
 from opsdir.domains.network.routing import Route, parse_route, route_text
+from support import imported_directory
 
 ENV = "env=prod,cloud=main,ou=environments,dc=ciam-ops"
 B = f"ou=bindings,{ENV}"
 
 
 def _d(*entries):
-    return make_directory((), {}, (
+    return imported_directory((), {}, (
         ("cloud=main,ou=environments,dc=ciam-ops", ("top", "ciamCloud"), {"cloud": ["main"]}),
         (ENV, ("top", "ciamEnvironment"), {"env": ["prod"]}),
         (B, ("top", "organizationalUnit"), {"ou": ["bindings"]}), *entries))

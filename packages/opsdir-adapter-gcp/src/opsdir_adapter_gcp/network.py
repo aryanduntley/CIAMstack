@@ -1,25 +1,28 @@
 """Google Cloud: what the stack renders of its network depth (opsdir.domains.network.stack). A Private Service Connect
 endpoint for Google's APIs (a global internal address with purpose PRIVATE_SERVICE_CONNECT and a global forwarding
-rule to all-apis, in the network's project); Private Google Access and private services access are the subnets' and
-the network's settings, which the landing zone keeps: said in comments. Service attachments exposing a service name's
-internal passthrough forwarding rule through a PSC NAT subnet, connections accepted automatically or from the allowed
-projects and networks. An egress firewall the stack keeps gets its allowlist as egress rules of the network firewall
+rule to all-apis, in the network's project). Private services access (the service producer networks managed
+databases get their private addresses from), when the record gives its allocated range: a global internal address
+with purpose VPC_PEERING and the service networking connection reserving it, rendered in its keeper's root like any
+plumbing. Private Google Access is a subnet setting the landing zone keeps: said in a comment. Service attachments
+exposing a service name's internal passthrough forwarding rule through a PSC NAT subnet, connections accepted
+automatically or from the allowed projects and networks. An egress firewall the stack keeps gets its allowlist as egress rules of the network firewall
 policy (opsdir_adapter_gcp.firewall_policy): FQDN rules exist only there. What someone else keeps is a comment naming
 them. Pure."""
 import re
 
 from opsdir.core.directory import one, rdn_value, values
+from opsdir.core.environment import one_role
 from opsdir.core.network import is_private
 from opsdir.domains.edge.resolve import service_edge
 from opsdir.domains.network.stack import (egress_firewalls, elsewhere, endpoint_services, firewall_model,
                                           private_endpoints, subnets)
 from opsdir_adapter_gcp.firewall_policy import egress_rules, network_project
-from opsdir_adapter_gcp.names import NETWORK, REGION, label
+from opsdir_adapter_gcp.names import NETWORK, REGION, label, name_parts, resource_id
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 
 # what a private endpoint of each other kind is on Google Cloud, and who keeps it
 NOT_HERE = {"subnet-access": "Private Google Access is a subnet setting the landing zone keeps",
-            "peered-service": "private services access (a service networking peering) is the landing zone's",
+            "peered-service": "private services access needs its allocated range (ciamCidr)",
             "gateway": "Google Cloud has no gateway endpoints",
             "interface": "a PSC endpoint to a published service needs the service attachment it connects to"}
 
@@ -30,10 +33,37 @@ def psc_name(cn):
     return (n if n[:1].isalpha() else "p" + n)[:20]
 
 
+SERVICE_NETWORKING = "servicenetworking.googleapis.com"
+
+
+def peering_connection_id(m):
+    """The import id of environment m's network's service networking connection (<network>:<service>)."""
+    net = one(one_role(m, "network"), "ciamProviderRef")
+    return f"{resource_id(net)}:{SERVICE_NETWORKING}" if net else None
+
+
+def _peered_service(m, p):
+    """Private services access: the allocated range as a VPC_PEERING global address (named by its provider ref, else
+    after the binding) and the service networking connection reserving it."""
+    n = tf_name(rdn_value(p))
+    address, _, prefix = one(p, "ciamCidr").partition("/")
+    name = name_parts(one(p, "ciamProviderRef")).get("addresses") or f"ciam-{rdn_value(m.env)}-{rdn_value(p)}"
+    return (block("resource", ["google_compute_global_address", n], [
+                ("name", name), *network_project(m), ("purpose", "VPC_PEERING"), ("address_type", "INTERNAL"),
+                ("address", address), ("prefix_length", int(prefix or 32)), ("network", NETWORK),
+                ("description", f"Private services access ({one(p, 'ciamPrivateService')}) for {m.label}"),
+                ("labels", {"role": label(one(p, "ciamBindingRole")), "managed_by": "opsdir"})]),
+            block("resource", ["google_service_networking_connection", n], [
+                ("network", NETWORK), ("service", SERVICE_NETWORKING),
+                ("reserved_peering_ranges", [ref(f"google_compute_global_address.{n}.name")])]))
+
+
 def private_endpoint(m, p):
-    """A Private Service Connect endpoint for Google's APIs the stack keeps; a comment for the kinds the landing zone
-    keeps or that need more than the record says."""
+    """A Private Service Connect endpoint for Google's APIs, or private services access with its allocated range; a
+    comment for the kinds the landing zone keeps or that need more than the record says."""
     n, kind = tf_name(rdn_value(p)), one(p, "ciamPrivateEndpointKind", "all-apis")
+    if kind == "peered-service" and one(p, "ciamCidr"):
+        return _peered_service(m, p)
     if kind != "all-apis":
         return (f"# Private endpoint '{rdn_value(p)}' ({kind}): {NOT_HERE[kind]}; not rendered.",)
     ip = one(p, "ciamFrontendIp")

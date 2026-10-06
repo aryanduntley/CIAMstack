@@ -59,6 +59,7 @@ from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, l
 from opsdir_format_terraform.state import blocks, first_block, read_state
 from .databases import database_resources
 from .storage import object_store_resources
+from .volumes import volume_resources
 from .iam import iam_resources
 from .names import name_parts, resource_id
 from .network_inventory import google_apis_endpoint, network_resources
@@ -392,12 +393,13 @@ def pairs_resources(pairs):
     instances = {key: _server_role(a) for a in of_types(pairs, "google_compute_instance") if _server_role(a)
                  for key in (resource_id(a.get("id")), str(a.get("instance_id") or "")) if key}
     network, network_notices = network_resources(pairs, instances, _tag_roles(pairs), proxy_subnets(pairs))
+    volumes, volume_notices = volume_resources(pairs)
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *rules, *_secrets(pairs),
              *_keys(pairs), *object_store_resources(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs),
              *_clusters(pairs),
              *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs), *_canaries(pairs),
-             *iam, *edge, *network, *database_resources(pairs)),
-            (*rule_notices, *iam_notices, *edge_notices, *network_notices))
+             *iam, *edge, *network, *database_resources(pairs), *volumes),
+            (*rule_notices, *iam_notices, *edge_notices, *network_notices, *volume_notices))
 
 
 def state_resources(text):

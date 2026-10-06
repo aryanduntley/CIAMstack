@@ -36,6 +36,7 @@ from opsdir_adapter_gcp.names import name_parts
 from opsdir_adapter_gcp.names import NETWORK, PRIORITIES, REGION, label, network_tag
 from opsdir_adapter_gcp.network import render_network
 from opsdir_adapter_gcp.plumbing import network_data
+from opsdir_adapter_gcp.volumes import boot_disk, render_snapshot_policies, server_volumes
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
 
@@ -67,12 +68,11 @@ def _firewall(m):
 def _instance(m, s, kms, identities=()):
     role = one(s, "ciamServerRole")
     w = identity_of(identities, role)
-    key = (("kms_key_self_link", kms.split("://", 1)[1]) if kms
-           else ("#", "UNBOUND: no disk-encryption key binding in this environment"))
-    return block("resource", ["google_compute_instance", tf_name(rdn_value(s))], [
+    notes, disk = boot_disk(m, s, kms)
+    return (*notes, block("resource", ["google_compute_instance", tf_name(rdn_value(s))], [
         ("name", rdn_value(s)), ("machine_type", one(s, "ciamInstanceSize")), ("zone", one(s, "ciamZone")),
         ("hostname", one(s, "ciamHostname")), ("tags", [_tag(m, role)]),
-        ("boot_disk", Block((("initialize_params", Block((("image", one(s, "ciamImageRef")),))), key))),
+        ("boot_disk", disk),
         ("network_interface", Block((
             ("subnetwork", ref(f"data.google_compute_subnetwork.{tf_name(rdn_value(subnet_of(m, s)))}.self_link")),
             ("network_ip", one(s, "ciamPrivateIp"))))),
@@ -82,7 +82,7 @@ def _instance(m, s, kms, identities=()):
                                       ("scopes", ["cloud-platform"])))),) if w else ()),
         ("metadata", {"enable-oslogin": "TRUE", "ciam-role": role, "ciam-product": one(s, "ciamProductVersion", "")}),
         ("labels", {"role": _label(role), "product": _label(one(s, "ciamProductVersion")),
-                    "managed_by": "opsdir"})])
+                    "managed_by": "opsdir"})]), *server_volumes(m, s))
 
 
 def _zones(targets):
@@ -210,7 +210,8 @@ def render(m, services):
     endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     kms, identities = secret(m, "disk-encryption"), workload_identities(m, ACCESS)
     out = (*network_data(m), *_firewall(m), *chain.from_iterable(identity(m, w) for w in identities),
-           *(_instance(m, s, kms, identities) for s in m.servers),
+           *chain.from_iterable(_instance(m, s, kms, identities) for s in m.servers),
+           *render_snapshot_policies(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
            *forwarding_zones(m),

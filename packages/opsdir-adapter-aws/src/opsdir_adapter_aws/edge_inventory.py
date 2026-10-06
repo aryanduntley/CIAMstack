@@ -22,7 +22,8 @@ CloudFormation readers normalize to them). Pure.
 Roles: tag Role (or BindingRole), else by convention (zone-<name>, record-<type>-<name>, forwarder-<domain>); an edge
 service fronting a service takes <kind>-<the service's role> (core inventory).
 """
-from opsdir.core.inventory import forwarder_role, of_types, record_role, resource, tagged_role, zone_role
+from opsdir.core.inventory import of_types, resource, tagged_role
+from opsdir.domains.edge.imports import forwarder_role, record_role, zone_role
 from opsdir.domains.edge.resolve import endpoint_kind_named, rate_limit_fact, tls_level
 from .edge import TLS_POLICIES, WAF_GROUPS
 

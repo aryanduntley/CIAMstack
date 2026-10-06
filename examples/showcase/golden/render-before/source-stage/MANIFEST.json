@@ -338,7 +338,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "a49fb73c4276867db12324e50bca936164f5d02b345aaa6ec47c8417a439991c"
+      "sha256": "2af2ef8ef77b4dbe4f009efc5b42ea6e17b04e022c3e6df31f9d37a3fe40410b"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

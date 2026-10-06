@@ -2,7 +2,7 @@
 environment keeps them, certificates as public facts, and who uses them."""
 from pathlib import Path
 
-from ...core.contract import Domain, directory_report, sql_report
+from ...core.contract import Domain, ImportKind, directory_report, sql_report
 from .checks import check_certificates, check_credentials
 from .reports import (IMPACT_HEADERS, KEYS_HEADERS, SPRAWL_HEADERS, key_placement_rows, rotation_impact_rows,
                       sprawl_rows)
@@ -19,4 +19,7 @@ DOMAIN = Domain(name="pki", schema=FRAGMENT, required_roles=(), sql=(Path(__file
                          "credentials": directory_report(SPRAWL_HEADERS, sprawl_rows),
                          "rotation-impact": directory_report(IMPACT_HEADERS, rotation_impact_rows, needs_dn=True)},
                 checks=(check_certificates, check_credentials), order=40,
-                vocabulary={})
+                vocabulary={},
+                import_kinds=(ImportKind("secret", "ciamSecretRef", ("ciamRefUri",), match="ciamRefUri"),
+                              ImportKind("key", "ciamKeyRef", ("ciamRefUri",), match="ciamRefUri")),
+                role_links={"ciamEncryptedByRole": "key"})

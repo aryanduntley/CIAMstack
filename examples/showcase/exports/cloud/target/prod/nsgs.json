@@ -262,5 +262,37 @@
     "tags": {
       "ManagedBy": "opsdir"
     }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-ciam-prod-pf-grants-db",
+    "name": "nsg-ciam-prod-pf-grants-db",
+    "type": "Microsoft.Network/networkSecurityGroups",
+    "resourceGroup": "rg-ciam-prod",
+    "securityRules": [
+      {
+        "name": "pf-grants-db-clients",
+        "priority": 100,
+        "direction": "Inbound",
+        "access": "Allow",
+        "protocol": "Tcp",
+        "sourceAddressPrefixes": [
+          "10.60.2.0/24"
+        ],
+        "destinationPortRanges": [
+          "5432"
+        ],
+        "description": "clients of database psql-ciam-prod-pf-grants"
+      }
+    ],
+    "subnets": [
+      {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-db"
+      }
+    ],
+    "tags": {
+      "Name": "psql-ciam-prod-pf-grants",
+      "Role": "pf-grants-db",
+      "ManagedBy": "opsdir"
+    }
   }
 ]

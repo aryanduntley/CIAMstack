@@ -22,8 +22,8 @@ import json
 import re
 from urllib.parse import unquote
 
-from opsdir.core.inventory import short_name
 from opsdir.domains.access.evaluations import evaluations_by_identity
+from opsdir.domains.access.imports import short_name
 from .access import troubleshooter_verdict
 from .names import resource_id
 

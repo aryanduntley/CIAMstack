@@ -1349,6 +1349,36 @@ ephemeral "azurerm_key_vault_secret" "psql_ciam_prod_pf_grants_admin" {
   key_vault_id = data.azurerm_key_vault.psql_ciam_prod_pf_grants_admin.id
 }
 
+resource "azurerm_network_security_group" "pf_grants_db" {
+  name                = "nsg-ciam-prod-pf-grants-db"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  tags = {
+    Role      = "pf-grants-db"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "azurerm_network_security_rule" "pf_grants_db_clients" {
+  name                        = "pf-grants-db-clients"
+  description                 = "clients of database psql-ciam-prod-pf-grants"
+  priority                    = 100
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_ranges     = ["5432"]
+  source_address_prefixes     = ["10.60.2.0/24"]
+  destination_address_prefix  = "*"
+  resource_group_name         = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.pf_grants_db.name
+}
+
+resource "azurerm_subnet_network_security_group_association" "pf_grants_db" {
+  subnet_id                 = data.azurerm_subnet.snet_db.id
+  network_security_group_id = azurerm_network_security_group.pf_grants_db.id
+}
+
 resource "azurerm_postgresql_flexible_server" "psql_ciam_prod_pf_grants" {
   name                              = "psql-ciam-prod-pf-grants"
   resource_group_name               = data.azurerm_resource_group.main.name

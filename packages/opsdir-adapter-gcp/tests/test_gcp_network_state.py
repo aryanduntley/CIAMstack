@@ -62,6 +62,9 @@ STATE = _state(
                                     "next_hop_vpn_tunnel": f"{HOST}/regions/us-central1/vpnTunnels/to-dc"}),
     ("google_compute_global_address", "psc", {"id": f"{HOST}/global/addresses/ciam-prod-psc-apis", "address": "10.70.255.5",
                                               "purpose": "PRIVATE_SERVICE_CONNECT", "labels": {"role": "private-apis"}}),
+    ("google_compute_global_address", "psa", {"id": f"{HOST}/global/addresses/ciam-services", "name": "ciam-services",
+                                              "address": "10.71.0.0", "prefix_length": 20, "purpose": "VPC_PEERING",
+                                              "labels": {"role": "private-services"}}),
     ("google_compute_global_forwarding_rule", "psc", {"id": f"{HOST}/global/forwardingRules/pscapis", "name": "pscapis",
                                                       "target": "all-apis",
                                                       "ip_address": f"{HOST}/global/addresses/ciam-prod-psc-apis"}),
@@ -119,6 +122,12 @@ def test_psc_for_googles_apis_is_a_private_endpoint_not_a_service():
     assert pe.role == "private-apis" and not [k for k, _ in by if k == "service"]
 
 
+def test_private_services_access_is_a_peered_private_endpoint_with_its_range():
+    pe = _by(state_resources(STATE)[0])[("private-endpoint", f"{HOST}/global/addresses/ciam-services")]
+    assert pe.attrs == {"ciamPrivateEndpointKind": ("peered-service",), "ciamCidr": ("10.71.0.0/20",)}
+    assert pe.role == "private-services"
+
+
 def test_attachments_links_flow_logs_and_nat():
     by = _by(state_resources(STATE)[0])
     sa = by[("endpoint-service", f"{PROJECT}/regions/us-central1/serviceAttachments/ciam-prod-ldaps-link")]
@@ -163,6 +172,8 @@ ASSETS = [
         "targetService": f"https://www.googleapis.com/compute/v1/{PROJECT}/regions/us-central1/forwardingRules/ldaps"}}},
     {"kind": "compute#address", "selfLink": f"https://www.googleapis.com/compute/v1/{HOST}/global/addresses/psc",
      "name": "psc", "address": "10.70.255.5", "purpose": "PRIVATE_SERVICE_CONNECT"},
+    {"kind": "compute#address", "selfLink": f"https://www.googleapis.com/compute/v1/{HOST}/global/addresses/psa",
+     "name": "psa", "address": "10.71.0.0", "prefixLength": 20, "purpose": "VPC_PEERING"},
     {"kind": "compute#forwardingRule", "selfLink": f"https://www.googleapis.com/compute/v1/{HOST}/global/forwardingRules/pscapis",
      "name": "pscapis", "target": "all-apis", "IPAddress": "10.70.255.5"},
 ]
@@ -179,6 +190,7 @@ def test_the_asset_inventory_reads_the_same_depth():
     sa = by[("endpoint-service", f"{PROJECT}/regions/us-central1/serviceAttachments/link")]
     assert sa.attrs["ciamAcceptanceRequired"] == ("FALSE",)
     assert by[("private-endpoint", f"{HOST}/global/forwardingRules/pscapis")].attrs["ciamFrontendIp"] == ("10.70.255.5",)
+    assert by[("private-endpoint", f"{HOST}/global/addresses/psa")].attrs["ciamCidr"] == ("10.71.0.0/20",)
     assert not [k for k, _ in by if k == "service"]
     assert not [n for n in notices if "not read" in n], notices
 

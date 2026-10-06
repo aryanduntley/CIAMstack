@@ -4,6 +4,7 @@ Technology-neutral. Every reader (renderers, planner, reports) is a pure functio
 """
 import datetime as dt
 import re
+from collections import namedtuple
 from types import MappingProxyType
 from typing import Mapping, NamedTuple
 
@@ -17,10 +18,10 @@ def norm_dn(dn):
 # them is a module-level function, so renderers and planners are pure functions of a snapshot.
 Entry = NamedTuple("Entry", [("dn", str), ("norm", str), ("classes", tuple),
                              ("attrs", Mapping)])          # attrs: {name: (values…)}, read-only
-Directory = NamedTuple("Directory", [("types", Mapping),     # {attr: {"value_type", "portability"}}
-                                     ("lower_types", Mapping),   # {lowercase attr: canonical attr}
-                                     ("supers", Mapping),        # {object class: superclass or None}
-                                     ("entries", Mapping)])      # {normalized dn: Entry}
+# The whole-directory snapshot: types {attr: {"value_type", "portability"}}, lower_types {lowercase attr: canonical
+# attr}, supers {object class: superclass or None}, entries {normalized dn: Entry}; imports: how the installed
+# domains read cloud resources into the record (core.inventory.Imports), attached for an import, else None.
+Directory = namedtuple("Directory", ("types", "lower_types", "supers", "entries", "imports"), defaults=(None,))
 
 
 def _frozen(mapping):

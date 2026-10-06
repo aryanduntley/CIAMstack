@@ -8,6 +8,7 @@ from opsdir.core.environment import published_role
 from opsdir.core.inventory import environment_groups, resource
 from opsdir.domains.data.databases import check_databases, database_rows, major_version
 from network_fixtures import ALPHA, BETA, context, entry, model
+from support import imported_directory
 
 SOURCE = dict(ciamBindingRole="pf-grants-db", ciamDbEngine="postgresql", ciamDbEngineVersion="16.4",
               ciamFqdn="grants.alpha.example.test", ciamPort="5432", ciamDbHighAvailability="zone-redundant",
@@ -118,7 +119,7 @@ B = f"ou=bindings,{ENV}"
 
 
 def test_a_cloud_inventory_places_a_database_by_provider_ref_with_its_secret_and_key_as_roles():
-    d = make_directory((), {}, (
+    d = imported_directory((), {}, (
         ("cloud=main,ou=environments,dc=ciam-ops", ("top", "ciamCloud"), {"cloud": ["main"]}),
         (ENV, ("top", "ciamEnvironment"), {"env": ["prod"]}),
         (B, ("top", "organizationalUnit"), {"ou": ["bindings"]}),

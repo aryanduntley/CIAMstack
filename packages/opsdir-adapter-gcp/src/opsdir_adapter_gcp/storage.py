@@ -11,12 +11,15 @@ reference (the backup target's data source):
   a lifecycle rule per recorded rule (SetStorageClass to NEARLINE, COLDLINE or ARCHIVE for cool, cold, archive;
   Delete; noncurrent versions by days since they became noncurrent), labels role and managed_by
   an import block when its provider ref is recorded
-  Cloud Storage has no bucket-to-bucket replication setting: a copy to its replica (a Storage Transfer Service job, or
-  a dual-region location instead) is a comment
+  a copy to its replica (ciamStorageReplicaRef, a gs:// bucket and optional prefix): Cloud Storage has no
+  bucket-to-bucket replication setting, so a Storage Transfer Service job with a replication spec (event-driven: new
+  and changed objects are copied as they arrive; what is already there needs a one-off transfer, a comment) and a
+  comment naming the grants its service agent needs. A replica elsewhere is a comment
 
 Read back from (google type, attributes) pairs, Terraform state as it is or Cloud Asset Inventory and gcloud
-normalized to it (bucket_attributes): versioning, retention, key, lifecycle, public access prevention. A setting a
-source doesn't report is left as the record has it.
+normalized to it (bucket_attributes, transfer_job_attributes): versioning, retention, key, lifecycle, public access
+prevention, and the replica an enabled transfer job copies the bucket to (its replication spec, or a transfer spec
+from bucket to bucket). A setting a source doesn't report is left as the record has it.
 """
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.environment import UNBOUND, bound, of_class
@@ -67,15 +70,35 @@ def _rule(r):
     return "lifecycle_rule", Block((("condition", Block(condition)), ("action", Block(action))))
 
 
+def _copy(b, n):
+    """The Storage Transfer Service job copying a bucket to its replica (a comment for one that isn't a bucket)."""
+    replica = one(b, "ciamStorageReplicaRef")
+    if not replica:
+        return ()
+    sink = bucket_of(replica)
+    if sink is None:
+        return (f"# {rdn_value(b)}: its replica {replica} isn't a Cloud Storage bucket: the copy is not rendered",)
+    path = replica[len("gs://") + len(sink):].strip("/")
+    return ((f"# {rdn_value(b)}: copied to {replica} by Storage Transfer Service. Its service agent "
+             "(project-<project number>@storage-transfer-service.iam.gserviceaccount.com) needs to read this bucket "
+             "and write the replica (roles/storage.admin on both, or the legacy bucket reader/writer and object "
+             "roles) and roles/pubsub.editor in the project for the event notifications; replication copies what "
+             "arrives from now on: copy what is already there once (a one-off transfer job)"),
+            block("resource", ["google_storage_transfer_job", f"{n}_copy"], [
+                ("description", f"Copy of {bucket_of(one(b, 'ciamStorageRef'))} to {replica} (role "
+                                f"{one(b, 'ciamBindingRole')})"),
+                ("replication_spec", Block((
+                    ("gcs_data_source", Block((("bucket_name", ref(f"google_storage_bucket.{n}.name")),))),
+                    ("gcs_data_sink", Block((("bucket_name", sink), *((("path", f"{path}/"),) if path else ())))),
+                    ("transfer_options", Block((("overwrite_when", "DIFFERENT"),))))))]))
+
+
 def _bucket(m, b):
     n, bucket = tf_name(rdn_value(b)), bucket_of(one(b, "ciamStorageRef"))
     mode, days = one(b, "ciamStorageImmutability"), one(b, "ciamStorageLockDays")
     versioning, public = one(b, "ciamStorageVersioning"), one(b, "ciamStoragePublicBlocked")
     notes, body = _key(m, b)
     return (*notes,
-            *((f"# {rdn_value(b)}: copied to {one(b, 'ciamStorageReplicaRef')}: Cloud Storage has no bucket-to-bucket "
-               "replication setting; a Storage Transfer Service job (or a dual-region location) does it: not rendered",)
-              if one(b, "ciamStorageReplicaRef") else ()),
             block("resource", ["google_storage_bucket", n], [
                 ("name", bucket), ("location", REGION), ("uniform_bucket_level_access", True),
                 *((("public_access_prevention", "enforced" if public == "TRUE" else "inherited"),) if public else ()),
@@ -85,7 +108,7 @@ def _bucket(m, b):
                   if mode in ("governance", "compliance") else ()),
                 *body, *(_rule(r) for r in lifecycle_rules(b)),
                 ("labels", {"role": label(one(b, "ciamBindingRole")), "managed_by": "opsdir"})]),
-            *((import_block(f"google_storage_bucket.{n}", bucket),) if adopted(b) else ()))
+            *((import_block(f"google_storage_bucket.{n}", bucket),) if adopted(b) else ()), *_copy(b, n))
 
 
 def render_object_stores(m):
@@ -125,6 +148,35 @@ def bucket_attributes(d):
             **({"public_access_prevention": public} if public else {})}
 
 
+def transfer_job_attributes(d):
+    """A Storage Transfer Service job as Cloud Asset Inventory (storagetransfer.googleapis.com/TransferJob) or `gcloud
+    transfer jobs list` prints it, as google_storage_transfer_job's attributes: its buckets, never its credentials
+    (other sources' keys)."""
+    def spec(s):
+        source, sink = s.get("gcsDataSource") or {}, s.get("gcsDataSink") or {}
+        return [{"gcs_data_source": [{"bucket_name": source.get("bucketName"), "path": source.get("path")}]
+                 if source else [],
+                 "gcs_data_sink": [{"bucket_name": sink.get("bucketName"), "path": sink.get("path")}] if sink else []}]
+    return {"name": d.get("name"), "description": d.get("description"), "status": d.get("status"),
+            **({"replication_spec": spec(d["replicationSpec"])} if d.get("replicationSpec") else {}),
+            **({"transfer_spec": spec(d["transferSpec"])} if d.get("transferSpec") else {})}
+
+
+def _replicas(pairs):
+    """{bucket: the gs:// replica an enabled transfer job copies it to} (its replication spec, else a transfer spec
+    from bucket to bucket)."""
+    def uri(sink):
+        path = (sink.get("path") or "").strip("/")
+        return f"gs://{sink['bucket_name']}" + (f"/{path}" if path else "") if sink.get("bucket_name") else None
+
+    def ends(j):
+        s = first_block(j.get("replication_spec")) or first_block(j.get("transfer_spec"))
+        return first_block(s.get("gcs_data_source")).get("bucket_name"), uri(first_block(s.get("gcs_data_sink")))
+    copies = [ends(j) for j in of_types(pairs, "google_storage_transfer_job")
+              if (j.get("status") or "ENABLED") == "ENABLED"]
+    return {source: sink for source, sink in copies if source and sink}
+
+
 def _rules(a):
     """The ciamStorageLifecycle values of a bucket's lifecycle rules."""
     out = []
@@ -140,7 +192,9 @@ def _rules(a):
 
 def object_store_resources(pairs):
     """Storage resources of (google type, attributes) pairs: Cloud Storage buckets with their versioning, retention,
-    key, lifecycle and public access prevention."""
+    key, lifecycle, public access prevention and the replica a transfer job copies them to."""
+    replicas = _replicas(pairs)
+
     def one_bucket(a):
         retention = first_block(a.get("retention_policy"))
         period = retention.get("retention_period")
@@ -154,7 +208,8 @@ def object_store_resources(pairs):
             if period else None,
             "ciamStorageLockDays": -(-int(period) // DAY) if period else None,
             "ciamStorageLifecycle": _rules(a) if "lifecycle_rule" in a else None,
-            "ciamStoragePublicBlocked": ("TRUE" if public == "enforced" else "FALSE") if public else None},
+            "ciamStoragePublicBlocked": ("TRUE" if public == "enforced" else "FALSE") if public else None,
+            "ciamStorageReplicaRef": replicas.get(a.get("name"))},
             links={"ciamEncryptedByRole": first_block(a.get("encryption")).get("default_kms_key_name") or None},
             name=a.get("name"), role=labels.get("role") or labels.get("bindingrole") or None)
     return tuple(one_bucket(a) for a in of_types(pairs, "google_storage_bucket") if a.get("name"))

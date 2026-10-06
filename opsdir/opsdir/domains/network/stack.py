@@ -63,12 +63,15 @@ def allowlist(proxy):
 
 def private_ranges(m):
     """The ranges the stack reaches without the internet: its network's, its interconnects' (accepted ranges, else
-    the other side's) and its private endpoints' own addresses (/32), sorted, unique."""
+    the other side's) and its private endpoints' own addresses (/32) and ranges (a peered service's allocated range:
+    where a managed database's private address comes from), sorted, unique."""
     net = one_role(m, "network")
     links = (c for ic in of_class(m, "ciamInterconnect")
              for c in (values(ic, "ciamAcceptedCidr") or values(ic, "ciamSourceCidr")))
-    ips = (f"{one(p, 'ciamFrontendIp')}/32" for p in of_class(m, "ciamPrivateEndpoint") if one(p, "ciamFrontendIp"))
-    return tuple(sorted({*(values(net, "ciamCidr") if net is not None else ()), *links, *ips}))
+    endpoints = of_class(m, "ciamPrivateEndpoint")
+    ips = (f"{one(p, 'ciamFrontendIp')}/32" for p in endpoints if one(p, "ciamFrontendIp"))
+    ranges = (c for p in endpoints for c in values(p, "ciamCidr"))
+    return tuple(sorted({*(values(net, "ciamCidr") if net is not None else ()), *links, *ips, *ranges}))
 
 
 def firewall_model(m):

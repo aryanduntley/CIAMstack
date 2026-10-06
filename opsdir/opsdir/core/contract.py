@@ -35,13 +35,33 @@ def fetch_report(headers, fetch, needs_dn=False):
     return Report(tuple(headers), None, None, fetch, needs_dn, False)
 
 
-Domain = NamedTuple("Domain", [("name", str), ("schema", object),     # its SchemaFragment
-                               ("required_roles", tuple),
-                               ("sql", tuple),          # SQL definitions (views, functions), re-applied on every upgrade
-                               ("reports", Mapping),    # report name -> Report
-                               ("checks", tuple),       # planner checks: (PlanContext) -> Findings
-                               ("order", int),          # domains run and report in ascending order
-                               ("vocabulary", Mapping)])  # {vocab attribute: values it defines}
+# How one kind of resource the cloud importers report is read into the record (core.inventory places it); declared
+# by the domain whose object class it is, so the core names none. kind: the importers' name for it; object_class: the
+# record's; required: what a new entry must have beyond cn and its role. match: what an entry of the kind is matched
+# by: "ref" (its provider ref, kept as ciamProviderRef), "name" (its cn, case aside), an attribute (its first value;
+# lower: case aside), or a function (attrs) -> key applied to the entry's and the resource's attributes alike.
+# first: placed before the other kinds (what they link to). role: a function (resource, {provider ref: role}) -> the
+# role of a new one whose source names none (from what it links to), or None. alias: a function (provider ref) ->
+# the name an entry is matched by when nothing else matches it. prepare: a function (directory, environment DN,
+# resource) -> resource, run before placing. resolve: a function (attrs, {provider ref: role}) -> {attr: values} for
+# values naming another resource by its provider ref (a route's target). ported: attributes whose values may carry a
+# port a source can't express. server: placed as a server (ciamServerRole, under the environment) and matched also by
+# hostname or private address.
+ImportKind = namedtuple("ImportKind", ("kind", "object_class", "required", "match", "lower", "first", "role", "alias",
+                                       "prepare", "resolve", "ported", "server"),
+                        defaults=((), "ref", False, False, None, None, None, None, frozenset(), False))
+
+Domain = namedtuple("Domain", (
+    "name", "schema",           # its SchemaFragment
+    "required_roles",
+    "sql",                      # SQL definitions (views, functions), re-applied on every upgrade
+    "reports",                  # report name -> Report
+    "checks",                   # planner checks: (PlanContext) -> Findings
+    "order",                    # domains run and report in ascending order
+    "vocabulary",               # {vocab attribute: values it defines}
+    "import_kinds",             # ImportKinds: the resources the cloud importers read into its classes
+    "role_links"),              # {attribute naming a binding's role: the import kind of what it names}
+    defaults=((), {}))
 
 # A language or file format opsdir renders or reads: registered (entry point group opsdir.formats) by the core for the
 # standard ones and by any package for its own, so what a managed system is written in is data, never an assumption.

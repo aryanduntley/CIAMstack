@@ -157,3 +157,22 @@ def test_keepers_folder_order_and_render_plumbing_data_first():
     r = render_plumbing(alpha, k)
     assert r.shared[0].startswith('data "google_compute_network" "main"') and "UNBOUND" in r.shared[0]
     assert r.blocks[0].startswith('resource "google_compute_router" "egress"')
+
+
+def test_private_services_access_goes_in_its_keepers_root_with_its_range():
+    files = _render(entry(ALPHA, "egress", "ciamEgress", ciamBindingRole="egress", ciamCidr="203.0.113.10/32",
+                          ciamNatAllocation="automatic"),
+                    entry(ALPHA, "psa", "ciamPrivateEndpoint", ciamBindingRole="private-services",
+                          ciamPrivateService="database", ciamPrivateEndpointKind="peered-service",
+                          ciamCidr="10.71.0.0/20", ciamManagedBy=TEAM,
+                          ciamProviderRef="projects/p/global/addresses/ciam-services"))
+    theirs = files["terraform/landing-zone/network-team/network.tf"]
+    assert 'resource "google_compute_global_address" "psa"' in theirs
+    for line in ('name          = "ciam-services"', 'purpose       = "VPC_PEERING"', 'address       = "10.71.0.0"',
+                 "prefix_length = 20", 'role       = "private-services"'):
+        assert line in theirs, line
+    assert 'resource "google_service_networking_connection" "psa"' in theirs
+    assert 'service                 = "servicenetworking.googleapis.com"' in theirs
+    assert "reserved_peering_ranges = [google_compute_global_address.psa.name]" in theirs
+    assert 'to = google_compute_global_address.psa\n  id = "projects/p/global/addresses/ciam-services"' in theirs
+    assert "to = google_service_networking_connection.psa" not in theirs     # its id needs the network's ref

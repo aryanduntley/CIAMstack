@@ -15,6 +15,9 @@ comment names them). PostgreSQL, MySQL and SQL Server run on Cloud SQL; other en
   written write-only: a google_sql_user (PostgreSQL, MySQL; the login an input) or SQL Server's root password. No
   Terraform state holds it and the record holds only the reference
   an import block when its provider ref is recorded
+The ranges the record admits to a database (ciamSourceCidr) are a comment: Cloud SQL's private address is in
+Google's service producer network, which the network's firewall rules and policies don't reach; the private services
+access peering carries the traffic (under an egress allowlist, its range is among the private ranges).
 
 Read back from (google type, attributes) pairs, Terraform state as it is or Cloud Asset Inventory and gcloud
 normalized to it (sql_instance). The root password (root_password) is never read.
@@ -22,6 +25,7 @@ normalized to it (sql_instance). The root password (root_password) is never read
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import UNBOUND, bound, of_class
 from opsdir.core.inventory import of_types, resource
+from opsdir.domains.data.naming import DEFAULT_PORTS
 from opsdir.domains.data.databases import major_version
 from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned
@@ -29,7 +33,7 @@ from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
 from opsdir_format_terraform.state import first_block
 from .names import NETWORK, REGION, label, name_parts, resource_id
 
-PORTS = {"postgresql": 5432, "mysql": 3306, "sqlserver": 1433}
+PORTS = {e: DEFAULT_PORTS[e] for e in ("postgresql", "mysql", "sqlserver")}    # the engines Cloud SQL runs
 SQLSERVER_YEARS = {"14": "2017", "15": "2019", "16": "2022"}
 EDITIONS = {"standard": "STANDARD", "enterprise": "ENTERPRISE", "express": "EXPRESS", "web": "WEB"}
 TLS_ONLY = ("ENCRYPTED_ONLY", "TRUSTED_CLIENT_CERTIFICATE_REQUIRED")
@@ -149,7 +153,11 @@ def _database(m, b):
     instance = block("resource", ["google_sql_database_instance", n], [
         ("name", cn), *_given(("database_version", version)), ("region", REGION), *key_body, *secret_body,
         ("deletion_protection", protected), ("settings", settings)])
+    cidrs = values(b, "ciamSourceCidr")
     return (*((f"# {cn}: no ciamDbEngineVersion Cloud SQL runs: set database_version",) if not version else ()),
+            *((f"# {cn} admits {', '.join(cidrs)}: Cloud SQL's private IP is in Google's service producer network, "
+               "which this network's firewall rules don't reach; the private services access peering carries the "
+               "traffic",) if cidrs else ()),
             *key_notes, *before, instance, *after,
             *((import_block(f"google_sql_database_instance.{n}", resource_id(one(b, "ciamProviderRef"))),)
               if adopted(b) else ()))

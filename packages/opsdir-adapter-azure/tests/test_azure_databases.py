@@ -49,6 +49,41 @@ def test_a_postgresql_flexible_server_with_its_key_password_parameters_and_lock(
     assert 'name      = "log_min_duration_statement"' in out and "require_secure_transport" not in out
 
 
+def test_a_network_security_group_named_by_its_role_on_its_delegated_subnet():
+    out = _render(KEY, SECRET, entry(ALPHA, "db-grants", "ciamDatabase", **DB, ciamSourceCidr="10.1.4.0/24"))
+    assert 'resource "azurerm_network_security_group" "pf_grants_db"' in out
+    assert 'name                = "nsg-ciam-prod-pf-grants-db"' in out and 'Role      = "pf-grants-db"' in out
+    assert 'resource "azurerm_subnet_network_security_group_association" "pf_grants_db"' in out
+    assert "subnet_id                 = data.azurerm_subnet.subnet_ds.id" in out
+    assert "network_security_group_id = azurerm_network_security_group.pf_grants_db.id" in out
+    assert 'resource "azurerm_network_security_rule" "pf_grants_db_clients"' in out
+    for line in ('name                        = "pf-grants-db-clients"', "priority                    = 100",
+                 'destination_port_ranges     = ["5432"]', 'source_address_prefixes     = ["10.1.4.0/24"]',
+                 "network_security_group_name = azurerm_network_security_group.pf_grants_db.name"):
+        assert line in out, line
+    no_subnet = _render(entry(ALPHA, "db-x", "ciamDatabase", ciamBindingRole="x-db", ciamDbEngine="postgresql"))
+    assert 'resource "azurerm_network_security_group" "x_db"' in no_subnet
+    assert "azurerm_subnet_network_security_group_association" not in no_subnet
+    assert "azurerm_network_security_rule" not in no_subnet           # it admits no ranges
+
+
+def test_the_rules_of_the_group_on_its_delegated_subnet_are_its_ranges_not_firewall_rules():
+    nsg = f"{SUB}/Microsoft.Network/networkSecurityGroups/nsg-ciam-prod-pf-grants-db"
+    resources, _ = state_resources(_state(
+        ("azurerm_postgresql_flexible_server", "grants", SERVER),
+        ("azurerm_network_security_group", "db", {"id": nsg, "name": "nsg-ciam-prod-pf-grants-db",
+                                                   "resource_group_name": "rg-ciam"}),
+        ("azurerm_subnet_network_security_group_association", "db", {"subnet_id": SNET,
+                                                                     "network_security_group_id": nsg}),
+        ("azurerm_network_security_rule", "db", {
+            "name": "pf-grants-db-clients", "direction": "Inbound", "access": "Allow", "protocol": "Tcp",
+            "source_address_prefixes": ["10.1.4.0/24"], "destination_port_ranges": ["5432"],
+            "resource_group_name": "rg-ciam", "network_security_group_name": "nsg-ciam-prod-pf-grants-db"})))
+    (db,) = (r for r in resources if r.kind == "database")
+    assert db.attrs["ciamSourceCidr"] == ("10.1.4.0/24",)
+    assert not [r for r in resources if r.kind == "firewall"]
+
+
 def test_mysql_storage_tls_off_and_what_flexible_server_doesnt_run():
     out = _render(SECRET, entry(ALPHA, "db-sess", "ciamDatabase", ciamBindingRole="sessions-db", ciamDbEngine="mysql",
                                 ciamDbEngineVersion="8.0.35", ciamDbStorageGb="64", ciamDbTlsRequired="FALSE",

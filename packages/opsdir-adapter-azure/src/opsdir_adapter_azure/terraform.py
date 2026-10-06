@@ -17,6 +17,7 @@ from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comm
 from .access import ACCESS
 from .databases import render_databases
 from .storage import render_object_stores
+from .volumes import boot_tag, os_disk, server_volumes, snapshot_policy_notes
 from .dns import FORWARDING_RULESET, forwarding_rules, records, service_record
 from .edge import ddos_note, gateway_service
 from .frontdoor import endpoint, front_door
@@ -57,9 +58,8 @@ def _security_groups(m):
 def _server(m, s, des, identities=()):
     n, role = tf_name(rdn_value(s)), one(s, "ciamServerRole")
     w = identity_of(identities, role)
-    encryption = (("disk_encryption_set_id", one(des, "ciamProviderRef")) if des and one(des, "ciamProviderRef")
-                  else ("#", "UNBOUND: no disk-encryption binding in this environment"))
-    return (block("resource", ["azurerm_network_interface", n], [
+    disk_notes, disk = os_disk(m, s, des)
+    return (*disk_notes, block("resource", ["azurerm_network_interface", n], [
                 ("name", f"nic-{rdn_value(s)}"), ("location", LOC), ("resource_group_name", RG),
                 ("ip_configuration", Block((
                     ("name", "primary"),
@@ -75,11 +75,12 @@ def _server(m, s, des, identities=()):
                 ("network_interface_ids", [ref(f"azurerm_network_interface.{n}.id")]),
                 ("source_image_id", one(s, "ciamImageRef")),
                 ("admin_ssh_key", Block((("username", "ciamadmin"), ("public_key", ref("var.admin_ssh_public_key"))))),
-                ("os_disk", Block((("caching", "ReadWrite"), ("storage_account_type", "Premium_LRS"), encryption))),
+                ("os_disk", disk),
                 *((("identity", Block((("type", "UserAssigned"), ("identity_ids", [
                     ref(f"azurerm_user_assigned_identity.{tf_name(w.identity_role)}.id")])))),) if w else ()),
                 ("tags", {"Role": role, "Hostname": one(s, "ciamHostname"),
-                          "Product": one(s, "ciamProductVersion", ""), "ManagedBy": "opsdir"})]))
+                          "Product": one(s, "ciamProductVersion", ""), **boot_tag(m, s), "ManagedBy": "opsdir"})]),
+            *server_volumes(m, s))
 
 
 def _frontend(m, svc, n, ip, internal, targets):
@@ -178,7 +179,7 @@ def render(m, services):
     endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     des, identities = one_role(m, "disk-encryption"), workload_identities(m, ACCESS)
     out = (*network_data(m), *_security_groups(m), *chain.from_iterable(identity(m, w) for w in identities),
-           *chain.from_iterable(_server(m, s, des, identities) for s in m.servers),
+           *chain.from_iterable(_server(m, s, des, identities) for s in m.servers), *snapshot_policy_notes(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
            *forwarding_rules(m),

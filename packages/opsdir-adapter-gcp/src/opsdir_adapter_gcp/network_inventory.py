@@ -23,6 +23,9 @@ domain's terms (hashicorp/google attribute names; Cloud Asset Inventory and gclo
   google_compute_global_address (purpose    -> private endpoint all-apis: Private Service Connect for Google's APIs
     PRIVATE_SERVICE_CONNECT) + global          (its forwarding rule the provider ref, the address its frontend; role
     forwarding rule to all-apis / vpc-sc       from the address's label role)
+  google_compute_global_address (purpose    -> private endpoint peered-service: private services access, its
+    VPC_PEERING)                               allocated range (address/prefix_length) its ciamCidr; what it serves
+                                               the record says (the address doesn't)
   google_compute_service_attachment         -> endpoint service: the forwarding rule it exposes, its URI for
                                                consumers, the projects and networks it accepts (acceptance required
                                                unless it accepts automatically), its PSC NAT subnets
@@ -228,6 +231,15 @@ def _google_apis(found):
                  if google_apis_endpoint(fr) and fr.get("id"))
 
 
+def _peered_services(found):
+    return tuple(resource("private-endpoint", resource_id(a.get("id")), {
+                     "ciamPrivateEndpointKind": "peered-service",
+                     "ciamCidr": f"{a.get('address')}/{a.get('prefix_length')}" if a.get("address") else None},
+                          name=a.get("name"), role=_role(a))
+                 for a in of_types(found, "google_compute_global_address")
+                 if a.get("purpose") == "VPC_PEERING" and a.get("id"))
+
+
 def _last(v):
     return resource_id(v or "").rsplit("/", 1)[-1]
 
@@ -291,7 +303,7 @@ def network_resources(found, instance_roles, tag_roles, proxies):
     hierarchical_rules = of_types(found, "google_compute_firewall_policy_rule")
     keys = foreign_tag_keys(found)
     return ((*rules, *_policies(found, sites), *_routes(found, tag_roles), *_google_apis(found),
-             *_attachments(found), *_links(found), *_flow_logs(found)),
+             *_peered_services(found), *_attachments(found), *_links(found), *_flow_logs(found)),
             (*notices, *((f"hierarchical firewall policy rules ({len(hierarchical_rules)}): read, not recorded",)
                          if hierarchical_rules else ()),
              *((f"firewall tag keys not made by opsdir ({', '.join(keys)}): which one the network policy targets by "

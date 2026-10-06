@@ -34,7 +34,7 @@ from opsdir.domains.network.stack import subnets
 from opsdir_adapter_gcp.firewall_policy import egress_rules, network_project, policy_ref
 from opsdir_adapter_gcp.identities import project_of
 from opsdir_adapter_gcp.names import NETWORK, label, name_parts, network_tag
-from opsdir_adapter_gcp.network import private_endpoint
+from opsdir_adapter_gcp.network import peering_connection_id, private_endpoint
 from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
 
 # blocks: what the binding renders; variables: inputs only its keeper knows; shared: data sources and resources
@@ -323,16 +323,20 @@ def flow_log(m, b, here=()):
 
 # ------------------------------------------------------------------ kept elsewhere
 def kept_elsewhere(m, b, here=()):
-    """A PSC endpoint for Google's APIs, or an egress firewall's FQDN rules in its keeper's network firewall policy
-    for every instance of the network (the stack's tag values aren't theirs)."""
+    """A PSC endpoint for Google's APIs, private services access (its address and connection), or an egress
+    firewall's FQDN rules in its keeper's network firewall policy for every instance of the network (the stack's tag
+    values aren't theirs)."""
     if is_kind(m.d, b, "ciamProxy"):
         policy = (one(b, "ciamProviderRef") or "").rsplit("/", 1)[-1] or policy_ref(m)
         return Rendered((f"# {rdn_value(b)}: its rules apply to every instance of the network, in policy {policy}",
                          *egress_rules(m, b, targets=(), policy=policy)), (), ())
-    blocks = private_endpoint(m, b)
+    blocks, n, connection = private_endpoint(m, b), tf_name(rdn_value(b)), peering_connection_id(m)
     made = any(x.startswith('resource "google_compute_global_forwarding_rule"') for x in blocks)
-    return Rendered((*blocks, *(_adopt(f"google_compute_global_forwarding_rule.{tf_name(rdn_value(b))}", b)
-                                if made else ())), (), ())
+    peered = any(x.startswith('resource "google_service_networking_connection"') for x in blocks)
+    return Rendered((*blocks, *(_adopt(f"google_compute_global_forwarding_rule.{n}", b) if made else ()),
+                     *(_adopt(f"google_compute_global_address.{n}", b) if peered else ()),
+                     *(_adopt(f"google_service_networking_connection.{n}", b, connection)
+                       if peered and connection else ())), (), ())
 
 
 RENDERERS = (("ciamEgress", egress), ("ciamRouteTable", route_table), ("ciamNetworkAcl", network_acl),

@@ -9,7 +9,7 @@ from opsdir.domains.access.grants import ALLOWED, UNKNOWN, effective
 from opsdir_adapter_azure.access import ACCESS
 from opsdir_adapter_azure.iam import iam_resources
 from opsdir_adapter_azure.inventory import read_terraform_state
-from support import BARE, SUPERS
+from support import BARE, SUPERS, imported_directory
 
 SUB = "/subscriptions/0000-1111"
 RG = f"{SUB}/resourceGroups/rg-ciam-prod"
@@ -107,7 +107,7 @@ def _row(dn, classes, **attrs):
 
 
 def _imported():
-    d = make_directory((), SUPERS, (
+    d = imported_directory((), SUPERS, (
         _row("cloud=main,ou=environments,dc=ciam-ops", ("ciamCloud",), cloud="main", ciamCloudProvider="azure",
              ciamRegion="eastus2"),
         _row(ENV, ("ciamEnvironment",), env="prod"),

@@ -20,7 +20,8 @@
   azurerm_private_dns_resolver_forwarding_rule -> DNS forwarders
 Roles as on AWS: tag Role, else by convention; an edge service takes <kind>-<the role of the service it fronts>.
 """
-from opsdir.core.inventory import forwarder_role, of_types, record_role, resource, tagged_role, zone_role
+from opsdir.core.inventory import of_types, resource, tagged_role
+from opsdir.domains.edge.imports import forwarder_role, record_role, zone_role
 from opsdir.domains.edge.resolve import endpoint_kind_named, rate_limit_fact, tls_level
 from .edge import TLS_POLICIES
 

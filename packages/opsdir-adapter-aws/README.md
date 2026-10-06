@@ -87,10 +87,21 @@ The core `data` domain's databases (`ciamDatabase`) the stack keeps render into 
 | service `aurora` (PostgreSQL, MySQL) | `aws_rds_cluster` with the same settings and one `aws_rds_cluster_instance`, two when zone-redundant |
 | Credentials | `manage_master_user_password`: RDS keeps the master password in Secrets Manager, so no password is in the Terraform, its state or the record; `ciamDbCredentialRole` names that secret's binding. The master user name is a variable, `<database>_admin_username` |
 | `ciamSubnetRole` | `aws_db_subnet_group` of those subnets |
-| Its role | `aws_security_group` `ciam-<env>-<role>`: the firewall rules targeting the role go on it |
+| Its role, `ciamSourceCidr` | `aws_security_group` `ciam-<env>-<role>`, with an `aws_vpc_security_group_ingress_rule` to the database's port (`ciamPort`, else the engine's) from each range it admits |
 | `ciamDbParameter`, `ciamDbTlsRequired` | `aws_db_parameter_group` (Aurora: `aws_rds_cluster_parameter_group`), family from the engine, edition and major version (`postgres16`, `mysql8.0`, `sqlserver-se-15.0`), holding the parameters and, where TLS differs from the engine's default, `rds.force_ssl` (PostgreSQL, SQL Server; required by default from PostgreSQL 15) or `require_secure_transport` (MySQL, MariaDB). Oracle's TLS needs an option group: a comment |
 | `ciamProviderRef` recorded | An `import` block (the ARN's last part is the identifier): the database is adopted, not created. Its subnet and parameter groups are adopted by hand, or Terraform creates new ones and moves it to them |
 | `ciamDbPointInTime` `FALSE` with backups kept | A comment: RDS restores to a point in time whenever it keeps backups |
+
+### Disks and snapshot policies
+
+The core `data` domain's volumes (`ciamVolume`, each server role's disks) and snapshot policies (`ciamSnapshotPolicy`) render into `main.tf` (`opsdir_adapter_aws.volumes`). Classes to types: `standard` st1, `ssd` gp3, `provisioned` io2.
+
+| Record | Renders as |
+|---|---|
+| The role's boot volume (`ciamVolumeKind` `boot`) | Each instance's `root_block_device`: `volume_size`, `volume_type`, `iops`, `throughput`, encrypted with its key role's KMS key (`ciamEncryptedByRole`, else the `disk-encryption` binding's; unbound: a comment), tagged `Volume`, `Role`. Without one, the root disk is encrypted with the disk key as before |
+| Each data volume of the role | Per server: an `aws_ebs_volume` in the server's zone (size, type, IOPS, throughput, encryption) tagged `Name`, `Volume`, `Role`, `Server`, `SnapshotPolicy`, and an `aws_volume_attachment` at `/dev/sdf`, `/dev/sdg`, … in the volumes' order; the server mounts it at `ciamMountPath` itself (a comment) |
+| `ciamVolumeEncrypted` `FALSE` | Rendered as recorded (`encrypted = false`); the planner names it |
+| `ciamSnapshotPolicy` the stack keeps | An `aws_dlm_lifecycle_policy` (`execution_role_arn` an input, `dlm_execution_role_arn`) snapshotting the volumes tagged `SnapshotPolicy = <role>`: `create_rule` every `ciamSnapshotEveryHours` (1, 2, 3, 4, 6, 8, 12 or 24; another interval is a comment) from `ciamSnapshotAt`, `retain_rule` `ciamRetentionDays` days, an encrypted `cross_region_copy_rule` per `ciamCopyRegion` (at most three) keyed by the disk key's replica there when it is a multi-region key replicated to that region, else an input `<policy>_<region>_kms_key_arn`; an `import` block when its provider ref (the policy ID) is recorded. One someone else keeps: a comment |
 
 ## Reading an environment back from Terraform state
 
@@ -141,7 +152,7 @@ The importer `aws/terraform-state` reads Terraform state (format version 4, `has
 
 The importer fills in everything else from the state. Where the source names a role itself, the source's is kept; map entries that disagree with it or match nothing, and a malformed map, are named in the notices. Without a role the resource is named in the notices with what the state says about it. A new entry also needs its class's required attributes (a server its hostname and subnet, a service its DNS name, target role and ports, …); one that lacks them is named.
 
-**Named, not recorded:** resource types that hold secret values or aren't modeled yet (`aws_secretsmanager_secret_version`, `aws_ssm_parameter`, `random_password`, `tls_private_key`, `aws_iam_access_key`, `aws_db_instance`), counted by type.
+**Named, not recorded:** resource types that hold secret values or aren't modeled yet (`aws_secretsmanager_secret_version`, `aws_ssm_parameter`, `random_password`, `tls_private_key`, `aws_iam_access_key`), counted by type.
 
 **Named, not recorded (security group rules):** a port range (`from_port` ≠ `to_port`) and a rule for all ports (`-1`, or `0`–`65535`), since `ciamPort` holds single ports; a source that isn't an IPv4 range (an IPv6 range, a referenced security group, a prefix list, the group itself). The rule's single IPv4 ports and sources are still recorded; a rule with no IPv4 source records nothing. The same from Terraform state, CLI output and CloudFormation.
 
@@ -187,8 +198,20 @@ What the network carries beyond VPCs, subnets and security groups comes back in 
 
 | AWS resource | Record entry |
 |---|---|
-| `aws_db_instance` (not an Aurora member) + its `aws_db_subnet_group` and `aws_db_parameter_group` | database: engine, edition and service (`rds`), version (`engine_version_actual` over `engine_version`), endpoint (`address`) and port, size, storage, zone (single-zone only), `zone-redundant` when `multi_az`, TLS from `rds.force_ssl` / `require_secure_transport` (else the engine's default), retention and point-in-time restore (on while backups are kept), deletion protection, the other parameters the group sets; its subnets, KMS key and master secret (`master_user_secret`) as the roles of those bindings |
+| `aws_db_instance` (not an Aurora member) + its `aws_db_subnet_group` and `aws_db_parameter_group` | database: engine, edition and service (`rds`), version (`engine_version_actual` over `engine_version`), endpoint (`address`) and port, size, storage, zone (single-zone only), `zone-redundant` when `multi_az`, TLS from `rds.force_ssl` / `require_secure_transport` (else the engine's default), retention and point-in-time restore (on while backups are kept), deletion protection, the other parameters the group sets; the IPv4 ranges the rules on its security groups (`vpc_security_group_ids`) admit as `ciamSourceCidr` (those groups aren't read as firewall rules); its subnets, KMS key and master secret (`master_user_secret`) as the roles of those bindings |
 | `aws_rds_cluster` (+ `aws_rds_cluster_instance`, `aws_rds_cluster_parameter_group`) | the same with service `aurora`; `zone-redundant` when its instances are in more than one zone, the size its instances' |
+
+### Disks and snapshot policies, read back
+
+`opsdir_adapter_aws.volumes` (the CLI normalizes to the same names: `cli_volume.py`). Volumes and snapshot policies are matched by name; a new one needs its tag `Role`.
+
+| AWS resource | Record entry |
+|---|---|
+| `aws_ebs_volume` (+ `aws_volume_attachment`), grouped by tag `Volume` | data volume of the role its instances run: the most common size, class, IOPS and throughput (a server whose disk differs in size is named), encrypted only when all are; its KMS key and the snapshot policy whose target tag its `SnapshotPolicy` tag matches as roles |
+| `aws_instance` `root_block_device` tagged `Volume` | the role's boot volume, the same way. An untagged root disk that isn't encrypted is named |
+| `aws_dlm_lifecycle_policy` (enabled) | snapshot policy: interval in hours, start time, retention in days (weeks, months, years converted; by count: named, not read), copy regions, consistency `crash` |
+
+An EBS volume attached to one of the environment's instances without a `Volume` tag is named: which of the record's volumes it is can't be told.
 
 ## Reading an environment from the AWS CLI
 
@@ -295,6 +318,14 @@ for g in $(aws rds describe-db-parameter-groups --query 'DBParameterGroups[?!sta
 done
 for g in $(aws rds describe-db-cluster-parameter-groups --query 'DBClusterParameterGroups[?!starts_with(DBClusterParameterGroupName, `default.`)].DBClusterParameterGroupName' --output text); do
   aws rds describe-db-cluster-parameters --db-cluster-parameter-group-name "$g" --source user > "$out/db-cluster-parameters/$g.json"
+done
+
+# disks and snapshot policies: the volumes (root volumes included: describe-instances says which they are) and each
+# Lifecycle Manager policy (saved under dlm-policies/: its output's key is IAM get-policy's too)
+aws ec2 describe-volumes                                                         > $out/volumes.json
+mkdir -p $out/dlm-policies
+for p in $(aws dlm get-lifecycle-policies --query 'Policies[].PolicyId' --output text); do
+  aws dlm get-lifecycle-policy --policy-id "$p"                                  > "$out/dlm-policies/$p.json"
 done
 
 # IAM: roles and policies (AWS managed ones included), key and bucket policies, Identity Center, control policies
@@ -431,6 +462,7 @@ It adds no required roles, planner checks or schema of its own; the environment'
 - **Services without an edge policy are TCP network load balancers.** With one, the renderer writes an application load balancer, its web ACL and Shield protection (see Edge); reading their listeners, TLS policies, certificates, web ACLs and Shield back comes with milestone 4.8's importers. An ALB's addresses are AWS's: a recorded frontend address isn't kept.
 - **What the importers can't see:** egress rules, sources other than IPv4 CIDRs, key pairs, IAM in CLI output and CloudFormation stacks (Terraform state only, for now), Image Builder pipelines (`ciamImageBuild` is recorded by hand), autoscaling groups and EKS clusters, and the monitoring above (log groups, alarms, canaries, alert topics), in CLI output and CloudFormation stacks (Terraform state only, for now), KMS key protection, bucket encryption (4.10), CloudFront / WAF / API Gateway (edge importers, 4.8), databases in CloudFormation stacks (milestone 5.6; Terraform state and CLI output read them).
 - **Databases someone else keeps** (`ciamManagedBy`) are named in a comment, not rendered into their keeper's root yet.
+- **Compute groups' disks:** AWS doesn't render compute groups (launch templates) yet, so their volumes come from the record only; a launch template's block device mappings aren't read into volumes yet. EBS volumes and Lifecycle Manager policies in CloudFormation stacks come with milestone 5.6.
 
 ## Tests
 
@@ -456,7 +488,9 @@ It adds no required roles, planner checks or schema of its own; the environment'
 
 `tests/test_aws_network.py`: the network depth the stack keeps: an interface endpoint with its security group and private DNS, a gateway endpoint on its subnets' and the main route tables, what AWS has no endpoint for, an endpoint service on an L4 service's NLB and not an ALB, the egress firewall's domain list (web traffic only), what others keep named, nothing rendered without records.
 
-`tests/test_aws_databases.py`: managed databases rendered (an RDS instance with its subnet, security and parameter groups, key, RDS-managed password and import block; TLS as a parameter where it isn't the default; Aurora with an instance per zone; one someone else keeps named) and read back from state and the CLI (Aurora members, user-set parameters only, SSM parameters and passwords never read, VPC scoping, render-to-state round trip).
+`tests/test_aws_volumes.py`: disks and snapshot policies rendered (the boot volume on the root block device, data volumes as EBS volumes with attachments and tags, unencrypted or unbound-key volumes as recorded and said, Lifecycle Manager policies with encrypted copies by the multi-region key's replica or an input, an interval it can't take and others' policies named) and read back from state and the CLI (volumes grouped by their Volume tag, root disks, policies linked by target tag, untagged disks, count-based and disabled policies and unencrypted roots named; dlm-policies/ outputs not read as IAM policies; render-to-state round trip).
+
+`tests/test_aws_databases.py`: managed databases rendered (an RDS instance with its subnet, security and parameter groups, key, RDS-managed password and import block; the ranges it admits as ingress rules on its security group, the engine's port when none is recorded; TLS as a parameter where it isn't the default; Aurora with an instance per zone; one someone else keeps named) and read back from state and the CLI (Aurora members, user-set parameters only, SSM parameters and passwords never read, VPC scoping, render-to-state round trip; the rules on its security groups as its ranges, not firewall rules).
 
 `tests/test_aws_network_state.py`: the network depth read back: route tables (targets as provider refs, a Network Firewall endpoint as the firewall, gateway endpoints, main table), network ACLs (IPv6 named), VPC endpoints and their security groups left out of the rules, endpoint services, the egress firewall's domain list under its policy, peering, transit and VPN depth, flow logs; the CLI (local route and rule 32767 left out) and CloudFormation reading the same.
 

@@ -1463,6 +1463,24 @@ resource "aws_security_group" "pf_grants_db" {
   }
 }
 
+resource "aws_vpc_security_group_ingress_rule" "pf_grants_db_0" {
+  security_group_id = aws_security_group.pf_grants_db.id
+  cidr_ipv4         = "10.20.4.0/24"
+  from_port         = 5432
+  to_port           = 5432
+  ip_protocol       = "tcp"
+  description       = "clients of database pf-grants (pf-grants-db)"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "pf_grants_db_1" {
+  security_group_id = aws_security_group.pf_grants_db.id
+  cidr_ipv4         = "10.20.5.0/24"
+  from_port         = 5432
+  to_port           = 5432
+  ip_protocol       = "tcp"
+  description       = "clients of database pf-grants (pf-grants-db)"
+}
+
 resource "aws_db_parameter_group" "pf_grants" {
   name   = "pf-grants"
   family = "postgres16"

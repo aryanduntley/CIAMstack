@@ -122,3 +122,10 @@ def test_cloud_asset_inventory_and_gcloud_read_the_same():
     assert a == g and a.ref == "projects/p-ciam/instances/db-grants"
     assert (a.attrs["ciamDbStorageGb"], a.attrs["ciamDbTlsRequired"], a.attrs["ciamRetentionDays"]) == (
         ("100",), ("TRUE",), ("14",))
+
+
+def test_the_ranges_it_admits_are_a_comment_the_peering_carries_them():
+    out = _render(KEY_REF, SECRET, entry(ALPHA, "db-grants", "ciamDatabase", **DB, ciamSourceCidr="10.1.4.0/24"))
+    assert ("# db-grants admits 10.1.4.0/24: Cloud SQL's private IP is in Google's service producer network, which "
+            "this network's firewall rules don't reach") in out
+    assert "google_compute_firewall" not in out

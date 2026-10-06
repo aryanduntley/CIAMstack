@@ -12,7 +12,8 @@
                                                              db-cluster-parameters/<group>.json
 A Parameters output anywhere else is not read: SSM's get-parameters has the same key, and holds values. Each database
 carries the VPC of its subnet group (an Aurora cluster its members'), so the importer reads only the listed VPCs'.
-The master password is never in these outputs; MasterUserSecret names the secret RDS keeps it in.
+The master password is never in these outputs; MasterUserSecret names the secret RDS keeps it in. VpcSecurityGroups
+names the security groups whose rules (ec2 describe-security-group-rules) admit its clients.
 """
 from .cli_outputs import documents, items, stem, tags_of
 
@@ -41,7 +42,12 @@ def _instance(i):
         "backup_retention_period": i.get("BackupRetentionPeriod"), "deletion_protection": i.get("DeletionProtection"),
         "db_subnet_group_name": group.get("DBSubnetGroupName"),
         "parameter_group_name": next((g.get("DBParameterGroupName") for g in i.get("DBParameterGroups") or ()), None),
-        "master_user_secret": _secret(i), "tags": tags_of(i.get("TagList")), "vpc_id": group.get("VpcId")}
+        "master_user_secret": _secret(i), "tags": tags_of(i.get("TagList")), "vpc_id": group.get("VpcId"),
+        "vpc_security_group_ids": _groups(i)}
+
+
+def _groups(d):
+    return [g.get("VpcSecurityGroupId") for g in d.get("VpcSecurityGroups") or () if g.get("VpcSecurityGroupId")]
 
 
 def _cluster(c, vpcs):
@@ -52,7 +58,7 @@ def _cluster(c, vpcs):
         "backup_retention_period": c.get("BackupRetentionPeriod"), "deletion_protection": c.get("DeletionProtection"),
         "db_subnet_group_name": c.get("DBSubnetGroup"),
         "db_cluster_parameter_group_name": c.get("DBClusterParameterGroup"), "master_user_secret": _secret(c),
-        "tags": tags_of(c.get("TagList")),
+        "tags": tags_of(c.get("TagList")), "vpc_security_group_ids": _groups(c),
         "vpc_id": vpcs.get(("cluster", c.get("DBClusterIdentifier"))) or vpcs.get(("group", c.get("DBSubnetGroup")))}
 
 

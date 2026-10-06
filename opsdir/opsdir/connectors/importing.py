@@ -12,8 +12,9 @@ from typing import NamedTuple, Optional
 from ..core.changeset import delete_values, diff
 from ..core.directory import get, subtree, values, within
 from ..core.findings import pending
+from ..core.inventory import with_imports
 from ..domains.governance.imports import run_records
-from .registry import ADAPTERS, pattern_records
+from .registry import ADAPTERS, import_table, pattern_records
 
 # Where an import and the record disagree: key (what to pass to --take or --keep: "<dn>|<attribute>", or the DN when
 # the import would delete the entry), the entry's DN, the attribute (None: the whole entry), what the record holds and
@@ -124,7 +125,7 @@ def import_plan(d, spec, files, installed=ADAPTERS, at=None):
     """What importing files ({relative path: text}) with the importer spec names would do, the import running at `at`
     (a UTC datetime; None when not given): an ImportPlan."""
     adapter, importer = importer_named(spec, installed)
-    imported = importer.read(files, d, pattern_records(installed), at)
+    imported = importer.read(files, with_imports(d, import_table()), pattern_records(installed), at)
     changes = import_changes(d, imported)
     return ImportPlan(f"{adapter.name}/{importer.name}", changes, tuple(imported.notices),
                       import_conflicts(d, changes), tuple(dict.fromkeys(scope for scope, _ in imported.groups)), at)

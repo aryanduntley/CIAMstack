@@ -14,8 +14,9 @@ attribute names the shared mapping reads (opsdir_adapter_gcp.network_inventory).
   tag bindings                                       gcloud resource-manager tags bindings list --parent=<instance>
                                                      (--location=<zone>), by their names (tagBindings/...)
   the networks' peerings and firewall policy enforcement order, subnetworks' flow log settings, routers' BGP numbers
-  and peers, Cloud NAT's address allocation, global addresses for Private Service Connect: read from the network,
-  subnetwork, router and address items the main reader recognizes (opsdir_adapter_gcp.cli)
+  and peers, Cloud NAT's address allocation, global addresses for Private Service Connect and private services access
+  (VPC_PEERING): read from the network, subnetwork, router and address items the main reader recognizes
+  (opsdir_adapter_gcp.cli)
 """
 from types import MappingProxyType
 
@@ -91,8 +92,10 @@ def _routing(of):
 
 def _endpoints(of):
     return [*(("google_compute_global_address", {"id": _self(d), "name": d.get("name"), "address": d.get("address"),
-                                                 "purpose": d.get("purpose"), "labels": d.get("labels") or {}})
-              for d, _ in of("address") if d.get("purpose") == "PRIVATE_SERVICE_CONNECT" and not d.get("region")),
+                                                 "purpose": d.get("purpose"), "prefix_length": d.get("prefixLength"),
+                                                 "labels": d.get("labels") or {}})
+              for d, _ in of("address") if d.get("purpose") in ("PRIVATE_SERVICE_CONNECT", "VPC_PEERING")
+              and not d.get("region")),
             *(("google_compute_service_attachment", {
                 "id": _self(d), "name": d.get("name"), "target_service": resource_id(d.get("targetService")),
                 "connection_preference": d.get("connectionPreference"),

@@ -636,6 +636,27 @@
     }
   },
   {
+    "name": "//compute.googleapis.com/projects/example-aero-net/global/addresses/ciam-standby-services",
+    "assetType": "compute.googleapis.com/GlobalAddress",
+    "resource": {
+      "version": "v1",
+      "data": {
+        "kind": "compute#address",
+        "name": "ciam-standby-services",
+        "address": "10.71.0.0",
+        "prefixLength": 20,
+        "purpose": "VPC_PEERING",
+        "addressType": "INTERNAL",
+        "network": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/networks/ciam-standby",
+        "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-net/global/addresses/ciam-standby-services",
+        "labels": {
+          "role": "private-services",
+          "managed_by": "opsdir"
+        }
+      }
+    }
+  },
+  {
     "name": "//compute.googleapis.com/projects/example-aero-net/global/addresses/ciam-prod-psc-apis",
     "assetType": "compute.googleapis.com/GlobalAddress",
     "resource": {

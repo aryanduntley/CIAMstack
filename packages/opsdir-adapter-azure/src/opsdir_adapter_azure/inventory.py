@@ -69,7 +69,9 @@ from .network_inventory import network_resources
 from .edge_inventory import (dns_resources, edge_services, fqdn, frontdoor_endpoints, frontdoor_origins,
                              gateway_facts, lb_facts, traffic_routing)
 from .iam import iam_resources
-from .databases import database_resources
+from .databases import database_resources, database_security_groups
+from .nsg_rules import allows_in, group_rules, rule_ports, rule_sources, source_cidr
+from .volumes import volume_resources
 from .storage import object_store_resources
 
 PROVIDER = "azure"
@@ -77,7 +79,6 @@ PROVIDER = "azure"
 SKIPPED = ("random_password", "tls_private_key", "azurerm_key_vault_certificate",
            "azurerm_mssql_server")  # secret values, or not modeled yet
 VMS = ("azurerm_linux_virtual_machine", "azurerm_windows_virtual_machine", "azurerm_virtual_machine")
-ANY = ("*", "any", "internet", "0.0.0.0/0")
 
 
 def _tags(a):
@@ -257,50 +258,37 @@ def _target_role(nsg, guarded):
         (nsg.get("name") or "").rsplit("-", 1)[-1] or None
 
 
-def _sources(rule):
-    given = (*(rule.get("source_address_prefixes") or ()), rule.get("source_address_prefix"))
-    return tuple(p for p in given if p)
+# what claims a network security group, so its rules are its claimant's (a database's delegated subnet), not the
+# record's firewall rules: each a function of the pairs -> the ids (lower case) of the groups it claims
+CLAIMS = (database_security_groups,)
 
 
-def _cidr(prefix):
-    """A source prefix as a CIDR: any source is 0.0.0.0/0, a bare address a /32; None for a service tag."""
-    if prefix.lower() in ANY:
-        return "0.0.0.0/0"
-    if all(c in "0123456789./:" for c in prefix):
-        return prefix if "/" in prefix else f"{prefix}/32"
-    return None
+def _claimed(found):
+    return frozenset().union(*(frozenset(claim(found)) for claim in CLAIMS))
 
 
-def _ports(rule):
-    given = (*(rule.get("destination_port_ranges") or ()), rule.get("destination_port_range"))
-    return tuple(str(p) for p in given if p)
-
-
-def _firewall(found):
-    """(firewall rules, notices): inbound allow rules of the security groups, by rule name."""
-    nsgs = {_low(g.get("id")): g for g in of_types(found, "azurerm_network_security_group")}
-    by_name = {(_low(g.get("resource_group_name")), _low(g.get("name"))): g for g in nsgs.values()}
+def _firewall(found, claimed=frozenset()):
+    """(firewall rules, notices): inbound allow rules of the security groups other readers don't claim, by rule
+    name."""
+    groups = {_low(g.get("id")): g for g in of_types(found, "azurerm_network_security_group")}
     guarded = _guarded_roles(found)
-    separate = [(by_name.get((_low(r.get("resource_group_name")), _low(r.get("network_security_group_name")))) or {}, r)
-                for r in of_types(found, "azurerm_network_security_rule")]
-    inline = [(g, r) for g in nsgs.values() for r in g.get("security_rule") or ()]
-    allowed = [(g, r) for g, r in (*separate, *inline) if r.get("name")
-               and _low(r.get("direction")) == "inbound" and _low(r.get("access")) == "allow"]
+    separate = [(groups.get(k) or {}, r) for k, r in group_rules(found) if k not in claimed]
+    allowed = [(g, r) for g, r in separate if r.get("name") and allows_in(r)]
     names = list(dict.fromkeys(r["name"] for _, r in allowed))
 
     def one_rule(name):
         mine = [(g, r) for g, r in allowed if r["name"] == name]
         protocol = next((_low(r.get("protocol")) for _, r in mine if _low(r.get("protocol")) in ("tcp", "udp")), None)
         return resource("firewall", name, {
-            "ciamSourceCidr": sorted({_cidr(p) for _, r in mine for p in _sources(r) if _cidr(p)}),
-            "ciamPort": sorted({p for _, r in mine for p in _ports(r) if p.isdigit()}, key=int),
+            "ciamSourceCidr": sorted({source_cidr(p) for _, r in mine for p in rule_sources(r) if source_cidr(p)}),
+            "ciamPort": sorted({p for _, r in mine for p in rule_ports(r) if p.isdigit()}, key=int),
             "ciamProtocol": protocol,
             "ciamRulePriority": next((r.get("priority") for _, r in mine if r.get("priority")), None),
             "ciamTargetRole": next((_target_role(g, guarded) for g, _ in mine if g), None)}, name=name)
     other = Counter(f"{_low(r.get('direction')) or '?'} {_low(r.get('access')) or '?'}"
-                    for g, r in (*separate, *inline) if (g, r) not in allowed)
-    tags = sorted({(r["name"], p) for _, r in allowed for p in _sources(r) if not _cidr(p)})
-    ranges = sorted({(r["name"], p) for _, r in allowed for p in _ports(r) if not p.isdigit()})
+                    for g, r in separate if (g, r) not in allowed)
+    tags = sorted({(r["name"], p) for _, r in allowed for p in rule_sources(r) if not source_cidr(p)})
+    ranges = sorted({(r["name"], p) for _, r in allowed for p in rule_ports(r) if not p.isdigit()})
     return (tuple(one_rule(n) for n in names),
             (*(f"security rules ({n} {kind}): not read (the record holds inbound allow rules)"
                for kind, n in sorted(other.items())),
@@ -543,17 +531,18 @@ def _streams(found):
 def pairs_resources(pairs):
     """(resources, notices) of (Terraform resource type, attributes) pairs: what every Azure source is read into
     (Terraform state as it is; CLI output normalized to the same attribute names, opsdir_adapter_azure.cli)."""
-    rules, rule_notices = _firewall(pairs)
+    rules, rule_notices = _firewall(pairs, _claimed(pairs))
     iam, iam_notices = iam_resources(pairs)
     services = _services(pairs)
     edge, edge_notices = _edge(pairs, services)
     network, network_notices = network_resources(pairs)
+    volumes, volume_notices = volume_resources(pairs)
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *services, *rules, *_secrets(pairs),
              *_keys(pairs), *object_store_resources(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs),
              *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
-             *_canaries(pairs), *iam, *edge, *network, *database_resources(pairs)),
-            (*rule_notices, *iam_notices, *edge_notices, *network_notices))
+             *_canaries(pairs), *iam, *edge, *network, *database_resources(pairs), *volumes),
+            (*rule_notices, *iam_notices, *edge_notices, *network_notices, *volume_notices))
 
 
 def state_resources(text):

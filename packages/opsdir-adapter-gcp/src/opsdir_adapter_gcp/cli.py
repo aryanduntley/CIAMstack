@@ -18,6 +18,11 @@ mapping reads them as reads Terraform state (opsdir_adapter_gcp.inventory.pairs_
   gcloud secrets list, gcloud kms keys list, gcloud storage buckets list, gcloud functions list, gcloud run jobs list,
   gcloud scheduler jobs list, gcloud builds triggers list, gcloud container clusters list, gcloud pubsub topics list,
   gcloud monitoring channels|policies|uptime list, gcloud logging buckets list      by their resource names and shapes
+  gcloud transfer jobs list                     Storage Transfer Service jobs (transferJobs/...), as their assets
+                                                (storagetransfer.googleapis.com/TransferJob): the buckets they copy
+  gcloud compute disks list, resource-policies list   disks (compute#disk: size, type, key, labels, the instances
+                                                using them, their snapshot schedules) and snapshot schedules
+                                                (compute#resourcePolicy), as their assets
   gcloud sql instances list                     Cloud SQL instances (sql#instance), as their assets
                                                 (sqladmin.googleapis.com/Instance) are: never a password
   gcloud projects describe <project>            project numbers (in Secret Manager's and others' names) read as IDs
@@ -43,7 +48,8 @@ from .cli_edge import KINDS as EDGE_KINDS, backend_attributes, edge_pairs, recor
 from .cli_iam import KINDS as IAM_KINDS, iam_kind, iam_pairs
 from .cli_network import KINDS as NETWORK_KINDS, network_pairs, network_shape
 from .databases import sql_instance
-from .storage import bucket_attributes
+from .storage import bucket_attributes, transfer_job_attributes
+from .volumes import disk_attributes, policy_attributes
 from .inventory import PROVIDER, pairs_resources
 from .names import name_parts, resource_id
 
@@ -55,6 +61,7 @@ KINDS = MappingProxyType({
     "compute.googleapis.com/Subnetwork": "subnetwork", "compute#subnetwork": "subnetwork",
     "compute.googleapis.com/Instance": "instance", "compute#instance": "instance",
     "compute.googleapis.com/Disk": "disk", "compute#disk": "disk",
+    "compute.googleapis.com/ResourcePolicy": "resource-policy", "compute#resourcePolicy": "resource-policy",
     "compute.googleapis.com/Firewall": "firewall", "compute#firewall": "firewall",
     "compute.googleapis.com/ForwardingRule": "forwarding-rule", "compute#forwardingRule": "forwarding-rule",
     "compute.googleapis.com/BackendService": "backend-service",
@@ -66,6 +73,7 @@ KINDS = MappingProxyType({
     "compute.googleapis.com/InstanceTemplate": "template", "compute#instanceTemplate": "template",
     "dns.googleapis.com/ResourceRecordSet": "record-set", "dns#resourceRecordSet": "record-set",
     "storage.googleapis.com/Bucket": "bucket", "storage#bucket": "bucket",
+    "storagetransfer.googleapis.com/TransferJob": "transfer-job",
     "secretmanager.googleapis.com/Secret": "secret",                    # regional ones too (a location)
     "cloudkms.googleapis.com/CryptoKey": "key",
     "cloudfunctions.googleapis.com/Function": "function",               # both generations
@@ -125,6 +133,8 @@ def _shape(item):
         return "trigger"
     if (item.get("storage_url") or "").startswith("gs://"):
         return "bucket"
+    if (item.get("name") or "").startswith("transferJobs/"):
+        return "transfer-job"
     return None
 
 
@@ -225,7 +235,8 @@ def _instances(items):
             "id": _self(d), "name": d.get("name"), "zone": _last(d.get("zone")), "instance_id": d.get("id"),
             "machine_type": _last(d.get("machineType")), "hostname": d.get("hostname"),
             "tags": (d.get("tags") or {}).get("items") or [], "labels": d.get("labels") or {}, "metadata": metadata,
-            "boot_disk": [{"initialize_params": [{"image": images.get(resource_id(boot.get("source")))}]}],
+            "boot_disk": [{"source": resource_id(boot.get("source")) or None,
+                           "initialize_params": [{"image": images.get(resource_id(boot.get("source")))}]}],
             "network_interface": [{"network_ip": nic.get("networkIP"), "network": resource_id(nic.get("network")),
                                    "subnetwork": resource_id(nic.get("subnetwork"))}]})
     return [instance(d) for d, _ in _of(items, "instance")]
@@ -332,7 +343,8 @@ def _references(items):
                                           "rotation_period": d.get("rotationPeriod"),
                                           "version_template": [{"protection_level": level}]})
     return [*(secret(d) for d, _ in _of(items, "secret")), *(key(d) for d, _ in _of(items, "key")),
-            *(("google_storage_bucket", bucket_attributes(d)) for d, _ in _of(items, "bucket"))]
+            *(("google_storage_bucket", bucket_attributes(d)) for d, _ in _of(items, "bucket")),
+            *(("google_storage_transfer_job", transfer_job_attributes(d)) for d, _ in _of(items, "transfer-job"))]
 
 
 def _automation(items):
@@ -469,6 +481,9 @@ def cli_resources(texts, at=None):
                                           *_references(items), *_automation(items), *_clusters(items),
                                           *_monitoring(items), *iam_pairs(items, at),
                                           *(sql_instance(d) for d, _ in _of(items, "database")),
+                                          *(("google_compute_disk", disk_attributes(d)) for d, _ in _of(items, "disk")),
+                                          *(("google_compute_resource_policy", policy_attributes(d))
+                                            for d, _ in _of(items, "resource-policy")),
                                           *network_pairs(lambda kind: _of(items, kind))], items)
     pairs, scope_notices = _scoped(pairs)
     resources, notices = pairs_resources(pairs)

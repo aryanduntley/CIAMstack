@@ -10,7 +10,7 @@ from opsdir.domains.access.grants import ALLOWED, DENIED, UNKNOWN, effective
 from opsdir_adapter_gcp.access import ACCESS
 from opsdir_adapter_gcp.iam import iam_resources, permission_v1
 from opsdir_adapter_gcp.inventory import read_terraform_state
-from support import BARE, SUPERS
+from support import BARE, SUPERS, imported_directory
 
 P = "projects/ciam-prod"
 SECRET = f"{P}/secrets/pf-admin-password"
@@ -104,7 +104,7 @@ def _row(dn, classes, **attrs):
 
 
 def _env(*extra):
-    d = make_directory((), SUPERS, (
+    d = imported_directory((), SUPERS, (
         _row("cloud=main,ou=environments,dc=ciam-ops", ("ciamCloud",), cloud="main", ciamCloudProvider="gcp",
              ciamRegion="us-central1"),
         _row(ENV, ("ciamEnvironment",), env="prod"),

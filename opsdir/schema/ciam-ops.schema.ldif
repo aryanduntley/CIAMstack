@@ -1942,6 +1942,63 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.443 NAME 'ciamStorageReplicaRef' DES
   bucket or container URI): each environment\27s own' EQUALITY caseIgnoreMat
  ch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding
  ' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.444 NAME 'ciamVolumeKind' DESC 'Whic
+ h disk of a server it is: the one it starts from (boot), or one it keeps da
+ ta on (data)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:boot|data' X-ORIGIN
+  'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.445 NAME 'ciamMountPath' DESC 'Where
+  a server mounts a data volume (/opt/ds/db): what its products keep there' 
+ EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE 
+ X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.446 NAME 'ciamVolumeSizeGb' DESC 'Th
+ e disk\27s size in GB: each environment\27s own, but a move must not make i
+ t smaller' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGL
+ E-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'int' X-MIN '1' X-ORIGIN 'opsd
+ ir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.447 NAME 'ciamVolumeClass' DESC 'Wha
+ t kind of disk it is: magnetic (standard), general-purpose SSD (ssd), or SS
+ D with provisioned IOPS (provisioned); each cloud\27s own type for it is th
+ e adapter\27s' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.1
+ 5 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:standard|ssd|provi
+ sioned' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.448 NAME 'ciamIops' DESC 'The I/O op
+ erations per second the disk is provisioned for, where its type takes them'
+  EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-
+ PORTABILITY 'intent' X-VALUE-TYPE 'int' X-MIN '1' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.449 NAME 'ciamThroughputMb' DESC 'Th
+ e throughput the disk is provisioned for, in MB/s, where its type takes it'
+  EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-
+ PORTABILITY 'intent' X-VALUE-TYPE 'int' X-MIN '1' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.450 NAME 'ciamVolumeEncrypted' DESC 
+ 'Whether the disk is encrypted at rest (with ciamEncryptedByRole, else the 
+ environment\27s disk-encryption key)' EQUALITY booleanMatch SYNTAX 1.3.6.1.
+ 4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'bool
+ ' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.451 NAME 'ciamSnapshotPolicyRole' DE
+ SC 'The binding role of the snapshot policy that copies the disk' EQUALITY 
+ caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABI
+ LITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.452 NAME 'ciamSnapshotEveryHours' DE
+ SC 'How often a snapshot policy takes a snapshot, in hours (24 when absent)
+ ' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X
+ -PORTABILITY 'intent' X-VALUE-TYPE 'int' X-MIN '1' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.453 NAME 'ciamSnapshotAt' DESC 'When
+  a snapshot policy takes its first snapshot of the day, HH:MM in UTC' EQUAL
+ ITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-POR
+ TABILITY 'intent' X-VALUE-TYPE 'string' X-PATTERN '([01][0-9]|2[0-3]):[0-5]
+ [0-9]' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.454 NAME 'ciamCopyRegion' DESC 'A re
+ gion a snapshot policy copies each snapshot to (each environment\27s own)' 
+ EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY
+  'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.455 NAME 'ciamSnapshotConsistency' D
+ ESC 'What a snapshot holds of a running server: the disk as a power cut wou
+ ld leave it (crash), or what the application was asked to flush first (appl
+ ication). Neither is a backup of a database or directory the server runs' E
+ QUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X
+ -PORTABILITY 'intent' X-VALUE-TYPE 'enum:crash|application' X-ORIGIN 'opsdi
+ r' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -2337,9 +2394,9 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.84 NAME 'ciamNetworkAcl' DESC 'A stat
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.85 NAME 'ciamPrivateEndpoint' DESC 'A
   private way to a service the platform uses, so its traffic stays off the i
  nternet' SUP ciamBinding STRUCTURAL MUST ciamPrivateService MAY ( ciamPriva
- teEndpointKind $ ciamReachesRole $ ciamSubnetRole $ ciamFrontendIp $ ciamDn
- sZone $ ciamDnsZoneRef $ ciamPrivateDns $ ciamManagedBy ) X-ORIGIN 'opsdir'
-  )
+ teEndpointKind $ ciamReachesRole $ ciamSubnetRole $ ciamFrontendIp $ ciamCi
+ dr $ ciamDnsZone $ ciamDnsZoneRef $ ciamPrivateDns $ ciamManagedBy ) X-ORIG
+ IN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.86 NAME 'ciamEndpointService' DESC 'A
   service name exposed privately to other networks or accounts, and who may 
  connect' SUP ciamBinding STRUCTURAL MUST ciamServiceRole MAY ( ciamServiceA
@@ -2377,10 +2434,25 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.92 NAME 'ciamExternalHost' DESC 'A sy
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.93 NAME 'ciamDatabase' DESC 'A manage
  d database an environment runs for the stack (a repository, a session or to
  ken store): its engine and version, endpoint, availability, encryption and 
- backups (ciamRetentionDays: automated backups kept), parameters and the sec
- ret role of its credentials' SUP ciamBinding STRUCTURAL MUST ciamDbEngine M
- AY ( ciamProviderRef $ ciamFqdn $ ciamPort $ ciamDbEngineVersion $ ciamDbEd
- ition $ ciamDbService $ ciamInstanceSize $ ciamDbStorageGb $ ciamZone $ cia
- mDbHighAvailability $ ciamEncryptedByRole $ ciamDbTlsRequired $ ciamRetenti
- onDays $ ciamDbPointInTime $ ciamDbDeletionProtection $ ciamDbParameter $ c
- iamSubnetRole $ ciamDbCredentialRole $ ciamManagedBy ) X-ORIGIN 'opsdir' )
+ backups (ciamRetentionDays: automated backups kept), parameters, the ranges
+  admitted to its port (ciamSourceCidr) and the secret role of its credentia
+ ls' SUP ciamBinding STRUCTURAL MUST ciamDbEngine MAY ( ciamProviderRef $ ci
+ amFqdn $ ciamPort $ ciamDbEngineVersion $ ciamDbEdition $ ciamDbService $ c
+ iamInstanceSize $ ciamDbStorageGb $ ciamZone $ ciamDbHighAvailability $ cia
+ mEncryptedByRole $ ciamDbTlsRequired $ ciamRetentionDays $ ciamDbPointInTim
+ e $ ciamDbDeletionProtection $ ciamDbParameter $ ciamSubnetRole $ ciamSourc
+ eCidr $ ciamDbCredentialRole $ ciamManagedBy ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.94 NAME 'ciamVolume' DESC 'A disk eve
+ ry server of a role (ciamTargetRole) has in an environment, its compute gro
+ ups\27 included: its boot disk or a data volume, how big and fast it is, it
+ s encryption and the snapshot policy that copies it' SUP ciamBinding STRUCT
+ URAL MUST ( ciamTargetRole $ ciamVolumeKind ) MAY ( ciamMountPath $ ciamVol
+ umeSizeGb $ ciamVolumeClass $ ciamIops $ ciamThroughputMb $ ciamVolumeEncry
+ pted $ ciamEncryptedByRole $ ciamSnapshotPolicyRole $ ciamManagedBy ) X-ORI
+ GIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.95 NAME 'ciamSnapshotPolicy' DESC 'Ho
+ w an environment snapshots its disks: how often, when, how long each snapsh
+ ot is kept (ciamRetentionDays) and the regions it is copied to' SUP ciamBin
+ ding STRUCTURAL MUST ciamRetentionDays MAY ( ciamSnapshotEveryHours $ ciamS
+ napshotAt $ ciamCopyRegion $ ciamSnapshotConsistency $ ciamProviderRef $ ci
+ amManagedBy ) X-ORIGIN 'opsdir' )

@@ -14,8 +14,8 @@ import shlex
 
 from ...core.directory import one, rdn_value
 from ...core.environment import of_class, one_role
-from ...core.inventory import short_name
 from .grants import ALLOWED, DENIED, UNKNOWN, rows_for
+from .imports import short_name
 from .principals import permits, principals
 
 FOLDER = "evaluations"

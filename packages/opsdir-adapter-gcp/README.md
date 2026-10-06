@@ -70,9 +70,10 @@ What the core `network` domain records and the stack keeps itself (no `ciamManag
 |---|---|
 | `ciamFirewallModel` `policy` on the `network` binding | A network firewall policy instead of VPC firewall rules, in the network's project (a Shared VPC's host project; the deployer needs rights there): `google_compute_network_firewall_policy` and its association with the network (unless the network policy, `ciamFirewallPolicy` scope `network`, is kept by someone else: its `ciamProviderRef` then names it), a tag key with purpose `GCE_FIREWALL` for the network (or the one `ciamTagKeyRef` names) and a value per server role bound to each instance (`google_tags_location_tag_binding`; the deployer needs the Tag User role on the values, an access request). The record's rules become policy rules targeting the role's tag value (priorities pinned as before); rules a hierarchical policy holds (`ciamPolicyRole`) are read, never rendered. The health-check and proxy rules of load balancers follow the model. `ciamPolicyOrder` is the network's `network_firewall_policy_enforcement_order` (the landing zone's): a comment |
 | `ciamPrivateEndpoint` kind `all-apis` | Private Service Connect for Google's APIs in the network's project: a global internal address (`PRIVATE_SERVICE_CONNECT`, `ciamFrontendIp`) and a global forwarding rule to `all-apis` (its name 1-20 lowercase letters and digits); with `ciamPrivateDns`, a comment for the landing zone's `googleapis.com` zone |
-| Kinds `subnet-access`, `peered-service`, `gateway`, `interface` | A comment: Private Google Access and private services access are the landing zone's subnet and network settings; Google Cloud has no gateway endpoints; an endpoint to a published service needs its service attachment |
+| `ciamPrivateEndpoint` kind `peered-service` with `ciamCidr` | Private services access (where managed databases' private addresses come from), in its keeper's root like any plumbing: a global internal address with purpose `VPC_PEERING` (`address`, `prefix_length` from the range; named by its provider ref) and the `google_service_networking_connection` reserving it, import blocks for both when it exists. The range is among the private ranges the egress allowlist admits |
+| Kinds `subnet-access`, `gateway`, `interface`; `peered-service` without a range | A comment: Private Google Access is the landing zone's subnet setting; Google Cloud has no gateway endpoints; an endpoint to a published service needs its service attachment; private services access needs its allocated range |
 | `ciamEndpointService` | A `google_compute_service_attachment` on the internal passthrough forwarding rule of the service name `ciamServiceRole` names, NAT subnets from `ciamSubnetRole` (PSC subnets the landing zone keeps), `ACCEPT_MANUAL` with a consumer accept list per `ciamAllowedPrincipal` (a project, or a network URL) when `ciamAcceptanceRequired`, else `ACCEPT_AUTOMATIC`. A public or application load balancer: a comment |
-| `ciamProxy` kind `firewall` the stack keeps | Under the policy model, egress rules for every role's tag value: `dest_fqdns` per port (a wildcard domain can't be an FQDN object: a comment), the ranges the stack reaches privately (its network, its interconnects', its private endpoints' addresses), then a deny of all other egress at the lowest priority. Under the rules model a comment: FQDN rules exist only in network firewall policies |
+| `ciamProxy` kind `firewall` the stack keeps | Under the policy model, egress rules for every role's tag value: `dest_fqdns` per port (a wildcard domain can't be an FQDN object: a comment), the ranges the stack reaches privately (its network, its interconnects', its private endpoints' addresses and ranges), then a deny of all other egress at the lowest priority. Under the rules model a comment: FQDN rules exist only in network firewall policies |
 | Other proxies | A comment: their allowlist is kept there |
 
 ### Managed databases
@@ -83,12 +84,24 @@ The core `data` domain's databases (`ciamDatabase`) the stack keeps render into 
 |---|---|
 | `ciamDatabase` | `google_sql_database_instance`: `database_version` from the engine, major version and edition (`POSTGRES_16`, `MYSQL_8_0`, `SQLSERVER_2019_ENTERPRISE`: Cloud SQL keeps minor versions current, so a re-import records the major version), `tier` from `ciamInstanceSize`, `disk_size`, the zone as `location_preference`, `REGIONAL` availability when zone-redundant (else `ZONAL`), labels `role` and `managed_by` |
 | `ciamRetentionDays`, `ciamDbPointInTime` | `backup_configuration`: enabled with `retained_backups` (daily backups kept), `point_in_time_recovery_enabled` (MySQL: `binary_log_enabled`) |
-| Network, `ciamDbTlsRequired` | A private IP on the environment's network (`private_network`, no public IPv4; private services access is the landing zone's), `ssl_mode` `ENCRYPTED_ONLY` or `ALLOW_UNENCRYPTED_AND_ENCRYPTED` |
+| Network, `ciamDbTlsRequired` | A private IP on the environment's network (`private_network`, no public IPv4; private services access is a `peered-service` private endpoint, usually the landing zone's), `ssl_mode` `ENCRYPTED_ONLY` or `ALLOW_UNENCRYPTED_AND_ENCRYPTED` |
+| `ciamSourceCidr` | A comment: Cloud SQL's private IP is in Google's service producer network, which the network's firewall rules don't reach; the private services access peering carries the traffic |
 | `ciamDbParameter` | A `database_flags` block per parameter |
 | `ciamEncryptedByRole` (a `gcp-kms://` key) | `encryption_key_name`; a comment: the Cloud SQL service agent needs `roles/cloudkms.cryptoKeyEncrypterDecrypter` on the key |
 | `ciamDbDeletionProtection` | `deletion_protection` (Terraform) and `deletion_protection_enabled` (the API) |
 | `ciamDbCredentialRole` (a global `gcp-sm://` secret) | The password read when applied by an `ephemeral google_secret_manager_secret_version` and written write-only: a `google_sql_user` with `password_wo` (PostgreSQL, MySQL; the login an input, `<database>_admin_login`), SQL Server's `root_password_wo`. No Terraform state holds it. A regional secret has no ephemeral read: a comment |
 | `ciamProviderRef` recorded | An `import` block (`projects/<project>/instances/<name>`) |
+
+### Disks and snapshot schedules
+
+The core `data` domain's volumes (`ciamVolume`, each server role's disks) and snapshot policies (`ciamSnapshotPolicy`) render into `main.tf` (`opsdir_adapter_gcp.volumes`). Classes to types: `standard` pd-standard, `ssd` pd-ssd, `provisioned` hyperdisk-balanced (it needs a machine series that takes Hyperdisk: a comment).
+
+| Record | Renders as |
+|---|---|
+| The role's boot volume | Each instance's `boot_disk`: `initialize_params` `size`, `type` (a provisioned boot disk is pd-ssd, said) and labels `volume`, `role`; `kms_key_self_link` from its key role (`ciamEncryptedByRole`, else the `disk-encryption` key). Without one, the boot disk is as before |
+| Each data volume of the role | Per instance: a `google_compute_disk` in its zone (size, type, `provisioned_iops` and `provisioned_throughput` where the type takes them, `disk_encryption_key`), labelled `volume`, `role`, `server`, `snapshot_policy`, and a `google_compute_attached_disk` with the volume as its device name; the instance mounts it at `ciamMountPath` itself (a comment) |
+| `ciamVolumeEncrypted` `FALSE`, an unbound key role | A comment: Google Cloud encrypts every disk at rest, with its own key when none is named |
+| `ciamSnapshotPolicy` the stack keeps | A `google_compute_resource_policy` `ciam-<env>-<name>` with a snapshot schedule: `daily_schedule` every 24 hours, `hourly_schedule` every 1 to 23 (more is a comment), from `ciamSnapshotAt` on the hour; `max_retention_days`, snapshots kept when the disk is deleted; `storage_locations` the first `ciamCopyRegion` (one location: more are a comment); `guest_flush` when application-consistent; an `import` block when its provider ref is recorded. Attached to each disk that follows it by `google_compute_disk_resource_policy_attachment` (a boot disk by its instance's name). One someone else keeps: a comment |
 
 ## Reading an environment back from Terraform state
 
@@ -111,6 +124,7 @@ The importer `gcp/terraform-state` reads Terraform state (format version 4, `has
 | `google_secret_manager_secret`, `google_secret_manager_regional_secret` | secret reference `gcp-sm://projects/<p>/[locations/<l>/]secrets/<name>`; automatic rotation when it has a rotation period (Secret Manager's rotation notifies; something must act on it) | reference URI |
 | `google_kms_crypto_key` | key reference `gcp-kms://<name>`: protection level (`SOFTWARE` → `software`, `HSM` → `hsm`, `HSM_SINGLE_TENANT` → `managed-hsm`, `EXTERNAL`/`EXTERNAL_VPC` → `external`), automatic rotation when it has a rotation period | reference URI |
 | `google_storage_bucket` | object store `gs://<bucket>` | storage reference |
+| `google_storage_transfer_job` (enabled; its replication spec, else a transfer spec from bucket to bucket) | the copied bucket's replica (`ciamStorageReplicaRef`, `gs://<sink>[/<path>]`) | the bucket's |
 | `google_cloudfunctions2_function`, `google_cloudfunctions_function`, `google_cloud_run_v2_job`, `google_cloudbuild_trigger` (+ `google_cloud_scheduler_job`) | job binding: runtime, and the schedules of the Cloud Scheduler jobs whose HTTP or Pub/Sub target names it | its resource name |
 | `google_compute_region_instance_group_manager`, `google_compute_instance_group_manager` (+ autoscaler, instance template) | compute group: the role its template's labels name, machine type, image, target size, min/max from the autoscaler, zones. Binding role label `bindingrole`, else `compute-<role>` | its resource name |
 | `google_container_cluster` (+ `google_container_node_pool`) | cluster: version, the add-ons it enables (from `addons_config`, workload identity, Secret Manager), node pools (`name: machine type, min-max`), node locations. Binding role label `bindingrole` or `role`, else `cluster` | its resource name |
@@ -160,6 +174,7 @@ What the network carries beyond networks, subnetworks and VPC firewall rules com
 | `google_compute_firewall_policy` (+ rules) | firewall policy (scope hierarchical): read, never rendered; its rules counted, not recorded |
 | `google_compute_route` | one route table per network (Google Cloud's routes are network-wide): `<destination> <kind> [<target>] [for <roles>]`, the roles those of the instances carrying the route's network tags |
 | `google_compute_global_address` (`PRIVATE_SERVICE_CONNECT`) + global forwarding rule to `all-apis` / `vpc-sc` | private endpoint `all-apis` (the forwarding rule its provider ref, the address its frontend, the address's label `role`); not a service name |
+| `google_compute_global_address` (`VPC_PEERING`) | private endpoint `peered-service`: private services access, its allocated range (`address`/`prefix_length`) as `ciamCidr`, the address its provider ref, its label `role`; what it serves is the record's |
 | `google_compute_service_attachment` | endpoint service: the forwarding rule it exposes, its URI for consumers, the projects and networks accepted, acceptance, its PSC NAT subnets |
 | `google_compute_network_peering`, `google_compute_vpn_tunnel` (+ router and router peer), `google_compute_interconnect_attachment` | interconnect depth: peering (`ACTIVE`: accepted; its other side the environment whose network binding is the peer network), VPN (peer address, BGP numbers), dedicated |
 | a subnetwork's `log_config` | flow log (scope subnet) |
@@ -174,6 +189,18 @@ A tag key the platform's own Terraform made (its description says `Managed by op
 | Google Cloud resource | Record entry |
 |---|---|
 | `google_sql_database_instance` | database: engine, major version and edition from `database_version`, service `cloud-sql`, endpoint (`dns_name`) and the engine's port, tier, disk, zone, `zone-redundant` when `REGIONAL`, TLS from `ssl_mode` (`ENCRYPTED_ONLY`, `TRUSTED_CLIENT_CERTIFICATE_REQUIRED`, else `require_ssl`), retained backups (7 when enabled without a count) and point-in-time restore (PITR or binary log), deletion protection, its flags; its CMEK key as a role |
+
+### Disks and snapshot schedules, read back
+
+`opsdir_adapter_gcp.volumes` (Cloud Asset Inventory's `compute.googleapis.com/Disk` and `ResourcePolicy`, `gcloud compute disks list` and `resource-policies list` normalize to the same names). Volumes and snapshot policies are matched by name; a new one needs its label `role`.
+
+| Google Cloud resource | Record entry |
+|---|---|
+| `google_compute_disk` (+ `google_compute_attached_disk`), grouped by label `volume` | data volume of the role its instances run (an instance's boot disk: its role's boot volume): the most common size, class, IOPS and throughput, its key and the schedule its resource policies (or a policy attachment) name as roles |
+| An instance's `boot_disk` labelled `volume` (Terraform state, where no disk of its own is reported) | the role's boot volume |
+| `google_compute_resource_policy` with a snapshot schedule | snapshot policy: hours (daily is 24), start time, `max_retention_days`, a storage location outside its region as its copy region, consistency from `guest_flush` |
+
+A data disk the environment's instances use without a `volume` label is named.
 
 ## Reading an environment from Cloud Asset Inventory and gcloud
 
@@ -200,6 +227,8 @@ done
 gcloud scheduler jobs list --location=$R --project=$P --format=json       > $out/scheduler.json
 gcloud beta monitoring channels list --project=$P --format=json           > $out/channels.json
 gcloud sql instances list --project=$P --format=json                      > $out/sql-instances.json   # also in assets
+gcloud compute disks list --project=$P --format=json                      > $out/disks.json           # also in assets
+gcloud compute resource-policies list --project=$P --format=json          > $out/resource-policies.json
 
 # the edge (also in the asset export): URL maps, HTTPS proxies, SSL and security policies, health checks, zones
 for kind in url-maps target-https-proxies ssl-policies health-checks security-policies; do
@@ -329,11 +358,14 @@ It adds no required roles, planner checks or schema of its own; the environment'
 - **Edge.** Preconfigured WAF exclusions apply on every path; Adaptive Protection (global backend services) isn't rendered for the regional load balancer.
 - **Cloud Asset Inventory and `gcloud` shapes** follow Google's API references and the gcloud source (checked 2026-10-02); like the Terraform, the importer hasn't yet read a live project (milestone 7.2).
 - **Databases someone else keeps** (`ciamManagedBy`) are named in a comment, not rendered into their keeper's root yet; Oracle and MariaDB have no Cloud SQL and aren't rendered; read replicas aren't modeled yet (DR, milestone 4.10).
+- **Managed instance groups' disks:** the adapter doesn't render instance templates yet, so their volumes come from the record only, and an instance template's disks aren't read into volumes yet. A snapshot schedule stores snapshots in one location; a policy copying to several regions renders the first.
 - **Firewall model.** Classic VPC firewall rules with network tags stay the default; an environment chooses network firewall policies with secure tags (IAM-governed targeting) with `ciamFirewallModel` `policy`. The importers read both (see [The network depth, read back](#the-network-depth-read-back)); hierarchical policies are read, never rendered.
 
 ## Tests
 
-`tests/test_gcp_databases.py`: managed databases rendered (a Cloud SQL instance with its key, write-only password from an ephemeral Secret Manager read, flags, backups and import; MySQL's binary log and TLS allowed; SQL Server's root password; engines Cloud SQL doesn't run and databases others keep named) and read back from state (root password and SQL users never read), Cloud Asset Inventory and gcloud (the same resource).
+`tests/test_gcp_volumes.py`: disks rendered (the boot volume on the boot disk with labels and key, data volumes as attached disks with provisioned IOPS and throughput, schedules attached to the data and boot disks) and snapshot schedules (daily and hourly, on the hour, one storage location, guest flush, an interval it can't take named, import block), read back from state and Cloud Asset Inventory / gcloud (boot disks among the disks, keys without their version, schedules linked through the disks' resource policies or attachments, an unlabelled data disk named).
+
+`tests/test_gcp_databases.py`: managed databases rendered (a Cloud SQL instance with its key, write-only password from an ephemeral Secret Manager read, flags, backups and import; MySQL's binary log and TLS allowed; SQL Server's root password; engines Cloud SQL doesn't run and databases others keep named; the ranges it admits a comment) and read back from state (root password and SQL users never read), Cloud Asset Inventory and gcloud (the same resource).
 
 `tests/test_gcp_cli_edge.py`: the edge from gcloud output: a forwarding rule through proxy, URL map and backend service (SSL policy, health check, affinity, timeout, draining), Cloud Armor rules, managed zones and a forwarding zone, weighted routing with the other answer named.
 
@@ -359,9 +391,9 @@ It adds no required roles, planner checks or schema of its own; the environment'
 
 `tests/test_gcp_state.py`: the Terraform state importer: networks, subnetworks, servers with their exact role and product, firewall rules by name (probe rules left out; what can't be recorded named), a forwarding rule as a service named by its DNS record, secrets, keys, storage, jobs, compute groups, clusters, monitoring; drift found and recorded.
 
-`tests/test_gcp_network.py`: the policy firewall model (policy and association in the network's project, tag key and values, instance tag bindings, rules by secure tag, a recorded tag key and a policy someone else keeps, hierarchical rules read only, probe and proxy rules following the model), the rules model unchanged, a PSC endpoint for Google's APIs, what the landing zone keeps, a service attachment with its accept lists, the egress allowlist ending in a deny, nothing rendered without records.
+`tests/test_gcp_network.py`: the policy firewall model (policy and association in the network's project, tag key and values, instance tag bindings, rules by secure tag, a recorded tag key and a policy someone else keeps, hierarchical rules read only, probe and proxy rules following the model), the rules model unchanged, a PSC endpoint for Google's APIs, what the landing zone keeps, the egress private rule admitting private services access, a service attachment with its accept lists, the egress allowlist ending in a deny, nothing rendered without records.
 
-`tests/test_gcp_network_state.py`: the policy firewall model read back (rules by secure tag as the bound role's, probe rules left out, the egress allowlist, the enforcement order, hierarchical rules counted), routes as a network-wide table, PSC for Google's APIs as a private endpoint and not a service, service attachments, peering and VPN depth, subnet flow logs, Cloud NAT's allocation; Cloud Asset Inventory and gcloud reading the same.
+`tests/test_gcp_network_state.py`: the policy firewall model read back (rules by secure tag as the bound role's, probe rules left out, the egress allowlist, the enforcement order, hierarchical rules counted), routes as a network-wide table, PSC for Google's APIs as a private endpoint and not a service, private services access as a peered private endpoint with its range, service attachments, peering and VPN depth, subnet flow logs, Cloud NAT's allocation; Cloud Asset Inventory and gcloud reading the same.
 
 Installing the package registers it with opsdir (entry point `opsdir.adapters`: `gcp`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.
 

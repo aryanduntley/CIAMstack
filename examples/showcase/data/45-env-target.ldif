@@ -795,6 +795,7 @@ ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
  roups/rg-ciam-prod/providers/Microsoft.DBforPostgreSQL/flexibleServers/psql-c
  iam-prod-pf-grants
 ciamRetentionDays: 7
+ciamSourceCidr: 10.60.2.0/24
 ciamSubnetRole: subnet-db
 ciamZone: 1
 

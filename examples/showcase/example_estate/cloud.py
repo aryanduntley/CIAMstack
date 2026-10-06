@@ -63,7 +63,8 @@ def _res(mode, type_, name, attrs):
 def _source_ids(p):
     subnets = {cn: ref for cn, _, ref, _, _ in p["subnets"]}
     instances = {cn: f"i-0{_hex('instance', cn, n=16)}" for cn, *_ in p["servers"]}
-    groups = {role: f"sg-0{_hex('group', role, n=16)}" for role in dict.fromkeys(s[1] for s in p["servers"])}
+    roles = (*(s[1] for s in p["servers"]), *(role for _, _, role, _ in p["databases"]))
+    groups = {role: f"sg-0{_hex('group', role, n=16)}" for role in dict.fromkeys(roles)}
     return subnets, instances, groups
 
 
@@ -84,8 +85,12 @@ def _aws_servers(p, subnets, instances, groups, resized):
 
 
 def _aws_firewall(p, groups):
-    return [*(_res("managed", "aws_security_group", role, {"id": gid, "name": f"ciam-prod-{role}",
-                                                           "vpc_id": p["net"][1], "ingress": []})
+    """The security groups (a database's carries its role and name: no instance says what it guards) and the rules."""
+    databases = {role: cn for _, cn, role, _ in p["databases"]}
+    return [*(_res("managed", "aws_security_group", role, {
+                "id": gid, "name": f"ciam-prod-{role}", "vpc_id": p["net"][1], "ingress": [],
+                **({"tags": {"Name": databases[role], "Role": role, "ManagedBy": "opsdir"}}
+                   if role in databases else {})})
               for role, gid in groups.items()),
             *(_res("managed", "aws_vpc_security_group_ingress_rule", f"{cn}_{i}_{port}", {
                 "security_group_rule_id": f"sgr-0{_hex(cn, cidr, port, n=16)}",
@@ -399,9 +404,10 @@ def _aws_network_depth(p):
     return out
 
 
-def _aws_databases(p):
+def _aws_databases(p, groups):
     """The managed databases as the stack's Terraform made them: each RDS instance with its subnet and parameter
-    groups (RDS keeps the master password in Secrets Manager: the state holds the secret's ARN, never the password)."""
+    groups and its security group, whose rules admit its clients' ranges (RDS keeps the master password in Secrets
+    Manager: the state holds the secret's ARN, never the password)."""
     out = []
     for _, cn, role, a in p["databases"]:
         params = [{"name": k, "value": v} for k, v in (x.split("=", 1) for x in a["ciamDbParameter"])]
@@ -420,10 +426,15 @@ def _aws_databases(p):
                     "backup_retention_period": int(a["ciamRetentionDays"]),
                     "deletion_protection": a["ciamDbDeletionProtection"] == "TRUE", "storage_encrypted": True,
                     "kms_key_id": p["key"][0].split("://", 1)[1], "db_subnet_group_name": cn,
-                    "parameter_group_name": cn, "publicly_accessible": False,
+                    "parameter_group_name": cn, "vpc_security_group_ids": [groups[role]], "publicly_accessible": False,
                     "master_user_secret": [{"secret_arn": p["secret"](a["ciamDbCredentialRole"]).split("://", 1)[1],
                                             "secret_status": "active"}],
-                    "tags": tags})]
+                    "tags": tags}),
+                *(_res("managed", "aws_vpc_security_group_ingress_rule", f"{role}_{i}", {
+                    "security_group_rule_id": f"sgr-0{_hex(role, cidr, n=16)}", "security_group_id": groups[role],
+                    "cidr_ipv4": cidr, "from_port": int(a["ciamPort"]), "to_port": int(a["ciamPort"]),
+                    "ip_protocol": "tcp", "description": f"clients of database {cn} ({role})"})
+                  for i, cidr in enumerate(a["ciamSourceCidr"]))]
     return out
 
 
@@ -434,7 +445,7 @@ def source_state():
     resources = [*_aws_network(p, subnets), *_aws_servers(p, subnets, instances, groups, {"pf-engine-2": "m6i.xlarge"}),
                  *_aws_firewall(p, groups), *_aws_services(p, instances), *_aws_keys(p, rotation=False),
                  *_aws_monitoring(), *_drifted_source(p, subnets, groups), *_source_iam(), *_aws_dns(p),
-                 *_aws_network_depth(p), *_aws_databases(p)]
+                 *_aws_network_depth(p), *_aws_databases(p, groups)]
     return _dumps({"version": 4, "terraform_version": "1.9.5", "serial": 214, "lineage": "5e0c-ciam-prod",
                    "outputs": {}, "resources": resources})
 
@@ -512,7 +523,10 @@ def _azure_services(p):
 
 
 def _azure_nsgs(p, priorities):
+    """The network security groups: one per server role on its servers' NICs, one per database role on the database's
+    delegated subnet (carrying its role: no NIC says what it guards)."""
     roles = list(dict.fromkeys(s[1] for s in p["servers"]))
+    databases = {role: (cn, _by_role(p["subnets"], a["ciamSubnetRole"])[0], a) for _, cn, role, a in p["databases"]}
     rules = [(trole, {"name": cn, "priority": priorities.get(cn, 100 + 10 * i), "direction": "Inbound",
                       "access": "Allow", "protocol": "Tcp", "sourceAddressPrefixes": cidrs,
                       "destinationPortRanges": [str(port) for port in ports],
@@ -523,7 +537,14 @@ def _azure_nsgs(p, priorities):
              "securityRules": [r for t, r in rules if t == role],
              "networkInterfaces": [{"id": _nic_id(s[0])} for s in p["servers"] if s[1] == role],
              "tags": {"ManagedBy": "opsdir"}}
-            for role in roles]
+            for role in roles] + \
+        [{"id": f"{NET}/networkSecurityGroups/nsg-ciam-prod-{role}", "name": f"nsg-ciam-prod-{role}",
+          "type": "Microsoft.Network/networkSecurityGroups", "resourceGroup": p["rg"],
+          "securityRules": [{"name": f"{role}-clients", "priority": 100, "direction": "Inbound", "access": "Allow",
+                             "protocol": "Tcp", "sourceAddressPrefixes": a["ciamSourceCidr"],
+                             "destinationPortRanges": [a["ciamPort"]], "description": f"clients of database {cn}"}],
+          "subnets": [{"id": _subnet_id(subnet)}], "tags": {"Name": cn, "Role": role, "ManagedBy": "opsdir"}}
+         for role, (cn, subnet, a) in databases.items()]
 
 
 def _azure_vault(p):
@@ -722,11 +743,20 @@ def _gcp_policy(p):
 
 
 def _gcp_google_apis(p):
-    """The Private Service Connect endpoint for Google's APIs, in the host project."""
-    (a,) = [a for oc, _, _, a in p["network"] if oc == "ciamPrivateEndpoint"]
-    (role,) = [r for oc, _, r, _ in p["network"] if oc == "ciamPrivateEndpoint"]
+    """The Private Service Connect endpoint for Google's APIs and the private services access range (the landing
+    zone's), in the host project."""
+    (role, a), = [(r, a) for oc, _, r, a in p["network"] if oc == "ciamPrivateEndpoint"
+                  and a["ciamPrivateEndpointKind"] == "all-apis"]
+    peered = [(r, a) for oc, _, r, a in p["network"] if oc == "ciamPrivateEndpoint"
+              and a["ciamPrivateEndpointKind"] == "peered-service"]
     address = f"{GAPI}/{HOST}/global/addresses/ciam-prod-psc-apis"
-    return [_asset("compute.googleapis.com/GlobalAddress", {
+    return [*(_asset("compute.googleapis.com/GlobalAddress", {
+                "kind": "compute#address", "name": x["ciamProviderRef"].rsplit("/", 1)[1],
+                "address": x["ciamCidr"].split("/")[0], "prefixLength": int(x["ciamCidr"].split("/")[1]),
+                "purpose": "VPC_PEERING", "addressType": "INTERNAL", "network": f"{GAPI}/{p['net'][1]}",
+                "selfLink": f"{GAPI}/{x['ciamProviderRef']}", "labels": {"role": r, "managed_by": "opsdir"}})
+              for r, x in peered),
+            _asset("compute.googleapis.com/GlobalAddress", {
                 "kind": "compute#address", "name": "ciam-prod-psc-apis", "address": a["ciamFrontendIp"],
                 "purpose": "PRIVATE_SERVICE_CONNECT", "addressType": "INTERNAL", "selfLink": address,
                 "labels": {"role": role, "managed_by": "opsdir"}}),

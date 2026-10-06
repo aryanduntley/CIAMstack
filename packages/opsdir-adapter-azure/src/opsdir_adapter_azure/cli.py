@@ -19,6 +19,7 @@ of the matching hashicorp/azurerm resource, so the same mapping reads them as re
   az network nsg rule list              Microsoft.Network/networkSecurityGroups/securityRules
   az network nat gateway list           Microsoft.Network/natGateways (+ public IP and prefix associations)
   az disk-encryption-set list           Microsoft.Compute/diskEncryptionSets
+  az disk list                          Microsoft.Compute/disks: managed disks (see cli_disk.py)
   az storage container-rm list          Microsoft.Storage/storageAccounts/blobServices/containers (with metadata)
   az keyvault secret list               https://<vault>.vault.azure.net/secrets/<name>: never a value
   az keyvault key list / key show       https://<vault>.vault.azure.net/keys/<name>: key type from `key show`
@@ -45,6 +46,7 @@ from opsdir.core.contract import Importer
 from opsdir.core.inventory import layout_import
 from .cli_edge import edge_items
 from .cli_iam import iam_items
+from .cli_disk import disk_items, os_disk_of
 from .cli_database import database_items
 from .cli_storage import storage_items
 from .cli_network import network_items
@@ -137,7 +139,7 @@ def _vms(items):
                 "size": (vm.get("hardwareProfile") or {}).get("vmSize"), "zone": (vm.get("zones") or [None])[0],
                 "private_ip_address": (vm.get("privateIps") or "").split(",")[0] or None,
                 "network_interface_ids": [n.get("id") for n in (vm.get("networkProfile") or {}).get("networkInterfaces") or ()
-                                          if n.get("id")], **image(vm)})
+                                          if n.get("id")], "os_disk": os_disk_of(vm), **image(vm)})
             for vm in _of(items, "Microsoft.Compute/virtualMachines")]
 
 
@@ -337,7 +339,7 @@ def items_resources(items):
                                             *_addresses(items), *_records(items), *_nsgs(items), *_nats(items),
                                             *_vault_items(items), *_stores(items), *_functions(items),
                                             *iam_items(items), *edge_items(items), *network_items(items),
-                                            *database_items(items), *storage_items(items)]))
+                                            *database_items(items), *storage_items(items), *disk_items(items)]))
     resources, notices = pairs_resources(pairs)
     return resources, (*scope_notices, *notices)
 

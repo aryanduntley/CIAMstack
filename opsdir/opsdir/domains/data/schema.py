@@ -5,9 +5,12 @@ in a move (the engine and its version, how available, encrypted and backed up it
 intent the planner compares; its size, the provider's offering and the secret holding its credentials are each
 environment's own. How an object store (infrastructure's ciamObjectStore, backup targets among them) keeps what it
 holds is defined here too: versioning, immutability, lifecycle, public access and replication, allowed on the object
-store's class."""
+store's class. A server role's disks (its boot disk and the volumes it keeps data on, each environment's own) and
+the snapshot policies that copy them are bindings too: what a move keeps of them (no smaller, encrypted, snapshotted
+as often and kept as long, copied to another region) is checked."""
 from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
-from .naming import EDITIONS, ENGINES, HIGH_AVAILABILITY, IMMUTABILITY, LIFECYCLE
+from .naming import (CONSISTENCY, EDITIONS, ENGINES, HIGH_AVAILABILITY, IMMUTABILITY, LIFECYCLE, SNAPSHOT_AT,
+                     VOLUME_CLASSES, VOLUME_KINDS)
 
 ATTRIBUTES = (
     AttributeDef(427, 'ciamDbEngine', enum_type(ENGINES), 'intent', True,
@@ -50,6 +53,37 @@ ATTRIBUTES = (
     AttributeDef(443, 'ciamStorageReplicaRef', 'string', 'binding', True,
                  "The object store its objects are copied to, usually in another region (a bucket or container URI): "
                  "each environment's own"),
+    AttributeDef(444, 'ciamVolumeKind', enum_type(VOLUME_KINDS), 'intent', True,
+                 'Which disk of a server it is: the one it starts from (boot), or one it keeps data on (data)'),
+    AttributeDef(445, 'ciamMountPath', 'string', 'intent', True,
+                 "Where a server mounts a data volume (/opt/ds/db): what its products keep there"),
+    AttributeDef(446, 'ciamVolumeSizeGb', 'int', 'binding', True,
+                 "The disk's size in GB: each environment's own, but a move must not make it smaller",
+                 (("X-MIN", "1"),)),
+    AttributeDef(447, 'ciamVolumeClass', enum_type(VOLUME_CLASSES), 'intent', True,
+                 "What kind of disk it is: magnetic (standard), general-purpose SSD (ssd), or SSD with provisioned "
+                 "IOPS (provisioned); each cloud's own type for it is the adapter's"),
+    AttributeDef(448, 'ciamIops', 'int', 'intent', True,
+                 'The I/O operations per second the disk is provisioned for, where its type takes them',
+                 (("X-MIN", "1"),)),
+    AttributeDef(449, 'ciamThroughputMb', 'int', 'intent', True,
+                 'The throughput the disk is provisioned for, in MB/s, where its type takes it', (("X-MIN", "1"),)),
+    AttributeDef(450, 'ciamVolumeEncrypted', 'bool', 'intent', True,
+                 'Whether the disk is encrypted at rest (with ciamEncryptedByRole, else the environment\'s '
+                 'disk-encryption key)'),
+    AttributeDef(451, 'ciamSnapshotPolicyRole', 'string', 'binding', True,
+                 'The binding role of the snapshot policy that copies the disk'),
+    AttributeDef(452, 'ciamSnapshotEveryHours', 'int', 'intent', True,
+                 'How often a snapshot policy takes a snapshot, in hours (24 when absent)', (("X-MIN", "1"),)),
+    AttributeDef(453, 'ciamSnapshotAt', 'string', 'intent', True,
+                 'When a snapshot policy takes its first snapshot of the day, HH:MM in UTC',
+                 (("X-PATTERN", SNAPSHOT_AT),)),
+    AttributeDef(454, 'ciamCopyRegion', 'string', 'binding', False,
+                 "A region a snapshot policy copies each snapshot to (each environment's own)"),
+    AttributeDef(455, 'ciamSnapshotConsistency', enum_type(CONSISTENCY), 'intent', True,
+                 "What a snapshot holds of a running server: the disk as a power cut would leave it (crash), or what "
+                 "the application was asked to flush first (application). Neither is a backup of a database or "
+                 "directory the server runs"),
 )
 # what an object store may record of how it keeps what it holds (allowed on infrastructure's ciamObjectStore)
 STORAGE_DEPTH = ('ciamStorageVersioning', 'ciamStorageImmutability', 'ciamStorageLockDays', 'ciamStorageLifecycle',
@@ -59,10 +93,22 @@ CLASSES = (
              ('ciamProviderRef', 'ciamFqdn', 'ciamPort', 'ciamDbEngineVersion', 'ciamDbEdition', 'ciamDbService',
               'ciamInstanceSize', 'ciamDbStorageGb', 'ciamZone', 'ciamDbHighAvailability', 'ciamEncryptedByRole',
               'ciamDbTlsRequired', 'ciamRetentionDays', 'ciamDbPointInTime', 'ciamDbDeletionProtection',
-              'ciamDbParameter', 'ciamSubnetRole', 'ciamDbCredentialRole', 'ciamManagedBy'),
+              'ciamDbParameter', 'ciamSubnetRole', 'ciamSourceCidr', 'ciamDbCredentialRole', 'ciamManagedBy'),
              'A managed database an environment runs for the stack (a repository, a session or token store): its '
              'engine and version, endpoint, availability, encryption and backups (ciamRetentionDays: automated '
-             'backups kept), parameters and the secret role of its credentials'),
+             'backups kept), parameters, the ranges admitted to its port (ciamSourceCidr) and the secret role of '
+             'its credentials'),
+    ClassDef(94, 'ciamVolume', 'ciamBinding', 'STRUCTURAL', ('ciamTargetRole', 'ciamVolumeKind'),
+             ('ciamMountPath', 'ciamVolumeSizeGb', 'ciamVolumeClass', 'ciamIops', 'ciamThroughputMb',
+              'ciamVolumeEncrypted', 'ciamEncryptedByRole', 'ciamSnapshotPolicyRole', 'ciamManagedBy'),
+             "A disk every server of a role (ciamTargetRole) has in an environment, its compute groups' included: "
+             "its boot disk or a data volume, how big and fast it is, its encryption and the snapshot policy that "
+             "copies it"),
+    ClassDef(95, 'ciamSnapshotPolicy', 'ciamBinding', 'STRUCTURAL', ('ciamRetentionDays',),
+             ('ciamSnapshotEveryHours', 'ciamSnapshotAt', 'ciamCopyRegion', 'ciamSnapshotConsistency',
+              'ciamProviderRef', 'ciamManagedBy'),
+             "How an environment snapshots its disks: how often, when, how long each snapshot is kept "
+             "(ciamRetentionDays) and the regions it is copied to"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

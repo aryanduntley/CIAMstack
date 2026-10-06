@@ -3,6 +3,7 @@ where the source names none; entries that disagree with the source or match noth
 refused as a whole. And a source that reports the record's values in another order changes nothing."""
 from opsdir.core.directory import get, make_directory, values
 from opsdir.core.inventory import environment_groups, read_role_map, resource, with_roles
+from support import imported_directory
 
 SUBNET = resource("subnet", "vnet-1/snet-new", {"ciamCidr": "10.60.4.0/24"}, name="snet-new")
 RULE = resource("firewall", "fw-new", {"ciamPort": "4444"}, name="fw-new")
@@ -32,7 +33,7 @@ def test_a_map_that_is_not_an_object_of_names_to_roles_is_refused():
 def test_the_same_values_in_another_order_change_nothing():
     env = "env=prod,cloud=main,ou=environments,dc=ciam-ops"
     rule = f"cn=fw-rep,ou=bindings,{env}"
-    d = make_directory((), {}, (
+    d = imported_directory((), {}, (
         ("cloud=main,ou=environments,dc=ciam-ops", ("top", "ciamCloud"), {"cloud": ["main"]}),
         (env, ("top", "ciamEnvironment"), {"env": ["prod"]}),
         (f"ou=bindings,{env}", ("top", "organizationalUnit"), {"ou": ["bindings"]}),
@@ -48,7 +49,7 @@ def test_the_same_values_in_another_order_change_nothing():
 def test_identities_match_by_short_name_and_role_links_name_the_linked_role():
     env = "env=prod,cloud=main,ou=environments,dc=ciam-ops"
     b = f"ou=bindings,{env}"
-    d = make_directory((), {}, (
+    d = imported_directory((), {}, (
         ("cloud=main,ou=environments,dc=ciam-ops", ("top", "ciamCloud"), {"cloud": ["main"]}),
         (env, ("top", "ciamEnvironment"), {"env": ["prod"]}),
         (b, ("top", "organizationalUnit"), {"ou": ["bindings"]}),

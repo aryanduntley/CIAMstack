@@ -10,7 +10,8 @@ network, the egress firewall and the sites it lets the servers reach, and the st
            load balancer, the hub's Azure Firewall, which the network team keeps, and the hub's forward proxy (an
            explicit proxy: the products must be told about it)
   standby  Google Cloud: the network firewall policy model (secure tags), a Private Service Connect endpoint for
-           Google's APIs, and the stack's own egress rules in the policy
+           Google's APIs, private services access (the range Cloud SQL's private IP comes from, which the network
+           team keeps: their root renders it) and the stack's own egress rules in the policy, which admit that range
 
 The plumbing under them: each environment's route table (the servers' subnets out through the NAT gateway, the hub
 firewall, the default internet gateway) and flow log (to the ops log destination), and the source's network ACL on
@@ -107,6 +108,11 @@ NETWORK = {
          {"ciamPrivateService": "apis", "ciamPrivateEndpointKind": "all-apis", "ciamFrontendIp": "10.70.255.5",
           "ciamPrivateDns": "TRUE", "ciamOwner": NETWORK_TEAM,
           "ciamProviderRef": "projects/example-aero-net/global/forwardingRules/pscapis"}),
+        # private services access: the range the grant store's Cloud SQL private IP comes from (the landing zone's)
+        ("ciamPrivateEndpoint", "psa-services", "private-services",
+         {"ciamPrivateService": "database", "ciamPrivateEndpointKind": "peered-service", "ciamCidr": "10.71.0.0/20",
+          "ciamReachesRole": "pf-grants-db", "ciamManagedBy": NETWORK_TEAM[0], "ciamOwner": NETWORK_TEAM,
+          "ciamProviderRef": "projects/example-aero-net/global/addresses/ciam-standby-services"}),
         ("ciamProxy", "egress-firewall", "egress-firewall",
          {"ciamProxyKind": "firewall", "ciamAllowedDestination": list(SITES), "ciamOwner": NETWORK_TEAM,
           "ciamProviderRef": STANDBY_POLICY}),      # its egress rules are in the network policy

@@ -7,6 +7,7 @@ from ...core.environment import bound_nowhere, environment_of, of_class
 from ...core.findings import Fix, findings, merge_findings, responsible
 from ...core.naming import branch, env_label
 from .kept import carry_fix, key_choice_fix
+from .naming import DEFAULT_PORTS
 
 DATABASE_HEADERS = ("environment", "database", "engine", "version", "edition", "service", "size",
                     "high availability", "encrypted by", "tls", "backup days", "point in time", "deletion protection",
@@ -25,6 +26,13 @@ def major_version(engine, version):
     """The major version of an engine version: what a move must keep (PostgreSQL 16.4 -> 16, MySQL 8.0.35 -> 8.0)."""
     parts = version.split(".")
     return ".".join(parts[:2]) if engine in ("mysql", "mariadb") else parts[0]
+
+
+def database_port(b):
+    """The port database binding b listens on: its ciamPort, else its engine's default (None for an engine without
+    one)."""
+    port = one(b, "ciamPort")
+    return int(port) if port else DEFAULT_PORTS.get(one(b, "ciamDbEngine"))
 
 
 # ------------------------------------------------------------------ report

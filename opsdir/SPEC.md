@@ -96,7 +96,7 @@ A conforming store MUST enforce all of these, not merely document them:
 
 | Branch | Object classes | Holds |
 |---|---|---|
-| `ou=environments` | `ciamCloud` → `ciamEnvironment` → `ciamServer`, `ou=stack` (`ciamStackComponent`, `ciamRequiredRole`), `ou=overrides` (`ciamOverride`), `ou=bindings` (`ciamNetwork`, `ciamSubnetBinding`, `ciamServiceName`, `ciamFirewallRule`, `ciamEgress`, `ciamSecretRef`, `ciamKeyRef`, `ciamCertificateRef`, `ciamObjectStore` (a `ciamBackupTarget` is one with a retention), `ciamInterconnect`) | Where things run, per environment |
+| `ou=environments` | `ciamCloud` → `ciamEnvironment` → `ciamServer`, `ou=stack` (`ciamStackComponent`, `ciamRequiredRole`), `ou=overrides` (`ciamOverride`), `ou=bindings` (`ciamNetwork`, `ciamSubnetBinding`, `ciamServiceName`, `ciamFirewallRule`, `ciamEgress`, `ciamSecretRef`, `ciamKeyRef`, `ciamCertificateRef`, `ciamObjectStore` (a `ciamBackupTarget` is one with a retention), `ciamDatabase`, `ciamVolume` (a server role's disks), `ciamSnapshotPolicy`, `ciamInterconnect`) | Where things run, per environment |
 | `ou=config` | `ou=declared` (`ciamBackend`, `ciamIndex`, `ciamPasswordPolicy`, `ciamConnectionHandler`, `ciamLogPublisher`, `ciamReplicationTopology`); `ou=observed` (`ciamSnapshot` + mirrored tree) | Desired vs actual server config |
 | `ou=user-schema` | `ciamUserAttribute`, `ciamUserObjectClass` | The user directory's schema: every attribute (purpose, PII class, export control) and object class, each standard or defined in the record (§6) |
 | `ou=consumers` | `ciamConsumer` | Clients of the user directory (from access logs) |
