@@ -21,13 +21,11 @@ policies, health checks, TTLs and routing (opsdir_adapter_aws.cli).
 """
 import re
 
+from .cli_outputs import stem
+
 KEYS = ("WebACL", "ResourceArns", "IPSet", "Protections", "DistributionList", "HostedZones", "ResolverRules",
         "Attributes")
 _CAMEL = re.compile(r"(?<!^)(?=[A-Z])")
-
-
-def _stem(path):
-    return path.rsplit("/", 1)[-1].rsplit(".", 1)[0]
 
 
 def _folder(path):
@@ -52,7 +50,7 @@ def terraform_shape(value):
 
 def attributes(outs, folder):
     """{the named resource: {attribute key: value}} of the Attributes outputs saved under folder/<name>.json."""
-    return {_stem(p): {a.get("Key"): a.get("Value") for a in doc.get("Attributes") or () if isinstance(a, dict)}
+    return {stem(p): {a.get("Key"): a.get("Value") for a in doc.get("Attributes") or () if isinstance(a, dict)}
             for p, k, doc in outs if k == "Attributes" and _folder(p) == folder}
 
 
@@ -61,8 +59,8 @@ def _web_acls(outs):
     by_name = {a.get("Name"): a.get("ARN") for a in acls}
     return [*(("aws_wafv2_web_acl", {"arn": a.get("ARN"), "name": a.get("Name"),
                                      "rule": [terraform_shape(r)[0] for r in a.get("Rules") or ()]}) for a in acls),
-            *(("aws_wafv2_web_acl_association", {"web_acl_arn": by_name.get(_stem(p)), "resource_arn": arn})
-              for p, k, doc in outs if k == "ResourceArns" and _stem(p) in by_name
+            *(("aws_wafv2_web_acl_association", {"web_acl_arn": by_name.get(stem(p)), "resource_arn": arn})
+              for p, k, doc in outs if k == "ResourceArns" and stem(p) in by_name
               for arn in doc.get("ResourceArns") or ()),
             *(("aws_wafv2_ip_set", {"arn": s.get("ARN"), "name": s.get("Name"), "addresses": s.get("Addresses") or []})
               for _, k, doc in outs if k == "IPSet" for s in (doc.get("IPSet") or {},) if s.get("ARN"))]

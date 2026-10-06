@@ -1,0 +1,205 @@
+"""Azure: the managed databases (opsdir.domains.data) an environment runs, rendered as Terraform and read back. Pure.
+
+Rendered into the stack's main.tf, for each database the stack keeps (one naming ciamManagedBy is someone else's: a
+comment names them). PostgreSQL and MySQL run on Azure Database Flexible Server; other engines have no Flexible
+Server (SQL Server is Azure SQL, a different offering): a comment.
+
+  azurerm_postgresql_flexible_server / azurerm_mysql_flexible_server: its version (Flexible Server takes PostgreSQL's
+  major version and MySQL's 5.7 or 8.0.21: Azure keeps the minor version current), SKU (ciamInstanceSize), storage,
+  zone, a zone-redundant standby, backup retention; in the delegated subnet its first subnet role names, with the
+  private DNS zone an input and no public access
+  the customer-managed key of its key role, through a user-assigned identity granted Key Vault Crypto Service
+  Encryption User on the key
+  the administrator password read from its credential role's Key Vault secret by an ephemeral resource and written
+  write-only (administrator_password_wo): it is in no Terraform state and never in the record; the login is a variable
+  a configuration per parameter, and require_secure_transport off where TLS isn't required (both engines require it
+  by default); a CanNotDelete management lock where deletion protection is on
+  an import block when its provider ref (its ARM ID) is recorded
+
+Read back from (azurerm type, attributes) pairs, Terraform state as it is or the CLI and ARM templates normalized to
+it (cli_database.py): the servers, their configurations and the locks on them. The administrator password
+(administrator_password) is never read.
+"""
+from opsdir.core.directory import one, rdn_value, values
+from opsdir.core.environment import UNBOUND, bound, of_class
+from opsdir.core.inventory import of_types, resource, tagged_role
+from opsdir.domains.data.databases import major_version
+from opsdir.domains.network.plumbing import adopted
+from opsdir.domains.network.stack import kept_by, owned, subnets
+from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
+from .arm_ids import subnet_ref
+from .identities import LOC, RG
+from .network import binding_tags
+
+SERVERS = {"postgresql": "azurerm_postgresql_flexible_server", "mysql": "azurerm_mysql_flexible_server"}
+ENGINES = {v: k for k, v in SERVERS.items()}
+PORTS = {"postgresql": 5432, "mysql": 3306}
+TLS = "require_secure_transport"                         # both engines' parameter; on by default
+MYSQL_VERSIONS = {"5.7": "5.7", "8.0": "8.0.21"}
+CMK_ROLE = "Key Vault Crypto Service Encryption User"
+_OFF = frozenset({"off", "0", "false"})
+
+
+def _version(engine, version):
+    """The version Flexible Server takes: PostgreSQL's major version, MySQL's 5.7 or 8.0.21."""
+    if not version:
+        return None
+    major = major_version(engine, version)
+    return MYSQL_VERSIONS.get(major, version) if engine == "mysql" else major
+
+
+def _given(*pairs):
+    return tuple((k, v) for k, v in pairs if v is not None)
+
+
+def _vault_object(uri):
+    """(vault, name) of an azkv:// or azkv-key:// reference (azkv://<vault>/<name>, azkv-key://<vault>/keys/<name>)."""
+    vault, _, rest = uri.split("://", 1)[1].partition("/")
+    return vault, rest.rsplit("/", 1)[-1]
+
+
+def _uri(m, role, what):
+    """(the role's reference URI, None) when m binds it, (None, a comment) when it doesn't, (None, None) for no role."""
+    if not role:
+        return None, None
+    uri = bound(m, role, "ciamRefUri")
+    return (None, ("#", f"{uri}: no {what} binding for role {role} in this environment")) \
+        if uri.startswith(UNBOUND) else (uri, None)
+
+
+def _key(m, b, n):
+    """(blocks, server body) for the customer-managed key: its key, a user-assigned identity and its grant."""
+    uri, note = _uri(m, one(b, "ciamEncryptedByRole"), "key")
+    if uri is None:
+        return (), (note,) if note else ()
+    vault, name = _vault_object(uri)
+    ident = f"azurerm_user_assigned_identity.{n}_cmk"
+    return ((block("data", ["azurerm_key_vault", f"{n}_cmk"], [("name", vault), ("resource_group_name", RG)]),
+             block("data", ["azurerm_key_vault_key", f"{n}_cmk"], [
+                 ("name", name), ("key_vault_id", ref(f"data.azurerm_key_vault.{n}_cmk.id"))]),
+             block("resource", ["azurerm_user_assigned_identity", f"{n}_cmk"], [
+                 ("name", f"id-{rdn_value(b)}-cmk"), ("location", LOC), ("resource_group_name", RG),
+                 ("tags", binding_tags(b))]),
+             block("resource", ["azurerm_role_assignment", f"{n}_cmk"], [
+                 ("scope", ref(f"data.azurerm_key_vault_key.{n}_cmk.resource_versionless_id")),
+                 ("role_definition_name", CMK_ROLE), ("principal_id", ref(f"{ident}.principal_id"))])),
+            (("identity", Block((("type", "UserAssigned"), ("identity_ids", [ref(f"{ident}.id")])))),
+             ("customer_managed_key", Block((
+                 ("key_vault_key_id", ref(f"data.azurerm_key_vault_key.{n}_cmk.id")),
+                 ("primary_user_assigned_identity_id", ref(f"{ident}.id"))))),
+             ("depends_on", [ref(f"azurerm_role_assignment.{n}_cmk")])))
+
+
+def _password(m, b, n):
+    """(blocks, server body) for the administrator password: written write-only from an ephemeral read of the
+    credential role's Key Vault secret."""
+    uri, note = _uri(m, one(b, "ciamDbCredentialRole"), "credential")
+    if uri is None:
+        return (), (note or ("#", "no ciamDbCredentialRole: no administrator password is set"),)
+    vault, name = _vault_object(uri)
+    return ((f"# {rdn_value(b)}: its administrator password is read when applied and written write-only: no "
+             "Terraform state holds it",
+             block("data", ["azurerm_key_vault", f"{n}_admin"], [("name", vault), ("resource_group_name", RG)]),
+             block("ephemeral", ["azurerm_key_vault_secret", f"{n}_admin"], [
+                 ("name", name), ("key_vault_id", ref(f"data.azurerm_key_vault.{n}_admin.id"))])),
+            (("administrator_password_wo", ref(f"ephemeral.azurerm_key_vault_secret.{n}_admin.value")),
+             ("administrator_password_wo_version", 1)))
+
+
+def _settings(b, engine):
+    """{name: value} of the configurations: its parameters, and TLS off where it isn't required."""
+    params = dict(v.split("=", 1) for v in values(b, "ciamDbParameter") if "=" in v)
+    return {**params, TLS: "off"} if one(b, "ciamDbTlsRequired") == "FALSE" else params
+
+
+def _database(m, b):
+    n, cn, engine = tf_name(rdn_value(b)), rdn_value(b), one(b, "ciamDbEngine")
+    kind = SERVERS.get(engine)
+    if kind is None:
+        return (f"# Database '{cn}' runs {engine}, which Azure Database Flexible Server doesn't (SQL Server is Azure "
+                "SQL, a different offering): not rendered",)
+    nets, storage = subnets(m, b), one(b, "ciamDbStorageGb")
+    key_blocks, key_body = _key(m, b, n)
+    pw_blocks, pw_body = _password(m, b, n)
+    login = f"{n}_admin_login"
+    dns = f"{n}_private_dns_zone_id"
+    server = block("resource", [kind, n], [
+        ("name", cn), ("resource_group_name", RG), ("location", LOC),
+        *_given(("version", _version(engine, one(b, "ciamDbEngineVersion"))),
+                ("sku_name", one(b, "ciamInstanceSize")),
+                ("storage_mb" if engine == "postgresql" else "storage", None if not storage else
+                 int(storage) * 1024 if engine == "postgresql" else Block((("size_gb", int(storage)),))),
+                ("zone", one(b, "ciamZone")),
+                ("backup_retention_days", int(one(b, "ciamRetentionDays")) if one(b, "ciamRetentionDays") else None)),
+        *((("high_availability", Block((("mode", "ZoneRedundant"),))),)
+          if one(b, "ciamDbHighAvailability") == "zone-redundant" else ()),
+        *((("delegated_subnet_id", ref(f"data.azurerm_subnet.{tf_name(rdn_value(nets[0]))}.id")),
+           ("private_dns_zone_id", ref(f"var.{dns}")), ("public_network_access_enabled", False)) if nets else ()),
+        ("administrator_login", ref(f"var.{login}")), *pw_body, *key_body, ("tags", binding_tags(b))])
+    settings = tuple(block("resource", [f"{kind}_configuration", tf_name(f"{cn}_{k}")], [
+        ("name", k), ("server_id", ref(f"{kind}.{n}.id")), ("value", v)])
+        for k, v in sorted(_settings(b, engine).items()))
+    lock = (block("resource", ["azurerm_management_lock", n], [
+        ("name", f"{cn}-no-delete"), ("scope", ref(f"{kind}.{n}.id")), ("lock_level", "CanNotDelete"),
+        ("notes", f"Deletion protection of database {cn} (role {one(b, 'ciamBindingRole')})")]),) \
+        if one(b, "ciamDbDeletionProtection") == "TRUE" else ()
+    return (block("variable", [login], [("type", ref("string")),
+                                        ("description", f"The administrator login of database {cn}")]),
+            *((block("variable", [dns], [("type", ref("string")), ("description", (
+                f"The private DNS zone ID database {cn} registers in (privatelink.{engine}.database.azure.com)"))]),)
+              if nets else ()),
+            *key_blocks, *pw_blocks, server, *settings, *lock,
+            *((import_block(f"{kind}.{n}", one(b, "ciamProviderRef")),) if adopted(b) else ()))
+
+
+def render_databases(m):
+    """HCL for environment m's managed databases: those the stack keeps, then comments naming who keeps the others."""
+    dbs = of_class(m, "ciamDatabase")
+    return (*(f"# Database '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: not "
+              "rendered here" for b in dbs if not owned(b)),
+            *(x for b in dbs if owned(b) for x in _database(m, b)))
+
+
+# ------------------------------------------------------------------ read back
+def _first(v):
+    return v[0] if isinstance(v, list) and v else v if isinstance(v, dict) else {}
+
+
+def _key_ref(url):
+    """The key reference of a Key Vault key URL (https://<vault>.vault.azure.net/keys/<name>[/<version>])."""
+    host, _, path = (url or "").partition("://")[2].partition("/")
+    parts = path.split("/")
+    return f"azkv-key://{host.split('.')[0].lower()}/keys/{parts[1]}" if len(parts) > 1 and parts[0] == "keys" \
+        else None
+
+
+def _server(kind, a, settings, locked):
+    engine = ENGINES[kind]
+    own = settings.get((a.get("id") or "").lower(), {})
+    tls = own.get(TLS)
+    retention = a.get("backup_retention_days")
+    storage = a.get("storage_mb") and int(a["storage_mb"]) // 1024 or _first(a.get("storage")).get("size_gb")
+    return resource("database", a.get("id") or a.get("name"), {
+        "ciamDbEngine": engine, "ciamDbEngineVersion": a.get("version"), "ciamDbService": "flexible-server",
+        "ciamFqdn": a.get("fqdn"), "ciamPort": PORTS[engine], "ciamInstanceSize": a.get("sku_name"),
+        "ciamDbStorageGb": storage, "ciamZone": a.get("zone"),
+        "ciamDbHighAvailability": "zone-redundant" if _first(a.get("high_availability")).get("mode")
+        == "ZoneRedundant" else "none",
+        "ciamDbTlsRequired": "FALSE" if tls is not None and tls.lower() in _OFF else "TRUE",
+        "ciamRetentionDays": retention, "ciamDbPointInTime": "TRUE" if retention else "FALSE",
+        "ciamDbDeletionProtection": "TRUE" if (a.get("id") or "").lower() in locked else "FALSE",
+        "ciamDbParameter": sorted(f"{k}={v}" for k, v in own.items() if k != TLS)},
+        links={"ciamSubnetRole": subnet_ref(a.get("delegated_subnet_id")),
+               "ciamEncryptedByRole": _key_ref(_first(a.get("customer_managed_key")).get("key_vault_key_id"))},
+        name=a.get("name"), role=tagged_role(a.get("tags") or {}))
+
+
+def database_resources(pairs):
+    """Database resources of (azurerm type, attributes) pairs: PostgreSQL and MySQL Flexible Servers."""
+    configs = [((c.get("server_id") or "").lower(), c.get("name"), str(c.get("value")))
+               for kind in SERVERS.values() for c in of_types(pairs, f"{kind}_configuration")]
+    settings = {sid: {n: v for s, n, v in configs if s == sid} for sid in {s for s, _, _ in configs}}
+    locked = {(lk.get("scope") or "").lower() for lk in of_types(pairs, "azurerm_management_lock")
+              if lk.get("lock_level") in ("CanNotDelete", "ReadOnly")}
+    return tuple(_server(kind, a, settings, locked) for kind in SERVERS.values() for a in of_types(pairs, kind)
+                 if a.get("id") or a.get("name"))

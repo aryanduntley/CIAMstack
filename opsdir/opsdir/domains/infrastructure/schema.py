@@ -108,6 +108,9 @@ ATTRIBUTES = (
                  "The attribute overridden: one whose definition allows it (X-OVERRIDABLE)"),
     AttributeDef(212, 'ciamOverrideValue', 'string', 'binding', False,
                  'The value(s) this environment uses instead of the shared one'),
+    AttributeDef(426, 'ciamHostOrder', 'int', 'binding', True,
+                 "This host's place among an environment's bindings of one role when a product setting lists several "
+                 '(failover order, lowest first)'),
 )
 CLASSES = (
     ClassDef(2, 'ciamCloud', 'ciamObject', 'STRUCTURAL', ('cloud', 'ciamCloudProvider', 'ciamRegion'),
@@ -163,10 +166,12 @@ CLASSES = (
              ('cn', 'ciamOverrides', 'ciamOverrideAttribute', 'ciamOverrideValue'),
              (),
              "An environment's own value for one overridable attribute of a shared entry; the description says why"),
-    ClassDef(92, 'ciamExternalHost', 'ciamBinding', 'STRUCTURAL', ('ciamFqdn',), ('ciamPort', 'ciamManagedBy'),
+    ClassDef(92, 'ciamExternalHost', 'ciamBinding', 'STRUCTURAL', ('ciamFqdn',),
+             ('ciamPort', 'ciamManagedBy', 'ciamHostOrder'),
              "A system the platform reaches but doesn't run (a database, a corporate directory), as this environment "
              "reaches it: its host name (and port); products name its role, so each environment renders its own "
-             "host"),
+             "host. One host is the usual case; a system reached at several (two domain controllers) is several "
+             "bindings of the role, in host order"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

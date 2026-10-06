@@ -2,6 +2,7 @@ CHG-2005: modify cn=ldap,ou=connectors,ou=pingidm,dc=ciam-ops
 CHG-2005: modify cn=hrdb,ou=connectors,ou=pingidm,dc=ciam-ops
 CHG-2005: modify cn=user-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
 CHG-2005: modify cn=grant-store,ou=data-stores,ou=pingfederate,dc=ciam-ops
+CHG-2005: modify cn=corp-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
 CHG-2005: modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
 CHG-2005: modify cn=recaptcha,ou=captcha-providers,ou=pingfederate,dc=ciam-ops
 exit 0

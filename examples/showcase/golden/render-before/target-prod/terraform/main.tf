@@ -1361,6 +1361,10 @@ data "azurerm_key_vault_secrets" "kv_ciam_prod" {
       error_message = "Key Vault kv-ciam-prod has no secret pf-captcha-secret (role pf-captcha-secret)"
     }
     postcondition {
+      condition     = contains(self.names, "pf-corp-ad-bind-password")
+      error_message = "Key Vault kv-ciam-prod has no secret pf-corp-ad-bind-password (role pf-corp-ad-bind-password)"
+    }
+    postcondition {
       condition     = contains(self.names, "pf-ds-bind-password")
       error_message = "Key Vault kv-ciam-prod has no secret pf-ds-bind-password (role pf-ds-bind-password)"
     }

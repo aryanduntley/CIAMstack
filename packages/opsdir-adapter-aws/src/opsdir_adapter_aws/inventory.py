@@ -44,6 +44,9 @@ From Terraform state (terraform.tfstate, format version 4), managed resources an
                                                  realizes (tag Realizes)
   aws_synthetics_canary                       -> synthetic check (kind canary, ciamCanaryBinding): its rate as an
                                                  interval, the canary it realizes (tag Realizes)
+  aws_db_instance, aws_rds_cluster (+ its      -> database (kind database, ciamDatabase): engine, edition, version,
+    instances, subnet and parameter groups)      endpoint, size, availability, TLS, backups, parameters, its subnets,
+                                                 key and master secret as roles; never its password: see databases.py
   IAM: roles, resource policies, permission sets, control policies, access paths: see iam.py
 Roles of resources the record doesn't have come from their tags Role (or BindingRole). A compute group's binding role
 is its tag BindingRole, else compute-<its tag Role>; a cluster's is its tag BindingRole or Role, else cluster; an
@@ -62,11 +65,12 @@ from .network_inventory import endpoint_security_groups, network_resources
 from .edge_inventory import (aliased_names, dns_resources, edge_services, lb_facts, lb_security_groups,
                              service_dns)
 from .iam import iam_resources
+from .databases import database_resources
 
 PROVIDER = "aws"
 
 SKIPPED = ("aws_secretsmanager_secret_version", "aws_ssm_parameter", "random_password", "tls_private_key",
-           "aws_iam_access_key", "aws_db_instance")          # hold secret values, or aren't modeled yet
+           "aws_iam_access_key")          # hold secret values, or aren't modeled yet
 _RULE_NAME = re.compile(r"\(([A-Za-z0-9._-]+)\)\s*$")
 
 
@@ -447,7 +451,8 @@ def pairs_resources(pairs):
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *rules, *_secrets(pairs),
              *_keys(pairs), *_storage(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
-             *_canaries(pairs), *iam, *edge_services(pairs), *zones, *records, *forwarders, *network),
+             *_canaries(pairs), *iam, *edge_services(pairs), *zones, *records, *forwarders, *network,
+             *database_resources(pairs)),
             (*rule_notices, *iam_notices, *dns_notices, *network_notices))
 
 

@@ -75,6 +75,21 @@ What the core `network` domain records and the stack keeps itself (no `ciamManag
 | `ciamProxy` kind `firewall` the stack keeps | Under the policy model, egress rules for every role's tag value: `dest_fqdns` per port (a wildcard domain can't be an FQDN object: a comment), the ranges the stack reaches privately (its network, its interconnects', its private endpoints' addresses), then a deny of all other egress at the lowest priority. Under the rules model a comment: FQDN rules exist only in network firewall policies |
 | Other proxies | A comment: their allowlist is kept there |
 
+### Managed databases
+
+The core `data` domain's databases (`ciamDatabase`) the stack keeps render into `main.tf`; one naming someone else in `ciamManagedBy` is a comment naming them (`opsdir_adapter_gcp.databases`). PostgreSQL, MySQL and SQL Server run on Cloud SQL; other engines are a comment.
+
+| Record | Renders as |
+|---|---|
+| `ciamDatabase` | `google_sql_database_instance`: `database_version` from the engine, major version and edition (`POSTGRES_16`, `MYSQL_8_0`, `SQLSERVER_2019_ENTERPRISE`: Cloud SQL keeps minor versions current, so a re-import records the major version), `tier` from `ciamInstanceSize`, `disk_size`, the zone as `location_preference`, `REGIONAL` availability when zone-redundant (else `ZONAL`), labels `role` and `managed_by` |
+| `ciamRetentionDays`, `ciamDbPointInTime` | `backup_configuration`: enabled with `retained_backups` (daily backups kept), `point_in_time_recovery_enabled` (MySQL: `binary_log_enabled`) |
+| Network, `ciamDbTlsRequired` | A private IP on the environment's network (`private_network`, no public IPv4; private services access is the landing zone's), `ssl_mode` `ENCRYPTED_ONLY` or `ALLOW_UNENCRYPTED_AND_ENCRYPTED` |
+| `ciamDbParameter` | A `database_flags` block per parameter |
+| `ciamEncryptedByRole` (a `gcp-kms://` key) | `encryption_key_name`; a comment: the Cloud SQL service agent needs `roles/cloudkms.cryptoKeyEncrypterDecrypter` on the key |
+| `ciamDbDeletionProtection` | `deletion_protection` (Terraform) and `deletion_protection_enabled` (the API) |
+| `ciamDbCredentialRole` (a global `gcp-sm://` secret) | The password read when applied by an `ephemeral google_secret_manager_secret_version` and written write-only: a `google_sql_user` with `password_wo` (PostgreSQL, MySQL; the login an input, `<database>_admin_login`), SQL Server's `root_password_wo`. No Terraform state holds it. A regional secret has no ephemeral read: a comment |
+| `ciamProviderRef` recorded | An `import` block (`projects/<project>/instances/<name>`) |
+
 ## Reading an environment back from Terraform state
 
 ```bash
@@ -113,7 +128,7 @@ The importer `gcp/terraform-state` reads Terraform state (format version 4, `has
 
 **What changes**, **roles of new resources** and the role map (`roles.json` beside the state, `{provider ref or name: role}`) work as on AWS and Azure (`opsdir.core.inventory`). Roles come from labels `role` / `bindingrole`; label values are lowercase, as the record's roles are. Firewall rules carry no labels: name new ones in `roles.json`, or record them.
 
-**Named, not recorded:** port ranges and all-ports rules (`ciamPort` holds single ports); network tag and service account sources (not address ranges); deny and egress rules; resource types that hold secret values or aren't modeled yet (`google_secret_manager_secret_version`, `google_secret_manager_regional_secret_version`, `random_password`, `tls_private_key`, `google_service_account_key`, `google_sql_database_instance`, `google_sql_user`), counted by type.
+**Named, not recorded:** port ranges and all-ports rules (`ciamPort` holds single ports); network tag and service account sources (not address ranges); deny and egress rules; resource types that hold secret values or aren't modeled yet (`google_secret_manager_secret_version`, `google_secret_manager_regional_secret_version`, `random_password`, `tls_private_key`, `google_service_account_key`, `google_sql_user`), counted by type.
 
 **Identities, guardrails and access paths.** An identity binding is matched by its provider ref, else by the identity's short name (an IAM role's name, a resource ID's last segment, a service account's account id), so a record that names an identity by its short name takes the full reference from the state. Grants, denials and ceilings are written in the cloud's own terms (`ciamGrant`, `ciamDenial`, `ciamBoundary`: `<action or role> on <resource>`, then ` (resource policy)`, ` (if <condition>)`, ` (eligible)`; parentheses in a condition become brackets; `p!a|b` is what `p` matches but `a` and `b`, `!a|b` every action but those), and the planner evaluates them (see Access below). Groups, users and other principals the state names without a role (a role map names them, as for any resource) are counted in one notice, not listed one by one.
 
@@ -152,6 +167,14 @@ What the network carries beyond networks, subnetworks and VPC firewall rules com
 
 A tag key the platform's own Terraform made (its description says `Managed by opsdir`, or its short name is the render's `ciam-<env>-role`) isn't read into `ciamTagKeyRef` (the render would then stop making it); a firewall tag key someone else made for the environment's network (`purpose_data.network`) is the network policy's `ciamTagKeyRef`, which the render references instead of creating one (several such keys are named: which one is the record's to say). A VPN's other side comes from its label-free tag `PeerEnvironment` only: the record holds no gateways to match `peer_gcp_gateway` against, and a peer's address isn't evidence of an environment.
 
+### Managed databases, read back
+
+`opsdir_adapter_gcp.databases` (Cloud Asset Inventory's `sqladmin.googleapis.com/Instance` and `gcloud sql instances list` normalize to the same names). Matching is by provider ref (`projects/<project>/instances/<name>`); a new one needs its label `role`. `root_password` is never read, and `google_sql_user` (it can hold a password) is counted, not read.
+
+| Google Cloud resource | Record entry |
+|---|---|
+| `google_sql_database_instance` | database: engine, major version and edition from `database_version`, service `cloud-sql`, endpoint (`dns_name`) and the engine's port, tier, disk, zone, `zone-redundant` when `REGIONAL`, TLS from `ssl_mode` (`ENCRYPTED_ONLY`, `TRUSTED_CLIENT_CERTIFICATE_REQUIRED`, else `require_ssl`), retained backups (7 when enabled without a count) and point-in-time restore (PITR or binary log), deletion protection, its flags; its CMEK key as a role |
+
 ## Reading an environment from Cloud Asset Inventory and gcloud
 
 Where there is no Terraform state (or to check it against what the project actually runs), `gcp/cli-inventory` reads Cloud Asset Inventory and `gcloud … --format=json` output. Collect it once per environment, into one folder per `<cloud>/<env>`; file names are free (`.json`, or `.jsonl` for an export), because every item says what it is: an asset by its asset type, a compute item by its `kind`, the others by their resource names. The one exception is DNS: `gcloud dns record-sets list` doesn't print the zone, so each zone's record sets go in a file named after the zone (record sets in an asset export name their zone).
@@ -176,6 +199,7 @@ for zone in $(gcloud dns managed-zones list --project=$HOST --format='value(name
 done
 gcloud scheduler jobs list --location=$R --project=$P --format=json       > $out/scheduler.json
 gcloud beta monitoring channels list --project=$P --format=json           > $out/channels.json
+gcloud sql instances list --project=$P --format=json                      > $out/sql-instances.json   # also in assets
 
 # the edge (also in the asset export): URL maps, HTTPS proxies, SSL and security policies, health checks, zones
 for kind in url-maps target-https-proxies ssl-policies health-checks security-policies; do
@@ -304,9 +328,12 @@ It adds no required roles, planner checks or schema of its own; the environment'
 - **DNS failover** is a plain record with a comment (Cloud DNS's primary-backup policy is configured by hand).
 - **Edge.** Preconfigured WAF exclusions apply on every path; Adaptive Protection (global backend services) isn't rendered for the regional load balancer.
 - **Cloud Asset Inventory and `gcloud` shapes** follow Google's API references and the gcloud source (checked 2026-10-02); like the Terraform, the importer hasn't yet read a live project (milestone 7.2).
+- **Databases someone else keeps** (`ciamManagedBy`) are named in a comment, not rendered into their keeper's root yet; Oracle and MariaDB have no Cloud SQL and aren't rendered; read replicas aren't modeled yet (DR, milestone 4.10).
 - **Firewall model.** Classic VPC firewall rules with network tags stay the default; an environment chooses network firewall policies with secure tags (IAM-governed targeting) with `ciamFirewallModel` `policy`. The importers read both (see [The network depth, read back](#the-network-depth-read-back)); hierarchical policies are read, never rendered.
 
 ## Tests
+
+`tests/test_gcp_databases.py`: managed databases rendered (a Cloud SQL instance with its key, write-only password from an ephemeral Secret Manager read, flags, backups and import; MySQL's binary log and TLS allowed; SQL Server's root password; engines Cloud SQL doesn't run and databases others keep named) and read back from state (root password and SQL users never read), Cloud Asset Inventory and gcloud (the same resource).
 
 `tests/test_gcp_cli_edge.py`: the edge from gcloud output: a forwarding rule through proxy, URL map and backend service (SSL policy, health check, affinity, timeout, draining), Cloud Armor rules, managed zones and a forwarding zone, weighted routing with the other answer named.
 

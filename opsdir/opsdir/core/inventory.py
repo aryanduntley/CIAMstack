@@ -41,6 +41,8 @@ this module places them.
   interconnect     -> ciamInterconnect     matched by provider ref (a peering, a transit attachment, a VPN); its other
                                            side's environment is the one whose network binding has the peer network's
                                            provider ref (else a tag PeerEnvironment: <cloud>/<env>; a new link needs one)
+  database         -> ciamDatabase         matched by provider ref (a managed database instance or cluster); its
+                                           credentials' secret and its key are named by role
 What a source says replaces the record's value for the attributes it gives; the rest of the entry is kept (the same
 values in another order, or an allowlist a source reports without the ports it can't express, change nothing). A
 resource the record doesn't have is added only when the source names its role (a tag), and is named otherwise: a role
@@ -82,14 +84,15 @@ CLASSES = MappingProxyType({"network": "ciamNetwork", "subnet": "ciamSubnetBindi
                             "route-table": "ciamRouteTable", "acl": "ciamNetworkAcl",
                             "private-endpoint": "ciamPrivateEndpoint", "endpoint-service": "ciamEndpointService",
                             "proxy": "ciamProxy", "flow-log": "ciamFlowLog", "firewall-policy": "ciamFirewallPolicy",
-                            "interconnect": "ciamInterconnect"})
+                            "interconnect": "ciamInterconnect", "database": "ciamDatabase"})
 BY_REF = ("network", "subnet", "egress", "job", "compute", "cluster", "sending", "stream", "channel", "logs", "alarm",
           "canary", "identity", "guardrail", "access", "edge", "route-table", "acl", "private-endpoint",
-          "endpoint-service", "proxy", "flow-log", "firewall-policy", "interconnect")    # matched by provider ref
+          "endpoint-service", "proxy", "flow-log", "firewall-policy", "interconnect", "database")    # by provider ref
 # links naming the linked binding's role, not its DN, and the kind of resource each names (two kinds may share a
 # provider ref: a firewall policy and the egress allowlist it enforces)
 ROLE_KINDS = MappingProxyType({"ciamEncryptedByRole": "key", "ciamServiceRole": "service", "ciamSubnetRole": "subnet",
-                               "ciamPolicyRole": "firewall-policy", "ciamLogDestinationRole": "logs"})
+                               "ciamPolicyRole": "firewall-policy", "ciamLogDestinationRole": "logs",
+                               "ciamDbCredentialRole": "secret"})
 ROLE_LINKS = frozenset(ROLE_KINDS)
 PEER = "ciamPeerEnvironment"         # an interconnect's link to its other side's network (its environment is the value)
 ROUTE_TARGET = 2                     # the token of a ciamRoute value naming its target (a role, else a provider ref)
@@ -190,7 +193,7 @@ REQUIRED = MappingProxyType({
     "forwarder": ("ciamForwardDomain", "ciamForwardTarget"), "route-table": ("ciamRoute",), "acl": ("ciamAclRule",),
     "private-endpoint": ("ciamPrivateService",), "endpoint-service": ("ciamServiceRole",),
     "proxy": ("ciamProxyKind",), "flow-log": ("ciamFlowScope",), "firewall-policy": ("ciamPolicyScope",),
-    "interconnect": ("ciamInterconnectKind", "ciamPeerEnvironment", "ciamSourceCidr")})
+    "interconnect": ("ciamInterconnectKind", "ciamPeerEnvironment", "ciamSourceCidr"), "database": ("ciamDbEngine",)})
 
 
 def zone_role(zone):

@@ -77,10 +77,11 @@ def with_required_roles(m, required_roles):
 
 
 def published_role(d, host):
-    """The binding role of the service name some environment publishes at this host, or of the external system it
-    reaches there (ciamExternalHost) (case-insensitive), or None: how an importer turns a host in a product's
-    configuration into a role each environment binds."""
-    names = (b for oc in ("ciamServiceName", "ciamExternalHost") for b in subtree(d, branch("environments"), oc)
+    """The binding role of the service name some environment publishes at this host, of the external system it
+    reaches there (ciamExternalHost) or of the managed database it runs there (ciamDatabase) (case-insensitive), or
+    None: how an importer turns a host in a product's configuration into a role each environment binds."""
+    names = (b for oc in ("ciamServiceName", "ciamExternalHost", "ciamDatabase")
+             for b in subtree(d, branch("environments"), oc)
              if host and (one(b, "ciamFqdn") or "").lower() == host.lower())
     return next((one(b, "ciamBindingRole") for b in names), None)
 
@@ -119,6 +120,17 @@ def by_role(m, role):
 def one_role(m, role):
     found = by_role(m, role)
     return found[0] if found else None
+
+
+def _host_order(b):
+    order = one(b, "ciamHostOrder")
+    return (0, int(order), rdn_value(b)) if order else (1, 0, rdn_value(b))
+
+
+def role_bindings(m, role):
+    """Environment m's bindings of a role in host order (ciamHostOrder, lowest first; any without one after, by name):
+    the hosts a product setting that lists several reaches, in failover order."""
+    return tuple(sorted(by_role(m, role), key=_host_order))
 
 
 def bound_nowhere(roles, *models):

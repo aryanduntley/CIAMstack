@@ -25,6 +25,8 @@ shared mapping reads (opsdir_adapter_aws.network_inventory). Pure.
   network-firewall describe-firewall-policy      FirewallPolicyResponse -> aws_networkfirewall_firewall_policy
   network-firewall describe-firewall             FirewallStatus         -> aws_networkfirewall_firewall (its endpoints)
 """
+from .cli_outputs import documents, items, stem, tags_of
+
 KEYS = ("RouteTables", "NetworkAcls", "VpcEndpoints", "ServiceConfigurations", "AllowedPrincipals",
         "VpcPeeringConnections", "TransitGatewayVpcAttachments", "VpnConnections", "CustomerGateways", "VpnGateways",
         "FlowLogs", "RuleGroupResponse", "FirewallPolicyResponse", "FirewallStatus")
@@ -35,22 +37,6 @@ _ROUTE_TARGETS = (("NatGatewayId", "nat_gateway_id"), ("TransitGatewayId", "tran
                   ("NetworkInterfaceId", "network_interface_id"),
                   ("EgressOnlyInternetGatewayId", "egress_only_gateway_id"), ("LocalGatewayId", "local_gateway_id"),
                   ("CarrierGatewayId", "carrier_gateway_id"), ("CoreNetworkArn", "core_network_arn"))
-
-
-def _tags(tags):
-    return {t["Key"]: t.get("Value", "") for t in tags or () if isinstance(t, dict) and "Key" in t}
-
-
-def _all(outs, key):
-    return [item for _, k, doc in outs if k == key for item in doc.get(key) or ()]
-
-
-def _docs(outs, key):
-    return [(p, doc) for p, k, doc in outs if k == key]
-
-
-def _stem(path):
-    return path.rsplit("/", 1)[-1].rsplit(".", 1)[0]
 
 
 def _route(r):
@@ -64,8 +50,8 @@ def _route(r):
 
 
 def _route_tables(outs):
-    tables = _all(outs, "RouteTables")
-    return [*(("aws_route_table", {"id": t.get("RouteTableId"), "vpc_id": t.get("VpcId"), "tags": _tags(t.get("Tags")),
+    tables = items(outs, "RouteTables")
+    return [*(("aws_route_table", {"id": t.get("RouteTableId"), "vpc_id": t.get("VpcId"), "tags": tags_of(t.get("Tags")),
                                    "route": [_route(r) for r in t.get("Routes") or ()
                                              if r.get("GatewayId") != "local"]}) for t in tables),
             *(("aws_main_route_table_association", {"route_table_id": t.get("RouteTableId"), "vpc_id": t.get("VpcId")})
@@ -83,13 +69,13 @@ def _acl_entry(e):
 
 def _acls(outs):
     return [("aws_network_acl", {
-        "id": a.get("NetworkAclId"), "vpc_id": a.get("VpcId"), "tags": _tags(a.get("Tags")),
+        "id": a.get("NetworkAclId"), "vpc_id": a.get("VpcId"), "tags": tags_of(a.get("Tags")),
         "subnet_ids": [s.get("SubnetId") for s in a.get("Associations") or () if s.get("SubnetId")],
         "ingress": [_acl_entry(e) for e in a.get("Entries") or ()
                     if not e.get("Egress") and e.get("RuleNumber") != DEFAULT_ACL_RULE],
         "egress": [_acl_entry(e) for e in a.get("Entries") or ()
                    if e.get("Egress") and e.get("RuleNumber") != DEFAULT_ACL_RULE]})
-        for a in _all(outs, "NetworkAcls")]
+        for a in items(outs, "NetworkAcls")]
 
 
 def _endpoints(outs):
@@ -97,38 +83,38 @@ def _endpoints(outs):
         "id": e.get("VpcEndpointId"), "vpc_id": e.get("VpcId"), "vpc_endpoint_type": e.get("VpcEndpointType"),
         "service_name": e.get("ServiceName"), "subnet_ids": e.get("SubnetIds") or [],
         "route_table_ids": e.get("RouteTableIds") or [], "private_dns_enabled": e.get("PrivateDnsEnabled"),
-        "security_group_ids": [g.get("GroupId") for g in e.get("Groups") or ()], "tags": _tags(e.get("Tags"))})
-        for e in _all(outs, "VpcEndpoints") if e.get("State", "available").lower() not in ("deleted", "deleting")]
+        "security_group_ids": [g.get("GroupId") for g in e.get("Groups") or ()], "tags": tags_of(e.get("Tags"))})
+        for e in items(outs, "VpcEndpoints") if e.get("State", "available").lower() not in ("deleted", "deleting")]
 
 
 def _endpoint_services(outs):
     return [*(("aws_vpc_endpoint_service", {
                 "id": s.get("ServiceId"), "service_name": s.get("ServiceName"),
                 "acceptance_required": s.get("AcceptanceRequired"),
-                "network_load_balancer_arns": s.get("NetworkLoadBalancerArns") or [], "tags": _tags(s.get("Tags"))})
-              for s in _all(outs, "ServiceConfigurations")),
+                "network_load_balancer_arns": s.get("NetworkLoadBalancerArns") or [], "tags": tags_of(s.get("Tags"))})
+              for s in items(outs, "ServiceConfigurations")),
             *(("aws_vpc_endpoint_service_allowed_principal", {
-                "vpc_endpoint_service_id": a.get("ServiceId") or _stem(path), "principal_arn": a.get("Principal")})
-              for path, doc in _docs(outs, "AllowedPrincipals") for a in doc.get("AllowedPrincipals") or ())]
+                "vpc_endpoint_service_id": a.get("ServiceId") or stem(path), "principal_arn": a.get("Principal")})
+              for path, doc in documents(outs, "AllowedPrincipals") for a in doc.get("AllowedPrincipals") or ())]
 
 
 def _links(outs):
-    return [*(("aws_vpc_peering_connection", {"id": p.get("VpcPeeringConnectionId"), "tags": _tags(p.get("Tags")),
+    return [*(("aws_vpc_peering_connection", {"id": p.get("VpcPeeringConnectionId"), "tags": tags_of(p.get("Tags")),
                                               "accept_status": (p.get("Status") or {}).get("Code"),
                                               "vpc_id": (p.get("RequesterVpcInfo") or {}).get("VpcId"),
                                               "peer_vpc_id": (p.get("AccepterVpcInfo") or {}).get("VpcId")})
-              for p in _all(outs, "VpcPeeringConnections")),
+              for p in items(outs, "VpcPeeringConnections")),
             *(("aws_ec2_transit_gateway_vpc_attachment", {
                 "id": t.get("TransitGatewayAttachmentId"), "transit_gateway_id": t.get("TransitGatewayId"),
-                "vpc_id": t.get("VpcId"), "tags": _tags(t.get("Tags"))})
-              for t in _all(outs, "TransitGatewayVpcAttachments")),
+                "vpc_id": t.get("VpcId"), "tags": tags_of(t.get("Tags"))})
+              for t in items(outs, "TransitGatewayVpcAttachments")),
             *(("aws_vpn_connection", {"id": v.get("VpnConnectionId"), "customer_gateway_id": v.get("CustomerGatewayId"),
-                                      "vpn_gateway_id": v.get("VpnGatewayId"), "tags": _tags(v.get("Tags"))})
-              for v in _all(outs, "VpnConnections")),
+                                      "vpn_gateway_id": v.get("VpnGatewayId"), "tags": tags_of(v.get("Tags"))})
+              for v in items(outs, "VpnConnections")),
             *(("aws_customer_gateway", {"id": g.get("CustomerGatewayId"), "ip_address": g.get("IpAddress"),
-                                        "bgp_asn": g.get("BgpAsn")}) for g in _all(outs, "CustomerGateways")),
+                                        "bgp_asn": g.get("BgpAsn")}) for g in items(outs, "CustomerGateways")),
             *(("aws_vpn_gateway", {"id": g.get("VpnGatewayId"), "amazon_side_asn": g.get("AmazonSideAsn")})
-              for g in _all(outs, "VpnGateways"))]
+              for g in items(outs, "VpnGateways"))]
 
 
 _FLOW_SCOPES = (("vpc-", "vpc_id"), ("subnet-", "subnet_id"), ("eni-", "eni_id"),
@@ -139,10 +125,10 @@ def _flow_logs(outs):
     return [("aws_flow_log", {
         "id": f.get("FlowLogId"), "log_destination_type": f.get("LogDestinationType"),
         "log_destination": f.get("LogDestination"), "log_group_name": f.get("LogGroupName"),
-        "tags": _tags(f.get("Tags")),
+        "tags": tags_of(f.get("Tags")),
         **next(({attr: f.get("ResourceId")} for prefix, attr in _FLOW_SCOPES
                 if (f.get("ResourceId") or "").startswith(prefix)), {})})
-        for f in _all(outs, "FlowLogs")]
+        for f in items(outs, "FlowLogs")]
 
 
 def _firewalls(outs):
@@ -153,22 +139,22 @@ def _firewalls(outs):
             "targets": source.get("Targets") or []}]}]}] if source else []
     return [*(("aws_networkfirewall_rule_group", {
                 "arn": (doc["RuleGroupResponse"] or {}).get("RuleGroupArn"),
-                "tags": _tags((doc["RuleGroupResponse"] or {}).get("Tags")), "rule_group": listed(doc)})
-              for _, doc in _docs(outs, "RuleGroupResponse")),
+                "tags": tags_of((doc["RuleGroupResponse"] or {}).get("Tags")), "rule_group": listed(doc)})
+              for _, doc in documents(outs, "RuleGroupResponse")),
             *(("aws_networkfirewall_firewall_policy", {
                 "arn": (doc["FirewallPolicyResponse"] or {}).get("FirewallPolicyArn"),
-                "tags": _tags((doc["FirewallPolicyResponse"] or {}).get("Tags")),
+                "tags": tags_of((doc["FirewallPolicyResponse"] or {}).get("Tags")),
                 "firewall_policy": [{"stateful_rule_group_reference": [
                     {"resource_arn": r.get("ResourceArn")}
                     for r in (doc.get("FirewallPolicy") or {}).get("StatefulRuleGroupReferences") or ()]}]})
-              for _, doc in _docs(outs, "FirewallPolicyResponse")),
+              for _, doc in documents(outs, "FirewallPolicyResponse")),
             *(("aws_networkfirewall_firewall", {
                 "arn": (doc.get("Firewall") or {}).get("FirewallArn"),
                 "firewall_policy_arn": (doc.get("Firewall") or {}).get("FirewallPolicyArn"),
                 "firewall_status": [{"sync_states": [
                     {"attachment": [{"endpoint_id": (state.get("Attachment") or {}).get("EndpointId")}]}
                     for state in ((doc.get("FirewallStatus") or {}).get("SyncStates") or {}).values()]}]})
-              for _, doc in _docs(outs, "FirewallStatus"))]
+              for _, doc in documents(outs, "FirewallStatus"))]
 
 
 def network_pairs(outs):

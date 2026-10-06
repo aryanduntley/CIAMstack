@@ -154,6 +154,13 @@
       "match": "Role `acl-ds` is bound in source/prod but not in target/prod",
       "planted": "the source's network ACL on the directory subnet has no counterpart in the target (Azure has none: its NSGs do that work); decide, and record why",
       "cleared_by": null
+    },
+    {
+      "id": "B23",
+      "area": "PingFederate",
+      "match": "Data store `corp-directory` has withheld credentials but no credential role",
+      "planted": "imported corporate directory store names no secret",
+      "cleared_by": "CHG-2005"
     }
   ],
   "actions": [
@@ -617,6 +624,13 @@
       "area": "Egress",
       "match": "no route sends internet egress through `egress-firewall`",
       "planted": "the target's route table sends internet traffic straight to the NAT gateway, around the hub firewall whose domain rules the stack relies on",
+      "cleared_by": null
+    },
+    {
+      "id": "A67",
+      "area": "PingFederate",
+      "match": "Data store `corp-directory` reaches a fixed host",
+      "planted": "PingFederate's corporate directory store lists two domain controllers, the same from every environment (its fix records both, in order, as one role's hosts)",
       "cleared_by": null
     }
   ]

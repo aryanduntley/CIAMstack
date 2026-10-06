@@ -24,6 +24,7 @@ from opsdir.domains.access.workloads import identity_of, workload_identities
 from opsdir.domains.edge.resolve import inspected, service_edge
 from opsdir.domains.network.stack import firewall_model
 from opsdir_adapter_gcp.access import ACCESS
+from opsdir_adapter_gcp.databases import render_databases
 from opsdir_adapter_gcp.dns import forwarding_zones, records, service_record
 from opsdir_adapter_gcp.edge import application_lb, network_ddos
 from opsdir_adapter_gcp.firewall_policy import health_check_rule, policy_firewall
@@ -209,7 +210,8 @@ def render(m, services):
     out = (*network_data(m), *_firewall(m), *chain.from_iterable(identity(m, w) for w in identities),
            *(_instance(m, s, kms, identities) for s in m.servers),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
-           *render_network(m, endpoints), *records(m.d, m), *forwarding_zones(m), *_references(m))
+           *render_network(m, endpoints), *render_databases(m), *records(m.d, m), *forwarding_zones(m),
+           *_references(m))
     main = header(m, "Google Cloud infrastructure for the CIAM platform", HCL) + unbound_comments(m.unbound) + "\n" \
         + "\n\n".join(out) + "\n"
     providers = header(m, "Providers and inputs", HCL) + "\n" + "\n\n".join([

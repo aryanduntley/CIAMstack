@@ -18,6 +18,8 @@ mapping reads them as reads Terraform state (opsdir_adapter_gcp.inventory.pairs_
   gcloud secrets list, gcloud kms keys list, gcloud storage buckets list, gcloud functions list, gcloud run jobs list,
   gcloud scheduler jobs list, gcloud builds triggers list, gcloud container clusters list, gcloud pubsub topics list,
   gcloud monitoring channels|policies|uptime list, gcloud logging buckets list      by their resource names and shapes
+  gcloud sql instances list                     Cloud SQL instances (sql#instance), as their assets
+                                                (sqladmin.googleapis.com/Instance) are: never a password
   gcloud projects describe <project>            project numbers (in Secret Manager's and others' names) read as IDs
   the network depth: network and hierarchical firewall policies, routes, service attachments, VPN tunnels,
   interconnect attachments, tag values and bindings: see cli_network.py
@@ -40,6 +42,7 @@ from opsdir.core.sources import json_records
 from .cli_edge import KINDS as EDGE_KINDS, backend_attributes, edge_pairs, record_routing
 from .cli_iam import KINDS as IAM_KINDS, iam_kind, iam_pairs
 from .cli_network import KINDS as NETWORK_KINDS, network_pairs, network_shape
+from .databases import sql_instance
 from .inventory import PROVIDER, pairs_resources
 from .names import name_parts, resource_id
 
@@ -73,6 +76,7 @@ KINDS = MappingProxyType({
     "monitoring.googleapis.com/AlertPolicy": "alert-policy",
     "monitoring.googleapis.com/UptimeCheckConfig": "uptime-check",
     "logging.googleapis.com/LogBucket": "log-bucket",
+    "sqladmin.googleapis.com/Instance": "database", "sql#instance": "database",
     **EDGE_KINDS, **NETWORK_KINDS,
 })
 # asset types another asset already holds: a cluster its node pools, Function a 1st-gen CloudFunction
@@ -465,6 +469,7 @@ def cli_resources(texts, at=None):
                                           *_load_balancing(items), *_egress(items), *_compute_groups(items),
                                           *_references(items), *_automation(items), *_clusters(items),
                                           *_monitoring(items), *iam_pairs(items, at),
+                                          *(sql_instance(d) for d, _ in _of(items, "database")),
                                           *network_pairs(lambda kind: _of(items, kind))], items)
     pairs, scope_notices = _scoped(pairs)
     resources, notices = pairs_resources(pairs)

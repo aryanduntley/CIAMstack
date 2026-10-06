@@ -77,6 +77,21 @@ What the core `network` domain records and the stack keeps itself (no `ciamManag
 | `ciamProxy` kind `firewall` the stack keeps | An `aws_networkfirewall_rule_group` (`STATEFUL`, `rules_source_list` `ALLOWLIST` on `TLS_SNI` and `HTTP_HOST`, `*.example` as `.example`, `HOME_NET` the network's range) and a comment to reference it from the firewall policy its `ciamProviderRef` names. A domain list matches web traffic only: sites on other ports (a mail relay on 587) are named in a comment, decided by the policy's other rules |
 | Other proxies (a forward proxy, a proxy service) | A comment: their allowlist is kept there |
 
+### Managed databases
+
+The core `data` domain's databases (`ciamDatabase`) the stack keeps render into `main.tf`; one naming someone else in `ciamManagedBy` is a comment naming them (`opsdir_adapter_aws.databases`).
+
+| Record | Renders as |
+|---|---|
+| `ciamDatabase` (service `rds`, or none) | `aws_db_instance`: engine from `ciamDbEngine` and `ciamDbEdition` (`postgres`, `mysql`, `mariadb`, `sqlserver-se`/`-ee`/`-ex`/`-web`, `oracle-se2`/`-ee`), `ciamDbEngineVersion`, `ciamInstanceSize`, `ciamDbStorageGb`, `ciamPort`, `multi_az` when `ciamDbHighAvailability` is `zone-redundant` (else `ciamZone`), `storage_encrypted` with the KMS key of `ciamEncryptedByRole`, `backup_retention_period` from `ciamRetentionDays`, `deletion_protection`, not publicly accessible; tags `Name`, `Role`, `ManagedBy` |
+| service `aurora` (PostgreSQL, MySQL) | `aws_rds_cluster` with the same settings and one `aws_rds_cluster_instance`, two when zone-redundant |
+| Credentials | `manage_master_user_password`: RDS keeps the master password in Secrets Manager, so no password is in the Terraform, its state or the record; `ciamDbCredentialRole` names that secret's binding. The master user name is a variable, `<database>_admin_username` |
+| `ciamSubnetRole` | `aws_db_subnet_group` of those subnets |
+| Its role | `aws_security_group` `ciam-<env>-<role>`: the firewall rules targeting the role go on it |
+| `ciamDbParameter`, `ciamDbTlsRequired` | `aws_db_parameter_group` (Aurora: `aws_rds_cluster_parameter_group`), family from the engine, edition and major version (`postgres16`, `mysql8.0`, `sqlserver-se-15.0`), holding the parameters and, where TLS differs from the engine's default, `rds.force_ssl` (PostgreSQL, SQL Server; required by default from PostgreSQL 15) or `require_secure_transport` (MySQL, MariaDB). Oracle's TLS needs an option group: a comment |
+| `ciamProviderRef` recorded | An `import` block (the ARN's last part is the identifier): the database is adopted, not created. Its subnet and parameter groups are adopted by hand, or Terraform creates new ones and moves it to them |
+| `ciamDbPointInTime` `FALSE` with backups kept | A comment: RDS restores to a point in time whenever it keeps backups |
+
 ## Reading an environment back from Terraform state
 
 ```bash
@@ -165,6 +180,15 @@ What the network carries beyond VPCs, subnets and security groups comes back in 
 | `aws_vpc_peering_connection`, `aws_ec2_transit_gateway_vpc_attachment`, `aws_vpn_connection` (+ customer and VPN gateways) | interconnect depth: kind, whether the other side accepted, a VPN's peer gateway and BGP numbers; a peering's other side is the environment whose network binding is one of its two VPCs (the one that isn't this environment's), else its tag `PeerEnvironment: <cloud>/<env>`; a new link needs one of them |
 | `aws_flow_log` | flow log: scope (VPC, subnet, interface, transit), the log group it writes to and its retention; untagged, a subnet's takes the role `flow-logs-<subnet role>` |
 | `aws_nat_gateway` | its egress binding's `ciamNatAllocation`: `static` for a public NAT gateway's Elastic IP |
+
+### Managed databases, read back
+
+`opsdir_adapter_aws.databases` (the CLI normalizes to the same names: `cli_database.py`). Matching is by provider ref (the ARN); a new one needs its tag `Role`. Named fields only: `password` and `master_password` are never read.
+
+| AWS resource | Record entry |
+|---|---|
+| `aws_db_instance` (not an Aurora member) + its `aws_db_subnet_group` and `aws_db_parameter_group` | database: engine, edition and service (`rds`), version (`engine_version_actual` over `engine_version`), endpoint (`address`) and port, size, storage, zone (single-zone only), `zone-redundant` when `multi_az`, TLS from `rds.force_ssl` / `require_secure_transport` (else the engine's default), retention and point-in-time restore (on while backups are kept), deletion protection, the other parameters the group sets; its subnets, KMS key and master secret (`master_user_secret`) as the roles of those bindings |
+| `aws_rds_cluster` (+ `aws_rds_cluster_instance`, `aws_rds_cluster_parameter_group`) | the same with service `aurora`; `zone-redundant` when its instances are in more than one zone, the size its instances' |
 
 ## Reading an environment from the AWS CLI
 
@@ -258,6 +282,19 @@ for arn in $(aws network-firewall list-firewall-policies --query 'FirewallPolici
 done
 for arn in $(aws network-firewall list-firewalls --query 'Firewalls[].FirewallArn' --output text); do
   aws network-firewall describe-firewall --firewall-arn "$arn"                    > "$out/firewall-${arn##*/}.json"
+done
+
+# managed databases: instances, Aurora clusters, subnet groups and the parameters set on their groups (only user-set
+# values are read; a group's output must be saved under its name, since the output doesn't say)
+aws rds describe-db-instances                                                    > $out/rds-instances.json
+aws rds describe-db-clusters                                                     > $out/rds-clusters.json
+aws rds describe-db-subnet-groups                                                > $out/rds-subnet-groups.json
+mkdir -p $out/db-parameters $out/db-cluster-parameters
+for g in $(aws rds describe-db-parameter-groups --query 'DBParameterGroups[?!starts_with(DBParameterGroupName, `default.`)].DBParameterGroupName' --output text); do
+  aws rds describe-db-parameters --db-parameter-group-name "$g" --source user     > "$out/db-parameters/$g.json"
+done
+for g in $(aws rds describe-db-cluster-parameter-groups --query 'DBClusterParameterGroups[?!starts_with(DBClusterParameterGroupName, `default.`)].DBClusterParameterGroupName' --output text); do
+  aws rds describe-db-cluster-parameters --db-cluster-parameter-group-name "$g" --source user > "$out/db-cluster-parameters/$g.json"
 done
 
 # IAM: roles and policies (AWS managed ones included), key and bucket policies, Identity Center, control policies
@@ -392,7 +429,8 @@ It adds no required roles, planner checks or schema of its own; the environment'
 - **Commercial partition only.** GovCloud and China (`aws-us-gov`, `aws-cn`) aren't in the vocabulary yet.
 - **Port ranges** aren't recorded (`ciamPort` holds single ports): the importers name them; the renderer writes single ports only.
 - **Services without an edge policy are TCP network load balancers.** With one, the renderer writes an application load balancer, its web ACL and Shield protection (see Edge); reading their listeners, TLS policies, certificates, web ACLs and Shield back comes with milestone 4.8's importers. An ALB's addresses are AWS's: a recorded frontend address isn't kept.
-- **What the importers can't see:** egress rules, sources other than IPv4 CIDRs, key pairs, IAM in CLI output and CloudFormation stacks (Terraform state only, for now), Image Builder pipelines (`ciamImageBuild` is recorded by hand), autoscaling groups and EKS clusters, and the monitoring above (log groups, alarms, canaries, alert topics), in CLI output and CloudFormation stacks (Terraform state only, for now), KMS key protection, bucket encryption (4.10), CloudFront / WAF / API Gateway (edge importers, 4.8), databases (counted, 4.10).
+- **What the importers can't see:** egress rules, sources other than IPv4 CIDRs, key pairs, IAM in CLI output and CloudFormation stacks (Terraform state only, for now), Image Builder pipelines (`ciamImageBuild` is recorded by hand), autoscaling groups and EKS clusters, and the monitoring above (log groups, alarms, canaries, alert topics), in CLI output and CloudFormation stacks (Terraform state only, for now), KMS key protection, bucket encryption (4.10), CloudFront / WAF / API Gateway (edge importers, 4.8), databases in CloudFormation stacks (milestone 5.6; Terraform state and CLI output read them).
+- **Databases someone else keeps** (`ciamManagedBy`) are named in a comment, not rendered into their keeper's root yet.
 
 ## Tests
 
@@ -417,6 +455,8 @@ It adds no required roles, planner checks or schema of its own; the environment'
 `tests/test_aws_access.py`: the AWS access table: a secret by its suffixed ARN or a pattern (not a longer name, not the bare ARN), objects in a bucket (reading also needs `s3:ListBucket`), a topic by stream kind, escalation actions. `tests/test_aws_identities.py`: a workload's IAM role, least-privilege policy and instance profile; notes for what can't be granted.
 
 `tests/test_aws_network.py`: the network depth the stack keeps: an interface endpoint with its security group and private DNS, a gateway endpoint on its subnets' and the main route tables, what AWS has no endpoint for, an endpoint service on an L4 service's NLB and not an ALB, the egress firewall's domain list (web traffic only), what others keep named, nothing rendered without records.
+
+`tests/test_aws_databases.py`: managed databases rendered (an RDS instance with its subnet, security and parameter groups, key, RDS-managed password and import block; TLS as a parameter where it isn't the default; Aurora with an instance per zone; one someone else keeps named) and read back from state and the CLI (Aurora members, user-set parameters only, SSM parameters and passwords never read, VPC scoping, render-to-state round trip).
 
 `tests/test_aws_network_state.py`: the network depth read back: route tables (targets as provider refs, a Network Firewall endpoint as the firewall, gateway endpoints, main table), network ACLs (IPv6 named), VPC endpoints and their security groups left out of the rules, endpoint services, the egress firewall's domain list under its policy, peering, transit and VPN depth, flow logs; the CLI (local route and rule 32767 left out) and CloudFormation reading the same.
 

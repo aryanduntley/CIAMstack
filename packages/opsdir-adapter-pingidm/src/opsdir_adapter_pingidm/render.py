@@ -4,8 +4,9 @@
   pingidm/conf/sync.json                             sync mappings              (environment-neutral)
   pingidm/conf/schedule-<name>.json                  schedules                  (environment-neutral)
   pingidm/conf/provisioner.openicf-<name>.json       connectors: the host from the binding of the connector's target
-                                                     role, withheld credentials as ${secret:<ref-uri>} of its
-                                                     credential role              (per environment)
+                                                     role (in its JDBC URL when the import found it there: every
+                                                     binding of the role, in host order), withheld credentials as
+                                                     ${secret:<ref-uri>} of its credential role   (per environment)
 
 The files follow IDM's conf/ layout but are not validated against a live IDM (milestone 7.2). A role the environment
 doesn't bind renders as UNBOUND:<role>, and a withheld value no credential role supplies as ${withheld} (the planner
@@ -15,6 +16,7 @@ blocks on both).
 from opsdir.core.directory import children, one, rdn_value, values
 from opsdir.core.environment import bound, secret_placeholder
 from opsdir.core.jsondata import WITHHELD, held_json, indented, with_value, with_values
+from opsdir.domains.infrastructure.external import is_jdbc_url, jdbc_hosts, role_hosts, with_jdbc_hosts
 from .naming import CONNECTORS, MANAGED, MAPPINGS, SCHEDULES
 
 FORMATS = (("pingidm/conf/*.json", "json"),)
@@ -52,11 +54,20 @@ def render_neutral(d):
             **schedule_files(d)}
 
 
+def _hosted(m, config, role, port):
+    """The connector's settings with environment m's host of its target role: in its JDBC URL when the import took
+    the hosts from there (the URL holds none), else as configurationProperties.host."""
+    url = (config.get("configurationProperties") or {}).get("url")
+    if is_jdbc_url(url) and not jdbc_hosts(url):
+        return with_value(config, "/configurationProperties/url", with_jdbc_hosts(url, role_hosts(m, role, port)))
+    return with_value(config, "/configurationProperties/host", bound(m, role, "ciamFqdn"))
+
+
 def provisioner(m, c):
     """A connector's provisioner file for environment m: its host and credentials from the environment's bindings."""
     target, credential = one(c, "pingidmTargetRole"), one(c, "pingidmCredentialRole")
     config = _config(c)
-    hosted = with_value(config, "/configurationProperties/host", bound(m, target, "ciamFqdn")) if target else config
+    hosted = _hosted(m, config, target, one(c, "pingidmPort")) if target else config
     filled = with_values(hosted, values(c, "pingidmWithheld"), secret_placeholder(m, credential) if credential
                          else WITHHELD)
     ref = {k: v for k, v in (("bundleName", one(c, "pingidmBundle")), ("bundleVersion", one(c, "pingidmBundleVersion")),

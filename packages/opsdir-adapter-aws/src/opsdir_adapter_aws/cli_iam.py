@@ -26,18 +26,11 @@ other AWS CLI outputs (opsdir_adapter_aws.cli):
 """
 from opsdir.domains.access.evaluations import evaluations_by_identity
 from .access import simulation_verdict
+from .cli_outputs import stem, tags_of
 
 KEYS = ("RoleDetailList", "ResourcePolicy", "PermissionSet", "AccountAssignments", "InlinePolicy",
         "AttachedManagedPolicies", "EvaluationResults", "Policy")
 EVALUATOR = "aws-simulator"
-
-
-def _tags(tags):
-    return {t["Key"]: t.get("Value", "") for t in tags or () if isinstance(t, dict) and "Key" in t}
-
-
-def _stem(path):
-    return path.rsplit("/", 1)[-1].rsplit(".", 1)[0]
 
 
 def _folder(path):
@@ -62,7 +55,7 @@ def _authorization(outs):
                                   for p in r.get("RolePolicyList") or ()],
                 "managed_policy_arns": [a.get("PolicyArn") for a in r.get("AttachedManagedPolicies") or ()],
                 "permissions_boundary": (r.get("PermissionsBoundary") or {}).get("PermissionsBoundaryArn"),
-                "tags": _tags(r.get("Tags"))})
+                "tags": tags_of(r.get("Tags"))})
                for doc in docs for r in doc.get("RoleDetailList") or ()),
              *(("aws_iam_policy", {"arn": p.get("Arn"), "name": p.get("PolicyName"), "policy": default_version(p)})
                for doc in docs for p in doc.get("Policies") or () if default_version(p))],
@@ -80,9 +73,9 @@ def _policies(outs):
                                                  "name": summary.get("Name"), "type": summary.get("Type"),
                                                  "content": policy.get("Content")})
         if _folder(path) == "key-policy":
-            return "aws_kms_key_policy", {"key_id": _stem(path), "policy": policy}
+            return "aws_kms_key_policy", {"key_id": stem(path), "policy": policy}
         if _folder(path) == "bucket-policy":
-            return "aws_s3_bucket_policy", {"bucket": _stem(path), "policy": policy}
+            return "aws_s3_bucket_policy", {"bucket": stem(path), "policy": policy}
         return None
     read = [(p, one(p, doc)) for p, doc in _of(outs, "Policy")]
     return ([pair for _, pair in read if pair],
@@ -96,10 +89,10 @@ def _identity_center(outs):
     by_name = {s.get("Name"): s.get("PermissionSetArn") for s in sets}
     return [*(("aws_ssoadmin_permission_set", {"arn": s.get("PermissionSetArn"), "name": s.get("Name")})
               for s in sets),
-            *(("aws_ssoadmin_permission_set_inline_policy", {"permission_set_arn": by_name.get(_stem(p)),
+            *(("aws_ssoadmin_permission_set_inline_policy", {"permission_set_arn": by_name.get(stem(p)),
                                                              "inline_policy": doc.get("InlinePolicy")})
               for p, doc in _of(outs, "InlinePolicy") if doc.get("InlinePolicy")),
-            *(("aws_ssoadmin_managed_policy_attachment", {"permission_set_arn": by_name.get(_stem(p)),
+            *(("aws_ssoadmin_managed_policy_attachment", {"permission_set_arn": by_name.get(stem(p)),
                                                           "managed_policy_arn": a.get("Arn")})
               for p, doc in _of(outs, "AttachedManagedPolicies") for a in doc.get("AttachedManagedPolicies") or ()),
             *(("aws_ssoadmin_account_assignment", {"permission_set_arn": a.get("PermissionSetArn"),

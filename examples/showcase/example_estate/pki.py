@@ -73,6 +73,8 @@ CREDENTIALS = (
      None, "cn=pf-ds-svc,ou=consumers,dc=ciam-ops", None),
     ("pf-grants-db-password", "password", None, None, ["authentication"], "text", None, "TRUE", 180, "per-environment",
      None, None, None),
+    ("pf-corp-ad-bind-password", "password", None, None, ["authentication"], "text", None, "TRUE", 90,
+     "per-environment", None, None, None),
     ("pf-smtp-password", "password", None, None, ["authentication"], "text", None, "TRUE", 90, "per-environment",
      None, None, None),
     ("pf-captcha-secret", "api-token", None, None, ["authentication"], "text", None, "TRUE", 365, "carry-over",

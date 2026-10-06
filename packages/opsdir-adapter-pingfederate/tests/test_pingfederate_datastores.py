@@ -230,3 +230,61 @@ def test_stores_the_target_can_serve_are_ok():
     f = plan(d, "alpha/prod")
     assert (f.blockers, f.actions, f.ok) == ((), (), ("PingFederate's 1 data store(s) reach their systems through "
                                                       "roles alpha/prod binds.",))
+
+
+CORP_AD = {"type": "LDAP", "id": "corp-ad", "name": "Corporate AD", "useSsl": True, "userDN": "cn=pf,dc=corp",
+           "hostnames": ["dc1.corp.example.test:636", "DC2.corp.example.test:3269", "dc1.corp.example.test:636"]}
+BETA = "env=prod,cloud=beta,ou=environments,dc=ciam-ops"
+BETA_AD = tuple(parse(f"dn: ou=bindings,{BETA}\nchangetype: add\nobjectClass: top\nobjectClass: organizationalUnit\n"
+                      f"ou: bindings\n\ndn: cn=ext-ad,ou=bindings,{BETA}\nchangetype: add\nobjectClass: top\n"
+                      "objectClass: ciamExternalHost\ncn: ext-ad\nciamBindingRole: corp-ad\n"
+                      "ciamFqdn: ad.beta.example.test\nciamPort: 636\n"))
+
+
+def test_a_store_reaching_several_fixed_hosts_records_one_binding_each_and_renders_every_one_in_order():
+    d, _, _ = imported((), export([CORP_AD]))
+    (fix,) = (f for f in plan(d).fixes if f.key == "external-host:data-stores/corp-ad")
+    assert fix.title == ("Record `dc1.corp.example.test`, `DC2.corp.example.test`, which data store `corp-ad` reaches, "
+                         "as alpha/prod's hosts of a role")
+    recorded = chosen(fix, given={"role": ("corp-ad",)}).records
+    assert [r.attrs for r in recorded[-2:]] == [
+        {"objectClass": ("top", "ciamExternalHost"), "cn": ("ext-dc1-corp-example-test",),
+         "ciamFqdn": ("dc1.corp.example.test",), "ciamPort": ("636",), "ciamHostOrder": ("1",),
+         "ciamBindingRole": ("corp-ad",)},
+        {"objectClass": ("top", "ciamExternalHost"), "cn": ("ext-dc2-corp-example-test",),
+         "ciamFqdn": ("DC2.corp.example.test",), "ciamPort": ("3269",), "ciamHostOrder": ("2",),
+         "ciamBindingRole": ("corp-ad",)}]
+    base = build_directory(REGISTRY, records(), (*recorded, *BETA_AD))
+    changes, notices = preview_import(base, "pingfederate/bulk", export([CORP_AD]), (ADAPTER,))
+    d = build_directory(REGISTRY, records(), (*recorded, *BETA_AD, *changes))
+    store = get(d, named(DATA_STORES, "corp-ad"))
+    assert (one(store, "pingfedTargetRole"), one(store, "pingfedPort")) == ("corp-ad", None)
+    assert not any("corp-ad" in n and "neither" in n for n in notices)
+    hosts = lambda env: json.loads(render_env(env_model(d, env), None)[             # noqa: E731
+        "pingfederate/data-stores.json"])[0]["hostnames"]
+    assert hosts("alpha/prod") == ["dc1.corp.example.test:636", "DC2.corp.example.test:3269"]
+    assert hosts("beta/prod") == ["ad.beta.example.test:636"]          # one host there: the default
+    assert not any(f.key.startswith("external-host:") for f in plan(d).fixes)
+    rendered = render_env(env_model(d, "alpha/prod"), None)
+    assert preview_import(d, "pingfederate/bulk", {"data.json": json.dumps({
+        "metadata": {"pfVersion": "12.1.4.0"}, "operations": [{"operationType": "SAVE", "resourceType": "/dataStores",
+                                                               "items": json.loads(rendered[
+                                                                   "pingfederate/data-stores.json"])}]})},
+                          (ADAPTER,))[0] == ()
+
+
+def test_hosts_sharing_a_port_keep_it_on_the_store_and_a_partly_named_setting_gets_no_fix():
+    shared = {**CORP_AD, "hostnames": ["dc1.corp.example.test:636", "dc2.corp.example.test:636"]}
+    d, _, _ = imported((), export([shared]))
+    (fix,) = (f for f in plan(d).fixes if f.key == "external-host:data-stores/corp-ad")
+    recorded = chosen(fix, given={"role": ("corp-ad",)}).records
+    assert all("ciamPort" not in r.attrs for r in recorded[-2:])
+    base = build_directory(REGISTRY, records(), recorded)
+    d = build_directory(REGISTRY, records(), (*recorded, *preview_import(base, "pingfederate/bulk", export([shared]),
+                                                                          (ADAPTER,))[0]))
+    assert one(get(d, named(DATA_STORES, "corp-ad")), "pingfedPort") == "636"
+    assert json.loads(render_env(env_model(d, "alpha/prod"), None)["pingfederate/data-stores.json"])[0][
+        "hostnames"] == ["dc1.corp.example.test:636", "dc2.corp.example.test:636"]
+    mixed = {**CORP_AD, "hostnames": ["ldap.example.test:1636", "dc9.corp.example.test:636"]}
+    d, _, _ = imported((), export([mixed]))
+    assert not any(f.key == "external-host:data-stores/corp-ad" for f in plan(d).fixes)

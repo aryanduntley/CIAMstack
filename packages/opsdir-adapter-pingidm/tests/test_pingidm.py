@@ -172,18 +172,50 @@ def test_the_planner_names_what_the_target_or_the_deployment_lacks():
     assert [t for _, t, _, _ in f.actions] == [
         "Connector `hrdb` reaches a fixed host from every environment (no target role): confirm beta/prod can reach "
         "it, or record the system's service name."]
-    assert f.fixes == ()                                                  # the target binds no secret to offer
+    assert [x.key for x in f.fixes] == ["external-host:connector/hrdb"]  # the target binds no secret to offer
     secret = tuple(parse("dn: cn=idm-ds,ou=bindings,env=prod,cloud=beta,ou=environments,dc=ciam-ops\n"
                          "changetype: add\nobjectClass: top\nobjectClass: ciamSecretRef\ncn: idm-ds\n"
                          "ciamBindingRole: idm-ds-bind-password\nciamRefUri: fake://idm-ds\n"))
     fixes = plan(imported(secret)[0]).fixes
     assert [(x.key, [o.key for o in x.options]) for x in fixes] == [
         ("credential-role:connector/hrdb", ["idm-ds-bind-password"]),
+        ("external-host:connector/hrdb", []),
         ("credential-role:connector/ldap", ["idm-ds-bind-password"])]
-    ldap = chosen(fixes[1], "idm-ds-bind-password").records
+    ldap = chosen(fixes[2], "idm-ds-bind-password").records
     assert not any("`ldap` has withheld credentials" in t for _, t, _ in plan(imported((*secret, *ldap))[0]).blockers)
     broken = parse(f"dn: {named(MAPPINGS, 'hr_managedUser')}\nchangetype: modify\nreplace: pingidmTarget\n"
                    "pingidmTarget: managed/person\n-\n")
     d2, _, _ = imported(broken)
     assert "`hr_managedUser`: managed/person names managed object 'person', which the record doesn't have." in \
         [t for _, t, _ in plan(d2, "alpha/prod").blockers]
+
+
+BETA = "env=prod,cloud=beta,ou=environments,dc=ciam-ops"
+BETA_HR = tuple(parse(f"dn: ou=bindings,{BETA}\nchangetype: add\nobjectClass: top\nobjectClass: organizationalUnit\n"
+                      f"ou: bindings\n\ndn: cn=ext-hr,ou=bindings,{BETA}\nchangetype: add\nobjectClass: top\n"
+                      "objectClass: ciamExternalHost\ncn: ext-hr\nciamBindingRole: hr-database\n"
+                      "ciamFqdn: hr.beta.example.test\n"))
+
+
+def test_a_connector_whose_host_is_in_a_jdbc_url_is_named_by_the_fix_and_renders_each_environments_host():
+    d, _, _ = imported()
+    (fix,) = (x for x in plan(d).fixes if x.key == "external-host:connector/hrdb")
+    assert fix.title == "Record `hrdb.corp.example.test`, which connector `hrdb` reaches, as alpha/prod's host of a role"
+    named_it = chosen(fix, given={"role": ("hr-database",)}).records
+    base = build_directory(REGISTRY, records(), (*named_it, *BETA_HR))   # the fix applied, the project imported again
+    changes, notices = preview_import(base, "pingidm", files_of(PROJECT), (ADAPTER,))
+    d = build_directory(REGISTRY, records(), (*named_it, *BETA_HR, *changes))
+    h = get(d, HRDB)
+    assert (one(h, "pingidmTargetRole"), one(h, "pingidmPort")) == ("hr-database", "5432")
+    assert json.loads(one(h, "pingidmConfig"))["configurationProperties"]["url"] == "jdbc:postgresql:///hr"
+    assert not any("connector hrdb: no host" in n for n in notices)
+    url = lambda env: json.loads(render_env(env_model(d, env), None)[                       # noqa: E731
+        "pingidm/conf/provisioner.openicf-hrdb.json"])["configurationProperties"]["url"]
+    assert (url("alpha/prod"), url("beta/prod")) == ("jdbc:postgresql://hrdb.corp.example.test:5432/hr",
+                                                     "jdbc:postgresql://hr.beta.example.test:5432/hr")
+    assert "host" not in json.loads(render_env(env_model(d, "alpha/prod"), None)[
+        "pingidm/conf/provisioner.openicf-hrdb.json"])["configurationProperties"]
+    assert not any(x.key == "external-host:connector/hrdb" for x in plan(d).fixes)
+    files = {**render_neutral(d), **render_env(env_model(d, "alpha/prod"), None)}
+    again, _ = preview_import(d, "pingidm", {p[len("pingidm/"):]: t for p, t in files.items()}, (ADAPTER,))
+    assert again == ()

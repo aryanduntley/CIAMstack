@@ -14,7 +14,8 @@ from .observability import MONITORING
 SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password", "ds-tls-keystore",
                 "sso-tls-keystore", "pf-signing-key", "pf-admin-password", "am-admin-password", "am-keystore",
                 "am-ds-bind-password", "idm-admin-password", "idm-keystore", "idm-ds-bind-password", "idm-hrdb-password",
-                "ig-keystore", "pf-ds-bind-password", "pf-grants-db-password", "pf-smtp-password", "pf-captcha-secret")
+                "ig-keystore", "pf-ds-bind-password", "pf-grants-db-password", "pf-smtp-password", "pf-captcha-secret",
+                "pf-corp-ad-bind-password")
 DS_V, PF_V, AM_V, IDM_V, IG_V = "PingDS 7.5.1", "PingFederate 12.1.4", "PingAM 7.5.1", "PingIDM 7.5.0", "PingGateway 2024.11.0"
 IMG = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/"
 

@@ -1,8 +1,10 @@
 """IDM project import: an IDM project directory (its conf/ files) read into the record. Pure.
 
   conf/managed.json                  -> managed objects (pingidmManagedObject), in file order
-  conf/provisioner.openicf-*.json    -> connectors (pingidmConnector): a host that is a service name in the record
-                                        becomes that binding's role (rendered per environment); the bind account is
+  conf/provisioner.openicf-*.json    -> connectors (pingidmConnector): a host (configurationProperties.host, else the
+                                        hosts of a JDBC configurationProperties.url) that is a role in the record (a
+                                        service name, an external system's host) becomes that role (rendered per
+                                        environment; a JDBC URL's common port kept as pingidmPort); the bind account is
                                         matched to a directory consumer record; credentials are withheld
   conf/sync.json                     -> mappings (pingidmMapping), in file order
   conf/schedule-*.json               -> schedules (pingidmSchedule)
@@ -17,7 +19,6 @@ from types import MappingProxyType
 
 from opsdir.core.contract import Imported, Importer
 from opsdir.core.directory import get, make_entry, one, ou_entry
-from opsdir.core.environment import published_role
 from opsdir.core.formats import JAVA_PROPERTIES, JSON
 from opsdir.core.jsondata import canonical, rendered_in_place, without_secrets
 from opsdir.core.naming import rdn_safe
@@ -25,6 +26,7 @@ from opsdir.core.sources import json_document
 from opsdir.domains.configuration.naming import CONFIG_FILES
 from opsdir.domains.configuration.record import captured_file
 from opsdir.domains.directory.consumers import consumer_by_bind_dn
+from opsdir.domains.infrastructure.external import hosts_role, jdbc_hosts, with_jdbc_hosts
 from .naming import CONNECTORS, MANAGED, MAPPINGS, PINGIDM, SCHEDULES, SERVER_ROLES, named
 
 CONNECTOR_PREFIX, SCHEDULE_PREFIX = "conf/provisioner.openicf-", "conf/schedule-"
@@ -85,12 +87,19 @@ def _schedule(d, name, data, patterns):
 
 
 # ------------------------------------------------------------------ connectors
+def _without_hosts(props, host):
+    """The connector's properties without what each environment renders: its host, else its JDBC URL's hosts."""
+    if host:
+        return {k: v for k, v in props.items() if k != "host"}
+    return {**props, "url": with_jdbc_hosts(props.get("url"), ())}
+
+
 def _connector(d, name, data, patterns):
     props = data.get("configurationProperties") or {}
     host = props.get("host") or ""
-    role = host[len("UNBOUND:"):] if host.startswith("UNBOUND:") else published_role(d, host)
+    role, port = hosts_role(d, (host,) if host else jdbc_hosts(props.get("url")))
     consumer = consumer_by_bind_dn(d, props.get("principal"))
-    stored = {**data, "configurationProperties": {k: v for k, v in props.items() if not (role and k == "host")}}
+    stored = {**data, "configurationProperties": _without_hosts(props, host) if role else props}
     config, held = _settings(stored, patterns, ("name", "connectorRef"))
     ref = data.get("connectorRef") or {}
     dn = named(CONNECTORS, name)
@@ -99,6 +108,7 @@ def _connector(d, name, data, patterns):
         "cn": name, "pingidmConnectorName": ref.get("connectorName") or "unknown",
         "pingidmBundle": ref.get("bundleName"), "pingidmBundleVersion": ref.get("bundleVersion"),
         **({"pingidmTargetRole": role} if role else {}),
+        "pingidmPort": str(port) if role and port and not host else None,
         **({"pingidmConsumer": consumer.dn} if consumer else {}),
         "pingidmConfig": canonical(config), "pingidmWithheld": list(held)}, existing)
     notices = (*((f"connector {name}: its credentials are withheld; set pingidmCredentialRole to the secret role "

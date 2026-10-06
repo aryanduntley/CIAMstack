@@ -4,12 +4,12 @@ instance, authentication policy and OIDC policy names only objects the record ha
 withheld secrets come from a credential role the target binds."""
 
 from opsdir.core.directory import children, one, rdn_value, values
-from opsdir.core.environment import UNBOUND, bound_nowhere, one_role
+from opsdir.core.environment import bound_nowhere, one_role
 from opsdir.core.findings import findings, merge_findings, responsible
 from opsdir.core.jsondata import held_json
-from opsdir.domains.infrastructure.external import external_host_fix
+from opsdir.domains.infrastructure.external import external_hosts_fix, unnamed
 from opsdir.domains.pki.credentials import credential_role_fix
-from .datastores import store_host, store_hosts
+from .datastores import store_hosts
 from .discovery import CHOICES, RENDERED, binding_protocol, clustered, discovery_fix, lacks, where
 from .generic import held_resources, resource_label
 from .naming import DATA_STORES, DEFAULT_POLICY, DISCOVERY_ROLE, FRAGMENTS, OIDC_POLICIES
@@ -49,9 +49,8 @@ def _data_store(ctx, s):
                  if fixed else ()),
                *((("PingFederate", f"Data store `{name}` connects to the directory without TLS: turn on LDAPS or "
                    "StartTLS.", owner, None),) if plain else ()))
-    host = store_host({"type": kind, **config}) if fixed else None
-    fix = external_host_fix(ctx.src, host, f"data store `{name}`", f"external-host:data-stores/{name}",
-                            "pingfederate/bulk") if host and not host.startswith(UNBOUND) else None
+    fix = external_hosts_fix(ctx.src, fixed, f"data store `{name}`", f"external-host:data-stores/{name}",
+                             "pingfederate/bulk") if fixed and unnamed(ctx.d, fixed) else None
     return merge_findings([_credentials(ctx, s, f"Data store `{name}`", owner),
                            findings(actions=actions, fixes=(fix,) if fix else ())])
 

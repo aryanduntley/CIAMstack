@@ -28,6 +28,7 @@ from opsdir.core.contract import Importer
 from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_document
 from .cli import items_resources, kind_of
+from .cli_database import READ as DATABASE_TYPES
 from .cli_network import TYPES as NETWORK_TYPES
 from .arm_ids import arm_segment
 from .inventory import PROVIDER
@@ -43,7 +44,7 @@ READ_TYPES = ("microsoft.network/virtualnetworks", "microsoft.network/virtualnet
               "microsoft.network/natgateways", "microsoft.compute/diskencryptionsets",
               "microsoft.storage/storageaccounts/blobservices/containers", "microsoft.keyvault/vaults/secrets",
               "microsoft.keyvault/vaults/keys", "microsoft.web/sites", "microsoft.web/sites/functions",
-              *(t.lower() for t in NETWORK_TYPES))
+              *(t.lower() for t in NETWORK_TYPES), *DATABASE_TYPES)
 PLACEHOLDER = ("unknown-subscription", "unknown-group")   # IDs without a deployment: links within it still resolve
 SUB_RESOURCES = ("subnets", "ipConfigurations", "frontendIPConfigurations", "backendAddressPools",
                  "loadBalancingRules", "probes", "securityRules", "routes", "privateLinkServiceConnections",

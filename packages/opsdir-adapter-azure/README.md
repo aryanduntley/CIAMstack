@@ -73,6 +73,20 @@ What the core `network` domain records and the stack keeps itself (no `ciamManag
 | `ciamProxy` kind `firewall` the stack keeps | An `azurerm_firewall_policy_rule_collection_group` in the Firewall policy its `ciamProviderRef` names, from the network's range: application rules per web port (`Http` on 80, where certificate status is fetched; `Https` on 443), network rules by FQDN for other ports (they need the policy's DNS proxy) |
 | Other proxies | A comment: their allowlist is kept there |
 
+### Managed databases
+
+The core `data` domain's databases (`ciamDatabase`) the stack keeps render into `main.tf`; one naming someone else in `ciamManagedBy` is a comment naming them (`opsdir_adapter_azure.databases`). PostgreSQL and MySQL run on Azure Database Flexible Server; other engines are a comment (SQL Server is Azure SQL, a different offering).
+
+| Record | Renders as |
+|---|---|
+| `ciamDatabase` (`postgresql`, `mysql`) | `azurerm_postgresql_flexible_server` / `azurerm_mysql_flexible_server`: `version` (PostgreSQL's major version; MySQL `5.7` or `8.0.21`: Azure keeps minor versions current, so a re-import records the major version), `sku_name` from `ciamInstanceSize`, `storage_mb` / `storage.size_gb` from `ciamDbStorageGb`, `zone`, a `ZoneRedundant` standby when `ciamDbHighAvailability` is `zone-redundant`, `backup_retention_days`; tags `Role`, `ManagedBy` |
+| `ciamSubnetRole` | `delegated_subnet_id` of the first subnet named, `private_dns_zone_id` an input (`<database>_private_dns_zone_id`, the `privatelink.<engine>.database.azure.com` zone), no public network access |
+| `ciamEncryptedByRole` (an `azkv-key://` key) | `customer_managed_key` with the key (`data azurerm_key_vault_key`) through a user-assigned identity granted `Key Vault Crypto Service Encryption User` on the key |
+| `ciamDbCredentialRole` (an `azkv://` secret) | The administrator password read when applied by an `ephemeral azurerm_key_vault_secret` and written write-only (`administrator_password_wo`): no Terraform state holds it, and the record holds only the reference. The login is an input (`<database>_admin_login`) |
+| `ciamDbParameter`, `ciamDbTlsRequired` `FALSE` | A `…_flexible_server_configuration` per parameter, and `require_secure_transport` `off` (both engines require TLS by default) |
+| `ciamDbDeletionProtection` `TRUE` | An `azurerm_management_lock` `CanNotDelete` on the server |
+| `ciamProviderRef` recorded | An `import` block (the ARM ID): the server is adopted, not created |
+
 ## Reading an environment back from Terraform state
 
 ```bash
@@ -157,6 +171,14 @@ What the network carries beyond virtual networks, subnets and NSGs comes back in
 | `azurerm_network_watcher_flow_log` | flow log: scope (virtual network, subnet, interface), retention, the workspace traffic analytics sends it to; an NSG's flow logs are named (they retire on 2027-09-30) |
 | `azurerm_nat_gateway` | its egress binding's `ciamNatAllocation`: `static` (Standard public addresses) |
 
+### Managed databases, read back
+
+`opsdir_adapter_azure.databases` (CLI and ARM items normalize to the same names: `cli_database.py`). Matching is by provider ref (the ARM ID); a new one needs its tag `Role`. `administrator_password` is never read.
+
+| Azure resource | Record entry |
+|---|---|
+| `azurerm_postgresql_flexible_server`, `azurerm_mysql_flexible_server` (+ their `_configuration`s, an `azurerm_management_lock` on them) | database: engine, version, service `flexible-server`, endpoint (`fqdn`) and the engine's port, SKU, storage, zone, `zone-redundant` with a `ZoneRedundant` standby, TLS from `require_secure_transport` (else on), retention and point-in-time restore (on while backups are kept), deletion protection from a `CanNotDelete` or `ReadOnly` lock, the other parameters set on it; its delegated subnet and customer-managed key as roles |
+
 ## Reading an environment from the Azure CLI
 
 Where there is no Terraform state (or to check it against what the subscription actually runs), `azure/cli-inventory` reads the JSON the Azure CLI prints. Collect it once per environment, into one folder per `<cloud>/<env>`; file names are free, because every item says what it is (its ARM `type`, or for Key Vault its URL):
@@ -231,6 +253,17 @@ az network vpn-connection list -g $RG -o json                 > $out/vpn-connect
 az network local-gateway list -g $RG -o json                  > $out/local-gateways.json
 az network vnet-gateway list -g $RG -o json                   > $out/vnet-gateways.json
 az network watcher flow-log list --location "$LOCATION" -o json > $out/flow-logs.json
+
+# managed databases: the servers, the parameters set on them (only user-set values are read) and their locks
+az postgres flexible-server list -g $RG -o json               > $out/postgres-servers.json
+for s in $(az postgres flexible-server list -g $RG --query '[].name' -o tsv); do
+  az postgres flexible-server parameter list -g $RG --server-name "$s" -o json > "$out/postgres-parameters-$s.json"
+done
+az mysql flexible-server list -g $RG -o json                  > $out/mysql-servers.json
+for s in $(az mysql flexible-server list -g $RG --query '[].name' -o tsv); do
+  az mysql flexible-server parameter list -g $RG --server-name "$s" -o json > "$out/mysql-parameters-$s.json"
+done
+az lock list -g $RG -o json                                   > $out/locks.json
 
 # access control: identities, assignments (inherited and through groups), roles, PIM, deny assignments, policies
 az identity list                                                        > $out/identities.json
@@ -335,6 +368,7 @@ It adds no required roles, planner checks or schema of its own; the environment'
 - **Not yet run against a live subscription.** The Terraform and the importer follow the `hashicorp/azurerm` 4.x schema; `terraform validate`/`plan` against a real subscription is part of the testing plan (milestone 7.2).
 - **Linux only.** Servers render as Linux VMs with SSH keys; the importer reads Windows VMs but the renderer doesn't write them.
 - **Edge.** Application Gateway WAF exclusions apply on every path, not only the endpoint kind a policy names; a rate limit keyed by a header is grouped by client address; Application Gateway v2 validates the servers' certificates (chain and name) whatever `ciamBackendValidation` says; DDoS Network Protection isn't rendered (the landing zone's virtual network).
+- **Databases someone else keeps** (`ciamManagedBy`) are named in a comment, not rendered into their keeper's root yet; SQL Server, Oracle and MariaDB have no Flexible Server and aren't rendered.
 - **What the importers can't see:** container metadata other than a role, the identity a disk encryption set uses, role assignments and Key Vault access policies in CLI output and ARM/Bicep deployments (Terraform state only, for now), private endpoints, Application Gateway / Front Door (read back with milestone 4.8's importers), scale sets and AKS clusters, and the monitoring above (action groups, workspaces, alerts, web tests), in CLI output and ARM/Bicep deployments (Terraform state only, for now).
 
 ## Tests
@@ -344,6 +378,8 @@ It adds no required roles, planner checks or schema of its own; the environment'
 `tests/test_azure_edge_state.py`: the edge read back from state: an Application Gateway's facts, a load balancer routed by Traffic Manager, WAF policies, Front Door and a DDoS plan as edge services, zones, records and forwarding rules.
 
 `tests/test_azure.py` (registration, vocabulary, secret resolution), `tests/test_azure_state.py` (the state importer: round trip, drift, new resources and role sources, rules, services, secrets never read, layout), `tests/test_azure_cli.py` (the CLI importer: round trip over `az` output shapes, drift from `key show` and rotation policies, network scoping, counted listings, unrecognized items), `tests/test_azure_arm.py` (the ARM importer: round trip over a Bicep-style template and its deployment, drift, `resourceId()` links, secure parameters never read, what the deployment didn't produce, no deployment, the evaluator), `tests/test_azure_messaging.py` (an email domain verified or not by its DNS, SPF and DMARC; queues and topics as stream carriers), `tests/test_azure_observability.py` (action groups as alert channels, workspaces with their retention, metric and log-query alerts and standard web tests with what they realize), `tests/test_azure_compute.py` (a scale set with its autoscale capacity, an AKS cluster with its pools and enabled add-ons), `tests/test_azure_jobs.py` (a function app with its runtime and timer schedules from state, CLI output and an ARM template; app settings never read), `tests/test_azure_state_store.py` (state and CLI against Postgres: imported under an approved change, re-import changes nothing). The rendered Terraform is covered end to end by the showcase's golden outputs (`examples/showcase`, the target environment).
+
+`tests/test_azure_databases.py`: managed databases rendered (a PostgreSQL Flexible Server with its customer-managed key, write-only password from an ephemeral Key Vault read, parameters, lock and import block; MySQL storage and TLS off; engines it doesn't run and databases others keep named; no credential role or an unbound key said) and read back from state, the CLI (user-set parameters only, the lock) and an ARM template (its password parameter never evaluated).
 
 `tests/test_azure_cdn.py`: Front Door over the gateway with its firewall policy and Key Vault certificate, Standard over the load balancer with a managed certificate, a private origin, the gateway behind keeping no WAF.
 

@@ -1516,6 +1516,10 @@ data "aws_secretsmanager_secret" "pf_captcha_secret" {
   arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-captcha-secret"
 }
 
+data "aws_secretsmanager_secret" "pf_corp_ad_bind_password" {
+  arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-corp-ad-bind-password"
+}
+
 data "aws_secretsmanager_secret" "pf_ds_bind_password" {
   arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-ds-bind-password"
 }

@@ -1984,6 +1984,12 @@ data "google_secret_manager_secret" "pf_captcha_secret" {
   project   = "example-aero-ciam-standby"
 }
 
+data "google_secret_manager_secret" "pf_corp_ad_bind_password" {
+  # metadata only: no secret version (value) enters Terraform state
+  secret_id = "pf-corp-ad-bind-password"
+  project   = "example-aero-ciam-standby"
+}
+
 data "google_secret_manager_secret" "pf_ds_bind_password" {
   # metadata only: no secret version (value) enters Terraform state
   secret_id = "pf-ds-bind-password"

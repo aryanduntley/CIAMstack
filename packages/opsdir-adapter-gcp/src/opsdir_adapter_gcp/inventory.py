@@ -37,6 +37,10 @@ alike; resource names (projects/<p>/...) are the provider refs, self links read 
   google_monitoring_alert_policy              -> alarm: the metric its first condition filters on, the channels it
                                                  notifies, the alert rule it realizes (label realizes)
   google_monitoring_uptime_check_config       -> synthetic check: its period, the canary it realizes
+  google_sql_database_instance               -> database (kind database, ciamDatabase): engine, version, edition,
+                                                 DNS name, tier, disk, zone, availability, TLS, backups, flags,
+                                                 deletion protection, its key as a role; never its root password:
+                                                 see databases.py
   IAM: service accounts and members' grants, deny policies, organization policies, IAP tunnels: see iam.py
 Roles of resources the record doesn't have come from their labels role (or bindingrole); label values are lowercase,
 as the record's roles are. A compute group's binding role is label bindingrole, else compute-<label role>; a
@@ -52,6 +56,7 @@ from opsdir_adapter_gcp.health_checks import is_probe_rule
 from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, layout_import, of_types, per_file,
                                    realization_roles, resource, tagged_role)
 from opsdir_format_terraform.state import blocks, first_block, read_state
+from .databases import database_resources
 from .iam import iam_resources
 from .names import name_parts, resource_id
 from .network_inventory import google_apis_endpoint, network_resources
@@ -59,7 +64,7 @@ from .network_inventory import google_apis_endpoint, network_resources
 PROVIDER = "gcp"
 
 SKIPPED = ("google_secret_manager_secret_version", "google_secret_manager_regional_secret_version", "random_password",
-           "tls_private_key", "google_service_account_key", "google_sql_database_instance", "google_sql_user")
+           "tls_private_key", "google_service_account_key", "google_sql_user")
 _RULE_NAME = re.compile(r"\(([A-Za-z0-9._-]+)\)\s*$")
 PROTECTION = {"SOFTWARE": "software", "HSM": "hsm", "HSM_SINGLE_TENANT": "managed-hsm", "EXTERNAL": "external",
               "EXTERNAL_VPC": "external"}
@@ -393,7 +398,8 @@ def pairs_resources(pairs):
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *rules, *_secrets(pairs),
              *_keys(pairs), *_storage(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
              *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs), *_canaries(pairs),
-             *iam, *edge, *network), (*rule_notices, *iam_notices, *edge_notices, *network_notices))
+             *iam, *edge, *network, *database_resources(pairs)),
+            (*rule_notices, *iam_notices, *edge_notices, *network_notices))
 
 
 def state_resources(text):

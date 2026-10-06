@@ -14,7 +14,8 @@ from opsdir.core.directory import Directory, make_entry
 from opsdir.core.environment import published_role
 from opsdir.core.findings import Fix, Input, Option, filled_records, fix_inputs, templated_entry
 from opsdir.core.interchange.ldif import LdifRecord
-from opsdir.domains.infrastructure.external import external_host_fix
+from opsdir.domains.infrastructure.external import (external_host_fix, external_hosts_fix, hosts_role, jdbc_hosts,
+                                                    role_hosts, with_jdbc_hosts)
 from network_fixtures import ALPHA, BETA, context, entry, model
 
 HOST = make_entry(f"cn=h,ou=bindings,{BETA}", ("ciamThing",), {})
@@ -160,3 +161,28 @@ def test_an_external_host_is_recorded_under_a_role_the_operator_gives():
         chosen(fix, given={"role": ("HR",)})
     d, _, _ = model(changes=(add,))
     assert published_role(d, "HR.corp.example.test") == "hr-database"
+
+
+def test_several_hosts_are_one_role_in_the_settings_order_and_one_host_is_the_single_host_fix():
+    d, alpha, _ = model()
+    one_host = external_hosts_fix(alpha, ("hr.corp.example.test:5432",), "connector `hr`", "k", "product/importer")
+    assert one_host == external_host_fix(alpha, "hr.corp.example.test", "connector `hr`", "k", "product/importer")
+    assert external_hosts_fix(alpha, (), "connector `hr`", "k", "product/importer") is None
+    fix = external_hosts_fix(alpha, ("zz.corp.example.test:5432", "aa.corp.example.test:5433"), "connector `hr`",
+                             "k", "product/importer")
+    assert [i.key for i in fix_inputs(fix.records)] == ["role"]                   # one role for every host
+    adds = chosen(fix, given={"role": ("hr-database",)}).records
+    d, alpha, beta = model(changes=adds)
+    assert hosts_role(d, ("zz.corp.example.test:5432", "AA.corp.example.test:5433")) == ("hr-database", None)
+    assert role_hosts(alpha, "hr-database") == ("zz.corp.example.test:5432", "aa.corp.example.test:5433")
+    assert role_hosts(alpha, "hr-database", 6000) == ("zz.corp.example.test:6000", "aa.corp.example.test:6000")
+    assert role_hosts(beta, "hr-database", 5432) == ("UNBOUND:hr-database:5432",)
+
+
+def test_jdbc_urls_give_and_take_their_hosts():
+    url = "jdbc:postgresql://a.example.test:5432,b.example.test:5433/hr?ssl=true"
+    assert jdbc_hosts(url) == ("a.example.test:5432", "b.example.test:5433")
+    assert with_jdbc_hosts(url, ()) == "jdbc:postgresql:///hr?ssl=true"
+    assert with_jdbc_hosts("jdbc:postgresql:///hr?ssl=true", ("c.example.test",)) == \
+        "jdbc:postgresql://c.example.test/hr?ssl=true"
+    assert (jdbc_hosts("https://x.example.test/"), jdbc_hosts(None), with_jdbc_hosts(None, ("h",))) == ((), (), None)

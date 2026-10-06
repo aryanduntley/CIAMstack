@@ -227,6 +227,14 @@ ciamBindingRole: pf-captcha-secret
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /stage/pf-captcha-secret
 
+dn: cn=secret-pf-corp-ad-bind-password,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-corp-ad-bind-password
+ciamBindingRole: pf-corp-ad-bind-password
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /stage/pf-corp-ad-bind-password
+
 dn: cn=backup,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamBackupTarget

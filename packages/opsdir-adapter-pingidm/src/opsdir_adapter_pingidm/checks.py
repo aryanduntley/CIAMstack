@@ -1,12 +1,13 @@
 """PingIDM planner checks: the deployment holds together (every mapping reads and writes things the record has, every
 reconciliation schedule runs a mapping it has) and every connector can reach its system from the target (a target
-role and a credential role the target binds; a connector with a fixed host is an action)."""
+role and a credential role the target binds; a connector with a fixed host, in configurationProperties.host or a JDBC
+URL, is an action, with the fix naming the host as an external system's)."""
 
 from opsdir.core.directory import children, one, rdn_value, values
 from opsdir.core.environment import bound_nowhere
 from opsdir.core.findings import findings, merge_findings, responsible
 from opsdir.core.jsondata import held_json
-from opsdir.domains.infrastructure.external import external_host_fix
+from opsdir.domains.infrastructure.external import external_hosts_fix, jdbc_hosts, unnamed
 from opsdir.domains.pki.credentials import credential_role_fix
 from .naming import CONNECTORS, MANAGED, MAPPINGS, SCHEDULES
 
@@ -39,6 +40,12 @@ def deployment_problems(d):
               if c.get("action") == "reconcile" and c.get("mapping") and c.get("mapping") not in names))
 
 
+def _fixed_hosts(props):
+    """The hosts a connector reaches when they aren't a role: its host, else its JDBC URL's hosts."""
+    host = props.get("host")
+    return (host,) if isinstance(host, str) and host else jdbc_hosts(props.get("url"))
+
+
 def _connector(ctx, c):
     name, target, credential = rdn_value(c), one(c, "pingidmTargetRole"), one(c, "pingidmCredentialRole")
     owner = responsible(ctx.d, c, ctx.dst.env)
@@ -54,9 +61,9 @@ def _connector(ctx, c):
     fix = credential_role_fix(ctx.src, ctx.dst, c, "pingidmCredentialRole", f"Connector `{name}`",
                               f"credential-role:connector/{name}", (name,)) \
         if values(c, "pingidmWithheld") and not credential else None
-    host = None if target else (held_json(c, "pingidmConfig").get("configurationProperties") or {}).get("host")
-    named = external_host_fix(ctx.src, host, f"connector `{name}`", f"external-host:connector/{name}",
-                              "pingidm/project") if isinstance(host, str) and host else None
+    hosts = () if target else _fixed_hosts(held_json(c, "pingidmConfig").get("configurationProperties") or {})
+    named = external_hosts_fix(ctx.src, hosts, f"connector `{name}`", f"external-host:connector/{name}",
+                               "pingidm/project") if hosts and unnamed(ctx.d, hosts) else None
     return findings(blockers=blockers, actions=actions, fixes=tuple(f for f in (fix, named) if f))
 
 

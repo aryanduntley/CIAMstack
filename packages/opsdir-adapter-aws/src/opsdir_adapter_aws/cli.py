@@ -44,6 +44,7 @@ matching Terraform resource, so the same mapping reads them as reads Terraform s
   Center, the policy simulator's verdicts                         -> see cli_iam.py
   The network depth: route tables, network ACLs, VPC endpoints and endpoint services, peering, transit and VPN, flow
   logs, Network Firewall rule groups, policies and firewalls      -> see cli_network.py
+  Managed databases: RDS instances, Aurora clusters, subnet groups, user-set parameters -> see cli_database.py
 Network resources outside the listed VPCs are counted, not read; secrets, keys, buckets, functions, pipelines and build
 projects are account-wide, so the importer counts rather than lists the ones the record doesn't have and nothing names
 a role for.
@@ -55,17 +56,21 @@ from opsdir.core.contract import Importer
 from opsdir.core.directory import gtime
 from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_document
+from .cli_database import KEYS as DATABASE_KEYS, database_pairs
 from .cli_edge import KEYS as EDGE_KEYS, attributes, edge_pairs, record_attributes
 from .cli_iam import KEYS as IAM_KEYS, iam_pairs
 from .cli_network import KEYS as NETWORK_KEYS, network_pairs
+from .cli_outputs import items, stem, tags_of
 from .inventory import PROVIDER, pairs_resources
 
 KEYS = ("Vpcs", "Subnets", "Reservations", "SecurityGroups", "SecurityGroupRules", "NatGateways", "LoadBalancers",
         "TagDescriptions", "Listeners", "TargetGroups", "TargetHealthDescriptions", "ResourceRecordSets", "SecretList",
         "KeyMetadata", "KeyRotationEnabled", "Buckets", "Functions", "Rules", "Targets", "ScheduleExpression",
-        "pipeline", "projects", *IAM_KEYS, *EDGE_KEYS, *NETWORK_KEYS, "Tags")   # Tags last: others carry tags too
+        "pipeline", "projects", *IAM_KEYS, *EDGE_KEYS, *NETWORK_KEYS, *DATABASE_KEYS,
+        "Tags")   # Tags last: others carry tags too
 IN_VPC = ("aws_subnet", "aws_instance", "aws_security_group", "aws_lb", "aws_nat_gateway", "aws_route_table",
-          "aws_network_acl", "aws_vpc_endpoint", "aws_ec2_transit_gateway_vpc_attachment")
+          "aws_network_acl", "aws_vpc_endpoint", "aws_ec2_transit_gateway_vpc_attachment", "aws_db_instance",
+          "aws_rds_cluster", "aws_rds_cluster_instance", "aws_db_subnet_group")
 ACCOUNT_WIDE = ("secret", "key", "storage", "job", "identity")
 
 
@@ -77,19 +82,6 @@ def _outputs(texts):
     found = {p: recognize(p, t) for p, t in sorted(texts.items())}
     return (tuple(o for o in found.values() if o),
             tuple(f"{p}: not an AWS CLI output this importer reads; not read" for p, o in found.items() if not o))
-
-
-def _all(outs, key):
-    """The items of every output with this top-level key, in file order."""
-    return [item for _, k, doc in outs if k == key for item in doc.get(key) or ()]
-
-
-def _tags(tags):
-    return {t["Key"]: t.get("Value", "") for t in tags or () if isinstance(t, dict) and "Key" in t}
-
-
-def _stem(path):
-    return path.rsplit("/", 1)[-1].rsplit(".", 1)[0]
 
 
 def generalized_time(value):
@@ -111,15 +103,15 @@ def _dns(name):
 
 def _network(outs):
     return [
-        *(("aws_vpc", {"id": v.get("VpcId"), "cidr_block": v.get("CidrBlock"), "tags": _tags(v.get("Tags"))})
-          for v in _all(outs, "Vpcs")),
+        *(("aws_vpc", {"id": v.get("VpcId"), "cidr_block": v.get("CidrBlock"), "tags": tags_of(v.get("Tags"))})
+          for v in items(outs, "Vpcs")),
         *(("aws_subnet", {"id": s.get("SubnetId"), "vpc_id": s.get("VpcId"), "cidr_block": s.get("CidrBlock"),
-                          "availability_zone": s.get("AvailabilityZone"), "tags": _tags(s.get("Tags"))})
-          for s in _all(outs, "Subnets")),
+                          "availability_zone": s.get("AvailabilityZone"), "tags": tags_of(s.get("Tags"))})
+          for s in items(outs, "Subnets")),
         *(("aws_nat_gateway", {"id": n.get("NatGatewayId"), "vpc_id": n.get("VpcId"),
                                "public_ip": next((a.get("PublicIp") for a in n.get("NatGatewayAddresses") or ()
-                                                  if a.get("PublicIp")), None), "tags": _tags(n.get("Tags"))})
-          for n in _all(outs, "NatGateways") if n.get("State") not in ("deleting", "deleted", "failed"))]
+                                                  if a.get("PublicIp")), None), "tags": tags_of(n.get("Tags"))})
+          for n in items(outs, "NatGateways") if n.get("State") not in ("deleting", "deleted", "failed"))]
 
 
 def _instances(outs):
@@ -128,8 +120,8 @@ def _instances(outs):
                 "private_ip": i.get("PrivateIpAddress"), "private_dns": i.get("PrivateDnsName"),
                 "availability_zone": (i.get("Placement") or {}).get("AvailabilityZone"), "subnet_id": i.get("SubnetId"),
                 "vpc_id": i.get("VpcId"), "vpc_security_group_ids": [g.get("GroupId") for g in i.get("SecurityGroups") or ()],
-                "tags": _tags(i.get("Tags"))})
-            for r in _all(outs, "Reservations") for i in r.get("Instances") or ()
+                "tags": tags_of(i.get("Tags"))})
+            for r in items(outs, "Reservations") for i in r.get("Instances") or ()
             if (i.get("State") or {}).get("Name") not in ("terminated", "shutting-down")]
 
 
@@ -153,21 +145,21 @@ def _security_groups(outs):
                     for desc in dict.fromkeys(d or "" for _, _, d in sources)]
         return [] if separate else [b for p in g.get("IpPermissions") or () for b in blocks(p)]
     return [*(("aws_security_group", {"id": g.get("GroupId"), "name": g.get("GroupName"), "vpc_id": g.get("VpcId"),
-                                      "tags": _tags(g.get("Tags")), "ingress": inline(g)})
-              for g in _all(outs, "SecurityGroups")),
+                                      "tags": tags_of(g.get("Tags")), "ingress": inline(g)})
+              for g in items(outs, "SecurityGroups")),
             *(("aws_vpc_security_group_ingress_rule", {
                 "security_group_rule_id": r.get("SecurityGroupRuleId"), "security_group_id": r.get("GroupId"),
                 "cidr_ipv4": r.get("CidrIpv4"), "cidr_ipv6": r.get("CidrIpv6"),
                 "referenced_security_group_id": (r.get("ReferencedGroupInfo") or {}).get("GroupId"),
                 "prefix_list_id": r.get("PrefixListId"), "from_port": r.get("FromPort"), "to_port": r.get("ToPort"),
                 "ip_protocol": r.get("IpProtocol"), "description": r.get("Description") or "",
-                "tags": _tags(r.get("Tags"))})
-              for r in _all(outs, "SecurityGroupRules") if not r.get("IsEgress"))]
+                "tags": tags_of(r.get("Tags"))})
+              for r in items(outs, "SecurityGroupRules") if not r.get("IsEgress"))]
 
 
 def _load_balancers(outs):
-    tags = {t.get("ResourceArn"): _tags(t.get("Tags")) for t in _all(outs, "TagDescriptions")}
-    lbs = _all(outs, "LoadBalancers")
+    tags = {t.get("ResourceArn"): tags_of(t.get("Tags")) for t in items(outs, "TagDescriptions")}
+    lbs = items(outs, "LoadBalancers")
     addresses = [(z.get("SubnetId"), a) for lb in lbs for z in lb.get("AvailabilityZones") or ()
                  for a in (z.get("LoadBalancerAddresses") or ())]
     settings = attributes(outs, "lb-attributes")
@@ -188,9 +180,9 @@ def _load_balancers(outs):
 
 def _forwarding(outs):
     """Listeners, target groups and their targets; (pairs, notices for target health naming no known group)."""
-    groups = _all(outs, "TargetGroups")
+    groups = items(outs, "TargetGroups")
     by_name = {g.get("TargetGroupName"): g.get("TargetGroupArn") for g in groups}
-    health = [(p, _stem(p), doc) for p, k, doc in outs if k == "TargetHealthDescriptions"]
+    health = [(p, stem(p), doc) for p, k, doc in outs if k == "TargetHealthDescriptions"]
 
     def forwards(action):
         return action.get("TargetGroupArn") or next(
@@ -205,7 +197,7 @@ def _forwarding(outs):
                                     "protocol": ls.get("Protocol"), "ssl_policy": ls.get("SslPolicy"),
                                     "default_action": [{"type": a.get("Type"), "target_group_arn": forwards(a)}
                                                        for a in ls.get("DefaultActions") or ()]})
-               for ls in _all(outs, "Listeners")),
+               for ls in items(outs, "Listeners")),
              *(("aws_lb_target_group", {
                  "arn": g.get("TargetGroupArn"), "name": g.get("TargetGroupName"), "port": g.get("Port"),
                  "protocol": g.get("Protocol"),
@@ -224,7 +216,7 @@ def _forwarding(outs):
 def _records(outs):
     """Each zone's record sets (aliases, and the others with their TTLs, values and routing), the zone from the file
     name (route53/<hosted zone ID>.json); a zone's own NS and SOA records are the zone's, not read."""
-    return [("aws_route53_record", {"name": _dns(r.get("Name")), "zone_id": _stem(p), "type": r.get("Type"),
+    return [("aws_route53_record", {"name": _dns(r.get("Name")), "zone_id": stem(p), "type": r.get("Type"),
                                     **record_attributes(r),
                                     "alias": [{"name": _dns(r["AliasTarget"].get("DNSName")),
                                                "zone_id": r["AliasTarget"].get("HostedZoneId")}]
@@ -234,8 +226,8 @@ def _records(outs):
 
 
 def _secrets(outs):
-    listed = _all(outs, "SecretList")
-    return [*(("aws_secretsmanager_secret", {"arn": s.get("ARN"), "name": s.get("Name"), "tags": _tags(s.get("Tags")),
+    listed = items(outs, "SecretList")
+    return [*(("aws_secretsmanager_secret", {"arn": s.get("ARN"), "name": s.get("Name"), "tags": tags_of(s.get("Tags")),
                                              "rotation_enabled": bool(s.get("RotationEnabled")),
                                              "kms_key_id": s.get("KmsKeyId"),
                                              "last_rotated": generalized_time(s.get("LastRotatedDate"))})
@@ -248,7 +240,7 @@ def _secrets(outs):
 def _keys(outs):
     """Customer managed keys (describe-key, one per file) with their rotation and replicas; (pairs, notices)."""
     metas = [doc["KeyMetadata"] for _, k, doc in outs if k == "KeyMetadata" and isinstance(doc["KeyMetadata"], dict)]
-    rotation = {**{_stem(p).removeprefix("rotation-"): doc["KeyRotationEnabled"]
+    rotation = {**{stem(p).removeprefix("rotation-"): doc["KeyRotationEnabled"]
                    for p, k, doc in outs if k == "KeyRotationEnabled"},
                 **{doc["KeyId"]: doc["KeyRotationEnabled"] for _, k, doc in outs
                    if k == "KeyRotationEnabled" and doc.get("KeyId")}}
@@ -271,17 +263,17 @@ def _enabled(item):
 
 def _jobs(outs):
     """(pairs, notices): functions, build projects and pipelines, and the enabled rules and schedules that start them."""
-    function_tags = {_stem(p): doc["Tags"] for p, k, doc in outs if k == "Tags" and isinstance(doc.get("Tags"), dict)}
-    rules = _all(outs, "Rules")
+    function_tags = {stem(p): doc["Tags"] for p, k, doc in outs if k == "Tags" and isinstance(doc.get("Tags"), dict)}
+    rules = items(outs, "Rules")
     schedules = [doc for _, k, doc in outs if k == "ScheduleExpression"]
     off = [r for r in rules if not _enabled(r)] + [s for s in schedules if not _enabled(s)]
     return ([*(("aws_lambda_function", {"arn": f.get("FunctionArn"), "function_name": f.get("FunctionName"),
                                         "runtime": f.get("Runtime"), "tags": function_tags.get(f.get("FunctionName"), {})})
-               for f in _all(outs, "Functions")),
+               for f in items(outs, "Functions")),
              *(("aws_cloudwatch_event_rule", {"name": r.get("Name"), "arn": r.get("Arn"),
                                               "schedule_expression": r.get("ScheduleExpression")})
                for r in rules if _enabled(r)),
-             *(("aws_cloudwatch_event_target", {"rule": _stem(p), "arn": t.get("Arn")})
+             *(("aws_cloudwatch_event_target", {"rule": stem(p), "arn": t.get("Arn")})
                for p, k, doc in outs if k == "Targets" for t in doc.get("Targets") or ()),
              *(("aws_scheduler_schedule", {"name": s.get("Name"), "arn": s.get("Arn"),
                                            "schedule_expression": s.get("ScheduleExpression"),
@@ -294,7 +286,7 @@ def _jobs(outs):
                                           "environment": {"image": (pr.get("environment") or {}).get("image")},
                                           "tags": {t.get("key"): t.get("value") for t in pr.get("tags") or ()
                                                    if isinstance(t, dict)}})
-               for pr in _all(outs, "projects"))],
+               for pr in items(outs, "projects"))],
             (f"events/scheduler: {len(off)} disabled rule(s) or schedule(s) not read",) if off else ())
 
 
@@ -325,13 +317,14 @@ def cli_resources(texts, at=None):
     forwarding, target_notices = _forwarding(outs)
     keys, key_notices = _keys(outs)
     jobs, job_notices = _jobs(outs)
+    databases, database_notices = database_pairs(outs)
     pairs, scope_notices = _scoped([*_network(outs), *_instances(outs), *_security_groups(outs),
                                     *_load_balancers(outs), *forwarding, *_records(outs), *_secrets(outs), *keys,
-                                    *(("aws_s3_bucket", {"bucket": b.get("Name")}) for b in _all(outs, "Buckets")),
-                                    *jobs, *iam, *edge_pairs(outs, _dns), *network_pairs(outs)])
+                                    *(("aws_s3_bucket", {"bucket": b.get("Name")}) for b in items(outs, "Buckets")),
+                                    *jobs, *iam, *edge_pairs(outs, _dns), *network_pairs(outs), *databases])
     resources, rule_notices = pairs_resources(pairs)
-    return resources, (*unknown, *target_notices, *key_notices, *job_notices, *iam_notices, *scope_notices,
-                       *rule_notices)
+    return resources, (*unknown, *target_notices, *key_notices, *job_notices, *iam_notices, *database_notices,
+                       *scope_notices, *rule_notices)
 
 
 def read_cli_inventory(files, d, patterns, at=None):

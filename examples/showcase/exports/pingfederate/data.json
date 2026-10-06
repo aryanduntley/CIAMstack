@@ -67,6 +67,21 @@
           "connectionUrl": "jdbc:postgresql://pf-grants.db.aws.internal.example-aero.test:5432/pf",
           "userName": "pf_grants",
           "encryptedPassword": "OBF:JWE:eyJhbGciOiJkaXIifQ..fictional-not-a-real-password"
+        },
+        {
+          "type": "LDAP",
+          "id": "corp-directory",
+          "name": "Corporate directory",
+          "ldapType": "ACTIVE_DIRECTORY",
+          "hostnames": [
+            "dc1.corp.example-aero.test:636",
+            "dc2.corp.example-aero.test:636"
+          ],
+          "useSsl": true,
+          "userDN": "CN=svc-pingfed,OU=Service Accounts,DC=corp,DC=example-aero,DC=test",
+          "encryptedPassword": "OBF:JWE:eyJhbGciOiJkaXIifQ..fictional-not-a-real-password",
+          "minConnections": 2,
+          "maxConnections": 20
         }
       ]
     },

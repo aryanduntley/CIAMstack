@@ -179,6 +179,7 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2008  insert  ou=policy-contracts,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  ou=resources,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  ou=settings,ou=pingfederate,dc=ciam-ops
+<TIMESTAMP>          CHG-2008  insert  cn=corp-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=default,ou=authentication-policies,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=default-apc,ou=policy-contracts,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=default-jwt,ou=access-token-managers,ou=pingfederate,dc=ciam-ops
@@ -297,6 +298,7 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2005  update  cn=hrdb,ou=connectors,ou=pingidm,dc=ciam-ops
 <TIMESTAMP>          CHG-2005  update  cn=user-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2005  update  cn=grant-store,ou=data-stores,ou=pingfederate,dc=ciam-ops
+<TIMESTAMP>          CHG-2005  update  cn=corp-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2005  update  cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2005  update  cn=recaptcha,ou=captcha-providers,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2011  update  cn=ds-nightly-export,ou=jobs,dc=ciam-ops
@@ -306,4 +308,4 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2013  update  cn=pf-engine,ou=baselines,dc=ciam-ops
 <TIMESTAMP>          CHG-2013  update  cn=pf-admin,ou=baselines,dc=ciam-ops
 <TIMESTAMP>          CHG-2015  insert  cn=fwd-corp-ad,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
-(306 rows)
+(308 rows)

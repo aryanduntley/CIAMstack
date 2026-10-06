@@ -1769,6 +1769,19 @@ ciamMaterialFormat: text
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationDays: 365
 
+dn: cn=pf-corp-ad-bind-password,ou=credentials,dc=ciam-ops
+objectClass: top
+objectClass: ciamCredential
+cn: pf-corp-ad-bind-password
+ciamBindingRole: pf-corp-ad-bind-password
+ciamContinuity: per-environment
+ciamCredentialType: password
+ciamExportable: TRUE
+ciamKeyUsage: authentication
+ciamMaterialFormat: text
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRotationDays: 90
+
 dn: cn=pf-ds-bind-password,ou=credentials,dc=ciam-ops
 objectClass: top
 objectClass: ciamCredential
@@ -2018,6 +2031,7 @@ ciamImportScope: cn=tech-pubs,ou=integrations,dc=ciam-ops
 ciamImportScope: cn=reports-api,ou=integrations,dc=ciam-ops
 ciamImportScope: cn=user-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
 ciamImportScope: cn=grant-store,ou=data-stores,ou=pingfederate,dc=ciam-ops
+ciamImportScope: cn=corp-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
 ciamImportScope: cn=pcv-customers,ou=credential-validators,ou=pingfederate,dc=
  ciam-ops
 ciamImportScope: cn=htmlform,ou=idp-adapters,ou=pingfederate,dc=ciam-ops
@@ -3158,6 +3172,20 @@ cn: c3d7809625b82975
 ciamLineNumber: 6
 ciamOccurrenceOf: cn=aci-portal-write,ou=acis,dc=ciam-ops
 ciamOccurringAttr: ciamAciTargetDn
+
+dn: cn=corp-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: pingfedDataStore
+cn: corp-directory
+ciamChangeRef: cn=CHG-2005,ou=changes,dc=ciam-ops
+pingfedConfig: {"hostnames":["dc1.corp.example-aero.test:636","dc2.corp.exampl
+ e-aero.test:636"],"ldapType":"ACTIVE_DIRECTORY","maxConnections":20,"minConne
+ ctions":2,"name":"Corporate directory","password":null,"useSsl":true,"userDN"
+ :"CN=svc-pingfed,OU=Service Accounts,DC=corp,DC=example-aero,DC=test"}
+pingfedCredentialRole: pf-corp-ad-bind-password
+pingfedStoreType: LDAP
+pingfedWithheld: /password
 
 dn: cn=d3463ecca0c1772f,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
 objectClass: top
@@ -7404,6 +7432,37 @@ cn: secret-pf-captcha-secret
 ciamBindingRole: pf-captcha-secret
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /stage/pf-captcha-secret
+
+dn: cn=secret-pf-corp-ad-bind-password,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-corp-ad-bind-password
+ciamBindingRole: pf-corp-ad-bind-password
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /prod/pf-corp-ad-bind-password
+
+dn: cn=secret-pf-corp-ad-bind-password,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-corp-ad-bind-password
+ciamBindingRole: pf-corp-ad-bind-password
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/pf-corp-ad-bin
+ d-password
+
+dn: cn=secret-pf-corp-ad-bind-password,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-corp-ad-bind-password
+ciamBindingRole: pf-corp-ad-bind-password
+ciamRefUri: azkv://kv-ciam-prod/pf-corp-ad-bind-password
+
+dn: cn=secret-pf-corp-ad-bind-password,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-corp-ad-bind-password
+ciamBindingRole: pf-corp-ad-bind-password
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /stage/pf-corp-ad-bind-password
 
 dn: cn=secret-pf-ds-bind-password,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top

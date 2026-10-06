@@ -1855,6 +1855,61 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.425 NAME 'ciamVerifyPending' DESC 'A
   confirms it; "<attribute>" alone: any)' EQUALITY caseIgnoreMatch SYNTAX 1.
  3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-OR
  IGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.426 NAME 'ciamHostOrder' DESC 'This 
+ host\27s place among an environment\27s bindings of one role when a product
+  setting lists several (failover order, lowest first)' EQUALITY integerMatc
+ h SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'binding'
+  X-VALUE-TYPE 'int' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.427 NAME 'ciamDbEngine' DESC 'The da
+ tabase engine a managed database runs' EQUALITY caseIgnoreMatch SYNTAX 1.3.
+ 6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 
+ 'enum:postgresql|mysql|mariadb|sqlserver|oracle' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.428 NAME 'ciamDbEngineVersion' DESC 
+ 'The engine version it runs (16.4): a move carries it unchanged; an upgrade
+  is its own change' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.12
+ 1.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN '
+ opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.429 NAME 'ciamDbService' DESC 'The p
+ rovider\27s managed offering it runs on (rds, aurora, flexible-server, clou
+ d-sql); the cloud\27s usual one when absent' EQUALITY caseIgnoreMatch SYNTA
+ X 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALU
+ E-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.430 NAME 'ciamDbHighAvailability' DE
+ SC 'How available it is kept: a standby in another zone it fails over to (z
+ one-redundant), or none' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.1
+ 15.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:none|zon
+ e-redundant' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.431 NAME 'ciamDbTlsRequired' DESC 'W
+ hether it refuses connections without TLS' EQUALITY booleanMatch SYNTAX 1.3
+ .6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 
+ 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.432 NAME 'ciamDbPointInTime' DESC 'W
+ hether it can be restored to any point within its backup retention' EQUALIT
+ Y booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILI
+ TY 'intent' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.433 NAME 'ciamDbDeletionProtection' 
+ DESC 'Whether the provider refuses to delete it until protection is turned 
+ off' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE
+  X-PORTABILITY 'intent' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.434 NAME 'ciamDbParameter' DESC 'An 
+ engine parameter set on it, name=value (the engine\27s defaults are not rec
+ orded)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-POR
+ TABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.435 NAME 'ciamDbCredentialRole' DESC
+  'The binding role of the secret holding its administrator credentials (nev
+ er a value)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 
+ SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir
+ ' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.436 NAME 'ciamDbStorageGb' DESC 'The
+  storage it is given, in GB' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.
+ 115.121.1.27 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'int' X-MIN 
+ '1' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.437 NAME 'ciamDbEdition' DESC 'The e
+ ngine\27s edition where it comes in several (SQL Server, Oracle): what it i
+ s licensed and able to do, so a move keeps it' EQUALITY caseIgnoreMatch SYN
+ TAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VAL
+ UE-TYPE 'enum:enterprise|standard|standard2|web|express' X-ORIGIN 'opsdir' 
+ )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -2281,5 +2336,17 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.91 NAME 'ciamImportRun' DESC 'The las
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.92 NAME 'ciamExternalHost' DESC 'A sy
  stem the platform reaches but doesn\27t run (a database, a corporate direct
  ory), as this environment reaches it: its host name (and port); products na
- me its role, so each environment renders its own host' SUP ciamBinding STRU
- CTURAL MUST ciamFqdn MAY ( ciamPort $ ciamManagedBy ) X-ORIGIN 'opsdir' )
+ me its role, so each environment renders its own host. One host is the usua
+ l case; a system reached at several (two domain controllers) is several bin
+ dings of the role, in host order' SUP ciamBinding STRUCTURAL MUST ciamFqdn 
+ MAY ( ciamPort $ ciamManagedBy $ ciamHostOrder ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.93 NAME 'ciamDatabase' DESC 'A manage
+ d database an environment runs for the stack (a repository, a session or to
+ ken store): its engine and version, endpoint, availability, encryption and 
+ backups (ciamRetentionDays: automated backups kept), parameters and the sec
+ ret role of its credentials' SUP ciamBinding STRUCTURAL MUST ciamDbEngine M
+ AY ( ciamProviderRef $ ciamFqdn $ ciamPort $ ciamDbEngineVersion $ ciamDbEd
+ ition $ ciamDbService $ ciamInstanceSize $ ciamDbStorageGb $ ciamZone $ cia
+ mDbHighAvailability $ ciamEncryptedByRole $ ciamDbTlsRequired $ ciamRetenti
+ onDays $ ciamDbPointInTime $ ciamDbDeletionProtection $ ciamDbParameter $ c
+ iamSubnetRole $ ciamDbCredentialRole $ ciamManagedBy ) X-ORIGIN 'opsdir' )

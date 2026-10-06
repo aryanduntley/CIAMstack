@@ -42,6 +42,10 @@ From Terraform state (terraform.tfstate, format version 4; hashicorp/azurerm), m
     alert_v2                                     it realizes (tag Realizes)
   azurerm_application_insights_standard_     -> synthetic check (kind canary, ciamCanaryBinding): its frequency as an
     web_test                                     interval, the canary it realizes (tag Realizes)
+  azurerm_postgresql_flexible_server,        -> database (kind database, ciamDatabase): engine, version, endpoint,
+    azurerm_mysql_flexible_server (+ their       SKU, storage, zone, availability, TLS, backups, parameters, deletion
+    _configuration, azurerm_management_lock)     protection (a lock), its subnet and key as roles; never its password:
+                                                 see databases.py
   access control: identities and their role assignments, access policies, policy assignments, bastions: see iam.py
 Roles of resources the record doesn't have come from their tags Role (or BindingRole), or for storage containers from
 their metadata (role); a compute group's binding role is its tag BindingRole, else compute-<its tag Role>, a
@@ -63,11 +67,12 @@ from .network_inventory import network_resources
 from .edge_inventory import (dns_resources, edge_services, fqdn, frontdoor_endpoints, frontdoor_origins,
                              gateway_facts, lb_facts, traffic_routing)
 from .iam import iam_resources
+from .databases import database_resources
 
 PROVIDER = "azure"
 
-SKIPPED = ("random_password", "tls_private_key", "azurerm_key_vault_certificate", "azurerm_mssql_server",
-           "azurerm_postgresql_flexible_server", "azurerm_mysql_flexible_server")  # secret values, or not modeled yet
+SKIPPED = ("random_password", "tls_private_key", "azurerm_key_vault_certificate",
+           "azurerm_mssql_server")  # secret values, or not modeled yet
 VMS = ("azurerm_linux_virtual_machine", "azurerm_windows_virtual_machine", "azurerm_virtual_machine")
 ANY = ("*", "any", "internet", "0.0.0.0/0")
 
@@ -558,7 +563,8 @@ def pairs_resources(pairs):
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *services, *rules, *_secrets(pairs),
              *_keys(pairs), *_storage(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
-             *_canaries(pairs), *iam, *edge, *network), (*rule_notices, *iam_notices, *edge_notices, *network_notices))
+             *_canaries(pairs), *iam, *edge, *network, *database_resources(pairs)),
+            (*rule_notices, *iam_notices, *edge_notices, *network_notices))
 
 
 def state_resources(text):

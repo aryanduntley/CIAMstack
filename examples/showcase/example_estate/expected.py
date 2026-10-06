@@ -44,6 +44,8 @@ EXPECTED = MappingProxyType({
         ("B22", "Binding", "Role `acl-ds` is bound in source/prod but not in target/prod",
          "the source's network ACL on the directory subnet has no counterpart in the target (Azure has none: its "
          "NSGs do that work); decide, and record why", None),
+        ("B23", "PingFederate", "Data store `corp-directory` has withheld credentials but no credential role",
+         "imported corporate directory store names no secret", "CHG-2005"),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -164,6 +166,9 @@ EXPECTED = MappingProxyType({
         ("A66", "Egress", "no route sends internet egress through `egress-firewall`",
          "the target's route table sends internet traffic straight to the NAT gateway, around the hub firewall whose "
          "domain rules the stack relies on", None),
+        ("A67", "PingFederate", "Data store `corp-directory` reaches a fixed host",
+         "PingFederate's corporate directory store lists two domain controllers, the same from every environment "
+         "(its fix records both, in order, as one role's hosts)", None),
     ],
 })
 

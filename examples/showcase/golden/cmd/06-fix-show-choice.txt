@@ -46,6 +46,9 @@ Choose one (--option):
   pf-captcha-secret: `pf-captcha-secret` (azkv://kv-ciam-prod/pf-captcha-secret in target/prod)
       modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
           replace pingfedCredentialRole: pf-captcha-secret
+  pf-corp-ad-bind-password: `pf-corp-ad-bind-password` (azkv://kv-ciam-prod/pf-corp-ad-bind-password in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: pf-corp-ad-bind-password
   pf-ds-bind-password: `pf-ds-bind-password` (azkv://kv-ciam-prod/pf-ds-bind-password in target/prod)
       modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
           replace pingfedCredentialRole: pf-ds-bind-password

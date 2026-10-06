@@ -22,6 +22,7 @@ from .edge import US_EAST_1, alb_service, health_check, shield, stickiness
 from .identities import EC2_TRUST, notes, role
 from .landing import render_landing
 from .network import render_network
+from .databases import render_databases
 from .plumbing import network_data
 
 
@@ -143,7 +144,8 @@ def render(m, services):
     out = (*network_data(m), *_security_groups(m), *chain.from_iterable(_identity(m, w) for w in identities),
            *(_instance(m, s, kms, identities) for s in m.servers),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
-           *render_network(m, endpoints), *records(m.d, m), *resolver_rules(m), *_references(m))
+           *render_network(m, endpoints), *render_databases(m), *records(m.d, m), *resolver_rules(m),
+           *_references(m))
     unbound = unbound_comments(m.unbound)
     main = header(m, "AWS infrastructure for the CIAM platform", HCL) + unbound + "\n" + "\n\n".join(out) + "\n"
     providers = header(m, "Providers", HCL) + "\n" + "\n\n".join([
