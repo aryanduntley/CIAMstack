@@ -1,9 +1,7 @@
 {
   "environment": "env=prod,cloud=target,ou=environments,dc=ciam-ops",
   "provider": "azure",
-  "unbound_roles": [
-    "backup-target"
-  ],
+  "unbound_roles": [],
   "files": {
     "am/global/Realms/partners.json": {
       "scope": "environment-neutral",
@@ -199,7 +197,7 @@
     "pingfederate/data-stores.json": {
       "scope": "environment-specific",
       "format": "json",
-      "sha256": "ea818f6f759f19e2ad3c093a283b1f55e73d0d67609de85fcf072847911d7ae0"
+      "sha256": "1060ac1e5318799b44440637be2b7dc07f631cea0820a9cad995e8e1ebbdb4f2"
     },
     "pingfederate/idp-adapters.json": {
       "scope": "environment-specific",
@@ -309,7 +307,7 @@
     "terraform/landing-zone/network-security/network.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "484b59e41cc40f119c4de1eff8993ae4f45faf5b27a30a312a234b58892ae2bf"
+      "sha256": "a0b381fc4ce455223f722357e42c5bb4ff68da5c98ed92b64822796bf844be65"
     },
     "terraform/landing-zone/network-security/providers.tf": {
       "scope": "landing-zone",
@@ -319,7 +317,7 @@
     "terraform/landing-zone/network.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "fee27d069a96be70cd311f3583aafeee7f2519d21b8448036cda6079ac49b984"
+      "sha256": "f5918579c89e94a2c6141fda46dc538e09c493abdd3cfea2aa379ecf91ec312f"
     },
     "terraform/landing-zone/providers.tf": {
       "scope": "landing-zone",
@@ -329,7 +327,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "3aaf22c891552fea942bc9e4f445296c5b51f7e95ade4d9e3173f8feef134fc2"
+      "sha256": "377b6d715af451e9a9c8554eee8fff7e10ceee2f8d92c9a4393157f2fa734f43"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

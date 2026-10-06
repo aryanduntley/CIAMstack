@@ -37,6 +37,11 @@
         "addressPrefix": "10.60.10.0/24"
       },
       {
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-db",
+        "name": "snet-db",
+        "addressPrefix": "10.60.8.0/24"
+      },
+      {
         "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-appgw",
         "name": "snet-appgw",
         "addressPrefix": "10.60.250.0/24"

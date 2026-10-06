@@ -18,7 +18,8 @@ From Terraform state (terraform.tfstate, format version 4), managed resources an
                                                  managed key that encrypts it (kms_key_id: ciamEncryptedByRole); its
                                                  value is never read (aws_secretsmanager_secret_version is skipped)
   aws_kms_key (+ aws_kms_replica_key)         -> key reference aws-kms://<arn>, rotation, replica regions
-  aws_s3_bucket                               -> storage s3://<bucket>
+  aws_s3_bucket                               -> storage s3://<bucket>, with its versioning, Object Lock,
+                                                 encryption, public access block, lifecycle and replication (storage.py)
   aws_nat_gateway                             -> egress: its public address
   aws_lambda_function, aws_codepipeline,      -> job bindings (what realizes a job: kind job, ciamJobBinding): the
     aws_codebuild_project                        ARN, runtime (a build project's image), and the schedules
@@ -66,6 +67,7 @@ from .edge_inventory import (aliased_names, dns_resources, edge_services, lb_fac
                              service_dns)
 from .iam import iam_resources
 from .databases import database_resources
+from .storage import object_store_resources
 
 PROVIDER = "aws"
 
@@ -236,12 +238,6 @@ def _keys(found):
                                                   if r.get("primary_key_arn") == a.get("arn") and r.get("arn")})},
                           name=_tags(a).get("Name") or a.get("key_id"), role=_role(a))
                  for a in of_types(found, "aws_kms_key") if a.get("arn"))
-
-
-def _storage(found):
-    return tuple(resource("storage", a.get("arn") or a.get("bucket"), {"ciamStorageRef": f"s3://{a.get('bucket')}"},
-                          name=a.get("bucket"), role=_role(a))
-                 for a in of_types(found, "aws_s3_bucket") if a.get("bucket"))
 
 
 def _egress(found):
@@ -449,7 +445,7 @@ def pairs_resources(pairs):
     zones, records, forwarders, dns_notices = dns_resources(pairs, _served(pairs))
     network, network_notices = network_resources(pairs)
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *rules, *_secrets(pairs),
-             *_keys(pairs), *_storage(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
+             *_keys(pairs), *object_store_resources(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
              *_canaries(pairs), *iam, *edge_services(pairs), *zones, *records, *forwarders, *network,
              *database_resources(pairs)),

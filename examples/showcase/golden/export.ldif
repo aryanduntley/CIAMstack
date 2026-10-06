@@ -676,6 +676,25 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Forward the AD domain to the domain controllers from the target env
  ironment
 
+dn: cn=CHG-2016,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2016
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Keep the target's grant database's backups 14 days and protect it f
+ rom deletion
+
+dn: cn=CHG-2017,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2017
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Give the target environment its directory backup target
+
 dn: cn=CHG-2040,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange
@@ -3343,11 +3362,13 @@ objectClass: ciamObject
 objectClass: pingfedDataStore
 cn: grant-store
 ciamChangeRef: cn=CHG-2005,ou=changes,dc=ciam-ops
-pingfedConfig: {"connectionUrl":"jdbc:postgresql://pf-grants.db.aws.internal.e
- xample-aero.test:5432/pf","driverClass":"org.postgresql.Driver","name":"Persi
- stent grant store","password":null,"userName":"pf_grants"}
+pingfedConfig: {"connectionUrl":"jdbc:postgresql:///pf","driverClass":"org.pos
+ tgresql.Driver","name":"Persistent grant store","password":null,"userName":"p
+ f_grants"}
 pingfedCredentialRole: pf-grants-db-password
+pingfedPort: 5432
 pingfedStoreType: JDBC
+pingfedTargetRole: pf-grants-db
 pingfedWithheld: /password
 
 dn: cn=hr_managedUser,ou=mappings,ou=pingidm,dc=ciam-ops
@@ -5162,16 +5183,50 @@ objectClass: top
 objectClass: ciamBackupTarget
 cn: backup
 ciamBindingRole: backup-target
+ciamEncryptedByRole: disk-encryption
+ciamProviderRef: arn:aws:s3:::example-aero-ciam-prod-ds-backups
 ciamRetentionDays: 35
+ciamStorageImmutability: compliance
+ciamStorageLifecycle: 30 cold
+ciamStorageLifecycle: 90 delete
+ciamStorageLifecycle: noncurrent 7 delete
+ciamStorageLockDays: 35
+ciamStoragePublicBlocked: TRUE
 ciamStorageRef: s3://example-aero-ciam-prod-ds-backups
+ciamStorageReplicaRef: s3://example-aero-ciam-prod-ds-backups-usw2
+ciamStorageVersioning: TRUE
 
 dn: cn=backup,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamBackupTarget
 cn: backup
 ciamBindingRole: backup-target
+ciamEncryptedByRole: disk-encryption
+ciamProviderRef: example-aero-ciam-standby-ds-backups
 ciamRetentionDays: 35
+ciamStorageImmutability: compliance
+ciamStorageLifecycle: 30 cold
+ciamStorageLifecycle: 90 delete
+ciamStorageLifecycle: noncurrent 7 delete
+ciamStorageLockDays: 35
+ciamStoragePublicBlocked: TRUE
 ciamStorageRef: gs://example-aero-ciam-standby-ds-backups
+ciamStorageVersioning: TRUE
+
+dn: cn=backup,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamBackupTarget
+cn: backup
+ciamBindingRole: backup-target
+ciamChangeRef: cn=CHG-2017,ou=changes,dc=ciam-ops
+ciamEncryptedByRole: disk-encryption
+ciamRetentionDays: 35
+ciamStorageLifecycle: 30 cold
+ciamStorageLifecycle: 90 delete
+ciamStorageLifecycle: noncurrent 7 delete
+ciamStoragePublicBlocked: TRUE
+ciamStorageRef: azblob://stciamprodbackups/ds-backups
+ciamStorageVersioning: TRUE
 
 dn: cn=backup,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -5215,6 +5270,32 @@ cn: cert-sso-tls
 ciamBindingRole: sso-tls-certificate
 ciamHoldsCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 ciamRefUri: azkv-cert://kv-ciam-prod/sso-tls-2026
+
+dn: cn=ciam-standby-pf-grants,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDatabase
+cn: ciam-standby-pf-grants
+ciamBindingRole: pf-grants-db
+ciamDbCredentialRole: pf-grants-db-password
+ciamDbDeletionProtection: TRUE
+ciamDbEngine: postgresql
+ciamDbEngineVersion: 16
+ciamDbHighAvailability: zone-redundant
+ciamDbParameter: log_min_duration_statement=1000
+ciamDbParameter: idle_in_transaction_session_timeout=60000
+ciamDbPointInTime: TRUE
+ciamDbService: cloud-sql
+ciamDbStorageGb: 100
+ciamDbTlsRequired: TRUE
+ciamEncryptedByRole: disk-encryption
+ciamFqdn: pf-grants.db.gcp.internal.example-aero.test
+ciamInstanceSize: db-custom-2-8192
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPort: 5432
+ciamProviderRef: projects/example-aero-ciam-standby/instances/ciam-standby-pf-
+ grants
+ciamRetentionDays: 14
+ciamZone: us-central1-a
 
 dn: cn=companyId,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
@@ -6283,6 +6364,7 @@ objectClass: top
 objectClass: ciamIdentityBinding
 cn: identity-ds
 ciamBindingRole: identity-ds
+ciamChangeRef: cn=CHG-2017,ou=changes,dc=ciam-ops
 ciamGrant: Key Vault Secrets User on /subscriptions/00000000-0000-0000-0000-00
  0000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.KeyVault/vaults/kv
  -ciam-prod
@@ -6291,6 +6373,9 @@ ciamGrant: Key Vault Crypto User on /subscriptions/00000000-0000-0000-0000-000
  ciam-prod
 ciamGrant: Monitoring Metrics Publisher on /subscriptions/00000000-0000-0000-0
  000-000000000000/resourceGroups/rg-ciam-prod
+ciamGrant: Storage Blob Data Contributor on /subscriptions/00000000-0000-0000-
+ 0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Storage/sto
+ rageAccounts/stciamprodbackups/blobServices/default/containers/ds-backups
 ciamIdentityKind: managed-identity
 ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
  roups/rg-ciam-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities
@@ -6822,6 +6907,57 @@ ciamBindingRole: pf-cluster-discovery
 ciamStorageRef: s3://example-aero-ciam-stage-pf-cluster
 description: Stage's own PingFederate cluster discovery: never prod's
 
+dn: cn=pf-grants,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDatabase
+cn: pf-grants
+ciamBindingRole: pf-grants-db
+ciamDbCredentialRole: pf-grants-db-password
+ciamDbDeletionProtection: TRUE
+ciamDbEngine: postgresql
+ciamDbEngineVersion: 16.4
+ciamDbHighAvailability: zone-redundant
+ciamDbParameter: log_min_duration_statement=1000
+ciamDbParameter: idle_in_transaction_session_timeout=60000
+ciamDbPointInTime: TRUE
+ciamDbService: rds
+ciamDbStorageGb: 100
+ciamDbTlsRequired: TRUE
+ciamEncryptedByRole: disk-encryption
+ciamFqdn: pf-grants.db.aws.internal.example-aero.test
+ciamInstanceSize: db.m6i.large
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPort: 5432
+ciamProviderRef: arn:aws:rds:us-east-1:111122223333:db:pf-grants
+ciamRetentionDays: 14
+ciamSubnetRole: subnet-pf
+
+dn: cn=pf-grants-stage,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDatabase
+cn: pf-grants-stage
+ciamBindingRole: pf-grants-db
+ciamDbCredentialRole: pf-grants-db-password
+ciamDbDeletionProtection: FALSE
+ciamDbEngine: postgresql
+ciamDbEngineVersion: 16.4
+ciamDbHighAvailability: none
+ciamDbParameter: log_min_duration_statement=1000
+ciamDbParameter: idle_in_transaction_session_timeout=60000
+ciamDbPointInTime: TRUE
+ciamDbService: rds
+ciamDbStorageGb: 20
+ciamDbTlsRequired: TRUE
+ciamEncryptedByRole: disk-encryption
+ciamFqdn: pf-grants.stage.db.aws.internal.example-aero.test
+ciamInstanceSize: db.t4g.medium
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPort: 5432
+ciamProviderRef: arn:aws:rds:us-east-1:111122223333:db:pf-grants-stage
+ciamRetentionDays: 7
+ciamSubnetRole: subnet-pf
+ciamZone: us-east-1a
+
 dn: cn=pf-login-failures,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamAlarmBinding
@@ -6895,6 +7031,35 @@ ciamPrivateDns: TRUE
 ciamPrivateEndpointKind: all-apis
 ciamPrivateService: apis
 ciamProviderRef: projects/example-aero-net/global/forwardingRules/pscapis
+
+dn: cn=psql-ciam-prod-pf-grants,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDatabase
+cn: psql-ciam-prod-pf-grants
+ciamBindingRole: pf-grants-db
+ciamChangeRef: cn=CHG-2016,ou=changes,dc=ciam-ops
+ciamDbCredentialRole: pf-grants-db-password
+ciamDbDeletionProtection: TRUE
+ciamDbEngine: postgresql
+ciamDbEngineVersion: 16
+ciamDbHighAvailability: none
+ciamDbParameter: log_min_duration_statement=1000
+ciamDbParameter: idle_in_transaction_session_timeout=60000
+ciamDbPointInTime: TRUE
+ciamDbService: flexible-server
+ciamDbStorageGb: 128
+ciamDbTlsRequired: TRUE
+ciamEncryptedByRole: disk-encryption
+ciamFqdn: psql-ciam-prod-pf-grants.postgres.database.azure.com
+ciamInstanceSize: GP_Standard_D2ds_v5
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPort: 5432
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.DBforPostgreSQL/flexibleServers/psql-c
+ iam-prod-pf-grants
+ciamRetentionDays: 14
+ciamSubnetRole: subnet-db
+ciamZone: 1
 
 dn: cn=registrationStatus,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
@@ -7658,6 +7823,14 @@ cn: snet-am
 ciamBindingRole: subnet-am
 ciamCidr: 10.60.3.0/24
 ciamProviderRef: vnet-ciam-prod/snet-am
+
+dn: cn=snet-db,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: snet-db
+ciamBindingRole: subnet-db
+ciamCidr: 10.60.8.0/24
+ciamProviderRef: vnet-ciam-prod/snet-db
 
 dn: cn=snet-ds,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top

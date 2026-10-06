@@ -1,5 +1,6 @@
 """infrastructure domain schema fragment: its attribute types and object classes (OIDs pinned by number)."""
 from ...core.standard import AttributeDef, ClassDef, fragment
+from ..data.schema import STORAGE_DEPTH
 
 ATTRIBUTES = (
     AttributeDef(1, 'cloud', 'string', 'meta', True,
@@ -148,7 +149,7 @@ CLASSES = (
              ('ciamRetentionDays',),
              'An object store backups are written to, with their retention'),
     ClassDef(81, 'ciamObjectStore', 'ciamBinding', 'STRUCTURAL', ('ciamStorageRef',),
-             (),
+             STORAGE_DEPTH,
              'An object storage location (bucket or container) the stack uses; a backup target is one with a '
              'retention'),
     ClassDef(15, 'ciamInterconnect', 'ciamBinding', 'STRUCTURAL', ('ciamInterconnectKind', 'ciamPeerEnvironment', 'ciamSourceCidr'),

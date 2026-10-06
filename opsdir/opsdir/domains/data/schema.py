@@ -3,9 +3,11 @@ repositories, session and token stores). A database is a binding: each environme
 by role (its endpoint is a ciamFqdn, so an importer turns the host into the role), and what must carry over unchanged
 in a move (the engine and its version, how available, encrypted and backed up it is, the parameters set on it) is
 intent the planner compares; its size, the provider's offering and the secret holding its credentials are each
-environment's own."""
+environment's own. How an object store (infrastructure's ciamObjectStore, backup targets among them) keeps what it
+holds is defined here too: versioning, immutability, lifecycle, public access and replication, allowed on the object
+store's class."""
 from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
-from .naming import EDITIONS, ENGINES, HIGH_AVAILABILITY
+from .naming import EDITIONS, ENGINES, HIGH_AVAILABILITY, IMMUTABILITY, LIFECYCLE
 
 ATTRIBUTES = (
     AttributeDef(427, 'ciamDbEngine', enum_type(ENGINES), 'intent', True,
@@ -32,7 +34,26 @@ ATTRIBUTES = (
     AttributeDef(437, 'ciamDbEdition', enum_type(EDITIONS), 'intent', True,
                  "The engine's edition where it comes in several (SQL Server, Oracle): what it is licensed and able to "
                  "do, so a move keeps it"),
+    AttributeDef(438, 'ciamStorageVersioning', 'bool', 'intent', True,
+                 'Whether an object store keeps every version of an object, so an overwrite or delete can be undone'),
+    AttributeDef(439, 'ciamStorageImmutability', enum_type(IMMUTABILITY), 'intent', True,
+                 'Whether objects are locked against change and deletion for ciamStorageLockDays: governance (a '
+                 'privileged user may lift it) or compliance (nobody may, the account root included)'),
+    AttributeDef(440, 'ciamStorageLockDays', 'int', 'intent', True,
+                 'How long each object stays locked (ciamStorageImmutability)', (("X-MIN", "1"),)),
+    AttributeDef(441, 'ciamStorageLifecycle', 'string', 'intent', False,
+                 "A lifecycle rule: '[noncurrent ]<days> <cool|cold|archive|delete>', after days move objects (or their "
+                 "noncurrent versions) to a cheaper tier or delete them (30 cool; 365 delete; noncurrent 90 delete)",
+                 (("X-PATTERN", LIFECYCLE),)),
+    AttributeDef(442, 'ciamStoragePublicBlocked', 'bool', 'intent', True,
+                 'Whether public access to the object store is blocked whatever its policies and ACLs say'),
+    AttributeDef(443, 'ciamStorageReplicaRef', 'string', 'binding', True,
+                 "The object store its objects are copied to, usually in another region (a bucket or container URI): "
+                 "each environment's own"),
 )
+# what an object store may record of how it keeps what it holds (allowed on infrastructure's ciamObjectStore)
+STORAGE_DEPTH = ('ciamStorageVersioning', 'ciamStorageImmutability', 'ciamStorageLockDays', 'ciamStorageLifecycle',
+                 'ciamStoragePublicBlocked', 'ciamStorageReplicaRef', 'ciamEncryptedByRole', 'ciamManagedBy')
 CLASSES = (
     ClassDef(93, 'ciamDatabase', 'ciamBinding', 'STRUCTURAL', ('ciamDbEngine',),
              ('ciamProviderRef', 'ciamFqdn', 'ciamPort', 'ciamDbEngineVersion', 'ciamDbEdition', 'ciamDbService',

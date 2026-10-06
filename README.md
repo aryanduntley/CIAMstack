@@ -36,6 +36,8 @@ It is built for the ForgeRock/Ping stack on AWS, Azure and Google Cloud today, a
 | Who and what may act on the platform, as which cloud identity, under which guardrails, and is it reviewed? | `opsdir report principals`, `opsdir report identities`, `opsdir report guardrails`, `opsdir report access-paths` |
 | How does traffic reach the platform, what protects it, and what does each environment's edge and DNS run? | `opsdir report edge-policies`, `opsdir report edge-services`, `opsdir report dns`, `opsdir report header-contracts` |
 | How does each environment route out, which private endpoints and endpoint services does it have, and which outside sites may the servers reach? | `opsdir report routes`, `opsdir report private-endpoints`, `opsdir report endpoint-services`, `opsdir report egress-sites` |
+| Which managed databases does the platform run on, and are they as available, encrypted, protected and backed up in every environment? | `opsdir report databases` |
+| Are the backup buckets versioned, locked, encrypted, private and copied elsewhere in every environment? | `opsdir report object-stores` |
 | When was each part of the record last read back from the live system? | `opsdir report imports` |
 | How big is the user data, which password schemes does it hold, how many accounts are idle? | `opsdir report data-profile`, `opsdir report data-profile-attributes` |
 | Which files copy this server's hostname (or any value), on which lines? | `opsdir report census [<DN>]` |

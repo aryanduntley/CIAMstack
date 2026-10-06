@@ -159,6 +159,25 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Forward the AD domain to the domain controllers from the target env
  ironment
 
+dn: cn=CHG-2016,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2016
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Keep the target's grant database's backups 14 days and protect it f
+ rom deletion
+
+dn: cn=CHG-2017,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2017
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Give the target environment its directory backup target
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

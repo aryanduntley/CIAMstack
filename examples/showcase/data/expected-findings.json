@@ -13,7 +13,7 @@
       "area": "Binding",
       "match": "Role `backup-target`",
       "planted": "the target environment has no backup target",
-      "cleared_by": null
+      "cleared_by": "CHG-2017"
     },
     {
       "id": "B3",
@@ -299,9 +299,9 @@
     },
     {
       "id": "A20",
-      "area": "PingFederate",
-      "match": "Data store `grant-store` reaches a fixed host",
-      "planted": "the grant database is reached at the same host everywhere",
+      "area": "Databases",
+      "match": "Database `pf-grants-db` has high availability in source/prod but not",
+      "planted": "the target's grant database has no zone-redundant standby: it fails with its zone",
       "cleared_by": null
     },
     {
@@ -632,6 +632,36 @@
       "match": "Data store `corp-directory` reaches a fixed host",
       "planted": "PingFederate's corporate directory store lists two domain controllers, the same from every environment (its fix records both, in order, as one role's hosts)",
       "cleared_by": null
+    },
+    {
+      "id": "A68",
+      "area": "Databases",
+      "match": "Database `pf-grants-db` keeps backups 14 days in source/prod but 7",
+      "planted": "the target's grant database keeps backups 7 days where the source keeps 14",
+      "cleared_by": "CHG-2016"
+    },
+    {
+      "id": "A69",
+      "area": "Databases",
+      "match": "Database `pf-grants-db` has deletion protection in source/prod but not",
+      "planted": "nothing stops the target's grant database being deleted by mistake (no lock)",
+      "cleared_by": "CHG-2016"
+    },
+    {
+      "id": "A70",
+      "area": "Object stores",
+      "match": "Object store `backup-target` locks objects (compliance 35 days) in source/prod",
+      "planted": "the target's backup container (CHG-2017) has no immutability policy: a backup can be deleted early",
+      "cleared_by": null,
+      "raised_by": "CHG-2017"
+    },
+    {
+      "id": "A71",
+      "area": "Object stores",
+      "match": "Object store `backup-target` is copied to",
+      "planted": "nothing copies the target's backups to another region; the source replicates to us-west-2",
+      "cleared_by": null,
+      "raised_by": "CHG-2017"
     }
   ]
 }

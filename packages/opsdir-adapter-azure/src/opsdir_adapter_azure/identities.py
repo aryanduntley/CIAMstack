@@ -8,6 +8,7 @@ import re
 
 from opsdir.core.directory import is_a, one, rdn_of, rdn_value
 from opsdir.core.environment import environment_of, of_class
+from opsdir.domains.data.storage import kept_store
 from opsdir_format_terraform.hcl import block, ref, tf_name
 
 RG = ref("data.azurerm_resource_group.main.name")
@@ -17,7 +18,8 @@ GROUP = "${data.azurerm_resource_group.main.id}"        # the start of a resourc
 
 def scope(b):
     """(the narrowest scope a role assignment on a binding's resource takes, the data source it needs or None): a
-    secret or key in its vault, a storage container, the resource ID a provider ref is; a service name's load balancer
+    secret or key in its vault, a storage container (in the account the stack renders, when it keeps it), the
+    resource ID a provider ref is; a service name's load balancer
     and a scale set named by its ref, by their IDs in the environment's resource group."""
     uri, storage = one(b, "ciamRefUri", ""), one(b, "ciamStorageRef", "")
     if uri.startswith(("azkv://", "azkv-key://")):
@@ -27,6 +29,8 @@ def scope(b):
                 ("azurerm_key_vault", vault))
     if storage.startswith("azblob://"):
         account, _, container = storage[9:].partition("/")
+        if kept_store(b):                           # rendered in this root (storage.py): its resource, no data source
+            return f"${{azurerm_storage_account.{tf_name(account)}.id}}/blobServices/default/containers/{container}", None
         return (f"${{data.azurerm_storage_account.{tf_name(account)}.id}}/blobServices/default/containers/{container}",
                 ("azurerm_storage_account", account))
     ref_ = one(b, "ciamProviderRef", "")

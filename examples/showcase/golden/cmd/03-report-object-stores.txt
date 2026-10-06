@@ -1,0 +1,9 @@
+environment   object store          kind           location                                   versioning  immutability        encrypted by     lifecycle                                public blocked  replica                                      retention days  kept by
+------------  --------------------  -------------  -----------------------------------------  ----------  ------------------  ---------------  ---------------------------------------  --------------  -------------------------------------------  --------------  -------
+source/prod   backup-target         backup target  s3://example-aero-ciam-prod-ds-backups     yes         compliance 35 days  disk-encryption  30 cold; 90 delete; noncurrent 7 delete  yes             s3://example-aero-ciam-prod-ds-backups-usw2  35
+source/prod   pf-cluster-discovery  object store   s3://example-aero-ciam-prod-pf-cluster
+source/stage  backup-target         backup target  s3://example-aero-ciam-stage-ds-backups                                                                                                                                                           7
+source/stage  pf-cluster-discovery  object store   s3://example-aero-ciam-stage-pf-cluster
+standby/prod  backup-target         backup target  gs://example-aero-ciam-standby-ds-backups  yes         compliance 35 days  disk-encryption  30 cold; 90 delete; noncurrent 7 delete  yes                                                          35
+(5 rows)
+exit 0

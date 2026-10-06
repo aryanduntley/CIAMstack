@@ -29,6 +29,9 @@ matching Terraform resource, so the same mapping reads them as reads Terraform s
   kms get-key-rotation-status           KeyRotationEnabled        -> the key's rotation (the key from its KeyId, else
                                                                      the file name rotation-<key id>.json)
   s3api list-buckets                    Buckets                   -> aws_s3_bucket
+  s3api get-bucket-versioning, -encryption, -lifecycle-configuration, -replication, get-object-lock-configuration,
+  get-public-access-block               a bucket's settings, saved by bucket under a folder per setting: see
+                                                                     cli_storage.py
   lambda list-functions                 Functions                 -> aws_lambda_function
   lambda list-tags                      Tags                      -> a function's tags; the output doesn't name the
                                                                      function: save it as lambda-tags/<function>.json
@@ -57,6 +60,7 @@ from opsdir.core.directory import gtime
 from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_document
 from .cli_database import KEYS as DATABASE_KEYS, database_pairs
+from .cli_storage import storage_folder, storage_pairs
 from .cli_edge import KEYS as EDGE_KEYS, attributes, edge_pairs, record_attributes
 from .cli_iam import KEYS as IAM_KEYS, iam_pairs
 from .cli_network import KEYS as NETWORK_KEYS, network_pairs
@@ -77,8 +81,11 @@ ACCOUNT_WIDE = ("secret", "key", "storage", "job", "identity")
 def _outputs(texts):
     """((path, key, document) of each recognized output), notices for the rest."""
     def recognize(path, text):
-        doc = json_document(text, dict) or {}
-        return next(((path, k, doc) for k in KEYS if k in doc), None)
+        doc = json_document(text, dict)
+        folder = storage_folder(path)
+        if folder and doc is not None:
+            return path, folder, doc                       # a bucket's settings: by the folder it is saved under
+        return next(((path, k, doc) for k in KEYS if k in (doc or {})), None)
     found = {p: recognize(p, t) for p, t in sorted(texts.items())}
     return (tuple(o for o in found.values() if o),
             tuple(f"{p}: not an AWS CLI output this importer reads; not read" for p, o in found.items() if not o))
@@ -321,7 +328,8 @@ def cli_resources(texts, at=None):
     pairs, scope_notices = _scoped([*_network(outs), *_instances(outs), *_security_groups(outs),
                                     *_load_balancers(outs), *forwarding, *_records(outs), *_secrets(outs), *keys,
                                     *(("aws_s3_bucket", {"bucket": b.get("Name")}) for b in items(outs, "Buckets")),
-                                    *jobs, *iam, *edge_pairs(outs, _dns), *network_pairs(outs), *databases])
+                                    *jobs, *iam, *edge_pairs(outs, _dns), *network_pairs(outs), *databases,
+                                    *storage_pairs(outs)])
     resources, rule_notices = pairs_resources(pairs)
     return resources, (*unknown, *target_notices, *key_notices, *job_notices, *iam_notices, *database_notices,
                        *scope_notices, *rule_notices)

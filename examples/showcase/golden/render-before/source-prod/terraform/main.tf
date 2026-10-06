@@ -1437,6 +1437,189 @@ resource "aws_networkfirewall_rule_group" "egress_firewall_domains" {
   }
 }
 
+variable "pf_grants_admin_username" {
+  type        = string
+  description = "The master user name of database pf-grants (role pf-grants-db)"
+}
+
+resource "aws_db_subnet_group" "pf_grants" {
+  name       = "pf-grants"
+  subnet_ids = [data.aws_subnet.subnet_pf_a.id, data.aws_subnet.subnet_pf_b.id]
+  tags = {
+    Name      = "pf-grants"
+    Role      = "pf-grants-db"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_security_group" "pf_grants_db" {
+  name        = "ciam-prod-pf-grants-db"
+  description = "CIAM database pf-grants-db (source/prod)"
+  vpc_id      = data.aws_vpc.main.id
+  tags = {
+    Name      = "pf-grants"
+    Role      = "pf-grants-db"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_db_parameter_group" "pf_grants" {
+  name   = "pf-grants"
+  family = "postgres16"
+  parameter {
+    name  = "idle_in_transaction_session_timeout"
+    value = "60000"
+  }
+  parameter {
+    name  = "log_min_duration_statement"
+    value = "1000"
+  }
+  tags = {
+    Name      = "pf-grants"
+    Role      = "pf-grants-db"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_db_instance" "pf_grants" {
+  identifier                  = "pf-grants"
+  engine                      = "postgres"
+  engine_version              = "16.4"
+  instance_class              = "db.m6i.large"
+  allocated_storage           = 100
+  db_subnet_group_name        = aws_db_subnet_group.pf_grants.name
+  vpc_security_group_ids      = [aws_security_group.pf_grants_db.id]
+  parameter_group_name        = aws_db_parameter_group.pf_grants.name
+  username                    = var.pf_grants_admin_username
+  multi_az                    = true
+  publicly_accessible         = false
+  manage_master_user_password = true
+  port                        = 5432
+  storage_encrypted           = true
+  kms_key_id                  = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
+  backup_retention_period     = 14
+  deletion_protection         = true
+  tags = {
+    Name      = "pf-grants"
+    Role      = "pf-grants-db"
+    ManagedBy = "opsdir"
+  }
+}
+
+import {
+  to = aws_db_instance.pf_grants
+  id = "pf-grants"
+}
+
+resource "aws_s3_bucket" "backup" {
+  bucket              = "example-aero-ciam-prod-ds-backups"
+  object_lock_enabled = true
+  tags = {
+    Name      = "backup"
+    Role      = "backup-target"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_s3_bucket_versioning" "backup" {
+  bucket = aws_s3_bucket.backup.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_object_lock_configuration" "backup" {
+  bucket = aws_s3_bucket.backup.id
+  rule {
+    default_retention {
+      mode = "COMPLIANCE"
+      days = 35
+    }
+  }
+  depends_on = [aws_s3_bucket_versioning.backup]
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "backup" {
+  bucket = aws_s3_bucket.backup.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
+    }
+    bucket_key_enabled = true
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "backup" {
+  bucket                  = aws_s3_bucket.backup.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "backup" {
+  bucket = aws_s3_bucket.backup.id
+  rule {
+    id     = "ciam"
+    status = "Enabled"
+    filter {
+    }
+    transition {
+      days          = 30
+      storage_class = "GLACIER_IR"
+    }
+    expiration {
+      days = 90
+    }
+    noncurrent_version_expiration {
+      noncurrent_days = 7
+    }
+  }
+  depends_on = [aws_s3_bucket_versioning.backup]
+}
+
+variable "backup_replication_role_arn" {
+  type        = string
+  description = "The IAM role S3 replicates bucket backup to example-aero-ciam-prod-ds-backups-usw2 with"
+}
+
+variable "backup_replica_kms_key_arn" {
+  type        = string
+  description = "The KMS key ARN objects are re-encrypted with in example-aero-ciam-prod-ds-backups-usw2"
+}
+
+resource "aws_s3_bucket_replication_configuration" "backup" {
+  bucket = aws_s3_bucket.backup.id
+  role   = var.backup_replication_role_arn
+  rule {
+    id     = "ciam"
+    status = "Enabled"
+    filter {
+    }
+    delete_marker_replication {
+      status = "Enabled"
+    }
+    source_selection_criteria {
+      sse_kms_encrypted_objects {
+        status = "Enabled"
+      }
+    }
+    destination {
+      bucket = "arn:aws:s3:::example-aero-ciam-prod-ds-backups-usw2"
+      encryption_configuration {
+        replica_kms_key_id = var.backup_replica_kms_key_arn
+      }
+    }
+  }
+  depends_on = [aws_s3_bucket_versioning.backup]
+}
+
+import {
+  to = aws_s3_bucket.backup
+  id = "example-aero-ciam-prod-ds-backups"
+}
+
 resource "aws_route53_resolver_rule" "fwd_corp_ad_0" {
   name                 = "ciam-prod-fwd-corp-ad-0"
   domain_name          = "corp.example-aero.internal"
@@ -1538,10 +1721,6 @@ data "aws_secretsmanager_secret" "pf_smtp_password" {
 
 data "aws_secretsmanager_secret" "sso_tls_keystore" {
   arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/sso-tls-keystore"
-}
-
-data "aws_s3_bucket" "ds_backups" {
-  bucket = "example-aero-ciam-prod-ds-backups"
 }
 
 data "aws_nat_gateway" "pf_egress" {

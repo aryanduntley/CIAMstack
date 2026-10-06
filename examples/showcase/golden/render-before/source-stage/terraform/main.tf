@@ -1203,6 +1203,81 @@ resource "aws_shield_protection" "svc_sso" {
 
 # `sso.stage.example-aero.test` is in a zone corporate-dns runs: not rendered here (the plan drafts the request to them)
 
+variable "pf_grants_stage_admin_username" {
+  type        = string
+  description = "The master user name of database pf-grants-stage (role pf-grants-db)"
+}
+
+resource "aws_db_subnet_group" "pf_grants_stage" {
+  name       = "pf-grants-stage"
+  subnet_ids = [data.aws_subnet.subnet_pf_a.id, data.aws_subnet.subnet_pf_b.id]
+  tags = {
+    Name      = "pf-grants-stage"
+    Role      = "pf-grants-db"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_security_group" "pf_grants_db" {
+  name        = "ciam-stage-pf-grants-db"
+  description = "CIAM database pf-grants-db (source/stage)"
+  vpc_id      = data.aws_vpc.main.id
+  tags = {
+    Name      = "pf-grants-stage"
+    Role      = "pf-grants-db"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_db_parameter_group" "pf_grants_stage" {
+  name   = "pf-grants-stage"
+  family = "postgres16"
+  parameter {
+    name  = "idle_in_transaction_session_timeout"
+    value = "60000"
+  }
+  parameter {
+    name  = "log_min_duration_statement"
+    value = "1000"
+  }
+  tags = {
+    Name      = "pf-grants-stage"
+    Role      = "pf-grants-db"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_db_instance" "pf_grants_stage" {
+  identifier                  = "pf-grants-stage"
+  engine                      = "postgres"
+  engine_version              = "16.4"
+  instance_class              = "db.t4g.medium"
+  allocated_storage           = 20
+  db_subnet_group_name        = aws_db_subnet_group.pf_grants_stage.name
+  vpc_security_group_ids      = [aws_security_group.pf_grants_db.id]
+  parameter_group_name        = aws_db_parameter_group.pf_grants_stage.name
+  username                    = var.pf_grants_stage_admin_username
+  multi_az                    = false
+  availability_zone           = "us-east-1a"
+  publicly_accessible         = false
+  manage_master_user_password = true
+  port                        = 5432
+  storage_encrypted           = true
+  kms_key_id                  = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
+  backup_retention_period     = 7
+  deletion_protection         = false
+  tags = {
+    Name      = "pf-grants-stage"
+    Role      = "pf-grants-db"
+    ManagedBy = "opsdir"
+  }
+}
+
+import {
+  to = aws_db_instance.pf_grants_stage
+  id = "pf-grants-stage"
+}
+
 resource "aws_route53_resolver_rule" "fwd_corp_ad_0" {
   name                 = "ciam-stage-fwd-corp-ad-0"
   domain_name          = "corp.example-aero.internal"

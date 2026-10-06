@@ -47,7 +47,8 @@ def test_a_missing_adapter_stops_the_run_before_planning(estate, as_of):
 
 def test_the_cli_text_and_exit_status(estate, as_of):
     text, files, status = migrate_text(estate["before"], SRC, DST, as_of, "out/m")
-    planted = f"{len(EXPECTED['blockers'])} blockers, {len(EXPECTED['actions'])} actions"
+    before = {kind: [r for r in rows if len(r) < 6 or not r[5]] for kind, rows in EXPECTED.items()}
+    planted = f"{len(before['blockers'])} blockers, {len(before['actions'])} actions"
     rendered = sum(p.startswith("target/") for p in files)
     drafts = sum(p.startswith("requests/") for p in files)
     assert status == 1 and drafts and text.endswith(f"NOT READY ({planted}); {rendered} target files, PLAN.md and "

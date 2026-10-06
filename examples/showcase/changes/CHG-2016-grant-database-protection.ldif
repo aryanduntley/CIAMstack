@@ -1,0 +1,14 @@
+# CHG-2016 (approved): the target's grant database was set up from a sandbox template: backups kept 7 days and no
+# deletion protection. Keep them 14 days, as production does, and lock the server against deletion (the planner's
+# exact fixes database:pf-grants-db:ciamRetentionDays and :ciamDbDeletionProtection). Its zone-redundant standby
+# stays open: its cost is the platform team's to approve.
+dn: cn=psql-ciam-prod-pf-grants,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: modify
+replace: ciamRetentionDays
+ciamRetentionDays: 14
+-
+replace: ciamDbDeletionProtection
+ciamDbDeletionProtection: TRUE
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2016,ou=changes,dc=ciam-ops

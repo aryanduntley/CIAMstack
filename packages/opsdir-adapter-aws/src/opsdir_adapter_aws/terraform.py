@@ -23,6 +23,7 @@ from .identities import EC2_TRUST, notes, role
 from .landing import render_landing
 from .network import render_network
 from .databases import render_databases
+from .storage import kept_buckets, render_object_stores
 from .plumbing import network_data
 
 
@@ -121,8 +122,10 @@ def _service(m, svc, endpoints=()):
 
 
 def _references(m):
-    """Data sources only: secrets, the backup bucket, the egress NAT gateway."""
+    """Data sources only: secrets, the backup bucket (unless the stack renders it: object stores), the egress NAT
+    gateway."""
     bk = one_role(m, "backup-target")
+    bk = None if bk is not None and bk.dn in {b.dn for b in kept_buckets(m)} else bk
     eg = one_role(m, "pf-egress")
     return (*(block("data", ["aws_secretsmanager_secret", tf_name(one(b, "ciamBindingRole"))],
                     [("arn", one(b, "ciamRefUri").split("://", 1)[1])]) for b in of_class(m, "ciamSecretRef")),
@@ -144,8 +147,8 @@ def render(m, services):
     out = (*network_data(m), *_security_groups(m), *chain.from_iterable(_identity(m, w) for w in identities),
            *(_instance(m, s, kms, identities) for s in m.servers),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
-           *render_network(m, endpoints), *render_databases(m), *records(m.d, m), *resolver_rules(m),
-           *_references(m))
+           *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
+           *resolver_rules(m), *_references(m))
     unbound = unbound_comments(m.unbound)
     main = header(m, "AWS infrastructure for the CIAM platform", HCL) + unbound + "\n" + "\n\n".join(out) + "\n"
     providers = header(m, "Providers", HCL) + "\n" + "\n\n".join([

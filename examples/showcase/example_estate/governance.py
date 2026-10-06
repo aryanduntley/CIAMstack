@@ -45,6 +45,10 @@ CHANGES = (
      "CAB 2026-09-18", "2026-09-23"),
     ("CHG-2015", "Forward the AD domain to the domain controllers from the target environment", "approved",
      "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2016", "Keep the target's grant database's backups 14 days and protect it from deletion", "approved",
+     "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2017", "Give the target environment its directory backup target", "approved", "CAB 2026-09-18",
+     "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

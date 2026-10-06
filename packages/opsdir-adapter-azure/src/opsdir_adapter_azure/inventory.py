@@ -16,7 +16,9 @@ From Terraform state (terraform.tfstate, format version 4; hashicorp/azurerm), m
   azurerm_key_vault_secret                    -> secret reference azkv://<vault>/<name>; its value is never read
   azurerm_key_vault_key                       -> key reference azkv-key://<vault>/keys/<name>: HSM or software, whether
     (+ azurerm_disk_encryption_set)              it rotates automatically, the disk encryption set that uses it
-  azurerm_storage_container                   -> storage azblob://<account>/<container> (role from its metadata key role)
+  azurerm_storage_container (+ its account,   -> storage azblob://<account>/<container> (role from its metadata key
+    immutability, management and object          role), with its versioning, lock, key, lifecycle, public access and
+    replication policies)                        replica (storage.py)
   azurerm_nat_gateway (+ its public IPs and   -> egress (by name): its public addresses
     prefixes)
   azurerm_linux_function_app,                 -> a job binding (what realizes a job: kind job, ciamJobBinding): the
@@ -68,6 +70,7 @@ from .edge_inventory import (dns_resources, edge_services, fqdn, frontdoor_endpo
                              gateway_facts, lb_facts, traffic_routing)
 from .iam import iam_resources
 from .databases import database_resources
+from .storage import object_store_resources
 
 PROVIDER = "azure"
 
@@ -340,21 +343,6 @@ def _keys(found):
     return tuple(one_key(a) for a in of_types(found, "azurerm_key_vault_key") if _vault(a) and a.get("name"))
 
 
-def _metadata_role(a):
-    """A container's role from its metadata (keys role or bindingrole, any case): containers carry metadata, not tags."""
-    meta = {k.lower(): v for k, v in (a.get("metadata") or {}).items()}
-    return meta.get("role") or meta.get("bindingrole")
-
-
-def _storage(found):
-    def account(a):
-        return a.get("storage_account_name") or arm_segment(a.get("storage_account_id"), "storageAccounts")
-    return tuple(resource("storage", a.get("id") or f"{account(a)}/{a.get('name')}",
-                          {"ciamStorageRef": f"azblob://{account(a)}/{a.get('name')}"},
-                          name=a.get("name"), role=_metadata_role(a))
-                 for a in of_types(found, "azurerm_storage_container") if account(a) and a.get("name"))
-
-
 def _egress(found):
     """NAT gateways by name, with the public addresses and prefixes associated with them (Standard public addresses:
     static)."""
@@ -561,7 +549,8 @@ def pairs_resources(pairs):
     edge, edge_notices = _edge(pairs, services)
     network, network_notices = network_resources(pairs)
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *services, *rules, *_secrets(pairs),
-             *_keys(pairs), *_storage(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
+             *_keys(pairs), *object_store_resources(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs),
+             *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
              *_canaries(pairs), *iam, *edge, *network, *database_resources(pairs)),
             (*rule_notices, *iam_notices, *edge_notices, *network_notices))

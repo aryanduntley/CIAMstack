@@ -58,6 +58,9 @@ def test_another_engine_or_major_version_blocks_and_a_minor_version_is_an_action
     minor = check_databases(_pair({"ciamDbEngineVersion": "16.2"}))
     assert minor.blockers == () and [k.key for k in minor.fixes] == ["database:pf-grants-db:ciamDbEngineVersion"]
     assert "the same major version, but test the products against the target's" in minor.actions[0][1]
+    # a service that keeps the minor version current is recorded by its major version: nothing to compare
+    assert check_databases(_pair({"ciamDbEngineVersion": "16"})).actions == ()
+    assert check_databases(_pair({"ciamDbEngineVersion": "17"})).blockers != ()
 
 
 def test_what_the_source_had_is_kept_or_named_with_a_fix_carrying_it():

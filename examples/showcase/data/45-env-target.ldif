@@ -75,6 +75,14 @@ ciamBindingRole: subnet-ig
 ciamCidr: 10.60.10.0/24
 ciamProviderRef: vnet-ciam-prod/snet-ig
 
+dn: cn=snet-db,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: snet-db
+ciamBindingRole: subnet-db
+ciamCidr: 10.60.8.0/24
+ciamProviderRef: vnet-ciam-prod/snet-db
+
 dn: cn=svc-ldaps,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServiceName
@@ -761,6 +769,34 @@ ciamManagedBy: cn=network-security,ou=owners,dc=ciam-ops
 ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
 ciamProxyAddress: proxy.hub.example-aero.test:3128
 ciamProxyKind: forward-proxy
+
+dn: cn=psql-ciam-prod-pf-grants,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDatabase
+cn: psql-ciam-prod-pf-grants
+ciamBindingRole: pf-grants-db
+ciamDbCredentialRole: pf-grants-db-password
+ciamDbDeletionProtection: FALSE
+ciamDbEngine: postgresql
+ciamDbEngineVersion: 16
+ciamDbHighAvailability: none
+ciamDbParameter: log_min_duration_statement=1000
+ciamDbParameter: idle_in_transaction_session_timeout=60000
+ciamDbPointInTime: TRUE
+ciamDbService: flexible-server
+ciamDbStorageGb: 128
+ciamDbTlsRequired: TRUE
+ciamEncryptedByRole: disk-encryption
+ciamFqdn: psql-ciam-prod-pf-grants.postgres.database.azure.com
+ciamInstanceSize: GP_Standard_D2ds_v5
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPort: 5432
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.DBforPostgreSQL/flexibleServers/psql-c
+ iam-prod-pf-grants
+ciamRetentionDays: 7
+ciamSubnetRole: subnet-db
+ciamZone: 1
 
 dn: cn=link-source,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top

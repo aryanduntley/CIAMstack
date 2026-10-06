@@ -1,0 +1,16 @@
+[
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.DBforPostgreSQL/flexibleServers/psql-ciam-prod-pf-grants/configurations/log_min_duration_statement",
+    "name": "log_min_duration_statement",
+    "value": "1000",
+    "source": "user-override",
+    "type": "Microsoft.DBforPostgreSQL/flexibleServers/configurations"
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.DBforPostgreSQL/flexibleServers/psql-ciam-prod-pf-grants/configurations/idle_in_transaction_session_timeout",
+    "name": "idle_in_transaction_session_timeout",
+    "value": "60000",
+    "source": "user-override",
+    "type": "Microsoft.DBforPostgreSQL/flexibleServers/configurations"
+  }
+]

@@ -251,6 +251,32 @@ ciamBindingRole: pf-cluster-discovery
 ciamStorageRef: s3://example-aero-ciam-stage-pf-cluster
 description: Stage's own PingFederate cluster discovery: never prod's
 
+dn: cn=pf-grants-stage,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDatabase
+cn: pf-grants-stage
+ciamBindingRole: pf-grants-db
+ciamDbCredentialRole: pf-grants-db-password
+ciamDbDeletionProtection: FALSE
+ciamDbEngine: postgresql
+ciamDbEngineVersion: 16.4
+ciamDbHighAvailability: none
+ciamDbParameter: log_min_duration_statement=1000
+ciamDbParameter: idle_in_transaction_session_timeout=60000
+ciamDbPointInTime: TRUE
+ciamDbService: rds
+ciamDbStorageGb: 20
+ciamDbTlsRequired: TRUE
+ciamEncryptedByRole: disk-encryption
+ciamFqdn: pf-grants.stage.db.aws.internal.example-aero.test
+ciamInstanceSize: db.t4g.medium
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPort: 5432
+ciamProviderRef: arn:aws:rds:us-east-1:111122223333:db:pf-grants-stage
+ciamRetentionDays: 7
+ciamSubnetRole: subnet-pf
+ciamZone: us-east-1a
+
 dn: ou=overrides,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit

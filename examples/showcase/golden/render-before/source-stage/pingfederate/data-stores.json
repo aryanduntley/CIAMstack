@@ -17,7 +17,7 @@
   {
     "type": "JDBC",
     "id": "grant-store",
-    "connectionUrl": "jdbc:postgresql://pf-grants.db.aws.internal.example-aero.test:5432/pf",
+    "connectionUrl": "jdbc:postgresql://pf-grants.stage.db.aws.internal.example-aero.test:5432/pf",
     "driverClass": "org.postgresql.Driver",
     "name": "Persistent grant store",
     "password": "${withheld}",

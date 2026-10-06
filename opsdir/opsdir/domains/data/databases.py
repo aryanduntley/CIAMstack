@@ -2,10 +2,11 @@
 both bind by role. A move carries the engine and its version unchanged (an upgrade or a conversion is its own change),
 and keeps the database as available, encrypted, protected and backed up as it was. Pure."""
 from ...core.changeset import set_values
-from ...core.directory import one, rdn_value, subtree, values
+from ...core.directory import one, subtree, values
 from ...core.environment import bound_nowhere, environment_of, of_class
-from ...core.findings import Fix, choice_fix, findings, merge_findings, responsible
+from ...core.findings import Fix, findings, merge_findings, responsible
 from ...core.naming import branch, env_label
+from .kept import carry_fix, key_choice_fix
 
 DATABASE_HEADERS = ("environment", "database", "engine", "version", "edition", "service", "size",
                     "high availability", "encrypted by", "tls", "backup days", "point in time", "deletion protection",
@@ -48,10 +49,9 @@ def database_rows(d, dn=None):
 # ------------------------------------------------------------------ check
 def _carry(ctx, role, s, t, attrs, title, risks=()):
     """The fix giving the target's database the source's values of attrs."""
-    return Fix(f"database:{role}:{attrs[0]}", AREA, title,
-               tuple(set_values(t, a, values(s, a)) for a in attrs),
-               (f"Apply the rendered database in {ctx.dst.label} (its keeper's root when someone else keeps it).",),
-               tuple(risks))
+    return carry_fix(f"database:{role}:{attrs[0]}", AREA, title, s, t, attrs,
+                     (f"Apply the rendered database in {ctx.dst.label} (its keeper's root when someone else keeps it).",),
+                     risks)
 
 
 def _engine(ctx, role, s, t, owner):
@@ -65,7 +65,7 @@ def _engine(ctx, role, s, t, owner):
                                       f"Run `{role}` in {ctx.dst.label} on {se}, as {ctx.src.label} does")])
     edition = _edition(ctx, role, s, t, owner)
     sv, tv = one(s, "ciamDbEngineVersion"), one(t, "ciamDbEngineVersion")
-    if not sv or not tv or sv == tv:
+    if not sv or not tv or sv == tv or _same_major(se, sv, tv):
         return edition
     fix = _carry(ctx, role, s, t, ("ciamDbEngineVersion",), f"Run `{role}` in {ctx.dst.label} on {se} {sv}, as "
                  f"{ctx.src.label} does", ("If the target's version is a planned upgrade, make it its own change "
@@ -78,6 +78,12 @@ def _engine(ctx, role, s, t, owner):
     return merge_findings([edition, findings(
         actions=[(AREA, f"Database `{role}` runs {se} {sv} in {ctx.src.label} but {tv} in {ctx.dst.label}: the same "
                   "major version, but test the products against the target's.", owner, ctx.cutover)], fixes=[fix])])
+
+
+def _same_major(engine, sv, tv):
+    """Whether the target records only a major version, the source's: the service keeps the minor version current
+    (Flexible Server, Cloud SQL), so there is no minor version to compare."""
+    return tv == major_version(engine, tv) and major_version(engine, sv) == tv
 
 
 def _edition(ctx, role, s, t, owner):
@@ -113,11 +119,10 @@ def _retention(ctx, role, s, t, owner):
 def _encryption(ctx, role, s, t, owner):
     if not one(s, "ciamEncryptedByRole") or one(t, "ciamEncryptedByRole"):
         return findings()
-    keys = sorted({one(k, "ciamBindingRole") for k in of_class(ctx.dst, "ciamKeyRef")})
-    fix = choice_fix(f"database:{role}:ciamEncryptedByRole", AREA, f"Encrypt `{role}` in {ctx.dst.label} with a key "
-                     "of its own", t, "ciamEncryptedByRole", [(k, f"key `{k}`", ()) for k in keys],
-                     (f"Apply the rendered database in {ctx.dst.label}: a database is encrypted when created, so an "
-                      "existing one is copied to an encrypted one.",))
+    fix = key_choice_fix(ctx.dst, f"database:{role}:ciamEncryptedByRole", AREA, f"Encrypt `{role}` in "
+                         f"{ctx.dst.label} with a key of its own", t,
+                         (f"Apply the rendered database in {ctx.dst.label}: a database is encrypted when created, so "
+                          "an existing one is copied to an encrypted one.",))
     return findings(actions=[(AREA, f"Database `{role}` is encrypted with key `{one(s, 'ciamEncryptedByRole')}` in "
                               f"{ctx.src.label}; in {ctx.dst.label} nothing names its key, so the provider's own "
                               "default key encrypts it, which nobody here controls or can revoke.", owner,

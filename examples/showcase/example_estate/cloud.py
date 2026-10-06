@@ -148,10 +148,50 @@ def _aws_keys(p, rotation):
             *(_res("managed", "aws_kms_replica_key", f"disk_{r}", {"arn": key_arn.replace(REGION, r),
                                                                    "primary_key_arn": key_arn})
               for r in (p["key_facts"]["disk-encryption"].get("ciamReplicaRegion"),) if r),
-            _res("data", "aws_s3_bucket", "ds_backups", {"bucket": p["backup"][len("s3://"):],
-                                                         "arn": f"arn:aws:s3:::{p['backup'][len('s3://'):]}"}),
+            *_aws_backup(p),
             *(_res("data", "aws_s3_bucket", "pf_cluster", {"bucket": bucket, "arn": f"arn:aws:s3:::{bucket}"})
               for bucket in (p["discovery"][len("s3://"):].split("/", 1)[0],) if p.get("discovery"))]
+
+
+_TIERS = {"cool": "STANDARD_IA", "cold": "GLACIER_IR", "archive": "DEEP_ARCHIVE"}
+
+
+def _rules(lifecycle):
+    """[(noncurrent, days, action)] of the record's lifecycle values."""
+    return [(v.startswith("noncurrent "), int(v.split()[-2]), v.split()[-1]) for v in lifecycle]
+
+
+def _aws_backup(p):
+    """The backup bucket as the stack's Terraform made it: the bucket and each of its settings."""
+    bucket, a = p["backup"][len("s3://"):], p["backup_depth"]
+    tags = {"Name": "backup", "Role": "backup-target", "ManagedBy": "opsdir"}
+    rules = _rules(a["ciamStorageLifecycle"])
+    rule = {"id": "ciam", "status": "Enabled",
+            **{f"{'noncurrent_version_' if nc else ''}transition": [
+                {"noncurrent_days" if nc else "days": d, "storage_class": _TIERS[act]}
+                for n, d, act in rules if n == nc and act in _TIERS] for nc in (False, True)},
+            **{f"{'noncurrent_version_' if nc else ''}expiration": [
+                {"noncurrent_days" if nc else "days": d} for n, d, act in rules if n == nc and act == "delete"]
+               for nc in (False, True)}}
+    return [_res("managed", "aws_s3_bucket", "backup", {"bucket": bucket, "arn": a["ciamProviderRef"],
+                                                        "object_lock_enabled": True, "tags": tags}),
+            _res("managed", "aws_s3_bucket_versioning", "backup", {
+                "bucket": bucket, "versioning_configuration": [{"status": "Enabled"}]}),
+            _res("managed", "aws_s3_bucket_object_lock_configuration", "backup", {"bucket": bucket, "rule": [
+                {"default_retention": [{"mode": a["ciamStorageImmutability"].upper(),
+                                        "days": int(a["ciamStorageLockDays"]), "years": None}]}]}),
+            _res("managed", "aws_s3_bucket_server_side_encryption_configuration", "backup", {"bucket": bucket, "rule": [
+                {"apply_server_side_encryption_by_default": [{"sse_algorithm": "aws:kms",
+                                                              "kms_master_key_id": p["key"][0].split("://", 1)[1]}],
+                 "bucket_key_enabled": True}]}),
+            _res("managed", "aws_s3_bucket_public_access_block", "backup", {
+                "bucket": bucket, "block_public_acls": True, "block_public_policy": True, "ignore_public_acls": True,
+                "restrict_public_buckets": True}),
+            _res("managed", "aws_s3_bucket_lifecycle_configuration", "backup", {"bucket": bucket, "rule": [rule]}),
+            _res("managed", "aws_s3_bucket_replication_configuration", "backup", {
+                "bucket": bucket, "role": f"arn:aws:iam::{ACCOUNT}:role/ciam-prod-backup-replication",
+                "rule": [{"id": "ciam", "status": "Enabled", "destination": [
+                    {"bucket": f"arn:aws:s3:::{a['ciamStorageReplicaRef'][len('s3://'):]}"}]}]})]
 
 
 def _aws_monitoring():
@@ -359,6 +399,34 @@ def _aws_network_depth(p):
     return out
 
 
+def _aws_databases(p):
+    """The managed databases as the stack's Terraform made them: each RDS instance with its subnet and parameter
+    groups (RDS keeps the master password in Secrets Manager: the state holds the secret's ARN, never the password)."""
+    out = []
+    for _, cn, role, a in p["databases"]:
+        params = [{"name": k, "value": v} for k, v in (x.split("=", 1) for x in a["ciamDbParameter"])]
+        tags = {"Name": cn, "Role": role, "ManagedBy": "opsdir"}
+        out += [_res("managed", "aws_db_subnet_group", cn, {
+                    "name": cn, "subnet_ids": _by_role(p["subnets"], a["ciamSubnetRole"]), "tags": tags}),
+                _res("managed", "aws_db_parameter_group", cn, {
+                    "name": cn, "family": f"postgres{a['ciamDbEngineVersion'].split('.')[0]}", "parameter": params,
+                    "tags": tags}),
+                _res("managed", "aws_db_instance", cn, {
+                    "arn": a["ciamProviderRef"], "identifier": cn, "engine": "postgres",
+                    "engine_version": a["ciamDbEngineVersion"], "engine_version_actual": a["ciamDbEngineVersion"],
+                    "address": a["ciamFqdn"], "port": int(a["ciamPort"]), "instance_class": a["ciamInstanceSize"],
+                    "allocated_storage": int(a["ciamDbStorageGb"]),
+                    "multi_az": a["ciamDbHighAvailability"] == "zone-redundant",
+                    "backup_retention_period": int(a["ciamRetentionDays"]),
+                    "deletion_protection": a["ciamDbDeletionProtection"] == "TRUE", "storage_encrypted": True,
+                    "kms_key_id": p["key"][0].split("://", 1)[1], "db_subnet_group_name": cn,
+                    "parameter_group_name": cn, "publicly_accessible": False,
+                    "master_user_secret": [{"secret_arn": p["secret"](a["ciamDbCredentialRole"]).split("://", 1)[1],
+                                            "secret_status": "active"}],
+                    "tags": tags})]
+    return out
+
+
 def source_state():
     """The source environment's Terraform state (format version 4), with the planted drift."""
     p = SOURCE
@@ -366,7 +434,7 @@ def source_state():
     resources = [*_aws_network(p, subnets), *_aws_servers(p, subnets, instances, groups, {"pf-engine-2": "m6i.xlarge"}),
                  *_aws_firewall(p, groups), *_aws_services(p, instances), *_aws_keys(p, rotation=False),
                  *_aws_monitoring(), *_drifted_source(p, subnets, groups), *_source_iam(), *_aws_dns(p),
-                 *_aws_network_depth(p)]
+                 *_aws_network_depth(p), *_aws_databases(p)]
     return _dumps({"version": 4, "terraform_version": "1.9.5", "serial": 214, "lineage": "5e0c-ciam-prod",
                    "outputs": {}, "resources": resources})
 
@@ -499,6 +567,36 @@ def _azure_network_depth(p):
     return endpoints, links
 
 
+def _azure_databases(p):
+    """The managed databases as `az postgres flexible-server list` and `parameter list` print them (the parameters
+    set on the server only), and `az lock list` the locks on them."""
+    servers, configs, locks = [], [], []
+    for _, cn, role, a in p["databases"]:
+        ref = a["ciamProviderRef"]
+        subnet = _by_role(p["subnets"], a["ciamSubnetRole"])[0]
+        ha = a["ciamDbHighAvailability"] == "zone-redundant"
+        servers.append({"id": ref, "name": cn, "type": "Microsoft.DBforPostgreSQL/flexibleServers",
+                        "location": "eastus2", "version": a["ciamDbEngineVersion"],
+                        "sku": {"name": a["ciamInstanceSize"], "tier": "GeneralPurpose"},
+                        "storage": {"storageSizeGb": int(a["ciamDbStorageGb"]), "autoGrow": "Disabled"},
+                        "availabilityZone": a["ciamZone"], "fullyQualifiedDomainName": a["ciamFqdn"],
+                        "highAvailability": {"mode": "ZoneRedundant" if ha else "Disabled"},
+                        "backup": {"backupRetentionDays": int(a["ciamRetentionDays"]), "geoRedundantBackup": "Disabled"},
+                        "network": {"delegatedSubnetResourceId": _subnet_id(subnet),
+                                    "publicNetworkAccess": "Disabled"},
+                        "dataEncryption": {"type": "AzureKeyVault",
+                                           "primaryKeyURI": f"https://{p['key'][0].split('://')[1].split('/')[0]}"
+                                                            f".vault.azure.net/keys/{p['key'][0].rsplit('/', 1)[1]}/4f1e"},
+                        "tags": {"Role": role, "ManagedBy": "opsdir"}})
+        configs += [{"id": f"{ref}/configurations/{k}", "name": k, "value": v, "source": "user-override",
+                     "type": "Microsoft.DBforPostgreSQL/flexibleServers/configurations"}
+                    for k, v in (x.split("=", 1) for x in a["ciamDbParameter"])]
+        locks += [{"id": f"{ref}/providers/Microsoft.Authorization/locks/{cn}-no-delete", "name": f"{cn}-no-delete",
+                   "level": "CanNotDelete", "type": "Microsoft.Authorization/locks"}
+                  ] if a["ciamDbDeletionProtection"] == "TRUE" else []
+    return servers, configs, locks
+
+
 def target_inventory():
     """{file name: text} of the target environment's Azure CLI output and role map, with the planted drift."""
     p = TARGET
@@ -518,6 +616,8 @@ def target_inventory():
             "disk-encryption-sets.json": sets, "kv-secrets.json": secrets, "kv-keys.json": keys,
             "kv-key-disk-cmk.json": key_show,
             "private-endpoints.json": _azure_network_depth(p)[0], "private-link-services.json": _azure_network_depth(p)[1],
+            "postgres-servers.json": _azure_databases(p)[0], "postgres-parameters.json": _azure_databases(p)[1],
+            "locks.json": _azure_databases(p)[2],
             "roles.json": {f"{p['net'][1]}/snet-mgmt": "subnet-mgmt"}}
 
 
@@ -672,9 +772,7 @@ def _gcp_references(p):
                                                          "rotationPeriod": "7776000s", "labels": {"role": "disk-encryption"},
                                                          "versionTemplate": {"protectionLevel": "HSM",
                                                                              "algorithm": "GOOGLE_SYMMETRIC_ENCRYPTION"}}),
-            _asset("storage.googleapis.com/Bucket", {"kind": "storage#bucket", "name": p["backup"][5:],
-                                                     "labels": {"role": "backup-target"}},
-                   name=f"//storage.googleapis.com/{p['backup'][5:]}"),
+            _asset("storage.googleapis.com/Bucket", _gcp_backup(p), name=f"//storage.googleapis.com/{p['backup'][5:]}"),
             *(_asset("pubsub.googleapis.com/Topic", {"name": sref, "labels": {"role": role}})
               for _, role, sref, _ in p["streams"]),
             _asset("compute.googleapis.com/InstanceGroupManager", {
@@ -689,6 +787,25 @@ def _gcp_references(p):
                 "kind": "compute#autoscaler", "name": ref.rsplit("/", 1)[1], "region": REGION_URL,
                 "selfLink": f"{REGION_URL}/autoscalers/{ref.rsplit('/', 1)[1]}", "target": f"{GAPI}/{ref}",
                 "autoscalingPolicy": {"minNumReplicas": least, "maxNumReplicas": most}})]
+
+
+_CLASSES = {"cool": "NEARLINE", "cold": "COLDLINE", "archive": "ARCHIVE"}
+
+
+def _gcp_backup(p):
+    """The backup bucket as Cloud Asset Inventory exports it, with its settings."""
+    a = p["backup_depth"]
+
+    def rule(noncurrent, days, act):
+        return {"action": {"type": "Delete"} if act == "delete" else
+                {"type": "SetStorageClass", "storageClass": _CLASSES[act]},
+                "condition": {"daysSinceNoncurrentTime": days, "isLive": False} if noncurrent else {"age": days}}
+    return {"kind": "storage#bucket", "name": p["backup"][5:], "location": "US-CENTRAL1",
+            "labels": {"role": "backup-target", "managed_by": "opsdir"}, "versioning": {"enabled": True},
+            "retentionPolicy": {"retentionPeriod": str(int(a["ciamStorageLockDays"]) * 86400), "isLocked": True},
+            "encryption": {"defaultKmsKeyName": p["key"][0].split("://", 1)[1]},
+            "iamConfiguration": {"publicAccessPrevention": "enforced", "uniformBucketLevelAccess": {"enabled": True}},
+            "lifecycle": {"rule": [rule(*r) for r in _rules(a["ciamStorageLifecycle"])]}}
 
 
 def _gcp_monitoring():
@@ -715,6 +832,30 @@ def _gcp_monitoring():
     return [asset(oc, attrs) for oc, _, _, attrs in MONITORING["standby"]]
 
 
+def _gcp_databases(p):
+    """The managed databases as Cloud Asset Inventory exports them (sqladmin.googleapis.com/Instance): never a
+    password."""
+    return [_asset("sqladmin.googleapis.com/Instance", {
+        "kind": "sql#instance", "name": cn, "project": PROJECT.split("/")[1], "region": "us-central1",
+        "databaseVersion": f"POSTGRES_{a['ciamDbEngineVersion']}", "dnsName": a["ciamFqdn"] + ".",
+        "selfLink": f"https://sqladmin.googleapis.com/sql/v1beta4/{a['ciamProviderRef']}",
+        "diskEncryptionConfiguration": {"kmsKeyName": p["key"][0].split("://", 1)[1]},
+        "settings": {
+            "tier": a["ciamInstanceSize"], "dataDiskSizeGb": a["ciamDbStorageGb"],
+            "availabilityType": "REGIONAL" if a["ciamDbHighAvailability"] == "zone-redundant" else "ZONAL",
+            "deletionProtectionEnabled": a["ciamDbDeletionProtection"] == "TRUE",
+            "userLabels": {"role": role, "managed_by": "opsdir"},
+            "locationPreference": {"zone": a["ciamZone"]},
+            "backupConfiguration": {"enabled": True, "pointInTimeRecoveryEnabled": True,
+                                    "backupRetentionSettings": {"retainedBackups": int(a["ciamRetentionDays"]),
+                                                                "retentionUnit": "COUNT"}},
+            "ipConfiguration": {"ipv4Enabled": False, "privateNetwork": f"{GAPI}/{p['net'][1]}",
+                                "sslMode": "ENCRYPTED_ONLY"},
+            "databaseFlags": [{"name": k, "value": v} for k, v in (x.split("=", 1) for x in a["ciamDbParameter"])]}},
+        name=f"//sqladmin.googleapis.com/{a['ciamProviderRef']}")
+        for _, cn, role, a in p["databases"]]
+
+
 def standby_inventory():
     """{file name: text} of the standby environment's Cloud Asset Inventory export and gcloud output, with the planted
     drift."""
@@ -736,7 +877,7 @@ def standby_inventory():
                                                          "selfLink": f"{REGION_URL}/routers/{nat[2]}",
                                                          "nats": [{"name": nat[3], "natIpAllocateOption": "MANUAL_ONLY",
                                                                    "natIps": [f"{REGION_URL}/addresses/ciam-standby-nat-1"]}]}),
-                *_gcp_references(p), *_gcp_monitoring(),
+                *_gcp_references(p), *_gcp_monitoring(), *_gcp_databases(p),
                 _asset("iam.googleapis.com/ServiceAccount", {"name": f"{PROJECT}/serviceAccounts/ciam-servers@"
                                                                      "example-aero-ciam-standby.iam.gserviceaccount.com"})]
     host = [_asset("compute.googleapis.com/Network", {"kind": "compute#network", "name": p["net"][1].rsplit("/", 1)[1],

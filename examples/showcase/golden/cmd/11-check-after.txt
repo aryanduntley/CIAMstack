@@ -1,6 +1,7 @@
 Expected findings check (after changes)
-  blockers planted 23   expected now 13   detected 13   missed 0   unexpected 0
+  blockers planted 23   expected now 12   detected 12   missed 0   unexpected 0
            B1   cleared by CHG-2003: the target environment binds a new LDAPS name (landing-zone DNS default) → gone
+           B2   cleared by CHG-2017: the target environment has no backup target → gone
            B4   cleared by CHG-2001: no target firewall rule for the MRO export → gone
            B9   cleared by CHG-2005: imported HR database connector names no secret → gone
            B10  cleared by CHG-2005: imported directory connector names no secret → gone
@@ -10,7 +11,7 @@ Expected findings check (after changes)
            B15  cleared by CHG-2005: imported CAPTCHA provider names no secret → gone
            B21  cleared by CHG-2015: the source forwards the AD domain to the domain controllers; nothing in the target does → gone
            B23  cleared by CHG-2005: imported corporate directory store names no secret → gone
-  actions  planted 67   expected now 60   detected 60   missed 0   unexpected 0
+  actions  planted 71   expected now 62   detected 62   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone
@@ -18,6 +19,10 @@ Expected findings check (after changes)
            A26  cleared by CHG-2013: the engines' truststore adds the corporate root CA, which the record lacks → gone
            A27  cleared by CHG-2013: the admin node's truststore adds it too → gone
            A55  cleared by CHG-2003: the target publishes LDAPS in the landing zone's default private zone (B1) → gone
+           A68  cleared by CHG-2016: the target's grant database keeps backups 7 days where the source keeps 14 → gone
+           A69  cleared by CHG-2016: nothing stops the target's grant database being deleted by mistake (no lock) → gone
+           A70  raised by CHG-2017: the target's backup container (CHG-2017) has no immutability policy: a backup can be deleted early → reported
+           A71  raised by CHG-2017: nothing copies the target's backups to another region; the source replicates to us-west-2 → reported
   RESULT: PASS. The planner found every planted problem and nothing else. 'NOT READY' is the correct verdict
           for this deliberately broken environment.
 exit 0

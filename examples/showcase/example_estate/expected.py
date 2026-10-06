@@ -1,5 +1,7 @@
 """What the tools should find: every problem planted in the estate, and how the migration planner reports it.
 The demo checks the planner against this list, so "NOT READY" reads as "found what was planted", not as a failure.
+A finding is (id, area, match, planted, cleared_by, raised_by): cleared_by, the approved change that fixes it;
+raised_by, the approved change whose record brings it (expected only once that change is applied).
 """
 from types import MappingProxyType
 
@@ -7,7 +9,7 @@ from types import MappingProxyType
 EXPECTED = MappingProxyType({
     "blockers": [
         ("B1", "Contract", "`ds-ldaps-service` changes name", "the target environment binds a new LDAPS name (landing-zone DNS default)", "CHG-2003"),
-        ("B2", "Binding", "Role `backup-target`", "the target environment has no backup target", None),
+        ("B2", "Binding", "Role `backup-target`", "the target environment has no backup target", "CHG-2017"),
         ("B3", "Binding", "Consumer `legacy-rptuser`", "no target firewall rule for the unowned legacy account", None),
         ("B4", "Binding", "Consumer `mro-batch-export`", "no target firewall rule for the MRO export", "CHG-2001"),
         ("B5", "Consumer", "Consumer `legacy-rptuser`", "legacy account: unknown status, no owner, no TLS", None),
@@ -72,8 +74,8 @@ EXPECTED = MappingProxyType({
          "PingFederate's engine pins ds-1's address in /etc/hosts", None),
         ("A19", "Hard-coded", "`apps/customer-portal/application.properties` holds source/prod values",
          "the portal names the LDAPS service, which the target renames (B1)", "CHG-2003"),
-        ("A20", "PingFederate", "Data store `grant-store` reaches a fixed host",
-         "the grant database is reached at the same host everywhere", None),
+        ("A20", "Databases", "Database `pf-grants-db` has high availability in source/prod but not",
+         "the target's grant database has no zone-redundant standby: it fails with its zone", None),
         ("A21", "PingFederate", "Data store `user-directory` reaches a fixed host",
          "PingFederate's LDAP data store lists ds-1 by hostname next to the LDAPS service", None),
         ("A22", "Job", "Job `ds-nightly-export` has no owner", "the MRO nightly export on ds-2's cron nobody owns",
@@ -169,10 +171,20 @@ EXPECTED = MappingProxyType({
         ("A67", "PingFederate", "Data store `corp-directory` reaches a fixed host",
          "PingFederate's corporate directory store lists two domain controllers, the same from every environment "
          "(its fix records both, in order, as one role's hosts)", None),
+        ("A68", "Databases", "Database `pf-grants-db` keeps backups 14 days in source/prod but 7",
+         "the target's grant database keeps backups 7 days where the source keeps 14", "CHG-2016"),
+        ("A69", "Databases", "Database `pf-grants-db` has deletion protection in source/prod but not",
+         "nothing stops the target's grant database being deleted by mistake (no lock)", "CHG-2016"),
+        ("A70", "Object stores", "Object store `backup-target` locks objects (compliance 35 days) in source/prod",
+         "the target's backup container (CHG-2017) has no immutability policy: a backup can be deleted early", None,
+         "CHG-2017"),
+        ("A71", "Object stores", "Object store `backup-target` is copied to",
+         "nothing copies the target's backups to another region; the source replicates to us-west-2", None,
+         "CHG-2017"),
     ],
 })
 
-KEYS = ("id", "area", "match", "planted", "cleared_by")
+KEYS = ("id", "area", "match", "planted", "cleared_by", "raised_by")
 
 
 def expected_findings():

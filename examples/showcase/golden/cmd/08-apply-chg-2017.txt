@@ -1,0 +1,3 @@
+CHG-2017: add cn=backup,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2017: modify cn=identity-ds,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+exit 0

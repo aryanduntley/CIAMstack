@@ -4,10 +4,21 @@ add cn=backup,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
     cn: backup
     ciamStorageRef: <ciamStorageRef>
     ciamBindingRole: backup-target
+    ciamProviderRef: <ciamProviderRef>
     ciamRetentionDays: 35
+    ciamEncryptedByRole: <ciamEncryptedByRole>
+    ciamStorageLockDays: 35
+    ciamStorageLifecycle: 30 cold | 90 delete | noncurrent 7 delete
+    ciamStorageReplicaRef: <ciamStorageReplicaRef>
+    ciamStorageVersioning: TRUE
+    ciamStorageImmutability: compliance
+    ciamStoragePublicBlocked: TRUE
 
 Give (--input KEY=VALUE):
   ciamStorageRef: this environment's own (the source's names its place) (e.g. s3://example-aero-ciam-prod-ds-backups)
+  ciamProviderRef: this environment's own (the source's names its place) (e.g. arn:aws:s3:::example-aero-ciam-prod-ds-backups)
+  ciamEncryptedByRole: this environment's own (the source's names its place) (e.g. disk-encryption)
+  ciamStorageReplicaRef: this environment's own (the source's names its place) (e.g. s3://example-aero-ciam-prod-ds-backups-usw2)
 
 Outside the record:
   - Create what the inputs name in target/prod (or find it there): the binding records the place, it doesn't build it.

@@ -1910,6 +1910,38 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.437 NAME 'ciamDbEdition' DESC 'The e
  TAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VAL
  UE-TYPE 'enum:enterprise|standard|standard2|web|express' X-ORIGIN 'opsdir' 
  )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.438 NAME 'ciamStorageVersioning' DES
+ C 'Whether an object store keeps every version of an object, so an overwrit
+ e or delete can be undone' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.11
+ 5.121.1.7 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'bool' X-ORIGIN 
+ 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.439 NAME 'ciamStorageImmutability' D
+ ESC 'Whether objects are locked against change and deletion for ciamStorage
+ LockDays: governance (a privileged user may lift it) or compliance (nobody 
+ may, the account root included)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.
+ 1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:
+ none|governance|compliance' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.440 NAME 'ciamStorageLockDays' DESC 
+ 'How long each object stays locked (ciamStorageImmutability)' EQUALITY inte
+ gerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'i
+ ntent' X-VALUE-TYPE 'int' X-MIN '1' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.441 NAME 'ciamStorageLifecycle' DESC
+  'A lifecycle rule: \27[noncurrent ]<days> <cool|cold|archive|delete>\27, a
+ fter days move objects (or their noncurrent versions) to a cheaper tier or 
+ delete them (30 cool; 365 delete; noncurrent 90 delete)' EQUALITY caseIgnor
+ eMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-
+ TYPE 'string' X-PATTERN '(noncurrent )?[1-9][0-9]{0,4} (cool|cold|archive|d
+ elete)' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.442 NAME 'ciamStoragePublicBlocked' 
+ DESC 'Whether public access to the object store is blocked whatever its pol
+ icies and ACLs say' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1
+ .7 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir
+ ' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.443 NAME 'ciamStorageReplicaRef' DES
+ C 'The object store its objects are copied to, usually in another region (a
+  bucket or container URI): each environment\27s own' EQUALITY caseIgnoreMat
+ ch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding
+ ' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -1965,8 +1997,10 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.13 NAME 'ciamExternalAllowlist' DESC
  eDays $ ciamRequestStatus $ ciamAllowsConsumer ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.81 NAME 'ciamObjectStore' DESC 'An ob
  ject storage location (bucket or container) the stack uses; a backup target
-  is one with a retention' SUP ciamBinding STRUCTURAL MUST ciamStorageRef X-
- ORIGIN 'opsdir' )
+  is one with a retention' SUP ciamBinding STRUCTURAL MUST ciamStorageRef MA
+ Y ( ciamStorageVersioning $ ciamStorageImmutability $ ciamStorageLockDays $
+  ciamStorageLifecycle $ ciamStoragePublicBlocked $ ciamStorageReplicaRef $ 
+ ciamEncryptedByRole $ ciamManagedBy ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.14 NAME 'ciamBackupTarget' DESC 'An o
  bject store backups are written to, with their retention' SUP ciamObjectSto
  re STRUCTURAL MAY ciamRetentionDays X-ORIGIN 'opsdir' )

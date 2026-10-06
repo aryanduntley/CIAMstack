@@ -524,8 +524,18 @@ objectClass: top
 objectClass: ciamBackupTarget
 cn: backup
 ciamBindingRole: backup-target
+ciamEncryptedByRole: disk-encryption
+ciamProviderRef: arn:aws:s3:::example-aero-ciam-prod-ds-backups
 ciamRetentionDays: 35
+ciamStorageImmutability: compliance
+ciamStorageLifecycle: 30 cold
+ciamStorageLifecycle: 90 delete
+ciamStorageLifecycle: noncurrent 7 delete
+ciamStorageLockDays: 35
+ciamStoragePublicBlocked: TRUE
 ciamStorageRef: s3://example-aero-ciam-prod-ds-backups
+ciamStorageReplicaRef: s3://example-aero-ciam-prod-ds-backups-usw2
+ciamStorageVersioning: TRUE
 
 dn: cn=pf-discovery,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -897,6 +907,31 @@ ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
 ciamProviderRef: arn:aws:network-firewall:us-east-1:111122223333:firewall-poli
  cy/ciam-prod-egress
 ciamProxyKind: firewall
+
+dn: cn=pf-grants,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDatabase
+cn: pf-grants
+ciamBindingRole: pf-grants-db
+ciamDbCredentialRole: pf-grants-db-password
+ciamDbDeletionProtection: TRUE
+ciamDbEngine: postgresql
+ciamDbEngineVersion: 16.4
+ciamDbHighAvailability: zone-redundant
+ciamDbParameter: log_min_duration_statement=1000
+ciamDbParameter: idle_in_transaction_session_timeout=60000
+ciamDbPointInTime: TRUE
+ciamDbService: rds
+ciamDbStorageGb: 100
+ciamDbTlsRequired: TRUE
+ciamEncryptedByRole: disk-encryption
+ciamFqdn: pf-grants.db.aws.internal.example-aero.test
+ciamInstanceSize: db.m6i.large
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPort: 5432
+ciamProviderRef: arn:aws:rds:us-east-1:111122223333:db:pf-grants
+ciamRetentionDays: 14
+ciamSubnetRole: subnet-pf
 
 dn: ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top

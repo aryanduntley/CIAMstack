@@ -6,6 +6,8 @@ from types import MappingProxyType
 
 from .common import AWS, AZ, CON, DECL, ENVS, GCP, INTS, XA, cert, chg, owner, spec, t
 from .custom import RESIDENCY
+from .databases import DATABASES
+from .storage import BACKUP
 from .access import ACCESS
 from .edge import EDGE, SERVICE_ATTRS
 from .network import NETWORK
@@ -72,7 +74,7 @@ SOURCE = MappingProxyType({
                             "ciamKeyUser": "arn:aws:iam::111122223333:role/ciam-server-instance",
                             "ciamKeyAdmin": "arn:aws:iam::111122223333:role/ciam-key-admins"},
     },
-    "backup": "s3://example-aero-ciam-prod-ds-backups",
+    "backup": "s3://example-aero-ciam-prod-ds-backups", "backup_depth": BACKUP["source"],
     "discovery": "s3://example-aero-ciam-prod-pf-cluster",   # where PingFederate's nodes find each other
     # sending identities: (name, binding role, domain, provider ref, DKIM verified, SPF authorized, DMARC policy)
     "sending": (("mail-ses", "mail-sending", "example-aero.test",
@@ -85,7 +87,7 @@ SOURCE = MappingProxyType({
     "access": ACCESS["source"],
     # DNS zones, forwarders, the SSO certificate in the cloud's store, edge subnets; what the source's edge runs (edge)
     "edge": EDGE["source"], "service_attrs": SERVICE_ATTRS["source"],
-    "network": NETWORK["source"],
+    "network": NETWORK["source"], "databases": DATABASES["source"],
     # compute groups: (name, binding role, server role, provider ref, image, size, min, desired, max, zones, tokens)
     "compute": (("asg-pf-engine", "compute-pf-engine", "pf-engine",
                  "arn:aws:autoscaling:us-east-1:111122223333:autoScalingGroup:6d4c1f0e-0000-4000-8000-00000000a001:"
@@ -110,7 +112,8 @@ TARGET = MappingProxyType({
                 ("snet-pf", "subnet-pf", "vnet-ciam-prod/snet-pf", "10.60.2.0/24", None),
                 ("snet-am", "subnet-am", "vnet-ciam-prod/snet-am", "10.60.3.0/24", None),
                 ("snet-idm", "subnet-idm", "vnet-ciam-prod/snet-idm", "10.60.6.0/24", None),
-                ("snet-ig", "subnet-ig", "vnet-ciam-prod/snet-ig", "10.60.10.0/24", None)],
+                ("snet-ig", "subnet-ig", "vnet-ciam-prod/snet-ig", "10.60.10.0/24", None),
+                ("snet-db", "subnet-db", "vnet-ciam-prod/snet-db", "10.60.8.0/24", None)],     # Flexible Server's
     "services": [("svc-ldaps", "ds-ldaps-service", "ldap.id.cloud.example-aero.test", "id.cloud.example-aero.test",
                   None, "ds", [1636], "10.60.1.100", None, None),     # no certificate covers this (planted) name
                  ("svc-sso", "pf-sso-service", "sso.example-aero.test", "example-aero.test",
@@ -158,7 +161,7 @@ TARGET = MappingProxyType({
     "access": ACCESS["target"],
     # DNS zones, forwarders, the SSO certificate in the cloud's store, edge subnets; what the source's edge runs (edge)
     "edge": EDGE["target"], "service_attrs": SERVICE_ATTRS["target"],
-    "network": NETWORK["target"],
+    "network": NETWORK["target"], "databases": DATABASES["target"],
     # planted: the domain's Communication Services identity isn't DKIM-verified yet and its DMARC is weaker; no bus
     # carries the identity audit stream
     "sending": (("mail-acs", "mail-sending", "example-aero.test",
@@ -226,7 +229,7 @@ STANDBY = MappingProxyType({
                         "pf-captcha-secret")},
         "disk-encryption": {"ciamProtectionLevel": "hsm", "ciamAutoRotate": "TRUE"},
     },
-    "backup": "gs://example-aero-ciam-standby-ds-backups",
+    "backup": "gs://example-aero-ciam-standby-ds-backups", "backup_depth": BACKUP["standby"],
     "discovery_protocol": "TCPPING",       # no Cloud Storage protocol for PingFederate: the nodes are listed
     "streams": (("audit-topic", "audit-events", f"{PROJECT}/topics/ciam-audit", "topic"),),
     "monitoring": MONITORING["standby"],
@@ -234,6 +237,7 @@ STANDBY = MappingProxyType({
     # DNS zones, forwarders, the SSO certificate in the cloud's store, edge subnets; what the source's edge runs (edge)
     "edge": EDGE["standby"], "service_attrs": SERVICE_ATTRS["standby"],
     "network": NETWORK["standby"], "firewall_model": "policy",   # rules by secure tag, in a network policy
+    "databases": DATABASES["standby"],
     "compute": (("mig-pf-engine", "compute-pf-engine", "pf-engine",
                  f"{PROJECT}/regions/us-central1/instanceGroupManagers/ciam-pf-engine",
                  GIMG + "pingfederate-12-1-4-rhel9", "n2-standard-2", 2, 2, 4, ("us-central1-a", "us-central1-b"),
@@ -296,7 +300,8 @@ def _bindings(file, env, p):
             spec(file, b("key-disk"), ["top", "ciamKeyRef"], cn="key-disk", ciamBindingRole="disk-encryption",
                  ciamRefUri=p["key"][0], ciamProviderRef=p["key"][1], **p["key_facts"].get("disk-encryption", {})),
             *((spec(file, b("backup"), ["top", "ciamBackupTarget"], cn="backup", ciamBindingRole="backup-target",
-                    ciamStorageRef=p["backup"], ciamRetentionDays=35),) if p.get("backup") else ()),
+                    ciamStorageRef=p["backup"], ciamRetentionDays=35, **(p.get("backup_depth") or {})),)
+              if p.get("backup") else ()),
             *((spec(file, b("pf-discovery"), ["top", "ciamObjectStore"], cn="pf-discovery",
                     ciamBindingRole="pf-cluster-discovery", ciamStorageRef=p["discovery"],
                     description="PingFederate cluster discovery (NATIVE_S3_PING bucket)"),)
@@ -316,7 +321,8 @@ def _bindings(file, env, p):
                    ciamStreamKind=kind) for cn, role, ref, kind in p.get("streams") or ()),
             *(spec(file, b(cn), ["top", oc], cn=cn, ciamBindingRole=role, **attrs)
               for oc, cn, role, attrs in (*(p.get("monitoring") or ()), *(p.get("access") or ()),
-                                          *(p.get("edge") or ()), *(p.get("network") or ()))),
+                                          *(p.get("edge") or ()), *(p.get("network") or ()),
+                                          *(p.get("databases") or ()))),
             *((_interconnect(file, b, *p["interconnect"]),) if p.get("interconnect") else ()))
 
 
@@ -429,6 +435,8 @@ def stage():
                  ciamBindingRole="pf-cluster-discovery",
                  ciamStorageRef="s3://example-aero-ciam-stage-pf-cluster",
                  description="Stage's own PingFederate cluster discovery: never prod's"),
+            *(spec(file, f"cn={cn},{B}", ["top", oc], cn=cn, ciamBindingRole=role, **attrs)
+              for oc, cn, role, attrs in DATABASES["stage"]),
             spec(file, f"ou=overrides,{STAGE}", ["top", "organizationalUnit"], ou="overrides"),
             *(spec(file, f"cn={cn},ou=overrides,{STAGE}", ["top", "ciamOverride"], cn=cn, ciamOverrides=target,
                    ciamOverrideAttribute=attr, ciamOverrideValue=value, description=why, ciamOwner=owner("ciam-platform"))

@@ -22,7 +22,8 @@ alike; resource names (projects/<p>/...) are the provider refs, self links read 
   google_secret_manager_secret, _regional_    -> secret reference gcp-sm://projects/<p>/[locations/<l>/]secrets/<name>,
     secret                                       automatic rotation when it has a rotation period; never a value
   google_kms_crypto_key                       -> key reference gcp-kms://<name>: protection level, rotation
-  google_storage_bucket                       -> storage gs://<bucket>
+  google_storage_bucket                       -> storage gs://<bucket>, with its versioning, retention policy, key,
+                                                 lifecycle and public access prevention (storage.py)
   google_cloudfunctions2_function,            -> job bindings: runtime, and the schedules of the Cloud Scheduler jobs
     google_cloudfunctions_function,              whose target names them
     google_cloud_run_v2_job,
@@ -57,6 +58,7 @@ from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, l
                                    realization_roles, resource, tagged_role)
 from opsdir_format_terraform.state import blocks, first_block, read_state
 from .databases import database_resources
+from .storage import object_store_resources
 from .iam import iam_resources
 from .names import name_parts, resource_id
 from .network_inventory import google_apis_endpoint, network_resources
@@ -255,11 +257,6 @@ def _keys(found):
         for a in of_types(found, "google_kms_crypto_key") if a.get("id"))
 
 
-def _storage(found):
-    return tuple(resource("storage", a.get("name"), {"ciamStorageRef": f"gs://{a.get('name')}"}, name=a.get("name"),
-                          role=_role(a)) for a in of_types(found, "google_storage_bucket") if a.get("name"))
-
-
 # ------------------------------------------------------------------ automation, compute, clusters, streams
 JOB_TYPES = ("google_cloudfunctions2_function", "google_cloudfunctions_function", "google_cloud_run_v2_job",
              "google_cloudbuild_trigger")
@@ -396,7 +393,8 @@ def pairs_resources(pairs):
                  for key in (resource_id(a.get("id")), str(a.get("instance_id") or "")) if key}
     network, network_notices = network_resources(pairs, instances, _tag_roles(pairs), proxy_subnets(pairs))
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *rules, *_secrets(pairs),
-             *_keys(pairs), *_storage(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
+             *_keys(pairs), *object_store_resources(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs),
+             *_clusters(pairs),
              *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs), *_canaries(pairs),
              *iam, *edge, *network, *database_resources(pairs)),
             (*rule_notices, *iam_notices, *edge_notices, *network_notices))

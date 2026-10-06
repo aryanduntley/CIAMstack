@@ -25,6 +25,7 @@ from opsdir.domains.edge.resolve import inspected, service_edge
 from opsdir.domains.network.stack import firewall_model
 from opsdir_adapter_gcp.access import ACCESS
 from opsdir_adapter_gcp.databases import render_databases
+from opsdir_adapter_gcp.storage import kept_buckets, render_object_stores
 from opsdir_adapter_gcp.dns import forwarding_zones, records, service_record
 from opsdir_adapter_gcp.edge import application_lb, network_ddos
 from opsdir_adapter_gcp.firewall_policy import health_check_rule, policy_firewall
@@ -192,9 +193,10 @@ def _secret(b):
 
 
 def _references(m):
-    """Data sources only: Secret Manager secrets, the backup bucket; a comment for the egress the landing zone
-    provides."""
+    """Data sources only: Secret Manager secrets, the backup bucket (unless the stack renders it: object stores); a
+    comment for the egress the landing zone provides."""
     bk, eg = one_role(m, "backup-target"), one_role(m, "pf-egress")
+    bk = None if bk is not None and bk.dn in {b.dn for b in kept_buckets(m)} else bk
     return (*(_secret(b) for b in of_class(m, "ciamSecretRef")
               if (one(b, "ciamRefUri") or "").startswith("gcp-sm://")),
             *((block("data", ["google_storage_bucket", "ds_backups"],
@@ -210,7 +212,8 @@ def render(m, services):
     out = (*network_data(m), *_firewall(m), *chain.from_iterable(identity(m, w) for w in identities),
            *(_instance(m, s, kms, identities) for s in m.servers),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
-           *render_network(m, endpoints), *render_databases(m), *records(m.d, m), *forwarding_zones(m),
+           *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
+           *forwarding_zones(m),
            *_references(m))
     main = header(m, "Google Cloud infrastructure for the CIAM platform", HCL) + unbound_comments(m.unbound) + "\n" \
         + "\n\n".join(out) + "\n"

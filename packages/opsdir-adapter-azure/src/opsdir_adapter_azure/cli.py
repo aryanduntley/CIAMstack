@@ -32,6 +32,7 @@ of the matching hashicorp/azurerm resource, so the same mapping reads them as re
   the network depth: route tables, private endpoints, Private Link Services, firewalls and their policies' rule
   collection groups, peering, VPN and hub connections, flow logs     see cli_network.py
   managed databases: PostgreSQL and MySQL Flexible Servers, their parameters, locks   see cli_database.py
+  storage accounts' settings, container immutability, lifecycle and object replication   see cli_storage.py
 Subnets, interfaces and VMs outside the listed virtual networks are counted, not read; secrets, keys and containers
 are listed per vault and account, and function apps per resource group, so the importer counts rather than lists the
 ones the record doesn't have and nothing names a role for.
@@ -45,6 +46,7 @@ from opsdir.core.inventory import layout_import
 from .cli_edge import edge_items
 from .cli_iam import iam_items
 from .cli_database import database_items
+from .cli_storage import storage_items
 from .cli_network import network_items
 from .arm_ids import arm_segment
 from .inventory import PROVIDER, pairs_resources
@@ -335,7 +337,7 @@ def items_resources(items):
                                             *_addresses(items), *_records(items), *_nsgs(items), *_nats(items),
                                             *_vault_items(items), *_stores(items), *_functions(items),
                                             *iam_items(items), *edge_items(items), *network_items(items),
-                                            *database_items(items)]))
+                                            *database_items(items), *storage_items(items)]))
     resources, notices = pairs_resources(pairs)
     return resources, (*scope_notices, *notices)
 

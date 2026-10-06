@@ -43,6 +43,7 @@ from .cli_edge import KINDS as EDGE_KINDS, backend_attributes, edge_pairs, recor
 from .cli_iam import KINDS as IAM_KINDS, iam_kind, iam_pairs
 from .cli_network import KINDS as NETWORK_KINDS, network_pairs, network_shape
 from .databases import sql_instance
+from .storage import bucket_attributes
 from .inventory import PROVIDER, pairs_resources
 from .names import name_parts, resource_id
 
@@ -331,9 +332,7 @@ def _references(items):
                                           "rotation_period": d.get("rotationPeriod"),
                                           "version_template": [{"protection_level": level}]})
     return [*(secret(d) for d, _ in _of(items, "secret")), *(key(d) for d, _ in _of(items, "key")),
-            *(("google_storage_bucket", {"name": d.get("name") or (d.get("storage_url") or "")[5:].rstrip("/"),
-                                         "labels": d.get("labels") or {}})
-              for d, _ in _of(items, "bucket"))]
+            *(("google_storage_bucket", bucket_attributes(d)) for d, _ in _of(items, "bucket"))]
 
 
 def _automation(items):

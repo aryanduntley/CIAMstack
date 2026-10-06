@@ -21,13 +21,14 @@ it (cli_database.py): the servers, their configurations and the locks on them. T
 (administrator_password) is never read.
 """
 from opsdir.core.directory import one, rdn_value, values
-from opsdir.core.environment import UNBOUND, bound, of_class
+from opsdir.core.environment import of_class
 from opsdir.core.inventory import of_types, resource, tagged_role
 from opsdir.domains.data.databases import major_version
 from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned, subnets
 from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
 from .arm_ids import subnet_ref
+from .cmk import customer_key, key_ref, role_uri, vault_object
 from .identities import LOC, RG
 from .network import binding_tags
 
@@ -36,7 +37,6 @@ ENGINES = {v: k for k, v in SERVERS.items()}
 PORTS = {"postgresql": 5432, "mysql": 3306}
 TLS = "require_secure_transport"                         # both engines' parameter; on by default
 MYSQL_VERSIONS = {"5.7": "5.7", "8.0": "8.0.21"}
-CMK_ROLE = "Key Vault Crypto Service Encryption User"
 _OFF = frozenset({"off", "0", "false"})
 
 
@@ -52,51 +52,25 @@ def _given(*pairs):
     return tuple((k, v) for k, v in pairs if v is not None)
 
 
-def _vault_object(uri):
-    """(vault, name) of an azkv:// or azkv-key:// reference (azkv://<vault>/<name>, azkv-key://<vault>/keys/<name>)."""
-    vault, _, rest = uri.split("://", 1)[1].partition("/")
-    return vault, rest.rsplit("/", 1)[-1]
-
-
-def _uri(m, role, what):
-    """(the role's reference URI, None) when m binds it, (None, a comment) when it doesn't, (None, None) for no role."""
-    if not role:
-        return None, None
-    uri = bound(m, role, "ciamRefUri")
-    return (None, ("#", f"{uri}: no {what} binding for role {role} in this environment")) \
-        if uri.startswith(UNBOUND) else (uri, None)
-
-
 def _key(m, b, n):
     """(blocks, server body) for the customer-managed key: its key, a user-assigned identity and its grant."""
-    uri, note = _uri(m, one(b, "ciamEncryptedByRole"), "key")
-    if uri is None:
-        return (), (note,) if note else ()
-    vault, name = _vault_object(uri)
-    ident = f"azurerm_user_assigned_identity.{n}_cmk"
-    return ((block("data", ["azurerm_key_vault", f"{n}_cmk"], [("name", vault), ("resource_group_name", RG)]),
-             block("data", ["azurerm_key_vault_key", f"{n}_cmk"], [
-                 ("name", name), ("key_vault_id", ref(f"data.azurerm_key_vault.{n}_cmk.id"))]),
-             block("resource", ["azurerm_user_assigned_identity", f"{n}_cmk"], [
-                 ("name", f"id-{rdn_value(b)}-cmk"), ("location", LOC), ("resource_group_name", RG),
-                 ("tags", binding_tags(b))]),
-             block("resource", ["azurerm_role_assignment", f"{n}_cmk"], [
-                 ("scope", ref(f"data.azurerm_key_vault_key.{n}_cmk.resource_versionless_id")),
-                 ("role_definition_name", CMK_ROLE), ("principal_id", ref(f"{ident}.principal_id"))])),
-            (("identity", Block((("type", "UserAssigned"), ("identity_ids", [ref(f"{ident}.id")])))),
-             ("customer_managed_key", Block((
-                 ("key_vault_key_id", ref(f"data.azurerm_key_vault_key.{n}_cmk.id")),
-                 ("primary_user_assigned_identity_id", ref(f"{ident}.id"))))),
-             ("depends_on", [ref(f"azurerm_role_assignment.{n}_cmk")])))
+    k = customer_key(m, b, n)
+    if k.identity is None:
+        return (), (k.note,) if k.note else ()
+    return k.blocks, (("identity", Block((("type", "UserAssigned"), ("identity_ids", [ref(f"{k.identity}.id")])))),
+                      ("customer_managed_key", Block((
+                          ("key_vault_key_id", ref(f"{k.key}.id")),
+                          ("primary_user_assigned_identity_id", ref(f"{k.identity}.id"))))),
+                      ("depends_on", [ref(k.grant)]))
 
 
 def _password(m, b, n):
     """(blocks, server body) for the administrator password: written write-only from an ephemeral read of the
     credential role's Key Vault secret."""
-    uri, note = _uri(m, one(b, "ciamDbCredentialRole"), "credential")
+    uri, note = role_uri(m, one(b, "ciamDbCredentialRole"), "credential")
     if uri is None:
         return (), (note or ("#", "no ciamDbCredentialRole: no administrator password is set"),)
-    vault, name = _vault_object(uri)
+    vault, name = vault_object(uri)
     return ((f"# {rdn_value(b)}: its administrator password is read when applied and written write-only: no "
              "Terraform state holds it",
              block("data", ["azurerm_key_vault", f"{n}_admin"], [("name", vault), ("resource_group_name", RG)]),
@@ -165,14 +139,6 @@ def _first(v):
     return v[0] if isinstance(v, list) and v else v if isinstance(v, dict) else {}
 
 
-def _key_ref(url):
-    """The key reference of a Key Vault key URL (https://<vault>.vault.azure.net/keys/<name>[/<version>])."""
-    host, _, path = (url or "").partition("://")[2].partition("/")
-    parts = path.split("/")
-    return f"azkv-key://{host.split('.')[0].lower()}/keys/{parts[1]}" if len(parts) > 1 and parts[0] == "keys" \
-        else None
-
-
 def _server(kind, a, settings, locked):
     engine = ENGINES[kind]
     own = settings.get((a.get("id") or "").lower(), {})
@@ -190,7 +156,7 @@ def _server(kind, a, settings, locked):
         "ciamDbDeletionProtection": "TRUE" if (a.get("id") or "").lower() in locked else "FALSE",
         "ciamDbParameter": sorted(f"{k}={v}" for k, v in own.items() if k != TLS)},
         links={"ciamSubnetRole": subnet_ref(a.get("delegated_subnet_id")),
-               "ciamEncryptedByRole": _key_ref(_first(a.get("customer_managed_key")).get("key_vault_key_id"))},
+               "ciamEncryptedByRole": key_ref(_first(a.get("customer_managed_key")).get("key_vault_key_id"))},
         name=a.get("name"), role=tagged_role(a.get("tags") or {}))
 
 

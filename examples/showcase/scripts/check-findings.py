@@ -2,7 +2,8 @@
 """Check the migration planner against the problems planted in the synthetic data.
 
   check-findings.py before   every planted blocker and action must be reported, and nothing else
-  check-findings.py after    same, except findings cleared by an applied change must be gone
+  check-findings.py after    same, except findings cleared by an applied change must be gone, and findings an applied
+                             change raises (its record brings them) must be there
 
 Exit status 0 = the planner found exactly what was planted.
 """
@@ -33,8 +34,9 @@ def _matches(row, finding):
 
 def compare(kind, rows, found, applied):
     """How the planner's findings of one kind compare with the planted ones."""
-    should = [r for r in rows if not (r["cleared_by"] and r["cleared_by"] in applied)]
-    cleared = [r for r in rows if r not in should]
+    raised = [r for r in rows if r.get("raised_by") and r["raised_by"] not in applied]     # not brought yet
+    should = [r for r in rows if r not in raised and not (r["cleared_by"] and r["cleared_by"] in applied)]
+    cleared = [r for r in rows if r not in should and r not in raised]
     missed = [r for r in should if not any(_matches(r, f) for f in found)]
     unexpected = [f for f in found if not any(_matches(r, f) for r in should)]
     still = [r for r in cleared if any(_matches(r, f) for f in found)]
@@ -52,6 +54,8 @@ def result_lines(r):
             f"detected {len(r.should) - len(r.missed):2}   missed {len(r.missed)}   unexpected {len(r.unexpected)}",
             *(f"           {c['id']:4} cleared by {c['cleared_by']}: {c['planted']} → "
               f"{'STILL REPORTED' if c in r.still else 'gone'}" for c in r.cleared),
+            *(f"           {s['id']:4} raised by {s['raised_by']}: {s['planted']} → "
+              f"{'MISSED' if s in r.missed else 'reported'}" for s in r.should if s.get("raised_by")),
             *(f"           MISSED {m['id']}: {m['planted']}" for m in r.missed),
             *(f"           UNEXPECTED [{a}] {t[:100]}" for a, t in r.unexpected))
 

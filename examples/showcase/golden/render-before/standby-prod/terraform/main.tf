@@ -1880,6 +1880,127 @@ resource "google_compute_network_firewall_policy_rule" "egress_firewall_deny" {
   }
 }
 
+# ciam-standby-pf-grants: the Cloud SQL service agent (service-<project number>@gcp-sa-cloud-sql.iam.gserviceaccount.com) needs roles/cloudkms.cryptoKeyEncrypterDecrypter on its key
+
+# ciam-standby-pf-grants: its administrator password is read when applied and written write-only: no Terraform state holds it
+
+ephemeral "google_secret_manager_secret_version" "ciam_standby_pf_grants_admin" {
+  secret  = "pf-grants-db-password"
+  project = "example-aero-ciam-standby"
+}
+
+resource "google_sql_database_instance" "ciam_standby_pf_grants" {
+  name                = "ciam-standby-pf-grants"
+  database_version    = "POSTGRES_16"
+  region              = var.region
+  encryption_key_name = "projects/example-aero-ciam-standby/locations/us-central1/keyRings/ciam/cryptoKeys/disk"
+  deletion_protection = true
+  settings {
+    tier                        = "db-custom-2-8192"
+    availability_type           = "REGIONAL"
+    disk_size                   = 100
+    deletion_protection_enabled = true
+    user_labels = {
+      role       = "pf-grants-db"
+      managed_by = "opsdir"
+    }
+    location_preference {
+      zone = "us-central1-a"
+    }
+    backup_configuration {
+      enabled                        = true
+      point_in_time_recovery_enabled = true
+      backup_retention_settings {
+        retained_backups = 14
+      }
+    }
+    ip_configuration {
+      ipv4_enabled    = false
+      private_network = data.google_compute_network.main.self_link
+      ssl_mode        = "ENCRYPTED_ONLY"
+    }
+    database_flags {
+      name  = "idle_in_transaction_session_timeout"
+      value = "60000"
+    }
+    database_flags {
+      name  = "log_min_duration_statement"
+      value = "1000"
+    }
+  }
+}
+
+resource "google_sql_user" "ciam_standby_pf_grants_admin" {
+  name                = var.ciam_standby_pf_grants_admin_login
+  instance            = google_sql_database_instance.ciam_standby_pf_grants.name
+  password_wo         = ephemeral.google_secret_manager_secret_version.ciam_standby_pf_grants_admin.secret_data
+  password_wo_version = 1
+}
+
+variable "ciam_standby_pf_grants_admin_login" {
+  type        = string
+  description = "The administrator login of database ciam-standby-pf-grants"
+}
+
+import {
+  to = google_sql_database_instance.ciam_standby_pf_grants
+  id = "projects/example-aero-ciam-standby/instances/ciam-standby-pf-grants"
+}
+
+# backup: the Cloud Storage service agent (service-<project number>@gs-project-accounts.iam.gserviceaccount.com) needs roles/cloudkms.cryptoKeyEncrypterDecrypter on its key
+
+resource "google_storage_bucket" "backup" {
+  name                        = "example-aero-ciam-standby-ds-backups"
+  location                    = var.region
+  uniform_bucket_level_access = true
+  public_access_prevention    = "enforced"
+  versioning {
+    enabled = true
+  }
+  retention_policy {
+    retention_period = 3024000
+    is_locked        = true
+  }
+  encryption {
+    default_kms_key_name = "projects/example-aero-ciam-standby/locations/us-central1/keyRings/ciam/cryptoKeys/disk"
+  }
+  lifecycle_rule {
+    condition {
+      age = 30
+    }
+    action {
+      type          = "SetStorageClass"
+      storage_class = "COLDLINE"
+    }
+  }
+  lifecycle_rule {
+    condition {
+      age = 90
+    }
+    action {
+      type = "Delete"
+    }
+  }
+  lifecycle_rule {
+    condition {
+      days_since_noncurrent_time = 7
+      with_state                 = "ARCHIVED"
+    }
+    action {
+      type = "Delete"
+    }
+  }
+  labels = {
+    role       = "backup-target"
+    managed_by = "opsdir"
+  }
+}
+
+import {
+  to = google_storage_bucket.backup
+  id = "example-aero-ciam-standby-ds-backups"
+}
+
 resource "google_dns_managed_zone" "fwd_corp_ad_0" {
   name        = "ciam-prod-fwd-corp-ad-0"
   dns_name    = "corp.example-aero.internal."
@@ -2018,10 +2139,6 @@ data "google_secret_manager_secret" "sso_tls_keystore" {
   # metadata only: no secret version (value) enters Terraform state
   secret_id = "sso-tls-keystore"
   project   = "example-aero-ciam-standby"
-}
-
-data "google_storage_bucket" "ds_backups" {
-  name = "example-aero-ciam-standby-ds-backups"
 }
 
 # Egress 'egress-pf': Cloud NAT example-aero-ciam-standby/us-central1/ciam-standby-router/ciam-standby-nat (landing zone; not managed here)

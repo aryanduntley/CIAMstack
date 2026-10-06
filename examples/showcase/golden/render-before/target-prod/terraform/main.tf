@@ -19,6 +19,12 @@ data "azurerm_subnet" "snet_am" {
   resource_group_name  = data.azurerm_resource_group.main.name
 }
 
+data "azurerm_subnet" "snet_db" {
+  name                 = "snet-db"
+  virtual_network_name = "vnet-ciam-prod"
+  resource_group_name  = data.azurerm_resource_group.main.name
+}
+
 data "azurerm_subnet" "snet_ds" {
   name                 = "snet-ds"
   virtual_network_name = "vnet-ciam-prod"
@@ -1293,6 +1299,101 @@ resource "azurerm_private_link_service" "ldaps_link" {
     Role      = "ldaps-endpoint-service"
     ManagedBy = "opsdir"
   }
+}
+
+variable "psql_ciam_prod_pf_grants_admin_login" {
+  type        = string
+  description = "The administrator login of database psql-ciam-prod-pf-grants"
+}
+
+variable "psql_ciam_prod_pf_grants_private_dns_zone_id" {
+  type        = string
+  description = "The private DNS zone ID database psql-ciam-prod-pf-grants registers in (privatelink.postgresql.database.azure.com)"
+}
+
+data "azurerm_key_vault" "psql_ciam_prod_pf_grants_cmk" {
+  name                = "kv-ciam-prod"
+  resource_group_name = data.azurerm_resource_group.main.name
+}
+
+data "azurerm_key_vault_key" "psql_ciam_prod_pf_grants_cmk" {
+  name         = "disk-cmk"
+  key_vault_id = data.azurerm_key_vault.psql_ciam_prod_pf_grants_cmk.id
+}
+
+resource "azurerm_user_assigned_identity" "psql_ciam_prod_pf_grants_cmk" {
+  name                = "id-psql-ciam-prod-pf-grants-cmk"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  tags = {
+    Role      = "pf-grants-db"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "azurerm_role_assignment" "psql_ciam_prod_pf_grants_cmk" {
+  scope                = data.azurerm_key_vault_key.psql_ciam_prod_pf_grants_cmk.resource_versionless_id
+  role_definition_name = "Key Vault Crypto Service Encryption User"
+  principal_id         = azurerm_user_assigned_identity.psql_ciam_prod_pf_grants_cmk.principal_id
+}
+
+# psql-ciam-prod-pf-grants: its administrator password is read when applied and written write-only: no Terraform state holds it
+
+data "azurerm_key_vault" "psql_ciam_prod_pf_grants_admin" {
+  name                = "kv-ciam-prod"
+  resource_group_name = data.azurerm_resource_group.main.name
+}
+
+ephemeral "azurerm_key_vault_secret" "psql_ciam_prod_pf_grants_admin" {
+  name         = "pf-grants-db-password"
+  key_vault_id = data.azurerm_key_vault.psql_ciam_prod_pf_grants_admin.id
+}
+
+resource "azurerm_postgresql_flexible_server" "psql_ciam_prod_pf_grants" {
+  name                              = "psql-ciam-prod-pf-grants"
+  resource_group_name               = data.azurerm_resource_group.main.name
+  location                          = data.azurerm_resource_group.main.location
+  version                           = "16"
+  sku_name                          = "GP_Standard_D2ds_v5"
+  storage_mb                        = 131072
+  zone                              = "1"
+  backup_retention_days             = 7
+  delegated_subnet_id               = data.azurerm_subnet.snet_db.id
+  private_dns_zone_id               = var.psql_ciam_prod_pf_grants_private_dns_zone_id
+  public_network_access_enabled     = false
+  administrator_login               = var.psql_ciam_prod_pf_grants_admin_login
+  administrator_password_wo         = ephemeral.azurerm_key_vault_secret.psql_ciam_prod_pf_grants_admin.value
+  administrator_password_wo_version = 1
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.psql_ciam_prod_pf_grants_cmk.id]
+  }
+  customer_managed_key {
+    key_vault_key_id                  = data.azurerm_key_vault_key.psql_ciam_prod_pf_grants_cmk.id
+    primary_user_assigned_identity_id = azurerm_user_assigned_identity.psql_ciam_prod_pf_grants_cmk.id
+  }
+  depends_on = [azurerm_role_assignment.psql_ciam_prod_pf_grants_cmk]
+  tags = {
+    Role      = "pf-grants-db"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "azurerm_postgresql_flexible_server_configuration" "psql_ciam_prod_pf_grants_idle_in_transaction_session_timeout" {
+  name      = "idle_in_transaction_session_timeout"
+  server_id = azurerm_postgresql_flexible_server.psql_ciam_prod_pf_grants.id
+  value     = "60000"
+}
+
+resource "azurerm_postgresql_flexible_server_configuration" "psql_ciam_prod_pf_grants_log_min_duration_statement" {
+  name      = "log_min_duration_statement"
+  server_id = azurerm_postgresql_flexible_server.psql_ciam_prod_pf_grants.id
+  value     = "1000"
+}
+
+import {
+  to = azurerm_postgresql_flexible_server.psql_ciam_prod_pf_grants
+  id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.DBforPostgreSQL/flexibleServers/psql-ciam-prod-pf-grants"
 }
 
 data "azurerm_key_vault" "kv_ciam_prod" {

@@ -16,6 +16,7 @@ from opsdir.domains.edge.resolve import inspected, service_edge
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
 from .access import ACCESS
 from .databases import render_databases
+from .storage import render_object_stores
 from .dns import FORWARDING_RULESET, forwarding_rules, records, service_record
 from .edge import ddos_note, gateway_service
 from .frontdoor import endpoint, front_door
@@ -179,7 +180,8 @@ def render(m, services):
     out = (*network_data(m), *_security_groups(m), *chain.from_iterable(identity(m, w) for w in identities),
            *chain.from_iterable(_server(m, s, des, identities) for s in m.servers),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
-           *render_network(m, endpoints), *render_databases(m), *records(m.d, m), *forwarding_rules(m),
+           *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
+           *forwarding_rules(m),
            *_key_vault_secrets(m), *scope_data(m, identities))
     notes = "\n".join(_interconnect_note(m, ic) for ic in of_class(m, "ciamInterconnect"))
     unbound = unbound_comments(m.unbound)

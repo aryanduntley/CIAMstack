@@ -1,0 +1,38 @@
+[
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.DBforPostgreSQL/flexibleServers/psql-ciam-prod-pf-grants",
+    "name": "psql-ciam-prod-pf-grants",
+    "type": "Microsoft.DBforPostgreSQL/flexibleServers",
+    "location": "eastus2",
+    "version": "16",
+    "sku": {
+      "name": "GP_Standard_D2ds_v5",
+      "tier": "GeneralPurpose"
+    },
+    "storage": {
+      "storageSizeGb": 128,
+      "autoGrow": "Disabled"
+    },
+    "availabilityZone": "1",
+    "fullyQualifiedDomainName": "psql-ciam-prod-pf-grants.postgres.database.azure.com",
+    "highAvailability": {
+      "mode": "Disabled"
+    },
+    "backup": {
+      "backupRetentionDays": 7,
+      "geoRedundantBackup": "Disabled"
+    },
+    "network": {
+      "delegatedSubnetResourceId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Network/virtualNetworks/vnet-ciam-prod/subnets/snet-db",
+      "publicNetworkAccess": "Disabled"
+    },
+    "dataEncryption": {
+      "type": "AzureKeyVault",
+      "primaryKeyURI": "https://kv-ciam-prod.vault.azure.net/keys/disk-cmk/4f1e"
+    },
+    "tags": {
+      "Role": "pf-grants-db",
+      "ManagedBy": "opsdir"
+    }
+  }
+]
