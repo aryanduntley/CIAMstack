@@ -18,7 +18,7 @@ def specs():
             *directory.consumers(), *directory.acis(), *governance.runbooks(), *pki.certificates(), *pki.credentials(),
             *federation.identity_services(), *federation.integrations(), *messaging.entries(),
             *observability.entries(), *access.entries(), *edge.entries(),
-            *infrastructure.external_allowlists(), *governance.incidents(),
+            *infrastructure.external_allowlists(), *governance.incidents(), *governance.restore_tests(),
             *custom.feature_flags(), *config.config_files(), *config.bundles())
 
 

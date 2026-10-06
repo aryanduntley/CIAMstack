@@ -152,6 +152,7 @@ od modify --change CHG-2015 changes/CHG-2015-target-ad-forwarder.ldif
 od modify --change CHG-2016 changes/CHG-2016-grant-database-protection.ldif
 od modify --change CHG-2017 changes/CHG-2017-target-backup-container.ldif
 od modify --change CHG-2018 changes/CHG-2018-target-directory-volume-size.ldif
+od modify --change CHG-2019 changes/CHG-2019-target-disk-backup.ldif
 od history
 od render target/prod >/dev/null
 diff -ru out/before/terraform out/target-prod/terraform

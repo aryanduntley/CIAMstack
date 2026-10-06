@@ -508,10 +508,11 @@ resource "azurerm_managed_disk" "ds_1_vol_ds_data" {
   disk_mbps_read_write   = 250
   disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
   tags = {
-    Volume    = "vol-ds-data"
-    Role      = "volume-ds-data"
-    Server    = "ds-1"
-    ManagedBy = "opsdir"
+    Volume         = "vol-ds-data"
+    Role           = "volume-ds-data"
+    Server         = "ds-1"
+    SnapshotPolicy = "snapshots-daily"
+    ManagedBy      = "opsdir"
   }
 }
 
@@ -584,10 +585,11 @@ resource "azurerm_managed_disk" "ds_2_vol_ds_data" {
   disk_mbps_read_write   = 250
   disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
   tags = {
-    Volume    = "vol-ds-data"
-    Role      = "volume-ds-data"
-    Server    = "ds-2"
-    ManagedBy = "opsdir"
+    Volume         = "vol-ds-data"
+    Role           = "volume-ds-data"
+    Server         = "ds-2"
+    SnapshotPolicy = "snapshots-daily"
+    ManagedBy      = "opsdir"
   }
 }
 
@@ -660,10 +662,11 @@ resource "azurerm_managed_disk" "ds_3_vol_ds_data" {
   disk_mbps_read_write   = 250
   disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
   tags = {
-    Volume    = "vol-ds-data"
-    Role      = "volume-ds-data"
-    Server    = "ds-3"
-    ManagedBy = "opsdir"
+    Volume         = "vol-ds-data"
+    Role           = "volume-ds-data"
+    Server         = "ds-3"
+    SnapshotPolicy = "snapshots-daily"
+    ManagedBy      = "opsdir"
   }
 }
 
@@ -900,6 +903,111 @@ resource "azurerm_linux_virtual_machine" "pf_engine_2" {
     Product   = "PingFederate 12.1.4"
     ManagedBy = "opsdir"
   }
+}
+
+# Vault 'ciam-backups': a locked vault keeps each recovery point as long as its policy says; 35 days isn't a setting of its own
+
+# Vault 'ciam-backups': immutability Locked can't be turned off once set
+
+resource "azurerm_data_protection_backup_vault" "ciam_backups" {
+  name                = "ciam-prod-ciam-backups"
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = data.azurerm_resource_group.main.location
+  datastore_type      = "VaultStore"
+  redundancy          = "LocallyRedundant"
+  immutability        = "Locked"
+  identity {
+    type = "SystemAssigned"
+  }
+  tags = {
+    Name      = "ciam-backups"
+    Role      = "backup-vault"
+    ManagedBy = "opsdir"
+  }
+}
+
+data "azurerm_key_vault" "ciam_backups_cmk" {
+  name                = "kv-ciam-prod"
+  resource_group_name = data.azurerm_resource_group.main.name
+}
+
+data "azurerm_key_vault_key" "ciam_backups_cmk" {
+  name         = "disk-cmk"
+  key_vault_id = data.azurerm_key_vault.ciam_backups_cmk.id
+}
+
+resource "azurerm_role_assignment" "ciam_backups_cmk" {
+  scope                = data.azurerm_key_vault_key.ciam_backups_cmk.resource_versionless_id
+  role_definition_name = "Key Vault Crypto Service Encryption User"
+  principal_id         = azurerm_data_protection_backup_vault.ciam_backups.identity[0].principal_id
+}
+
+resource "azurerm_data_protection_backup_vault_customer_managed_key" "ciam_backups" {
+  data_protection_backup_vault_id = azurerm_data_protection_backup_vault.ciam_backups.id
+  key_vault_key_id                = data.azurerm_key_vault_key.ciam_backups_cmk.versionless_id
+  depends_on                      = [azurerm_role_assignment.ciam_backups_cmk]
+}
+
+resource "azurerm_role_assignment" "ciam_backups_snapshots" {
+  scope                = data.azurerm_resource_group.main.id
+  role_definition_name = "Disk Snapshot Contributor"
+  principal_id         = azurerm_data_protection_backup_vault.ciam_backups.identity[0].principal_id
+}
+
+resource "azurerm_data_protection_backup_policy_disk" "snapshots_daily" {
+  name                            = "snapshots-daily"
+  vault_id                        = azurerm_data_protection_backup_vault.ciam_backups.id
+  backup_repeating_time_intervals = ["R/2024-01-01T03:00:00+00:00/P1D"]
+  default_retention_duration      = "P7D"
+  time_zone                       = "UTC"
+}
+
+resource "azurerm_role_assignment" "snapshots_daily_ds_1_vol_ds_data_reader" {
+  scope                = azurerm_managed_disk.ds_1_vol_ds_data.id
+  role_definition_name = "Disk Backup Reader"
+  principal_id         = azurerm_data_protection_backup_vault.ciam_backups.identity[0].principal_id
+}
+
+resource "azurerm_data_protection_backup_instance_disk" "snapshots_daily_ds_1_vol_ds_data" {
+  name                         = "ds-1-vol-ds-data"
+  location                     = data.azurerm_resource_group.main.location
+  vault_id                     = azurerm_data_protection_backup_vault.ciam_backups.id
+  disk_id                      = azurerm_managed_disk.ds_1_vol_ds_data.id
+  snapshot_resource_group_name = data.azurerm_resource_group.main.name
+  backup_policy_id             = azurerm_data_protection_backup_policy_disk.snapshots_daily.id
+  depends_on                   = [azurerm_role_assignment.snapshots_daily_ds_1_vol_ds_data_reader, azurerm_role_assignment.ciam_backups_snapshots]
+}
+
+resource "azurerm_role_assignment" "snapshots_daily_ds_2_vol_ds_data_reader" {
+  scope                = azurerm_managed_disk.ds_2_vol_ds_data.id
+  role_definition_name = "Disk Backup Reader"
+  principal_id         = azurerm_data_protection_backup_vault.ciam_backups.identity[0].principal_id
+}
+
+resource "azurerm_data_protection_backup_instance_disk" "snapshots_daily_ds_2_vol_ds_data" {
+  name                         = "ds-2-vol-ds-data"
+  location                     = data.azurerm_resource_group.main.location
+  vault_id                     = azurerm_data_protection_backup_vault.ciam_backups.id
+  disk_id                      = azurerm_managed_disk.ds_2_vol_ds_data.id
+  snapshot_resource_group_name = data.azurerm_resource_group.main.name
+  backup_policy_id             = azurerm_data_protection_backup_policy_disk.snapshots_daily.id
+  depends_on                   = [azurerm_role_assignment.snapshots_daily_ds_2_vol_ds_data_reader, azurerm_role_assignment.ciam_backups_snapshots]
+}
+
+resource "azurerm_role_assignment" "snapshots_daily_ds_3_vol_ds_data_reader" {
+  scope                = azurerm_managed_disk.ds_3_vol_ds_data.id
+  role_definition_name = "Disk Backup Reader"
+  principal_id         = azurerm_data_protection_backup_vault.ciam_backups.identity[0].principal_id
+}
+
+resource "azurerm_data_protection_backup_instance_disk" "snapshots_daily_ds_3_vol_ds_data" {
+  name                         = "ds-3-vol-ds-data"
+  location                     = data.azurerm_resource_group.main.location
+  vault_id                     = azurerm_data_protection_backup_vault.ciam_backups.id
+  disk_id                      = azurerm_managed_disk.ds_3_vol_ds_data.id
+  snapshot_resource_group_name = data.azurerm_resource_group.main.name
+  backup_policy_id             = azurerm_data_protection_backup_policy_disk.snapshots_daily.id
+  depends_on                   = [azurerm_role_assignment.snapshots_daily_ds_3_vol_ds_data_reader, azurerm_role_assignment.ciam_backups_snapshots]
 }
 
 data "azurerm_public_ip" "svc_apps" {

@@ -1,0 +1,5 @@
+setting                     domain  kind         default  value  in effect  status   what it tunes
+--------------------------  ------  -----------  -------  -----  ---------  -------  ----------------------------------------------------------------------
+restore-test-interval-days  data    int (min 1)  90              90         default  How often each backup plan's restores must be tested, in days, unless the plan says otherwise: a passed restore test older than this is overdue
+(1 rows)
+exit 0

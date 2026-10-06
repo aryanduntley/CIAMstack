@@ -1,0 +1,40 @@
+# CHG-2019 (approved): snapshot the target's directory data volume on a schedule, as production does. On Azure that is
+# Azure Backup's disk backup: a Backup vault (locked in compliance mode for 35 days, encrypted with the target's disk
+# key) and a disk backup plan with the production policy's role, daily at 03:00, each snapshot kept 7 days; the data
+# volume follows it (the planner's fix volume:volume-ds-data:ciamSnapshotPolicyRole, with the plan in place of a
+# snapshot policy). Disk backup keeps snapshots in the disk's region: the copy production sends to us-west-2 has no
+# counterpart here (the planner says so). Production's AWS Backup plan (backup-daily) stays unmatched: its cost is the
+# platform team's to approve.
+dn: cn=ciam-backups,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamBackupVault
+cn: ciam-backups
+ciamBindingRole: backup-vault
+ciamStorageImmutability: compliance
+ciamStorageLockDays: 35
+ciamEncryptedByRole: disk-encryption
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamChangeRef: cn=CHG-2019,ou=changes,dc=ciam-ops
+
+dn: cn=snapshots-daily,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamBackupPlan
+cn: snapshots-daily
+ciamBindingRole: snapshots-daily
+ciamProtectsRole: volume-ds-data
+ciamBackupVaultRole: backup-vault
+ciamBackupEveryHours: 24
+ciamBackupAt: 03:00
+ciamRetentionDays: 7
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamChangeRef: cn=CHG-2019,ou=changes,dc=ciam-ops
+
+dn: cn=vol-ds-data,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: modify
+replace: ciamSnapshotPolicyRole
+ciamSnapshotPolicyRole: snapshots-daily
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2019,ou=changes,dc=ciam-ops

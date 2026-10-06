@@ -1,4 +1,4 @@
-"""Disk fixture data, per environment (VOLUMES below, used by infrastructure: SOURCE / TARGET / STANDBY and stage):
+"""Disk and backup fixture data, per environment (VOLUMES below, used by infrastructure: SOURCE / TARGET / STANDBY and stage):
 PingDS's data volume, the disk each directory server keeps its database on (/opt/ds/db), as a volume every server of
 role ds has (volume-ds-data), and the snapshot policy that copies it (snapshots-daily). Each is (object class, cn,
 binding role, attributes), rendered by the cloud adapters into the stack's own Terraform and read back from what each
@@ -13,19 +13,32 @@ it.
   standby  500 GB pd-ssd (its n2 machines don't take Hyperdisk), snapshotted daily at 03:00 UTC by a snapshot
            schedule kept 7 days and stored in us-east1
 
+Backups by a backup service, of the same data volume (the plans protect its role, volume-ds-data):
+  source   an AWS Backup vault (compliance lock for 35 days, the platform's key) and plan backup-daily: daily at 05:00
+           within 2 hours, each recovery point kept 35 days and copied to a vault in us-west-2; both adopted
+  stage    neither (it drops them: a backup selection by tag in the shared account would back up production twice)
+  standby  a Backup and DR vault in us-east1 (governance lock: 14 days of enforced retention; another region than the
+           standby's, so its backups restore there) and plan backup-daily: daily at 05:00, kept 35 days
+
 Planted for the planner to find (the target was set up from a sandbox template):
   - the data volume is 256 GB where the source's is 500 GB: what PingDS keeps on it doesn't fit (a blocker)
   - no snapshot policy: a lost or damaged disk can't be restored from a snapshot
-Approved change CHG-2018 makes the volume 500 GB; the snapshot policy stays open (Azure's scheduled disk snapshots are
-Azure Backup's, in a Backup vault: milestone 4.10 task 5).
+  - no backup vault and no backup plan: nothing backs the volume up (the roles unbound: blockers; an action)
+Approved change CHG-2018 makes the volume 500 GB. Approved change CHG-2019 gives the target a Backup vault and the
+snapshots-daily role as Azure Backup's disk backup (on Azure, scheduled disk snapshots are a backup plan), which the
+volume follows; disk backup can't copy to another region (an action it raises), and the AWS Backup plan's role stays
+unbound (its cost is the platform team's to approve).
 """
 from .common import owner
 
 ROLE, POLICY, KEY = "volume-ds-data", "snapshots-daily", "disk-encryption"
+VAULT, BACKUP = "backup-vault", "backup-daily"
 DATA = {"ciamTargetRole": "ds", "ciamVolumeKind": "data", "ciamMountPath": "/opt/ds/db", "ciamVolumeEncrypted": "TRUE",
         "ciamEncryptedByRole": KEY, "ciamOwner": owner("ciam-platform")}
 DAILY = {"ciamRetentionDays": "7", "ciamSnapshotEveryHours": "24", "ciamSnapshotAt": "03:00",
          "ciamSnapshotConsistency": "crash", "ciamOwner": owner("ciam-platform")}
+NIGHTLY = {"ciamProtectsRole": ROLE, "ciamBackupVaultRole": VAULT, "ciamBackupEveryHours": "24", "ciamBackupAt": "05:00",
+           "ciamRetentionDays": "35", "ciamOwner": owner("ciam-platform")}
 VOLUMES = {
     "source": (
         ("ciamVolume", "vol-ds-data", ROLE,
@@ -33,6 +46,13 @@ VOLUMES = {
           "ciamSnapshotPolicyRole": POLICY}),
         ("ciamSnapshotPolicy", "snapshots-daily", POLICY,
          {**DAILY, "ciamCopyRegion": "us-west-2", "ciamProviderRef": "policy-0c1a2b3d4e5f60718"}),
+        ("ciamBackupVault", "ciam-backups", VAULT,
+         {"ciamStorageImmutability": "compliance", "ciamStorageLockDays": "35", "ciamEncryptedByRole": KEY,
+          "ciamProviderRef": "arn:aws:backup:us-east-1:111122223333:backup-vault:ciam-prod-ciam-backups",
+          "ciamOwner": owner("ciam-platform")}),
+        ("ciamBackupPlan", "backup-daily", BACKUP,
+         {**NIGHTLY, "ciamBackupWindowHours": "2", "ciamCopyRegion": "us-west-2",
+          "ciamProviderRef": "arn:aws:backup:us-east-1:111122223333:backup-plan:3f7a9c2e-0b1d-4e5f-8a9b-0c1d2e3f4a5b"}),
     ),
     "stage": (
         ("ciamVolume", "vol-ds-data-stage", ROLE, {**DATA, "ciamVolumeSizeGb": "100", "ciamVolumeClass": "ssd"}),
@@ -49,5 +69,12 @@ VOLUMES = {
          {**DAILY, "ciamCopyRegion": "us-east1",
           "ciamProviderRef": "projects/example-aero-ciam-standby/regions/us-central1/resourcePolicies/"
                              "ciam-prod-snapshots-daily"}),
+        ("ciamBackupVault", "ciam-backups", VAULT,
+         {"ciamStorageImmutability": "governance", "ciamStorageLockDays": "14", "ciamCrossRegionRestore": "TRUE",
+          "ciamProviderRef": "projects/example-aero-ciam-standby/locations/us-east1/backupVaults/ciam-prod-ciam-backups",
+          "ciamOwner": owner("ciam-platform")}),
+        ("ciamBackupPlan", "backup-daily", BACKUP,
+         {**NIGHTLY, "ciamCopyRegion": "us-east1",
+          "ciamProviderRef": "projects/example-aero-ciam-standby/locations/us-central1/backupPlans/backup-daily"}),
     ),
 }

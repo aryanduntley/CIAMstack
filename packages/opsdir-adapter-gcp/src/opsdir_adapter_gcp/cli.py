@@ -49,6 +49,7 @@ from .cli_iam import KINDS as IAM_KINDS, iam_kind, iam_pairs
 from .cli_network import KINDS as NETWORK_KINDS, network_pairs, network_shape
 from .databases import sql_instance
 from .storage import bucket_attributes, transfer_job_attributes
+from .backups import BACKUP_ASSETS, BACKUP_COLLECTIONS, backup_attributes
 from .volumes import disk_attributes, policy_attributes
 from .inventory import PROVIDER, pairs_resources
 from .names import name_parts, resource_id
@@ -73,6 +74,7 @@ KINDS = MappingProxyType({
     "compute.googleapis.com/InstanceTemplate": "template", "compute#instanceTemplate": "template",
     "dns.googleapis.com/ResourceRecordSet": "record-set", "dns#resourceRecordSet": "record-set",
     "storage.googleapis.com/Bucket": "bucket", "storage#bucket": "bucket",
+    **{f"backupdr.googleapis.com/{asset}": kind for kind, asset in BACKUP_ASSETS},
     "storagetransfer.googleapis.com/TransferJob": "transfer-job",
     "secretmanager.googleapis.com/Secret": "secret",                    # regional ones too (a location)
     "cloudkms.googleapis.com/CryptoKey": "key",
@@ -99,7 +101,8 @@ NAMED = (("secret", re.compile(r"^projects/[^/]+/(?:locations/[^/]+/)?secrets/[^
          ("uptime-check", re.compile(r"^projects/[^/]+/uptimeCheckConfigs/[^/]+$")),
          ("log-bucket", re.compile(r"^projects/[^/]+/locations/[^/]+/buckets/[^/]+$")),
          ("function", re.compile(r"^projects/[^/]+/locations/[^/]+/functions/[^/]+$")),
-         ("job", re.compile(r"^projects/[^/]+/locations/[^/]+/jobs/[^/]+$")))
+         ("job", re.compile(r"^projects/[^/]+/locations/[^/]+/jobs/[^/]+$")),
+         *((kind, re.compile(rf"^projects/[^/]+/locations/[^/]+/{c}/[^/]+$")) for kind, c in BACKUP_COLLECTIONS))
 _NUMBERED = re.compile(r"(?<![\w-])projects/(\d+)(?=/|$)")
 
 
@@ -484,6 +487,8 @@ def cli_resources(texts, at=None):
                                           *(("google_compute_disk", disk_attributes(d)) for d, _ in _of(items, "disk")),
                                           *(("google_compute_resource_policy", policy_attributes(d))
                                             for d, _ in _of(items, "resource-policy")),
+                                          *(backup_attributes(kind, d) for kind, _ in BACKUP_ASSETS
+                                            for d, _ in _of(items, kind)),
                                           *network_pairs(lambda kind: _of(items, kind))], items)
     pairs, scope_notices = _scoped(pairs)
     resources, notices = pairs_resources(pairs)

@@ -136,7 +136,9 @@ def _resolved(links, attr, ref):
     """The DNs (or, for a role link, the roles of the entries of its kind) a link names: one ref, or a tuple of them;
     those the source doesn't report are left out."""
     role_links = links["role_links"]
-    table = {x: role for (kind, x), role in links["kinds"].items() if kind == role_links[attr]} \
+    wanted = role_links.get(attr)
+    kinds = wanted if isinstance(wanted, tuple) else (wanted,)
+    table = {x: role for (kind, x), role in links["kinds"].items() if kind in kinds} \
         if attr in role_links else links[False]
     return tuple(dict.fromkeys(table[x] for x in (ref if isinstance(ref, tuple) else (ref,)) if x in table))
 

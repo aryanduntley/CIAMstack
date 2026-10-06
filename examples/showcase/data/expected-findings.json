@@ -174,7 +174,21 @@
       "area": "Binding",
       "match": "Role `snapshots-daily` is bound in source/prod but not in target/prod",
       "planted": "the target binds no snapshot policy (the volume check says what it loses: A72)",
+      "cleared_by": "CHG-2019"
+    },
+    {
+      "id": "B26",
+      "area": "Binding",
+      "match": "Role `backup-daily` is bound in source/prod but not in target/prod",
+      "planted": "the target runs no AWS Backup-like plan for the directory's data (its cost is the platform team's to approve)",
       "cleared_by": null
+    },
+    {
+      "id": "B27",
+      "area": "Binding",
+      "match": "Role `backup-vault` is bound in source/prod but not in target/prod",
+      "planted": "the target has no backup vault",
+      "cleared_by": "CHG-2019"
     }
   ],
   "actions": [
@@ -678,11 +692,33 @@
       "raised_by": "CHG-2017"
     },
     {
+      "id": "A73",
+      "area": "Restore tests",
+      "match": "Before cutover, restore `volume-ds-data`'s data in target/prod",
+      "planted": "nothing shows the target can recover the directory's data: it has no restore test (the source's passed in August)",
+      "cleared_by": null
+    },
+    {
       "id": "A72",
       "area": "Volumes",
       "match": "Volume `volume-ds-data` is snapshotted by `snapshots-daily`",
-      "planted": "the target snapshots nothing of the directory's data volume (Azure's scheduled disk snapshots are Azure Backup's: 4.10 task 5)",
-      "cleared_by": null
+      "planted": "the target snapshots nothing of the directory's data volume (on Azure that is a disk backup plan in a Backup vault)",
+      "cleared_by": "CHG-2019"
+    },
+    {
+      "id": "A74",
+      "area": "Backups",
+      "match": "Role `volume-ds-data` is backed up by `backup-daily`",
+      "planted": "nothing backs the target's directory data volume up",
+      "cleared_by": "CHG-2019"
+    },
+    {
+      "id": "A75",
+      "area": "Volumes",
+      "match": "Snapshot policy `snapshots-daily` copies each snapshot to us-west-2 in source/prod",
+      "planted": "the target's disk backup (CHG-2019) keeps snapshots in its own region: Azure disk backup can't copy them",
+      "cleared_by": null,
+      "raised_by": "CHG-2019"
     }
   ]
 }

@@ -1,6 +1,8 @@
 """Data domain vocabulary: the database engines a managed database runs and how available it is kept; how an object
 store keeps what it holds (immutability, lifecycle); the disks servers keep their data on and how they are
-snapshotted."""
+snapshotted; how restores are tested."""
+
+from ...core.naming import branch
 
 ENGINES = ("postgresql", "mysql", "mariadb", "sqlserver", "oracle")
 DEFAULT_PORTS = {"postgresql": 5432, "mysql": 3306, "mariadb": 3306, "sqlserver": 1433, "oracle": 1521}
@@ -16,3 +18,8 @@ VOLUME_CLASSES = ("standard", "ssd", "provisioned")
 # what a snapshot holds of a running server: the disk as a power cut would leave it, or what the application flushed
 CONSISTENCY = ("crash", "application")
 SNAPSHOT_AT = r"([01][0-9]|2[0-3]):[0-5][0-9]"    # a daily start time, UTC (03:00)
+# what a restore test proved: a disk restored and mounted (as far as a crash-consistent snapshot goes), or the
+# application's data (the directory, the database) restored and verified to work
+RESTORE_LEVELS = ("disk", "application")
+TEST_RESULTS = ("passed", "partial", "failed")
+RESTORE_TESTS = branch("restore-tests")          # the restore-test records (ciamRestoreTest), one entry per test

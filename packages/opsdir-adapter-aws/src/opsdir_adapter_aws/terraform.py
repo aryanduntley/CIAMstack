@@ -22,6 +22,7 @@ from .edge import US_EAST_1, alb_service, health_check, shield, stickiness
 from .identities import EC2_TRUST, notes, role
 from .landing import render_landing
 from .network import render_network
+from .backups import render_backups
 from .volumes import render_snapshot_policies, root_block_device, server_volumes
 from .databases import render_databases
 from .storage import kept_buckets, render_object_stores
@@ -146,6 +147,7 @@ def render(m, services):
     out = (*network_data(m), *_security_groups(m), *chain.from_iterable(_identity(m, w) for w in identities),
            *(_instance(m, s, kms, identities) for s in m.servers),
            *chain.from_iterable(server_volumes(m, s) for s in m.servers), *render_snapshot_policies(m),
+           *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
            *resolver_rules(m), *_references(m))

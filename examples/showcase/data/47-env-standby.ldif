@@ -831,6 +831,33 @@ ciamSnapshotAt: 03:00
 ciamSnapshotConsistency: crash
 ciamSnapshotEveryHours: 24
 
+dn: cn=ciam-backups,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamBackupVault
+cn: ciam-backups
+ciamBindingRole: backup-vault
+ciamCrossRegionRestore: TRUE
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamProviderRef: projects/example-aero-ciam-standby/locations/us-east1/backupV
+ aults/ciam-prod-ciam-backups
+ciamStorageImmutability: governance
+ciamStorageLockDays: 14
+
+dn: cn=backup-daily,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamBackupPlan
+cn: backup-daily
+ciamBackupAt: 05:00
+ciamBackupEveryHours: 24
+ciamBackupVaultRole: backup-vault
+ciamBindingRole: backup-daily
+ciamCopyRegion: us-east1
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamProtectsRole: volume-ds-data
+ciamProviderRef: projects/example-aero-ciam-standby/locations/us-central1/back
+ upPlans/backup-daily
+ciamRetentionDays: 35
+
 dn: cn=link-source,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamInterconnect

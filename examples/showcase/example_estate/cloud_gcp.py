@@ -19,7 +19,7 @@ from opsdir.domains.data.storage import parse_lifecycle
 from opsdir.domains.network.stack import sites_by_port
 
 from .access import GCP_IDENTITIES, GITHUB, PRINCIPAL_ROWS
-from .cloud_common import edge_subnets, hex_id, rows_of, servers_of
+from .cloud_common import edge_subnets, hex_id, listed, rows_of, servers_of
 from .infrastructure import HOST, PROJECT, SECRET_ROLES, STANDBY
 from .observability import MONITORING
 
@@ -302,6 +302,40 @@ def _gcp_volumes(p):
     return [*schedules, *disks]
 
 
+def _gcp_backups(p):
+    """Backup and DR as Cloud Asset Inventory exports it: each vault (its minimum enforced retention, in its plans'
+    copy region), each plan (in the standby's region, for disks: retention, a daily schedule from its hour and the
+    default window) and an association per disk of the roles it protects."""
+    rows = p.get("volumes") or ()
+    root = f"{PROJECT}/locations"
+    regions = {a["ciamBackupVaultRole"]: (listed(a.get("ciamCopyRegion")) or ["us-central1"])[0]
+               for _, _, a in rows_of(rows, "ciamBackupPlan")}          # a vault is where its plans copy to
+    vaults = {role: f"{root}/{regions[role]}/backupVaults/ciam-prod-{cn}"
+              for cn, role, _ in rows_of(rows, "ciamBackupVault") if role in regions}
+    found = [_asset("backupdr.googleapis.com/BackupVault", {
+                 "name": vaults[role], "state": "ACTIVE",
+                 "backupMinimumEnforcedRetentionDuration": f"{int(a.get('ciamStorageLockDays') or 1) * 86400}s",
+                 "labels": {"name": _label(cn), "role": _label(role), "managed_by": "opsdir"}})
+             for cn, role, a in rows_of(rows, "ciamBackupVault") if role in vaults]
+    for cn, role, a in rows_of(rows, "ciamBackupPlan"):
+        plan = f"{root}/us-central1/backupPlans/{cn}"
+        hour = int(a["ciamBackupAt"][:2])
+        found += [_asset("backupdr.googleapis.com/BackupPlan", {
+                      "name": plan, "state": "ACTIVE", "resourceType": "compute.googleapis.com/Disk",
+                      "backupVault": vaults[a["ciamBackupVaultRole"]],
+                      "backupRules": [{"ruleId": "ciam", "backupRetentionDays": int(a["ciamRetentionDays"]),
+                                       "standardSchedule": {"recurrenceType": "DAILY", "timeZone": "UTC",
+                                                            "backupWindow": {"startHourOfDay": hour,
+                                                                             "endHourOfDay": min(hour + 6, 24)}}}]}),
+                  *(_asset("backupdr.googleapis.com/BackupPlanAssociation", {
+                      "name": f"{root}/us-central1/backupPlanAssociations/{s[0]}-{vcn}", "state": "ACTIVE",
+                      "resource": f"{PROJECT}/zones/{s[4]}/disks/{s[0]}-{vcn}",
+                      "resourceType": "compute.googleapis.com/Disk", "backupPlan": plan})
+                    for vcn, vrole, v in rows_of(rows, "ciamVolume") if vrole in listed(a["ciamProtectsRole"])
+                    for s in servers_of(p, v["ciamTargetRole"]))]
+    return found
+
+
 def standby_inventory():
     """{file name: text} of the standby environment's Cloud Asset Inventory export and gcloud output, with the planted
     drift."""
@@ -324,6 +358,7 @@ def standby_inventory():
                                                          "nats": [{"name": nat[3], "natIpAllocateOption": "MANUAL_ONLY",
                                                                    "natIps": [f"{REGION_URL}/addresses/ciam-standby-nat-1"]}]}),
                 *_gcp_references(p), *_gcp_monitoring(), *_gcp_databases(p), *_gcp_volumes(p),
+                *_gcp_backups(p),
                 _asset("iam.googleapis.com/ServiceAccount", {"name": f"{PROJECT}/serviceAccounts/ciam-servers@"
                                                                      "example-aero-ciam-standby.iam.gserviceaccount.com"})]
     host = [_asset("compute.googleapis.com/Network", {"kind": "compute#network", "name": p["net"][1].rsplit("/", 1)[1],

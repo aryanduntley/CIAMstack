@@ -814,6 +814,62 @@ import {
   id = "projects/example-aero-ciam-standby/regions/us-central1/resourcePolicies/ciam-prod-snapshots-daily"
 }
 
+resource "google_backup_dr_backup_vault" "ciam_backups" {
+  location                                   = "us-east1"
+  backup_vault_id                            = "ciam-prod-ciam-backups"
+  backup_minimum_enforced_retention_duration = "1209600s"
+  labels = {
+    name       = "ciam-backups"
+    role       = "backup-vault"
+    managed_by = "opsdir"
+  }
+}
+
+import {
+  to = google_backup_dr_backup_vault.ciam_backups
+  id = "projects/example-aero-ciam-standby/locations/us-east1/backupVaults/ciam-prod-ciam-backups"
+}
+
+resource "google_backup_dr_backup_plan" "backup_daily" {
+  location       = var.region
+  backup_plan_id = "backup-daily"
+  resource_type  = "compute.googleapis.com/Disk"
+  backup_vault   = google_backup_dr_backup_vault.ciam_backups.id
+  backup_rules {
+    rule_id               = "ciam"
+    backup_retention_days = 35
+    standard_schedule {
+      recurrence_type = "DAILY"
+      time_zone       = "UTC"
+      backup_window {
+        start_hour_of_day = 5
+        end_hour_of_day   = 11
+      }
+    }
+  }
+}
+
+resource "google_backup_dr_backup_plan_association" "backup_daily_ds_1_vol_ds_data" {
+  location                   = var.region
+  backup_plan_association_id = "ds-1-vol-ds-data"
+  resource                   = google_compute_disk.ds_1_vol_ds_data.id
+  resource_type              = "compute.googleapis.com/Disk"
+  backup_plan                = google_backup_dr_backup_plan.backup_daily.name
+}
+
+resource "google_backup_dr_backup_plan_association" "backup_daily_ds_2_vol_ds_data" {
+  location                   = var.region
+  backup_plan_association_id = "ds-2-vol-ds-data"
+  resource                   = google_compute_disk.ds_2_vol_ds_data.id
+  resource_type              = "compute.googleapis.com/Disk"
+  backup_plan                = google_backup_dr_backup_plan.backup_daily.name
+}
+
+import {
+  to = google_backup_dr_backup_plan.backup_daily
+  id = "projects/example-aero-ciam-standby/locations/us-central1/backupPlans/backup-daily"
+}
+
 data "google_compute_address" "svc_apps" {
   name   = "ciam-standby-apps"
   region = var.region

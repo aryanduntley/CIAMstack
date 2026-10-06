@@ -103,6 +103,16 @@ The core `data` domain's volumes (`ciamVolume`, each server role's disks) and sn
 | `ciamVolumeEncrypted` `FALSE` | Rendered as recorded (`encrypted = false`); the planner names it |
 | `ciamSnapshotPolicy` the stack keeps | An `aws_dlm_lifecycle_policy` (`execution_role_arn` an input, `dlm_execution_role_arn`) snapshotting the volumes tagged `SnapshotPolicy = <role>`: `create_rule` every `ciamSnapshotEveryHours` (1, 2, 3, 4, 6, 8, 12 or 24; another interval is a comment) from `ciamSnapshotAt`, `retain_rule` `ciamRetentionDays` days, an encrypted `cross_region_copy_rule` per `ciamCopyRegion` (at most three) keyed by the disk key's replica there when it is a multi-region key replicated to that region, else an input `<policy>_<region>_kms_key_arn`; an `import` block when its provider ref (the policy ID) is recorded. One someone else keeps: a comment |
 
+### Backup vaults and plans
+
+The core `data` domain's backup vaults (`ciamBackupVault`) and plans (`ciamBackupPlan`) render as AWS Backup into `main.tf` (`opsdir_adapter_aws.backups`).
+
+| Record | Renders as |
+|---|---|
+| `ciamBackupVault` the stack keeps | An `aws_backup_vault` `ciam-<env>-<name>` with `kms_key_arn` from its key role (AWS Backup's own key when it names none: a comment), tagged `Name`, `Role`; its lock an `aws_backup_vault_lock_configuration` (`min_retention_days` its `ciamStorageLockDays`; `compliance` with `changeable_for_days = 3`, the grace AWS gives before a compliance lock can't be changed or removed; `governance` without). `ciamCrossRegionRestore` is a comment: on AWS another region's restores come from a plan's copies to a vault there. An `import` block when its provider ref is recorded |
+| `ciamBackupPlan` the stack keeps | An `aws_backup_plan` `ciam-<env>-<name>` with one rule into its vault: `schedule` `cron(M H ? * * *)` daily, `cron(M H/N ? * * *)` every N hours, `cron(M H */D * ? *)` every D days (another interval is a comment), `start_window` from `ciamBackupWindowHours`, `lifecycle` `delete_after` its retention, a `copy_action` per `ciamCopyRegion` to that region's vault (its ARN an input, `<plan>_<region>_vault_arn`); and an `aws_backup_selection` choosing every resource tagged `Role` = a role it protects (the volumes, databases and instances this adapter renders carry that tag), AWS Backup's IAM role an input (`backup_iam_role_arn`). A plan whose vault isn't bound is a comment. An `import` block when its provider ref is recorded |
+| One someone else keeps (`ciamManagedBy`) | A comment naming them |
+
 ## Reading an environment back from Terraform state
 
 ```bash
@@ -212,6 +222,17 @@ What the network carries beyond VPCs, subnets and security groups comes back in 
 | `aws_dlm_lifecycle_policy` (enabled) | snapshot policy: interval in hours, start time, retention in days (weeks, months, years converted; by count: named, not read), copy regions, consistency `crash` |
 
 An EBS volume attached to one of the environment's instances without a `Volume` tag is named: which of the record's volumes it is can't be told.
+
+### Backup vaults and plans, read back
+
+`opsdir_adapter_aws.backups` (the CLI normalizes to the same names: `cli_backup.py`). Vaults and plans are matched by name: their tag `Name` (what this adapter renders), else the resource's own; a new one needs its tag `Role`.
+
+| AWS resource | Record entry |
+|---|---|
+| `aws_backup_vault` (+ `aws_backup_vault_lock_configuration`) | backup vault: its KMS key as its key role, its lock (`compliance` when the lock has a grace, `governance` otherwise) and minimum retention days |
+| `aws_backup_plan` (+ its `aws_backup_selection`s) | backup plan, from its first rule: every hours and start time (from the cron expressions this adapter writes; another is named), start window in hours, retention in days, the regions its copies go to, its vault; the roles its selections' `Role` tags choose |
+
+A plan with several rules is named (the first is read); a selection choosing resources by ARN rather than by tag is named (what it protects isn't read).
 
 ## Reading an environment from the AWS CLI
 
@@ -326,6 +347,24 @@ aws ec2 describe-volumes                                                        
 mkdir -p $out/dlm-policies
 for p in $(aws dlm get-lifecycle-policies --query 'Policies[].PolicyId' --output text); do
   aws dlm get-lifecycle-policy --policy-id "$p"                                  > "$out/dlm-policies/$p.json"
+done
+
+# AWS Backup: the vaults, each plan and its selections, and the tags of each vault and plan (list-tags doesn't name its
+# resource: saved under backup-tags/ by name)
+aws backup list-backup-vaults                                                    > $out/backup-vaults.json
+mkdir -p $out/backup-plans $out/backup-tags
+for v in $(aws backup list-backup-vaults --query 'BackupVaultList[].BackupVaultName' --output text); do
+  aws backup list-tags --resource-arn "$(aws backup describe-backup-vault --backup-vault-name "$v" --query BackupVaultArn --output text)" \
+                                                                                 > "$out/backup-tags/$v.json"
+done
+for p in $(aws backup list-backup-plans --query 'BackupPlansList[].BackupPlanId' --output text); do
+  aws backup get-backup-plan --backup-plan-id "$p"                               > "$out/backup-plans/$p.json"
+  name=$(aws backup get-backup-plan --backup-plan-id "$p" --query BackupPlan.BackupPlanName --output text)
+  aws backup list-tags --resource-arn "$(aws backup get-backup-plan --backup-plan-id "$p" --query BackupPlanArn --output text)" \
+                                                                                 > "$out/backup-tags/$name.json"
+  for s in $(aws backup list-backup-selections --backup-plan-id "$p" --query 'BackupSelectionsList[].SelectionId' --output text); do
+    aws backup get-backup-selection --backup-plan-id "$p" --selection-id "$s"    > "$out/backup-plans/$p-$s.json"
+  done
 done
 
 # IAM: roles and policies (AWS managed ones included), key and bucket policies, Identity Center, control policies
@@ -487,6 +526,8 @@ It adds no required roles, planner checks or schema of its own; the environment'
 `tests/test_aws_access.py`: the AWS access table: a secret by its suffixed ARN or a pattern (not a longer name, not the bare ARN), objects in a bucket (reading also needs `s3:ListBucket`), a topic by stream kind, escalation actions. `tests/test_aws_identities.py`: a workload's IAM role, least-privilege policy and instance profile; notes for what can't be granted.
 
 `tests/test_aws_network.py`: the network depth the stack keeps: an interface endpoint with its security group and private DNS, a gateway endpoint on its subnets' and the main route tables, what AWS has no endpoint for, an endpoint service on an L4 service's NLB and not an ALB, the egress firewall's domain list (web traffic only), what others keep named, nothing rendered without records.
+
+`tests/test_aws_backups.py`: AWS Backup rendered (vault with its key and lock, compliance grace, plan with its cron, window, retention and copies to an input vault, selection by tag `Role`; what it can't render said; others' named) and read back from state and the CLI (lock mode, schedule, copies, protected roles, vault link; several rules or ARN selections named).
 
 `tests/test_aws_volumes.py`: disks and snapshot policies rendered (the boot volume on the root block device, data volumes as EBS volumes with attachments and tags, unencrypted or unbound-key volumes as recorded and said, Lifecycle Manager policies with encrypted copies by the multi-region key's replica or an input, an interval it can't take and others' policies named) and read back from state and the CLI (volumes grouped by their Volume tag, root disks, policies linked by target tag, untagged disks, count-based and disabled policies and unencrypted roots named; dlm-policies/ outputs not read as IAM policies; render-to-state round trip).
 

@@ -32,7 +32,7 @@ the environment's instances without a volume label is named.
 """
 from collections import Counter
 
-from opsdir.core.directory import one, rdn_value, values
+from opsdir.core.directory import is_kind, one, rdn_value, values
 from opsdir.core.environment import UNBOUND, of_class, secret
 from opsdir.core.inventory import of_types, resource
 from opsdir.domains.data.volumes import (POLICY, boot_volume, data_volumes, is_encrypted, snapshot_every,
@@ -41,6 +41,7 @@ from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned
 from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
 from opsdir_format_terraform.state import blocks, first_block
+from .backups import disk_plans
 from .names import REGION, label, name_parts, resource_id
 
 TYPES = {"standard": "pd-standard", "ssd": "pd-ssd", "provisioned": "hyperdisk-balanced"}
@@ -97,6 +98,12 @@ def boot_disk(m, s, kms):
         *((("kms_key_self_link", key),) if key else ())))
 
 
+def _scheduled(m, p):
+    """Whether a disk's policy is a snapshot schedule this stack renders (a backup plan backs disks up its own way:
+    backups.py)."""
+    return p is not None and owned(p) and is_kind(m.d, p, POLICY)
+
+
 def _attach_policy(p, n, disk, zone):
     return block("resource", ["google_compute_disk_resource_policy_attachment", n], [
         ("name", ref(f"google_compute_resource_policy.{tf_name(rdn_value(p))}.name")), ("disk", disk),
@@ -109,7 +116,7 @@ def server_volumes(m, s):
     n, zone, out = tf_name(rdn_value(s)), one(s, "ciamZone"), []
     boot = boot_volume(m, one(s, "ciamServerRole"))
     boot_policy = volume_policy(m, boot) if boot is not None else None
-    if boot_policy is not None and owned(boot_policy):
+    if _scheduled(m, boot_policy):
         out.append(_attach_policy(boot_policy, f"{n}_boot", ref(f"google_compute_instance.{n}.name"), zone))
     for v in data_volumes(m, one(s, "ciamServerRole")):
         if not owned(v):
@@ -135,7 +142,7 @@ def server_volumes(m, s):
                     ("disk", ref(f"google_compute_disk.{dn}.id")), ("instance", ref(f"google_compute_instance.{n}.id")),
                     ("device_name", label(rdn_value(v)))]),
                 *((_attach_policy(policy, dn, ref(f"google_compute_disk.{dn}.name"), zone),)
-                  if policy is not None and owned(policy) else ())]
+                  if _scheduled(m, policy) else ())]
     return tuple(out)
 
 
@@ -158,7 +165,8 @@ def _policy(m, p):
     schedule, notes = _schedule(p)
     return (*notes,
             *((f"# Snapshot policy '{rdn_value(p)}': snapshots are stored in one location, {regions[0]}; "
-               f"{', '.join(regions[1:])} not rendered",) if len(regions) > 1 else ()),
+               f"{', '.join(regions[1:])} not rendered: a disk follows one schedule, so copies to more regions are a "
+               "backup plan's (Backup and DR, its vault there)",) if len(regions) > 1 else ()),
             block("resource", ["google_compute_resource_policy", n], [
                 ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(p)}"), ("region", REGION),
                 ("description", f"CIAM snapshots {one(p, 'ciamBindingRole')} ({m.label})"),
@@ -272,6 +280,7 @@ def volume_resources(pairs):
     attached = {resource_id(a.get("disk")): instances.get(resource_id(a.get("instance")), by_name.get(
                     (a.get("instance") or "").rsplit("/", 1)[-1], {}))
                 for a in of_types(pairs, "google_compute_attached_disk")}
+    planned = disk_plans(pairs)                     # disks a Backup and DR plan backs up (backups.py)
     followed = {resource_id(a.get("disk")).rsplit("/", 1)[-1]: refs.get(a.get("name")) or refs.get(
                     resource_id(a.get("name")))
                 for a in of_types(pairs, "google_compute_disk_resource_policy_attachment")}
@@ -287,7 +296,7 @@ def volume_resources(pairs):
 
     def policy_of(d):
         named = [refs.get(resource_id(x)) or refs.get(x.rsplit("/", 1)[-1]) for x in d.get("resource_policies") or ()]
-        return next((x for x in (*named, followed.get(d.get("name"))) if x), None)
+        return next((x for x in (*named, followed.get(d.get("name")), planned.get(d.get("name"))) if x), None)
 
     def key_of(d):
         return _key_path(first_block(d.get("disk_encryption_key")).get("kms_key_self_link"))

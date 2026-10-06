@@ -66,3 +66,15 @@ def test_a_bundle_is_recorded_from_its_content_and_verified_against_a_checkout(c
     assert ops.verify_paths(conn) == ("am/ui/login",)
     assert ops.verify(conn, {"am/ui/login": content}).rows == (("bundle", "login-ui", "am/ui/login", "unchanged", ""),)
     assert ops.report(conn, "bundles").rows[0][:3] == ("login-ui", "template", "2.4.0")
+
+
+def test_an_estate_setting_is_set_under_a_change_and_read_back(conn):
+    preview = ops.preview_setting(conn, "restore-test-interval-days", "60")
+    assert [r.dn for r in preview.changes] == ["ou=settings,dc=ciam-ops",
+                                                 "cn=restore-test-interval-days,ou=settings,dc=ciam-ops"]
+    assert ops.report(conn, "settings").rows[0][4:7] == ("", "90", "default")
+    ops.apply_preview(conn, preview, "CHG-1")
+    assert ops.report(conn, "settings").rows[0][4:7] == ("60", "60", "set")
+    assert ops.preview_setting(conn, "restore-test-interval-days", "60").changes == ()
+    with pytest.raises(ValueError, match="no installed domain declares"):
+        ops.preview_setting(conn, "nonsense", "1")

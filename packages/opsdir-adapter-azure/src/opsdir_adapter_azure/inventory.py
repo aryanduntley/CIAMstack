@@ -71,6 +71,7 @@ from .edge_inventory import (dns_resources, edge_services, fqdn, frontdoor_endpo
 from .iam import iam_resources
 from .databases import database_resources, database_security_groups
 from .nsg_rules import allows_in, group_rules, rule_ports, rule_sources, source_cidr
+from .backups import backup_resources
 from .volumes import volume_resources
 from .storage import object_store_resources
 
@@ -537,12 +538,13 @@ def pairs_resources(pairs):
     edge, edge_notices = _edge(pairs, services)
     network, network_notices = network_resources(pairs)
     volumes, volume_notices = volume_resources(pairs)
+    backups, backup_notices = backup_resources(pairs)
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *services, *rules, *_secrets(pairs),
              *_keys(pairs), *object_store_resources(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs),
              *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
-             *_canaries(pairs), *iam, *edge, *network, *database_resources(pairs), *volumes),
-            (*rule_notices, *iam_notices, *edge_notices, *network_notices, *volume_notices))
+             *_canaries(pairs), *iam, *edge, *network, *database_resources(pairs), *volumes, *backups),
+            (*rule_notices, *iam_notices, *edge_notices, *network_notices, *volume_notices, *backup_notices))
 
 
 def state_resources(text):

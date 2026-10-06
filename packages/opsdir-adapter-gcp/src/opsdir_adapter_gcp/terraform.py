@@ -36,6 +36,7 @@ from opsdir_adapter_gcp.names import name_parts
 from opsdir_adapter_gcp.names import NETWORK, PRIORITIES, REGION, label, network_tag
 from opsdir_adapter_gcp.network import render_network
 from opsdir_adapter_gcp.plumbing import network_data
+from opsdir_adapter_gcp.backups import render_backups
 from opsdir_adapter_gcp.volumes import boot_disk, render_snapshot_policies, server_volumes
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
@@ -211,7 +212,7 @@ def render(m, services):
     kms, identities = secret(m, "disk-encryption"), workload_identities(m, ACCESS)
     out = (*network_data(m), *_firewall(m), *chain.from_iterable(identity(m, w) for w in identities),
            *chain.from_iterable(_instance(m, s, kms, identities) for s in m.servers),
-           *render_snapshot_policies(m),
+           *render_snapshot_policies(m), *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
            *forwarding_zones(m),

@@ -312,4 +312,7 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2017  insert  cn=backup,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2017  update  cn=identity-ds,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2018  update  cn=vol-ds-data,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
-(312 rows)
+<TIMESTAMP>          CHG-2019  insert  cn=ciam-backups,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2019  insert  cn=snapshots-daily,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2019  update  cn=vol-ds-data,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+(315 rows)

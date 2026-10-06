@@ -50,6 +50,7 @@ matching Terraform resource, so the same mapping reads them as reads Terraform s
   Managed databases: RDS instances, Aurora clusters, subnet groups, user-set parameters -> see cli_database.py
   Disks and snapshots: EBS volumes (instances' root volumes on the instance), Lifecycle Manager policies saved as
   dlm-policies/<policy id>.json                                   -> see cli_volume.py
+  Backups: AWS Backup vaults, plans, selections, and their tags saved as backup-tags/<name>.json -> see cli_backup.py
 Network resources outside the listed VPCs are counted, not read; secrets, keys, buckets, functions, pipelines and build
 projects are account-wide, so the importer counts rather than lists the ones the record doesn't have and nothing names
 a role for.
@@ -61,6 +62,7 @@ from opsdir.core.contract import Importer
 from opsdir.core.directory import gtime
 from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_document
+from .cli_backup import KEYS as BACKUP_KEYS, backup_pairs, is_backup_tags
 from .cli_database import KEYS as DATABASE_KEYS, database_pairs
 from .cli_volume import DLM, KEYS as VOLUME_KEYS, is_dlm_output, root_devices, volume_pairs
 from .cli_storage import storage_folder, storage_pairs
@@ -73,7 +75,7 @@ from .inventory import PROVIDER, pairs_resources
 KEYS = ("Vpcs", "Subnets", "Reservations", "SecurityGroups", "SecurityGroupRules", "NatGateways", "LoadBalancers",
         "TagDescriptions", "Listeners", "TargetGroups", "TargetHealthDescriptions", "ResourceRecordSets", "SecretList",
         "KeyMetadata", "KeyRotationEnabled", "Buckets", "Functions", "Rules", "Targets", "ScheduleExpression",
-        "pipeline", "projects", *IAM_KEYS, *EDGE_KEYS, *NETWORK_KEYS, *DATABASE_KEYS, *VOLUME_KEYS,
+        "pipeline", "projects", *IAM_KEYS, *EDGE_KEYS, *NETWORK_KEYS, *DATABASE_KEYS, *VOLUME_KEYS, *BACKUP_KEYS,
         "Tags")   # Tags last: others carry tags too
 IN_VPC = ("aws_subnet", "aws_instance", "aws_security_group", "aws_lb", "aws_nat_gateway", "aws_route_table",
           "aws_network_acl", "aws_vpc_endpoint", "aws_ec2_transit_gateway_vpc_attachment", "aws_db_instance",
@@ -278,7 +280,8 @@ def _enabled(item):
 
 def _jobs(outs):
     """(pairs, notices): functions, build projects and pipelines, and the enabled rules and schedules that start them."""
-    function_tags = {stem(p): doc["Tags"] for p, k, doc in outs if k == "Tags" and isinstance(doc.get("Tags"), dict)}
+    function_tags = {stem(p): doc["Tags"] for p, k, doc in outs if k == "Tags" and isinstance(doc.get("Tags"), dict)
+                     and not is_backup_tags(p)}
     rules = items(outs, "Rules")
     schedules = [doc for _, k, doc in outs if k == "ScheduleExpression"]
     off = [r for r in rules if not _enabled(r)] + [s for s in schedules if not _enabled(s)]
@@ -337,7 +340,7 @@ def cli_resources(texts, at=None):
                                     *_load_balancers(outs), *forwarding, *_records(outs), *_secrets(outs), *keys,
                                     *(("aws_s3_bucket", {"bucket": b.get("Name")}) for b in items(outs, "Buckets")),
                                     *jobs, *iam, *edge_pairs(outs, _dns), *network_pairs(outs), *databases,
-                                    *storage_pairs(outs), *volume_pairs(outs)])
+                                    *storage_pairs(outs), *volume_pairs(outs), *backup_pairs(outs)])
     resources, rule_notices = pairs_resources(pairs)
     return resources, (*unknown, *target_notices, *key_notices, *job_notices, *iam_notices, *database_notices,
                        *scope_notices, *rule_notices)

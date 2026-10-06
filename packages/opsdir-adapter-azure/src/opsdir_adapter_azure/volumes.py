@@ -8,7 +8,8 @@
   in the volumes' order (caching None: a database's writes); the VM mounts it at its ciamMountPath itself
   Azure encrypts every managed disk at rest: a volume recorded unencrypted is a comment (Azure's own key encrypts it);
   a key role with no disk encryption set leaves the platform key, said. A snapshot policy has no Azure setting of its
-  own: scheduled disk snapshots are Azure Backup's disk backup, in a Backup vault (4.10 task 5): a comment.
+  own: scheduled disk snapshots are Azure Backup's disk backup, which a backup plan renders (backups.py): a comment
+  says so.
 Class to type: standard Standard_LRS, ssd Premium_LRS, provisioned PremiumV2_LRS (TYPES; the reader also takes
 StandardSSD_LRS and the zone-redundant ones as ssd, UltraSSD_LRS as provisioned).
 
@@ -16,8 +17,9 @@ Read back from (azurerm type, attributes) pairs, Terraform state as it is or the
 (cli_disk.py): azurerm_managed_disk (+ azurerm_virtual_machine_data_disk_attachment) grouped by tag Volume into one
 volume of the role their VMs run (the most common size, type, IOPS, MB/s; the key of its disk encryption set as its
 key role),
-each VM's os_disk as the boot volume its tag BootVolume names. A data disk attached to the environment's VMs without
-a Volume tag is named.
+each VM's os_disk as the boot volume its tag BootVolume names; a disk an Azure Backup backup instance protects follows
+that instance's policy (its snapshot policy role: the backup plan's). A data disk attached to the environment's VMs
+without a Volume tag is named.
 """
 from collections import Counter
 
@@ -29,6 +31,7 @@ from opsdir.domains.data.volumes import (POLICY, boot_volume, data_volumes, is_e
 from opsdir.domains.network.stack import kept_by, owned
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 from opsdir_format_terraform.state import first_block
+from .backups import disk_policies
 from .cmk import key_ref
 from .identities import LOC, RG
 
@@ -114,12 +117,12 @@ def server_volumes(m, s):
 
 
 def snapshot_policy_notes(m):
-    """Comments for environment m's snapshot policies: Azure Backup's disk backup snapshots managed disks on a
-    schedule, in a Backup vault (4.10 task 5); someone else's named."""
+    """Comments for environment m's snapshot policies: Azure snapshots managed disks on a schedule only with Azure
+    Backup's disk backup, which a backup plan renders (opsdir_adapter_azure.backups); someone else's named."""
     return tuple(f"# Snapshot policy '{rdn_value(p)}' (role {one(p, 'ciamBindingRole')}): "
                  + (f"kept by {kept_by(m, p)}: not rendered here" if not owned(p) else
-                    "managed disks are snapshotted on a schedule by Azure Backup's disk backup, in a Backup vault: "
-                    "not rendered yet (4.10 task 5)")
+                    "Azure snapshots managed disks on a schedule with Azure Backup's disk backup, in a Backup vault: "
+                    "record a backup plan (ciamBackupPlan) with this role and a vault, which renders as one")
                  for p in of_class(m, POLICY))
 
 
@@ -148,6 +151,7 @@ def volume_resources(pairs):
     attached = {_low(a.get("managed_disk_id")): vms.get(_low(a.get("virtual_machine_id")), {})
                 for a in of_types(pairs, "azurerm_virtual_machine_data_disk_attachment")}
     disks = [d for d in of_types(pairs, "azurerm_managed_disk") if d.get("id")]
+    followed = disk_policies(pairs)
     named = {}
     for d in disks:
         named.setdefault((d.get("tags") or {}).get("Volume"), []).append(d)
@@ -164,7 +168,8 @@ def volume_resources(pairs):
             "ciamVolumeEncrypted": "TRUE",
             "ciamTargetRole": _common(tagged_role(attached.get(_low(d.get("id")), {}).get("tags") or {})
                                       for d in found)},
-            links={"ciamEncryptedByRole": key(_common(d.get("disk_encryption_set_id") for d in found))},
+            links={"ciamEncryptedByRole": key(_common(d.get("disk_encryption_set_id") for d in found)),
+                   "ciamSnapshotPolicyRole": _common(followed.get(_low(d.get("id"))) for d in found)},
             name=name, role=_common(tagged_role(d.get("tags") or {}) for d in found))
     booted = {}
     for vm in vms.values():

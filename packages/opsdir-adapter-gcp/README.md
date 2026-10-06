@@ -103,6 +103,16 @@ The core `data` domain's volumes (`ciamVolume`, each server role's disks) and sn
 | `ciamVolumeEncrypted` `FALSE`, an unbound key role | A comment: Google Cloud encrypts every disk at rest, with its own key when none is named |
 | `ciamSnapshotPolicy` the stack keeps | A `google_compute_resource_policy` `ciam-<env>-<name>` with a snapshot schedule: `daily_schedule` every 24 hours, `hourly_schedule` every 1 to 23 (more is a comment), from `ciamSnapshotAt` on the hour; `max_retention_days`, snapshots kept when the disk is deleted; `storage_locations` the first `ciamCopyRegion` (one location: more are a comment); `guest_flush` when application-consistent; its snapshots labelled `policy` (the record's name) and `role`; an `import` block when its provider ref is recorded. Attached to each disk that follows it by `google_compute_disk_resource_policy_attachment` (a boot disk by its instance's name). One someone else keeps: a comment |
 
+### Backup vaults and plans
+
+The core `data` domain's backup vaults (`ciamBackupVault`) and plans (`ciamBackupPlan`) render as Backup and DR into `main.tf` (`opsdir_adapter_gcp.backups`).
+
+| Record | Renders as |
+|---|---|
+| `ciamBackupVault` the stack keeps | A `google_backup_dr_backup_vault` `ciam-<env>-<name>` in the copy region of the plans writing to it (the first; a vault in another region is how Backup and DR copies backups there), else the environment's region; `backup_minimum_enforced_retention_duration` its lock days (a day when nothing is locked: Backup and DR always enforces one); labelled `name`, `role`. A compliance lock's `effective_time` (after which the minimum can't be lowered) and a vault restoring elsewhere without a copy region are comments. An `import` block when its provider ref is recorded |
+| `ciamBackupPlan` the stack keeps | A `google_backup_dr_backup_plan` with `backup_plan_id` its name, in the environment's region (where the disks are), for `compute.googleapis.com/Disk`, writing to its vault, with one backup rule: `backup_retention_days` (less than the vault enforces, which Backup and DR refuses: the plan is a comment), a `standard_schedule` `HOURLY` every `ciamBackupEveryHours` (6 to 23: Google's console guide sets six hours as the least) or `DAILY`, `UTC`, its `backup_window` from `ciamBackupAt`'s hour for `ciamBackupWindowHours` (6 when not stated); and a `google_backup_dr_backup_plan_association` per disk of the volumes it protects (its protected roles that are volumes, and the volumes naming it). Another interval, more copy regions than the first, a protected role that isn't a volume, and a vault the stack doesn't keep are comments |
+| One someone else keeps (`ciamManagedBy`) | A comment naming them |
+
 ## Reading an environment back from Terraform state
 
 ```bash
@@ -202,6 +212,17 @@ A tag key the platform's own Terraform made (its description says `Managed by op
 
 A data disk the environment's instances use without a `volume` label is named.
 
+### Backup vaults and plans, read back
+
+`opsdir_adapter_gcp.backups` (Cloud Asset Inventory's `backupdr.googleapis.com/BackupVault`, `BackupPlan` and `BackupPlanAssociation`, and `gcloud backup-dr … list`, normalize to the same names).
+
+| Google Cloud resource | Record entry |
+|---|---|
+| `google_backup_dr_backup_vault` | backup vault named by its label `name` (else its id): its minimum enforced retention as its lock (`governance`, `compliance` once it has an effective time; a day: none) and lock days; restoring in another region when a plan in another location writes to it |
+| `google_backup_dr_backup_plan` (+ its associations) | backup plan named by its id: its first rule's schedule (every hours, start hour, window unless the default 6), retention, the vault's location as its copy region when it differs, its vault; the roles (label `role`) of the disks its associations name; a new plan's role is its id (plans carry no labels in Terraform). A disk an association names follows the plan (its volume's snapshot policy role). Several rules: the first is read |
+
+A vault, plan or association whose `state` says it is being deleted, deleted or inactive is named, not read.
+
 ## Reading an environment from Cloud Asset Inventory and gcloud
 
 Where there is no Terraform state (or to check it against what the project actually runs), `gcp/cli-inventory` reads Cloud Asset Inventory and `gcloud … --format=json` output. Collect it once per environment, into one folder per `<cloud>/<env>`; file names are free (`.json`, or `.jsonl` for an export), because every item says what it is: an asset by its asset type, a compute item by its `kind`, the others by their resource names. The one exception is DNS: `gcloud dns record-sets list` doesn't print the zone, so each zone's record sets go in a file named after the zone (record sets in an asset export name their zone).
@@ -229,6 +250,9 @@ gcloud beta monitoring channels list --project=$P --format=json           > $out
 gcloud sql instances list --project=$P --format=json                      > $out/sql-instances.json   # also in assets
 gcloud compute disks list --project=$P --format=json                      > $out/disks.json           # also in assets
 gcloud compute resource-policies list --project=$P --format=json          > $out/resource-policies.json
+gcloud backup-dr backup-vaults list --project=$P --location=- --format=json     > $out/backup-vaults.json      # also in assets
+gcloud backup-dr backup-plans list --project=$P --location=- --format=json      > $out/backup-plans.json
+gcloud backup-dr backup-plan-associations list --project=$P --location=- --format=json > $out/backup-plan-associations.json
 
 # the edge (also in the asset export): URL maps, HTTPS proxies, SSL and security policies, health checks, zones
 for kind in url-maps target-https-proxies ssl-policies health-checks security-policies; do
@@ -358,10 +382,13 @@ It adds no required roles, planner checks or schema of its own; the environment'
 - **Edge.** Preconfigured WAF exclusions apply on every path; Adaptive Protection (global backend services) isn't rendered for the regional load balancer.
 - **Cloud Asset Inventory and `gcloud` shapes** follow Google's API references and the gcloud source (checked 2026-10-02); like the Terraform, the importer hasn't yet read a live project (milestone 7.2).
 - **Databases someone else keeps** (`ciamManagedBy`) are named in a comment, not rendered into their keeper's root yet; Oracle and MariaDB have no Cloud SQL and aren't rendered; read replicas aren't modeled yet (DR, milestone 4.10).
-- **Managed instance groups' disks:** the adapter doesn't render instance templates yet, so their volumes come from the record only, and an instance template's disks aren't read into volumes yet. A snapshot schedule stores snapshots in one location; a policy copying to several regions renders the first.
+- **Managed instance groups' disks:** the adapter doesn't render instance templates yet, so their volumes come from the record only, and an instance template's disks aren't read into volumes yet. A snapshot schedule stores snapshots in one location and a disk follows one schedule; a policy copying to several regions renders the first, and copies to more are a backup plan's (Backup and DR, its vault there).
+- **Backup and DR:** plans back up disks only (a plan protecting a database or the servers of a role is a comment: Cloud SQL keeps its own backups, `ciamDatabase`); one copy region per vault (its location).
 - **Firewall model.** Classic VPC firewall rules with network tags stay the default; an environment chooses network firewall policies with secure tags (IAM-governed targeting) with `ciamFirewallModel` `policy`. The importers read both (see [The network depth, read back](#the-network-depth-read-back)); hierarchical policies are read, never rendered.
 
 ## Tests
+
+`tests/test_gcp_backups.py`: Backup and DR rendered (vault in the copy region with its minimum enforced retention, plan for disks with its rule, schedule and window, an association per disk; a day's minimum, compliance, other intervals, short retention, roles that aren't volumes said) and read back from state and Cloud Asset Inventory (lock and days, cross-region restore, schedule, copy region, protected roles; an association links its disk's volume to the plan; the default window isn't recorded).
 
 `tests/test_gcp_volumes.py`: disks rendered (the boot volume on the boot disk with labels and key, data volumes as attached disks with provisioned IOPS and throughput, schedules attached to the data and boot disks) and snapshot schedules (daily and hourly, on the hour, one storage location, guest flush, an interval it can't take named, import block), read back from state and Cloud Asset Inventory / gcloud (boot disks among the disks, keys without their version, schedules linked through the disks' resource policies or attachments, an unlabelled data disk named).
 

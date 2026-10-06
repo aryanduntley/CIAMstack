@@ -111,6 +111,9 @@ SUBCOMMANDS = (
                                "help": "a conflict where the live value goes in (KEY as listed, or all)"}),
                 (("--keep",), {"action": "append", "default": [], "metavar": "KEY",
                                "help": "a conflict where the record's value stays (KEY as listed, or all)"}))),
+    ("setting", ((("name",), {"help": "an estate setting (opsdir report settings lists them)"}), (("value",), {}),
+                 (("--change",), {}),
+                 (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}))),
     ("data-profile", ((("--env",), {"required": True, "help": "CLOUD/ENV whose directory the data is from"}),
                       (("path",), {"nargs": "?", "default": "-", "help": "LDIF to read (default: standard input)"}),
                       (("--at",), {"help": "when the data was read, YYYYMMDDhhmmssZ (UTC; default: now)"}),
@@ -428,6 +431,17 @@ def _cmd_census(conn, a, as_of):
     return "\n".join((*notes, f"{a.change}: {len(r.lines)} change(s) applied" if r.lines else "no changes"))
 
 
+def _cmd_setting(conn, a, as_of):
+    try:
+        preview = ops.preview_setting(conn, a.name, a.value)
+    except ValueError as e:
+        raise SystemExit(str(e)) from None
+    if a.dry_run or not a.change:
+        return _not_applied(preview.notices, preview.changes, a.dry_run)
+    r = ops.apply_preview(conn, preview, a.change)
+    return f"{a.change}: {len(r.lines)} change(s) applied" if r.lines else f"{a.name} already holds {a.value}"
+
+
 def _cmd_verify(conn, a, as_of):
     root = pathlib.Path(a.root or ".")
     r = ops.verify(conn, {path: read_content(root / path) for path in ops.verify_paths(conn)})
@@ -500,7 +514,7 @@ COMMANDS = MappingProxyType({"init": _cmd_init, "upgrade": _cmd_upgrade, "load":
                              "search": _cmd_search, "report": _cmd_report, "render": _cmd_render, "plan": _cmd_plan,
                              "migrate": _cmd_migrate, "fix": _cmd_fix, "modify": _cmd_modify, "export": _cmd_export,
                              "history": _cmd_history, "capture": _cmd_capture, "import": _cmd_import, "file": _cmd_file,
-                             "bundle": _cmd_bundle, "verify": _cmd_verify, "census": _cmd_census,
+                             "bundle": _cmd_bundle, "verify": _cmd_verify, "census": _cmd_census, "setting": _cmd_setting,
                              "data-profile": _cmd_data_profile, "workspace": _cmd_workspace})
 NO_DATABASE = frozenset({"data-profile"})          # commands that run where only the source is reachable
 

@@ -24,6 +24,11 @@ def rows_of(rows, oc):
     return [(cn, role, attrs) for c, cn, role, attrs in rows if c == oc]
 
 
+def listed(v):
+    """A fixture attribute's values as a list: a string is one value."""
+    return [v] if isinstance(v, str) else list(v or ())
+
+
 def servers_of(p, role):
     """The environment's server rows of one server role."""
     return [s for s in p["servers"] if s[1] == role]

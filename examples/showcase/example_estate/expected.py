@@ -51,7 +51,12 @@ EXPECTED = MappingProxyType({
         ("B24", "Volumes", "Volume `volume-ds-data` is 500 GB in source/prod but 256 GB in target/prod",
          "the target's directory data volume came from a sandbox template: what PingDS keeps doesn't fit", "CHG-2018"),
         ("B25", "Binding", "Role `snapshots-daily` is bound in source/prod but not in target/prod",
-         "the target binds no snapshot policy (the volume check says what it loses: A72)", None),
+         "the target binds no snapshot policy (the volume check says what it loses: A72)", "CHG-2019"),
+        ("B26", "Binding", "Role `backup-daily` is bound in source/prod but not in target/prod",
+         "the target runs no AWS Backup-like plan for the directory's data (its cost is the platform team's to "
+         "approve)", None),
+        ("B27", "Binding", "Role `backup-vault` is bound in source/prod but not in target/prod",
+         "the target has no backup vault", "CHG-2019"),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -185,9 +190,17 @@ EXPECTED = MappingProxyType({
         ("A71", "Object stores", "Object store `backup-target` is copied to",
          "nothing copies the target's backups to another region; the source replicates to us-west-2", None,
          "CHG-2017"),
+        ("A73", "Restore tests", "Before cutover, restore `volume-ds-data`'s data in target/prod",
+         "nothing shows the target can recover the directory's data: it has no restore test (the source's passed in "
+         "August)", None),
         ("A72", "Volumes", "Volume `volume-ds-data` is snapshotted by `snapshots-daily`",
-         "the target snapshots nothing of the directory's data volume (Azure's scheduled disk snapshots are Azure "
-         "Backup's: 4.10 task 5)", None),
+         "the target snapshots nothing of the directory's data volume (on Azure that is a disk backup plan in a "
+         "Backup vault)", "CHG-2019"),
+        ("A74", "Backups", "Role `volume-ds-data` is backed up by `backup-daily`",
+         "nothing backs the target's directory data volume up", "CHG-2019"),
+        ("A75", "Volumes", "Snapshot policy `snapshots-daily` copies each snapshot to us-west-2 in source/prod",
+         "the target's disk backup (CHG-2019) keeps snapshots in its own region: Azure disk backup can't copy them",
+         None, "CHG-2019"),
     ],
 })
 

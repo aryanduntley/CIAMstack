@@ -1,8 +1,8 @@
 portability  values
 -----------  ------
-meta         1853
-intent       1393
-binding      959
+meta         1890
+intent       1405
+binding      972
 observed     378
 contract     98
 secret-ref   88

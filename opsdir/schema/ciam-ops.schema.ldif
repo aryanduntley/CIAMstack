@@ -1916,15 +1916,17 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.438 NAME 'ciamStorageVersioning' DES
  5.121.1.7 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'bool' X-ORIGIN 
  'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.439 NAME 'ciamStorageImmutability' D
- ESC 'Whether objects are locked against change and deletion for ciamStorage
- LockDays: governance (a privileged user may lift it) or compliance (nobody 
- may, the account root included)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.
- 1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:
- none|governance|compliance' X-ORIGIN 'opsdir' )
+ ESC 'Whether an object store\27s objects, or a backup vault\27s recovery po
+ ints, are locked against change and deletion for ciamStorageLockDays: gover
+ nance (a privileged user may lift it) or compliance (nobody may, the accoun
+ t root included)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.
+ 1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:none|governance
+ |compliance' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.440 NAME 'ciamStorageLockDays' DESC 
- 'How long each object stays locked (ciamStorageImmutability)' EQUALITY inte
- gerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'i
- ntent' X-VALUE-TYPE 'int' X-MIN '1' X-ORIGIN 'opsdir' )
+ 'How long each object or recovery point stays locked at least (ciamStorageI
+ mmutability)' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SI
+ NGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int' X-MIN '1' X-ORIGIN 'op
+ sdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.441 NAME 'ciamStorageLifecycle' DESC
   'A lifecycle rule: \27[noncurrent ]<days> <cool|cold|archive|delete>\27, a
  fter days move objects (or their noncurrent versions) to a cheaper tier or 
@@ -1976,9 +1978,10 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.450 NAME 'ciamVolumeEncrypted' DESC
  4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'bool
  ' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.451 NAME 'ciamSnapshotPolicyRole' DE
- SC 'The binding role of the snapshot policy that copies the disk' EQUALITY 
- caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABI
- LITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+ SC 'The binding role of what copies the disk on a schedule: a snapshot poli
+ cy, or a backup plan where the environment does that with a backup service'
+  EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE
+  X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.452 NAME 'ciamSnapshotEveryHours' DE
  SC 'How often a snapshot policy takes a snapshot, in hours (24 when absent)
  ' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X
@@ -1989,9 +1992,10 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.453 NAME 'ciamSnapshotAt' DESC 'When
  TABILITY 'intent' X-VALUE-TYPE 'string' X-PATTERN '([01][0-9]|2[0-3]):[0-5]
  [0-9]' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.454 NAME 'ciamCopyRegion' DESC 'A re
- gion a snapshot policy copies each snapshot to (each environment\27s own)' 
- EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY
-  'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+ gion a snapshot policy or backup plan copies each snapshot or recovery poin
+ t to (each environment\27s own)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.
+ 1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 
+ 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.455 NAME 'ciamSnapshotConsistency' D
  ESC 'What a snapshot holds of a running server: the disk as a power cut wou
  ld leave it (crash), or what the application was asked to flush first (appl
@@ -1999,6 +2003,75 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.455 NAME 'ciamSnapshotConsistency' D
  QUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X
  -PORTABILITY 'intent' X-VALUE-TYPE 'enum:crash|application' X-ORIGIN 'opsdi
  r' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.456 NAME 'ciamEstateValue' DESC 'An 
+ estate setting\27s value, as text the declaring domain\27s setting reads (a
+  whole number, TRUE or FALSE, or a string)' EQUALITY caseIgnoreMatch SYNTAX
+  1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TY
+ PE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.457 NAME 'ciamBackupVaultRole' DESC 
+ 'The binding role of the backup vault a backup plan keeps its recovery poin
+ ts in' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE
+ -VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.458 NAME 'ciamProtectsRole' DESC 'A 
+ role a backup plan backs up: a volume, a database, or the servers of a role
+ ' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILI
+ TY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.459 NAME 'ciamBackupEveryHours' DESC
+  'How often a backup plan backs up, in hours (24 when absent)' EQUALITY int
+ egerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY '
+ intent' X-VALUE-TYPE 'int' X-MIN '1' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.460 NAME 'ciamBackupAt' DESC 'When a
+  backup plan starts its first backup of the day, HH:MM in UTC' EQUALITY cas
+ eIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILIT
+ Y 'intent' X-VALUE-TYPE 'string' X-PATTERN '([01][0-9]|2[0-3]):[0-5][0-9]' 
+ X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.461 NAME 'ciamBackupWindowHours' DES
+ C 'How long after its start time a backup may begin, in hours (the service 
+ decides when absent)' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121
+ .1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int' X-MIN '1' X-OR
+ IGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.462 NAME 'ciamCrossRegionRestore' DE
+ SC 'Whether a backup vault\27s recovery points can be restored in another r
+ egion (its geo-redundancy or location)' EQUALITY booleanMatch SYNTAX 1.3.6.
+ 1.4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'bo
+ ol' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.463 NAME 'ciamRestoreTestDays' DESC 
+ 'How often what a backup plan protects must be restore-tested, in days: its
+  own, in place of the estate setting restore-test-interval-days' EQUALITY i
+ ntegerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY
+  'meta' X-VALUE-TYPE 'int' X-MIN '1' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.464 NAME 'ciamTestedOn' DESC 'When a
+  restore test was done' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.14
+ 66.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORI
+ GIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.465 NAME 'ciamTestEnvironment' DESC 
+ 'The environment a restore test restored in' EQUALITY distinguishedNameMatc
+ h SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'meta' X-
+ VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.466 NAME 'ciamRestoredRole' DESC 'Th
+ e role whose data a restore test restored: a volume, a database, the server
+ s of a role' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 
+ SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.467 NAME 'ciamRestoredFromRole' DESC
+  'The binding role of what it was restored from: a backup plan, a snapshot 
+ policy, a backup target' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.1
+ 15.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGI
+ N 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.468 NAME 'ciamRestoreLevel' DESC 'Wh
+ at a restore test proved: the disk restored and mounted (disk: as far as a 
+ crash-consistent snapshot goes), or the application\27s data restored and v
+ erified to work (application)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.
+ 1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'enum:disk
+ |application' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.469 NAME 'ciamTestResult' DESC 'How 
+ a restore test went: passed, partial (restored, but something was missing o
+ r wrong), failed' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.
+ 1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'enum:passed|partial|fa
+ iled' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.470 NAME 'ciamRestoreMinutes' DESC '
+ How long the restore took, in minutes, until the data was usable' EQUALITY 
+ integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILIT
+ Y 'meta' X-VALUE-TYPE 'int' X-MIN '0' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -2456,3 +2529,31 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.95 NAME 'ciamSnapshotPolicy' DESC 'Ho
  ding STRUCTURAL MUST ciamRetentionDays MAY ( ciamSnapshotEveryHours $ ciamS
  napshotAt $ ciamCopyRegion $ ciamSnapshotConsistency $ ciamProviderRef $ ci
  amManagedBy ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.96 NAME 'ciamEstateSetting' DESC 'An 
+ estate-wide setting the platform\27s managers give a value (under ou=settin
+ gs, named as a domain declares it): where the record holds none, or one tha
+ t isn\27t valid, the domain\27s default applies' SUP ciamObject STRUCTURAL 
+ MUST ( cn $ ciamEstateValue ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.97 NAME 'ciamBackupVault' DESC 'Where
+  a backup service keeps an environment\27s recovery points (an AWS Backup v
+ ault, an Azure Backup vault, a Backup and DR vault): its key, its lock and 
+ whether it can restore in another region. Not infrastructure\27s ciamBackup
+ Target, the object store a product writes its own backup files to' SUP ciam
+ Binding STRUCTURAL MAY ( ciamProviderRef $ ciamEncryptedByRole $ ciamStorag
+ eImmutability $ ciamStorageLockDays $ ciamCrossRegionRestore $ ciamManagedB
+ y ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.98 NAME 'ciamBackupPlan' DESC 'What a
+  backup service backs up in an environment (the roles it protects), into wh
+ ich vault, how often and from when, how long it keeps each recovery point (
+ ciamRetentionDays) and the regions it copies them to' SUP ciamBinding STRUC
+ TURAL MUST ( ciamProtectsRole $ ciamBackupVaultRole $ ciamRetentionDays ) M
+ AY ( ciamBackupEveryHours $ ciamBackupAt $ ciamBackupWindowHours $ ciamCopy
+ Region $ ciamRestoreTestDays $ ciamProviderRef $ ciamManagedBy ) X-ORIGIN '
+ opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.99 NAME 'ciamRestoreTest' DESC 'One r
+ estore test (under ou=restore-tests): when, in which environment, whose dat
+ a it restored and from what, what it proved (disk or application), how it w
+ ent and how long it took' SUP ciamObject STRUCTURAL MUST ( cn $ ciamTestedO
+ n $ ciamTestEnvironment $ ciamRestoredRole $ ciamRestoreLevel $ ciamTestRes
+ ult ) MAY ( ciamRestoredFromRole $ ciamRestoreMinutes $ ciamRunbookRef ) X-
+ ORIGIN 'opsdir' )

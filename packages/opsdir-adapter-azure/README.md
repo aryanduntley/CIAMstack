@@ -97,7 +97,17 @@ The core `data` domain's volumes (`ciamVolume`, each server role's disks) render
 | The role's boot volume | Each VM's `os_disk`: `disk_size_gb`, `storage_account_type` (an OS disk can't be PremiumV2/Ultra: Premium_LRS, said), the disk encryption set of its key role (`ciamEncryptedByRole`, else the `disk-encryption` binding's `ciamProviderRef`); the VM tagged `BootVolume` (what the readers find it by). Without one, `os_disk` is as before |
 | Each data volume of the role | Per VM: an `azurerm_managed_disk` (`Empty`) in the VM's zone with its size, type, `disk_iops_read_write` and `disk_mbps_read_write` (PremiumV2/Ultra only), disk encryption set, tags `Volume`, `Role`, `Server`, `SnapshotPolicy`; an `azurerm_virtual_machine_data_disk_attachment` at LUN 0, 1, … in the volumes' order, caching `None`; the VM mounts it at `ciamMountPath` itself (a comment) |
 | `ciamVolumeEncrypted` `FALSE`, a key role without a disk encryption set | A comment: Azure encrypts every managed disk at rest, with its own key when no disk encryption set is named |
-| `ciamSnapshotPolicy` | A comment: scheduled disk snapshots are Azure Backup's disk backup, in a Backup vault (4.10 task 5) |
+| `ciamSnapshotPolicy` | A comment: Azure snapshots managed disks on a schedule only with Azure Backup's disk backup; record a backup plan (`ciamBackupPlan`) with the policy's role and a vault, which renders as one (below) |
+
+### Backup vaults and plans
+
+The core `data` domain's backup vaults (`ciamBackupVault`) and plans (`ciamBackupPlan`) render as Azure Backup into `main.tf` (`opsdir_adapter_azure.backups`). A volume's `ciamSnapshotPolicyRole` may name a backup plan: on Azure that is how a disk is snapshotted on a schedule.
+
+| Record | Renders as |
+|---|---|
+| `ciamBackupVault` the stack keeps | An `azurerm_data_protection_backup_vault` `ciam-<env>-<name>` (`VaultStore`; `GeoRedundant` with `cross_region_restore_enabled` when `ciamCrossRegionRestore`, `LocallyRedundant` otherwise; `immutability` `Unlocked` for a governance lock, `Locked` for compliance, which can't be turned off, `Disabled` without), a system-assigned identity, tags `Name`, `Role`; its key role an `azurerm_data_protection_backup_vault_customer_managed_key` after the identity's Key Vault Crypto Service Encryption User grant on the key. A lock's days are a comment: a locked vault keeps each recovery point as long as its policy says. An `import` block when its provider ref is recorded |
+| `ciamBackupPlan` the stack keeps | For the volumes it protects (the roles it lists that are volumes, and the volumes naming it): an `azurerm_data_protection_backup_policy_disk` named as the plan in its vault (`backup_repeating_time_intervals` `R/2024-01-01T<at>:00+00:00/PT<n>H`, `P1D` daily: every 1, 2, 4, 6, 8 or 12 hours or daily, another interval is a comment; `default_retention_duration` `P<days>D`, at most 360), and per disk of those volumes' VMs an `azurerm_data_protection_backup_instance_disk` (snapshots kept in the environment's resource group) after the vault identity's grants: Disk Backup Reader on the disk, Disk Snapshot Contributor on the resource group (once per vault). Copies to another region are a comment (disk backup keeps snapshots in the disk's region), and so is a protected role that isn't a volume, or a vault the stack doesn't keep |
+| One someone else keeps (`ciamManagedBy`) | A comment naming them |
 
 ## Reading an environment back from Terraform state
 
@@ -200,6 +210,17 @@ What the network carries beyond virtual networks, subnets and NSGs comes back in
 | `azurerm_managed_disk` (+ `azurerm_virtual_machine_data_disk_attachment`), grouped by tag `Volume` | data volume of the role its VMs run: the most common size, class, IOPS and MB/s, the key of its disk encryption set as its key role |
 | A VM's `os_disk`, the VM tagged `BootVolume` | the role's boot volume, the same way |
 
+A disk an Azure Backup backup instance protects follows that instance's disk backup policy: its volume's snapshot policy role is the backup plan's.
+
+### Backup vaults and plans, read back
+
+`opsdir_adapter_azure.backups` (CLI and ARM items normalize to the same names: `cli_backup.py`; properties nested or flattened).
+
+| Azure resource | Record entry |
+|---|---|
+| `azurerm_data_protection_backup_vault` (+ its customer-managed key) | backup vault named by its tag `Name` (else its name): `immutability` as its lock (`Unlocked` governance, `Locked` compliance), `cross_region_restore_enabled` as restores in another region, its key as its key role |
+| `azurerm_data_protection_backup_policy_disk` (+ the backup instances using it) | backup plan named as the policy: interval as every hours and start time (several intervals, or one it can't read: named), default retention in days, its vault; the roles (tag `Role`) of the disks its backup instances protect, and the plan's role from their tag `SnapshotPolicy` |
+
 A data disk attached to one of the environment's VMs without a `Volume` tag is named. The CLI's `az disk list` gives the data disks (an OS disk is the VM's, from its `storageProfile`), `az vm list` the OS disks and the data disks' LUNs; an ARM template's `Microsoft.Compute/disks` read the same way.
 
 ## Reading an environment from the Azure CLI
@@ -283,6 +304,12 @@ for s in $(az postgres flexible-server list -g $RG --query '[].name' -o tsv); do
   az postgres flexible-server parameter list -g $RG --server-name "$s" -o json > "$out/postgres-parameters-$s.json"
 done
 az disk list -g $RG -o json                                   > $out/disks.json
+# Azure Backup: the Data Protection vaults, and each vault's backup policies and backup instances
+az dataprotection backup-vault list -g $RG -o json            > $out/backup-vaults.json
+for v in $(az dataprotection backup-vault list -g $RG --query '[].name' -o tsv); do
+  az dataprotection backup-policy list -g $RG --vault-name "$v" -o json   > "$out/backup-policies-$v.json"
+  az dataprotection backup-instance list -g $RG --vault-name "$v" -o json > "$out/backup-instances-$v.json"
+done
 az mysql flexible-server list -g $RG -o json                  > $out/mysql-servers.json
 for s in $(az mysql flexible-server list -g $RG --query '[].name' -o tsv); do
   az mysql flexible-server parameter list -g $RG --server-name "$s" -o json > "$out/mysql-parameters-$s.json"
@@ -393,7 +420,8 @@ It adds no required roles, planner checks or schema of its own; the environment'
 - **Linux only.** Servers render as Linux VMs with SSH keys; the importer reads Windows VMs but the renderer doesn't write them.
 - **Edge.** Application Gateway WAF exclusions apply on every path, not only the endpoint kind a policy names; a rate limit keyed by a header is grouped by client address; Application Gateway v2 validates the servers' certificates (chain and name) whatever `ciamBackendValidation` says; DDoS Network Protection isn't rendered (the landing zone's virtual network).
 - **Databases someone else keeps** (`ciamManagedBy`) are named in a comment, not rendered into their keeper's root yet; SQL Server, Oracle and MariaDB have no Flexible Server and aren't rendered.
-- **Scale sets' disks:** the adapter doesn't render scale sets yet, so their volumes come from the record only, and a scale set's data disks aren't read into volumes yet. Snapshot schedules come with Azure Backup (4.10 task 5).
+- **Scale sets' disks:** the adapter doesn't render scale sets yet, so their volumes come from the record only, and a scale set's data disks aren't read into volumes yet.
+- **Backups of what isn't a disk:** a backup plan renders Azure Backup's disk backup only; a plan protecting a database or the servers of a role is a comment (Flexible Servers keep their own backups: `ciamDatabase`). Disk backup keeps snapshots in the disk's region, so a plan's copy regions are a comment.
 - **What the importers can't see:** container metadata other than a role, the identity a disk encryption set uses, role assignments and Key Vault access policies in CLI output and ARM/Bicep deployments (Terraform state only, for now), private endpoints, Application Gateway / Front Door (read back with milestone 4.8's importers), scale sets and AKS clusters, and the monitoring above (action groups, workspaces, alerts, web tests), in CLI output and ARM/Bicep deployments (Terraform state only, for now).
 
 ## Tests
@@ -403,6 +431,8 @@ It adds no required roles, planner checks or schema of its own; the environment'
 `tests/test_azure_edge_state.py`: the edge read back from state: an Application Gateway's facts, a load balancer routed by Traffic Manager, WAF policies, Front Door and a DDoS plan as edge services, zones, records and forwarding rules.
 
 `tests/test_azure.py` (registration, vocabulary, secret resolution), `tests/test_azure_state.py` (the state importer: round trip, drift, new resources and role sources, rules, services, secrets never read, layout), `tests/test_azure_cli.py` (the CLI importer: round trip over `az` output shapes, drift from `key show` and rotation policies, network scoping, counted listings, unrecognized items), `tests/test_azure_arm.py` (the ARM importer: round trip over a Bicep-style template and its deployment, drift, `resourceId()` links, secure parameters never read, what the deployment didn't produce, no deployment, the evaluator), `tests/test_azure_messaging.py` (an email domain verified or not by its DNS, SPF and DMARC; queues and topics as stream carriers), `tests/test_azure_observability.py` (action groups as alert channels, workspaces with their retention, metric and log-query alerts and standard web tests with what they realize), `tests/test_azure_compute.py` (a scale set with its autoscale capacity, an AKS cluster with its pools and enabled add-ons), `tests/test_azure_jobs.py` (a function app with its runtime and timer schedules from state, CLI output and an ARM template; app settings never read), `tests/test_azure_state_store.py` (state and CLI against Postgres: imported under an approved change, re-import changes nothing). The rendered Terraform is covered end to end by the showcase's golden outputs (`examples/showcase`, the target environment).
+
+`tests/test_azure_backups.py`: Azure Backup rendered (vault with redundancy, cross-region restore, immutability, identity and customer-managed key; disk backup policy with its interval and retention; a backup instance per disk after the identity's grants; copies, lock days, roles that aren't volumes, other intervals and vaults kept elsewhere said) and read back from state, the CLI and ARM (a disk's backup instance links its volume to the plan, whatever the case of the ids).
 
 `tests/test_azure_volumes.py`: disks rendered (the boot volume as the os_disk with its disk encryption set and the VM's BootVolume tag, an OS disk that can't be PremiumV2, data volumes as managed disks attached at their LUNs, an unencrypted record and a key without a disk encryption set said, snapshot policies a comment) and read back from state, the CLI (OS disks from the VMs' storageProfile, data disks and LUNs) and an ARM template; untagged disks on the environment's VMs named.
 

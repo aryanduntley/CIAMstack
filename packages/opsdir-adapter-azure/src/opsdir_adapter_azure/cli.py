@@ -46,6 +46,7 @@ from opsdir.core.contract import Importer
 from opsdir.core.inventory import layout_import
 from .cli_edge import edge_items
 from .cli_iam import iam_items
+from .cli_backup import backup_items
 from .cli_disk import disk_items, os_disk_of
 from .cli_database import database_items
 from .cli_storage import storage_items
@@ -339,7 +340,8 @@ def items_resources(items):
                                             *_addresses(items), *_records(items), *_nsgs(items), *_nats(items),
                                             *_vault_items(items), *_stores(items), *_functions(items),
                                             *iam_items(items), *edge_items(items), *network_items(items),
-                                            *database_items(items), *storage_items(items), *disk_items(items)]))
+                                            *database_items(items), *storage_items(items), *disk_items(items),
+                                            *backup_items(items)]))
     resources, notices = pairs_resources(pairs)
     return resources, (*scope_notices, *notices)
 

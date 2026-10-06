@@ -1,6 +1,6 @@
 """Governance fixture data: owners (10-owners), change records (20-changes), work instructions
 (65-runbooks) and incidents (85-incidents)."""
-from .common import AWS, CERTS, CHG, DECL, INC, INTS, OWN, RB, owner, spec, t
+from .common import AWS, CERTS, CHG, DECL, INC, INTS, OWN, RB, R, owner, spec, t
 from .custom import COST_CENTERS
 
 PARTIES = (      # cn, kind, mail, contact url, display name
@@ -51,6 +51,8 @@ CHANGES = (
      "2026-09-24"),
     ("CHG-2018", "Make the target's directory data volume as large as production's", "approved",
      "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2019", "Snapshot the target's directory data volume daily with Azure Backup", "approved",
+     "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (
@@ -64,6 +66,14 @@ RUNBOOKS = (
      [f"cn=customer-portal,{INTS}", f"cn=pf-signing-2025,{CERTS}"]),
     ("WI-CIAM-012", "Use the break-glass account (directory root)", "2025-11-03",
      [f"cn=secret-ds-root-password,ou=bindings,{AWS}"]),
+    ("WI-CIAM-015", "Restore a directory server's data volume from a snapshot", "2026-08-14",
+     [f"cn=vol-ds-data,ou=bindings,{AWS}"]),
+)
+# restore tests done: (cn, date, environment, role restored, restored from, level, result, minutes, what was done)
+RESTORE_TESTS = (
+    ("RT-2026-08-14-ds-data", "2026-08-14", AWS, "volume-ds-data", "snapshots-daily", "application", "passed", 95,
+     "ds-2's data volume restored from the night's snapshot onto a scratch server; PingDS started on it, "
+     "verify-integrity passed and the replication status was read"),
 )
 
 
@@ -84,6 +94,16 @@ def runbooks():
                       ciamLastValidated=t(validated), ciamAppliesTo=applies,
                       ciamDocUrl=f"https://wiki.example-aero.test/ciam/{cn}", ciamOwner=owner("ciam-platform"))
                  for cn, title, validated, applies in RUNBOOKS)
+
+
+def restore_tests():
+    """The restore tests done (the target has none yet: the planner asks for one before cutover)."""
+    return tuple(spec("86-restore-tests", f"cn={cn},ou=restore-tests,{R}", ["top", "ciamRestoreTest"], cn=cn,
+                      ciamTestedOn=t(on, "100000"), ciamTestEnvironment=env, ciamRestoredRole=role,
+                      ciamRestoredFromRole=src, ciamRestoreLevel=level, ciamTestResult=result,
+                      ciamRestoreMinutes=minutes, ciamRunbookRef=f"cn=WI-CIAM-015,{RB}", description=what,
+                      ciamOwner=owner("ciam-platform"))
+                 for cn, on, env, role, src, level, result, minutes, what in RESTORE_TESTS)
 
 
 def incidents():

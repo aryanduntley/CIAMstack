@@ -401,9 +401,11 @@ STAGE_SERVERS = (("ds-s1", "ds", "10.20.1.31", "us-east-1a", "subnet-ds-a", "ami
                  ("idm-s1", "idm", "10.20.6.31", "us-east-1a", "subnet-idm-a", "ami-0b1c2d3e4f5a60987", IDM_V),
                  ("ig-s1", "ig", "10.20.10.31", "us-east-1a", "subnet-ig-a", "ami-0c2d3e4f5a6b70123", IG_V))
 # consumers reach production only (its firewall rules, its LDAPS endpoint service); the private endpoint and the egress
-# firewall are the shared VPC's, kept by production's root; stage's disks aren't snapshotted (stage is rebuilt)
+# firewall are the shared VPC's, kept by production's root; stage's disks aren't snapshotted or backed up (stage is
+# rebuilt, and a backup selection by tag in the shared account would back up production's volumes twice)
 STAGE_DROPS = (*(role for _, role, *_ in SOURCE["fw"] if role.startswith("fw-consumer-") and role != "fw-consumer-pf-ds-svc"),
-               "ldaps-endpoint-service", "private-secrets", "egress-firewall", "snapshots-daily")
+               "ldaps-endpoint-service", "private-secrets", "egress-firewall", "snapshots-daily", "backup-daily",
+               "backup-vault")
 # (name, overridden entry, attribute, value, why)
 STAGE_OVERRIDES = (
     ("replicas", f"cn=topology,ou=replication,{DECL}", "ciamReplicaCount", 1, "stage runs one directory replica"),

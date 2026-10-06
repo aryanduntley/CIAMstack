@@ -71,3 +71,15 @@ ciamLastValidated: 20251103000000Z
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamTitle: Use the break-glass account (directory root)
 ciamVersion: 1.0
+
+dn: cn=WI-CIAM-015,ou=runbooks,dc=ciam-ops
+objectClass: top
+objectClass: ciamRunbook
+cn: WI-CIAM-015
+ciamAppliesTo: cn=vol-ds-data,ou=bindings,env=prod,cloud=source,ou=environment
+ s,dc=ciam-ops
+ciamDocUrl: https://wiki.example-aero.test/ciam/WI-CIAM-015
+ciamLastValidated: 20260814000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamTitle: Restore a directory server's data volume from a snapshot
+ciamVersion: 1.0

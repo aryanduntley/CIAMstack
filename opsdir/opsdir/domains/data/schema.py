@@ -7,10 +7,14 @@ environment's own. How an object store (infrastructure's ciamObjectStore, backup
 holds is defined here too: versioning, immutability, lifecycle, public access and replication, allowed on the object
 store's class. A server role's disks (its boot disk and the volumes it keeps data on, each environment's own) and
 the snapshot policies that copy them are bindings too: what a move keeps of them (no smaller, encrypted, snapshotted
-as often and kept as long, copied to another region) is checked."""
+as often and kept as long, copied to another region) is checked. So are backups by a backup service: the vault it
+keeps recovery points in (locked, encrypted, restorable in another region) and the plan saying what it backs up, how
+often, how long it keeps them and where it copies them (a different thing from infrastructure's ciamBackupTarget, the
+object store a product writes its own backup files to), and the record of each restore test, which the planner holds
+to a schedule (the estate setting restore-test-interval-days)."""
 from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
-from .naming import (CONSISTENCY, EDITIONS, ENGINES, HIGH_AVAILABILITY, IMMUTABILITY, LIFECYCLE, SNAPSHOT_AT,
-                     VOLUME_CLASSES, VOLUME_KINDS)
+from .naming import (CONSISTENCY, EDITIONS, ENGINES, HIGH_AVAILABILITY, IMMUTABILITY, LIFECYCLE, RESTORE_LEVELS,
+                     SNAPSHOT_AT, TEST_RESULTS, VOLUME_CLASSES, VOLUME_KINDS)
 
 ATTRIBUTES = (
     AttributeDef(427, 'ciamDbEngine', enum_type(ENGINES), 'intent', True,
@@ -40,10 +44,12 @@ ATTRIBUTES = (
     AttributeDef(438, 'ciamStorageVersioning', 'bool', 'intent', True,
                  'Whether an object store keeps every version of an object, so an overwrite or delete can be undone'),
     AttributeDef(439, 'ciamStorageImmutability', enum_type(IMMUTABILITY), 'intent', True,
-                 'Whether objects are locked against change and deletion for ciamStorageLockDays: governance (a '
-                 'privileged user may lift it) or compliance (nobody may, the account root included)'),
+                 "Whether an object store's objects, or a backup vault's recovery points, are locked against change and "
+                 "deletion for ciamStorageLockDays: governance (a privileged user may lift it) or compliance (nobody "
+                 "may, the account root included)"),
     AttributeDef(440, 'ciamStorageLockDays', 'int', 'intent', True,
-                 'How long each object stays locked (ciamStorageImmutability)', (("X-MIN", "1"),)),
+                 'How long each object or recovery point stays locked at least (ciamStorageImmutability)',
+                 (("X-MIN", "1"),)),
     AttributeDef(441, 'ciamStorageLifecycle', 'string', 'intent', False,
                  "A lifecycle rule: '[noncurrent ]<days> <cool|cold|archive|delete>', after days move objects (or their "
                  "noncurrent versions) to a cheaper tier or delete them (30 cool; 365 delete; noncurrent 90 delete)",
@@ -72,18 +78,52 @@ ATTRIBUTES = (
                  'Whether the disk is encrypted at rest (with ciamEncryptedByRole, else the environment\'s '
                  'disk-encryption key)'),
     AttributeDef(451, 'ciamSnapshotPolicyRole', 'string', 'binding', True,
-                 'The binding role of the snapshot policy that copies the disk'),
+                 'The binding role of what copies the disk on a schedule: a snapshot policy, or a backup plan where '
+                 'the environment does that with a backup service'),
     AttributeDef(452, 'ciamSnapshotEveryHours', 'int', 'intent', True,
                  'How often a snapshot policy takes a snapshot, in hours (24 when absent)', (("X-MIN", "1"),)),
     AttributeDef(453, 'ciamSnapshotAt', 'string', 'intent', True,
                  'When a snapshot policy takes its first snapshot of the day, HH:MM in UTC',
                  (("X-PATTERN", SNAPSHOT_AT),)),
     AttributeDef(454, 'ciamCopyRegion', 'string', 'binding', False,
-                 "A region a snapshot policy copies each snapshot to (each environment's own)"),
+                 "A region a snapshot policy or backup plan copies each snapshot or recovery point to (each "
+                 "environment's own)"),
     AttributeDef(455, 'ciamSnapshotConsistency', enum_type(CONSISTENCY), 'intent', True,
                  "What a snapshot holds of a running server: the disk as a power cut would leave it (crash), or what "
                  "the application was asked to flush first (application). Neither is a backup of a database or "
                  "directory the server runs"),
+    AttributeDef(457, 'ciamBackupVaultRole', 'string', 'binding', True,
+                 'The binding role of the backup vault a backup plan keeps its recovery points in'),
+    AttributeDef(458, 'ciamProtectsRole', 'string', 'binding', False,
+                 'A role a backup plan backs up: a volume, a database, or the servers of a role'),
+    AttributeDef(459, 'ciamBackupEveryHours', 'int', 'intent', True,
+                 'How often a backup plan backs up, in hours (24 when absent)', (("X-MIN", "1"),)),
+    AttributeDef(460, 'ciamBackupAt', 'string', 'intent', True,
+                 'When a backup plan starts its first backup of the day, HH:MM in UTC', (("X-PATTERN", SNAPSHOT_AT),)),
+    AttributeDef(461, 'ciamBackupWindowHours', 'int', 'intent', True,
+                 'How long after its start time a backup may begin, in hours (the service decides when absent)',
+                 (("X-MIN", "1"),)),
+    AttributeDef(462, 'ciamCrossRegionRestore', 'bool', 'intent', True,
+                 "Whether a backup vault's recovery points can be restored in another region (its geo-redundancy or "
+                 "location)"),
+    AttributeDef(463, 'ciamRestoreTestDays', 'int', 'meta', True,
+                 "How often what a backup plan protects must be restore-tested, in days: its own, in place of the "
+                 "estate setting restore-test-interval-days", (("X-MIN", "1"),)),
+    AttributeDef(464, 'ciamTestedOn', 'time', 'meta', True,
+                 'When a restore test was done'),
+    AttributeDef(465, 'ciamTestEnvironment', 'dn', 'meta', True,
+                 'The environment a restore test restored in'),
+    AttributeDef(466, 'ciamRestoredRole', 'string', 'meta', True,
+                 'The role whose data a restore test restored: a volume, a database, the servers of a role'),
+    AttributeDef(467, 'ciamRestoredFromRole', 'string', 'meta', True,
+                 'The binding role of what it was restored from: a backup plan, a snapshot policy, a backup target'),
+    AttributeDef(468, 'ciamRestoreLevel', enum_type(RESTORE_LEVELS), 'meta', True,
+                 "What a restore test proved: the disk restored and mounted (disk: as far as a crash-consistent "
+                 "snapshot goes), or the application's data restored and verified to work (application)"),
+    AttributeDef(469, 'ciamTestResult', enum_type(TEST_RESULTS), 'meta', True,
+                 'How a restore test went: passed, partial (restored, but something was missing or wrong), failed'),
+    AttributeDef(470, 'ciamRestoreMinutes', 'int', 'meta', True,
+                 'How long the restore took, in minutes, until the data was usable', (("X-MIN", "0"),)),
 )
 # what an object store may record of how it keeps what it holds (allowed on infrastructure's ciamObjectStore)
 STORAGE_DEPTH = ('ciamStorageVersioning', 'ciamStorageImmutability', 'ciamStorageLockDays', 'ciamStorageLifecycle',
@@ -109,6 +149,25 @@ CLASSES = (
               'ciamProviderRef', 'ciamManagedBy'),
              "How an environment snapshots its disks: how often, when, how long each snapshot is kept "
              "(ciamRetentionDays) and the regions it is copied to"),
+    ClassDef(97, 'ciamBackupVault', 'ciamBinding', 'STRUCTURAL', (),
+             ('ciamProviderRef', 'ciamEncryptedByRole', 'ciamStorageImmutability', 'ciamStorageLockDays',
+              'ciamCrossRegionRestore', 'ciamManagedBy'),
+             "Where a backup service keeps an environment's recovery points (an AWS Backup vault, an Azure Backup "
+             "vault, a Backup and DR vault): its key, its lock and whether it can restore in another region. Not "
+             "infrastructure's ciamBackupTarget, the object store a product writes its own backup files to"),
+    ClassDef(98, 'ciamBackupPlan', 'ciamBinding', 'STRUCTURAL', ('ciamProtectsRole', 'ciamBackupVaultRole',
+                                                                  'ciamRetentionDays'),
+             ('ciamBackupEveryHours', 'ciamBackupAt', 'ciamBackupWindowHours', 'ciamCopyRegion',
+              'ciamRestoreTestDays', 'ciamProviderRef', 'ciamManagedBy'),
+             "What a backup service backs up in an environment (the roles it protects), into which vault, how often "
+             "and from when, how long it keeps each recovery point (ciamRetentionDays) and the regions it copies them "
+             "to"),
+    ClassDef(99, 'ciamRestoreTest', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTestedOn', 'ciamTestEnvironment',
+                                                                  'ciamRestoredRole', 'ciamRestoreLevel',
+                                                                  'ciamTestResult'),
+             ('ciamRestoredFromRole', 'ciamRestoreMinutes', 'ciamRunbookRef'),
+             "One restore test (under ou=restore-tests): when, in which environment, whose data it restored and from "
+             "what, what it proved (disk or application), how it went and how long it took"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

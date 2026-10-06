@@ -51,6 +51,12 @@ ImportKind = namedtuple("ImportKind", ("kind", "object_class", "required", "matc
                                        "prepare", "resolve", "ported", "server"),
                         defaults=((), "ref", False, False, None, None, None, None, frozenset(), False))
 
+# An estate setting a domain declares: a value the platform's managers may change for the whole estate (a governed
+# entry under ou=settings, read by core.settings). kind: "int", "bool" or "string"; default: the value when the record
+# holds none (or one that isn't valid); minimum, maximum: the bounds of an int.
+Setting = namedtuple("Setting", ("name", "kind", "default", "description", "minimum", "maximum"),
+                     defaults=(None, None))
+
 Domain = namedtuple("Domain", (
     "name", "schema",           # its SchemaFragment
     "required_roles",
@@ -60,8 +66,9 @@ Domain = namedtuple("Domain", (
     "order",                    # domains run and report in ascending order
     "vocabulary",               # {vocab attribute: values it defines}
     "import_kinds",             # ImportKinds: the resources the cloud importers read into its classes
-    "role_links"),              # {attribute naming a binding's role: the import kind of what it names}
-    defaults=((), {}))
+    "role_links",               # {attribute naming a binding's role: the import kind (or kinds) of what it names}
+    "settings"),                # Settings: the estate settings it declares (core.settings)
+    defaults=((), {}, ()))
 
 # A language or file format opsdir renders or reads: registered (entry point group opsdir.formats) by the core for the
 # standard ones and by any package for its own, so what a managed system is written in is data, never an assumption.

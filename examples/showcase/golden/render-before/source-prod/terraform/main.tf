@@ -782,6 +782,77 @@ import {
   id = "policy-0c1a2b3d4e5f60718"
 }
 
+variable "backup_iam_role_arn" {
+  type        = string
+  description = "The IAM role AWS Backup backs up and restores with (AWSBackupDefaultServiceRole)"
+}
+
+resource "aws_backup_vault" "ciam_backups" {
+  name        = "ciam-prod-ciam-backups"
+  kms_key_arn = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
+  tags = {
+    Name      = "ciam-backups"
+    Role      = "backup-vault"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_backup_vault_lock_configuration" "ciam_backups" {
+  backup_vault_name   = aws_backup_vault.ciam_backups.name
+  min_retention_days  = 35
+  changeable_for_days = 3
+}
+
+import {
+  to = aws_backup_vault.ciam_backups
+  id = "ciam-prod-ciam-backups"
+}
+
+variable "backup_daily_us_west_2_vault_arn" {
+  type        = string
+  description = "The backup vault in us-west-2 the copies of backup-daily go to"
+}
+
+resource "aws_backup_plan" "backup_daily" {
+  name = "ciam-prod-backup-daily"
+  rule {
+    rule_name         = "backup_daily"
+    target_vault_name = aws_backup_vault.ciam_backups.name
+    schedule          = "cron(0 5 ? * * *)"
+    start_window      = 120
+    lifecycle {
+      delete_after = 35
+    }
+    copy_action {
+      destination_vault_arn = var.backup_daily_us_west_2_vault_arn
+      lifecycle {
+        delete_after = 35
+      }
+    }
+  }
+  tags = {
+    Name      = "backup-daily"
+    Role      = "backup-daily"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_backup_selection" "backup_daily" {
+  name         = "ciam-prod-backup-daily"
+  iam_role_arn = var.backup_iam_role_arn
+  plan_id      = aws_backup_plan.backup_daily.id
+  selection_tag {
+    type  = "STRINGEQUALS"
+    key   = "Role"
+    value = "volume-ds-data"
+  }
+}
+
+import {
+  to = aws_backup_plan.backup_daily
+  id = "3f7a9c2e-0b1d-4e5f-8a9b-0c1d2e3f4a5b"
+}
+
 resource "aws_lb" "svc_apps" {
   name               = "ciam-prod-svc-apps"
   internal           = false

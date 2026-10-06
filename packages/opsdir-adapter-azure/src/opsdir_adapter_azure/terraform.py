@@ -17,6 +17,7 @@ from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comm
 from .access import ACCESS
 from .databases import render_databases
 from .storage import render_object_stores
+from .backups import render_backups
 from .volumes import boot_tag, os_disk, server_volumes, snapshot_policy_notes
 from .dns import FORWARDING_RULESET, forwarding_rules, records, service_record
 from .edge import ddos_note, gateway_service
@@ -180,6 +181,7 @@ def render(m, services):
     des, identities = one_role(m, "disk-encryption"), workload_identities(m, ACCESS)
     out = (*network_data(m), *_security_groups(m), *chain.from_iterable(identity(m, w) for w in identities),
            *chain.from_iterable(_server(m, s, des, identities) for s in m.servers), *snapshot_policy_notes(m),
+           *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
            *forwarding_rules(m),

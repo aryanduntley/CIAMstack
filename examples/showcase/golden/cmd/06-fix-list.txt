@@ -4,7 +4,9 @@ contract:ds-ldaps-service                       Contract      2             1   
 binding:acl-ds                                  Binding       1 (3 inputs)  1             Bind `acl-ds` in target/prod like source/prod does
 binding:alarm-disk-free                         Binding       1 (4 inputs)  1             Bind `alarm-disk-free` in target/prod like source/prod does
 binding:audit-events                            Binding       1 (1 input)   1             Bind `audit-events` in target/prod like source/prod does
+binding:backup-daily                            Binding       1 (4 inputs)  1             Bind `backup-daily` in target/prod like source/prod does
 binding:backup-target                           Binding       1 (4 inputs)  1             Bind `backup-target` in target/prod like source/prod does
+binding:backup-vault                            Binding       1 (2 inputs)  1             Bind `backup-vault` in target/prod like source/prod does
 binding:forwarder-corp.example-aero.internal    Binding       1 (4 inputs)  1             Bind `forwarder-corp.example-aero.internal` in target/prod like source/prod does
 binding:fw-consumer-legacy-rptuser              Binding       1 (2 inputs)  1             Bind `fw-consumer-legacy-rptuser` in target/prod like source/prod does
 binding:fw-consumer-mro-batch-export            Binding       1 (2 inputs)  1             Bind `fw-consumer-mro-batch-export` in target/prod like source/prod does
@@ -31,6 +33,7 @@ database:pf-grants-db:ciamDbDeletionProtection  Databases     1             1   
 database:pf-grants-db:ciamRetentionDays         Databases     1             1             Keep `pf-grants-db`'s backups 14 days in target/prod, as source/prod does
 volume:volume-ds-data:ciamVolumeSizeGb          Volumes       1             1             Make `volume-ds-data` 500 GB in target/prod, as in source/prod
 volume:volume-ds-data:ciamSnapshotPolicyRole    Volumes       2 (2 inputs)  1             Snapshot `volume-ds-data` in target/prod with a policy like `snapshots-daily` of source/prod
+backup:volume-ds-data                           Backups       1 (4 inputs)  2             Back up `volume-ds-data` in target/prod with a plan like `backup-daily` of source/prod
 egress-proxy:pf-engine:bin/run.properties       Egress proxy  6             1             Link `http.proxyHost`, `http.proxyPort`, `https.proxyHost`, `https.proxyPort`, `http.nonProxyHosts` in `pf-engine`'s bin/run.properties (run.properties) to `egress-proxy`'s proxy
-(32 rows)
+(35 rows)
 exit 0

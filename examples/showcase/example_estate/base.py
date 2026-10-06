@@ -14,6 +14,7 @@ BRANCHES = (("environments", "Clouds, environments, servers and bindings"),
             ("runbooks", "Work instructions"),
             ("changes", "Change records mirrored from ITSM"),
             ("incidents", "Incidents and postmortems"),
+            ("restore-tests", "Restore tests: one entry per restore someone did, and what it proved"),
             ("owners", "Teams, partners and vendors"),
             ("custom-schema", "Fields and record types the operator defines"),
             ("feature-flags", "Feature switches of the login experience (a custom record type)"))

@@ -22,7 +22,7 @@ from opsdir.domains.data.storage import parse_lifecycle
 from opsdir.domains.network.stack import sites_by_port
 
 from .access import ACCT, AWS_IDENTITIES
-from .cloud_common import by_role, hex_id, rows_of, servers_of, service_named
+from .cloud_common import by_role, hex_id, listed, rows_of, servers_of, service_named
 from .infrastructure import SECRET_ROLES, SOURCE
 from .observability import MONITORING
 
@@ -436,8 +436,48 @@ def _aws_volumes(p, instances):
                                  "times": [a["ciamSnapshotAt"]]}],
                 "cross_region_copy_rule": [{"target": region, "encrypted": True, "copy_tags": True,
                                             "cmk_arn": key.replace(REGION, region), "retain_rule": days}
-                                           for region in ([a["ciamCopyRegion"]] if a.get("ciamCopyRegion") else [])]
+                                           for region in listed(a.get("ciamCopyRegion"))]
             }]}]}))
+    return out
+
+
+def _aws_backups(p):
+    """AWS Backup as the stack's Terraform made it: each vault (the platform's key) with its lock, each plan's rule into
+    its vault (daily from its hour, its window, retention, a copy to the vault of each copy region) and its selection
+    by tag Role of what it protects."""
+    rows = p.get("volumes") or ()
+    names = {role: f"ciam-prod-{cn}" for cn, role, _ in rows_of(rows, "ciamBackupVault")}
+    out = []
+    for cn, role, a in rows_of(rows, "ciamBackupVault"):
+        locked = (a.get("ciamStorageImmutability") or "none") != "none"
+        out += [_res("managed", "aws_backup_vault", cn, {
+                    "name": names[role], "arn": a["ciamProviderRef"],
+                    "kms_key_arn": p["key"][0].split("://", 1)[1] if a.get("ciamEncryptedByRole") else None,
+                    "tags": {"Name": cn, "Role": role, "ManagedBy": "opsdir"}}),
+                *((_res("managed", "aws_backup_vault_lock_configuration", cn, {
+                    "backup_vault_name": names[role], "min_retention_days": int(a["ciamStorageLockDays"]),
+                    "changeable_for_days": 3 if a["ciamStorageImmutability"] == "compliance" else None}),)
+                  if locked else ())]
+    for cn, role, a in rows_of(rows, "ciamBackupPlan"):
+        pid, keep = a["ciamProviderRef"].rsplit(":", 1)[1], [{"delete_after": int(a["ciamRetentionDays"])}]
+        hour, minute = (int(x) for x in a["ciamBackupAt"].split(":"))
+        vault = names[a["ciamBackupVaultRole"]]
+        out += [_res("managed", "aws_backup_plan", cn, {
+                    "id": pid, "arn": a["ciamProviderRef"], "name": f"ciam-prod-{cn}",
+                    "tags": {"Name": cn, "Role": role, "ManagedBy": "opsdir"},
+                    "rule": [{"rule_name": cn.replace("-", "_"), "target_vault_name": vault,
+                              "schedule": f"cron({minute} {hour} ? * * *)",
+                              "start_window": int(a["ciamBackupWindowHours"]) * 60 if a.get("ciamBackupWindowHours")
+                              else None, "lifecycle": keep,
+                              "copy_action": [{"destination_vault_arn": f"arn:aws:backup:{region}:{ACCOUNT}:backup-vault:"
+                                                                        f"{vault}", "lifecycle": keep}
+                                              for region in listed(a.get("ciamCopyRegion"))]}]}),
+                _res("managed", "aws_backup_selection", cn, {
+                    "id": f"{hex_id('selection', cn, n=8)}-0000-4000-8000-{hex_id('selection', cn, n=12)}",
+                    "plan_id": pid, "name": f"ciam-prod-{cn}",
+                    "iam_role_arn": f"arn:aws:iam::{ACCOUNT}:role/service-role/AWSBackupDefaultServiceRole",
+                    "selection_tag": [{"type": "STRINGEQUALS", "key": "Role", "value": r}
+                                      for r in listed(a["ciamProtectsRole"])]})]
     return out
 
 
@@ -448,6 +488,7 @@ def source_state():
     resources = [*_aws_network(p, subnets), *_aws_servers(p, subnets, instances, groups, {"pf-engine-2": "m6i.xlarge"}),
                  *_aws_firewall(p, groups), *_aws_services(p, instances), *_aws_keys(p, rotation=False),
                  *_aws_monitoring(), *_drifted_source(p, subnets, groups), *_source_iam(), *_aws_dns(p),
-                 *_aws_network_depth(p), *_aws_databases(p, groups), *_aws_volumes(p, instances)]
+                 *_aws_network_depth(p), *_aws_databases(p, groups), *_aws_volumes(p, instances),
+                 *_aws_backups(p)]
     return indented({"version": 4, "terraform_version": "1.9.5", "serial": 214, "lineage": "5e0c-ciam-prod",
                    "outputs": {}, "resources": resources})

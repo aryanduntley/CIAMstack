@@ -4,8 +4,9 @@ database server, a storage account), shared by their renders and read-backs. Pur
   role_uri        the reference URI a binding's role is bound to (a secret's azkv://, a key's azkv-key://), or a comment
                   when the environment doesn't bind it
   vault_object    (vault, name) of such a URI
-  customer_key    the key's vault and key data sources, a user-assigned identity and its Key Vault Crypto Service
-                  Encryption User grant on the key: what a service needs to encrypt with it
+  key_sources     the key's vault and key data sources (what a customer-managed key, or a grant on it, refers to)
+  customer_key    those, a user-assigned identity and its Key Vault Crypto Service Encryption User grant on the key:
+                  what a service needs to encrypt with it
   key_ref         the azkv-key:// reference of a Key Vault key URL, as a read-back links it to its key binding
 """
 from typing import NamedTuple
@@ -39,24 +40,35 @@ def role_uri(m, role, what):
         if uri.startswith(UNBOUND) else (uri, None)
 
 
-def customer_key(m, b, n):
-    """The CustomerKey of binding b's key role (ciamEncryptedByRole), its blocks named after n."""
+def key_sources(m, b, n):
+    """(the Key Vault and key data sources of binding b's key role (ciamEncryptedByRole), named after n, the key data
+    source's address, a body comment or None): no blocks and no address when it names no key or the role is
+    unbound."""
     uri, note = role_uri(m, one(b, "ciamEncryptedByRole"), "key")
     if uri is None:
-        return CustomerKey((), None, None, None, note)
+        return (), None, note
     vault, name = vault_object(uri)
+    return ((block("data", ["azurerm_key_vault", f"{n}_cmk"], [("name", vault), ("resource_group_name", RG)]),
+             block("data", ["azurerm_key_vault_key", f"{n}_cmk"], [
+                 ("name", name), ("key_vault_id", ref(f"data.azurerm_key_vault.{n}_cmk.id"))])),
+            f"data.azurerm_key_vault_key.{n}_cmk", None)
+
+
+def customer_key(m, b, n):
+    """The CustomerKey of binding b's key role (ciamEncryptedByRole), its blocks named after n."""
+    sources, key, note = key_sources(m, b, n)
+    if key is None:
+        return CustomerKey((), None, None, None, note)
     ident = f"azurerm_user_assigned_identity.{n}_cmk"
     return CustomerKey(
-        (block("data", ["azurerm_key_vault", f"{n}_cmk"], [("name", vault), ("resource_group_name", RG)]),
-         block("data", ["azurerm_key_vault_key", f"{n}_cmk"], [
-             ("name", name), ("key_vault_id", ref(f"data.azurerm_key_vault.{n}_cmk.id"))]),
+        (*sources,
          block("resource", ["azurerm_user_assigned_identity", f"{n}_cmk"], [
              ("name", f"id-{rdn_value(b)}-cmk"), ("location", LOC), ("resource_group_name", RG),
              ("tags", binding_tags(b))]),
          block("resource", ["azurerm_role_assignment", f"{n}_cmk"], [
-             ("scope", ref(f"data.azurerm_key_vault_key.{n}_cmk.resource_versionless_id")),
+             ("scope", ref(f"{key}.resource_versionless_id")),
              ("role_definition_name", CMK_ROLE), ("principal_id", ref(f"{ident}.principal_id"))])),
-        ident, f"data.azurerm_key_vault_key.{n}_cmk", f"azurerm_role_assignment.{n}_cmk", None)
+        ident, key, f"azurerm_role_assignment.{n}_cmk", None)
 
 
 def key_ref(url):

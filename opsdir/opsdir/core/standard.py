@@ -108,11 +108,17 @@ CORE_ATTRIBUTES = (
     AttributeDef(425, 'ciamVerifyPending', 'string', 'meta', False,
                  'An attribute whose value the record holds ahead of the live system, awaiting an import to confirm '
                  'it: "<attribute> <adapter>" (the adapter whose import confirms it; "<attribute>" alone: any)'),
+    AttributeDef(456, 'ciamEstateValue', 'string', 'meta', True,
+                 "An estate setting's value, as text the declaring domain's setting reads (a whole number, TRUE or "
+                 "FALSE, or a string)"),
 )
 CORE_CLASSES = (
     ClassDef(1, 'ciamObject', 'top', 'ABSTRACT', (),
              ('description', 'ciamOwner', 'ciamLastChanged', 'ciamChangeRef', 'ciamVerifyPending'),
              'Base of every operations-directory entry'),
+    ClassDef(96, 'ciamEstateSetting', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamEstateValue'), (),
+             "An estate-wide setting the platform's managers give a value (under ou=settings, named as a domain "
+             "declares it): where the record holds none, or one that isn't valid, the domain's default applies"),
 )
 CORE = fragment(CORE_ATTRIBUTES, CORE_CLASSES)
 

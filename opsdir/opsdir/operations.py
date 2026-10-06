@@ -10,7 +10,7 @@ import datetime as dt
 from typing import NamedTuple
 
 from .connectors import capture as capturemod, importing, migration, plan as planmod, profiling, reports, workspace
-from .connectors import fixes as fixmod
+from .connectors import fixes as fixmod, settings as settingsmod
 from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, schema_sync, store_parts
 from .connectors.render import render_env
 from .connectors.stack import STATUS_HEADERS, stack_rows
@@ -154,6 +154,12 @@ def apply_proposed(conn, change_id):
     """Effect: apply the records a proposed change holds once a person approved it, and mark it applied."""
     records, applied = fixmod.proposed_records(db.load_directory(conn), change_id)
     return modify(conn, (*records, applied), change_id)
+
+
+def preview_setting(conn, name, value):
+    """Effect (reads the record): the change records giving estate setting name a value (applied with apply_preview
+    under an approved change); ValueError when no installed domain declares it or the value isn't valid for it."""
+    return Preview(name, tuple(settingsmod.changes_for_setting(db.load_directory(conn), name, value)), ())
 
 
 # ------------------------------------------------------------------ config files

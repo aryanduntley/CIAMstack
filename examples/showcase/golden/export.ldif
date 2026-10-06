@@ -199,6 +199,13 @@ objectClass: top
 objectClass: organizationalUnit
 ou: principals
 
+dn: ou=restore-tests,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: restore-tests
+description: Restore tests: one entry per restore someone did, and what it pro
+ ved
+
 dn: ou=runbooks,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -703,6 +710,15 @@ ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Make the target's directory data volume as large as production's
+
+dn: cn=CHG-2019,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2019
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Snapshot the target's directory data volume daily with Azure Backup
 
 dn: cn=CHG-2040,ou=changes,dc=ciam-ops
 objectClass: top
@@ -2200,6 +2216,23 @@ ciamTokenAuthMethod: client_secret_basic
 pingfedUses: cn=default-jwt,ou=access-token-managers,ou=pingfederate,dc=ciam-o
  ps
 
+dn: cn=RT-2026-08-14-ds-data,ou=restore-tests,dc=ciam-ops
+objectClass: top
+objectClass: ciamRestoreTest
+cn: RT-2026-08-14-ds-data
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRestoreLevel: application
+ciamRestoreMinutes: 95
+ciamRestoredFromRole: snapshots-daily
+ciamRestoredRole: volume-ds-data
+ciamRunbookRef: cn=WI-CIAM-015,ou=runbooks,dc=ciam-ops
+ciamTestEnvironment: env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamTestResult: passed
+ciamTestedOn: 20260814100000Z
+description: ds-2's data volume restored from the night's snapshot onto a scra
+ tch server; PingDS started on it, verify-integrity passed and the replication
+  status was read
+
 dn: cn=run.properties,ou=config-files,dc=ciam-ops
 objectClass: top
 objectClass: ciamConfigFile
@@ -2636,6 +2669,18 @@ ciamDocUrl: https://wiki.example-aero.test/ciam/WI-CIAM-012
 ciamLastValidated: 20251103000000Z
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamTitle: Use the break-glass account (directory root)
+ciamVersion: 1.0
+
+dn: cn=WI-CIAM-015,ou=runbooks,dc=ciam-ops
+objectClass: top
+objectClass: ciamRunbook
+cn: WI-CIAM-015
+ciamAppliesTo: cn=vol-ds-data,ou=bindings,env=prod,cloud=source,ou=environment
+ s,dc=ciam-ops
+ciamDocUrl: https://wiki.example-aero.test/ciam/WI-CIAM-015
+ciamLastValidated: 20260814000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamTitle: Restore a directory server's data volume from a snapshot
 ciamVersion: 1.0
 
 dn: cn=xCostCenter,ou=custom-schema,dc=ciam-ops
@@ -3641,6 +3686,8 @@ ciamDropsRole: ldaps-endpoint-service
 ciamDropsRole: private-secrets
 ciamDropsRole: egress-firewall
 ciamDropsRole: snapshots-daily
+ciamDropsRole: backup-daily
+ciamDropsRole: backup-vault
 ciamLifecycle: active
 ciamOverlayOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
@@ -5246,6 +5293,37 @@ ciamBindingRole: backup-target
 ciamRetentionDays: 7
 ciamStorageRef: s3://example-aero-ciam-stage-ds-backups
 
+dn: cn=backup-daily,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamBackupPlan
+cn: backup-daily
+ciamBackupAt: 05:00
+ciamBackupEveryHours: 24
+ciamBackupVaultRole: backup-vault
+ciamBackupWindowHours: 2
+ciamBindingRole: backup-daily
+ciamCopyRegion: us-west-2
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamProtectsRole: volume-ds-data
+ciamProviderRef: arn:aws:backup:us-east-1:111122223333:backup-plan:3f7a9c2e-0b
+ 1d-4e5f-8a9b-0c1d2e3f4a5b
+ciamRetentionDays: 35
+
+dn: cn=backup-daily,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamBackupPlan
+cn: backup-daily
+ciamBackupAt: 05:00
+ciamBackupEveryHours: 24
+ciamBackupVaultRole: backup-vault
+ciamBindingRole: backup-daily
+ciamCopyRegion: us-east1
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamProtectsRole: volume-ds-data
+ciamProviderRef: projects/example-aero-ciam-standby/locations/us-central1/back
+ upPlans/backup-daily
+ciamRetentionDays: 35
+
 dn: cn=backup-target,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamRequiredRole
@@ -5280,6 +5358,41 @@ cn: cert-sso-tls
 ciamBindingRole: sso-tls-certificate
 ciamHoldsCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 ciamRefUri: azkv-cert://kv-ciam-prod/sso-tls-2026
+
+dn: cn=ciam-backups,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamBackupVault
+cn: ciam-backups
+ciamBindingRole: backup-vault
+ciamEncryptedByRole: disk-encryption
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamProviderRef: arn:aws:backup:us-east-1:111122223333:backup-vault:ciam-prod-
+ ciam-backups
+ciamStorageImmutability: compliance
+ciamStorageLockDays: 35
+
+dn: cn=ciam-backups,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamBackupVault
+cn: ciam-backups
+ciamBindingRole: backup-vault
+ciamCrossRegionRestore: TRUE
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamProviderRef: projects/example-aero-ciam-standby/locations/us-east1/backupV
+ aults/ciam-prod-ciam-backups
+ciamStorageImmutability: governance
+ciamStorageLockDays: 14
+
+dn: cn=ciam-backups,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamBackupVault
+cn: ciam-backups
+ciamBindingRole: backup-vault
+ciamChangeRef: cn=CHG-2019,ou=changes,dc=ciam-ops
+ciamEncryptedByRole: disk-encryption
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamStorageImmutability: compliance
+ciamStorageLockDays: 35
 
 dn: cn=ciam-standby-pf-grants,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
@@ -7873,6 +7986,19 @@ ciamSnapshotAt: 03:00
 ciamSnapshotConsistency: crash
 ciamSnapshotEveryHours: 24
 
+dn: cn=snapshots-daily,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamBackupPlan
+cn: snapshots-daily
+ciamBackupAt: 03:00
+ciamBackupEveryHours: 24
+ciamBackupVaultRole: backup-vault
+ciamBindingRole: snapshots-daily
+ciamChangeRef: cn=CHG-2019,ou=changes,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamProtectsRole: volume-ds-data
+ciamRetentionDays: 7
+
 dn: cn=snet-am,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSubnetBinding
@@ -8495,11 +8621,12 @@ objectClass: top
 objectClass: ciamVolume
 cn: vol-ds-data
 ciamBindingRole: volume-ds-data
-ciamChangeRef: cn=CHG-2018,ou=changes,dc=ciam-ops
+ciamChangeRef: cn=CHG-2019,ou=changes,dc=ciam-ops
 ciamEncryptedByRole: disk-encryption
 ciamIops: 6000
 ciamMountPath: /opt/ds/db
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSnapshotPolicyRole: snapshots-daily
 ciamTargetRole: ds
 ciamThroughputMb: 250
 ciamVolumeClass: provisioned

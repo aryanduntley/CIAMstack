@@ -1,0 +1,6 @@
+environment   plan          protects        vault         every hours  at     window hours  retention days  copies to  vault lock          vault key        restores in another region  restore test every
+------------  ------------  --------------  ------------  -----------  -----  ------------  --------------  ---------  ------------------  ---------------  --------------------------  ------------------
+source/prod   backup-daily  volume-ds-data  backup-vault  24           05:00  2             35              us-west-2  compliance 35 days  disk-encryption
+standby/prod  backup-daily  volume-ds-data  backup-vault  24           05:00                35              us-east1   governance 14 days  the provider's   TRUE
+(2 rows)
+exit 0

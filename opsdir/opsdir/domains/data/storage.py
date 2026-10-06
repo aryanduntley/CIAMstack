@@ -10,8 +10,8 @@ from ...core.environment import environment_of, of_class
 from ...core.findings import Fix, Input, findings, merge_findings, responsible
 from ...core.naming import branch, env_label
 from ..network.stack import owned
-from .kept import carry_fix, key_choice_fix
-from .naming import IMMUTABILITY, LIFECYCLE_ACTIONS
+from .kept import carry_fix, key_dropped, lock_text, lock_weakened
+from .naming import LIFECYCLE_ACTIONS
 
 STORE = "ciamObjectStore"
 DEPTH = ("ciamStorageVersioning", "ciamStorageImmutability", "ciamStorageLockDays", "ciamStorageLifecycle",
@@ -60,7 +60,7 @@ def kept_store(e):
 def depth_summary(e):
     """What an object store's record asks of it, in words (versioning; compliance lock 35 days; key disk-encryption;
     lifecycle 30 cold, 400 delete; public access blocked; copied to s3://x): what to ask its keeper for."""
-    lock = _immutability(e)
+    lock = lock_text(e)
     parts = ("versioning" if one(e, "ciamStorageVersioning") == "TRUE" else "",
              f"{lock.split(' ', 1)[0]} lock {lock.split(' ', 1)[1]}" if " " in lock else "",
              f"key {one(e, 'ciamEncryptedByRole')}" if one(e, "ciamEncryptedByRole") else "",
@@ -75,11 +75,6 @@ def _yes(e, attr):
     return {"TRUE": "yes", "FALSE": "no"}.get(one(e, attr) or "", "")
 
 
-def _immutability(e):
-    mode, days = one(e, "ciamStorageImmutability"), one(e, "ciamStorageLockDays")
-    return f"{mode} {days} days" if mode and mode != "none" and days else mode or ""
-
-
 def object_store_rows(d, dn=None):
     """One row per object store of every environment (backup targets among them)."""
     def kept_by(e):
@@ -88,7 +83,7 @@ def object_store_rows(d, dn=None):
         return rdn_value(party) if party is not None else dn_ or ""
     return sorted(((env_label(environment_of(e)), one(e, "ciamBindingRole"),
                     "backup target" if "ciamBackupTarget" in e.classes else "object store", one(e, "ciamStorageRef"),
-                    _yes(e, "ciamStorageVersioning"), _immutability(e), one(e, "ciamEncryptedByRole") or "",
+                    _yes(e, "ciamStorageVersioning"), lock_text(e), one(e, "ciamEncryptedByRole") or "",
                     "; ".join(lifecycle_value(r) for r in lifecycle_rules(e)), _yes(e, "ciamStoragePublicBlocked"),
                     one(e, "ciamStorageReplicaRef") or "", one(e, "ciamRetentionDays") or "", kept_by(e))
                    for e in subtree(d, branch("environments")) if is_kind(d, e, STORE)), key=lambda row: row[:2])
@@ -115,38 +110,14 @@ def _kept(ctx, role, s, t, owner):
                                   f"{ctx.src.label} has it") for a, what, _ in lost])
 
 
-def _rank(e):
-    mode = one(e, "ciamStorageImmutability") or "none"
-    return IMMUTABILITY.index(mode) if mode in IMMUTABILITY else 0
-
-
 def _immutable(ctx, role, s, t, owner):
     """The target's lock weaker than the source's, or as strong but shorter."""
-    sr, tr = _rank(s), _rank(t)
-    sd, td = int(one(s, "ciamStorageLockDays") or 0), int(one(t, "ciamStorageLockDays") or 0)
-    if sr == 0 or (tr > sr) or (tr == sr and td >= sd):
-        return findings()
-    held = f"locks objects ({_immutability(s)})"
-    there = f"{_immutability(t)}" if tr else "doesn't lock them"
-    risks = ("A compliance lock can't be shortened or removed once set, not even by the account's root: check the "
-             "days before applying.",) if one(s, "ciamStorageImmutability") == "compliance" else ()
-    return findings(actions=[(AREA, f"Object store `{role}` {held} in {ctx.src.label}; {ctx.dst.label} {there}: "
-                              "ransomware or a mistake could delete or change what it holds.", owner, ctx.cutover)],
-                    fixes=[_carry(ctx, role, s, t, ("ciamStorageImmutability", "ciamStorageLockDays"),
-                                  f"Lock `{role}`'s objects in {ctx.dst.label} as {ctx.src.label} does ("
-                                  f"{_immutability(s)})", risks)])
+    return lock_weakened(ctx, role, s, t, owner, AREA, "Object store", "object-store", "objects", _apply(ctx))
 
 
 def _encryption(ctx, role, s, t, owner):
-    if not one(s, "ciamEncryptedByRole") or one(t, "ciamEncryptedByRole"):
-        return findings()
-    fix = key_choice_fix(ctx.dst, f"object-store:{role}:ciamEncryptedByRole", AREA, f"Encrypt `{role}` in "
-                         f"{ctx.dst.label} with a key of its own", t,
-                         (*_apply(ctx), "Objects already stored keep their old encryption until rewritten."))
-    return findings(actions=[(AREA, f"Object store `{role}` is encrypted with key `{one(s, 'ciamEncryptedByRole')}` "
-                              f"in {ctx.src.label}; in {ctx.dst.label} nothing names its key, so the provider's own "
-                              "default key encrypts it, which nobody here controls or can revoke.", owner,
-                              ctx.cutover)], fixes=[fix] if fix else [])
+    return key_dropped(ctx, role, s, t, owner, AREA, "Object store", "object-store",
+                       (*_apply(ctx), "Objects already stored keep their old encryption until rewritten."))
 
 
 def _replication(ctx, role, s, t, owner):

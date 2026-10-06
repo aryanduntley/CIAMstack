@@ -88,6 +88,13 @@ objectClass: organizationalUnit
 ou: incidents
 description: Incidents and postmortems
 
+dn: ou=restore-tests,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: restore-tests
+description: Restore tests: one entry per restore someone did, and what it pro
+ ved
+
 dn: ou=owners,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit

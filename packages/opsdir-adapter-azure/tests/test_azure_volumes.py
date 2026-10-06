@@ -71,7 +71,7 @@ def test_a_data_volume_is_a_managed_disk_attached_at_its_lun():
                  "# ds-1 mounts vol-ds-data at /opt/ds/db (its own configuration, not Terraform)"):
         assert _flat(text) in out, text
     (note,) = snapshot_policy_notes(m)
-    assert "Azure Backup's disk backup, in a Backup vault: not rendered yet (4.10 task 5)" in note
+    assert "record a backup plan (ciamBackupPlan) with this role and a vault, which renders as one" in note
 
 
 def test_azure_always_encrypts_and_a_key_without_a_disk_encryption_set_is_said():
