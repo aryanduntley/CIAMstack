@@ -1,0 +1,7 @@
+prerequisite   adapter  status  fetch                              provider command
+-------------  -------  ------  ---------------------------------  -------------------------------------------------------------------
+aws-regions    aws      met     opsdir import aws/regions --run    aws ec2 describe-regions --all-regions --output json > regions.json
+azure-regions  azure    met     opsdir import azure/regions --run  az account list-locations -o json > regions.json
+gcp-regions    gcp      met     opsdir import gcp/regions --run    gcloud compute regions list --format=json > regions.json
+(3 rows)
+exit 0

@@ -1,0 +1,7 @@
+CHG-2023: add ou=residencies,dc=ciam-ops
+CHG-2023: add cn=us,ou=residencies,dc=ciam-ops
+CHG-2023: modify env=prod,cloud=source,ou=environments,dc=ciam-ops
+CHG-2023: modify env=stage,cloud=source,ou=environments,dc=ciam-ops
+CHG-2023: modify env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2023: modify env=prod,cloud=standby,ou=environments,dc=ciam-ops
+exit 0

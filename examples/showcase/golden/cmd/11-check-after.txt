@@ -14,7 +14,7 @@ Expected findings check (after changes)
            B24  cleared by CHG-2018: the target's directory data volume came from a sandbox template: what PingDS keeps doesn't fit → gone
            B25  cleared by CHG-2019: the target binds no snapshot policy (the volume check says what it loses: A72) → gone
            B27  cleared by CHG-2019: the target has no backup vault → gone
-  actions  planted 79   expected now 67   detected 67   missed 0   unexpected 0
+  actions  planted 81   expected now 67   detected 67   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone
@@ -27,6 +27,8 @@ Expected findings check (after changes)
            A72  cleared by CHG-2019: the target snapshots nothing of the directory's data volume (on Azure that is a disk backup plan in a Backup vault) → gone
            A74  cleared by CHG-2019: nothing backs the target's directory data volume up → gone
            A78  cleared by CHG-2019: nothing shows how fast the target recovers the directory's data (once CHG-2019 backs it up, the restore-test check asks for the test instead: A73) → gone
+           A80  cleared by CHG-2020: the record holds no region list from AWS yet (a provider prerequisite: `opsdir prerequisites`), so the source's region can't be checked against the provider's list → gone
+           A81  cleared by CHG-2021: the record holds no region list from Azure yet, so the target's region can't be checked against the provider's list → gone
            A70  raised by CHG-2017: the target's backup container (CHG-2017) has no immutability policy: a backup can be deleted early → reported
            A71  raised by CHG-2017: nothing copies the target's backups to another region; the source replicates to us-west-2 → reported
            A75  raised by CHG-2019: the target's disk backup (CHG-2019) keeps snapshots in its own region: Azure disk backup can't copy them → reported

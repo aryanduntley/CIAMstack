@@ -8,7 +8,7 @@ opsdir adapter for Google Cloud: Terraform for Google Cloud environments, read b
 
 ## What it renders
 
-Per environment, `terraform/providers.tf` (`hashicorp/google ~> 8.0`; the project as variable `project_id`, the region as variable `region`, defaulting to the cloud's `ciamRegion`; credentials come from the usual Google Cloud environment, never from the record) and `terraform/main.tf`:
+Per environment, `terraform/providers.tf` (`hashicorp/google ~> 8.0`; the project as variable `project_id`, the region as variable `region`, defaulting to the cloud's `ciamRegion`; when the cloud's `ciamFipsEndpoints` is TRUE, a comment that the google provider has no FIPS endpoint switch: FIPS 140 is met by Google Cloud's own validated modules or enforced with Assured Workloads; credentials come from the usual Google Cloud environment, never from the record) and `terraform/main.tf`:
 
 | From the record | Rendered as |
 |---|---|
@@ -320,6 +320,18 @@ opsdir import --dry-run gcp/cli-inventory export/
 
 Each answer is recorded on the identity as `ciamEvaluated` (`<verb> <role>: allowed|denied|unknown (gcp-policy-troubleshooter <date of the import>)`, the worst of a permission's parts), and the planner prefers it over evaluating the recorded policies. States: `CAN_ACCESS` allowed, `CANNOT_ACCESS` denied, `UNKNOWN_INFO` and `UNKNOWN_CONDITIONAL` unknown (the caller can't see everything, or a condition's context wasn't given). It answers for service accounts and users, not groups: a group's permissions are left to the recorded policies. A service name's forwarding rule and zone are named by pattern in the record, so they aren't asked.
 
+## The region list (a provider prerequisite)
+
+The record's region catalog (core `estate` domain: residencies and the planner's region checks) needs Google Cloud's own list of regions. The adapter declares it as the prerequisite `gcp-regions` (`opsdir prerequisites` shows whether it is met) and reads it with `gcp/regions`: the output of `gcloud compute regions list --format=json`, the Compute Engine regions your project can see.
+
+```sh
+opsdir import gcp/regions --run --change CHG-…         # runs gcloud under your own login; opsdir never sees the credentials
+gcloud compute regions list --format=json > regions.json
+opsdir import gcp/regions regions.json --change CHG-…  # or run it yourself (elsewhere) and import the file
+```
+
+Every region listed is recorded `available` in the `public` partition (Google Cloud has one). The list gives no display names or geography: add them to the catalog yourself, a refresh keeps them. A refresh adds new regions, shows changed details as conflicts to take or keep, and keeps a region Google Cloud stops listing, marked `not-listed`. An export listing no region is refused.
+
 ## Landing zone
 
 What the platform needs from the organization rather than its own Terraform is rendered per environment into `terraform/landing-zone/` (its own root: `providers.tf`, `main.tf`) for whoever keeps the landing zone: the header names them (the owners of the environment's guardrails, else of its cloud, else of the environment) and the MANIFEST marks the files `landing-zone`. Nothing is rendered when the environment needs nothing from one. When the target lacks a guardrail's prevention or a way in the source has, the planner drafts a request to that owner (`requests/<owner>.md`).
@@ -328,7 +340,7 @@ What the platform needs from the organization rather than its own Terraform is r
 |---|---|
 | Deployer principals whose identity binding trusts an OIDC issuer (`ciamTrustedBy`: `<issuer URL> <subject>`) | `google_iam_workload_identity_pool` (`ciam-<env>-ci`), a `google_iam_workload_identity_pool_provider` per issuer whose attribute condition accepts only the deployers' subjects, and per deployer a `google_service_account` its subject may act as (`roles/iam.workloadIdentityUser` for `principal://…/subject/<subject>`) with its resource-level IAM members |
 | Operator principals whose identity binding names a group (its email) | Resource-level IAM members granted to `group:<email>` |
-| Guardrails' denials (`ciamDenies`) | `google_org_policy_policy` on the project, each constraint once: `region-escape` `gcp.resourceLocations` (`in:<region>-locations`), `public-storage` `storage.publicAccessPrevention`, `service-account-keys` `iam.disableServiceAccountKeyCreation` and `iam.disableServiceAccountKeyUpload`, `key-deletion` `cloudkms.disableBeforeDestroy`, `audit-log-disable` `iam.disableAuditLoggingExemption` (Admin Activity audit logs can't be disabled at all; this stops new exemptions). `metadata-v1` and `root-use` don't apply (`# NOTE`) |
+| Guardrails' denials (`ciamDenies`) | `google_org_policy_policy` on the project, each constraint once: `region-escape` `gcp.resourceLocations` (`in:<region>-locations` for the cloud's region and each region the environment's residency allows, core `estate` domain), `public-storage` `storage.publicAccessPrevention`, `service-account-keys` `iam.disableServiceAccountKeyCreation` and `iam.disableServiceAccountKeyUpload`, `key-deletion` `cloudkms.disableBeforeDestroy`, `audit-log-disable` `iam.disableAuditLoggingExemption` (Admin Activity audit logs can't be disabled at all; this stops new exemptions). `metadata-v1` and `root-use` don't apply (`# NOTE`) |
 
 ### The network plumbing
 

@@ -4,6 +4,7 @@ from .access import ACCESS
 from .cli import CLI_INVENTORY
 from .cloudformation import CLOUDFORMATION
 from .inventory import TERRAFORM_STATE
+from .regions import PREREQUISITE, REGIONS
 from .secrets import SECRET_PATTERNS, secretsmanager_command
 from .terraform import render
 
@@ -21,5 +22,6 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamCloudEnvironment": ("public",)}, schema=None,
                   formats=(("terraform/*.tf", "hcl"), ("access/*.sh", "shell")),
                   products=(),
-                  secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY, CLOUDFORMATION),
-                  profile_terms=None, access=ACCESS)
+                  secret_patterns=SECRET_PATTERNS,
+                  importers=(TERRAFORM_STATE, CLI_INVENTORY, CLOUDFORMATION, REGIONS),
+                  profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE,))

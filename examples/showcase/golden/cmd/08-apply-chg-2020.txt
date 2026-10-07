@@ -1,0 +1,4 @@
+aws: the provider lists 9 region(s)
+aws: 9 new region(s): us-east-1, us-east-2, us-west-1, us-west-2, ca-central-1 and 4 more
+CHG-2020: 12 change(s) applied, the import run among them
+exit 0

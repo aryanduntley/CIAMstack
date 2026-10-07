@@ -97,7 +97,11 @@ SecretPattern = NamedTuple("SecretPattern", [("name", str), ("pattern", str), ("
 # with what it holds, keeping attributes and entries it doesn't own); patterns: the SecretPatterns the store refuses (an
 # importer withholds matching values and says so in its notices); at: when the import runs (a UTC datetime, or None
 # when not given), for importers that date what they observe. Pure: the connectors diff and the store applies.
-Importer = NamedTuple("Importer", [("name", str), ("description", str), ("read", Callable)])
+# commands: ((relative path, argv), ...): the provider commands whose output is the export (each command's standard
+# output read as the file at its path), for `opsdir import --run`, which runs them under the operator's own login to
+# the provider (the credentials stay the provider tool's; opsdir never sees or stores them); () when the export can't
+# be produced by a command.
+Importer = namedtuple("Importer", ("name", "description", "read", "commands"), defaults=((),))
 # What an import yields: containers (branch entries to create when missing, never changed otherwise); groups: ((scope
 # DN, entries that should exist in that subtree), ...), each replacing the record's subtree at its scope; notices.
 Imported = NamedTuple("Imported", [("containers", tuple), ("groups", tuple), ("notices", tuple)])
@@ -144,8 +148,13 @@ Listener = namedtuple("Listener", ("server_role", "port", "protocol", "purpose",
 ProxySetting = namedtuple("ProxySetting", ("server_role", "place", "file", "locator", "value", "link"),
                           defaults=(None,))
 
+# Data an adapter needs from its provider before the record is complete (a provider's region catalog): fetched with one
+# of its importers (by name; its commands say how), met when met(directory) says the record holds it. Needed once the
+# adapter applies to an environment; `opsdir prerequisites` lists what is pending.
+Prerequisite = namedtuple("Prerequisite", ("name", "description", "importer", "met"))
+
 # An adapter's fields; an older adapter that names no endpoints declares none, one that names no listeners or proxy
-# settings None.
+# settings None, one that names no prerequisites none.
 Adapter = namedtuple("Adapter", (
     "name",
     "kind",                 # provider | product | host | delivery | secret-store
@@ -168,8 +177,9 @@ Adapter = namedtuple("Adapter", (
     "access",               # a cloud's AccessModel: what its actions and roles mean as neutral permissions, or None
     "endpoints",            # Endpoints: what its products serve that the edge protects, checks or never caches
     "listeners",            # (EnvModel) -> Listeners: the ports its servers listen on in an environment, or None
-    "proxy_settings"),      # (EnvModel, ProxySettings) -> ProxySettings its servers need for an explicit proxy, or None
-    defaults=((), None, None))
+    "proxy_settings",       # (EnvModel, ProxySettings) -> ProxySettings its servers need for an explicit proxy, or None
+    "prerequisites"),       # Prerequisites: data it needs fetched from its provider
+    defaults=((), None, None, ()))
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

@@ -8,7 +8,7 @@ opsdir adapter for Microsoft Azure: Terraform for Azure environments; Azure Terr
 
 ## What it renders
 
-Per environment, `terraform/providers.tf` (`hashicorp/azurerm ~> 4.0`; `subscription_id` and `admin_ssh_public_key` as variables; `environment = "usgovernment"` for the government partition) and `terraform/main.tf`:
+Per environment, `terraform/providers.tf` (`hashicorp/azurerm ~> 4.0`; `subscription_id` and `admin_ssh_public_key` as variables; `environment = "usgovernment"` for the government partition; when the cloud's `ciamFipsEndpoints` is TRUE, a comment that azurerm has no FIPS endpoint switch: FIPS 140 is met by the services' validated modules or by Azure Government; the landing-zone roots use the same provider block) and `terraform/main.tf`:
 
 | From the record | Rendered as |
 |---|---|
@@ -360,6 +360,18 @@ Expressions are evaluated where they depend only on what the deployment knows: p
 
 Each resource the template declares (nested child resources included; `existing` references and resources whose condition is false excluded; when the deployment is given, only those it produced) is given its ARM ID and read like the CLI's output of the same resource, so the tables above, roles and `roles.json` apply unchanged. Without `az deployment group show` the subscription and resource group are unknown: links within the template still resolve, but disk encryption sets aren't read (their ID is what the record keeps for the key). Named in the notices: functions not evaluated, resources that couldn't be named (loops over `copyIndex()`), declared resources the deployment didn't produce, and resource types not read.
 
+## The region list (a provider prerequisite)
+
+The record's region catalog (core `estate` domain: residencies and the planner's region checks) needs Azure's own list of regions. The adapter declares it as the prerequisite `azure-regions` (`opsdir prerequisites` shows whether it is met) and reads it with `azure/regions`: the output of `az account list-locations -o json`, the regions of the cloud you are signed in to (public or US Government), each with its display name and geography.
+
+```sh
+opsdir import azure/regions --run --change CHG-…         # runs the Azure CLI under your own login; opsdir never sees the credentials
+az account list-locations -o json > regions.json
+opsdir import azure/regions regions.json --change CHG-…  # or run it yourself (elsewhere) and import the file
+```
+
+Only physical regions are recorded; logical entries (geographies such as `unitedstates`, `global`) are left out and named. A refresh adds new regions, shows changed names as conflicts to take or keep, and keeps a region Azure stops listing, marked `not-listed`. An export listing no region is refused.
+
 ## Landing zone
 
 What the platform needs from the organization rather than its own Terraform is rendered per environment into `terraform/landing-zone/` (its own root: `providers.tf`, `main.tf`) for whoever keeps the landing zone: the header names them (the owners of the environment's guardrails, else of its cloud, else of the environment) and the MANIFEST marks the files `landing-zone`. Nothing is rendered when the environment needs nothing from one. When the target lacks a guardrail's prevention or a way in the source has, the planner drafts a request to that owner (`requests/<owner>.md`).
@@ -368,7 +380,7 @@ What the platform needs from the organization rather than its own Terraform is r
 |---|---|
 | Deployer principals whose identity binding trusts an OIDC issuer (`ciamTrustedBy`: `<issuer URL> <subject>`) | `azurerm_user_assigned_identity` per deployer with an `azurerm_federated_identity_credential` (that issuer and subject, audience `api://AzureADTokenExchange`) and its role assignments |
 | Operator principals whose identity binding names an Entra group (its object id) | `azurerm_role_assignment` per permission to the group at the narrowest scope; eligible instead (`azurerm_pim_eligible_role_assignment`, activated when needed, renewed yearly) when the principal's `ciamCondition` says `jit` |
-| Guardrails' denials (`ciamDenies`) | `azurerm_subscription_policy_assignment` of a built-in definition, by ID: `region-escape` Allowed locations (`e56962a6-…`, the cloud's region), `public-storage` Storage account public access should be disallowed (`4fa4b6c0-…`, Deny), `key-deletion` Key vaults should have deletion protection enabled (`0b60c0b2-…`, Deny), `audit-log-disable` Do not allow deletion of resource types on diagnostic settings (`78460a36-…`; it blocks deleting them, not changing them: Azure has no built-in for that). `service-account-keys`, `metadata-v1`, `root-use` don't apply on Azure (`# NOTE`) |
+| Guardrails' denials (`ciamDenies`) | `azurerm_subscription_policy_assignment` of a built-in definition, by ID: `region-escape` Allowed locations (`e56962a6-…`: the cloud's region and those the environment's residency allows, core `estate` domain), `public-storage` Storage account public access should be disallowed (`4fa4b6c0-…`, Deny), `key-deletion` Key vaults should have deletion protection enabled (`0b60c0b2-…`, Deny), `audit-log-disable` Do not allow deletion of resource types on diagnostic settings (`78460a36-…`; it blocks deleting them, not changing them: Azure has no built-in for that). `service-account-keys`, `metadata-v1`, `root-use` don't apply on Azure (`# NOTE`) |
 
 ### Network plumbing
 

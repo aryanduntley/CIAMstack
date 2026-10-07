@@ -28,7 +28,8 @@ rm -rf "$OUT" && mkdir -p "$OUT/cmd"
 
 # The generators must reproduce the published schema and data files exactly (independent of git state).
 generated() { (cd "$CORE" && sha256sum schema/*.ldif); sha256sum data/*.ldif data/*.json;
-              find exports/ds-config exports/ds-access-logs exports/cloud exports/ds-data -type f | sort | xargs sha256sum; }
+              find exports/ds-config exports/ds-access-logs exports/cloud exports/ds-data exports/regions -type f | sort |
+                xargs sha256sum; }
 generated > "$OUT/cmd/.generated-before"
 cap 00-gen-schema    "$PY" "$CORE/scripts/gen-schema.py"
 cap 00-gen-synthetic "$PY" scripts/gen-synthetic.py
@@ -98,6 +99,13 @@ cap 08-apply-chg-2016 od modify --change CHG-2016 changes/CHG-2016-grant-databas
 cap 08-apply-chg-2017 od modify --change CHG-2017 changes/CHG-2017-target-backup-container.ldif
 cap 08-apply-chg-2018 od modify --change CHG-2018 changes/CHG-2018-target-directory-volume-size.ldif
 cap 08-apply-chg-2019 od modify --change CHG-2019 changes/CHG-2019-target-disk-backup.ldif
+cap 08-apply-chg-2020 od import --change CHG-2020 --at 20260923090000Z aws/regions exports/regions/aws
+cap 08-apply-chg-2021 od import --change CHG-2021 --at 20260923090000Z azure/regions exports/regions/azure
+cap 08-apply-chg-2022 od import --change CHG-2022 --at 20260923090000Z gcp/regions exports/regions/gcp
+cap 08-apply-chg-2023 od modify --change CHG-2023 changes/CHG-2023-us-residency.ldif
+cap 08-prerequisites od prerequisites
+cap 08-report-regions od report regions
+cap 08-report-residency od report residency
 od history 2>&1 | sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}/<TIMESTAMP>        /' \
   > "$OUT/cmd/09-history.txt"
 

@@ -107,7 +107,9 @@ resource "azurerm_subscription_policy_assignment" "org_guardrails_region_escape"
   parameters = jsonencode({
     "listOfAllowedLocations" : {
       "value" : [
-        "eastus2"
+        "eastus2",
+        "centralus",
+        "eastus"
       ]
     }
   })

@@ -26,7 +26,7 @@ from .identities import LOC, RG, identity, scope_data
 from .landing import render_landing
 from .network import render_network
 from .plumbing import network_data
-from .account import subscription_variable, tagged
+from .account import provider_block, subscription_variable, tagged
 
 PRIORITIES = (100, 10, 4096)        # NSG rule priorities: first slot, step, last (pinned ones kept)
 
@@ -191,12 +191,10 @@ def render(m, services):
     unbound = unbound_comments(m.unbound)
     main = header(m, "Azure infrastructure for the CIAM platform", HCL) + unbound + notes + "\n\n" \
         + "\n\n".join(out) + "\n"
-    gov = (("environment", "usgovernment"),) if one(m.cloud, "ciamCloudEnvironment") == "usgovernment" else ()
     providers = header(m, "Providers and inputs", HCL) + "\n" + "\n\n".join([
         block("terraform", [], [("required_providers", Block((
             ("azurerm", {"source": "hashicorp/azurerm", "version": "~> 4.0"}),)))]),
-        block("provider", ["azurerm"], [("features", Block(())), ("subscription_id", ref("var.subscription_id")),
-                                        *gov]),
+        provider_block(m),
         subscription_variable(m),
         block("variable", ["admin_ssh_public_key"], [("type", ref("string"))]),
         *((block("variable", [FORWARDING_RULESET], [

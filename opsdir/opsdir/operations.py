@@ -10,7 +10,7 @@ import datetime as dt
 from typing import NamedTuple
 
 from .connectors import capture as capturemod, importing, migration, plan as planmod, profiling, reports, workspace
-from .connectors import fixes as fixmod, settings as settingsmod
+from .connectors import fixes as fixmod, prerequisites as prereqmod, settings as settingsmod
 from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, schema_sync, store_parts
 from .connectors.render import render_env
 from .connectors.stack import STATUS_HEADERS, stack_rows
@@ -71,6 +71,17 @@ def stack_check(d, specs=()):
 def check(conn, specs=()):
     """Effect (reads the record): stack_check over the store."""
     return stack_check(db.load_directory(conn), specs)
+
+
+def prerequisites(conn):
+    """Effect (reads the record): the data the installed adapters need fetched from their providers
+    (connectors.prerequisites): each with its status (met, pending, not needed yet) and how to fetch it."""
+    return Rows(prereqmod.HEADERS, prereqmod.prerequisite_rows(db.load_directory(conn), ADAPTERS))
+
+
+def pending_prerequisites(conn):
+    """Effect (reads the record): the provider prerequisites still pending (prerequisites' rows)."""
+    return Rows(prereqmod.HEADERS, prereqmod.pending_prerequisites(db.load_directory(conn), ADAPTERS))
 
 
 def search(conn, base, filt, scope="sub"):

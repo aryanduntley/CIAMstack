@@ -213,6 +213,12 @@ EXPECTED = MappingProxyType({
         ("A79", "Tags", "Tag `DataClassification` (tag rule data-classification) has no value in target/prod",
          "the target environment records no data classification, so its resources would go without the tag policy's "
          "DataClassification tag", None),
+        ("A80", "Regions", "The region catalog holds no aws regions, so source/prod's region us-east-1",
+         "the record holds no region list from AWS yet (a provider prerequisite: `opsdir prerequisites`), so the "
+         "source's region can't be checked against the provider's list", "CHG-2020"),
+        ("A81", "Regions", "The region catalog holds no azure regions, so target/prod's region eastus2",
+         "the record holds no region list from Azure yet, so the target's region can't be checked against the "
+         "provider's list", "CHG-2021"),
     ],
 })
 

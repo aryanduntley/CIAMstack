@@ -6,12 +6,14 @@ from functools import reduce
 import os
 import pathlib
 import subprocess
+from typing import NamedTuple
 
 from opsdir import operations as ops
 from opsdir.cli import import_time, read_texts
 from opsdir.connectors.capture import census_changes
 from opsdir.connectors import importing
 from opsdir.core.directory import norm_dn
+from opsdir.store import postgres as db
 from opsdir.store.postgres import read_ldif_files
 from support import build_directory, schema_for
 
@@ -19,7 +21,11 @@ SHOWCASE = pathlib.Path(__file__).resolve().parents[1]
 DATA = SHOWCASE / "data"
 GOLDEN = SHOWCASE / "golden"
 SCRIPTS = SHOWCASE / "scripts"
-# the approved changes the showcase applies, in order: (change id, LDIF file)
+# An approved change made by an import (the record's region catalog fetched from a provider): the importer, the export
+# directory, when it was taken.
+ImportStep = NamedTuple("ImportStep", [("spec", str), ("root", pathlib.Path), ("at", str)])
+REGIONS = SHOWCASE / "exports" / "regions"
+# the approved changes the showcase applies, in order: (change id, LDIF file or ImportStep)
 APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ldif"),
             ("CHG-2003", SHOWCASE / "changes" / "CHG-2003-stable-ldaps-name.ldif"),
             ("CHG-2005", SHOWCASE / "changes" / "CHG-2005-credential-roles.ldif"),
@@ -29,7 +35,11 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2016", SHOWCASE / "changes" / "CHG-2016-grant-database-protection.ldif"),
             ("CHG-2017", SHOWCASE / "changes" / "CHG-2017-target-backup-container.ldif"),
             ("CHG-2018", SHOWCASE / "changes" / "CHG-2018-target-directory-volume-size.ldif"),
-            ("CHG-2019", SHOWCASE / "changes" / "CHG-2019-target-disk-backup.ldif"))
+            ("CHG-2019", SHOWCASE / "changes" / "CHG-2019-target-disk-backup.ldif"),
+            ("CHG-2020", ImportStep("aws/regions", REGIONS / "aws", "20260923090000Z")),
+            ("CHG-2021", ImportStep("azure/regions", REGIONS / "azure", "20260923090000Z")),
+            ("CHG-2022", ImportStep("gcp/regions", REGIONS / "gcp", "20260923090000Z")),
+            ("CHG-2023", SHOWCASE / "changes" / "CHG-2023-us-residency.ldif"))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
 # night before, all of them)
 IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", "20260920030000Z"),
@@ -92,18 +102,44 @@ def import_exports(conn):
             ops.apply_preview(conn, ops.preview_census(conn, export_files(CENSUS[1])), CENSUS[0])]
 
 
+def _changed(schema, records, done, changes):
+    """Effect (reads files): done followed by the change records of changes ((change id, LDIF file or ImportStep),
+    ...) in order, each import planned against the estate as the changes before it leave it."""
+    def step(so_far, change):
+        change_id, source = change
+        if not isinstance(source, ImportStep):
+            return (*so_far, *read_ldif_files([source]))
+        d = build_directory(schema, records, so_far)
+        plan = importing.import_plan(d, source.spec, export_files(source.root), at=import_time(source.at))
+        return (*so_far, *importing.import_records(d, plan, change_id))
+    return reduce(step, changes, tuple(done))
+
+
 def fixture_directory(changes=()):
     """Effect (reads files): the example estate as a Directory, as the demo builds it: loaded, the product exports
-    imported (IMPORTS), then after (change id, LDIF file) changes."""
+    imported (IMPORTS), then after (change id, LDIF file or ImportStep) changes."""
     records = read_ldif_files(sorted(DATA.glob("*.ldif")))
     schema = schema_for(records)
-    return build_directory(schema, records, (*import_records(schema, records),
-                                             *read_ldif_files([path for _, path in changes])))
+    return build_directory(schema, records, _changed(schema, records, import_records(schema, records), changes))
 
 
 def approved_records():
-    """Effect (reads files): the change records of every approved change (APPROVED), in order."""
-    return read_ldif_files([path for _, path in APPROVED])
+    """Effect (reads files): the change records of every approved change (APPROVED), in order (an import's as it
+    makes them in the estate the changes before it leave)."""
+    records = read_ldif_files(sorted(DATA.glob("*.ldif")))
+    schema = schema_for(records)
+    imported = import_records(schema, records)
+    return _changed(schema, records, imported, APPROVED)[len(imported):]
+
+
+def apply_approved(conn, changes=APPROVED):
+    """Effect: apply the approved changes to a store as the demo does: an LDIF file's records, or an import."""
+    for change_id, source in changes:
+        if isinstance(source, ImportStep):
+            ops.apply_import(conn, ops.preview_import(conn, source.spec, export_files(source.root),
+                                                      import_time(source.at)), change_id)
+        else:
+            db.apply_changes(conn, source, change_id)
 
 
 def approved_targets():

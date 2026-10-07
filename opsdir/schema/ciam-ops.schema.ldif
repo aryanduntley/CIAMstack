@@ -2161,6 +2161,54 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.488 NAME 'ciamTagValue' DESC 'A lite
  ral tag rule\27s value' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.11
  5.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN
   'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.489 NAME 'ciamRegionName' DESC 'A cl
+ oud region\27s name as its provider shows it (Europe (Ireland), West Europe
+ , Belgium)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 S
+ INGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.490 NAME 'ciamGeography' DESC 'Where
+  a cloud region is, as its provider places it (a geography, country or cont
+ inent), when the provider says' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1
+ .1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' 
+ X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.491 NAME 'ciamRegionStatus' DESC 'A 
+ cloud region as its provider lists it: available, opt-in (open only to acco
+ unts that opt in) or not-listed (no longer listed; kept so what names it ke
+ eps its link)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.1
+ 5 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'enum:available|opt-in
+ |not-listed' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.492 NAME 'ciamResidencyRef' DESC 'Th
+ e residency an environment\27s data is held to (a ciamResidency under ou=re
+ sidencies)' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121
+ .1.12 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdi
+ r' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.493 NAME 'ciamAllowedRegion' DESC 'A
+  cloud region a residency allows data to be held in (a ciamCloudRegion of t
+ he region catalog)' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466
+ .115.121.1.12 X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.494 NAME 'ciamFipsEndpoints' DESC 'W
+ hether a cloud\27s clients (renderers\27 providers, the products\27 SDKs) u
+ se the provider\27s FIPS 140 validated endpoints' EQUALITY booleanMatch SYN
+ TAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'binding' X-VAL
+ UE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.495 NAME 'ciamAuditScope' DESC 'What
+  an audit trail records: one account (an AWS account, an Azure subscription
+ , a Google Cloud project) or every account of the organization' EQUALITY ca
+ seIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILI
+ TY 'binding' X-VALUE-TYPE 'enum:account|organization' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.496 NAME 'ciamAuditEvents' DESC 'Whi
+ ch activity an audit trail records: control-plane (management API calls), d
+ ata-read, data-write' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.
+ 121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'enum:control-plane|data-read
+ |data-write' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.497 NAME 'ciamAllRegions' DESC 'Whet
+ her an audit trail records activity in every region (and global services), 
+ not one region' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 S
+ INGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.498 NAME 'ciamIntegrityValidation' D
+ ESC 'Whether an audit trail\27s records can be proven unaltered (CloudTrail
+ \27s digest files, immutable storage)' EQUALITY booleanMatch SYNTAX 1.3.6.1
+ .4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'bo
+ ol' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -2672,8 +2720,9 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.103 NAME 'ciamCloudAccount' DESC 'Add
  GIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.104 NAME 'ciamEnvironmentPlacement' D
  ESC 'Added to an environment: the resource group its resources go in (where
-  the cloud has them) and how sensitive its data is' SUP top AUXILIARY MAY (
-  ciamResourceGroup $ ciamDataClassification ) X-ORIGIN 'opsdir' )
+  the cloud has them), how sensitive its data is and the residency it is hel
+ d to' SUP top AUXILIARY MAY ( ciamResourceGroup $ ciamDataClassification $ 
+ ciamResidencyRef ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.105 NAME 'ciamChargedParty' DESC 'Add
  ed to a party: the cost center its spending is charged to' SUP top AUXILIAR
  Y MAY ciamCostCenter X-ORIGIN 'opsdir' )
@@ -2681,3 +2730,28 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.106 NAME 'ciamTagRule' DESC 'One tag
  of the estate\27s tag policy (under ou=tag-policy): its key and where its v
  alue comes from in each environment' SUP ciamObject STRUCTURAL MUST ( cn $ 
  ciamTagKey $ ciamTagSource ) MAY ciamTagValue X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.107 NAME 'ciamRegionCatalog' DESC 'On
+ e provider\27s regions (under ou=regions, named after the provider): its ci
+ amCloudRegion entries' SUP ciamObject STRUCTURAL MUST ( cn $ ciamCloudProvi
+ der ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.108 NAME 'ciamCloudRegion' DESC 'A re
+ gion of a provider\27s catalog, named by the provider\27s region code (eu-w
+ est-1, westeurope, europe-west1): its name, where it is, its status and par
+ tition' SUP ciamObject STRUCTURAL MUST cn MAY ( ciamRegionName $ ciamGeogra
+ phy $ ciamRegionStatus $ ciamCloudEnvironment ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.109 NAME 'ciamResidency' DESC 'A resi
+ dency the estate defines (under ou=residencies): where data held to it may 
+ be, as the catalog regions it allows (any provider\27s)' SUP ciamObject STR
+ UCTURAL MUST cn MAY ciamAllowedRegion X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.110 NAME 'ciamCloudEndpoints' DESC 'A
+ dded to a cloud: how its clients reach the provider\27s APIs (FIPS 140 vali
+ dated endpoints)' SUP top AUXILIARY MAY ciamFipsEndpoints X-ORIGIN 'opsdir'
+  )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.111 NAME 'ciamAuditTrail' DESC 'An en
+ vironment\27s control-plane audit trail (CloudTrail, the Activity Log\27s d
+ iagnostic setting, Cloud Audit Logs\27 sinks): what it records, where its r
+ ecords go (a log destination\27s or object store\27s role), and who keeps i
+ t when it isn\27t the platform team (an organization trail the landing zone
+  keeps)' SUP ciamBinding STRUCTURAL MUST ciamAuditScope MAY ( ciamAuditEven
+ ts $ ciamAllRegions $ ciamIntegrityValidation $ ciamLogDestinationRole $ ci
+ amProviderRef $ ciamManagedBy ) X-ORIGIN 'opsdir' )

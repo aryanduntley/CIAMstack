@@ -6,6 +6,7 @@ import re
 
 from ...core.directory import children, get, one, rdn_value, values
 from .naming import TAG_POLICY
+from .regions import named
 
 RULE = "ciamTagRule"
 EXAMPLES = 3                      # resources named per missing tag in an import notice
@@ -70,5 +71,4 @@ def tag_notices(d, spec, resources):
 
 
 def _named(rs):
-    more = f" and {len(rs) - EXAMPLES} more" if len(rs) > EXAMPLES else ""
-    return ", ".join(f"{r.kind} {r.name or r.ref}" for r in rs[:EXAMPLES]) + more
+    return named([f"{r.kind} {r.name or r.ref}" for r in rs], EXAMPLES)

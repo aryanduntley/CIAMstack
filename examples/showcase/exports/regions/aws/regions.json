@@ -1,0 +1,49 @@
+{
+    "Regions": [
+        {
+            "Endpoint": "ec2.us-east-1.amazonaws.com",
+            "RegionName": "us-east-1",
+            "OptInStatus": "opt-in-not-required"
+        },
+        {
+            "Endpoint": "ec2.us-east-2.amazonaws.com",
+            "RegionName": "us-east-2",
+            "OptInStatus": "opt-in-not-required"
+        },
+        {
+            "Endpoint": "ec2.us-west-1.amazonaws.com",
+            "RegionName": "us-west-1",
+            "OptInStatus": "opt-in-not-required"
+        },
+        {
+            "Endpoint": "ec2.us-west-2.amazonaws.com",
+            "RegionName": "us-west-2",
+            "OptInStatus": "opt-in-not-required"
+        },
+        {
+            "Endpoint": "ec2.ca-central-1.amazonaws.com",
+            "RegionName": "ca-central-1",
+            "OptInStatus": "opt-in-not-required"
+        },
+        {
+            "Endpoint": "ec2.eu-west-1.amazonaws.com",
+            "RegionName": "eu-west-1",
+            "OptInStatus": "opt-in-not-required"
+        },
+        {
+            "Endpoint": "ec2.eu-central-1.amazonaws.com",
+            "RegionName": "eu-central-1",
+            "OptInStatus": "opt-in-not-required"
+        },
+        {
+            "Endpoint": "ec2.af-south-1.amazonaws.com",
+            "RegionName": "af-south-1",
+            "OptInStatus": "not-opted-in"
+        },
+        {
+            "Endpoint": "ec2.me-south-1.amazonaws.com",
+            "RegionName": "me-south-1",
+            "OptInStatus": "not-opted-in"
+        }
+    ]
+}

@@ -45,6 +45,9 @@ From Terraform state (terraform.tfstate, format version 4), managed resources an
                                                  realizes (tag Realizes)
   aws_synthetics_canary                       -> synthetic check (kind canary, ciamCanaryBinding): its rate as an
                                                  interval, the canary it realizes (tag Realizes)
+  aws_cloudtrail                              -> audit trail (kind audit, ciamAuditTrail): scope, the activity its
+                                                 event selectors record, all regions, integrity validation, where its
+                                                 records go (its bucket's or log group's role): see audit.py
   aws_db_instance, aws_rds_cluster (+ its      -> database (kind database, ciamDatabase): engine, edition, version,
     instances, subnet and parameter groups)      endpoint, size, availability, TLS, backups, parameters, its subnets,
                                                  key and master secret as roles; never its password: see databases.py
@@ -67,6 +70,7 @@ from .edge_inventory import (aliased_names, dns_resources, edge_services, lb_fac
                              service_dns)
 from .iam import iam_resources
 from .databases import database_resources, database_security_groups
+from .audit import trail_resources
 from .backups import backup_resources
 from .volumes import volume_resources
 from .storage import object_store_resources
@@ -464,7 +468,7 @@ def pairs_resources(pairs):
              *_keys(pairs), *object_store_resources(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
              *_canaries(pairs), *iam, *edge_services(pairs), *zones, *records, *forwarders, *network,
-             *database_resources(pairs), *volumes, *backups),
+             *database_resources(pairs), *volumes, *backups, *trail_resources(pairs)),
             (*rule_notices, *iam_notices, *dns_notices, *network_notices, *volume_notices, *backup_notices))
 
 

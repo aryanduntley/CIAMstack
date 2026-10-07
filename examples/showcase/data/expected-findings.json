@@ -747,6 +747,20 @@
       "match": "Tag `DataClassification` (tag rule data-classification) has no value in target/prod",
       "planted": "the target environment records no data classification, so its resources would go without the tag policy's DataClassification tag",
       "cleared_by": null
+    },
+    {
+      "id": "A80",
+      "area": "Regions",
+      "match": "The region catalog holds no aws regions, so source/prod's region us-east-1",
+      "planted": "the record holds no region list from AWS yet (a provider prerequisite: `opsdir prerequisites`), so the source's region can't be checked against the provider's list",
+      "cleared_by": "CHG-2020"
+    },
+    {
+      "id": "A81",
+      "area": "Regions",
+      "match": "The region catalog holds no azure regions, so target/prod's region eastus2",
+      "planted": "the record holds no region list from Azure yet, so the target's region can't be checked against the provider's list",
+      "cleared_by": "CHG-2021"
     }
   ]
 }

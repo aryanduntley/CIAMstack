@@ -1,9 +1,11 @@
-"""Observability domain schema: what the platform is watched for, where its logs go and for how long, and the
-synthetic checks that sign in as a user would. Alert rules, log routes and canaries are intent, the same in every
-environment; what delivers an alert (a topic, an action group, a paging service) and what keeps logs (a log group, a
-workspace, a SIEM index) are bindings each environment gives a role."""
+"""Observability domain schema: what the platform is watched for, where its logs go and for how long, the synthetic
+checks that sign in as a user would, and the control-plane audit trail that records who did what to the cloud. Alert
+rules, log routes and canaries are intent, the same in every environment; what delivers an alert (a topic, an action
+group, a paging service), what keeps logs (a log group, a workspace, a SIEM index) and the audit trail (CloudTrail, the
+Activity Log's diagnostic setting, Cloud Audit Logs' sinks) are bindings each environment gives a role."""
 from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
-from .naming import CANARY_FLOWS, CHANNEL_KINDS, COMPARISONS, DESTINATION_KINDS, DURATION, LOG_KINDS
+from .naming import (AUDIT_EVENTS, AUDIT_SCOPES, CANARY_FLOWS, CHANNEL_KINDS, COMPARISONS, DESTINATION_KINDS, DURATION,
+                     LOG_KINDS)
 
 PERIOD = (("X-PATTERN", DURATION),)
 
@@ -52,6 +54,17 @@ ATTRIBUTES = (
     AttributeDef(325, 'ciamMetric', 'string', 'binding', True,
                  'The metric or query an alarm a cloud runs evaluates, as the provider names it (AWS/EC2 '
                  'CPUUtilization)'),
+    # ------------------------------------------------------------------ control-plane audit trails
+    AttributeDef(495, 'ciamAuditScope', enum_type(AUDIT_SCOPES), 'binding', True,
+                 "What an audit trail records: one account (an AWS account, an Azure subscription, a Google Cloud "
+                 "project) or every account of the organization"),
+    AttributeDef(496, 'ciamAuditEvents', enum_type(AUDIT_EVENTS), 'binding', False,
+                 "Which activity an audit trail records: control-plane (management API calls), data-read, data-write"),
+    AttributeDef(497, 'ciamAllRegions', 'bool', 'binding', True,
+                 "Whether an audit trail records activity in every region (and global services), not one region"),
+    AttributeDef(498, 'ciamIntegrityValidation', 'bool', 'binding', True,
+                 "Whether an audit trail's records can be proven unaltered (CloudTrail's digest files, immutable "
+                 "storage)"),
 )
 CLASSES = (
     ClassDef(62, 'ciamAlertRule', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamSignal', 'ciamAlertRole'),
@@ -79,6 +92,12 @@ CLASSES = (
     ClassDef(68, 'ciamCanaryBinding', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef',),
              ('ciamRealizes', 'ciamInterval'),
              'A synthetic check a cloud runs in an environment: the canary it realizes, how often'),
+    ClassDef(111, 'ciamAuditTrail', 'ciamBinding', 'STRUCTURAL', ('ciamAuditScope',),
+             ('ciamAuditEvents', 'ciamAllRegions', 'ciamIntegrityValidation', 'ciamLogDestinationRole',
+              'ciamProviderRef', 'ciamManagedBy'),
+             "An environment's control-plane audit trail (CloudTrail, the Activity Log's diagnostic setting, Cloud "
+             "Audit Logs' sinks): what it records, where its records go (a log destination's or object store's "
+             "role), and who keeps it when it isn't the platform team (an organization trail the landing zone keeps)"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

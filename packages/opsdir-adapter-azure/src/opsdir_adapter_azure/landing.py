@@ -22,7 +22,7 @@ from .access import ACCESS
 from .guardrails import render_guardrails
 from .identities import RG, assignments, managed_identity, notes, role_of, scope, scope_data
 from .plumbing import render_plumbing
-from .account import subscription_variable
+from .account import provider_block, subscription_variable
 
 AUDIENCE = "api://AzureADTokenExchange"
 
@@ -61,7 +61,7 @@ def _providers(m, variables):
     return header(m, "Providers and inputs (landing zone)", HCL) + "\n" + "\n\n".join([
         block("terraform", [], [("required_providers", Block((
             ("azurerm", {"source": "hashicorp/azurerm", "version": "~> 4.0"}),)))]),
-        block("provider", ["azurerm"], [("features", Block(())), ("subscription_id", ref("var.subscription_id"))]),
+        provider_block(m),
         subscription_variable(m, described=True),
         *variables]) + "\n"
 

@@ -8,7 +8,7 @@ opsdir adapter for Amazon Web Services: Terraform for AWS environments; AWS Terr
 
 ## What it renders
 
-Per environment, `terraform/providers.tf` (`hashicorp/aws ~> 5.0`; `region` from the cloud's `ciamRegion`; credentials come from the usual AWS environment, never from the record) and `terraform/main.tf`:
+Per environment, `terraform/providers.tf` (`hashicorp/aws ~> 5.0`; `region` from the cloud's `ciamRegion`; `use_fips_endpoint = true` when the cloud's `ciamFipsEndpoints` is TRUE (core `estate` domain); credentials come from the usual AWS environment, never from the record) and `terraform/main.tf`:
 
 | From the record | Rendered as |
 |---|---|
@@ -21,6 +21,7 @@ Per environment, `terraform/providers.tf` (`hashicorp/aws ~> 5.0`; `region` from
 | Secret references (`aws-sm://<arn>`) | `data aws_secretsmanager_secret` per secret: metadata only, so a missing secret fails the plan and no value enters Terraform state (`aws_secretsmanager_secret_version` is never rendered) |
 | The `backup-target` binding; the `pf-egress` binding | `data aws_s3_bucket` `ds_backups`; `data aws_nat_gateway` `pf_egress` (when it has a `ciamProviderRef`) |
 | Workload principals (core `access` domain: kind `workload`, `ciamTargetRole` a server role here) | Per principal: `aws_iam_role` EC2 may assume (named by its identity binding's provider ref, else `ciam-<env>-<server role>`), an inline `aws_iam_role_policy` with one statement per permission from the access table below (the binding's resource: a secret's ARN with its six-character suffix `-??????`, a key's ARN, `arn:aws:s3:::<bucket>/<prefix>*` and the bucket, a stream's ARN, a log group's ARN and `:*`), an `aws_iam_instance_profile` set on the role's instances; a permission that can't be granted (role unbound here, or no row) is a `# NOTE` |
+| Control-plane audit trails (core `observability`: `ciamAuditTrail`) the platform team keeps | `aws_cloudtrail` into the S3 bucket of the object store its `ciamLogDestinationRole` names: `is_multi_region_trail` and `include_global_service_events` from `ciamAllRegions`, `enable_log_file_validation` from `ciamIntegrityValidation`, `is_organization_trail` for scope `organization`; data events are a comment (event selectors must name the resources). A trail `ciamManagedBy` names someone else keeps (an organization trail the landing zone keeps) is a comment naming its keeper; one delivering to a CloudWatch log group is a `# NOTE` (that delivery also needs a role) |
 | Required roles without a binding | `# UNBOUND: required role …` |
 
 Not rendered: the VPC, subnets, NAT gateways, buckets, Elastic IPs and Route 53 zones themselves (referenced, the landing zone creates them); KMS keys (referenced by ARN); egress security group rules; key pairs, IAM instance profiles and user data; application load balancers and TLS listeners (services are TCP pass-through).
@@ -141,6 +142,7 @@ The importer `aws/terraform-state` reads Terraform state (format version 4, `has
 | `aws_sqs_queue`, `aws_sns_topic`, `aws_cloudwatch_event_bus` (not the default bus), `aws_kinesis_stream` | stream carrier (`ciamStreamBinding`): what carries an event stream (`ou=event-streams` names its binding role, `ciamStreamRole`); an SNS topic an alarm notifies is an alert channel instead | ARN (`ciamProviderRef`) |
 | `aws_sns_topic` named in an alarm's `alarm_actions`, `ok_actions` or `insufficient_data_actions` | alert channel (`ciamAlertChannel`, the core observability domain): `topic`; an alert rule's `ciamAlertRole` names it | ARN (`ciamProviderRef`) |
 | `aws_cloudwatch_log_group` | log destination (`ciamLogDestination`): `log-group`, its retention in days (`0`: never expires, which meets any obligation); a log route's `ciamLogDestinationRole` names it | ARN (`ciamProviderRef`) |
+| `aws_cloudtrail` | audit trail (`ciamAuditTrail`, role `audit-trail` unless tagged): `organization` or `account` (`is_organization_trail`), the activity its event selectors record (basic or advanced; none: `control-plane`), all regions, integrity validation, and where its records go (`ciamLogDestinationRole`: the role of its bucket's object store, or of its CloudWatch log group) | ARN (`ciamProviderRef`) |
 | `aws_cloudwatch_metric_alarm` | alarm the cloud runs (`ciamAlarmBinding`): what it evaluates (`ciamMetric`: namespace and metric, or `metric query`), the topics it notifies (`ciamNotifies`), the alert rule it realizes (`ciamRealizes`, its tag `Realizes`). Its binding role is its tag `Role` or `BindingRole`, else `alarm-<Realizes>`; untagged alarms are named, not recorded | ARN (`ciamProviderRef`) |
 | `aws_synthetics_canary` | synthetic check the cloud runs (`ciamCanaryBinding`): its `rate(...)` schedule as an interval (`5m`), the canary it realizes (tag `Realizes`); binding role as for alarms, else `canary-<Realizes>` | ARN (`ciamProviderRef`) |
 | `aws_iam_role` (+ `aws_iam_role_policy`, `aws_iam_role_policy_attachment`, `aws_iam_policy`) | identity binding (`ciamIdentityBinding`, kind `role`, `federated` when an OIDC provider may assume it): who may assume it (`ciamTrustedBy`: a service, `<issuer URL> <subject>` per OIDC subject, a principal ARN), the grants and denials of its inline and attached policies, its permissions boundary's allows as its ceiling (`ciamBoundary`); role from its tag `Role` | role ARN, else its name |
@@ -441,6 +443,18 @@ What the stacks declare is read into the same resources as Terraform state (the 
 
 A secret's `SecretString`, `SecretBinary` and `GenerateSecretString` are dropped before anything is resolved; `NoEcho` parameters come back from `describe-stacks` masked.
 
+## The region list (a provider prerequisite)
+
+The record's region catalog (core `estate` domain: residencies and the planner's region checks) needs AWS's own list of regions. The adapter declares it as the prerequisite `aws-regions` (`opsdir prerequisites` shows whether it is met) and reads it with `aws/regions`: the output of `aws ec2 describe-regions --all-regions --output json`, every region of the partition your credentials are in, whether or not the account opted in.
+
+```sh
+opsdir import aws/regions --run --change CHG-…         # runs the AWS CLI under your own login; opsdir never sees the credentials
+aws ec2 describe-regions --all-regions --output json > regions.json
+opsdir import aws/regions regions.json --change CHG-…  # or run it yourself (elsewhere) and import the file
+```
+
+A region open only to accounts that opt in (`OptInStatus` `opted-in` or `not-opted-in`) is recorded `opt-in`, the rest `available`; a region whose endpoint is under `amazonaws.com` is in the `public` partition. The list gives no display names or geography: add them to the catalog yourself, a refresh keeps them. A refresh adds new regions, shows changed details as conflicts to take or keep, and keeps a region AWS stops listing, marked `not-listed`. An export listing no region is refused.
+
 ## Landing zone
 
 What the platform needs from the organization rather than its own Terraform is rendered per environment into `terraform/landing-zone/` (its own root: `providers.tf`, `main.tf`) for whoever keeps the landing zone: the header names them (the owners of the environment's guardrails, else of its cloud, else of the environment) and the MANIFEST marks the files `landing-zone`. Nothing is rendered when the environment needs nothing from one. When the target lacks a guardrail's prevention or a way in the source has, the planner drafts a request to that owner (`requests/<owner>.md`).
@@ -449,7 +463,7 @@ What the platform needs from the organization rather than its own Terraform is r
 |---|---|
 | Deployer principals whose identity binding trusts an OIDC issuer (`ciamTrustedBy`: `<issuer URL> <subject>`, a CI pipeline) | `aws_iam_openid_connect_provider` per issuer (audience `sts.amazonaws.com`), and per deployer an `aws_iam_role` assumable only with that pipeline's tokens (`sts:AssumeRoleWithWebIdentity`, `<host>:aud` and `<host>:sub` pinned) with its least-privilege policy |
 | Operator principals whose identity binding names a group (`ciamIdentityKind` group or permission-set; the group id as provider ref) | IAM Identity Center: `aws_ssoadmin_permission_set` (4-hour sessions), its permissions as `aws_ssoadmin_permission_set_inline_policy`, `aws_ssoadmin_account_assignment` to the group in `var.account_id` |
-| Guardrails' denials (`ciamDenies`) | One `aws_organizations_policy` (service control policy) per guardrail attached to `var.guardrail_target_id` (an OU or account): `region-escape` (AWS's region-control statement: global services exempt), `audit-log-disable` (CloudTrail changes on every trail; creation allowed), `service-account-keys` (`iam:CreateAccessKey`), `metadata-v1` (`ec2:RunInstances` without IMDSv2), `root-use` (the root user, bucket policies exempt), `key-deletion` (`kms:ScheduleKeyDeletion`, `DeleteAlias`, `DeleteCustomKeyStore`, `DeleteImportedKeyMaterial`). From AWS's examples (`aws-samples/service-control-policy-examples`) without their privileged-role exemptions. `public-storage` is a `# NOTE`: AWS's mechanism, the Organizations S3 policy type, needs the aws provider v6 |
+| Guardrails' denials (`ciamDenies`) | One `aws_organizations_policy` (service control policy) per guardrail attached to `var.guardrail_target_id` (an OU or account): `region-escape` (AWS's region-control statement: global services exempt; the regions it allows are the cloud's region and those the environment's residency allows, core `estate` domain), `audit-log-disable` (CloudTrail changes on every trail; creation allowed), `service-account-keys` (`iam:CreateAccessKey`), `metadata-v1` (`ec2:RunInstances` without IMDSv2), `root-use` (the root user, bucket policies exempt), `key-deletion` (`kms:ScheduleKeyDeletion`, `DeleteAlias`, `DeleteCustomKeyStore`, `DeleteImportedKeyMaterial`). From AWS's examples (`aws-samples/service-control-policy-examples`) without their privileged-role exemptions. `public-storage` is a `# NOTE`: AWS's mechanism, the Organizations S3 policy type, needs the aws provider v6 |
 
 ### Network plumbing
 

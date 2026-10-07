@@ -213,6 +213,16 @@ ou: recovery
 description: Recovery objectives: how long each protected role may be down, ho
  w much it may lose
 
+dn: ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: regions
+
+dn: ou=residencies,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: residencies
+
 dn: ou=restore-tests,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -516,6 +526,38 @@ ciamPublishedBy: pf-engine
 ciamPublishedBy: pf-admin
 ciamRetentionDays: 400
 
+dn: cn=aws,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamRegionCatalog
+cn: aws
+ciamCloudProvider: aws
+
+dn: cn=aws.regions.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: aws.regions.shared
+ciamChangeRef: cn=CHG-2020,ou=changes,dc=ciam-ops
+ciamImportScope: cn=aws,ou=regions,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: aws/regions
+
+dn: cn=azure,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamRegionCatalog
+cn: azure
+ciamCloudProvider: azure
+
+dn: cn=azure.regions.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: azure.regions.shared
+ciamChangeRef: cn=CHG-2021,ou=changes,dc=ciam-ops
+ciamImportScope: cn=azure,ou=regions,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: azure/regions
+
 dn: cn=break-glass-root,ou=principals,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -746,6 +788,45 @@ ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Snapshot the target's directory data volume daily with Azure Backup
+
+dn: cn=CHG-2020,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2020
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Fetch AWS's region list into the region catalog (prerequisite aws-r
+ egions)
+
+dn: cn=CHG-2021,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2021
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Fetch Azure's region list into the region catalog (prerequisite azu
+ re-regions)
+
+dn: cn=CHG-2022,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2022
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Fetch Google Cloud's region list into the region catalog (prerequis
+ ite gcp-regions)
+
+dn: cn=CHG-2023,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2023
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Hold the estate's environments to the us residency
 
 dn: cn=CHG-2040,ou=changes,dc=ciam-ops
 objectClass: top
@@ -1226,6 +1307,22 @@ cn: fda3b4cba0f0ad02
 ciamOnServer: cn=ds-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamRepoPath: opt/scripts/nightly-export.sh
 ciamSha256: b0deff05a91717b60751d8acf4bfeb90280cc77b83632aedc54aa33710d29bb8
+
+dn: cn=gcp,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamRegionCatalog
+cn: gcp
+ciamCloudProvider: gcp
+
+dn: cn=gcp.regions.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: gcp.regions.shared
+ciamChangeRef: cn=CHG-2022,ou=changes,dc=ciam-ops
+ciamImportScope: cn=gcp,ou=regions,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: gcp/regions
 
 dn: cn=github-actions-ciam-ops-directory-backup,ou=jobs,dc=ciam-ops
 objectClass: top
@@ -2691,6 +2788,22 @@ ciamLdapName: uid
 ciamPiiClass: low
 ciamPurpose: Login identifier (the user's email address)
 
+dn: cn=us,ou=residencies,dc=ciam-ops
+objectClass: top
+objectClass: ciamResidency
+cn: us
+ciamAllowedRegion: cn=us-east-1,cn=aws,ou=regions,dc=ciam-ops
+ciamAllowedRegion: cn=us-east-2,cn=aws,ou=regions,dc=ciam-ops
+ciamAllowedRegion: cn=us-west-2,cn=aws,ou=regions,dc=ciam-ops
+ciamAllowedRegion: cn=eastus2,cn=azure,ou=regions,dc=ciam-ops
+ciamAllowedRegion: cn=centralus,cn=azure,ou=regions,dc=ciam-ops
+ciamAllowedRegion: cn=eastus,cn=azure,ou=regions,dc=ciam-ops
+ciamAllowedRegion: cn=us-central1,cn=gcp,ou=regions,dc=ciam-ops
+ciamAllowedRegion: cn=us-east4,cn=gcp,ou=regions,dc=ciam-ops
+ciamChangeRef: cn=CHG-2023,ou=changes,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+description: Identity data stays in the United States
+
 dn: cn=WI-CIAM-001,ou=runbooks,dc=ciam-ops
 objectClass: top
 objectClass: ciamRunbook
@@ -2784,21 +2897,6 @@ ciamLastValidated: 20260910000000Z
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamTitle: Fail production over to the warm standby
 ciamVersion: 1.0
-
-dn: cn=xDataResidency,ou=custom-schema,dc=ciam-ops
-objectClass: top
-objectClass: ciamFieldDefinition
-cn: xDataResidency
-ciamCarriedBy: ciamEnvironment
-ciamDefinitionNumber: 2
-ciamDocumentation: https://wiki.example-aero.test/security/data-residency
-ciamOverridable: TRUE
-ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
-ciamPortability: binding
-ciamPurpose: Jurisdiction the environment's identity data must stay in
-ciamValueSource: terraform: azurerm_resource_group.location
-ciamValueSource: terraform: aws provider region
-ciamValueType: enum:us|eu|uk|ca
 
 dn: cn=xFeatureFlag,ou=custom-schema,dc=ciam-ops
 objectClass: top
@@ -3276,6 +3374,13 @@ ciamLineNumber: 5
 ciamOccurrenceOf: cn=mro-batch-export,ou=consumers,dc=ciam-ops
 ciamOccurringAttr: ciamBindDn
 
+dn: cn=af-south-1,cn=aws,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: af-south-1
+ciamCloudEnvironment: public
+ciamRegionStatus: opt-in
+
 dn: cn=b24b629b40d0196b,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops
 objectClass: top
 objectClass: ciamConfigSetting
@@ -3332,6 +3437,29 @@ cn: c3d7809625b82975
 ciamLineNumber: 6
 ciamOccurrenceOf: cn=aci-portal-write,ou=acis,dc=ciam-ops
 ciamOccurringAttr: ciamAciTargetDn
+
+dn: cn=ca-central-1,cn=aws,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: ca-central-1
+ciamCloudEnvironment: public
+ciamRegionStatus: available
+
+dn: cn=canadacentral,cn=azure,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: canadacentral
+ciamGeography: Canada
+ciamRegionName: Canada Central
+ciamRegionStatus: available
+
+dn: cn=centralus,cn=azure,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: centralus
+ciamGeography: United States
+ciamRegionName: Central US
+ciamRegionStatus: available
 
 dn: cn=corp-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
 objectClass: top
@@ -3472,6 +3600,50 @@ ciamLineNumber: 6
 ciamOccurrenceOf: cn=aci-idm-write,ou=acis,dc=ciam-ops
 ciamOccurringAttr: ciamAciTargetDn
 
+dn: cn=eastus,cn=azure,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: eastus
+ciamGeography: United States
+ciamRegionName: East US
+ciamRegionStatus: available
+
+dn: cn=eastus2,cn=azure,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: eastus2
+ciamGeography: United States
+ciamRegionName: East US 2
+ciamRegionStatus: available
+
+dn: cn=eu-central-1,cn=aws,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: eu-central-1
+ciamCloudEnvironment: public
+ciamRegionStatus: available
+
+dn: cn=eu-west-1,cn=aws,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: eu-west-1
+ciamCloudEnvironment: public
+ciamRegionStatus: available
+
+dn: cn=europe-west1,cn=gcp,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: europe-west1
+ciamCloudEnvironment: public
+ciamRegionStatus: available
+
+dn: cn=europe-west2,cn=gcp,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: europe-west2
+ciamCloudEnvironment: public
+ciamRegionStatus: available
+
 dn: cn=f5a2dd8fd1c7a4e2,cn=default-atm.json,ou=config-files,dc=ciam-ops
 objectClass: top
 objectClass: ciamConfigSetting
@@ -3594,6 +3766,28 @@ pingidmPosition: 1
 pingidmSource: managed/user
 pingidmTarget: system/ldap/account
 
+dn: cn=me-south-1,cn=aws,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: me-south-1
+ciamCloudEnvironment: public
+ciamRegionStatus: opt-in
+
+dn: cn=northamerica-northeast1,cn=gcp,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: northamerica-northeast1
+ciamCloudEnvironment: public
+ciamRegionStatus: available
+
+dn: cn=northeurope,cn=azure,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: northeurope
+ciamGeography: Europe
+ciamRegionName: North Europe
+ciamRegionStatus: available
+
 dn: cn=oauth-auth-server,ou=settings,ou=pingfederate,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -3702,6 +3896,70 @@ pingfedConfig: {"clients":{"implementation":"org.sourceid.oauth20.domain.Clien
  tManagerJdbcImpl","storage":"JDBC"},"grants":{"implementation":"org.sourceid.
  oauth20.token.AccessGrantManagerJdbcImpl","storage":"JDBC"}}
 
+dn: cn=uksouth,cn=azure,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: uksouth
+ciamGeography: United Kingdom
+ciamRegionName: UK South
+ciamRegionStatus: available
+
+dn: cn=us-central1,cn=gcp,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: us-central1
+ciamCloudEnvironment: public
+ciamRegionStatus: available
+
+dn: cn=us-east-1,cn=aws,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: us-east-1
+ciamCloudEnvironment: public
+ciamRegionStatus: available
+
+dn: cn=us-east-2,cn=aws,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: us-east-2
+ciamCloudEnvironment: public
+ciamRegionStatus: available
+
+dn: cn=us-east1,cn=gcp,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: us-east1
+ciamCloudEnvironment: public
+ciamRegionStatus: available
+
+dn: cn=us-east4,cn=gcp,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: us-east4
+ciamCloudEnvironment: public
+ciamRegionStatus: available
+
+dn: cn=us-west-1,cn=aws,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: us-west-1
+ciamCloudEnvironment: public
+ciamRegionStatus: available
+
+dn: cn=us-west-2,cn=aws,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: us-west-2
+ciamCloudEnvironment: public
+ciamRegionStatus: available
+
+dn: cn=us-west1,cn=gcp,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: us-west1
+ciamCloudEnvironment: public
+ciamRegionStatus: available
+
 dn: cn=user,ou=managed-objects,ou=pingidm,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -3731,6 +3989,22 @@ pingfedCredentialRole: pf-ds-bind-password
 pingfedStoreType: LDAP
 pingfedWithheld: /password
 
+dn: cn=westeurope,cn=azure,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: westeurope
+ciamGeography: Europe
+ciamRegionName: West Europe
+ciamRegionStatus: available
+
+dn: cn=westus2,cn=azure,ou=regions,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudRegion
+cn: westus2
+ciamGeography: United States
+ciamRegionName: West US 2
+ciamRegionStatus: available
+
 dn: env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamEnvironment
@@ -3739,7 +4013,7 @@ env: prod
 ciamDataClassification: confidential
 ciamLifecycle: active
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
-xDataResidency: us
+ciamResidencyRef: cn=us,ou=residencies,dc=ciam-ops
 
 dn: env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
@@ -3751,22 +4025,23 @@ ciamDataClassification: confidential
 ciamJoinsDeploymentOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamLifecycle: building
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamResidencyRef: cn=us,ou=residencies,dc=ciam-ops
 ciamRunbookRef: cn=WI-CIAM-016,ou=runbooks,dc=ciam-ops
 ciamStandbyMode: warm
 ciamStandbyOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 description: Warm standby of production: directory replicas join its deploymen
  t over a VPN
-xDataResidency: us
 
 dn: env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamEnvironment
+objectClass: ciamEnvironmentPlacement
 env: prod
 ciamJoinsDeploymentOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamLifecycle: building
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPlannedCutover: 20270115000000Z
-xDataResidency: us
+ciamResidencyRef: cn=us,ou=residencies,dc=ciam-ops
 
 dn: env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -3788,9 +4063,9 @@ ciamDropsRole: backup-vault
 ciamLifecycle: active
 ciamOverlayOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamResidencyRef: cn=us,ou=residencies,dc=ciam-ops
 description: Stage: an overlay of production (shared network, own servers and 
  secrets)
-xDataResidency: us
 
 dn: ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
 objectClass: top

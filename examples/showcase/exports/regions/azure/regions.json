@@ -1,0 +1,186 @@
+[
+  {
+    "displayName": "East US",
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/locations/eastus",
+    "metadata": {
+      "regionType": "Physical",
+      "regionCategory": "Recommended",
+      "geography": "United States",
+      "geographyGroup": "US",
+      "physicalLocation": "Virginia",
+      "pairedRegion": [
+        {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/locations/westus",
+          "name": "westus"
+        }
+      ]
+    },
+    "name": "eastus",
+    "regionalDisplayName": "(US) East US",
+    "type": "Region"
+  },
+  {
+    "displayName": "East US 2",
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/locations/eastus2",
+    "metadata": {
+      "regionType": "Physical",
+      "regionCategory": "Recommended",
+      "geography": "United States",
+      "geographyGroup": "US",
+      "physicalLocation": "Virginia",
+      "pairedRegion": [
+        {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/locations/centralus",
+          "name": "centralus"
+        }
+      ]
+    },
+    "name": "eastus2",
+    "regionalDisplayName": "(US) East US 2",
+    "type": "Region"
+  },
+  {
+    "displayName": "Central US",
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/locations/centralus",
+    "metadata": {
+      "regionType": "Physical",
+      "regionCategory": "Recommended",
+      "geography": "United States",
+      "geographyGroup": "US",
+      "physicalLocation": "Iowa",
+      "pairedRegion": [
+        {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/locations/eastus2",
+          "name": "eastus2"
+        }
+      ]
+    },
+    "name": "centralus",
+    "regionalDisplayName": "(US) Central US",
+    "type": "Region"
+  },
+  {
+    "displayName": "West US 2",
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/locations/westus2",
+    "metadata": {
+      "regionType": "Physical",
+      "regionCategory": "Recommended",
+      "geography": "United States",
+      "geographyGroup": "US",
+      "physicalLocation": "Washington",
+      "pairedRegion": [
+        {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/locations/westcentralus",
+          "name": "westcentralus"
+        }
+      ]
+    },
+    "name": "westus2",
+    "regionalDisplayName": "(US) West US 2",
+    "type": "Region"
+  },
+  {
+    "displayName": "Canada Central",
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/locations/canadacentral",
+    "metadata": {
+      "regionType": "Physical",
+      "regionCategory": "Recommended",
+      "geography": "Canada",
+      "geographyGroup": "Canada",
+      "physicalLocation": "Toronto",
+      "pairedRegion": [
+        {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/locations/canadaeast",
+          "name": "canadaeast"
+        }
+      ]
+    },
+    "name": "canadacentral",
+    "regionalDisplayName": "(Canada) Canada Central",
+    "type": "Region"
+  },
+  {
+    "displayName": "West Europe",
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/locations/westeurope",
+    "metadata": {
+      "regionType": "Physical",
+      "regionCategory": "Recommended",
+      "geography": "Europe",
+      "geographyGroup": "Europe",
+      "physicalLocation": "Netherlands",
+      "pairedRegion": [
+        {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/locations/northeurope",
+          "name": "northeurope"
+        }
+      ]
+    },
+    "name": "westeurope",
+    "regionalDisplayName": "(Europe) West Europe",
+    "type": "Region"
+  },
+  {
+    "displayName": "North Europe",
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/locations/northeurope",
+    "metadata": {
+      "regionType": "Physical",
+      "regionCategory": "Recommended",
+      "geography": "Europe",
+      "geographyGroup": "Europe",
+      "physicalLocation": "Ireland",
+      "pairedRegion": [
+        {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/locations/westeurope",
+          "name": "westeurope"
+        }
+      ]
+    },
+    "name": "northeurope",
+    "regionalDisplayName": "(Europe) North Europe",
+    "type": "Region"
+  },
+  {
+    "displayName": "UK South",
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/locations/uksouth",
+    "metadata": {
+      "regionType": "Physical",
+      "regionCategory": "Recommended",
+      "geography": "United Kingdom",
+      "geographyGroup": "UK",
+      "physicalLocation": "London",
+      "pairedRegion": [
+        {
+          "id": "/subscriptions/00000000-0000-0000-0000-000000000000/locations/ukwest",
+          "name": "ukwest"
+        }
+      ]
+    },
+    "name": "uksouth",
+    "regionalDisplayName": "(UK) UK South",
+    "type": "Region"
+  },
+  {
+    "displayName": "United States",
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/locations/unitedstates",
+    "metadata": {
+      "regionType": "Logical",
+      "regionCategory": "Other",
+      "geographyGroup": "US"
+    },
+    "name": "unitedstates",
+    "regionalDisplayName": "United States",
+    "type": "Region"
+  },
+  {
+    "displayName": "Europe",
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/locations/europe",
+    "metadata": {
+      "regionType": "Logical",
+      "regionCategory": "Other",
+      "geographyGroup": "Europe"
+    },
+    "name": "europe",
+    "regionalDisplayName": "Europe",
+    "type": "Region"
+  }
+]

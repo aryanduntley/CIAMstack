@@ -1,0 +1,5 @@
+azure: the provider lists 8 region(s)
+azure: 8 new region(s): eastus, eastus2, centralus, westus2, canadacentral and 3 more
+azure: 2 logical location(s) left out (geographies, not regions): unitedstates, europe
+CHG-2021: 10 change(s) applied, the import run among them
+exit 0

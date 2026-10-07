@@ -157,6 +157,14 @@ od modify --change CHG-2016 changes/CHG-2016-grant-database-protection.ldif
 od modify --change CHG-2017 changes/CHG-2017-target-backup-container.ldif
 od modify --change CHG-2018 changes/CHG-2018-target-directory-volume-size.ldif
 od modify --change CHG-2019 changes/CHG-2019-target-disk-backup.ldif
+echo "-- the providers' region lists (prerequisites: here the saved CLI output; --run runs the CLI under your login)"
+od import --change CHG-2020 --at 20260923090000Z aws/regions exports/regions/aws
+od import --change CHG-2021 --at 20260923090000Z azure/regions exports/regions/azure
+od import --change CHG-2022 --at 20260923090000Z gcp/regions exports/regions/gcp
+od prerequisites
+echo "-- the estate's residency: where each environment's data may be held"
+od modify --change CHG-2023 changes/CHG-2023-us-residency.ldif
+od report regions; od report residency
 od history
 od render target/prod >/dev/null
 diff -ru out/before/terraform out/target-prod/terraform

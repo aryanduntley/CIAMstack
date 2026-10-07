@@ -3,7 +3,10 @@
   opsdir init                          DROP the opsdir schema and create it from nothing (all migrations)
   opsdir upgrade                       upgrade the schema in place (pending migrations), keeping data and history
   opsdir load FILE...                  load LDIF content under change BOOTSTRAP
-  opsdir check [ENV...]                each environment's declared stack against the installed adapters
+  opsdir check [ENV...]                each environment's declared stack against the installed adapters (and the
+                                       provider prerequisites still pending)
+  opsdir prerequisites                 data the installed adapters need fetched from their providers (a provider's
+                                       region catalog): met, pending or not needed yet, and how to fetch each
   opsdir search [-b base] [-s scope] FILTER [attr...]
   opsdir report NAME [DN]              portability, unowned, blast-radius DN, and every domain's reports (expiring, keys ENV, …)
   opsdir render ENV [-o dir]           e.g. prod environment of a cloud: CLOUD/ENV (default out/ here)
@@ -27,12 +30,14 @@
                                        record code, scripts, templates or a package (a file or a directory under the
                                        repo checkout R) by repo path and SHA-256; its content is not stored
   opsdir verify [--root R]             bundles and captured files against a repo checkout (exit 1 if anything differs)
-  opsdir import [--change CHG-…] ADAPTER[/IMPORTER] PATH [--dry-run] [--at YYYYMMDDhhmmssZ] [--take K|all]
+  opsdir import [--change CHG-…] ADAPTER[/IMPORTER] PATH|--run [--dry-run] [--at YYYYMMDDhhmmssZ] [--take K|all]
                 [--keep K|all]         read a product's export (a directory or a file) into the record with an
                                        adapter's importer; without --change (or with --dry-run) only lists the changes
                                        and conflicts (values the record holds that the import would replace or
                                        remove): each is decided, the live value taken or the record's kept; an
-                                       applied import records when each scope it read was last imported
+                                       applied import records when each scope it read was last imported; --run: run
+                                       the importer's provider command(s) for the export instead of reading PATH,
+                                       under your own login to the provider (opsdir never sees the credentials)
   opsdir data-profile --env CLOUD/ENV [LDIF] [--term NAME=ATTRIBUTE[=VALUE]]... [--at YYYYMMDDhhmmssZ] [-o FILE]
                                        the shape of a directory's user data, values-free: reads LDIF (ldapsearch
                                        output or an export; default standard input) once and writes counts only, for
@@ -55,11 +60,13 @@ import gzip
 import os
 import pathlib
 import re
+import subprocess
 import sys
 from types import MappingProxyType
 
 from . import operations as ops
-from .connectors import fixes as fixmod, migration, workspace
+from .connectors import fixes as fixmod, importing, migration, workspace
+from .connectors.prerequisites import command_line
 from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS
 from .connectors.stack import STATUS_HEADERS
 from .core.changeset import describe
@@ -77,6 +84,7 @@ SUBCOMMANDS = (
     ("upgrade", ()),
     ("load", ((("files",), {"nargs": "+"}),)),
     ("check", ((("envs",), {"nargs": "*"}),)),
+    ("prerequisites", ()),
     ("search", ((("-b", "--base"), {"default": SUFFIX}),
                 (("-s", "--scope"), {"default": "sub", "choices": ["base", "one", "sub"]}),
                 (("filter",), {}), (("attrs",), {"nargs": "*"}))),
@@ -104,7 +112,10 @@ SUBCOMMANDS = (
                 (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}),
                 (("--replace",), {"action": "store_true",
                                   "help": "the scan is the whole census: recorded files not in it are removed"}))),
-    ("import", ((("--change",), {}), (("importer",), {"help": "adapter[/importer]"}), (("path",), {}),
+    ("import", ((("--change",), {}), (("importer",), {"help": "adapter[/importer]"}),
+                (("path",), {"nargs": "?", "help": "the export (a directory or a file); not with --run"}),
+                (("--run",), {"action": "store_true",
+                              "help": "run the importer's provider command(s) for the export, under your own login"}),
                 (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}),
                 (("--at",), {"help": "when the export was taken, YYYYMMDDhhmmssZ (UTC; default: now)"}),
                 (("--take",), {"action": "append", "default": [], "metavar": "KEY",
@@ -191,14 +202,18 @@ def capture_name(path):
 # ------------------------------------------------------------------ commands: parse, call an operation, present
 def _cmd_init(conn, a, as_of):
     r = ops.init(conn)
-    return f"initialized: {r.attribute_types} attribute types, {r.object_classes} object classes"
+    later = [row[0] for row in ops.prerequisites(conn).rows]
+    return "\n".join((f"initialized: {r.attribute_types} attribute types, {r.object_classes} object classes",
+                      *((f"provider prerequisites to fetch once an environment uses their adapter: {', '.join(later)} "
+                         "(`opsdir prerequisites`)",) if later else ())))
 
 
 def _cmd_upgrade(conn, a, as_of):
     r = ops.upgrade(conn)
     return "\n".join((*(f"applied migration {label}" for label in r.applied),
                       f"schema at migration {r.version:04d}{'' if r.applied else ' (up to date)'}: "
-                      f"{r.attribute_types} attribute types, {r.object_classes} object classes"))
+                      f"{r.attribute_types} attribute types, {r.object_classes} object classes",
+                      *pending_text(ops.pending_prerequisites(conn).rows)))
 
 
 def _cmd_load(conn, a, as_of):
@@ -206,8 +221,21 @@ def _cmd_load(conn, a, as_of):
     return f"loaded {r.entries} entries from {len(a.files)} files; {r.references} DN references verified"
 
 
+def pending_text(rows):
+    """Lines naming the provider prerequisites still pending and how to fetch each (none when nothing is)."""
+    return tuple(f"prerequisite pending: {name} ({adapter}): `{fetch}`, or run `{command}` and import its output"
+                 for name, adapter, _, fetch, command in rows)
+
+
 def _cmd_check(conn, a, as_of):
-    return stack_text(ops.check(conn, a.envs))
+    text, status = stack_text(ops.check(conn, a.envs))
+    pending = pending_text(ops.pending_prerequisites(conn).rows)
+    return "\n".join((text, *pending)), status
+
+
+def _cmd_prerequisites(conn, a, as_of):
+    r = ops.prerequisites(conn)
+    return format_table(r.rows, r.headers)
 
 
 def _cmd_search(conn, a, as_of):
@@ -408,8 +436,32 @@ def _conflict_lines(conflicts):
     return tuple(f"conflict {c.key}: record {shown(c.held)} -> live {shown(c.live)}" for c in conflicts)
 
 
+def run_export(spec):
+    """Effect: an importer's export produced by running its provider commands (Importer.commands) under the operator's
+    own login to the provider, {relative path: standard output}. Refused when the importer has no command, the
+    provider's tool isn't installed or a command fails (its error output named)."""
+    _, importer = importing.importer_named(spec, ADAPTERS)
+    if not importer.commands:
+        raise SystemExit(f"{spec} has no provider command: give the export's path instead of --run")
+    return {path: _run(path, argv) for path, argv in importer.commands}
+
+
+def _run(path, argv):
+    try:
+        done = subprocess.run(argv, capture_output=True, text=True, check=False)
+    except FileNotFoundError:
+        raise SystemExit(f"{argv[0]} is not installed here: install it and sign in to the provider, or run "
+                         f"`{command_line(path, argv)}` where you can and import that file") from None
+    if done.returncode:
+        raise SystemExit(f"`{command_line(path, argv)}` failed (exit {done.returncode}): "
+                         f"{done.stderr.strip()[-600:] or 'no error output'}")
+    return done.stdout
+
+
 def _cmd_import(conn, a, as_of):
-    files, skipped = read_texts(a.path)
+    if a.run == bool(a.path):
+        raise SystemExit("give the export's PATH or --run (not both)")
+    files, skipped = (run_export(a.importer), ()) if a.run else read_texts(a.path)
     plan = ops.preview_import(conn, a.importer, files, import_time(a.at))
     notes = (*(f"skipped (not UTF-8 text): {rel}" for rel in skipped), *plan.notices, *_conflict_lines(plan.conflicts))
     if a.dry_run or not a.change:
@@ -514,6 +566,7 @@ COMMANDS = MappingProxyType({"init": _cmd_init, "upgrade": _cmd_upgrade, "load":
                              "search": _cmd_search, "report": _cmd_report, "render": _cmd_render, "plan": _cmd_plan,
                              "migrate": _cmd_migrate, "fix": _cmd_fix, "modify": _cmd_modify, "export": _cmd_export,
                              "history": _cmd_history, "capture": _cmd_capture, "import": _cmd_import, "file": _cmd_file,
+                             "prerequisites": _cmd_prerequisites,
                              "bundle": _cmd_bundle, "verify": _cmd_verify, "census": _cmd_census, "setting": _cmd_setting,
                              "data-profile": _cmd_data_profile, "workspace": _cmd_workspace})
 NO_DATABASE = frozenset({"data-profile"})          # commands that run where only the source is reachable

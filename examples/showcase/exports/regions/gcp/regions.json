@@ -1,0 +1,86 @@
+[
+  {
+    "kind": "compute#region",
+    "name": "us-central1",
+    "description": "us-central1",
+    "status": "UP",
+    "zones": [
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-a",
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-b",
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-central1-c"
+    ],
+    "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/regions/us-central1"
+  },
+  {
+    "kind": "compute#region",
+    "name": "us-east1",
+    "description": "us-east1",
+    "status": "UP",
+    "zones": [
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-east1-a",
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-east1-b",
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-east1-c"
+    ],
+    "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/regions/us-east1"
+  },
+  {
+    "kind": "compute#region",
+    "name": "us-east4",
+    "description": "us-east4",
+    "status": "UP",
+    "zones": [
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-east4-a",
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-east4-b",
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-east4-c"
+    ],
+    "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/regions/us-east4"
+  },
+  {
+    "kind": "compute#region",
+    "name": "us-west1",
+    "description": "us-west1",
+    "status": "UP",
+    "zones": [
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-west1-a",
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-west1-b",
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/us-west1-c"
+    ],
+    "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/regions/us-west1"
+  },
+  {
+    "kind": "compute#region",
+    "name": "northamerica-northeast1",
+    "description": "northamerica-northeast1",
+    "status": "UP",
+    "zones": [
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/northamerica-northeast1-a",
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/northamerica-northeast1-b",
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/northamerica-northeast1-c"
+    ],
+    "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/regions/northamerica-northeast1"
+  },
+  {
+    "kind": "compute#region",
+    "name": "europe-west1",
+    "description": "europe-west1",
+    "status": "UP",
+    "zones": [
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/europe-west1-a",
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/europe-west1-b",
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/europe-west1-c"
+    ],
+    "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/regions/europe-west1"
+  },
+  {
+    "kind": "compute#region",
+    "name": "europe-west2",
+    "description": "europe-west2",
+    "status": "UP",
+    "zones": [
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/europe-west2-a",
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/europe-west2-b",
+      "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/zones/europe-west2-c"
+    ],
+    "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/regions/europe-west2"
+  }
+]

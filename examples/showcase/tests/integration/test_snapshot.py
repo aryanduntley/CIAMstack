@@ -36,8 +36,8 @@ def test_guardrail_rejects_the_write(snapshot, name, reason):
 
 @pytest.mark.parametrize("change", [cid for cid, _ in APPROVED])
 def test_approved_change_applies_and_is_in_history(snapshot, change):
-    text = snapshot[f"cmd/08-apply-{change.lower()}.txt"]
-    assert text.startswith(f"{change}: ") and text.endswith("exit 0\n"), text
+    text = snapshot[f"cmd/08-apply-{change.lower()}.txt"]             # an import's notices come first
+    assert text.splitlines()[-2].startswith(f"{change}: ") and text.endswith("exit 0\n"), text
     assert change in snapshot["cmd/09-history.txt"]
 
 

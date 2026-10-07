@@ -1,9 +1,22 @@
-"""The Azure subscription an environment runs in and how every resource rendered for it is tagged: the subscription
-the record names (ciamAccountRef) as the default of each root's subscription_id input, and the estate's tag policy
-merged into each resource's own tags (azurerm has no provider-wide default tags). Pure."""
+"""The Azure subscription an environment runs in and how every resource rendered for it is tagged: the azurerm provider
+block of each root (the subscription its input names, Azure Government when the cloud is in it, a note when the cloud
+says its clients use FIPS endpoints: azurerm has no switch for them), the subscription the record names
+(ciamAccountRef) as the default of each root's subscription_id input, and the estate's tag policy merged into each
+resource's own tags (azurerm has no provider-wide default tags). Pure."""
 from opsdir.core.directory import one, rdn_value
+from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.estate.tags import required_tags
-from opsdir_format_terraform.hcl import block, ref
+from opsdir_format_terraform.hcl import Block, block, ref
+
+FIPS_NOTE = ("FIPS endpoints: Azure has no separate FIPS endpoints for the provider to use; FIPS 140 is met by the "
+             "services' own validated modules, or by Azure Government (ciamCloudEnvironment usgovernment)")
+
+
+def provider_block(m):
+    """The azurerm provider block of a root of environment m."""
+    gov = (("environment", "usgovernment"),) if one(m.cloud, "ciamCloudEnvironment") == "usgovernment" else ()
+    return block("provider", ["azurerm"], [*((("#", FIPS_NOTE),) if fips_endpoints(m) else ()), ("features", Block(())),
+                                            ("subscription_id", ref("var.subscription_id")), *gov])
 
 
 def subscription_id(m):

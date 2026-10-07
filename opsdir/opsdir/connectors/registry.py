@@ -56,10 +56,15 @@ def ordered_domains(domains):
 
 
 def ordered_adapters(adapters):
-    """Adapters by kind (providers, products, secret stores), then name."""
+    """Adapters by kind (providers, products, secret stores), then name. Refused: an adapter of a kind not known, or
+    one declaring a prerequisite fetched with an importer it doesn't have."""
     unknown = [a.name for a in adapters if a.kind not in KIND_ORDER]
     if unknown:
         raise SystemExit(f"adapters of unknown kind: {', '.join(unknown)} (kinds: {', '.join(KIND_ORDER)})")
+    unfetched = [f"{a.name} ({p.name}: {p.importer})" for a in adapters for p in a.prerequisites
+                 if p.importer not in {i.name for i in a.importers}]
+    if unfetched:
+        raise SystemExit(f"prerequisites naming an importer their adapter doesn't have: {', '.join(unfetched)}")
     return tuple(sorted(adapters, key=lambda a: (KIND_ORDER.index(a.kind), a.name)))
 
 

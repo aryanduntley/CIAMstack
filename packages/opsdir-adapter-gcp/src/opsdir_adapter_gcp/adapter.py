@@ -6,6 +6,7 @@ from .cli import CLI_INVENTORY
 from .inventory import TERRAFORM_STATE
 from .secrets import SECRET_PATTERNS, secret_manager_command
 from .names import PRIORITIES
+from .regions import PREREQUISITE, REGIONS
 from .terraform import render
 
 PROVIDER = "gcp"
@@ -23,5 +24,5 @@ ADAPTER = Adapter(name="gcp", kind="provider", applies=applies, required_roles=(
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamCloudEnvironment": ("public",)}, schema=None,
                   formats=(("terraform/*.tf", "hcl"), ("access/*.sh", "shell")),
                   products=(),
-                  secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY), profile_terms=None,
-                  access=ACCESS)
+                  secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY, REGIONS),
+                  profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE,))

@@ -27,4 +27,7 @@ source/stage  identity-management  pingidm       ok (installed 0.1.0)
 source/stage  provider             aws           ok (installed 0.1.0)
 (25 rows)
 0 problem(s)
+prerequisite pending: aws-regions (aws): `opsdir import aws/regions --run`, or run `aws ec2 describe-regions --all-regions --output json > regions.json` and import its output
+prerequisite pending: azure-regions (azure): `opsdir import azure/regions --run`, or run `az account list-locations -o json > regions.json` and import its output
+prerequisite pending: gcp-regions (gcp): `opsdir import gcp/regions --run`, or run `gcloud compute regions list --format=json > regions.json` and import its output
 exit 0

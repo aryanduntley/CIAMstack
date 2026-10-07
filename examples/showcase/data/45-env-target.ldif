@@ -20,7 +20,6 @@ ciamJoinsDeploymentOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamLifecycle: building
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPlannedCutover: 20270115000000Z
-xDataResidency: us
 
 dn: ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top

@@ -22,7 +22,6 @@ ciamOverlayOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 description: Stage: an overlay of production (shared network, own servers and 
  secrets)
-xDataResidency: us
 
 dn: ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top

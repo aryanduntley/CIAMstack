@@ -5,7 +5,6 @@ allowlists that hold our addresses (80-external-allowlists)."""
 from types import MappingProxyType
 
 from .common import AWS, AZ, CON, DECL, ENVS, GCP, INTS, XA, cert, chg, owner, spec, t
-from .custom import RESIDENCY
 from .databases import DATABASES
 from .storage import BACKUP
 from .volumes import VOLUMES
@@ -367,8 +366,7 @@ def environments():
                  ciamCloudProvider="aws", ciamRegion="us-east-1", ciamCloudEnvironment="public", ciamLifecycle="active",
                  description="Primary hosting environment (AWS)"),
             spec(aws, AWS, ["top", "ciamEnvironment", "ciamEnvironmentPlacement"], env="prod", ciamLifecycle="active",
-                 ciamDataClassification=CLASSIFICATION["source"], ciamOwner=owner("ciam-platform"),
-                 xDataResidency=RESIDENCY["source"]),
+                 ciamDataClassification=CLASSIFICATION["source"], ciamOwner=owner("ciam-platform")),
             *environment(aws, AWS, SOURCE), *required_roles(aws, AWS),
             *stage(),
             spec(az, f"cloud=target,{ENVS}", ["top", "ciamCloud", "ciamCloudAccount"], cloud="target",
@@ -377,8 +375,7 @@ def environments():
                  ciamLifecycle="building",
                  description="Second hosting environment (Azure)"),
             spec(az, AZ, ["top", "ciamEnvironment"], env="prod", ciamLifecycle="building",
-                 ciamPlannedCutover=t("2027-01-15"), ciamJoinsDeploymentOf=AWS, ciamOwner=owner("ciam-platform"),
-                 xDataResidency=RESIDENCY["target"]),
+                 ciamPlannedCutover=t("2027-01-15"), ciamJoinsDeploymentOf=AWS, ciamOwner=owner("ciam-platform")),
             *environment(az, AZ, TARGET), *required_roles(az, AZ),
             spec(gcp, f"cloud=standby,{ENVS}", ["top", "ciamCloud", "ciamCloudAccount"], cloud="standby",
                  ciamAccountRef=ACCOUNTS["standby"],
@@ -387,7 +384,6 @@ def environments():
             spec(gcp, GCP, ["top", "ciamEnvironment", "ciamStandby", "ciamEnvironmentPlacement"], env="prod",
                  ciamLifecycle="building", ciamDataClassification=CLASSIFICATION["standby"],
                  ciamJoinsDeploymentOf=AWS, **STANDBY_INTENT, ciamOwner=owner("ciam-platform"),
-                 xDataResidency=RESIDENCY["standby"],
                  description="Warm standby of production: directory replicas join its deployment over a VPN"),
             *environment(gcp, GCP, STANDBY))
 
@@ -432,7 +428,7 @@ def stage():
     file, B = "42-env-source-stage", f"ou=bindings,{STAGE}"
     return (spec(file, STAGE, ["top", "ciamEnvironment", "ciamEnvironmentPlacement"], env="stage",
                  ciamLifecycle="active", ciamDataClassification=CLASSIFICATION["stage"], ciamOverlayOf=AWS,
-                 ciamDropsRole=STAGE_DROPS, ciamOwner=owner("ciam-platform"), xDataResidency=RESIDENCY["source"],
+                 ciamDropsRole=STAGE_DROPS, ciamOwner=owner("ciam-platform"),
                  description="Stage: an overlay of production (shared network, own servers and secrets)"),
             spec(file, B, ["top", "organizationalUnit"], ou="bindings"),
             *(spec(file, f"cn={cn},{B}", ["top", "ciamServiceName"], cn=cn, ciamBindingRole=role, ciamFqdn=fqdn,

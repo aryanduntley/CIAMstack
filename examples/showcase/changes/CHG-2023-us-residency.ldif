@@ -1,0 +1,54 @@
+# CHG-2023 (approved): the estate defines its data residency as records, not a custom field (xDataResidency is
+# retired): the residency `us` allows the regions of the region catalog in the United States on each cloud (the
+# catalog AWS, Azure and Google Cloud listed: CHG-2020..2022), and every environment is held to it. The planner then
+# checks each environment's region against it (the target's eastus2 and the standby's us-central1 are allowed) and the
+# cloud renderers' region guardrails allow these regions.
+dn: ou=residencies,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: organizationalUnit
+ou: residencies
+
+dn: cn=us,ou=residencies,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamResidency
+cn: us
+description: Identity data stays in the United States
+ciamAllowedRegion: cn=us-east-1,cn=aws,ou=regions,dc=ciam-ops
+ciamAllowedRegion: cn=us-east-2,cn=aws,ou=regions,dc=ciam-ops
+ciamAllowedRegion: cn=us-west-2,cn=aws,ou=regions,dc=ciam-ops
+ciamAllowedRegion: cn=eastus2,cn=azure,ou=regions,dc=ciam-ops
+ciamAllowedRegion: cn=centralus,cn=azure,ou=regions,dc=ciam-ops
+ciamAllowedRegion: cn=eastus,cn=azure,ou=regions,dc=ciam-ops
+ciamAllowedRegion: cn=us-central1,cn=gcp,ou=regions,dc=ciam-ops
+ciamAllowedRegion: cn=us-east4,cn=gcp,ou=regions,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamChangeRef: cn=CHG-2023,ou=changes,dc=ciam-ops
+
+dn: env=prod,cloud=source,ou=environments,dc=ciam-ops
+changetype: modify
+replace: ciamResidencyRef
+ciamResidencyRef: cn=us,ou=residencies,dc=ciam-ops
+-
+
+dn: env=stage,cloud=source,ou=environments,dc=ciam-ops
+changetype: modify
+replace: ciamResidencyRef
+ciamResidencyRef: cn=us,ou=residencies,dc=ciam-ops
+-
+
+dn: env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: modify
+add: objectClass
+objectClass: ciamEnvironmentPlacement
+-
+replace: ciamResidencyRef
+ciamResidencyRef: cn=us,ou=residencies,dc=ciam-ops
+-
+
+dn: env=prod,cloud=standby,ou=environments,dc=ciam-ops
+changetype: modify
+replace: ciamResidencyRef
+ciamResidencyRef: cn=us,ou=residencies,dc=ciam-ops
+-

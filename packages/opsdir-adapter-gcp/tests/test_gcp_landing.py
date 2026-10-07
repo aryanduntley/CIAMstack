@@ -2,7 +2,7 @@
 only the deployers' subjects, a deployer's service account its pipeline may act as with its IAM members, an operator
 group's IAM members; nothing when the environment needs nothing from one."""
 from opsdir.core.environment import env_model
-from opsdir.core.interchange.ldif import parse
+from opsdir.core.interchange.ldif import LdifRecord, parse
 from opsdir_adapter_gcp.landing import render_landing
 from support import REGISTRY, build_directory
 
@@ -64,3 +64,20 @@ def test_guardrails_as_organization_policies_each_constraint_once():
     assert out.count('resource "google_org_policy_policy" "iam_disableserviceaccountkeycreation"') == 1
     assert "cloudkms.disableBeforeDestroy" in out
     assert "# NOTE: guardrail baseline: metadata-v1: the metadata server already requires" in out
+
+
+def test_the_resource_locations_are_the_regions_the_environment_s_residency_allows():
+    catalog = "cn=gcp,ou=regions,dc=ciam-ops"
+    tree = ("dn: ou=regions,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: regions\n",
+            _entry(catalog, "ciamRegionCatalog", cn="gcp", ciamCloudProvider="gcp"),
+            *(_entry(f"cn={r},{catalog}", "ciamCloudRegion", cn=r) for r in ("us-central1", "us-east4")),
+            "dn: ou=residencies,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: residencies\n",
+            _entry("cn=us,ou=residencies,dc=ciam-ops", "ciamResidency", cn="us",
+                   ciamAllowedRegion=tuple(f"cn={r},{catalog}" for r in ("us-east4", "us-central1"))),
+            _entry(f"cn=baseline,ou=bindings,{ENV}", "ciamGuardrail", cn="baseline", ciamBindingRole="baseline",
+                   ciamGuardrailKind="org-constraint", ciamDenies="region-escape"))
+    held = LdifRecord(ENV, "modify", {}, (("add", "objectClass", ("ciamEnvironmentPlacement",)),
+                                          ("replace", "ciamResidencyRef", ("cn=us,ou=residencies,dc=ciam-ops",))))
+    d = build_directory(REGISTRY, tuple(parse(RECORDS + "\n" + "\n".join(tree))), (held,))
+    out = render_landing(env_model(d, "gcp/prod"))["terraform/landing-zone/main.tf"]
+    assert 'allowed_values = ["in:us-central1-locations", "in:us-east4-locations"]' in out

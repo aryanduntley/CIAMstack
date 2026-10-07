@@ -1,9 +1,11 @@
 """The Google Cloud project an environment runs in and how every resource rendered for it is labelled: the project the
-record names (ciamAccountRef) as the default of each root's project_id input, and the estate's tag policy as the
-provider's default labels, in label form (lowercase letters, digits, - and _). Pure."""
+record names (ciamAccountRef) as the default of each root's project_id input, the estate's tag policy as the
+provider's default labels, in label form (lowercase letters, digits, - and _), and a note when the cloud says its
+clients use FIPS endpoints (the google provider has no switch for them). Pure."""
 import re
 
 from opsdir.core.directory import one, rdn_value
+from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.estate.tags import required_tags
 from opsdir_format_terraform.hcl import block, ref
 from .names import label
@@ -32,7 +34,13 @@ def default_labels(m):
     return {label_key(k): label(v) for k, v in required_tags(m).items()}
 
 
+FIPS_NOTE = ("FIPS endpoints: the google provider has no FIPS endpoint switch; FIPS 140 is met by Google Cloud's own "
+             "validated modules, or enforced for a folder with Assured Workloads")
+
+
 def provider_block(m, *body):
-    """The google provider block of environment m: the given settings, then the policy's default labels."""
+    """The google provider block of environment m: a FIPS note when its cloud uses FIPS endpoints, the given settings,
+    then the policy's default labels."""
     labels = default_labels(m)
-    return block("provider", ["google"], [*body, *((("default_labels", labels),) if labels else ())])
+    return block("provider", ["google"], [*((("#", FIPS_NOTE),) if fips_endpoints(m) else ()), *body,
+                                          *((("default_labels", labels),) if labels else ())])

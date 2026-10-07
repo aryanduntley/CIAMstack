@@ -27,7 +27,6 @@ ciamStandbyMode: warm
 ciamStandbyOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 description: Warm standby of production: directory replicas join its deploymen
  t over a VPN
-xDataResidency: us
 
 dn: ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top

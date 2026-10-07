@@ -5,11 +5,14 @@ Statements follow AWS's examples (github.com/aws-samples/service-control-policy-
 457), without their privileged-role exemptions: add one where the organization keeps such a role. Adapted: the
 CloudTrail statement covers every trail (the example names one) and leaves trail creation allowed. IMDSv2 follows the
 EC2 User Guide's example. Not rendered: public-storage (AWS's mechanism, the Organizations S3 policy type, needs the
-aws provider v6), and any denial AWS has no statement for; each is a NOTE.
+aws provider v6), and any denial AWS has no statement for; each is a NOTE. region-escape allows the regions the
+environment may hold resources in (estate.residency.permitted_regions: its cloud's region and those its residency
+allows).
 """
-from opsdir.core.directory import one, rdn_value, values
+from opsdir.core.directory import rdn_value, values
 from opsdir.core.environment import of_class
 from opsdir.domains.access.naming import DENIALS
+from opsdir.domains.estate.residency import permitted_regions
 from opsdir_format_terraform.hcl import block, jsonencoded, ref, tf_name
 
 
@@ -25,12 +28,13 @@ NOT_RENDERED = {"public-storage": ("AWS's mechanism is the Organizations S3 poli
                                    "aws provider v6; set it on the organization")}
 
 
-def _statements(denial, region):
-    """The SCP statements preventing a neutral denial, or () when AWS has none."""
+def _statements(denial, regions):
+    """The SCP statements preventing a neutral denial (regions: those region-escape allows), or () when AWS has
+    none."""
     deny = {"Effect": "Deny", "Resource": "*"}
     return {
         "region-escape": ({**deny, "Sid": "DenyOutsideRegion", "NotAction": list(GLOBAL_SERVICES),
-                           "Condition": {"StringNotEquals": {"aws:RequestedRegion": [region]}}},),
+                           "Condition": {"StringNotEquals": {"aws:RequestedRegion": list(regions)}}},),
         "audit-log-disable": ({**deny, "Sid": "DenyCloudTrailChanges",
                                "Action": ["cloudtrail:DeleteTrail", "cloudtrail:PutEventSelectors",
                                           "cloudtrail:StopLogging", "cloudtrail:UpdateTrail"]},),
@@ -49,18 +53,18 @@ def _statements(denial, region):
 
 def denials_of(statements):
     """What a control policy's statements prevent, by the statement ids the renderer gives (read back on import)."""
-    sids = {s["Sid"]: d for d in DENIALS for s in _statements(d, "")}
+    sids = {s["Sid"]: d for d in DENIALS for s in _statements(d, ())}
     return tuple(dict.fromkeys(sids[s.get("Sid")] for s in statements if s.get("Sid") in sids))
 
 
 def render_guardrails(m):
     """HCL for environment m's guardrails: per guardrail an SCP and its attachment; a NOTE for what isn't rendered."""
     def one_guardrail(g):
-        n, region = tf_name(rdn_value(g)), one(m.cloud, "ciamRegion")
+        n, regions = tf_name(rdn_value(g)), permitted_regions(m)
         denials = values(g, "ciamDenies")
-        found = [s for d in denials for s in _statements(d, region)]
+        found = [s for d in denials for s in _statements(d, regions)]
         skipped = [f"# NOTE: guardrail {rdn_value(g)}: {d}: {NOT_RENDERED.get(d, 'AWS has no statement for it')}"
-                   for d in denials if not _statements(d, region)]
+                   for d in denials if not _statements(d, regions)]
         return (*skipped, *((
             block("resource", ["aws_organizations_policy", n], [
                 ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(g)}"), ("type", "SERVICE_CONTROL_POLICY"),

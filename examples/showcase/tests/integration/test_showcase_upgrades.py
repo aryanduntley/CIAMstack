@@ -4,7 +4,7 @@ import pytest
 
 from opsdir.connectors.registry import schema_sync, store_parts
 from opsdir.store import migrations, postgres as db
-from showcase_support import APPROVED, DATA, import_exports
+from showcase_support import APPROVED, DATA, apply_approved, import_exports
 
 pytestmark = pytest.mark.integration
 
@@ -39,8 +39,7 @@ def _loaded(conn, parts):
     migrations.init(conn, *parts)
     db.load_ldif(conn, sorted(DATA.glob("*.ldif")), schema_sync=schema_sync())
     import_exports(conn)
-    for change_id, path in APPROVED:
-        db.apply_changes(conn, path, change_id)
+    apply_approved(conn)
 
 
 def test_upgrade_keeps_entries_references_and_history(conn, parts, probe):

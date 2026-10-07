@@ -20,7 +20,6 @@ env: prod
 ciamDataClassification: confidential
 ciamLifecycle: active
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
-xDataResidency: us
 
 dn: ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top

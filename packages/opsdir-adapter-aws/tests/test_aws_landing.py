@@ -4,7 +4,7 @@ to an operator group, the owner in the header and the landing-zone scope in the 
 environment needs nothing from one."""
 from opsdir.connectors.render import render_env
 from opsdir.core.environment import env_model
-from opsdir.core.interchange.ldif import parse
+from opsdir.core.interchange.ldif import LdifRecord, parse
 from opsdir_adapter_aws.landing import render_landing
 from support import REGISTRY, build_directory
 
@@ -84,3 +84,21 @@ def test_guardrails_as_service_control_policies():
     assert "# NOTE: guardrail baseline: public-storage: AWS's mechanism is the Organizations S3 policy type" in out
     assert 'target_id = var.guardrail_target_id' in out
     assert 'variable "guardrail_target_id"' in files["terraform/landing-zone/providers.tf"]
+
+
+def test_the_region_guardrail_allows_the_regions_the_environment_s_residency_allows():
+    catalog = "cn=aws,ou=regions,dc=ciam-ops"
+    tree = ("dn: ou=regions,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: regions\n",
+            _entry(catalog, "ciamRegionCatalog", cn="aws", ciamCloudProvider="aws"),
+            *(_entry(f"cn={r},{catalog}", "ciamCloudRegion", cn=r) for r in ("us-east-1", "us-west-2")),
+            "dn: ou=residencies,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: residencies\n",
+            _entry("cn=us,ou=residencies,dc=ciam-ops", "ciamResidency", cn="us",
+                   ciamAllowedRegion=tuple(f"cn={r},{catalog}" for r in ("us-west-2", "us-east-1"))),
+            _entry(f"cn=baseline,ou=bindings,{ENV}", "ciamGuardrail", cn="baseline", ciamBindingRole="guardrails",
+                   ciamGuardrailKind="service-control", ciamDenies="region-escape"))
+    held = LdifRecord(ENV, "modify", {}, (("add", "objectClass", ("ciamEnvironmentPlacement",)),
+                                          ("replace", "ciamResidencyRef", ("cn=us,ou=residencies,dc=ciam-ops",))))
+    d = build_directory(REGISTRY, tuple(parse(_records(*tree))), (held,))
+    out = render_landing(env_model(d, "aws/prod"))["terraform/landing-zone/main.tf"]
+    assert '"aws:RequestedRegion" : [\n' in out
+    assert out.index('"us-east-1"') < out.index('"us-west-2"')         # its own region first, then the residency's

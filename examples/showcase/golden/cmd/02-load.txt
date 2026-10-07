@@ -1,2 +1,2 @@
-loaded 581 entries from 29 files; 404 DN references verified
+loaded 584 entries from 29 files; 403 DN references verified
 exit 0

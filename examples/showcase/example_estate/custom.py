@@ -1,6 +1,7 @@
 """Custom definitions fixture data: fields and a record type the operator defines for the record itself
 (22-custom-schema), and records of that type (90-feature-flags). The fields are used on environments and integrations
-elsewhere in the estate (owners' cost centers are the core ciamCostCenter: estate)."""
+elsewhere in the estate (owners' cost centers are the core ciamCostCenter and environments' data residency the core
+residencies: estate)."""
 from types import MappingProxyType
 
 from .common import CUSTOM, FLAGS, owner, spec
@@ -8,12 +9,6 @@ from .config import TOKEN_LIFETIME
 
 # name -> definition attributes (the metadata says what, which values, which records, where it lives, why)
 FIELDS = (
-    ("xDataResidency", dict(
-        ciamDefinitionNumber=2, ciamValueType="enum:us|eu|uk|ca", ciamPortability="binding",
-        ciamCarriedBy="ciamEnvironment", ciamOverridable="TRUE",
-        ciamPurpose="Jurisdiction the environment's identity data must stay in",
-        ciamDocumentation="https://wiki.example-aero.test/security/data-residency",
-        ciamValueSource=["terraform: azurerm_resource_group.location", "terraform: aws provider region"])),
     ("xTokenLifetimeMinutes", dict(
         ciamDefinitionNumber=3, ciamValueType="int", ciamPortability="intent", ciamCarriedBy="ciamIntegration",
         ciamMinValue=5, ciamMaxValue=1440, ciamUnit="minutes", ciamDefaultValue=60, ciamOverridable="TRUE",
@@ -35,8 +30,7 @@ RECORD_TYPES = (
 )
 FEATURE_FLAGS = (("passkey-enrollment", "TRUE", 25, "Offer passkey enrollment after sign-in"),
                  ("legacy-kba-recovery", "FALSE", None, "Knowledge-based account recovery (being retired)"))
-# the values the estate's records carry: environment residency, integration token lifetimes
-RESIDENCY = MappingProxyType({"source": "us", "target": "us", "standby": "us"})
+# the values the estate's records carry: integration token lifetimes
 TOKEN_LIFETIMES = MappingProxyType({"tech-pubs": 60, "mobile-ops": 30})
 
 

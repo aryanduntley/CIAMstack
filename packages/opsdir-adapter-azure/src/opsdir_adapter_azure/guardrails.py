@@ -4,11 +4,13 @@ definition to the subscription, by the definition's ID (display names aren't uni
 Definitions from the Azure/azure-policy repository (checked 2026-10-02, note 457). audit-log-disable has no built-in:
 the nearest, "Do not allow deletion of resource types" on diagnostic settings, blocks deleting them, not changing
 them (said in a comment). Not applicable on Azure, and NOTEs: service-account-keys (service principal secrets belong to
-Entra ID), metadata-v1, root-use.
+Entra ID), metadata-v1, root-use. region-escape (allowed locations) allows the regions the environment may hold
+resources in (estate.residency.permitted_regions: its cloud's region and those its residency allows).
 """
-from opsdir.core.directory import one, rdn_value, values
+from opsdir.core.directory import rdn_value, values
 from opsdir.core.environment import of_class
 from opsdir.domains.access.naming import DENIALS
+from opsdir.domains.estate.residency import permitted_regions
 from opsdir_format_terraform.hcl import block, jsonencoded, ref, tf_name
 
 DEFINITIONS = "/providers/Microsoft.Authorization/policyDefinitions/"
@@ -17,10 +19,11 @@ NOT_APPLICABLE = {"service-account-keys": "service principal secrets belong to E
                   "metadata-v1": "Azure's instance metadata has no v1/v2 split", "root-use": "Azure has no root user"}
 
 
-def _assignment(denial, region):
-    """(definition ID, parameters, comment) assigning the built-in that prevents a neutral denial, or None."""
+def _assignment(denial, regions):
+    """(definition ID, parameters, comment) assigning the built-in that prevents a neutral denial (regions: those
+    region-escape allows), or None."""
     return {
-        "region-escape": ("e56962a6-4747-49cd-b67b-bf8b01975c4c", {"listOfAllowedLocations": {"value": [region]}},
+        "region-escape": ("e56962a6-4747-49cd-b67b-bf8b01975c4c", {"listOfAllowedLocations": {"value": list(regions)}},
                           None),
         "public-storage": ("4fa4b6c0-31ca-4c0d-b10d-24b96f62a751", DENY, None),
         "key-deletion": ("0b60c0b2-2dc2-4e1c-b5c9-abbed971de53", DENY, None),
@@ -33,13 +36,13 @@ def _assignment(denial, region):
 def denial_of(definition_id):
     """What a policy assignment prevents, by its built-in definition's ID (read back on import), or None."""
     guid = (definition_id or "").rsplit("/", 1)[-1].lower()
-    return next((d for d in DENIALS if (_assignment(d, "") or (None,))[0] == guid), None)
+    return next((d for d in DENIALS if (_assignment(d, ()) or (None,))[0] == guid), None)
 
 
 def render_guardrails(m):
     """HCL for environment m's guardrails: an assignment per denial; a NOTE for what Azure has no policy for."""
     def one_denial(g, d):
-        found = _assignment(d, one(m.cloud, "ciamRegion"))
+        found = _assignment(d, permitted_regions(m))
         if found is None:
             return (f"# NOTE: guardrail {rdn_value(g)}: {d}: {NOT_APPLICABLE.get(d, 'Azure has no built-in for it')}",)
         definition, parameters, comment = found

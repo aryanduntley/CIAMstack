@@ -2,7 +2,7 @@
 its pipeline's tokens and its role assignments, an operator group's role assignments (eligible through PIM when the
 principal's condition says jit), the owner in the header; nothing when the environment needs nothing from one."""
 from opsdir.core.environment import env_model
-from opsdir.core.interchange.ldif import parse
+from opsdir.core.interchange.ldif import LdifRecord, parse
 from opsdir_adapter_azure.landing import render_landing
 from support import REGISTRY, build_directory
 
@@ -78,3 +78,20 @@ def test_guardrails_as_built_in_policy_assignments():
     assert "blocks deleting diagnostic settings, not changing them" in out
     assert "# NOTE: guardrail baseline: root-use: Azure has no root user" in out
     assert 'data "azurerm_subscription" "current"' in out
+
+
+def test_the_allowed_locations_are_the_regions_the_environment_s_residency_allows():
+    catalog = "cn=azure,ou=regions,dc=ciam-ops"
+    tree = ("dn: ou=regions,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: regions\n",
+            _entry(catalog, "ciamRegionCatalog", cn="azure", ciamCloudProvider="azure"),
+            *(_entry(f"cn={r},{catalog}", "ciamCloudRegion", cn=r) for r in ("eastus2", "centralus")),
+            "dn: ou=residencies,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: residencies\n",
+            _entry("cn=us,ou=residencies,dc=ciam-ops", "ciamResidency", cn="us",
+                   ciamAllowedRegion=tuple(f"cn={r},{catalog}" for r in ("centralus", "eastus2"))),
+            _entry(f"cn=baseline,ou=bindings,{ENV}", "ciamGuardrail", cn="baseline", ciamBindingRole="guardrails",
+                   ciamGuardrailKind="policy-assignment", ciamDenies="region-escape"))
+    held = LdifRecord(ENV, "modify", {}, (("add", "objectClass", ("ciamEnvironmentPlacement",)),
+                                          ("replace", "ciamResidencyRef", ("cn=us,ou=residencies,dc=ciam-ops",))))
+    d = build_directory(REGISTRY, tuple(parse(_records_text() + "\n" + "\n".join(tree))), (held,))
+    out = render_landing(env_model(d, "az/prod"))["terraform/landing-zone/main.tf"]
+    assert out.index('"eastus2"') < out.index('"centralus"')            # its own region first, then the residency's
