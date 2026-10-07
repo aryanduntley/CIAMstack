@@ -37,6 +37,7 @@ from opsdir_adapter_gcp.names import NETWORK, PRIORITIES, REGION, label, network
 from opsdir_adapter_gcp.network import render_network
 from opsdir_adapter_gcp.plumbing import network_data
 from opsdir_adapter_gcp.backups import render_backups
+from opsdir_adapter_gcp.audit import render_trails
 from opsdir_adapter_gcp.volumes import boot_disk, render_snapshot_policies, server_volumes
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
@@ -216,7 +217,7 @@ def render(m, services):
            *render_snapshot_policies(m), *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
-           *forwarding_zones(m),
+           *forwarding_zones(m), *render_trails(m),
            *_references(m))
     main = header(m, "Google Cloud infrastructure for the CIAM platform", HCL) + unbound_comments(m.unbound) + "\n" \
         + "\n\n".join(out) + "\n"

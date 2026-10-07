@@ -583,6 +583,28 @@ ciamProviderRef: projects/example-aero-ciam-standby/uptimeCheckConfigs/sso-log
  in
 ciamRealizes: sso-login
 
+dn: cn=audit-archive,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamObjectStore
+cn: audit-archive
+ciamBindingRole: audit-archive
+ciamProviderRef: example-aero-ciam-standby-audit
+ciamStorageImmutability: compliance
+ciamStorageLockDays: 400
+ciamStorageRef: gs://example-aero-ciam-standby-audit
+
+dn: cn=audit-sink,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAuditTrail
+cn: audit-sink
+ciamAllRegions: TRUE
+ciamAuditEvents: control-plane
+ciamAuditEvents: data-write
+ciamAuditScope: account
+ciamBindingRole: audit-trail
+ciamLogDestinationRole: audit-archive
+ciamProviderRef: projects/example-aero-ciam-standby/sinks/ciam-audit
+
 dn: cn=identity-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamIdentityBinding

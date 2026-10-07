@@ -6,8 +6,10 @@ Server (SQL Server is Azure SQL, a different offering): a comment.
 
   azurerm_postgresql_flexible_server / azurerm_mysql_flexible_server: its version (Flexible Server takes PostgreSQL's
   major version and MySQL's 5.7 or 8.0.21: Azure keeps the minor version current), SKU (ciamInstanceSize), storage,
-  zone, a zone-redundant standby, backup retention; in the delegated subnet its first subnet role names, with the
-  private DNS zone an input and no public access
+  zone, a zone-redundant standby, backup retention, geo-redundant backups when the record copies them to another
+  region (ciamCopyRegion: Azure copies them, and the logs point-in-time restore replays, to the region's pair; a
+  recorded region that isn't the pair is named, and so is the setting being fixed when a server is created); in the
+  delegated subnet its first subnet role names, with the private DNS zone an input and no public access
   a network security group named by its role on that subnet, admitting the ranges the record does (ciamSourceCidr)
   to its port (ciamPort, else the engine's)
   the customer-managed key of its key role, through a user-assigned identity granted Key Vault Crypto Service
@@ -19,7 +21,8 @@ Server (SQL Server is Azure SQL, a different offering): a comment.
   an import block when its provider ref (its ARM ID) is recorded
 
 Read back from (azurerm type, attributes) pairs, Terraform state as it is or the CLI and ARM templates normalized to
-it (cli_database.py): the servers, their configurations and the locks on them, the ranges the inbound rules of the
+it (cli_database.py): the servers (geo-redundant backups: their location's pair as the copy region), their
+configurations and the locks on them, the ranges the inbound rules of the
 network security groups on their delegated subnets admit (database_security_groups keeps those out of the firewall
 rules). The administrator password (administrator_password) is never read.
 """
@@ -36,6 +39,7 @@ from .cmk import customer_key, key_ref, role_uri, vault_object
 from .identities import LOC, RG
 from .network import binding_tags
 from .nsg_rules import admitted_ranges
+from .pairs import paired_region
 from .account import tagged
 
 SERVERS = {"postgresql": "azurerm_postgresql_flexible_server", "mysql": "azurerm_mysql_flexible_server"}
@@ -111,6 +115,22 @@ def _security_group(m, b, nets):
                 ("network_security_group_id", ref(f"azurerm_network_security_group.{nsg}.id"))]),) if nets else ()))
 
 
+def _geo(m, b):
+    """(notes, server arguments) of geo-redundant backups: on when the record copies the backups to another region."""
+    cn, regions = rdn_value(b), values(b, "ciamCopyRegion")
+    if not regions:
+        return (), ()
+    region = one(m.cloud, "ciamRegion")
+    pair = paired_region(region)
+    where = (f"# {cn}: Azure copies geo-redundant backups to {region}'s pair, {pair}, not "
+             f"{', '.join(regions)}: record {pair} as its ciamCopyRegion" if pair and tuple(regions) != (pair,) else
+             f"# {cn}: Azure copies geo-redundant backups to {region}'s paired region, which isn't known here: "
+             "check it is the recorded ciamCopyRegion" if not pair else None)
+    fixed = (f"# {cn}: geo-redundant backup is chosen when a server is created: an existing server without it is "
+             "restored into a new server that has it" if adopted(b) else None)
+    return tuple(x for x in (where, fixed) if x), (("geo_redundant_backup_enabled", True),)
+
+
 def _database(m, b):
     n, cn, engine = tf_name(rdn_value(b)), rdn_value(b), one(b, "ciamDbEngine")
     kind = SERVERS.get(engine)
@@ -122,6 +142,7 @@ def _database(m, b):
     pw_blocks, pw_body = _password(m, b, n)
     login = f"{n}_admin_login"
     dns = f"{n}_private_dns_zone_id"
+    geo_notes, geo = _geo(m, b)
     server = block("resource", [kind, n], [
         ("name", cn), ("resource_group_name", RG), ("location", LOC),
         *_given(("version", _version(engine, one(b, "ciamDbEngineVersion"))),
@@ -130,6 +151,7 @@ def _database(m, b):
                  int(storage) * 1024 if engine == "postgresql" else Block((("size_gb", int(storage)),))),
                 ("zone", one(b, "ciamZone")),
                 ("backup_retention_days", int(one(b, "ciamRetentionDays")) if one(b, "ciamRetentionDays") else None)),
+        *geo,
         *((("high_availability", Block((("mode", "ZoneRedundant"),))),)
           if one(b, "ciamDbHighAvailability") == "zone-redundant" else ()),
         *((("delegated_subnet_id", ref(f"data.azurerm_subnet.{tf_name(rdn_value(nets[0]))}.id")),
@@ -147,7 +169,7 @@ def _database(m, b):
             *((block("variable", [dns], [("type", ref("string")), ("description", (
                 f"The private DNS zone ID database {cn} registers in (privatelink.{engine}.database.azure.com)"))]),)
               if nets else ()),
-            *key_blocks, *pw_blocks, *_security_group(m, b, nets), server, *settings, *lock,
+            *key_blocks, *pw_blocks, *_security_group(m, b, nets), *geo_notes, server, *settings, *lock,
             *((import_block(f"{kind}.{n}", one(b, "ciamProviderRef")),) if adopted(b) else ()))
 
 
@@ -193,6 +215,8 @@ def _server(kind, a, settings, locked, admitted=()):
         == "ZoneRedundant" else "none",
         "ciamDbTlsRequired": "FALSE" if tls is not None and tls.lower() in _OFF else "TRUE",
         "ciamRetentionDays": retention, "ciamDbPointInTime": "TRUE" if retention else "FALSE",
+        "ciamCopyRegion": [paired_region(a.get("location"))] if a.get("geo_redundant_backup_enabled") is True
+        and paired_region(a.get("location")) else None,
         "ciamDbDeletionProtection": "TRUE" if (a.get("id") or "").lower() in locked else "FALSE",
         "ciamDbParameter": sorted(f"{k}={v}" for k, v in own.items() if k != TLS),
         "ciamSourceCidr": sorted(set(admitted))},

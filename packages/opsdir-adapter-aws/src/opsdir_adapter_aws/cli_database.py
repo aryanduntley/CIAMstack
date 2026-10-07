@@ -2,7 +2,9 @@
 (opsdir_adapter_aws.databases reads both). Pure.
 
   rds describe-db-instances             DBInstances       -> aws_db_instance; an Aurora cluster's member (it names
-                                                             DBClusterIdentifier) -> aws_rds_cluster_instance
+                                                             DBClusterIdentifier) -> aws_rds_cluster_instance; its
+                                                             DBInstanceAutomatedBackupsReplications -> aws_db_instance_
+                                                             automated_backups_replication (the copy's region)
   rds describe-db-clusters              DBClusters        -> aws_rds_cluster
   rds describe-db-subnet-groups         DBSubnetGroups    -> aws_db_subnet_group
   rds describe-db-parameters            Parameters        -> aws_db_parameter_group: its user-set parameters; the
@@ -82,7 +84,11 @@ def database_pairs(outs):
             **{("cluster", a.get("cluster_identifier")): a.get("vpc_id") for t, a in instances
                if t == "aws_rds_cluster_instance" and a.get("vpc_id")}}
     params, notices = _parameters(outs)
-    return ([*instances, *(_cluster(c, vpcs) for c in items(outs, "DBClusters")),
+    copies = [("aws_db_instance_automated_backups_replication", {
+                  "id": r.get("DBInstanceAutomatedBackupsArn"), "source_db_instance_arn": i.get("DBInstanceArn")})
+              for i in items(outs, "DBInstances") for r in i.get("DBInstanceAutomatedBackupsReplications") or ()
+              if r.get("DBInstanceAutomatedBackupsArn")]
+    return ([*instances, *copies, *(_cluster(c, vpcs) for c in items(outs, "DBClusters")),
              *(("aws_db_subnet_group", {"name": g.get("DBSubnetGroupName"), "vpc_id": g.get("VpcId"),
                                         "subnet_ids": [s.get("SubnetIdentifier") for s in g.get("Subnets") or ()]})
                for g in groups), *params], notices)

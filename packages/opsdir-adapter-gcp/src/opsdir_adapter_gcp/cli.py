@@ -18,6 +18,10 @@ mapping reads them as reads Terraform state (opsdir_adapter_gcp.inventory.pairs_
   gcloud secrets list, gcloud kms keys list, gcloud storage buckets list, gcloud functions list, gcloud run jobs list,
   gcloud scheduler jobs list, gcloud builds triggers list, gcloud container clusters list, gcloud pubsub topics list,
   gcloud monitoring channels|policies|uptime list, gcloud logging buckets list      by their resource names and shapes
+  gcloud logging sinks list                     log sinks (logging.googleapis.com/LogSink), the Cloud Audit Logs exports
+                                                among them read as audit trails (see audit.py); the list doesn't name
+                                                its parent: save it as log-sinks/<project>.json (an organization's:
+                                                organizations-<id>.json, a folder's: folders-<id>.json)
   gcloud transfer jobs list                     Storage Transfer Service jobs (transferJobs/...), as their assets
                                                 (storagetransfer.googleapis.com/TransferJob): the buckets they copy
   gcloud compute disks list, resource-policies list   disks (compute#disk: size, type, key, labels, the instances
@@ -49,6 +53,7 @@ from .cli_iam import KINDS as IAM_KINDS, iam_kind, iam_pairs
 from .cli_network import KINDS as NETWORK_KINDS, network_pairs, network_shape
 from .databases import sql_instance
 from .storage import bucket_attributes, transfer_job_attributes
+from .audit import sink_attributes, sink_parent
 from .backups import BACKUP_ASSETS, BACKUP_COLLECTIONS, backup_attributes
 from .volumes import disk_attributes, policy_attributes
 from .inventory import PROVIDER, pairs_resources
@@ -87,6 +92,7 @@ KINDS = MappingProxyType({
     "monitoring.googleapis.com/AlertPolicy": "alert-policy",
     "monitoring.googleapis.com/UptimeCheckConfig": "uptime-check",
     "logging.googleapis.com/LogBucket": "log-bucket",
+    "logging.googleapis.com/LogSink": "log-sink",
     "sqladmin.googleapis.com/Instance": "database", "sql#instance": "database",
     **EDGE_KINDS, **NETWORK_KINDS,
 })
@@ -122,6 +128,8 @@ def _shape(item):
         return "scheduler-job" if "schedule" in item else "run-job"
     if found:
         return found
+    if "destination" in item and ("writerIdentity" in item or "filter" in item) and "/" not in name:
+        return "log-sink"                               # gcloud logging sinks list: names carry no parent
     if network_shape(item):
         return network_shape(item)
     if "projectId" in item and "projectNumber" in item:
@@ -483,6 +491,7 @@ def cli_resources(texts, at=None):
                                           *_load_balancing(items), *_egress(items), *_compute_groups(items),
                                           *_references(items), *_automation(items), *_clusters(items),
                                           *_monitoring(items), *iam_pairs(items, at),
+                                          *(sink_attributes(d, sink_parent(p)) for d, p in _of(items, "log-sink")),
                                           *(sql_instance(d) for d, _ in _of(items, "database")),
                                           *(("google_compute_disk", disk_attributes(d)) for d, _ in _of(items, "disk")),
                                           *(("google_compute_resource_policy", policy_attributes(d))

@@ -7,10 +7,11 @@ comment names them). PostgreSQL, MySQL and SQL Server run on Cloud SQL; other en
   google_sql_database_instance: database_version from the engine, major version and edition (POSTGRES_16, MYSQL_8_0,
   SQLSERVER_2019_STANDARD: Cloud SQL keeps minor versions current), tier (ciamInstanceSize), disk size, its zone as
   the location preference, REGIONAL availability when zone-redundant, backups (retained backups from
-  ciamRetentionDays, point-in-time recovery or MySQL's binary log), a private IP on the environment's network with no
-  public IPv4, ssl_mode ENCRYPTED_ONLY when TLS is required, a database flag per parameter, the CMEK of its key role
-  (the Cloud SQL service agent needs Encrypter/Decrypter on the key: a comment), deletion protection both in
-  Terraform and the API, labels role and managed_by
+  ciamRetentionDays, point-in-time recovery or MySQL's binary log, stored in its first ciamCopyRegion: a region or a
+  multi-region such as us; Cloud SQL keeps backups in one location, so others are named), a private IP on the
+  environment's network with no public IPv4, ssl_mode ENCRYPTED_ONLY when TLS is required, a database flag per
+  parameter, the CMEK of its key role (the Cloud SQL service agent needs Encrypter/Decrypter on the key: a comment),
+  deletion protection both in Terraform and the API, labels role and managed_by
   the administrator password read from its credential role's Secret Manager secret by an ephemeral resource and
   written write-only: a google_sql_user (PostgreSQL, MySQL; the login an input) or SQL Server's root password. No
   Terraform state holds it and the record holds only the reference
@@ -119,13 +120,16 @@ def _key(m, b):
 
 
 def _backups(b, engine):
-    retention, pitr = one(b, "ciamRetentionDays"), one(b, "ciamDbPointInTime")
+    retention, pitr, copies = one(b, "ciamRetentionDays"), one(b, "ciamDbPointInTime"), values(b, "ciamCopyRegion")
     kept = bool(retention and retention != "0")
-    if not kept and pitr is None:
+    if not kept and pitr is None and not copies:
         return ()
     log = "binary_log_enabled" if engine == "mysql" else "point_in_time_recovery_enabled"
     return (("backup_configuration", Block((
-        ("enabled", kept or pitr == "TRUE"), *_given((log, {"TRUE": True, "FALSE": False}.get(pitr))),
+        *((("#", f"Cloud SQL keeps backups in one location: {', '.join(copies[1:])} not rendered"),)
+          if len(copies) > 1 else ()),
+        ("enabled", kept or pitr == "TRUE" or bool(copies)),
+        *_given((log, {"TRUE": True, "FALSE": False}.get(pitr)), ("location", copies[0] if copies else None)),
         *((("backup_retention_settings", Block((("retained_backups", int(retention)),))),) if kept else ())))),)
 
 
@@ -192,6 +196,7 @@ def sql_instance(d):
             "backup_configuration": [{
                 "enabled": backup.get("enabled"), "binary_log_enabled": backup.get("binaryLogEnabled"),
                 "point_in_time_recovery_enabled": backup.get("pointInTimeRecoveryEnabled"),
+                "location": backup.get("location"),
                 "backup_retention_settings": [{"retained_backups": retained}] if retained else []}],
             "ip_configuration": [{"ssl_mode": ip.get("sslMode"), "require_ssl": ip.get("requireSsl"),
                                   "private_network": ip.get("privateNetwork")}],
@@ -218,11 +223,13 @@ def _instance(a):
         "ciamDbHighAvailability": "zone-redundant" if s.get("availability_type") == "REGIONAL" else "none",
         "ciamDbTlsRequired": "TRUE" if tls else "FALSE",
         "ciamRetentionDays": (retained or 7) if kept else 0, "ciamDbPointInTime": "TRUE" if pitr else "FALSE",
+        "ciamCopyRegion": [backup["location"]] if backup.get("location") and backup["location"] != a.get("region")
+        else None,
         "ciamDbDeletionProtection": "TRUE" if s.get("deletion_protection_enabled") is True else "FALSE",
         "ciamDbParameter": sorted(f"{f.get('name')}={f.get('value')}" for f in s.get("database_flags") or ()
                                   if f.get("name"))},
         links={"ciamEncryptedByRole": a.get("encryption_key_name") or None},
-        name=a.get("name"), role=labels.get("role") or labels.get("bindingrole") or None)
+        name=a.get("name"), role=labels.get("role") or labels.get("bindingrole") or None, tags=labels)
 
 
 def database_resources(pairs):

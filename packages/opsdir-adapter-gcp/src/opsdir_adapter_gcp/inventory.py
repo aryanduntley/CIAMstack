@@ -35,6 +35,10 @@ alike; resource names (projects/<p>/...) are the provider refs, self links read 
   google_monitoring_notification_channel      -> alert channel: its type (pagerduty: paging-service, email, pubsub:
                                                  topic, webhook)
   google_logging_project_bucket_config        -> log destination: its retention in days
+  google_logging_project_sink, _organization_ -> audit trail (kind audit, ciamAuditTrail) when its filter exports Cloud
+    sink, _folder_sink (+ google_*_iam_audit_     Audit Logs: scope, control-plane, data reads/writes its parent's audit
+    config, IAM policies' auditConfigs)          configs turn on, every region, its bucket's or log bucket's role:
+                                                 see audit.py
   google_monitoring_alert_policy              -> alarm: the metric its first condition filters on, the channels it
                                                  notifies, the alert rule it realizes (label realizes)
   google_monitoring_uptime_check_config       -> synthetic check: its period, the canary it realizes
@@ -57,12 +61,13 @@ from opsdir_adapter_gcp.health_checks import is_probe_rule
 from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, layout_import, of_types, per_file,
                                    realization_roles, resource, tagged_role)
 from opsdir_format_terraform.state import blocks, first_block, read_state
+from .audit import trail_resources
 from .databases import database_resources
 from .storage import object_store_resources
 from .backups import backup_resources
 from .volumes import volume_resources
 from .iam import iam_resources
-from .names import name_parts, resource_id
+from .names import name_parts, resource_id, state_labels
 from .network_inventory import google_apis_endpoint, network_resources
 
 PROVIDER = "gcp"
@@ -84,7 +89,7 @@ def _labels(a):
 def _state_labels(a):
     """All the labels state reports on a resource: effective_labels (the provider's default labels included) with its
     own over them."""
-    return {**(a.get("effective_labels") or {}), **_labels(a)}
+    return state_labels(a, _labels(a))
 
 
 def _tags(a):
@@ -103,13 +108,13 @@ def _metadata(a):
 
 
 def _networks(found):
-    return tuple(resource("network", resource_id(a.get("id")), {}, name=a.get("name"), role=_role(a) or "network", tags=_state_labels(a))
+    return tuple(resource("network", resource_id(a.get("id")), {}, name=a.get("name"), role=_role(a) or "network")
                  for a in of_types(found, "google_compute_network") if a.get("id"))
 
 
 def _subnets(found):
     return tuple(resource("subnet", resource_id(a.get("id")), {"ciamCidr": a.get("ip_cidr_range")},
-                          name=a.get("name"), role=_role(a), tags=_state_labels(a))
+                          name=a.get("name"), role=_role(a))
                  for a in of_types(found, "google_compute_subnetwork") if a.get("id"))
 
 
@@ -238,7 +243,7 @@ def _egress(found):
     return tuple(resource("egress", resource_id(a.get("id")), {
         "ciamCidr": [f"{addresses[resource_id(n)]}/32" for n in a.get("nat_ips") or ()
                      if addresses.get(resource_id(n))],
-        "ciamNatAllocation": ALLOCATION.get(a.get("nat_ip_allocate_option"))}, name=a.get("name"), role=_role(a), tags=_state_labels(a))
+        "ciamNatAllocation": ALLOCATION.get(a.get("nat_ip_allocate_option"))}, name=a.get("name"), role=_role(a))
         for a in of_types(found, "google_compute_router_nat") if a.get("id"))
 
 
@@ -336,7 +341,8 @@ def _clusters(found):
             "ciamClusterAddon": _addons(c),
             "ciamNodePool": sorted(pool(n) for n in of_types(found, "google_container_node_pool")
                                    if resource_id(n.get("cluster")) in (resource_id(c.get("id")), name)),
-            "ciamSpansZone": sorted(c.get("node_locations") or ())}, name=name, role=cluster_role(_tags(c)))
+            "ciamSpansZone": sorted(c.get("node_locations") or ())}, name=name, role=cluster_role(_tags(c)),
+            tags=_state_labels(c))
     return tuple(cluster(c) for c in of_types(found, "google_container_cluster") if c.get("id"))
 
 
@@ -357,7 +363,7 @@ def _channels(found):
 def _log_destinations(found):
     return tuple(resource("logs", resource_id(a.get("id")), {"ciamDestinationKind": "log-group",
                                                             "ciamRetentionDays": a.get("retention_days")},
-                          name=a.get("bucket_id"), role=_role(a), tags=_state_labels(a))
+                          name=a.get("bucket_id"), role=_role(a))
                  for a in of_types(found, "google_logging_project_bucket_config") if a.get("id"))
 
 
@@ -377,7 +383,7 @@ def _alarms(found):
         return resource("alarm", resource_id(a.get("name") or a.get("id")), {
             "ciamMetric": _metric(a), "ciamRealizes": realizes,
             "ciamNotifies": sorted(resource_id(c) for c in a.get("notification_channels") or ())},
-            name=a.get("display_name"), role=role)
+            name=a.get("display_name"), role=role, tags=_state_labels(a))
     return tuple(alarm(a) for a in of_types(found, "google_monitoring_alert_policy") if a.get("name") or a.get("id"))
 
 
@@ -386,7 +392,8 @@ def _canaries(found):
         role, realizes = realization_roles(_tags(a), "canary")
         period = int(str(a.get("period") or "0s").rstrip("s") or 0)
         return resource("canary", resource_id(a.get("name") or a.get("id")), {
-            "ciamInterval": duration_text(period), "ciamRealizes": realizes}, name=a.get("display_name"), role=role)
+            "ciamInterval": duration_text(period), "ciamRealizes": realizes}, name=a.get("display_name"), role=role,
+            tags=_state_labels(a))
     return tuple(canary(a) for a in of_types(found, "google_monitoring_uptime_check_config")
                  if a.get("name") or a.get("id"))
 
@@ -406,7 +413,7 @@ def pairs_resources(pairs):
              *_keys(pairs), *object_store_resources(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs),
              *_clusters(pairs),
              *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs), *_canaries(pairs),
-             *iam, *edge, *network, *database_resources(pairs), *volumes, *backups),
+             *iam, *edge, *network, *database_resources(pairs), *volumes, *backups, *trail_resources(pairs)),
             (*rule_notices, *iam_notices, *edge_notices, *network_notices, *volume_notices, *backup_notices))
 
 

@@ -1,9 +1,14 @@
 """Control-plane audit trails on AWS: an account trail the platform keeps rendered as aws_cloudtrail into its bucket
 (all regions with global services' events, integrity validation; data events noted), trails kept by someone else or
 delivered to CloudWatch Logs named, not rendered; aws_cloudtrail read back from Terraform state with the activity its
-event selectors record and its bucket's role as where its records go."""
+event selectors record and its bucket's role as where its records go; the same from the CLI's describe-trails,
+get-event-selectors and list-tags, and from a CloudFormation AWS::CloudTrail::Trail."""
+import json
+
 from opsdir.core.inventory import environment_groups, resource
 from opsdir_adapter_aws.audit import render_trails, trail_events, trail_resources
+from opsdir_adapter_aws.cli import cli_resources
+from opsdir_adapter_aws.cloudformation import cloudformation_resources
 from network_fixtures import ALPHA, entry, model
 
 PARTY = "cn=landing-zone,ou=owners,dc=ciam-ops"
@@ -61,3 +66,47 @@ def test_a_trail_is_read_back_with_its_bucket_s_role_as_where_its_records_go():
         "cn": ("ciam-prod",), "ciamBindingRole": ("audit-trail",), "ciamProviderRef": (trail["arn"],),
         "ciamAuditScope": ("account",), "ciamAuditEvents": ("control-plane",), "ciamAllRegions": ("TRUE",),
         "ciamIntegrityValidation": ("FALSE",), "ciamLogDestinationRole": ("audit-logs",)})]
+
+
+ARN = "arn:aws:cloudtrail:us-east-1:111122223333:trail/ciam-prod"
+
+
+def _trails(resources):
+    return [(r.ref, dict(r.attrs), dict(r.links), r.role) for r in resources if r.kind == "audit"]
+
+
+def test_the_cli_s_trails_are_read_with_their_selectors_and_tags():
+    trail = {"Name": "ciam-prod", "TrailARN": ARN, "S3BucketName": "example-ciam-audit", "IsMultiRegionTrail": True,
+             "IncludeGlobalServiceEvents": True, "LogFileValidationEnabled": True, "IsOrganizationTrail": False,
+             "HomeRegion": "us-east-1"}
+    texts = {"trails.json": json.dumps({"trailList": [trail, trail]}),        # listed again from another region
+             "trail-selectors.json": json.dumps({"TrailARN": ARN, "EventSelectors": [
+                 {"ReadWriteType": "All", "IncludeManagementEvents": True,
+                  "DataResources": [{"Type": "AWS::S3::Object", "Values": ["arn:aws:s3"]}]}]}),
+             "trail-tags.json": json.dumps({"ResourceTagList": [
+                 {"ResourceId": ARN, "TagsList": [{"Key": "Role", "Value": "cloudtrail"}]}]})}
+    resources, _ = cli_resources(texts)
+    assert _trails(resources) == [(ARN, {
+        "ciamAuditScope": ("account",), "ciamAuditEvents": ("control-plane", "data-read", "data-write"),
+        "ciamAllRegions": ("TRUE",), "ciamIntegrityValidation": ("TRUE",)},
+        {"ciamLogDestinationRole": "arn:aws:s3:::example-ciam-audit"}, "cloudtrail")]
+
+
+def test_a_cloudformation_trail_is_read_with_its_arn_from_the_stack():
+    template = {"Resources": {"Trail": {"Type": "AWS::CloudTrail::Trail", "Properties": {
+        "TrailName": "ciam-prod", "IsLogging": True, "S3BucketName": "example-ciam-audit",
+        "IsMultiRegionTrail": False, "EnableLogFileValidation": True,
+        "AdvancedEventSelectors": [{"FieldSelectors": [{"Field": "eventCategory", "Equals": ["Management"]}]}],
+        "Tags": [{"Key": "Role", "Value": "cloudtrail"}]}}}}
+    stack = {"Stacks": [{"StackId": "arn:aws:cloudformation:us-east-1:111122223333:stack/ciam-audit/0a1b",
+                         "StackName": "ciam-audit", "StackStatus": "CREATE_COMPLETE"}]}
+    created = {"StackResourceSummaries": [{"LogicalResourceId": "Trail", "PhysicalResourceId": "ciam-prod",
+                                           "ResourceType": "AWS::CloudTrail::Trail",
+                                           "ResourceStatus": "CREATE_COMPLETE"}]}
+    texts = {f"audit/{p}": json.dumps(t) for p, t in (("stack.json", stack), ("resources.json", created),
+                                                      ("template.json", template))}
+    resources, _ = cloudformation_resources(texts)
+    assert _trails(resources) == [(ARN, {
+        "ciamAuditScope": ("account",), "ciamAuditEvents": ("control-plane",), "ciamAllRegions": ("FALSE",),
+        "ciamIntegrityValidation": ("TRUE",)}, {"ciamLogDestinationRole": "arn:aws:s3:::example-ciam-audit"},
+        "cloudtrail")]

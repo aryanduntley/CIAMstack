@@ -1,12 +1,20 @@
 """Observability fixture data (79-observability): what the platform is watched for, where its logs go and for how
-long, and the synthetic sign-in that checks it works. Each environment's alert channels, log destinations, and the
-alarms and checks its cloud runs, are bindings (MONITORING below, used by infrastructure: SOURCE / TARGET /
-STANDBY).
+long, and the synthetic sign-in that checks it works. Each environment's alert channels, log destinations, the alarms
+and checks its cloud runs, and its control-plane audit trail with the object store that keeps its records, are
+bindings (MONITORING below, used by infrastructure: SOURCE / TARGET / STANDBY).
+
+The audit trails: the source's CloudTrail (management events and S3 data writes, every region, log file validation)
+into a bucket under Object Lock in compliance mode; the target's Activity Log export (a subscription diagnostic
+setting) into its storage account's insights-activity-logs container; the standby's Cloud Audit Logs sink (Data
+Access logs on) into a bucket whose retention policy is locked.
 
 Planted for the planner to find:
   - the target's audit workspace keeps logs 90 days; the audit route must keep them 400 (and they are under legal hold)
   - the source runs an alarm on disk space that realizes no recorded rule, and the target doesn't run it
   - the login-failures rule names no runbook
+  - the target's audit trail records control-plane activity only (the source's records data writes too), and its
+    container's immutability policy is unlocked: a privileged user can lift it, so its records are less protected
+    than the source's validated ones
 """
 from .common import RB, R, ou, owner, spec
 
@@ -44,6 +52,10 @@ def entries():
 
 
 GCP_PROJECT = "projects/example-aero-ciam-standby"
+SUBSCRIPTION = "/subscriptions/00000000-0000-0000-0000-000000000000"
+AZ_AUDIT_ACCOUNT = (f"{SUBSCRIPTION}/resourceGroups/rg-ciam-prod/providers/Microsoft.Storage/storageAccounts/"
+                    "stciamprodaudit")
+CLOUDTRAIL_BUCKET = "example-aero-ciam-prod-cloudtrail"
 
 
 def _aws(service, rest):
@@ -73,7 +85,14 @@ MONITORING = {
           "ciamMetric": "CWAgent disk_used_percent", "ciamNotifies": PAGE_TOPIC}),
         ("ciamCanaryBinding", "sso-login", "canary-sso-login",
          {"ciamProviderRef": _aws("synthetics", "canary:ciam-sso-login"), "ciamRealizes": "sso-login",
-          "ciamInterval": "5m"})),
+          "ciamInterval": "5m"}),
+        ("ciamObjectStore", "audit-archive", "audit-archive",
+         {"ciamStorageRef": f"s3://{CLOUDTRAIL_BUCKET}", "ciamProviderRef": f"arn:aws:s3:::{CLOUDTRAIL_BUCKET}",
+          "ciamStorageVersioning": "TRUE", "ciamStorageImmutability": "compliance", "ciamStorageLockDays": "400"}),
+        ("ciamAuditTrail", "cloudtrail", "audit-trail",
+         {"ciamAuditScope": "account", "ciamAuditEvents": ["control-plane", "data-write"], "ciamAllRegions": "TRUE",
+          "ciamIntegrityValidation": "TRUE", "ciamLogDestinationRole": "audit-archive",
+          "ciamProviderRef": _aws("cloudtrail", "trail/ciam-prod")})),
     "target": (
         ("ciamAlertChannel", "alerts-page", "alerts-page",
          {"ciamChannelKind": "action-group", "ciamProviderRef": AZ_INSIGHTS.format("actionGroups/ag-ciam-page")}),
@@ -92,7 +111,16 @@ MONITORING = {
           "ciamRealizes": "login-failures", "ciamMetric": "log query"}),
         ("ciamCanaryBinding", "sso-login", "canary-sso-login",
          {"ciamProviderRef": AZ_INSIGHTS.format("webtests/sso-login"), "ciamRealizes": "sso-login",
-          "ciamInterval": "5m"})),
+          "ciamInterval": "5m"}),
+        # planted: an unlocked immutability policy (governance), and control-plane activity only
+        ("ciamObjectStore", "activity-logs", "audit-archive",
+         {"ciamStorageRef": "azblob://stciamprodaudit/insights-activity-logs",
+          "ciamProviderRef": f"{AZ_AUDIT_ACCOUNT}/blobServices/default/containers/insights-activity-logs",
+          "ciamStorageVersioning": "TRUE", "ciamStorageImmutability": "governance", "ciamStorageLockDays": "400"}),
+        ("ciamAuditTrail", "activity-log", "audit-trail",
+         {"ciamAuditScope": "account", "ciamAuditEvents": "control-plane", "ciamAllRegions": "TRUE",
+          "ciamLogDestinationRole": "audit-archive",
+          "ciamProviderRef": f"{SUBSCRIPTION}/providers/Microsoft.Insights/diagnosticSettings/ciam-activity-log"})),
     "standby": (
         ("ciamAlertChannel", "alerts-page", "alerts-page",
          {"ciamChannelKind": "paging-service", "ciamProviderRef": f"{GCP_PROJECT}/notificationChannels/1001"}),
@@ -111,6 +139,13 @@ MONITORING = {
           "ciamMetric": "log query", "ciamNotifies": f"{GCP_PROJECT}/notificationChannels/1001"}),
         ("ciamCanaryBinding", "sso-login", "canary-sso-login",
          {"ciamProviderRef": f"{GCP_PROJECT}/uptimeCheckConfigs/sso-login", "ciamRealizes": "sso-login",
-          "ciamInterval": "5m"})),
+          "ciamInterval": "5m"}),
+        ("ciamObjectStore", "audit-archive", "audit-archive",
+         {"ciamStorageRef": "gs://example-aero-ciam-standby-audit",
+          "ciamProviderRef": "example-aero-ciam-standby-audit", "ciamStorageImmutability": "compliance",
+          "ciamStorageLockDays": "400"}),
+        ("ciamAuditTrail", "audit-sink", "audit-trail",
+         {"ciamAuditScope": "account", "ciamAuditEvents": ["control-plane", "data-write"], "ciamAllRegions": "TRUE",
+          "ciamLogDestinationRole": "audit-archive", "ciamProviderRef": f"{GCP_PROJECT}/sinks/ciam-audit"})),
 }
 

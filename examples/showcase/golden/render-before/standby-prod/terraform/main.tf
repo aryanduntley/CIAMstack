@@ -2101,6 +2101,25 @@ import {
   id = "projects/example-aero-ciam-standby/instances/ciam-standby-pf-grants"
 }
 
+resource "google_storage_bucket" "audit_archive" {
+  name                        = "example-aero-ciam-standby-audit"
+  location                    = var.region
+  uniform_bucket_level_access = true
+  retention_policy {
+    retention_period = 34560000
+    is_locked        = true
+  }
+  labels = {
+    role       = "audit-archive"
+    managed_by = "opsdir"
+  }
+}
+
+import {
+  to = google_storage_bucket.audit_archive
+  id = "example-aero-ciam-standby-audit"
+}
+
 # backup: the Cloud Storage service agent (service-<project number>@gs-project-accounts.iam.gserviceaccount.com) needs roles/cloudkms.cryptoKeyEncrypterDecrypter on its key
 
 resource "google_storage_bucket" "backup" {
@@ -2172,6 +2191,27 @@ resource "google_dns_managed_zone" "fwd_corp_ad_0" {
     target_name_servers {
       ipv4_address = "10.40.0.54"
     }
+  }
+}
+
+resource "google_logging_project_sink" "audit_sink" {
+  name                   = "ciam-audit"
+  destination            = "storage.googleapis.com/example-aero-ciam-standby-audit"
+  filter                 = "logName:\"cloudaudit.googleapis.com\""
+  unique_writer_identity = true
+}
+
+resource "google_storage_bucket_iam_member" "audit_sink" {
+  bucket = google_storage_bucket.audit_archive.name
+  role   = "roles/storage.objectCreator"
+  member = google_logging_project_sink.audit_sink.writer_identity
+}
+
+resource "google_project_iam_audit_config" "audit_sink" {
+  project = var.project_id
+  service = "allServices"
+  audit_log_config {
+    log_type = "DATA_WRITE"
   }
 }
 

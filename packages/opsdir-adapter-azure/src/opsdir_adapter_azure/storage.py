@@ -20,7 +20,8 @@ Rendered into the stack's main.tf, per account the stack keeps:
 
 Read back from (azurerm type, attributes) pairs, Terraform state as it is or the CLI and ARM templates normalized to
 it (cli_storage.py): each container with what its account, immutability policy, management policy and object
-replication say. A setting no source reports is left as the record has it.
+replication say (and the tags of its account: a container has metadata, not tags). A setting no source reports is
+left as the record has it.
 """
 from itertools import groupby
 
@@ -232,6 +233,7 @@ def object_store_resources(pairs):
             "ciamStorageReplicaRef": f"azblob://{_name_of(copy[0].get('destination_storage_account_id'))}/"
                                      f"{copy[1].get('destination_container_name')}" if copy else None},
             links={"ciamEncryptedByRole": key_ref(_key_url(a, cmks)) if a else None},
-            name=name, role=_metadata_role(c))
+            name=name, role=_metadata_role(c),
+            tags=(a["tags"] or {}) if a and "tags" in a else None)   # a container has metadata; its account tags
     return tuple(one_container(c) for c in of_types(pairs, "azurerm_storage_container")
                  if _account_of(c) and c.get("name"))

@@ -52,6 +52,8 @@ echo "-- the consumers to review: what they do, who owns them, what to check"; o
 echo "-- the shape of the user data: size, password schemes, idle accounts, group health"; od report data-profile
 echo "-- what the platform is watched for, where its logs go, and what each cloud runs of it"
 od report alerts; od report log-routes; od report monitors
+echo "-- who changes each cloud: the control-plane audit trails, what they record, where, and how well protected"
+od report audit-trails
 echo "-- the user directory's attributes: what each is for, its privacy class, standard or defined here"
 od report user-schema
 echo "-- the managed databases each environment runs: engine, version, availability, encryption, backups"

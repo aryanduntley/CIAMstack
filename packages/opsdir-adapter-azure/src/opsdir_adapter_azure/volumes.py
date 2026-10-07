@@ -171,7 +171,7 @@ def volume_resources(pairs):
                                       for d in found)},
             links={"ciamEncryptedByRole": key(_common(d.get("disk_encryption_set_id") for d in found)),
                    "ciamSnapshotPolicyRole": _common(followed.get(_low(d.get("id"))) for d in found)},
-            name=name, role=_common(tagged_role(d.get("tags") or {}) for d in found))
+            name=name, role=_common(tagged_role(d.get("tags") or {}) for d in found), tags=found[0].get("tags") or {})
     booted = {}
     for vm in vms.values():
         if (vm.get("tags") or {}).get("BootVolume"):

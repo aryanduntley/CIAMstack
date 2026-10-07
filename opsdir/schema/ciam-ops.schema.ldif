@@ -2205,10 +2205,11 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.497 NAME 'ciamAllRegions' DESC 'Whet
  not one region' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 S
  INGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.498 NAME 'ciamIntegrityValidation' D
- ESC 'Whether an audit trail\27s records can be proven unaltered (CloudTrail
- \27s digest files, immutable storage)' EQUALITY booleanMatch SYNTAX 1.3.6.1
- .4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'bo
- ol' X-ORIGIN 'opsdir' )
+ ESC 'Whether the cloud cryptographically validates an audit trail\27s recor
+ ds (CloudTrail\27s signed digest files); a locked immutable store keeping t
+ hem is graded through its ciamStorageImmutability' EQUALITY booleanMatch SY
+ NTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'binding' X-VA
+ LUE-TYPE 'bool' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir

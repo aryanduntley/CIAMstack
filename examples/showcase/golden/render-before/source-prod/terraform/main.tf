@@ -1725,6 +1725,46 @@ import {
   id = "pf-grants"
 }
 
+resource "aws_db_instance_automated_backups_replication" "pf_grants" {
+  provider               = aws.copy_us_west_2
+  source_db_instance_arn = aws_db_instance.pf_grants.arn
+  retention_period       = 14
+  kms_key_id             = "arn:aws:kms:us-west-2:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
+}
+
+resource "aws_s3_bucket" "audit_archive" {
+  bucket              = "example-aero-ciam-prod-cloudtrail"
+  object_lock_enabled = true
+  tags = {
+    Name      = "audit-archive"
+    Role      = "audit-archive"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_s3_bucket_versioning" "audit_archive" {
+  bucket = aws_s3_bucket.audit_archive.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_object_lock_configuration" "audit_archive" {
+  bucket = aws_s3_bucket.audit_archive.id
+  rule {
+    default_retention {
+      mode = "COMPLIANCE"
+      days = 400
+    }
+  }
+  depends_on = [aws_s3_bucket_versioning.audit_archive]
+}
+
+import {
+  to = aws_s3_bucket.audit_archive
+  id = "example-aero-ciam-prod-cloudtrail"
+}
+
 resource "aws_s3_bucket" "backup" {
   bucket              = "example-aero-ciam-prod-ds-backups"
   object_lock_enabled = true
@@ -1855,6 +1895,15 @@ resource "aws_route53_resolver_rule" "fwd_corp_ad_0" {
 resource "aws_route53_resolver_rule_association" "fwd_corp_ad_0" {
   resolver_rule_id = aws_route53_resolver_rule.fwd_corp_ad_0.id
   vpc_id           = data.aws_vpc.main.id
+}
+
+resource "aws_cloudtrail" "cloudtrail" {
+  # data-write events: log them with event selectors naming the resources (not rendered)
+  name                          = "ciam-prod"
+  s3_bucket_name                = "example-aero-ciam-prod-cloudtrail"
+  is_multi_region_trail         = true
+  include_global_service_events = true
+  enable_log_file_validation    = true
 }
 
 data "aws_secretsmanager_secret" "am_admin_password" {

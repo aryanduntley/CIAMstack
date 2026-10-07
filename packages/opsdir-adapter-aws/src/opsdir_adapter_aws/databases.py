@@ -9,6 +9,11 @@ comment names them):
   port (ciamPort, else the engine's) from each range the record admits (ciamSourceCidr), and a parameter group
   (family from the engine, edition and major version) holding its parameters and, where it differs from the engine's
   default, the parameter that makes TLS required (rds.force_ssl, require_secure_transport)
+  a copy of an RDS instance's automated backups (and the transaction logs its point-in-time restore replays) in its
+  first ciamCopyRegion: aws_db_instance_automated_backups_replication, created through the aws provider of that region
+  (alias copy_<region>, providers.tf), encrypted with the key's replica there when the key is a multi-region one, else
+  with the key an input names (RDS replicates to one region: others are named; Aurora copies across regions with a
+  global database or AWS Backup: named)
   the KMS key of its key role, its backup retention and deletion protection; RDS keeps the master password in Secrets
   Manager (manage_master_user_password): no password is in the Terraform or the record, and the credential role names
   that secret. The master user name is a variable. A database whose provider ref is recorded is adopted (an import
@@ -18,7 +23,8 @@ Read back from (Terraform type, attributes) pairs, Terraform state as it is or t
 (cli_database.py): aws_db_instance (one that is an Aurora cluster's member is read with its cluster), aws_rds_cluster
 (+ aws_rds_cluster_instance), aws_db_subnet_group, aws_db_parameter_group and aws_rds_cluster_parameter_group, the
 ingress rules on its security groups (their IPv4 ranges: ciamSourceCidr; database_security_groups keeps them out of
-the firewall rules). Named fields only: the master password (password, master_password) is never read.
+the firewall rules), aws_db_instance_automated_backups_replication (the region of its ARN: the instance's
+ciamCopyRegion). Named fields only: the master password (password, master_password) is never read.
 """
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import UNBOUND, bound, of_class
@@ -126,6 +132,52 @@ def _notes(b, engine, version):
             *((f"# {cn}: no ciamDbEngineVersion: RDS picks its default version",) if not version else ()))
 
 
+def copy_alias(region):
+    """The aws provider alias the copies of databases' automated backups to region are created through."""
+    return f"copy_{tf_name(region)}"
+
+
+def _aurora(b):
+    return one(b, "ciamDbService") == "aurora" and one(b, "ciamDbEngine") in _AURORA
+
+
+def copy_regions(m):
+    """The regions environment m's RDS instances (those the stack keeps) copy their automated backups to: the first
+    copy region of each, in order. Each needs a provider of its own (copy_alias)."""
+    return tuple(dict.fromkeys(values(b, "ciamCopyRegion")[0] for b in of_class(m, "ciamDatabase")
+                               if owned(b) and values(b, "ciamCopyRegion") and not _aurora(b)))
+
+
+def _replica_key(m, b, region):
+    """The ARN of the database key's replica in region when the key is a multi-region one (mrk-), else None."""
+    role = one(b, "ciamEncryptedByRole")
+    uri = bound(m, role, "ciamRefUri") if role else None
+    arn = uri.split("://", 1)[1] if uri and "://" in uri else ""
+    parts = arn.split(":")
+    return ":".join((*parts[:3], region, *parts[4:])) if len(parts) > 5 and ":key/mrk-" in arn else None
+
+
+def _copy(m, b, n):
+    """The copy of an RDS instance's automated backups in its first copy region, and notes for what isn't rendered."""
+    cn, regions = rdn_value(b), values(b, "ciamCopyRegion")
+    if not regions:
+        return ()
+    if _aurora(b):
+        return (f"# {cn}: Aurora copies backups to another region with a global database or an AWS Backup copy, not "
+                f"automated backups replication: ciamCopyRegion {', '.join(regions)} not rendered",)
+    region, key, var = regions[0], _replica_key(m, b, regions[0]), f"{n}_copy_kms_key_arn"
+    return (*((f"# {cn}: RDS replicates automated backups to one region: {', '.join(regions[1:])} not rendered",)
+              if len(regions) > 1 else ()),
+            *((block("variable", [var], [("type", ref("string")), ("description", (
+                f"The KMS key in {region} that encrypts the copies of database {cn}'s automated backups"))]),)
+              if key is None else ()),
+            block("resource", ["aws_db_instance_automated_backups_replication", n], [
+                ("provider", ref(f"aws.{copy_alias(region)}")),
+                ("source_db_instance_arn", ref(f"aws_db_instance.{n}.arn")),
+                *_given(("retention_period", _int(b, "ciamRetentionDays"))),
+                ("kms_key_id", key or ref(f"var.{var}"))]))
+
+
 def _ingress(m, b):
     """The security group's ingress rules: the database's port from each range the record admits."""
     role, cidrs, port = one(b, "ciamBindingRole"), values(b, "ciamSourceCidr"), database_port(b)
@@ -140,7 +192,7 @@ def _ingress(m, b):
 def _database(m, b):
     n, cn, role = tf_name(rdn_value(b)), rdn_value(b), one(b, "ciamBindingRole")
     engine, version = one(b, "ciamDbEngine"), one(b, "ciamDbEngineVersion")
-    aurora = one(b, "ciamDbService") == "aurora" and engine in _AURORA
+    aurora = _aurora(b)
     aws = aws_engine(engine, one(b, "ciamDbEdition"), one(b, "ciamDbService"))
     params, nets = _parameters(b, engine, version), subnets(m, b)
     ha, user = one(b, "ciamDbHighAvailability") == "zone-redundant", f"{n}_admin_username"
@@ -186,7 +238,7 @@ def _database(m, b):
                 ("name", cn), ("family", parameter_family(aws, version or "0")),
                 *(("parameter", Block((("name", k), ("value", v)))) for k, v in sorted(params.items())),
                 ("tags", binding_tags(b))]),) if params else ()),
-            *main, *adopt)
+            *main, *adopt, *_copy(m, b, n))
 
 
 def render_databases(m):
@@ -206,9 +258,9 @@ def _secret(a):
     return next((s.get("secret_arn") for s in blocks(a.get("master_user_secret")) if s.get("secret_arn")), None)
 
 
-def _read(kind_ref, a, name, engine_name, version, group, params, members=(), admitted=()):
+def _read(kind_ref, a, name, engine_name, version, group, params, members=(), admitted=(), copies=()):
     """The database resource of an RDS instance or Aurora cluster's attributes (admitted: the ranges its security
-    groups' rules let in)."""
+    groups' rules let in; copies: the regions its automated backups are replicated to)."""
     engine, edition, service = neutral_engine(engine_name)
     if engine is None:
         return None
@@ -225,6 +277,7 @@ def _read(kind_ref, a, name, engine_name, version, group, params, members=(), ad
         "ciamZone": a.get("availability_zone") if not ha and service != "aurora" else None,
         "ciamDbHighAvailability": "zone-redundant" if ha else "none", "ciamDbTlsRequired": _bool(tls),
         "ciamRetentionDays": retention, "ciamDbPointInTime": _bool(bool(retention)),
+        "ciamCopyRegion": list(copies) or None,
         "ciamDbDeletionProtection": _bool(a.get("deletion_protection")),
         "ciamDbParameter": sorted(f"{k}={v}" for k, v in params.items() if k != _TLS.get(engine)),
         "ciamSourceCidr": sorted(set(admitted))},
@@ -253,9 +306,18 @@ def _admits(admitted, a):
     return tuple(c for g in a.get("vpc_security_group_ids") or () for c in admitted.get(g, ()))
 
 
+def backup_copies(pairs):
+    """{source DB instance ARN: (regions its automated backups are replicated to)}: the region of each
+    aws_db_instance_automated_backups_replication's ARN (arn:aws:rds:<region>:<account>:auto-backup:<id>)."""
+    found = [(a.get("source_db_instance_arn"), (a.get("id") or a.get("arn") or "").split(":"))
+             for a in of_types(pairs, "aws_db_instance_automated_backups_replication")]
+    return {src: tuple(dict.fromkeys(p[3] for s, p in found if s == src and len(p) > 3 and p[3]))
+            for src in dict.fromkeys(s for s, _ in found if s)}
+
+
 def database_resources(pairs):
     """Database resources of (Terraform type, attributes) pairs: RDS instances and Aurora clusters."""
-    admitted = _admitted(pairs)
+    admitted, copies = _admitted(pairs), backup_copies(pairs)
     groups = {a.get("name"): tuple(a.get("subnet_ids") or ()) for a in of_types(pairs, "aws_db_subnet_group")}
     params = {a.get("name"): {p.get("name"): str(p.get("value")) for p in blocks(a.get("parameter"))}
               for a in of_types(pairs, "aws_db_parameter_group", "aws_rds_cluster_parameter_group")}
@@ -263,7 +325,7 @@ def database_resources(pairs):
     instances = (_read(a.get("arn") or a.get("identifier"), a, a.get("identifier"), a.get("engine"),
                        a.get("engine_version_actual") or a.get("engine_version"),
                        groups.get(a.get("db_subnet_group_name"), ()), params.get(a.get("parameter_group_name"), {}),
-                       admitted=_admits(admitted, a))
+                       admitted=_admits(admitted, a), copies=copies.get(a.get("arn"), ()))
                  for a in of_types(pairs, "aws_db_instance") if not a.get("cluster_identifier"))
     clusters = (_read(c.get("arn") or c.get("cluster_identifier"), c, c.get("cluster_identifier"), c.get("engine"),
                       c.get("engine_version_actual") or c.get("engine_version"),

@@ -35,7 +35,7 @@ from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned
 from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
 from opsdir_format_terraform.state import blocks, first_block
-from .names import REGION, label, name_parts, resource_id
+from .names import REGION, label, name_parts, resource_id, state_labels
 
 DAY = 86400
 # what Backup and DR's items are: (kind, Cloud Asset Inventory asset type), (kind, the collection in their names)
@@ -218,7 +218,8 @@ def backup_resources(pairs):
             "ciamStorageImmutability": ("compliance" if a.get("effective_time") else "governance") if days > 1 else "none",
             "ciamStorageLockDays": days if days > 1 else None,
             "ciamCrossRegionRestore": "TRUE" if elsewhere else "FALSE"},
-            name=(a.get("labels") or {}).get("name") or _last(vid), role=(a.get("labels") or {}).get("role")))
+            name=(a.get("labels") or {}).get("name") or _last(vid), role=(a.get("labels") or {}).get("role"),
+            tags=state_labels(a)))
     locations = {_last(resource_id(a.get("id") or a.get("name"))): a.get("location")
                  for a in of_types(pairs, "google_backup_dr_backup_vault")}
     found = []

@@ -17,6 +17,7 @@ from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comm
 from .access import ACCESS
 from .databases import render_databases
 from .storage import render_object_stores
+from .audit import render_trails
 from .backups import render_backups
 from .volumes import boot_tag, os_disk, server_volumes, snapshot_policy_notes
 from .dns import FORWARDING_RULESET, forwarding_rules, records, service_record
@@ -66,7 +67,8 @@ def _server(m, s, des, identities=()):
                 ("ip_configuration", Block((
                     ("name", "primary"),
                     ("subnet_id", ref(f"data.azurerm_subnet.{tf_name(rdn_value(subnet_of(m, s)))}.id")),
-                    ("private_ip_address_allocation", "Static"), ("private_ip_address", one(s, "ciamPrivateIp")))))]),
+                    ("private_ip_address_allocation", "Static"), ("private_ip_address", one(s, "ciamPrivateIp"))))),
+                ("tags", tagged(m, {"Role": role, "ManagedBy": "opsdir"}))]),
             block("resource", ["azurerm_network_interface_security_group_association", n], [
                 ("network_interface_id", ref(f"azurerm_network_interface.{n}.id")),
                 ("network_security_group_id", ref(f"azurerm_network_security_group.{tf_name(role)}.id"))]),
@@ -185,7 +187,7 @@ def render(m, services):
            *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
-           *forwarding_rules(m),
+           *forwarding_rules(m), *render_trails(m),
            *_key_vault_secrets(m), *scope_data(m, identities))
     notes = "\n".join(_interconnect_note(m, ic) for ic in of_class(m, "ciamInterconnect"))
     unbound = unbound_comments(m.unbound)

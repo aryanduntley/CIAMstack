@@ -761,6 +761,34 @@
       "match": "The region catalog holds no azure regions, so target/prod's region eastus2",
       "planted": "the record holds no region list from Azure yet, so the target's region can't be checked against the provider's list",
       "cleared_by": "CHG-2021"
+    },
+    {
+      "id": "A82",
+      "area": "Audit",
+      "match": "source/prod's audit trails record data-write activity and target/prod's don't",
+      "planted": "the source's CloudTrail logs S3 data writes; the target's Activity Log export records control-plane activity only (Azure logs data access per resource, in each resource's own diagnostic settings)",
+      "cleared_by": null
+    },
+    {
+      "id": "A83",
+      "area": "Audit",
+      "match": "target/prod's only by an immutable store whose policy a privileged user can lift",
+      "planted": "the source's CloudTrail log files are validated (signed digests) and kept under Object Lock; the target's Activity Log container has an unlocked immutability policy, which a privileged user can lift: lock it",
+      "cleared_by": null
+    },
+    {
+      "id": "A84",
+      "area": "Object stores",
+      "match": "Object store `audit-archive` locks objects (compliance 400 days) in source/prod",
+      "planted": "the same unlocked policy, seen as an object store: the fix locks the target's container (compliance)",
+      "cleared_by": null
+    },
+    {
+      "id": "A85",
+      "area": "Databases",
+      "match": "Database `pf-grants-db` copies its backups to us-west-2 in source/prod",
+      "planted": "the source replicates the grant database's automated backups to us-west-2; the target's Flexible Server has no geo-redundant backup, so losing its region loses the backups (the fix asks for the region; Azure copies to the region's pair)",
+      "cleared_by": null
     }
   ]
 }

@@ -2,13 +2,14 @@
 parameter group (TLS where it isn't the engine's default) and key, its master password kept by RDS (never in the
 Terraform or the record), adopted when it exists; one someone else keeps is named. Read back from Terraform state and
 the CLI: engine, edition, version, endpoint, availability, TLS, backups, parameters, and its subnets, key and master
-secret as roles; the password is never read."""
+secret as roles; the password is never read. A copy of its automated backups in another region is rendered through
+that region's provider and read back from state and the CLI."""
 import json
 import re
 
 from opsdir_adapter_aws.cli import cli_resources
-from opsdir_adapter_aws.databases import (aws_engine, database_resources, neutral_engine, parameter_family,
-                                          render_databases)
+from opsdir_adapter_aws.databases import (aws_engine, copy_regions, database_resources, neutral_engine,
+                                          parameter_family, render_databases)
 from opsdir_adapter_aws.inventory import state_resources
 from network_fixtures import ALPHA, entry, model
 
@@ -211,3 +212,42 @@ def test_what_it_renders_reads_back_as_recorded():
     recorded = {k: (v,) if isinstance(v, str) else v for k, v in DB.items()
                 if k not in ("ciamBindingRole", "ciamEncryptedByRole", "ciamSubnetRole")}
     assert {k: db.attrs[k] for k in recorded} == recorded
+
+
+MRK_ARN = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234"
+COPY_ARN = "arn:aws:rds:us-west-2:111122223333:auto-backup:ab-1234"
+
+
+def test_a_copy_region_replicates_automated_backups_through_that_region_s_provider():
+    mrk = entry(ALPHA, "key-db", "ciamKeyRef", ciamBindingRole="db-key", ciamRefUri=f"aws-kms://{MRK_ARN}")
+    db = entry(ALPHA, "db-grants", "ciamDatabase", **DB, ciamCopyRegion=("us-west-2", "eu-west-1"))
+    _, alpha, _ = model(alpha=(mrk, db))
+    assert copy_regions(alpha) == ("us-west-2",)
+    out = _render(mrk, db)
+    assert "# db-grants: RDS replicates automated backups to one region: eu-west-1 not rendered" in out
+    assert '''resource "aws_db_instance_automated_backups_replication" "db_grants" {
+  provider               = aws.copy_us_west_2
+  source_db_instance_arn = aws_db_instance.db_grants.arn
+  retention_period       = 14
+  kms_key_id             = "arn:aws:kms:us-west-2:111122223333:key/mrk-1234"
+}''' in out
+    single = _render(KEY, entry(ALPHA, "db-grants", "ciamDatabase", **DB, ciamCopyRegion="us-west-2"))
+    assert 'variable "db_grants_copy_kms_key_arn"' in single and "kms_key_id             = var.db_grants_copy_kms_key_arn" \
+        in single
+    aurora = _render(KEY, entry(ALPHA, "db-grants", "ciamDatabase", **{**DB, "ciamDbService": "aurora"},
+                                ciamCopyRegion="us-west-2"))
+    assert "Aurora copies backups to another region" in aurora and "automated_backups_replication\"" not in aurora
+
+
+def test_the_copy_region_is_read_back_from_state_and_the_cli():
+    resources, _ = state_resources(_state(("aws_db_instance", "grants", INSTANCE), *GROUPS, (
+        "aws_db_instance_automated_backups_replication", "copy",
+        {"id": COPY_ARN, "source_db_instance_arn": ARN, "retention_period": 14})))
+    (db,) = (r for r in resources if r.kind == "database")
+    assert db.attrs["ciamCopyRegion"] == ("us-west-2",)
+    listed = {"DBInstances": [{"DBInstanceIdentifier": "db-grants", "DBInstanceArn": ARN, "Engine": "postgres",
+                               "EngineVersion": "16.4", "DBInstanceAutomatedBackupsReplications": [
+                                   {"DBInstanceAutomatedBackupsArn": COPY_ARN}]}]}
+    resources, _ = cli_resources({"rds-instances.json": json.dumps(listed)})
+    (db,) = (r for r in resources if r.kind == "database")
+    assert db.attrs["ciamCopyRegion"] == ("us-west-2",)

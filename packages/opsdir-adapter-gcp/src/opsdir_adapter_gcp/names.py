@@ -13,6 +13,12 @@ MANAGED = "Managed by opsdir"         # what a resource the platform's own Terra
 _SELF_LINK = re.compile(r"^(?:https:)?//[^/]+/(?:(?:[a-z]+/)?(?:v\d+[a-z0-9]*|beta|alpha)/)?")
 
 
+def state_labels(a, own=None):
+    """All the labels a source reports on a resource: effective_labels (the provider's default labels included) with
+    its own (own, else its labels) over them; what the estate's tag check judges."""
+    return {**(a.get("effective_labels") or {}), **(own if own is not None else a.get("labels") or {})}
+
+
 def network_tag(m, role):
     """The network tag of environment m's servers of a role."""
     return f"ciam-{rdn_value(m.env)}-{role}"

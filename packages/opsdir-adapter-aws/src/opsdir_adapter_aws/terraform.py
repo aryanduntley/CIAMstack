@@ -26,7 +26,7 @@ from .network import render_network
 from .backups import render_backups
 from .account import provider_block
 from .volumes import render_snapshot_policies, root_block_device, server_volumes
-from .databases import render_databases
+from .databases import copy_alias, copy_regions, render_databases
 from .storage import kept_buckets, render_object_stores
 from .plumbing import network_data
 
@@ -161,6 +161,8 @@ def render(m, services):
         provider_block(m),
         *((provider_block(m, "us-east-1", US_EAST_1, "CloudFront's certificates and web ACLs live in us-east-1"),)
           if _fronted(m, endpoints) else ()),
+        *(provider_block(m, r, copy_alias(r), f"Copies of databases' automated backups in {r}")
+          for r in copy_regions(m)),
         *((block("variable", [RESOLVER_ENDPOINT], [
             ("description", "The landing zone's outbound Route 53 Resolver endpoint the forwarding rules use"),
             ("type", ref("string"))]),) if forwarders(m) else ()),

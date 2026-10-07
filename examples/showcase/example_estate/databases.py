@@ -7,8 +7,9 @@ binding role, attributes), rendered by the cloud adapters into the stack's own T
 cloud reports (cloud.py).
 
   source   RDS for PostgreSQL 16.4, Multi-AZ, TLS required (RDS's default from 15 on), 14 days of backups with
-           point-in-time restore, deletion protection, encrypted with the platform's key; RDS keeps the master
-           password in Secrets Manager (the credential role names that secret)
+           point-in-time restore, copied to us-west-2 (automated backups replication: a region's loss keeps them),
+           deletion protection, encrypted with the platform's multi-region key; RDS keeps the master password in
+           Secrets Manager (the credential role names that secret)
   stage    its own smaller RDS instance in one zone, 7 days of backups, no deletion protection (stage is rebuilt)
   target   Azure Database for PostgreSQL Flexible Server 16 in its own delegated subnet, encrypted with the target's
            key (Azure keeps the minor version current: the record holds the major version)
@@ -18,6 +19,7 @@ Planted for the planner to find (the target was set up from a sandbox template):
   - no zone-redundant standby: the database fails with its zone
   - backups kept 7 days where the source keeps 14
   - no deletion protection (no lock on the server)
+  - its backups stay in its region (no geo-redundant backup), where the source copies them to another
 Approved change CHG-2016 restores the backups and the lock; the zone-redundant standby stays open (its cost is the
 platform team's to approve).
 """
@@ -33,7 +35,7 @@ DATABASES = {
         ("ciamDatabase", "pf-grants", ROLE,
          {**SHARED, "ciamDbEngineVersion": "16.4", "ciamDbService": "rds", "ciamInstanceSize": "db.m6i.large",
           "ciamDbStorageGb": "100", "ciamDbHighAvailability": "zone-redundant", "ciamRetentionDays": "14",
-          "ciamDbDeletionProtection": "TRUE", "ciamSubnetRole": "subnet-pf",
+          "ciamCopyRegion": "us-west-2", "ciamDbDeletionProtection": "TRUE", "ciamSubnetRole": "subnet-pf",
           "ciamSourceCidr": ["10.20.4.0/24", "10.20.5.0/24"],
           "ciamFqdn": "pf-grants.db.aws.internal.example-aero.test",
           "ciamProviderRef": "arn:aws:rds:us-east-1:111122223333:db:pf-grants"}),

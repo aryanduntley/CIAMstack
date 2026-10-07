@@ -90,7 +90,8 @@ def front_door(m, svc, spec, n):
             ("name", f"afd-ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("resource_group_name", RG), ("sku_name", sku),
             ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]),
         block("resource", ["azurerm_cdn_frontdoor_endpoint", n], [
-            ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("cdn_frontdoor_profile_id", profile)]),
+            ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("cdn_frontdoor_profile_id", profile),
+            ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]),
         block("resource", ["azurerm_cdn_frontdoor_origin_group", n], [
             ("name", "servers"), ("cdn_frontdoor_profile_id", profile),
             ("session_affinity_enabled", spec.stickiness == "cookie"),
@@ -123,7 +124,8 @@ def front_door(m, svc, spec, n):
               ("name", f"waf{tf_name(rdn_value(m.env)).replace('_', '')}{n.replace('_', '')}"),
               ("resource_group_name", RG), ("sku_name", sku), ("enabled", True),
               ("mode", "Detection" if spec.waf_mode == "detect" else "Prevention"),
-              *_custom_rules(spec), *_managed_rules(spec)]),
+              *_custom_rules(spec), *_managed_rules(spec),
+              ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]),
            block("resource", ["azurerm_cdn_frontdoor_security_policy", n], [
               ("name", f"{n.replace('_', '-')}-waf"), ("cdn_frontdoor_profile_id", profile),
               ("security_policies", Block((("firewall", Block((
@@ -135,7 +137,8 @@ def front_door(m, svc, spec, n):
         block("resource", ["azurerm_dns_txt_record", f"{n}_dnsauth"], [
             ("name", f"_dnsauth.{record_name(name, zone)}" if record_name(name, zone) != "@" else "_dnsauth"),
             ("zone_name", zone), ("resource_group_name", RG), ("ttl", 3600),
-            ("record", Block((("value", ref(f"azurerm_cdn_frontdoor_custom_domain.{n}.validation_token")),)))]))
+            ("record", Block((("value", ref(f"azurerm_cdn_frontdoor_custom_domain.{n}.validation_token")),))),
+            ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]))
 
 
 def endpoint(n):

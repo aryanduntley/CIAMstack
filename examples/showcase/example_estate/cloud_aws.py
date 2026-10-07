@@ -10,6 +10,7 @@ by source address; the AD domain is forwarded by a Resolver rule.
     - the disk key's automatic rotation switched off
     - a CloudWatch alarm someone added in the console (ds-cpu-high), untagged: named, not recorded
     - PingFederate's role given secretsmanager:ListSecrets on everything in the console
+  Its CloudTrail trail and the Object Lock bucket keeping its log files, as the record has them (read back unchanged).
   Its network depth as the stack's own Terraform made it: the Secrets Manager endpoint, the LDAPS endpoint service and
   the egress firewall's domain list.
   source/prod, the landing zone's Terraform state (landing-zone.tfstate): the pipeline's OIDC role, the admins'
@@ -194,6 +195,30 @@ def _aws_monitoring():
             _res("managed", "aws_cloudwatch_metric_alarm", "ds-cpu-high", {      # someone added it in the console
                 "arn": "arn:aws:cloudwatch:us-east-1:111122223333:alarm:ds-cpu-high", "alarm_name": "ds-cpu-high",
                 "namespace": "AWS/EC2", "metric_name": "CPUUtilization"})]
+
+
+def _aws_audit():
+    """The source's CloudTrail trail (management events, and S3 data writes to the backup bucket) and the bucket under
+    Object Lock that keeps its log files."""
+    (_, cn, role, store), = [x for x in MONITORING["source"] if x[0] == "ciamObjectStore"]
+    (_, _, trail_role, trail), = [x for x in MONITORING["source"] if x[0] == "ciamAuditTrail"]
+    bucket = store["ciamStorageRef"][len("s3://"):]
+    return [_res("managed", "aws_s3_bucket", cn, {"bucket": bucket, "arn": store["ciamProviderRef"],
+                                                  "object_lock_enabled": True,
+                                                  "tags": {"Name": cn, "Role": role, "ManagedBy": "opsdir"}}),
+            _res("managed", "aws_s3_bucket_versioning", cn, {
+                "bucket": bucket, "versioning_configuration": [{"status": "Enabled"}]}),
+            _res("managed", "aws_s3_bucket_object_lock_configuration", cn, {"bucket": bucket, "rule": [
+                {"default_retention": [{"mode": store["ciamStorageImmutability"].upper(),
+                                        "days": int(store["ciamStorageLockDays"]), "years": None}]}]}),
+            _res("managed", "aws_cloudtrail", "ciam_prod", {
+                "arn": trail["ciamProviderRef"], "name": trail["ciamProviderRef"].rsplit("/", 1)[1],
+                "s3_bucket_name": bucket, "is_multi_region_trail": True, "include_global_service_events": True,
+                "enable_log_file_validation": True, "is_organization_trail": False,
+                "event_selector": [{"read_write_type": "WriteOnly", "include_management_events": True,
+                                    "data_resource": [{"type": "AWS::S3::Object", "values": [
+                                        f"arn:aws:s3:::{SOURCE['backup'][len('s3://'):]}/"]}]}],
+                "tags": {"Role": trail_role, "ManagedBy": "opsdir"}})]
 
 
 def _drifted_source(p, subnets, groups):
@@ -390,6 +415,11 @@ def _aws_databases(p, groups):
                     "master_user_secret": [{"secret_arn": p["secret"](a["ciamDbCredentialRole"]).split("://", 1)[1],
                                             "secret_status": "active"}],
                     "tags": tags}),
+                *(_res("managed", "aws_db_instance_automated_backups_replication", f"{cn}_{region}", {
+                    "id": f"arn:aws:rds:{region}:{ACCOUNT}:auto-backup:ab-{hex_id(cn, region, n=26)}",
+                    "source_db_instance_arn": a["ciamProviderRef"], "retention_period": int(a["ciamRetentionDays"]),
+                    "kms_key_id": p["key"][0].split("://", 1)[1].replace(REGION, region)})
+                  for region in ([a["ciamCopyRegion"]] if a.get("ciamCopyRegion") else [])),
                 *(_res("managed", "aws_vpc_security_group_ingress_rule", f"{role}_{i}", {
                     "security_group_rule_id": f"sgr-0{hex_id(role, cidr, n=16)}", "security_group_id": groups[role],
                     "cidr_ipv4": cidr, "from_port": int(a["ciamPort"]), "to_port": int(a["ciamPort"]),
@@ -487,7 +517,7 @@ def source_state():
     subnets, instances, groups = _source_ids(p)
     resources = [*_aws_network(p, subnets), *_aws_servers(p, subnets, instances, groups, {"pf-engine-2": "m6i.xlarge"}),
                  *_aws_firewall(p, groups), *_aws_services(p, instances), *_aws_keys(p, rotation=False),
-                 *_aws_monitoring(), *_drifted_source(p, subnets, groups), *_source_iam(), *_aws_dns(p),
+                 *_aws_monitoring(), *_aws_audit(), *_drifted_source(p, subnets, groups), *_source_iam(), *_aws_dns(p),
                  *_aws_network_depth(p), *_aws_databases(p, groups), *_aws_volumes(p, instances),
                  *_aws_backups(p)]
     return indented({"version": 4, "terraform_version": "1.9.5", "serial": 214, "lineage": "5e0c-ciam-prod",

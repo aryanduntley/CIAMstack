@@ -374,6 +374,13 @@ resource "azurerm_network_interface" "am_1" {
     private_ip_address_allocation = "Static"
     private_ip_address            = "10.60.3.21"
   }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "am"
+    ManagedBy   = "opsdir"
+  }
 }
 
 resource "azurerm_network_interface_security_group_association" "am_1" {
@@ -421,6 +428,13 @@ resource "azurerm_network_interface" "am_2" {
     private_ip_address_allocation = "Static"
     private_ip_address            = "10.60.3.22"
   }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "am"
+    ManagedBy   = "opsdir"
+  }
 }
 
 resource "azurerm_network_interface_security_group_association" "am_2" {
@@ -467,6 +481,13 @@ resource "azurerm_network_interface" "ds_1" {
     subnet_id                     = data.azurerm_subnet.snet_ds.id
     private_ip_address_allocation = "Static"
     private_ip_address            = "10.60.1.11"
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "ds"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -550,6 +571,13 @@ resource "azurerm_network_interface" "ds_2" {
     private_ip_address_allocation = "Static"
     private_ip_address            = "10.60.1.12"
   }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "ds"
+    ManagedBy   = "opsdir"
+  }
 }
 
 resource "azurerm_network_interface_security_group_association" "ds_2" {
@@ -631,6 +659,13 @@ resource "azurerm_network_interface" "ds_3" {
     subnet_id                     = data.azurerm_subnet.snet_ds.id
     private_ip_address_allocation = "Static"
     private_ip_address            = "10.60.1.13"
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "ds"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -714,6 +749,13 @@ resource "azurerm_network_interface" "idm_1" {
     private_ip_address_allocation = "Static"
     private_ip_address            = "10.60.6.21"
   }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "idm"
+    ManagedBy   = "opsdir"
+  }
 }
 
 resource "azurerm_network_interface_security_group_association" "idm_1" {
@@ -760,6 +802,13 @@ resource "azurerm_network_interface" "ig_1" {
     subnet_id                     = data.azurerm_subnet.snet_ig.id
     private_ip_address_allocation = "Static"
     private_ip_address            = "10.60.10.21"
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "ig"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -808,6 +857,13 @@ resource "azurerm_network_interface" "pf_admin_1" {
     private_ip_address_allocation = "Static"
     private_ip_address            = "10.60.2.10"
   }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "pf-admin"
+    ManagedBy   = "opsdir"
+  }
 }
 
 resource "azurerm_network_interface_security_group_association" "pf_admin_1" {
@@ -854,6 +910,13 @@ resource "azurerm_network_interface" "pf_engine_1" {
     subnet_id                     = data.azurerm_subnet.snet_pf.id
     private_ip_address_allocation = "Static"
     private_ip_address            = "10.60.2.21"
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "pf-engine"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -905,6 +968,13 @@ resource "azurerm_network_interface" "pf_engine_2" {
     subnet_id                     = data.azurerm_subnet.snet_pf.id
     private_ip_address_allocation = "Static"
     private_ip_address            = "10.60.2.22"
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "pf-engine"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -1069,6 +1139,13 @@ resource "azurerm_private_dns_a_record" "svc_ldaps" {
   resource_group_name = data.azurerm_resource_group.main.name
   ttl                 = 300
   records             = ["10.60.1.100"]
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Service     = "ldap.id.cloud.example-aero.test"
+    ManagedBy   = "opsdir"
+  }
 }
 
 data "azurerm_public_ip" "svc_login" {
@@ -1238,6 +1315,12 @@ resource "azurerm_user_assigned_identity" "svc_sso_gateway" {
   name                = "id-agw-ciam-prod-svc_sso"
   resource_group_name = data.azurerm_resource_group.main.name
   location            = data.azurerm_resource_group.main.location
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
+  }
 }
 
 data "azurerm_key_vault" "svc_sso_tls" {
@@ -1604,6 +1687,70 @@ resource "azurerm_postgresql_flexible_server_configuration" "psql_ciam_prod_pf_g
 import {
   to = azurerm_postgresql_flexible_server.psql_ciam_prod_pf_grants
   id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.DBforPostgreSQL/flexibleServers/psql-ciam-prod-pf-grants"
+}
+
+resource "azurerm_storage_account" "stciamprodaudit" {
+  name                       = "stciamprodaudit"
+  resource_group_name        = data.azurerm_resource_group.main.name
+  location                   = data.azurerm_resource_group.main.location
+  account_tier               = "Standard"
+  account_replication_type   = "ZRS"
+  min_tls_version            = "TLS1_2"
+  https_traffic_only_enabled = true
+  blob_properties {
+    versioning_enabled = true
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
+  }
+}
+
+import {
+  to = azurerm_storage_account.stciamprodaudit
+  id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Storage/storageAccounts/stciamprodaudit"
+}
+
+resource "azurerm_storage_container" "activity_logs" {
+  name                  = "insights-activity-logs"
+  storage_account_id    = azurerm_storage_account.stciamprodaudit.id
+  container_access_type = "private"
+  metadata = {
+    role      = "audit-archive"
+    managedby = "opsdir"
+  }
+}
+
+resource "azurerm_storage_container_immutability_policy" "activity_logs" {
+  storage_container_resource_manager_id = azurerm_storage_container.activity_logs.resource_manager_id
+  immutability_period_in_days           = 400
+  protected_append_writes_enabled       = false
+  locked                                = false
+}
+
+import {
+  to = azurerm_storage_container.activity_logs
+  id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Storage/storageAccounts/stciamprodaudit/blobServices/default/containers/insights-activity-logs"
+}
+
+data "azurerm_subscription" "current" {
+}
+
+resource "azurerm_monitor_diagnostic_setting" "activity_log" {
+  name               = "ciam-activity-log"
+  target_resource_id = data.azurerm_subscription.current.id
+  storage_account_id = azurerm_storage_account.stciamprodaudit.id
+  enabled_log {
+    category = "Administrative"
+  }
+  enabled_log {
+    category = "Security"
+  }
+  enabled_log {
+    category = "Policy"
+  }
 }
 
 data "azurerm_key_vault" "kv_ciam_prod" {

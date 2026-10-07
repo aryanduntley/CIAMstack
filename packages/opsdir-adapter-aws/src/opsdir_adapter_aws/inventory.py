@@ -89,7 +89,7 @@ def _role(a):
 
 def _networks(found):
     return tuple(resource("network", a.get("id"), {"ciamCidr": a.get("cidr_block")}, name=_tags(a).get("Name"),
-                          role=_role(a) or "network") for a in of_types(found, "aws_vpc"))
+                          role=_role(a) or "network", tags=_tags(a)) for a in of_types(found, "aws_vpc"))
 
 
 def _subnets(found):
@@ -137,7 +137,7 @@ def _services(found):
                 (m.get("public_ip") for m in mappings if m.get("public_ip")), None),
             "ciamProviderRef": None if lb.get("internal") else allocation,
             "ciamEdgeFact": facts, "ciamEdgeSetting": settings, **(service_dns(alias) if alias else {})},
-            name=lb.get("name"), role=_role(lb))
+            name=lb.get("name"), role=_role(lb), tags=_tags(lb))
     return tuple(one_lb(lb) for lb in of_types(found, "aws_lb", "aws_alb"))
 
 
@@ -208,6 +208,9 @@ def _firewall(found, claimed=frozenset()):
     named = [(n, sg, cidr, _port(rule)[0], str(rule.get("protocol") or ""), role)
              for n, sg, cidrs, rule, role in rules for cidr in cidrs]
     names = list(dict.fromkeys(n for n, *_ in named))
+    # a separate rule is a resource with its own tags; an inline rule is part of its group (judged as no resource)
+    tagged = {_name_of(rule.get("description") or "", tag, ref): _tags(rule)
+              for _, _, rule, tag, _, ref in separate}
     notices = (*(f"security group rule {n}: {why}, not a single port; not recorded" for n, why in
                  dict.fromkeys((n, _port(rule)[1]) for n, _, cidrs, rule, _ in rules if cidrs and _port(rule)[1])),
                *(f"security group rule {n}: source {s} is not an IPv4 address range; not recorded"
@@ -218,7 +221,8 @@ def _firewall(found, claimed=frozenset()):
                      "ciamProtocol": next((p for n, *_, p, _ in named if n == name and p in ("tcp", "udp")), None),
                      "ciamTargetRole": next((_target_role(sg, members) for n, sg, *_ in named if n == name and sg),
                                             None)},
-                          name=name, role=next((r for n, *_, r in named if n == name and r), None))
+                          name=name, role=next((r for n, *_, r in named if n == name and r), None),
+                          tags=tagged.get(name))
                  for name in names), notices
 
 
@@ -329,7 +333,7 @@ def _compute(found):
             "ciamMaxSize": a.get("max_size"), "ciamDesiredSize": a.get("desired_capacity"),
             "ciamSpansZone": _zones_of(a.get("vpc_zone_identifier"), zones)
             or sorted(a.get("availability_zones") or ()),
-            "ciamMetadataTokens": _tokens(template)}, name=a.get("name"), role=binding)
+            "ciamMetadataTokens": _tokens(template)}, name=a.get("name"), role=binding, tags=_asg_tags(a))
     return tuple(group(a) for a in of_types(found, "aws_autoscaling_group") if a.get("arn") or a.get("name"))
 
 
@@ -383,7 +387,7 @@ def _sending(found):
             "ciamSenderDomain": domain, "ciamDkimVerified": _dkim(a, found, domain),
             "ciamSpfAuthorized": spf_authorizes(_txt(found, domain), SES_SPF),
             "ciamDmarcPolicy": dmarc_policy(_txt(found, f"_dmarc.{domain}"))}, name=f"ses-{domain}", role=_role(a),
-                        tags=_tags(a))
+                        tags=_tags(a) if a.get("email_identity") else None)   # SES v1 identities take no tags
     return tuple(identity(a) for a in of_types(found, "aws_sesv2_email_identity", "aws_ses_domain_identity")
                  if "@" not in (a.get("email_identity") or a.get("domain") or "@"))
 
@@ -426,7 +430,8 @@ def _alarms(found):
         role, realizes = realization_roles(_tags(a), "alarm")
         notifies = sorted({x for k in ALARM_ACTIONS for x in a.get(k) or ()})
         return resource("alarm", a.get("arn"), {"ciamMetric": _metric(a), "ciamRealizes": realizes,
-                                                "ciamNotifies": notifies}, name=a.get("alarm_name"), role=role)
+                                                "ciamNotifies": notifies}, name=a.get("alarm_name"), role=role,
+                        tags=_tags(a))
     return tuple(alarm(a) for a in of_types(found, "aws_cloudwatch_metric_alarm") if a.get("arn"))
 
 
@@ -440,7 +445,8 @@ def _canaries(found):
     def canary(a):
         role, realizes = realization_roles(_tags(a), "canary")
         return resource("canary", a.get("arn"), {"ciamInterval": _interval(a.get("schedule")),
-                                                 "ciamRealizes": realizes}, name=a.get("name"), role=role)
+                                                 "ciamRealizes": realizes}, name=a.get("name"), role=role,
+                        tags=_tags(a))
     return tuple(canary(a) for a in of_types(found, "aws_synthetics_canary") if a.get("arn"))
 
 

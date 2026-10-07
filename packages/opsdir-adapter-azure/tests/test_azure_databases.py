@@ -8,7 +8,9 @@ import re
 
 from opsdir_adapter_azure.arm import arm_resources
 from opsdir_adapter_azure.cli import cli_resources
+from opsdir.core.directory import make_entry
 from opsdir_adapter_azure.databases import render_databases
+from opsdir_adapter_azure.pairs import paired_region
 from opsdir_adapter_azure.inventory import state_resources
 from network_fixtures import ALPHA, entry, model
 
@@ -181,3 +183,36 @@ def test_an_arm_template_deploys_the_same_and_its_password_parameter_is_never_ev
     assert (db.role, db.attrs["ciamDbParameter"], db.attrs["ciamDbHighAvailability"]) == (
         "pf-grants-db", ("log_min_duration_statement=500",), ("zone-redundant",))
     assert "s3cr3t" not in repr(resources)
+
+
+def _in_region(m, region):
+    """Model m with its cloud in region."""
+    return m._replace(cloud=make_entry(m.cloud.dn, m.cloud.classes, {**m.cloud.attrs, "ciamRegion": (region,)}))
+
+
+def test_a_copy_region_is_geo_redundant_backup_to_the_region_s_pair():
+    assert (paired_region("eastus2"), paired_region("usgovvirginia"), paired_region("usgovtexas")) == (
+        "centralus", "usgovtexas", None)
+    db = entry(ALPHA, "db-grants", "ciamDatabase", **DB, ciamCopyRegion="centralus", ciamProviderRef=PG)
+    _, alpha, _ = model(alpha=(KEY, SECRET, db))
+    out = "\n\n".join(render_databases(_in_region(alpha, "eastus2")))
+    assert "geo_redundant_backup_enabled = true" in out and "not centralus" not in out
+    assert "# db-grants: geo-redundant backup is chosen when a server is created" in out
+    other = "\n\n".join(render_databases(_in_region(model(alpha=(KEY, SECRET, entry(
+        ALPHA, "db-grants", "ciamDatabase", **DB, ciamCopyRegion="westus3")))[1], "eastus2")))
+    assert "# db-grants: Azure copies geo-redundant backups to eastus2's pair, centralus, not westus3: record " \
+           "centralus as its ciamCopyRegion" in other
+    unknown = _render(KEY, SECRET, entry(ALPHA, "db-grants", "ciamDatabase", **DB, ciamCopyRegion="region-2"))
+    assert "paired region, which isn't known here" in unknown and "geo_redundant_backup_enabled = true" in unknown
+
+
+def test_geo_redundant_backup_is_read_back_as_the_location_s_pair():
+    resources, _ = state_resources(_state(("azurerm_postgresql_flexible_server", "grants",
+                                           {**SERVER, "location": "eastus2", "geo_redundant_backup_enabled": True})))
+    (db,) = (r for r in resources if r.kind == "database")
+    assert db.attrs["ciamCopyRegion"] == ("centralus",)
+    server = {"id": PG, "name": "db-grants", "type": "Microsoft.DBforPostgreSQL/flexibleServers", "version": "16",
+              "location": "usgovvirginia", "backup": {"backupRetentionDays": 14, "geoRedundantBackup": "Enabled"}}
+    resources, _ = cli_resources({"pg.json": json.dumps([server])})
+    (db,) = (r for r in resources if r.kind == "database")
+    assert db.attrs["ciamCopyRegion"] == ("usgovtexas",)

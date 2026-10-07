@@ -257,7 +257,7 @@ def volume_resources(pairs):
         return resource("volume", name, {**_disk_attrs(disks, "data", "size", "type"), "ciamTargetRole": role},
                         links={"ciamEncryptedByRole": _common(d.get("kms_key_id") for d in disks),
                                "ciamSnapshotPolicyRole": targets.get(policy)},
-                        name=name, role=_common(_cloud_tags(d).get("Role") for d in disks))
+                        name=name, role=_common(_cloud_tags(d).get("Role") for d in disks), tags=_cloud_tags(disks[0]))
     roots = [(i, first_block(i.get("root_block_device"))) for i in instances.values()]
     booted = {}
     for i, r in roots:
@@ -269,7 +269,8 @@ def volume_resources(pairs):
         return resource("volume", name, {**_disk_attrs(disks, "boot", "volume_size", "volume_type"),
                                          "ciamTargetRole": _common(_cloud_tags(i).get("Role") for i, _ in found)},
                         links={"ciamEncryptedByRole": _common(r.get("kms_key_id") for r in disks)},
-                        name=name, role=_common((r.get("tags") or {}).get("Role") for r in disks))
+                        name=name, role=_common((r.get("tags") or {}).get("Role") for r in disks),
+                        tags=disks[0].get("tags") or {})
     volumes = (*(data(name, disks) for name, disks in named.items() if name),
                *(boot(name, found) for name, found in booted.items()))
     return ((*policies, *volumes),

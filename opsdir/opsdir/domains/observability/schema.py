@@ -63,8 +63,8 @@ ATTRIBUTES = (
     AttributeDef(497, 'ciamAllRegions', 'bool', 'binding', True,
                  "Whether an audit trail records activity in every region (and global services), not one region"),
     AttributeDef(498, 'ciamIntegrityValidation', 'bool', 'binding', True,
-                 "Whether an audit trail's records can be proven unaltered (CloudTrail's digest files, immutable "
-                 "storage)"),
+                 "Whether the cloud cryptographically validates an audit trail's records (CloudTrail's signed digest "
+                 "files); a locked immutable store keeping them is graded through its ciamStorageImmutability"),
 )
 CLASSES = (
     ClassDef(62, 'ciamAlertRule', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamSignal', 'ciamAlertRole'),

@@ -654,6 +654,30 @@ ciamProviderRef: arn:aws:synthetics:us-east-1:111122223333:canary:ciam-sso-log
  in
 ciamRealizes: sso-login
 
+dn: cn=audit-archive,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamObjectStore
+cn: audit-archive
+ciamBindingRole: audit-archive
+ciamProviderRef: arn:aws:s3:::example-aero-ciam-prod-cloudtrail
+ciamStorageImmutability: compliance
+ciamStorageLockDays: 400
+ciamStorageRef: s3://example-aero-ciam-prod-cloudtrail
+ciamStorageVersioning: TRUE
+
+dn: cn=cloudtrail,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAuditTrail
+cn: cloudtrail
+ciamAllRegions: TRUE
+ciamAuditEvents: control-plane
+ciamAuditEvents: data-write
+ciamAuditScope: account
+ciamBindingRole: audit-trail
+ciamIntegrityValidation: TRUE
+ciamLogDestinationRole: audit-archive
+ciamProviderRef: arn:aws:cloudtrail:us-east-1:111122223333:trail/ciam-prod
+
 dn: cn=identity-pf,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamIdentityBinding
@@ -916,6 +940,7 @@ objectClass: top
 objectClass: ciamDatabase
 cn: pf-grants
 ciamBindingRole: pf-grants-db
+ciamCopyRegion: us-west-2
 ciamDbCredentialRole: pf-grants-db-password
 ciamDbDeletionProtection: TRUE
 ciamDbEngine: postgresql

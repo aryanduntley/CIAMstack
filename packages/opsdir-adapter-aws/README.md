@@ -85,6 +85,7 @@ The core `data` domain's databases (`ciamDatabase`) the stack keeps render into 
 | Record | Renders as |
 |---|---|
 | `ciamDatabase` (service `rds`, or none) | `aws_db_instance`: engine from `ciamDbEngine` and `ciamDbEdition` (`postgres`, `mysql`, `mariadb`, `sqlserver-se`/`-ee`/`-ex`/`-web`, `oracle-se2`/`-ee`), `ciamDbEngineVersion`, `ciamInstanceSize`, `ciamDbStorageGb`, `ciamPort`, `multi_az` when `ciamDbHighAvailability` is `zone-redundant` (else `ciamZone`), `storage_encrypted` with the KMS key of `ciamEncryptedByRole`, `backup_retention_period` from `ciamRetentionDays`, `deletion_protection`, not publicly accessible; tags `Name`, `Role`, `ManagedBy` |
+| `ciamCopyRegion` of an RDS instance | `aws_db_instance_automated_backups_replication`: its automated backups (and the transaction logs point-in-time restore replays) copied to the first copy region, created through that region's provider (`aws.copy_<region>`, declared in `providers.tf`), encrypted with the key's replica there when `ciamEncryptedByRole` is a multi-region key (`mrk-`), else with the key `var.<db>_copy_kms_key_arn` names; RDS replicates to one region, so further regions are a comment, and so is Aurora (a global database or an AWS Backup copy does it) |
 | service `aurora` (PostgreSQL, MySQL) | `aws_rds_cluster` with the same settings and one `aws_rds_cluster_instance`, two when zone-redundant |
 | Credentials | `manage_master_user_password`: RDS keeps the master password in Secrets Manager, so no password is in the Terraform, its state or the record; `ciamDbCredentialRole` names that secret's binding. The master user name is a variable, `<database>_admin_username` |
 | `ciamSubnetRole` | `aws_db_subnet_group` of those subnets |
@@ -142,7 +143,7 @@ The importer `aws/terraform-state` reads Terraform state (format version 4, `has
 | `aws_sqs_queue`, `aws_sns_topic`, `aws_cloudwatch_event_bus` (not the default bus), `aws_kinesis_stream` | stream carrier (`ciamStreamBinding`): what carries an event stream (`ou=event-streams` names its binding role, `ciamStreamRole`); an SNS topic an alarm notifies is an alert channel instead | ARN (`ciamProviderRef`) |
 | `aws_sns_topic` named in an alarm's `alarm_actions`, `ok_actions` or `insufficient_data_actions` | alert channel (`ciamAlertChannel`, the core observability domain): `topic`; an alert rule's `ciamAlertRole` names it | ARN (`ciamProviderRef`) |
 | `aws_cloudwatch_log_group` | log destination (`ciamLogDestination`): `log-group`, its retention in days (`0`: never expires, which meets any obligation); a log route's `ciamLogDestinationRole` names it | ARN (`ciamProviderRef`) |
-| `aws_cloudtrail` | audit trail (`ciamAuditTrail`, role `audit-trail` unless tagged): `organization` or `account` (`is_organization_trail`), the activity its event selectors record (basic or advanced; none: `control-plane`), all regions, integrity validation, and where its records go (`ciamLogDestinationRole`: the role of its bucket's object store, or of its CloudWatch log group) | ARN (`ciamProviderRef`) |
+| `aws_cloudtrail` | audit trail (`ciamAuditTrail`, role `audit-trail` unless tagged): `organization` or `account` (`is_organization_trail`), the activity its event selectors record (basic or advanced; none: `control-plane`), all regions, integrity validation, and where its records go (`ciamLogDestinationRole`: the role of its bucket's object store, or of its CloudWatch log group). The CLI's `cloudtrail describe-trails`, `get-event-selectors` and `list-tags`, and CloudFormation's `AWS::CloudTrail::Trail`, are read the same way | ARN (`ciamProviderRef`) |
 | `aws_cloudwatch_metric_alarm` | alarm the cloud runs (`ciamAlarmBinding`): what it evaluates (`ciamMetric`: namespace and metric, or `metric query`), the topics it notifies (`ciamNotifies`), the alert rule it realizes (`ciamRealizes`, its tag `Realizes`). Its binding role is its tag `Role` or `BindingRole`, else `alarm-<Realizes>`; untagged alarms are named, not recorded | ARN (`ciamProviderRef`) |
 | `aws_synthetics_canary` | synthetic check the cloud runs (`ciamCanaryBinding`): its `rate(...)` schedule as an interval (`5m`), the canary it realizes (tag `Realizes`); binding role as for alarms, else `canary-<Realizes>` | ARN (`ciamProviderRef`) |
 | `aws_iam_role` (+ `aws_iam_role_policy`, `aws_iam_role_policy_attachment`, `aws_iam_policy`) | identity binding (`ciamIdentityBinding`, kind `role`, `federated` when an OIDC provider may assume it): who may assume it (`ciamTrustedBy`: a service, `<issuer URL> <subject>` per OIDC subject, a principal ARN), the grants and denials of its inline and attached policies, its permissions boundary's allows as its ceiling (`ciamBoundary`); role from its tag `Role` | role ARN, else its name |
@@ -210,7 +211,7 @@ What the network carries beyond VPCs, subnets and security groups comes back in 
 
 | AWS resource | Record entry |
 |---|---|
-| `aws_db_instance` (not an Aurora member) + its `aws_db_subnet_group` and `aws_db_parameter_group` | database: engine, edition and service (`rds`), version (`engine_version_actual` over `engine_version`), endpoint (`address`) and port, size, storage, zone (single-zone only), `zone-redundant` when `multi_az`, TLS from `rds.force_ssl` / `require_secure_transport` (else the engine's default), retention and point-in-time restore (on while backups are kept), deletion protection, the other parameters the group sets; the IPv4 ranges the rules on its security groups (`vpc_security_group_ids`) admit as `ciamSourceCidr` (those groups aren't read as firewall rules); its subnets, KMS key and master secret (`master_user_secret`) as the roles of those bindings |
+| `aws_db_instance` (not an Aurora member) + its `aws_db_subnet_group` and `aws_db_parameter_group` | database: engine, edition and service (`rds`), version (`engine_version_actual` over `engine_version`), endpoint (`address`) and port, size, storage, zone (single-zone only), `zone-redundant` when `multi_az`, TLS from `rds.force_ssl` / `require_secure_transport` (else the engine's default), retention and point-in-time restore (on while backups are kept), deletion protection, the other parameters the group sets; the IPv4 ranges the rules on its security groups (`vpc_security_group_ids`) admit as `ciamSourceCidr` (those groups aren't read as firewall rules); its subnets, KMS key and master secret (`master_user_secret`) as the roles of those bindings; `ciamCopyRegion` from the region of each `aws_db_instance_automated_backups_replication` copying it (the CLI: `DBInstanceAutomatedBackupsReplications`) |
 | `aws_rds_cluster` (+ `aws_rds_cluster_instance`, `aws_rds_cluster_parameter_group`) | the same with service `aurora`; `zone-redundant` when its instances are in more than one zone, the size its instances' |
 
 ### Disks and snapshot policies, read back
@@ -369,6 +370,16 @@ for p in $(aws backup list-backup-plans --query 'BackupPlansList[].BackupPlanId'
   done
 done
 
+# the control-plane audit trail: trails (a multi-region trail listed from several regions is read once), each one's
+# event selectors and tags (both name their trail)
+aws cloudtrail describe-trails                                                    > $out/trails.json
+mkdir -p $out/cloudtrail
+for arn in $(aws cloudtrail describe-trails --query 'trailList[].TrailARN' --output text); do
+  name=${arn##*/}
+  aws cloudtrail get-event-selectors --trail-name "$arn"                         > "$out/cloudtrail/$name-selectors.json"
+  aws cloudtrail list-tags --resource-id-list "$arn"                             > "$out/cloudtrail/$name-tags.json"
+done
+
 # IAM: roles and policies (AWS managed ones included), key and bucket policies, Identity Center, control policies
 mkdir -p $out/key-policy $out/bucket-policy $out/sso-inline $out/sso-managed $out/org
 ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
@@ -435,7 +446,7 @@ opsdir import --dry-run aws/cloudformation export/
 
 The template says what each resource is declared with; the stack's resources give the IDs the record matches on (`vpc-…`, `i-…`, ARNs), so a stack without its resource listing is read for nothing and named, and so is a folder without a template. Values are resolved from the stack's parameters (else the template's defaults), pseudo parameters (`AWS::Region`, `AWS::AccountId`, … from the stack ID) and physical IDs: `Ref`, `Fn::Sub`, `Fn::Join`, `Fn::Select`, and `Fn::GetAtt` where it links resources (a Route 53 alias to its load balancer, a NAT gateway or load balancer to its Elastic IP's address). JSON and YAML templates are read, short tags (`!Ref`, `!Sub`, `!GetAtt`, …) included.
 
-What the stacks declare is read into the same resources as Terraform state (the mapping is shared: VPCs, subnets, instances, security groups and ingress rules, load balancers with listeners and target groups, alias records, Secrets Manager secrets with rotation schedules, KMS keys, S3 buckets, NAT gateways, Lambda functions, EventBridge rules and their targets (`Fn::GetAtt X.Arn` resolves to X's ARN), Scheduler schedules, CodePipeline pipelines, CodeBuild projects; ARNs built from the stack's partition, region and account), so the table above, roles and `roles.json` apply unchanged. A KMS key's rotation is off unless the template sets `EnableKeyRotation`, as in CloudFormation. Named in the notices:
+What the stacks declare is read into the same resources as Terraform state (the mapping is shared: VPCs, subnets, instances, security groups and ingress rules, load balancers with listeners and target groups, alias records, Secrets Manager secrets with rotation schedules, KMS keys, S3 buckets, NAT gateways, Lambda functions, EventBridge rules and their targets (`Fn::GetAtt X.Arn` resolves to X's ARN), Scheduler schedules, CodePipeline pipelines, CodeBuild projects, CloudTrail trails (with their event selectors); ARNs built from the stack's partition, region and account), so the table above, roles and `roles.json` apply unchanged. A KMS key's rotation is off unless the template sets `EnableKeyRotation`, as in CloudFormation. Named in the notices:
 
 - functions that aren't evaluated (`Fn::If`, `Fn::ImportValue`, `Fn::FindInMap`, `Fn::Cidr`, …), counted per stack: the attributes computed with them keep the record's values;
 - resources without a physical ID (not created, failed, deleted) and resource types not read, counted;
@@ -518,6 +529,8 @@ It adds no required roles, planner checks or schema of its own; the environment'
 - **Compute groups' disks:** AWS doesn't render compute groups (launch templates) yet, so their volumes come from the record only; a launch template's block device mappings aren't read into volumes yet. EBS volumes and Lifecycle Manager policies in CloudFormation stacks come with milestone 5.6.
 
 ## Tests
+
+`tests/test_aws_audit.py`: control-plane audit trails: an account trail the platform keeps rendered into its bucket (data events noted), trails kept by someone else or delivered to CloudWatch Logs named; the activity event selectors record (basic and advanced); a trail read back from state with its bucket's role, from the CLI (a multi-region trail listed twice read once; selectors and tags by ARN) and from a CloudFormation stack (its ARN from the stack's region and account).
 
 `tests/test_aws_cli_edge.py`: the edge from CLI output: the same facts and edge services as from state (attributes by file name, web ACL rules in CLI shape, Shield, CloudFront, hosted zones, record sets with TTL and routing, resolver rules).
 

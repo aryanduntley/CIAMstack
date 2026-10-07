@@ -1,17 +1,18 @@
 """Managed databases: the databases report, and the planner check comparing each database the source and the target
 both bind by role. A move carries the engine and its version unchanged (an upgrade or a conversion is its own change),
-and keeps the database as available, encrypted, protected and backed up as it was. Pure."""
+and keeps the database as available, encrypted, protected and backed up as it was, its backups copied out of its region
+where the source's are (ciamCopyRegion: the region its automated backups and point-in-time logs are copied to). Pure."""
 from ...core.changeset import set_values
 from ...core.directory import one, subtree, values
 from ...core.environment import bound_nowhere, environment_of, of_class
-from ...core.findings import Fix, findings, merge_findings, responsible
+from ...core.findings import Fix, Input, findings, merge_findings, responsible
 from ...core.naming import branch, env_label
 from .kept import carry_fix, key_choice_fix
 from .naming import DEFAULT_PORTS
 
 DATABASE_HEADERS = ("environment", "database", "engine", "version", "edition", "service", "size",
-                    "high availability", "encrypted by", "tls", "backup days", "point in time", "deletion protection",
-                    "endpoint", "credential role")
+                    "high availability", "encrypted by", "tls", "backup days", "point in time", "copied to",
+                    "deletion protection", "endpoint", "credential role")
 AREA = "Databases"
 # what the target must keep as the source has it: (attribute, what losing it means, the value that has it)
 KEPT = (("ciamDbHighAvailability", "no standby to fail over to when its zone fails", "zone-redundant"),
@@ -50,7 +51,8 @@ def database_rows(d, dn=None):
                     one(e, "ciamInstanceSize") or "",
                     one(e, "ciamDbHighAvailability") or "", one(e, "ciamEncryptedByRole") or "",
                     _yes(e, "ciamDbTlsRequired"), one(e, "ciamRetentionDays") or "", _yes(e, "ciamDbPointInTime"),
-                    _yes(e, "ciamDbDeletionProtection"), endpoint(e), one(e, "ciamDbCredentialRole") or "")
+                    ", ".join(values(e, "ciamCopyRegion")), _yes(e, "ciamDbDeletionProtection"), endpoint(e),
+                    one(e, "ciamDbCredentialRole") or "")
                    for e in subtree(d, branch("environments"), "ciamDatabase")), key=lambda row: row[:2])
 
 
@@ -124,6 +126,24 @@ def _retention(ctx, role, s, t, owner):
                                   f"{ctx.dst.label}, as {ctx.src.label} does")])
 
 
+def _copies(ctx, role, s, t, owner):
+    """An action, with a fix, when the source copies the database's backups to another region and the target copies
+    them nowhere: losing the target's region would lose its backups too."""
+    regions = values(s, "ciamCopyRegion")
+    if not regions or values(t, "ciamCopyRegion"):
+        return findings()
+    region = Input("ciamCopyRegion", f"the region {ctx.dst.label}'s backups of `{role}` are copied to", (), regions)
+    return findings(actions=[(AREA, f"Database `{role}` copies its backups to {', '.join(regions)} in "
+                              f"{ctx.src.label}; in {ctx.dst.label} they stay in its region: losing the region loses "
+                              "them too, and point-in-time restore with it.", owner, ctx.cutover)],
+                    fixes=[Fix(f"database:{role}:ciamCopyRegion", AREA, f"Copy `{role}`'s backups to another region in "
+                               f"{ctx.dst.label}", (set_values(t, "ciamCopyRegion", (region,)),),
+                               (f"Apply the rendered database in {ctx.dst.label} (its keeper's root when someone else "
+                                "keeps it).",),
+                               ("Where the cloud fixes the copy region (Azure copies to the region's pair), the "
+                                "rendered database names the region it uses.",))])
+
+
 def _encryption(ctx, role, s, t, owner):
     if not one(s, "ciamEncryptedByRole") or one(t, "ciamEncryptedByRole"):
         return findings()
@@ -173,12 +193,12 @@ def _credentials(ctx, role, s, t, owner):
 
 def check_databases(ctx):
     """Each managed database the source and the target both bind: engine and major version kept (blockers), the rest
-    of what it had kept too (actions), its credential role bound."""
+    of what it had kept too, its backups' copy region included (actions), its credential role bound."""
     dst = {one(b, "ciamBindingRole"): b for b in of_class(ctx.dst, "ciamDatabase")}
     pairs = [(role, s, dst[role]) for role, s in sorted((one(b, "ciamBindingRole"), b)
                                                         for b in of_class(ctx.src, "ciamDatabase")) if role in dst]
     parts = merge_findings([f(ctx, role, s, t, responsible(ctx.d, t, ctx.dst.env)) for role, s, t in pairs
-                            for f in (_engine, _kept, _retention, _encryption, _parameters, _credentials)])
+                            for f in (_engine, _kept, _retention, _copies, _encryption, _parameters, _credentials)])
     if pairs and not (parts.blockers or parts.actions):
         return parts._replace(ok=(*parts.ok, f"{len(pairs)} managed database(s) keep their engine, version, "
                                              f"availability, encryption and backups in {ctx.dst.label}."))

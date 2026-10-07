@@ -10,6 +10,7 @@ from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import LdifRecord
 from opsdir_adapter_aws.account import provider_block
 from opsdir_adapter_aws.adapter import ADAPTER
+from opsdir_adapter_aws.inventory import state_resources
 from opsdir_adapter_aws.regions import read_regions, region_rows
 from opsdir_adapter_aws.tags import state_tags
 from estate_fixtures import estate as _pair
@@ -78,3 +79,25 @@ def test_state_tags_include_the_provider_s_default_tags():
     assert state_tags({"tags": {"Role": "ds"}, "tags_all": {"Role": "ds", "Owner": "platform"}}) == {
         "Role": "ds", "Owner": "platform"}
     assert state_tags({}) == {}
+
+
+def _state(provider, *resources):
+    return json.dumps({"version": 4, "terraform_version": "1.9.0", "resources": [
+        {"mode": "managed", "type": t, "name": f"r{i}", "provider": f'provider["registry.terraform.io/hashicorp/{provider}"]',
+         "instances": [{"attributes": a}]} for i, (t, a) in enumerate(resources)]})
+
+
+def _tags_by_kind(resources):
+    return {r.kind: (dict(r.tags) if r.tags is not None else None) for r in resources}
+
+
+def test_taggable_resources_are_read_with_their_tags_and_others_without():
+    resources, _ = state_resources(_state("aws",
+        ("aws_vpc", {"id": "vpc-1", "cidr_block": "10.0.0.0/16", "tags": {"Owner": "platform"}}),
+        ("aws_cloudwatch_metric_alarm", {"arn": "arn:aws:cloudwatch:us-east-1:1:alarm:a", "alarm_name": "a",
+                                         "tags": {"Realizes": "lag"}}),
+        ("aws_ses_domain_identity", {"arn": "arn:aws:ses:us-east-1:1:identity/example.test",
+                                     "domain": "example.test"})))
+    tags = _tags_by_kind(resources)
+    assert tags["network"] == {"Owner": "platform"} and tags["alarm"] == {"Realizes": "lag"}
+    assert tags["sending"] is None          # an SES v1 domain identity takes no tags: not judged

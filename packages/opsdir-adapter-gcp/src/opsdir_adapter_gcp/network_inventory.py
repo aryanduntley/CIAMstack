@@ -46,7 +46,7 @@ from opsdir.core.inventory import of_types, resource, tagged_role
 from opsdir.domains.network.routing import Route, route_text
 from opsdir_format_terraform.state import blocks, first_block
 from .health_checks import is_probe_rule
-from .names import MANAGED, name_parts, resource_id
+from .names import MANAGED, name_parts, resource_id, state_labels
 
 OWN_KEY = re.compile(r"^ciam-[a-z0-9-]+-role$")      # the short name of the tag key the render makes
 ROUTES = "routes"          # the role of a network's routes: Google Cloud's routes can't be labelled
@@ -226,7 +226,7 @@ def _google_apis(found):
         return resource("private-endpoint", resource_id(fr.get("id")), {
             "ciamPrivateService": "apis", "ciamPrivateEndpointKind": "all-apis",
             "ciamFrontendIp": address.get("address") or fr.get("ip_address")},
-            name=fr.get("name"), role=_role(address) or _role(fr))
+            name=fr.get("name"), role=_role(address) or _role(fr), tags=state_labels(fr))
     return tuple(one(fr) for fr in of_types(found, "google_compute_global_forwarding_rule")
                  if google_apis_endpoint(fr) and fr.get("id"))
 
@@ -235,7 +235,7 @@ def _peered_services(found):
     return tuple(resource("private-endpoint", resource_id(a.get("id")), {
                      "ciamPrivateEndpointKind": "peered-service",
                      "ciamCidr": f"{a.get('address')}/{a.get('prefix_length')}" if a.get("address") else None},
-                          name=a.get("name"), role=_role(a))
+                          name=a.get("name"), role=_role(a), tags=state_labels(a))
                  for a in of_types(found, "google_compute_global_address")
                  if a.get("purpose") == "VPC_PEERING" and a.get("id"))
 
@@ -264,9 +264,10 @@ def _links(found):
     routers = {resource_id(r.get("id")): r for r in of_types(found, "google_compute_router")}
     peers = {resource_id(p.get("router")): p for p in of_types(found, "google_compute_router_peer")}
 
-    def link(a, ref, kind, text, extra=None, network=None, role=None):
+    def link(a, ref, kind, text, extra=None, network=None, role=None, labeled=True):
         return resource("interconnect", ref, {"ciamLinkKind": kind, "ciamInterconnectKind": text, **(extra or {})},
-                        links={"ciamPeerEnvironment": network}, name=a.get("name"), role=_role(a) or role)
+                        links={"ciamPeerEnvironment": network}, name=a.get("name"), role=_role(a) or role,
+                        tags=state_labels(a) if labeled else None)        # a peering takes no labels
 
     def tunnel(t):
         router = resource_id(t.get("router"))
@@ -278,7 +279,7 @@ def _links(found):
         *(link(p, f"{resource_id(p.get('network'))}/peerings/{p.get('name')}", "peering", "VPC peering",
                {"ciamPeerAccepted": None if not p.get("state") else "TRUE" if p.get("state") == "ACTIVE" else "FALSE"},
                (resource_id(p.get("peer_network")), _last(p.get("peer_network"))),    # recorded by name or in full
-               f"peering-{_last(p.get('peer_network'))}")
+               f"peering-{_last(p.get('peer_network'))}", labeled=False)
           for p in of_types(found, "google_compute_network_peering") if p.get("name") and p.get("network")),
         *(tunnel(t) for t in of_types(found, "google_compute_vpn_tunnel") if t.get("id")),
         *(link(a, resource_id(a.get("id")), "dedicated", "Cloud Interconnect attachment")

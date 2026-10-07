@@ -1,0 +1,7 @@
+environment   audit trail   scope    records                    all regions  integrity                 kept in        keep (days)  kept by
+------------  ------------  -------  -------------------------  -----------  ------------------------  -------------  -----------  --------
+source/prod   cloudtrail    account  control-plane, data-write  yes          validated                 audit-archive               platform
+standby/prod  audit-sink    account  control-plane, data-write  yes          locked immutable store    audit-archive               platform
+target/prod   activity-log  account  control-plane              yes          unlocked immutable store  audit-archive               platform
+(3 rows)
+exit 0

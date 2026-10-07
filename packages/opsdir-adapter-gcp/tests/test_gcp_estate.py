@@ -12,6 +12,7 @@ from opsdir.core.inventory import resource
 from opsdir.domains.estate.tags import tag_notices
 from opsdir_adapter_gcp.account import default_labels, label_key, project_variable, provider_block
 from opsdir_adapter_gcp.adapter import ADAPTER
+from opsdir_adapter_gcp.inventory import state_resources
 from opsdir_adapter_gcp.regions import read_regions, region_rows
 from estate_fixtures import estate
 
@@ -80,3 +81,22 @@ def test_the_provider_notes_that_google_cloud_has_no_fips_endpoints_to_switch_to
         'provider "google" {\n  # FIPS endpoints: the google provider has no FIPS endpoint switch; FIPS 140 is met by '
         'Google Cloud\'s own validated modules, or enforced for a folder with Assured Workloads\n  project = "p"\n}')
     assert "FIPS" not in provider_block(beta, ("project", "p"))
+
+
+def _state(*resources):
+    return json.dumps({"version": 4, "terraform_version": "1.9.0", "resources": [
+        {"mode": "managed", "type": t, "name": f"r{i}", "provider": 'provider["registry.terraform.io/hashicorp/google"]',
+         "instances": [{"attributes": a}]} for i, (t, a) in enumerate(resources)]})
+
+
+def test_labelled_resources_are_read_with_their_labels_and_others_without():
+    resources, _ = state_resources(_state(
+        ("google_compute_network", {"id": "projects/p/global/networks/n", "name": "n"}),
+        ("google_monitoring_alert_policy", {"name": "projects/p/alertPolicies/1", "display_name": "lag",
+                                            "user_labels": {"realizes": "lag"},
+                                            "effective_labels": {"goog-terraform-provisioned": "true"}}),
+        ("google_storage_bucket", {"name": "b", "labels": {"owner": "p"}})))
+    tags = {r.kind: (dict(r.tags) if r.tags is not None else None) for r in resources}
+    assert tags["network"] is None          # networks take no labels: not judged
+    assert tags["alarm"] == {"goog-terraform-provisioned": "true", "realizes": "lag"}
+    assert tags["storage"] == {"owner": "p"}

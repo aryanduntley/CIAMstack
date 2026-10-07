@@ -42,7 +42,7 @@ from opsdir.domains.network.stack import kept_by, owned
 from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
 from opsdir_format_terraform.state import blocks, first_block
 from .backups import disk_plans
-from .names import REGION, label, name_parts, resource_id
+from .names import REGION, label, name_parts, resource_id, state_labels
 
 TYPES = {"standard": "pd-standard", "ssd": "pd-ssd", "provisioned": "hyperdisk-balanced"}
 CLASSES = {"pd-standard": "standard", "pd-balanced": "ssd", "pd-ssd": "ssd", "pd-extreme": "provisioned",
@@ -316,7 +316,7 @@ def volume_resources(pairs):
             "ciamTargetRole": _common((u.get("labels") or {}).get("role") for d in found for u in users(d))},
             links={"ciamEncryptedByRole": _common(key_of(d) for d in found),
                    "ciamSnapshotPolicyRole": _common(policy_of(d) for d in found)},
-            name=name, role=_common((d.get("labels") or {}).get("role") for d in found))
+            name=name, role=_common((d.get("labels") or {}).get("role") for d in found), tags=state_labels(found[0]))
     from_disks = {name for (name, boot), _ in grouped.items() if name and boot}
     booted = {}
     for i in instances.values():
@@ -334,7 +334,8 @@ def volume_resources(pairs):
             links={"ciamEncryptedByRole": _common(_key_path(first_block(i.get("boot_disk")).get("kms_key_self_link"))
                                                   for i, _ in found),
                    "ciamSnapshotPolicyRole": _common(followed.get(i.get("name")) for i, _ in found)},
-            name=name, role=_common((p.get("labels") or {}).get("role") for _, p in found))
+            name=name, role=_common((p.get("labels") or {}).get("role") for _, p in found),
+            tags=found[0][1].get("labels") or {})
     return ((*policies, *(volume(name, b, found) for (name, b), found in grouped.items() if name),
              *(boot(name, found) for name, found in booted.items())),
             tuple(f"disk {d.get('name')} ({users(d)[0].get('name')}) carries no label volume: which of the record's "

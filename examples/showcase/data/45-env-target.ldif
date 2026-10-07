@@ -538,6 +538,31 @@ ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
  roups/rg-ciam-prod/providers/Microsoft.Insights/webtests/sso-login
 ciamRealizes: sso-login
 
+dn: cn=activity-logs,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamObjectStore
+cn: activity-logs
+ciamBindingRole: audit-archive
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Storage/storageAccounts/stciamprodaudi
+ t/blobServices/default/containers/insights-activity-logs
+ciamStorageImmutability: governance
+ciamStorageLockDays: 400
+ciamStorageRef: azblob://stciamprodaudit/insights-activity-logs
+ciamStorageVersioning: TRUE
+
+dn: cn=activity-log,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAuditTrail
+cn: activity-log
+ciamAllRegions: TRUE
+ciamAuditEvents: control-plane
+ciamAuditScope: account
+ciamBindingRole: audit-trail
+ciamLogDestinationRole: audit-archive
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/providers
+ /Microsoft.Insights/diagnosticSettings/ciam-activity-log
+
 dn: cn=identity-pf,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamIdentityBinding

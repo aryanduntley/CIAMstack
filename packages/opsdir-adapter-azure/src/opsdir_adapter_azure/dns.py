@@ -45,7 +45,8 @@ def _traffic_manager(m, svc, n, policy, found):
                 ("weight", a.weight) if weighted else ("priority", i + 1)]) for i, a in enumerate(found)),
             block("resource", ["azurerm_dns_cname_record", n], [
                 ("name", record_name(name, zone)), ("zone_name", zone), ("resource_group_name", RG),
-                ("ttl", ttl(svc)), ("record", ref(f"azurerm_traffic_manager_profile.{n}.fqdn"))]))
+                ("ttl", ttl(svc)), ("record", ref(f"azurerm_traffic_manager_profile.{n}.fqdn")),
+                ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]))
 
 
 def service_record(d, m, svc, n, target=None):
@@ -58,7 +59,7 @@ def service_record(d, m, svc, n, target=None):
     if target is not None:
         return (block("resource", ["azurerm_dns_cname_record", n], [
             ("name", record_name(name, zone)), ("zone_name", zone), ("resource_group_name", RG), ("ttl", ttl(svc)),
-            ("record", target)]),)
+            ("record", target), ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]),)
     routed = routing(d, m, svc)
     if routed is not None:
         policy, found = routed
@@ -68,15 +69,15 @@ def service_record(d, m, svc, n, target=None):
         if is_private(ip):
             return (f"# `{name}` routes between environments ({policy}), but Traffic Manager answers public names "
                     "only: a single private record is rendered",
-                    *_a_record(svc, n, name, zone, ip, True))
+                    *_a_record(m, svc, n, name, zone, ip, True))
         return _traffic_manager(m, svc, n, policy, found)
-    return _a_record(svc, n, name, zone, ip, is_private(ip))
+    return _a_record(m, svc, n, name, zone, ip, is_private(ip))
 
 
-def _a_record(svc, n, name, zone, ip, private):
+def _a_record(m, svc, n, name, zone, ip, private):
     return (block("resource", ["azurerm_private_dns_a_record" if private else "azurerm_dns_a_record", n], [
         ("name", record_name(name, zone)), ("zone_name", zone), ("resource_group_name", RG), ("ttl", ttl(svc)),
-        ("records", [ip])]),)
+        ("records", [ip]), ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]),)
 
 
 def _values(rtype, vs):

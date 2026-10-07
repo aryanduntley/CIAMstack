@@ -24,6 +24,21 @@ provider "aws" {
   }
 }
 
+provider "aws" {
+  # Copies of databases' automated backups in us-west-2
+  alias               = "copy_us_west_2"
+  region              = "us-west-2"
+  allowed_account_ids = ["111122223333"]
+  default_tags {
+    tags = {
+      CostCenter         = "CC-1001"
+      DataClassification = "confidential"
+      Environment        = "source/prod"
+      Owner              = "ciam-platform"
+    }
+  }
+}
+
 variable "resolver_endpoint_id" {
   description = "The landing zone's outbound Route 53 Resolver endpoint the forwarding rules use"
   type        = string

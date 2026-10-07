@@ -219,6 +219,20 @@ EXPECTED = MappingProxyType({
         ("A81", "Regions", "The region catalog holds no azure regions, so target/prod's region eastus2",
          "the record holds no region list from Azure yet, so the target's region can't be checked against the "
          "provider's list", "CHG-2021"),
+        ("A82", "Audit", "source/prod's audit trails record data-write activity and target/prod's don't",
+         "the source's CloudTrail logs S3 data writes; the target's Activity Log export records control-plane activity "
+         "only (Azure logs data access per resource, in each resource's own diagnostic settings)", None),
+        ("A83", "Audit", "target/prod's only by an immutable store whose policy a privileged user can lift",
+         "the source's CloudTrail log files are validated (signed digests) and kept under Object Lock; the target's "
+         "Activity Log container has an unlocked immutability policy, which a privileged user can lift: lock it",
+         None),
+        ("A84", "Object stores", "Object store `audit-archive` locks objects (compliance 400 days) in source/prod",
+         "the same unlocked policy, seen as an object store: the fix locks the target's container (compliance)",
+         None),
+        ("A85", "Databases", "Database `pf-grants-db` copies its backups to us-west-2 in source/prod",
+         "the source replicates the grant database's automated backups to us-west-2; the target's Flexible Server "
+         "has no geo-redundant backup, so losing its region loses the backups (the fix asks for the region; Azure "
+         "copies to the region's pair)", None),
     ],
 })
 

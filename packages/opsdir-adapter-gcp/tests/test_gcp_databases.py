@@ -3,6 +3,7 @@ tier, disk, zone, REGIONAL when zone-redundant, backups with point-in-time recov
 ssl_mode, flags, CMEK, deletion protection), the administrator password written write-only from an ephemeral Secret
 Manager read (a SQL user, or SQL Server's root password), adopted when it exists; engines Cloud SQL doesn't run and
 databases others keep named. Read back from Terraform state, Cloud Asset Inventory and gcloud; no password is read."""
+import copy
 import json
 import re
 
@@ -129,3 +130,20 @@ def test_the_ranges_it_admits_are_a_comment_the_peering_carries_them():
     assert ("# db-grants admits 10.1.4.0/24: Cloud SQL's private IP is in Google's service producer network, which "
             "this network's firewall rules don't reach") in out
     assert "google_compute_firewall" not in out
+
+
+def test_a_copy_region_is_where_cloud_sql_stores_its_backups_and_is_read_back():
+    out = _render(KEY_REF, SECRET, entry(ALPHA, "db-grants", "ciamDatabase", **DB, ciamCopyRegion=("us", "us-west1")))
+    assert 'location                       = "us"' in out and "one location: us-west1 not rendered" in out
+    moved = copy.deepcopy(INSTANCE)
+    moved["settings"][0]["backup_configuration"][0]["location"] = "us-west1"
+    (db,) = (r for r in state_resources(_state(("google_sql_database_instance", "grants", moved)))[0]
+             if r.kind == "database")
+    assert db.attrs["ciamCopyRegion"] == ("us-west1",)
+    (same,) = (r for r in state_resources(_state(("google_sql_database_instance", "grants", INSTANCE)))[0]
+               if r.kind == "database")
+    assert "ciamCopyRegion" not in same.attrs
+    api = {"name": "db-grants", "project": "p-ciam", "databaseVersion": "POSTGRES_16", "region": "us-east1",
+           "settings": {"backupConfiguration": {"enabled": True, "location": "us"}}, "kind": "sql#instance"}
+    (g,) = (r for r in cli_resources({"sql.json": json.dumps([api])})[0] if r.kind == "database")
+    assert g.attrs["ciamCopyRegion"] == ("us",)

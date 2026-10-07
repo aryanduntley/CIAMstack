@@ -48,6 +48,11 @@ From Terraform state (terraform.tfstate, format version 4; hashicorp/azurerm), m
     azurerm_mysql_flexible_server (+ their       SKU, storage, zone, availability, TLS, backups, parameters, deletion
     _configuration, azurerm_management_lock)     protection (a lock), its subnet and key as roles; never its password:
                                                  see databases.py
+  azurerm_monitor_diagnostic_setting on a   -> audit trail (kind audit, ciamAuditTrail): the subscription's Activity
+    subscription                                 Log export: control-plane when Administrative is exported, every
+                                                 region, where its records go (its storage account's
+                                                 insights-activity-logs container or its workspace, as that object
+                                                 store's or log destination's role): see audit.py
   access control: identities and their role assignments, access policies, policy assignments, bastions: see iam.py
 Roles of resources the record doesn't have come from their tags Role (or BindingRole), or for storage containers from
 their metadata (role); a compute group's binding role is its tag BindingRole, else compute-<its tag Role>, a
@@ -74,6 +79,7 @@ from .nsg_rules import allows_in, group_rules, rule_ports, rule_sources, source_
 from .backups import backup_resources
 from .volumes import volume_resources
 from .storage import object_store_resources
+from .audit import trail_resources
 
 PROVIDER = "azure"
 
@@ -108,7 +114,7 @@ def _networks(found):
 def _subnets(found):
     return tuple(resource("subnet", f"{a.get('virtual_network_name')}/{a.get('name')}",
                           {"ciamCidr": _first(a.get("address_prefixes")) or a.get("address_prefix")},
-                          name=a.get("name"), role=_role(a), tags=_tags(a))
+                          name=a.get("name"), role=_role(a))       # subnets take no tags: not judged
                  for a in of_types(found, "azurerm_subnet") if a.get("name") and a.get("virtual_network_name"))
 
 
@@ -189,7 +195,7 @@ def _service(kind_ref, name, role, found, ip, pip, ports, roles, facts, settings
         "ciamDnsZone": (record or {}).get("zone_name"),
         "ciamPort": ports, "ciamTargetRole": roles.most_common(1)[0][0] if roles else None, "ciamFrontendIp": ip,
         "ciamProviderRef": (pip or {}).get("name"), "ciamTtlSeconds": (record or {}).get("ttl"),
-        "ciamEdgeFact": facts, "ciamEdgeSetting": settings, **routed}, name=name, role=role)
+        "ciamEdgeFact": facts, "ciamEdgeSetting": settings, **routed}, name=name, role=role, tags=tags)
 
 
 def _services(found):
@@ -408,7 +414,7 @@ def _compute(found):
         return resource("compute", a.get("id") or a.get("name"), {
             "ciamTargetRole": target, "ciamImageRef": _image(a), "ciamInstanceSize": a.get("sku") or a.get("sku_name"),
             "ciamMinSize": least, "ciamMaxSize": most, "ciamDesiredSize": a.get("instances"),
-            "ciamSpansZone": sorted(a.get("zones") or ())}, name=a.get("name"), role=binding)
+            "ciamSpansZone": sorted(a.get("zones") or ())}, name=a.get("name"), role=binding, tags=_tags(a))
     return tuple(group(a) for a in of_types(found, *SCALE_SETS) if a.get("id") or a.get("name"))
 
 
@@ -510,7 +516,8 @@ def _alarms(found):
         role, realizes = realization_roles(_tags(a), "alarm")
         metric, notifies = read(a)
         return resource("alarm", a.get("id"), {"ciamMetric": metric, "ciamNotifies": notifies,
-                                               "ciamRealizes": realizes}, name=a.get("name"), role=role)
+                                               "ciamRealizes": realizes}, name=a.get("name"), role=role,
+                        tags=_tags(a))
     return tuple(alarm(a, read) for t, read in ALARM_TYPES for a in of_types(found, t) if a.get("id"))
 
 
@@ -519,7 +526,8 @@ def _canaries(found):
     def canary(a):
         role, realizes = realization_roles(_tags(a), "canary")
         return resource("canary", a.get("id"), {"ciamInterval": duration_text(a.get("frequency")),
-                                                "ciamRealizes": realizes}, name=a.get("name"), role=role)
+                                                "ciamRealizes": realizes}, name=a.get("name"), role=role,
+                        tags=_tags(a))
     return tuple(canary(a) for a in of_types(found, "azurerm_application_insights_standard_web_test") if a.get("id"))
 
 
@@ -543,7 +551,8 @@ def pairs_resources(pairs):
              *_keys(pairs), *object_store_resources(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs),
              *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
-             *_canaries(pairs), *iam, *edge, *network, *database_resources(pairs), *volumes, *backups),
+             *_canaries(pairs), *iam, *edge, *network, *database_resources(pairs), *volumes, *backups,
+             *trail_resources(pairs)),
             (*rule_notices, *iam_notices, *edge_notices, *network_notices, *volume_notices, *backup_notices))
 
 

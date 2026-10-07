@@ -1,7 +1,8 @@
 """Managed databases (the data domain): a database each environment runs, compared by role. A move carries the engine
 and its major version unchanged (blockers), and keeps availability, TLS, point-in-time restore, deletion protection,
-backup retention, encryption and parameters (actions with fixes carrying the source's values); a credential role the
-target doesn't bind blocks. Products name a database by its endpoint; a cloud's inventory places it by provider ref."""
+backup retention, encryption and parameters (actions with fixes carrying the source's values), and backups copied out
+of the region where the source's are (an action whose fix asks for the region); a credential role the target doesn't
+bind blocks. Products name a database by its endpoint; a cloud's inventory places it by provider ref."""
 from opsdir.connectors.fixes import chosen
 from opsdir.core.directory import make_directory, values
 from opsdir.core.environment import published_role
@@ -108,9 +109,9 @@ def test_the_report_lists_every_environments_databases_and_products_name_them_by
     ctx = _pair({"ciamDbHighAvailability": "none", "ciamDbService": "flexible-server"})
     assert database_rows(ctx.d) == [
         ("alpha/prod", "pf-grants-db", "postgresql", "16.4", "", "", "", "zone-redundant", "db-key", "yes", "14", "yes",
-         "yes", "grants.alpha.example.test:5432", "pf-grants-db-admin"),
+         "", "yes", "grants.alpha.example.test:5432", "pf-grants-db-admin"),
         ("beta/prod", "pf-grants-db", "postgresql", "16.4", "", "flexible-server", "", "none", "db-key", "yes", "14",
-         "yes", "yes", "grants.beta.example.test:5432", "pf-grants-db-admin")]
+         "yes", "", "yes", "grants.beta.example.test:5432", "pf-grants-db-admin")]
     assert published_role(ctx.d, "GRANTS.beta.example.test") == "pf-grants-db"
 
 
@@ -140,3 +141,21 @@ def test_a_cloud_inventory_places_a_database_by_provider_ref_with_its_secret_and
     assert e.classes[-1] == "ciamDatabase" and values(e, "ciamProviderRef") == ("arn:aws:rds:x:1:db:pf-grants",)
     assert (values(e, "ciamDbCredentialRole"), values(e, "ciamEncryptedByRole")) == (("pf-grants-db-admin",),
                                                                                       ("db-key",))
+
+
+def test_backups_the_source_copies_out_of_its_region_are_copied_in_the_target_too():
+    ctx = _pair(target={"ciamCopyRegion": None})
+    assert check_databases(ctx).actions == ()
+    d, alpha, beta = model(alpha=(entry(ALPHA, "db-grants", "ciamDatabase", **SOURCE, ciamCopyRegion="region-2"),
+                                  entry(ALPHA, "secret-db", SECRET[0], **SECRET[1])),
+                           beta=(entry(BETA, "db-grants", "ciamDatabase", **SOURCE),
+                                 entry(BETA, "secret-db", SECRET[0], **SECRET[1])))
+    f = check_databases(context(d, alpha, beta))
+    assert _texts(f.actions) == [
+        "Database `pf-grants-db` copies its backups to region-2 in alpha/prod; in beta/prod they stay in its region: "
+        "losing the region loses them too, and point-in-time restore with it."]
+    fix, = f.fixes
+    assert fix.key == "database:pf-grants-db:ciamCopyRegion"
+    assert chosen(fix, given={"ciamCopyRegion": ("region-3",)}).records[0].mods == (
+        ("replace", "ciamCopyRegion", ("region-3",)),)
+    assert database_rows(d)[0][12] == "region-2"

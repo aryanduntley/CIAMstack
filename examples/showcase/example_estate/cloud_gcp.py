@@ -212,10 +212,40 @@ def _gcp_backup(p):
             "lifecycle": {"rule": [rule(*parse_lifecycle(v)) for v in a["ciamStorageLifecycle"]]}}
 
 
+DATA_ACCESS = (("data-read", "DATA_READ"), ("data-write", "DATA_WRITE"))
+
+
+def _audit_configs():
+    """The project's Data Access audit configs (its IAM policy's auditConfigs) the standby's audit trail records."""
+    events = [e for oc, _, _, a in MONITORING["standby"] if oc == "ciamAuditTrail" for e in a["ciamAuditEvents"]]
+    logs = [{"logType": log} for e, log in DATA_ACCESS if e in events]
+    return [{"service": "allServices", "auditLogConfigs": logs}] if logs else []
+
+
 def _gcp_monitoring():
-    """What Cloud Monitoring and Logging run, from the standby's monitoring bindings."""
+    """What Cloud Monitoring and Logging run, from the standby's monitoring bindings: the audit trail as the sink
+    exporting Cloud Audit Logs, and the bucket keeping them with its locked retention policy."""
+    numbered = PROJECT.replace(PROJECT.split("/")[1], NUMBER)
+    stores = {role: a for oc, _, role, a in MONITORING["standby"] if oc == "ciamObjectStore"}
+
     def asset(oc, attrs):
         ref = attrs["ciamProviderRef"]
+        if oc == "ciamObjectStore":
+            return _asset("storage.googleapis.com/Bucket", {
+                "kind": "storage#bucket", "name": ref, "location": "US-CENTRAL1",
+                "labels": {"role": "audit-archive", "managed_by": "opsdir"},
+                "retentionPolicy": {"retentionPeriod": str(int(attrs["ciamStorageLockDays"]) * 86400),
+                                    "isLocked": attrs["ciamStorageImmutability"] == "compliance"},
+                "iamConfiguration": {"uniformBucketLevelAccess": {"enabled": True}}},
+                name=f"//storage.googleapis.com/{ref}")
+        if oc == "ciamAuditTrail":
+            name = ref.rsplit("/", 1)[1]
+            bucket = stores[attrs["ciamLogDestinationRole"]]["ciamStorageRef"][len("gs://"):]
+            return _asset("logging.googleapis.com/LogSink", {
+                "name": name, "destination": f"storage.googleapis.com/{bucket}",
+                "filter": 'logName:"cloudaudit.googleapis.com"',
+                "writerIdentity": f"serviceAccount:service-{NUMBER}@gcp-sa-logging.iam.gserviceaccount.com"},
+                name=f"//logging.googleapis.com/{numbered}/sinks/{name}")
         if oc == "ciamAlertChannel":
             return _asset("monitoring.googleapis.com/NotificationChannel", {
                 "name": ref, "type": "pagerduty", "displayName": "ciam-page", "labels": {"service_key": "**********"},
@@ -404,9 +434,15 @@ def _gcp_iam():
     accounts = [(cn, ref) for cn, kind, ref, _, _ in GCP_IDENTITIES if kind in ("service-account", "federated")]
     pool = f"projects/{NUMBER}/locations/global/workloadIdentityPools/ciam-prod-ci"
     ci = next((ref, trusted[0].split(" ", 1)[1]) for cn, _, ref, trusted, _ in GCP_IDENTITIES if cn == "identity-ci")
-    return ([*({"name": full(r)[0], "assetType": full(r)[1],
+    project = f"//cloudresourcemanager.googleapis.com/{numbered}"
+    granted = [{"name": full(r)[0], "assetType": full(r)[1],
                 "iamPolicy": {"bindings": [{"role": role, "members": members} for role, members in roles.items()]}}
-               for r, roles in bindings.items()),
+               for r, roles in bindings.items()]
+    policies = [*granted, *([{"name": project, "assetType": "cloudresourcemanager.googleapis.com/Project",
+                              "iamPolicy": {"bindings": []}}]
+                            if _audit_configs() and not any(x["name"] == project for x in granted) else [])]
+    return ([*({**x, "iamPolicy": {**x["iamPolicy"], "auditConfigs": _audit_configs()}} if x["name"] == project
+               and _audit_configs() else x for x in policies),
              {"name": f"//iam.googleapis.com/{numbered}/serviceAccounts/{ci[0]}",
               "assetType": "iam.googleapis.com/ServiceAccount",
               "iamPolicy": {"bindings": [{"role": "roles/iam.workloadIdentityUser",

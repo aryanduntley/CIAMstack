@@ -24,6 +24,7 @@ from opsdir.domains.edge.imports import forwarder_role, record_role, zone_role
 from opsdir.domains.edge.resolve import endpoint_kind_named, rate_limit_fact, tls_level
 from opsdir_format_terraform.state import blocks, first_block
 from .edge import TLS_POLICIES, WAF_RULES
+from .names import state_labels
 
 CATEGORIES = {rule_set: category for category, sets in WAF_RULES.items() for rule_set in sets}
 _REGION_CODE = re.compile(r"origin\.region_code == '([A-Z]{2})'")
@@ -143,7 +144,8 @@ def edge_services(found, served):
         return resource("edge", policy.get("id"), {
             "ciamEdgeKind": "waf", "ciamEdgeFact": sorted({f"waf-mode {mode}", *(f for fs, _ in parts for f in fs)}),
             "ciamEdgeSetting": sorted({s for _, ss in parts for s in ss})},
-            links={"ciamServiceRole": used.get(key)}, name=policy.get("name"), role=_role(policy))
+            links={"ciamServiceRole": used.get(key)}, name=policy.get("name"), role=_role(policy),
+            tags=state_labels(policy))
     armored = {k: p for k, p in policies.items()
                if p.get("type") in (None, "", "CLOUD_ARMOR") and k == ref_key(p.get("id"))}
     adaptive = {k: used.get(k) for k, p in armored.items()
@@ -159,7 +161,7 @@ def edge_services(found, served):
                 links={"ciamServiceRole": served.get(ref_key(b.get("id")))}, name=f"{b.get('name')}-cdn")
               for b in of_types(found, *BACKENDS) if b.get("enable_cdn")),
             *(resource("edge", p.get("id"), {"ciamEdgeKind": "ddos", "ciamEdgeFact": "ddos network-advanced"},
-                       name=p.get("name"), role=_role(p))
+                       name=p.get("name"), role=_role(p), tags=state_labels(p))
               for p in of_types(found, *SECURITY_POLICIES) if p.get("type") == "CLOUD_ARMOR_NETWORK"
               and first_block(p.get("ddos_protection_config")).get("ddos_protection") == "ADVANCED"))
 
@@ -189,7 +191,7 @@ def dns_resources(found, served):
     return (tuple(resource("zone", z.get("id") or z.get("name"), {
                 "ciamDnsZone": zones[z.get("name")], "ciamProviderRef": z.get("name"),
                 "ciamZoneVisibility": "private" if z.get("visibility") == "private" else "public"},
-                name=z.get("name"), role=_role(z) or zone_role(zones[z.get("name")]))
+                name=z.get("name"), role=_role(z) or zone_role(zones[z.get("name")]), tags=state_labels(z))
                   for z in of_types(found, "google_dns_managed_zone") if z.get("name") and z not in forwarding),
             tuple(resource("record", r.get("id") or f"{r.get('name')}/{r.get('type')}", {
                 "ciamRecordName": (r.get("name") or "").rstrip("."), "ciamRecordType": r.get("type"),

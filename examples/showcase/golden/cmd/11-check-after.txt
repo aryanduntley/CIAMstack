@@ -14,7 +14,7 @@ Expected findings check (after changes)
            B24  cleared by CHG-2018: the target's directory data volume came from a sandbox template: what PingDS keeps doesn't fit → gone
            B25  cleared by CHG-2019: the target binds no snapshot policy (the volume check says what it loses: A72) → gone
            B27  cleared by CHG-2019: the target has no backup vault → gone
-  actions  planted 81   expected now 67   detected 67   missed 0   unexpected 0
+  actions  planted 85   expected now 71   detected 71   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone

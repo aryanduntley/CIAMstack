@@ -30,7 +30,7 @@ from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned
 from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
 from opsdir_format_terraform.state import first_block
-from .names import REGION, label
+from .names import REGION, label, state_labels
 
 CLASSES = {"cool": "NEARLINE", "cold": "COLDLINE", "archive": "ARCHIVE"}
 _NEUTRAL = {"NEARLINE": "cool", "COLDLINE": "cold", "ARCHIVE": "archive"}
@@ -211,5 +211,5 @@ def object_store_resources(pairs):
             "ciamStoragePublicBlocked": ("TRUE" if public == "enforced" else "FALSE") if public else None,
             "ciamStorageReplicaRef": replicas.get(a.get("name"))},
             links={"ciamEncryptedByRole": first_block(a.get("encryption")).get("default_kms_key_name") or None},
-            name=a.get("name"), role=labels.get("role") or labels.get("bindingrole") or None)
+            name=a.get("name"), role=labels.get("role") or labels.get("bindingrole") or None, tags=state_labels(a))
     return tuple(one_bucket(a) for a in of_types(pairs, "google_storage_bucket") if a.get("name"))

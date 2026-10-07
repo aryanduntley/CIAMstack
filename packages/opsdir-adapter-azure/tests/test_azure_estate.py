@@ -7,10 +7,13 @@ import pytest
 
 from opsdir.connectors.importing import import_changes
 from opsdir.connectors.prerequisites import prerequisite_rows
-from opsdir.core.environment import env_model
+from opsdir.core.environment import env_model, of_class
 from opsdir.core.interchange.ldif import LdifRecord
 from opsdir_adapter_azure.account import provider_block, subscription_variable, tagged
 from opsdir_adapter_azure.adapter import ADAPTER
+from opsdir_adapter_azure.inventory import state_resources
+from opsdir_adapter_azure.dns import service_record
+from network_fixtures import entry, model
 from opsdir_adapter_azure.regions import read_regions, region_rows
 from opsdir_adapter_azure.plumbing import network_data
 from estate_fixtures import ALPHA, estate
@@ -80,3 +83,31 @@ def test_the_provider_notes_that_azure_has_no_fips_endpoints_to_switch_to():
                                             'endpoints')
     assert '  environment     = "usgovernment"\n' in provider_block(alpha)
     assert "FIPS" not in provider_block(beta) and "environment" not in provider_block(beta)
+
+
+def _state(provider, *resources):
+    return json.dumps({"version": 4, "terraform_version": "1.9.0", "resources": [
+        {"mode": "managed", "type": t, "name": f"r{i}", "provider": f'provider["registry.terraform.io/hashicorp/{provider}"]',
+         "instances": [{"attributes": a}]} for i, (t, a) in enumerate(resources)]})
+
+
+def _tags_by_kind(resources):
+    return {r.kind: (dict(r.tags) if r.tags is not None else None) for r in resources}
+
+
+def test_taggable_resources_are_read_with_their_tags_and_others_without():
+    resources, _ = state_resources(_state("azurerm",
+        ("azurerm_virtual_network", {"name": "vnet", "address_space": ["10.0.0.0/16"], "tags": {"Owner": "p"}}),
+        ("azurerm_subnet", {"name": "snet", "virtual_network_name": "vnet", "address_prefixes": ["10.0.1.0/24"]}),
+        ("azurerm_monitor_metric_alert", {"id": "/alerts/a", "name": "a", "tags": {"Realizes": "lag"}})))
+    tags = _tags_by_kind(resources)
+    assert tags["network"] == {"Owner": "p"} and tags["alarm"] == {"Realizes": "lag"}
+    assert tags["subnet"] is None            # subnets take no tags: not judged
+
+
+def test_a_dns_record_carries_its_tags():
+    d, alpha, _ = model(alpha=(entry(ALPHA, "svc-ldaps", "ciamServiceName", ciamBindingRole="ds-ldaps-service",
+                                     ciamFqdn="ldap.example.test", ciamDnsZone="example.test",
+                                     ciamFrontendIp="10.0.1.10", ciamPort="636", ciamTargetRole="ds"),))
+    out = "\n".join(service_record(d, alpha, of_class(alpha, "ciamServiceName")[0], "svc_ldaps"))
+    assert 'resource "azurerm_private_dns_a_record"' in out and '"ldap.example.test"' in out and "tags" in out

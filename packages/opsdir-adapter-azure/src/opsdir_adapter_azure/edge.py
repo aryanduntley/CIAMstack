@@ -118,7 +118,8 @@ def _certificate(m, n, spec):
                           "environment"),), ()
     vault, name = kv
     return ((block("resource", ["azurerm_user_assigned_identity", f"{n}_gateway"], [
-                ("name", f"id-agw-ciam-{rdn_value(m.env)}-{n}"), ("resource_group_name", RG), ("location", LOC)]),
+                ("name", f"id-agw-ciam-{rdn_value(m.env)}-{n}"), ("resource_group_name", RG), ("location", LOC),
+                ("tags", tagged(m, {"ManagedBy": "opsdir"}))]),
              block("data", ["azurerm_key_vault", f"{n}_tls"], [("name", vault), ("resource_group_name", RG)]),
              block("resource", ["azurerm_role_assignment", f"{n}_gateway_certificate"], [
                  ("scope", ref(f"data.azurerm_key_vault.{n}_tls.id")),

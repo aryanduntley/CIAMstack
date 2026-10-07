@@ -17,6 +17,8 @@ ciamDropsRole: egress-firewall
 ciamDropsRole: snapshots-daily
 ciamDropsRole: backup-daily
 ciamDropsRole: backup-vault
+ciamDropsRole: audit-trail
+ciamDropsRole: audit-archive
 ciamLifecycle: active
 ciamOverlayOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops

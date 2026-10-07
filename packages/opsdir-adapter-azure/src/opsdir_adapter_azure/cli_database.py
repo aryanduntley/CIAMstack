@@ -30,6 +30,8 @@ def _server(s):
                                    ha.get("standbyAvailabilityZone")}] if ha.get("mode") not in (None, "Disabled")
             else [],
             "backup_retention_days": (s.get("backup") or {}).get("backupRetentionDays"),
+            "geo_redundant_backup_enabled": (s.get("backup") or {}).get("geoRedundantBackup") == "Enabled",
+            "location": s.get("location"),
             "delegated_subnet_id": network.get("delegatedSubnetResourceId"),
             "customer_managed_key": [{"key_vault_key_id": key}] if key else [], "tags": s.get("tags") or {}}
 
