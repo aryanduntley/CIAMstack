@@ -29,13 +29,10 @@ from urllib.parse import unquote
 from opsdir.core.inventory import of_types, resource, tagged_role
 from opsdir.domains.access.grants import excluding, grant_text
 from .guardrails import denials_of
+from .tags import state_tags as _tags
 
 CONTROL_KINDS = {"SERVICE_CONTROL_POLICY": "service-control", "RESOURCE_CONTROL_POLICY": "resource-control"}
 ASSUME = ("sts:AssumeRole", "sts:AssumeRoleWithWebIdentity", "sts:AssumeRoleWithSAML", "sts:TagSession", "sts:*")
-
-
-def _tags(a):
-    return a.get("tags") or a.get("tags_all") or {}
 
 
 def _listed(v):
@@ -159,7 +156,7 @@ def _roles(found, policies, by_resource):
             "ciamTrustedBy": trust, "ciamGrant": sorted({*grants, *extra[0]}),
             "ciamDenial": sorted({*denials, *edge, *extra[1], *by_resource.get("*", ((), ()))[1]}),
             "ciamBoundary": sorted(ceiling), "ciamEvaluated": r.get("evaluated")}, name=name,
-            role=tagged_role(_tags(r))), (
+            role=tagged_role(_tags(r)), tags=_tags(r)), (
             *missing, *((f"role {name}: permissions boundary {boundary} isn't in the state; its ceiling not read",)
                         if boundary and boundary not in policies else ()))
     read = [one_role(r) for r in of_types(found, "aws_iam_role") if r.get("arn")]
@@ -200,7 +197,7 @@ def _guardrails(found):
             "ciamGuardrailKind": CONTROL_KINDS.get(p.get("type"), "other"),
             "ciamDenies": denials_of(statements(p.get("content"))), "ciamDenial": sorted(denials),
             "ciamBoundary": () if "* on *" in grants else sorted(grants)},
-            name=p.get("name"), role=tagged_role(_tags(p)))
+            name=p.get("name"), role=tagged_role(_tags(p)), tags=_tags(p))
     return tuple(one_policy(p) for p in of_types(found, "aws_organizations_policy")
                  if p.get("type") in CONTROL_KINDS and (p.get("arn") or p.get("id")))
 
@@ -211,7 +208,8 @@ def _access_paths(found):
                        name="workforce-sso", role="access-workforce-sso")
               for i in of_types(found, "aws_ssoadmin_instances") for arn in (i.get("arns") or ())[:1]),
             *(resource("access", e.get("arn") or e.get("id"), {"ciamAccessKind": "session"},
-                       name=_tags(e).get("Name") or e.get("id"), role=tagged_role(_tags(e)) or "access-session")
+                       name=_tags(e).get("Name") or e.get("id"), role=tagged_role(_tags(e)) or "access-session",
+                       tags=_tags(e))
               for e in of_types(found, "aws_ec2_instance_connect_endpoint") if e.get("arn") or e.get("id")))
 
 

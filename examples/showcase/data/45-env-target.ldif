@@ -3,7 +3,9 @@
 dn: cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamCloud
+objectClass: ciamCloudAccount
 cloud: target
+ciamAccountRef: 00000000-0000-0000-0000-000000000000
 ciamCloudEnvironment: public
 ciamCloudProvider: azure
 ciamLifecycle: building

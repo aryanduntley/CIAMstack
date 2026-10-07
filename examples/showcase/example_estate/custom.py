@@ -1,6 +1,6 @@
 """Custom definitions fixture data: fields and a record type the operator defines for the record itself
-(22-custom-schema), and records of that type (90-feature-flags). The fields are used on owners, environments and
-integrations elsewhere in the estate."""
+(22-custom-schema), and records of that type (90-feature-flags). The fields are used on environments and integrations
+elsewhere in the estate (owners' cost centers are the core ciamCostCenter: estate)."""
 from types import MappingProxyType
 
 from .common import CUSTOM, FLAGS, owner, spec
@@ -8,10 +8,6 @@ from .config import TOKEN_LIFETIME
 
 # name -> definition attributes (the metadata says what, which values, which records, where it lives, why)
 FIELDS = (
-    ("xCostCenter", dict(
-        ciamDefinitionNumber=1, ciamValueType="string", ciamPortability="meta", ciamCarriedBy="ciamParty",
-        ciamPattern="^CC-[0-9]{4}$", ciamExample="CC-1001", ciamPurpose="Cost center billed for the team's usage",
-        ciamValueSource="finance: cost-center register", ciamPiiClass="none")),
     ("xDataResidency", dict(
         ciamDefinitionNumber=2, ciamValueType="enum:us|eu|uk|ca", ciamPortability="binding",
         ciamCarriedBy="ciamEnvironment", ciamOverridable="TRUE",
@@ -39,9 +35,7 @@ RECORD_TYPES = (
 )
 FEATURE_FLAGS = (("passkey-enrollment", "TRUE", 25, "Offer passkey enrollment after sign-in"),
                  ("legacy-kba-recovery", "FALSE", None, "Knowledge-based account recovery (being retired)"))
-# the values the estate's records carry: owner cost centers, environment residency, integration token lifetimes
-COST_CENTERS = MappingProxyType({"ciam-platform": "CC-1001", "customer-portal-team": "CC-2040",
-                                 "supplier-portal-team": "CC-2041"})
+# the values the estate's records carry: environment residency, integration token lifetimes
 RESIDENCY = MappingProxyType({"source": "us", "target": "us", "standby": "us"})
 TOKEN_LIFETIMES = MappingProxyType({"tech-pubs": 60, "mobile-ops": 30})
 

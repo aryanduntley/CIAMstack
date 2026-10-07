@@ -18,7 +18,8 @@ provider "azurerm" {
 }
 
 variable "subscription_id" {
-  type = string
+  type    = string
+  default = "00000000-0000-0000-0000-000000000000"
 }
 
 variable "admin_ssh_public_key" {

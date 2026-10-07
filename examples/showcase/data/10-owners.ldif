@@ -3,27 +3,30 @@
 dn: cn=ciam-platform,ou=owners,dc=ciam-ops
 objectClass: top
 objectClass: ciamParty
+objectClass: ciamChargedParty
 cn: ciam-platform
+ciamCostCenter: CC-1001
 ciamDisplayName: CIAM platform team
 ciamOwnerKind: team
 mail: ciam-platform@example-aero.test
-xCostCenter: CC-1001
 
 dn: cn=customer-portal-team,ou=owners,dc=ciam-ops
 objectClass: top
 objectClass: ciamParty
+objectClass: ciamChargedParty
 cn: customer-portal-team
+ciamCostCenter: CC-2040
 ciamOwnerKind: team
 mail: customer-portal@example-aero.test
-xCostCenter: CC-2040
 
 dn: cn=supplier-portal-team,ou=owners,dc=ciam-ops
 objectClass: top
 objectClass: ciamParty
+objectClass: ciamChargedParty
 cn: supplier-portal-team
+ciamCostCenter: CC-2041
 ciamOwnerKind: team
 mail: supplier-portal@example-aero.test
-xCostCenter: CC-2041
 
 dn: cn=mro-analytics-team,ou=owners,dc=ciam-ops
 objectClass: top

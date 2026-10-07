@@ -333,7 +333,7 @@
     "terraform/landing-zone/providers.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "aac64e0af5b1b71d052927af21f79f4f4acac96c6c7d1d2071b3c79d690217fe"
+      "sha256": "d938e3a5ff793797c1f60f68d406c9d6936de429bac0362f4abf04cd4ff07c5b"
     },
     "terraform/main.tf": {
       "scope": "environment-specific",
@@ -343,7 +343,7 @@
     "terraform/providers.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "3484a566d1f2d0ecaa008272cac2cbdefbc677c6c7e09f76515dd41278832c24"
+      "sha256": "62d0a23256e7b5c01f9faf0c4c41fb2c345011b0ecdf989288df14136baf6e85"
     }
   }
 }

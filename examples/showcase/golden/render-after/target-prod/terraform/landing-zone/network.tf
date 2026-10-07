@@ -55,8 +55,11 @@ resource "azurerm_nat_gateway" "egress_pf" {
   resource_group_name = data.azurerm_resource_group.main.name
   sku_name            = "Standard"
   tags = {
-    Role      = "pf-egress"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "pf-egress"
+    ManagedBy   = "opsdir"
   }
 }
 

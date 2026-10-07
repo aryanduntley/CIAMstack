@@ -23,6 +23,7 @@ from .identities import EC2_TRUST, notes, role
 from .landing import render_landing
 from .network import render_network
 from .backups import render_backups
+from .account import provider_block
 from .volumes import render_snapshot_policies, root_block_device, server_volumes
 from .databases import render_databases
 from .storage import kept_buckets, render_object_stores
@@ -156,9 +157,8 @@ def render(m, services):
     providers = header(m, "Providers", HCL) + "\n" + "\n\n".join([
         block("terraform", [], [("required_providers", Block((
             ("aws", {"source": "hashicorp/aws", "version": "~> 5.0"}),)))]),
-        block("provider", ["aws"], [("region", one(m.cloud, "ciamRegion"))]),
-        *((block("provider", ["aws"], [("#", "CloudFront's certificates and web ACLs live in us-east-1"),
-                                       ("alias", US_EAST_1), ("region", "us-east-1")]),)
+        provider_block(m),
+        *((provider_block(m, "us-east-1", US_EAST_1, "CloudFront's certificates and web ACLs live in us-east-1"),)
           if _fronted(m, endpoints) else ()),
         *((block("variable", [RESOLVER_ENDPOINT], [
             ("description", "The landing zone's outbound Route 53 Resolver endpoint the forwarding rules use"),

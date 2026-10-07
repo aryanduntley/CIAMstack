@@ -3,7 +3,9 @@
 dn: env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamEnvironment
+objectClass: ciamEnvironmentPlacement
 env: stage
+ciamDataClassification: internal
 ciamDropsRole: fw-consumer-customer-portal-svc
 ciamDropsRole: fw-consumer-supplier-portal-svc
 ciamDropsRole: fw-consumer-mro-batch-export

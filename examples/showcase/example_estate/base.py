@@ -15,7 +15,10 @@ BRANCHES = (("environments", "Clouds, environments, servers and bindings"),
             ("changes", "Change records mirrored from ITSM"),
             ("incidents", "Incidents and postmortems"),
             ("restore-tests", "Restore tests: one entry per restore someone did, and what it proved"),
+            ("recovery", "Recovery objectives: how long each protected role may be down, how much it may lose"),
+            ("failover-drills", "Failover drills: one entry per failover someone did, and how it went"),
             ("owners", "Teams, partners and vendors"),
+            ("tag-policy", "Tag policy: the tags every rendered resource carries and where their values come from"),
             ("custom-schema", "Fields and record types the operator defines"),
             ("feature-flags", "Feature switches of the login experience (a custom record type)"))
 

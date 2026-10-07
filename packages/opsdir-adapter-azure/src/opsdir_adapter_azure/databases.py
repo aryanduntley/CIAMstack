@@ -36,6 +36,7 @@ from .cmk import customer_key, key_ref, role_uri, vault_object
 from .identities import LOC, RG
 from .network import binding_tags
 from .nsg_rules import admitted_ranges
+from .account import tagged
 
 SERVERS = {"postgresql": "azurerm_postgresql_flexible_server", "mysql": "azurerm_mysql_flexible_server"}
 ENGINES = {v: k for k, v in SERVERS.items()}
@@ -103,7 +104,7 @@ def _security_group(m, b, nets):
         ("destination_address_prefix", "*"), ("resource_group_name", RG),
         ("network_security_group_name", ref(f"azurerm_network_security_group.{nsg}.name"))]),) if cidrs else ()
     return (block("resource", ["azurerm_network_security_group", nsg], [
-                ("name", name), ("location", LOC), ("resource_group_name", RG), ("tags", binding_tags(b))]),
+                ("name", name), ("location", LOC), ("resource_group_name", RG), ("tags", tagged(m, binding_tags(b)))]),
             *rule,
             *((block("resource", ["azurerm_subnet_network_security_group_association", nsg], [
                 ("subnet_id", ref(f"data.azurerm_subnet.{tf_name(rdn_value(nets[0]))}.id")),
@@ -133,7 +134,7 @@ def _database(m, b):
           if one(b, "ciamDbHighAvailability") == "zone-redundant" else ()),
         *((("delegated_subnet_id", ref(f"data.azurerm_subnet.{tf_name(rdn_value(nets[0]))}.id")),
            ("private_dns_zone_id", ref(f"var.{dns}")), ("public_network_access_enabled", False)) if nets else ()),
-        ("administrator_login", ref(f"var.{login}")), *pw_body, *key_body, ("tags", binding_tags(b))])
+        ("administrator_login", ref(f"var.{login}")), *pw_body, *key_body, ("tags", tagged(m, binding_tags(b)))])
     settings = tuple(block("resource", [f"{kind}_configuration", tf_name(f"{cn}_{k}")], [
         ("name", k), ("server_id", ref(f"{kind}.{n}.id")), ("value", v)])
         for k, v in sorted(_settings(b, engine).items()))
@@ -197,7 +198,7 @@ def _server(kind, a, settings, locked, admitted=()):
         "ciamSourceCidr": sorted(set(admitted))},
         links={"ciamSubnetRole": subnet_ref(a.get("delegated_subnet_id")),
                "ciamEncryptedByRole": key_ref(_first(a.get("customer_managed_key")).get("key_vault_key_id"))},
-        name=a.get("name"), role=tagged_role(a.get("tags") or {}))
+        name=a.get("name"), role=tagged_role(a.get("tags") or {}), tags=a.get("tags") or {})
 
 
 def database_resources(pairs):

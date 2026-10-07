@@ -1,0 +1,8 @@
+objective       role            environment   RTO minutes  recovered in                                    RPO minutes  recovery point                                                        standby       runbook
+--------------  --------------  ------------  -----------  ----------------------------------------------  -----------  --------------------------------------------------------------------  ------------  ------------------------
+directory-data  volume-ds-data  source/prod   120          45 (failover drill 2026-09-10 to standby/prod)  60           0 (replicated to standby/prod in us-central1)                         standby/prod  WI-CIAM-015, WI-CIAM-016
+directory-data  volume-ds-data  standby/prod  120          none recorded                                   60           1440 (backup plan `backup-daily` every 24 hours, copied to us-east1)                WI-CIAM-015, WI-CIAM-016
+directory-data  volume-ds-data  target/prod   120          none recorded                                   60           none recorded                                                                       WI-CIAM-015, WI-CIAM-016
+directory-data  volume-ds-data  source/stage  120          none recorded                                   60           none recorded                                                                       WI-CIAM-015, WI-CIAM-016
+(4 rows)
+exit 0

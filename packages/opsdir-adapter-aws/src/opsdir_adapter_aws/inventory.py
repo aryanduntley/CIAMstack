@@ -70,16 +70,13 @@ from .databases import database_resources, database_security_groups
 from .backups import backup_resources
 from .volumes import volume_resources
 from .storage import object_store_resources
+from .tags import state_tags as _tags
 
 PROVIDER = "aws"
 
 SKIPPED = ("aws_secretsmanager_secret_version", "aws_ssm_parameter", "random_password", "tls_private_key",
            "aws_iam_access_key")          # hold secret values, or aren't modeled yet
 _RULE_NAME = re.compile(r"\(([A-Za-z0-9._-]+)\)\s*$")
-
-
-def _tags(a):
-    return a.get("tags") or a.get("tags_all") or {}
 
 
 def _role(a):
@@ -93,7 +90,8 @@ def _networks(found):
 
 def _subnets(found):
     return tuple(resource("subnet", a.get("id"), {"ciamCidr": a.get("cidr_block"), "ciamZone": a.get("availability_zone")},
-                          name=_tags(a).get("Name"), role=_role(a)) for a in of_types(found, "aws_subnet"))
+                          name=_tags(a).get("Name"), role=_role(a), tags=_tags(a))
+                 for a in of_types(found, "aws_subnet"))
 
 
 def _servers(found):
@@ -103,7 +101,7 @@ def _servers(found):
                            "ciamHostname": _tags(a).get("Hostname") or a.get("private_dns"),
                            "ciamProductVersion": _tags(a).get("Product")},
                           links={"ciamSubnet": a.get("subnet_id")}, name=_tags(a).get("Name") or a.get("id"),
-                          role=_tags(a).get("Role"))
+                          role=_tags(a).get("Role"), tags=_tags(a))
                  for a in of_types(found, "aws_instance"))
 
 
@@ -236,7 +234,7 @@ def _secrets(found):
                      "ciamRotationFunction": (rotation.get(a.get("arn")) or rotation.get(a.get("id")) or {})
                      .get("rotation_lambda_arn")},
                           links={"ciamEncryptedByRole": keys.get(a.get("kms_key_id"))},
-                          name=_tags(a).get("Name") or a.get("name"), role=_role(a))
+                          name=_tags(a).get("Name") or a.get("name"), role=_role(a), tags=_tags(a))
                  for a in of_types(found, "aws_secretsmanager_secret") if a.get("arn"))
 
 
@@ -247,7 +245,7 @@ def _keys(found):
                      "ciamAutoRotate": {True: "TRUE", False: "FALSE"}.get(a.get("enable_key_rotation")),
                      "ciamReplicaRegion": sorted({r.get("arn", "").split(":")[3] for r in replicas
                                                   if r.get("primary_key_arn") == a.get("arn") and r.get("arn")})},
-                          name=_tags(a).get("Name") or a.get("key_id"), role=_role(a))
+                          name=_tags(a).get("Name") or a.get("key_id"), role=_role(a), tags=_tags(a))
                  for a in of_types(found, "aws_kms_key") if a.get("arn"))
 
 
@@ -256,7 +254,7 @@ def _egress(found):
     return tuple(resource("egress", a.get("id"), {
                               "ciamCidr": f"{a.get('public_ip')}/32" if a.get("public_ip") else None,
                               "ciamNatAllocation": "static" if a.get("public_ip") else None},
-                          name=_tags(a).get("Name") or a.get("id"), role=_role(a))
+                          name=_tags(a).get("Name") or a.get("id"), role=_role(a), tags=_tags(a))
                  for a in of_types(found, "aws_nat_gateway") if a.get("id"))
 
 
@@ -279,12 +277,14 @@ def _jobs(found):
     def image(a):
         return next((b.get("image") for b in blocks(a.get("environment")) if b.get("image")), None)
     return (*(resource("job", a.get("arn"), {"ciamRuntime": a.get("runtime"), "ciamSchedule": schedules(a.get("arn"))},
-                       name=a.get("function_name"), role=_role(a)) for a in of_types(found, "aws_lambda_function")
+                       name=a.get("function_name"), role=_role(a),
+                       tags=_tags(a)) for a in of_types(found, "aws_lambda_function")
               if a.get("arn")),
             *(resource("job", a.get("arn"), {"ciamSchedule": schedules(a.get("arn"))}, name=a.get("name"),
-                       role=_role(a)) for a in of_types(found, "aws_codepipeline") if a.get("arn")),
+                       role=_role(a), tags=_tags(a)) for a in of_types(found, "aws_codepipeline") if a.get("arn")),
             *(resource("job", a.get("arn"), {"ciamRuntime": image(a), "ciamSchedule": schedules(a.get("arn"))},
-                       name=a.get("name"), role=_role(a)) for a in of_types(found, "aws_codebuild_project") if a.get("arn")))
+                       name=a.get("name"), role=_role(a),
+                       tags=_tags(a)) for a in of_types(found, "aws_codebuild_project") if a.get("arn")))
 
 
 def _asg_tags(a):
@@ -347,7 +347,7 @@ def _clusters(found):
                                        for a in of_types(found, "aws_eks_addon") if a.get("cluster_name") == name),
             "ciamNodePool": sorted(pool(n) for n in of_types(found, "aws_eks_node_group")
                                    if n.get("cluster_name") == name),
-            "ciamSpansZone": _zones_of(subnets, zones)}, name=name, role=cluster_role(_tags(c)))
+            "ciamSpansZone": _zones_of(subnets, zones)}, name=name, role=cluster_role(_tags(c)), tags=_tags(c))
     return tuple(cluster(c) for c in of_types(found, "aws_eks_cluster") if c.get("arn") or c.get("name"))
 
 
@@ -378,7 +378,8 @@ def _sending(found):
         return resource("sending", a.get("arn") or domain, {
             "ciamSenderDomain": domain, "ciamDkimVerified": _dkim(a, found, domain),
             "ciamSpfAuthorized": spf_authorizes(_txt(found, domain), SES_SPF),
-            "ciamDmarcPolicy": dmarc_policy(_txt(found, f"_dmarc.{domain}"))}, name=f"ses-{domain}", role=_role(a))
+            "ciamDmarcPolicy": dmarc_policy(_txt(found, f"_dmarc.{domain}"))}, name=f"ses-{domain}", role=_role(a),
+                        tags=_tags(a))
     return tuple(identity(a) for a in of_types(found, "aws_sesv2_email_identity", "aws_ses_domain_identity")
                  if "@" not in (a.get("email_identity") or a.get("domain") or "@"))
 
@@ -397,7 +398,8 @@ def _notified(found):
 def _channels(found):
     """SNS topics an alarm notifies, as alert channels."""
     notified = _notified(found)
-    return tuple(resource("channel", a.get("arn"), {"ciamChannelKind": "topic"}, name=a.get("name"), role=_role(a))
+    return tuple(resource("channel", a.get("arn"), {"ciamChannelKind": "topic"}, name=a.get("name"), role=_role(a),
+                          tags=_tags(a))
                  for a in of_types(found, "aws_sns_topic") if a.get("arn") in notified)
 
 
@@ -405,7 +407,7 @@ def _log_destinations(found):
     """CloudWatch log groups, with their retention (0: never expires)."""
     return tuple(resource("logs", a.get("arn"), {"ciamDestinationKind": "log-group",
                                                  "ciamRetentionDays": a.get("retention_in_days")},
-                          name=a.get("name"), role=_role(a))
+                          name=a.get("name"), role=_role(a), tags=_tags(a))
                  for a in of_types(found, "aws_cloudwatch_log_group") if a.get("arn"))
 
 
@@ -442,7 +444,8 @@ def _streams(found):
     """Queues, topics, event buses and data streams as stream carriers (the default event bus, and topics an alarm
     notifies, left out)."""
     notified = _notified(found)
-    return tuple(resource("stream", a.get("arn"), {"ciamStreamKind": kind}, name=a.get("name"), role=_role(a))
+    return tuple(resource("stream", a.get("arn"), {"ciamStreamKind": kind}, name=a.get("name"), role=_role(a),
+                          tags=_tags(a))
                  for t, kind in STREAM_TYPES for a in of_types(found, t)
                  if a.get("arn") and not (t == "aws_cloudwatch_event_bus" and a.get("name") == "default")
                  and not (t == "aws_sns_topic" and a.get("arn") in notified))

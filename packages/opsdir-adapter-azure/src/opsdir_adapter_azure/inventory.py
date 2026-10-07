@@ -101,14 +101,14 @@ def _low(x):
 def _networks(found):
     return tuple(resource("network", a.get("name"), {"ciamCidr": _first(a.get("address_space")),
                                                      "ciamResourceGroup": a.get("resource_group_name")},
-                          name=_tags(a).get("Name") or a.get("name"), role=_role(a) or "network")
+                          name=_tags(a).get("Name") or a.get("name"), role=_role(a) or "network", tags=_tags(a))
                  for a in of_types(found, "azurerm_virtual_network") if a.get("name"))
 
 
 def _subnets(found):
     return tuple(resource("subnet", f"{a.get('virtual_network_name')}/{a.get('name')}",
                           {"ciamCidr": _first(a.get("address_prefixes")) or a.get("address_prefix")},
-                          name=a.get("name"), role=_role(a))
+                          name=a.get("name"), role=_role(a), tags=_tags(a))
                  for a in of_types(found, "azurerm_subnet") if a.get("name") and a.get("virtual_network_name"))
 
 
@@ -150,7 +150,7 @@ def _servers(found):
                          "ciamInstanceSize": vm.get("size") or vm.get("vm_size"), "ciamImageRef": _image(vm),
                          "ciamHostname": _hostname(vm), "ciamProductVersion": _tags(vm).get("Product")},
                         links={"ciamSubnet": subnet}, name=_tags(vm).get("Name") or vm.get("name"),
-                        role=_tags(vm).get("Role"))
+                        role=_tags(vm).get("Role"), tags=_tags(vm))
     return tuple(one_vm(vm) for vm in of_types(found, *VMS))
 
 
@@ -305,7 +305,7 @@ def _secrets(found):
     """Secret references from the secrets' vault and name alone; the value (and the version holding it) is never read."""
     return tuple(resource("secret", f"azkv://{_vault(a)}/{a.get('name')}",
                           {"ciamRefUri": f"azkv://{_vault(a)}/{a.get('name')}"},
-                          name=_tags(a).get("Name") or a.get("name"), role=_role(a))
+                          name=_tags(a).get("Name") or a.get("name"), role=_role(a), tags=_tags(a))
                  for a in of_types(found, "azurerm_key_vault_secret") if _vault(a) and a.get("name"))
 
 
@@ -328,7 +328,7 @@ def _keys(found):
             "ciamProtectionLevel": ("hsm" if kind.upper().endswith("-HSM") else "software") if kind else None,
             "ciamAutoRotate": ("TRUE" if policy.get("automatic") else "FALSE") if "rotation_policy" in a else None,
             "ciamProviderRef": sets.get((vault.lower(), name.lower()))},
-            name=_tags(a).get("Name") or name, role=_role(a))
+            name=_tags(a).get("Name") or name, role=_role(a), tags=_tags(a))
     return tuple(one_key(a) for a in of_types(found, "azurerm_key_vault_key") if _vault(a) and a.get("name"))
 
 
@@ -347,7 +347,7 @@ def _egress(found):
         return sorted({c for g, c in (*addresses, *ranges) if g == _low(nat.get("id"))})
     return tuple(resource("egress", a.get("name"),
                           {"ciamCidr": cidrs(a), "ciamNatAllocation": "static" if cidrs(a) else None},
-                          name=_tags(a).get("Name") or a.get("name"), role=_role(a))
+                          name=_tags(a).get("Name") or a.get("name"), role=_role(a), tags=_tags(a))
                  for a in of_types(found, "azurerm_nat_gateway") if a.get("name"))
 
 
@@ -377,7 +377,7 @@ def _jobs(found):
     return tuple(resource("job", a.get("id"), {"ciamRuntime": runtime(stack(a)),
                                                "ciamSchedule": sorted({s for app, ss in functions
                                                                        if app == _low(a.get("id")) for s in ss})},
-                          name=_tags(a).get("Name") or a.get("name"), role=_role(a))
+                          name=_tags(a).get("Name") or a.get("name"), role=_role(a), tags=_tags(a))
                  for a in of_types(found, *FUNCTION_APPS) if a.get("id"))
 
 
@@ -432,7 +432,7 @@ def _clusters(found):
             "ciamClusterAddon": sorted(name for arg, name in AKS_ADDONS if _enabled(c.get(arg))),
             "ciamNodePool": sorted(_pool(p) for p in pools),
             "ciamSpansZone": sorted({z for p in pools for z in p.get("zones") or ()})},
-            name=c.get("name"), role=cluster_role(_tags(c)))
+            name=c.get("name"), role=cluster_role(_tags(c)), tags=_tags(c))
     return tuple(cluster(c) for c in of_types(found, "azurerm_kubernetes_cluster") if c.get("id") or c.get("name"))
 
 
@@ -470,7 +470,7 @@ def _sending(found):
         return resource("sending", a.get("id") or domain, {
             "ciamSenderDomain": domain, "ciamDkimVerified": _dkim(a, found),
             "ciamSpfAuthorized": spf_authorizes(_txt(found, domain), ACS_SPF),
-            "ciamDmarcPolicy": dmarc_policy(_txt(found, f"_dmarc.{domain}"))}, name=f"acs-{domain}", role=_role(a))
+            "ciamDmarcPolicy": dmarc_policy(_txt(found, f"_dmarc.{domain}"))}, name=f"acs-{domain}", role=_role(a), tags=_tags(a))
     return tuple(identity(a) for a in of_types(found, "azurerm_email_communication_service_domain")
                  if a.get("domain_management") != "AzureManaged" and a.get("name"))
 
@@ -478,7 +478,7 @@ def _sending(found):
 def _channels(found):
     """Action groups, as alert channels."""
     return tuple(resource("channel", a.get("id"), {"ciamChannelKind": "action-group"}, name=a.get("name"),
-                          role=_role(a))
+                          role=_role(a), tags=_tags(a))
                  for a in of_types(found, "azurerm_monitor_action_group") if a.get("id"))
 
 
@@ -486,7 +486,7 @@ def _log_destinations(found):
     """Log Analytics workspaces, with their retention."""
     return tuple(resource("logs", a.get("id"), {"ciamDestinationKind": "workspace",
                                                 "ciamRetentionDays": a.get("retention_in_days")},
-                          name=a.get("name"), role=_role(a))
+                          name=a.get("name"), role=_role(a), tags=_tags(a))
                  for a in of_types(found, "azurerm_log_analytics_workspace") if a.get("id"))
 
 
@@ -525,7 +525,7 @@ def _canaries(found):
 
 def _streams(found):
     """Service Bus queues and topics, Event Hubs and Event Grid topics as stream carriers."""
-    return tuple(resource("stream", a.get("id"), {"ciamStreamKind": kind}, name=a.get("name"), role=_role(a))
+    return tuple(resource("stream", a.get("id"), {"ciamStreamKind": kind}, name=a.get("name"), role=_role(a), tags=_tags(a))
                  for t, kind in STREAM_TYPES for a in of_types(found, t) if a.get("id"))
 
 

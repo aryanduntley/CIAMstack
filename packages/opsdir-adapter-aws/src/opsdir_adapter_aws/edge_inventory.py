@@ -26,6 +26,7 @@ from opsdir.core.inventory import of_types, resource, tagged_role
 from opsdir.domains.edge.imports import forwarder_role, record_role, zone_role
 from opsdir.domains.edge.resolve import endpoint_kind_named, rate_limit_fact, tls_level
 from .edge import TLS_POLICIES, WAF_GROUPS
+from .tags import state_tags as _tags
 
 CATEGORIES = {group: category for category, group in WAF_GROUPS.items()}
 _DEFAULT_DRAIN, _DEFAULT_IDLE = "300", "60"
@@ -34,10 +35,6 @@ _DEFAULT_DRAIN, _DEFAULT_IDLE = "300", "60"
 def _first(v):
     """The first object of a nested block as state keeps it (a list of objects), or {}."""
     return (v[0] if v else {}) if isinstance(v, list) else (v or {})
-
-
-def _tags(a):
-    return a.get("tags") or a.get("tags_all") or {}
 
 
 def tls_mode(lb, listeners, groups):
@@ -139,19 +136,19 @@ def edge_services(found):
             "ciamEdgeKind": "waf", "ciamEdgeFact": sorted({f"waf-mode {mode}", *(f for fs, _ in parts for f in fs)}),
             "ciamEdgeSetting": sorted({s for _, ss in parts for s in ss})},
             links={"ciamServiceRole": fronts.get(attached.get(a.get("arn")))}, name=a.get("name"),
-            role=tagged_role(_tags(a)))
+            role=tagged_role(_tags(a)), tags=_tags(a))
     return (*(acl(a) for a in of_types(found, "aws_wafv2_web_acl") if a.get("arn")),
             *(resource("edge", a.get("arn") or f"shield:{a.get('resource_arn')}", {
                 "ciamEdgeKind": "ddos", "ciamEdgeFact": "ddos application-advanced"
                 if a.get("resource_arn") in automatic else "ddos network-advanced"},
                 links={"ciamServiceRole": fronts.get(a.get("resource_arn"))}, name=a.get("name"),
-                role=tagged_role(_tags(a)))
+                role=tagged_role(_tags(a)), tags=_tags(a))
               for a in of_types(found, "aws_shield_protection")),
             *(resource("edge", d.get("arn"), {
                 "ciamEdgeKind": "cdn", "ciamEdgeFact": "cdn on",
                 "ciamEdgeSetting": f"minimum_protocol_version {minimum}" if minimum else None},
                 links={"ciamServiceRole": fronts.get(d.get("arn"))}, name=d.get("id") or d.get("arn"),
-                role=tagged_role(_tags(d)))
+                role=tagged_role(_tags(d)), tags=_tags(d))
               for d in of_types(found, "aws_cloudfront_distribution") if d.get("arn")
               for minimum in (_first(d.get("viewer_certificate")).get("minimum_protocol_version"),)))
 
@@ -186,7 +183,8 @@ def dns_resources(found, served):
     return (tuple(resource("zone", a.get("zone_id"), {
                 "ciamDnsZone": zones[a.get("zone_id")], "ciamProviderRef": a.get("zone_id"),
                 "ciamZoneVisibility": "private" if a.get("vpc") else "public"},
-                name=zones[a.get("zone_id")], role=tagged_role(_tags(a)) or zone_role(zones[a.get("zone_id")]))
+                name=zones[a.get("zone_id")], role=tagged_role(_tags(a)) or zone_role(zones[a.get("zone_id")]),
+                           tags=_tags(a))
                   for a in of_types(found, "aws_route53_zone") if a.get("zone_id")),
             tuple(resource("record", f"{r.get('zone_id')}/{_name(r)}/{r.get('type')}/{r.get('set_identifier') or ''}",
                            {"ciamRecordName": _name(r), "ciamRecordType": r.get("type"), "ciamTtlSeconds": r.get("ttl"),
@@ -199,7 +197,7 @@ def dns_resources(found, served):
                 "ciamForwardDomain": (a.get("domain_name") or "").rstrip("."), "ciamForwardDirection": "outbound",
                 "ciamForwardTarget": [t.get("ip") for t in a.get("target_ip") or ()], "ciamProviderRef": a.get("id")},
                 name=a.get("name") or a.get("id"),
-                role=tagged_role(_tags(a)) or forwarder_role((a.get("domain_name"),)))
+                role=tagged_role(_tags(a)) or forwarder_role((a.get("domain_name"),)), tags=_tags(a))
                   for a in of_types(found, "aws_route53_resolver_rule") if a.get("rule_type") == "FORWARD"),
             tuple(f"Route 53 record {r.get('type')} {_name(r)} ({r.get('set_identifier')}) answers for another "
                   "environment of a routed name: not recorded here" for r in elsewhere))

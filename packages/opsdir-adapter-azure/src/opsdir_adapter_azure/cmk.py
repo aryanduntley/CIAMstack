@@ -16,6 +16,7 @@ from opsdir.core.environment import UNBOUND, bound
 from opsdir_format_terraform.hcl import block, ref
 from .identities import LOC, RG
 from .network import binding_tags
+from .account import tagged
 
 CMK_ROLE = "Key Vault Crypto Service Encryption User"
 # A data service's customer-managed key: blocks (data sources, the identity, its grant), the addresses of the
@@ -64,7 +65,7 @@ def customer_key(m, b, n):
         (*sources,
          block("resource", ["azurerm_user_assigned_identity", f"{n}_cmk"], [
              ("name", f"id-{rdn_value(b)}-cmk"), ("location", LOC), ("resource_group_name", RG),
-             ("tags", binding_tags(b))]),
+             ("tags", tagged(m, binding_tags(b)))]),
          block("resource", ["azurerm_role_assignment", f"{n}_cmk"], [
              ("scope", ref(f"{key}.resource_versionless_id")),
              ("role_definition_name", CMK_ROLE), ("principal_id", ref(f"{ident}.principal_id"))])),

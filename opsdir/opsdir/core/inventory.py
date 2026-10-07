@@ -34,37 +34,41 @@ from .environment import env_dn
 from .overlays import lineage
 
 # One resource a cloud reports: its kind, the provider's reference for it, the record attributes the source gives,
-# links to other resources by their provider refs ({attribute: ref}), and hints for a new entry's name and role.
+# links to other resources by their provider refs ({attribute: ref}), hints for a new entry's name and role, and the
+# tags (labels) the cloud reports on it, when the source gives them (None when it doesn't; {} when it has none).
 Resource = NamedTuple("Resource", [("kind", str), ("ref", str), ("attrs", Mapping), ("links", Mapping),
-                                   ("name", Optional[str]), ("role", Optional[str])])
+                                   ("name", Optional[str]), ("role", Optional[str]), ("tags", Optional[Mapping])])
 
 # How the installed domains read cloud resources into the record: kinds {kind: ImportKind} (core.contract), role_links
-# {attribute naming a binding's role: the kind of what it names}. Built from the domains (imports); an import attaches
-# it to the snapshot it reads (with_imports), so the core names no domain's classes.
-Imports = NamedTuple("Imports", [("kinds", Mapping), ("role_links", Mapping)])
+# {attribute naming a binding's role: the kind of what it names}, checks (the domains' import checks: (directory, spec,
+# resources) -> notices). Built from the domains (imports); an import attaches it to the snapshot it reads
+# (with_imports), so the core names no domain's classes.
+Imports = NamedTuple("Imports", [("kinds", Mapping), ("role_links", Mapping), ("checks", tuple)])
 _PORT = re.compile(r":[0-9]+$")
 ROLE_MAP = "roles.json"                         # <cloud>/<env>/roles.json: roles for what a cloud can't tag
 _UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
 
 
-def resource(kind, ref, attrs=None, links=None, name=None, role=None):
+def resource(kind, ref, attrs=None, links=None, name=None, role=None, tags=None):
     """A Resource, dropping attributes and links the source left empty."""
     clean = {k: tuple(str(x) for x in (v if isinstance(v, (list, tuple)) else (v,)) if x not in (None, ""))
              for k, v in (attrs or {}).items()}
     return Resource(kind, ref, {k: v for k, v in clean.items() if v},
-                    {k: v for k, v in (links or {}).items() if v}, name, role)
+                    {k: v for k, v in (links or {}).items() if v}, name, role,
+                    MappingProxyType(dict(tags)) if tags is not None else None)
 
 
 def imports(domains):
-    """The Imports of these domains: their import kinds and role links, merged; refused when two declare the same kind
-    or link."""
+    """The Imports of these domains: their import kinds, role links and import checks, merged; refused when two declare
+    the same kind or link."""
     kinds = [k for dom in domains for k in dom.import_kinds]
     links = [(a, kind) for dom in domains for a, kind in dom.role_links.items()]
     twice = sorted({k.kind for k in kinds if [x.kind for x in kinds].count(k.kind) > 1} |
                    {a for a, _ in links if [x for x, _ in links].count(a) > 1})
     if twice:
         raise ValueError(f"declared by more than one domain: {', '.join(twice)}")
-    return Imports(MappingProxyType({k.kind: k for k in kinds}), MappingProxyType(dict(links)))
+    return Imports(MappingProxyType({k.kind: k for k in kinds}), MappingProxyType(dict(links)),
+                   tuple(c for dom in domains for c in dom.import_checks))
 
 
 def with_imports(d, table):
@@ -243,7 +247,9 @@ def environment_groups(d, spec, resources, summarize=()):
                *(f"{spec}: {r.kind} {name} added (role {r.role})" for r, name in added),
                *(f"{spec}: {rdn_value(e)} ({next(c for c in e.classes if any(is_subclass(d, c, k) for k in kinds))}) is in "
                  f"the record but not in what the cloud reports"
-                 for e in own if e.norm not in reported and any(is_kind(d, e, k) for k in kinds)))
+                 for e in own if e.norm not in reported and any(is_kind(d, e, k) for k in kinds)),
+               *(n for check in table.checks
+                 for n in check(d, spec, (*(r for r, held, _, _ in placed if held is not None), *(r for r, _ in added)))))
     return tuple((e.dn, (e,)) for e in entries), notices
 
 

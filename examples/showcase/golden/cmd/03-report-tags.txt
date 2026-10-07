@@ -1,0 +1,20 @@
+environment   tag                 source          value
+------------  ------------------  --------------  ---------------------------------------------------------------------
+source/prod   CostCenter          cost-center     CC-1001
+source/prod   DataClassification  classification  confidential
+source/prod   Environment         environment     source/prod
+source/prod   Owner               owner           ciam-platform
+standby/prod  CostCenter          cost-center     CC-1001
+standby/prod  DataClassification  classification  confidential
+standby/prod  Environment         environment     standby/prod
+standby/prod  Owner               owner           ciam-platform
+target/prod   CostCenter          cost-center     CC-1001
+target/prod   DataClassification  classification  none: target/prod has no data classification (ciamDataClassification)
+target/prod   Environment         environment     target/prod
+target/prod   Owner               owner           ciam-platform
+source/stage  CostCenter          cost-center     CC-1001
+source/stage  DataClassification  classification  internal
+source/stage  Environment         environment     source/stage
+source/stage  Owner               owner           ciam-platform
+(16 rows)
+exit 0

@@ -35,6 +35,7 @@ from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
 from .arm_ids import arm_segment
 from .identities import LOC, RG
 from .network import application_rules, binding_tags, private_endpoint
+from .account import tagged
 
 VNET = "data.azurerm_virtual_network.main"
 # blocks: what the binding renders; variables: inputs only its keeper knows; shared: data sources and resources
@@ -62,9 +63,9 @@ def network_data(m):
     """Data sources for environment m's resource group, virtual network and subnets (by their provider refs)."""
     net = one_role(m, "network")
     name = one(net, "ciamProviderRef") if net is not None else None
-    return (block("data", ["azurerm_resource_group", "main"], [("name", one(net, "ciamResourceGroup"))]
-                  if net is not None and one(net, "ciamResourceGroup") else
-                  [("#", "UNBOUND: the network binding has no resource group")]),
+    group = (one(net, "ciamResourceGroup") if net is not None else None) or one(m.env, "ciamResourceGroup")
+    return (block("data", ["azurerm_resource_group", "main"], [("name", group)] if group else
+                  [("#", "UNBOUND: neither the network binding nor the environment names a resource group")]),
             block("data", ["azurerm_virtual_network", "main"], [("name", name), ("resource_group_name", RG)] if name
                   else [("#", "UNBOUND: the network binding has no provider ref")]),
             *(_subnet_data(s) for s in of_class(m, "ciamSubnetBinding")))
@@ -127,7 +128,7 @@ def egress(m, b, here=()):
     return Rendered((
         block("resource", ["azurerm_nat_gateway", n], [
             ("name", one(b, "ciamProviderRef") or _name(m, b, "ng")), ("location", LOC), ("resource_group_name", RG),
-            ("sku_name", "Standard"), *((("zones", [zone]),) if zone else ()), ("tags", binding_tags(b))]),
+            ("sku_name", "Standard"), *((("zones", [zone]),) if zone else ()), ("tags", tagged(m, binding_tags(b)))]),
         *_adopt(f"azurerm_nat_gateway.{n}", b, "natGateways"),
         *(x for i, _ in enumerate(single) for x in (
             block("resource", ["azurerm_nat_gateway_public_ip_association", f"{n}_{i}"], [
@@ -194,7 +195,7 @@ def route_table(m, b, here=()):
         *main,
         block("resource", ["azurerm_route_table", n], [
             ("name", name or _name(m, b, "rt")), ("location", LOC), ("resource_group_name", RG),
-            *(x for p in parts for x in p.blocks), ("tags", binding_tags(b))]),
+            *(x for p in parts for x in p.blocks), ("tags", tagged(m, binding_tags(b)))]),
         *_adopt(f"azurerm_route_table.{n}", b, "routeTables"),
         *(x for s in subnets(m, b) for x in (
             block("resource", ["azurerm_subnet_route_table_association", f"{n}_{tf_name(rdn_value(s))}"], [
@@ -257,13 +258,13 @@ def _vpn(m, b, n):
             ("name", _name(m, b, "lgw")), ("location", LOC), ("resource_group_name", RG),
             ("gateway_address", gateway),
             *((("address_space", values(b, "ciamAcceptedCidr")),) if values(b, "ciamAcceptedCidr") else ()),
-            *bgp, ("tags", binding_tags(b))]),
+            *bgp, ("tags", tagged(m, binding_tags(b)))]),
         block("resource", ["azurerm_virtual_network_gateway_connection", n], [
             ("name", _name(m, b, "cn")), ("location", LOC), ("resource_group_name", RG), ("type", "IPsec"),
             ("virtual_network_gateway_id", ref(f"var.{GATEWAY}")),
             ("local_network_gateway_id", ref(f"azurerm_local_network_gateway.{n}.id")),
             ("shared_key", ref(f"var.{n}_shared_key")), ("bgp_enabled", peer_asn is not None),
-            ("tags", binding_tags(b))]),
+            ("tags", tagged(m, binding_tags(b)))]),
         *_adopt(f"azurerm_virtual_network_gateway_connection.{n}", b, "connections")),
         (_var(GATEWAY, "The virtual network gateway (VPN) the connections are made on"),
          _var(f"{n}_shared_key", f"The IPsec shared key of {rdn_value(b)}, from the secret store (never recorded)",
@@ -340,7 +341,7 @@ def flow_log(m, b, here=()):
                 ("resource_group_name", ref(f"var.{WATCHER[1]}")),
                 ("target_resource_id", target), ("storage_account_id", storage), ("enabled", True), ("version", 2),
                 ("retention_policy", Block((("enabled", bool(days)), ("days", int(days or 0))))), *analytics,
-                ("tags", binding_tags(b))]),
+                ("tags", tagged(m, binding_tags(b)))]),
             *(_adopt(f"azurerm_network_watcher_flow_log.{name}", b) if len(on) == 1 else ()))),
         (_var(WATCHER[0], "The Network Watcher of the network's region"),
          _var(WATCHER[1], "The resource group of that Network Watcher"), *variables),

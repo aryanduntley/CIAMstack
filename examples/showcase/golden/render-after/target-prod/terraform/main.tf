@@ -59,7 +59,10 @@ resource "azurerm_network_security_group" "am" {
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   tags = {
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -68,7 +71,10 @@ resource "azurerm_network_security_group" "ds" {
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   tags = {
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -77,7 +83,10 @@ resource "azurerm_network_security_group" "idm" {
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   tags = {
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -86,7 +95,10 @@ resource "azurerm_network_security_group" "ig" {
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   tags = {
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -95,7 +107,10 @@ resource "azurerm_network_security_group" "pf_admin" {
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   tags = {
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -104,7 +119,10 @@ resource "azurerm_network_security_group" "pf_engine" {
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   tags = {
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -293,9 +311,12 @@ resource "azurerm_user_assigned_identity" "identity_ds" {
   resource_group_name = data.azurerm_resource_group.main.name
   location            = data.azurerm_resource_group.main.location
   tags = {
-    Principal = "pingds"
-    Role      = "identity-ds"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Principal   = "pingds"
+    Role        = "identity-ds"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -328,9 +349,12 @@ resource "azurerm_user_assigned_identity" "identity_pf" {
   resource_group_name = data.azurerm_resource_group.main.name
   location            = data.azurerm_resource_group.main.location
   tags = {
-    Principal = "pingfederate"
-    Role      = "identity-pf"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Principal   = "pingfederate"
+    Role        = "identity-pf"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -395,10 +419,13 @@ resource "azurerm_linux_virtual_machine" "am_1" {
     disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
   }
   tags = {
-    Role      = "am"
-    Hostname  = "am-1.az.internal.example-aero.test"
-    Product   = "PingAM 7.5.1"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "am"
+    Hostname    = "am-1.az.internal.example-aero.test"
+    Product     = "PingAM 7.5.1"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -439,10 +466,13 @@ resource "azurerm_linux_virtual_machine" "am_2" {
     disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
   }
   tags = {
-    Role      = "am"
-    Hostname  = "am-2.az.internal.example-aero.test"
-    Product   = "PingAM 7.5.1"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "am"
+    Hostname    = "am-2.az.internal.example-aero.test"
+    Product     = "PingAM 7.5.1"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -487,10 +517,13 @@ resource "azurerm_linux_virtual_machine" "ds_1" {
     identity_ids = [azurerm_user_assigned_identity.identity_ds.id]
   }
   tags = {
-    Role      = "ds"
-    Hostname  = "ds-1.az.internal.example-aero.test"
-    Product   = "PingDS 7.5.1"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "ds"
+    Hostname    = "ds-1.az.internal.example-aero.test"
+    Product     = "PingDS 7.5.1"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -508,6 +541,9 @@ resource "azurerm_managed_disk" "ds_1_vol_ds_data" {
   disk_mbps_read_write   = 250
   disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
   tags = {
+    CostCenter     = "CC-1001"
+    Environment    = "target/prod"
+    Owner          = "ciam-platform"
     Volume         = "vol-ds-data"
     Role           = "volume-ds-data"
     Server         = "ds-1"
@@ -564,10 +600,13 @@ resource "azurerm_linux_virtual_machine" "ds_2" {
     identity_ids = [azurerm_user_assigned_identity.identity_ds.id]
   }
   tags = {
-    Role      = "ds"
-    Hostname  = "ds-2.az.internal.example-aero.test"
-    Product   = "PingDS 7.5.1"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "ds"
+    Hostname    = "ds-2.az.internal.example-aero.test"
+    Product     = "PingDS 7.5.1"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -585,6 +624,9 @@ resource "azurerm_managed_disk" "ds_2_vol_ds_data" {
   disk_mbps_read_write   = 250
   disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
   tags = {
+    CostCenter     = "CC-1001"
+    Environment    = "target/prod"
+    Owner          = "ciam-platform"
     Volume         = "vol-ds-data"
     Role           = "volume-ds-data"
     Server         = "ds-2"
@@ -641,10 +683,13 @@ resource "azurerm_linux_virtual_machine" "ds_3" {
     identity_ids = [azurerm_user_assigned_identity.identity_ds.id]
   }
   tags = {
-    Role      = "ds"
-    Hostname  = "ds-3.az.internal.example-aero.test"
-    Product   = "PingDS 7.5.1"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "ds"
+    Hostname    = "ds-3.az.internal.example-aero.test"
+    Product     = "PingDS 7.5.1"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -662,6 +707,9 @@ resource "azurerm_managed_disk" "ds_3_vol_ds_data" {
   disk_mbps_read_write   = 250
   disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
   tags = {
+    CostCenter     = "CC-1001"
+    Environment    = "target/prod"
+    Owner          = "ciam-platform"
     Volume         = "vol-ds-data"
     Role           = "volume-ds-data"
     Server         = "ds-3"
@@ -714,10 +762,13 @@ resource "azurerm_linux_virtual_machine" "idm_1" {
     disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
   }
   tags = {
-    Role      = "idm"
-    Hostname  = "idm-1.az.internal.example-aero.test"
-    Product   = "PingIDM 7.5.0"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "idm"
+    Hostname    = "idm-1.az.internal.example-aero.test"
+    Product     = "PingIDM 7.5.0"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -758,10 +809,13 @@ resource "azurerm_linux_virtual_machine" "ig_1" {
     disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
   }
   tags = {
-    Role      = "ig"
-    Hostname  = "ig-1.az.internal.example-aero.test"
-    Product   = "PingGateway 2024.11.0"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "ig"
+    Hostname    = "ig-1.az.internal.example-aero.test"
+    Product     = "PingGateway 2024.11.0"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -802,10 +856,13 @@ resource "azurerm_linux_virtual_machine" "pf_admin_1" {
     disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
   }
   tags = {
-    Role      = "pf-admin"
-    Hostname  = "pf-admin-1.az.internal.example-aero.test"
-    Product   = "PingFederate 12.1.4"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "pf-admin"
+    Hostname    = "pf-admin-1.az.internal.example-aero.test"
+    Product     = "PingFederate 12.1.4"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -850,10 +907,13 @@ resource "azurerm_linux_virtual_machine" "pf_engine_1" {
     identity_ids = [azurerm_user_assigned_identity.identity_pf.id]
   }
   tags = {
-    Role      = "pf-engine"
-    Hostname  = "pf-engine-1.az.internal.example-aero.test"
-    Product   = "PingFederate 12.1.4"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "pf-engine"
+    Hostname    = "pf-engine-1.az.internal.example-aero.test"
+    Product     = "PingFederate 12.1.4"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -898,10 +958,13 @@ resource "azurerm_linux_virtual_machine" "pf_engine_2" {
     identity_ids = [azurerm_user_assigned_identity.identity_pf.id]
   }
   tags = {
-    Role      = "pf-engine"
-    Hostname  = "pf-engine-2.az.internal.example-aero.test"
-    Product   = "PingFederate 12.1.4"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "pf-engine"
+    Hostname    = "pf-engine-2.az.internal.example-aero.test"
+    Product     = "PingFederate 12.1.4"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -920,9 +983,12 @@ resource "azurerm_data_protection_backup_vault" "ciam_backups" {
     type = "SystemAssigned"
   }
   tags = {
-    Name      = "ciam-backups"
-    Role      = "backup-vault"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Name        = "ciam-backups"
+    Role        = "backup-vault"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -1025,8 +1091,11 @@ resource "azurerm_lb" "svc_apps" {
     public_ip_address_id = data.azurerm_public_ip.svc_apps.id
   }
   tags = {
-    Service   = "apps.example-aero.test"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Service     = "apps.example-aero.test"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -1074,8 +1143,11 @@ resource "azurerm_lb" "svc_ldaps" {
     private_ip_address            = "10.60.1.100"
   }
   tags = {
-    Service   = "ldap.id.example-aero.test"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Service     = "ldap.id.example-aero.test"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -1195,7 +1267,10 @@ resource "azurerm_web_application_firewall_policy" "svc_login" {
     }
   }
   tags = {
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -1273,8 +1348,11 @@ resource "azurerm_application_gateway" "svc_login" {
   }
   firewall_policy_id = azurerm_web_application_firewall_policy.svc_login.id
   tags = {
-    Service   = "login.example-aero.test"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Service     = "login.example-aero.test"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -1364,7 +1442,10 @@ resource "azurerm_web_application_firewall_policy" "svc_sso" {
     }
   }
   tags = {
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -1450,8 +1531,11 @@ resource "azurerm_application_gateway" "svc_sso" {
   }
   firewall_policy_id = azurerm_web_application_firewall_policy.svc_sso.id
   tags = {
-    Service   = "sso.example-aero.test"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Service     = "sso.example-aero.test"
+    ManagedBy   = "opsdir"
   }
   depends_on = [azurerm_role_assignment.svc_sso_gateway_certificate]
 }
@@ -1489,8 +1573,11 @@ resource "azurerm_private_endpoint" "pe_secrets" {
     private_dns_zone_ids = ["/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-hub-dns/providers/Microsoft.Network/privateDnsZones/privatelink.vaultcore.azure.net"]
   }
   tags = {
-    Role      = "private-secrets"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "private-secrets"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -1506,8 +1593,11 @@ resource "azurerm_private_link_service" "ldaps_link" {
   }
   visibility_subscription_ids = ["55555555-6666-7777-8888-999999999999"]
   tags = {
-    Role      = "ldaps-endpoint-service"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "ldaps-endpoint-service"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -1536,8 +1626,11 @@ resource "azurerm_user_assigned_identity" "psql_ciam_prod_pf_grants_cmk" {
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   tags = {
-    Role      = "pf-grants-db"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "pf-grants-db"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -1564,8 +1657,11 @@ resource "azurerm_network_security_group" "pf_grants_db" {
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   tags = {
-    Role      = "pf-grants-db"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "pf-grants-db"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -1614,8 +1710,11 @@ resource "azurerm_postgresql_flexible_server" "psql_ciam_prod_pf_grants" {
   }
   depends_on = [azurerm_role_assignment.psql_ciam_prod_pf_grants_cmk]
   tags = {
-    Role      = "pf-grants-db"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "pf-grants-db"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -1658,8 +1757,11 @@ resource "azurerm_user_assigned_identity" "stciamprodbackups_storage_cmk" {
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   tags = {
-    Role      = "backup-target"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "backup-target"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -1686,7 +1788,10 @@ resource "azurerm_storage_account" "stciamprodbackups" {
     identity_ids = [azurerm_user_assigned_identity.stciamprodbackups_storage_cmk.id]
   }
   tags = {
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
   }
 }
 

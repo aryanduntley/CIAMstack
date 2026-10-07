@@ -140,7 +140,7 @@ def _identities(found):
         return resource("identity", i.get("id"), {
             "ciamIdentityKind": "federated" if trusted else "managed-identity", "ciamTrustedBy": trusted,
             "ciamGrant": sorted(set(grants.get(pid, ()))), "ciamDenial": _denied(denials, pid)},
-            name=i.get("name"), role=tagged_role(_tags(i)))
+            name=i.get("name"), role=tagged_role(_tags(i)), tags=_tags(i))
     others = [pid for pid in grants if pid and pid not in managed]
     return ((*(one_managed(pid, i) for pid, i in managed.items()),
              *(resource("identity", pid, {"ciamIdentityKind": PRINCIPAL_KINDS.get(kinds.get(pid))
@@ -171,7 +171,7 @@ def _guardrails(found):
 
 def _access_paths(found):
     return tuple(resource("access", b.get("id"), {"ciamAccessKind": "bastion"}, name=b.get("name"),
-                          role=tagged_role(_tags(b)) or "access-bastion")
+                          role=tagged_role(_tags(b)) or "access-bastion", tags=_tags(b))
                  for b in of_types(found, "azurerm_bastion_host") if b.get("id"))
 
 

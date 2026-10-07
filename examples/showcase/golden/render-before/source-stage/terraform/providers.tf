@@ -12,7 +12,16 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-east-1"
+  region              = "us-east-1"
+  allowed_account_ids = ["111122223333"]
+  default_tags {
+    tags = {
+      CostCenter         = "CC-1001"
+      DataClassification = "internal"
+      Environment        = "source/stage"
+      Owner              = "ciam-platform"
+    }
+  }
 }
 
 variable "resolver_endpoint_id" {

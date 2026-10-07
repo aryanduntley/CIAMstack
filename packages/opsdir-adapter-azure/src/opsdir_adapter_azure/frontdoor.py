@@ -18,6 +18,7 @@ from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 from .dns import record_name
 from .edge import WAF_RULE_SETS, rate
 from .identities import RG
+from .account import tagged
 
 EXCLUDED_VARIABLE = {"body": "RequestBodyPostArgNames", "query": "QueryStringArgNames",
                      "header": "RequestHeaderNames", "cookie": "RequestCookieNames"}
@@ -87,7 +88,7 @@ def front_door(m, svc, spec, n):
     return (
         block("resource", ["azurerm_cdn_frontdoor_profile", n], [
             ("name", f"afd-ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("resource_group_name", RG), ("sku_name", sku),
-            ("tags", {"Service": name, "ManagedBy": "opsdir"})]),
+            ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]),
         block("resource", ["azurerm_cdn_frontdoor_endpoint", n], [
             ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("cdn_frontdoor_profile_id", profile)]),
         block("resource", ["azurerm_cdn_frontdoor_origin_group", n], [

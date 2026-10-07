@@ -76,7 +76,7 @@ def _route_tables(found):
         return resource("route-table", t.get("id"), {
             "ciamRoute": tuple(dict.fromkeys(route_text(x) for x in (_route(r, firewalls) for r in routes) if x))},
             links={"ciamSubnetRole": tuple(dict.fromkeys(s for s in map(subnet_ref, subnets) if s))},
-            name=t.get("name"), role=tagged_role(_tags(t)))
+            name=t.get("name"), role=tagged_role(_tags(t)), tags=_tags(t))
     return tuple(one_table(t) for t in of_types(found, "azurerm_route_table") if t.get("id"))
 
 
@@ -93,7 +93,7 @@ def _private_endpoints(found):
             "ciamDnsZoneRef": zones[0] if zones else None,
             "ciamDnsZone": arm_segment(zones[0], "privateDnsZones") if zones else None},
             links={"ciamSubnetRole": subnet_ref(e.get("subnet_id"))},
-            name=e.get("name"), role=tagged_role(_tags(e)))
+            name=e.get("name"), role=tagged_role(_tags(e)), tags=_tags(e))
     return tuple(one_endpoint(e) for e in of_types(found, "azurerm_private_endpoint") if e.get("id"))
 
 
@@ -107,7 +107,7 @@ def _link_services(found):
             "ciamAllowedPrincipal": approved, "ciamAcceptanceRequired": "FALSE" if approved else "TRUE"},
             links={"ciamServiceRole": frontend.split("/frontendIPConfigurations/", 1)[0] if frontend else None,
                    "ciamSubnetRole": tuple(dict.fromkeys(r for r in nat if r))},
-            name=s.get("name"), role=tagged_role(_tags(s)))
+            name=s.get("name"), role=tagged_role(_tags(s)), tags=_tags(s))
     return tuple(one_service(s) for s in of_types(found, "azurerm_private_link_service") if s.get("id"))
 
 
@@ -140,7 +140,7 @@ def _proxies(found):
         sites = (s for g in groups if _low(g.get("firewall_policy_id")) == _low(ref) for s in _allowed(g))
         return resource("proxy", ref, {"ciamProxyKind": "firewall",
                                        "ciamAllowedDestination": tuple(dict.fromkeys(sites))},
-                        name=arm_segment(ref, "firewallPolicies") or ref, role=tagged_role(tags))
+                        name=arm_segment(ref, "firewallPolicies") or ref, role=tagged_role(tags), tags=tags)
     return tuple(one_proxy(ref) for ref in refs)
 
 
@@ -152,7 +152,7 @@ def _interconnects(found):
         return resource("interconnect", a.get("id"), {"ciamLinkKind": kind, "ciamInterconnectKind": text,
                                                       "ciamPeerEnvironment": peer_environment(_tags(a)),
                                                       **(extra or {})},
-                        links={"ciamPeerEnvironment": network}, name=a.get("name"), role=tagged_role(_tags(a)))
+                        links={"ciamPeerEnvironment": network}, name=a.get("name"), role=tagged_role(_tags(a)), tags=_tags(a))
 
     def connection(c):
         kind, text = LINK_TYPES.get(_low(c.get("type")), ("vpn", "VPN"))
@@ -190,7 +190,7 @@ def _flow_logs(found):
             "ciamRetentionDays": retention.get("days") if retention.get("enabled") else None},
             links={"ciamSubnetRole": subnet_ref(target) if "/subnets/" in _low(target) else None,
                    "ciamLogDestinationRole": analytics.get("workspace_resource_id")},
-            name=f.get("name"), role=tagged_role(_tags(f)))
+            name=f.get("name"), role=tagged_role(_tags(f)), tags=_tags(f))
     logs = tuple(one_log(f) for f in of_types(found, "azurerm_network_watcher_flow_log") if f.get("id"))
     return logs, tuple(f"flow log {r.name}: an NSG flow log (they retire on 2027-09-30): move to a virtual network "
                        "flow log" for r in logs if r.attrs.get("ciamFlowScope") == ("security-group",))

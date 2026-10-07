@@ -37,6 +37,7 @@ from opsdir.domains.network.stack import kept_by, owned
 from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
 from .cmk import CMK_ROLE, key_ref, key_sources
 from .identities import LOC, RG
+from .account import tagged
 
 ANCHOR = "2024-01-01"                    # the date a repeating interval starts counting from (any past day)
 DISK_HOURS = (1, 2, 4, 6, 8, 12, 24)     # the intervals disk backup takes
@@ -89,7 +90,7 @@ def _vault(m, v, disks):
                 ("datastore_type", "VaultStore"), ("redundancy", "GeoRedundant" if geo else "LocallyRedundant"),
                 *((("cross_region_restore_enabled", True),) if geo else ()),
                 ("immutability", IMMUTABILITY.get(mode, "Disabled")),
-                ("identity", Block((("type", "SystemAssigned"),))), ("tags", _tags(v))]),
+                ("identity", Block((("type", "SystemAssigned"),))), ("tags", tagged(m, _tags(v)))]),
             *sources,
             *((block("resource", ["azurerm_role_assignment", f"{n}_cmk"], [
                 ("scope", ref(f"{key}.resource_versionless_id")), ("role_definition_name", CMK_ROLE),
@@ -195,7 +196,7 @@ def backup_resources(pairs):
                   "ciamStorageImmutability": {v: k for k, v in IMMUTABILITY.items()}.get(a.get("immutability"), "none"),
                   "ciamCrossRegionRestore": "TRUE" if a.get("cross_region_restore_enabled") else "FALSE"},
                   links={"ciamEncryptedByRole": keys.get(_low(a.get("id")))},
-                  name=(a.get("tags") or {}).get("Name") or a.get("name"), role=tagged_role(a.get("tags") or {}))
+                  name=(a.get("tags") or {}).get("Name") or a.get("name"), role=tagged_role(a.get("tags") or {}), tags=a.get("tags") or {})
               for a in of_types(pairs, "azurerm_data_protection_backup_vault") if a.get("id")]
     plans, notices = [], []
     for a in of_types(pairs, "azurerm_data_protection_backup_policy_disk"):

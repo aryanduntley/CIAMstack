@@ -31,6 +31,7 @@ from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned
 from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
 from opsdir_format_terraform.state import blocks, first_block
+from .tags import state_tags as _cloud_tags
 
 BACKUP_ROLE = "backup_iam_role_arn"
 COMPLIANCE_GRACE = 3            # days AWS requires before a compliance lock can't be changed (the minimum)
@@ -146,10 +147,6 @@ def render_backups(m):
 
 
 # ------------------------------------------------------------------ read back
-def _cloud_tags(a):
-    return a.get("tags") or a.get("tags_all") or {}
-
-
 def _locks(pairs):
     """{vault name: (mode, min retention days)} of the vaults' lock configurations."""
     return {a.get("backup_vault_name"): ("compliance" if a.get("changeable_for_days") is not None else "governance",
@@ -166,7 +163,7 @@ def backup_resources(pairs):
                  "ciamStorageImmutability": locks.get(a.get("name"), ("none",))[0],
                  "ciamStorageLockDays": locks.get(a.get("name"), (None, None))[1]},
                  links={"ciamEncryptedByRole": a.get("kms_key_arn")},
-                 name=_cloud_tags(a).get("Name") or a.get("name"), role=tagged_role(_cloud_tags(a)))
+                 name=_cloud_tags(a).get("Name") or a.get("name"), role=tagged_role(_cloud_tags(a)), tags=_cloud_tags(a))
              for a in vaults]
     for a in of_types(pairs, "aws_backup_plan"):
         name, rules = _cloud_tags(a).get("Name") or a.get("name"), blocks(a.get("rule"))
@@ -192,5 +189,5 @@ def backup_resources(pairs):
             "ciamProtectsRole": [t.get("value") for s in selections for t in blocks(s.get("selection_tag"))
                                  if t.get("key") == "Role"]},
             links={"ciamBackupVaultRole": arn_of.get(rule.get("target_vault_name"))},
-            name=name, role=tagged_role(_cloud_tags(a))))
+            name=name, role=tagged_role(_cloud_tags(a)), tags=_cloud_tags(a)))
     return tuple(found), tuple(notices)

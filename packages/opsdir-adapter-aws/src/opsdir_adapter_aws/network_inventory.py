@@ -30,6 +30,7 @@ from opsdir.core.inventory import of_types, peer_environment, resource, tagged_r
 from opsdir.domains.network.ports import acl_rule_text
 from opsdir.domains.network.routing import Route, route_text
 from .network import SERVICES
+from .tags import state_tags as _tags
 
 # the kind of service a VPC endpoint's service name reaches (com.amazonaws.<region>.<service>)
 SERVICE_KINDS = {**{v: k for k, v in SERVICES.items()}, "ecr.dkr": "registry", "dynamodb": "database",
@@ -41,10 +42,6 @@ _TARGETS = (("nat_gateway_id", "nat"), ("transit_gateway_id", "transit"), ("vpc_
             ("egress_only_gateway_id", "egress-only"), ("network_interface_id", "appliance"),
             ("local_gateway_id", "appliance"), ("carrier_gateway_id", "internet"), ("core_network_arn", "transit"))
 _GATEWAYS = {"igw-": "internet", "vgw-": "vpn", "local": "local"}
-
-
-def _tags(a):
-    return a.get("tags") or a.get("tags_all") or {}
 
 
 def _first(v):
@@ -93,7 +90,7 @@ def _route_tables(found):
             "ciamMainTable": "TRUE" if ref in main else "FALSE"},
             links={"ciamSubnetRole": tuple(a.get("subnet_id") for a in associations
                                            if a.get("route_table_id") == ref and a.get("subnet_id"))},
-            name=_tags(t).get("Name") or ref, role=tagged_role(_tags(t)))
+            name=_tags(t).get("Name") or ref, role=tagged_role(_tags(t)), tags=_tags(t))
     return tuple(one_table(t) for t in tables if t.get("id") or t.get("default_route_table_id"))
 
 
@@ -132,7 +129,7 @@ def _acls(found):
                             links={"ciamSubnetRole": tuple(dict.fromkeys((
                                 *(acl.get("subnet_ids") or ()),
                                 *(a.get("subnet_id") for a in associated if a.get("network_acl_id") == ref))))},
-                            name=_tags(acl).get("Name") or ref, role=tagged_role(_tags(acl))))
+                            name=_tags(acl).get("Name") or ref, role=tagged_role(_tags(acl)), tags=_tags(acl)))
     return tuple(out), tuple(notices)
 
 
@@ -149,7 +146,7 @@ def _private_endpoints(found):
             "ciamPrivateService": SERVICE_KINDS.get(service, "other"), "ciamPrivateEndpointKind": kind,
             "ciamPrivateDns": ("TRUE" if e.get("private_dns_enabled") else "FALSE") if kind == "interface" else None},
             links={"ciamSubnetRole": tuple(e.get("subnet_ids") or ())},
-            name=_tags(e).get("Name") or e.get("id"), role=tagged_role(_tags(e)))
+            name=_tags(e).get("Name") or e.get("id"), role=tagged_role(_tags(e)), tags=_tags(e))
     return tuple(one_endpoint(e) for e in of_types(found, "aws_vpc_endpoint")
                  if e.get("id") and (e.get("vpc_endpoint_type") or "") != "GatewayLoadBalancer")
 
@@ -164,7 +161,7 @@ def _endpoint_services(found):
             "ciamServiceAlias": s.get("service_name"), "ciamAllowedPrincipal": tuple(dict.fromkeys(principals)),
             "ciamAcceptanceRequired": "TRUE" if s.get("acceptance_required") else "FALSE"},
             links={"ciamServiceRole": next(iter(s.get("network_load_balancer_arns") or ()), None)},
-            name=_tags(s).get("Name") or s.get("id"), role=tagged_role(_tags(s)))
+            name=_tags(s).get("Name") or s.get("id"), role=tagged_role(_tags(s)), tags=_tags(s))
     return tuple(one_service(s) for s in of_types(found, "aws_vpc_endpoint_service") if s.get("id"))
 
 
@@ -194,7 +191,7 @@ def _proxies(found):
                        if tagged_role(_tags(x))), {})
         allowed = tuple(dict.fromkeys(s for a in mine for s in sites(a)))
         return resource("proxy", ref, {"ciamProxyKind": "firewall", "ciamAllowedDestination": allowed},
-                        name=tagged.get("Name") or ref.rsplit("/", 1)[-1], role=tagged_role(tagged))
+                        name=tagged.get("Name") or ref.rsplit("/", 1)[-1], role=tagged_role(tagged), tags=tagged)
     return tuple(one_proxy(ref) for ref in dict.fromkeys(owner.values()))
 
 
@@ -207,7 +204,7 @@ def _interconnects(found):
             "ciamLinkKind": kind, "ciamInterconnectKind": text,
             "ciamPeerEnvironment": peer_environment(_tags(a)), **(extra or {})},
             links={"ciamPeerEnvironment": tuple(n for n in networks if n)},
-            name=_tags(a).get("Name") or a.get("id"), role=tagged_role(_tags(a)))
+            name=_tags(a).get("Name") or a.get("id"), role=tagged_role(_tags(a)), tags=_tags(a))
     peerings = (link("peering", p, "VPC peering",
                      {"ciamPeerAccepted": None if not p.get("accept_status") else
                       "TRUE" if p.get("accept_status") == "active" else "FALSE"},
@@ -237,7 +234,7 @@ def _flow_logs(found):
             "ciamRetentionDays": (group or {}).get("retention_in_days") or None},
             links={"ciamSubnetRole": f.get("subnet_id"),
                    "ciamLogDestinationRole": (group or {}).get("arn") or dest or None},
-            name=_tags(f).get("Name") or f.get("id"), role=tagged_role(_tags(f)))
+            name=_tags(f).get("Name") or f.get("id"), role=tagged_role(_tags(f)), tags=_tags(f))
     return tuple(one_log(f) for f in of_types(found, "aws_flow_log") if f.get("id"))
 
 

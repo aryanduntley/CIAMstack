@@ -13,6 +13,7 @@ from .drift import DRIFT_HEADERS, drift
 from .naming import CONSUMERS, DIRECTORY_SERVER_ROLE
 from .profile import ATTRIBUTE_HEADERS, PROFILE_HEADERS, attribute_rows, check_data_profile, profile_rows
 from .schema import FRAGMENT
+from .settings import SETTINGS
 from .user_schema import USER_SCHEMA_HEADERS, check_user_schema, user_schema_rows
 
 PII_SQL = ("select attribute, pii_class, export_controlled, consumer, owner, aci, justification"
@@ -39,4 +40,5 @@ DOMAIN = Domain(name="directory", schema=FRAGMENT, required_roles=(),
                          "data-profile": directory_report(PROFILE_HEADERS, profile_rows),
                          "data-profile-attributes": directory_report(ATTRIBUTE_HEADERS, attribute_rows)},
                 checks=(check_user_schema, check_consumers, check_hygiene, check_data_profile), order=20,
-                vocabulary={"ciamServerRole": (DIRECTORY_SERVER_ROLE,), "ciamTargetRole": (DIRECTORY_SERVER_ROLE,)})
+                vocabulary={"ciamServerRole": (DIRECTORY_SERVER_ROLE,), "ciamTargetRole": (DIRECTORY_SERVER_ROLE,)},
+                settings=SETTINGS)

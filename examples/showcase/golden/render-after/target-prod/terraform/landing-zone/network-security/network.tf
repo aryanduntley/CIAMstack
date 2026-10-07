@@ -64,8 +64,11 @@ resource "azurerm_route_table" "rt_private" {
   resource_group_name = data.azurerm_resource_group.main.name
   # 0.0.0.0/0 nat: not a next hop in Azure (subnets reach it without a route); not rendered
   tags = {
-    Role      = "routes-private"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "routes-private"
+    ManagedBy   = "opsdir"
   }
 }
 
@@ -114,8 +117,11 @@ resource "azurerm_network_watcher_flow_log" "flow_vnet" {
     interval_in_minutes   = 10
   }
   tags = {
-    Role      = "flow-logs"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "flow-logs"
+    ManagedBy   = "opsdir"
   }
 }
 

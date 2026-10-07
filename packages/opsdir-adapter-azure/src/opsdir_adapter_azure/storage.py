@@ -37,6 +37,7 @@ from .cli_storage import BASE, VERSION
 from .cmk import customer_key, key_ref
 from .identities import LOC, RG
 from .network import binding_tags
+from .account import tagged
 
 _TIERS = {"cool": "tierToCool", "cold": "tierToCold", "archive": "tierToArchive", "delete": "delete"}
 _FROM_BASE = {tf: neutral for neutral, cli in _TIERS.items() for c, tf in BASE if c == cli}
@@ -86,7 +87,7 @@ def _account(m, account, stores):
                                            *((("change_feed_enabled", True),) if replicated else ())))),
                 *((("identity", Block((("type", "UserAssigned"), ("identity_ids", [ref(f"{k.identity}.id")])))),)
                   if k is not None and k.identity else ((k.note,) if k is not None and k.note else ())),
-                ("tags", {"ManagedBy": "opsdir"})]),
+                ("tags", tagged(m, {"ManagedBy": "opsdir"}))]),
             *((block("resource", ["azurerm_storage_account_customer_managed_key", n], [
                 ("storage_account_id", ref(f"azurerm_storage_account.{n}.id")),
                 ("key_vault_id", ref(f"{k.key}.key_vault_id")), ("key_name", ref(f"{k.key}.name")),

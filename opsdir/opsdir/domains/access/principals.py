@@ -8,12 +8,12 @@ break-glass account that couldn't be used today (no credential, no procedure, ne
 from ...core.directory import children, date_of, follow_all, one, rdn_value, values
 from ...core.environment import bound_nowhere
 from ...core.findings import findings, owner_label, responsible
+from ...core.settings import setting_value
 from .naming import PERMISSION_SETS, PRINCIPALS
+from .settings import REVIEW_DAYS, TEST_DAYS
 
 PRINCIPAL_HEADERS = ("principal", "kind", "identity role", "server role", "permission sets", "permits", "conditions",
                      "owner", "reviewed", "to check")
-REVIEW_DAYS = 365        # a principal's access is reviewed at least this often unless it says otherwise
-TEST_DAYS = 180          # a break-glass procedure not exercised for longer than this may not work
 
 
 def permission_sets(d):
@@ -33,7 +33,7 @@ def permits(d, p):
 def to_check(d, p, as_of):
     """What an operator should look at for one principal, as short phrases."""
     reviewed, tested = date_of(p, "ciamReviewedOn"), date_of(p, "ciamLastTested")
-    every = int(one(p, "ciamReviewIntervalDays", REVIEW_DAYS))
+    every = int(one(p, "ciamReviewIntervalDays") or setting_value(d, REVIEW_DAYS))
     glass = one(p, "ciamPrincipalKind") == "break-glass"
     checks = (("no owner", not values(p, "ciamOwner")),
               ("never reviewed", reviewed is None),
@@ -44,7 +44,7 @@ def to_check(d, p, as_of):
               ("break-glass: no procedure", glass and not one(p, "ciamRunbookRef")),
               ("break-glass: never tested", glass and tested is None),
               (f"break-glass: last tested {tested}" if tested else "",
-               glass and bool(tested) and (as_of - tested).days > TEST_DAYS))
+               glass and bool(tested) and (as_of - tested).days > setting_value(d, TEST_DAYS)))
     return tuple(text for text, applies in checks if applies)
 
 

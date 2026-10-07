@@ -81,6 +81,12 @@ def _labels(a):
     return a.get("user_labels") or a.get("labels") or a.get("resource_labels") or {}
 
 
+def _state_labels(a):
+    """All the labels state reports on a resource: effective_labels (the provider's default labels included) with its
+    own over them."""
+    return {**(a.get("effective_labels") or {}), **_labels(a)}
+
+
 def _tags(a):
     """A resource's labels as the core's tag names (Role, BindingRole, Realizes)."""
     labels = _labels(a)
@@ -97,13 +103,13 @@ def _metadata(a):
 
 
 def _networks(found):
-    return tuple(resource("network", resource_id(a.get("id")), {}, name=a.get("name"), role=_role(a) or "network")
+    return tuple(resource("network", resource_id(a.get("id")), {}, name=a.get("name"), role=_role(a) or "network", tags=_state_labels(a))
                  for a in of_types(found, "google_compute_network") if a.get("id"))
 
 
 def _subnets(found):
     return tuple(resource("subnet", resource_id(a.get("id")), {"ciamCidr": a.get("ip_cidr_range")},
-                          name=a.get("name"), role=_role(a))
+                          name=a.get("name"), role=_role(a), tags=_state_labels(a))
                  for a in of_types(found, "google_compute_subnetwork") if a.get("id"))
 
 
@@ -120,7 +126,7 @@ def _servers(found):
             "ciamInstanceSize": (a.get("machine_type") or "").rsplit("/", 1)[-1] or None,
             "ciamImageRef": resource_id(image), "ciamHostname": a.get("hostname"),
             "ciamProductVersion": _metadata(a).get("ciam-product")},
-            links={"ciamSubnet": resource_id(nic.get("subnetwork"))}, name=a.get("name"), role=_server_role(a))
+            links={"ciamSubnet": resource_id(nic.get("subnetwork"))}, name=a.get("name"), role=_server_role(a), tags=_state_labels(a))
     return tuple(server(a) for a in of_types(found, "google_compute_instance") if a.get("id"))
 
 
@@ -207,7 +213,7 @@ def _services(found):
             "ciamPort": sorted({str(p) for p in _rule_ports(fr)}, key=int),
             "ciamTargetRole": found_roles.most_common(1)[0][0] if found_roles else None,
             "ciamFrontendIp": ip, "ciamEdgeFact": facts, "ciamEdgeSetting": settings, **dns},
-            name=fr.get("name"), role=_role(fr))
+            name=fr.get("name"), role=_role(fr), tags=_state_labels(fr))
     return tuple(one_rule(fr) for fr in of_types(found, *FORWARDING) if fr.get("id") and not google_apis_endpoint(fr))
 
 
@@ -232,7 +238,7 @@ def _egress(found):
     return tuple(resource("egress", resource_id(a.get("id")), {
         "ciamCidr": [f"{addresses[resource_id(n)]}/32" for n in a.get("nat_ips") or ()
                      if addresses.get(resource_id(n))],
-        "ciamNatAllocation": ALLOCATION.get(a.get("nat_ip_allocate_option"))}, name=a.get("name"), role=_role(a))
+        "ciamNatAllocation": ALLOCATION.get(a.get("nat_ip_allocate_option"))}, name=a.get("name"), role=_role(a), tags=_state_labels(a))
         for a in of_types(found, "google_compute_router_nat") if a.get("id"))
 
 
@@ -246,7 +252,7 @@ def _secrets(found):
     return tuple(resource("secret", resource_id(a.get("id")), {
         "ciamRefUri": _secret_ref(a, regional),
         "ciamAutoRotate": "TRUE" if first_block(a.get("rotation")).get("rotation_period") else None},
-        name=a.get("secret_id"), role=_role(a))
+        name=a.get("secret_id"), role=_role(a), tags=_state_labels(a))
         for t, regional in (("google_secret_manager_secret", False), ("google_secret_manager_regional_secret", True))
         for a in of_types(found, t) if a.get("secret_id") and a.get("project"))
 
@@ -255,7 +261,7 @@ def _keys(found):
     return tuple(resource("key", resource_id(a.get("id")), {
         "ciamRefUri": f"gcp-kms://{resource_id(a.get('id'))}",
         "ciamProtectionLevel": PROTECTION.get(first_block(a.get("version_template")).get("protection_level")),
-        "ciamAutoRotate": "TRUE" if a.get("rotation_period") else "FALSE"}, name=a.get("name"), role=_role(a))
+        "ciamAutoRotate": "TRUE" if a.get("rotation_period") else "FALSE"}, name=a.get("name"), role=_role(a), tags=_state_labels(a))
         for a in of_types(found, "google_kms_crypto_key") if a.get("id"))
 
 
@@ -278,7 +284,7 @@ def _jobs(found):
         return sorted({when for where, when in targets if name and name in where})
     return tuple(resource("job", resource_id(a.get("id")), {"ciamRuntime": _runtime(a),
                                                             "ciamSchedule": schedules(a.get("name"))},
-                          name=a.get("name"), role=_role(a))
+                          name=a.get("name"), role=_role(a), tags=_state_labels(a))
                  for t in JOB_TYPES for a in of_types(found, t) if a.get("id"))
 
 
@@ -336,7 +342,7 @@ def _clusters(found):
 
 def _streams(found):
     return tuple(resource("stream", resource_id(a.get("id")), {"ciamStreamKind": "topic"}, name=a.get("name"),
-                          role=_role(a)) for a in of_types(found, "google_pubsub_topic") if a.get("id"))
+                          role=_role(a), tags=_state_labels(a)) for a in of_types(found, "google_pubsub_topic") if a.get("id"))
 
 
 # ------------------------------------------------------------------ monitoring
@@ -344,14 +350,14 @@ def _channels(found):
     def kind(t):
         return next((k for prefix, k in CHANNEL_KINDS if (t or "").startswith(prefix)), "other")
     return tuple(resource("channel", resource_id(a.get("name") or a.get("id")),
-                          {"ciamChannelKind": kind(a.get("type"))}, name=a.get("display_name"), role=_role(a))
+                          {"ciamChannelKind": kind(a.get("type"))}, name=a.get("display_name"), role=_role(a), tags=_state_labels(a))
                  for a in of_types(found, "google_monitoring_notification_channel") if a.get("name") or a.get("id"))
 
 
 def _log_destinations(found):
     return tuple(resource("logs", resource_id(a.get("id")), {"ciamDestinationKind": "log-group",
                                                             "ciamRetentionDays": a.get("retention_days")},
-                          name=a.get("bucket_id"), role=_role(a))
+                          name=a.get("bucket_id"), role=_role(a), tags=_state_labels(a))
                  for a in of_types(found, "google_logging_project_bucket_config") if a.get("id"))
 
 

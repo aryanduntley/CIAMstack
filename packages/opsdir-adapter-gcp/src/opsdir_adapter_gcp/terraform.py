@@ -40,6 +40,7 @@ from opsdir_adapter_gcp.backups import render_backups
 from opsdir_adapter_gcp.volumes import boot_disk, render_snapshot_policies, server_volumes
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
+from .account import project_variable, provider_block
 
 _tag, _label = network_tag, label
 
@@ -222,8 +223,8 @@ def render(m, services):
     providers = header(m, "Providers and inputs", HCL) + "\n" + "\n\n".join([
         block("terraform", [], [("required_providers", Block((
             ("google", {"source": "hashicorp/google", "version": "~> 8.0"}),)))]),
-        block("provider", ["google"], [("project", ref("var.project_id")), ("region", REGION)]),
-        block("variable", ["project_id"], [("type", ref("string"))]),
+        provider_block(m, ("project", ref("var.project_id")), ("region", REGION)),
+        project_variable(m),
         block("variable", ["region"], [("type", ref("string")), ("default", one(m.cloud, "ciamRegion"))]),
     ]) + "\n"
     return {"terraform/providers.tf": providers, "terraform/main.tf": main, **render_landing(m),

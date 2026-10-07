@@ -1,0 +1,5 @@
+environment   stands by for  mode  region       primary's region  joins        runbook
+------------  -------------  ----  -----------  ----------------  -----------  -----------
+standby/prod  source/prod    warm  us-central1  us-east-1         source/prod  WI-CIAM-016
+(1 rows)
+exit 0

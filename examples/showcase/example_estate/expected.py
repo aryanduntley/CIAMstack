@@ -201,6 +201,18 @@ EXPECTED = MappingProxyType({
         ("A75", "Volumes", "Snapshot policy `snapshots-daily` copies each snapshot to us-west-2 in source/prod",
          "the target's disk backup (CHG-2019) keeps snapshots in its own region: Azure disk backup can't copy them",
          None, "CHG-2019"),
+        ("A76", "Disaster recovery", "Recovery objective `directory-data` allows `volume-ds-data` to lose 60 minutes "
+         "of changes; in target/prod", "nothing keeps the target's directory data outside its region: no standby "
+         "replicates from it, and its disk backup (CHG-2019) stays in eastus2 (Azure disk backup can't copy)", None),
+        ("A77", "Disaster recovery", "standby/prod stands by for source/prod",
+         "the warm standby on Google Cloud still stands by for production on AWS: after cutover nothing stands by "
+         "for the target (the fix re-points it)", None),
+        ("A78", "Disaster recovery", "Recovery objective `directory-data` wants `volume-ds-data` back within 120 "
+         "minutes; in target/prod", "nothing shows how fast the target recovers the directory's data (once CHG-2019 "
+         "backs it up, the restore-test check asks for the test instead: A73)", "CHG-2019"),
+        ("A79", "Tags", "Tag `DataClassification` (tag rule data-classification) has no value in target/prod",
+         "the target environment records no data classification, so its resources would go without the tag policy's "
+         "DataClassification tag", None),
     ],
 })
 

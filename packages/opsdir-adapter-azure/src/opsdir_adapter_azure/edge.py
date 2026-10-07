@@ -18,6 +18,7 @@ from opsdir.core.network import is_private
 from opsdir.domains.edge.resolve import inspected, path_regex, tls_policy
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 from .identities import LOC, RG
+from .account import tagged
 
 EDGE_SUBNET = "subnet-edge"            # the binding role of the subnet the gateways go in
 # (min version, profile, predefined Application Gateway TLS policy, exact)
@@ -100,7 +101,7 @@ def waf_policy(m, n, spec):
         ("policy_settings", Block((("enabled", True),
                                    ("mode", "Detection" if spec.waf_mode == "detect" else "Prevention"),
                                    ("request_body_check", True)))),
-        *_custom_rules(spec), _managed_rules(spec), ("tags", {"ManagedBy": "opsdir"})])
+        *_custom_rules(spec), _managed_rules(spec), ("tags", tagged(m, {"ManagedBy": "opsdir"}))])
 
 
 def _key_vault(spec):
@@ -202,7 +203,7 @@ def gateway_service(m, svc, spec, targets):
                               *((("#", f"nearest policy to TLS {spec.tls_min} {spec.tls_profile}"),)
                                 if not exact else ())))),
         *((("firewall_policy_id", ref(f"azurerm_web_application_firewall_policy.{n}.id")),) if waf else ()),
-        ("tags", {"Service": one(svc, "ciamFqdn"), "ManagedBy": "opsdir"}),
+        ("tags", tagged(m, {"Service": one(svc, "ciamFqdn"), "ManagedBy": "opsdir"})),
         *((("depends_on", [ref(f"azurerm_role_assignment.{n}_gateway_certificate")]),) if access else ()))
     public = (block("data", ["azurerm_public_ip", n], [("name", one(svc, "ciamProviderRef")),
                                                        ("resource_group_name", RG)]),) \

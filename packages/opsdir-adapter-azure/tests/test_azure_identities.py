@@ -29,7 +29,7 @@ W = WorkloadIdentity("pf-engine", "identity-pf-engine", "pf-engine", "ciam-prod-
 
 
 def test_an_identity_with_role_assignments_at_the_narrowest_scope():
-    out = "\n".join(_identity(None, W))
+    out = "\n".join(_identity(SimpleNamespace(d=BARE), W))
     assert 'resource "azurerm_user_assigned_identity" "identity_pf_engine"' in out
     assert 'scope                = "${data.azurerm_key_vault.kv_ciam_prod.id}/secrets/pf-admin-password"' in out
     assert 'role_definition_name = "Key Vault Secrets User"' in out

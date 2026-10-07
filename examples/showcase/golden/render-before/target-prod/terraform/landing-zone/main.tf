@@ -19,9 +19,12 @@ resource "azurerm_user_assigned_identity" "identity_ci" {
   resource_group_name = data.azurerm_resource_group.main.name
   location            = data.azurerm_resource_group.main.location
   tags = {
-    Principal = "ciam-ops-ci"
-    Role      = "identity-ci"
-    ManagedBy = "opsdir"
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Principal   = "ciam-ops-ci"
+    Role        = "identity-ci"
+    ManagedBy   = "opsdir"
   }
 }
 

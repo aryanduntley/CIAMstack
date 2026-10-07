@@ -34,6 +34,7 @@ from opsdir_format_terraform.state import first_block
 from .backups import disk_policies
 from .cmk import key_ref
 from .identities import LOC, RG
+from .account import tagged
 
 TYPES = {"standard": "Standard_LRS", "ssd": "Premium_LRS", "provisioned": "PremiumV2_LRS"}
 CLASSES = {"Standard_LRS": "standard", "StandardSSD_LRS": "ssd", "StandardSSD_ZRS": "ssd", "Premium_LRS": "ssd",
@@ -108,7 +109,7 @@ def server_volumes(m, s):
                     *_given(("disk_size_gb", _int(v, "ciamVolumeSizeGb")),
                             ("disk_iops_read_write", _int(v, "ciamIops") if kind in PROVISIONED else None),
                             ("disk_mbps_read_write", _int(v, "ciamThroughputMb") if kind in PROVISIONED else None)),
-                    *encryption, ("tags", tags)]),
+                    *encryption, ("tags", tagged(m, tags))]),
                 block("resource", ["azurerm_virtual_machine_data_disk_attachment", dn], [
                     ("managed_disk_id", ref(f"azurerm_managed_disk.{dn}.id")),
                     ("virtual_machine_id", ref(f"azurerm_linux_virtual_machine.{n}.id")), ("lun", lun),

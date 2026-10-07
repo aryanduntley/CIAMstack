@@ -33,6 +33,8 @@ access = "opsdir.domains.access.domain:DOMAIN"
 edge = "opsdir.domains.edge.domain:DOMAIN"
 network = "opsdir.domains.network.domain:DOMAIN"
 data = "opsdir.domains.data.domain:DOMAIN"
+recovery = "opsdir.domains.recovery.domain:DOMAIN"
+estate = "opsdir.domains.estate.domain:DOMAIN"
 
 # The standard file formats; packages register their own under the same group.
 [project.entry-points."opsdir.formats"]

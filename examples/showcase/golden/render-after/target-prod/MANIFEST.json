@@ -302,37 +302,37 @@
     "terraform/landing-zone/main.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "0b1102c91b102975759c55e6415dac56534543f22b8d46b21b6804c11cf2adca"
+      "sha256": "92335510939870c717286b215f2c63ca7b0c9b9acfa01e7dd7e97b94a6421a7f"
     },
     "terraform/landing-zone/network-security/network.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "a0b381fc4ce455223f722357e42c5bb4ff68da5c98ed92b64822796bf844be65"
+      "sha256": "6298be74f6c7c9d285ca2b2554fd0180fa168b4c6b8808d5d978ff2dab4b2142"
     },
     "terraform/landing-zone/network-security/providers.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "c90bce5cb90ac9d7378a5ee9bc4ef2c3326ea07aeb834fee28814e47636eafd1"
+      "sha256": "3adff63214285b9c47889f10a11558d57006b48032ca21c08feec17915129886"
     },
     "terraform/landing-zone/network.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "f5918579c89e94a2c6141fda46dc538e09c493abdd3cfea2aa379ecf91ec312f"
+      "sha256": "bd99544a30511c8c6e0275d0e5c8e854dea11c43114871917cc3ef5604c8130c"
     },
     "terraform/landing-zone/providers.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "de508dfccbace7bdae3ae66cac152503f3111ffd681b8e400c3993272a15055b"
+      "sha256": "112001e95a917b0c7d092a9b2e520c2b0f87f2f79506234f9800022fa5ce20c9"
     },
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "347eeb91ab9301a89b4ab0671471bf8c48adda579ff87e9b76b055c03269bbf4"
+      "sha256": "54771b023e5aab9fd8ead3eb834b826bf30d276a9c21a1229cb86c0ba4563891"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "be5f690a8894a59d8100e5bed5d8586c79801fe768d4e3544caca11ed814769f"
+      "sha256": "fe34f85bbdc2f40ff02c251c52a0dfb015b3936515a5446a17fb70a24743858b"
     }
   }
 }

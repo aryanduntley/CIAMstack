@@ -22,6 +22,7 @@ from .access import ACCESS
 from .guardrails import render_guardrails
 from .identities import RG, assignments, managed_identity, notes, role_of, scope, scope_data
 from .plumbing import render_plumbing
+from .account import subscription_variable
 
 AUDIENCE = "api://AzureADTokenExchange"
 
@@ -29,7 +30,7 @@ AUDIENCE = "api://AzureADTokenExchange"
 def _deployer(m, w):
     """A deployer's managed identity, trusted only for its pipeline's tokens, and its role assignments."""
     n, (issuer, subject) = tf_name(w.identity_role), w.trust
-    return (*notes(w), managed_identity(w),
+    return (*notes(w), managed_identity(m, w),
             block("resource", ["azurerm_federated_identity_credential", n], [
                 ("name", f"{w.name}-ci"), ("resource_group_name", RG),
                 ("parent_id", ref(f"azurerm_user_assigned_identity.{n}.id")), ("audience", [AUDIENCE]),
@@ -61,8 +62,7 @@ def _providers(m, variables):
         block("terraform", [], [("required_providers", Block((
             ("azurerm", {"source": "hashicorp/azurerm", "version": "~> 4.0"}),)))]),
         block("provider", ["azurerm"], [("features", Block(())), ("subscription_id", ref("var.subscription_id"))]),
-        block("variable", ["subscription_id"], [
-            ("type", ref("string")), ("description", f"The subscription {rdn_value(m.env)} runs in")]),
+        subscription_variable(m, described=True),
         *variables]) + "\n"
 
 

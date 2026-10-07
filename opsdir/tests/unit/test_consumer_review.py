@@ -51,5 +51,5 @@ def test_everything_to_look_at_is_named():
     rows = _by_name(consumer_rows(_record(), None, AS_OF))
     assert rows["legacy"]["to check"] == (
         "no owner; no criticality; plain-text connections; 12 unindexed searches/day; reads high-PII attributes: "
-        "screening; no ACI grants its access; not seen for 53 days; review over a year old (2025-01-01)")
+        "screening; no ACI grants its access; not seen for 53 days; review older than 365 days (2025-01-01)")
     assert rows["quiet"]["to check"] == "never seen in access logs; never reviewed"

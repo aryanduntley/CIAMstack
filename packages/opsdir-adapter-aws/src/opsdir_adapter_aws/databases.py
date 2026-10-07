@@ -29,6 +29,7 @@ from opsdir.domains.network.stack import kept_by, owned, subnets
 from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
 from opsdir_format_terraform.state import blocks
 from .network import binding_tags
+from .tags import state_tags as _tags
 
 _ENGINES = {"postgresql": "postgres", "mysql": "mysql", "mariadb": "mariadb", "sqlserver": "sqlserver",
             "oracle": "oracle"}
@@ -197,10 +198,6 @@ def render_databases(m):
 
 
 # ------------------------------------------------------------------ read back
-def _tags(a):
-    return a.get("tags") or a.get("tags_all") or {}
-
-
 def _bool(v):
     return "TRUE" if v is True or str(v).lower() == "true" else "FALSE"
 
@@ -233,7 +230,7 @@ def _read(kind_ref, a, name, engine_name, version, group, params, members=(), ad
         "ciamSourceCidr": sorted(set(admitted))},
         links={"ciamSubnetRole": tuple(group), "ciamEncryptedByRole": a.get("kms_key_id") or None,
                "ciamDbCredentialRole": _secret(a)},
-        name=_tags(a).get("Name") or name, role=tagged_role(_tags(a)))
+        name=_tags(a).get("Name") or name, role=tagged_role(_tags(a)), tags=_tags(a))
 
 
 def database_security_groups(pairs):

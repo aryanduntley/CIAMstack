@@ -7,6 +7,7 @@ from .checks import check_certificates, check_credentials
 from .reports import (IMPACT_HEADERS, KEYS_HEADERS, SPRAWL_HEADERS, key_placement_rows, rotation_impact_rows,
                       sprawl_rows)
 from .schema import FRAGMENT
+from .settings import SETTINGS
 
 EXPIRING_SQL = ("select cert, purpose, not_after, days_left, array_to_string(names, ','),"
                 " (select string_agg(split_part(split_part(u, ',', 1), '=', 2), ',') from unnest(used_by) u)"
@@ -22,4 +23,4 @@ DOMAIN = Domain(name="pki", schema=FRAGMENT, required_roles=(), sql=(Path(__file
                 vocabulary={},
                 import_kinds=(ImportKind("secret", "ciamSecretRef", ("ciamRefUri",), match="ciamRefUri"),
                               ImportKind("key", "ciamKeyRef", ("ciamRefUri",), match="ciamRefUri")),
-                role_links={"ciamEncryptedByRole": "key"})
+                role_links={"ciamEncryptedByRole": "key"}, settings=SETTINGS)

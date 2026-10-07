@@ -144,7 +144,7 @@ def edge_services(found, services_by_address, gateways):
         facts, settings = waf_facts(p)
         return resource("edge", p.get("id"), {"ciamEdgeKind": "waf", "ciamEdgeFact": facts,
                                               "ciamEdgeSetting": settings},
-                        links={"ciamServiceRole": fronts}, name=p.get("name"), role=tagged_role(_tags(p)))
+                        links={"ciamServiceRole": fronts}, name=p.get("name"), role=tagged_role(_tags(p)), tags=_tags(p))
     return (*(waf(p, gateways.get(_low(p.get("id"))))
               for p in of_types(found, "azurerm_web_application_firewall_policy")),
             *(waf(p, by_policy.get(_low(p.get("id"))))
@@ -152,9 +152,9 @@ def edge_services(found, services_by_address, gateways):
             *(resource("edge", p.get("id"), {"ciamEdgeKind": "cdn", "ciamEdgeFact": "cdn on",
                                               "ciamEdgeSetting": f"sku {p.get('sku_name')}"},
                        links={"ciamServiceRole": fronting.get(_low(p.get("id")))}, name=p.get("name"),
-                       role=tagged_role(_tags(p))) for p in of_types(found, "azurerm_cdn_frontdoor_profile")),
+                       role=tagged_role(_tags(p)), tags=_tags(p)) for p in of_types(found, "azurerm_cdn_frontdoor_profile")),
             *(resource("edge", p.get("id"), {"ciamEdgeKind": "ddos", "ciamEdgeFact": "ddos network-advanced"},
-                       name=p.get("name"), role=tagged_role(_tags(p)))
+                       name=p.get("name"), role=tagged_role(_tags(p)), tags=_tags(p))
               for p in of_types(found, "azurerm_network_ddos_protection_plan")))
 
 
@@ -196,11 +196,11 @@ def dns_resources(found, served):
     return (tuple(resource("zone", z.get("id") or z.get("name"), {
                 "ciamDnsZone": (z.get("name") or "").rstrip("."), "ciamZoneVisibility": visibility,
                 "ciamProviderRef": z.get("id")}, name=z.get("name"),
-                role=tagged_role(_tags(z)) or zone_role(z.get("name"))) for z, visibility in zones if z.get("name")),
+                role=tagged_role(_tags(z)) or zone_role(z.get("name")), tags=_tags(z)) for z, visibility in zones if z.get("name")),
             tuple(resource("record", r.get("id") or f"{fqdn(r)}/{t}", {
                 "ciamRecordName": fqdn(r), "ciamRecordType": t.upper(), "ciamTtlSeconds": r.get("ttl"),
                 "ciamRecordValue": _values(t, r), "ciamDnsZone": (r.get("zone_name") or "").rstrip(".")},
-                name=f"{t}-{fqdn(r)}", role=tagged_role(_tags(r)) or record_role(fqdn(r), t.upper()))
+                name=f"{t}-{fqdn(r)}", role=tagged_role(_tags(r)) or record_role(fqdn(r), t.upper()), tags=_tags(r))
                   for t, r in records),
             tuple(resource("forwarder", f.get("id"), {
                 "ciamForwardDomain": (f.get("domain_name") or "").rstrip("."), "ciamForwardDirection": "outbound",

@@ -3,12 +3,12 @@ operators recorded, and what to check about it. A pure function of a snapshot, d
 import datetime as dt
 
 from ...core.directory import children, date_of, follow_all, get, one, rdn_value, referrers, values
+from ...core.settings import setting_value
 from .naming import CONSUMERS
+from .settings import REVIEW_DAYS, UNSEEN_DAYS
 
 CONSUMERS_HEADERS = ("consumer", "bind DN", "owner", "criticality", "status", "TLS only", "sources", "unindexed/day",
                      "peak/s", "last seen", "reviewed", "to check")
-UNSEEN_DAYS = 30         # not seen in the logs for longer than this: still in use?
-REVIEW_DAYS = 365        # a review older than this is due again
 
 
 def consumer_by_bind_dn(d, bind_dn):
@@ -25,6 +25,7 @@ def _owners(d, c):
 def to_check(d, c, as_of):
     """What an operator should look at for one consumer, as short phrases."""
     seen, reviewed = date_of(c, "ciamLastSeen"), date_of(c, "ciamReviewedOn")
+    unseen, every = setting_value(d, UNSEEN_DAYS), setting_value(d, REVIEW_DAYS)
     sensitive = [one(a, "ciamLdapName") for a in follow_all(d, c, "ciamAttrRead")
                  if a is not None and one(a, "ciamPiiClass") == "high"]
     unindexed = int(one(c, "ciamUnindexedSearchesPerDay", "0") or 0)
@@ -36,9 +37,9 @@ def to_check(d, c, as_of):
               ("no ACI grants its access", not any(True for _ in referrers(d, c, "ciamAciGrantee"))),
               ("never seen in access logs", seen is None),
               (f"not seen for {(as_of - seen).days} days" if seen else "", bool(seen)
-               and (as_of - seen).days > UNSEEN_DAYS),
+               and (as_of - seen).days > unseen),
               ("never reviewed", reviewed is None),
-              (f"review over a year old ({reviewed})", bool(reviewed) and (as_of - reviewed).days > REVIEW_DAYS))
+              (f"review older than {every} days ({reviewed})", bool(reviewed) and (as_of - reviewed).days > every))
     return "; ".join(phrase for phrase, applies in checks if applies)
 
 

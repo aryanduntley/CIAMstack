@@ -8,6 +8,7 @@ from .identities import (ACCESS_PATH_HEADERS, GUARDRAIL_HEADERS, IDENTITY_HEADER
 from .imports import IMPORT_KINDS
 from .principals import PRINCIPAL_HEADERS, check_principals, principal_rows
 from .schema import FRAGMENT
+from .settings import SETTINGS
 
 DOMAIN = Domain(name="access", schema=FRAGMENT, required_roles=(), sql=(),
                 reports={"principals": directory_report(PRINCIPAL_HEADERS, principal_rows, dated=True),
@@ -15,4 +16,4 @@ DOMAIN = Domain(name="access", schema=FRAGMENT, required_roles=(), sql=(),
                          "guardrails": directory_report(GUARDRAIL_HEADERS, guardrail_rows),
                          "access-paths": directory_report(ACCESS_PATH_HEADERS, access_path_rows)},
                 checks=(check_principals, check_identities), order=62, vocabulary={},
-                import_kinds=IMPORT_KINDS)
+                import_kinds=IMPORT_KINDS, settings=SETTINGS)

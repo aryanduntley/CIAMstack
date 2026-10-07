@@ -5,30 +5,33 @@ from ...core.directory import children, follow, get, gtime_date, one, rdn_value,
 from ...core.environment import environment_of
 from ...core.findings import findings, merge_findings, owner_label, responsible
 from ...core.naming import env_label
+from ...core.settings import setting_value
 from .credentials import binding_for, credentials, material_bindings
 from .naming import CERTIFICATES
+from .settings import EXPIRY_MARGIN_DAYS
 
 # attributes through which an entry depends on a certificate (integrations; service names presenting it; host
 # baselines whose truststore adds it)
 CERTIFICATE_USE = ("ciamUsesCertificate", "ciamTlsCertificate", "ciamTrustsCertificate")
 
 
-def _certificate_action(d, as_of, c):
+def _certificate_action(d, as_of, c, margin):
     exp = gtime_date(one(c, "ciamNotAfter"))
     partner = follow(d, c, "ciamPartnerContact")
     rb = follow(d, c, "ciamRotationRunbook")
     used = list(dict.fromkeys(rdn_value(u) for attr in CERTIFICATE_USE for _, u in referrers(d, c, attr)))
-    text = (f"Certificate `{rdn_value(c)}` expires {exp} ({(exp - as_of).days} days), before cutover + 30 days. "
+    text = (f"Certificate `{rdn_value(c)}` expires {exp} ({(exp - as_of).days} days), before cutover + {margin} days. "
             f"Used by: {', '.join(used) or 'nothing recorded'}."
             + (f" Coordinate with partner {rdn_value(partner)}." if partner else "")
             + (f" Runbook {rdn_value(rb)}." if rb else ""))
-    return ("Certificate", text, owner_label(d, c), exp - dt.timedelta(days=30))
+    return ("Certificate", text, owner_label(d, c), exp - dt.timedelta(days=margin))
 
 
 def check_certificates(ctx):
-    """Certificates that expire before cutover (or the as-of date) + 30 days."""
-    horizon = (ctx.cutover or ctx.as_of) + dt.timedelta(days=30)
-    return findings(actions=[_certificate_action(ctx.d, ctx.as_of, c)
+    """Certificates that expire before cutover (or the as-of date) + the estate's certificate-expiry-margin-days."""
+    margin = setting_value(ctx.d, EXPIRY_MARGIN_DAYS)
+    horizon = (ctx.cutover or ctx.as_of) + dt.timedelta(days=margin)
+    return findings(actions=[_certificate_action(ctx.d, ctx.as_of, c, margin)
                              for c in children(ctx.d, CERTIFICATES, "ciamCertificate")
                              if gtime_date(one(c, "ciamNotAfter")) <= horizon])
 

@@ -3,7 +3,9 @@
 dn: cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamCloud
+objectClass: ciamCloudAccount
 cloud: source
+ciamAccountRef: 111122223333
 ciamCloudEnvironment: public
 ciamCloudProvider: aws
 ciamLifecycle: active
@@ -13,7 +15,9 @@ description: Primary hosting environment (AWS)
 dn: env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamEnvironment
+objectClass: ciamEnvironmentPlacement
 env: prod
+ciamDataClassification: confidential
 ciamLifecycle: active
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 xDataResidency: us

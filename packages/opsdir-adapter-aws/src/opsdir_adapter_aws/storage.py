@@ -27,6 +27,7 @@ from opsdir.domains.network.stack import kept_by, owned
 from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
 from opsdir_format_terraform.state import blocks
 from .network import binding_tags
+from .tags import state_tags
 
 TIERS = {"cool": "STANDARD_IA", "cold": "GLACIER_IR", "archive": "DEEP_ARCHIVE"}
 _NEUTRAL_TIERS = {"STANDARD_IA": "cool", "ONEZONE_IA": "cool", "INTELLIGENT_TIERING": "cool", "GLACIER_IR": "cold",
@@ -202,5 +203,5 @@ def object_store_resources(pairs):
             "ciamStorageReplicaRef": _replica(replication[name]) if name in replication else None},
             links={"ciamEncryptedByRole": default.get("kms_master_key_id")
                    if default.get("sse_algorithm") in ("aws:kms", "aws:kms:dsse") else None},
-            name=name, role=tagged_role(a.get("tags") or a.get("tags_all") or {}))
+            name=name, role=tagged_role(state_tags(a)), tags=state_tags(a))
     return tuple(one_bucket(a) for a in of_types(pairs, "aws_s3_bucket") if a.get("bucket"))

@@ -8,7 +8,7 @@ from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
 from opsdir.domains.edge.resolve import EdgeSpec, Exclusion, Health, RateLimit
 import mini_estate
-from support import REGISTRY, build_directory
+from support import BARE, REGISTRY, build_directory
 
 ENV = "env=prod,cloud=c,ou=environments,dc=ciam-ops"
 BASE = EdgeSpec(
@@ -52,8 +52,8 @@ def server(name, ip, role="pf-engine"):
 
 
 def environment(*bindings):
-    """The parts of an environment model the edge renderers read."""
-    return SimpleNamespace(env=make_entry(ENV, ("top", "ciamEnvironment"), {"env": ["prod"]}), label="c/prod",
+    """The parts of an environment model the edge renderers read (an empty record: no tag policy)."""
+    return SimpleNamespace(d=BARE, env=make_entry(ENV, ("top", "ciamEnvironment"), {"env": ["prod"]}), label="c/prod",
                            bindings=tuple(bindings))
 
 

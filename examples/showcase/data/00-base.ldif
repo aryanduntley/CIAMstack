@@ -95,11 +95,32 @@ ou: restore-tests
 description: Restore tests: one entry per restore someone did, and what it pro
  ved
 
+dn: ou=recovery,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: recovery
+description: Recovery objectives: how long each protected role may be down, ho
+ w much it may lose
+
+dn: ou=failover-drills,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: failover-drills
+description: Failover drills: one entry per failover someone did, and how it w
+ ent
+
 dn: ou=owners,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: owners
 description: Teams, partners and vendors
+
+dn: ou=tag-policy,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: tag-policy
+description: Tag policy: the tags every rendered resource carries and where th
+ eir values come from
 
 dn: ou=custom-schema,dc=ciam-ops
 objectClass: top

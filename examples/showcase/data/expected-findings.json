@@ -719,6 +719,34 @@
       "planted": "the target's disk backup (CHG-2019) keeps snapshots in its own region: Azure disk backup can't copy them",
       "cleared_by": null,
       "raised_by": "CHG-2019"
+    },
+    {
+      "id": "A76",
+      "area": "Disaster recovery",
+      "match": "Recovery objective `directory-data` allows `volume-ds-data` to lose 60 minutes of changes; in target/prod",
+      "planted": "nothing keeps the target's directory data outside its region: no standby replicates from it, and its disk backup (CHG-2019) stays in eastus2 (Azure disk backup can't copy)",
+      "cleared_by": null
+    },
+    {
+      "id": "A77",
+      "area": "Disaster recovery",
+      "match": "standby/prod stands by for source/prod",
+      "planted": "the warm standby on Google Cloud still stands by for production on AWS: after cutover nothing stands by for the target (the fix re-points it)",
+      "cleared_by": null
+    },
+    {
+      "id": "A78",
+      "area": "Disaster recovery",
+      "match": "Recovery objective `directory-data` wants `volume-ds-data` back within 120 minutes; in target/prod",
+      "planted": "nothing shows how fast the target recovers the directory's data (once CHG-2019 backs it up, the restore-test check asks for the test instead: A73)",
+      "cleared_by": "CHG-2019"
+    },
+    {
+      "id": "A79",
+      "area": "Tags",
+      "match": "Tag `DataClassification` (tag rule data-classification) has no value in target/prod",
+      "planted": "the target environment records no data classification, so its resources would go without the tag policy's DataClassification tag",
+      "cleared_by": null
     }
   ]
 }

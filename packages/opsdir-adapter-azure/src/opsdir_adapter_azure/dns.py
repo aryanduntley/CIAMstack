@@ -11,6 +11,7 @@ from opsdir.domains.edge.dns import zone_of
 from opsdir.domains.edge.records import address, forwarders, parts, records_in, routing, run_by, ttl
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 from .identities import RG
+from .account import tagged
 
 FORWARDING_RULESET = "dns_forwarding_ruleset_id"   # the landing zone's DNS forwarding ruleset, an input
 PRIVATE_TYPES = ("A", "AAAA", "CNAME", "MX", "SRV", "TXT")
@@ -37,7 +38,7 @@ def _traffic_manager(m, svc, n, policy, found):
                 ("dns_config", Block((("relative_name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"),
                                       ("ttl", ttl(svc))))),
                 ("monitor_config", Block((("protocol", "TCP"), ("port", int(values(svc, "ciamPort")[0]))))),
-                ("tags", {"Service": name, "ManagedBy": "opsdir"})]),
+                ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]),
             *(block("resource", ["azurerm_traffic_manager_external_endpoint", f"{n}_{tf_name(a.label)}"], [
                 ("name", a.label.replace("/", "-")), ("profile_id", ref(f"azurerm_traffic_manager_profile.{n}.id")),
                 ("target", address(a)),

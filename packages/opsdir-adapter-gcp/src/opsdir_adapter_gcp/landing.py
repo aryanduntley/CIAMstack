@@ -21,6 +21,7 @@ from .access import ACCESS
 from .guardrails import render_guardrails
 from .identities import members, notes, sa_member, service_account
 from .plumbing import render_plumbing
+from .account import project_variable, provider_block
 
 POOL = "ci"
 
@@ -71,9 +72,8 @@ def _providers(m, variables):
     return header(m, "Providers and inputs (landing zone)", HCL) + "\n" + "\n\n".join([
         block("terraform", [], [("required_providers", Block((
             ("google", {"source": "hashicorp/google", "version": "~> 8.0"}),)))]),
-        block("provider", ["google"], [("project", ref("var.project_id"))]),
-        block("variable", ["project_id"], [("type", ref("string")),
-                                           ("description", f"The project {rdn_value(m.env)} runs in")]),
+        provider_block(m, ("project", ref("var.project_id"))),
+        project_variable(m, described=True),
         *variables]) + "\n"
 
 

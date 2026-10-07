@@ -67,8 +67,9 @@ Domain = namedtuple("Domain", (
     "vocabulary",               # {vocab attribute: values it defines}
     "import_kinds",             # ImportKinds: the resources the cloud importers read into its classes
     "role_links",               # {attribute naming a binding's role: the import kind (or kinds) of what it names}
-    "settings"),                # Settings: the estate settings it declares (core.settings)
-    defaults=((), {}, ()))
+    "settings",                 # Settings: the estate settings it declares (core.settings)
+    "import_checks"),           # (directory, environment spec, Resources) -> notices, run on every cloud import
+    defaults=((), {}, (), ()))
 
 # A language or file format opsdir renders or reads: registered (entry point group opsdir.formats) by the core for the
 # standard ones and by any package for its own, so what a managed system is written in is data, never an assumption.

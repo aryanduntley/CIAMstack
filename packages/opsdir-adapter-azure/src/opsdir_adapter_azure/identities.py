@@ -10,6 +10,7 @@ from opsdir.core.directory import is_a, one, rdn_of, rdn_value
 from opsdir.core.environment import environment_of, of_class
 from opsdir.domains.data.storage import kept_store
 from opsdir_format_terraform.hcl import block, ref, tf_name
+from .account import tagged
 
 RG = ref("data.azurerm_resource_group.main.name")
 LOC = ref("data.azurerm_resource_group.main.location")
@@ -56,16 +57,16 @@ def assignments(w, principal_id):
         for permit, b, row in w.grants)
 
 
-def managed_identity(w):
+def managed_identity(m, w):
     return block("resource", ["azurerm_user_assigned_identity", tf_name(w.identity_role)], [
         ("name", w.name), ("resource_group_name", RG), ("location", LOC),
-        ("tags", {"Principal": w.principal, "Role": w.identity_role, "ManagedBy": "opsdir"})])
+        ("tags", tagged(m, {"Principal": w.principal, "Role": w.identity_role, "ManagedBy": "opsdir"}))])
 
 
 def identity(m, w):
     """A workload principal's user-assigned managed identity and its role assignments."""
     n = tf_name(w.identity_role)
-    return (*notes(w), managed_identity(w),
+    return (*notes(w), managed_identity(m, w),
             *assignments(w, ref(f"azurerm_user_assigned_identity.{n}.principal_id")))
 
 

@@ -1,0 +1,5 @@
+drilled on  from         to            roles           result  service minutes  data loss minutes  runbook      owner
+----------  -----------  ------------  --------------  ------  ---------------  -----------------  -----------  -------------
+2026-09-10  source/prod  standby/prod  volume-ds-data  passed  45               0                  WI-CIAM-016  ciam-platform
+(1 rows)
+exit 0

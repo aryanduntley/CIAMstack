@@ -60,6 +60,10 @@ echo "-- the object stores: versioning, locks, keys, lifecycle, public access an
 od report object-stores
 echo "-- the disks: each server role's volumes, their size, class, key and the snapshot policy that copies them"
 od report volumes
+echo "-- the tag policy: the tags every rendered resource carries and the value each takes in every environment"
+od report tags
+echo "-- disaster recovery: each objective against the environments running its roles, the standbys, the drills"
+od report recovery; od report standbys; od report failover-drills
 echo "-- the network: routes, private endpoints, endpoint services, and the sites egress lets the servers reach"
 od report routes; od report private-endpoints; od report endpoint-services; od report egress-sites
 echo "-- the edge: DNS, traffic and protection policies, what each load balancer runs, header contracts"

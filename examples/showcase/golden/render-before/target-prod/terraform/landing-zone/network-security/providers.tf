@@ -20,6 +20,7 @@ provider "azurerm" {
 variable "subscription_id" {
   type        = string
   description = "The subscription prod runs in"
+  default     = "00000000-0000-0000-0000-000000000000"
 }
 
 variable "network_watcher_name" {

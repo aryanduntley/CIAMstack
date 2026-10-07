@@ -13,6 +13,7 @@ from opsdir.domains.network.stack import (allowlist, egress_firewalls, elsewhere
                                           reached, subnets)
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 from .identities import LOC, RG
+from .account import tagged
 
 # the private link subresource (group id) a private endpoint to each kind of service connects to, and the private DNS
 # zone that answers it
@@ -63,7 +64,7 @@ def _endpoint(m, p, name, target, group, sub):
             ("is_manual_connection", False)))),
         *((("ip_configuration", Block((("name", "primary"), ("private_ip_address", ip), ("subresource_name", group),
                                         ("member_name", "default")))),) if ip else ()),
-        *dns, ("tags", binding_tags(p))])
+        *dns, ("tags", tagged(m, binding_tags(p)))])
 
 
 def private_endpoint(m, p):
@@ -109,7 +110,7 @@ def link_service(m, e, svc, endpoints=()):
         *((("visibility_subscription_ids", values(e, "ciamVisibleTo")),) if values(e, "ciamVisibleTo") else ()),
         *((("auto_approval_subscription_ids", values(e, "ciamAllowedPrincipal")),)
           if values(e, "ciamAllowedPrincipal") and not manual else ()),
-        ("tags", binding_tags(e))]),)
+        ("tags", tagged(m, binding_tags(e)))]),)
 
 
 WEB = {80: "Http", 443: "Https"}     # what application rules can match: web traffic by its host name

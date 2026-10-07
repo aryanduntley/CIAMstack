@@ -34,6 +34,7 @@ from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned
 from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
 from opsdir_format_terraform.state import blocks, first_block
+from .tags import state_tags as _cloud_tags
 
 VOLUME_TYPES = {"standard": "st1", "ssd": "gp3", "provisioned": "io2"}
 CLASSES = {"st1": "standard", "sc1": "standard", "standard": "standard", "gp2": "ssd", "gp3": "ssd",
@@ -182,10 +183,6 @@ def render_snapshot_policies(m):
 
 
 # ------------------------------------------------------------------ read back
-def _cloud_tags(a):
-    return a.get("tags") or a.get("tags_all") or {}
-
-
 def _common(values_):
     """The most common of the values given (None left out), or None."""
     found = Counter(v for v in values_ if v not in (None, ""))
@@ -234,7 +231,7 @@ def _policies(pairs):
             "ciamSnapshotAt": (create.get("times") or (None,))[0],
             "ciamCopyRegion": [c.get("target") or c.get("target_region")
                                for c in blocks(schedules[0].get("cross_region_copy_rule"))],
-            "ciamSnapshotConsistency": "crash"}, name=name, role=tagged_role(_cloud_tags(a))))
+            "ciamSnapshotConsistency": "crash"}, name=name, role=tagged_role(_cloud_tags(a)), tags=_cloud_tags(a)))
         targets.update({v: ref_ for k, v in (details.get("target_tags") or {}).items() if k == "SnapshotPolicy"})
     return tuple(out), targets, tuple(notices)
 

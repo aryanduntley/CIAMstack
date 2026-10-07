@@ -17,6 +17,7 @@ from opsdir.domains.network.plumbing import LANDING_ZONE, NETWORK_FILE, keepers
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import Block, block, jsonencoded, ref, tf_name
 from .access import ACCESS
+from .account import account_id, provider_block
 from .guardrails import render_guardrails
 from .identities import notes, role, statements
 from .plumbing import render_plumbing
@@ -65,7 +66,7 @@ def _providers(m, variables):
     return header(m, "Providers and inputs (landing zone)", HCL) + "\n" + "\n\n".join([
         block("terraform", [], [("required_providers", Block((
             ("aws", {"source": "hashicorp/aws", "version": "~> 5.10"}),)))]),
-        block("provider", ["aws"], [("region", one(m.cloud, "ciamRegion"))]), *variables]) + "\n"
+        provider_block(m, own_account=False), *variables]) + "\n"
 
 
 def _identities(m, guardrails):
@@ -81,7 +82,8 @@ def _identities(m, guardrails):
     what = (f"AWS landing zone for the CIAM platform, kept by {landing_zone_owner(m)}: applied by the landing zone, "
             "not by the platform's pipeline")
     variables = (*((block("variable", ["account_id"], [("type", ref("string")),
-                                                       ("description", f"The account {rdn_value(m.env)} runs in")]),)
+                                                       ("description", f"The account {rdn_value(m.env)} runs in"),
+                                                       *((("default", account_id(m)),) if account_id(m) else ())]),)
                    if operators else ()),
                  *((block("variable", ["guardrail_target_id"], [
                      ("type", ref("string")),

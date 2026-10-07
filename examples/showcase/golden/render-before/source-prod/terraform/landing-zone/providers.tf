@@ -13,11 +13,20 @@ terraform {
 
 provider "aws" {
   region = "us-east-1"
+  default_tags {
+    tags = {
+      CostCenter         = "CC-1001"
+      DataClassification = "confidential"
+      Environment        = "source/prod"
+      Owner              = "ciam-platform"
+    }
+  }
 }
 
 variable "account_id" {
   type        = string
   description = "The account prod runs in"
+  default     = "111122223333"
 }
 
 variable "guardrail_target_id" {

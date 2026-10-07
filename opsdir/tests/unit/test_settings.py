@@ -74,3 +74,47 @@ def test_only_declared_settings_can_be_set():
 def test_the_data_domain_declares_the_restore_test_interval():
     domain, s = {s.name: (dm, s) for dm, s in declared_settings(DOMAINS)}["restore-test-interval-days"]
     assert (domain, s.kind, s.default, s.minimum) == ("data", "int", 90, 1)
+
+
+def test_the_access_directory_and_pki_domains_declare_their_thresholds():
+    found = {s.name: (dm, s.default) for dm, s in declared_settings(DOMAINS)}
+    assert {n: found[n] for n in ("access-review-interval-days", "break-glass-test-interval-days",
+                                  "consumer-review-interval-days", "consumer-unseen-days",
+                                  "certificate-expiry-margin-days")} == {
+        "access-review-interval-days": ("access", 365), "break-glass-test-interval-days": ("access", 180),
+        "consumer-review-interval-days": ("directory", 365), "consumer-unseen-days": ("directory", 30),
+        "certificate-expiry-margin-days": ("pki", 30)}
+
+
+def test_recorded_thresholds_change_what_is_flagged():
+    import datetime as dt
+    from types import SimpleNamespace
+    from opsdir.core.directory import get
+    from opsdir.domains.access.principals import to_check as principal_points
+    from opsdir.domains.directory.consumers import to_check as consumer_points
+    from opsdir.domains.pki.checks import check_certificates
+    principal, consumer = "cn=glass,ou=principals,dc=ciam-ops", "cn=app,ou=consumers,dc=ciam-ops"
+    entries = ((principal, ("top", "ciamPrincipal"), {"cn": ("glass",), "ciamPrincipalKind": ("break-glass",),
+                                                      "ciamReviewedOn": ("20260601000000Z",),
+                                                      "ciamLastTested": ("20260501000000Z",)}),
+               (consumer, ("top", "ciamConsumer"), {"cn": ("app",), "ciamLastSeen": ("20260901000000Z",),
+                                                    "ciamReviewedOn": ("20260601000000Z",)}),
+               ("cn=tls,ou=certificates,dc=ciam-ops", ("top", "ciamCertificate"),
+                {"cn": ("tls",), "ciamNotAfter": ("20261220000000Z",)}))
+    as_of = dt.date(2026, 10, 1)
+
+    def flagged(*values):
+        d = make_directory((), {}, (SETTINGS, *entries, *((setting_dn(n), ("top", "ciamEstateSetting"),
+                                                           {"cn": (n,), "ciamEstateValue": (t,)}) for n, t in values)))
+        ctx = SimpleNamespace(d=d, cutover=dt.date(2026, 12, 1), as_of=as_of)
+        return (principal_points(d, get(d, principal), as_of), consumer_points(d, get(d, consumer), as_of),
+                len(check_certificates(ctx).actions))
+
+    glass, app, certs = flagged()          # defaults: nothing overdue; the certificate expires within cutover + 30
+    assert not any("review overdue" in g or "last tested" in g for g in glass)
+    assert "not seen" not in app and "review older" not in app and certs == 1
+    glass, app, certs = flagged(("access-review-interval-days", "90"), ("break-glass-test-interval-days", "90"),
+                                ("consumer-unseen-days", "20"), ("consumer-review-interval-days", "90"),
+                                ("certificate-expiry-margin-days", "10"))
+    assert "review overdue (last 2026-06-01, every 90 days)" in glass and "break-glass: last tested 2026-05-01" in glass
+    assert "not seen for 30 days" in app and "review older than 90 days (2026-06-01)" in app and certs == 0

@@ -14,10 +14,17 @@ terraform {
 provider "google" {
   project = var.project_id
   region  = var.region
+  default_labels = {
+    costcenter         = "cc-1001"
+    dataclassification = "confidential"
+    environment        = "standby-prod"
+    owner              = "ciam-platform"
+  }
 }
 
 variable "project_id" {
-  type = string
+  type    = string
+  default = "example-aero-ciam-standby"
 }
 
 variable "region" {

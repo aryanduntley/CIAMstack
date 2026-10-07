@@ -86,8 +86,9 @@ ATTRIBUTES = (
                  'When a snapshot policy takes its first snapshot of the day, HH:MM in UTC',
                  (("X-PATTERN", SNAPSHOT_AT),)),
     AttributeDef(454, 'ciamCopyRegion', 'string', 'binding', False,
-                 "A region a snapshot policy or backup plan copies each snapshot or recovery point to (each "
-                 "environment's own)"),
+                 "A region a snapshot policy or backup plan copies each snapshot or recovery point to, or a managed "
+                 "database its automated backups (and the logs its point-in-time restore replays) are copied to "
+                 "(each environment's own)"),
     AttributeDef(455, 'ciamSnapshotConsistency', enum_type(CONSISTENCY), 'intent', True,
                  "What a snapshot holds of a running server: the disk as a power cut would leave it (crash), or what "
                  "the application was asked to flush first (application). Neither is a backup of a database or "
@@ -133,7 +134,8 @@ CLASSES = (
              ('ciamProviderRef', 'ciamFqdn', 'ciamPort', 'ciamDbEngineVersion', 'ciamDbEdition', 'ciamDbService',
               'ciamInstanceSize', 'ciamDbStorageGb', 'ciamZone', 'ciamDbHighAvailability', 'ciamEncryptedByRole',
               'ciamDbTlsRequired', 'ciamRetentionDays', 'ciamDbPointInTime', 'ciamDbDeletionProtection',
-              'ciamDbParameter', 'ciamSubnetRole', 'ciamSourceCidr', 'ciamDbCredentialRole', 'ciamManagedBy'),
+              'ciamDbParameter', 'ciamSubnetRole', 'ciamSourceCidr', 'ciamDbCredentialRole', 'ciamCopyRegion',
+              'ciamManagedBy'),
              'A managed database an environment runs for the stack (a repository, a session or token store): its '
              'engine and version, endpoint, availability, encryption and backups (ciamRetentionDays: automated '
              'backups kept), parameters, the ranges admitted to its port (ciamSourceCidr) and the secret role of '

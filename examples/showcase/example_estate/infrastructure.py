@@ -13,6 +13,8 @@ from .access import ACCESS
 from .edge import EDGE, SERVICE_ATTRS
 from .network import NETWORK
 from .observability import MONITORING
+from .estate import ACCOUNTS, CLASSIFICATION
+from .recovery import STANDBY_INTENT
 
 SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password", "ds-tls-keystore",
                 "sso-tls-keystore", "pf-signing-key", "pf-admin-password", "am-admin-password", "am-keystore",
@@ -360,14 +362,17 @@ def environment(file, env, p):
 
 def environments():
     aws, az, gcp = "40-env-source", "45-env-target", "47-env-standby"
-    return (spec(aws, f"cloud=source,{ENVS}", ["top", "ciamCloud"], cloud="source",
+    return (spec(aws, f"cloud=source,{ENVS}", ["top", "ciamCloud", "ciamCloudAccount"], cloud="source",
+                 ciamAccountRef=ACCOUNTS["source"],
                  ciamCloudProvider="aws", ciamRegion="us-east-1", ciamCloudEnvironment="public", ciamLifecycle="active",
                  description="Primary hosting environment (AWS)"),
-            spec(aws, AWS, ["top", "ciamEnvironment"], env="prod", ciamLifecycle="active", ciamOwner=owner("ciam-platform"),
+            spec(aws, AWS, ["top", "ciamEnvironment", "ciamEnvironmentPlacement"], env="prod", ciamLifecycle="active",
+                 ciamDataClassification=CLASSIFICATION["source"], ciamOwner=owner("ciam-platform"),
                  xDataResidency=RESIDENCY["source"]),
             *environment(aws, AWS, SOURCE), *required_roles(aws, AWS),
             *stage(),
-            spec(az, f"cloud=target,{ENVS}", ["top", "ciamCloud"], cloud="target",
+            spec(az, f"cloud=target,{ENVS}", ["top", "ciamCloud", "ciamCloudAccount"], cloud="target",
+                 ciamAccountRef=ACCOUNTS["target"],
                  ciamCloudProvider="azure", ciamRegion="eastus2", ciamCloudEnvironment="public",
                  ciamLifecycle="building",
                  description="Second hosting environment (Azure)"),
@@ -375,11 +380,14 @@ def environments():
                  ciamPlannedCutover=t("2027-01-15"), ciamJoinsDeploymentOf=AWS, ciamOwner=owner("ciam-platform"),
                  xDataResidency=RESIDENCY["target"]),
             *environment(az, AZ, TARGET), *required_roles(az, AZ),
-            spec(gcp, f"cloud=standby,{ENVS}", ["top", "ciamCloud"], cloud="standby",
+            spec(gcp, f"cloud=standby,{ENVS}", ["top", "ciamCloud", "ciamCloudAccount"], cloud="standby",
+                 ciamAccountRef=ACCOUNTS["standby"],
                  ciamCloudProvider="gcp", ciamRegion="us-central1", ciamCloudEnvironment="public",
                  ciamLifecycle="building", description="Warm standby (Google Cloud)"),
-            spec(gcp, GCP, ["top", "ciamEnvironment"], env="prod", ciamLifecycle="building",
-                 ciamJoinsDeploymentOf=AWS, ciamOwner=owner("ciam-platform"), xDataResidency=RESIDENCY["standby"],
+            spec(gcp, GCP, ["top", "ciamEnvironment", "ciamStandby", "ciamEnvironmentPlacement"], env="prod",
+                 ciamLifecycle="building", ciamDataClassification=CLASSIFICATION["standby"],
+                 ciamJoinsDeploymentOf=AWS, **STANDBY_INTENT, ciamOwner=owner("ciam-platform"),
+                 xDataResidency=RESIDENCY["standby"],
                  description="Warm standby of production: directory replicas join its deployment over a VPN"),
             *environment(gcp, GCP, STANDBY))
 
@@ -422,7 +430,8 @@ def stage():
     """source/stage, an overlay of source/prod: its own servers, service names, secrets and backups, prod's network
     and firewall rules (except the consumers'), and overrides of shared intent."""
     file, B = "42-env-source-stage", f"ou=bindings,{STAGE}"
-    return (spec(file, STAGE, ["top", "ciamEnvironment"], env="stage", ciamLifecycle="active", ciamOverlayOf=AWS,
+    return (spec(file, STAGE, ["top", "ciamEnvironment", "ciamEnvironmentPlacement"], env="stage",
+                 ciamLifecycle="active", ciamDataClassification=CLASSIFICATION["stage"], ciamOverlayOf=AWS,
                  ciamDropsRole=STAGE_DROPS, ciamOwner=owner("ciam-platform"), xDataResidency=RESIDENCY["source"],
                  description="Stage: an overlay of production (shared network, own servers and secrets)"),
             spec(file, B, ["top", "organizationalUnit"], ou="bindings"),

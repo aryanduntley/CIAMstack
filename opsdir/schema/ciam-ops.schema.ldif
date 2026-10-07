@@ -1993,9 +1993,10 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.453 NAME 'ciamSnapshotAt' DESC 'When
  [0-9]' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.454 NAME 'ciamCopyRegion' DESC 'A re
  gion a snapshot policy or backup plan copies each snapshot or recovery poin
- t to (each environment\27s own)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.
- 1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 
- 'opsdir' )
+ t to, or a managed database its automated backups (and the logs its point-i
+ n-time restore replays) are copied to (each environment\27s own)' EQUALITY 
+ caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'binding
+ ' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.455 NAME 'ciamSnapshotConsistency' D
  ESC 'What a snapshot holds of a running server: the disk as a power cut wou
  ld leave it (crash), or what the application was asked to flush first (appl
@@ -2072,6 +2073,94 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.470 NAME 'ciamRestoreMinutes' DESC '
  How long the restore took, in minutes, until the data was usable' EQUALITY 
  integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILIT
  Y 'meta' X-VALUE-TYPE 'int' X-MIN '0' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.471 NAME 'ciamRecoversRole' DESC 'A 
+ role a recovery objective or failover drill is about: a volume, a database,
+  an object store, the servers of a role' EQUALITY caseIgnoreMatch SYNTAX 1.
+ 3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-OR
+ IGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.472 NAME 'ciamRtoMinutes' DESC 'Reco
+ very time objective: how long what a role serves may be unavailable after a
+  disaster, in minutes' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.12
+ 1.1.27 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'int' X-MIN '1' X-ORI
+ GIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.473 NAME 'ciamRpoMinutes' DESC 'Reco
+ very point objective: how much of what a role holds may be lost in a disast
+ er, in minutes of changes (0: nothing)' EQUALITY integerMatch SYNTAX 1.3.6.
+ 1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'int
+ ' X-MIN '0' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.474 NAME 'ciamStandbyOf' DESC 'The e
+ nvironment a standby environment takes over from in a disaster (its primary
+ )' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SIN
+ GLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.475 NAME 'ciamStandbyMode' DESC 'How
+  ready a standby is kept: serving already (hot), running with less capacity
+  (warm), its data kept current but its servers mostly stopped (pilot-light)
+ , built only when needed (cold)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.
+ 1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:
+ hot|warm|pilot-light|cold' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.476 NAME 'ciamDrilledOn' DESC 'When 
+ a failover drill was done' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1
+ .1466.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-
+ ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.477 NAME 'ciamDrillFrom' DESC 'The e
+ nvironment a failover drill failed over from' EQUALITY distinguishedNameMat
+ ch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'meta' X
+ -VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.478 NAME 'ciamDrillTo' DESC 'The env
+ ironment a failover drill failed over to' EQUALITY distinguishedNameMatch S
+ YNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'meta' X-VAL
+ UE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.479 NAME 'ciamDrillResult' DESC 'How
+  a failover drill went: passed (service back and verified), partial (back, 
+ but something was missing or wrong), failed' EQUALITY caseIgnoreMatch SYNTA
+ X 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-T
+ YPE 'enum:passed|partial|failed' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.480 NAME 'ciamServiceMinutes' DESC '
+ How long a failover drill took, in minutes, until service was back from the
+  environment failed over to (the recovery time it measured)' EQUALITY integ
+ erMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'me
+ ta' X-VALUE-TYPE 'int' X-MIN '0' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.481 NAME 'ciamDataLossMinutes' DESC 
+ 'How many minutes of changes a failover drill lost (the recovery point it m
+ easured; 0: none)' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.
+ 27 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'int' X-MIN '0' X-ORIGIN 
+ 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.482 NAME 'ciamAccountRef' DESC 'The 
+ cloud account a cloud\27s environments run in: an AWS account ID, an Azure 
+ subscription ID, a Google Cloud project ID' EQUALITY caseIgnoreMatch SYNTAX
+  1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE
+ -TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.483 NAME 'ciamOrganizationRef' DESC 
+ 'The organization the account belongs to: an AWS organization, an Azure ten
+ ant, a Google Cloud organization or folder' EQUALITY caseIgnoreMatch SYNTAX
+  1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE
+ -TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.484 NAME 'ciamCostCenter' DESC 'The 
+ cost center a party\27s spending is charged to (resources of environments i
+ t owns are tagged with it where the tag policy says so)' EQUALITY caseIgnor
+ eMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'met
+ a' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.485 NAME 'ciamDataClassification' DE
+ SC 'How sensitive an environment\27s data is: public, internal, confidentia
+ l, restricted' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.1
+ 5 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'enum:public|internal|conf
+ idential|restricted' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.486 NAME 'ciamTagKey' DESC 'The key 
+ of a tag (a label on Google Cloud) every resource rendered for an environme
+ nt carries' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 S
+ INGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-PATTERN '[A-Za-z][
+ A-Za-z0-9_.:/=+@-]{0,62}' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.487 NAME 'ciamTagSource' DESC 'Where
+  a tag rule takes its value in each environment: the environment\27s owner,
+  that owner\27s cost center, the environment\27s data classification, the e
+ nvironment (cloud/env), its cloud, or the rule\27s own value (literal: ciam
+ TagValue)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SI
+ NGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'enum:owner|cost-center|classi
+ fication|environment|cloud|literal' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.488 NAME 'ciamTagValue' DESC 'A lite
+ ral tag rule\27s value' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.11
+ 5.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN
+  'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -2514,7 +2603,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.93 NAME 'ciamDatabase' DESC 'A manage
  iamInstanceSize $ ciamDbStorageGb $ ciamZone $ ciamDbHighAvailability $ cia
  mEncryptedByRole $ ciamDbTlsRequired $ ciamRetentionDays $ ciamDbPointInTim
  e $ ciamDbDeletionProtection $ ciamDbParameter $ ciamSubnetRole $ ciamSourc
- eCidr $ ciamDbCredentialRole $ ciamManagedBy ) X-ORIGIN 'opsdir' )
+ eCidr $ ciamDbCredentialRole $ ciamCopyRegion $ ciamManagedBy ) X-ORIGIN 'o
+ psdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.94 NAME 'ciamVolume' DESC 'A disk eve
  ry server of a role (ciamTargetRole) has in an environment, its compute gro
  ups\27 included: its boot disk or a data volume, how big and fast it is, it
@@ -2557,3 +2647,37 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.99 NAME 'ciamRestoreTest' DESC 'One r
  n $ ciamTestEnvironment $ ciamRestoredRole $ ciamRestoreLevel $ ciamTestRes
  ult ) MAY ( ciamRestoredFromRole $ ciamRestoreMinutes $ ciamRunbookRef ) X-
  ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.100 NAME 'ciamRecoveryObjective' DESC
+  'A recovery objective (under ou=recovery): for the roles it names, how lon
+ g what they serve may be down after a disaster (RTO), how much of what they
+  hold may be lost (RPO) and the runbook that recovers them; every environme
+ nt running them is held to it' SUP ciamObject STRUCTURAL MUST ( cn $ ciamRe
+ coversRole ) MAY ( ciamRtoMinutes $ ciamRpoMinutes $ ciamRunbookRef ) X-ORI
+ GIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.101 NAME 'ciamStandby' DESC 'Added to
+  an environment that stands by for another: the environment it takes over f
+ rom, how ready it is kept and the runbook that fails over to it' SUP top AU
+ XILIARY MUST ciamStandbyOf MAY ( ciamStandbyMode $ ciamRunbookRef ) X-ORIGI
+ N 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.102 NAME 'ciamFailoverDrill' DESC 'On
+ e failover drill (under ou=failover-drills): when, from which environment t
+ o which, the roles it verified (all when none is named), how it went, how l
+ ong until service was back and how much was lost' SUP ciamObject STRUCTURAL
+  MUST ( cn $ ciamDrilledOn $ ciamDrillFrom $ ciamDrillTo $ ciamDrillResult 
+ ) MAY ( ciamServiceMinutes $ ciamDataLossMinutes $ ciamRecoversRole $ ciamR
+ unbookRef ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.103 NAME 'ciamCloudAccount' DESC 'Add
+ ed to a cloud: the account its environments run in and the organization abo
+ ve it' SUP top AUXILIARY MAY ( ciamAccountRef $ ciamOrganizationRef ) X-ORI
+ GIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.104 NAME 'ciamEnvironmentPlacement' D
+ ESC 'Added to an environment: the resource group its resources go in (where
+  the cloud has them) and how sensitive its data is' SUP top AUXILIARY MAY (
+  ciamResourceGroup $ ciamDataClassification ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.105 NAME 'ciamChargedParty' DESC 'Add
+ ed to a party: the cost center its spending is charged to' SUP top AUXILIAR
+ Y MAY ciamCostCenter X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.106 NAME 'ciamTagRule' DESC 'One tag 
+ of the estate\27s tag policy (under ou=tag-policy): its key and where its v
+ alue comes from in each environment' SUP ciamObject STRUCTURAL MUST ( cn $ 
+ ciamTagKey $ ciamTagSource ) MAY ciamTagValue X-ORIGIN 'opsdir' )

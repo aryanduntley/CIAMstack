@@ -83,3 +83,13 @@ ciamLastValidated: 20260814000000Z
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamTitle: Restore a directory server's data volume from a snapshot
 ciamVersion: 1.0
+
+dn: cn=WI-CIAM-016,ou=runbooks,dc=ciam-ops
+objectClass: top
+objectClass: ciamRunbook
+cn: WI-CIAM-016
+ciamDocUrl: https://wiki.example-aero.test/ciam/WI-CIAM-016
+ciamLastValidated: 20260910000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamTitle: Fail production over to the warm standby
+ciamVersion: 1.0
