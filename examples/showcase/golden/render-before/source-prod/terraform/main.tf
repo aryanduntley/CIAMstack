@@ -2126,6 +2126,58 @@ resource "aws_cloudwatch_event_target" "security_hub_findings" {
   arn  = "arn:aws:sns:us-east-1:111122223333:ciam-prod-security"
 }
 
+resource "aws_macie2_account" "macie" {
+  finding_publishing_frequency = "FIFTEEN_MINUTES"
+  status                       = "ENABLED"
+}
+
+resource "aws_macie2_custom_data_identifier" "cdi_cui_marking" {
+  name       = "cui-marking"
+  regex      = "CUI//[A-Z][A-Z/-]*"
+  depends_on = [aws_macie2_account.macie]
+}
+
+resource "aws_macie2_custom_data_identifier" "cdi_employee_id" {
+  name       = "employee-id"
+  regex      = "EA[0-9]{6}"
+  depends_on = [aws_macie2_account.macie]
+}
+
+resource "aws_macie2_classification_job" "macie_backups" {
+  job_type = "SCHEDULED"
+  name     = "macie-backups"
+  schedule_frequency {
+    weekly_schedule = "SUNDAY"
+  }
+  custom_data_identifier_ids = [aws_macie2_custom_data_identifier.cdi_cui_marking.id, aws_macie2_custom_data_identifier.cdi_employee_id.id]
+  s3_job_definition {
+    bucket_definitions {
+      account_id = "111122223333"
+      buckets    = ["example-aero-ciam-prod-ds-backups"]
+    }
+  }
+  depends_on = [aws_macie2_account.macie]
+}
+
+resource "aws_cloudwatch_event_rule" "macie_backups_findings" {
+  name        = "macie-backups-findings"
+  description = "macie-backups's findings to security-findings"
+  event_pattern = jsonencode({
+    "source" : [
+      "aws.macie"
+    ],
+    "detail-type" : [
+      "Macie Finding"
+    ]
+  })
+}
+
+resource "aws_cloudwatch_event_target" "macie_backups_findings" {
+  # its resource policy must let events.amazonaws.com deliver to it
+  rule = aws_cloudwatch_event_rule.macie_backups_findings.name
+  arn  = "arn:aws:sns:us-east-1:111122223333:ciam-prod-security"
+}
+
 # exc-EXC-2026-01: Security Hub automation rules have no expiry: remove this rule on 2027-03-31
 
 resource "aws_securityhub_automation_rule" "exc_exc_2026_01" {

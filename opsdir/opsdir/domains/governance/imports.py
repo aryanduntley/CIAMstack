@@ -4,7 +4,10 @@ An applied import (`opsdir import --change`) records an import run under ou=impo
 the record it read (and one for what environments share, a product's configuration): the importer, the scopes it made
 match the live system, when the export was taken and the change it was applied under. One entry per importer and
 environment, replaced by the next run (history keeps the earlier ones). A dry run records nothing. A fix that must not
-act on a stale picture of the live system checks the runs (a fresh read of its environment first).
+act on a stale picture of the live system checks the runs (a fresh read of its environment first). When opsdir
+collected the export itself (`opsdir collect`), the run also holds how (EVIDENCE: the identity the provider saw, each
+call with the hash of what it returned, the credential references resolved); a run from an export read off disk holds
+none of it.
 """
 from ...core.changeset import new_entry
 from ...core.directory import children, get, gtime, one, values, within
@@ -13,6 +16,7 @@ from ...core.naming import branch, env_label
 from .naming import IMPORTS
 
 IMPORT_HEADERS = ("importer", "environment", "scopes", "read at", "change")
+EVIDENCE = ("ciamCollectionIdentity", "ciamCollectedCall", "ciamCollectionCredential")
 SHARED = "shared"            # what an import reads that no environment holds (a product's configuration)
 
 
@@ -25,27 +29,31 @@ def run_dn(importer, env=None):
     return f"cn={importer.replace('/', '.')}.{_where(env)},{IMPORTS}"
 
 
-def _run(d, importer, env, scopes, at, change_id):
+def _run(d, importer, env, scopes, at, change_id, evidence):
     dn, change = run_dn(importer, env), f"cn={change_id},{branch('changes')}"
-    if get(d, dn) is None:
+    held = get(d, dn)
+    if held is None:
         return new_entry(dn, ("top", "ciamObject", "ciamImportRun"), {
             "cn": (dn.split(",", 1)[0][3:],), "ciamImporter": (importer,), "ciamImportScope": scopes,
-            "ciamImportedAt": (gtime(at),), "ciamChangeRef": (change,)})
+            "ciamImportedAt": (gtime(at),), "ciamChangeRef": (change,), **{a: v for a, v in evidence.items() if v}})
+    proof = tuple(("replace", a, tuple(evidence.get(a, ()))) for a in EVIDENCE if evidence.get(a) or values(held, a))
     return LdifRecord(dn, "modify", {}, (("replace", "ciamImportScope", scopes),
                                          ("replace", "ciamImportedAt", (gtime(at),)),
-                                         ("replace", "ciamChangeRef", (change,))))
+                                         ("replace", "ciamChangeRef", (change,)), *proof))
 
 
-def run_records(d, importer, scopes, at, change_id):
+def run_records(d, importer, scopes, at, change_id, evidence=None):
     """The records recording an import's runs (its export taken at `at`, a UTC datetime) under change change_id: the
     imports container when missing, then per environment of the scopes it read (and once for shared ones), a new run
-    entry or the existing one's scopes, time and change."""
+    entry or the existing one's scopes, time and change; evidence ({attribute: values} of EVIDENCE: how opsdir
+    collected the export, connectors.collecting.evidence) replaces what an earlier run held (none: removed)."""
     read = tuple(dict.fromkeys(scopes))
     by_env = {env: tuple(s for s in read if environment_of_scope(s) == env)
               for env in dict.fromkeys(environment_of_scope(s) for s in read)}
     container = () if get(d, IMPORTS) is not None else (new_entry(IMPORTS, ("top", "organizationalUnit"),
                                                                   {"ou": ("imports",)}),)
-    return (*container, *(_run(d, importer, env, found, at, change_id) for env, found in by_env.items()))
+    return (*container, *(_run(d, importer, env, found, at, change_id, evidence or {})
+                          for env, found in by_env.items()))
 
 
 def environment_of_scope(scope):

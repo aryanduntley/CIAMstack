@@ -11,6 +11,19 @@ opsdir adapter for PingIDM (ForgeRock IDM): managed objects, connectors, sync ma
 
 The files follow IDM's `conf/` layout but are not yet validated against a live IDM. Installing the package registers it with opsdir (entry point `opsdir.adapters`: `pingidm`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.
 
+## Collecting from PingIDM (`opsdir collect`)
+
+`opsdir collect --env CLOUD/ENV --adapter pingidm` reads the project's configuration over IDM's REST API, read-only,
+and imports it like a saved `conf/` directory (`opsdir_adapter_pingidm.collect`): `GET /openidm/config` lists the
+objects, `GET /openidm/config/<id>` reads each, saved as `conf/<id>.json` (a factory configuration's instance after a
+dash: `provisioner.openicf/ldap` -> `conf/provisioner.openicf-ldap.json`) without the `_id` the API adds. The
+environment declares where (`ciamCollectionSource`: `ciamImporter: pingidm/project`, `ciamSourceRef` IDM's URL,
+`ciamCredentialRole` and `ciamLoginName` for the account, `ciamCaRole` for the trust anchor); the password is resolved
+when collecting and sent as `X-OpenIDM-Username` / `X-OpenIDM-Password`, never stored. `resolver/` properties aren't
+served over REST and aren't collected; encrypted values (`$crypto`) stay as IDM holds them and the importer withholds
+them. Least privilege: an internal user whose role `access.json` allows `read` on `config/*` only (else
+`openidm-admin`).
+
 ## Egress through an explicit proxy
 
 When an environment's egress passes a proxy clients must be told about (a `ciamProxy` with `ciamProxyAddress` that isn't a firewall), PingIDM's HTTP client (external REST, the identity provider service) is told to use the JVM's proxy, `openidm.http.client.proxy.useSystem=true` in `resolver/boot.properties`, with the standard Java proxy properties in the JVM options it starts with (`OPENIDM_OPTS`). The JVM's proxy is used, not `openidm.http.client.proxy.uri`, because only it honours the hosts reached directly (`http.nonProxyHosts`), so connectors to the platform's own services stay off the proxy. The importer captures `resolver/*.properties` with the `conf/` files, so the planner compares `boot.properties` with the record and offers a fix (`opsdir fix`) that adds the setting when it is missing; it names the JVM options, which the record can't confirm.

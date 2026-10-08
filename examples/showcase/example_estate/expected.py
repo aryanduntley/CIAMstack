@@ -78,11 +78,17 @@ EXPECTED = MappingProxyType({
          "nothing records how it is met", "CHG-2032"),
         ("B36", "Authorization", "target/prod uses Azure Communication Services (mail-sending), which `F1209051525` "
          "doesn't list in its boundary", "the target sends mail through Azure Communication Services, which Microsoft's "
-         "compliance-scope tables don't list; a blocker once the target must rely on FedRAMP Moderate (DFARS)", None,
-         "CHG-2029"),
+         "compliance-scope tables don't list; a blocker once the target must rely on FedRAMP Moderate (DFARS) (accepted "
+         "by EXC-2026-04 once CHG-2033 approves it: shown as accepted, not counted)", "CHG-2033", "CHG-2029"),
         ("B37", "Authorization", "target/prod uses DNS Private Resolver", "the target's forwarder to the corporate AD "
-         "(CHG-2015) runs on the DNS Private Resolver, which Microsoft's compliance-scope tables don't list", None,
-         "CHG-2015"),
+         "(CHG-2015) runs on the DNS Private Resolver, which Microsoft's compliance-scope tables don't list (CHG-2033 "
+         "moves it to the landing zone's DNS servers, virtual machines)", "CHG-2033", "CHG-2015"),
+        ("B38", "Data discovery", "source/prod runs data discovery (macie-backups, over backup-target) and target/prod "
+         "runs none", "production's Macie examines the directory backups for sensitive data (CUI markings, employee "
+         "numbers); the target runs no data discovery, a blocker once it is held to FedRAMP Moderate (DFARS)",
+         "CHG-2034", "CHG-2029"),
+        ("B39", "Binding", "Role `data-discovery` is bound in source/prod but not in target/prod",
+         "the target has no data discovery binding: Macie examines the source's backups", "CHG-2034"),
         ("B33", "Incident reporting", "source/prod is held to reporting obligation `dfars-7012` and target/prod isn't",
          "production is held to DFARS 252.204-7012 (72-hour reporting on DIBNet); the target to no reporting "
          "obligation", "CHG-2029"),
@@ -309,6 +315,9 @@ EXPECTED = MappingProxyType({
          "becomes B36 once CHG-2029 holds the target to DFARS)", "CHG-2029"),
         ("A101", "Authorization", "source/prod is inside system boundary `SSP-CIAM-2026` and target/prod in none",
          "the system security plan covers production and the standby, not the target", "CHG-2032"),
+        ("A102", "Data discovery", "source/prod runs data discovery (macie-backups, over backup-target) and target/prod "
+         "runs none", "an action while nothing requires the target to rely on an authorization (it becomes B38 once "
+         "CHG-2029 holds the target to DFARS)", "CHG-2029"),
     ],
 })
 

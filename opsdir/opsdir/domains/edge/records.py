@@ -1,13 +1,14 @@
 """DNS as the cloud renderers need it: the zone binding a name is published in and who runs it when not the platform,
 the other environments answering a name that routes between environments (a failover pair, a weighted set), each
-record's TTL and its values taken apart where a record type has parts. Pure.
+record's TTL and its values taken apart where a record type has parts, and the forwarders: on the platform's managed
+resolver, or on DNS servers the environment runs (what those must do is a comment). Pure.
 
 A name that routes between environments is answered from one place: the environment holding the primary (or, for a
 weighted set, the first by label) renders the routing with the others' addresses; the others render a comment.
 """
 from collections import namedtuple
 
-from ...core.directory import get, one, subtree, values
+from ...core.directory import get, one, rdn_value, subtree, values
 from ...core.environment import environment_of
 from ...core.naming import branch, env_label
 from .dns import answer, zone_of
@@ -80,8 +81,28 @@ def records_in(m):
                         key=lambda r: (_name(r), one(r, "ciamRecordType"))))
 
 
-def forwarders(m, direction="outbound"):
-    """Environment m's forwarders in a direction, by name."""
+def is_hosted(f):
+    """Whether forwarder f runs on DNS servers the environment runs (ciamResolverHost), not the managed resolver."""
+    return bool(values(f, "ciamResolverHost"))
+
+
+def forwarders(m, direction="outbound", hosted=None):
+    """Environment m's forwarders in a direction, by name: all, or only those on its own DNS servers (hosted True)
+    or on the platform's managed resolver (False)."""
     return tuple(sorted((b for b in m.bindings if "ciamDnsForwarder" in b.classes
-                         and (one(b, "ciamForwardDirection") or "outbound") == direction),
+                         and (one(b, "ciamForwardDirection") or "outbound") == direction
+                         and (hosted is None or is_hosted(b) == hosted)),
                         key=lambda f: tuple(values(f, "ciamForwardDomain"))))
+
+
+def hosted_notes(m, machines):
+    """A comment per forwarder of environment m on its own DNS servers (machines: what the platform calls them): what
+    those servers must do, the network's DNS settings pointing at them; neither is rendered here."""
+    def note(f):
+        doms, hosts = ", ".join(values(f, "ciamForwardDomain")), ", ".join(values(f, "ciamResolverHost"))
+        does = (f"forward {doms} to {', '.join(values(f, 'ciamForwardTarget'))} and everything else to the "
+                "platform's resolver" if (one(f, "ciamForwardDirection") or "outbound") == "outbound"
+                else f"answer other networks' queries for {doms}")
+        return (f"# Forwarder `{rdn_value(f)}` runs on DNS servers {hosts} ({machines}), not the managed resolver: "
+                f"they {does}, and the network's DNS servers point at them; not managed here")
+    return tuple(note(f) for direction in ("outbound", "inbound") for f in forwarders(m, direction, hosted=True))

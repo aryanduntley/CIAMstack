@@ -1963,20 +1963,7 @@ resource "azurerm_storage_container" "backup" {
   }
 }
 
-resource "azurerm_private_dns_resolver_forwarding_rule" "fwd_corp_ad_0" {
-  name                      = "fwd-corp-ad-0"
-  dns_forwarding_ruleset_id = var.dns_forwarding_ruleset_id
-  domain_name               = "corp.example-aero.internal."
-  enabled                   = true
-  target_dns_servers {
-    ip_address = "10.40.0.53"
-    port       = 53
-  }
-  target_dns_servers {
-    ip_address = "10.40.0.54"
-    port       = 53
-  }
-}
+# Forwarder `fwd-corp-ad` runs on DNS servers 10.100.0.4, 10.100.0.5 (virtual machines), not the managed resolver: they forward corp.example-aero.internal to 10.40.0.53, 10.40.0.54 and everything else to the platform's resolver, and the network's DNS servers point at them; not managed here
 
 data "azurerm_subscription" "current" {
 }
@@ -2043,6 +2030,9 @@ resource "azurerm_security_center_subscription_pricing" "cosmosdbs" {
 resource "azurerm_security_center_subscription_pricing" "cloudposture" {
   tier          = "Standard"
   resource_type = "CloudPosture"
+  extension {
+    name = "SensitiveDataDiscovery"
+  }
 }
 
 # defender: Defender for Cloud has no plan for identity: Microsoft Entra ID Protection watches sign-ins (not rendered)
@@ -2130,6 +2120,12 @@ resource "azurerm_security_center_automation" "defender_vulnerability_export" {
 }
 
 # resource-changes: Azure records resource changes itself (Resource Graph change history, about 14 days): nothing to enable; keeping them longer needs an export (not rendered)
+
+# dspm: Defender for Cloud's sensitive data discovery (Defender CSPM, SensitiveDataDiscovery) examines every block blob, Azure Files and ADLS Gen2 storage account and Azure SQL database in the subscription, by sampling (complete cataloguing needs Microsoft Purview scanning, not rendered)
+
+# dspm: its own data types (cui-marking: CUI//[A-Z][A-Z/-]*, employee-id: EA[0-9]{6}) are Microsoft Purview custom sensitive information types imported into Defender's data sensitivity settings: not rendered
+
+# dspm: its findings are Defender recommendations and alerts: they reach security-findings through the security services' continuous export
 
 resource "azapi_resource" "exc_exc_2026_03_ipanomaly" {
   type      = "Microsoft.Security/alertsSuppressionRules@2019-01-01-preview"

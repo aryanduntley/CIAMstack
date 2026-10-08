@@ -53,7 +53,8 @@ def _row(d, e):
     if "ciamDnsForwarder" in e.classes:
         direction = one(e, "ciamForwardDirection") or "outbound"
         return (env, ", ".join(values(e, "ciamForwardDomain")), f"forward {direction}",
-                ", ".join(values(e, "ciamForwardTarget")), "", "", "", "")
+                ", ".join(values(e, "ciamForwardTarget")), "", "", "",
+                f"on {', '.join(values(e, 'ciamResolverHost'))}" if values(e, "ciamResolverHost") else "")
     name = one(e, "ciamFqdn") or one(e, "ciamRecordName")
     return (env, name, one(e, "ciamRecordType") or "A", answer(e), one(e, "ciamTtlSeconds") or "",
             one(e, "ciamRoutingPolicy") or "", one(e, "ciamDnsZone") or "", "")

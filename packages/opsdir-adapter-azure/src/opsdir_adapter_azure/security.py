@@ -138,9 +138,10 @@ def _kept(m):
     return [s for s in security_services(m) if not one(s, "ciamManagedBy")]
 
 
-def _plans(services):
-    """((plan, subplan, extensions), ...) the kept services need, one per plan, extensions merged."""
-    wanted = [p for s in services for p in _service_plans(s)]
+def _plans(services, extra=()):
+    """((plan, subplan, extensions), ...) the kept services need (and extra plans: data discovery's), one per plan,
+    extensions merged."""
+    wanted = [*(p for s in services for p in _service_plans(s)), *extra]
     names = list(dict.fromkeys(p for p, _, _ in wanted))
     return tuple((p, next((sub for q, sub, _ in wanted if q == p and sub), None),
                   tuple(dict.fromkeys(x for q, _, ext in wanted if q == p for x in ext))) for p in names)
@@ -294,11 +295,13 @@ def _service(m, s):
               if one(s, "ciamAuditScope") == "organization" else ()))
 
 
-def render_security(m):
+def render_security(m, extra=()):
     """HCL (and comments) for environment m's security services: the subscription data source when anything refers
-    to it, the merged Defender plans, then each service's own blocks and comments."""
+    to it, the merged Defender plans (with extra plans: data discovery's, discovery.discovery_plans), then each
+    service's own blocks and comments."""
     kept = _kept(m)
-    out = (*(_pricing(m, *p) for p in _plans(kept)), *(x for s in security_services(m) for x in _service(m, s)))
+    out = (*(_pricing(m, *p) for p in _plans(kept, extra)),
+           *(x for s in security_services(m) for x in _service(m, s)))
     return ((block("data", ["azurerm_subscription", "current"], []),)
             if any(SUBSCRIPTION in x for x in out) else ()) + out
 

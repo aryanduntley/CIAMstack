@@ -324,6 +324,26 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Extend SSP-CIAM-2026 to the target and record how it meets SC-12 on
   Azure
 
+dn: cn=CHG-2033,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2033
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Move the target's AD forwarder to the landing zone's DNS servers; a
+ ccept its reset mail's service
+
+dn: cn=CHG-2034,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2034
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Turn on the target's sensitive data discovery over its backups (Def
+ ender CSPM)
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

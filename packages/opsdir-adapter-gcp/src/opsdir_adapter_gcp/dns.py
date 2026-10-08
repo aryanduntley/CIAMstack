@@ -9,7 +9,7 @@ health-checked external endpoints is to be configured by hand.
 """
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.domains.edge.dns import zone_of
-from opsdir.domains.edge.records import address, forwarders, records_in, routing, run_by, ttl
+from opsdir.domains.edge.records import address, forwarders, hosted_notes, records_in, routing, run_by, ttl
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 from .names import NETWORK, label
 
@@ -71,7 +71,8 @@ def records(d, m):
 
 def forwarding_zones(m):
     """Outbound forwarders as private forwarding zones on the network; inbound ones are a DNS server policy the
-    landing zone keeps (a comment)."""
+    landing zone keeps (a comment); those on the environment's own DNS servers (Compute Engine instances) a
+    comment."""
     return (*(block("resource", ["google_dns_managed_zone", tf_name(f"{rdn_value(f)}_{i}")], [
                 ("name", label(f"ciam-{rdn_value(m.env)}-{rdn_value(f)}-{i}")),
                 ("dns_name", domain.rstrip(".") + "."), ("visibility", "private"),
@@ -79,7 +80,8 @@ def forwarding_zones(m):
                 ("private_visibility_config", Block((("networks", Block((("network_url", NETWORK),))),))),
                 ("forwarding_config", Block(tuple(("target_name_servers", Block((("ipv4_address", ip),)))
                                                   for ip in values(f, "ciamForwardTarget"))))])
-              for f in forwarders(m) for i, domain in enumerate(values(f, "ciamForwardDomain"))),
+              for f in forwarders(m, hosted=False) for i, domain in enumerate(values(f, "ciamForwardDomain"))),
             *(f"# Inbound forwarder `{rdn_value(f)}` ({', '.join(values(f, 'ciamForwardDomain'))}): a DNS server "
               "policy with inbound forwarding, kept by the landing zone; not managed here"
-              for f in forwarders(m, "inbound")))
+              for f in forwarders(m, "inbound", hosted=False)),
+            *hosted_notes(m, "Compute Engine instances"))

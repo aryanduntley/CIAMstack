@@ -1,5 +1,5 @@
 Expected findings check (after changes)
-  blockers planted 37   expected now 16   detected 16   missed 0   unexpected 0
+  blockers planted 39   expected now 14   detected 14   missed 0   unexpected 0
            B1   cleared by CHG-2003: the target environment binds a new LDAPS name (landing-zone DNS default) → gone
            B2   cleared by CHG-2017: the target environment has no backup target → gone
            B4   cleared by CHG-2001: no target firewall rule for the MRO export → gone
@@ -20,10 +20,12 @@ Expected findings check (after changes)
            B32  cleared by CHG-2029: the target has no incident channel: GuardDuty pages the source's → gone
            B34  cleared by CHG-2030: the target's risk acceptance (no container scanning until PingGateway moves) was approved without an expiry → gone
            B35  cleared by CHG-2032: AWS covers key management (SC-12) for production; on Azure it is the customer's and nothing records how it is met → gone
+           B36  cleared by CHG-2033: the target sends mail through Azure Communication Services, which Microsoft's compliance-scope tables don't list; a blocker once the target must rely on FedRAMP Moderate (DFARS) (accepted by EXC-2026-04 once CHG-2033 approves it: shown as accepted, not counted) → gone
+           B37  cleared by CHG-2033: the target's forwarder to the corporate AD (CHG-2015) runs on the DNS Private Resolver, which Microsoft's compliance-scope tables don't list (CHG-2033 moves it to the landing zone's DNS servers, virtual machines) → gone
+           B38  cleared by CHG-2034: production's Macie examines the directory backups for sensitive data (CUI markings, employee numbers); the target runs no data discovery, a blocker once it is held to FedRAMP Moderate (DFARS) → gone
+           B39  cleared by CHG-2034: the target has no data discovery binding: Macie examines the source's backups → gone
            B33  cleared by CHG-2029: production is held to DFARS 252.204-7012 (72-hour reporting on DIBNet); the target to no reporting obligation → gone
-           B36  raised by CHG-2029: the target sends mail through Azure Communication Services, which Microsoft's compliance-scope tables don't list; a blocker once the target must rely on FedRAMP Moderate (DFARS) → reported
-           B37  raised by CHG-2015: the target's forwarder to the corporate AD (CHG-2015) runs on the DNS Private Resolver, which Microsoft's compliance-scope tables don't list → reported
-  actions  planted 101   expected now 80   detected 80   missed 0   unexpected 0
+  actions  planted 102   expected now 80   detected 80   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone
@@ -45,6 +47,7 @@ Expected findings check (after changes)
            A96  cleared by CHG-2029: GuardDuty pages the source's incident process on high findings; Defender pages no one (an action while the target is held to no obligation) → gone
            A100 cleared by CHG-2029: an action while nothing requires the target to rely on an authorization (it becomes B36 once CHG-2029 holds the target to DFARS) → gone
            A101 cleared by CHG-2032: the system security plan covers production and the standby, not the target → gone
+           A102 cleared by CHG-2029: an action while nothing requires the target to rely on an authorization (it becomes B38 once CHG-2029 holds the target to DFARS) → gone
            A70  raised by CHG-2017: the target's backup container (CHG-2017) has no immutability policy: a backup can be deleted early → reported
            A71  raised by CHG-2017: nothing copies the target's backups to another region; the source replicates to us-west-2 → reported
            A75  raised by CHG-2019: the target's disk backup (CHG-2019) keeps snapshots in its own region: Azure disk backup can't copy them → reported

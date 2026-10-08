@@ -87,7 +87,7 @@ def level_met(granted, required):
                for _, levels in AUTHORIZATION_LEVELS for lv in granted)
 
 
-def _held_to(m):
+def held_to(m):
     """Whether environment m must rely on an authorization: a level is required or its data is restricted."""
     return bool(required_levels(m)) or one(m.env, "ciamDataClassification") == RESTRICTED
 
@@ -140,7 +140,7 @@ def _crm_delta(ctx, src_auth, dst_auth, owner):
 def check_authorization(ctx):
     """The target's cloud authorization against what it must meet (see the module). Nothing when neither environment
     names one and the target needs none."""
-    src_auth, dst_auth, held = authorization_of(ctx.src), authorization_of(ctx.dst), _held_to(ctx.dst)
+    src_auth, dst_auth, held = authorization_of(ctx.src), authorization_of(ctx.dst), held_to(ctx.dst)
     ref = one(ctx.dst.env, "ciamAuthorizationRef")
     if not (held or ref or src_auth is not None):
         return findings()
@@ -197,20 +197,27 @@ def in_scope(name, scope):
     return name in scope or any(s.startswith(f"{name} [") or s.startswith(f"{name} (") for s in scope)
 
 
-def boundary_findings(ctx, used):
+def boundary_findings(ctx, used, covered=None):
     """The services the target uses ((name as its provider's package lists it, what uses it), ...) that its
-    authorization's in-scope list lacks: blockers where the target must rely on an authorization, else actions."""
+    authorization's in-scope list lacks: blockers where the target must rely on an authorization, else actions. A
+    service its provider documents as covered by a listed one (covered: {name: (listed service, the provider's
+    basis)}) is in place when that one is listed."""
     auth = authorization_of(ctx.dst)
     scope = set(values(auth, "ciamInScopeService")) if auth is not None else set()
     if auth is None or not scope:
         return findings()
-    outside = list(dict.fromkeys((name, what) for name, what in used if not in_scope(name, scope)))
+    unlisted = list(dict.fromkeys((name, what) for name, what in used if not in_scope(name, scope)))
+    by = {name: (covered or {})[name] for name, _ in unlisted
+          if name in (covered or {}) and in_scope(covered[name][0], scope)}
+    outside = [(name, what) for name, what in unlisted if name not in by]
+    ok = [f"{ctx.dst.label} uses {name} ({what}), which `{rdn_value(auth)}` covers as part of {by[name][0]}: "
+          f"{by[name][1]}." for name, what in unlisted if name in by]
     texts = [f"{ctx.dst.label} uses {name} ({what}), which `{rdn_value(auth)}` doesn't list in its boundary (as of "
-             f"{date_of(auth, 'ciamScopeAsOf') or 'its import'}): confirm it with the provider, use a service in scope, "
-             "or record an exception." for name, what in outside]
+             f"{date_of(auth, 'ciamScopeAsOf') or 'its import'}): check the provider's boundary documents (its SSP), "
+             "use a service in scope, or record an exception." for name, what in outside]
     owner = responsible(ctx.d, ctx.dst.env)
-    return findings(blockers=[(AREA, t, owner) for t in texts] if _held_to(ctx.dst) else [],
-                    actions=[] if _held_to(ctx.dst) else [(AREA, t, owner, ctx.cutover) for t in texts])
+    return findings(blockers=[(AREA, t, owner) for t in texts] if held_to(ctx.dst) else [],
+                    actions=[] if held_to(ctx.dst) else [(AREA, t, owner, ctx.cutover) for t in texts], ok=ok)
 
 
 # ------------------------------------------------------------------ reports

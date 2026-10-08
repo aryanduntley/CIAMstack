@@ -5,7 +5,7 @@ forwarders as Resolver rules on the VPC. Nothing is rendered into a zone someone
 planner drafts the request). Pure.
 """
 from opsdir.core.directory import one, rdn_value, values
-from opsdir.domains.edge.records import address, forwarders, records_in, routing, run_by, ttl
+from opsdir.domains.edge.records import address, forwarders, hosted_notes, records_in, routing, run_by, ttl
 from opsdir.domains.edge.dns import zone_of
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 
@@ -75,9 +75,10 @@ def records(d, m):
 
 def resolver_rules(m):
     """Outbound forwarders as Resolver forwarding rules through the landing zone's endpoint, associated with the
-    VPC; inbound ones are the landing zone's endpoint (a comment)."""
+    VPC; inbound ones are the landing zone's endpoint (a comment); those on the environment's own DNS servers (EC2
+    instances) a comment."""
     out = tuple(
-        part for f in forwarders(m) for i, domain in enumerate(values(f, "ciamForwardDomain"))
+        part for f in forwarders(m, hosted=False) for i, domain in enumerate(values(f, "ciamForwardDomain"))
         for n in (tf_name(f"{rdn_value(f)}_{i}"),)
         for part in (
             block("resource", ["aws_route53_resolver_rule", n], [
@@ -89,5 +90,6 @@ def resolver_rules(m):
                 ("resolver_rule_id", ref(f"aws_route53_resolver_rule.{n}.id")),
                 ("vpc_id", ref("data.aws_vpc.main.id"))])))
     inbound = tuple(f"# Inbound forwarder `{rdn_value(f)}` ({', '.join(values(f, 'ciamForwardDomain'))}): the "
-                    "landing zone's inbound Resolver endpoint; not managed here" for f in forwarders(m, "inbound"))
-    return (*out, *inbound)
+                    "landing zone's inbound Resolver endpoint; not managed here"
+                    for f in forwarders(m, "inbound", hosted=False))
+    return (*out, *inbound, *hosted_notes(m, "EC2 instances"))

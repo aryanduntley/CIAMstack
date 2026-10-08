@@ -23,6 +23,7 @@ Per environment, `terraform/providers.tf` (`hashicorp/google ~> 8.0`; the projec
 | Workload principals (core `access` domain: kind `workload`, `ciamTargetRole` a server role here) | Per principal: `google_service_account` (account id from its identity binding's provider ref, else `ciam-<env>-<server role>`, at most 30 characters) set on the role's instances with scope `cloud-platform` (IAM alone decides), and one resource-level IAM member per permission from the access table below: `google_secret_manager_secret_iam_member` (regional: `google_secret_manager_regional_secret_iam_member`), `google_kms_crypto_key_iam_member`, `google_storage_bucket_iam_member`, `google_pubsub_topic_iam_member`; log writes as `google_project_iam_member` on the log bucket's project (the narrowest scope Google Cloud allows); a permission that can't be granted is a `# NOTE` |
 | Control-plane audit trails (core `observability`: `ciamAuditTrail`) the platform team keeps | A log sink exporting Cloud Audit Logs (`filter = logName:"cloudaudit.googleapis.com"`, unique writer identity): `google_logging_project_sink`, or for scope `organization` `google_logging_organization_sink` with `include_children` on `var.organization_id`; to what its `ciamLogDestinationRole` names: an object store's bucket (`storage.googleapis.com/<bucket>`, with `google_storage_bucket_iam_member` granting the sink's writer identity `roles/storage.objectCreator`) or a log bucket (`logging.googleapis.com/<its ciamProviderRef>`; one in another project needs `roles/logging.bucketWriter`: a comment). `data-read` / `data-write` turn on Data Access logs for every service (`google_project_iam_audit_config` / `google_organization_iam_audit_config`, `allServices`). Admin Activity is always recorded, in every region. Google keeps no digest of audit logs: `ciamIntegrityValidation` without a bucket whose retention policy is locked (`ciamStorageImmutability` `compliance`) is a comment, and the planner grades a locked bucket as CloudTrail validation's equal. A trail someone else keeps (`ciamManagedBy`) is a comment naming its keeper; another destination a `# NOTE` |
 | Security services (core `estate`: `ciamSecurityService`) the platform team keeps | Security Command Center's activation (tier Premium or Enterprise, on the organization or a project) and its services have no google provider resource: a comment names them as a request to the organization's administrators (threat detection: Event Threat Detection for control-plane, identity, network, storage and databases, Container Threat Detection, VM Threat Detection, Cloud Run Threat Detection for applications; posture: Security Health Analytics, and frameworks as Compliance Manager deployments, FedRAMP, IL and ITAR regimes as an Assured Workloads folder). Rendered: a `google_scc_v2_project_notification_config` streaming the service's finding class (`THREAT`, `VULNERABILITY`, `MISCONFIGURATION`) to the Pub/Sub topic (`ciamProviderRef projects/<p>/topics/<t>`) of the binding `ciamFindingsRole` names; `google_project_service` for Artifact Analysis container scanning and OS Config (VM Manager's vulnerability reports need the instances' `enable-osconfig` metadata, a comment), once each; configuration recording as a `google_cloud_asset_project_feed` of every resource's changes to that topic (Cloud Asset Inventory keeps 35 days itself, a comment). Findings at or above `ciamIncidentSeverity` (high by default) also go to the incident process: a second notification config whose filter adds the Security Command Center severities at or above it (`severity="CRITICAL" OR severity="HIGH"`) to the Pub/Sub topic of the binding `ciamIncidentRole` names (an asset feed has no severity: a `# NOTE`). Another binding is a `# NOTE`; organization scope, other clouds' baselines and services someone else keeps are comments |
+| Data discovery (core `estate`: `ciamDataDiscovery`) the platform team keeps | Sensitive Data Protection: a `google_data_loss_prevention_inspect_template` with the own data types (`ciamCustomIdentifier`) as custom regular-expression info types (names in upper case, likelihood `LIKELY`), and a `google_data_loss_prevention_discovery_config` in the project and the cloud's region (`RUNNING`) profiling the Cloud Storage buckets of the object stores `ciamScansRole` names (`cloud_storage_target`, a `^(…)$` bucket-name expression) with that template; `refresh_frequency` monthly when `ciamRescanDays` is 30 or more, else daily (never less often than recorded; a comment when more often); `pub_sub_notification`s (`NEW_PROFILE`, `CHANGED_PROFILE`) to the topic of the binding `ciamFindingsRole` names. Other stores (databases, volumes) and `ciamResultsRole` (profiles export to BigQuery only) are comments |
 | Suppressions of findings (core `estate`: `ciamSuppression`, carrying out an exception) the platform team keeps | A Security Command Center mute rule per suppression of its `gcp:scc:<category>` refs: `google_scc_v2_project_mute_config` (`type` `STATIC`, `location` `global`, `mute_config_id` `exc-<exception>` in lower case, `filter` `category="…" OR …`, the exception and its expiry in the description); the google provider (8.x) takes no expiry for a mute rule, so a comment says when to remove it; other providers' refs and suppressions someone else keeps are comments |
 | Required roles without a binding | `# UNBOUND: required role …` |
 
@@ -65,7 +66,7 @@ Nothing is rendered into a zone whose binding names `ciamManagedBy` (someone out
 |---|---|
 | A service name | Its record set with `ciamTtlSeconds` (300 when not recorded); a weighted set, a `routing_policy` of `wrr` items (each environment's weight and address). A failover pair is a plain record with a comment: Cloud DNS's primary-backup policy over health-checked external endpoints is configured by hand |
 | DNS records | `google_dns_record_set` in the zone's managed zone (its `ciamProviderRef`, else a label of its name), type, TTL, values (TXT quoted) |
-| Outbound forwarders | Per domain a private `google_dns_managed_zone` on the network with a `forwarding_config` target per `ciamForwardTarget`. Inbound forwarders: a comment (a DNS server policy the landing zone keeps) |
+| Outbound forwarders | Per domain a private `google_dns_managed_zone` on the network with a `forwarding_config` target per `ciamForwardTarget`. Inbound forwarders: a comment (a DNS server policy the landing zone keeps). A forwarder on the environment's own DNS servers (`ciamResolverHost`: Compute Engine instances) gets no zone: a comment says what those servers must forward and that the network's DNS servers point at them |
 
 ### CDN
 
@@ -152,6 +153,7 @@ The importer `gcp/terraform-state` reads Terraform state (format version 4, `has
 | `google_logging_project_bucket_config` | log destination: `log-group`, its retention in days | its resource name |
 | `google_logging_project_sink`, `google_logging_organization_sink`, `google_logging_folder_sink` (+ `google_project_iam_audit_config`, `_organization_`, `_folder_`, and IAM policies' `auditConfigs`) | audit trail (`ciamAuditTrail`, role `audit-trail`) when its filter exports Cloud Audit Logs (no filter: every log): scope `account` for a project's sink, `organization` for one including its children; `control-plane` when it exports Admin Activity, `data-read` / `data-write` when it exports Data Access and an audit config on its parent turns them on; every region; where its records go (`ciamLogDestinationRole`: its bucket's object store, or its log bucket). Disabled sinks and the built-in `_Required` and `_Default` sinks aren't trails | its resource name (`ciamProviderRef`) |
 | `google_scc_v2_project_notification_config`, `google_scc_project_notification_config`, `google_scc_v2_organization_notification_config`, `google_scc_notification_config`, `google_project_service` (`containerscanning`, `osconfig`), `google_cloud_asset_project_feed` / `_folder_feed` / `_organization_feed` | security services (`ciamSecurityService`, role its kind): one per finding class a notification config streams (no class: threat detection; an organization's config: scope `organization`), vulnerability scanning over containers / compute from the scanning APIs, configuration recording (35 days) from an asset feed; every region; findings going to the config's or feed's Pub/Sub topic; a config whose filter names severities is the incident route (`ciamIncidentRole`, `ciamIncidentSeverity`: its topic and the least severity it lets through) of the service of its class and scope, or that service on its own when no other config streams the class | the config's or feed's resource name |
+| `google_data_loss_prevention_discovery_config` (+ the `google_data_loss_prevention_inspect_template`s it uses) | data discovery (`ciamDataDiscovery`, role `data-discovery`): the buckets its bucket-name expression names (`ciamScansRole`), daily or monthly as 1 or 30 days, its templates' custom info types as own data types (`CUI_MARKING` -> `cui-marking`), the topic its Pub/Sub notifications go to (`ciamFindingsRole`) | its id |
 | `google_scc_v2_project_mute_config`, `google_scc_project_mute_config`, `google_scc_v2_organization_mute_config`, `google_scc_mute_config` | suppression (`ciamSuppression`, role `suppression-<exception>`): the categories its filter names (`gcp:scc:<category>`), its exception from the description (`exception <cn>`) or the `exc-` id | the mute rule's resource name |
 | `google_monitoring_alert_policy` | alarm the cloud runs: the metric its first condition filters on (`metric.type`), or `log query`; the channels it notifies; the alert rule it realizes (label `realizes`). Binding role label `role` or `bindingrole`, else `alarm-<realizes>` | its resource name |
 | `google_monitoring_uptime_check_config` | synthetic check: its period as an interval (`5m`), the canary it realizes; binding role else `canary-<realizes>` | its resource name |
@@ -234,6 +236,43 @@ A data disk the environment's instances use without a `volume` label is named.
 | `google_backup_dr_backup_plan` (+ its associations) | backup plan named by its id: its first rule's schedule (every hours, start hour, window unless the default 6), retention, the vault's location as its copy region when it differs, its vault; the roles (label `role`) of the disks its associations name; a new plan's role is its id (plans carry no labels in Terraform). A disk an association names follows the plan (its volume's snapshot policy role). Several rules: the first is read |
 
 A vault, plan or association whose `state` says it is being deleted, deleted or inactive is named, not read.
+
+## Collecting from Google Cloud (`opsdir collect`)
+
+`opsdir collect --env CLOUD/ENV --adapter gcp` reads what the two importers below read, read-only, under your own
+gcloud login (`opsdir_adapter_gcp.collect`), and imports it like an export you saved:
+
+- First `gcloud config list`: an account must be signed in and its project must be the cloud's `ciamAccountRef`, or
+  nothing is read. Every call names the project explicitly (`--project=`).
+- `gcp/cli-inventory`: every call of the script below, as exact calls in rounds: Cloud Asset Inventory's resources of
+  the project (and the Shared VPC host's networks, the host named by the network binding's provider ref
+  `projects/<host>/global/networks/<name>`), then what it lacks, then each listed item's details. IAM policies are
+  searched in the organization the cloud records (`ciamOrganizationRef`) to see what the project inherits, else in
+  the project. Trimmed in memory before anything sees them: instance metadata keeps only `ciam-role` and
+  `ciam-product` (never startup scripts), scheduler jobs only their target's URI or topic (no bodies, headers or
+  messages), notification channels lose their labels. `gcloud asset export` (it writes to Cloud Storage) is never
+  run; secure tag values are listed for each tag key a binding records (`ciamTagKeyRef`) and, with `ciamOrganizationRef`,
+  for each firewall tag key (`GCE_FIREWALL`) of the organization (`roles/resourcemanager.tagViewer`).
+- `gcp/terraform-state`: (a) by default the state object a collection source names, read with `gcloud storage cat`
+  (no `terraform init`, no lock; customer-supplied encryption keys are not supported):
+
+  ```ldif
+  dn: cn=tf-state,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+  objectClass: ciamCollectionSource
+  ciamBindingRole: collect-tf-state
+  ciamImporter: gcp/terraform-state
+  ciamSourceRef: gs://example-ciam-tf-state/ciam/prod.tfstate
+  ```
+
+  (b) `--terraform-dir DIR`: `terraform state pull` in that initialized working directory.
+
+Least privilege: `roles/viewer` on the project covers the management reads; narrower, the predefined viewer roles of
+each service read (Cloud Asset Viewer, Compute Viewer, DNS Reader, Cloud Scheduler Viewer, Monitoring Viewer, Cloud
+SQL Viewer, the Backup and DR viewer, Security Reviewer for IAM roles and policies, Organization Policy Viewer, Tag
+Viewer, Workload Identity Pool Viewer, Deny Reviewer), Cloud Asset Viewer on the organization for the inherited IAM
+policies, and Storage Object Viewer on the Terraform state object only (role names to confirm against Google's
+predefined roles reference before use). The tests pin every command the collector may run
+(`tests/test_gcp_collect.py`, OPERATIONS) and check what is trimmed.
 
 ## Reading an environment from Cloud Asset Inventory and gcloud
 

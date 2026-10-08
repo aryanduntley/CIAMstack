@@ -36,13 +36,32 @@ ATTRIBUTES = (
                  'The LDIF change records a proposed change applies once approved (an assisted fix, from an '
                  'operator or an AI): what the approver reviews and what is applied, unchanged'),
     AttributeDef(422, 'ciamImporter', 'string', 'meta', True,
-                 'The importer an import run used, as adapter/importer'),
+                 'The importer an import run used (or a collection source feeds), as adapter/importer'),
     AttributeDef(423, 'ciamImportScope', 'extdn', 'meta', False,
                  'The parts of the record an import run read back (bindings of an environment, a product\'s '
                  'objects): what it made match the live system (DNs, not references: a run never holds what it read '
                  'in place)'),
     AttributeDef(424, 'ciamImportedAt', 'time', 'meta', True,
                  'When the export an import run read was taken (the live system as of then)'),
+    AttributeDef(597, 'ciamSourceRef', 'string', 'binding', True,
+                 'Where a collection source is read: an endpoint URL (https://host:port) or a stored object '
+                 '(s3://bucket/key, azblob://account/container/blob, gs://bucket/object: a Terraform state, its '
+                 'workspace prefix included)'),
+    AttributeDef(598, 'ciamCredentialRole', 'string', 'intent', True,
+                 'The role of the binding holding the reference to the credential a collection source is read with '
+                 '(resolved when collecting, held in memory for the call, never stored)'),
+    AttributeDef(599, 'ciamCaRole', 'string', 'intent', True,
+                 'The role of the certificate binding a collection source\'s TLS endpoint is trusted by'),
+    AttributeDef(600, 'ciamLoginName', 'string', 'intent', True,
+                 'The account a collection source\'s credential signs in as (a read-only service account)'),
+    AttributeDef(601, 'ciamCollectionIdentity', 'string', 'meta', True,
+                 'Who the provider said the collector was when an import run\'s export was collected (its identity '
+                 'check: account, subscription, project)'),
+    AttributeDef(602, 'ciamCollectedCall', 'string', 'meta', False,
+                 'A call that collected part of an import run\'s export: the SHA-256 of what it returned, the file it '
+                 'became and the command or URL (never a credential)'),
+    AttributeDef(603, 'ciamCollectionCredential', 'string', 'meta', False,
+                 'A credential reference an import run\'s collection resolved (the reference, never the value)'),
 )
 CLASSES = (
     ClassDef(29, 'ciamRunbook', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamLastValidated'),
@@ -59,10 +78,17 @@ CLASSES = (
              'Team, partner, vendor, or the operator of the platform (how to reach it: mail, telephone, contact '
              'link)'),
     ClassDef(91, 'ciamImportRun', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamImporter', 'ciamImportScope',
-                                                               'ciamImportedAt'), (),
+                                                               'ciamImportedAt'),
+             ('ciamCollectionIdentity', 'ciamCollectedCall', 'ciamCollectionCredential'),
              'The last import by one importer of one environment (or of what environments share): when the live '
-             'system was read back, what it read and under which change (ciamChangeRef); what a fix that needs a '
-             'fresh read checks'),
+             'system was read back, what it read and under which change (ciamChangeRef), and when opsdir collected '
+             'the export itself, how (the identity the provider saw, each call and the hash of what it returned, '
+             'the credential references used); what a fix that needs a fresh read checks'),
+    ClassDef(128, 'ciamCollectionSource', 'ciamBinding', 'STRUCTURAL', ('ciamImporter',),
+             ('ciamSourceRef', 'ciamTargetRole', 'ciamPort', 'ciamCredentialRole', 'ciamCaRole', 'ciamLoginName'),
+             'Where `opsdir collect` reads an environment for an importer that needs more than the operator\'s own '
+             'cloud login: a Terraform state object, or a product\'s admin endpoint (a URL, or the servers of a role '
+             'on a port) with the credential and trust anchor it is read with: the operator\'s opt-in'),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

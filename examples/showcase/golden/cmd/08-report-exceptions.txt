@@ -1,7 +1,8 @@
-exception    kind             status    environments  covers                  accepts                                              risk authority                            approved                   expires     in force
------------  ---------------  --------  ------------  ----------------------  ---------------------------------------------------  ----------------------------------------  -------------------------  ----------  --------
-EXC-2026-01  false-positive   approved  source/prod   aws:securityhub:IAM.6                                                        Example Aero CISO (authorizing official)  CAB 2026-09-18 2026-09-18  2027-03-31  yes
-EXC-2026-02  risk-acceptance  approved  target/prod                           Security: vulnerability-scanning watches containers  Example Aero CISO (authorizing official)  CAB 2026-09-18 2026-09-18  2027-03-31  yes
-EXC-2026-03  false-positive   approved  target/prod   azure:alerts:IpAnomaly                                                       Example Aero CISO (authorizing official)  CAB 2026-09-18 2026-09-18  2027-03-31  yes
-(3 rows)
+exception    kind                     status    environments  covers                  accepts                                              risk authority                            approved                   expires     in force
+-----------  -----------------------  --------  ------------  ----------------------  ---------------------------------------------------  ----------------------------------------  -------------------------  ----------  --------
+EXC-2026-01  false-positive           approved  source/prod   aws:securityhub:IAM.6                                                        Example Aero CISO (authorizing official)  CAB 2026-09-18 2026-09-18  2027-03-31  yes
+EXC-2026-02  risk-acceptance          approved  target/prod                           Security: vulnerability-scanning watches containers  Example Aero CISO (authorizing official)  CAB 2026-09-18 2026-09-18  2027-03-31  yes
+EXC-2026-03  false-positive           approved  target/prod   azure:alerts:IpAnomaly                                                       Example Aero CISO (authorizing official)  CAB 2026-09-18 2026-09-18  2027-03-31  yes
+EXC-2026-04  operational-requirement  approved  target/prod                           Authorization: uses Azure Communication Services     Example Aero CISO (authorizing official)  CAB 2026-09-18 2026-09-18  2027-03-31  yes
+(4 rows)
 exit 0

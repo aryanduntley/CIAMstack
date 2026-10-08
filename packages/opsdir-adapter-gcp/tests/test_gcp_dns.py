@@ -29,3 +29,6 @@ def test_outbound_forwarders_are_private_forwarding_zones():
     assert out.count('resource "google_dns_managed_zone"') == 2 and 'dns_name    = "corp.example."' in out
     assert 'visibility  = "private"' in out and out.count("ipv4_address = ") == 4
     assert "network_url = data.google_compute_network.main.self_link" in out and "# Inbound forwarder `fwd-in`" in out
+    _, _, beta = dns_estate()
+    hosted = forwarding_zones(beta)                               # on its own DNS servers: no zone, a comment
+    assert len(hosted) == 1 and "runs on DNS servers 10.2.0.4, 10.2.0.5 (Compute Engine instances)" in hosted[0]

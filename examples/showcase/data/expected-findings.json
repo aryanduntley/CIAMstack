@@ -243,17 +243,32 @@
       "id": "B36",
       "area": "Authorization",
       "match": "target/prod uses Azure Communication Services (mail-sending), which `F1209051525` doesn't list in its boundary",
-      "planted": "the target sends mail through Azure Communication Services, which Microsoft's compliance-scope tables don't list; a blocker once the target must rely on FedRAMP Moderate (DFARS)",
-      "cleared_by": null,
+      "planted": "the target sends mail through Azure Communication Services, which Microsoft's compliance-scope tables don't list; a blocker once the target must rely on FedRAMP Moderate (DFARS) (accepted by EXC-2026-04 once CHG-2033 approves it: shown as accepted, not counted)",
+      "cleared_by": "CHG-2033",
       "raised_by": "CHG-2029"
     },
     {
       "id": "B37",
       "area": "Authorization",
       "match": "target/prod uses DNS Private Resolver",
-      "planted": "the target's forwarder to the corporate AD (CHG-2015) runs on the DNS Private Resolver, which Microsoft's compliance-scope tables don't list",
-      "cleared_by": null,
+      "planted": "the target's forwarder to the corporate AD (CHG-2015) runs on the DNS Private Resolver, which Microsoft's compliance-scope tables don't list (CHG-2033 moves it to the landing zone's DNS servers, virtual machines)",
+      "cleared_by": "CHG-2033",
       "raised_by": "CHG-2015"
+    },
+    {
+      "id": "B38",
+      "area": "Data discovery",
+      "match": "source/prod runs data discovery (macie-backups, over backup-target) and target/prod runs none",
+      "planted": "production's Macie examines the directory backups for sensitive data (CUI markings, employee numbers); the target runs no data discovery, a blocker once it is held to FedRAMP Moderate (DFARS)",
+      "cleared_by": "CHG-2034",
+      "raised_by": "CHG-2029"
+    },
+    {
+      "id": "B39",
+      "area": "Binding",
+      "match": "Role `data-discovery` is bound in source/prod but not in target/prod",
+      "planted": "the target has no data discovery binding: Macie examines the source's backups",
+      "cleared_by": "CHG-2034"
     },
     {
       "id": "B33",
@@ -978,6 +993,13 @@
       "match": "source/prod is inside system boundary `SSP-CIAM-2026` and target/prod in none",
       "planted": "the system security plan covers production and the standby, not the target",
       "cleared_by": "CHG-2032"
+    },
+    {
+      "id": "A102",
+      "area": "Data discovery",
+      "match": "source/prod runs data discovery (macie-backups, over backup-target) and target/prod runs none",
+      "planted": "an action while nothing requires the target to rely on an authorization (it becomes B38 once CHG-2029 holds the target to DFARS)",
+      "cleared_by": "CHG-2029"
     }
   ]
 }

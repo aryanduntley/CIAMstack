@@ -380,4 +380,7 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2031  insert  cn=fedramp.cpo.shared,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2032  update  cn=SSP-CIAM-2026,ou=boundaries,dc=ciam-ops
 <TIMESTAMP>          CHG-2032  update  cn=azure-sc-12,ou=responsibilities,dc=ciam-ops
-(380 rows)
+<TIMESTAMP>          CHG-2033  update  cn=fwd-corp-ad,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2033  insert  cn=EXC-2026-04,ou=exceptions,dc=ciam-ops
+<TIMESTAMP>          CHG-2034  insert  cn=dspm,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+(383 rows)

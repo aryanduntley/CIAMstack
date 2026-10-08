@@ -1,10 +1,13 @@
-setting                         domain     kind         default  value  in effect  status   what it tunes
-------------------------------  ---------  -----------  -------  -----  ---------  -------  ----------------------------------------------------------------------
-access-review-interval-days     access     int (min 1)  365             365        default  How often each principal's access must be reviewed, in days, unless the principal says otherwise (ciamReviewIntervalDays): a review older than this is overdue
-break-glass-test-interval-days  access     int (min 1)  180             180        default  How often a break-glass procedure must be exercised, in days: one not tested for longer may no longer work
-certificate-expiry-margin-days  pki        int (min 0)  30              30         default  How long after cutover (or today, when no cutover is planned) a certificate must stay valid, in days: one expiring sooner is renewed before the move
-consumer-review-interval-days   directory  int (min 1)  365             365        default  How often each consumer of the user directory must be reviewed, in days: a review older than this is due again
-consumer-unseen-days            directory  int (min 1)  30              30         default  How long a consumer may go unseen in the captured access logs, in days, before it is asked whether it is still in use
-restore-test-interval-days      data       int (min 1)  90              90         default  How often each backup plan's restores must be tested, in days, unless the plan says otherwise: a passed restore test older than this is overdue
-(6 rows)
+setting                         domain      kind         default  value  in effect  status   what it tunes
+------------------------------  ----------  -----------  -------  -----  ---------  -------  ----------------------------------------------------------------------
+access-review-interval-days     access      int (min 1)  365             365        default  How often each principal's access must be reviewed, in days, unless the principal says otherwise (ciamReviewIntervalDays): a review older than this is overdue
+break-glass-test-interval-days  access      int (min 1)  180             180        default  How often a break-glass procedure must be exercised, in days: one not tested for longer may no longer work
+certificate-expiry-margin-days  pki         int (min 0)  30              30         default  How long after cutover (or today, when no cutover is planned) a certificate must stay valid, in days: one expiring sooner is renewed before the move
+collect-from-git                governance  bool         FALSE           FALSE      default  Whether opsdir collect may read collection sources in Git repositories (a read-only shallow clone with the operator's own Git credentials)
+collect-from-kubernetes         governance  bool         FALSE           FALSE      default  Whether opsdir collect may read collection sources in Kubernetes (ConfigMaps, with the operator's own kubectl context; never Secrets)
+collect-from-ssh                governance  bool         FALSE           FALSE      default  Whether opsdir collect may read collection sources over SSH (fixed read-only commands on the declared paths, with the operator's own SSH agent and known hosts)
+consumer-review-interval-days   directory   int (min 1)  365             365        default  How often each consumer of the user directory must be reviewed, in days: a review older than this is due again
+consumer-unseen-days            directory   int (min 1)  30              30         default  How long a consumer may go unseen in the captured access logs, in days, before it is asked whether it is still in use
+restore-test-interval-days      data        int (min 1)  90              90         default  How often each backup plan's restores must be tested, in days, unless the plan says otherwise: a passed restore test older than this is overdue
+(9 rows)
 exit 0

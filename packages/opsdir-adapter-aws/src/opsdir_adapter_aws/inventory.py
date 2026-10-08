@@ -78,6 +78,7 @@ from .iam import iam_resources
 from .databases import database_resources, database_security_groups
 from .audit import trail_resources
 from .budgets import budget_resources, budget_topics
+from .discovery import discovery_resources
 from .security import findings_topics, security_resources
 from .suppressions import suppression_resources
 from .backups import backup_resources
@@ -485,7 +486,7 @@ def pairs_resources(pairs):
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
              *_canaries(pairs), *iam, *edge_services(pairs), *zones, *records, *forwarders, *network,
              *database_resources(pairs), *volumes, *backups, *trail_resources(pairs),
-             *security_resources(pairs), *suppression_resources(pairs), *budget_resources(pairs)),
+             *security_resources(pairs), *discovery_resources(pairs), *suppression_resources(pairs), *budget_resources(pairs)),
             (*rule_notices, *iam_notices, *dns_notices, *network_notices, *volume_notices, *backup_notices))
 
 

@@ -29,6 +29,28 @@ The importer `pingfederate/bulk` reads the Admin API bulk export (and this adapt
 
 Integrations are matched by entity ID or client ID, data stores by id, and keep everything the export doesn't hold (owners, criticality, populations, claim transforms, certificate links the record makes, a data store's credential role). A client or connection the record didn't have is added and named in the notices, so it gets an owner. Client secrets, data store passwords and plugin secrets are never read. Every other resource type of the export is held as is (below), so nothing the export holds is left out. Two importers, so name the one you mean: `pingfederate/bulk` (the bulk export) and `pingfederate/node-files` (the nodes' own files).
 
+## Collecting from PingFederate (`opsdir collect`)
+
+`opsdir collect --env CLOUD/ENV --adapter pingfederate` reads the bulk export from the admin node, read-only, and
+imports it like a saved `/bulk/export` (`opsdir_adapter_pingfederate.collect`). The environment declares where:
+
+```ldif
+dn: cn=pf-admin,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: ciamCollectionSource
+ciamBindingRole: collect-pf-admin
+ciamImporter: pingfederate/bulk
+ciamSourceRef: https://pf-admin.example.test:9999
+ciamCredentialRole: pf-admin-reader        # a binding whose ciamRefUri references the password (vault://, aws-sm://, ...)
+ciamLoginName: opsdir-reader
+ciamCaRole: pf-admin-ca                    # a binding whose ciamRefUri references the admin port's CA certificate (PEM)
+```
+
+opsdir resolves the password and the CA certificate when collecting (held in memory, never stored) and sends `GET
+/pf-admin-api/v1/bulk/export` with `X-XSRF-Header: PingFederate` and HTTP Basic credentials. Without a bound credential
+or trust anchor it says which role is missing and reads nothing. Least privilege: a native admin account with the
+lowest administrative role PingFederate accepts for `/bulk/export` (Ping's role table gives Auditor view-only access
+yet lists the four roles for `/bulk`: confirm against your version before relying on Auditor).
+
 ## Egress through an explicit proxy
 
 When an environment's egress passes a proxy clients must be told about (a `ciamProxy` with `ciamProxyAddress` that isn't a firewall), PingFederate needs it on every node: `bin/run.properties` keys `http.proxyHost`, `http.proxyPort`, `https.proxyHost`, `https.proxyPort` (the AWS SDK plugins, such as the SNS notification publisher, read only the `http.*` ones) and `http.nonProxyHosts` (pipe-separated: the host, the private ranges as `10.20.*`, private DNS zones as `*.zone`, the service names). Certificate revocation checking (CRL, OCSP) has its own proxy setting (Security > Certificate Revocation Checking, `/certificates/revocation/settings`), set once on the admin node. The planner compares the keys with each node's captured `run.properties` (missing or other values are actions with a fix, `opsdir fix`, that adds them to the captured file linked to the proxy's derived values, `<proxy role>#proxy:host` and so on, so every environment's file names its own proxy and an environment without one renders them empty) and names the revocation setting, which the record can't confirm.

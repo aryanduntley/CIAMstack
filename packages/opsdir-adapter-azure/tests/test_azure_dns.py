@@ -39,3 +39,6 @@ def test_outbound_forwarders_are_ruleset_rules():
     assert 'domain_name               = "ad.corp.example."' in out
     assert "dns_forwarding_ruleset_id = var.dns_forwarding_ruleset_id" in out
     assert out.count("target_dns_servers {") == 4 and "# Inbound forwarder `fwd-in`" in out
+    _, _, beta = dns_estate()
+    hosted = forwarding_rules(beta)                               # on its own DNS servers: no rule, a comment
+    assert len(hosted) == 1 and "runs on DNS servers 10.2.0.4, 10.2.0.5 (virtual machines)" in hosted[0]

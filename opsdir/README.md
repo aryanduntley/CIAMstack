@@ -29,6 +29,8 @@ On a machine whose global pip config sets `user = true`, pip refuses it inside a
 ./opsdir.sh modify --change CHG-… FILE.ldif   # apply LDIF change records under an approved change
 ./opsdir.sh import [--change CHG-…] ADAPTER[/IMPORTER] PATH [--dry-run] [--at TIME] [--take K|all] [--keep K|all]
                                       # read a product's export into the record (conflicts decided: below)
+./opsdir.sh collect [--env CLOUD/ENV] [--adapter A[/I]] [--list] [--dry-run] [--change CHG-…] [--save DIR]
+                                      # read the live system for the importers, read-only (below), then import
 ./opsdir.sh capture --change CHG-… FILE       # hold a config file in the record (settings, whole, or a reference)
 ./opsdir.sh file NAME [--env CLOUD/ENV]       # rebuild a captured file from the record
 ./opsdir.sh census --change CHG-… PATH        # where the record's values occur in files (secrets flagged, not stored);
@@ -45,6 +47,49 @@ On a machine whose global pip config sets `user = true`, pip refuses it inside a
 ./opsdir.sh workspace create|status|diff|cutover     # migration workspaces (below)
 ./opsdir.sh --workspace COMMAND …     # any command against the workspace instead of the live record
 ```
+
+## Collecting from the live system
+
+`opsdir collect` reads the live system for the installed adapters' importers instead of you gathering their exports,
+read-only, and imports the result exactly as `opsdir import` would (preview, conflicts to take or keep, applied only
+under an approved change). Each adapter declares collectors (`core.contract.Collector`): the exact calls that produce
+its importers' files, in rounds (a list, then each item's details), and a check that your provider login is the
+account, subscription or project the record names (nothing is read when it isn't).
+
+- Credentials are never stored. Clouds use your own CLI login. What needs more (a product's admin API, a directory, a
+  Terraform state object) is declared per environment as a collection source (`ciamCollectionSource`: the importer,
+  the URL or object, the role of the binding holding the credential's reference, the login name, the role of the CA
+  certificate its endpoint is trusted by): the reference is resolved through its secret store when collecting, held
+  in memory for the run, and reaches a tool only on its standard input or opsdir's own HTTP GET (`live.py`); a failing
+  call's error output is shown with resolved values masked. Calls carrying provider debug switches are never run.
+- A collection is complete or not imported: an import makes the record's subtrees exactly what the export holds, so a
+  failed call (or a collector asking for more than 5 rounds or 2000 calls) leaves the record as it is and says why.
+- An applied collection records how it was collected on its import run (its `ciamImportRun` entry): the identity the
+  provider saw, each call (command or URL, never a credential) with the SHA-256 of what it returned, and the
+  credential references resolved. `--save DIR` also keeps the raw export and its manifest: it may hold sensitive
+  configuration, keep it on encrypted storage.
+- Without `--env`, `collect` reads provider-wide data (region lists, quota limits): the same calls `import --run` makes.
+- `--list` shows the calls each collector starts with and runs nothing.
+
+### Configuration sources: Git, Kubernetes, SSH
+
+Any importer's collection can also read configuration kept in a Git repository, a Kubernetes ConfigMap or files on a
+host (PingGateway routes, PingFederate node files, DS configuration directories, crontabs, CI repositories): a
+collection source for that importer whose `ciamSourceRef` names it. Each kind is read only once its estate setting
+allows it; all three are off until an approved change turns them on (`opsdir setting collect-from-ssh TRUE --change
+CHG-…`), and a declared source of a kind that's off makes the collection say which setting would allow it.
+
+| `ciamSourceRef` | What runs | Becomes |
+|---|---|---|
+| `git+https://host/org/repo.git?ref=main&dir=gateway&prefix=routes/` (or `git+ssh://git@host/...`) | `git clone --depth 1 --single-branch [--branch REF]` into a private work directory | the files under `dir` (else all) placed under `prefix`; `.git` is never read |
+| `k8s://CONTEXT/NAMESPACE/configmap/NAME?prefix=routes/` | `kubectl --context CONTEXT -n NAMESPACE get configmap NAME -o json` | each data key a file under `prefix` (Secrets are never read) |
+| `ssh://user@host[:port]/BASE?dir=config&match=*.json` | `ssh -o BatchMode=yes -o StrictHostKeyChecking=yes` running `find BASE/dir -type f [-name MATCH]`, then `cat --` each (`zcat --` for `.gz`, saved without `.gz`) | each file under `prefix` (default `host/`), `dir` kept in its path |
+| `ssh://user@host/BASE?files=bin/run.properties,data/x.xml` | `cat --` each listed file | the same |
+
+What they read is your own access: your Git credentials, kubectl context, SSH agent and known hosts; nothing is held.
+An unknown or changed host key fails (add the host to `known_hosts` first). SSH runs only those fixed commands, on paths
+that must look like paths (letters, digits, `_./@+=,:-`, no `..`) and are quoted, and hosts, users and object names
+can't pose as options. A file kept that isn't regular UTF-8 text (a link, a binary) fails the collection.
 
 ## Database
 
@@ -188,7 +233,9 @@ opsdir/                      the package (names no platform, product, vendor or 
   connectors/                the only code that joins parts: registry (discovers domains and adapters through entry
                              points), schema (the store's schema: code fragments + the record's custom definitions),
                              stack (declared stacks vs installed adapters), render, plan (migration planner),
-                             migration (runner), workspace (copy, diff, cutover), reports, sql (cross-domain views)
+                             migration (runner), workspace (copy, diff, cutover), reports, collecting (live
+                             read-only collection: rounds, completeness, evidence), sql (cross-domain views)
+  live.py                    the effects of collecting: provider commands and HTTP GETs, credentials resolved in memory
   cli.py                     thin orchestrator
 schema/ciam-ops.schema.ldif  the published RFC 4512 schema of the core and its domains (scripts/gen-schema.py)
 scripts/                     dev-install.sh, dev-env.sh (local defaults), gen-schema.py, test.sh, fetch-tools.sh,

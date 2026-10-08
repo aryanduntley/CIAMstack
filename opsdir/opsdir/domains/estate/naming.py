@@ -26,6 +26,8 @@ SECURITY_KINDS = ("threat-detection", "vulnerability-scanning", "config-recordin
 SECURITY_AREAS = ("control-plane", "identity", "network", "compute", "containers", "storage", "databases",
                   "key-vaults", "applications")
 STANDARD_ID = r"[a-z0-9]+(-[a-z0-9]+)*"     # a compliance framework's or baseline's id: nist-800-171-r2, cis
+# a data type of the organization's own a data discovery service looks for: `name: regular expression`
+CUSTOM_IDENTIFIER = r"[a-z][a-z0-9-]{0,62}: \S.*"
 # the regulatory frameworks a posture service assesses that a move can't silently drop (a target without posture
 # assessment while the source assesses one of these is a blocker)
 REGULATORY = frozenset(("nist-800-53-r5", "nist-800-171-r2", "fedramp-low", "fedramp-moderate", "fedramp-high",

@@ -14,3 +14,28 @@ Reads servers' configuration back with the lineage's importers, `opendj/config` 
 Command and option names follow the OpenDJ 4.x documentation; verify them against the exact target version before use.
 
 Installing the package registers it with opsdir (entry point `opsdir.adapters`: `opendj`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.
+
+## Collecting the configuration (`opsdir collect`)
+
+`opsdir collect --env CLOUD/ENV --adapter opendj [--ldapsearch PATH] [--ldap-truststore PATH]` reads each directory
+server's `cn=config` over LDAPS on its administration port, with this product's own `ldapsearch` (`--bindDN`, `--useSSL`, `--bindPasswordFile /dev/stdin`, `--baseDN`), and
+imports it as `opendj/config` (`<host>/config/config.ldif` per server) or `opendj/declared` (the first server's
+`config.ldif`) (`opsdir_base_ds.collect`). The environment declares where:
+
+```ldif
+dn: cn=ds-config,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: ciamCollectionSource
+ciamBindingRole: collect-ds-config
+ciamImporter: opendj/config
+ciamTargetRole: ds                       # the directory servers (their host names), on
+ciamPort: 4444                           # the administration connector
+ciamLoginName: uid=config-reader,ou=admins,ou=identities
+ciamCredentialRole: ds-config-reader      # a binding whose ciamRefUri references the password
+```
+
+The password reaches `ldapsearch` only on its standard input. Before anything sees the output, every attribute holding
+a credential is dropped (password values, key and trust store PINs, secrets: `opsdir_base_ds.collect.holds_credential`);
+the password policies' settings are kept. Only the configuration in effect is read: archived configurations are on
+disk only, as are the access logs. Least privilege: an account with the `config-read` privilege and a global ACI on
+`cn=config` allowing `read,search,compare` (targetattr `*||+`).
+

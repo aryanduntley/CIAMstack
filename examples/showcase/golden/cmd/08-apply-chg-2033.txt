@@ -1,0 +1,3 @@
+CHG-2033: modify cn=fwd-corp-ad,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2033: add cn=EXC-2026-04,ou=exceptions,dc=ciam-ops
+exit 0

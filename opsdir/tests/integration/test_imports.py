@@ -1,5 +1,6 @@
 """Imports through the store: an import that would replace what the record holds is refused until each conflict is
-decided; the record's value stays where it is kept; every applied import records its run of each scope it read."""
+decided; the record's value stays where it is kept; every applied import records its run of each scope it read, with
+how its export was collected when opsdir collected it."""
 import datetime as dt
 
 import psycopg
@@ -89,6 +90,18 @@ def test_a_conflict_is_decided_and_the_run_recorded(conn):
 def test_an_import_with_nothing_to_change_still_records_its_run(conn):
     ops.apply_import(conn, _plan(conn)._replace(changes=()), "CHG-1")
     assert get(db.load_directory(conn), run_dn("parties/directory")) is not None
+
+
+def test_a_collected_export_leaves_its_evidence_on_the_run_and_a_file_import_clears_it(conn):
+    proof = {"ciamCollectionIdentity": ("arn:aws:sts::111122223333:assumed-role/reader/op",),
+             "ciamCollectedCall": ("9f86d081 parties.json <- tool list-parties",),
+             "ciamCollectionCredential": ("vault://kv/reader",)}
+    ops.apply_import(conn, _plan(conn)._replace(changes=()), "CHG-1", evidence=proof)
+    run = get(db.load_directory(conn), run_dn("parties/directory"))
+    assert {a: values(run, a) for a in proof} == proof
+    ops.apply_import(conn, _plan(conn)._replace(changes=()), "CHG-1")             # an export read off disk
+    run = get(db.load_directory(conn), run_dn("parties/directory"))
+    assert not any(values(run, a) for a in proof)
 
 
 def test_runs_are_written_under_an_approved_change_only(conn):

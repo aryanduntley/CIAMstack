@@ -1,6 +1,7 @@
 """The Azure services an environment uses, named as Microsoft's compliance-scope page names them (with the page's
 qualifiers matched), and the planner's check against the authorization the target relies on (Azure Communication
-Services: on neither of the page's tables)."""
+Services: on neither of the page's tables; a forwarder on the environment's own DNS servers: Virtual Machines, not
+the DNS Private Resolver)."""
 from opsdir.core.interchange.ldif import LdifRecord
 from opsdir_adapter_azure.boundary import azure_services, check_boundary
 from network_fixtures import BETA, context, entry, model
@@ -16,7 +17,9 @@ TREE = ("dn: ou=authorizations,dc=ciam-ops\nobjectClass: top\nobjectClass: organ
         + "".join(f"ciamInScopeService: {s}\n" for s in SCOPE))
 BINDINGS = (entry(BETA, "grants", "ciamDatabase", ciamBindingRole="pf-grants-db", ciamDbEngine="postgresql"),
             entry(BETA, "logs", "ciamLogDestination", ciamBindingRole="audit-logs", ciamDestinationKind="workspace"),
-            entry(BETA, "mail", "ciamSendingIdentity", ciamBindingRole="mail-sender", ciamSenderDomain="example.test"))
+            entry(BETA, "mail", "ciamSendingIdentity", ciamBindingRole="mail-sender", ciamSenderDomain="example.test"),
+            entry(BETA, "fwd", "ciamDnsForwarder", ciamBindingRole="ad-forwarder", ciamForwardDomain="corp.example",
+                  ciamForwardTarget="10.9.0.2", ciamResolverHost="10.2.0.4"))
 
 
 def test_the_services_an_environment_uses_and_those_outside_its_authorization():
@@ -26,6 +29,7 @@ def test_the_services_an_environment_uses_and_those_outside_its_authorization():
     d, a, b = model(beta=BINDINGS, tree=TREE, changes=(held,))
     used = dict(azure_services(b))
     assert used["Azure Database for PostgreSQL"] == "pf-grants-db" and used["Azure Monitor"] == "audit-logs"
+    assert used["Virtual Machines"].endswith("and 1 more") and "DNS Private Resolver" not in used   # + the forwarder
     f = check_boundary(context(d, a, b, cutover="2026-12-01"))
     assert [x[1].split(", which")[0] for x in f.blockers if "Communication" in x[1]] == [
         "beta/prod uses Azure Communication Services (mail-sender)"]

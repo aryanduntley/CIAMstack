@@ -218,11 +218,13 @@ def preview_import(conn, spec, files, at=None):
     return importing.import_plan(db.load_directory(conn), spec, files, at=at)
 
 
-def apply_import(conn, plan, change_id, take=(), keep=()):
+def apply_import(conn, plan, change_id, take=(), keep=(), evidence=None):
     """Effect: apply an import (preview_import) under an approved change: each conflict decided, the live value taken
     or the record's kept (keys, or 'all'; ValueError while any is undecided), and an import run recorded for each
-    scope it read (domains.governance.imports), even when nothing else changed."""
-    return modify(conn, importing.import_records(db.load_directory(conn), plan, change_id, take, keep), change_id)
+    scope it read (domains.governance.imports), even when nothing else changed, with how opsdir collected the export
+    when it did (evidence: connectors.collecting.evidence)."""
+    return modify(conn, importing.import_records(db.load_directory(conn), plan, change_id, take, keep, evidence),
+                  change_id)
 
 
 def apply_preview(conn, preview, change_id):

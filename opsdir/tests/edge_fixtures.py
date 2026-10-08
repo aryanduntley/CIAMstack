@@ -104,6 +104,8 @@ DNS_RECORDS = (
           ciamForwardTarget=("10.9.0.2", "10.9.0.3")),
     _ldif(ALPHA, "fwd-in", "ciamDnsForwarder", "inbound", ciamForwardDomain="example.internal",
           ciamForwardTarget="10.1.0.53", ciamForwardDirection="inbound"),
+    _ldif(BETA, "fwd-legacy", "ciamDnsForwarder", "legacy-forwarder", ciamForwardDomain="legacy.example",
+          ciamForwardTarget="10.9.1.2", ciamResolverHost=("10.2.0.4", "10.2.0.5")),
 )
 
 

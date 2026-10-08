@@ -1,0 +1,34 @@
+# CHG-2033 (approved): once DFARS 252.204-7012 holds the target to FedRAMP Moderate, two services it uses are outside
+# what Microsoft lists for its authorization (F1209051525). The forwarder to the corporate AD (CHG-2015) moves off the
+# DNS Private Resolver to the landing zone's DNS servers, two virtual machines (in scope) that forward the AD domain
+# to the domain controllers. Azure Communication Services, which sends the password-reset mail, stays: the authorizing
+# official approves exception EXC-2026-04 (an operational requirement: the mail carries a one-time link and the
+# recipient's address, no CUI) until 2027-03-31.
+dn: cn=fwd-corp-ad,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: modify
+add: ciamResolverHost
+ciamResolverHost: 10.100.0.4
+ciamResolverHost: 10.100.0.5
+-
+delete: ciamProviderRef
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2033,ou=changes,dc=ciam-ops
+
+dn: cn=EXC-2026-04,ou=exceptions,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamRiskException
+cn: EXC-2026-04
+ciamExceptionKind: operational-requirement
+ciamExceptionStatus: approved
+ciamAffectedEnvironment: env=prod,cloud=target,ou=environments,dc=ciam-ops
+ciamAcceptsFinding: Authorization: uses Azure Communication Services
+ciamJustification: the password-reset mail carries a one-time link and the recipient's address, no CUI; no mail
+  service in the authorization's scope sends it
+ciamRiskAuthority: cn=authorizing-official,ou=owners,dc=ciam-ops
+ciamApprovedBy: CAB 2026-09-18
+ciamApprovedAt: 20260918000000Z
+ciamExpiresAt: 20270331000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamChangeRef: cn=CHG-2033,ou=changes,dc=ciam-ops

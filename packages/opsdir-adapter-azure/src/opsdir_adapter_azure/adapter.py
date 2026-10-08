@@ -5,6 +5,7 @@ from .access import ACCESS
 from .boundary import check_boundary
 from .arm import ARM
 from .cli import CLI_INVENTORY
+from .collect import COLLECTORS
 from .inventory import TERRAFORM_STATE
 from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
 from .regions import PREREQUISITE, REGIONS
@@ -27,4 +28,5 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                   formats=(("terraform/*.tf", "hcl"),),
                   products=(),
                   secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY, ARM, REGIONS, QUOTAS),
-                  profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE))
+                  profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE),
+                  collectors=COLLECTORS)

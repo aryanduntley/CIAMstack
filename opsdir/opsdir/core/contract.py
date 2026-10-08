@@ -159,6 +159,41 @@ ProxySetting = namedtuple("ProxySetting", ("server_role", "place", "file", "loca
 # adapter applies to an environment; `opsdir prerequisites` lists what is pending.
 Prerequisite = namedtuple("Prerequisite", ("name", "description", "importer", "met"))
 
+# How `opsdir collect` reads the live system for one importer, read-only (connectors.collecting): calls whose outputs
+# are the importer's export, file by file.
+# A provider tool run: argv (exact: never a credential), secrets the credential references it needs, stdin a function
+# ({reference: value}) -> the text it reads on standard input (where a credential reaches it: never argv, environment
+# or disk), env extra environment ((name, value), ...: switches such as FIPS endpoints, never a credential), absent
+# what its error output says when there is nothing to read (NoSuchBucketPolicy): then the file is left out, not a
+# failure; keep a pure function (output) -> output trimming what the importer never reads and may be secret (startup
+# scripts in instance metadata) before anything else sees it: the export, the evidence's hash, --save. workdir: the tool
+# writes files instead of printing (Amster's export-config): the runner makes a private directory, writes inputs
+# ((name, text), ...: a script, never a credential) there, replaces {dir} in argv and inputs with its path, and the
+# output is the files the tool wrote under {dir}/export ({relative path: text}); the directory is removed after. digest:
+# a pure function of the output's lines (an iterator) -> the text kept, applied while the output streams, so what the
+# tool prints is never held whole nor written anywhere (a directory's user data profiled into counts).
+Command = namedtuple("Command", ("argv", "secrets", "stdin", "env", "absent", "keep", "workdir", "inputs", "digest"),
+                     defaults=((), None, (), (), None, False, (), None))
+# An HTTP GET opsdir makes itself (no other method exists): url, headers ((name, value), ...: never a credential),
+# credential (scheme 'basic', 'bearer' or 'headers', the reference to resolve, the login name, and for 'headers' the
+# names of the header carrying the login and of the one carrying the secret: PingIDM's X-OpenIDM-Username and
+# X-OpenIDM-Password) or None, ca the reference
+# to the certificate (PEM) the endpoint is trusted by, or None for the system's trust store; absent the HTTP statuses
+# that mean nothing to read (404); keep as a Command's.
+Request = namedtuple("Request", ("url", "headers", "credential", "ca", "absent", "keep"),
+                     defaults=((), None, None, (), None))
+# A collector: the importer (by name) whose export it produces; scope "environment" (one environment's, `--env`) or
+# "estate" (provider-wide data: regions, quota limits); steps(d, m, done, options) -> ((relative path, Command |
+# Request), ...): the calls still to make given what was collected so far (done: {path: output}), m the environment's
+# EnvModel (None for estate scope), options what the operator gave at run time ({name: value}: a Terraform working
+# directory); called again until it asks for nothing new (a list, then each item's details), so it never repeats a
+# path. Paths under _work/ are what only the collector reads (the list it takes the items from): kept out of the
+# export, kept in the evidence. problems(d, m, options) -> (problem, ...) or None: why it can't collect here (a
+# collection source's credential role unbound, an option missing), shown instead of collecting. verify(d, m) -> (call, check) or None: the identity check run first, check(output) -> a problem (the provider
+# login isn't the account, subscription or project the record names) or None.
+Collector = namedtuple("Collector", ("importer", "scope", "steps", "verify", "problems"),
+                       defaults=("environment", None, None, None))
+
 # An adapter's fields; an older adapter that names no endpoints declares none, one that names no listeners or proxy
 # settings None, one that names no prerequisites none.
 Adapter = namedtuple("Adapter", (
@@ -184,8 +219,9 @@ Adapter = namedtuple("Adapter", (
     "endpoints",            # Endpoints: what its products serve that the edge protects, checks or never caches
     "listeners",            # (EnvModel) -> Listeners: the ports its servers listen on in an environment, or None
     "proxy_settings",       # (EnvModel, ProxySettings) -> ProxySettings its servers need for an explicit proxy, or None
-    "prerequisites"),       # Prerequisites: data it needs fetched from its provider
-    defaults=((), None, None, ()))
+    "prerequisites",        # Prerequisites: data it needs fetched from its provider
+    "collectors"),          # Collectors: how `opsdir collect` reads its importers' exports from the live system
+    defaults=((), None, None, (), ()))
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

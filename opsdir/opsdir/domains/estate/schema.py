@@ -10,7 +10,9 @@ ou=residencies) is the estate's own classification of where data may be held, li
 so residency values are the estate's to define yet every environment names one that exists. A cloud may say its
 clients use FIPS 140 validated endpoints (ciamCloudEndpoints). The cloud security services an environment runs
 (ciamSecurityService: threat detection, vulnerability scanning, configuration recording, posture assessment) are
-bindings: what each watches or assesses, where its findings go and how long it keeps its records. What an environment
+bindings: what each watches or assesses, where its findings go and how long it keeps its records; so are the data
+discovery services (ciamDataDiscovery: the stores each examines for sensitive data, the organization's own data types it
+looks for, how often, where its findings go and where it keeps its results). What an environment
 needs of a provider limit (ciamQuotaNeed: virtual CPUs, public addresses, networks, ...) is a binding too, with the
 operator's decision when the provider grants less; the limits themselves are fetched from the provider into the quota
 catalog (under ou=quotas, one ciamQuotaCatalog per account and region, a ciamQuotaLimit per quota). A budget
@@ -29,7 +31,7 @@ from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
 from .naming import (AMOUNT, ASSESSMENT_KINDS, AUTHORIZATION_STATUSES, CONFIGURATIONS, LEVELS, RESPONSIBILITY, ASSESSMENT_STATUSES, BUDGET_PERIODS, CAGE_CODE, CLASSIFICATIONS,
                      CONTROL_REF, CURRENCY, DISCOVERY_SOURCES, EXCEPTION_KINDS, EXCEPTION_STATUSES, FINDING_REF,
                      MEDIA_REQUESTS, POAM_STATUSES, QUOTA_DECISIONS, QUOTA_KINDS, REGION_STATUSES, RISK_RATINGS,
-                     SECURITY_AREAS, SECURITY_KINDS, SEVERITIES, STANDARD_ID, TAG_SOURCES, UEI)
+                     SECURITY_AREAS, SECURITY_KINDS, SEVERITIES, STANDARD_ID, TAG_SOURCES, UEI, CUSTOM_IDENTIFIER)
 
 ATTRIBUTES = (
     AttributeDef(482, 'ciamAccountRef', 'string', 'binding', True,
@@ -83,7 +85,8 @@ ATTRIBUTES = (
                  "one cloud's baseline never stands in for another's",
                  (("X-PATTERN", STANDARD_ID),)),
     AttributeDef(503, 'ciamFindingsRole', 'string', 'intent', True,
-                 "The role of the binding a security service's findings (or recorded configuration) go to: an alert "
+                 "The role of the binding a security or data discovery service's findings (or recorded "
+                 "configuration) go to: an alert "
                  "channel, a log destination, an object store, a stream (a topic); none: they stay in the service"),
     AttributeDef(504, 'ciamQuotaKind', enum_type(QUOTA_KINDS), 'binding', True,
                  "What a quota counts, by a kind every cloud limits: vcpus (the region's standard machines), public-ips, "
@@ -300,6 +303,19 @@ ATTRIBUTES = (
                  "What the customer must do for a control its authorization leaves to it"),
     AttributeDef(591, 'ciamImplementation', 'string', 'meta', True,
                  "How the operator meets a control its authorization leaves to it"),
+    AttributeDef(593, 'ciamScansRole', 'string', 'binding', False,
+                 "The role of a store a data discovery service examines for sensitive data (an object store, a "
+                 "database, a volume)"),
+    AttributeDef(594, 'ciamCustomIdentifier', 'string', 'intent', False,
+                 "A data type of the organization's own a data discovery service looks for, as `name: regular "
+                 "expression` (CUI markings, employee or contract numbers); the clouds' built-in detectors are theirs",
+                 (("X-PATTERN", CUSTOM_IDENTIFIER),)),
+    AttributeDef(595, 'ciamRescanDays', 'int', 'intent', True,
+                 "How often a data discovery service examines its stores again, in days (1 daily, 7 weekly, 30 "
+                 "monthly)", (("X-MIN", "1"),)),
+    AttributeDef(596, 'ciamResultsRole', 'string', 'intent', True,
+                 "The role of the binding a data discovery service keeps its detailed results in (an object store): "
+                 "the record of where sensitive data was found"),
 )
 CLASSES = (
     ClassDef(103, 'ciamCloudAccount', 'top', 'AUXILIARY', (),
@@ -412,6 +428,12 @@ CLASSES = (
              ('ciamSspRef', 'ciamAffectedEnvironment', 'ciamRiskAuthority', 'ciamDocUrl', 'ciamEvidenceRef'),
              "The operator's own system boundary (under ou=boundaries): the system security plan it is documented in, "
              "the environments inside it and its authorizing official"),
+    ClassDef(127, 'ciamDataDiscovery', 'ciamBinding', 'STRUCTURAL', (),
+             ('ciamScansRole', 'ciamCustomIdentifier', 'ciamRescanDays', 'ciamFindingsRole', 'ciamResultsRole',
+              'ciamProviderRef', 'ciamManagedBy'),
+             "A data discovery service an environment runs (Amazon Macie, Defender for Cloud's sensitive data "
+             "discovery, Sensitive Data Protection): the stores it examines, the organization's own data types it "
+             "looks for, how often, where its findings go and where it keeps its results"),
     ClassDef(126, 'ciamControlResponsibility', 'ciamObject', 'STRUCTURAL',
              ('cn', 'ciamAuthorizationRef', 'ciamControlRef', 'ciamResponsibility'),
              ('ciamCustomerAction', 'ciamImplementation', 'ciamExceptionRef', 'ciamPoamRef', 'ciamEvidenceRef'),

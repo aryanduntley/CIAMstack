@@ -2255,6 +2255,73 @@ resource "google_scc_v2_project_notification_config" "scc_incidents" {
   }
 }
 
+# sdp-backups: Sensitive Data Protection refreshes profiles daily or monthly: the record asks every 7 days, profiled daily
+
+resource "google_data_loss_prevention_inspect_template" "sdp_backups" {
+  parent       = "projects/${var.project_id}/locations/${var.region}"
+  template_id  = "ciam-sdp-backups"
+  display_name = "sdp-backups: own data types"
+  inspect_config {
+    custom_info_types {
+      info_type {
+        name = "CUI_MARKING"
+      }
+      likelihood = "LIKELY"
+      regex {
+        pattern = "CUI//[A-Z][A-Z/-]*"
+      }
+    }
+    custom_info_types {
+      info_type {
+        name = "EMPLOYEE_ID"
+      }
+      likelihood = "LIKELY"
+      regex {
+        pattern = "EA[0-9]{6}"
+      }
+    }
+  }
+}
+
+resource "google_data_loss_prevention_discovery_config" "sdp_backups" {
+  parent            = "projects/${var.project_id}/locations/${var.region}"
+  location          = var.region
+  display_name      = "sdp-backups"
+  status            = "RUNNING"
+  inspect_templates = [google_data_loss_prevention_inspect_template.sdp_backups.id]
+  targets {
+    cloud_storage_target {
+      filter {
+        collection {
+          include_regexes {
+            patterns {
+              cloud_storage_regex {
+                project_id_regex  = "^${var.project_id}$"
+                bucket_name_regex = "^(example\\-aero\\-ciam\\-standby\\-ds\\-backups)$"
+              }
+            }
+          }
+        }
+      }
+      generation_cadence {
+        refresh_frequency = "UPDATE_FREQUENCY_DAILY"
+      }
+    }
+  }
+  actions {
+    pub_sub_notification {
+      topic = "projects/example-aero-ciam-standby/topics/ciam-security"
+      event = "NEW_PROFILE"
+    }
+  }
+  actions {
+    pub_sub_notification {
+      topic = "projects/example-aero-ciam-standby/topics/ciam-security"
+      event = "CHANGED_PROFILE"
+    }
+  }
+}
+
 data "google_secret_manager_secret" "am_admin_password" {
   # metadata only: no secret version (value) enters Terraform state
   secret_id = "am-admin-password"

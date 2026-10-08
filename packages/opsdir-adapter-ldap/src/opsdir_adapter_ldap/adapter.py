@@ -7,6 +7,7 @@ Its importer `ldap/data-profile` records the values-free profile of any environm
 """
 from opsdir.core.contract import Adapter
 from .dit import dit_ldif
+from .collect import COLLECTORS
 from .profile import DATA_PROFILE_IMPORTER
 from .schema import schema_ldif
 
@@ -23,4 +24,5 @@ ADAPTER = Adapter(name=NAME, kind="product", applies=None, required_roles=(), re
                   render_env=None, checks=(), ref_schemes=(), secret_schemes={}, renders=None, neutral_label="LDAP",
                   vocabulary={}, schema=None, formats=FORMATS,
                   products=(),
-                  secret_patterns=(), importers=(DATA_PROFILE_IMPORTER,), profile_terms=None, access=None)
+                  secret_patterns=(), importers=(DATA_PROFILE_IMPORTER,), profile_terms=None, access=None,
+                  collectors=COLLECTORS)

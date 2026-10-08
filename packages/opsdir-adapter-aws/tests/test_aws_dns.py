@@ -42,4 +42,7 @@ def test_outbound_forwarders_are_resolver_rules_on_the_vpc():
     assert out.count('resource "aws_route53_resolver_rule" ') == 2 and 'domain_name          = "corp.example"' in out
     assert "resolver_endpoint_id = var.resolver_endpoint_id" in out and out.count("target_ip {") == 4
     assert "vpc_id           = data.aws_vpc.main.id" in out
-    assert "# Inbound forwarder `fwd-in` (example.internal)" in out and resolver_rules(beta) == ()
+    assert "# Inbound forwarder `fwd-in` (example.internal)" in out
+    hosted = resolver_rules(beta)                                 # on its own DNS servers: no rule, a comment
+    assert len(hosted) == 1 and hosted[0].startswith("# Forwarder `fwd-legacy` runs on DNS servers 10.2.0.4, 10.2.0.5 "
+                                                     "(EC2 instances)")

@@ -21,6 +21,7 @@ from .audit import render_trails
 from .budgets import budget_inputs, render_budgets
 from .quotas import quota_request_notes
 from .suppressions import azapi_provider, render_suppressions, uses_azapi
+from .discovery import discovery_plans, render_discovery
 from .security import render_security
 from .backups import render_backups
 from .volumes import boot_tag, os_disk, server_volumes, snapshot_policy_notes
@@ -191,7 +192,7 @@ def render(m, services):
            *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
-           *forwarding_rules(m), *render_trails(m), *render_security(m), *render_suppressions(m), *render_budgets(m), *quota_request_notes(m),
+           *forwarding_rules(m), *render_trails(m), *render_security(m, discovery_plans(m)), *render_discovery(m), *render_suppressions(m), *render_budgets(m), *quota_request_notes(m),
            *_key_vault_secrets(m), *scope_data(m, identities))
     out = tuple(x for i, x in enumerate(out) if not (x.startswith('data "') and x in out[:i]))   # a data source once
     notes = "\n".join(_interconnect_note(m, ic) for ic in of_class(m, "ciamInterconnect"))
@@ -209,6 +210,6 @@ def render(m, services):
         *budget_inputs(m),
         *((block("variable", [FORWARDING_RULESET], [
             ("description", "The landing zone's DNS forwarding ruleset the forwarding rules join"),
-            ("type", ref("string"))]),) if forwarders(m) else ()),
+            ("type", ref("string"))]),) if forwarders(m, hosted=False) else ()),
     ]) + "\n"
     return {"terraform/providers.tf": providers, "terraform/main.tf": main, **render_landing(m)}

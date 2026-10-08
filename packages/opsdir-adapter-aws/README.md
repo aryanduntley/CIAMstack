@@ -23,6 +23,7 @@ Per environment, `terraform/providers.tf` (`hashicorp/aws ~> 5.0`; `region` from
 | Workload principals (core `access` domain: kind `workload`, `ciamTargetRole` a server role here) | Per principal: `aws_iam_role` EC2 may assume (named by its identity binding's provider ref, else `ciam-<env>-<server role>`), an inline `aws_iam_role_policy` with one statement per permission from the access table below (the binding's resource: a secret's ARN with its six-character suffix `-??????`, a key's ARN, `arn:aws:s3:::<bucket>/<prefix>*` and the bucket, a stream's ARN, a log group's ARN and `:*`), an `aws_iam_instance_profile` set on the role's instances; a permission that can't be granted (role unbound here, or no row) is a `# NOTE` |
 | Control-plane audit trails (core `observability`: `ciamAuditTrail`) the platform team keeps | `aws_cloudtrail` into the S3 bucket of the object store its `ciamLogDestinationRole` names: `is_multi_region_trail` and `include_global_service_events` from `ciamAllRegions`, `enable_log_file_validation` from `ciamIntegrityValidation`, `is_organization_trail` for scope `organization`; data events are a comment (event selectors must name the resources). A trail `ciamManagedBy` names someone else keeps (an organization trail the landing zone keeps) is a comment naming its keeper; one delivering to a CloudWatch log group is a `# NOTE` (that delivery also needs a role) |
 | Security services (core `estate`: `ciamSecurityService`) the platform team keeps | threat-detection: `aws_guardduty_detector` (its foundational sources watch control-plane, identity and network) and an `aws_guardduty_detector_feature` per further area (storage `S3_DATA_EVENTS`; containers `EKS_AUDIT_LOGS` and `RUNTIME_MONITORING` with the EKS add-on and Fargate agent; compute `EBS_MALWARE_PROTECTION` and `RUNTIME_MONITORING` with the EC2 agent; databases `RDS_LOGIN_EVENTS`; applications `LAMBDA_NETWORK_LOGS`; key-vaults a comment). vulnerability-scanning: `aws_inspector2_enabler` (EC2, ECR, LAMBDA/LAMBDA_CODE from the areas; EC2 and ECR by default). config-recording: `aws_config_configuration_recorder` through AWS Config's service-linked role, its delivery channel to the bucket of the object store its `ciamFindingsRole` names (none: a `# NOTE`), `aws_config_retention_configuration` from `ciamRetentionDays` (30 to 2557), the recorder status. posture: `aws_securityhub_account` (consolidated control findings) and an `aws_securityhub_standards_subscription` per standard Security Hub has (`cis` v5.0.0, `nist-800-53-r5`, `nist-800-171-r2`, `pci-dss`; baselines `aws-foundational`, `aws-resource-tagging`; partition and region from data sources), the rest a comment. Findings of GuardDuty, Inspector and Security Hub go to the SNS topic or log group (`ciamProviderRef`) of the binding `ciamFindingsRole` names through an `aws_cloudwatch_event_rule` and target; those at or above `ciamIncidentSeverity` (high by default) also go to the incident process (`ciamIncidentRole`'s topic or log group) through a second rule filtering on severity: GuardDuty's numeric `detail.severity` (low 1, medium 4, high 7, critical 9 and up), Security Hub's `detail.findings.Severity.Label` and Inspector's `detail.severity` (the labels at or above it); AWS Config has no finding severity (a `# NOTE`). Organization scope, every region, and services `ciamManagedBy` names someone else as keeper are comments |
+| Data discovery (core `estate`: `ciamDataDiscovery`) the platform team keeps | Amazon Macie: `aws_macie2_account` (enabled, findings every fifteen minutes); an `aws_macie2_custom_data_identifier` per own data type (`ciamCustomIdentifier` `name: regex`); per discovery a `SCHEDULED` `aws_macie2_classification_job` over the S3 buckets of the object stores `ciamScansRole` names, in the cloud's account (`ciamAccountRef`; none: a `# NOTE`), `schedule_frequency` daily / weekly (`SUNDAY`) / monthly (day 1) from `ciamRescanDays` (1; up to 7; more), with those identifiers; stores that aren't S3 buckets are a comment (Macie examines S3 only). Findings go where `ciamFindingsRole` says through an EventBridge rule (`aws.macie`, `Macie Finding`), as the security services' do; detailed results to the bucket of the object store `ciamResultsRole` names (`aws_macie2_classification_export_configuration`, with that store's KMS key, which Macie requires; otherwise a `# NOTE`). In GovCloud, rendered as an add-on with a comment: AWS's FedRAMP services-in-scope page marks Macie for US East/West only and no GovCloud endpoint was found (2026-10-08) |
 | Suppressions of findings (core `estate`: `ciamSuppression`, carrying out an exception) the platform team keeps | Named `exc-<exception>`: an `aws_securityhub_automation_rule` matching the suppression's `aws:securityhub:<control>` refs (`compliance_security_control_id` `EQUALS`) that sets workflow status `SUPPRESSED` and notes the exception and its expiry; an `aws_guardduty_filter` (`ARCHIVE`, `data aws_guardduty_detector`) for its `aws:guardduty:<type>` refs. Neither takes an expiry (a comment says when to remove it); GovCloud's unavailable automation rules for integrations, other providers' refs and suppressions someone else keeps are comments |
 | Required roles without a binding | `# UNBOUND: required role …` |
 
@@ -30,7 +31,8 @@ Not rendered: the VPC, subnets, NAT gateways, buckets, Elastic IPs and Route 53 
 
 ## Planner checks
 
-- `check_boundary`: the AWS services the target uses, named as AWS's FedRAMP Certification Package Overviews name them (servers: Amazon Elastic Compute Cloud (EC2); databases by engine: Amazon RDS for Postgres, ...; object stores: Amazon Simple Storage Service (S3); service names: Elastic Load Balancing (ELB); and so on), checked against the in-scope list of the authorization the target relies on (core `estate`: blockers where the target must rely on one). Neither of AWS's lists (2026-08) names Elastic Load Balancing, EC2 Auto Scaling, Data Lifecycle Manager, Site-to-Site VPN, Transit Gateway or CloudWatch Synthetics: a target using them is told so, to confirm with AWS or record an exception.
+- `check_boundary`: the AWS services the target uses, named as AWS's FedRAMP Certification Package Overviews name them (servers: Amazon Elastic Compute Cloud (EC2); databases by engine: Amazon RDS for Postgres, ...; object stores: Amazon Simple Storage Service (S3); service names: Elastic Load Balancing (ELB); and so on), checked against the in-scope list of the authorization the target relies on (core `estate`: blockers where the target must rely on one). Neither of AWS's lists (2026-08) nor its services-in-scope page (2026-10-08) names Elastic Load Balancing, EC2 Auto Scaling, Data Lifecycle Manager, Site-to-Site VPN, Transit Gateway or CloudWatch Synthetics. Two are covered by a listed service on AWS's own word, shown as in place with the basis: Data Lifecycle Manager (the EBS user guide: assessed as a capability of Amazon EBS; any program listing EBS applies to it) and Site-to-Site VPN (a feature of Amazon VPC in the EC2 API; the scope page counts generally available features of a listed service in scope unless specifically excluded). The others have APIs of their own and no row: a target using them is told so, to check AWS's SSP (the FedRAMP Partner Package in AWS Artifact), use a service in scope, or record an exception.
+- `check_discovery_availability`: a GovCloud target that records data discovery the platform keeps gets an action: Macie is marked for US East/West only on AWS's FedRAMP services-in-scope page and no GovCloud endpoint was found (rendered as an add-on).
 
 ## Edge: traffic and protection policies
 
@@ -65,7 +67,7 @@ Nothing is rendered into a zone whose binding names `ciamManagedBy` (someone out
 |---|---|
 | A service name | Its Route 53 alias record (a recorded `ciamTtlSeconds` doesn't apply to an alias: a comment); routed, with `set_identifier` (the environment) and a failover or weighted routing policy, the other environments' answers as A records with their TTL, each with a TCP `aws_route53_health_check` on its address and first port |
 | DNS records (`ciamDnsRecord`) | `aws_route53_record` in the zone the record's name falls in (the zone binding's `ciamProviderRef`, public or private), type, `ciamTtlSeconds` (300 when not recorded), values; no zone bound: an `UNBOUND` comment |
-| Outbound forwarders (`ciamDnsForwarder`) | Per domain an `aws_route53_resolver_rule` (`FORWARD`, a `target_ip` per `ciamForwardTarget` on port 53) through `var.resolver_endpoint_id` (the landing zone's outbound Resolver endpoint; the variable is declared only when there are forwarders) and its association with the VPC. Inbound forwarders are the landing zone's inbound endpoint: a comment |
+| Outbound forwarders (`ciamDnsForwarder`) | Per domain an `aws_route53_resolver_rule` (`FORWARD`, a `target_ip` per `ciamForwardTarget` on port 53) through `var.resolver_endpoint_id` (the landing zone's outbound Resolver endpoint; the variable is declared only when there are forwarders) and its association with the VPC. Inbound forwarders are the landing zone's inbound endpoint: a comment. A forwarder on the environment's own DNS servers (`ciamResolverHost`: EC2 instances) gets no rule; the variable is declared only for managed forwarders: a comment says what those servers must forward and that the network's DNS servers point at them |
 
 ### CDN
 
@@ -152,6 +154,7 @@ The importer `aws/terraform-state` reads Terraform state (format version 4, `has
 | `aws_cloudtrail` | audit trail (`ciamAuditTrail`, role `audit-trail` unless tagged): `organization` or `account` (`is_organization_trail`), the activity its event selectors record (basic or advanced; none: `control-plane`), all regions, integrity validation, and where its records go (`ciamLogDestinationRole`: the role of its bucket's object store, or of its CloudWatch log group). The CLI's `cloudtrail describe-trails`, `get-event-selectors` and `list-tags`, and CloudFormation's `AWS::CloudTrail::Trail`, are read the same way | ARN (`ciamProviderRef`) |
 | `aws_guardduty_detector` (+ `_feature`, legacy `datasources`, `aws_guardduty_organization_configuration`), `aws_inspector2_enabler`, `aws_config_configuration_recorder` (+ its delivery channel, `aws_config_retention_configuration`), `aws_securityhub_account` (+ `aws_securityhub_standards_subscription`, `_organization_configuration`) | security service (`ciamSecurityService`, role its kind unless tagged): kind, the areas a detector's features or Inspector's resource types watch, the standards and AWS baselines subscribed, organization or account, retention, and where findings go (`ciamFindingsRole`: the SNS topic or log group an EventBridge rule for the service's findings targets, or the recorder's delivery bucket), and the incident route (`ciamIncidentRole`, `ciamIncidentSeverity`: the target of a rule filtering the findings on severity, and the least severity it lets through). An SNS topic findings go to is an alert channel | ARN, or `inspector2:`/`config-recorder:` ids |
 | `aws_securityhub_automation_rule` setting workflow `SUPPRESSED`, `aws_guardduty_filter` with action `ARCHIVE` | suppression (`ciamSuppression`, role `suppression-<exception>`): merged per name, the controls (`aws:securityhub:<control>`) and finding types (`aws:guardduty:<type>`) it hides, its exception from the name `exc-<cn>` (linked when the record holds it; else the planner says no exception covers it) | the rule's ARN |
+| `aws_macie2_classification_job` (`SCHEDULED`; + `aws_macie2_custom_data_identifier`, `aws_macie2_classification_export_configuration`) | data discovery (`ciamDataDiscovery`, role `data-discovery`): the buckets it examines as the object stores' roles (`ciamScansRole`), its schedule as days, its custom identifiers (`name: regex`), where findings go (the target of the EventBridge rule for `aws.macie`) and results (the export configuration's bucket) | the job's ARN or id |
 | `aws_cloudwatch_metric_alarm` | alarm the cloud runs (`ciamAlarmBinding`): what it evaluates (`ciamMetric`: namespace and metric, or `metric query`), the topics it notifies (`ciamNotifies`), the alert rule it realizes (`ciamRealizes`, its tag `Realizes`). Its binding role is its tag `Role` or `BindingRole`, else `alarm-<Realizes>`; untagged alarms are named, not recorded | ARN (`ciamProviderRef`) |
 | `aws_synthetics_canary` | synthetic check the cloud runs (`ciamCanaryBinding`): its `rate(...)` schedule as an interval (`5m`), the canary it realizes (tag `Realizes`); binding role as for alarms, else `canary-<Realizes>` | ARN (`ciamProviderRef`) |
 | `aws_iam_role` (+ `aws_iam_role_policy`, `aws_iam_role_policy_attachment`, `aws_iam_policy`) | identity binding (`ciamIdentityBinding`, kind `role`, `federated` when an OIDC provider may assume it): who may assume it (`ciamTrustedBy`: a service, `<issuer URL> <subject>` per OIDC subject, a principal ARN), the grants and denials of its inline and attached policies, its permissions boundary's allows as its ceiling (`ciamBoundary`); role from its tag `Role` | role ARN, else its name |
@@ -244,6 +247,63 @@ An EBS volume attached to one of the environment's instances without a `Volume` 
 | `aws_backup_plan` (+ its `aws_backup_selection`s) | backup plan, from its first rule: every hours and start time (from the cron expressions this adapter writes; another is named), start window in hours, retention in days, the regions its copies go to, its vault; the roles its selections' `Role` tags choose |
 
 A plan with several rules is named (the first is read); a selection choosing resources by ARN rather than by tag is named (what it protects isn't read).
+
+## Collecting from AWS (`opsdir collect`)
+
+`opsdir collect --env CLOUD/ENV --adapter aws` reads what the two importers below read, read-only, under your own
+AWS CLI login (`opsdir_adapter_aws.collect`), and imports it like an export you saved:
+
+- First `aws sts get-caller-identity`: its `Account` must be the cloud's `ciamAccountRef`, or nothing is read.
+- `aws/cli-inventory`: every call of the script below, as exact calls in rounds (the listings in the environment's
+  VPC, its network binding's provider ref, and the cloud's `ciamRegion`; then each item's details), all `--output
+  json --region <region>`, with `AWS_USE_FIPS_ENDPOINT=true` when the cloud records FIPS endpoints. Per-bucket settings
+  and bucket policies are read for the buckets the environment records only; secret resource policies for the secrets
+  it references only. Lambda functions, CodeBuild projects, Scheduler schedules, EventBridge targets, CodePipeline
+  pipelines and CloudFront distributions are projected (`--query`) to the fields the importer reads, so environment
+  variables, inputs, action configuration and origin custom headers are never fetched. A resource without a setting
+  (no bucket policy, no Shield Advanced subscription, a key without rotation support) leaves its file out. Organization
+  control policies need the management account: not collected (save and import them as below).
+- `aws/terraform-state`: (a) by default the state object a collection source names, read with `aws s3 cp URI -` (no
+  `terraform init`, no lock):
+
+  ```ldif
+  dn: cn=tf-state,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+  objectClass: ciamCollectionSource
+  ciamBindingRole: collect-tf-state
+  ciamImporter: aws/terraform-state
+  ciamSourceRef: s3://example-ciam-tf-state/env:/prod/ciam/terraform.tfstate
+  ```
+
+  (b) `--terraform-dir DIR`: `terraform state pull` in that initialized working directory, the backend as configured
+  there.
+
+Least privilege: a role with exactly these actions (AWS managed read-only policies grant more, some of it data):
+`ec2:DescribeVpcs`, `ec2:DescribeSubnets`, `ec2:DescribeInstances`, `ec2:DescribeSecurityGroups`,
+`ec2:DescribeSecurityGroupRules`, `ec2:DescribeNatGateways`, `ec2:DescribeRouteTables`, `ec2:DescribeNetworkAcls`,
+`ec2:DescribeVpcEndpoints`, `ec2:DescribeVpcEndpointServiceConfigurations`, `ec2:DescribeVpcEndpointServicePermissions`,
+`ec2:DescribeVpcPeeringConnections`, `ec2:DescribeTransitGatewayVpcAttachments`, `ec2:DescribeVpnConnections`,
+`ec2:DescribeCustomerGateways`, `ec2:DescribeVpnGateways`, `ec2:DescribeFlowLogs`, `ec2:DescribeVolumes`;
+`elasticloadbalancing:DescribeLoadBalancers`, `DescribeTargetGroups`, `DescribeListeners`, `DescribeTags`,
+`DescribeLoadBalancerAttributes`, `DescribeTargetHealth`, `DescribeTargetGroupAttributes`;
+`secretsmanager:ListSecrets`, `secretsmanager:GetResourcePolicy`; `kms:ListKeys`, `kms:DescribeKey`,
+`kms:GetKeyRotationStatus`, `kms:GetKeyPolicy`; `s3:ListAllMyBuckets`, `s3:GetBucketVersioning`,
+`s3:GetBucketObjectLockConfiguration`, `s3:GetEncryptionConfiguration`, `s3:GetBucketPublicAccessBlock`,
+`s3:GetLifecycleConfiguration`, `s3:GetReplicationConfiguration`, `s3:GetBucketPolicy` (and `s3:GetObject` on the
+Terraform state object only); `lambda:ListFunctions`, `lambda:ListTags`; `events:ListRules`,
+`events:ListTargetsByRule`; `scheduler:ListSchedules`, `scheduler:GetSchedule`; `codepipeline:ListPipelines`,
+`codepipeline:GetPipeline`; `codebuild:ListProjects`, `codebuild:BatchGetProjects`; `wafv2:ListWebACLs`,
+`wafv2:GetWebACL`, `wafv2:ListResourcesForWebACL`, `wafv2:ListIPSets`, `wafv2:GetIPSet`; `shield:ListProtections`;
+`cloudfront:ListDistributions`; `route53:ListHostedZones`, `route53:ListResourceRecordSets`;
+`route53resolver:ListResolverRules`; `network-firewall:ListRuleGroups`, `DescribeRuleGroup`, `ListFirewallPolicies`,
+`DescribeFirewallPolicy`, `ListFirewalls`, `DescribeFirewall`; `rds:DescribeDBInstances`, `DescribeDBClusters`,
+`DescribeDBSubnetGroups`, `DescribeDBParameterGroups`, `DescribeDBParameters`, `DescribeDBClusterParameterGroups`,
+`DescribeDBClusterParameters`; `dlm:GetLifecyclePolicies`, `dlm:GetLifecyclePolicy`; `backup:ListBackupVaults`,
+`ListTags`, `ListBackupPlans`, `GetBackupPlan`, `ListBackupSelections`, `GetBackupSelection`;
+`cloudtrail:DescribeTrails`, `GetEventSelectors`, `ListTags`; `iam:GetAccountAuthorizationDetails`;
+`sso:ListInstances`, `ListPermissionSets`, `DescribePermissionSet`, `GetInlinePolicyForPermissionSet`,
+`ListManagedPoliciesInPermissionSet`, `ListAccountAssignments`. `sts:GetCallerIdentity` needs no permission. The
+tests pin every (service, operation) the collector may run (`tests/test_aws_collect.py`, OPERATIONS) and refuse any
+call that returns secret material.
 
 ## Reading an environment from the AWS CLI
 

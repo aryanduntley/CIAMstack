@@ -1839,9 +1839,9 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.421 NAME 'ciamChangeRecords' DESC 'T
  .15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdi
  r' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.422 NAME 'ciamImporter' DESC 'The im
- porter an import run used, as adapter/importer' EQUALITY caseIgnoreMatch SY
- NTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALU
- E-TYPE 'string' X-ORIGIN 'opsdir' )
+ porter an import run used (or a collection source feeds), as adapter/import
+ er' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VA
+ LUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.423 NAME 'ciamImportScope' DESC 'The
   parts of the record an import run read back (bindings of an environment, a
   product\27s objects): what it made match the live system (DNs, not referen
@@ -2240,11 +2240,11 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.502 NAME 'ciamSecurityBaseline' DESC
  LITY 'binding' X-VALUE-TYPE 'string' X-PATTERN '[a-z0-9]+(-[a-z0-9]+)*' X-O
  RIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.503 NAME 'ciamFindingsRole' DESC 'Th
- e role of the binding a security service\27s findings (or recorded configur
- ation) go to: an alert channel, a log destination, an object store, a strea
- m (a topic); none: they stay in the service' EQUALITY caseIgnoreMatch SYNTA
- X 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE
- -TYPE 'string' X-ORIGIN 'opsdir' )
+ e role of the binding a security or data discovery service\27s findings (or
+  recorded configuration) go to: an alert channel, a log destination, an obj
+ ect store, a stream (a topic); none: they stay in the service' EQUALITY cas
+ eIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILIT
+ Y 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.504 NAME 'ciamQuotaKind' DESC 'What 
  a quota counts, by a kind every cloud limits: vcpus (the region\27s standar
  d machines), public-ips, networks, load-balancers, database-instances, kube
@@ -2660,6 +2660,66 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.591 NAME 'ciamImplementation' DESC '
  How the operator meets a control its authorization leaves to it' EQUALITY c
  aseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABIL
  ITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.592 NAME 'ciamResolverHost' DESC 'A 
+ DNS server on the environment\27s own machines that does the forwarding, in
+ stead of the platform\27s managed resolver; the network\27s DNS settings po
+ int at it' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-
+ PORTABILITY 'binding' X-VALUE-TYPE 'ip' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.593 NAME 'ciamScansRole' DESC 'The r
+ ole of a store a data discovery service examines for sensitive data (an obj
+ ect store, a database, a volume)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4
+ .1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN
+  'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.594 NAME 'ciamCustomIdentifier' DESC
+  'A data type of the organization\27s own a data discovery service looks fo
+ r, as `name: regular expression` (CUI markings, employee or contract number
+ s); the clouds\27 built-in detectors are theirs' EQUALITY caseIgnoreMatch S
+ YNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'st
+ ring' X-PATTERN '[a-z][a-z0-9-]{0,62}: \5CS.*' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.595 NAME 'ciamRescanDays' DESC 'How 
+ often a data discovery service examines its stores again, in days (1 daily,
+  7 weekly, 30 monthly)' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.1
+ 21.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int' X-MIN '1' X-
+ ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.596 NAME 'ciamResultsRole' DESC 'The
+  role of the binding a data discovery service keeps its detailed results in
+  (an object store): the record of where sensitive data was found' EQUALITY 
+ caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABI
+ LITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.597 NAME 'ciamSourceRef' DESC 'Where
+  a collection source is read: an endpoint URL (https://host:port) or a stor
+ ed object (s3://bucket/key, azblob://account/container/blob, gs://bucket/ob
+ ject: a Terraform state, its workspace prefix included)' EQUALITY caseIgnor
+ eMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'bin
+ ding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.598 NAME 'ciamCredentialRole' DESC '
+ The role of the binding holding the reference to the credential a collectio
+ n source is read with (resolved when collecting, held in memory for the cal
+ l, never stored)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.
+ 1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'op
+ sdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.599 NAME 'ciamCaRole' DESC 'The role
+  of the certificate binding a collection source\27s TLS endpoint is trusted
+  by' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-V
+ ALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.600 NAME 'ciamLoginName' DESC 'The a
+ ccount a collection source\27s credential signs in as (a read-only service 
+ account)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SIN
+ GLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.601 NAME 'ciamCollectionIdentity' DE
+ SC 'Who the provider said the collector was when an import run\27s export w
+ as collected (its identity check: account, subscription, project)' EQUALITY
+  caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTAB
+ ILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.602 NAME 'ciamCollectedCall' DESC 'A
+  call that collected part of an import run\27s export: the SHA-256 of what 
+ it returned, the file it became and the command or URL (never a credential)
+ ' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILI
+ TY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.603 NAME 'ciamCollectionCredential' 
+ DESC 'A credential reference an import run\27s collection resolved (the ref
+ erence, never the value)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.
+ 115.121.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -3034,8 +3094,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.78 NAME 'ciamDnsRecord' DESC 'A DNS r
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.79 NAME 'ciamDnsForwarder' DESC 'A co
  nditional forwarder or resolver rule: the domains it forwards and the resol
  vers it forwards to' SUP ciamBinding STRUCTURAL MUST ( ciamForwardDomain $ 
- ciamForwardTarget ) MAY ( ciamForwardDirection $ ciamProviderRef ) X-ORIGIN
-  'opsdir' )
+ ciamForwardTarget ) MAY ( ciamForwardDirection $ ciamProviderRef $ ciamReso
+ lverHost ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.80 NAME 'ciamEdgeService' DESC 'A web
   application firewall, CDN, DDoS protection, API gateway or reverse proxy i
  n front of service names, and what it runs' SUP ciamBinding STRUCTURAL MUST
@@ -3083,9 +3143,12 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.90 NAME 'ciamFirewallPolicy' DESC 'A
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.91 NAME 'ciamImportRun' DESC 'The las
  t import by one importer of one environment (or of what environments share)
  : when the live system was read back, what it read and under which change (
- ciamChangeRef); what a fix that needs a fresh read checks' SUP ciamObject S
- TRUCTURAL MUST ( cn $ ciamImporter $ ciamImportScope $ ciamImportedAt ) X-O
- RIGIN 'opsdir' )
+ ciamChangeRef), and when opsdir collected the export itself, how (the ident
+ ity the provider saw, each call and the hash of what it returned, the crede
+ ntial references used); what a fix that needs a fresh read checks' SUP ciam
+ Object STRUCTURAL MUST ( cn $ ciamImporter $ ciamImportScope $ ciamImported
+ At ) MAY ( ciamCollectionIdentity $ ciamCollectedCall $ ciamCollectionCrede
+ ntial ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.92 NAME 'ciamExternalHost' DESC 'A sy
  stem the platform reaches but doesn\27t run (a database, a corporate direct
  ory), as this environment reaches it: its host name (and port); products na
@@ -3325,3 +3388,19 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.126 NAME 'ciamControlResponsibility'
  SUP ciamObject STRUCTURAL MUST ( cn $ ciamAuthorizationRef $ ciamControlRef
   $ ciamResponsibility ) MAY ( ciamCustomerAction $ ciamImplementation $ cia
  mExceptionRef $ ciamPoamRef $ ciamEvidenceRef ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.127 NAME 'ciamDataDiscovery' DESC 'A 
+ data discovery service an environment runs (Amazon Macie, Defender for Clou
+ d\27s sensitive data discovery, Sensitive Data Protection): the stores it e
+ xamines, the organization\27s own data types it looks for, how often, where
+  its findings go and where it keeps its results' SUP ciamBinding STRUCTURAL
+  MAY ( ciamScansRole $ ciamCustomIdentifier $ ciamRescanDays $ ciamFindings
+ Role $ ciamResultsRole $ ciamProviderRef $ ciamManagedBy ) X-ORIGIN 'opsdir
+ ' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.128 NAME 'ciamCollectionSource' DESC 
+ 'Where `opsdir collect` reads an environment for an importer that needs mor
+ e than the operator\27s own cloud login: a Terraform state object, or a pro
+ duct\27s admin endpoint (a URL, or the servers of a role on a port) with th
+ e credential and trust anchor it is read with: the operator\27s opt-in' SUP
+  ciamBinding STRUCTURAL MUST ciamImporter MAY ( ciamSourceRef $ ciamTargetR
+ ole $ ciamPort $ ciamCredentialRole $ ciamCaRole $ ciamLoginName ) X-ORIGIN
+  'opsdir' )

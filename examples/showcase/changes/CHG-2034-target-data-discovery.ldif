@@ -1,0 +1,20 @@
+# CHG-2034 (approved): production's Macie examines the directory backups weekly for sensitive data, the organization's
+# own types among it (CUI markings, employee numbers), and sends its findings to the security topic; the target runs no
+# data discovery, which blocks the move once DFARS 252.204-7012 holds it to FedRAMP Moderate (CHG-2029). The target
+# turns on Defender for Cloud's sensitive data discovery (the Defender CSPM extension) over its backups container, with
+# the same own data types (Purview custom sensitive information types: set up by hand) and its findings exported to
+# the security workspace.
+dn: cn=dspm,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamDataDiscovery
+cn: dspm
+ciamBindingRole: data-discovery
+ciamScansRole: backup-target
+ciamCustomIdentifier: cui-marking: CUI//[A-Z][A-Z/-]*
+ciamCustomIdentifier: employee-id: EA[0-9]{6}
+ciamRescanDays: 7
+ciamFindingsRole: security-findings
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Security/pricings/CloudPo
+ sture/SensitiveDataDiscovery
+ciamChangeRef: cn=CHG-2034,ou=changes,dc=ciam-ops

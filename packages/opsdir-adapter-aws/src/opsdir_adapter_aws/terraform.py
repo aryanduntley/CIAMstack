@@ -17,6 +17,7 @@ from opsdir.domains.edge.resolve import inspected, service_edge
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
 from .access import ACCESS
 from .audit import render_trails
+from .discovery import render_discovery
 from .security import render_security
 from .suppressions import render_suppressions
 from .budgets import BILLING, BILLING_REGION, billing_account, needs_billing_provider, render_budgets
@@ -156,7 +157,7 @@ def render(m, services):
            *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
-           *resolver_rules(m), *render_trails(m), *render_security(m), *render_suppressions(m), *render_budgets(m), *render_quota_requests(m),
+           *resolver_rules(m), *render_trails(m), *render_security(m), *render_discovery(m), *render_suppressions(m), *render_budgets(m), *render_quota_requests(m),
            *_references(m))
     unbound = unbound_comments(m.unbound)
     main = header(m, "AWS infrastructure for the CIAM platform", HCL) + unbound + "\n" + "\n\n".join(out) + "\n"
@@ -172,7 +173,7 @@ def render(m, services):
                           "standard account", account=billing_account(m)),) if needs_billing_provider(m) else ()),
         *((block("variable", [RESOLVER_ENDPOINT], [
             ("description", "The landing zone's outbound Route 53 Resolver endpoint the forwarding rules use"),
-            ("type", ref("string"))]),) if forwarders(m) else ()),
+            ("type", ref("string"))]),) if forwarders(m, hosted=False) else ()),
     ]) + "\n"
     return {"terraform/providers.tf": providers, "terraform/main.tf": main, **render_landing(m),
             **evaluation_files(m, ACCESS, "AWS")}

@@ -85,6 +85,10 @@ CHANGES = (
      "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2032", "Extend SSP-CIAM-2026 to the target and record how it meets SC-12 on Azure", "approved",
      "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2033", "Move the target's AD forwarder to the landing zone's DNS servers; accept its reset mail's service",
+     "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2034", "Turn on the target's sensitive data discovery over its backups (Defender CSPM)", "approved",
+     "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

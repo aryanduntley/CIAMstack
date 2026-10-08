@@ -26,7 +26,7 @@ from .access import ACCT, AWS_IDENTITIES
 from .cloud_common import by_role, hex_id, listed, rows_of, servers_of, service_named
 from .infrastructure import SECRET_ROLES, SOURCE
 from .observability import MONITORING, PAGE_TOPIC
-from .estate import CONFIG_BUCKET, COSTS, SECURITY
+from .estate import CONFIG_BUCKET, COSTS, MACIE_JOB, OWN_DATA_TYPES, SECURITY
 
 ACCOUNT, REGION = "111122223333", "us-east-1"
 
@@ -226,7 +226,9 @@ def _aws_security():
     """The source's security services as Terraform holds them: GuardDuty with its protection plans, Inspector, AWS
     Config recording into its bucket (kept 2557 days), Security Hub with its standards, and the EventBridge rules that
     send GuardDuty's, Inspector's and Security Hub's findings to the security topic, and GuardDuty's high and worse to
-    the incident topic too; the Security Hub automation rule suppressing IAM.6 (exception EXC-2026-01)."""
+    the incident topic too; the Security Hub automation rule suppressing IAM.6 (exception EXC-2026-01); Macie with its
+    weekly classification job over the directory backups' bucket, the own data types as custom data identifiers and
+    its findings rule."""
     by_cn = {cn: (role, a) for _, cn, role, a in SECURITY["source"]}
     topic = by_cn["security-alerts"][1]["ciamProviderRef"]
     incidents = by_cn["security-incidents"][1]["ciamProviderRef"]
@@ -234,7 +236,9 @@ def _aws_security():
     detector_id = detector.rsplit("/", 1)[1]
     hub = "arn:aws:securityhub:us-east-1::standards/"
     rules = (("guardduty", "aws.guardduty", "GuardDuty Finding"), ("inspector", "aws.inspector2", "Inspector2 Finding"),
-             ("security-hub", "aws.securityhub", "Security Hub Findings - Imported"))
+             ("security-hub", "aws.securityhub", "Security Hub Findings - Imported"),
+             ("macie-backups", "aws.macie", "Macie Finding"))
+    identifiers = [(f"cdi-{i}", *t.split(": ", 1)) for i, t in enumerate(OWN_DATA_TYPES, 1)]
     return [_res("managed", "aws_sns_topic", "security-alerts", {
                 "arn": topic, "name": topic.rsplit(":", 1)[1],
                 "tags": {"Role": "security-findings", "ManagedBy": "opsdir"}}),
@@ -278,6 +282,18 @@ def _aws_security():
                     "tags": {"ManagedBy": "opsdir"}}),
                 _res("managed", "aws_cloudwatch_event_target", f"{cn}-findings", {
                     "rule": f"{cn}-findings", "arn": topic, "target_id": "security-topic"}))),
+            _res("managed", "aws_macie2_account", "macie", {
+                "id": "111122223333", "finding_publishing_frequency": "FIFTEEN_MINUTES", "status": "ENABLED"}),
+            *(_res("managed", "aws_macie2_custom_data_identifier", f"cdi_{name.replace('-', '_')}", {
+                "id": cid, "name": name, "regex": rx, "arn": f"arn:aws:macie2:us-east-1:111122223333:custom-data-"
+                                                            f"identifier/{cid}"})
+              for cid, name, rx in identifiers),
+            _res("managed", "aws_macie2_classification_job", "macie-backups", {
+                "id": MACIE_JOB.rsplit("/", 1)[1], "arn": MACIE_JOB, "name": "macie-backups", "job_type": "SCHEDULED",
+                "job_status": "RUNNING", "schedule_frequency": [{"weekly_schedule": "SUNDAY"}],
+                "custom_data_identifier_ids": [cid for cid, _, _ in identifiers],
+                "s3_job_definition": [{"bucket_definitions": [{"account_id": "111122223333",
+                                                              "buckets": ["example-aero-ciam-prod-ds-backups"]}]}]}),
             _res("managed", "aws_sns_topic", "security-incidents", {
                 "arn": incidents, "name": incidents.rsplit(":", 1)[1],
                 "tags": {"Role": "security-incidents", "ManagedBy": "opsdir"}}),

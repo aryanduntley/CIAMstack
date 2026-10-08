@@ -95,7 +95,8 @@ _KNOWN = (("cis-aws-foundations-benchmark/", "cis", False), ("nist-800-53/", "ni
           ("aws-resource-tagging-standard/", "aws-resource-tagging", True))
 SOURCES = {"threat-detection": ("aws.guardduty", "GuardDuty Finding"),
            "vulnerability-scanning": ("aws.inspector2", "Inspector2 Finding"),
-           "posture": ("aws.securityhub", "Security Hub Findings - Imported")}
+           "posture": ("aws.securityhub", "Security Hub Findings - Imported"),
+           "data-discovery": ("aws.macie", "Macie Finding")}             # Macie (opsdir_adapter_aws.discovery)
 _HUB = "arn:${data.aws_partition.current.partition}:securityhub:${data.aws_region.current.name}::"
 # the least GuardDuty severity value of each level (GuardDuty's severity levels: low 1.0-3.9 .. critical 9.0-10.0)
 GUARDDUTY_FLOOR = {"low": 1, "medium": 4, "high": 7, "critical": 9}
@@ -178,7 +179,7 @@ def _hub(m, s):
                "(an AWS Audit Manager framework, a Config conformance pack), not rendered",) if missing else ()))
 
 
-def _routing(m, s, kind):
+def findings_routing(m, s, kind):
     """The EventBridge rule and target sending a service's findings where its ciamFindingsRole says, or a note."""
     cn, dest = rdn_value(s), findings_destination(m, s)
     if dest is None or kind not in SOURCES:
@@ -249,7 +250,7 @@ def _service(m, s):
         holder = get(m.d, keeper)
         return (f"# Security service {rdn_value(s)} ({kind}): kept by "
                 f"{rdn_value(holder) if holder is not None else keeper}, not rendered here",)
-    return (*_RENDER[kind](m, s), *_routing(m, s, kind), *_incident_routing(m, s, kind), *_notes(m, s))
+    return (*_RENDER[kind](m, s), *findings_routing(m, s, kind), *_incident_routing(m, s, kind), *_notes(m, s))
 
 
 def render_security(m):
@@ -321,7 +322,7 @@ def _targets(pairs):
                  for src, least in rules.get(t.get("rule"), ()))
 
 
-def _routes(pairs):
+def findings_routes(pairs):
     """{event source: the ARN its findings rule (no severity filter) targets}."""
     return {src: arn for src, least, arn in _targets(pairs) if least is None}
 
@@ -362,7 +363,7 @@ def _incident_severity(incidents, source):
 
 def security_resources(pairs):
     """Security services of (Terraform resource type, attributes) pairs."""
-    routes, incidents = _routes(pairs), _incidents(pairs)
+    routes, incidents = findings_routes(pairs), _incidents(pairs)
     found = of_types(pairs, FEATURE)
     features = {i: [f for f in found if f.get("detector_id") == i] for i in {f.get("detector_id") for f in found}}
     buckets = {c.get("name"): c.get("s3_bucket_name") for c in of_types(pairs, CHANNEL)}

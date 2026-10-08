@@ -38,6 +38,17 @@
                                        applied import records when each scope it read was last imported; --run: run
                                        the importer's provider command(s) for the export instead of reading PATH,
                                        under your own login to the provider (opsdir never sees the credentials)
+  opsdir collect [--env CLOUD/ENV] [--adapter A[/I]] [--list] [--dry-run] [--change CHG-…] [--save DIR]
+                 [--terraform-dir DIR] [--amster-key PATH] [--ldapsearch PATH] [--ldap-truststore PATH]
+                 [--ldap-ca PATH] [--at YYYYMMDDhhmmssZ] [--take K|all] [--keep K|all]
+                                       read the live system for the installed adapters' importers, read-only: each
+                                       collector's calls (your own provider login; credentials the record references
+                                       resolved for the run, never stored), after a check that the login is the
+                                       account the record names; a complete export goes through the import as
+                                       `import` does (an incomplete one is never imported), and an applied one records
+                                       how it was collected; without --env: provider-wide data (regions, quotas);
+                                       --list: the calls each collector starts with, nothing run; --save: keep the
+                                       raw export (it may hold sensitive configuration: keep it on encrypted storage)
   opsdir data-profile --env CLOUD/ENV [LDIF] [--term NAME=ATTRIBUTE[=VALUE]]... [--at YYYYMMDDhhmmssZ] [-o FILE]
                                        the shape of a directory's user data, values-free: reads LDIF (ldapsearch
                                        output or an export; default standard input) once and writes counts only, for
@@ -64,8 +75,8 @@ import subprocess
 import sys
 from types import MappingProxyType
 
-from . import operations as ops
-from .connectors import fixes as fixmod, importing, migration, workspace
+from . import live, operations as ops
+from .connectors import collecting, fixes as fixmod, importing, migration, registry, workspace
 from .connectors.prerequisites import command_line
 from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS
 from .connectors.stack import STATUS_HEADERS
@@ -76,6 +87,7 @@ from .core.findings import fix_inputs
 from .core.interchange import ldif
 from .core.interchange.export import export_text  # noqa: F401  (callers import it from here)
 from .core.naming import SUFFIX
+from .domains.governance.collection import declared_adapters
 from .store import postgres as db
 
 # subcommand → ((argument flags, argparse options), …)
@@ -122,6 +134,24 @@ SUBCOMMANDS = (
                                "help": "a conflict where the live value goes in (KEY as listed, or all)"}),
                 (("--keep",), {"action": "append", "default": [], "metavar": "KEY",
                                "help": "a conflict where the record's value stays (KEY as listed, or all)"}))),
+    ("collect", ((("--env",), {"help": "CLOUD/ENV to read (default: provider-wide data: regions, quotas)"}),
+                 (("--adapter",), {"help": "only this adapter[/importer]"}), (("--change",), {}),
+                 (("--list",), {"action": "store_true", "help": "the calls each collector starts with; run nothing"}),
+                 (("--dry-run",), {"action": "store_true",
+                                   "help": "collect and list the change records; apply nothing"}),
+                 (("--save",), {"metavar": "DIR", "help": "keep the raw export under DIR (may hold sensitive config)"}),
+                 (("--terraform-dir",), {"metavar": "DIR",
+                                         "help": "read Terraform state with `terraform state pull` in DIR"}),
+                 (("--amster-key",), {"metavar": "PATH", "help": "the private key AM trusts for Amster (not stored)"}),
+                 (("--ldapsearch",), {"metavar": "PATH", "help": "the directory product's ldapsearch (default: PATH)"}),
+                 (("--ldap-truststore",), {"metavar": "PATH",
+                                           "help": "truststore checking the directory's certificate"}),
+                 (("--ldap-ca",), {"metavar": "PATH", "help": "CA certificate (PEM) for the data profile's search"}),
+                 (("--at",), {"help": "when the export is taken, YYYYMMDDhhmmssZ (UTC; default: now)"}),
+                 (("--take",), {"action": "append", "default": [], "metavar": "KEY",
+                                "help": "a conflict where the live value goes in (KEY as listed, or all)"}),
+                 (("--keep",), {"action": "append", "default": [], "metavar": "KEY",
+                                "help": "a conflict where the record's value stays (KEY as listed, or all)"}))),
     ("setting", ((("name",), {"help": "an estate setting (opsdir report settings lists them)"}), (("value",), {}),
                  (("--change",), {}),
                  (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}))),
@@ -477,6 +507,93 @@ def _cmd_import(conn, a, as_of):
     return "\n".join((*notes, f"{a.change}: {len(r.lines)} change(s) applied, the import run among them"))
 
 
+def _targets(d, a):
+    """((adapter, collector), environment model or None) of a collect: the environment's applicable adapters'
+    environment collectors, or every installed adapter's estate ones."""
+    if a.env:
+        m, adapters = registry.environment(d, a.env)
+        named = declared_adapters(m)
+        opted = tuple(x for x in ADAPTERS if x.name in named and x not in adapters)
+        return collecting.chosen((*adapters, *opted), "environment", a.adapter, m), m
+    return collecting.chosen(ADAPTERS, "estate", a.adapter), None
+
+
+def _identity(adapter, collector, d, m, resolve):
+    """(identity seen, problem) of a collector's identity check (None, None without one)."""
+    check = collector.verify(d, m) if collector.verify else None
+    if check is None:
+        return None, None
+    call, judge = check
+    out, problem = live.run_call(call, resolve)
+    if problem:
+        return None, f"{adapter.name}: identity check `{collecting.provenance(call)}` failed: {problem}"
+    found = judge(out)
+    return " ".join(out.split())[:300], (f"{adapter.name}: {found}: nothing read" if found else None)
+
+
+def _save(root, c):
+    """Effect: the raw export of a complete collection and its manifest under root/<adapter>/<importer>/."""
+    base = pathlib.Path(root) / c.importer
+    for rel, text in c.files.items():
+        (base / rel).parent.mkdir(parents=True, exist_ok=True)
+        (base / rel).write_text(text)
+    (base / "MANIFEST.txt").write_text("".join(f"{x.sha256} {x.path} <- {x.provenance}\n" for x in c.calls))
+    return f"saved {len(c.files)} file(s) under {base} (raw provider output: keep it on encrypted storage)"
+
+
+def _collected(conn, a, c):
+    """What one collection leads to: its problems (not imported), or its import previewed or applied."""
+    if c.problems:
+        return (f"{c.importer}: incomplete, not imported", *(f"  {p}" for p in c.problems))
+    if not c.calls:
+        return (f"{c.importer}: nothing to collect here (its collection sources: ciamCollectionSource)",)
+    saved = (_save(a.save, c),) if a.save else ()
+    plan = ops.preview_import(conn, c.importer, c.files, import_time(a.at))
+    head = (f"{c.importer}: {len(c.calls)} call(s) as {c.identity or 'your provider login'}", *saved,
+            *plan.notices, *_conflict_lines(plan.conflicts))
+    if a.dry_run or not a.change:
+        return (_not_applied(head, plan.changes, a.dry_run),)
+    try:
+        r = ops.apply_import(conn, plan, a.change, a.take, a.keep, collecting.evidence(c))
+    except ValueError as e:
+        return (*head, f"{c.importer}: not applied: {e}")
+    return (*head, f"{a.change}: {len(r.lines)} change(s) applied for {c.importer}, the import run among them")
+
+
+def _listed(d, m, targets, options):
+    return "\n".join(line for adapter, c in targets for line in (
+        f"{adapter.name}/{c.importer}:",
+        *((f"  check  {collecting.provenance(c.verify(d, m)[0])}",) if c.verify and c.verify(d, m) else ()),
+        *(f"  {path}  {collecting.provenance(call)}" for path, call in collecting.first_calls(c, d, m, options))))
+
+
+def _cmd_collect(conn, a, as_of):
+    d = db.load_directory(conn)
+    targets, m = _targets(d, a)
+    if not targets:
+        raise SystemExit(f"nothing to collect {'for ' + a.env if a.env else 'provider-wide'}"
+                         f"{' with ' + a.adapter if a.adapter else ''}")
+    captured = import_time(a.at)
+    options = {**{k: v for k, v in (("terraform_dir", a.terraform_dir), ("amster_key", a.amster_key),
+                                    ("ldapsearch", a.ldapsearch), ("ldap_truststore", a.ldap_truststore),
+                                    ("ldap_ca", a.ldap_ca)) if v},
+               "profile": lambda lines: ops.data_profile(lines, a.env, captured.date(), captured)} if a.env else \
+        {k: v for k, v in (("terraform_dir", a.terraform_dir),) if v}
+    if a.list:
+        return _listed(d, m, targets, options)
+    resolve = live.resolver()
+    checking = {adapter.name: (adapter, c) for adapter, c in reversed(targets) if c.verify}
+    checked = {name: _identity(adapter, c, d, m, resolve) for name, (adapter, c) in checking.items()}
+    seen = {name: (None, None) for name in {adapter.name for adapter, _ in targets}} | checked
+    outcomes = [(adapter, c, seen[adapter.name][1] or collecting.collect(
+                    f"{adapter.name}/{c.importer}", c, d, m, lambda call: live.run_call(call, resolve), options,
+                    seen[adapter.name][0])) for adapter, c in targets]
+    lines = [line for adapter, c, o in outcomes for line in (
+        (f"{adapter.name}/{c.importer}: skipped: {o}",) if isinstance(o, str) else _collected(conn, a, o))]
+    failed = any(isinstance(o, str) or o.problems for _, _, o in outcomes)
+    return "\n".join(lines), (1 if failed else 0)
+
+
 def _cmd_census(conn, a, as_of):
     files, skipped = read_texts(a.path)
     preview = ops.preview_census(conn, files, a.replace)
@@ -569,7 +686,8 @@ def _cmd_workspace(conn, a, as_of):
 COMMANDS = MappingProxyType({"init": _cmd_init, "upgrade": _cmd_upgrade, "load": _cmd_load, "check": _cmd_check,
                              "search": _cmd_search, "report": _cmd_report, "render": _cmd_render, "plan": _cmd_plan,
                              "migrate": _cmd_migrate, "fix": _cmd_fix, "modify": _cmd_modify, "export": _cmd_export,
-                             "history": _cmd_history, "capture": _cmd_capture, "import": _cmd_import, "file": _cmd_file,
+                             "history": _cmd_history, "capture": _cmd_capture, "import": _cmd_import,
+                             "collect": _cmd_collect, "file": _cmd_file,
                              "prerequisites": _cmd_prerequisites,
                              "bundle": _cmd_bundle, "verify": _cmd_verify, "census": _cmd_census, "setting": _cmd_setting,
                              "data-profile": _cmd_data_profile, "workspace": _cmd_workspace})

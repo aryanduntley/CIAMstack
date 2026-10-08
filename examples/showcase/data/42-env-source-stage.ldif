@@ -27,6 +27,7 @@ ciamDropsRole: vulnerability-scanning
 ciamDropsRole: config-recording
 ciamDropsRole: suppression-EXC-2026-01
 ciamDropsRole: posture
+ciamDropsRole: data-discovery
 ciamDropsRole: quota-vcpus
 ciamDropsRole: quota-public-ips
 ciamDropsRole: quota-database-instances

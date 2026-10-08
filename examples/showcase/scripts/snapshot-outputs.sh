@@ -113,10 +113,13 @@ cap 08-apply-chg-2029 od modify --change CHG-2029 changes/CHG-2029-target-incide
 cap 08-apply-chg-2030 od modify --change CHG-2030 changes/CHG-2030-target-exceptions.ldif
 cap 08-apply-chg-2031 od import --change CHG-2031 --at 20260923090000Z fedramp/cpo exports/fedramp
 cap 08-apply-chg-2032 od modify --change CHG-2032 changes/CHG-2032-target-ssp-and-key-management.ldif
+cap 08-apply-chg-2033 od modify --change CHG-2033 changes/CHG-2033-target-boundary.ldif
+cap 08-apply-chg-2034 od modify --change CHG-2034 changes/CHG-2034-target-data-discovery.ldif
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions
 cap 08-report-residency od report residency
 cap 08-report-security-services od report security-services
+cap 08-report-data-discovery od report data-discovery
 cap 08-report-quotas od report quotas
 cap 08-report-budgets od report budgets
 cap 08-report-incident-reporting od report incident-reporting

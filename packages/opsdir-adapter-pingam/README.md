@@ -12,6 +12,18 @@ opsdir adapter for PingAM (ForgeRock AM): realms, OAuth2/OIDC clients, SAML, aut
 
 Installing the package registers it with opsdir (entry point `opsdir.adapters`: `pingam`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.
 
+## Collecting from PingAM (`opsdir collect`)
+
+`opsdir collect --env CLOUD/ENV --adapter pingam --amster-key PATH` runs Amster's `export-config` and imports its export
+(`opsdir_adapter_pingam.collect`). The environment declares AM's URL (`ciamCollectionSource`: `ciamImporter:
+pingam/amster`, `ciamSourceRef: https://am.example.test/am`); the private key Amster signs in with is your existing key
+file, whose public key AM trusts (`authorized_keys`), given when collecting and never stored. Amster runs a script in a
+private work directory (connect with the key, `export-config --failOnError` into the directory, exit), and the files
+it writes are the export; the directory is removed after. No transport key is configured, so encrypted passwords are
+not exported. Needs Amster on the path. Least privilege: Amster's key-based connection signs in as an administrative
+user (AM's `amAdmin` session): keep the key on the operator's workstation only, its public key trusted only from the
+addresses collection runs from.
+
 ## Egress through an explicit proxy
 
 When an environment's egress passes a proxy clients must be told about (a `ciamProxy` with `ciamProxyAddress` that isn't a firewall), PingAM needs its HTTP client's advanced server properties `org.forgerock.openam.httpclienthandler.system.proxy.uri` (`http://<host>:<port>`, which takes precedence over the JVM's proxy) and `org.forgerock.openam.httpclienthandler.system.nonProxyHosts` (comma-separated), and the standard Java proxy properties in its container's JVM options (`JAVA_OPTS`, setenv.sh) for what doesn't use that client. The record holds neither place, so the planner names what to set.

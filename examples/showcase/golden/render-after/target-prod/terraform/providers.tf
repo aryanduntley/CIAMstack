@@ -38,8 +38,3 @@ variable "budget_start_date" {
   description = "The first day of the month the budgets start from (YYYY-MM-01T00:00:00Z; changing it replaces them)"
   type        = string
 }
-
-variable "dns_forwarding_ruleset_id" {
-  description = "The landing zone's DNS forwarding ruleset the forwarding rules join"
-  type        = string
-}

@@ -44,3 +44,23 @@ from opsdir_adapter_ldap.dit import dit_ldif, tree
 ```
 
 Installing the package registers the adapter with opsdir (entry point `opsdir.adapters`: `ldap`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.
+
+### Collecting the profile (`opsdir collect`)
+
+`opsdir collect --env CLOUD/ENV --ldap-ca CA.pem` runs the search above itself and profiles it as it streams
+(`opsdir_adapter_ldap.collect`): nothing a value holds is held whole, written or kept, and the export is the profile's
+counts only. The environment declares the directory to read (a replica, preferably):
+
+```ldif
+dn: cn=profile,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: ciamCollectionSource
+ciamBindingRole: collect-data-profile
+ciamImporter: ldap/data-profile
+ciamSourceRef: ldaps://ds-replica.example.test:1636/ou=people,dc=example,dc=test
+ciamLoginName: uid=profiler,ou=admins,dc=example,dc=test
+ciamCredentialRole: profiler-password      # a binding whose ciamRefUri references the password
+```
+
+It runs OpenLDAP's `ldapsearch -x -y /dev/stdin` (the password only on its standard input), paged (`pr=1000`).
+Declaring the source opts the environment in (this adapter is otherwise declaration-only). Least privilege: an
+account with read, search and compare on the user branch, targetattr `*||+`, nothing else.

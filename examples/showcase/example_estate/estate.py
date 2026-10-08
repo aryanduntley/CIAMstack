@@ -25,6 +25,11 @@ account each cloud's environments run in (as the exports show them).
                800-171 Rev. 2 (actions); it records no configuration history while the source exports its (a
                blocker): approved change CHG-2024 records Azure's own (Resource Graph, 14 days), which leaves
                actions: the target keeps 14 days of it in the service, the source exports 2557
+  discovery    each environment's data discovery (SECURITY too): the source's Macie and the standby's Sensitive Data
+               Protection examine the directory backups weekly for sensitive data and the organization's own types
+               (OWN_DATA_TYPES: CUI markings, employee numbers), findings to the security topic; Macie is in the
+               source's Terraform state. Planted: the target runs none (an action, a blocker once CHG-2029 holds it
+               to DFARS) until CHG-2034 records Defender's sensitive data discovery over its backups
   quotas       what each environment needs of its provider's limits (COSTS: vCPUs, public addresses, database
                instances; stage shares production's account and needs nothing of its own) and the limits each
                provider's quota commands printed (exports/quotas/<provider>/, the real CLI output shapes, synthetic
@@ -60,7 +65,9 @@ account each cloud's environments run in (as the exports show them).
                Planted: the target is outside the SSP (an action) and nothing meets SC-12 on Azure (a blocker), until
                CHG-2032; the target sends mail through Azure Communication Services, which Microsoft's scope tables
                don't list (an action, a blocker once CHG-2029 holds the target to DFARS), and once CHG-2015 gives it
-               a DNS Private Resolver forwarder, that isn't listed either (a blocker)
+               a DNS Private Resolver forwarder, that isn't listed either (a blocker); CHG-2033 moves the forwarder to
+               the landing zone's DNS servers (virtual machines, in scope) and approves exception EXC-2026-04 for the
+               reset mail (it carries no CUI): shown as accepted
   budgets      what each environment may spend: the source 25000 USD a month (alerts at 80% and 100% spent and 100%
                forecast to its paging channel; AWS Budgets in its Terraform state), the standby 12000 USD on the
                billing account its cloud names (rendered in its landing zone). Planted: the target has no budget (a
@@ -102,6 +109,11 @@ _WORKSPACE = (f"{_SUB}/resourceGroups/rg-ciam-prod/providers/Microsoft.Operation
 _PROJECT = "projects/example-aero-ciam-standby"
 _ALL = {"ciamAuditScope": "account", "ciamAllRegions": "TRUE", "ciamFindingsRole": "security-findings"}
 _INCIDENTS = {"ciamIncidentRole": "security-incidents", "ciamIncidentSeverity": "high"}
+# the organization's own data types every data discovery service looks for: CUI banner markings, employee numbers
+OWN_DATA_TYPES = ("cui-marking: CUI//[A-Z][A-Z/-]*", "employee-id: EA[0-9]{6}")
+_DISCOVERY = {"ciamScansRole": "backup-target", "ciamCustomIdentifier": list(OWN_DATA_TYPES), "ciamRescanDays": 7,
+              "ciamFindingsRole": "security-findings"}
+MACIE_JOB = "arn:aws:macie2:us-east-1:111122223333:classification-job/3ce05dbb7ec5505def334104bf1b1fd5"
 # Each environment's security bindings: (class, name, binding role, attributes).
 SECURITY = MappingProxyType({
     "source": (
@@ -129,9 +141,11 @@ SECURITY = MappingProxyType({
         ("ciamSecurityService", "security-hub", "posture",
          {"ciamSecurityKind": "posture", "ciamAuditScope": "account", "ciamFindingsRole": "security-findings",
           "ciamComplianceStandard": ["nist-800-53-r5", "nist-800-171-r2"],
-          "ciamSecurityBaseline": "aws-foundational", "ciamProviderRef": HUB})),
+          "ciamSecurityBaseline": "aws-foundational", "ciamProviderRef": HUB}),
+        ("ciamDataDiscovery", "macie-backups", "data-discovery", {**_DISCOVERY, "ciamProviderRef": MACIE_JOB})),
     # planted: no Defender for Containers (no containers watched or scanned), not assessed against NIST SP 800-171
-    # Rev. 2, no configuration history recorded, no incident routing (CHG-2029 routes Defender's high alerts)
+    # Rev. 2, no configuration history recorded, no incident routing (CHG-2029 routes Defender's high alerts), no data
+    # discovery (CHG-2034 records Defender's sensitive data discovery)
     "target": (
         ("ciamLogDestination", "security-logs", "security-findings",
          {"ciamDestinationKind": "workspace", "ciamRetentionDays": 400, "ciamProviderRef": _WORKSPACE}),
@@ -158,7 +172,9 @@ SECURITY = MappingProxyType({
           "ciamProviderRef": f"{_PROJECT}/locations/global/notificationConfigs/scc-findings"}),
         ("ciamSecurityService", "assets", "config-recording",
          {"ciamSecurityKind": "config-recording", **_ALL, "ciamRetentionDays": 35,
-          "ciamProviderRef": f"{_PROJECT}/feeds/assets"})),
+          "ciamProviderRef": f"{_PROJECT}/feeds/assets"}),
+        ("ciamDataDiscovery", "sdp-backups", "data-discovery",
+         {**_DISCOVERY, "ciamProviderRef": f"{_PROJECT}/locations/us-east4/discoveryConfigs/ciam-backups"})),
 })
 
 # Each environment's quota needs and budget, as bindings (class, name, binding role, attributes): the budget alerts the

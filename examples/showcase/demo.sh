@@ -192,6 +192,11 @@ od report exceptions
 echo "-- production's FedRAMP package overview; the target joins the SSP and records how it meets SC-12 on Azure"
 od import --change CHG-2031 --at 20260923090000Z fedramp/cpo exports/fedramp
 od modify --change CHG-2032 changes/CHG-2032-target-ssp-and-key-management.ldif
+echo "-- the AD forwarder moves to the landing zone's DNS servers; the reset mail's service gets an exception"
+od modify --change CHG-2033 changes/CHG-2033-target-boundary.ldif
+echo "-- data discovery: the target turns on Defender's sensitive data discovery over its backups"
+od modify --change CHG-2034 changes/CHG-2034-target-data-discovery.ldif
+od report data-discovery
 od report authorizations; od report responsibilities
 od history
 od render target/prod >/dev/null

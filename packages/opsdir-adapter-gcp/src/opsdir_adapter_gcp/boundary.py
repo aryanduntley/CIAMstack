@@ -7,6 +7,7 @@ the compliance regime of the level it requires (IL5, IL4, FEDRAMP_HIGH, FEDRAMP_
 named in an import notice when read back. Google has no mail service: a sending identity is named nowhere. Pure."""
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.inventory import of_types
+from opsdir.domains.edge.records import is_hosted
 from opsdir.domains.estate.authorizations import boundary_findings, required_levels, services_used
 from opsdir_format_terraform.hcl import block, tf_name
 
@@ -22,11 +23,12 @@ NAMES = {
     "ciamLogDestination": lambda b: {"log-group": "Cloud Logging", "bucket": STORAGE}.get(one(b, "ciamDestinationKind")),
     "ciamAuditTrail": "Cloud Logging",
     "ciamSecurityService": lambda b: "Cloud Asset Inventory" if one(b, "ciamSecurityKind") == "config-recording"
-    else "Security Command Center",
+    else "Security Command Center", "ciamDataDiscovery": "Sensitive Data Protection",
     "ciamComputeGroup": "Compute Engine", "ciamCluster": "Google Kubernetes Engine (GKE)",
     "ciamStreamBinding": "Pub/Sub", "ciamEdgeService": lambda b: EDGE.get(one(b, "ciamEdgeKind")),
     "ciamServiceName": "Cloud Load Balancing",
-    "ciamDnsZoneBinding": "Cloud DNS", "ciamDnsRecord": "Cloud DNS", "ciamDnsForwarder": "Cloud DNS",
+    "ciamDnsZoneBinding": "Cloud DNS", "ciamDnsRecord": "Cloud DNS",
+    "ciamDnsForwarder": lambda b: "Compute Engine" if is_hosted(b) else "Cloud DNS",
     "ciamIdentityBinding": "Identity and Access Management (IAM)", "ciamGuardrail": "Organization Policy Service",
     "ciamFirewallPolicy": "Cloud Next Generation Firewall Essentials",
     "ciamInterconnect": lambda b: "Cloud Interconnect" if "interconnect" in (one(b, "ciamInterconnectKind") or "").lower()

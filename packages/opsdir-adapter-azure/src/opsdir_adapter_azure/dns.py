@@ -8,7 +8,7 @@ Pure.
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.network import is_private
 from opsdir.domains.edge.dns import zone_of
-from opsdir.domains.edge.records import address, forwarders, parts, records_in, routing, run_by, ttl
+from opsdir.domains.edge.records import address, forwarders, hosted_notes, parts, records_in, routing, run_by, ttl
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 from .identities import RG
 from .account import tagged
@@ -113,13 +113,15 @@ def records(d, m):
 
 def forwarding_rules(m):
     """Outbound forwarders as rules of the landing zone's DNS forwarding ruleset; inbound ones are its resolver's
-    inbound endpoint (a comment)."""
+    inbound endpoint (a comment); those on the environment's own DNS servers (virtual machines) a comment."""
     return (*(block("resource", ["azurerm_private_dns_resolver_forwarding_rule", tf_name(f"{rdn_value(f)}_{i}")], [
                 ("name", tf_name(f"{rdn_value(f)}_{i}").replace("_", "-")),
                 ("dns_forwarding_ruleset_id", ref(f"var.{FORWARDING_RULESET}")),
                 ("domain_name", domain.rstrip(".") + "."), ("enabled", True),
                 *(("target_dns_servers", Block((("ip_address", ip), ("port", 53))))
                   for ip in values(f, "ciamForwardTarget"))])
-              for f in forwarders(m) for i, domain in enumerate(values(f, "ciamForwardDomain"))),
+              for f in forwarders(m, hosted=False) for i, domain in enumerate(values(f, "ciamForwardDomain"))),
             *(f"# Inbound forwarder `{rdn_value(f)}` ({', '.join(values(f, 'ciamForwardDomain'))}): the landing "
-              "zone's DNS Private Resolver inbound endpoint; not managed here" for f in forwarders(m, "inbound")))
+              "zone's DNS Private Resolver inbound endpoint; not managed here"
+              for f in forwarders(m, "inbound", hosted=False)),
+            *hosted_notes(m, "virtual machines"))

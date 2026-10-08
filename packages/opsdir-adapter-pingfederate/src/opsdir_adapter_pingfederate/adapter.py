@@ -1,6 +1,7 @@
 """PingFederate adapter: applies to environments whose servers run PingFederate."""
 from opsdir.core.contract import Adapter, SecretPattern
 from opsdir.core.directory import one
+from .collect import COLLECTORS
 from opsdir_base_oidc.render import FORMATS as OIDC_FORMATS
 from opsdir_base_saml.render import FORMATS as SAML_FORMATS
 from .checks import check_cluster, check_data_stores, check_references
@@ -38,4 +39,4 @@ ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required
                   products=(("PingFederate", ">=11,<13"),),
                   secret_patterns=SECRET_PATTERNS, importers=(BULK, NODE_FILES), profile_terms=None, access=None,
                   endpoints=ENDPOINTS, listeners=listeners,
-                  proxy_settings=proxy_settings)
+                  proxy_settings=proxy_settings, collectors=COLLECTORS)

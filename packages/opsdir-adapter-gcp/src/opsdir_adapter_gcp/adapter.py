@@ -4,6 +4,7 @@ from opsdir.domains.infrastructure.firewall import priority_check
 from .access import ACCESS
 from .boundary import check_boundary
 from .cli import CLI_INVENTORY
+from .collect import COLLECTORS
 from .inventory import TERRAFORM_STATE
 from .secrets import SECRET_PATTERNS, secret_manager_command
 from .names import PRIORITIES
@@ -27,4 +28,5 @@ ADAPTER = Adapter(name="gcp", kind="provider", applies=applies, required_roles=(
                   formats=(("terraform/*.tf", "hcl"), ("access/*.sh", "shell")),
                   products=(),
                   secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY, REGIONS, QUOTAS),
-                  profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE))
+                  profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE),
+                  collectors=COLLECTORS)

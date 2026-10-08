@@ -147,12 +147,12 @@ def confirmations(d, plan, keep=()):
                                     if by in (None, adapter) and f"{e.dn}|{attr}" not in kept),) if gone)
 
 
-def import_records(d, plan, change_id, take=(), keep=()):
+def import_records(d, plan, change_id, take=(), keep=(), evidence=None):
     """The records applying an ImportPlan under change change_id: its change records with each conflict decided
     (decided), what it confirms (confirmations), then an import run of each scope it read (even when nothing else
-    changes)."""
+    changes), with how opsdir collected the export when it did (evidence: connectors.collecting.evidence)."""
     return (*decided(plan.changes, plan.conflicts, take, keep), *confirmations(d, plan, keep),
-            *run_records(d, plan.importer, plan.scopes, plan.at, change_id))
+            *run_records(d, plan.importer, plan.scopes, plan.at, change_id, evidence))
 
 
 def preview_import(d, spec, files, installed=ADAPTERS, at=None):

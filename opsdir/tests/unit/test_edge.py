@@ -17,7 +17,8 @@ from opsdir.domains.edge.headers import check_headers, header_rows
 from opsdir.domains.edge.naming import EDGE_FACT, EDGE_POLICIES, HEADER_CONTRACTS, RATE_LIMIT, WAF_EXCLUSION
 from opsdir.domains.edge.policies import check_policies, intended_facts, policy_for, policy_rows
 from opsdir.domains.edge.running import check_running, edge_service_rows, missing, observed_facts, unstated
-from opsdir.domains.edge.records import answers, forwarders, parts, records_in, routing, run_by, ttl
+from opsdir.domains.edge.records import (answers, forwarders, hosted_notes, is_hosted, parts, records_in, routing, run_by,
+                                        ttl)
 from opsdir.domains.edge.resolve import (Exclusion, Health, RateLimit, certificate_ref, declared_endpoints, inspected,
                                          path_regex, service_edge)
 from opsdir.domains.edge.schema import ATTRIBUTES
@@ -366,3 +367,8 @@ def test_routed_names_zones_run_by_others_ttls_and_record_parts():
     assert [r.dn.split(",")[0] for r in records_in(alpha)][:2] == ["cn=srv-ldap", "cn=txt-nowhere"]
     assert [f.dn.split(",")[0] for f in forwarders(alpha)] == ["cn=fwd-ad"]
     assert [f.dn.split(",")[0] for f in forwarders(alpha, "inbound")] == ["cn=fwd-in"]
+    assert forwarders(beta, hosted=False) == () and is_hosted(forwarders(beta, hosted=True)[0])
+    assert hosted_notes(beta, "virtual machines") == (
+        "# Forwarder `fwd-legacy` runs on DNS servers 10.2.0.4, 10.2.0.5 (virtual machines), not the managed resolver: "
+        "they forward legacy.example to 10.9.1.2 and everything else to the platform's resolver, and the network's DNS "
+        "servers point at them; not managed here",)

@@ -1,0 +1,7 @@
+environment   data discovery  examines       own data types            every (days)  findings to        results to  kept by
+------------  --------------  -------------  ------------------------  ------------  -----------------  ----------  --------
+source/prod   macie-backups   backup-target  cui-marking, employee-id  7             security-findings              platform
+standby/prod  sdp-backups     backup-target  cui-marking, employee-id  7             security-findings              platform
+target/prod   dspm            backup-target  cui-marking, employee-id  7             security-findings              platform
+(3 rows)
+exit 0

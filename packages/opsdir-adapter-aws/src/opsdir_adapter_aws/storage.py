@@ -49,7 +49,8 @@ def kept_buckets(m):
 
 
 # ------------------------------------------------------------------ render
-def _key_arn(m, b):
+def key_arn(m, b):
+    """(the KMS key ARN object store b is encrypted with: its ciamEncryptedByRole's key binding, or None; notes)."""
     role = one(b, "ciamEncryptedByRole")
     uri = bound(m, role, "ciamRefUri") if role else None
     if uri is None:
@@ -79,7 +80,7 @@ def _bucket(m, b):
     mode, days = one(b, "ciamStorageImmutability"), one(b, "ciamStorageLockDays")
     locked = mode in MODES
     versioning = one(b, "ciamStorageVersioning")
-    key, key_note = _key_arn(m, b)
+    key, key_note = key_arn(m, b)
     rules, replica = lifecycle_rules(b), bucket_of(one(b, "ciamStorageReplicaRef"))
     public = one(b, "ciamStoragePublicBlocked")
     notes = (*key_note,

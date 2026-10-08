@@ -104,6 +104,9 @@ ATTRIBUTES = (
     AttributeDef(381, 'ciamForwardDirection', enum_type(FORWARD_DIRECTIONS), 'binding', True,
                  "outbound: the environment's queries for the domains go to the targets; inbound: other networks' "
                  'queries come in to the environment'),
+    AttributeDef(592, 'ciamResolverHost', 'ip', 'binding', False,
+                 "A DNS server on the environment's own machines that does the forwarding, instead of the platform's "
+                 "managed resolver; the network's DNS settings point at it"),
     # ------------------------------------------------------------------ bindings: what the edge runs
     AttributeDef(382, 'ciamEdgeKind', enum_type(EDGE_KINDS), 'binding', True,
                  'What an edge service is: a web application firewall, a CDN, DDoS protection, an API gateway, a '
@@ -140,7 +143,7 @@ CLASSES = (
               'ciamProviderRef'),
              'A DNS record beyond the service names (verification, mail, delegation), with its TTL and routing'),
     ClassDef(79, 'ciamDnsForwarder', 'ciamBinding', 'STRUCTURAL', ('ciamForwardDomain', 'ciamForwardTarget'),
-             ('ciamForwardDirection', 'ciamProviderRef'),
+             ('ciamForwardDirection', 'ciamProviderRef', 'ciamResolverHost'),
              'A conditional forwarder or resolver rule: the domains it forwards and the resolvers it forwards to'),
     ClassDef(80, 'ciamEdgeService', 'ciamBinding', 'STRUCTURAL', ('ciamEdgeKind',),
              ('ciamServiceRole', 'ciamProviderRef', 'ciamEdgeFact', 'ciamEdgeSetting'),
