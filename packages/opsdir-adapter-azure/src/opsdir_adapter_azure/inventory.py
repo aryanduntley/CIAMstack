@@ -83,7 +83,8 @@ from .volumes import volume_resources
 from .storage import object_store_resources
 from .audit import trail_resources
 from .budgets import budget_resources
-from .security import security_resources
+from .security import is_incident_alert, security_resources
+from .suppressions import suppression_resources
 
 PROVIDER = "azure"
 
@@ -515,14 +516,17 @@ ALARM_TYPES = (("azurerm_monitor_metric_alert", _metric_alarm),
 
 
 def _alarms(found):
-    """Metric and log-query alerts: what each evaluates, the action groups it notifies, the alert rule it realizes."""
+    """Metric and log-query alerts: what each evaluates, the action groups it notifies, the alert rule it realizes
+    (a log alert on a table Defender's findings are exported to is a security service's incident route, read by
+    security.py)."""
     def alarm(a, read):
         role, realizes = realization_roles(_tags(a), "alarm")
         metric, notifies = read(a)
         return resource("alarm", a.get("id"), {"ciamMetric": metric, "ciamNotifies": notifies,
                                                "ciamRealizes": realizes}, name=a.get("name"), role=role,
                         tags=_tags(a))
-    return tuple(alarm(a, read) for t, read in ALARM_TYPES for a in of_types(found, t) if a.get("id"))
+    return tuple(alarm(a, read) for t, read in ALARM_TYPES for a in of_types(found, t)
+                 if a.get("id") and not is_incident_alert(a))
 
 
 def _canaries(found):
@@ -556,7 +560,8 @@ def pairs_resources(pairs):
              *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
              *_canaries(pairs), *iam, *edge, *network, *database_resources(pairs), *volumes, *backups,
-             *trail_resources(pairs), *security_resources(pairs), *budget_resources(pairs)),
+             *trail_resources(pairs), *security_resources(pairs), *suppression_resources(pairs),
+             *budget_resources(pairs)),
             (*rule_notices, *iam_notices, *edge_notices, *network_notices, *volume_notices, *backup_notices,
              *geo_backup_notices(pairs)))
 

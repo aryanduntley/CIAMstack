@@ -39,6 +39,7 @@ from opsdir_adapter_gcp.plumbing import network_data
 from opsdir_adapter_gcp.backups import render_backups
 from opsdir_adapter_gcp.audit import render_trails
 from opsdir_adapter_gcp.security import render_security
+from opsdir_adapter_gcp.suppressions import render_suppressions
 from opsdir_adapter_gcp.quotas import render_quota_requests
 from opsdir_adapter_gcp.budgets import budget_notes
 from opsdir_adapter_gcp.volumes import boot_disk, render_snapshot_policies, server_volumes
@@ -220,7 +221,7 @@ def render(m, services):
            *render_snapshot_policies(m), *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
-           *forwarding_zones(m), *render_trails(m), *render_security(m), *render_quota_requests(m), *budget_notes(m),
+           *forwarding_zones(m), *render_trails(m), *render_security(m), *render_suppressions(m), *render_quota_requests(m), *budget_notes(m),
            *_references(m))
     main = header(m, "Google Cloud infrastructure for the CIAM platform", HCL) + unbound_comments(m.unbound) + "\n" \
         + "\n\n".join(out) + "\n"

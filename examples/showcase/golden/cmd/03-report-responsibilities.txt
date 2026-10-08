@@ -1,0 +1,6 @@
+authorization   controls              responsibility  customer action                                                         met by
+--------------  --------------------  --------------  ----------------------------------------------------------------------  ----------------
+AGENCYAMAZONEW  nist-800-53-r5:SC-12  inherited
+F1209051525     nist-800-53-r5:SC-12  customer        establish and manage the keys of customer-managed encryption (Key Vaul  nothing recorded
+(2 rows)
+exit 0

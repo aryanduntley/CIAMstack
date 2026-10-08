@@ -102,3 +102,16 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPartnerContact: cn=harbor-mro,ou=owners,dc=ciam-ops
 ciamRotationRunbook: cn=WI-CIAM-001,ou=runbooks,dc=ciam-ops
 ciamSubject: CN=Harbor MRO SSO
+
+dn: cn=dibnet-eca,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: dibnet-eca
+ciamCertPurpose: client-auth
+ciamFingerprint: 1C:B4:70:DB:8E:B9:D6:CE:DC:6B:7F:9B:2E:BF:13:26:31:FF:21:45:8
+ F:39:3A:43:22:8C:42:C6:3F:EB:31:AA
+ciamIssuer: CN=ECA Medium Assurance Issuing CA (synthetic)
+ciamNotAfter: 20270630000000Z
+ciamNotBefore: 20250630000000Z
+ciamOwner: cn=security-operations,ou=owners,dc=ciam-ops
+ciamSubject: CN=Example Aero Security Operations, OU=ECA, O=Example Aero

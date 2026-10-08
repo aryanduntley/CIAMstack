@@ -19,6 +19,14 @@ BRANCHES = (("environments", "Clouds, environments, servers and bindings"),
             ("failover-drills", "Failover drills: one entry per failover someone did, and how it went"),
             ("owners", "Teams, partners and vendors"),
             ("tag-policy", "Tag policy: the tags every rendered resource carries and where their values come from"),
+            ("reporting-obligations", "Incident reporting obligations the estate is held to (a regime's clock, "
+                                      "authority, filer, certificate, preservation)"),
+            ("poam", "Plan of action and milestones: the known weaknesses and how each is corrected"),
+            ("exceptions", "Approved deviations: accepted risks, false positives, operational requirements"),
+            ("assessments", "Compliance assessments of the environments: score and status"),
+            ("authorizations", "Cloud offerings' authorizations (FedRAMP, DoD): levels, status, the services in scope"),
+            ("boundaries", "The operator's system boundaries: its system security plans and the environments inside"),
+            ("responsibilities", "Who meets each control under a cloud authorization (its responsibility matrix)"),
             ("custom-schema", "Fields and record types the operator defines"),
             ("feature-flags", "Feature switches of the login experience (a custom record type)"))
 

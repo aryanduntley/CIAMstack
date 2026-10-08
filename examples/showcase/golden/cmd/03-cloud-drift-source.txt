@@ -2,7 +2,7 @@ role ciam-prod-break-glass: policy arn:aws:iam::aws:policy/AdministratorAccess i
 source/prod: alarm ds-cpu-high (arn:aws:cloudwatch:us-east-1:111122223333:alarm:ds-cpu-high) is not in the record and names no role (tag it Role, name it in roles.json, or record it); not imported
 source/prod: firewall sgr-0feedc0ffee000001 (ciamSourceCidr 10.99.0.0/16, ciamPort 1636) is not in the record and names no role (tag it Role, name it in roles.json, or record it); not imported
 source/prod: server i-0b4571011cafe0001 (ciamPrivateIp 10.20.4.99) is not in the record and names no role (tag it Role, name it in roles.json, or record it); not imported
-source/prod: 91 resource(s) lack the required tags CostCenter, DataClassification, Environment, Owner (network vpc-0a1b2c3d4e5f67890, subnet subnet-0a11b22c33d44e55a, subnet subnet-0a11b22c33d44e55b and 88 more)
+source/prod: 92 resource(s) lack the required tags CostCenter, DataClassification, Environment, Owner (network vpc-0a1b2c3d4e5f67890, subnet subnet-0a11b22c33d44e55a, subnet subnet-0a11b22c33d44e55b and 89 more)
 conflict cn=key-disk,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops|ciamAutoRotate: record TRUE -> live FALSE
 conflict cn=pf-engine-2,env=prod,cloud=source,ou=environments,dc=ciam-ops|ciamInstanceSize: record m6i.large -> live m6i.xlarge
 modify cn=identity-pf,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops

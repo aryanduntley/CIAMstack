@@ -2031,6 +2031,35 @@ resource "aws_cloudwatch_event_target" "guardduty_findings" {
   arn  = "arn:aws:sns:us-east-1:111122223333:ciam-prod-security"
 }
 
+resource "aws_cloudwatch_event_rule" "guardduty_incidents" {
+  name        = "guardduty-incidents"
+  description = "guardduty's high and worse findings to security-incidents (incident process)"
+  event_pattern = jsonencode({
+    "source" : [
+      "aws.guardduty"
+    ],
+    "detail-type" : [
+      "GuardDuty Finding"
+    ],
+    "detail" : {
+      "severity" : [
+        {
+          "numeric" : [
+            ">=",
+            7
+          ]
+        }
+      ]
+    }
+  })
+}
+
+resource "aws_cloudwatch_event_target" "guardduty_incidents" {
+  # its resource policy must let events.amazonaws.com deliver to it
+  rule = aws_cloudwatch_event_rule.guardduty_incidents.name
+  arn  = "arn:aws:sns:us-east-1:111122223333:ciam-prod-security-incidents"
+}
+
 # guardduty: runs in every region: each region needs its own (this root renders us-east-1)
 
 resource "aws_inspector2_enabler" "inspector" {
@@ -2095,6 +2124,32 @@ resource "aws_cloudwatch_event_target" "security_hub_findings" {
   # its resource policy must let events.amazonaws.com deliver to it
   rule = aws_cloudwatch_event_rule.security_hub_findings.name
   arn  = "arn:aws:sns:us-east-1:111122223333:ciam-prod-security"
+}
+
+# exc-EXC-2026-01: Security Hub automation rules have no expiry: remove this rule on 2027-03-31
+
+resource "aws_securityhub_automation_rule" "exc_exc_2026_01" {
+  rule_name   = "exc-EXC-2026-01"
+  rule_order  = 1
+  description = "Suppress IAM.6: exception EXC-2026-01, until 2027-03-31"
+  criteria {
+    compliance_security_control_id {
+      comparison = "EQUALS"
+      value      = "IAM.6"
+    }
+  }
+  actions {
+    type = "FINDING_FIELDS_UPDATE"
+    finding_fields_update {
+      workflow {
+        status = "SUPPRESSED"
+      }
+      note {
+        text       = "exception EXC-2026-01, until 2027-03-31"
+        updated_by = "opsdir"
+      }
+    }
+  }
 }
 
 resource "aws_budgets_budget" "monthly_spend" {

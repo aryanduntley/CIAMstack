@@ -68,8 +68,13 @@ Domain = namedtuple("Domain", (
     "import_kinds",             # ImportKinds: the resources the cloud importers read into its classes
     "role_links",               # {attribute naming a binding's role: the import kind (or kinds) of what it names}
     "settings",                 # Settings: the estate settings it declares (core.settings)
-    "import_checks"),           # (directory, environment spec, Resources) -> notices, run on every cloud import
-    defaults=((), {}, (), ()))
+    "import_checks",            # (directory, environment spec, Resources) -> notices, run on every cloud import
+    "local_classes",            # binding classes local to their environment's cloud (a cloud's suppression of
+                                # findings): the planner doesn't ask the target to bind what the source's do
+    "accept"),                  # (PlanContext, blockers, actions) -> (blockers, actions, accepted): the findings the
+                                # record's approved decisions accept, each accepted one as (kind, area, text, owner,
+                                # why), shown in the plan, not counted; None: it accepts none
+    defaults=((), {}, (), (), (), None))
 
 # A language or file format opsdir renders or reads: registered (entry point group opsdir.formats) by the core for the
 # standard ones and by any package for its own, so what a managed system is written in is data, never an assumption.
@@ -158,7 +163,7 @@ Prerequisite = namedtuple("Prerequisite", ("name", "description", "importer", "m
 # settings None, one that names no prerequisites none.
 Adapter = namedtuple("Adapter", (
     "name",
-    "kind",                 # provider | product | host | delivery | secret-store
+    "kind",                 # provider | product | host | delivery | secret-store | compliance
     "applies",              # (EnvModel) -> bool, from directory data only; None = declaration-only (connectors.stack)
     "required_roles",
     "render_neutral",       # (Directory) -> {path: text}, same everywhere

@@ -16,10 +16,30 @@ objectClass: top
 objectClass: organizationalUnit
 ou: alert-rules
 
+dn: ou=assessments,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: assessments
+description: Compliance assessments of the environments: score and status
+
+dn: ou=authorizations,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: authorizations
+description: Cloud offerings' authorizations (FedRAMP, DoD): levels, status, t
+ he services in scope
+
 dn: ou=baselines,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: baselines
+
+dn: ou=boundaries,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: boundaries
+description: The operator's system boundaries: its system security plans and t
+ he environments inside
 
 dn: ou=bundles,dc=ciam-ops
 objectClass: top
@@ -101,6 +121,13 @@ dn: ou=event-streams,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: event-streams
+
+dn: ou=exceptions,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: exceptions
+description: Approved deviations: accepted risks, false positives, operational
+  requirements
 
 dn: ou=external-allowlists,dc=ciam-ops
 objectClass: top
@@ -201,6 +228,13 @@ objectClass: top
 objectClass: organizationalUnit
 ou: pingidm
 
+dn: ou=poam,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: poam
+description: Plan of action and milestones: the known weaknesses and how each 
+ is corrected
+
 dn: ou=principals,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -223,10 +257,24 @@ objectClass: top
 objectClass: organizationalUnit
 ou: regions
 
+dn: ou=reporting-obligations,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: reporting-obligations
+description: Incident reporting obligations the estate is held to (a regime's 
+ clock, authority, filer, certificate, preservation)
+
 dn: ou=residencies,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: residencies
+
+dn: ou=responsibilities,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: responsibilities
+description: Who meets each control under a cloud authorization (its responsib
+ ility matrix)
 
 dn: ou=restore-tests,dc=ciam-ops
 objectClass: top
@@ -276,6 +324,7 @@ ciamBillingAccountRef: 01A2B3-C4D5E6-F7A8B9
 ciamCloudEnvironment: public
 ciamCloudProvider: gcp
 ciamLifecycle: building
+ciamOrganizationRef: organizations/123456789012
 ciamRegion: us-central1
 description: Warm standby (Google Cloud)
 
@@ -285,9 +334,11 @@ objectClass: ciamCloud
 objectClass: ciamCloudAccount
 cloud: target
 ciamAccountRef: 00000000-0000-0000-0000-000000000000
+ciamChangeRef: cn=CHG-2030,ou=changes,dc=ciam-ops
 ciamCloudEnvironment: public
 ciamCloudProvider: azure
 ciamLifecycle: building
+ciamProviderAddOn: azapi
 ciamRegion: eastus2
 description: Second hosting environment (Azure)
 
@@ -411,6 +462,49 @@ ciamJustification: Supplier portal account lookup
 ciamOwner: cn=supplier-portal-team,ou=owners,dc=ciam-ops
 ciamReviewedOn: 20260302000000Z
 
+dn: cn=AGENCYAMAZONEW,ou=authorizations,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudAuthorization
+cn: AGENCYAMAZONEW
+ciamAuthorizationLevel: fedramp-moderate
+ciamAuthorizationStatus: certified
+ciamCertificationType: Rev5
+ciamCertifiedAt: 20130501000000Z
+ciamCloudEnvironment: public
+ciamCloudProvider: aws
+ciamCrmRef: AWS CIS/CRM workbook (FedRAMP package, trust center)
+ciamDeploymentModel: Public Cloud
+ciamDocUrl: https://www.fedramp.gov/marketplace/products/AGENCYAMAZONEW/
+ciamInScopeService: Amazon Elastic Compute Cloud (EC2)
+ciamInScopeService: Amazon Virtual Private Cloud (VPC)
+ciamInScopeService: Amazon RDS for Postgres
+ciamInScopeService: Amazon Simple Storage Service (S3)
+ciamInScopeService: Amazon Elastic Block Store (EBS)
+ciamInScopeService: AWS Key Management Service (KMS)
+ciamInScopeService: AWS Secrets Manager
+ciamInScopeService: AWS Certificate Manager (ACM)
+ciamInScopeService: Amazon Simple Notification Service (SNS)
+ciamInScopeService: Amazon Cloudwatch
+ciamInScopeService: Amazon Cloudwatch Logs
+ciamInScopeService: AWS CloudTrail
+ciamInScopeService: Amazon GuardDuty
+ciamInScopeService: Amazon Inspector
+ciamInScopeService: AWS Config
+ciamInScopeService: AWS Security Hub CSPM
+ciamInScopeService: Amazon Route 53
+ciamInScopeService: AWS Backup
+ciamInScopeService: AWS Identity and Access Management (IAM)
+ciamInScopeService: AWS Organizations
+ciamInScopeService: Amazon EventBridge
+ciamInScopeService: Amazon Simple Email Service (SES)
+ciamInScopeService: Amazon Kinesis Data Streams
+ciamOfferingName: AWS US East/West
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPackageId: AGENCYAMAZONEW
+ciamProviderName: Amazon Web Services, Inc.
+ciamRetrievedAt: 20260923090000Z
+ciamScopeAsOf: 20260826182146Z
+
 dn: cn=am,ou=baselines,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -532,11 +626,28 @@ ciamPublishedBy: pf-engine
 ciamPublishedBy: pf-admin
 ciamRetentionDays: 400
 
+dn: cn=authorizing-official,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: authorizing-official
+ciamDisplayName: Example Aero CISO (authorizing official)
+ciamOwnerKind: team
+mail: ciso@example-aero.test
+
 dn: cn=aws,ou=regions,dc=ciam-ops
 objectClass: top
 objectClass: ciamRegionCatalog
 cn: aws
 ciamCloudProvider: aws
+
+dn: cn=aws-sc-12,ou=responsibilities,dc=ciam-ops
+objectClass: top
+objectClass: ciamControlResponsibility
+cn: aws-sc-12
+ciamAuthorizationRef: cn=AGENCYAMAZONEW,ou=authorizations,dc=ciam-ops
+ciamControlRef: nist-800-53-r5:SC-12
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamResponsibility: inherited
 
 dn: cn=aws.quotas.shared,ou=imports,dc=ciam-ops
 objectClass: top
@@ -571,6 +682,20 @@ objectClass: top
 objectClass: ciamRegionCatalog
 cn: azure
 ciamCloudProvider: azure
+
+dn: cn=azure-sc-12,ou=responsibilities,dc=ciam-ops
+objectClass: top
+objectClass: ciamControlResponsibility
+cn: azure-sc-12
+ciamAuthorizationRef: cn=F1209051525,ou=authorizations,dc=ciam-ops
+ciamChangeRef: cn=CHG-2032,ou=changes,dc=ciam-ops
+ciamControlRef: nist-800-53-r5:SC-12
+ciamCustomerAction: establish and manage the keys of customer-managed encrypti
+ on (Key Vault)
+ciamImplementation: Key Vault keys created, rotated and retired by the platfor
+ m's key roles (WI-CIAM-012)
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamResponsibility: customer
 
 dn: cn=azure.quotas.shared,ou=imports,dc=ciam-ops
 objectClass: top
@@ -920,6 +1045,46 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Hold the target to a budget and request its vCPU increase
 
+dn: cn=CHG-2029,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2029
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Hold the target to DFARS 252.204-7012 and page the incident process
+  on Defender's high alerts
+
+dn: cn=CHG-2030,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2030
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Complete the target's risk acceptance and suppress a Defender false
+  positive (azapi add-on)
+
+dn: cn=CHG-2031,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2031
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Import AWS US East/West's FedRAMP Certification Package Overview (p
+ roduction's authorization)
+
+dn: cn=CHG-2032,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2032
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Extend SSP-CIAM-2026 to the target and record how it meets SC-12 on
+  Azure
+
 dn: cn=CHG-2040,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange
@@ -998,6 +1163,22 @@ cn: cloud-landing-zone
 ciamDisplayName: Cloud landing zone team
 ciamOwnerKind: team
 mail: landing-zone@example-aero.test
+
+dn: cn=CMMC-2026,ou=assessments,dc=ciam-ops
+objectClass: top
+objectClass: ciamComplianceAssessment
+cn: CMMC-2026
+ciamAffectedEnvironment: env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamAffectedEnvironment: env=prod,cloud=target,ou=environments,dc=ciam-ops
+ciamAssessedAt: 20260815000000Z
+ciamAssessmentKind: c3pao
+ciamAssessmentMaxScore: 110
+ciamAssessmentRef: C3PAO report EA-2026-L2-017 (synthetic)
+ciamAssessmentScore: 104
+ciamAssessmentStatus: conditional
+ciamFramework: cmmc-l2
+ciamFullScoreBy: 20261215000000Z
+ciamOwner: cn=authorizing-official,ou=owners,dc=ciam-ops
 
 dn: cn=companyId,ou=user-schema,dc=ciam-ops
 objectClass: top
@@ -1136,6 +1317,37 @@ ciamLdapName: description
 ciamPiiClass: low
 ciamPurpose: Free text; used by a legacy export for account notes
 
+dn: cn=dfars-7012,ou=reporting-obligations,dc=ciam-ops
+objectClass: top
+objectClass: ciamReportingObligation
+cn: dfars-7012
+ciamContractNumber: FA0000-26-C-0001
+ciamDocUrl: https://www.acquisition.gov/dfars/252.204-7012-safeguarding-covere
+ d-defense-information-and-cyber-incident-reporting
+ciamInternalReportingHours: 1
+ciamMalwareSubmission: https://www.dc3.mil
+ciamPreservationDays: 90
+ciamReportingAuthority: cn=dod-dc3,ou=owners,dc=ciam-ops
+ciamReportingCertificateRef: cn=dibnet-eca,ou=certificates,dc=ciam-ops
+ciamReportingHours: 72
+ciamReportingParty: cn=security-operations,ou=owners,dc=ciam-ops
+ciamRequiredAuthorization: fedramp-moderate
+description: DFARS 252.204-7012: rapidly report cyber incidents (72 hours from
+  discovery) on DIBNet (synthetic contract number)
+
+dn: cn=dibnet-eca,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: dibnet-eca
+ciamCertPurpose: client-auth
+ciamFingerprint: 1C:B4:70:DB:8E:B9:D6:CE:DC:6B:7F:9B:2E:BF:13:26:31:FF:21:45:8
+ F:39:3A:43:22:8C:42:C6:3F:EB:31:AA
+ciamIssuer: CN=ECA Medium Assurance Issuing CA (synthetic)
+ciamNotAfter: 20270630000000Z
+ciamNotBefore: 20250630000000Z
+ciamOwner: cn=security-operations,ou=owners,dc=ciam-ops
+ciamSubject: CN=Example Aero Security Operations, OU=ECA, O=Example Aero
+
 dn: cn=directory-data,ou=recovery,dc=ciam-ops
 objectClass: top
 objectClass: ciamRecoveryObjective
@@ -1165,6 +1377,14 @@ ciamKeyUsage: key-wrapping
 ciamMaterialFormat: raw
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationDays: 365
+
+dn: cn=dod-dc3,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: dod-dc3
+ciamContactUrl: https://dibnet.dod.mil
+ciamDisplayName: DoD Cyber Crime Center (DIBNet)
+ciamOwnerKind: partner
 
 dn: cn=ds,ou=baselines,dc=ciam-ops
 objectClass: top
@@ -1317,9 +1537,12 @@ description: Every rendered resource carries Environment
 dn: cn=example-aero,ou=owners,dc=ciam-ops
 objectClass: top
 objectClass: ciamParty
+objectClass: ciamReportingIdentity
 cn: example-aero
+ciamCageCode: 0EXA1
 ciamDisplayName: Example Aero
 ciamOwnerKind: operator
+ciamUei: EXAMPLEAERO0
 
 dn: cn=example-aero-corp-root-ca,ou=certificates,dc=ciam-ops
 objectClass: top
@@ -1352,6 +1575,56 @@ ciamLdapOid: 1.3.6.1.4.1.32473.2.2.1
 ciamLdapSuperior: top
 ciamPurpose: Customer / supplier attributes added to every user entry
 
+dn: cn=EXC-2026-01,ou=exceptions,dc=ciam-ops
+objectClass: top
+objectClass: ciamRiskException
+cn: EXC-2026-01
+ciamAffectedEnvironment: env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamApprovedAt: 20260918000000Z
+ciamApprovedBy: CAB 2026-09-18
+ciamExceptionKind: false-positive
+ciamExceptionStatus: approved
+ciamExpiresAt: 20270331000000Z
+ciamFindingRef: aws:securityhub:IAM.6
+ciamJustification: the root user is disabled by a service control policy; its 
+ hardware MFA device is held by the break-glass process the control can't see
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRiskAuthority: cn=authorizing-official,ou=owners,dc=ciam-ops
+
+dn: cn=EXC-2026-02,ou=exceptions,dc=ciam-ops
+objectClass: top
+objectClass: ciamRiskException
+cn: EXC-2026-02
+ciamAcceptsFinding: Security: vulnerability-scanning watches containers
+ciamAffectedEnvironment: env=prod,cloud=target,ou=environments,dc=ciam-ops
+ciamApprovedAt: 20260918000000Z
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeRef: cn=CHG-2030,ou=changes,dc=ciam-ops
+ciamExceptionKind: risk-acceptance
+ciamExceptionStatus: approved
+ciamExpiresAt: 20270331000000Z
+ciamJustification: the target runs no containers until the PingGateway move in
+  2027; Defender for Containers is enabled with it
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRiskAuthority: cn=authorizing-official,ou=owners,dc=ciam-ops
+
+dn: cn=EXC-2026-03,ou=exceptions,dc=ciam-ops
+objectClass: top
+objectClass: ciamRiskException
+cn: EXC-2026-03
+ciamAffectedEnvironment: env=prod,cloud=target,ou=environments,dc=ciam-ops
+ciamApprovedAt: 20260918000000Z
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeRef: cn=CHG-2030,ou=changes,dc=ciam-ops
+ciamExceptionKind: false-positive
+ciamExceptionStatus: approved
+ciamExpiresAt: 20270331000000Z
+ciamFindingRef: azure:alerts:IpAnomaly
+ciamJustification: the directory servers' replication traffic from the source 
+ over the interconnect
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRiskAuthority: cn=authorizing-official,ou=owners,dc=ciam-ops
+
 dn: cn=exportScreeningStatus,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
@@ -1365,6 +1638,51 @@ ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: high
 ciamPurpose: Result of restricted-party / export screening from the authoritat
  ive system
+
+dn: cn=F1209051525,ou=authorizations,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudAuthorization
+cn: F1209051525
+ciamAuthorizationLevel: fedramp-high
+ciamAuthorizationStatus: certified
+ciamCertificationType: Rev5
+ciamCertifiedAt: 20190503000000Z
+ciamCloudEnvironment: public
+ciamCloudProvider: azure
+ciamCrmRef: Azure CIS/CRM workbook (FedRAMP package)
+ciamDeploymentModel: Public Cloud
+ciamDocUrl: https://www.fedramp.gov/marketplace/products/F1209051525/
+ciamInScopeService: Virtual Machines
+ciamInScopeService: Virtual Machine Scale Sets
+ciamInScopeService: Virtual Network
+ciamInScopeService: Load Balancer
+ciamInScopeService: Private Link
+ciamInScopeService: Azure Database for PostgreSQL
+ciamInScopeService: Storage: Blobs (incl. Azure Data Lake Storage Gen2)
+ciamInScopeService: Storage: Disks (incl. managed disks)
+ciamInScopeService: Key Vault
+ciamInScopeService: Backup
+ciamInScopeService: Azure Monitor (incl. Application Insights, Log Analytics, 
+ and Application Change Analysis)
+ciamInScopeService: Microsoft Defender for Cloud (formerly Azure Security Cent
+ er)
+ciamInScopeService: Resource Graph
+ciamInScopeService: Azure Policy
+ciamInScopeService: DNS
+ciamInScopeService: Event Hubs
+ciamInScopeService: Service Bus
+ciamInScopeService: Front Door
+ciamInScopeService: Web Application Firewall
+ciamInScopeService: VPN Gateway
+ciamInScopeService: Microsoft Entra ID (P1 + P2)
+ciamOfferingName: Azure Commercial Cloud
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPackageId: F1209051525
+ciamProviderName: Microsoft
+ciamRetrievedAt: 20260920000000Z
+ciamScopeAsOf: 20260915000000Z
+ciamSourceUrl: https://learn.microsoft.com/en-us/azure/azure-government/compli
+ ance/azure-services-in-fedramp-auditscope
 
 dn: cn=FD-2026-09-10-standby,ou=failover-drills,dc=ciam-ops
 objectClass: top
@@ -1399,6 +1717,57 @@ cn: fda3b4cba0f0ad02
 ciamOnServer: cn=ds-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamRepoPath: opt/scripts/nightly-export.sh
 ciamSha256: b0deff05a91717b60751d8acf4bfeb90280cc77b83632aedc54aa33710d29bb8
+
+dn: cn=fedramp.cpo.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: fedramp.cpo.shared
+ciamChangeRef: cn=CHG-2031,ou=changes,dc=ciam-ops
+ciamImportScope: cn=AGENCYAMAZONEW,ou=authorizations,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: fedramp/cpo
+
+dn: cn=FR1805751477,ou=authorizations,dc=ciam-ops
+objectClass: top
+objectClass: ciamCloudAuthorization
+cn: FR1805751477
+ciamAuthorizationLevel: fedramp-high
+ciamAuthorizationStatus: certified
+ciamCertificationType: Rev5
+ciamCertifiedAt: 20191204000000Z
+ciamCloudEnvironment: public
+ciamCloudProvider: gcp
+ciamDeploymentModel: Public Cloud
+ciamDocUrl: https://www.fedramp.gov/marketplace/products/FR1805751477/
+ciamInScopeService: Compute Engine
+ciamInScopeService: Virtual Private Cloud (VPC)
+ciamInScopeService: Cloud Load Balancing
+ciamInScopeService: Cloud SQL
+ciamInScopeService: Cloud Storage
+ciamInScopeService: Persistent Disk
+ciamInScopeService: Cloud Key Management Service (Cloud KMS)
+ciamInScopeService: Secret Manager
+ciamInScopeService: Cloud Logging
+ciamInScopeService: Cloud Monitoring
+ciamInScopeService: Security Command Center
+ciamInScopeService: Cloud Asset Inventory
+ciamInScopeService: Pub/Sub
+ciamInScopeService: Cloud DNS
+ciamInScopeService: Backup and DR Service
+ciamInScopeService: Identity and Access Management (IAM)
+ciamInScopeService: Organization Policy Service
+ciamInScopeService: Cloud VPN
+ciamInScopeService: Cloud Interconnect
+ciamOfferingName: Google Services
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPackageId: FR1805751477
+ciamProviderName: Google
+ciamRequiresConfiguration: assured-workload
+ciamRetrievedAt: 20260920000000Z
+ciamScopeAsOf: 20260915000000Z
+ciamSourceUrl: https://cloud.google.com/assured-workloads/docs/supported-produ
+ cts
 
 dn: cn=gcp,ou=regions,dc=ciam-ops
 objectClass: top
@@ -1741,6 +2110,26 @@ ciamRootCause: mail equality index missing on ds-2 (unrecorded manual change);
   searches by mail went unindexed
 ciamSeverity: sev3
 ciamTitle: Search latency spike on ds-2
+
+dn: cn=INC-2240,ou=incidents,dc=ciam-ops
+objectClass: top
+objectClass: ciamIncident
+objectClass: ciamReportableIncident
+cn: INC-2240
+ciamAffectedEnvironment: env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamDiscoveredAt: 20260922031000Z
+ciamInvolved: cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamMediaRequest: none
+ciamOpenedAt: 20260922033500Z
+ciamOwner: cn=security-operations,ou=owners,dc=ciam-ops
+ciamPreservedUntil: 20261222000000Z
+ciamReportRef: DIBNET-2026-000042
+ciamReportedAt: 20260923180000Z
+ciamRootCause: a directory administrator's credentials were tried from an addr
+ ess outside the estate; GuardDuty raised a high-severity finding; no data was
+  read (synthetic)
+ciamSeverity: sev2
+ciamTitle: Suspicious sign-in to the directory admin account
 
 dn: cn=inetOrgPerson,ou=user-schema,dc=ciam-ops
 objectClass: top
@@ -2463,6 +2852,28 @@ ciamPermits: manage-key disk-encryption
 ciamPermits: read-logs audit-logs
 description: What the platform admins manage
 
+dn: cn=POAM-2026-001,ou=poam,dc=ciam-ops
+objectClass: top
+objectClass: ciamPoamItem
+cn: POAM-2026-001
+ciamAffectedEnvironment: env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamAffectedEnvironment: env=prod,cloud=target,ou=environments,dc=ciam-ops
+ciamAssessmentRef: C3PAO report EA-2026-L2-017 (synthetic)
+ciamControlRef: cmmc-l2:SC.L2-3.13.11
+ciamControlRef: nist-800-171-r2:3.13.11
+ciamDiscoveredAt: 20260815000000Z
+ciamDiscoverySource: assessment
+ciamMilestone: 2026-10-31: FIPS provider (Bouncy Castle FIPS) qualified on sta
+ ge
+ciamMilestone: 2026-12-15: production directory servers switched over
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPoamStatus: open
+ciamPointValue: 3
+ciamRiskRating: moderate
+ciamScheduledCompletion: 20261215000000Z
+ciamWeakness: PingDS's LDAPS runs on a JSSE provider that isn't FIPS 140 valid
+ ated
+
 dn: cn=registrationStatus,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
@@ -2548,6 +2959,15 @@ ciamSkeleton:: IyBQaW5nRmVkZXJhdGUgZW5naW5lIHJ1bi5wcm9wZXJ0aWVzIChFeGFtcGxlIEF
  BwZi5hZG1pbi5odHRwcy5wb3J07oCBfQpwZi5hZG1pbi5wd2Q9JHvugIBwZi5hZG1pbi5wd2TugIF
  9CnBmLmxvZy5ldmVudGRldGFpbD0ke+6AgHBmLmxvZy5ldmVudGRldGFpbO6AgX0K
 ciamTargetRole: pf-engine
+
+dn: cn=security-operations,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: security-operations
+ciamDisplayName: Security operations center
+ciamOwnerKind: team
+mail: soc@example-aero.test
+telephoneNumber: +1 202 555 0100
 
 dn: cn=sign-on-edge,ou=edge-policies,dc=ciam-ops
 objectClass: top
@@ -2771,6 +3191,18 @@ ciamKeyUsage: tls
 ciamMaterialFormat: pkcs12
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationDays: 365
+
+dn: cn=SSP-CIAM-2026,ou=boundaries,dc=ciam-ops
+objectClass: top
+objectClass: ciamSystemBoundary
+cn: SSP-CIAM-2026
+ciamAffectedEnvironment: env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamAffectedEnvironment: env=prod,cloud=standby,ou=environments,dc=ciam-ops
+ciamAffectedEnvironment: env=prod,cloud=target,ou=environments,dc=ciam-ops
+ciamChangeRef: cn=CHG-2032,ou=changes,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRiskAuthority: cn=authorizing-official,ou=owners,dc=ciam-ops
+ciamSspRef: SSP-CIAM-2026 v3.2 (synthetic)
 
 dn: cn=supplier-portal,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -4180,9 +4612,11 @@ objectClass: top
 objectClass: ciamEnvironment
 objectClass: ciamEnvironmentPlacement
 env: prod
+ciamAuthorizationRef: cn=AGENCYAMAZONEW,ou=authorizations,dc=ciam-ops
 ciamDataClassification: confidential
 ciamLifecycle: active
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamReportingObligationRef: cn=dfars-7012,ou=reporting-obligations,dc=ciam-ops
 ciamResidencyRef: cn=us,ou=residencies,dc=ciam-ops
 
 dn: env=prod,cloud=standby,ou=environments,dc=ciam-ops
@@ -4191,10 +4625,13 @@ objectClass: ciamEnvironment
 objectClass: ciamStandby
 objectClass: ciamEnvironmentPlacement
 env: prod
+ciamAuthorizationRef: cn=FR1805751477,ou=authorizations,dc=ciam-ops
+ciamConfigurationMet: assured-workload
 ciamDataClassification: confidential
 ciamJoinsDeploymentOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamLifecycle: building
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamReportingObligationRef: cn=dfars-7012,ou=reporting-obligations,dc=ciam-ops
 ciamResidencyRef: cn=us,ou=residencies,dc=ciam-ops
 ciamRunbookRef: cn=WI-CIAM-016,ou=runbooks,dc=ciam-ops
 ciamStandbyMode: warm
@@ -4207,10 +4644,13 @@ objectClass: top
 objectClass: ciamEnvironment
 objectClass: ciamEnvironmentPlacement
 env: prod
+ciamAuthorizationRef: cn=F1209051525,ou=authorizations,dc=ciam-ops
+ciamChangeRef: cn=CHG-2029,ou=changes,dc=ciam-ops
 ciamJoinsDeploymentOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamLifecycle: building
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPlannedCutover: 20270115000000Z
+ciamReportingObligationRef: cn=dfars-7012,ou=reporting-obligations,dc=ciam-ops
 ciamResidencyRef: cn=us,ou=residencies,dc=ciam-ops
 
 dn: env=stage,cloud=source,ou=environments,dc=ciam-ops
@@ -4233,10 +4673,12 @@ ciamDropsRole: backup-vault
 ciamDropsRole: audit-trail
 ciamDropsRole: audit-archive
 ciamDropsRole: security-findings
+ciamDropsRole: security-incidents
 ciamDropsRole: config-history
 ciamDropsRole: threat-detection
 ciamDropsRole: vulnerability-scanning
 ciamDropsRole: config-recording
+ciamDropsRole: suppression-EXC-2026-01
 ciamDropsRole: posture
 ciamDropsRole: quota-vcpus
 ciamDropsRole: quota-public-ips
@@ -6172,7 +6614,10 @@ cn: defender
 ciamAllRegions: TRUE
 ciamAuditScope: account
 ciamBindingRole: threat-detection
+ciamChangeRef: cn=CHG-2029,ou=changes,dc=ciam-ops
 ciamFindingsRole: security-findings
+ciamIncidentRole: security-incidents
+ciamIncidentSeverity: high
 ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/providers
  /Microsoft.Security/pricings/defender
 ciamSecurityCoverage: control-plane
@@ -6355,6 +6800,26 @@ ciamBindingRole: pf-egress
 ciamCidr: 203.0.113.200/32
 ciamNatAllocation: static
 ciamProviderRef: natgw-ciam-prod
+
+dn: cn=exc-EXC-2026-01,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSuppression
+cn: exc-EXC-2026-01
+ciamBindingRole: suppression-EXC-2026-01
+ciamExceptionRef: cn=EXC-2026-01,ou=exceptions,dc=ciam-ops
+ciamFindingRef: aws:securityhub:IAM.6
+ciamProviderRef: arn:aws:securityhub:us-east-1:111122223333:automation-rule/0f
+ 3c2d1e-5b6a-4c7d-8e9f-a0b1c2d3e4f5
+
+dn: cn=exc-EXC-2026-03,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSuppression
+cn: exc-EXC-2026-03
+ciamBindingRole: suppression-EXC-2026-03
+ciamChangeRef: cn=CHG-2030,ou=changes,dc=ciam-ops
+ciamExceptionRef: cn=EXC-2026-03,ou=exceptions,dc=ciam-ops
+ciamFindingRef: azure:alerts:IpAnomaly
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 
 dn: cn=federation,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -6982,6 +7447,8 @@ ciamAllRegions: TRUE
 ciamAuditScope: account
 ciamBindingRole: threat-detection
 ciamFindingsRole: security-findings
+ciamIncidentRole: security-incidents
+ciamIncidentSeverity: high
 ciamProviderRef: arn:aws:guardduty:us-east-1:111122223333:detector/6ec9a2f1b3d
  4e5f60718293a4b5c6d7e
 ciamSecurityCoverage: control-plane
@@ -8155,6 +8622,8 @@ ciamAllRegions: TRUE
 ciamAuditScope: account
 ciamBindingRole: threat-detection
 ciamFindingsRole: security-findings
+ciamIncidentRole: security-incidents
+ciamIncidentSeverity: high
 ciamProviderRef: projects/example-aero-ciam-standby/locations/global/notificat
  ionConfigs/scc-findings
 ciamSecurityCoverage: control-plane
@@ -8838,6 +9307,36 @@ ciamFindingsRole: security-findings
 ciamProviderRef: arn:aws:securityhub:us-east-1:111122223333:hub/default
 ciamSecurityBaseline: aws-foundational
 ciamSecurityKind: posture
+
+dn: cn=security-incidents,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlertChannel
+cn: security-incidents
+ciamBindingRole: security-incidents
+ciamChannelKind: topic
+ciamProviderRef: arn:aws:sns:us-east-1:111122223333:ciam-prod-security-inciden
+ ts
+
+dn: cn=security-incidents,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStreamBinding
+cn: security-incidents
+ciamBindingRole: security-incidents
+ciamProviderRef: projects/example-aero-ciam-standby/topics/ciam-security-incid
+ ents
+ciamStreamKind: topic
+
+dn: cn=security-incidents,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlertChannel
+cn: security-incidents
+ciamBindingRole: security-incidents
+ciamChangeRef: cn=CHG-2029,ou=changes,dc=ciam-ops
+ciamChannelKind: action-group
+ciamOwner: cn=security-operations,ou=owners,dc=ciam-ops
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Insights/actionGroups/ag-ciam-security
+ -incidents
 
 dn: cn=security-logs,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top

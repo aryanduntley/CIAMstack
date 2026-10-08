@@ -217,6 +217,50 @@
       "match": "Role `budget` is bound in source/prod but not in target/prod",
       "planted": "the target has no budget",
       "cleared_by": "CHG-2028"
+    },
+    {
+      "id": "B32",
+      "area": "Binding",
+      "match": "Role `security-incidents` is bound in source/prod but not in target/prod",
+      "planted": "the target has no incident channel: GuardDuty pages the source's",
+      "cleared_by": "CHG-2029"
+    },
+    {
+      "id": "B34",
+      "area": "Exceptions",
+      "match": "Exception `EXC-2026-02` for target/prod is approved with no expiry",
+      "planted": "the target's risk acceptance (no container scanning until PingGateway moves) was approved without an expiry",
+      "cleared_by": "CHG-2030"
+    },
+    {
+      "id": "B35",
+      "area": "Authorization",
+      "match": "nist-800-53-r5:SC-12 is the customer's under `F1209051525` and was covered by `AGENCYAMAZONEW`",
+      "planted": "AWS covers key management (SC-12) for production; on Azure it is the customer's and nothing records how it is met",
+      "cleared_by": "CHG-2032"
+    },
+    {
+      "id": "B36",
+      "area": "Authorization",
+      "match": "target/prod uses Azure Communication Services (mail-sending), which `F1209051525` doesn't list in its boundary",
+      "planted": "the target sends mail through Azure Communication Services, which Microsoft's compliance-scope tables don't list; a blocker once the target must rely on FedRAMP Moderate (DFARS)",
+      "cleared_by": null,
+      "raised_by": "CHG-2029"
+    },
+    {
+      "id": "B37",
+      "area": "Authorization",
+      "match": "target/prod uses DNS Private Resolver",
+      "planted": "the target's forwarder to the corporate AD (CHG-2015) runs on the DNS Private Resolver, which Microsoft's compliance-scope tables don't list",
+      "cleared_by": null,
+      "raised_by": "CHG-2015"
+    },
+    {
+      "id": "B33",
+      "area": "Incident reporting",
+      "match": "source/prod is held to reporting obligation `dfars-7012` and target/prod isn't",
+      "planted": "production is held to DFARS 252.204-7012 (72-hour reporting on DIBNet); the target to no reporting obligation",
+      "cleared_by": "CHG-2029"
     }
   ],
   "actions": [
@@ -829,8 +873,8 @@
       "id": "A90",
       "area": "Security",
       "match": "source/prod's vulnerability-scanning watches containers and target/prod's doesn't",
-      "planted": "Inspector scans the source's container images; without Defender for Containers nothing scans the target's registry",
-      "cleared_by": null
+      "planted": "Inspector scans the source's container images; without Defender for Containers nothing scans the target's registry (accepted by EXC-2026-02 once CHG-2030 gives it an expiry: shown as accepted, not counted)",
+      "cleared_by": "CHG-2030"
     },
     {
       "id": "A87",
@@ -892,6 +936,48 @@
       "planted": "the operator approved the vCPU increase (CHG-2028); the planner waits for the quotas to be fetched again once Microsoft grants it",
       "cleared_by": null,
       "raised_by": "CHG-2028"
+    },
+    {
+      "id": "A96",
+      "area": "Incident reporting",
+      "match": "source/prod's threat-detection sends high and worse findings to the incident process and target/prod's sends none",
+      "planted": "GuardDuty pages the source's incident process on high findings; Defender pages no one (an action while the target is held to no obligation)",
+      "cleared_by": "CHG-2029"
+    },
+    {
+      "id": "A97",
+      "area": "Exceptions",
+      "match": "source/prod's exception `EXC-2026-01` (false-positive: aws:securityhub:IAM.6) doesn't carry to target/prod",
+      "planted": "production's Security Hub IAM.6 false positive is the source's exception: the target decides for itself",
+      "cleared_by": null
+    },
+    {
+      "id": "A98",
+      "area": "POA&M",
+      "match": "POA&M item `POAM-2026-001` is open against cmmc-l2, which target/prod is assessed against",
+      "planted": "PingDS's LDAPS isn't on a FIPS-validated provider yet (SC.L2-3.13.11, allowed on the POA&M at 3 points)",
+      "cleared_by": null
+    },
+    {
+      "id": "A99",
+      "area": "POA&M",
+      "match": "Close out `CMMC-2026`'s POA&M by 2027-02-11",
+      "planted": "the CMMC Level 2 assessment is Conditional since 2026-08-15: its POA&M closes out within 180 days",
+      "cleared_by": null
+    },
+    {
+      "id": "A100",
+      "area": "Authorization",
+      "match": "target/prod uses Azure Communication Services (mail-sending), which `F1209051525` doesn't list in its boundary",
+      "planted": "an action while nothing requires the target to rely on an authorization (it becomes B36 once CHG-2029 holds the target to DFARS)",
+      "cleared_by": "CHG-2029"
+    },
+    {
+      "id": "A101",
+      "area": "Authorization",
+      "match": "source/prod is inside system boundary `SSP-CIAM-2026` and target/prod in none",
+      "planted": "the system security plan covers production and the standby, not the target",
+      "cleared_by": "CHG-2032"
     }
   ]
 }

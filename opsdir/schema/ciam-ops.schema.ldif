@@ -1,6 +1,7 @@
 # Operations Directory schema (opsdir): the attribute types and object classes opsdir defines for platform
 # configuration, as RFC 4512 definitions. The standard definitions they build on (RFC 4512 top, RFC 4519
-# cn, ou, description, RFC 4524 dc, mail, domain) are the server's own and are not redefined here.
+# cn, ou, description, telephoneNumber, RFC 4524 dc, mail, domain) are the server's own and are not
+# redefined here.
 # Extensions (legal per RFC 4512 §4.2):
 #   X-PORTABILITY  intent | contract | binding | secret-ref | observed | meta
 #   X-VALUE-TYPE   stricter value type enforced by the store (string, int, bool, time, dn, extdn,
@@ -421,10 +422,12 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.104 NAME 'ciamNotAfter' DESC 'Expire
  s' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGL
  E-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.105 NAME 'ciamCertPurpose' DESC 'Wha
- t the certificate is for (ca: a certification authority a truststore adds)'
-  EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE
-  X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:tls-server|saml-signing|saml-enc
- ryption|jwt-signing|partner-signing|ca' X-ORIGIN 'opsdir' )
+ t the certificate is for (client-auth: one the operator presents to authent
+ icate, e.g. to a reporting portal; ca: a certification authority a truststo
+ re adds)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SIN
+ GLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:tls-server|saml-signing
+ |saml-encryption|jwt-signing|partner-signing|client-auth|ca' X-ORIGIN 'opsd
+ ir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.106 NAME 'ciamSubjectAltName' DESC '
  DNS names the certificate is valid for' EQUALITY caseIgnoreMatch SYNTAX 1.3
  .6.1.4.1.1466.115.121.1.26 X-PORTABILITY 'contract' X-VALUE-TYPE 'fqdn' X-O
@@ -2307,6 +2310,356 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.516 NAME 'ciamBillingAccountRef' DES
  t; an Azure billing account; a Google Cloud billing account' EQUALITY caseI
  gnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 
  'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.517 NAME 'ciamReportingObligationRef
+ ' DESC 'A reporting obligation an environment is held to, or an incident fa
+ lls under (a ciamReportingObligation under ou=reporting-obligations)' EQUAL
+ ITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILI
+ TY 'intent' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.518 NAME 'ciamReportingHours' DESC '
+ How many hours from an incident\27s discovery a reporting obligation gives 
+ to report it to its authority (DFARS 252.204-7012: 72)' EQUALITY integerMat
+ ch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'meta' X
+ -VALUE-TYPE 'int' X-MIN '1' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.519 NAME 'ciamInternalReportingHours
+ ' DESC 'How many hours from discovery the operator\27s own people have to r
+ eport an incident to its incident response capability (the period NIST SP 8
+ 00-53 IR-6 leaves the organization to define)' EQUALITY integerMatch SYNTAX
+  1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TY
+ PE 'int' X-MIN '1' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.520 NAME 'ciamReportingAuthority' DE
+ SC 'The authority a reporting obligation\27s reports go to (a party; its ci
+ amContactUrl is where they are filed, e.g. https://dibnet.dod.mil)' EQUALIT
+ Y distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE 
+ X-PORTABILITY 'meta' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.521 NAME 'ciamReportingParty' DESC '
+ Who files a reporting obligation\27s reports (a party: the operator\27s des
+ ignated incident reporter)' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.
+ 4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'dn' X
+ -ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.522 NAME 'ciamMalwareSubmission' DES
+ C 'Where a reporting obligation says malicious software found in an inciden
+ t is submitted (DFARS 252.204-7012: the DoD Cyber Crime Center, DC3)' EQUAL
+ ITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE X-POR
+ TABILITY 'meta' X-VALUE-TYPE 'url' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.523 NAME 'ciamPreservationDays' DESC
+  'How many days after a report a reporting obligation requires images of af
+ fected systems and monitoring data to be preserved (DFARS 252.204-7012: 90)
+ ' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X
+ -PORTABILITY 'meta' X-VALUE-TYPE 'int' X-MIN '1' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.524 NAME 'ciamReportingCertificateRe
+ f' DESC 'The certificate a reporting obligation\27s reports are filed with 
+ (a ciamCertificate: its public facts only; DFARS 252.204-7012: a DoD-approv
+ ed medium assurance certificate)' EQUALITY distinguishedNameMatch SYNTAX 1.
+ 3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 
+ 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.525 NAME 'ciamContractNumber' DESC '
+ A contract that imposes a reporting obligation, by its number' EQUALITY cas
+ eIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta' X-VA
+ LUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.526 NAME 'ciamPrimeParty' DESC 'The 
+ prime contractor (or next higher-tier subcontractor) a subcontractor\27s re
+ porting obligation passes the authority\27s report number to (a party, with
+  its contact)' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.
+ 121.1.12 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'dn' X-ORIGIN 'opsd
+ ir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.527 NAME 'ciamCageCode' DESC 'A part
+ y\27s Commercial and Government Entity (CAGE) code' EQUALITY caseIgnoreMatc
+ h SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-
+ VALUE-TYPE 'string' X-PATTERN '[A-Z0-9]{5}' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.528 NAME 'ciamUei' DESC 'A party\27s
+  Unique Entity ID (SAM.gov)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.14
+ 66.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-P
+ ATTERN '[A-Z0-9]{12}' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.529 NAME 'ciamIncidentRole' DESC 'Th
+ e role of the binding a security service\27s findings at or above its ciamI
+ ncidentSeverity also go to: the incident process\27s alert channel, log des
+ tination or stream' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.12
+ 1.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN '
+ opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.530 NAME 'ciamIncidentSeverity' DESC
+  'The least severe of a security service\27s findings that go to the incide
+ nt process (its ciamIncidentRole): low, medium, high (when not given), crit
+ ical' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-
+ VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'enum:low|medium|high|critical' 
+ X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.531 NAME 'ciamDiscoveredAt' DESC 'Wh
+ en an incident was discovered: a reporting obligation\27s clock starts here
+ ' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE
+ -VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.532 NAME 'ciamReportedAt' DESC 'When
+  an incident\27s report was submitted to its authority' EQUALITY generalize
+ dTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE X-PORTABILITY 
+ 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.533 NAME 'ciamReportRef' DESC 'The n
+ umber the authority assigned an incident\27s report (DIBNet\27s incident re
+ port number)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' 
+ )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.534 NAME 'ciamPrimeNotifiedAt' DESC 
+ 'When a subcontractor gave the prime contractor an incident\27s report numb
+ er' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SING
+ LE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.535 NAME 'ciamMalwareSubmittedAt' DE
+ SC 'When malicious software found in an incident was submitted where its ob
+ ligation says' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.12
+ 1.1.24 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsd
+ ir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.536 NAME 'ciamMalwareRef' DESC 'The 
+ reference the malware submission was given' EQUALITY caseIgnoreMatch SYNTAX
+  1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TY
+ PE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.537 NAME 'ciamPreservedUntil' DESC '
+ Until when an incident\27s images and monitoring data are preserved (held)'
+  EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-
+ VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.538 NAME 'ciamMediaRequest' DESC 'Wh
+ at the authority asked of an incident\27s preserved media: none (yet), requ
+ ested, provided, declined' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466
+ .115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'enum:none|req
+ uested|provided|declined' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.539 NAME 'ciamAffectedEnvironment' D
+ ESC 'An environment an incident affected (the obligations it is held to app
+ ly to the incident)' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.146
+ 6.115.121.1.12 X-PORTABILITY 'meta' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.540 NAME 'ciamControlRef' DESC 'A co
+ ntrol a POA&M item or exception concerns, as framework:control (nist-800-17
+ 1-r2:3.13.11, nist-800-53-r5:SC-13, cmmc-l2:SC.L2-3.13.11)' EQUALITY caseIg
+ noreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta' X-VALUE
+ -TYPE 'string' X-PATTERN '[a-z0-9]+(-[a-z0-9]+)*:[A-Za-z0-9][A-Za-z0-9.()-]
+ *' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.541 NAME 'ciamWeakness' DESC 'What i
+ s wrong: the weakness a POA&M item plans to correct' EQUALITY caseIgnoreMat
+ ch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X
+ -VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.542 NAME 'ciamDiscoverySource' DESC 
+ 'How a weakness was found: assessment, scan, audit, continuous-monitoring, 
+ incident' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SIN
+ GLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'enum:assessment|scan|audit|con
+ tinuous-monitoring|incident' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.543 NAME 'ciamAssessmentRef' DESC 'T
+ he assessment, scan or report a weakness or score comes from (its id or lin
+ k)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VA
+ LUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.544 NAME 'ciamScheduledCompletion' D
+ ESC 'When a POA&M item is scheduled to be corrected' EQUALITY generalizedTi
+ meMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'me
+ ta' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.545 NAME 'ciamMilestone' DESC 'A mil
+ estone of a POA&M item: its date and what is done by then (2026-11-30: keys
+  moved to the HSM)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.12
+ 1.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.546 NAME 'ciamPoamStatus' DESC 'Whet
+ her a POA&M item is open or closed (corrected and verified)' EQUALITY caseI
+ gnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 
+ 'meta' X-VALUE-TYPE 'enum:open|closed' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.547 NAME 'ciamRiskRating' DESC 'How 
+ much risk a weakness carries: low, moderate, high' EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-V
+ ALUE-TYPE 'enum:low|moderate|high' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.548 NAME 'ciamVendorDependency' DESC
+  'Whether correcting a weakness waits on a vendor (tracked, not a deviation
+ )' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X
+ -PORTABILITY 'meta' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.549 NAME 'ciamFindingRef' DESC 'A cl
+ oud finding or control a POA&M item, exception or suppression concerns, as 
+ provider:kind:id (the kind and id its adapter defines: aws:securityhub:IAM.
+ 6)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABI
+ LITY 'meta' X-VALUE-TYPE 'string' X-PATTERN '[a-z0-9-]+:[a-z0-9-]+:.+' X-OR
+ IGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.550 NAME 'ciamEvidenceRef' DESC 'Whe
+ re the evidence for a POA&M item, exception or assessment is kept' EQUALITY
+  caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 X-PORTABILITY 'meta' 
+ X-VALUE-TYPE 'url' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.551 NAME 'ciamLastReviewedAt' DESC '
+ When a POA&M item or exception was last reviewed' EQUALITY generalizedTimeM
+ atch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'meta'
+  X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.552 NAME 'ciamPointValue' DESC 'What
+  a POA&M item\27s requirement is worth in its framework\27s scoring (CMMC: 
+ 1, 3 or 5)' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SING
+ LE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'int' X-MIN '1' X-MAX '5' X-ORIG
+ IN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.553 NAME 'ciamExceptionKind' DESC 'W
+ hat an exception is: risk-adjustment, false-positive, operational-requireme
+ nt, risk-acceptance, compensating-control' EQUALITY caseIgnoreMatch SYNTAX 
+ 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYP
+ E 'enum:risk-adjustment|false-positive|operational-requirement|risk-accepta
+ nce|compensating-control' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.554 NAME 'ciamExceptionStatus' DESC 
+ 'Where an exception stands: requested, approved, rejected, withdrawn' EQUAL
+ ITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-POR
+ TABILITY 'meta' X-VALUE-TYPE 'enum:requested|approved|rejected|withdrawn' X
+ -ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.556 NAME 'ciamCompensatingControl' D
+ ESC 'What meets a control\27s purpose another way while an exception stands
+ ' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILI
+ TY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.557 NAME 'ciamRiskAuthority' DESC 'W
+ ho may accept the risk an exception carries (a party: the authorizing offic
+ ial, the risk owner)' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.14
+ 66.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'dn' X-ORIGI
+ N 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.558 NAME 'ciamApprovedAt' DESC 'When
+  an exception was approved' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.
+ 1.1466.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X
+ -ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.559 NAME 'ciamExpiresAt' DESC 'When 
+ an exception (or the cloud\27s suppression carrying it out) ends' EQUALITY 
+ generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE X-PO
+ RTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.560 NAME 'ciamAcceptsFinding' DESC '
+ A planner finding an exception accepts, as its area and a phrase of its tex
+ t (Budgets: has a budget): it is shown as accepted, never hidden; a changed
+  wording makes it count again' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.
+ 1466.115.121.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsd
+ ir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.561 NAME 'ciamPoamRef' DESC 'The POA
+ &M item an exception belongs to' EQUALITY distinguishedNameMatch SYNTAX 1.3
+ .6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE '
+ dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.562 NAME 'ciamFramework' DESC 'The f
+ ramework a compliance assessment is against, by its neutral id (cmmc-l2, ni
+ st-800-171-r2)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.
+ 15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-PATTERN '[a-z0
+ -9]+(-[a-z0-9]+)*' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.563 NAME 'ciamAssessmentKind' DESC '
+ Who assessed: self, c3pao, dibcac, dod-medium, dod-high' EQUALITY caseIgnor
+ eMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'met
+ a' X-VALUE-TYPE 'enum:self|c3pao|dibcac|dod-medium|dod-high' X-ORIGIN 'opsd
+ ir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.564 NAME 'ciamAssessmentScore' DESC 
+ 'The score an assessment gave (NIST SP 800-171 DoD methodology: -203 to 110
+ )' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE 
+ X-PORTABILITY 'meta' X-VALUE-TYPE 'int' X-MIN '-1000' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.565 NAME 'ciamAssessmentMaxScore' DE
+ SC 'The highest score the assessment\27s framework gives (110 for NIST SP 8
+ 00-171 and CMMC Level 2)' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115
+ .121.1.27 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'int' X-MIN '1' X-
+ ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.566 NAME 'ciamAssessedAt' DESC 'When
+  an assessment was completed (a Conditional status starts its POA&M closeou
+ t clock)' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.2
+ 4 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.567 NAME 'ciamAssessmentStatus' DESC
+  'The status an assessment gave: conditional (open POA&M items) or final' E
+ QUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X
+ -PORTABILITY 'meta' X-VALUE-TYPE 'enum:conditional|final' X-ORIGIN 'opsdir'
+  )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.568 NAME 'ciamFullScoreBy' DESC 'Whe
+ n the operator expects to reach the framework\27s full score (what SPRS ask
+ s with the score)' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.11
+ 5.121.1.24 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN '
+ opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.569 NAME 'ciamExceptionRef' DESC 'Th
+ e exception a cloud\27s suppression of findings carries out' EQUALITY disti
+ nguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTA
+ BILITY 'meta' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.570 NAME 'ciamProviderAddOn' DESC 'A
+  Terraform provider beyond the cloud\27s own its roots may use, as its adap
+ ter names it (an add-on an operator allows: Azure\27s azapi for what azurer
+ m doesn\27t manage)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.1
+ 21.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.571 NAME 'ciamPackageId' DESC 'A clo
+ ud offering\27s FedRAMP package id (the Marketplace\27s: F1603047866)' EQUA
+ LITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PO
+ RTABILITY 'meta' X-VALUE-TYPE 'string' X-PATTERN '[A-Za-z0-9][A-Za-z0-9_-]*
+ ' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.572 NAME 'ciamOfferingName' DESC 'Th
+ e cloud service offering an authorization covers, as its package names it (
+ AWS GovCloud)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.1
+ 5 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir'
+  )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.573 NAME 'ciamProviderName' DESC 'Th
+ e cloud service provider, as its package names it' EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-V
+ ALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.574 NAME 'ciamDeploymentModel' DESC 
+ 'An offering\27s deployment model as its package states it (Public Cloud, G
+ overnment-Only Cloud, ...)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.146
+ 6.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-OR
+ IGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.575 NAME 'ciamAuthorizationLevel' DE
+ SC 'A level an authorization grants: fedramp-low|moderate|high (Class B, C,
+  D), dod-il2|il4|il5 (a DoD provisional authorization)' EQUALITY caseIgnore
+ Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta' X-VALUE-TYP
+ E 'enum:fedramp-low|fedramp-moderate|fedramp-high|dod-il2|dod-il4|dod-il5' 
+ X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.576 NAME 'ciamAuthorizationStatus' D
+ ESC 'Where an authorization stands: certified (Rev5), validated (20x), equi
+ valent (to FedRAMP Moderate, with evidence), in-process, revoked' EQUALITY 
+ caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABI
+ LITY 'meta' X-VALUE-TYPE 'enum:certified|validated|equivalent|in-process|re
+ voked' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.577 NAME 'ciamCertificationType' DES
+ C 'How the offering is certified, as its package says (Rev5, 20x; JAB or ag
+ ency path)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 S
+ INGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.578 NAME 'ciamCertifiedAt' DESC 'Whe
+ n an offering was first certified (authorized)' EQUALITY generalizedTimeMat
+ ch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'meta' X
+ -VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.579 NAME 'ciamInScopeService' DESC '
+ A service inside an authorization\27s boundary, as the package names it (Am
+ azon Simple Storage Service (S3))' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.
+ 4.1.1466.115.121.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN '
+ opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.580 NAME 'ciamScopeAsOf' DESC 'When 
+ the in-scope service list an authorization holds was last updated by its pr
+ ovider' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 
+ SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.581 NAME 'ciamSourceUrl' DESC 'Where
+  an imported list was taken from (the provider\27s published package overvi
+ ew)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-V
+ ALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'url' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.582 NAME 'ciamRetrievedAt' DESC 'Whe
+ n an imported list was taken from its source' EQUALITY generalizedTimeMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'meta' X-V
+ ALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.583 NAME 'ciamCrmRef' DESC 'The cust
+ omer responsibility matrix (CIS/CRM workbook) an authorization comes with: 
+ its document id and version, or where it is kept' EQUALITY caseIgnoreMatch 
+ SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VA
+ LUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.584 NAME 'ciamAuthorizationRef' DESC
+  'The cloud authorization an environment relies on, or a control responsibi
+ lity belongs to' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.11
+ 5.121.1.12 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X-ORIGIN '
+ opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.585 NAME 'ciamRequiredAuthorization'
+  DESC 'A level an environment\27s cloud authorization must meet (an obligat
+ ion\27s requirement: dfars-7012 asks for fedramp-moderate; a DoD contract f
+ or dod-il4 or dod-il5)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.11
+ 5.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:fedramp-low|fedramp-mo
+ derate|fedramp-high|dod-il2|dod-il4|dod-il5' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.586 NAME 'ciamRequiresConfiguration'
+  DESC 'What a customer must configure for its use to be inside an authoriza
+ tion\27s boundary: assured-workload, us-data-location, us-person-support, i
+ l5-isolation' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  X-PORTABILITY 'meta' X-VALUE-TYPE 'enum:assured-workload|us-data-location|
+ us-person-support|il5-isolation' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.587 NAME 'ciamConfigurationMet' DESC
+  'A configuration an environment has in place for its authorization (an Ass
+ ured Workloads workload, US data location, US-person support, IL5 isolation
+ )' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABIL
+ ITY 'intent' X-VALUE-TYPE 'enum:assured-workload|us-data-location|us-person
+ -support|il5-isolation' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.588 NAME 'ciamSspRef' DESC 'The syst
+ em security plan a system boundary is documented in: its id and version' EQ
+ UALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-
+ PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.589 NAME 'ciamResponsibility' DESC '
+ Who meets a control under an authorization: inherited (the provider), share
+ d, customer' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 
+ SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'enum:inherited|shared|custo
+ mer' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.590 NAME 'ciamCustomerAction' DESC '
+ What the customer must do for a control its authorization leaves to it' EQU
+ ALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-P
+ ORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.591 NAME 'ciamImplementation' DESC '
+ How the operator meets a control its authorization leaves to it' EQUALITY c
+ aseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABIL
+ ITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -2439,9 +2792,10 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.31 NAME 'ciamIncident' DESC 'Incident
  At ) MAY ( ciamSeverity $ ciamInvolved $ ciamRootCause ) X-ORIGIN 'opsdir' 
  )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.32 NAME 'ciamParty' DESC 'Team, partn
- er, vendor, or the operator of the platform' SUP ciamObject STRUCTURAL MUST
-  ( cn $ ciamOwnerKind ) MAY ( mail $ ciamContactUrl $ ciamDisplayName ) X-O
- RIGIN 'opsdir' )
+ er, vendor, or the operator of the platform (how to reach it: mail, telepho
+ ne, contact link)' SUP ciamObject STRUCTURAL MUST ( cn $ ciamOwnerKind ) MA
+ Y ( mail $ telephoneNumber $ ciamContactUrl $ ciamDisplayName ) X-ORIGIN 'o
+ psdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.33 NAME 'ciamStackComponent' DESC 'On
  e component of an environment stack: the adapter that fills a role' SUP cia
  mObject STRUCTURAL MUST ( cn $ ciamStackRole $ ciamAdapter ) MAY ( ciamAdap
@@ -2814,14 +3168,17 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.102 NAME 'ciamFailoverDrill' DESC 'On
  unbookRef ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.103 NAME 'ciamCloudAccount' DESC 'Add
  ed to a cloud: the account its environments run in, the organization above 
- it and the account its billing is managed from' SUP top AUXILIARY MAY ( cia
- mAccountRef $ ciamOrganizationRef $ ciamBillingAccountRef ) X-ORIGIN 'opsdi
- r' )
+ it, the account its billing is managed from and the Terraform provider add-
+ ons its roots may use' SUP top AUXILIARY MAY ( ciamAccountRef $ ciamOrganiz
+ ationRef $ ciamBillingAccountRef $ ciamProviderAddOn ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.104 NAME 'ciamEnvironmentPlacement' D
  ESC 'Added to an environment: the resource group its resources go in (where
-  the cloud has them), how sensitive its data is and the residency it is hel
- d to' SUP top AUXILIARY MAY ( ciamResourceGroup $ ciamDataClassification $ 
- ciamResidencyRef ) X-ORIGIN 'opsdir' )
+  the cloud has them), how sensitive its data is, the residency and reportin
+ g obligations it is held to, the cloud authorization it relies on (the leve
+ l it requires, the configurations it has in place)' SUP top AUXILIARY MAY (
+  ciamResourceGroup $ ciamDataClassification $ ciamResidencyRef $ ciamReport
+ ingObligationRef $ ciamAuthorizationRef $ ciamRequiredAuthorization $ ciamC
+ onfigurationMet ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.105 NAME 'ciamChargedParty' DESC 'Add
  ed to a party: the cost center its spending is charged to' SUP top AUXILIAR
  Y MAY ciamCostCenter X-ORIGIN 'opsdir' )
@@ -2858,11 +3215,13 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.112 NAME 'ciamSecurityService' DESC '
  A cloud security service an environment runs (threat detection, vulnerabili
  ty scanning, configuration recording, posture assessment): what it watches 
  or assesses, one account or the whole organization, every region or one, wh
- ere its findings go, how long it keeps its records (ciamRetentionDays), and
-  who keeps it when the platform team doesn\27t' SUP ciamBinding STRUCTURAL 
- MUST ciamSecurityKind MAY ( ciamSecurityCoverage $ ciamComplianceStandard $
-  ciamSecurityBaseline $ ciamAuditScope $ ciamAllRegions $ ciamFindingsRole 
- $ ciamRetentionDays $ ciamProviderRef $ ciamManagedBy ) X-ORIGIN 'opsdir' )
+ ere its findings go (and those at or above a severity, to the incident proc
+ ess), how long it keeps its records (ciamRetentionDays), and who keeps it w
+ hen the platform team doesn\27t' SUP ciamBinding STRUCTURAL MUST ciamSecuri
+ tyKind MAY ( ciamSecurityCoverage $ ciamComplianceStandard $ ciamSecurityBa
+ seline $ ciamAuditScope $ ciamAllRegions $ ciamFindingsRole $ ciamIncidentR
+ ole $ ciamIncidentSeverity $ ciamRetentionDays $ ciamProviderRef $ ciamMana
+ gedBy ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.113 NAME 'ciamQuotaNeed' DESC 'What a
  n environment needs of a provider limit: a quota kind (or the provider\27s 
  own quota, ciamProviderRef) and how many; and, when the provider grants les
@@ -2885,3 +3244,84 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.116 NAME 'ciamQuotaLimit' DESC 'One l
  ted, its name, the usage when fetched and the quota kind it answers' SUP ci
  amObject STRUCTURAL MUST ( cn $ ciamQuotaValue ) MAY ( ciamQuotaName $ ciam
  QuotaUsage $ ciamQuotaKind ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.117 NAME 'ciamReportingObligation' DE
+ SC 'An incident reporting obligation the estate is held to (under ou=report
+ ing-obligations, named by the regime\27s id: dfars-7012): the hours from di
+ scovery to report, to the operator\27s own incident response and to the aut
+ hority; who files and with which certificate; where malware goes; how long 
+ evidence is preserved after a report (and the runbook placing the hold); th
+ e contracts imposing it and the prime contractor a subcontractor reports to
+ ' SUP ciamObject STRUCTURAL MUST ( cn $ ciamReportingHours ) MAY ( ciamInte
+ rnalReportingHours $ ciamReportingAuthority $ ciamReportingParty $ ciamMalw
+ areSubmission $ ciamPreservationDays $ ciamReportingCertificateRef $ ciamCo
+ ntractNumber $ ciamPrimeParty $ ciamRunbookRef $ ciamDocUrl $ ciamRequiredA
+ uthorization ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.118 NAME 'ciamReportingIdentity' DESC
+  'Added to a party: what a reporting regime asks to identify it by (CAGE co
+ de, Unique Entity ID)' SUP top AUXILIARY MAY ( ciamCageCode $ ciamUei ) X-O
+ RIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.119 NAME 'ciamReportableIncident' DES
+ C 'Added to an incident: what its reporting needs: the obligations it falls
+  under (its own, else those of the environments it affected), when it was d
+ iscovered and reported, the authority\27s report number, when the prime was
+  told, malware submitted, until when its media are preserved and what the a
+ uthority asked of them' SUP top AUXILIARY MAY ( ciamReportingObligationRef 
+ $ ciamAffectedEnvironment $ ciamDiscoveredAt $ ciamReportedAt $ ciamReportR
+ ef $ ciamPrimeNotifiedAt $ ciamMalwareSubmittedAt $ ciamMalwareRef $ ciamPr
+ eservedUntil $ ciamMediaRequest ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.120 NAME 'ciamPoamItem' DESC 'A known
+  weakness the operator plans to correct (under ou=poam): the controls it co
+ ncerns, how and when it was found, when and how it will be corrected, its r
+ isk, the environments it affects and what it is worth in its framework\27s 
+ scoring' SUP ciamObject STRUCTURAL MUST ( cn $ ciamWeakness $ ciamPoamStatu
+ s $ ciamAffectedEnvironment ) MAY ( ciamControlRef $ ciamDiscoverySource $ 
+ ciamAssessmentRef $ ciamDiscoveredAt $ ciamScheduledCompletion $ ciamMilest
+ one $ ciamRiskRating $ ciamVendorDependency $ ciamInvolved $ ciamFindingRef
+  $ ciamEvidenceRef $ ciamLastReviewedAt $ ciamPointValue ) X-ORIGIN 'opsdir
+ ' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.121 NAME 'ciamRiskException' DESC 'An
+  approved deviation (under ou=exceptions) for the environments it names, ne
+ ver others: what it is, why, who may accept the risk and who approved it, u
+ ntil when, and the controls, cloud findings and planner findings it covers'
+  SUP ciamObject STRUCTURAL MUST ( cn $ ciamExceptionKind $ ciamExceptionSta
+ tus $ ciamAffectedEnvironment ) MAY ( ciamJustification $ ciamCompensatingC
+ ontrol $ ciamRiskAuthority $ ciamApprovedBy $ ciamApprovedAt $ ciamExpiresA
+ t $ ciamControlRef $ ciamFindingRef $ ciamAcceptsFinding $ ciamPoamRef $ ci
+ amEvidenceRef $ ciamLastReviewedAt ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.122 NAME 'ciamComplianceAssessment' D
+ ESC 'A compliance assessment of environments against a framework (under ou=
+ assessments): who assessed, when, the score and the status it gave' SUP cia
+ mObject STRUCTURAL MUST ( cn $ ciamFramework $ ciamAssessmentKind $ ciamAss
+ essedAt ) MAY ( ciamAssessmentScore $ ciamAssessmentMaxScore $ ciamAssessme
+ ntStatus $ ciamAffectedEnvironment $ ciamFullScoreBy $ ciamAssessmentRef $ 
+ ciamEvidenceRef ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.123 NAME 'ciamSuppression' DESC 'A cl
+ oud\27s suppression of findings in an environment (archived, muted, exempte
+ d), carrying out an exception: the findings it covers, until when; local to
+  its environment\27s cloud (a target gets its own from its own exceptions)'
+  SUP ciamBinding STRUCTURAL MAY ( ciamFindingRef $ ciamExceptionRef $ ciamE
+ xpiresAt $ ciamProviderRef $ ciamManagedBy ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.124 NAME 'ciamCloudAuthorization' DES
+ C 'A cloud offering\27s authorization the estate relies on (under ou=author
+ izations, named by its package id): the offering, its levels and status, th
+ e services inside its boundary (imported from the provider\27s package over
+ view, with where and when), its customer responsibility matrix and what cus
+ tomers must configure' SUP ciamObject STRUCTURAL MUST ( cn $ ciamPackageId 
+ ) MAY ( ciamOfferingName $ ciamProviderName $ ciamCloudProvider $ ciamCloud
+ Environment $ ciamDeploymentModel $ ciamAuthorizationLevel $ ciamAuthorizat
+ ionStatus $ ciamCertificationType $ ciamCertifiedAt $ ciamInScopeService $ 
+ ciamScopeAsOf $ ciamSourceUrl $ ciamRetrievedAt $ ciamCrmRef $ ciamRequires
+ Configuration $ ciamEvidenceRef $ ciamDocUrl ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.125 NAME 'ciamSystemBoundary' DESC 'T
+ he operator\27s own system boundary (under ou=boundaries): the system secur
+ ity plan it is documented in, the environments inside it and its authorizin
+ g official' SUP ciamObject STRUCTURAL MUST cn MAY ( ciamSspRef $ ciamAffect
+ edEnvironment $ ciamRiskAuthority $ ciamDocUrl $ ciamEvidenceRef ) X-ORIGIN
+  'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.126 NAME 'ciamControlResponsibility' 
+ DESC 'Who meets a control under a cloud authorization (under ou=responsibil
+ ities, from its customer responsibility matrix), what the customer must do 
+ and how the operator does it (or the exception or POA&M item covering it)' 
+ SUP ciamObject STRUCTURAL MUST ( cn $ ciamAuthorizationRef $ ciamControlRef
+  $ ciamResponsibility ) MAY ( ciamCustomerAction $ ciamImplementation $ cia
+ mExceptionRef $ ciamPoamRef $ ciamEvidenceRef ) X-ORIGIN 'opsdir' )

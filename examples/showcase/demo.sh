@@ -55,6 +55,9 @@ od report alerts; od report log-routes; od report monitors
 echo "-- who changes each cloud: the control-plane audit trails, what they record, where, and how well protected"
 od report audit-trails
 od report security-services
+od report incident-reporting; od report reportable-incidents
+od report assessments; od report poam; od report exceptions
+od report authorizations; od report responsibilities
 echo "-- what each environment needs of its provider's limits, and the budgets its spending is held to"
 od report quotas; od report budgets
 echo "-- the user directory's attributes: what each is for, its privacy class, standard or defined here"
@@ -180,6 +183,16 @@ od import --change CHG-2027 --at 20260923090000Z gcp/quotas exports/quotas/gcp
 od fix show source/prod target/prod quota:prod:vcpus
 od modify --change CHG-2028 changes/CHG-2028-target-budget-and-quota.ldif
 od report quotas; od report budgets
+echo "-- incident reporting: the target is held to DFARS 252.204-7012 and Defender pages the incident process"
+od modify --change CHG-2029 changes/CHG-2029-target-incident-reporting.ldif
+od report incident-reporting; od report reportable-incidents
+echo "-- the target's risk acceptance gets its expiry; a Defender false positive is suppressed (azapi add-on)"
+od modify --change CHG-2030 changes/CHG-2030-target-exceptions.ldif
+od report exceptions
+echo "-- production's FedRAMP package overview; the target joins the SSP and records how it meets SC-12 on Azure"
+od import --change CHG-2031 --at 20260923090000Z fedramp/cpo exports/fedramp
+od modify --change CHG-2032 changes/CHG-2032-target-ssp-and-key-management.ldif
+od report authorizations; od report responsibilities
 od history
 od render target/prod >/dev/null
 diff -ru out/before/terraform out/target-prod/terraform

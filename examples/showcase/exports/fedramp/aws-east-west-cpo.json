@@ -1,0 +1,125 @@
+{
+  "serviceIdentification": {
+    "fedRampPackageId": "AGENCYAMAZONEW",
+    "providerName": "Amazon Web Services, Inc.",
+    "serviceName": "AWS US East/West",
+    "serviceAcronym": "AWS",
+    "serviceDescription": "Trimmed for the showcase to the services production uses",
+    "certificationType": "Rev5",
+    "website": "https://aws.amazon.com/",
+    "logo": "https://www.fedramp.gov/assets/img/logos/CSP_logos/Amazon%20Logo.png"
+  },
+  "serviceProperties": {
+    "serviceType": [
+      "IaaS",
+      "PaaS",
+      "SaaS"
+    ],
+    "deploymentModel": "Public Cloud",
+    "securityCategorization": "Moderate (FedRAMP Certification Level Class C)"
+  },
+  "cpoMetadata": {
+    "version": "2026.08.26",
+    "lastUpdated": "2026-08-26T18:21:46.492Z"
+  },
+  "contactInformation": [
+    {
+      "contactType": "Security",
+      "contactName": "AWS Compliance FedRAMP"
+    }
+  ],
+  "certifiedServices": [
+    {
+      "serviceName": "Amazon Elastic Compute Cloud (EC2)",
+      "serviceDescription": "Amazon Elastic Compute Cloud (EC2)"
+    },
+    {
+      "serviceName": "Amazon Virtual Private Cloud (VPC)",
+      "serviceDescription": "Amazon Virtual Private Cloud (VPC)"
+    },
+    {
+      "serviceName": "Amazon RDS for Postgres",
+      "serviceDescription": "Amazon RDS for Postgres"
+    },
+    {
+      "serviceName": "Amazon Simple Storage Service (S3)",
+      "serviceDescription": "Amazon Simple Storage Service (S3)"
+    },
+    {
+      "serviceName": "Amazon Elastic Block Store (EBS)",
+      "serviceDescription": "Amazon Elastic Block Store (EBS)"
+    },
+    {
+      "serviceName": "AWS Key Management Service (KMS)",
+      "serviceDescription": "AWS Key Management Service (KMS)"
+    },
+    {
+      "serviceName": "AWS Secrets Manager",
+      "serviceDescription": "AWS Secrets Manager"
+    },
+    {
+      "serviceName": "AWS Certificate Manager (ACM)",
+      "serviceDescription": "AWS Certificate Manager (ACM)"
+    },
+    {
+      "serviceName": "Amazon Simple Notification Service (SNS)",
+      "serviceDescription": "Amazon Simple Notification Service (SNS)"
+    },
+    {
+      "serviceName": "Amazon Cloudwatch",
+      "serviceDescription": "Amazon Cloudwatch"
+    },
+    {
+      "serviceName": "Amazon Cloudwatch Logs",
+      "serviceDescription": "Amazon Cloudwatch Logs"
+    },
+    {
+      "serviceName": "AWS CloudTrail",
+      "serviceDescription": "AWS CloudTrail"
+    },
+    {
+      "serviceName": "Amazon GuardDuty",
+      "serviceDescription": "Amazon GuardDuty"
+    },
+    {
+      "serviceName": "Amazon Inspector",
+      "serviceDescription": "Amazon Inspector"
+    },
+    {
+      "serviceName": "AWS Config",
+      "serviceDescription": "AWS Config"
+    },
+    {
+      "serviceName": "AWS Security Hub CSPM",
+      "serviceDescription": "AWS Security Hub CSPM"
+    },
+    {
+      "serviceName": "Amazon Route 53",
+      "serviceDescription": "Amazon Route 53"
+    },
+    {
+      "serviceName": "AWS Backup",
+      "serviceDescription": "AWS Backup"
+    },
+    {
+      "serviceName": "AWS Identity and Access Management (IAM)",
+      "serviceDescription": "AWS Identity and Access Management (IAM)"
+    },
+    {
+      "serviceName": "AWS Organizations",
+      "serviceDescription": "AWS Organizations"
+    },
+    {
+      "serviceName": "Amazon EventBridge",
+      "serviceDescription": "Amazon EventBridge"
+    },
+    {
+      "serviceName": "Amazon Simple Email Service (SES)",
+      "serviceDescription": "Amazon Simple Email Service (SES)"
+    },
+    {
+      "serviceName": "Amazon Kinesis Data Streams",
+      "serviceDescription": "Amazon Kinesis Data Streams"
+    }
+  ]
+}

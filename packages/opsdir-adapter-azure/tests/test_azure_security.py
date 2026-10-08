@@ -140,3 +140,93 @@ def test_the_subscription_data_source_matches_the_audit_trail_s_so_the_root_keep
     assert out.count(data) == 2      # terraform.render keeps the first of identical data sources
     kept = tuple(x for i, x in enumerate(out) if not (x.startswith('data "') and x in out[:i]))
     assert kept.count(data) == 1
+
+
+# ------------------------------------------------------------------ incident routes
+INCIDENT_WS = f"{SUB}/resourceGroups/rg-sec/providers/Microsoft.OperationalInsights/workspaces/incidents"
+GROUP = f"{SUB}/resourceGroups/rg-sec/providers/Microsoft.Insights/actionGroups/security-incidents"
+INCIDENT_LOGS = entry(ALPHA, "incident-logs", "ciamLogDestination", ciamBindingRole="incident-logs",
+                      ciamDestinationKind="workspace", ciamProviderRef=INCIDENT_WS)
+PAGER = entry(ALPHA, "security-incidents", "ciamAlertChannel", ciamBindingRole="security-incidents",
+              ciamChannelKind="pager", ciamProviderRef=GROUP)
+
+
+def test_findings_at_or_above_the_incident_severity_go_to_the_incident_workspace():
+    out = _render(INCIDENT_LOGS,
+                  svc("defender", "threat-detection", ciamFindingsRole="security-logs", ciamIncidentRole="incident-logs",
+                      ciamIncidentSeverity="medium", ciamSecurityCoverage=("control-plane",)),
+                  svc("cspm", "posture", ciamIncidentRole="incident-logs", ciamIncidentSeverity="critical"))
+    automation = out[out.index('resource "azurerm_security_center_automation" "defender_incidents"'):]
+    automation = automation[:automation.index("\n}") + 2]
+    assert automation.count("rule_set {") == 2 and 'property_path  = "Severity"' in automation
+    assert ['expected_value = "high"' in automation, 'expected_value = "medium"' in automation,
+            'expected_value = "low"' in automation] == [True, True, False]
+    assert f'resource_id = "{INCIDENT_WS}"' in automation
+    cspm = out[out.index('resource "azurerm_security_center_automation" "cspm_incidents"'):]
+    assert 'property_path  = "properties.metadata.severity"' in cspm and 'expected_value = "High"' in cspm
+    assert "RegulatoryComplianceAssessment" not in cspm
+    assert "# cspm: Defender has no critical severity: its high findings go to incident-logs" in out
+
+
+def test_an_action_group_is_paged_by_a_log_alert_on_security_alert():
+    out = _render(PAGER, svc("defender", "threat-detection", ciamFindingsRole="security-logs",
+                             ciamIncidentRole="security-incidents", ciamSecurityCoverage=("control-plane",)))
+    assert 'resource "azurerm_monitor_scheduled_query_rules_alert_v2" "defender_incidents"' in out
+    assert f'scopes               = ["{WORKSPACE}"]' in out and f'action_groups = ["{GROUP}"]' in out
+    assert 'query                   = "SecurityAlert | where AlertSeverity in (\\"High\\")"' in out
+    assert "severity             = 1" in out
+    out = _render(PAGER, svc("defender", "threat-detection", ciamIncidentRole="security-incidents"))
+    assert out.endswith("# NOTE: defender's incidents to security-incidents: not rendered: a log alert on SecurityAlert "
+                        "needs the service's findings exported to a Log Analytics workspace (its ciamFindingsRole)")
+
+
+def test_incident_routes_are_read_back():
+    from opsdir_adapter_azure.security import severity_rule_sets
+    rules = [{"rule": [{"property_path": "Severity", "operator": "Equals", "expected_value": v,
+                        "property_type": "String"}]} for v in ("high", "medium")]
+    state = [*STATE,
+             ("azurerm_security_center_automation", {"name": "cspm-incidents", "action": [{"resource_id": INCIDENT_WS}],
+                                                     "source": [{"event_source": "Assessments", "rule_set": [
+                                                         {"rule": [{"property_path": "properties.metadata.severity",
+                                                                    "expected_value": "High"}]}]}]}),
+             ("azurerm_security_center_automation", {"name": "unused", "action": [{"resource_id": INCIDENT_WS}],
+                                                     "source": [{"event_source": "SubAssessments", "rule_set": rules}]}),
+             ("azurerm_monitor_scheduled_query_rules_alert_v2", {
+                 "id": f"{SUB}/resourceGroups/rg-sec/providers/Microsoft.Insights/scheduledQueryRules/defender-incidents",
+                 "criteria": [{"query": 'SecurityAlert\n| where AlertSeverity in ("High", "Medium")'}],
+                 "action": [{"action_groups": [GROUP]}]})]
+    found = {r.attrs["ciamSecurityKind"][0]: r for r in security_resources(state)}
+    assert (found["threat-detection"].links["ciamIncidentRole"], found["threat-detection"].attrs["ciamIncidentSeverity"]) \
+        == (GROUP, ("medium",))
+    assert found["threat-detection"].links["ciamFindingsRole"] == WORKSPACE
+    assert (found["posture"].links["ciamIncidentRole"], found["posture"].attrs["ciamIncidentSeverity"]) == (
+        INCIDENT_WS, ("high",))
+    assert severity_rule_sets("RegulatoryComplianceAssessment", "high") == ()
+
+
+def test_a_security_alert_log_alert_is_not_read_as_an_alarm():
+    from opsdir_adapter_azure.inventory import _alarms
+    alert = ("azurerm_monitor_scheduled_query_rules_alert_v2", {
+        "id": "x", "criteria": [{"query": 'SecurityAlert | where AlertSeverity in ("High")'}],
+        "action": [{"action_groups": [GROUP]}]})
+    assert _alarms([alert]) == ()
+
+
+def test_vulnerability_findings_and_recommendations_page_an_action_group_from_their_tables():
+    out = _render(PAGER, svc("mdvm", "vulnerability-scanning", ciamFindingsRole="security-logs",
+                             ciamIncidentRole="security-incidents", ciamIncidentSeverity="medium"),
+                  svc("cspm", "posture", ciamFindingsRole="security-logs", ciamIncidentRole="security-incidents"))
+    assert ('"SecurityNestedRecommendation | where RecommendationSeverity in (\\"High\\", \\"Medium\\") and '
+            'RecommendationState != \\"Healthy\\""') in out
+    assert ('"SecurityRecommendation | where RecommendationSeverity in (\\"High\\") and RecommendationState != '
+            '\\"Healthy\\""') in out
+    state = [("azurerm_security_center_subscription_pricing", {
+                 "id": f"{SUB}/providers/Microsoft.Security/pricings/CloudPosture", "tier": "Standard",
+                 "resource_type": "CloudPosture"}),
+             ("azurerm_monitor_scheduled_query_rules_alert_v2", {
+                 "id": "x", "action": [{"action_groups": [GROUP]}], "criteria": [{
+                     "query": 'SecurityRecommendation | where RecommendationSeverity in ("High") and '
+                              'RecommendationState != "Healthy"'}]})]
+    found = {r.attrs["ciamSecurityKind"][0]: r for r in security_resources(state)}
+    assert (found["posture"].links.get("ciamIncidentRole"), found["posture"].attrs["ciamIncidentSeverity"]) == (
+        GROUP, ("high",))

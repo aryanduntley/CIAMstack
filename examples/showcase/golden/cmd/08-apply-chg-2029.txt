@@ -1,0 +1,4 @@
+CHG-2029: modify env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2029: add cn=security-incidents,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2029: modify cn=defender,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+exit 0

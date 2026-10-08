@@ -55,8 +55,9 @@ CLASSES = (
              ('ciamSeverity', 'ciamInvolved', 'ciamRootCause'),
              'Incident / postmortem'),
     ClassDef(32, 'ciamParty', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamOwnerKind'),
-             ('mail', 'ciamContactUrl', 'ciamDisplayName'),
-             'Team, partner, vendor, or the operator of the platform'),
+             ('mail', 'telephoneNumber', 'ciamContactUrl', 'ciamDisplayName'),
+             'Team, partner, vendor, or the operator of the platform (how to reach it: mail, telephone, contact '
+             'link)'),
     ClassDef(91, 'ciamImportRun', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamImporter', 'ciamImportScope',
                                                                'ciamImportedAt'), (),
              'The last import by one importer of one environment (or of what environments share): when the live '

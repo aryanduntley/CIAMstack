@@ -2243,6 +2243,18 @@ resource "google_scc_v2_project_notification_config" "scc_findings" {
   }
 }
 
+resource "google_scc_v2_project_notification_config" "scc_incidents" {
+  # Security Command Center's service agent must be able to publish to the topic
+  config_id    = "scc-incidents"
+  project      = var.project_id
+  location     = "global"
+  description  = "scc's high and worse findings to security-incidents (incident process)"
+  pubsub_topic = "projects/example-aero-ciam-standby/topics/ciam-security-incidents"
+  streaming_config {
+    filter = "finding_class=\"THREAT\" AND state=\"ACTIVE\" AND (severity=\"CRITICAL\" OR severity=\"HIGH\")"
+  }
+}
+
 data "google_secret_manager_secret" "am_admin_password" {
   # metadata only: no secret version (value) enters Terraform state
   secret_id = "am-admin-password"

@@ -1,0 +1,23 @@
+# CHG-2032 (approved): production and the standby are inside the system security plan SSP-CIAM-2026 and the target
+# isn't, and the target's authorization (Azure, F1209051525) leaves SC-12 (cryptographic key establishment and
+# management) to the customer where AWS's covered it. The plan's boundary is extended to the target, and the platform
+# records how it meets SC-12 there: Key Vault keys created, rotated and retired by the platform's key roles under
+# WI-CIAM-012.
+dn: cn=SSP-CIAM-2026,ou=boundaries,dc=ciam-ops
+changetype: modify
+add: ciamAffectedEnvironment
+ciamAffectedEnvironment: env=prod,cloud=target,ou=environments,dc=ciam-ops
+-
+replace: ciamSspRef
+ciamSspRef: SSP-CIAM-2026 v3.2 (synthetic)
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2032,ou=changes,dc=ciam-ops
+
+dn: cn=azure-sc-12,ou=responsibilities,dc=ciam-ops
+changetype: modify
+replace: ciamImplementation
+ciamImplementation: Key Vault keys created, rotated and retired by the platform's key roles (WI-CIAM-012)
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2032,ou=changes,dc=ciam-ops

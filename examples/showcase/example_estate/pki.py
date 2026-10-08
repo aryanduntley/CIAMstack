@@ -18,6 +18,10 @@ CERTIFICATES = (
      "2024-11-02", "2026-11-02", None, None, "ciam-platform", "skyline-air", "WI-CIAM-001", None),
     ("harbor-mro-idp-signing", "partner-signing", "CN=Harbor MRO SSO", "self-signed",
      "2025-01-15", "2028-01-15", None, None, "ciam-platform", "harbor-mro", "WI-CIAM-001", None),
+    # the DoD-approved medium assurance certificate incident reports are filed with on DIBNet (synthetic)
+    ("dibnet-eca", "client-auth", "CN=Example Aero Security Operations, OU=ECA, O=Example Aero",
+     "CN=ECA Medium Assurance Issuing CA (synthetic)", "2025-06-30", "2027-06-30", None, None,
+     "security-operations", None, None, None),
 )
 
 

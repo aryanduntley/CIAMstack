@@ -2061,6 +2061,26 @@ resource "azurerm_security_center_automation" "defender_export" {
   }
 }
 
+resource "azurerm_monitor_scheduled_query_rules_alert_v2" "defender_incidents" {
+  name                 = "defender-incidents"
+  location             = data.azurerm_resource_group.main.location
+  resource_group_name  = data.azurerm_resource_group.main.name
+  description          = "defender's high and worse findings to security-incidents (incident process)"
+  scopes               = ["/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-ciam-prod-security"]
+  severity             = 1
+  evaluation_frequency = "PT5M"
+  window_duration      = "PT5M"
+  criteria {
+    query                   = "SecurityAlert | where AlertSeverity in (\"High\")"
+    time_aggregation_method = "Count"
+    operator                = "GreaterThan"
+    threshold               = 0
+  }
+  action {
+    action_groups = ["/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Insights/actionGroups/ag-ciam-security-incidents"]
+  }
+}
+
 data "azurerm_policy_set_definition" "nist_800_53_r5" {
   display_name = "NIST SP 800-53 Rev. 5"
 }
@@ -2110,6 +2130,21 @@ resource "azurerm_security_center_automation" "defender_vulnerability_export" {
 }
 
 # resource-changes: Azure records resource changes itself (Resource Graph change history, about 14 days): nothing to enable; keeping them longer needs an export (not rendered)
+
+resource "azapi_resource" "exc_exc_2026_03_ipanomaly" {
+  type      = "Microsoft.Security/alertsSuppressionRules@2019-01-01-preview"
+  name      = "exc-EXC-2026-03"
+  parent_id = data.azurerm_subscription.current.id
+  body = {
+    properties = {
+      alertType         = "IpAnomaly"
+      state             = "Enabled"
+      reason            = "FalsePositive"
+      comment           = "exception EXC-2026-03"
+      expirationDateUtc = "2027-03-31T00:00:00Z"
+    }
+  }
+}
 
 resource "azurerm_consumption_budget_resource_group" "monthly_spend" {
   name              = "target-prod-monthly-spend"

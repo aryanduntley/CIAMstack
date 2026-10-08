@@ -3,7 +3,7 @@ import pytest
 
 from opsdir.connectors.registry import schema_fragments, store_parts
 from opsdir.core.interchange.ldif import parse
-from opsdir.core.standard import fragment_counts, registry_ldif
+from opsdir.core.standard import STANDARD_ATTRIBUTES, STANDARD_CLASSES, fragment_counts, registry_ldif
 from opsdir.store import migrations, postgres as db
 from mini_estate import FAKE
 
@@ -58,7 +58,7 @@ def test_fresh_database_gets_every_migration_then_nothing(conn, parts):
     assert migrations.upgrade(conn, *parts) == ()
     assert migrations.current_version(conn) == shipped[-1].version
     n_attrs, n_classes = fragment_counts(schema_fragments())
-    assert db.registry_counts(conn) == (n_attrs + 6, n_classes + 3)   # + standard LDAP definitions
+    assert db.registry_counts(conn) == (n_attrs + len(STANDARD_ATTRIBUTES), n_classes + len(STANDARD_CLASSES))
 
 
 def test_edited_applied_migration_is_refused_and_nothing_changes(conn, parts):

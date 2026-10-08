@@ -15,10 +15,21 @@ needs of a provider limit (ciamQuotaNeed: virtual CPUs, public addresses, networ
 operator's decision when the provider grants less; the limits themselves are fetched from the provider into the quota
 catalog (under ou=quotas, one ciamQuotaCatalog per account and region, a ciamQuotaLimit per quota). A budget
 (ciamBudget) caps an environment's spending per period and says at which shares of it, spent or forecast, whom to
-alert; the account billing is managed from is the cloud's ciamBillingAccountRef."""
+alert; the account billing is managed from is the cloud's ciamBillingAccountRef. The reporting obligations (under
+ou=reporting-obligations: a regime's clock from discovery to report, the authority reports go to, who files them, the
+certificate they are filed with, how long evidence is preserved, the contracts that impose it) are the estate's to
+define, and an environment names the ones it is held to; a security service says which of its findings (at or above a
+severity) also go to the incident process; an incident (governance) may carry what its reporting needs (ciamReportable
+Incident: when it was discovered and reported, the authority's report number, malware submitted, media preserved). The plan of action and milestones (under ou=poam: each known weakness, the controls it concerns, how and when it
+is fixed), the approved deviations (under ou=exceptions: accepted risks, false positives, operational requirements, each
+approved by a risk authority until a date, for named environments) and the compliance assessments (under
+ou=assessments: score, status) are the estate's record of its compliance; a cloud's suppression of findings
+(ciamSuppression) is a binding of the environment it runs in, named after the exception it carries out."""
 from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
-from .naming import (AMOUNT, BUDGET_PERIODS, CLASSIFICATIONS, CURRENCY, QUOTA_DECISIONS, QUOTA_KINDS,
-                     REGION_STATUSES, SECURITY_AREAS, SECURITY_KINDS, STANDARD_ID, TAG_SOURCES)
+from .naming import (AMOUNT, ASSESSMENT_KINDS, AUTHORIZATION_STATUSES, CONFIGURATIONS, LEVELS, RESPONSIBILITY, ASSESSMENT_STATUSES, BUDGET_PERIODS, CAGE_CODE, CLASSIFICATIONS,
+                     CONTROL_REF, CURRENCY, DISCOVERY_SOURCES, EXCEPTION_KINDS, EXCEPTION_STATUSES, FINDING_REF,
+                     MEDIA_REQUESTS, POAM_STATUSES, QUOTA_DECISIONS, QUOTA_KINDS, REGION_STATUSES, RISK_RATINGS,
+                     SECURITY_AREAS, SECURITY_KINDS, SEVERITIES, STANDARD_ID, TAG_SOURCES, UEI)
 
 ATTRIBUTES = (
     AttributeDef(482, 'ciamAccountRef', 'string', 'binding', True,
@@ -112,16 +123,195 @@ ATTRIBUTES = (
                  "The account a cloud's billing is managed from, where its budgets live: an AWS management (payer) "
                  "or, for GovCloud, the associated standard account; an Azure billing account; a Google Cloud billing "
                  "account"),
+    AttributeDef(517, 'ciamReportingObligationRef', 'dn', 'intent', False,
+                 "A reporting obligation an environment is held to, or an incident falls under (a "
+                 "ciamReportingObligation under ou=reporting-obligations)"),
+    AttributeDef(518, 'ciamReportingHours', 'int', 'meta', True,
+                 "How many hours from an incident's discovery a reporting obligation gives to report it to its "
+                 "authority (DFARS 252.204-7012: 72)", (("X-MIN", "1"),)),
+    AttributeDef(519, 'ciamInternalReportingHours', 'int', 'meta', True,
+                 "How many hours from discovery the operator's own people have to report an incident to its incident "
+                 "response capability (the period NIST SP 800-53 IR-6 leaves the organization to define)",
+                 (("X-MIN", "1"),)),
+    AttributeDef(520, 'ciamReportingAuthority', 'dn', 'meta', True,
+                 "The authority a reporting obligation's reports go to (a party; its ciamContactUrl is where they are "
+                 "filed, e.g. https://dibnet.dod.mil)"),
+    AttributeDef(521, 'ciamReportingParty', 'dn', 'meta', True,
+                 "Who files a reporting obligation's reports (a party: the operator's designated incident reporter)"),
+    AttributeDef(522, 'ciamMalwareSubmission', 'url', 'meta', True,
+                 "Where a reporting obligation says malicious software found in an incident is submitted (DFARS "
+                 "252.204-7012: the DoD Cyber Crime Center, DC3)"),
+    AttributeDef(523, 'ciamPreservationDays', 'int', 'meta', True,
+                 "How many days after a report a reporting obligation requires images of affected systems and "
+                 "monitoring data to be preserved (DFARS 252.204-7012: 90)", (("X-MIN", "1"),)),
+    AttributeDef(524, 'ciamReportingCertificateRef', 'dn', 'meta', True,
+                 "The certificate a reporting obligation's reports are filed with (a ciamCertificate: its public "
+                 "facts only; DFARS 252.204-7012: a DoD-approved medium assurance certificate)"),
+    AttributeDef(525, 'ciamContractNumber', 'string', 'meta', False,
+                 "A contract that imposes a reporting obligation, by its number"),
+    AttributeDef(526, 'ciamPrimeParty', 'dn', 'meta', True,
+                 "The prime contractor (or next higher-tier subcontractor) a subcontractor's reporting obligation "
+                 "passes the authority's report number to (a party, with its contact)"),
+    AttributeDef(527, 'ciamCageCode', 'string', 'meta', True,
+                 "A party's Commercial and Government Entity (CAGE) code", (("X-PATTERN", CAGE_CODE),)),
+    AttributeDef(528, 'ciamUei', 'string', 'meta', True,
+                 "A party's Unique Entity ID (SAM.gov)", (("X-PATTERN", UEI),)),
+    AttributeDef(529, 'ciamIncidentRole', 'string', 'intent', True,
+                 "The role of the binding a security service's findings at or above its ciamIncidentSeverity also go "
+                 "to: the incident process's alert channel, log destination or stream"),
+    AttributeDef(530, 'ciamIncidentSeverity', enum_type(SEVERITIES), 'binding', True,
+                 "The least severe of a security service's findings that go to the incident process (its "
+                 "ciamIncidentRole): low, medium, high (when not given), critical"),
+    AttributeDef(531, 'ciamDiscoveredAt', 'time', 'meta', True,
+                 "When an incident was discovered: a reporting obligation's clock starts here"),
+    AttributeDef(532, 'ciamReportedAt', 'time', 'meta', True,
+                 "When an incident's report was submitted to its authority"),
+    AttributeDef(533, 'ciamReportRef', 'string', 'meta', True,
+                 "The number the authority assigned an incident's report (DIBNet's incident report number)"),
+    AttributeDef(534, 'ciamPrimeNotifiedAt', 'time', 'meta', True,
+                 "When a subcontractor gave the prime contractor an incident's report number"),
+    AttributeDef(535, 'ciamMalwareSubmittedAt', 'time', 'meta', True,
+                 "When malicious software found in an incident was submitted where its obligation says"),
+    AttributeDef(536, 'ciamMalwareRef', 'string', 'meta', True,
+                 "The reference the malware submission was given"),
+    AttributeDef(537, 'ciamPreservedUntil', 'time', 'meta', True,
+                 "Until when an incident's images and monitoring data are preserved (held)"),
+    AttributeDef(538, 'ciamMediaRequest', enum_type(MEDIA_REQUESTS), 'meta', True,
+                 "What the authority asked of an incident's preserved media: none (yet), requested, provided, "
+                 "declined"),
+    AttributeDef(539, 'ciamAffectedEnvironment', 'dn', 'meta', False,
+                 "An environment an incident affected (the obligations it is held to apply to the incident)"),
+    AttributeDef(540, 'ciamControlRef', 'string', 'meta', False,
+                 "A control a POA&M item or exception concerns, as framework:control (nist-800-171-r2:3.13.11, "
+                 "nist-800-53-r5:SC-13, cmmc-l2:SC.L2-3.13.11)", (("X-PATTERN", CONTROL_REF),)),
+    AttributeDef(541, 'ciamWeakness', 'string', 'meta', True,
+                 "What is wrong: the weakness a POA&M item plans to correct"),
+    AttributeDef(542, 'ciamDiscoverySource', enum_type(DISCOVERY_SOURCES), 'meta', True,
+                 "How a weakness was found: assessment, scan, audit, continuous-monitoring, incident"),
+    AttributeDef(543, 'ciamAssessmentRef', 'string', 'meta', True,
+                 "The assessment, scan or report a weakness or score comes from (its id or link)"),
+    AttributeDef(544, 'ciamScheduledCompletion', 'time', 'meta', True,
+                 "When a POA&M item is scheduled to be corrected"),
+    AttributeDef(545, 'ciamMilestone', 'string', 'meta', False,
+                 "A milestone of a POA&M item: its date and what is done by then (2026-11-30: keys moved to the HSM)"),
+    AttributeDef(546, 'ciamPoamStatus', enum_type(POAM_STATUSES), 'meta', True,
+                 "Whether a POA&M item is open or closed (corrected and verified)"),
+    AttributeDef(547, 'ciamRiskRating', enum_type(RISK_RATINGS), 'meta', True,
+                 "How much risk a weakness carries: low, moderate, high"),
+    AttributeDef(548, 'ciamVendorDependency', 'bool', 'meta', True,
+                 "Whether correcting a weakness waits on a vendor (tracked, not a deviation)"),
+    AttributeDef(549, 'ciamFindingRef', 'string', 'meta', False,
+                 "A cloud finding or control a POA&M item, exception or suppression concerns, as provider:kind:id (the "
+                 "kind and id its adapter defines: aws:securityhub:IAM.6)", (("X-PATTERN", FINDING_REF),)),
+    AttributeDef(550, 'ciamEvidenceRef', 'url', 'meta', False,
+                 "Where the evidence for a POA&M item, exception or assessment is kept"),
+    AttributeDef(551, 'ciamLastReviewedAt', 'time', 'meta', True,
+                 "When a POA&M item or exception was last reviewed"),
+    AttributeDef(552, 'ciamPointValue', 'int', 'meta', True,
+                 "What a POA&M item's requirement is worth in its framework's scoring (CMMC: 1, 3 or 5)",
+                 (("X-MIN", "1"), ("X-MAX", "5"))),
+    AttributeDef(553, 'ciamExceptionKind', enum_type(EXCEPTION_KINDS), 'meta', True,
+                 "What an exception is: risk-adjustment, false-positive, operational-requirement, risk-acceptance, "
+                 "compensating-control"),
+    AttributeDef(554, 'ciamExceptionStatus', enum_type(EXCEPTION_STATUSES), 'meta', True,
+                 "Where an exception stands: requested, approved, rejected, withdrawn"),
+    AttributeDef(556, 'ciamCompensatingControl', 'string', 'meta', False,
+                 "What meets a control's purpose another way while an exception stands"),
+    AttributeDef(557, 'ciamRiskAuthority', 'dn', 'meta', True,
+                 "Who may accept the risk an exception carries (a party: the authorizing official, the risk owner)"),
+    AttributeDef(558, 'ciamApprovedAt', 'time', 'meta', True,
+                 "When an exception was approved"),
+    AttributeDef(559, 'ciamExpiresAt', 'time', 'meta', True,
+                 "When an exception (or the cloud's suppression carrying it out) ends"),
+    AttributeDef(560, 'ciamAcceptsFinding', 'string', 'meta', False,
+                 "A planner finding an exception accepts, as its area and a phrase of its text (Budgets: has a budget): "
+                 "it is shown as accepted, never hidden; a changed wording makes it count again"),
+    AttributeDef(561, 'ciamPoamRef', 'dn', 'meta', True,
+                 "The POA&M item an exception belongs to"),
+    AttributeDef(562, 'ciamFramework', 'string', 'meta', True,
+                 "The framework a compliance assessment is against, by its neutral id (cmmc-l2, nist-800-171-r2)",
+                 (("X-PATTERN", STANDARD_ID),)),
+    AttributeDef(563, 'ciamAssessmentKind', enum_type(ASSESSMENT_KINDS), 'meta', True,
+                 "Who assessed: self, c3pao, dibcac, dod-medium, dod-high"),
+    AttributeDef(564, 'ciamAssessmentScore', 'int', 'meta', True,
+                 "The score an assessment gave (NIST SP 800-171 DoD methodology: -203 to 110)",
+                 (("X-MIN", "-1000"),)),
+    AttributeDef(565, 'ciamAssessmentMaxScore', 'int', 'meta', True,
+                 "The highest score the assessment's framework gives (110 for NIST SP 800-171 and CMMC Level 2)",
+                 (("X-MIN", "1"),)),
+    AttributeDef(566, 'ciamAssessedAt', 'time', 'meta', True,
+                 "When an assessment was completed (a Conditional status starts its POA&M closeout clock)"),
+    AttributeDef(567, 'ciamAssessmentStatus', enum_type(ASSESSMENT_STATUSES), 'meta', True,
+                 "The status an assessment gave: conditional (open POA&M items) or final"),
+    AttributeDef(568, 'ciamFullScoreBy', 'time', 'meta', True,
+                 "When the operator expects to reach the framework's full score (what SPRS asks with the score)"),
+    AttributeDef(569, 'ciamExceptionRef', 'dn', 'meta', True,
+                 "The exception a cloud's suppression of findings carries out"),
+    AttributeDef(570, 'ciamProviderAddOn', 'string', 'intent', False,
+                 "A Terraform provider beyond the cloud's own its roots may use, as its adapter names it (an add-on an "
+                 "operator allows: Azure's azapi for what azurerm doesn't manage)"),
+    AttributeDef(571, 'ciamPackageId', 'string', 'meta', True,
+                 "A cloud offering's FedRAMP package id (the Marketplace's: F1603047866)",
+                 (("X-PATTERN", r"[A-Za-z0-9][A-Za-z0-9_-]*"),)),
+    AttributeDef(572, 'ciamOfferingName', 'string', 'meta', True,
+                 "The cloud service offering an authorization covers, as its package names it (AWS GovCloud)"),
+    AttributeDef(573, 'ciamProviderName', 'string', 'meta', True,
+                 "The cloud service provider, as its package names it"),
+    AttributeDef(574, 'ciamDeploymentModel', 'string', 'meta', True,
+                 "An offering's deployment model as its package states it (Public Cloud, Government-Only Cloud, ...)"),
+    AttributeDef(575, 'ciamAuthorizationLevel', enum_type(LEVELS), 'meta', False,
+                 "A level an authorization grants: fedramp-low|moderate|high (Class B, C, D), dod-il2|il4|il5 (a DoD "
+                 "provisional authorization)"),
+    AttributeDef(576, 'ciamAuthorizationStatus', enum_type(AUTHORIZATION_STATUSES), 'meta', True,
+                 "Where an authorization stands: certified (Rev5), validated (20x), equivalent (to FedRAMP Moderate, "
+                 "with evidence), in-process, revoked"),
+    AttributeDef(577, 'ciamCertificationType', 'string', 'meta', True,
+                 "How the offering is certified, as its package says (Rev5, 20x; JAB or agency path)"),
+    AttributeDef(578, 'ciamCertifiedAt', 'time', 'meta', True,
+                 "When an offering was first certified (authorized)"),
+    AttributeDef(579, 'ciamInScopeService', 'string', 'meta', False,
+                 "A service inside an authorization's boundary, as the package names it (Amazon Simple Storage Service "
+                 "(S3))"),
+    AttributeDef(580, 'ciamScopeAsOf', 'time', 'meta', True,
+                 "When the in-scope service list an authorization holds was last updated by its provider"),
+    AttributeDef(581, 'ciamSourceUrl', 'url', 'meta', True,
+                 "Where an imported list was taken from (the provider's published package overview)"),
+    AttributeDef(582, 'ciamRetrievedAt', 'time', 'meta', True,
+                 "When an imported list was taken from its source"),
+    AttributeDef(583, 'ciamCrmRef', 'string', 'meta', True,
+                 "The customer responsibility matrix (CIS/CRM workbook) an authorization comes with: its document id "
+                 "and version, or where it is kept"),
+    AttributeDef(584, 'ciamAuthorizationRef', 'dn', 'intent', True,
+                 "The cloud authorization an environment relies on, or a control responsibility belongs to"),
+    AttributeDef(585, 'ciamRequiredAuthorization', enum_type(LEVELS), 'intent', False,
+                 "A level an environment's cloud authorization must meet (an obligation's requirement: dfars-7012 "
+                 "asks for fedramp-moderate; a DoD contract for dod-il4 or dod-il5)"),
+    AttributeDef(586, 'ciamRequiresConfiguration', enum_type(CONFIGURATIONS), 'meta', False,
+                 "What a customer must configure for its use to be inside an authorization's boundary: "
+                 "assured-workload, us-data-location, us-person-support, il5-isolation"),
+    AttributeDef(587, 'ciamConfigurationMet', enum_type(CONFIGURATIONS), 'intent', False,
+                 "A configuration an environment has in place for its authorization (an Assured Workloads workload, US "
+                 "data location, US-person support, IL5 isolation)"),
+    AttributeDef(588, 'ciamSspRef', 'string', 'meta', True,
+                 "The system security plan a system boundary is documented in: its id and version"),
+    AttributeDef(589, 'ciamResponsibility', enum_type(RESPONSIBILITY), 'meta', True,
+                 "Who meets a control under an authorization: inherited (the provider), shared, customer"),
+    AttributeDef(590, 'ciamCustomerAction', 'string', 'meta', True,
+                 "What the customer must do for a control its authorization leaves to it"),
+    AttributeDef(591, 'ciamImplementation', 'string', 'meta', True,
+                 "How the operator meets a control its authorization leaves to it"),
 )
 CLASSES = (
     ClassDef(103, 'ciamCloudAccount', 'top', 'AUXILIARY', (),
-             ('ciamAccountRef', 'ciamOrganizationRef', 'ciamBillingAccountRef'),
-             "Added to a cloud: the account its environments run in, the organization above it and the account its "
-             "billing is managed from"),
+             ('ciamAccountRef', 'ciamOrganizationRef', 'ciamBillingAccountRef', 'ciamProviderAddOn'),
+             "Added to a cloud: the account its environments run in, the organization above it, the account its "
+             "billing is managed from and the Terraform provider add-ons its roots may use"),
     ClassDef(104, 'ciamEnvironmentPlacement', 'top', 'AUXILIARY', (),
-             ('ciamResourceGroup', 'ciamDataClassification', 'ciamResidencyRef'),
+             ('ciamResourceGroup', 'ciamDataClassification', 'ciamResidencyRef', 'ciamReportingObligationRef',
+              'ciamAuthorizationRef', 'ciamRequiredAuthorization', 'ciamConfigurationMet'),
              "Added to an environment: the resource group its resources go in (where the cloud has them), how "
-             "sensitive its data is and the residency it is held to"),
+             "sensitive its data is, the residency and reporting obligations it is held to, the cloud authorization it relies on "
+             "(the level it requires, the configurations it has in place)"),
     ClassDef(105, 'ciamChargedParty', 'top', 'AUXILIARY', (), ('ciamCostCenter',),
              "Added to a party: the cost center its spending is charged to"),
     ClassDef(106, 'ciamTagRule', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTagKey', 'ciamTagSource'), ('ciamTagValue',),
@@ -140,11 +330,12 @@ CLASSES = (
              "Added to a cloud: how its clients reach the provider's APIs (FIPS 140 validated endpoints)"),
     ClassDef(112, 'ciamSecurityService', 'ciamBinding', 'STRUCTURAL', ('ciamSecurityKind',),
              ('ciamSecurityCoverage', 'ciamComplianceStandard', 'ciamSecurityBaseline', 'ciamAuditScope',
-              'ciamAllRegions', 'ciamFindingsRole', 'ciamRetentionDays', 'ciamProviderRef', 'ciamManagedBy'),
+              'ciamAllRegions', 'ciamFindingsRole', 'ciamIncidentRole', 'ciamIncidentSeverity', 'ciamRetentionDays',
+              'ciamProviderRef', 'ciamManagedBy'),
              "A cloud security service an environment runs (threat detection, vulnerability scanning, configuration "
              "recording, posture assessment): what it watches or assesses, one account or the whole organization, "
-             "every region or one, where its findings go, how long it keeps its records (ciamRetentionDays), and who "
-             "keeps it when the platform team doesn't"),
+             "every region or one, where its findings go (and those at or above a severity, to the incident process), "
+             "how long it keeps its records (ciamRetentionDays), and who keeps it when the platform team doesn't"),
     ClassDef(113, 'ciamQuotaNeed', 'ciamBinding', 'STRUCTURAL', ('ciamQuotaNeeded',),
              ('ciamQuotaKind', 'ciamProviderRef', 'ciamQuotaDecision', 'ciamQuotaRequested'),
              "What an environment needs of a provider limit: a quota kind (or the provider's own quota, "
@@ -162,6 +353,71 @@ CLASSES = (
              ('ciamQuotaName', 'ciamQuotaUsage', 'ciamQuotaKind'),
              "One limit of a quota catalog, named by the provider's quota id: the value granted, its name, the "
              "usage when fetched and the quota kind it answers"),
+    ClassDef(117, 'ciamReportingObligation', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamReportingHours'),
+             ('ciamInternalReportingHours', 'ciamReportingAuthority', 'ciamReportingParty', 'ciamMalwareSubmission',
+              'ciamPreservationDays', 'ciamReportingCertificateRef', 'ciamContractNumber', 'ciamPrimeParty',
+              'ciamRunbookRef', 'ciamDocUrl', 'ciamRequiredAuthorization'),
+             "An incident reporting obligation the estate is held to (under ou=reporting-obligations, named by the "
+             "regime's id: dfars-7012): the hours from discovery to report, to the operator's own incident response "
+             "and to the authority; who files and with which certificate; where malware goes; how long evidence is "
+             "preserved after a report (and the runbook placing the hold); the contracts imposing it and the prime "
+             "contractor a subcontractor reports to"),
+    ClassDef(118, 'ciamReportingIdentity', 'top', 'AUXILIARY', (), ('ciamCageCode', 'ciamUei'),
+             "Added to a party: what a reporting regime asks to identify it by (CAGE code, Unique Entity ID)"),
+    ClassDef(119, 'ciamReportableIncident', 'top', 'AUXILIARY', (),
+             ('ciamReportingObligationRef', 'ciamAffectedEnvironment', 'ciamDiscoveredAt', 'ciamReportedAt',
+              'ciamReportRef', 'ciamPrimeNotifiedAt', 'ciamMalwareSubmittedAt', 'ciamMalwareRef',
+              'ciamPreservedUntil', 'ciamMediaRequest'),
+             "Added to an incident: what its reporting needs: the obligations it falls under (its own, else those of "
+             "the environments it affected), when it was discovered and reported, the authority's report number, "
+             "when the prime was told, malware submitted, until when its media are preserved and what the authority "
+             "asked of them"),
+    ClassDef(120, 'ciamPoamItem', 'ciamObject', 'STRUCTURAL',
+             ('cn', 'ciamWeakness', 'ciamPoamStatus', 'ciamAffectedEnvironment'),
+             ('ciamControlRef', 'ciamDiscoverySource', 'ciamAssessmentRef', 'ciamDiscoveredAt', 'ciamScheduledCompletion',
+              'ciamMilestone', 'ciamRiskRating', 'ciamVendorDependency', 'ciamInvolved', 'ciamFindingRef',
+              'ciamEvidenceRef', 'ciamLastReviewedAt', 'ciamPointValue'),
+             "A known weakness the operator plans to correct (under ou=poam): the controls it concerns, how and when it "
+             "was found, when and how it will be corrected, its risk, the environments it affects and what it is "
+             "worth in its framework's scoring"),
+    ClassDef(121, 'ciamRiskException', 'ciamObject', 'STRUCTURAL',
+             ('cn', 'ciamExceptionKind', 'ciamExceptionStatus', 'ciamAffectedEnvironment'),
+             ('ciamJustification', 'ciamCompensatingControl', 'ciamRiskAuthority', 'ciamApprovedBy', 'ciamApprovedAt',
+              'ciamExpiresAt', 'ciamControlRef', 'ciamFindingRef', 'ciamAcceptsFinding', 'ciamPoamRef',
+              'ciamEvidenceRef', 'ciamLastReviewedAt'),
+             "An approved deviation (under ou=exceptions) for the environments it names, never others: what it is, "
+             "why, who may accept the risk and who approved it, until when, and the controls, cloud findings and "
+             "planner findings it covers"),
+    ClassDef(122, 'ciamComplianceAssessment', 'ciamObject', 'STRUCTURAL',
+             ('cn', 'ciamFramework', 'ciamAssessmentKind', 'ciamAssessedAt'),
+             ('ciamAssessmentScore', 'ciamAssessmentMaxScore', 'ciamAssessmentStatus', 'ciamAffectedEnvironment',
+              'ciamFullScoreBy', 'ciamAssessmentRef', 'ciamEvidenceRef'),
+             "A compliance assessment of environments against a framework (under ou=assessments): who assessed, when, "
+             "the score and the status it gave"),
+    ClassDef(123, 'ciamSuppression', 'ciamBinding', 'STRUCTURAL', (),
+             ('ciamFindingRef', 'ciamExceptionRef', 'ciamExpiresAt', 'ciamProviderRef', 'ciamManagedBy'),
+             "A cloud's suppression of findings in an environment (archived, muted, exempted), carrying out an "
+             "exception: the findings it covers, until when; local to its environment's cloud (a target gets its own "
+             "from its own exceptions)"),
+    ClassDef(124, 'ciamCloudAuthorization', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamPackageId'),
+             ('ciamOfferingName', 'ciamProviderName', 'ciamCloudProvider', 'ciamCloudEnvironment', 'ciamDeploymentModel',
+              'ciamAuthorizationLevel', 'ciamAuthorizationStatus', 'ciamCertificationType', 'ciamCertifiedAt',
+              'ciamInScopeService', 'ciamScopeAsOf', 'ciamSourceUrl', 'ciamRetrievedAt', 'ciamCrmRef',
+              'ciamRequiresConfiguration', 'ciamEvidenceRef', 'ciamDocUrl'),
+             "A cloud offering's authorization the estate relies on (under ou=authorizations, named by its package "
+             "id): the offering, its levels and status, the services inside its boundary (imported from the "
+             "provider's package overview, with where and when), its customer responsibility matrix and what customers "
+             "must configure"),
+    ClassDef(125, 'ciamSystemBoundary', 'ciamObject', 'STRUCTURAL', ('cn',),
+             ('ciamSspRef', 'ciamAffectedEnvironment', 'ciamRiskAuthority', 'ciamDocUrl', 'ciamEvidenceRef'),
+             "The operator's own system boundary (under ou=boundaries): the system security plan it is documented in, "
+             "the environments inside it and its authorizing official"),
+    ClassDef(126, 'ciamControlResponsibility', 'ciamObject', 'STRUCTURAL',
+             ('cn', 'ciamAuthorizationRef', 'ciamControlRef', 'ciamResponsibility'),
+             ('ciamCustomerAction', 'ciamImplementation', 'ciamExceptionRef', 'ciamPoamRef', 'ciamEvidenceRef'),
+             "Who meets a control under a cloud authorization (under ou=responsibilities, from its customer "
+             "responsibility matrix), what the customer must do and how the operator does it (or the exception or "
+             "POA&M item covering it)"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

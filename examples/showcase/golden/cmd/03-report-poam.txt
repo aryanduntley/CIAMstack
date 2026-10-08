@@ -1,0 +1,5 @@
+POA&M item     environments              controls                                        weakness                                                              risk      found                  scheduled   status  points  exceptions
+-------------  ------------------------  ----------------------------------------------  --------------------------------------------------------------------  --------  ---------------------  ----------  ------  ------  ----------
+POAM-2026-001  source/prod, target/prod  cmmc-l2:SC.L2-3.13.11, nist-800-171-r2:3.13.11  PingDS's LDAPS runs on a JSSE provider that isn't FIPS 140 validated  moderate  assessment 2026-08-15  2026-12-15  open    3
+(1 rows)
+exit 0

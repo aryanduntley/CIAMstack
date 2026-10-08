@@ -1,0 +1,5 @@
+assessment  framework  kind   score    status       assessed    closeout due  full score by  environments
+----------  ---------  -----  -------  -----------  ----------  ------------  -------------  ------------------------
+CMMC-2026   cmmc-l2    c3pao  104/110  conditional  2026-08-15  2027-02-11    2026-12-15     source/prod, target/prod
+(1 rows)
+exit 0

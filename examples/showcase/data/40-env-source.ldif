@@ -17,9 +17,11 @@ objectClass: top
 objectClass: ciamEnvironment
 objectClass: ciamEnvironmentPlacement
 env: prod
+ciamAuthorizationRef: cn=AGENCYAMAZONEW,ou=authorizations,dc=ciam-ops
 ciamDataClassification: confidential
 ciamLifecycle: active
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamReportingObligationRef: cn=dfars-7012,ou=reporting-obligations,dc=ciam-ops
 
 dn: ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -686,6 +688,15 @@ ciamBindingRole: security-findings
 ciamChannelKind: topic
 ciamProviderRef: arn:aws:sns:us-east-1:111122223333:ciam-prod-security
 
+dn: cn=security-incidents,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlertChannel
+cn: security-incidents
+ciamBindingRole: security-incidents
+ciamChannelKind: topic
+ciamProviderRef: arn:aws:sns:us-east-1:111122223333:ciam-prod-security-inciden
+ ts
+
 dn: cn=config-history,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamObjectStore
@@ -703,6 +714,8 @@ ciamAllRegions: TRUE
 ciamAuditScope: account
 ciamBindingRole: threat-detection
 ciamFindingsRole: security-findings
+ciamIncidentRole: security-incidents
+ciamIncidentSeverity: high
 ciamProviderRef: arn:aws:guardduty:us-east-1:111122223333:detector/6ec9a2f1b3d
  4e5f60718293a4b5c6d7e
 ciamSecurityCoverage: control-plane
@@ -736,6 +749,16 @@ ciamFindingsRole: config-history
 ciamProviderRef: config-recorder:config
 ciamRetentionDays: 2557
 ciamSecurityKind: config-recording
+
+dn: cn=exc-EXC-2026-01,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSuppression
+cn: exc-EXC-2026-01
+ciamBindingRole: suppression-EXC-2026-01
+ciamExceptionRef: cn=EXC-2026-01,ou=exceptions,dc=ciam-ops
+ciamFindingRef: aws:securityhub:IAM.6
+ciamProviderRef: arn:aws:securityhub:us-east-1:111122223333:automation-rule/0f
+ 3c2d1e-5b6a-4c7d-8e9f-a0b1c2d3e4f5
 
 dn: cn=security-hub,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top

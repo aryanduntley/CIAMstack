@@ -1,0 +1,7 @@
+environment   obligation  report within (h)  internal (h)  authority                                                 filed by                                                             certificate  expires   preserve (days)  incident routes
+------------  ----------  -----------------  ------------  --------------------------------------------------------  -------------------------------------------------------------------  -----------  --------  ---------------  --------------------------------------
+source/prod   dfars-7012  72                 1             DoD Cyber Crime Center (DIBNet) (https://dibnet.dod.mil)  Security operations center (soc@example-aero.test, +1 202 555 0100)  dibnet-eca   20270630  90               guardduty: high+ to security-incidents
+standby/prod  dfars-7012  72                 1             DoD Cyber Crime Center (DIBNet) (https://dibnet.dod.mil)  Security operations center (soc@example-aero.test, +1 202 555 0100)  dibnet-eca   20270630  90               scc: high+ to security-incidents
+target/prod   dfars-7012  72                 1             DoD Cyber Crime Center (DIBNet) (https://dibnet.dod.mil)  Security operations center (soc@example-aero.test, +1 202 555 0100)  dibnet-eca   20270630  90               defender: high+ to security-incidents
+(3 rows)
+exit 0

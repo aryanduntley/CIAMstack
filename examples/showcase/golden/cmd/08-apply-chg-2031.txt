@@ -1,0 +1,4 @@
+AGENCYAMAZONEW (AWS US East/West): 23 service(s) in scope
+AGENCYAMAZONEW: added AWS Backup, AWS Certificate Manager (ACM), AWS CloudTrail, AWS Config, AWS Identity and Access Management (IAM), AWS Key Management Service (KMS), AWS Organizations, AWS Secrets Manager, AWS Security Hub CSPM, Amazon Cloudwatch, Amazon Cloudwatch Logs, Amazon Elastic Block Store (EBS), Amazon Elastic Compute Cloud (EC2), Amazon EventBridge, Amazon GuardDuty, Amazon Inspector, Amazon Kinesis Data Streams, Amazon RDS for Postgres, Amazon Route 53, Amazon Simple Email Service (SES), Amazon Simple Notification Service (SNS), Amazon Simple Storage Service (S3), Amazon Virtual Private Cloud (VPC)
+CHG-2031: 2 change(s) applied, the import run among them
+exit 0

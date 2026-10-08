@@ -1,7 +1,9 @@
 """Estate domain vocabulary: how sensitive an environment's data is, where a tag's value comes from, a cloud region's
 status, where the tag policy, the region catalog and the residencies live, what a cloud security service is and
-watches, what a quota counts and what may be decided about it, where the provider limits fetched live, and a budget's
-period, amount and currency."""
+watches, what a quota counts and what may be decided about it, where the provider limits fetched live, a budget's
+period, amount and currency, where the reporting obligations live, how severe a finding is and what an authority asked
+of an incident's preserved media, and the vocabulary of POA&M items, exceptions and compliance assessments (with the
+CMMC rules a POA&M must keep to)."""
 
 from ...core.naming import branch
 
@@ -41,3 +43,64 @@ BUDGET_PERIODS = ("monthly", "quarterly", "annually")
 AMOUNT = r"[0-9]{1,12}(\.[0-9]{1,2})?"   # a budget's amount in its currency: 1500, 1500.50
 CURRENCY = r"[A-Z]{3}"                  # ISO 4217: USD, EUR
 DEFAULT_CURRENCY = "USD"
+# the reporting obligations the estate is held to (ciamReportingObligation: a regime's clock, authority, reporter, ...)
+REPORTING_OBLIGATIONS = branch("reporting-obligations")
+# how severe a security finding is, least first: the clouds' own scales map onto these (a cloud without critical
+# routes its highest as high)
+SEVERITIES = ("low", "medium", "high", "critical")
+# what an authority asked of an incident's preserved images and monitoring data: nothing yet, the media, which the
+# operator provided, or it declined interest
+MEDIA_REQUESTS = ("none", "requested", "provided", "declined")
+CAGE_CODE = r"[A-Z0-9]{5}"      # a Commercial and Government Entity code: 1ABC2
+UEI = r"[A-Z0-9]{12}"           # a Unique Entity ID (SAM.gov): ABCDEF123456
+POAM = branch("poam")                   # the plan of action and milestones: one ciamPoamItem per known weakness
+EXCEPTIONS = branch("exceptions")       # approved deviations (ciamRiskException): accepted risks, false positives, ...
+ASSESSMENTS = branch("assessments")     # compliance assessments (ciamComplianceAssessment): their scores and status
+# a control a POA&M item or exception concerns, as framework:control (the framework by the neutral ids posture uses):
+# nist-800-171-r2:3.13.11, nist-800-53-r5:SC-13, cmmc-l2:SC.L2-3.13.11
+CONTROL_REF = r"[a-z0-9]+(-[a-z0-9]+)*:[A-Za-z0-9][A-Za-z0-9.()-]*"
+# a cloud finding or control an exception (or a cloud's suppression) concerns, as provider:kind:id, the kind and id the
+# provider's adapter defines (aws:securityhub:IAM.6, aws:guardduty:Recon:EC2/PortProbeUnprotectedPort)
+FINDING_REF = r"[a-z0-9-]+:[a-z0-9-]+:.+"
+DISCOVERY_SOURCES = ("assessment", "scan", "audit", "continuous-monitoring", "incident")
+POAM_STATUSES = ("open", "closed")
+RISK_RATINGS = ("low", "moderate", "high")
+# what an exception is: FedRAMP's deviation requests (risk adjustment, false positive, operational requirement), a risk
+# the authority accepts as is, or a control met another way
+EXCEPTION_KINDS = ("risk-adjustment", "false-positive", "operational-requirement", "risk-acceptance",
+                   "compensating-control")
+EXCEPTION_STATUSES = ("requested", "approved", "rejected", "withdrawn")
+# who assessed: the operator itself (a DFARS Basic assessment is a self-assessment), a C3PAO, DCMA DIBCAC, or DoD at the
+# Medium or High confidence level (DFARS 252.204-7020)
+ASSESSMENT_KINDS = ("self", "c3pao", "dibcac", "dod-medium", "dod-high")
+ASSESSMENT_STATUSES = ("conditional", "final")
+# findings no exception can accept: the blockers of these areas (a broken contract, a key kept wrongly, a reporting
+# obligation lost or unmet, a security service lost, an exception or POA&M itself) and blockers naming withheld
+# credentials (no secret to run with)
+UNACCEPTABLE_AREAS = frozenset(("Contract", "Key", "Planner", "Incident reporting", "Security", "Exceptions", "POA&M"))
+UNACCEPTABLE_PHRASES = ("withheld credentials",)
+# CMMC Level 2 (32 CFR 170.21(a)(2), (b)): a Conditional status needs a score of at least 0.8 of the maximum, no POA&M
+# requirement worth more than 1 point except SC.L2-3.13.11 when encryption is used but not FIPS-validated (3 points),
+# none of these requirements on the POA&M, and the POA&M closed out within 180 days of the Conditional status date
+CMMC_FRAMEWORK = "cmmc-l2"
+CMMC_MIN_RATIO = 0.8
+CMMC_NEVER_POAM = ("3.1.20", "3.1.22", "3.12.4", "3.10.3", "3.10.4", "3.10.5")
+CMMC_FIPS_EXCEPTION = ("3.13.11", 3)
+CMMC_CLOSEOUT_DAYS = 180
+SUPPRESSION_PREFIX = "exc-"   # a cloud suppression is named after the exception it carries out: exc-<exception cn>
+AUTHORIZATIONS = branch("authorizations")   # the cloud offerings' authorizations (ciamCloudAuthorization)
+BOUNDARIES = branch("boundaries")           # the operator's system boundaries (ciamSystemBoundary): its SSPs
+RESPONSIBILITIES = branch("responsibilities")   # who meets each control under an authorization (its CRM)
+# an authorization's level, by program: FedRAMP's baselines (Class B, C, D) and the DoD SRG impact levels; a requirement
+# is met by the same program at the same or a higher level
+AUTHORIZATION_LEVELS = (("fedramp", ("fedramp-low", "fedramp-moderate", "fedramp-high")),
+                        ("dod-pa", ("dod-il2", "dod-il4", "dod-il5")))
+LEVELS = tuple(lv for _, levels in AUTHORIZATION_LEVELS for lv in levels)
+# where an authorization stands: FedRAMP Certified (Rev5) or Validated (20x), equivalent to FedRAMP Moderate per DoD's
+# equivalency policy (with evidence), in process, revoked
+AUTHORIZATION_STATUSES = ("certified", "validated", "equivalent", "in-process", "revoked")
+STANDING = frozenset(("certified", "validated", "equivalent"))
+RESPONSIBILITY = ("inherited", "shared", "customer")
+# what a customer must configure for its use to be inside an authorization's boundary
+CONFIGURATIONS = ("assured-workload", "us-data-location", "us-person-support", "il5-isolation")
+SCOPE_STALE_DAYS = 90         # an in-scope service list older than this asks for a fresh one

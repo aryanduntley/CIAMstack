@@ -163,3 +163,11 @@ resource "google_billing_budget" "monthly_spend" {
     monitoring_notification_channels = ["projects/example-aero-ciam-standby/notificationChannels/1001"]
   }
 }
+
+resource "google_assured_workloads_workload" "ciam_prod" {
+  compliance_regime = "FEDRAMP_MODERATE"
+  display_name      = "ciam-prod"
+  location          = "us-central1"
+  organization      = "123456789012"
+  billing_account   = "billingAccounts/01A2B3-C4D5E6-F7A8B9"
+}

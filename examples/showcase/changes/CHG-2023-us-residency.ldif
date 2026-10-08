@@ -40,9 +40,6 @@ ciamResidencyRef: cn=us,ou=residencies,dc=ciam-ops
 
 dn: env=prod,cloud=target,ou=environments,dc=ciam-ops
 changetype: modify
-add: objectClass
-objectClass: ciamEnvironmentPlacement
--
 replace: ciamResidencyRef
 ciamResidencyRef: cn=us,ou=residencies,dc=ciam-ops
 -

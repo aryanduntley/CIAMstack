@@ -122,6 +122,54 @@ ou: tag-policy
 description: Tag policy: the tags every rendered resource carries and where th
  eir values come from
 
+dn: ou=reporting-obligations,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: reporting-obligations
+description: Incident reporting obligations the estate is held to (a regime's 
+ clock, authority, filer, certificate, preservation)
+
+dn: ou=poam,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: poam
+description: Plan of action and milestones: the known weaknesses and how each 
+ is corrected
+
+dn: ou=exceptions,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: exceptions
+description: Approved deviations: accepted risks, false positives, operational
+  requirements
+
+dn: ou=assessments,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: assessments
+description: Compliance assessments of the environments: score and status
+
+dn: ou=authorizations,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: authorizations
+description: Cloud offerings' authorizations (FedRAMP, DoD): levels, status, t
+ he services in scope
+
+dn: ou=boundaries,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: boundaries
+description: The operator's system boundaries: its system security plans and t
+ he environments inside
+
+dn: ou=responsibilities,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: responsibilities
+description: Who meets each control under a cloud authorization (its responsib
+ ility matrix)
+
 dn: ou=custom-schema,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit

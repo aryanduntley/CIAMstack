@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-adapter-fedramp"
+version = "0.1.0"
+description = "opsdir compliance adapter for FedRAMP's machine-readable formats: a cloud offering's Certification Package Overview (FRC-CSO-PKG) read as the authorization the estate relies on and the services inside its boundary."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1"]
+
+[project.entry-points."opsdir.adapters"]
+fedramp = "opsdir_adapter_fedramp.adapter:ADAPTER"
+
+[tool.setuptools.packages.find]
+where = ["src"]

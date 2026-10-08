@@ -20,10 +20,12 @@ ciamDropsRole: backup-vault
 ciamDropsRole: audit-trail
 ciamDropsRole: audit-archive
 ciamDropsRole: security-findings
+ciamDropsRole: security-incidents
 ciamDropsRole: config-history
 ciamDropsRole: threat-detection
 ciamDropsRole: vulnerability-scanning
 ciamDropsRole: config-recording
+ciamDropsRole: suppression-EXC-2026-01
 ciamDropsRole: posture
 ciamDropsRole: quota-vcpus
 ciamDropsRole: quota-public-ips

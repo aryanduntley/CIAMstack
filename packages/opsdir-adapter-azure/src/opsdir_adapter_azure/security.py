@@ -31,14 +31,30 @@ destination's ciamProviderRef); an Event Hub (its connection string is a secret)
 organization-wide service is enabled on the management group by Azure Policy (a comment). Defender covers the whole
 subscription, every region.
 
+Findings at or above a service's ciamIncidentSeverity also go to the incident process (its ciamIncidentRole): to a Log
+Analytics workspace by a second continuous export whose sources carry one rule set per Defender severity at or above it
+(alerts: "Severity" Equals high, medium or low, as Microsoft's built-in continuous-export policy filters them;
+assessments and sub-assessments: properties.metadata.severity Equals High, Medium or Low); to an action group by a log
+alert (azurerm_monitor_scheduled_query_rules_alert_v2) on the table the workspace the service's findings are exported
+to keeps them in (Azure Monitor's table reference): threat detection's alerts in SecurityAlert (AlertSeverity at or
+above it), vulnerability scanning's findings in SecurityNestedRecommendation and posture's recommendations in
+SecurityRecommendation (RecommendationSeverity at or above it, RecommendationState not Healthy). Defender has no
+critical severity: critical is routed as high (a comment). Anything else is a NOTE.
+
 Read back from Terraform state: azurerm_security_center_subscription_pricing (tier Standard) -> threat detection over
 the areas its plans watch, vulnerability scanning (azurerm_security_center_server_vulnerability_assessments_setting, a
 Containers plan's registry vulnerability assessment), posture (CloudPosture, azurerm_subscription_policy_assignment of
 a known initiative by its display name) -> security services (kind security), each covering every region, with the
-workspace or Event Hub a continuous export of its findings goes to as their destination.
+workspace or Event Hub a continuous export of its findings goes to as their destination, and the incident route: the
+workspace an export filtering them on severity goes to, or the action group a log alert on the table of their kind
+notifies, with the least severity it lets through.
 """
+import re
+
 from opsdir.core.directory import get, is_kind, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource
+from opsdir.domains.estate.incidents import incident_routes
+from opsdir.domains.estate.naming import SEVERITIES
 from opsdir.domains.estate.security import findings_destination, security_services
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 from .identities import LOC, RG
@@ -94,6 +110,19 @@ GOV_ONLY = frozenset(("dod-il4", "dod-il5"))
 # continuous export: the sources a service's findings come from
 EXPORTS = {"threat-detection": ("Alerts",), "vulnerability-scanning": ("SubAssessments",),
            "posture": ("Assessments", "RegulatoryComplianceAssessment")}
+QUERY_ALERT = "azurerm_monitor_scheduled_query_rules_alert_v2"
+# the Log Analytics table continuous export keeps a kind's findings in, and its severity column
+INCIDENT_TABLES = {"threat-detection": ("SecurityAlert", "AlertSeverity"),
+                   "vulnerability-scanning": ("SecurityNestedRecommendation", "RecommendationSeverity"),
+                   "posture": ("SecurityRecommendation", "RecommendationSeverity")}
+TABLE_KINDS = {table: kind for kind, (table, _) in INCIDENT_TABLES.items()}
+DEFENDER_LEVELS = ("low", "medium", "high")      # Defender's alert and recommendation severities (Informational aside)
+# where a source's severity is in a continuous export's rules: alerts by Microsoft's built-in policy (values lower
+# case), recommendations (assessments) and their findings by their metadata (values capitalized)
+SEVERITY_PATHS = {"Alerts": ("Severity", str.lower), "Assessments": ("properties.metadata.severity", str.capitalize),
+                  "SubAssessments": ("properties.metadata.severity", str.capitalize)}
+# Azure Monitor alert severity (0 severest) of an incident route by its least severity
+MONITOR_SEVERITY = {"critical": 0, "high": 1, "medium": 2, "low": 3}
 
 
 def _gov(m):
@@ -180,6 +209,75 @@ def _export(m, s, kind):
         *(("source", Block((("event_source", src),))) for src in EXPORTS[kind])]),)
 
 
+def _levels(severity):
+    """Defender's severities at or above a neutral one (critical: high, Defender's highest)."""
+    return DEFENDER_LEVELS[min(SEVERITIES.index(severity), len(DEFENDER_LEVELS) - 1):]
+
+
+def severity_rule_sets(source, severity):
+    """The rule sets (one per severity, OR'd) a continuous export of a source keeps its findings at or above a severity
+    by; () for a source with no severity (regulatory compliance: an incident export leaves it out)."""
+    if source not in SEVERITY_PATHS:
+        return ()
+    path, spell = SEVERITY_PATHS[source]
+    return tuple(("rule_set", Block((("rule", Block((("property_path", path), ("operator", "Equals"),
+                                                     ("expected_value", spell(level)),
+                                                     ("property_type", "String")))),)))
+                 for level in reversed(_levels(severity)))
+
+
+def incident_query(kind, severity):
+    """The query of a kind's exported findings at or above a severity (recommendations: those not healthy)."""
+    table, column = INCIDENT_TABLES[kind]
+    levels = ", ".join(f'"{x.capitalize()}"' for x in reversed(_levels(severity)))
+    state = ' and RecommendationState != "Healthy"' if column == "RecommendationSeverity" else ""
+    return f"{table} | where {column} in ({levels}){state}"
+
+
+def _workspace_of(m, binding):
+    return one(binding, "ciamProviderRef") if binding is not None and is_kind(m.d, binding, "ciamLogDestination") \
+        and one(binding, "ciamDestinationKind") == "workspace" else None
+
+
+def _action_group_of(binding):
+    ref_ = one(binding, "ciamProviderRef") if binding is not None else None
+    return ref_ if ref_ and "/actiongroups/" in ref_.lower() else None
+
+
+def _incident_routing(m, s, kind):
+    """The continuous export (or log alert) sending a service's findings at or above its incident severity to the
+    incident process (its ciamIncidentRole), or a note."""
+    route = next((r for r in incident_routes(m) if r.service.dn == s.dn), None)
+    if route is None or route.binding is None or kind not in EXPORTS:
+        return ()
+    cn, n = rdn_value(s), tf_name(f"{rdn_value(s)}_incidents")
+    critical = ((f"# {cn}: Defender has no critical severity: its high findings go to {route.role}",)
+                if route.severity == "critical" else ())
+    workspace, group = _workspace_of(m, route.binding), _action_group_of(route.binding)
+    if workspace:
+        return (*critical, block("resource", [AUTOMATION, n], [
+            ("name", f"{cn}-incidents"), ("location", LOC), ("resource_group_name", RG),
+            ("description", f"{cn}'s {route.severity} and worse findings to {route.role} (incident process)"),
+            ("scopes", [ref(f"{SUBSCRIPTION}.id")]),
+            ("action", Block((("type", "loganalytics"), ("resource_id", workspace)))),
+            *(("source", Block((("event_source", src), *severity_rule_sets(src, route.severity))))
+              for src in EXPORTS[kind] if src in SEVERITY_PATHS)]))
+    findings_ws = _workspace_of(m, findings_destination(m, s))
+    if group and kind in INCIDENT_TABLES and findings_ws:
+        return (*critical, block("resource", [QUERY_ALERT, n], [
+            ("name", f"{cn}-incidents"), ("location", LOC), ("resource_group_name", RG),
+            ("description", f"{cn}'s {route.severity} and worse findings to {route.role} (incident process)"),
+            ("scopes", [findings_ws]), ("severity", MONITOR_SEVERITY[route.severity]),
+            ("evaluation_frequency", "PT5M"), ("window_duration", "PT5M"),
+            ("criteria", Block((("query", incident_query(kind, route.severity)), ("time_aggregation_method", "Count"),
+                                ("operator", "GreaterThan"), ("threshold", 0)))),
+            ("action", Block((("action_groups", [group]),)))]))
+    why = (f"a log alert on {INCIDENT_TABLES[kind][0]} needs the service's findings exported to a Log Analytics "
+           "workspace (its ciamFindingsRole)" if group and kind in INCIDENT_TABLES else
+           f"{rdn_value(route.binding)} is no Log Analytics workspace or action group (ciamProviderRef)")
+    return (f"# NOTE: {cn}'s incidents to {route.role}: not rendered: {why}",)
+
+
 def _service(m, s):
     cn, kind, keeper = rdn_value(s), one(s, "ciamSecurityKind"), one(s, "ciamManagedBy")
     if keeper:
@@ -191,7 +289,7 @@ def _service(m, s):
              "to enable; keeping them longer needs an export (not rendered)",) if kind == "config-recording" else
             (f"# {cn}: Defender for Cloud has no plan for identity: Microsoft Entra ID Protection watches sign-ins "
              "(not rendered)",) if "identity" in values(s, "ciamSecurityCoverage") else ())
-    return (*body, *_export(m, s, kind),
+    return (*body, *_export(m, s, kind), *_incident_routing(m, s, kind),
             *((f"# {cn}: organization-wide: enable it on the management group with Azure Policy (not rendered here)",)
               if one(s, "ciamAuditScope") == "organization" else ()))
 
@@ -215,37 +313,92 @@ def _subscription_ref(a, suffix):
     return pid.rsplit("/", 1)[0] + suffix if "/pricings/" in pid else None
 
 
+def _least(levels):
+    """The least neutral severity among Defender severities, or None."""
+    known = [x.lower() for x in levels if isinstance(x, str) and x.lower() in DEFENDER_LEVELS]
+    return min(known, key=SEVERITIES.index) if known else None
+
+
+def _export_severity(a):
+    """The least severity a continuous export's rule sets filter its sources on, or None when they don't."""
+    paths = {path for path, _ in SEVERITY_PATHS.values()}
+    return _least([r.get("expected_value") for src in a.get("source") or () for rs in src.get("rule_set") or ()
+                   for r in rs.get("rule") or () if r.get("property_path") in paths])
+
+
+def _exports(pairs):
+    """((kind, destination, least severity or None), ...) of the continuous exports."""
+    return tuple((kind, dest, _export_severity(a)) for a in of_types(pairs, AUTOMATION)
+                 for dest in (next((x.get("resource_id") for x in a.get("action") or () if x.get("resource_id")),
+                                   None),) if dest
+                 for sources in ({x.get("event_source") for x in a.get("source") or ()},)
+                 for kind, wanted in EXPORTS.items() if sources & set(wanted))
+
+
 def _routes(pairs):
-    """{kind: the destination its findings' continuous export sends to}."""
-    found = {}
-    for a in of_types(pairs, AUTOMATION):
-        dest = next((x.get("resource_id") for x in a.get("action") or () if x.get("resource_id")), None)
-        sources = {x.get("event_source") for x in a.get("source") or ()}
-        for kind, wanted in EXPORTS.items():
-            if dest and sources & set(wanted):
-                found.setdefault(kind, dest)
-    return found
+    """{kind: the destination its findings' continuous export (no severity filter) sends to}."""
+    exports = [(kind, dest) for kind, dest, least in _exports(pairs) if least is None]
+    return {kind: next(d for k, d in exports if k == kind) for kind in dict.fromkeys(k for k, _ in exports)}
+
+
+def _query_table(a):
+    """The table a scheduled query alert's query reads (its first word), or None."""
+    found = [re.match(r"\s*(\w+)", c.get("query") or "") for c in a.get("criteria") or ()]
+    return next((m.group(1) for m in found if m), None)
+
+
+def is_incident_alert(a):
+    """Whether a scheduled query alert's attributes are an incident route's (a query on a table Defender's findings are
+    exported to)."""
+    return _query_table(a) in TABLE_KINDS
+
+
+def _query_severity(a):
+    return _least(re.findall(r'"(High|Medium|Low)"', " ".join(c.get("query") or "" for c in a.get("criteria") or ())))
+
+
+def _incidents(pairs):
+    """{kind: (the workspace an export filtering its findings on severity, or the action group a log alert on its table
+    notifies, the least severity it lets through)}."""
+    exported = [(kind, (dest, least)) for kind, dest, least in _exports(pairs) if least is not None]
+    alerted = [(TABLE_KINDS[_query_table(a)], (g, _query_severity(a))) for a in of_types(pairs, QUERY_ALERT)
+               if is_incident_alert(a) and _query_severity(a)
+               for g in [g for x in a.get("action") or () for g in x.get("action_groups") or ()][:1]]
+    found = [*exported, *alerted]
+    return {kind: next(v for k, v in found if k == kind) for kind in dict.fromkeys(k for k, _ in found)}
+
+
+def _incident(incidents, kind):
+    """(the incident role link, the incident severity attribute) of a kind's route, or ({}, {})."""
+    if kind not in incidents:
+        return {}, {}
+    dest, least = incidents[kind]
+    return {"ciamIncidentRole": dest}, {"ciamIncidentSeverity": least}
 
 
 def security_resources(pairs):
     """Security services of (azurerm type, attributes) pairs."""
     pricings = [a for a in of_types(pairs, PRICING) if (a.get("tier") or "").lower() == "standard"]
     plans = {a.get("resource_type"): a for a in pricings}
-    routes = _routes(pairs)
+    routes, incidents = _routes(pairs), _incidents(pairs)
     every = {"ciamAuditScope": "account", "ciamAllRegions": "TRUE"}
     watched = {PLAN_AREAS[p] for p in plans if p in PLAN_AREAS} | (
         {"network"} if (plans.get("VirtualMachines") or {}).get("subplan") == "P2" else set())
     threat = tuple(resource("security", _subscription_ref(pricings[0], "/defender"), {
         "ciamSecurityKind": "threat-detection", "ciamSecurityCoverage": tuple(a for a in AREAS if a in watched),
-        **every}, links={"ciamFindingsRole": routes.get("threat-detection")}, name="defender-for-cloud")
+        **every, **_incident(incidents, "threat-detection")[1]},
+        links={"ciamFindingsRole": routes.get("threat-detection"), **_incident(incidents, "threat-detection")[0]},
+        name="defender-for-cloud")
         for _ in (1,) if watched and _subscription_ref(pricings[0], "/defender"))
     va = next(iter(of_types(pairs, VA_SETTING)), None)
     registries = "ContainerRegistriesVulnerabilityAssessments" in _ext(plans.get("Containers") or {})
     scanned = (*(("compute",) if va is not None else ()), *(("containers",) if registries else ()))
     ref_of = (va or {}).get("id") or (_subscription_ref(pricings[0], "/vulnerability") if pricings else None)
     scan = tuple(resource("security", ref_of, {
-        "ciamSecurityKind": "vulnerability-scanning", "ciamSecurityCoverage": scanned, **every},
-        links={"ciamFindingsRole": routes.get("vulnerability-scanning")}, name="defender-vulnerability")
+        "ciamSecurityKind": "vulnerability-scanning", "ciamSecurityCoverage": scanned, **every,
+        **_incident(incidents, "vulnerability-scanning")[1]},
+        links={"ciamFindingsRole": routes.get("vulnerability-scanning"),
+               **_incident(incidents, "vulnerability-scanning")[0]}, name="defender-vulnerability")
         for _ in (1,) if scanned and ref_of)
     names = {v: k for k, v in INITIATIVES.items()}
     assignments = [a for a in of_types(pairs, ASSIGNMENT) if a.get("display_name") in (*names, BASELINE_NAME)]
@@ -256,7 +409,9 @@ def security_resources(pairs):
         "ciamComplianceStandard": tuple(sorted({names[a["display_name"]] for a in assignments
                                                 if a.get("display_name") in names})),
         "ciamSecurityBaseline": (BASELINE,) if cspm is not None or any(
-            a.get("display_name") == BASELINE_NAME for a in assignments) else (), **every},
-        links={"ciamFindingsRole": routes.get("posture")}, name="defender-cspm")
+            a.get("display_name") == BASELINE_NAME for a in assignments) else (), **every,
+        **_incident(incidents, "posture")[1]},
+        links={"ciamFindingsRole": routes.get("posture"), **_incident(incidents, "posture")[0]},
+        name="defender-cspm")
         for _ in (1,) if posture_ref)
     return (*threat, *scan, *posture)

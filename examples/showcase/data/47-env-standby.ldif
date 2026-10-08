@@ -10,6 +10,7 @@ ciamBillingAccountRef: 01A2B3-C4D5E6-F7A8B9
 ciamCloudEnvironment: public
 ciamCloudProvider: gcp
 ciamLifecycle: building
+ciamOrganizationRef: organizations/123456789012
 ciamRegion: us-central1
 description: Warm standby (Google Cloud)
 
@@ -19,10 +20,13 @@ objectClass: ciamEnvironment
 objectClass: ciamStandby
 objectClass: ciamEnvironmentPlacement
 env: prod
+ciamAuthorizationRef: cn=FR1805751477,ou=authorizations,dc=ciam-ops
+ciamConfigurationMet: assured-workload
 ciamDataClassification: confidential
 ciamJoinsDeploymentOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamLifecycle: building
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamReportingObligationRef: cn=dfars-7012,ou=reporting-obligations,dc=ciam-ops
 ciamRunbookRef: cn=WI-CIAM-016,ou=runbooks,dc=ciam-ops
 ciamStandbyMode: warm
 ciamStandbyOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
@@ -614,6 +618,15 @@ ciamBindingRole: security-findings
 ciamProviderRef: projects/example-aero-ciam-standby/topics/ciam-security
 ciamStreamKind: topic
 
+dn: cn=security-incidents,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStreamBinding
+cn: security-incidents
+ciamBindingRole: security-incidents
+ciamProviderRef: projects/example-aero-ciam-standby/topics/ciam-security-incid
+ ents
+ciamStreamKind: topic
+
 dn: cn=scc,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecurityService
@@ -622,6 +635,8 @@ ciamAllRegions: TRUE
 ciamAuditScope: account
 ciamBindingRole: threat-detection
 ciamFindingsRole: security-findings
+ciamIncidentRole: security-incidents
+ciamIncidentSeverity: high
 ciamProviderRef: projects/example-aero-ciam-standby/locations/global/notificat
  ionConfigs/scc-findings
 ciamSecurityCoverage: control-plane

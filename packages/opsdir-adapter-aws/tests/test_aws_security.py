@@ -131,3 +131,54 @@ def test_the_findings_topic_is_an_alert_channel_and_the_detector_finds_its_role(
     assert placed["cn=config"]["ciamBindingRole"] == ("config-recording",)
     assert placed["cn=config"]["ciamFindingsRole"] == ("config-history",)
 
+
+
+# ------------------------------------------------------------------ incident routes (severity-filtered rules)
+INCIDENT_ARN = "arn:aws:sns:us-east-1:111122223333:security-incidents"
+INCIDENTS = entry(ALPHA, "security-incidents", "ciamAlertChannel", ciamBindingRole="security-incidents",
+                  ciamChannelKind="topic", ciamProviderRef=INCIDENT_ARN)
+
+
+def test_findings_at_or_above_the_incident_severity_go_to_the_incident_topic():
+    import json
+    from opsdir_adapter_aws.security import severity_filter
+    _, alpha, _ = model(alpha=(BUCKET, TOPIC, INCIDENTS,
+                               svc("guardduty", "threat-detection", ciamFindingsRole="security-alerts",
+                                   ciamIncidentRole="security-incidents"),
+                               svc("hub", "posture", ciamIncidentRole="security-incidents",
+                                   ciamIncidentSeverity="critical"),
+                               svc("config", "config-recording", ciamFindingsRole="config-history",
+                                   ciamIncidentRole="security-incidents")), tree=OWNERS)
+    out = "\n\n".join(render_security(alpha))
+    assert 'resource "aws_cloudwatch_event_rule" "guardduty_incidents"' in out
+    assert '"guardduty\'s high and worse findings to security-incidents (incident process)"' in out
+    compact = "".join(out.split())
+    assert '"detail":{"severity":[{"numeric":[">=",7]}]}' in compact and out.count(f'arn  = "{INCIDENT_ARN}"') == 2
+    assert '"detail":{"findings":{"Severity":{"Label":["CRITICAL"]}}}' in compact
+    assert "# NOTE: config's incidents to security-incidents: not rendered: AWS Config's findings have no severity" in out
+    assert severity_filter("aws.inspector2", "medium") == {"severity": ["MEDIUM", "HIGH", "CRITICAL"]}
+    assert json.loads(json.dumps(severity_filter("aws.guardduty", "low"))) == {"severity": [{"numeric": [">=", 1]}]}
+
+
+def test_an_unbound_incident_role_renders_nothing_the_planner_blocks_it():
+    out = _render(svc("guardduty", "threat-detection", ciamIncidentRole="nowhere"))
+    assert "incidents" not in out
+
+
+def test_incident_routes_are_read_back_with_their_least_severity():
+    state = (*STATE,
+             ("aws_cloudwatch_event_rule", {"name": "guardduty-incidents", "event_pattern":
+                 '{"source":["aws.guardduty"],"detail-type":["GuardDuty Finding"],'
+                 '"detail":{"severity":[{"numeric":[">=",7]}]}}'}),
+             ("aws_cloudwatch_event_target", {"rule": "guardduty-incidents", "arn": INCIDENT_ARN}),
+             ("aws_cloudwatch_event_rule", {"name": "hub-incidents", "event_pattern":
+                 '{"source":["aws.securityhub"],"detail-type":["Security Hub Findings - Imported"],'
+                 '"detail":{"findings":{"Severity":{"Label":["HIGH","CRITICAL"]}}}}'}),
+             ("aws_cloudwatch_event_target", {"rule": "hub-incidents", "arn": INCIDENT_ARN}))
+    found = {r.attrs["ciamSecurityKind"][0]: r for r in security_resources(state)}
+    assert dict(found["threat-detection"].links) == {"ciamFindingsRole": TOPIC_ARN, "ciamIncidentRole": INCIDENT_ARN}
+    assert found["threat-detection"].attrs["ciamIncidentSeverity"] == ("high",)
+    assert found["posture"].attrs["ciamIncidentSeverity"] == ("high",)
+    assert "ciamIncidentRole" not in found["vulnerability-scanning"].links
+    from opsdir_adapter_aws.security import findings_topics
+    assert findings_topics(state) == frozenset({TOPIC_ARN, INCIDENT_ARN})

@@ -23,8 +23,10 @@ ATTRIBUTES = (
                  'Valid from'),
     AttributeDef(104, 'ciamNotAfter', 'time', 'meta', True,
                  'Expires'),
-    AttributeDef(105, 'ciamCertPurpose', 'enum:tls-server|saml-signing|saml-encryption|jwt-signing|partner-signing|ca', 'intent', True,
-                 'What the certificate is for (ca: a certification authority a truststore adds)'),
+    AttributeDef(105, 'ciamCertPurpose',
+                 'enum:tls-server|saml-signing|saml-encryption|jwt-signing|partner-signing|client-auth|ca', 'intent',
+                 True, 'What the certificate is for (client-auth: one the operator presents to authenticate, e.g. to '
+                       'a reporting portal; ca: a certification authority a truststore adds)'),
     AttributeDef(106, 'ciamSubjectAltName', 'fqdn', 'contract', False,
                  'DNS names the certificate is valid for'),
     AttributeDef(107, 'ciamKeyRole', 'string', 'meta', True,

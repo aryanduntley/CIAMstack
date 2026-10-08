@@ -95,3 +95,45 @@ def test_the_topic_s_role_is_where_findings_go():
     placed = {e.dn.split(",")[0]: dict(e.attrs) for _, entries in groups for e in entries
               if "ciamSecurityService" in e.classes}
     assert placed["cn=scc-findings"]["ciamFindingsRole"] == ("security-findings",)
+
+
+# ------------------------------------------------------------------ incident routes
+INCIDENT_TOPIC = "projects/example-sec/topics/security-incidents"
+INCIDENTS = entry(ALPHA, "security-incidents", "ciamStreamBinding", ciamBindingRole="security-incidents",
+                  ciamStreamKind="topic", ciamProviderRef=INCIDENT_TOPIC)
+
+
+def test_findings_at_or_above_the_incident_severity_go_to_the_incident_topic():
+    out = _render(INCIDENTS,
+                  svc("scc", "threat-detection", ciamFindingsRole="security-findings",
+                      ciamIncidentRole="security-incidents"),
+                  svc("posture", "posture", ciamIncidentRole="security-incidents", ciamIncidentSeverity="medium"),
+                  svc("assets", "config-recording", ciamFindingsRole="security-findings",
+                      ciamIncidentRole="security-incidents"),
+                  svc("shared", "posture", ciamIncidentRole="app-logs"))
+    assert 'resource "google_scc_v2_project_notification_config" "scc_incidents"' in out
+    assert ('filter = "finding_class=\\"THREAT\\" AND state=\\"ACTIVE\\" AND (severity=\\"CRITICAL\\" OR '
+            'severity=\\"HIGH\\")"') in out
+    assert ('(severity=\\"CRITICAL\\" OR severity=\\"HIGH\\" OR severity=\\"MEDIUM\\")' in out
+            and out.count(f'pubsub_topic = "{INCIDENT_TOPIC}"') == 2)
+    assert "# NOTE: assets's incidents to security-incidents: not rendered: an asset feed's changes have no severity" in out
+    assert "# NOTE: shared's incidents to app-logs: not rendered: app-logs names no Pub/Sub topic" in out
+
+
+def test_incident_routes_are_read_back():
+    state = [*STATE,
+             ("google_scc_v2_project_notification_config", {
+                 "name": "projects/example/locations/global/notificationConfigs/scc-incidents",
+                 "config_id": "scc-incidents", "pubsub_topic": INCIDENT_TOPIC, "streaming_config": [{
+                     "filter": 'finding_class="THREAT" AND state="ACTIVE" AND (severity="CRITICAL" OR severity="HIGH")'}]}),
+             ("google_scc_v2_project_notification_config", {
+                 "name": "projects/example/locations/global/notificationConfigs/posture-incidents",
+                 "config_id": "posture-incidents", "pubsub_topic": INCIDENT_TOPIC, "streaming_config": [{
+                     "filter": 'finding_class="MISCONFIGURATION" AND severity="CRITICAL"'}]})]
+    found = [(r.attrs["ciamSecurityKind"][0], r.attrs.get("ciamIncidentSeverity"), dict(r.links), r.name)
+             for r in security_resources(state)]
+    assert found[0] == ("threat-detection", ("high",), {"ciamFindingsRole": TOPIC, "ciamIncidentRole": INCIDENT_TOPIC},
+                        "scc-findings")
+    assert ("posture", ("critical",), {"ciamIncidentRole": INCIDENT_TOPIC}, "posture-incidents") in found
+    assert found[1] == ("threat-detection", None, {"ciamFindingsRole": TOPIC}, "all")      # the organization's
+    assert len(found) == len(security_resources(STATE)) + 1

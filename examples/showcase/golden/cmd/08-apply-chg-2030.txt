@@ -1,0 +1,5 @@
+CHG-2030: modify cn=EXC-2026-02,ou=exceptions,dc=ciam-ops
+CHG-2030: modify cloud=target,ou=environments,dc=ciam-ops
+CHG-2030: add cn=EXC-2026-03,ou=exceptions,dc=ciam-ops
+CHG-2030: add cn=exc-EXC-2026-03,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+exit 0

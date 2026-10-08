@@ -26,15 +26,23 @@ google_scc_v2_project_notification_config streaming the finding class (THREAT, V
 Pub/Sub topic its binding names (ciamProviderRef projects/<p>/topics/<t>; Security Command Center's service agent must
 be able to publish, a comment); any other binding is a NOTE. Security Command Center covers every region.
 
+Findings at or above a service's ciamIncidentSeverity also go to the incident process (its ciamIncidentRole) through a
+second notification config whose filter adds the Security Command Center severities at or above it (severity="HIGH"
+OR severity="CRITICAL"), to the incident role's Pub/Sub topic; an asset feed has no severity (a NOTE).
+
 Read back from Terraform state: SCC notification configs (project or organization, v1 or v2) -> a security service per
 finding class their filter streams (no class: threat detection), organization scope for an organization's;
 google_project_service containerscanning / osconfig -> vulnerability scanning over containers / compute; asset feeds
-(project, folder, organization) -> configuration recording (35 days); each with its topic as where findings go.
+(project, folder, organization) -> configuration recording (35 days); each with its topic as where findings go. A
+notification config whose filter names severities is the incident route of its class's service (its topic, the least
+severity it lets through).
 """
 import re
 
 from opsdir.core.directory import get, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource
+from opsdir.domains.estate.incidents import incident_routes
+from opsdir.domains.estate.naming import SEVERITIES
 from opsdir.domains.estate.security import findings_destination, security_services
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 
@@ -81,6 +89,32 @@ def _notification(m, s, kind):
         ("config_id", f"{cn}-findings"), ("project", PROJECT), ("location", "global"),
         ("description", f"{cn}'s findings to {one(s, 'ciamFindingsRole')}"), ("pubsub_topic", topic),
         ("streaming_config", Block((("filter", f'finding_class="{CLASSES[kind]}" AND state="ACTIVE"'),)))]),)
+
+
+def severity_filter(kind, severity):
+    """The notification filter streaming a kind's active findings at or above a severity."""
+    levels = " OR ".join(f'severity="{x.upper()}"' for x in reversed(SEVERITIES[SEVERITIES.index(severity):]))
+    return f'finding_class="{CLASSES[kind]}" AND state="ACTIVE" AND ({levels})'
+
+
+def _incident_notification(m, s, kind):
+    """The notification config sending a service's findings at or above its incident severity to the incident
+    process's Pub/Sub topic (its ciamIncidentRole), or a note."""
+    route = next((r for r in incident_routes(m) if r.service.dn == s.dn), None)
+    if route is None or route.binding is None:
+        return ()
+    cn = rdn_value(s)
+    if kind not in CLASSES:
+        return (f"# NOTE: {cn}'s incidents to {route.role}: not rendered: an asset feed's changes have no severity",)
+    topic = one(route.binding, "ciamProviderRef")
+    if not topic or "/topics/" not in topic:
+        return (f"# NOTE: {cn}'s incidents to {route.role}: not rendered: {rdn_value(route.binding)} names no Pub/Sub "
+                "topic (ciamProviderRef projects/<p>/topics/<t>)",)
+    return (block("resource", [NOTIFICATION, tf_name(f"{cn}_incidents")], [
+        ("#", "Security Command Center's service agent must be able to publish to the topic"),
+        ("config_id", f"{cn}-incidents"), ("project", PROJECT), ("location", "global"),
+        ("description", f"{cn}'s {route.severity} and worse findings to {route.role} (incident process)"),
+        ("pubsub_topic", topic), ("streaming_config", Block((("filter", severity_filter(kind, route.severity)),)))]),)
 
 
 def _request(cn, what):
@@ -134,7 +168,7 @@ def _service(m, s):
         holder = get(m.d, keeper)
         return (f"# Security service {cn} ({kind}): kept by {rdn_value(holder) if holder is not None else keeper}, "
                 "not rendered here",)
-    return (*_RENDER[kind](m, s), *_notification(m, s, kind),
+    return (*_RENDER[kind](m, s), *_notification(m, s, kind), *_incident_notification(m, s, kind),
             *((_request(cn, "organization-wide (Security Command Center and its notification at the organization)"),)
               if one(s, "ciamAuditScope") == "organization" else ()))
 
@@ -155,6 +189,13 @@ def render_security(m):
 
 # ------------------------------------------------------------------ read back
 _CLASS = re.compile(r'finding_class\s*=\s*"?([A-Z_]+)"?')
+_SEVERITY = re.compile(r'(?<![a-z_])severity\s*=\s*"?([A-Z_]+)"?')
+
+
+def _least(filter_):
+    """The least severity a notification filter lets through, or None when it names none."""
+    known = [x.lower() for x in _SEVERITY.findall(filter_ or "") if x.lower() in SEVERITIES]
+    return min(known, key=SEVERITIES.index) if known else None
 
 
 def _kinds(filter_):
@@ -179,23 +220,38 @@ def _feed_topic(a):
 
 def security_resources(pairs):
     """Security services of (google type, attributes) pairs."""
-    notified = [(kind, scope, a) for t, scope in NOTIFICATIONS for a in of_types(pairs, t)
+    notified = [(kind, scope, a, _least(_filter(a))) for t, scope in NOTIFICATIONS for a in of_types(pairs, t)
                 for kind in _kinds(_filter(a)) if a.get("name") or a.get("id")]
+    routes = [(kind, scope, a) for kind, scope, a, least in notified if least is None]
+    incidents = [((kind, scope), (a.get("pubsub_topic"), least)) for kind, scope, a, least in notified
+                 if least is not None]
+    incident = {k: next(v for key, v in incidents if key == k) for k in dict.fromkeys(k for k, _ in incidents)}
+    # a kind (and scope) whose findings only go to the incident process is read from that notification config
+    only = [(kind, scope, a) for kind, scope, a, least in notified if least is not None
+            and not any((k, s) == (kind, scope) for k, s, _ in routes)]
+    services = [*routes, *[n for i, n in enumerate(only) if all(o[:2] != n[:2] for o in only[:i])]]
     every = {"ciamAllRegions": "TRUE"}
     scanned = tuple(dict.fromkeys(APIS[a.get("service")] for a in of_types(pairs, "google_project_service")
                                   if a.get("service") in APIS))
-    vuln_topic = next((a.get("pubsub_topic") for k, _, a in notified if k == "vulnerability-scanning"), None)
+    vuln_topic = next((a.get("pubsub_topic") for k, _, a in routes if k == "vulnerability-scanning"), None)
+
+    def incident_of(kind, scope):
+        topic, least = incident.get((kind, scope), (None, None))
+        return {"ciamIncidentSeverity": least} if least else {}, {"ciamIncidentRole": topic} if topic else {}
+
     found = [*(resource("security", a.get("name") or a.get("id"), {
                   "ciamSecurityKind": kind, "ciamAuditScope": scope, **every,
-                  **({"ciamSecurityCoverage": scanned} if kind == "vulnerability-scanning" else {})},
-                  links={"ciamFindingsRole": a.get("pubsub_topic")},
+                  **({"ciamSecurityCoverage": scanned} if kind == "vulnerability-scanning" else {}),
+                  **incident_of(kind, scope)[0]},
+                  links={"ciamFindingsRole": a.get("pubsub_topic") if (kind, scope, a) in routes else None,
+                         **incident_of(kind, scope)[1]},
                   name=(a.get("config_id") or (a.get("name") or "").rsplit("/", 1)[-1]))
-               for kind, scope, a in notified),
+               for kind, scope, a in services),
              *(resource("security", f"scanning:{'+'.join(scanned)}", {
                    "ciamSecurityKind": "vulnerability-scanning", "ciamSecurityCoverage": scanned,
                    "ciamAuditScope": "account", **every}, links={"ciamFindingsRole": vuln_topic},
                    name="vulnerability-scanning")
-               for _ in (1,) if scanned and not any(k == "vulnerability-scanning" for k, _, _ in notified)),
+               for _ in (1,) if scanned and not any(k == "vulnerability-scanning" for k, _, _ in services)),
              *(resource("security", a.get("name") or a.get("id"), {
                    "ciamSecurityKind": "config-recording", "ciamAuditScope": scope,
                    "ciamRetentionDays": NATIVE_DAYS, **every},

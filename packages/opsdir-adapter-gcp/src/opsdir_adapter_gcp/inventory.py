@@ -67,6 +67,8 @@ from opsdir_format_terraform.state import blocks, first_block, read_state
 from .audit import trail_resources
 from .budgets import budget_resources
 from .security import security_resources
+from .suppressions import suppression_resources
+from .boundary import workload_notices
 from .databases import database_resources
 from .storage import object_store_resources
 from .backups import backup_resources
@@ -419,8 +421,9 @@ def pairs_resources(pairs):
              *_clusters(pairs),
              *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs), *_canaries(pairs),
              *iam, *edge, *network, *database_resources(pairs), *volumes, *backups, *trail_resources(pairs),
-             *security_resources(pairs), *budget_resources(pairs)),
-            (*rule_notices, *iam_notices, *edge_notices, *network_notices, *volume_notices, *backup_notices))
+             *security_resources(pairs), *suppression_resources(pairs), *budget_resources(pairs)),
+            (*rule_notices, *iam_notices, *edge_notices, *network_notices, *volume_notices, *backup_notices,
+             *workload_notices(pairs)))
 
 
 def state_resources(text):

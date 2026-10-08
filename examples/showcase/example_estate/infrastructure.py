@@ -12,7 +12,7 @@ from .access import ACCESS
 from .edge import EDGE, SERVICE_ATTRS
 from .network import NETWORK
 from .observability import MONITORING
-from .estate import ACCOUNTS, BILLING_ACCOUNTS, CLASSIFICATION, COSTS, SECURITY
+from .estate import ACCOUNTS, AUTHORIZED, BILLING_ACCOUNTS, CLASSIFICATION, COSTS, DFARS, ORGANIZATIONS, SECURITY
 from .recovery import STANDBY_INTENT
 
 SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password", "ds-tls-keystore",
@@ -374,7 +374,9 @@ def environments():
                  ciamCloudProvider="aws", ciamRegion="us-east-1", ciamCloudEnvironment="public", ciamLifecycle="active",
                  description="Primary hosting environment (AWS)"),
             spec(aws, AWS, ["top", "ciamEnvironment", "ciamEnvironmentPlacement"], env="prod", ciamLifecycle="active",
-                 ciamDataClassification=CLASSIFICATION["source"], ciamOwner=owner("ciam-platform")),
+                 ciamDataClassification=CLASSIFICATION["source"], ciamReportingObligationRef=DFARS,
+                 ciamAuthorizationRef=AUTHORIZED["source"],
+                 ciamOwner=owner("ciam-platform")),
             *environment(aws, AWS, SOURCE), *required_roles(aws, AWS),
             *stage(),
             spec(az, f"cloud=target,{ENVS}", ["top", "ciamCloud", "ciamCloudAccount"], cloud="target",
@@ -382,16 +384,19 @@ def environments():
                  ciamCloudProvider="azure", ciamRegion="eastus2", ciamCloudEnvironment="public",
                  ciamLifecycle="building",
                  description="Second hosting environment (Azure)"),
-            spec(az, AZ, ["top", "ciamEnvironment"], env="prod", ciamLifecycle="building",
+            spec(az, AZ, ["top", "ciamEnvironment", "ciamEnvironmentPlacement"], env="prod", ciamLifecycle="building",
+                 ciamAuthorizationRef=AUTHORIZED["target"],
                  ciamPlannedCutover=t("2027-01-15"), ciamJoinsDeploymentOf=AWS, ciamOwner=owner("ciam-platform")),
             *environment(az, AZ, TARGET), *required_roles(az, AZ),
             spec(gcp, f"cloud=standby,{ENVS}", ["top", "ciamCloud", "ciamCloudAccount"], cloud="standby",
                  ciamAccountRef=ACCOUNTS["standby"], ciamBillingAccountRef=BILLING_ACCOUNTS["standby"],
+                 ciamOrganizationRef=ORGANIZATIONS["standby"],
                  ciamCloudProvider="gcp", ciamRegion="us-central1", ciamCloudEnvironment="public",
                  ciamLifecycle="building", description="Warm standby (Google Cloud)"),
             spec(gcp, GCP, ["top", "ciamEnvironment", "ciamStandby", "ciamEnvironmentPlacement"], env="prod",
                  ciamLifecycle="building", ciamDataClassification=CLASSIFICATION["standby"],
-                 ciamJoinsDeploymentOf=AWS, **STANDBY_INTENT, ciamOwner=owner("ciam-platform"),
+                 ciamReportingObligationRef=DFARS, ciamAuthorizationRef=AUTHORIZED["standby"],
+                 ciamConfigurationMet="assured-workload", ciamJoinsDeploymentOf=AWS, **STANDBY_INTENT, ciamOwner=owner("ciam-platform"),
                  description="Warm standby of production: directory replicas join its deployment over a VPN"),
             *environment(gcp, GCP, STANDBY))
 

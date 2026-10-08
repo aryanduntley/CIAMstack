@@ -18,6 +18,7 @@ from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comm
 from .access import ACCESS
 from .audit import render_trails
 from .security import render_security
+from .suppressions import render_suppressions
 from .budgets import BILLING, BILLING_REGION, billing_account, needs_billing_provider, render_budgets
 from .quotas import render_quota_requests
 from .cdn import alias, distribution
@@ -155,7 +156,7 @@ def render(m, services):
            *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
-           *resolver_rules(m), *render_trails(m), *render_security(m), *render_budgets(m), *render_quota_requests(m),
+           *resolver_rules(m), *render_trails(m), *render_security(m), *render_suppressions(m), *render_budgets(m), *render_quota_requests(m),
            *_references(m))
     unbound = unbound_comments(m.unbound)
     main = header(m, "AWS infrastructure for the CIAM platform", HCL) + unbound + "\n" + "\n\n".join(out) + "\n"

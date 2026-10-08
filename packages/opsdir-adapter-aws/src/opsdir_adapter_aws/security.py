@@ -30,17 +30,26 @@ group's resource policy must let EventBridge deliver, said in a comment); an obj
 management account or delegated administrator, and a service in every region (ciamAllRegions) needs a detector, hub
 or recorder in each region: both said in a comment, this root renders its own account and region.
 
+Findings at or above a service's ciamIncidentSeverity also go to the incident process (its ciamIncidentRole) through a
+second EventBridge rule filtering on the finding's severity: GuardDuty's numeric detail.severity (low 1.0, medium 4.0,
+high 7.0, critical 9.0 and up), Security Hub's detail.findings.Severity.Label and Inspector's detail.severity (the
+labels at or above it); AWS Config has no finding severity (a comment).
+
 Read back from Terraform state: aws_guardduty_detector (+ aws_guardduty_detector_feature, its legacy datasources;
 aws_guardduty_organization_configuration: organization scope), aws_inspector2_enabler,
 aws_config_configuration_recorder (+ its delivery channel's bucket as the findings destination,
 aws_config_retention_configuration), aws_securityhub_account (+ aws_securityhub_standards_subscription,
 aws_securityhub_organization_configuration) -> security services (kind
-security), the SNS topic or log group an EventBridge rule for the service's findings targets as their destination.
+security), the SNS topic or log group an EventBridge rule for the service's findings targets as their destination,
+and the one a rule filtering them on severity targets as their incident route (with the least severity it lets
+through).
 """
 import json
 
 from opsdir.core.directory import get, is_kind, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource, tagged_role
+from opsdir.domains.estate.incidents import incident_routes
+from opsdir.domains.estate.naming import SEVERITIES
 from opsdir.domains.estate.security import findings_destination, security_services
 from opsdir.domains.observability.audit import INDEFINITE
 from opsdir_format_terraform.hcl import Block, block, jsonencoded, ref, tf_name
@@ -88,6 +97,8 @@ SOURCES = {"threat-detection": ("aws.guardduty", "GuardDuty Finding"),
            "vulnerability-scanning": ("aws.inspector2", "Inspector2 Finding"),
            "posture": ("aws.securityhub", "Security Hub Findings - Imported")}
 _HUB = "arn:${data.aws_partition.current.partition}:securityhub:${data.aws_region.current.name}::"
+# the least GuardDuty severity value of each level (GuardDuty's severity levels: low 1.0-3.9 .. critical 9.0-10.0)
+GUARDDUTY_FLOOR = {"low": 1, "medium": 4, "high": 7, "critical": 9}
 
 
 def _notes(m, s):
@@ -186,6 +197,48 @@ def _routing(m, s, kind):
                 ("rule", ref(f"{RULE}.{n}.name")), ("arn", target)]))
 
 
+def _labels(severity):
+    """The severity labels (upper case) at or above a neutral severity."""
+    return [x.upper() for x in SEVERITIES[SEVERITIES.index(severity):]]
+
+
+def severity_filter(source, severity):
+    """The EventBridge pattern's detail filter letting a security service's findings at or above a severity through."""
+    if source == "aws.guardduty":
+        return {"severity": [{"numeric": [">=", GUARDDUTY_FLOOR[severity]]}]}
+    if source == "aws.securityhub":
+        return {"findings": {"Severity": {"Label": _labels(severity)}}}
+    return {"severity": _labels(severity)}
+
+
+def _incident_routing(m, s, kind):
+    """The EventBridge rule and target sending a service's findings at or above its incident severity to the incident
+    process (its ciamIncidentRole), or a note."""
+    route = next((r for r in incident_routes(m) if r.service.dn == s.dn), None)
+    if route is None:
+        return ()
+    cn, dest = rdn_value(s), route.binding
+    if kind not in SOURCES:
+        return (f"# NOTE: {cn}'s incidents to {route.role}: not rendered: AWS Config's findings have no severity (route "
+                "its compliance changes through a Config rule's EventBridge event)",)
+    if dest is None:
+        return ()
+    target = one(dest, "ciamProviderRef") if not is_kind(m.d, dest, "ciamObjectStore") else None
+    if not target:
+        why = ("an object store isn't an EventBridge target" if is_kind(m.d, dest, "ciamObjectStore") else
+               f"{rdn_value(dest)} names no ARN (ciamProviderRef)")
+        return (f"# NOTE: {cn}'s incidents to {route.role}: not rendered: {why}",)
+    n, (source, detail) = tf_name(f"{cn}_incidents"), SOURCES[kind]
+    return (block("resource", [RULE, n], [
+                ("name", f"{cn}-incidents"),
+                ("description", f"{cn}'s {route.severity} and worse findings to {route.role} (incident process)"),
+                ("event_pattern", jsonencoded({"source": [source], "detail-type": [detail],
+                                               "detail": severity_filter(source, route.severity)}))]),
+            block("resource", [TARGET, n], [
+                ("#", "its resource policy must let events.amazonaws.com deliver to it"),
+                ("rule", ref(f"{RULE}.{n}.name")), ("arn", target)]))
+
+
 _RENDER = {"threat-detection": _detector, "vulnerability-scanning": _scanner, "config-recording": _recorder,
            "posture": _hub}
 
@@ -196,7 +249,7 @@ def _service(m, s):
         holder = get(m.d, keeper)
         return (f"# Security service {rdn_value(s)} ({kind}): kept by "
                 f"{rdn_value(holder) if holder is not None else keeper}, not rendered here",)
-    return (*_RENDER[kind](m, s), *_routing(m, s, kind), *_notes(m, s))
+    return (*_RENDER[kind](m, s), *_routing(m, s, kind), *_incident_routing(m, s, kind), *_notes(m, s))
 
 
 def render_security(m):
@@ -237,24 +290,51 @@ def _detector_areas(a, features):
                  if x in FOUNDATIONAL or x in found)
 
 
-def _routes(pairs):
-    """{event source: the ARN its findings rule targets}."""
-    sources = {}
-    for r in of_types(pairs, RULE):
+def _least(source, detail):
+    """The least neutral severity an EventBridge pattern's detail filter lets through, or None when it filters none."""
+    if source == "aws.guardduty":
+        floors = [num[i + 1] for c in (detail.get("severity") or ()) if isinstance(c, dict)
+                  for num in (c.get("numeric") or [],) for i in range(0, len(num) - 1, 2) if num[i] in (">=", ">")]
+        return max((s for s, f in GUARDDUTY_FLOOR.items() if floors and f <= min(floors)),
+                   key=SEVERITIES.index, default="low" if floors else None)
+    labels = (((detail.get("findings") or {}).get("Severity") or {}).get("Label") if source == "aws.securityhub"
+              else detail.get("severity")) or ()
+    known = [x.lower() for x in labels if isinstance(x, str) and x.lower() in SEVERITIES]
+    return min(known, key=SEVERITIES.index) if known else None
+
+
+def _rules(pairs):
+    """{rule name: ((event source, least severity or None), ...)} of the EventBridge rules for security findings."""
+    def parsed(r):
         try:
-            pattern = json.loads(r.get("event_pattern") or "{}")
+            return json.loads(r.get("event_pattern") or "{}")
         except ValueError:
-            continue
-        for src in pattern.get("source") or ():
-            sources.setdefault(r.get("name"), set()).add(src)
-    return {src: t.get("arn") for t in of_types(pairs, TARGET) for src in sources.get(t.get("rule"), ())
-            if t.get("arn")}
+            return {}
+    return {r.get("name"): tuple((src, _least(src, p.get("detail") or {})) for src in p.get("source") or ())
+            for r in of_types(pairs, RULE) for p in (parsed(r),)}
+
+
+def _targets(pairs):
+    """((event source, least severity or None, target ARN), ...) of the rules' targets."""
+    rules = _rules(pairs)
+    return tuple((src, least, t.get("arn")) for t in of_types(pairs, TARGET) if t.get("arn")
+                 for src, least in rules.get(t.get("rule"), ()))
+
+
+def _routes(pairs):
+    """{event source: the ARN its findings rule (no severity filter) targets}."""
+    return {src: arn for src, least, arn in _targets(pairs) if least is None}
+
+
+def _incidents(pairs):
+    """{event source: (the ARN a rule filtering its findings on severity targets, the least severity it lets through)}."""
+    return {src: (arn, least) for src, least, arn in _targets(pairs) if least is not None}
 
 
 def findings_topics(pairs):
-    """ARNs of SNS topics EventBridge rules send security findings to."""
+    """ARNs of SNS topics EventBridge rules send security findings to (all of them, or the incident process's)."""
     wanted = {src for src, _ in SOURCES.values()}
-    return frozenset(arn for src, arn in _routes(pairs).items() if src in wanted and ":sns:" in arn)
+    return frozenset(arn for src, _, arn in _targets(pairs) if src in wanted and ":sns:" in arn)
 
 
 def _standard(arn):
@@ -271,28 +351,38 @@ def _scope(pairs, kind):
     return "organization" if of_types(pairs, kind) else "account"
 
 
+def _incident_link(incidents, source):
+    """The incident role link (and nothing when none routes the source's findings on severity)."""
+    return {"ciamIncidentRole": incidents[source][0]} if source in incidents else {}
+
+
+def _incident_severity(incidents, source):
+    return {"ciamIncidentSeverity": incidents[source][1]} if source in incidents else {}
+
+
 def security_resources(pairs):
     """Security services of (Terraform resource type, attributes) pairs."""
-    routes = _routes(pairs)
-    features = {}
-    for f in of_types(pairs, FEATURE):
-        features.setdefault(f.get("detector_id"), []).append(f)
+    routes, incidents = _routes(pairs), _incidents(pairs)
+    found = of_types(pairs, FEATURE)
+    features = {i: [f for f in found if f.get("detector_id") == i] for i in {f.get("detector_id") for f in found}}
     buckets = {c.get("name"): c.get("s3_bucket_name") for c in of_types(pairs, CHANNEL)}
     retention = next((c.get("retention_period_in_days") for c in of_types(pairs, RETENTION)), None)
     standards = [_standard(s.get("standards_arn")) for s in of_types(pairs, SUBSCRIPTION)]
     detectors = tuple(resource("security", a.get("arn") or a.get("id"), {
         "ciamSecurityKind": "threat-detection",
         "ciamSecurityCoverage": _detector_areas(a, features.get(a.get("id"), ())),
-        "ciamAuditScope": _scope(pairs, "aws_guardduty_organization_configuration")},
-        links={"ciamFindingsRole": routes.get("aws.guardduty")}, name=f"guardduty-{a.get('id')}",
+        "ciamAuditScope": _scope(pairs, "aws_guardduty_organization_configuration"),
+        **_incident_severity(incidents, "aws.guardduty")},
+        links={"ciamFindingsRole": routes.get("aws.guardduty"), **_incident_link(incidents, "aws.guardduty")}, name=f"guardduty-{a.get('id')}",
         role=tagged_role(state_tags(a)), tags=state_tags(a))
         for a in of_types(pairs, DETECTOR) if a.get("enable", True) and (a.get("arn") or a.get("id")))
     scanners = tuple(resource("security", f"inspector2:{a.get('id')}", {
         "ciamSecurityKind": "vulnerability-scanning",
         "ciamSecurityCoverage": tuple(dict.fromkeys(SCANNED[t] for t in a.get("resource_types") or ()
                                                     if t in SCANNED)),
-        "ciamAuditScope": _scope(pairs, "aws_inspector2_organization_configuration")},
-        links={"ciamFindingsRole": routes.get("aws.inspector2")}, name="inspector")
+        "ciamAuditScope": _scope(pairs, "aws_inspector2_organization_configuration"),
+        **_incident_severity(incidents, "aws.inspector2")},
+        links={"ciamFindingsRole": routes.get("aws.inspector2"), **_incident_link(incidents, "aws.inspector2")}, name="inspector")
         for a in of_types(pairs, ENABLER) if a.get("id"))
     recorders = tuple(resource("security", f"config-recorder:{a.get('name')}", {
         "ciamSecurityKind": "config-recording", "ciamAuditScope": "account",
@@ -304,7 +394,8 @@ def security_resources(pairs):
         "ciamSecurityKind": "posture",
         "ciamComplianceStandard": tuple(sorted(k for k, base in standards if not base)),
         "ciamSecurityBaseline": tuple(sorted(k for k, base in standards if base)),
-        "ciamAuditScope": _scope(pairs, "aws_securityhub_organization_configuration")},
-        links={"ciamFindingsRole": routes.get("aws.securityhub")}, name="security-hub")
+        "ciamAuditScope": _scope(pairs, "aws_securityhub_organization_configuration"),
+        **_incident_severity(incidents, "aws.securityhub")},
+        links={"ciamFindingsRole": routes.get("aws.securityhub"), **_incident_link(incidents, "aws.securityhub")}, name="security-hub")
         for a in of_types(pairs, HUB) if a.get("arn") or a.get("id"))
     return (*detectors, *scanners, *recorders, *hubs)

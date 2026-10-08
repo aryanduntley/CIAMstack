@@ -71,6 +71,7 @@ STANDARD_ATTRIBUTES = (
     ("dc", "string", "meta", "Domain component / RDN"),
     ("description", "string", "meta", "Free text"),
     ("mail", "string", "meta", "Contact email"),
+    ("telephoneNumber", "string", "meta", "Contact telephone number"),
 )
 STANDARD_CLASSES = (
     ("top", "Top of the class hierarchy"),
@@ -80,7 +81,8 @@ STANDARD_CLASSES = (
 
 HEADER = ("# Operations Directory schema (opsdir): the attribute types and object classes opsdir defines for platform",
           "# configuration, as RFC 4512 definitions. The standard definitions they build on (RFC 4512 top, RFC 4519",
-          "# cn, ou, description, RFC 4524 dc, mail, domain) are the server's own and are not redefined here.",
+          "# cn, ou, description, telephoneNumber, RFC 4524 dc, mail, domain) are the server's own and are not",
+          "# redefined here.",
           "# Extensions (legal per RFC 4512 §4.2):",
           "#   X-PORTABILITY  intent | contract | binding | secret-ref | observed | meta",
           "#   X-VALUE-TYPE   stricter value type enforced by the store (string, int, bool, time, dn, extdn,",

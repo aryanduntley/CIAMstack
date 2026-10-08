@@ -2,6 +2,7 @@
 from opsdir.core.contract import Adapter
 from opsdir.domains.infrastructure.firewall import priority_check
 from .access import ACCESS
+from .boundary import check_boundary
 from .arm import ARM
 from .cli import CLI_INVENTORY
 from .inventory import TERRAFORM_STATE
@@ -18,7 +19,7 @@ def applies(m):
 
 
 ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles=(),
-                  render_neutral=None, render_env=render, checks=(priority_check(*PRIORITIES),),
+                  render_neutral=None, render_env=render, checks=(priority_check(*PRIORITIES), check_boundary),
                   ref_schemes=("azkv", "azkv-key", "azkv-cert", "azblob"),
                   secret_schemes={"azkv": keyvault_command}, renders="Terraform for the target cloud",
                   neutral_label=None,

@@ -1,5 +1,6 @@
 """AWS adapter: applies to environments in clouds whose ciamCloudProvider is aws."""
 from opsdir.core.contract import Adapter
+from .boundary import check_boundary
 from .access import ACCESS
 from .cli import CLI_INVENTORY
 from .cloudformation import CLOUDFORMATION
@@ -17,7 +18,7 @@ def applies(m):
 
 
 ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(),
-                  render_neutral=None, render_env=render, checks=(), ref_schemes=("aws-sm", "aws-kms", "aws-acm", "s3"),
+                  render_neutral=None, render_env=render, checks=(check_boundary,), ref_schemes=("aws-sm", "aws-kms", "aws-acm", "s3"),
                   secret_schemes={"aws-sm": secretsmanager_command}, renders="Terraform for the target cloud",
                   neutral_label=None,
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamCloudEnvironment": ("public",)}, schema=None,

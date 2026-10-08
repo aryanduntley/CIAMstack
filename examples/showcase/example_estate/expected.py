@@ -68,6 +68,24 @@ EXPECTED = MappingProxyType({
          "(Azure keeps its own for 14 days: CHG-2024 records it)", "CHG-2024"),
         ("B31", "Binding", "Role `budget` is bound in source/prod but not in target/prod",
          "the target has no budget", "CHG-2028"),
+        ("B32", "Binding", "Role `security-incidents` is bound in source/prod but not in target/prod",
+         "the target has no incident channel: GuardDuty pages the source's", "CHG-2029"),
+        ("B34", "Exceptions", "Exception `EXC-2026-02` for target/prod is approved with no expiry",
+         "the target's risk acceptance (no container scanning until PingGateway moves) was approved without an expiry",
+         "CHG-2030"),
+        ("B35", "Authorization", "nist-800-53-r5:SC-12 is the customer's under `F1209051525` and was covered by "
+         "`AGENCYAMAZONEW`", "AWS covers key management (SC-12) for production; on Azure it is the customer's and "
+         "nothing records how it is met", "CHG-2032"),
+        ("B36", "Authorization", "target/prod uses Azure Communication Services (mail-sending), which `F1209051525` "
+         "doesn't list in its boundary", "the target sends mail through Azure Communication Services, which Microsoft's "
+         "compliance-scope tables don't list; a blocker once the target must rely on FedRAMP Moderate (DFARS)", None,
+         "CHG-2029"),
+        ("B37", "Authorization", "target/prod uses DNS Private Resolver", "the target's forwarder to the corporate AD "
+         "(CHG-2015) runs on the DNS Private Resolver, which Microsoft's compliance-scope tables don't list", None,
+         "CHG-2015"),
+        ("B33", "Incident reporting", "source/prod is held to reporting obligation `dfars-7012` and target/prod isn't",
+         "production is held to DFARS 252.204-7012 (72-hour reporting on DIBNet); the target to no reporting "
+         "obligation", "CHG-2029"),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -249,7 +267,8 @@ EXPECTED = MappingProxyType({
          "Defender for Containers plan", None),
         ("A90", "Security", "source/prod's vulnerability-scanning watches containers and target/prod's doesn't",
          "Inspector scans the source's container images; without Defender for Containers nothing scans the target's "
-         "registry", None),
+         "registry (accepted by EXC-2026-02 once CHG-2030 gives it an expiry: shown as accepted, not counted)",
+         "CHG-2030"),
         ("A87", "Security", "source/prod is assessed against nist-800-171-r2 and target/prod isn't",
          "Security Hub assesses the source against NIST SP 800-171 Rev. 2 (CUI); the target's Defender CSPM against "
          "NIST SP 800-53 Rev. 5 only", None),
@@ -274,6 +293,22 @@ EXPECTED = MappingProxyType({
         ("A95", "Quotas", "96 is requested (rendered where the cloud takes requests)",
          "the operator approved the vCPU increase (CHG-2028); the planner waits for the quotas to be fetched again "
          "once Microsoft grants it", None, "CHG-2028"),
+        ("A96", "Incident reporting", "source/prod's threat-detection sends high and worse findings to the incident "
+         "process and target/prod's sends none",
+         "GuardDuty pages the source's incident process on high findings; Defender pages no one (an action while the "
+         "target is held to no obligation)", "CHG-2029"),
+        ("A97", "Exceptions", "source/prod's exception `EXC-2026-01` (false-positive: aws:securityhub:IAM.6) doesn't "
+         "carry to target/prod", "production's Security Hub IAM.6 false positive is the source's exception: the target "
+         "decides for itself", None),
+        ("A98", "POA&M", "POA&M item `POAM-2026-001` is open against cmmc-l2, which target/prod is assessed against",
+         "PingDS's LDAPS isn't on a FIPS-validated provider yet (SC.L2-3.13.11, allowed on the POA&M at 3 points)", None),
+        ("A99", "POA&M", "Close out `CMMC-2026`'s POA&M by 2027-02-11",
+         "the CMMC Level 2 assessment is Conditional since 2026-08-15: its POA&M closes out within 180 days", None),
+        ("A100", "Authorization", "target/prod uses Azure Communication Services (mail-sending), which `F1209051525` "
+         "doesn't list in its boundary", "an action while nothing requires the target to rely on an authorization (it "
+         "becomes B36 once CHG-2029 holds the target to DFARS)", "CHG-2029"),
+        ("A101", "Authorization", "source/prod is inside system boundary `SSP-CIAM-2026` and target/prod in none",
+         "the system security plan covers production and the standby, not the target", "CHG-2032"),
     ],
 })
 

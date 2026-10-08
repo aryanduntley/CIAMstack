@@ -18,6 +18,7 @@ from opsdir.domains.access.workloads import landing_identities, landing_zone_own
 from opsdir.domains.network.plumbing import LANDING_ZONE, NETWORK_FILE, keepers
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from .boundary import render_workload
 from .access import ACCESS
 from .guardrails import render_guardrails
 from .identities import members, notes, sa_member, service_account
@@ -81,14 +82,15 @@ def _providers(m, variables, settings=()):
 
 
 def _identities(m, guardrails):
-    """main.tf text of the identities and guardrails environment m's landing zone grants and the budgets it keeps on
-    the billing account, or None."""
+    """main.tf text of the identities and guardrails environment m's landing zone grants, the budgets it keeps on the
+    billing account and its Assured Workloads workload, or None."""
     deployers, operators = landing_identities(m, ACCESS)
     fences, costs = tuple(guardrails(m)), render_budgets(m) if budget_provider_settings(m) else ()
-    if not (deployers or operators or fences or costs):
+    workload = render_workload(m)
+    if not (deployers or operators or fences or costs or workload):
         return None
     out = (*(_pool(m, deployers) if deployers else ()), *(x for w in deployers for x in _deployer(w)),
-           *(x for w in operators for x in _operator(w)), *fences, *costs)
+           *(x for w in operators for x in _operator(w)), *fences, *costs, *workload)
     what = (f"Google Cloud landing zone for the CIAM platform, kept by {landing_zone_owner(m)}: applied by the landing "
             "zone, not by the platform's pipeline")
     return header(m, what, HCL) + "\n" + "\n\n".join(out) + "\n"

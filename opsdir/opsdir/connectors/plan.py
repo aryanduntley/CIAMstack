@@ -10,6 +10,7 @@ every domain's, in registration order; every check is a pure function of a PlanC
 that fails never passes silently or hides the others: its failure is a blocker naming the check and the error.
 """
 import datetime as dt
+from functools import reduce
 from typing import NamedTuple, Optional
 
 from ..core.changeset import set_values
@@ -18,7 +19,7 @@ from .access import access_check
 from .edge import edge_check
 from .network import network_check
 from .proxies import proxy_check
-from ..core.directory import children, date_of, follow, get, one, rdn_value, values
+from ..core.directory import children, date_of, follow, get, is_kind, one, rdn_value, values
 from ..core.environment import EnvModel, by_role, environment_of, one_role, of_class
 from ..core.findings import (Fix, bindings_container, findings, merge_findings, owner_label, responsible,
                              templated_entry)
@@ -38,7 +39,9 @@ Plan = NamedTuple("Plan", [("src", EnvModel), ("dst", EnvModel), ("cutover", Opt
                                                          # dns; network)
                            ("target_files", dict),
                            ("target_summary", str),      # what the target renders to, in words (from its adapters)
-                           ("fixes", tuple)])            # core.findings.Fix: record changes the findings offer
+                           ("fixes", tuple),             # core.findings.Fix: record changes the findings offer
+                           ("accepted", tuple)])         # findings approved exceptions accept: (kind, area, text,
+                                                         # owner, why), shown, not counted
 
 
 # ------------------------------------------------------------------ cross-domain checks
@@ -125,10 +128,15 @@ def _missing_role(ctx, role):
                     fixes=[fix])
 
 
+def _local(d, b):
+    """Whether a binding is local to its environment's cloud (a class a domain declares local)."""
+    return any(is_kind(d, b, oc) for dom in DOMAINS for oc in dom.local_classes)
+
+
 def _check_roles(ctx):
-    """Every role bound in the source must be bound in the target; each one it lacks offers the fix binding it like
-    the source does, the target's own values given."""
-    src_roles = {one(b, "ciamBindingRole") for b in ctx.src.bindings}
+    """Every role bound in the source must be bound in the target (except bindings local to the source's cloud); each
+    one it lacks offers the fix binding it like the source does, the target's own values given."""
+    src_roles = {one(b, "ciamBindingRole") for b in ctx.src.bindings if not _local(ctx.d, b)}
     dst_roles = {one(b, "ciamBindingRole") for b in ctx.dst.bindings}
     return merge_findings([*(_missing_role(ctx, r) for r in sorted(src_roles - dst_roles)),
                            findings(ok=[f"New in {ctx.dst.label}: `{r}`." for r in sorted(dst_roles - src_roles)])])
@@ -204,8 +212,18 @@ def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS):
                         run_check(edge_check(src_adapters, adapters), ctx),
                         run_check(network_check(src_adapters, adapters), ctx),
                         run_check(proxy_check(adapters), ctx)])
-    return Plan(src, dst, cutover, as_of, f.blockers, f.actions, f.ok, _group_requests(f.requests), dst_files,
-                render_summary(adapters), tuple({x.key: x for x in f.fixes}.values()))
+    blockers, actions, accepted = accept_findings(ctx, domains, f.blockers, f.actions)
+    return Plan(src, dst, cutover, as_of, blockers, actions, f.ok, _group_requests(f.requests), dst_files,
+                render_summary(adapters), tuple({x.key: x for x in f.fixes}.values()), accepted)
+
+
+def accept_findings(ctx, domains, blockers, actions):
+    """(blockers, actions, accepted): the findings each domain's approved decisions accept taken out, in domain order."""
+    def step(acc, accept):
+        b, a, done = acc
+        nb, na, more = accept(ctx, b, a)
+        return tuple(nb), tuple(na), (*done, *more)
+    return reduce(step, (dom.accept for dom in domains if dom.accept), (tuple(blockers), tuple(actions), ()))
 
 
 # ------------------------------------------------------------------ output
@@ -226,6 +244,10 @@ def to_markdown(p):
              *([f"| {a} | {t} | {o} |" for a, t, o in p.blockers] or ["| - | none | - |"]),
              "", "## Actions (dated)", "", "| Area | Action | Owner | Do by |", "|---|---|---|---|",
              *(f"| {a} | {t} | {o} | {b or ''} |" for a, t, o, b in sorted(p.actions, key=_action_order)),
+             *(("", "## Accepted (approved exceptions in force)", "",
+                "Findings the record's approved exceptions accept for the target: shown, not counted in the verdict.",
+                "", "| Kind | Area | Finding | Owner | Accepted |", "|---|---|---|---|---|",
+                *(f"| {k} | {a} | {t} | {o} | {w} |" for k, a, t, o, w in p.accepted)) if p.accepted else ()),
              *(("", "## Fixes offered", "",
                 "Record changes these findings can make (`opsdir fix show FROM TO KEY`; propose or apply them under a "
                 "change):", "", *(f"- `{f.key}`: {f.title}" for f in p.fixes)) if p.fixes else ()),

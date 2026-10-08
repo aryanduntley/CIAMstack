@@ -225,9 +225,11 @@ def _aws_audit():
 def _aws_security():
     """The source's security services as Terraform holds them: GuardDuty with its protection plans, Inspector, AWS
     Config recording into its bucket (kept 2557 days), Security Hub with its standards, and the EventBridge rules that
-    send GuardDuty's, Inspector's and Security Hub's findings to the security topic."""
+    send GuardDuty's, Inspector's and Security Hub's findings to the security topic, and GuardDuty's high and worse to
+    the incident topic too; the Security Hub automation rule suppressing IAM.6 (exception EXC-2026-01)."""
     by_cn = {cn: (role, a) for _, cn, role, a in SECURITY["source"]}
     topic = by_cn["security-alerts"][1]["ciamProviderRef"]
+    incidents = by_cn["security-incidents"][1]["ciamProviderRef"]
     detector = by_cn["guardduty"][1]["ciamProviderRef"]
     detector_id = detector.rsplit("/", 1)[1]
     hub = "arn:aws:securityhub:us-east-1::standards/"
@@ -275,7 +277,25 @@ def _aws_security():
                     "event_pattern": json.dumps({"source": [source], "detail-type": [detail]}),
                     "tags": {"ManagedBy": "opsdir"}}),
                 _res("managed", "aws_cloudwatch_event_target", f"{cn}-findings", {
-                    "rule": f"{cn}-findings", "arn": topic, "target_id": "security-topic"})))]
+                    "rule": f"{cn}-findings", "arn": topic, "target_id": "security-topic"}))),
+            _res("managed", "aws_sns_topic", "security-incidents", {
+                "arn": incidents, "name": incidents.rsplit(":", 1)[1],
+                "tags": {"Role": "security-incidents", "ManagedBy": "opsdir"}}),
+            _res("managed", "aws_cloudwatch_event_rule", "guardduty-incidents", {
+                "name": "guardduty-incidents", "arn": "arn:aws:events:us-east-1:111122223333:rule/guardduty-incidents",
+                "event_pattern": json.dumps({"source": ["aws.guardduty"], "detail-type": ["GuardDuty Finding"],
+                                             "detail": {"severity": [{"numeric": [">=", 7]}]}}),
+                "tags": {"ManagedBy": "opsdir"}}),
+            _res("managed", "aws_cloudwatch_event_target", "guardduty-incidents", {
+                "rule": "guardduty-incidents", "arn": incidents, "target_id": "incident-topic"}),
+            _res("managed", "aws_securityhub_automation_rule", "exc-EXC-2026-01", {
+                "arn": by_cn["exc-EXC-2026-01"][1]["ciamProviderRef"], "rule_name": "exc-EXC-2026-01",
+                "rule_order": 1, "rule_status": "ENABLED", "is_terminal": False,
+                "description": "Suppress IAM.6: exception EXC-2026-01, until 2027-03-31",
+                "criteria": [{"compliance_security_control_id": [{"comparison": "EQUALS", "value": "IAM.6"}]}],
+                "actions": [{"type": "FINDING_FIELDS_UPDATE", "finding_fields_update": [{
+                    "workflow": [{"status": "SUPPRESSED"}],
+                    "note": [{"text": "exception EXC-2026-01, until 2027-03-31", "updated_by": "opsdir"}]}]}]})]
 
 
 def _aws_budgets():

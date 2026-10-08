@@ -284,6 +284,46 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Hold the target to a budget and request its vCPU increase
 
+dn: cn=CHG-2029,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2029
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Hold the target to DFARS 252.204-7012 and page the incident process
+  on Defender's high alerts
+
+dn: cn=CHG-2030,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2030
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Complete the target's risk acceptance and suppress a Defender false
+  positive (azapi add-on)
+
+dn: cn=CHG-2031,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2031
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Import AWS US East/West's FedRAMP Certification Package Overview (p
+ roduction's authorization)
+
+dn: cn=CHG-2032,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2032
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Extend SSP-CIAM-2026 to the target and record how it meets SC-12 on
+  Azure
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

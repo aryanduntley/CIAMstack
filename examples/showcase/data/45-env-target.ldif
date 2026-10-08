@@ -15,7 +15,9 @@ description: Second hosting environment (Azure)
 dn: env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamEnvironment
+objectClass: ciamEnvironmentPlacement
 env: prod
+ciamAuthorizationRef: cn=F1209051525,ou=authorizations,dc=ciam-ops
 ciamJoinsDeploymentOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamLifecycle: building
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops

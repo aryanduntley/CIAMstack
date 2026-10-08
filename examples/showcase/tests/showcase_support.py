@@ -45,7 +45,11 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2025", ImportStep("aws/quotas", QUOTAS / "aws", "20260923090000Z")),
             ("CHG-2026", ImportStep("azure/quotas", QUOTAS / "azure", "20260923090000Z")),
             ("CHG-2027", ImportStep("gcp/quotas", QUOTAS / "gcp", "20260923090000Z")),
-            ("CHG-2028", SHOWCASE / "changes" / "CHG-2028-target-budget-and-quota.ldif"))
+            ("CHG-2028", SHOWCASE / "changes" / "CHG-2028-target-budget-and-quota.ldif"),
+            ("CHG-2029", SHOWCASE / "changes" / "CHG-2029-target-incident-reporting.ldif"),
+            ("CHG-2030", SHOWCASE / "changes" / "CHG-2030-target-exceptions.ldif"),
+            ("CHG-2031", ImportStep("fedramp/cpo", SHOWCASE / "exports" / "fedramp", "20260923090000Z")),
+            ("CHG-2032", SHOWCASE / "changes" / "CHG-2032-target-ssp-and-key-management.ldif"))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
 # night before, all of them)
 IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", "20260920030000Z"),

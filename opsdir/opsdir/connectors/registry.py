@@ -26,7 +26,7 @@ DOMAIN_GROUP = "opsdir.domains"
 ADAPTER_GROUP = "opsdir.adapters"
 FORMAT_GROUP = "opsdir.formats"
 FORMAT_ATTRIBUTE = "ciamFormat"                          # its values are the registered formats' names
-KIND_ORDER = ("provider", "product", "host", "delivery", "secret-store")     # providers first: their files lead a render
+KIND_ORDER = ("provider", "product", "host", "delivery", "secret-store", "compliance")   # providers first: their files lead a render
 ENVIRONMENTS = branch("environments")
 CONNECTOR_SQL = (Path(__file__).resolve().parent / "sql" / "connectors.sql",)
 

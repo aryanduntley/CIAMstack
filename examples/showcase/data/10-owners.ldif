@@ -89,9 +89,37 @@ ciamContactUrl: https://portal.harbor-mro.example/support
 ciamOwnerKind: partner
 mail: it-security@harbor-mro.example
 
+dn: cn=security-operations,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: security-operations
+ciamDisplayName: Security operations center
+ciamOwnerKind: team
+mail: soc@example-aero.test
+telephoneNumber: +1 202 555 0100
+
+dn: cn=dod-dc3,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: dod-dc3
+ciamContactUrl: https://dibnet.dod.mil
+ciamDisplayName: DoD Cyber Crime Center (DIBNet)
+ciamOwnerKind: partner
+
+dn: cn=authorizing-official,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: authorizing-official
+ciamDisplayName: Example Aero CISO (authorizing official)
+ciamOwnerKind: team
+mail: ciso@example-aero.test
+
 dn: cn=example-aero,ou=owners,dc=ciam-ops
 objectClass: top
 objectClass: ciamParty
+objectClass: ciamReportingIdentity
 cn: example-aero
+ciamCageCode: 0EXA1
 ciamDisplayName: Example Aero
 ciamOwnerKind: operator
+ciamUei: EXAMPLEAERO0

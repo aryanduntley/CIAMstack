@@ -369,4 +369,15 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2027  insert  cn=gcp.quotas.shared,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2028  insert  cn=monthly-spend,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2028  update  cn=quota-vcpus,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
-(369 rows)
+<TIMESTAMP>          CHG-2029  update  env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2029  insert  cn=security-incidents,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2029  update  cn=defender,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2030  update  cn=EXC-2026-02,ou=exceptions,dc=ciam-ops
+<TIMESTAMP>          CHG-2030  update  cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2030  insert  cn=EXC-2026-03,ou=exceptions,dc=ciam-ops
+<TIMESTAMP>          CHG-2030  insert  cn=exc-EXC-2026-03,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2031  update  cn=AGENCYAMAZONEW,ou=authorizations,dc=ciam-ops
+<TIMESTAMP>          CHG-2031  insert  cn=fedramp.cpo.shared,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2032  update  cn=SSP-CIAM-2026,ou=boundaries,dc=ciam-ops
+<TIMESTAMP>          CHG-2032  update  cn=azure-sc-12,ou=responsibilities,dc=ciam-ops
+(380 rows)

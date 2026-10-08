@@ -13,3 +13,23 @@ ciamRootCause: mail equality index missing on ds-2 (unrecorded manual change);
   searches by mail went unindexed
 ciamSeverity: sev3
 ciamTitle: Search latency spike on ds-2
+
+dn: cn=INC-2240,ou=incidents,dc=ciam-ops
+objectClass: top
+objectClass: ciamIncident
+objectClass: ciamReportableIncident
+cn: INC-2240
+ciamAffectedEnvironment: env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamDiscoveredAt: 20260922031000Z
+ciamInvolved: cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamMediaRequest: none
+ciamOpenedAt: 20260922033500Z
+ciamOwner: cn=security-operations,ou=owners,dc=ciam-ops
+ciamPreservedUntil: 20261222000000Z
+ciamReportRef: DIBNET-2026-000042
+ciamReportedAt: 20260923180000Z
+ciamRootCause: a directory administrator's credentials were tried from an addr
+ ess outside the estate; GuardDuty raised a high-severity finding; no data was
+  read (synthetic)
+ciamSeverity: sev2
+ciamTitle: Suspicious sign-in to the directory admin account
