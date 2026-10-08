@@ -1753,6 +1753,119 @@ resource "azurerm_monitor_diagnostic_setting" "activity_log" {
   }
 }
 
+resource "azurerm_security_center_subscription_pricing" "arm" {
+  tier          = "Standard"
+  resource_type = "Arm"
+  subplan       = "PerSubscription"
+}
+
+resource "azurerm_security_center_subscription_pricing" "virtualmachines" {
+  tier          = "Standard"
+  resource_type = "VirtualMachines"
+  subplan       = "P2"
+  extension {
+    name = "AgentlessVmScanning"
+  }
+}
+
+resource "azurerm_security_center_subscription_pricing" "storageaccounts" {
+  tier          = "Standard"
+  resource_type = "StorageAccounts"
+  subplan       = "DefenderForStorageV2"
+  extension {
+    name = "OnUploadMalwareScanning"
+  }
+}
+
+resource "azurerm_security_center_subscription_pricing" "sqlservers" {
+  tier          = "Standard"
+  resource_type = "SqlServers"
+}
+
+resource "azurerm_security_center_subscription_pricing" "sqlservervirtualmachines" {
+  tier          = "Standard"
+  resource_type = "SqlServerVirtualMachines"
+}
+
+resource "azurerm_security_center_subscription_pricing" "opensourcerelationaldatabases" {
+  tier          = "Standard"
+  resource_type = "OpenSourceRelationalDatabases"
+}
+
+resource "azurerm_security_center_subscription_pricing" "cosmosdbs" {
+  tier          = "Standard"
+  resource_type = "CosmosDbs"
+}
+
+resource "azurerm_security_center_subscription_pricing" "cloudposture" {
+  tier          = "Standard"
+  resource_type = "CloudPosture"
+}
+
+# defender: Defender for Cloud has no plan for identity: Microsoft Entra ID Protection watches sign-ins (not rendered)
+
+resource "azurerm_security_center_automation" "defender_export" {
+  name                = "defender-export"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  scopes              = [data.azurerm_subscription.current.id]
+  action {
+    type        = "loganalytics"
+    resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-ciam-prod-security"
+  }
+  source {
+    event_source = "Alerts"
+  }
+}
+
+data "azurerm_policy_set_definition" "nist_800_53_r5" {
+  display_name = "NIST SP 800-53 Rev. 5"
+}
+
+resource "azurerm_subscription_policy_assignment" "defender_cspm_nist_800_53_r5" {
+  name                 = "ciam-nist-800-53-r5"
+  display_name         = "NIST SP 800-53 Rev. 5"
+  policy_definition_id = data.azurerm_policy_set_definition.nist_800_53_r5.id
+  subscription_id      = data.azurerm_subscription.current.id
+}
+
+# defender-cspm: Defender for Cloud assigns the Microsoft cloud security benchmark itself (its default assignment)
+
+resource "azurerm_security_center_automation" "defender_cspm_export" {
+  name                = "defender-cspm-export"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  scopes              = [data.azurerm_subscription.current.id]
+  action {
+    type        = "loganalytics"
+    resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-ciam-prod-security"
+  }
+  source {
+    event_source = "Assessments"
+  }
+  source {
+    event_source = "RegulatoryComplianceAssessment"
+  }
+}
+
+resource "azurerm_security_center_server_vulnerability_assessments_setting" "defender_vulnerability" {
+  vulnerability_assessment_provider = "MdeTvm"
+}
+
+resource "azurerm_security_center_automation" "defender_vulnerability_export" {
+  name                = "defender-vulnerability-export"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  scopes              = [data.azurerm_subscription.current.id]
+  action {
+    type        = "loganalytics"
+    resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-ciam-prod-security"
+  }
+  source {
+    event_source = "SubAssessments"
+  }
+}
+
 data "azurerm_key_vault" "kv_ciam_prod" {
   name                = "kv-ciam-prod"
   resource_group_name = data.azurerm_resource_group.main.name

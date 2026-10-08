@@ -352,4 +352,5 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2023  update  env=stage,cloud=source,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2023  update  env=prod,cloud=target,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2023  update  env=prod,cloud=standby,ou=environments,dc=ciam-ops
-(352 rows)
+<TIMESTAMP>          CHG-2024  insert  cn=resource-changes,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+(353 rows)

@@ -57,6 +57,15 @@ EXPECTED = MappingProxyType({
          "approve)", None),
         ("B27", "Binding", "Role `backup-vault` is bound in source/prod but not in target/prod",
          "the target has no backup vault", "CHG-2019"),
+        ("B28", "Binding", "Role `config-history` is bound in source/prod but not in target/prod",
+         "the source's AWS Config history bucket has no counterpart: the target keeps Azure's own change history "
+         "(CHG-2024) and exports none (A88)", None),
+        ("B29", "Binding", "Role `config-recording` is bound in source/prod but not in target/prod",
+         "the target records no configuration history", "CHG-2024"),
+        ("B30", "Security",
+         "source/prod runs config-recording (config, exporting its history) and target/prod runs none",
+         "the source records every resource change with AWS Config and exports the history; the target records none "
+         "(Azure keeps its own for 14 days: CHG-2024 records it)", "CHG-2024"),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -233,6 +242,21 @@ EXPECTED = MappingProxyType({
          "the source replicates the grant database's automated backups to us-west-2; the target's Flexible Server "
          "has no geo-redundant backup, so losing its region loses the backups (the fix asks for the region; Azure "
          "copies to the region's pair)", None),
+        ("A86", "Security", "source/prod's threat-detection watches containers and target/prod's doesn't",
+         "GuardDuty's EKS protection watches the source's containers; the target's Defender for Cloud runs no "
+         "Defender for Containers plan", None),
+        ("A90", "Security", "source/prod's vulnerability-scanning watches containers and target/prod's doesn't",
+         "Inspector scans the source's container images; without Defender for Containers nothing scans the target's "
+         "registry", None),
+        ("A87", "Security", "source/prod is assessed against nist-800-171-r2 and target/prod isn't",
+         "Security Hub assesses the source against NIST SP 800-171 Rev. 2 (CUI); the target's Defender CSPM against "
+         "NIST SP 800-53 Rev. 5 only", None),
+        ("A88", "Security",
+         "source/prod exports its configuration history and target/prod keeps it in the service only",
+         "AWS Config delivers the source's history to a bucket; Azure's change history (CHG-2024) stays in Resource "
+         "Graph", None, "CHG-2024"),
+        ("A89", "Security", "source/prod keeps its config-recording records 2557 days and target/prod 14 days",
+         "the source keeps seven years of configuration history; Azure keeps 14 days (CHG-2024)", None, "CHG-2024"),
     ],
 })
 

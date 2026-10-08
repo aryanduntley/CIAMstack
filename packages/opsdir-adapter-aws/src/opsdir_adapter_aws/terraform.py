@@ -17,6 +17,7 @@ from opsdir.domains.edge.resolve import inspected, service_edge
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
 from .access import ACCESS
 from .audit import render_trails
+from .security import render_security
 from .cdn import alias, distribution
 from .dns import RESOLVER_ENDPOINT, records, resolver_rules, service_record
 from .edge import US_EAST_1, alb_service, health_check, shield, stickiness
@@ -152,7 +153,7 @@ def render(m, services):
            *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
-           *resolver_rules(m), *render_trails(m), *_references(m))
+           *resolver_rules(m), *render_trails(m), *render_security(m), *_references(m))
     unbound = unbound_comments(m.unbound)
     main = header(m, "AWS infrastructure for the CIAM platform", HCL) + unbound + "\n" + "\n\n".join(out) + "\n"
     providers = header(m, "Providers", HCL) + "\n" + "\n\n".join([

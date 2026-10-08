@@ -1,5 +1,5 @@
 Expected findings check (after changes)
-  blockers planted 27   expected now 13   detected 13   missed 0   unexpected 0
+  blockers planted 30   expected now 14   detected 14   missed 0   unexpected 0
            B1   cleared by CHG-2003: the target environment binds a new LDAPS name (landing-zone DNS default) → gone
            B2   cleared by CHG-2017: the target environment has no backup target → gone
            B4   cleared by CHG-2001: no target firewall rule for the MRO export → gone
@@ -14,7 +14,9 @@ Expected findings check (after changes)
            B24  cleared by CHG-2018: the target's directory data volume came from a sandbox template: what PingDS keeps doesn't fit → gone
            B25  cleared by CHG-2019: the target binds no snapshot policy (the volume check says what it loses: A72) → gone
            B27  cleared by CHG-2019: the target has no backup vault → gone
-  actions  planted 85   expected now 71   detected 71   missed 0   unexpected 0
+           B29  cleared by CHG-2024: the target records no configuration history → gone
+           B30  cleared by CHG-2024: the source records every resource change with AWS Config and exports the history; the target records none (Azure keeps its own for 14 days: CHG-2024 records it) → gone
+  actions  planted 90   expected now 76   detected 76   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone
@@ -32,6 +34,8 @@ Expected findings check (after changes)
            A70  raised by CHG-2017: the target's backup container (CHG-2017) has no immutability policy: a backup can be deleted early → reported
            A71  raised by CHG-2017: nothing copies the target's backups to another region; the source replicates to us-west-2 → reported
            A75  raised by CHG-2019: the target's disk backup (CHG-2019) keeps snapshots in its own region: Azure disk backup can't copy them → reported
+           A88  raised by CHG-2024: AWS Config delivers the source's history to a bucket; Azure's change history (CHG-2024) stays in Resource Graph → reported
+           A89  raised by CHG-2024: the source keeps seven years of configuration history; Azure keeps 14 days (CHG-2024) → reported
   RESULT: PASS. The planner found every planted problem and nothing else. 'NOT READY' is the correct verdict
           for this deliberately broken environment.
 exit 0

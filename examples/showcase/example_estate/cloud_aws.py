@@ -26,6 +26,7 @@ from .access import ACCT, AWS_IDENTITIES
 from .cloud_common import by_role, hex_id, listed, rows_of, servers_of, service_named
 from .infrastructure import SECRET_ROLES, SOURCE
 from .observability import MONITORING
+from .estate import CONFIG_BUCKET, SECURITY
 
 ACCOUNT, REGION = "111122223333", "us-east-1"
 
@@ -219,6 +220,62 @@ def _aws_audit():
                                     "data_resource": [{"type": "AWS::S3::Object", "values": [
                                         f"arn:aws:s3:::{SOURCE['backup'][len('s3://'):]}/"]}]}],
                 "tags": {"Role": trail_role, "ManagedBy": "opsdir"}})]
+
+
+def _aws_security():
+    """The source's security services as Terraform holds them: GuardDuty with its protection plans, Inspector, AWS
+    Config recording into its bucket (kept 2557 days), Security Hub with its standards, and the EventBridge rules that
+    send GuardDuty's, Inspector's and Security Hub's findings to the security topic."""
+    by_cn = {cn: (role, a) for _, cn, role, a in SECURITY["source"]}
+    topic = by_cn["security-alerts"][1]["ciamProviderRef"]
+    detector = by_cn["guardduty"][1]["ciamProviderRef"]
+    detector_id = detector.rsplit("/", 1)[1]
+    hub = "arn:aws:securityhub:us-east-1::standards/"
+    rules = (("guardduty", "aws.guardduty", "GuardDuty Finding"), ("inspector", "aws.inspector2", "Inspector2 Finding"),
+             ("security-hub", "aws.securityhub", "Security Hub Findings - Imported"))
+    return [_res("managed", "aws_sns_topic", "security-alerts", {
+                "arn": topic, "name": topic.rsplit(":", 1)[1],
+                "tags": {"Role": "security-findings", "ManagedBy": "opsdir"}}),
+            _res("managed", "aws_guardduty_detector", "guardduty", {
+                "id": detector_id, "arn": detector, "enable": True, "finding_publishing_frequency": "FIFTEEN_MINUTES",
+                "tags": {"Role": "threat-detection", "ManagedBy": "opsdir"}}),
+            *(_res("managed", "aws_guardduty_detector_feature", f"guardduty-{name.lower()}", {
+                "detector_id": detector_id, "name": name, "status": "ENABLED",
+                "additional_configuration": [{"name": x, "status": "ENABLED"} for x in extra]})
+              for name, extra in (("S3_DATA_EVENTS", ()), ("EKS_AUDIT_LOGS", ()),
+                                  ("RUNTIME_MONITORING", ("EKS_ADDON_MANAGEMENT", "EC2_AGENT_MANAGEMENT")),
+                                  ("EBS_MALWARE_PROTECTION", ()), ("RDS_LOGIN_EVENTS", ()))),
+            _res("managed", "aws_inspector2_enabler", "inspector", {
+                "id": "111122223333-EC2:ECR", "account_ids": ["111122223333"], "resource_types": ["EC2", "ECR"]}),
+            _res("managed", "aws_s3_bucket", "config-history", {
+                "bucket": CONFIG_BUCKET, "arn": f"arn:aws:s3:::{CONFIG_BUCKET}",
+                "tags": {"Name": "config-history", "Role": "config-history", "ManagedBy": "opsdir"}}),
+            _res("managed", "aws_s3_bucket_versioning", "config-history", {
+                "bucket": CONFIG_BUCKET, "versioning_configuration": [{"status": "Enabled"}]}),
+            _res("managed", "aws_config_configuration_recorder", "config", {
+                "id": "config", "name": "config",
+                "role_arn": "arn:aws:iam::111122223333:role/aws-service-role/config.amazonaws.com/"
+                            "AWSServiceRoleForConfig",
+                "recording_group": [{"all_supported": True, "include_global_resource_types": True}]}),
+            _res("managed", "aws_config_delivery_channel", "config", {
+                "id": "config", "name": "config", "s3_bucket_name": CONFIG_BUCKET}),
+            _res("managed", "aws_config_retention_configuration", "config", {
+                "id": "default", "name": "default", "retention_period_in_days": 2557}),
+            _res("managed", "aws_securityhub_account", "security-hub", {
+                "id": "111122223333", "arn": by_cn["security-hub"][1]["ciamProviderRef"],
+                "control_finding_generator": "SECURITY_CONTROL", "enable_default_standards": False}),
+            *(_res("managed", "aws_securityhub_standards_subscription", f"security-hub-{n}", {
+                "id": f"arn:aws:securityhub:us-east-1:111122223333:subscription/{path}",
+                "standards_arn": hub + path})
+              for n, path in (("nist-800-53", "nist-800-53/v/5.0.0"), ("nist-800-171", "nist-800-171/v/2.0.0"),
+                              ("fsbp", "aws-foundational-security-best-practices/v/1.0.0"))),
+            *(x for cn, source, detail in rules for x in (
+                _res("managed", "aws_cloudwatch_event_rule", f"{cn}-findings", {
+                    "name": f"{cn}-findings", "arn": f"arn:aws:events:us-east-1:111122223333:rule/{cn}-findings",
+                    "event_pattern": json.dumps({"source": [source], "detail-type": [detail]}),
+                    "tags": {"ManagedBy": "opsdir"}}),
+                _res("managed", "aws_cloudwatch_event_target", f"{cn}-findings", {
+                    "rule": f"{cn}-findings", "arn": topic, "target_id": "security-topic"})))]
 
 
 def _drifted_source(p, subnets, groups):
@@ -517,7 +574,7 @@ def source_state():
     subnets, instances, groups = _source_ids(p)
     resources = [*_aws_network(p, subnets), *_aws_servers(p, subnets, instances, groups, {"pf-engine-2": "m6i.xlarge"}),
                  *_aws_firewall(p, groups), *_aws_services(p, instances), *_aws_keys(p, rotation=False),
-                 *_aws_monitoring(), *_aws_audit(), *_drifted_source(p, subnets, groups), *_source_iam(), *_aws_dns(p),
+                 *_aws_monitoring(), *_aws_audit(), *_aws_security(), *_drifted_source(p, subnets, groups), *_source_iam(), *_aws_dns(p),
                  *_aws_network_depth(p), *_aws_databases(p, groups), *_aws_volumes(p, instances),
                  *_aws_backups(p)]
     return indented({"version": 4, "terraform_version": "1.9.5", "serial": 214, "lineage": "5e0c-ciam-prod",

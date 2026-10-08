@@ -2215,6 +2215,34 @@ resource "google_project_iam_audit_config" "audit_sink" {
   }
 }
 
+# assets: Cloud Asset Inventory keeps 35 days of resource history itself
+
+resource "google_cloud_asset_project_feed" "assets" {
+  project      = var.project_id
+  feed_id      = "assets"
+  content_type = "RESOURCE"
+  asset_types  = [".*"]
+  feed_output_config {
+    pubsub_destination {
+      topic = "projects/example-aero-ciam-standby/topics/ciam-security"
+    }
+  }
+}
+
+# scc: Security Command Center (Premium or Enterprise) activated with Event Threat Detection, Container Threat Detection, VM Threat Detection: a request to the organization's administrators (not rendered)
+
+resource "google_scc_v2_project_notification_config" "scc_findings" {
+  # Security Command Center's service agent must be able to publish to the topic
+  config_id    = "scc-findings"
+  project      = var.project_id
+  location     = "global"
+  description  = "scc's findings to security-findings"
+  pubsub_topic = "projects/example-aero-ciam-standby/topics/ciam-security"
+  streaming_config {
+    filter = "finding_class=\"THREAT\" AND state=\"ACTIVE\""
+  }
+}
+
 data "google_secret_manager_secret" "am_admin_password" {
   # metadata only: no secret version (value) enters Terraform state
   secret_id = "am-admin-password"

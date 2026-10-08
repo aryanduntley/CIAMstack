@@ -8,9 +8,11 @@ The region catalog (under ou=regions) holds each provider's regions as the provi
 provider's own command (an adapter's prerequisite) and managed from then on like any other record; a residency (under
 ou=residencies) is the estate's own classification of where data may be held, listing the catalog regions it allows,
 so residency values are the estate's to define yet every environment names one that exists. A cloud may say its
-clients use FIPS 140 validated endpoints (ciamCloudEndpoints)."""
+clients use FIPS 140 validated endpoints (ciamCloudEndpoints). The cloud security services an environment runs
+(ciamSecurityService: threat detection, vulnerability scanning, configuration recording, posture assessment) are
+bindings: what each watches or assesses, where its findings go and how long it keeps its records."""
 from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
-from .naming import CLASSIFICATIONS, REGION_STATUSES, TAG_SOURCES
+from .naming import CLASSIFICATIONS, REGION_STATUSES, SECURITY_AREAS, SECURITY_KINDS, STANDARD_ID, TAG_SOURCES
 
 ATTRIBUTES = (
     AttributeDef(482, 'ciamAccountRef', 'string', 'binding', True,
@@ -48,6 +50,24 @@ ATTRIBUTES = (
     AttributeDef(494, 'ciamFipsEndpoints', 'bool', 'binding', True,
                  "Whether a cloud's clients (renderers' providers, the products' SDKs) use the provider's FIPS 140 "
                  "validated endpoints"),
+    AttributeDef(499, 'ciamSecurityKind', enum_type(SECURITY_KINDS), 'binding', True,
+                 "What a cloud security service does: threat-detection, vulnerability-scanning, config-recording "
+                 "(resources' configuration and its changes) or posture (assessment against compliance frameworks and "
+                 "the cloud's own baseline)"),
+    AttributeDef(500, 'ciamSecurityCoverage', enum_type(SECURITY_AREAS), 'binding', False,
+                 "What a threat-detection or vulnerability-scanning service watches: control-plane, identity, network, "
+                 "compute, containers, storage, databases, key-vaults, applications"),
+    AttributeDef(501, 'ciamComplianceStandard', 'string', 'binding', False,
+                 "A compliance framework a posture service assesses the estate against, by a neutral id the clouds "
+                 "share (nist-800-53-r5, nist-800-171-r2, fedramp-high, cmmc-l2, cis: its cloud's CIS benchmark)",
+                 (("X-PATTERN", STANDARD_ID),)),
+    AttributeDef(502, 'ciamSecurityBaseline', 'string', 'binding', False,
+                 "A cloud's own security baseline a posture service assesses, by the name its adapter gives it: "
+                 "one cloud's baseline never stands in for another's",
+                 (("X-PATTERN", STANDARD_ID),)),
+    AttributeDef(503, 'ciamFindingsRole', 'string', 'intent', True,
+                 "The role of the binding a security service's findings (or recorded configuration) go to: an alert "
+                 "channel, a log destination, an object store, a stream (a topic); none: they stay in the service"),
 )
 CLASSES = (
     ClassDef(103, 'ciamCloudAccount', 'top', 'AUXILIARY', (), ('ciamAccountRef', 'ciamOrganizationRef'),
@@ -72,6 +92,13 @@ CLASSES = (
              "regions it allows (any provider's)"),
     ClassDef(110, 'ciamCloudEndpoints', 'top', 'AUXILIARY', (), ('ciamFipsEndpoints',),
              "Added to a cloud: how its clients reach the provider's APIs (FIPS 140 validated endpoints)"),
+    ClassDef(112, 'ciamSecurityService', 'ciamBinding', 'STRUCTURAL', ('ciamSecurityKind',),
+             ('ciamSecurityCoverage', 'ciamComplianceStandard', 'ciamSecurityBaseline', 'ciamAuditScope',
+              'ciamAllRegions', 'ciamFindingsRole', 'ciamRetentionDays', 'ciamProviderRef', 'ciamManagedBy'),
+             "A cloud security service an environment runs (threat detection, vulnerability scanning, configuration "
+             "recording, posture assessment): what it watches or assesses, one account or the whole organization, "
+             "every region or one, where its findings go, how long it keeps its records (ciamRetentionDays), and who "
+             "keeps it when the platform team doesn't"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

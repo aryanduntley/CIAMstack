@@ -1,6 +1,6 @@
 Expected findings check (before changes)
-  blockers planted 27   expected now 27   detected 27   missed 0   unexpected 0
-  actions  planted 85   expected now 82   detected 82   missed 0   unexpected 0
+  blockers planted 30   expected now 30   detected 30   missed 0   unexpected 0
+  actions  planted 90   expected now 85   detected 85   missed 0   unexpected 0
   RESULT: PASS. The planner found every planted problem and nothing else. 'NOT READY' is the correct verdict
           for this deliberately broken environment.
 exit 0

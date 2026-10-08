@@ -18,6 +18,7 @@ from .access import ACCESS
 from .databases import render_databases
 from .storage import render_object_stores
 from .audit import render_trails
+from .security import render_security
 from .backups import render_backups
 from .volumes import boot_tag, os_disk, server_volumes, snapshot_policy_notes
 from .dns import FORWARDING_RULESET, forwarding_rules, records, service_record
@@ -187,8 +188,9 @@ def render(m, services):
            *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
-           *forwarding_rules(m), *render_trails(m),
+           *forwarding_rules(m), *render_trails(m), *render_security(m),
            *_key_vault_secrets(m), *scope_data(m, identities))
+    out = tuple(x for i, x in enumerate(out) if not (x.startswith('data "') and x in out[:i]))   # a data source once
     notes = "\n".join(_interconnect_note(m, ic) for ic in of_class(m, "ciamInterconnect"))
     unbound = unbound_comments(m.unbound)
     main = header(m, "Azure infrastructure for the CIAM platform", HCL) + unbound + notes + "\n\n" \

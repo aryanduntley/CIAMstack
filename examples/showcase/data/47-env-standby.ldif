@@ -605,6 +605,44 @@ ciamBindingRole: audit-trail
 ciamLogDestinationRole: audit-archive
 ciamProviderRef: projects/example-aero-ciam-standby/sinks/ciam-audit
 
+dn: cn=security-findings,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStreamBinding
+cn: security-findings
+ciamBindingRole: security-findings
+ciamProviderRef: projects/example-aero-ciam-standby/topics/ciam-security
+ciamStreamKind: topic
+
+dn: cn=scc,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecurityService
+cn: scc
+ciamAllRegions: TRUE
+ciamAuditScope: account
+ciamBindingRole: threat-detection
+ciamFindingsRole: security-findings
+ciamProviderRef: projects/example-aero-ciam-standby/locations/global/notificat
+ ionConfigs/scc-findings
+ciamSecurityCoverage: control-plane
+ciamSecurityCoverage: identity
+ciamSecurityCoverage: network
+ciamSecurityCoverage: compute
+ciamSecurityCoverage: containers
+ciamSecurityCoverage: storage
+ciamSecurityKind: threat-detection
+
+dn: cn=assets,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecurityService
+cn: assets
+ciamAllRegions: TRUE
+ciamAuditScope: account
+ciamBindingRole: config-recording
+ciamFindingsRole: security-findings
+ciamProviderRef: projects/example-aero-ciam-standby/feeds/assets
+ciamRetentionDays: 35
+ciamSecurityKind: config-recording
+
 dn: cn=identity-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamIdentityBinding

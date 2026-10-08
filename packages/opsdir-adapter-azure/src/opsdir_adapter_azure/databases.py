@@ -22,7 +22,8 @@ Server (SQL Server is Azure SQL, a different offering): a comment.
 
 Read back from (azurerm type, attributes) pairs, Terraform state as it is or the CLI and ARM templates normalized to
 it (cli_database.py): the servers (geo-redundant backups: their location's pair as the copy region), their
-configurations and the locks on them, the ranges the inbound rules of the
+configurations and the locks on them (a server with geo-redundant backups in a region whose pair isn't known:
+a notice), the ranges the inbound rules of the
 network security groups on their delegated subnets admit (database_security_groups keeps those out of the firewall
 rules). The administrator password (administrator_password) is never read.
 """
@@ -223,6 +224,16 @@ def _server(kind, a, settings, locked, admitted=()):
         links={"ciamSubnetRole": subnet_ref(a.get("delegated_subnet_id")),
                "ciamEncryptedByRole": key_ref(_first(a.get("customer_managed_key")).get("key_vault_key_id"))},
         name=a.get("name"), role=tagged_role(a.get("tags") or {}), tags=a.get("tags") or {})
+
+
+def geo_backup_notices(pairs):
+    """Notices for Flexible Servers whose geo-redundant backup is on in a region whose pair isn't known here: where
+    the copies go can't be told, so no copy region is recorded."""
+    return tuple(f"{kind} {a.get('name') or a.get('id')}: geo-redundant backup is on in {a.get('location')}, whose "
+                 "paired region isn't known here: its copy region (ciamCopyRegion) isn't recorded; record it"
+                 for kind in SERVERS.values() for a in of_types(pairs, kind)
+                 if (a.get("id") or a.get("name")) and a.get("geo_redundant_backup_enabled") is True
+                 and not paired_region(a.get("location")))
 
 
 def database_resources(pairs):

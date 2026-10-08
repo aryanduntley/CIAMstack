@@ -62,6 +62,7 @@ from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, l
                                    realization_roles, resource, tagged_role)
 from opsdir_format_terraform.state import blocks, first_block, read_state
 from .audit import trail_resources
+from .security import security_resources
 from .databases import database_resources
 from .storage import object_store_resources
 from .backups import backup_resources
@@ -413,7 +414,8 @@ def pairs_resources(pairs):
              *_keys(pairs), *object_store_resources(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs),
              *_clusters(pairs),
              *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs), *_canaries(pairs),
-             *iam, *edge, *network, *database_resources(pairs), *volumes, *backups, *trail_resources(pairs)),
+             *iam, *edge, *network, *database_resources(pairs), *volumes, *backups, *trail_resources(pairs),
+             *security_resources(pairs)),
             (*rule_notices, *iam_notices, *edge_notices, *network_notices, *volume_notices, *backup_notices))
 
 

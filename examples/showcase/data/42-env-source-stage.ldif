@@ -19,6 +19,12 @@ ciamDropsRole: backup-daily
 ciamDropsRole: backup-vault
 ciamDropsRole: audit-trail
 ciamDropsRole: audit-archive
+ciamDropsRole: security-findings
+ciamDropsRole: config-history
+ciamDropsRole: threat-detection
+ciamDropsRole: vulnerability-scanning
+ciamDropsRole: config-recording
+ciamDropsRole: posture
 ciamLifecycle: active
 ciamOverlayOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops

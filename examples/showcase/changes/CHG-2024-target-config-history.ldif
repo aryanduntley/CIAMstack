@@ -1,0 +1,17 @@
+# CHG-2024 (approved): the source records its resources' configuration and every change to it (AWS Config, its history
+# exported to a bucket and kept 2557 days); the target recorded nothing, which the planner blocks on. Azure records
+# resource changes itself (Resource Graph change history, about 14 days): this records that as the target's
+# configuration recording. The planner then asks for the difference in how long it is kept (14 days against the
+# source's 2557): exporting the history is a separate decision, not taken here.
+dn: cn=resource-changes,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamSecurityService
+cn: resource-changes
+ciamBindingRole: config-recording
+ciamSecurityKind: config-recording
+ciamAuditScope: account
+ciamAllRegions: TRUE
+ciamRetentionDays: 14
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamChangeRef: cn=CHG-2024,ou=changes,dc=ciam-ops

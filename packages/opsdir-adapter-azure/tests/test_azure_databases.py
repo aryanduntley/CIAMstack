@@ -191,8 +191,8 @@ def _in_region(m, region):
 
 
 def test_a_copy_region_is_geo_redundant_backup_to_the_region_s_pair():
-    assert (paired_region("eastus2"), paired_region("usgovvirginia"), paired_region("usgovtexas")) == (
-        "centralus", "usgovtexas", None)
+    assert (paired_region("eastus2"), paired_region("usgovvirginia"), paired_region("usgovtexas"),
+            paired_region("usdodeast")) == ("centralus", "usgovtexas", "usgovarizona", None)
     db = entry(ALPHA, "db-grants", "ciamDatabase", **DB, ciamCopyRegion="centralus", ciamProviderRef=PG)
     _, alpha, _ = model(alpha=(KEY, SECRET, db))
     out = "\n\n".join(render_databases(_in_region(alpha, "eastus2")))
@@ -216,3 +216,15 @@ def test_geo_redundant_backup_is_read_back_as_the_location_s_pair():
     resources, _ = cli_resources({"pg.json": json.dumps([server])})
     (db,) = (r for r in resources if r.kind == "database")
     assert db.attrs["ciamCopyRegion"] == ("usgovtexas",)
+
+
+def test_geo_redundant_backup_in_a_region_without_a_known_pair_is_named():
+    resources, notices = state_resources(_state(("azurerm_postgresql_flexible_server", "grants",
+                                                 {**SERVER, "location": "usdodeast",
+                                                  "geo_redundant_backup_enabled": True})))
+    (db,) = (r for r in resources if r.kind == "database")
+    assert db.attrs.get("ciamCopyRegion") is None
+    assert any("geo-redundant backup is on in usdodeast, whose paired region isn't known here" in n for n in notices)
+    _, quiet = state_resources(_state(("azurerm_postgresql_flexible_server", "grants",
+                                       {**SERVER, "location": "usgovtexas", "geo_redundant_backup_enabled": True})))
+    assert not any("geo-redundant backup is on" in n for n in quiet)

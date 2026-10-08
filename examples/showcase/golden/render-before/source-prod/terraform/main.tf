@@ -1874,6 +1874,27 @@ import {
   id = "example-aero-ciam-prod-ds-backups"
 }
 
+resource "aws_s3_bucket" "config_history" {
+  bucket = "example-aero-ciam-prod-config"
+  tags = {
+    Name      = "config-history"
+    Role      = "config-history"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_s3_bucket_versioning" "config_history" {
+  bucket = aws_s3_bucket.config_history.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+import {
+  to = aws_s3_bucket.config_history
+  id = "example-aero-ciam-prod-config"
+}
+
 resource "aws_route53_resolver_rule" "fwd_corp_ad_0" {
   name                 = "ciam-prod-fwd-corp-ad-0"
   domain_name          = "corp.example-aero.internal"
@@ -1904,6 +1925,176 @@ resource "aws_cloudtrail" "cloudtrail" {
   is_multi_region_trail         = true
   include_global_service_events = true
   enable_log_file_validation    = true
+}
+
+data "aws_partition" "current" {
+}
+
+data "aws_region" "current" {
+}
+
+data "aws_caller_identity" "current" {
+}
+
+resource "aws_iam_service_linked_role" "config_config" {
+  aws_service_name = "config.amazonaws.com"
+}
+
+resource "aws_config_configuration_recorder" "config" {
+  name     = "config"
+  role_arn = aws_iam_service_linked_role.config_config.arn
+  recording_group {
+    all_supported                 = true
+    include_global_resource_types = true
+  }
+}
+
+resource "aws_config_delivery_channel" "config" {
+  name           = "config"
+  s3_bucket_name = "example-aero-ciam-prod-config"
+  depends_on     = [aws_config_configuration_recorder.config]
+}
+
+resource "aws_config_retention_configuration" "config" {
+  retention_period_in_days = 2557
+}
+
+resource "aws_config_configuration_recorder_status" "config" {
+  name       = aws_config_configuration_recorder.config.name
+  is_enabled = true
+  depends_on = [aws_config_delivery_channel.config]
+}
+
+resource "aws_guardduty_detector" "guardduty" {
+  enable                       = true
+  finding_publishing_frequency = "FIFTEEN_MINUTES"
+}
+
+resource "aws_guardduty_detector_feature" "guardduty_ebs_malware_protection" {
+  detector_id = aws_guardduty_detector.guardduty.id
+  name        = "EBS_MALWARE_PROTECTION"
+  status      = "ENABLED"
+}
+
+resource "aws_guardduty_detector_feature" "guardduty_runtime_monitoring" {
+  detector_id = aws_guardduty_detector.guardduty.id
+  name        = "RUNTIME_MONITORING"
+  status      = "ENABLED"
+  additional_configuration {
+    name   = "EC2_AGENT_MANAGEMENT"
+    status = "ENABLED"
+  }
+  additional_configuration {
+    name   = "EKS_ADDON_MANAGEMENT"
+    status = "ENABLED"
+  }
+  additional_configuration {
+    name   = "ECS_FARGATE_AGENT_MANAGEMENT"
+    status = "ENABLED"
+  }
+}
+
+resource "aws_guardduty_detector_feature" "guardduty_eks_audit_logs" {
+  detector_id = aws_guardduty_detector.guardduty.id
+  name        = "EKS_AUDIT_LOGS"
+  status      = "ENABLED"
+}
+
+resource "aws_guardduty_detector_feature" "guardduty_s3_data_events" {
+  detector_id = aws_guardduty_detector.guardduty.id
+  name        = "S3_DATA_EVENTS"
+  status      = "ENABLED"
+}
+
+resource "aws_guardduty_detector_feature" "guardduty_rds_login_events" {
+  detector_id = aws_guardduty_detector.guardduty.id
+  name        = "RDS_LOGIN_EVENTS"
+  status      = "ENABLED"
+}
+
+resource "aws_cloudwatch_event_rule" "guardduty_findings" {
+  name        = "guardduty-findings"
+  description = "guardduty's findings to security-findings"
+  event_pattern = jsonencode({
+    "source" : [
+      "aws.guardduty"
+    ],
+    "detail-type" : [
+      "GuardDuty Finding"
+    ]
+  })
+}
+
+resource "aws_cloudwatch_event_target" "guardduty_findings" {
+  # its resource policy must let events.amazonaws.com deliver to it
+  rule = aws_cloudwatch_event_rule.guardduty_findings.name
+  arn  = "arn:aws:sns:us-east-1:111122223333:ciam-prod-security"
+}
+
+# guardduty: runs in every region: each region needs its own (this root renders us-east-1)
+
+resource "aws_inspector2_enabler" "inspector" {
+  account_ids    = [data.aws_caller_identity.current.account_id]
+  resource_types = ["EC2", "ECR"]
+}
+
+resource "aws_cloudwatch_event_rule" "inspector_findings" {
+  name        = "inspector-findings"
+  description = "inspector's findings to security-findings"
+  event_pattern = jsonencode({
+    "source" : [
+      "aws.inspector2"
+    ],
+    "detail-type" : [
+      "Inspector2 Finding"
+    ]
+  })
+}
+
+resource "aws_cloudwatch_event_target" "inspector_findings" {
+  # its resource policy must let events.amazonaws.com deliver to it
+  rule = aws_cloudwatch_event_rule.inspector_findings.name
+  arn  = "arn:aws:sns:us-east-1:111122223333:ciam-prod-security"
+}
+
+resource "aws_securityhub_account" "security_hub" {
+  enable_default_standards  = false
+  auto_enable_controls      = true
+  control_finding_generator = "SECURITY_CONTROL"
+}
+
+resource "aws_securityhub_standards_subscription" "security_hub_nist_800_53_r5" {
+  standards_arn = "arn:${data.aws_partition.current.partition}:securityhub:${data.aws_region.current.name}::standards/nist-800-53/v/5.0.0"
+  depends_on    = [aws_securityhub_account.security_hub]
+}
+
+resource "aws_securityhub_standards_subscription" "security_hub_nist_800_171_r2" {
+  standards_arn = "arn:${data.aws_partition.current.partition}:securityhub:${data.aws_region.current.name}::standards/nist-800-171/v/2.0.0"
+  depends_on    = [aws_securityhub_account.security_hub]
+}
+
+resource "aws_securityhub_standards_subscription" "security_hub_aws_foundational" {
+  standards_arn = "arn:${data.aws_partition.current.partition}:securityhub:${data.aws_region.current.name}::standards/aws-foundational-security-best-practices/v/1.0.0"
+  depends_on    = [aws_securityhub_account.security_hub]
+}
+
+resource "aws_cloudwatch_event_rule" "security_hub_findings" {
+  name        = "security-hub-findings"
+  description = "security-hub's findings to security-findings"
+  event_pattern = jsonencode({
+    "source" : [
+      "aws.securityhub"
+    ],
+    "detail-type" : [
+      "Security Hub Findings - Imported"
+    ]
+  })
+}
+
+resource "aws_cloudwatch_event_target" "security_hub_findings" {
+  # its resource policy must let events.amazonaws.com deliver to it
+  rule = aws_cloudwatch_event_rule.security_hub_findings.name
+  arn  = "arn:aws:sns:us-east-1:111122223333:ciam-prod-security"
 }
 
 data "aws_secretsmanager_secret" "am_admin_password" {

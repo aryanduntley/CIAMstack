@@ -38,6 +38,7 @@ From Terraform state (terraform.tfstate, format version 4), managed resources an
     aws_cloudwatch_event_bus,                    log stream; an SNS topic an alarm notifies is an alert channel instead
     aws_kinesis_stream
   aws_sns_topic an alarm's actions name       -> alert channel (kind channel, ciamAlertChannel): topic
+    (or security findings go to)
   aws_cloudwatch_log_group                    -> log destination (kind logs, ciamLogDestination): log group, its
                                                  retention in days (0: never expires)
   aws_cloudwatch_metric_alarm                 -> alarm (kind alarm, ciamAlarmBinding): what it evaluates (namespace and
@@ -48,6 +49,9 @@ From Terraform state (terraform.tfstate, format version 4), managed resources an
   aws_cloudtrail                              -> audit trail (kind audit, ciamAuditTrail): scope, the activity its
                                                  event selectors record, all regions, integrity validation, where its
                                                  records go (its bucket's or log group's role): see audit.py
+  GuardDuty, Inspector, AWS Config,           -> security services (kind security, ciamSecurityService): kind, areas,
+    Security Hub (+ EventBridge rules for        standards, scope, where findings go: see security.py
+    their findings)
   aws_db_instance, aws_rds_cluster (+ its      -> database (kind database, ciamDatabase): engine, edition, version,
     instances, subnet and parameter groups)      endpoint, size, availability, TLS, backups, parameters, its subnets,
                                                  key and master secret as roles; never its password: see databases.py
@@ -71,6 +75,7 @@ from .edge_inventory import (aliased_names, dns_resources, edge_services, lb_fac
 from .iam import iam_resources
 from .databases import database_resources, database_security_groups
 from .audit import trail_resources
+from .security import findings_topics, security_resources
 from .backups import backup_resources
 from .volumes import volume_resources
 from .storage import object_store_resources
@@ -398,9 +403,9 @@ _UNIT_SECONDS = {"minute": 60, "hour": 3600, "day": 86400}
 
 
 def _notified(found):
-    """The ARNs every alarm's actions name (alert channels: topics alarms notify)."""
+    """The ARNs every alarm's actions name and the topics security findings go to (alert channels)."""
     return frozenset(arn for a in of_types(found, "aws_cloudwatch_metric_alarm") for k in ALARM_ACTIONS
-                     for arn in a.get(k) or ())
+                     for arn in a.get(k) or ()) | findings_topics(found)
 
 
 def _channels(found):
@@ -474,7 +479,8 @@ def pairs_resources(pairs):
              *_keys(pairs), *object_store_resources(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
              *_canaries(pairs), *iam, *edge_services(pairs), *zones, *records, *forwarders, *network,
-             *database_resources(pairs), *volumes, *backups, *trail_resources(pairs)),
+             *database_resources(pairs), *volumes, *backups, *trail_resources(pairs),
+             *security_resources(pairs)),
             (*rule_notices, *iam_notices, *dns_notices, *network_notices, *volume_notices, *backup_notices))
 
 

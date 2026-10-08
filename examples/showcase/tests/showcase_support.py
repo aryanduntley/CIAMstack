@@ -39,7 +39,8 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2020", ImportStep("aws/regions", REGIONS / "aws", "20260923090000Z")),
             ("CHG-2021", ImportStep("azure/regions", REGIONS / "azure", "20260923090000Z")),
             ("CHG-2022", ImportStep("gcp/regions", REGIONS / "gcp", "20260923090000Z")),
-            ("CHG-2023", SHOWCASE / "changes" / "CHG-2023-us-residency.ldif"))
+            ("CHG-2023", SHOWCASE / "changes" / "CHG-2023-us-residency.ldif"),
+            ("CHG-2024", SHOWCASE / "changes" / "CHG-2024-target-config-history.ldif"))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
 # night before, all of them)
 IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", "20260920030000Z"),

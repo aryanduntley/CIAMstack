@@ -12,7 +12,7 @@ from .access import ACCESS
 from .edge import EDGE, SERVICE_ATTRS
 from .network import NETWORK
 from .observability import MONITORING
-from .estate import ACCOUNTS, CLASSIFICATION
+from .estate import ACCOUNTS, CLASSIFICATION, SECURITY
 from .recovery import STANDBY_INTENT
 
 SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password", "ds-tls-keystore",
@@ -85,6 +85,7 @@ SOURCE = MappingProxyType({
     "streams": (("audit-bus", "audit-events", "arn:aws:events:us-east-1:111122223333:event-bus/ciam-audit", "bus"),),
     # alert channels, log destinations, and the alarms and checks CloudWatch runs (observability)
     "monitoring": MONITORING["source"],
+    "security": SECURITY["source"],   # the cloud security services it runs (estate)
     # the cloud identities the principals act as, the guardrails over it, the ways operators come in (access)
     "access": ACCESS["source"],
     # DNS zones, forwarders, the SSO certificate in the cloud's store, edge subnets; what the source's edge runs (edge)
@@ -160,6 +161,7 @@ TARGET = MappingProxyType({
     "discovery": None,   # deliberately missing too: the nodes' tcp.xml discovery is cloud-specific (S3 on AWS)
     # alert channels, log destinations, alarms and checks Azure Monitor runs (planted: audit retention, no disk alarm)
     "monitoring": MONITORING["target"],
+    "security": SECURITY["target"],   # the cloud security services it runs (estate)
     "access": ACCESS["target"],
     # DNS zones, forwarders, the SSO certificate in the cloud's store, edge subnets; what the source's edge runs (edge)
     "edge": EDGE["target"], "service_attrs": SERVICE_ATTRS["target"],
@@ -235,6 +237,7 @@ STANDBY = MappingProxyType({
     "discovery_protocol": "TCPPING",       # no Cloud Storage protocol for PingFederate: the nodes are listed
     "streams": (("audit-topic", "audit-events", f"{PROJECT}/topics/ciam-audit", "topic"),),
     "monitoring": MONITORING["standby"],
+    "security": SECURITY["standby"],   # the cloud security services it runs (estate)
     "access": ACCESS["standby"],
     # DNS zones, forwarders, the SSO certificate in the cloud's store, edge subnets; what the source's edge runs (edge)
     "edge": EDGE["standby"], "service_attrs": SERVICE_ATTRS["standby"],
@@ -322,7 +325,8 @@ def _bindings(file, env, p):
             *(spec(file, b(cn), ["top", "ciamStreamBinding"], cn=cn, ciamBindingRole=role, ciamProviderRef=ref,
                    ciamStreamKind=kind) for cn, role, ref, kind in p.get("streams") or ()),
             *(spec(file, b(cn), ["top", oc], cn=cn, ciamBindingRole=role, **attrs)
-              for oc, cn, role, attrs in (*(p.get("monitoring") or ()), *(p.get("access") or ()),
+              for oc, cn, role, attrs in (*(p.get("monitoring") or ()), *(p.get("security") or ()),
+                                          *(p.get("access") or ()),
                                           *(p.get("edge") or ()), *(p.get("network") or ()),
                                           *(p.get("databases") or ()), *(p.get("volumes") or ()))),
             *((_interconnect(file, b, *p["interconnect"]),) if p.get("interconnect") else ()))
@@ -407,10 +411,12 @@ STAGE_SERVERS = (("ds-s1", "ds", "10.20.1.31", "us-east-1a", "subnet-ds-a", "ami
 # consumers reach production only (its firewall rules, its LDAPS endpoint service); the private endpoint and the egress
 # firewall are the shared VPC's, kept by production's root; stage's disks aren't snapshotted or backed up (stage is
 # rebuilt, and a backup selection by tag in the shared account would back up production's volumes twice); the
-# account's CloudTrail trail and the bucket keeping its log files are production's too (one trail records the account)
+# account's CloudTrail trail and the bucket keeping its log files are production's too (one trail records the account),
+# and so are its security services, the topic their findings go to and AWS Config's bucket (each covers the account)
 STAGE_DROPS = (*(role for _, role, *_ in SOURCE["fw"] if role.startswith("fw-consumer-") and role != "fw-consumer-pf-ds-svc"),
                "ldaps-endpoint-service", "private-secrets", "egress-firewall", "snapshots-daily", "backup-daily",
-               "backup-vault", "audit-trail", "audit-archive")
+               "backup-vault", "audit-trail", "audit-archive",
+               *(role for oc, _, role, _ in SECURITY["source"]))
 # (name, overridden entry, attribute, value, why)
 STAGE_OVERRIDES = (
     ("replicas", f"cn=topology,ou=replication,{DECL}", "ciamReplicaCount", 1, "stage runs one directory replica"),

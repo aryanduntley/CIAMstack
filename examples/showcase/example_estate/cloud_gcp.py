@@ -22,6 +22,7 @@ from .access import GCP_IDENTITIES, GITHUB, PRINCIPAL_ROWS
 from .cloud_common import edge_subnets, hex_id, listed, rows_of, servers_of
 from .infrastructure import HOST, PROJECT, SECRET_ROLES, STANDBY
 from .observability import MONITORING
+from .estate import SECURITY
 
 # ------------------------------------------------------------------ standby/prod: Cloud Asset Inventory and gcloud
 GAPI = "https://www.googleapis.com/compute/v1"
@@ -179,6 +180,8 @@ def _gcp_references(p):
             _asset("storage.googleapis.com/Bucket", _gcp_backup(p), name=f"//storage.googleapis.com/{p['backup'][5:]}"),
             *(_asset("pubsub.googleapis.com/Topic", {"name": sref, "labels": {"role": role}})
               for _, role, sref, _ in p["streams"]),
+            *(_asset("pubsub.googleapis.com/Topic", {"name": a["ciamProviderRef"], "labels": {"role": role}})
+              for oc, _, role, a in SECURITY["standby"] if oc == "ciamStreamBinding"),
             _asset("compute.googleapis.com/InstanceGroupManager", {
                 "kind": "compute#instanceGroupManager", "name": ref.rsplit("/", 1)[1], "region": REGION_URL,
                 "selfLink": f"{GAPI}/{ref}", "targetSize": runs, "versions": [{"instanceTemplate": template}],

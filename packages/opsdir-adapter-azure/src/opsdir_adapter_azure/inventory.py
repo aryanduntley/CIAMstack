@@ -74,12 +74,13 @@ from .network_inventory import network_resources
 from .edge_inventory import (dns_resources, edge_services, fqdn, frontdoor_endpoints, frontdoor_origins,
                              gateway_facts, lb_facts, traffic_routing)
 from .iam import iam_resources
-from .databases import database_resources, database_security_groups
+from .databases import database_resources, database_security_groups, geo_backup_notices
 from .nsg_rules import allows_in, group_rules, rule_ports, rule_sources, source_cidr
 from .backups import backup_resources
 from .volumes import volume_resources
 from .storage import object_store_resources
 from .audit import trail_resources
+from .security import security_resources
 
 PROVIDER = "azure"
 
@@ -552,8 +553,9 @@ def pairs_resources(pairs):
              *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
              *_canaries(pairs), *iam, *edge, *network, *database_resources(pairs), *volumes, *backups,
-             *trail_resources(pairs)),
-            (*rule_notices, *iam_notices, *edge_notices, *network_notices, *volume_notices, *backup_notices))
+             *trail_resources(pairs), *security_resources(pairs)),
+            (*rule_notices, *iam_notices, *edge_notices, *network_notices, *volume_notices, *backup_notices,
+             *geo_backup_notices(pairs)))
 
 
 def state_resources(text):

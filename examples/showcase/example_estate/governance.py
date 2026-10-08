@@ -60,6 +60,8 @@ CHANGES = (
     ("CHG-2022", "Fetch Google Cloud's region list into the region catalog (prerequisite gcp-regions)", "approved",
      "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2023", "Hold the estate's environments to the us residency", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2024", "Record the target's configuration change history (Azure Resource Graph)", "approved",
+     "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

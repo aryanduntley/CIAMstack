@@ -2210,6 +2210,38 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.498 NAME 'ciamIntegrityValidation' D
  hem is graded through its ciamStorageImmutability' EQUALITY booleanMatch SY
  NTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'binding' X-VA
  LUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.499 NAME 'ciamSecurityKind' DESC 'Wh
+ at a cloud security service does: threat-detection, vulnerability-scanning,
+  config-recording (resources\27 configuration and its changes) or posture (
+ assessment against compliance frameworks and the cloud\27s own baseline)' E
+ QUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X
+ -PORTABILITY 'binding' X-VALUE-TYPE 'enum:threat-detection|vulnerability-sc
+ anning|config-recording|posture' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.500 NAME 'ciamSecurityCoverage' DESC
+  'What a threat-detection or vulnerability-scanning service watches: contro
+ l-plane, identity, network, compute, containers, storage, databases, key-va
+ ults, applications' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.12
+ 1.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'enum:control-plane|identity|ne
+ twork|compute|containers|storage|databases|key-vaults|applications' X-ORIGI
+ N 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.501 NAME 'ciamComplianceStandard' DE
+ SC 'A compliance framework a posture service assesses the estate against, b
+ y a neutral id the clouds share (nist-800-53-r5, nist-800-171-r2, fedramp-h
+ igh, cmmc-l2, cis: its cloud\27s CIS benchmark)' EQUALITY caseIgnoreMatch S
+ YNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 's
+ tring' X-PATTERN '[a-z0-9]+(-[a-z0-9]+)*' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.502 NAME 'ciamSecurityBaseline' DESC
+  'A cloud\27s own security baseline a posture service assesses, by the name
+  its adapter gives it: one cloud\27s baseline never stands in for another\2
+ 7s' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABI
+ LITY 'binding' X-VALUE-TYPE 'string' X-PATTERN '[a-z0-9]+(-[a-z0-9]+)*' X-O
+ RIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.503 NAME 'ciamFindingsRole' DESC 'Th
+ e role of the binding a security service\27s findings (or recorded configur
+ ation) go to: an alert channel, a log destination, an object store, a strea
+ m (a topic); none: they stay in the service' EQUALITY caseIgnoreMatch SYNTA
+ X 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE
+ -TYPE 'string' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -2756,3 +2788,12 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.111 NAME 'ciamAuditTrail' DESC 'An en
   keeps)' SUP ciamBinding STRUCTURAL MUST ciamAuditScope MAY ( ciamAuditEven
  ts $ ciamAllRegions $ ciamIntegrityValidation $ ciamLogDestinationRole $ ci
  amProviderRef $ ciamManagedBy ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.112 NAME 'ciamSecurityService' DESC '
+ A cloud security service an environment runs (threat detection, vulnerabili
+ ty scanning, configuration recording, posture assessment): what it watches 
+ or assesses, one account or the whole organization, every region or one, wh
+ ere its findings go, how long it keeps its records (ciamRetentionDays), and
+  who keeps it when the platform team doesn\27t' SUP ciamBinding STRUCTURAL 
+ MUST ciamSecurityKind MAY ( ciamSecurityCoverage $ ciamComplianceStandard $
+  ciamSecurityBaseline $ ciamAuditScope $ ciamAllRegions $ ciamFindingsRole 
+ $ ciamRetentionDays $ ciamProviderRef $ ciamManagedBy ) X-ORIGIN 'opsdir' )

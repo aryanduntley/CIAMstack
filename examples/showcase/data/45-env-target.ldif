@@ -563,6 +563,63 @@ ciamLogDestinationRole: audit-archive
 ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/providers
  /Microsoft.Insights/diagnosticSettings/ciam-activity-log
 
+dn: cn=security-logs,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogDestination
+cn: security-logs
+ciamBindingRole: security-findings
+ciamDestinationKind: workspace
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-cia
+ m-prod-security
+ciamRetentionDays: 400
+
+dn: cn=defender,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecurityService
+cn: defender
+ciamAllRegions: TRUE
+ciamAuditScope: account
+ciamBindingRole: threat-detection
+ciamFindingsRole: security-findings
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/providers
+ /Microsoft.Security/pricings/defender
+ciamSecurityCoverage: control-plane
+ciamSecurityCoverage: identity
+ciamSecurityCoverage: network
+ciamSecurityCoverage: compute
+ciamSecurityCoverage: storage
+ciamSecurityCoverage: databases
+ciamSecurityKind: threat-detection
+
+dn: cn=defender-vulnerability,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecurityService
+cn: defender-vulnerability
+ciamAllRegions: TRUE
+ciamAuditScope: account
+ciamBindingRole: vulnerability-scanning
+ciamFindingsRole: security-findings
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/providers
+ /Microsoft.Security/serverVulnerabilityAssessmentsSettings/AzureServersSettin
+ g
+ciamSecurityCoverage: compute
+ciamSecurityKind: vulnerability-scanning
+
+dn: cn=defender-cspm,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecurityService
+cn: defender-cspm
+ciamAllRegions: TRUE
+ciamAuditScope: account
+ciamBindingRole: posture
+ciamComplianceStandard: nist-800-53-r5
+ciamFindingsRole: security-findings
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/providers
+ /Microsoft.Security/pricings/CloudPosture
+ciamSecurityBaseline: microsoft-cloud-security-benchmark
+ciamSecurityKind: posture
+
 dn: cn=identity-pf,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamIdentityBinding

@@ -1,0 +1,13 @@
+environment   security service        kind                    scope    all regions  watches                                                                 assesses                                            findings to        keep (days)  kept by
+------------  ----------------------  ----------------------  -------  -----------  ----------------------------------------------------------------------  --------------------------------------------------  -----------------  -----------  --------
+source/prod   config                  config-recording        account                                                                                                                                           config-history     2557         platform
+source/prod   guardduty               threat-detection        account  yes          control-plane, identity, network, compute, containers, storage, databa                                                      security-findings               platform
+source/prod   inspector               vulnerability-scanning  account               compute, containers                                                                                                         security-findings               platform
+source/prod   security-hub            posture                 account                                                                                       nist-800-53-r5, nist-800-171-r2, aws-foundational   security-findings               platform
+standby/prod  assets                  config-recording        account  yes                                                                                                                                      security-findings  35           platform
+standby/prod  scc                     threat-detection        account  yes          control-plane, identity, network, compute, containers, storage                                                              security-findings               platform
+target/prod   defender                threat-detection        account  yes          control-plane, identity, network, compute, storage, databases                                                               security-findings  400          platform
+target/prod   defender-cspm           posture                 account  yes                                                                                  nist-800-53-r5, microsoft-cloud-security-benchmark  security-findings  400          platform
+target/prod   defender-vulnerability  vulnerability-scanning  account  yes          compute                                                                                                                     security-findings  400          platform
+(9 rows)
+exit 0

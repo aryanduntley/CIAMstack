@@ -828,6 +828,16 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Hold the estate's environments to the us residency
 
+dn: cn=CHG-2024,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2024
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the target's configuration change history (Azure Resource Gr
+ aph)
+
 dn: cn=CHG-2040,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange
@@ -4062,6 +4072,12 @@ ciamDropsRole: backup-daily
 ciamDropsRole: backup-vault
 ciamDropsRole: audit-trail
 ciamDropsRole: audit-archive
+ciamDropsRole: security-findings
+ciamDropsRole: config-history
+ciamDropsRole: threat-detection
+ciamDropsRole: vulnerability-scanning
+ciamDropsRole: config-recording
+ciamDropsRole: posture
 ciamLifecycle: active
 ciamOverlayOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
@@ -5587,6 +5603,18 @@ ciamSpansZone: us-east-1a
 ciamSpansZone: us-east-1b
 ciamTargetRole: pf-engine
 
+dn: cn=assets,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecurityService
+cn: assets
+ciamAllRegions: TRUE
+ciamAuditScope: account
+ciamBindingRole: config-recording
+ciamFindingsRole: security-findings
+ciamProviderRef: projects/example-aero-ciam-standby/feeds/assets
+ciamRetentionDays: 35
+ciamSecurityKind: config-recording
+
 dn: cn=audit-archive,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamObjectStore
@@ -5873,6 +5901,26 @@ cn: companyId
 ciamIndexType: equality
 ciamIndexedAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
 
+dn: cn=config,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecurityService
+cn: config
+ciamAuditScope: account
+ciamBindingRole: config-recording
+ciamFindingsRole: config-history
+ciamProviderRef: config-recorder:config
+ciamRetentionDays: 2557
+ciamSecurityKind: config-recording
+
+dn: cn=config-history,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamObjectStore
+cn: config-history
+ciamBindingRole: config-history
+ciamProviderRef: arn:aws:s3:::example-aero-ciam-prod-config
+ciamStorageRef: s3://example-aero-ciam-prod-config
+ciamStorageVersioning: TRUE
+
 dn: cn=cross-cloud-replication,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamRequiredRole
@@ -5952,6 +6000,52 @@ objectClass: top
 objectClass: ciamPasswordPolicy
 cn: Default Password Policy
 ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=defender,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecurityService
+cn: defender
+ciamAllRegions: TRUE
+ciamAuditScope: account
+ciamBindingRole: threat-detection
+ciamFindingsRole: security-findings
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/providers
+ /Microsoft.Security/pricings/defender
+ciamSecurityCoverage: control-plane
+ciamSecurityCoverage: identity
+ciamSecurityCoverage: network
+ciamSecurityCoverage: compute
+ciamSecurityCoverage: storage
+ciamSecurityCoverage: databases
+ciamSecurityKind: threat-detection
+
+dn: cn=defender-cspm,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecurityService
+cn: defender-cspm
+ciamAllRegions: TRUE
+ciamAuditScope: account
+ciamBindingRole: posture
+ciamComplianceStandard: nist-800-53-r5
+ciamFindingsRole: security-findings
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/providers
+ /Microsoft.Security/pricings/CloudPosture
+ciamSecurityBaseline: microsoft-cloud-security-benchmark
+ciamSecurityKind: posture
+
+dn: cn=defender-vulnerability,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecurityService
+cn: defender-vulnerability
+ciamAllRegions: TRUE
+ciamAuditScope: account
+ciamBindingRole: vulnerability-scanning
+ciamFindingsRole: security-findings
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/providers
+ /Microsoft.Security/serverVulnerabilityAssessmentsSettings/AzureServersSettin
+ g
+ciamSecurityCoverage: compute
+ciamSecurityKind: vulnerability-scanning
 
 dn: cn=directory,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -6716,6 +6810,25 @@ ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: gateway
 
+dn: cn=guardduty,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecurityService
+cn: guardduty
+ciamAllRegions: TRUE
+ciamAuditScope: account
+ciamBindingRole: threat-detection
+ciamFindingsRole: security-findings
+ciamProviderRef: arn:aws:guardduty:us-east-1:111122223333:detector/6ec9a2f1b3d
+ 4e5f60718293a4b5c6d7e
+ciamSecurityCoverage: control-plane
+ciamSecurityCoverage: identity
+ciamSecurityCoverage: network
+ciamSecurityCoverage: compute
+ciamSecurityCoverage: containers
+ciamSecurityCoverage: storage
+ciamSecurityCoverage: databases
+ciamSecurityKind: threat-detection
+
 dn: cn=HTTPS,ou=connection-handlers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamConnectionHandler
@@ -7032,6 +7145,18 @@ ciamIdentityKind: managed-identity
 ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
  roups/rg-ciam-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities
  /id-ciam-prod-pf
+
+dn: cn=inspector,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecurityService
+cn: inspector
+ciamAuditScope: account
+ciamBindingRole: vulnerability-scanning
+ciamFindingsRole: security-findings
+ciamProviderRef: inspector2:111122223333-EC2:ECR
+ciamSecurityCoverage: compute
+ciamSecurityCoverage: containers
+ciamSecurityKind: vulnerability-scanning
 
 dn: cn=Json File-Based Access Logger,ou=log-publishers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
@@ -7667,6 +7792,18 @@ ciamOverrides: cn=topology,ou=replication,ou=declared,ou=config,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 description: stage runs one directory replica
 
+dn: cn=resource-changes,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecurityService
+cn: resource-changes
+ciamAllRegions: TRUE
+ciamAuditScope: account
+ciamBindingRole: config-recording
+ciamChangeRef: cn=CHG-2024,ou=changes,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRetentionDays: 14
+ciamSecurityKind: config-recording
+
 dn: cn=Root Password Policy,ou=password-policies,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamPasswordPolicy
@@ -7727,6 +7864,24 @@ ciamSubnetRole: subnet-pf
 ciamSubnetRole: subnet-am
 ciamSubnetRole: subnet-idm
 ciamSubnetRole: subnet-ig
+
+dn: cn=scc,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecurityService
+cn: scc
+ciamAllRegions: TRUE
+ciamAuditScope: account
+ciamBindingRole: threat-detection
+ciamFindingsRole: security-findings
+ciamProviderRef: projects/example-aero-ciam-standby/locations/global/notificat
+ ionConfigs/scc-findings
+ciamSecurityCoverage: control-plane
+ciamSecurityCoverage: identity
+ciamSecurityCoverage: network
+ciamSecurityCoverage: compute
+ciamSecurityCoverage: containers
+ciamSecurityCoverage: storage
+ciamSecurityKind: threat-detection
 
 dn: cn=secret-am-admin-password,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -8372,6 +8527,46 @@ cn: secret-sso-tls-keystore
 ciamBindingRole: sso-tls-keystore
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /stage/sso-tls-keystore
+
+dn: cn=security-alerts,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlertChannel
+cn: security-alerts
+ciamBindingRole: security-findings
+ciamChannelKind: topic
+ciamProviderRef: arn:aws:sns:us-east-1:111122223333:ciam-prod-security
+
+dn: cn=security-findings,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStreamBinding
+cn: security-findings
+ciamBindingRole: security-findings
+ciamProviderRef: projects/example-aero-ciam-standby/topics/ciam-security
+ciamStreamKind: topic
+
+dn: cn=security-hub,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecurityService
+cn: security-hub
+ciamAuditScope: account
+ciamBindingRole: posture
+ciamComplianceStandard: nist-800-53-r5
+ciamComplianceStandard: nist-800-171-r2
+ciamFindingsRole: security-findings
+ciamProviderRef: arn:aws:securityhub:us-east-1:111122223333:hub/default
+ciamSecurityBaseline: aws-foundational
+ciamSecurityKind: posture
+
+dn: cn=security-logs,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogDestination
+cn: security-logs
+ciamBindingRole: security-findings
+ciamDestinationKind: workspace
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-cia
+ m-prod-security
+ciamRetentionDays: 400
 
 dn: cn=service-accounts,ou=password-policies,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top

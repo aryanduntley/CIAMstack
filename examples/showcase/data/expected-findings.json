@@ -189,6 +189,27 @@
       "match": "Role `backup-vault` is bound in source/prod but not in target/prod",
       "planted": "the target has no backup vault",
       "cleared_by": "CHG-2019"
+    },
+    {
+      "id": "B28",
+      "area": "Binding",
+      "match": "Role `config-history` is bound in source/prod but not in target/prod",
+      "planted": "the source's AWS Config history bucket has no counterpart: the target keeps Azure's own change history (CHG-2024) and exports none (A88)",
+      "cleared_by": null
+    },
+    {
+      "id": "B29",
+      "area": "Binding",
+      "match": "Role `config-recording` is bound in source/prod but not in target/prod",
+      "planted": "the target records no configuration history",
+      "cleared_by": "CHG-2024"
+    },
+    {
+      "id": "B30",
+      "area": "Security",
+      "match": "source/prod runs config-recording (config, exporting its history) and target/prod runs none",
+      "planted": "the source records every resource change with AWS Config and exports the history; the target records none (Azure keeps its own for 14 days: CHG-2024 records it)",
+      "cleared_by": "CHG-2024"
     }
   ],
   "actions": [
@@ -789,6 +810,43 @@
       "match": "Database `pf-grants-db` copies its backups to us-west-2 in source/prod",
       "planted": "the source replicates the grant database's automated backups to us-west-2; the target's Flexible Server has no geo-redundant backup, so losing its region loses the backups (the fix asks for the region; Azure copies to the region's pair)",
       "cleared_by": null
+    },
+    {
+      "id": "A86",
+      "area": "Security",
+      "match": "source/prod's threat-detection watches containers and target/prod's doesn't",
+      "planted": "GuardDuty's EKS protection watches the source's containers; the target's Defender for Cloud runs no Defender for Containers plan",
+      "cleared_by": null
+    },
+    {
+      "id": "A90",
+      "area": "Security",
+      "match": "source/prod's vulnerability-scanning watches containers and target/prod's doesn't",
+      "planted": "Inspector scans the source's container images; without Defender for Containers nothing scans the target's registry",
+      "cleared_by": null
+    },
+    {
+      "id": "A87",
+      "area": "Security",
+      "match": "source/prod is assessed against nist-800-171-r2 and target/prod isn't",
+      "planted": "Security Hub assesses the source against NIST SP 800-171 Rev. 2 (CUI); the target's Defender CSPM against NIST SP 800-53 Rev. 5 only",
+      "cleared_by": null
+    },
+    {
+      "id": "A88",
+      "area": "Security",
+      "match": "source/prod exports its configuration history and target/prod keeps it in the service only",
+      "planted": "AWS Config delivers the source's history to a bucket; Azure's change history (CHG-2024) stays in Resource Graph",
+      "cleared_by": null,
+      "raised_by": "CHG-2024"
+    },
+    {
+      "id": "A89",
+      "area": "Security",
+      "match": "source/prod keeps its config-recording records 2557 days and target/prod 14 days",
+      "planted": "the source keeps seven years of configuration history; Azure keeps 14 days (CHG-2024)",
+      "cleared_by": null,
+      "raised_by": "CHG-2024"
     }
   ]
 }
