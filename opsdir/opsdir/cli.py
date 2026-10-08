@@ -202,7 +202,7 @@ def capture_name(path):
 # ------------------------------------------------------------------ commands: parse, call an operation, present
 def _cmd_init(conn, a, as_of):
     r = ops.init(conn)
-    later = [row[0] for row in ops.prerequisites(conn).rows]
+    later = [row[0] for row in ops.prerequisites(conn).rows if row[2] != "met"]    # met: nothing needs it yet
     return "\n".join((f"initialized: {r.attribute_types} attribute types, {r.object_classes} object classes",
                       *((f"provider prerequisites to fetch once an environment uses their adapter: {', '.join(later)} "
                          "(`opsdir prerequisites`)",) if later else ())))
@@ -436,14 +436,18 @@ def _conflict_lines(conflicts):
     return tuple(f"conflict {c.key}: record {shown(c.held)} -> live {shown(c.live)}" for c in conflicts)
 
 
-def run_export(spec):
-    """Effect: an importer's export produced by running its provider commands (Importer.commands) under the operator's
-    own login to the provider, {relative path: standard output}. Refused when the importer has no command, the
-    provider's tool isn't installed or a command fails (its error output named)."""
+def run_export(spec, d=None):
+    """Effect: an importer's export produced by running its provider commands (Importer.commands, derived from the
+    record d when they depend on it) under the operator's own login to the provider, {relative path: standard output}.
+    Refused when the importer has no command (or the record gives it nothing to fetch), the provider's tool isn't
+    installed or a command fails (its error output named)."""
     _, importer = importing.importer_named(spec, ADAPTERS)
     if not importer.commands:
         raise SystemExit(f"{spec} has no provider command: give the export's path instead of --run")
-    return {path: _run(path, argv) for path, argv in importer.commands}
+    commands = importing.import_commands(importer, d)
+    if not commands:
+        raise SystemExit(f"{spec}: the record gives it nothing to fetch ({importer.description})")
+    return {path: _run(path, argv) for path, argv in commands}
 
 
 def _run(path, argv):
@@ -461,7 +465,7 @@ def _run(path, argv):
 def _cmd_import(conn, a, as_of):
     if a.run == bool(a.path):
         raise SystemExit("give the export's PATH or --run (not both)")
-    files, skipped = (run_export(a.importer), ()) if a.run else read_texts(a.path)
+    files, skipped = (run_export(a.importer, db.load_directory(conn)), ()) if a.run else read_texts(a.path)
     plan = ops.preview_import(conn, a.importer, files, import_time(a.at))
     notes = (*(f"skipped (not UTF-8 text): {rel}" for rel in skipped), *plan.notices, *_conflict_lines(plan.conflicts))
     if a.dry_run or not a.change:

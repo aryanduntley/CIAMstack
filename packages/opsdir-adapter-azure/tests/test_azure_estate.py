@@ -71,7 +71,8 @@ def test_the_region_list_is_a_prerequisite_fetched_by_running_the_azure_cli():
     _, d, *_ = estate()
     assert prerequisite_rows(d, (ADAPTER,)) == (
         ("azure-regions", "azure", "not needed yet", "opsdir import azure/regions --run",
-         "az account list-locations -o json > regions.json"),)
+         "az account list-locations -o json > regions.json"),
+        ("azure-quotas", "azure", "met", "opsdir import azure/quotas --run", ""))   # no environment needs a quota
 
 
 def test_the_provider_notes_that_azure_has_no_fips_endpoints_to_switch_to():

@@ -6,6 +6,7 @@ objectClass: ciamCloud
 objectClass: ciamCloudAccount
 cloud: standby
 ciamAccountRef: example-aero-ciam-standby
+ciamBillingAccountRef: 01A2B3-C4D5E6-F7A8B9
 ciamCloudEnvironment: public
 ciamCloudProvider: gcp
 ciamLifecycle: building
@@ -642,6 +643,43 @@ ciamFindingsRole: security-findings
 ciamProviderRef: projects/example-aero-ciam-standby/feeds/assets
 ciamRetentionDays: 35
 ciamSecurityKind: config-recording
+
+dn: cn=quota-vcpus,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaNeed
+cn: quota-vcpus
+ciamBindingRole: quota-vcpus
+ciamQuotaKind: vcpus
+ciamQuotaNeeded: 48
+
+dn: cn=quota-public-ips,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaNeed
+cn: quota-public-ips
+ciamBindingRole: quota-public-ips
+ciamQuotaKind: public-ips
+ciamQuotaNeeded: 4
+
+dn: cn=quota-database-instances,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaNeed
+cn: quota-database-instances
+ciamBindingRole: quota-database-instances
+ciamQuotaKind: database-instances
+ciamQuotaNeeded: 1
+
+dn: cn=monthly-spend,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamBudget
+cn: monthly-spend
+ciamActualThreshold: 80
+ciamActualThreshold: 100
+ciamAlertRole: alerts-page
+ciamBindingRole: budget
+ciamBudgetAmount: 12000
+ciamBudgetPeriod: monthly
+ciamCurrency: USD
+ciamForecastThreshold: 100
 
 dn: cn=identity-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top

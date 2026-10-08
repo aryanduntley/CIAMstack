@@ -1,0 +1,7 @@
+environment   budget         amount     period   alert at (spent)  alert at (forecast)  alerts to    kept by
+------------  -------------  ---------  -------  ----------------  -------------------  -----------  --------
+source/prod   monthly-spend  25000 USD  monthly  80%, 100%         100%                 alerts-page  platform
+standby/prod  monthly-spend  12000 USD  monthly  80%, 100%         100%                 alerts-page  platform
+target/prod   monthly-spend  25000 USD  monthly  80%, 100%         100%                 alerts-page  platform
+(3 rows)
+exit 0

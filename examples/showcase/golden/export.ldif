@@ -206,6 +206,11 @@ objectClass: top
 objectClass: organizationalUnit
 ou: principals
 
+dn: ou=quotas,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: quotas
+
 dn: ou=recovery,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -267,6 +272,7 @@ objectClass: ciamCloud
 objectClass: ciamCloudAccount
 cloud: standby
 ciamAccountRef: example-aero-ciam-standby
+ciamBillingAccountRef: 01A2B3-C4D5E6-F7A8B9
 ciamCloudEnvironment: public
 ciamCloudProvider: gcp
 ciamLifecycle: building
@@ -532,6 +538,16 @@ objectClass: ciamRegionCatalog
 cn: aws
 ciamCloudProvider: aws
 
+dn: cn=aws.quotas.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: aws.quotas.shared
+ciamChangeRef: cn=CHG-2025,ou=changes,dc=ciam-ops
+ciamImportScope: cn=aws:111122223333:us-east-1,ou=quotas,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: aws/quotas
+
 dn: cn=aws.regions.shared,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -542,11 +558,30 @@ ciamImportScope: cn=aws,ou=regions,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
 ciamImporter: aws/regions
 
+dn: cn=aws:111122223333:us-east-1,ou=quotas,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaCatalog
+cn: aws:111122223333:us-east-1
+ciamAccountRef: 111122223333
+ciamCloudProvider: aws
+ciamRegion: us-east-1
+
 dn: cn=azure,ou=regions,dc=ciam-ops
 objectClass: top
 objectClass: ciamRegionCatalog
 cn: azure
 ciamCloudProvider: azure
+
+dn: cn=azure.quotas.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: azure.quotas.shared
+ciamChangeRef: cn=CHG-2026,ou=changes,dc=ciam-ops
+ciamImportScope: cn=azure:00000000-0000-0000-0000-000000000000:eastus2,ou=quot
+ as,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: azure/quotas
 
 dn: cn=azure.regions.shared,ou=imports,dc=ciam-ops
 objectClass: top
@@ -557,6 +592,14 @@ ciamChangeRef: cn=CHG-2021,ou=changes,dc=ciam-ops
 ciamImportScope: cn=azure,ou=regions,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
 ciamImporter: azure/regions
+
+dn: cn=azure:00000000-0000-0000-0000-000000000000:eastus2,ou=quotas,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaCatalog
+cn: azure:00000000-0000-0000-0000-000000000000:eastus2
+ciamAccountRef: 00000000-0000-0000-0000-000000000000
+ciamCloudProvider: azure
+ciamRegion: eastus2
 
 dn: cn=break-glass-root,ou=principals,dc=ciam-ops
 objectClass: top
@@ -837,6 +880,45 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Record the target's configuration change history (Azure Resource Gr
  aph)
+
+dn: cn=CHG-2025,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2025
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Fetch AWS's quota limits for the source's account (prerequisite aws
+ -quotas)
+
+dn: cn=CHG-2026,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2026
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Fetch Azure's quota limits for the target's subscription (prerequis
+ ite azure-quotas)
+
+dn: cn=CHG-2027,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2027
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Fetch Google Cloud's quota limits for the standby's project (prereq
+ uisite gcp-quotas)
+
+dn: cn=CHG-2028,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2028
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Hold the target to a budget and request its vCPU increase
 
 dn: cn=CHG-2040,ou=changes,dc=ciam-ops
 objectClass: top
@@ -1324,6 +1406,17 @@ objectClass: ciamRegionCatalog
 cn: gcp
 ciamCloudProvider: gcp
 
+dn: cn=gcp.quotas.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: gcp.quotas.shared
+ciamChangeRef: cn=CHG-2027,ou=changes,dc=ciam-ops
+ciamImportScope: cn=gcp:example-aero-ciam-standby:us-central1,ou=quotas,dc=cia
+ m-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: gcp/quotas
+
 dn: cn=gcp.regions.shared,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -1333,6 +1426,14 @@ ciamChangeRef: cn=CHG-2022,ou=changes,dc=ciam-ops
 ciamImportScope: cn=gcp,ou=regions,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
 ciamImporter: gcp/regions
+
+dn: cn=gcp:example-aero-ciam-standby:us-central1,ou=quotas,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaCatalog
+cn: gcp:example-aero-ciam-standby:us-central1
+ciamAccountRef: example-aero-ciam-standby
+ciamCloudProvider: gcp
+ciamRegion: us-central1
 
 dn: cn=github-actions-ciam-ops-directory-backup,ou=jobs,dc=ciam-ops
 objectClass: top
@@ -3471,6 +3572,15 @@ ciamGeography: United States
 ciamRegionName: Central US
 ciamRegionStatus: available
 
+dn: cn=cores,cn=azure:00000000-0000-0000-0000-000000000000:eastus2,ou=quotas,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaLimit
+cn: cores
+ciamQuotaKind: vcpus
+ciamQuotaName: Total Regional vCPUs
+ciamQuotaUsage: 0
+ciamQuotaValue: 50
+
 dn: cn=corp-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -3484,6 +3594,14 @@ pingfedConfig: {"hostnames":["dc1.corp.example-aero.test:636","dc2.corp.exampl
 pingfedCredentialRole: pf-corp-ad-bind-password
 pingfedStoreType: LDAP
 pingfedWithheld: /password
+
+dn: cn=CPUS,cn=gcp:example-aero-ciam-standby:us-central1,ou=quotas,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaLimit
+cn: CPUS
+ciamQuotaKind: vcpus
+ciamQuotaUsage: 12
+ciamQuotaValue: 72
 
 dn: cn=d3463ecca0c1772f,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
 objectClass: top
@@ -3626,6 +3744,23 @@ ciamGeography: United States
 ciamRegionName: East US 2
 ciamRegionStatus: available
 
+dn: cn=ec2.L-0263D0A3,cn=aws:111122223333:us-east-1,ou=quotas,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaLimit
+cn: ec2.L-0263D0A3
+ciamQuotaKind: public-ips
+ciamQuotaName: EC2-VPC Elastic IPs
+ciamQuotaValue: 20
+
+dn: cn=ec2.L-1216C47A,cn=aws:111122223333:us-east-1,ou=quotas,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaLimit
+cn: ec2.L-1216C47A
+ciamQuotaKind: vcpus
+ciamQuotaName: Running On-Demand Standard (A, C, D, H, I, M, R, T, Z) instance
+ s
+ciamQuotaValue: 256
+
 dn: cn=eu-central-1,cn=aws,ou=regions,dc=ciam-ops
 objectClass: top
 objectClass: ciamCloudRegion
@@ -3742,6 +3877,14 @@ pingfedPluginType: com.pingidentity.adapters.htmlform.idp.HtmlFormIdpAuthnAdap
 pingfedUses: cn=pcv-customers,ou=credential-validators,ou=pingfederate,dc=ciam
  -ops
 
+dn: cn=IN_USE_ADDRESSES,cn=gcp:example-aero-ciam-standby:us-central1,ou=quotas,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaLimit
+cn: IN_USE_ADDRESSES
+ciamQuotaKind: public-ips
+ciamQuotaUsage: 2
+ciamQuotaValue: 8
+
 dn: cn=ldap,ou=connectors,ou=pingidm,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -3848,6 +3991,23 @@ pingfedPluginKind: validator
 pingfedPluginType: org.sourceid.saml20.domain.LDAPUsernamePasswordCredentialVa
  lidator
 pingfedUses: cn=user-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
+
+dn: cn=PublicIPAddresses,cn=azure:00000000-0000-0000-0000-000000000000:eastus2,ou=quotas,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaLimit
+cn: PublicIPAddresses
+ciamQuotaKind: public-ips
+ciamQuotaName: Public IP Addresses
+ciamQuotaUsage: 3
+ciamQuotaValue: 1000
+
+dn: cn=rds.L-7B6409FD,cn=aws:111122223333:us-east-1,ou=quotas,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaLimit
+cn: rds.L-7B6409FD
+ciamQuotaKind: database-instances
+ciamQuotaName: DB instances
+ciamQuotaValue: 40
 
 dn: cn=recaptcha,ou=captcha-providers,ou=pingfederate,dc=ciam-ops
 objectClass: top
@@ -4078,6 +4238,10 @@ ciamDropsRole: threat-detection
 ciamDropsRole: vulnerability-scanning
 ciamDropsRole: config-recording
 ciamDropsRole: posture
+ciamDropsRole: quota-vcpus
+ciamDropsRole: quota-public-ips
+ciamDropsRole: quota-database-instances
+ciamDropsRole: budget
 ciamLifecycle: active
 ciamOverlayOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
@@ -7407,6 +7571,49 @@ ciamSpansZone: us-central1-a
 ciamSpansZone: us-central1-b
 ciamTargetRole: pf-engine
 
+dn: cn=monthly-spend,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamBudget
+cn: monthly-spend
+ciamActualThreshold: 80
+ciamActualThreshold: 100
+ciamAlertRole: alerts-page
+ciamBindingRole: budget
+ciamBudgetAmount: 25000
+ciamBudgetPeriod: monthly
+ciamCurrency: USD
+ciamForecastThreshold: 100
+ciamProviderRef: arn:aws:budgets::111122223333:budget/source-prod-monthly-spen
+ d
+
+dn: cn=monthly-spend,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamBudget
+cn: monthly-spend
+ciamActualThreshold: 80
+ciamActualThreshold: 100
+ciamAlertRole: alerts-page
+ciamBindingRole: budget
+ciamBudgetAmount: 12000
+ciamBudgetPeriod: monthly
+ciamCurrency: USD
+ciamForecastThreshold: 100
+
+dn: cn=monthly-spend,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamBudget
+cn: monthly-spend
+ciamActualThreshold: 80
+ciamActualThreshold: 100
+ciamAlertRole: alerts-page
+ciamBindingRole: budget
+ciamBudgetAmount: 25000
+ciamBudgetPeriod: monthly
+ciamChangeRef: cn=CHG-2028,ou=changes,dc=ciam-ops
+ciamCurrency: USD
+ciamForecastThreshold: 100
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+
 dn: cn=operator-console,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamAccessPath
@@ -7774,6 +7981,81 @@ ciamRetentionDays: 14
 ciamSourceCidr: 10.60.2.0/24
 ciamSubnetRole: subnet-db
 ciamZone: 1
+
+dn: cn=quota-database-instances,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaNeed
+cn: quota-database-instances
+ciamBindingRole: quota-database-instances
+ciamQuotaKind: database-instances
+ciamQuotaNeeded: 2
+
+dn: cn=quota-database-instances,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaNeed
+cn: quota-database-instances
+ciamBindingRole: quota-database-instances
+ciamQuotaKind: database-instances
+ciamQuotaNeeded: 1
+
+dn: cn=quota-database-instances,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaNeed
+cn: quota-database-instances
+ciamBindingRole: quota-database-instances
+ciamQuotaKind: database-instances
+ciamQuotaNeeded: 2
+
+dn: cn=quota-public-ips,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaNeed
+cn: quota-public-ips
+ciamBindingRole: quota-public-ips
+ciamQuotaKind: public-ips
+ciamQuotaNeeded: 8
+
+dn: cn=quota-public-ips,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaNeed
+cn: quota-public-ips
+ciamBindingRole: quota-public-ips
+ciamQuotaKind: public-ips
+ciamQuotaNeeded: 4
+
+dn: cn=quota-public-ips,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaNeed
+cn: quota-public-ips
+ciamBindingRole: quota-public-ips
+ciamQuotaKind: public-ips
+ciamQuotaNeeded: 8
+
+dn: cn=quota-vcpus,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaNeed
+cn: quota-vcpus
+ciamBindingRole: quota-vcpus
+ciamQuotaKind: vcpus
+ciamQuotaNeeded: 96
+
+dn: cn=quota-vcpus,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaNeed
+cn: quota-vcpus
+ciamBindingRole: quota-vcpus
+ciamQuotaKind: vcpus
+ciamQuotaNeeded: 48
+
+dn: cn=quota-vcpus,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaNeed
+cn: quota-vcpus
+ciamBindingRole: quota-vcpus
+ciamChangeRef: cn=CHG-2028,ou=changes,dc=ciam-ops
+ciamQuotaDecision: request
+ciamQuotaKind: vcpus
+ciamQuotaNeeded: 96
+ciamQuotaRequested: 96
 
 dn: cn=registrationStatus,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
 objectClass: top

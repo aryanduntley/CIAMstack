@@ -1,0 +1,13 @@
+environment   quota               need  needed on the account  limit        usage  decision  requested  verdict
+------------  ------------------  ----  ---------------------  -----------  -----  --------  ---------  ----------------
+source/prod   database-instances  2     2                      not fetched                              fetch the limits
+source/prod   public-ips          8     8                      not fetched                              fetch the limits
+source/prod   vcpus               96    96                     not fetched                              fetch the limits
+standby/prod  database-instances  1     1                      not fetched                              fetch the limits
+standby/prod  public-ips          4     4                      not fetched                              fetch the limits
+standby/prod  vcpus               48    48                     not fetched                              fetch the limits
+target/prod   database-instances  2     2                      not fetched                              fetch the limits
+target/prod   public-ips          8     8                      not fetched                              fetch the limits
+target/prod   vcpus               96    96                     not fetched                              fetch the limits
+(9 rows)
+exit 0

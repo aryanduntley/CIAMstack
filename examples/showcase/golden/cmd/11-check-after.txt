@@ -1,5 +1,5 @@
 Expected findings check (after changes)
-  blockers planted 30   expected now 14   detected 14   missed 0   unexpected 0
+  blockers planted 31   expected now 14   detected 14   missed 0   unexpected 0
            B1   cleared by CHG-2003: the target environment binds a new LDAPS name (landing-zone DNS default) → gone
            B2   cleared by CHG-2017: the target environment has no backup target → gone
            B4   cleared by CHG-2001: no target firewall rule for the MRO export → gone
@@ -16,7 +16,8 @@ Expected findings check (after changes)
            B27  cleared by CHG-2019: the target has no backup vault → gone
            B29  cleared by CHG-2024: the target records no configuration history → gone
            B30  cleared by CHG-2024: the source records every resource change with AWS Config and exports the history; the target records none (Azure keeps its own for 14 days: CHG-2024 records it) → gone
-  actions  planted 90   expected now 76   detected 76   missed 0   unexpected 0
+           B31  cleared by CHG-2028: the target has no budget → gone
+  actions  planted 95   expected now 78   detected 78   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone
@@ -31,11 +32,16 @@ Expected findings check (after changes)
            A78  cleared by CHG-2019: nothing shows how fast the target recovers the directory's data (once CHG-2019 backs it up, the restore-test check asks for the test instead: A73) → gone
            A80  cleared by CHG-2020: the record holds no region list from AWS yet (a provider prerequisite: `opsdir prerequisites`), so the source's region can't be checked against the provider's list → gone
            A81  cleared by CHG-2021: the record holds no region list from Azure yet, so the target's region can't be checked against the provider's list → gone
+           A91  cleared by CHG-2028: the source's spending is held to an AWS Budgets budget; the target was set up without one → gone
+           A92  cleared by CHG-2026: the record holds no quota limits from Azure yet (a provider prerequisite: `opsdir prerequisites`), so the target's needs can't be checked against them → gone
+           A93  cleared by CHG-2028: the target's region grants 50 vCPUs where its servers need 96; the fix offers the operator's decision (request 96, a value of their own, or deny) → gone
            A70  raised by CHG-2017: the target's backup container (CHG-2017) has no immutability policy: a backup can be deleted early → reported
            A71  raised by CHG-2017: nothing copies the target's backups to another region; the source replicates to us-west-2 → reported
            A75  raised by CHG-2019: the target's disk backup (CHG-2019) keeps snapshots in its own region: Azure disk backup can't copy them → reported
            A88  raised by CHG-2024: AWS Config delivers the source's history to a bucket; Azure's change history (CHG-2024) stays in Resource Graph → reported
            A89  raised by CHG-2024: the source keeps seven years of configuration history; Azure keeps 14 days (CHG-2024) → reported
+           A94  raised by CHG-2026: Azure reports no usage limit on database servers (raised by a support request): confirm it with Microsoft → reported
+           A95  raised by CHG-2028: the operator approved the vCPU increase (CHG-2028); the planner waits for the quotas to be fetched again once Microsoft grants it → reported
   RESULT: PASS. The planner found every planted problem and nothing else. 'NOT READY' is the correct verdict
           for this deliberately broken environment.
 exit 0

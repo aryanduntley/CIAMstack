@@ -2242,6 +2242,71 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.503 NAME 'ciamFindingsRole' DESC 'Th
  m (a topic); none: they stay in the service' EQUALITY caseIgnoreMatch SYNTA
  X 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE
  -TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.504 NAME 'ciamQuotaKind' DESC 'What 
+ a quota counts, by a kind every cloud limits: vcpus (the region\27s standar
+ d machines), public-ips, networks, load-balancers, database-instances, kube
+ rnetes-clusters (a provider\27s own quota: ciamProviderRef)' EQUALITY caseI
+ gnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 
+ 'binding' X-VALUE-TYPE 'enum:vcpus|public-ips|networks|load-balancers|datab
+ ase-instances|kubernetes-clusters' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.505 NAME 'ciamQuotaNeeded' DESC 'How
+  many of what a quota counts an environment needs (the environments on one 
+ account and region need their sum)' EQUALITY integerMatch SYNTAX 1.3.6.1.4.
+ 1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'int'
+  X-MIN '1' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.506 NAME 'ciamQuotaDecision' DESC 'T
+ he operator\27s decision on a quota the provider grants less of than needed
+ : request an increase (rendered where the cloud takes requests) or deny it 
+ (the move stops until the need changes)' EQUALITY caseIgnoreMatch SYNTAX 1.
+ 3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYP
+ E 'enum:request|deny' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.507 NAME 'ciamQuotaRequested' DESC '
+ The limit an increase request asks the provider for (when not given, what t
+ he environments need)' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.12
+ 1.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int' X-MIN '1' X-O
+ RIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.508 NAME 'ciamQuotaValue' DESC 'The 
+ limit a provider grants an account in a region, as fetched' EQUALITY intege
+ rMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'obs
+ erved' X-VALUE-TYPE 'int' X-MIN '0' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.509 NAME 'ciamQuotaUsage' DESC 'How 
+ much of a quota the account used when it was fetched, when the provider say
+ s' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE 
+ X-PORTABILITY 'observed' X-VALUE-TYPE 'int' X-MIN '0' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.510 NAME 'ciamQuotaName' DESC 'A quo
+ ta\27s name as its provider shows it (Running On-Demand Standard instances,
+  Total Regional vCPUs)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.11
+ 5.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN
+  'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.511 NAME 'ciamBudgetAmount' DESC 'Ho
+ w much a budget allows an environment to spend each period, in its currency
+  (1500, 1500.50)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.
+ 1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-PATTERN '
+ [0-9]{1,12}(\5C.[0-9]{1,2})?' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.512 NAME 'ciamCurrency' DESC 'The cu
+ rrency of a budget\27s amount (ISO 4217; the billing account\27s, USD when 
+ not given)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 S
+ INGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-PATTERN '[A-Z]{
+ 3}' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.513 NAME 'ciamBudgetPeriod' DESC 'Th
+ e period a budget\27s amount covers: monthly (when not given), quarterly, a
+ nnually' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SING
+ LE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'enum:monthly|quarterly|annua
+ lly' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.514 NAME 'ciamActualThreshold' DESC 
+ 'A share of a budget (percent) whose actual spending alerts its channel' EQ
+ UALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 X-PORTABILITY 'bin
+ ding' X-VALUE-TYPE 'int' X-MIN '1' X-MAX '1000' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.515 NAME 'ciamForecastThreshold' DES
+ C 'A share of a budget (percent) whose forecast spending alerts its channel
+ ' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 X-PORTABILITY 
+ 'binding' X-VALUE-TYPE 'int' X-MIN '1' X-MAX '1000' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.516 NAME 'ciamBillingAccountRef' DES
+ C 'The account a cloud\27s billing is managed from, where its budgets live:
+  an AWS management (payer) or, for GovCloud, the associated standard accoun
+ t; an Azure billing account; a Google Cloud billing account' EQUALITY caseI
+ gnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 
+ 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -2748,9 +2813,10 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.102 NAME 'ciamFailoverDrill' DESC 'On
  ) MAY ( ciamServiceMinutes $ ciamDataLossMinutes $ ciamRecoversRole $ ciamR
  unbookRef ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.103 NAME 'ciamCloudAccount' DESC 'Add
- ed to a cloud: the account its environments run in and the organization abo
- ve it' SUP top AUXILIARY MAY ( ciamAccountRef $ ciamOrganizationRef ) X-ORI
- GIN 'opsdir' )
+ ed to a cloud: the account its environments run in, the organization above 
+ it and the account its billing is managed from' SUP top AUXILIARY MAY ( cia
+ mAccountRef $ ciamOrganizationRef $ ciamBillingAccountRef ) X-ORIGIN 'opsdi
+ r' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.104 NAME 'ciamEnvironmentPlacement' D
  ESC 'Added to an environment: the resource group its resources go in (where
   the cloud has them), how sensitive its data is and the residency it is hel
@@ -2797,3 +2863,25 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.112 NAME 'ciamSecurityService' DESC '
  MUST ciamSecurityKind MAY ( ciamSecurityCoverage $ ciamComplianceStandard $
   ciamSecurityBaseline $ ciamAuditScope $ ciamAllRegions $ ciamFindingsRole 
  $ ciamRetentionDays $ ciamProviderRef $ ciamManagedBy ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.113 NAME 'ciamQuotaNeed' DESC 'What a
+ n environment needs of a provider limit: a quota kind (or the provider\27s 
+ own quota, ciamProviderRef) and how many; and, when the provider grants les
+ s, the operator\27s decision' SUP ciamBinding STRUCTURAL MUST ciamQuotaNeed
+ ed MAY ( ciamQuotaKind $ ciamProviderRef $ ciamQuotaDecision $ ciamQuotaReq
+ uested ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.114 NAME 'ciamBudget' DESC 'A budget 
+ for an environment\27s spending: its amount per period, the shares of it (s
+ pent or forecast) that alert the channel of its ciamAlertRole, and who keep
+ s it when the platform team doesn\27t' SUP ciamBinding STRUCTURAL MUST ciam
+ BudgetAmount MAY ( ciamCurrency $ ciamBudgetPeriod $ ciamActualThreshold $ 
+ ciamForecastThreshold $ ciamAlertRole $ ciamProviderRef $ ciamManagedBy ) X
+ -ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.115 NAME 'ciamQuotaCatalog' DESC 'The
+  limits a provider grants one account in one region (under ou=quotas), as f
+ etched: its ciamQuotaLimit entries' SUP ciamObject STRUCTURAL MUST ( cn $ c
+ iamCloudProvider $ ciamRegion ) MAY ciamAccountRef X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.116 NAME 'ciamQuotaLimit' DESC 'One l
+ imit of a quota catalog, named by the provider\27s quota id: the value gran
+ ted, its name, the usage when fetched and the quota kind it answers' SUP ci
+ amObject STRUCTURAL MUST ( cn $ ciamQuotaValue ) MAY ( ciamQuotaName $ ciam
+ QuotaUsage $ ciamQuotaKind ) X-ORIGIN 'opsdir' )

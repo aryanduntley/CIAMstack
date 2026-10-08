@@ -336,6 +336,21 @@ opsdir import gcp/regions regions.json --change CHG-…  # or run it yourself (e
 
 Every region listed is recorded `available` in the `public` partition (Google Cloud has one). The list gives no display names or geography: add them to the catalog yourself, a refresh keeps them. A refresh adds new regions, shows changed details as conflicts to take or keep, and keeps a region Google Cloud stops listing, marked `not-listed`. An export listing no region is refused.
 
+## Quota limits (a provider prerequisite)
+
+Environments record what they need of Google Cloud's limits (core `estate`: `ciamQuotaNeed`, by kind or by `ciamProviderRef`: a Compute Engine metric such as `N2_CPUS`, or `global.<metric>` for a project-wide one). The kinds: `vcpus` `CPUS` (the region's N1/E2 pool: other machine families have their own metric, so record that need by its id), `public-ips` `IN_USE_ADDRESSES`, `networks` `global.NETWORKS`. `load-balancers` has no single Compute quota (forwarding rules and backend services each have their own), `database-instances` none (Cloud SQL: 1000 instances per project, raised by a support case) and `kubernetes-clusters` none in Compute (GKE's own): the planner names them as limits to confirm. The prerequisite `gcp-quotas` is met once every project and region whose environments record needs has its limits:
+
+```sh
+opsdir import gcp/quotas --run --change CHG-…   # gcloud compute project-info describe, then per region
+                                                # gcloud compute regions describe <region> (--format=json)
+```
+
+Each region's catalog holds its regional quotas and the project-wide ones. An increase the operator decided to request is rendered in the environment's root as `google_cloud_quotas_quota_preference` for the quota ids Google documents (`CPUS-per-project-region` with the region as its dimension, `NETWORKS-per-project`), at `ciamQuotaRequested` (else the need), `deletion_policy = "ABANDON"` (destroying it leaves the granted quota alone); others are named in a comment.
+
+## Budgets
+
+A Cloud Billing budget lives on the billing account (the cloud's `ciamBillingAccountRef`), where only its administrators or costs managers may create one, so each budget the platform team keeps (core `estate`: `ciamBudget`) is rendered in the landing-zone root: `google_billing_budget` with its amount (`specified_amount`: currency, units, nanos) per `calendar_period` (`MONTH`, `QUARTER`, `YEAR`), filtered to the environment's project by number (`data.google_project`) and, when the tag policy has an environment tag, to resources labelled with it; a `threshold_rules` per `ciamActualThreshold` (`CURRENT_SPEND`) and `ciamForecastThreshold` (`FORECASTED_SPEND`), 1.0 being 100%; its updates to the channel its `ciamAlertRole` names, a Cloud Monitoring notification channel or a Pub/Sub topic (else the billing account's administrators get Google's default emails, commented). The landing zone's provider bills the Budget API's calls to the project (`billing_project`, `user_project_override`), as the API needs under user credentials. Without a billing account the platform root says so in a `# NOTE`. Read back from Terraform state.
+
 ## Landing zone
 
 What the platform needs from the organization rather than its own Terraform is rendered per environment into `terraform/landing-zone/` (its own root: `providers.tf`, `main.tf`) for whoever keeps the landing zone: the header names them (the owners of the environment's guardrails, else of its cloud, else of the environment) and the MANIFEST marks the files `landing-zone`. Nothing is rendered when the environment needs nothing from one. When the target lacks a guardrail's prevention or a way in the source has, the planner drafts a request to that owner (`requests/<owner>.md`).

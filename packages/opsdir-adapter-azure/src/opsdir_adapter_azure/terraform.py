@@ -18,6 +18,8 @@ from .access import ACCESS
 from .databases import render_databases
 from .storage import render_object_stores
 from .audit import render_trails
+from .budgets import budget_inputs, render_budgets
+from .quotas import quota_request_notes
 from .security import render_security
 from .backups import render_backups
 from .volumes import boot_tag, os_disk, server_volumes, snapshot_policy_notes
@@ -188,7 +190,7 @@ def render(m, services):
            *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
-           *forwarding_rules(m), *render_trails(m), *render_security(m),
+           *forwarding_rules(m), *render_trails(m), *render_security(m), *render_budgets(m), *quota_request_notes(m),
            *_key_vault_secrets(m), *scope_data(m, identities))
     out = tuple(x for i, x in enumerate(out) if not (x.startswith('data "') and x in out[:i]))   # a data source once
     notes = "\n".join(_interconnect_note(m, ic) for ic in of_class(m, "ciamInterconnect"))
@@ -201,6 +203,7 @@ def render(m, services):
         provider_block(m),
         subscription_variable(m),
         block("variable", ["admin_ssh_public_key"], [("type", ref("string"))]),
+        *budget_inputs(m),
         *((block("variable", [FORWARDING_RULESET], [
             ("description", "The landing zone's DNS forwarding ruleset the forwarding rules join"),
             ("type", ref("string"))]),) if forwarders(m) else ()),

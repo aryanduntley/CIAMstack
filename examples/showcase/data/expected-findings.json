@@ -210,6 +210,13 @@
       "match": "source/prod runs config-recording (config, exporting its history) and target/prod runs none",
       "planted": "the source records every resource change with AWS Config and exports the history; the target records none (Azure keeps its own for 14 days: CHG-2024 records it)",
       "cleared_by": "CHG-2024"
+    },
+    {
+      "id": "B31",
+      "area": "Binding",
+      "match": "Role `budget` is bound in source/prod but not in target/prod",
+      "planted": "the target has no budget",
+      "cleared_by": "CHG-2028"
     }
   ],
   "actions": [
@@ -847,6 +854,44 @@
       "planted": "the source keeps seven years of configuration history; Azure keeps 14 days (CHG-2024)",
       "cleared_by": null,
       "raised_by": "CHG-2024"
+    },
+    {
+      "id": "A91",
+      "area": "Budgets",
+      "match": "source/prod has a budget (monthly-spend: 25000 USD monthly) and target/prod none",
+      "planted": "the source's spending is held to an AWS Budgets budget; the target was set up without one",
+      "cleared_by": "CHG-2028"
+    },
+    {
+      "id": "A92",
+      "area": "Quotas",
+      "match": "target/prod's quota limits (azure account 00000000-0000-0000-0000-000000000000 in eastus2) aren't fetched",
+      "planted": "the record holds no quota limits from Azure yet (a provider prerequisite: `opsdir prerequisites`), so the target's needs can't be checked against them",
+      "cleared_by": "CHG-2026"
+    },
+    {
+      "id": "A93",
+      "area": "Quotas",
+      "match": "`vcpus` on azure account 00000000-0000-0000-0000-000000000000 in eastus2 is limited to 50 and its environments need 96: decide",
+      "planted": "the target's region grants 50 vCPUs where its servers need 96; the fix offers the operator's decision (request 96, a value of their own, or deny)",
+      "cleared_by": "CHG-2028",
+      "raised_by": "CHG-2026"
+    },
+    {
+      "id": "A94",
+      "area": "Quotas",
+      "match": "has no `database-instances` quota, which target/prod needs 2 of",
+      "planted": "Azure reports no usage limit on database servers (raised by a support request): confirm it with Microsoft",
+      "cleared_by": null,
+      "raised_by": "CHG-2026"
+    },
+    {
+      "id": "A95",
+      "area": "Quotas",
+      "match": "96 is requested (rendered where the cloud takes requests)",
+      "planted": "the operator approved the vCPU increase (CHG-2028); the planner waits for the quotas to be fetched again once Microsoft grants it",
+      "cleared_by": null,
+      "raised_by": "CHG-2028"
     }
   ]
 }

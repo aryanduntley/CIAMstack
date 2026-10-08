@@ -10,9 +10,15 @@ ou=residencies) is the estate's own classification of where data may be held, li
 so residency values are the estate's to define yet every environment names one that exists. A cloud may say its
 clients use FIPS 140 validated endpoints (ciamCloudEndpoints). The cloud security services an environment runs
 (ciamSecurityService: threat detection, vulnerability scanning, configuration recording, posture assessment) are
-bindings: what each watches or assesses, where its findings go and how long it keeps its records."""
+bindings: what each watches or assesses, where its findings go and how long it keeps its records. What an environment
+needs of a provider limit (ciamQuotaNeed: virtual CPUs, public addresses, networks, ...) is a binding too, with the
+operator's decision when the provider grants less; the limits themselves are fetched from the provider into the quota
+catalog (under ou=quotas, one ciamQuotaCatalog per account and region, a ciamQuotaLimit per quota). A budget
+(ciamBudget) caps an environment's spending per period and says at which shares of it, spent or forecast, whom to
+alert; the account billing is managed from is the cloud's ciamBillingAccountRef."""
 from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
-from .naming import CLASSIFICATIONS, REGION_STATUSES, SECURITY_AREAS, SECURITY_KINDS, STANDARD_ID, TAG_SOURCES
+from .naming import (AMOUNT, BUDGET_PERIODS, CLASSIFICATIONS, CURRENCY, QUOTA_DECISIONS, QUOTA_KINDS,
+                     REGION_STATUSES, SECURITY_AREAS, SECURITY_KINDS, STANDARD_ID, TAG_SOURCES)
 
 ATTRIBUTES = (
     AttributeDef(482, 'ciamAccountRef', 'string', 'binding', True,
@@ -68,10 +74,50 @@ ATTRIBUTES = (
     AttributeDef(503, 'ciamFindingsRole', 'string', 'intent', True,
                  "The role of the binding a security service's findings (or recorded configuration) go to: an alert "
                  "channel, a log destination, an object store, a stream (a topic); none: they stay in the service"),
+    AttributeDef(504, 'ciamQuotaKind', enum_type(QUOTA_KINDS), 'binding', True,
+                 "What a quota counts, by a kind every cloud limits: vcpus (the region's standard machines), public-ips, "
+                 "networks, load-balancers, database-instances, kubernetes-clusters (a provider's own quota: "
+                 "ciamProviderRef)"),
+    AttributeDef(505, 'ciamQuotaNeeded', 'int', 'binding', True,
+                 "How many of what a quota counts an environment needs (the environments on one account and region "
+                 "need their sum)", (("X-MIN", "1"),)),
+    AttributeDef(506, 'ciamQuotaDecision', enum_type(QUOTA_DECISIONS), 'intent', True,
+                 "The operator's decision on a quota the provider grants less of than needed: request an increase "
+                 "(rendered where the cloud takes requests) or deny it (the move stops until the need changes)"),
+    AttributeDef(507, 'ciamQuotaRequested', 'int', 'intent', True,
+                 "The limit an increase request asks the provider for (when not given, what the environments need)",
+                 (("X-MIN", "1"),)),
+    AttributeDef(508, 'ciamQuotaValue', 'int', 'observed', True,
+                 "The limit a provider grants an account in a region, as fetched", (("X-MIN", "0"),)),
+    AttributeDef(509, 'ciamQuotaUsage', 'int', 'observed', True,
+                 "How much of a quota the account used when it was fetched, when the provider says",
+                 (("X-MIN", "0"),)),
+    AttributeDef(510, 'ciamQuotaName', 'string', 'meta', True,
+                 "A quota's name as its provider shows it (Running On-Demand Standard instances, Total Regional vCPUs)"),
+    AttributeDef(511, 'ciamBudgetAmount', 'string', 'binding', True,
+                 "How much a budget allows an environment to spend each period, in its currency (1500, 1500.50)",
+                 (("X-PATTERN", AMOUNT),)),
+    AttributeDef(512, 'ciamCurrency', 'string', 'binding', True,
+                 "The currency of a budget's amount (ISO 4217; the billing account's, USD when not given)",
+                 (("X-PATTERN", CURRENCY),)),
+    AttributeDef(513, 'ciamBudgetPeriod', enum_type(BUDGET_PERIODS), 'binding', True,
+                 "The period a budget's amount covers: monthly (when not given), quarterly, annually"),
+    AttributeDef(514, 'ciamActualThreshold', 'int', 'binding', False,
+                 "A share of a budget (percent) whose actual spending alerts its channel",
+                 (("X-MIN", "1"), ("X-MAX", "1000"))),
+    AttributeDef(515, 'ciamForecastThreshold', 'int', 'binding', False,
+                 "A share of a budget (percent) whose forecast spending alerts its channel",
+                 (("X-MIN", "1"), ("X-MAX", "1000"))),
+    AttributeDef(516, 'ciamBillingAccountRef', 'string', 'binding', True,
+                 "The account a cloud's billing is managed from, where its budgets live: an AWS management (payer) "
+                 "or, for GovCloud, the associated standard account; an Azure billing account; a Google Cloud billing "
+                 "account"),
 )
 CLASSES = (
-    ClassDef(103, 'ciamCloudAccount', 'top', 'AUXILIARY', (), ('ciamAccountRef', 'ciamOrganizationRef'),
-             "Added to a cloud: the account its environments run in and the organization above it"),
+    ClassDef(103, 'ciamCloudAccount', 'top', 'AUXILIARY', (),
+             ('ciamAccountRef', 'ciamOrganizationRef', 'ciamBillingAccountRef'),
+             "Added to a cloud: the account its environments run in, the organization above it and the account its "
+             "billing is managed from"),
     ClassDef(104, 'ciamEnvironmentPlacement', 'top', 'AUXILIARY', (),
              ('ciamResourceGroup', 'ciamDataClassification', 'ciamResidencyRef'),
              "Added to an environment: the resource group its resources go in (where the cloud has them), how "
@@ -99,6 +145,23 @@ CLASSES = (
              "recording, posture assessment): what it watches or assesses, one account or the whole organization, "
              "every region or one, where its findings go, how long it keeps its records (ciamRetentionDays), and who "
              "keeps it when the platform team doesn't"),
+    ClassDef(113, 'ciamQuotaNeed', 'ciamBinding', 'STRUCTURAL', ('ciamQuotaNeeded',),
+             ('ciamQuotaKind', 'ciamProviderRef', 'ciamQuotaDecision', 'ciamQuotaRequested'),
+             "What an environment needs of a provider limit: a quota kind (or the provider's own quota, "
+             "ciamProviderRef) and how many; and, when the provider grants less, the operator's decision"),
+    ClassDef(114, 'ciamBudget', 'ciamBinding', 'STRUCTURAL', ('ciamBudgetAmount',),
+             ('ciamCurrency', 'ciamBudgetPeriod', 'ciamActualThreshold', 'ciamForecastThreshold', 'ciamAlertRole',
+              'ciamProviderRef', 'ciamManagedBy'),
+             "A budget for an environment's spending: its amount per period, the shares of it (spent or forecast) "
+             "that alert the channel of its ciamAlertRole, and who keeps it when the platform team doesn't"),
+    ClassDef(115, 'ciamQuotaCatalog', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamCloudProvider', 'ciamRegion'),
+             ('ciamAccountRef',),
+             "The limits a provider grants one account in one region (under ou=quotas), as fetched: its "
+             "ciamQuotaLimit entries"),
+    ClassDef(116, 'ciamQuotaLimit', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamQuotaValue'),
+             ('ciamQuotaName', 'ciamQuotaUsage', 'ciamQuotaKind'),
+             "One limit of a quota catalog, named by the provider's quota id: the value granted, its name, the "
+             "usage when fetched and the quota kind it answers"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

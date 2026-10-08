@@ -750,6 +750,45 @@ ciamProviderRef: arn:aws:securityhub:us-east-1:111122223333:hub/default
 ciamSecurityBaseline: aws-foundational
 ciamSecurityKind: posture
 
+dn: cn=quota-vcpus,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaNeed
+cn: quota-vcpus
+ciamBindingRole: quota-vcpus
+ciamQuotaKind: vcpus
+ciamQuotaNeeded: 96
+
+dn: cn=quota-public-ips,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaNeed
+cn: quota-public-ips
+ciamBindingRole: quota-public-ips
+ciamQuotaKind: public-ips
+ciamQuotaNeeded: 8
+
+dn: cn=quota-database-instances,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaNeed
+cn: quota-database-instances
+ciamBindingRole: quota-database-instances
+ciamQuotaKind: database-instances
+ciamQuotaNeeded: 2
+
+dn: cn=monthly-spend,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamBudget
+cn: monthly-spend
+ciamActualThreshold: 80
+ciamActualThreshold: 100
+ciamAlertRole: alerts-page
+ciamBindingRole: budget
+ciamBudgetAmount: 25000
+ciamBudgetPeriod: monthly
+ciamCurrency: USD
+ciamForecastThreshold: 100
+ciamProviderRef: arn:aws:budgets::111122223333:budget/source-prod-monthly-spen
+ d
+
 dn: cn=identity-pf,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamIdentityBinding

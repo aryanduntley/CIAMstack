@@ -46,6 +46,9 @@ alike; resource names (projects/<p>/...) are the provider refs, self links read 
                                                  DNS name, tier, disk, zone, availability, TLS, backups, flags,
                                                  deletion protection, its key as a role; never its root password:
                                                  see databases.py
+  google_billing_budget                       -> budget (kind budget, ciamBudget): amount and currency, period,
+                                                 threshold rules, the channel or topic its updates go to: see
+                                                 budgets.py
   IAM: service accounts and members' grants, deny policies, organization policies, IAP tunnels: see iam.py
 Roles of resources the record doesn't have come from their labels role (or bindingrole); label values are lowercase,
 as the record's roles are. A compute group's binding role is label bindingrole, else compute-<label role>; a
@@ -62,6 +65,7 @@ from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, l
                                    realization_roles, resource, tagged_role)
 from opsdir_format_terraform.state import blocks, first_block, read_state
 from .audit import trail_resources
+from .budgets import budget_resources
 from .security import security_resources
 from .databases import database_resources
 from .storage import object_store_resources
@@ -415,7 +419,7 @@ def pairs_resources(pairs):
              *_clusters(pairs),
              *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs), *_canaries(pairs),
              *iam, *edge, *network, *database_resources(pairs), *volumes, *backups, *trail_resources(pairs),
-             *security_resources(pairs)),
+             *security_resources(pairs), *budget_resources(pairs)),
             (*rule_notices, *iam_notices, *edge_notices, *network_notices, *volume_notices, *backup_notices))
 
 

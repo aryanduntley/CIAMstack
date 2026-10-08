@@ -2097,6 +2097,40 @@ resource "aws_cloudwatch_event_target" "security_hub_findings" {
   arn  = "arn:aws:sns:us-east-1:111122223333:ciam-prod-security"
 }
 
+resource "aws_budgets_budget" "monthly_spend" {
+  name         = "source-prod-monthly-spend"
+  budget_type  = "COST"
+  limit_amount = "25000"
+  limit_unit   = "USD"
+  time_unit    = "MONTHLY"
+  # filters by tag Environment: activate it as a cost allocation tag in the billing account
+  cost_filter {
+    name   = "TagKeyValue"
+    values = ["user:Environment$source/prod"]
+  }
+  notification {
+    comparison_operator       = "GREATER_THAN"
+    threshold                 = 80
+    threshold_type            = "PERCENTAGE"
+    notification_type         = "ACTUAL"
+    subscriber_sns_topic_arns = ["arn:aws:sns:us-east-1:111122223333:ciam-prod-page"]
+  }
+  notification {
+    comparison_operator       = "GREATER_THAN"
+    threshold                 = 100
+    threshold_type            = "PERCENTAGE"
+    notification_type         = "ACTUAL"
+    subscriber_sns_topic_arns = ["arn:aws:sns:us-east-1:111122223333:ciam-prod-page"]
+  }
+  notification {
+    comparison_operator       = "GREATER_THAN"
+    threshold                 = 100
+    threshold_type            = "PERCENTAGE"
+    notification_type         = "FORECASTED"
+    subscriber_sns_topic_arns = ["arn:aws:sns:us-east-1:111122223333:ciam-prod-page"]
+  }
+}
+
 data "aws_secretsmanager_secret" "am_admin_password" {
   arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/am-admin-password"
 }

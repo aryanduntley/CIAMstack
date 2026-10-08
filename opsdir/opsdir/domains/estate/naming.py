@@ -1,6 +1,7 @@
 """Estate domain vocabulary: how sensitive an environment's data is, where a tag's value comes from, a cloud region's
-status, where the tag policy, the region catalog and the residencies live, and what a cloud security service is and
-watches."""
+status, where the tag policy, the region catalog and the residencies live, what a cloud security service is and
+watches, what a quota counts and what may be decided about it, where the provider limits fetched live, and a budget's
+period, amount and currency."""
 
 from ...core.naming import branch
 
@@ -28,3 +29,15 @@ STANDARD_ID = r"[a-z0-9]+(-[a-z0-9]+)*"     # a compliance framework's or baseli
 REGULATORY = frozenset(("nist-800-53-r5", "nist-800-171-r2", "fedramp-low", "fedramp-moderate", "fedramp-high",
                         "cmmc-l1", "cmmc-l2", "cmmc-l3", "dod-il2", "dod-il4", "dod-il5"))
 RESTRICTED = "restricted"                   # the data classification under which a narrower target blocks the move
+# what a quota counts, by kinds every cloud has a limit for (each adapter maps them to its provider's own quotas):
+# virtual CPUs of the region's standard machines, public IP addresses, networks, load balancers, managed database
+# instances, Kubernetes clusters
+QUOTA_KINDS = ("vcpus", "public-ips", "networks", "load-balancers", "database-instances", "kubernetes-clusters")
+# the operator's decision on a quota the provider grants less of than the environments need: request an increase (to
+# ciamQuotaRequested, else the need), or deny it (the move stops)
+QUOTA_DECISIONS = ("request", "deny")
+QUOTAS = branch("quotas")               # the provider limits fetched: one ciamQuotaCatalog per account and region
+BUDGET_PERIODS = ("monthly", "quarterly", "annually")
+AMOUNT = r"[0-9]{1,12}(\.[0-9]{1,2})?"   # a budget's amount in its currency: 1500, 1500.50
+CURRENCY = r"[A-Z]{3}"                  # ISO 4217: USD, EUR
+DEFAULT_CURRENCY = "USD"

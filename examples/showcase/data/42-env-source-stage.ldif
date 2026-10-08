@@ -25,6 +25,10 @@ ciamDropsRole: threat-detection
 ciamDropsRole: vulnerability-scanning
 ciamDropsRole: config-recording
 ciamDropsRole: posture
+ciamDropsRole: quota-vcpus
+ciamDropsRole: quota-public-ips
+ciamDropsRole: quota-database-instances
+ciamDropsRole: budget
 ciamLifecycle: active
 ciamOverlayOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops

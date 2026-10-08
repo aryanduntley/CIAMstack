@@ -5,6 +5,7 @@ from .access import ACCESS
 from .arm import ARM
 from .cli import CLI_INVENTORY
 from .inventory import TERRAFORM_STATE
+from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
 from .regions import PREREQUISITE, REGIONS
 from .secrets import SECRET_PATTERNS, keyvault_command
 from .terraform import PRIORITIES, render
@@ -24,5 +25,5 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamCloudEnvironment": ("public", "usgovernment")}, schema=None,
                   formats=(("terraform/*.tf", "hcl"),),
                   products=(),
-                  secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY, ARM, REGIONS),
-                  profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE,))
+                  secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY, ARM, REGIONS, QUOTAS),
+                  profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE))

@@ -18,6 +18,8 @@ from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comm
 from .access import ACCESS
 from .audit import render_trails
 from .security import render_security
+from .budgets import BILLING, BILLING_REGION, billing_account, needs_billing_provider, render_budgets
+from .quotas import render_quota_requests
 from .cdn import alias, distribution
 from .dns import RESOLVER_ENDPOINT, records, resolver_rules, service_record
 from .edge import US_EAST_1, alb_service, health_check, shield, stickiness
@@ -153,7 +155,8 @@ def render(m, services):
            *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
-           *resolver_rules(m), *render_trails(m), *render_security(m), *_references(m))
+           *resolver_rules(m), *render_trails(m), *render_security(m), *render_budgets(m), *render_quota_requests(m),
+           *_references(m))
     unbound = unbound_comments(m.unbound)
     main = header(m, "AWS infrastructure for the CIAM platform", HCL) + unbound + "\n" + "\n\n".join(out) + "\n"
     providers = header(m, "Providers", HCL) + "\n" + "\n\n".join([
@@ -164,6 +167,8 @@ def render(m, services):
           if _fronted(m, endpoints) else ()),
         *(provider_block(m, r, copy_alias(r), f"Copies of databases' automated backups in {r}")
           for r in copy_regions(m)),
+        *((provider_block(m, BILLING_REGION, BILLING, "GovCloud's billing (AWS Budgets) is managed in its associated "
+                          "standard account", account=billing_account(m)),) if needs_billing_provider(m) else ()),
         *((block("variable", [RESOLVER_ENDPOINT], [
             ("description", "The landing zone's outbound Route 53 Resolver endpoint the forwarding rules use"),
             ("type", ref("string"))]),) if forwarders(m) else ()),

@@ -53,6 +53,8 @@ From Terraform state (terraform.tfstate, format version 4; hashicorp/azurerm), m
                                                  region, where its records go (its storage account's
                                                  insights-activity-logs container or its workspace, as that object
                                                  store's or log destination's role): see audit.py
+  azurerm_consumption_budget_resource_group, -> budget (kind budget, ciamBudget): amount, period, GreaterThan
+    _subscription                                thresholds, the action group its alerts go to: see budgets.py
   access control: identities and their role assignments, access policies, policy assignments, bastions: see iam.py
 Roles of resources the record doesn't have come from their tags Role (or BindingRole), or for storage containers from
 their metadata (role); a compute group's binding role is its tag BindingRole, else compute-<its tag Role>, a
@@ -80,6 +82,7 @@ from .backups import backup_resources
 from .volumes import volume_resources
 from .storage import object_store_resources
 from .audit import trail_resources
+from .budgets import budget_resources
 from .security import security_resources
 
 PROVIDER = "azure"
@@ -553,7 +556,7 @@ def pairs_resources(pairs):
              *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
              *_canaries(pairs), *iam, *edge, *network, *database_resources(pairs), *volumes, *backups,
-             *trail_resources(pairs), *security_resources(pairs)),
+             *trail_resources(pairs), *security_resources(pairs), *budget_resources(pairs)),
             (*rule_notices, *iam_notices, *edge_notices, *network_notices, *volume_notices, *backup_notices,
              *geo_backup_notices(pairs)))
 

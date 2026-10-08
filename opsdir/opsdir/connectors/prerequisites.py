@@ -6,6 +6,7 @@ export. Pure."""
 import shlex
 
 from ..core.environment import env_model
+from .importing import import_commands
 from .registry import ADAPTERS, environment_specs
 from .stack import declared_adapters
 
@@ -33,7 +34,7 @@ def prerequisite_rows(d, installed=ADAPTERS):
     needed = _needed(d, installed)
     return tuple((p.name, a.name, "met" if p.met(d) else PENDING if a.name in needed else "not needed yet",
                   f"opsdir import {a.name}/{p.importer} --run",
-                  "; ".join(command_line(path, argv) for path, argv in (i.commands if i else ())))
+                  "; ".join(command_line(path, argv) for path, argv in (import_commands(i, d) if i else ())))
                  for a in installed for p in a.prerequisites for i in (_importer(a, p),))
 
 

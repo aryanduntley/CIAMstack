@@ -153,7 +153,8 @@ def _after(d, imported):
 
 
 def test_the_importer_is_registered_on_the_adapter():
-    assert [i.name for i in ADAPTER.importers] == ["terraform-state", "cli-inventory", "arm", "regions"]
+    assert [i.name for i in ADAPTER.importers] == ["terraform-state", "cli-inventory", "arm", "regions",
+                                                   "quotas"]
 
 
 def test_outputs_that_match_the_record_change_nothing():

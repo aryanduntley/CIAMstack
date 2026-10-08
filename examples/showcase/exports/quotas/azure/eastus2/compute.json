@@ -1,0 +1,29 @@
+[
+  {
+    "currentValue": 0,
+    "limit": 50,
+    "name": {
+      "localizedValue": "Total Regional vCPUs",
+      "value": "cores"
+    },
+    "unit": "Count"
+  },
+  {
+    "currentValue": 0,
+    "limit": 10,
+    "name": {
+      "localizedValue": "Standard DSv5 Family vCPUs",
+      "value": "standardDSv5Family"
+    },
+    "unit": "Count"
+  },
+  {
+    "currentValue": 0,
+    "limit": 25000,
+    "name": {
+      "localizedValue": "Virtual Machines",
+      "value": "virtualMachines"
+    },
+    "unit": "Count"
+  }
+]

@@ -52,6 +52,8 @@ From Terraform state (terraform.tfstate, format version 4), managed resources an
   GuardDuty, Inspector, AWS Config,           -> security services (kind security, ciamSecurityService): kind, areas,
     Security Hub (+ EventBridge rules for        standards, scope, where findings go: see security.py
     their findings)
+  aws_budgets_budget                          -> budget (kind budget, ciamBudget): amount, currency, period, its
+                                                 percentage thresholds, the topic its alerts go to: see budgets.py
   aws_db_instance, aws_rds_cluster (+ its      -> database (kind database, ciamDatabase): engine, edition, version,
     instances, subnet and parameter groups)      endpoint, size, availability, TLS, backups, parameters, its subnets,
                                                  key and master secret as roles; never its password: see databases.py
@@ -75,6 +77,7 @@ from .edge_inventory import (aliased_names, dns_resources, edge_services, lb_fac
 from .iam import iam_resources
 from .databases import database_resources, database_security_groups
 from .audit import trail_resources
+from .budgets import budget_resources, budget_topics
 from .security import findings_topics, security_resources
 from .backups import backup_resources
 from .volumes import volume_resources
@@ -403,9 +406,10 @@ _UNIT_SECONDS = {"minute": 60, "hour": 3600, "day": 86400}
 
 
 def _notified(found):
-    """The ARNs every alarm's actions name and the topics security findings go to (alert channels)."""
+    """The ARNs every alarm's actions name and the topics security findings and budget alerts go to (alert
+    channels)."""
     return frozenset(arn for a in of_types(found, "aws_cloudwatch_metric_alarm") for k in ALARM_ACTIONS
-                     for arn in a.get(k) or ()) | findings_topics(found)
+                     for arn in a.get(k) or ()) | findings_topics(found) | budget_topics(found)
 
 
 def _channels(found):
@@ -480,7 +484,7 @@ def pairs_resources(pairs):
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
              *_canaries(pairs), *iam, *edge_services(pairs), *zones, *records, *forwarders, *network,
              *database_resources(pairs), *volumes, *backups, *trail_resources(pairs),
-             *security_resources(pairs)),
+             *security_resources(pairs), *budget_resources(pairs)),
             (*rule_notices, *iam_notices, *dns_notices, *network_notices, *volume_notices, *backup_notices))
 
 

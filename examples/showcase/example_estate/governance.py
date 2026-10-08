@@ -62,6 +62,14 @@ CHANGES = (
     ("CHG-2023", "Hold the estate's environments to the us residency", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2024", "Record the target's configuration change history (Azure Resource Graph)", "approved",
      "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2025", "Fetch AWS's quota limits for the source's account (prerequisite aws-quotas)", "approved",
+     "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2026", "Fetch Azure's quota limits for the target's subscription (prerequisite azure-quotas)", "approved",
+     "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2027", "Fetch Google Cloud's quota limits for the standby's project (prerequisite gcp-quotas)", "approved",
+     "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2028", "Hold the target to a budget and request its vCPU increase", "approved", "CAB 2026-09-18",
+     "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

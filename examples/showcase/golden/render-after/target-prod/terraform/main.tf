@@ -2111,6 +2111,36 @@ resource "azurerm_security_center_automation" "defender_vulnerability_export" {
 
 # resource-changes: Azure records resource changes itself (Resource Graph change history, about 14 days): nothing to enable; keeping them longer needs an export (not rendered)
 
+resource "azurerm_consumption_budget_resource_group" "monthly_spend" {
+  name              = "target-prod-monthly-spend"
+  resource_group_id = data.azurerm_resource_group.main.id
+  amount            = 25000
+  time_grain        = "Monthly"
+  time_period {
+    start_date = var.budget_start_date
+  }
+  notification {
+    operator       = "GreaterThan"
+    threshold      = 80
+    threshold_type = "Actual"
+    contact_groups = ["/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Insights/actionGroups/ag-ciam-page"]
+  }
+  notification {
+    operator       = "GreaterThan"
+    threshold      = 100
+    threshold_type = "Actual"
+    contact_groups = ["/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Insights/actionGroups/ag-ciam-page"]
+  }
+  notification {
+    operator       = "GreaterThan"
+    threshold      = 100
+    threshold_type = "Forecasted"
+    contact_groups = ["/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Insights/actionGroups/ag-ciam-page"]
+  }
+}
+
+# Quota request (vcpus): raise it to 96 for subscription 00000000-0000-0000-0000-000000000000 in eastus2 through the Quota API (`az quota update`, Microsoft.Quota) or a support request: azurerm has no resource for it; Microsoft's pages don't say whether the Quota API serves Azure Government
+
 data "azurerm_key_vault" "kv_ciam_prod" {
   name                = "kv-ciam-prod"
   resource_group_name = data.azurerm_resource_group.main.name

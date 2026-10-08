@@ -1,0 +1,37 @@
+{
+    "Quotas": [
+        {
+            "ServiceCode": "ec2",
+            "ServiceName": "EC2",
+            "QuotaArn": "arn:aws:servicequotas:us-east-1::ec2/L-1216C47A",
+            "QuotaCode": "L-1216C47A",
+            "QuotaName": "Running On-Demand Standard (A, C, D, H, I, M, R, T, Z) instances",
+            "Value": 5.0,
+            "Unit": "None",
+            "Adjustable": true,
+            "GlobalQuota": false
+        },
+        {
+            "ServiceCode": "ec2",
+            "ServiceName": "EC2",
+            "QuotaArn": "arn:aws:servicequotas:us-east-1::ec2/L-0263D0A3",
+            "QuotaCode": "L-0263D0A3",
+            "QuotaName": "EC2-VPC Elastic IPs",
+            "Value": 5.0,
+            "Unit": "None",
+            "Adjustable": true,
+            "GlobalQuota": false
+        },
+        {
+            "ServiceCode": "ec2",
+            "ServiceName": "EC2",
+            "QuotaArn": "arn:aws:servicequotas:us-east-1::ec2/L-34B43A08",
+            "QuotaCode": "L-34B43A08",
+            "QuotaName": "All Standard (A, C, D, H, I, M, R, T, Z) Spot Instance Requests",
+            "Value": 5.0,
+            "Unit": "None",
+            "Adjustable": true,
+            "GlobalQuota": false
+        }
+    ]
+}

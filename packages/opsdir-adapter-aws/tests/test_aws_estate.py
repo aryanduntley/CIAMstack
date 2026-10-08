@@ -71,7 +71,8 @@ def test_the_region_list_is_a_prerequisite_fetched_by_running_the_aws_cli():
     _, d, *_ = _pair()
     assert prerequisite_rows(d, (ADAPTER,)) == (
         ("aws-regions", "aws", "not needed yet", "opsdir import aws/regions --run",
-         "aws ec2 describe-regions --all-regions --output json > regions.json"),)
+         "aws ec2 describe-regions --all-regions --output json > regions.json"),
+        ("aws-quotas", "aws", "met", "opsdir import aws/quotas --run", ""))     # no environment needs a quota
     assert ADAPTER.prerequisites[0].met(d) is False
 
 

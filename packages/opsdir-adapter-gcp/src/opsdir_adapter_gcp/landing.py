@@ -7,6 +7,7 @@ owner).
                    (roles/iam.workloadIdentityUser for that subject) with its resource-level IAM members
   operators        resource-level IAM members granted to the operator's group (group:<email>)
   guardrails       organization policies on the project preventing what the environment's guardrails deny
+  budgets          Cloud Billing budgets on the billing account (opsdir_adapter_gcp.budgets)
   network          the plumbing its owner keeps (opsdir_adapter_gcp.plumbing) in network.tf; plumbing another party
                    keeps (ciamManagedBy) goes in that party's own root, terraform/landing-zone/<party>/
 Pure.
@@ -22,6 +23,7 @@ from .guardrails import render_guardrails
 from .identities import members, notes, sa_member, service_account
 from .plumbing import render_plumbing
 from .account import project_variable, provider_block
+from .budgets import budget_provider_settings, render_budgets
 
 POOL = "ci"
 
@@ -67,24 +69,26 @@ def _operator(w):
     return (*notes(w), *members(w, f"group:{w.group}"))
 
 
-def _providers(m, variables):
-    """providers.tf of a landing-zone root: the Google provider in the environment's project, and the root's inputs."""
+def _providers(m, variables, settings=()):
+    """providers.tf of a landing-zone root: the Google provider in the environment's project (with settings: the
+    Budget API's quota project in the root keeping the budgets), and the root's inputs."""
     return header(m, "Providers and inputs (landing zone)", HCL) + "\n" + "\n\n".join([
         block("terraform", [], [("required_providers", Block((
             ("google", {"source": "hashicorp/google", "version": "~> 8.0"}),)))]),
-        provider_block(m, ("project", ref("var.project_id"))),
+        provider_block(m, ("project", ref("var.project_id")), *settings),
         project_variable(m, described=True),
         *variables]) + "\n"
 
 
 def _identities(m, guardrails):
-    """main.tf text of the identities and guardrails environment m's landing zone grants, or None."""
+    """main.tf text of the identities and guardrails environment m's landing zone grants and the budgets it keeps on
+    the billing account, or None."""
     deployers, operators = landing_identities(m, ACCESS)
-    fences = tuple(guardrails(m))
-    if not (deployers or operators or fences):
+    fences, costs = tuple(guardrails(m)), render_budgets(m) if budget_provider_settings(m) else ()
+    if not (deployers or operators or fences or costs):
         return None
     out = (*(_pool(m, deployers) if deployers else ()), *(x for w in deployers for x in _deployer(w)),
-           *(x for w in operators for x in _operator(w)), *fences)
+           *(x for w in operators for x in _operator(w)), *fences, *costs)
     what = (f"Google Cloud landing zone for the CIAM platform, kept by {landing_zone_owner(m)}: applied by the landing "
             "zone, not by the platform's pipeline")
     return header(m, what, HCL) + "\n" + "\n\n".join(out) + "\n"
@@ -100,5 +104,6 @@ def render_landing(m, guardrails=render_guardrails, plumbing=render_plumbing):
         m, f"Google Cloud network kept by {k.name} for the CIAM platform: applied by them, not by the platform's "
            "pipeline", HCL) + "\n" + "\n\n".join((*r.shared, *r.blocks)) + "\n" for k, r in nets}
     providers = {f"{f}/providers.tf": _providers(m, tuple(dict.fromkeys(
-        v for k, r in nets if k.folder == f for v in r.variables))) for f in roots}
+        v for k, r in nets if k.folder == f for v in r.variables)),
+        budget_provider_settings(m) if f == LANDING_ZONE else ()) for f in roots}
     return {**providers, **({f"{LANDING_ZONE}/main.tf": main} if main else {}), **network}

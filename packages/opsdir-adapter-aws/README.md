@@ -468,6 +468,21 @@ opsdir import aws/regions regions.json --change CHG-…  # or run it yourself (e
 
 A region open only to accounts that opt in (`OptInStatus` `opted-in` or `not-opted-in`) is recorded `opt-in`, the rest `available`; a region whose endpoint is under `amazonaws.com` is in the `public` partition. The list gives no display names or geography: add them to the catalog yourself, a refresh keeps them. A refresh adds new regions, shows changed details as conflicts to take or keep, and keeps a region AWS stops listing, marked `not-listed`. An export listing no region is refused.
 
+## Quota limits (a provider prerequisite)
+
+Environments record what they need of AWS's limits (core `estate`: `ciamQuotaNeed`, by kind or by `ciamProviderRef` `<service code>.<quota code>`). The adapter maps the kinds to the quota codes AWS's quota tables give: `vcpus` `ec2.L-1216C47A` (Running On-Demand Standard instances), `public-ips` `ec2.L-0263D0A3` (EC2-VPC Elastic IPs), `networks` `vpc.L-F678F1CE` (VPCs per Region), `load-balancers` `elasticloadbalancing.L-53DA6B97` (Application Load Balancers per Region), `database-instances` `rds.L-7B6409FD`, `kubernetes-clusters` `eks.L-1194D53C`. The prerequisite `aws-quotas` is met once every account and region whose environments record needs has its limits; `aws/quotas` fetches them, its commands derived from the record (each region of those clouds, each service the needs name):
+
+```sh
+opsdir import aws/quotas --run --change CHG-…    # sts get-caller-identity, then per region and service
+                                                 # list-aws-default-service-quotas and list-service-quotas
+```
+
+Applied values take precedence over AWS's defaults (`list-service-quotas` leaves out quotas without an applied value). Only the quotas the environments need are kept, in the catalog of the caller's account and the region (`cn=aws:<account>:<region>,ou=quotas`). The codes are the commercial partition's; a GovCloud list lacking one leaves that quota for the planner to name. An increase the operator decided to request (the plan's fix, `ciamQuotaDecision request`) is rendered as `aws_servicequotas_service_quota` at `ciamQuotaRequested` (else the need): AWS is asked when the value is above the applied one; destroying it changes nothing.
+
+## Budgets
+
+Each budget the platform team keeps (core `estate`: `ciamBudget`) is rendered as `aws_budgets_budget` (COST, `limit_amount`/`limit_unit`, `MONTHLY`/`QUARTERLY`/`ANNUALLY`), filtered by the tag policy's environment tag (`TagKeyValue` `user:<key>$<cloud/env>`: activate the tag as a cost allocation tag) or, without one, by the account (`LinkedAccount`), with a `GREATER_THAN` percentage notification per `ciamActualThreshold` (`ACTUAL`) and `ciamForecastThreshold` (`FORECASTED`) to the SNS topic of the channel its `ciamAlertRole` names. AWS Budgets publishes only to a topic in the budget's own account whose policy lets `budgets.amazonaws.com` publish; a channel elsewhere is a `# NOTE` and the notifications are left out. A GovCloud cloud's billing is managed only in its associated standard account: its budgets go through the provider aliased `billing` (us-east-1, `allowed_account_ids` the cloud's `ciamBillingAccountRef`; none: a `# NOTE`), with a comment that how a filter isolates one GovCloud account's spend there isn't documented. Read back from Terraform state as budgets (COST, those periods; percentage thresholds; the first topic as the channel).
+
 ## Landing zone
 
 What the platform needs from the organization rather than its own Terraform is rendered per environment into `terraform/landing-zone/` (its own root: `providers.tf`, `main.tf`) for whoever keeps the landing zone: the header names them (the owners of the environment's guardrails, else of its cloud, else of the environment) and the MANIFEST marks the files `landing-zone`. Nothing is rendered when the environment needs nothing from one. When the target lacks a guardrail's prevention or a way in the source has, the planner drafts a request to that owner (`requests/<owner>.md`).

@@ -28,6 +28,9 @@ source/stage  provider             aws           ok (installed 0.1.0)
 (25 rows)
 0 problem(s)
 prerequisite pending: aws-regions (aws): `opsdir import aws/regions --run`, or run `aws ec2 describe-regions --all-regions --output json > regions.json` and import its output
+prerequisite pending: aws-quotas (aws): `opsdir import aws/quotas --run`, or run `aws sts get-caller-identity --output json > quotas/caller.json; aws service-quotas list-aws-default-service-quotas --service-code ec2 --region us-east-1 --output json > quotas/us-east-1/ec2-defaults.json; aws service-quotas list-service-quotas --service-code ec2 --region us-east-1 --output json > quotas/us-east-1/ec2.json; aws service-quotas list-aws-default-service-quotas --service-code rds --region us-east-1 --output json > quotas/us-east-1/rds-defaults.json; aws service-quotas list-service-quotas --service-code rds --region us-east-1 --output json > quotas/us-east-1/rds.json` and import its output
 prerequisite pending: azure-regions (azure): `opsdir import azure/regions --run`, or run `az account list-locations -o json > regions.json` and import its output
+prerequisite pending: azure-quotas (azure): `opsdir import azure/quotas --run`, or run `az account show -o json > quotas/account.json; az vm list-usage --location eastus2 -o json > quotas/eastus2/compute.json; az network list-usages --location eastus2 -o json > quotas/eastus2/network.json` and import its output
 prerequisite pending: gcp-regions (gcp): `opsdir import gcp/regions --run`, or run `gcloud compute regions list --format=json > regions.json` and import its output
+prerequisite pending: gcp-quotas (gcp): `opsdir import gcp/quotas --run`, or run `gcloud compute project-info describe --format=json > quotas/project.json; gcloud compute regions describe us-central1 --format=json > quotas/us-central1.json` and import its output
 exit 0

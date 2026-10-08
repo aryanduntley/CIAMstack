@@ -1,0 +1,5 @@
+{
+    "UserId": "AIDAEXAMPLEOPERATOR01",
+    "Account": "111122223333",
+    "Arn": "arn:aws:iam::111122223333:user/ciam-operator"
+}

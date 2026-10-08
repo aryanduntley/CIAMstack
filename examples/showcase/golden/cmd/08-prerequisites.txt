@@ -1,7 +1,10 @@
 prerequisite   adapter  status  fetch                              provider command
--------------  -------  ------  ---------------------------------  -------------------------------------------------------------------
+-------------  -------  ------  ---------------------------------  ----------------------------------------------------------------------
 aws-regions    aws      met     opsdir import aws/regions --run    aws ec2 describe-regions --all-regions --output json > regions.json
+aws-quotas     aws      met     opsdir import aws/quotas --run     aws sts get-caller-identity --output json > quotas/caller.json; aws service-quotas list-aws-default-service-quotas --service-code ec2 --region us-east-1 --output json > quotas/us-east-1/ec2-defaults.json; aws service-quotas list-service-quotas --service-code ec2 --region us-east-1 --output json > quotas/us-east-1/ec2.json; aws service-quotas list-aws-default-service-quotas --service-code rds --region us-east-1 --output json > quotas/us-east-1/rds-defaults.json; aws service-quotas list-service-quotas --service-code rds --region us-east-1 --output json > quotas/us-east-1/rds.json
 azure-regions  azure    met     opsdir import azure/regions --run  az account list-locations -o json > regions.json
+azure-quotas   azure    met     opsdir import azure/quotas --run   az account show -o json > quotas/account.json; az vm list-usage --location eastus2 -o json > quotas/eastus2/compute.json; az network list-usages --location eastus2 -o json > quotas/eastus2/network.json
 gcp-regions    gcp      met     opsdir import gcp/regions --run    gcloud compute regions list --format=json > regions.json
-(3 rows)
+gcp-quotas     gcp      met     opsdir import gcp/quotas --run     gcloud compute project-info describe --format=json > quotas/project.json; gcloud compute regions describe us-central1 --format=json > quotas/us-central1.json
+(6 rows)
 exit 0

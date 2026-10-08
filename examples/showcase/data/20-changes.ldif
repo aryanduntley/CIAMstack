@@ -245,6 +245,45 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Record the target's configuration change history (Azure Resource Gr
  aph)
 
+dn: cn=CHG-2025,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2025
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Fetch AWS's quota limits for the source's account (prerequisite aws
+ -quotas)
+
+dn: cn=CHG-2026,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2026
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Fetch Azure's quota limits for the target's subscription (prerequis
+ ite azure-quotas)
+
+dn: cn=CHG-2027,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2027
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Fetch Google Cloud's quota limits for the standby's project (prereq
+ uisite gcp-quotas)
+
+dn: cn=CHG-2028,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2028
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Hold the target to a budget and request its vCPU increase
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

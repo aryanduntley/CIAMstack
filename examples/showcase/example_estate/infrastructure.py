@@ -12,7 +12,7 @@ from .access import ACCESS
 from .edge import EDGE, SERVICE_ATTRS
 from .network import NETWORK
 from .observability import MONITORING
-from .estate import ACCOUNTS, CLASSIFICATION, SECURITY
+from .estate import ACCOUNTS, BILLING_ACCOUNTS, CLASSIFICATION, COSTS, SECURITY
 from .recovery import STANDBY_INTENT
 
 SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password", "ds-tls-keystore",
@@ -86,6 +86,7 @@ SOURCE = MappingProxyType({
     # alert channels, log destinations, and the alarms and checks CloudWatch runs (observability)
     "monitoring": MONITORING["source"],
     "security": SECURITY["source"],   # the cloud security services it runs (estate)
+    "costs": COSTS["source"],         # what it needs of its provider's limits and the budget it is held to (estate)
     # the cloud identities the principals act as, the guardrails over it, the ways operators come in (access)
     "access": ACCESS["source"],
     # DNS zones, forwarders, the SSO certificate in the cloud's store, edge subnets; what the source's edge runs (edge)
@@ -162,6 +163,7 @@ TARGET = MappingProxyType({
     # alert channels, log destinations, alarms and checks Azure Monitor runs (planted: audit retention, no disk alarm)
     "monitoring": MONITORING["target"],
     "security": SECURITY["target"],   # the cloud security services it runs (estate)
+    "costs": COSTS["target"],         # what it needs of its provider's limits and the budget it is held to (estate)
     "access": ACCESS["target"],
     # DNS zones, forwarders, the SSO certificate in the cloud's store, edge subnets; what the source's edge runs (edge)
     "edge": EDGE["target"], "service_attrs": SERVICE_ATTRS["target"],
@@ -238,6 +240,7 @@ STANDBY = MappingProxyType({
     "streams": (("audit-topic", "audit-events", f"{PROJECT}/topics/ciam-audit", "topic"),),
     "monitoring": MONITORING["standby"],
     "security": SECURITY["standby"],   # the cloud security services it runs (estate)
+    "costs": COSTS["standby"],         # what it needs of its provider's limits and the budget it is held to (estate)
     "access": ACCESS["standby"],
     # DNS zones, forwarders, the SSO certificate in the cloud's store, edge subnets; what the source's edge runs (edge)
     "edge": EDGE["standby"], "service_attrs": SERVICE_ATTRS["standby"],
@@ -326,6 +329,7 @@ def _bindings(file, env, p):
                    ciamStreamKind=kind) for cn, role, ref, kind in p.get("streams") or ()),
             *(spec(file, b(cn), ["top", oc], cn=cn, ciamBindingRole=role, **attrs)
               for oc, cn, role, attrs in (*(p.get("monitoring") or ()), *(p.get("security") or ()),
+                                          *(p.get("costs") or ()),
                                           *(p.get("access") or ()),
                                           *(p.get("edge") or ()), *(p.get("network") or ()),
                                           *(p.get("databases") or ()), *(p.get("volumes") or ()))),
@@ -382,7 +386,7 @@ def environments():
                  ciamPlannedCutover=t("2027-01-15"), ciamJoinsDeploymentOf=AWS, ciamOwner=owner("ciam-platform")),
             *environment(az, AZ, TARGET), *required_roles(az, AZ),
             spec(gcp, f"cloud=standby,{ENVS}", ["top", "ciamCloud", "ciamCloudAccount"], cloud="standby",
-                 ciamAccountRef=ACCOUNTS["standby"],
+                 ciamAccountRef=ACCOUNTS["standby"], ciamBillingAccountRef=BILLING_ACCOUNTS["standby"],
                  ciamCloudProvider="gcp", ciamRegion="us-central1", ciamCloudEnvironment="public",
                  ciamLifecycle="building", description="Warm standby (Google Cloud)"),
             spec(gcp, GCP, ["top", "ciamEnvironment", "ciamStandby", "ciamEnvironmentPlacement"], env="prod",
@@ -412,11 +416,13 @@ STAGE_SERVERS = (("ds-s1", "ds", "10.20.1.31", "us-east-1a", "subnet-ds-a", "ami
 # firewall are the shared VPC's, kept by production's root; stage's disks aren't snapshotted or backed up (stage is
 # rebuilt, and a backup selection by tag in the shared account would back up production's volumes twice); the
 # account's CloudTrail trail and the bucket keeping its log files are production's too (one trail records the account),
-# and so are its security services, the topic their findings go to and AWS Config's bucket (each covers the account)
+# and so are its security services, the topic their findings go to and AWS Config's bucket (each covers the account);
+# its quota needs are production's (the account's limits are shared: production's needs count for both) and its
+# spending is production's budget's
 STAGE_DROPS = (*(role for _, role, *_ in SOURCE["fw"] if role.startswith("fw-consumer-") and role != "fw-consumer-pf-ds-svc"),
                "ldaps-endpoint-service", "private-secrets", "egress-firewall", "snapshots-daily", "backup-daily",
                "backup-vault", "audit-trail", "audit-archive",
-               *(role for oc, _, role, _ in SECURITY["source"]))
+               *(role for oc, _, role, _ in SECURITY["source"]), *(role for oc, _, role, _ in COSTS["source"]))
 # (name, overridden entry, attribute, value, why)
 STAGE_OVERRIDES = (
     ("replicas", f"cn=topology,ou=replication,{DECL}", "ciamReplicaCount", 1, "stage runs one directory replica"),

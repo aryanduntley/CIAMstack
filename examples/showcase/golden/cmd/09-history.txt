@@ -353,4 +353,20 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2023  update  env=prod,cloud=target,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2023  update  env=prod,cloud=standby,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2024  insert  cn=resource-changes,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
-(353 rows)
+<TIMESTAMP>          CHG-2025  insert  ou=quotas,dc=ciam-ops
+<TIMESTAMP>          CHG-2025  insert  cn=aws:111122223333:us-east-1,ou=quotas,dc=ciam-ops
+<TIMESTAMP>          CHG-2025  insert  cn=ec2.L-0263D0A3,cn=aws:111122223333:us-east-1,ou=quotas,dc=ciam-ops
+<TIMESTAMP>          CHG-2025  insert  cn=ec2.L-1216C47A,cn=aws:111122223333:us-east-1,ou=quotas,dc=ciam-ops
+<TIMESTAMP>          CHG-2025  insert  cn=rds.L-7B6409FD,cn=aws:111122223333:us-east-1,ou=quotas,dc=ciam-ops
+<TIMESTAMP>          CHG-2025  insert  cn=aws.quotas.shared,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2026  insert  cn=azure:00000000-0000-0000-0000-000000000000:eastus2,ou=quotas,dc=ciam-ops
+<TIMESTAMP>          CHG-2026  insert  cn=cores,cn=azure:00000000-0000-0000-0000-000000000000:eastus2,ou=quotas,dc=ciam-ops
+<TIMESTAMP>          CHG-2026  insert  cn=PublicIPAddresses,cn=azure:00000000-0000-0000-0000-000000000000:eastus2,ou=quotas,dc=ciam-ops
+<TIMESTAMP>          CHG-2026  insert  cn=azure.quotas.shared,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2027  insert  cn=gcp:example-aero-ciam-standby:us-central1,ou=quotas,dc=ciam-ops
+<TIMESTAMP>          CHG-2027  insert  cn=CPUS,cn=gcp:example-aero-ciam-standby:us-central1,ou=quotas,dc=ciam-ops
+<TIMESTAMP>          CHG-2027  insert  cn=IN_USE_ADDRESSES,cn=gcp:example-aero-ciam-standby:us-central1,ou=quotas,dc=ciam-ops
+<TIMESTAMP>          CHG-2027  insert  cn=gcp.quotas.shared,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2028  insert  cn=monthly-spend,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2028  update  cn=quota-vcpus,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+(369 rows)

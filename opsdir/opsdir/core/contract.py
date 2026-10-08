@@ -100,7 +100,8 @@ SecretPattern = NamedTuple("SecretPattern", [("name", str), ("pattern", str), ("
 # commands: ((relative path, argv), ...): the provider commands whose output is the export (each command's standard
 # output read as the file at its path), for `opsdir import --run`, which runs them under the operator's own login to
 # the provider (the credentials stay the provider tool's; opsdir never sees or stores them); () when the export can't
-# be produced by a command.
+# be produced by a command; or a function (d) -> such pairs, the commands derived from the record (one per region its
+# clouds run in), for exports that depend on what the record holds (connectors.importing.import_commands).
 Importer = namedtuple("Importer", ("name", "description", "read", "commands"), defaults=((),))
 # What an import yields: containers (branch entries to create when missing, never changed otherwise); groups: ((scope
 # DN, entries that should exist in that subtree), ...), each replacing the record's subtree at its scope; notices.

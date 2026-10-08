@@ -126,3 +126,40 @@ resource "google_org_policy_policy" "cloudkms_disablebeforedestroy" {
     }
   }
 }
+
+data "google_project" "budgets" {
+  project_id = var.project_id
+}
+
+resource "google_billing_budget" "monthly_spend" {
+  billing_account = "01A2B3-C4D5E6-F7A8B9"
+  display_name    = "standby-prod-monthly-spend"
+  budget_filter {
+    projects = ["projects/${data.google_project.budgets.number}"]
+    labels = {
+      environment = "standby-prod"
+    }
+    calendar_period = "MONTH"
+  }
+  amount {
+    specified_amount {
+      currency_code = "USD"
+      units         = "12000"
+    }
+  }
+  threshold_rules {
+    threshold_percent = 0.8
+    spend_basis       = "CURRENT_SPEND"
+  }
+  threshold_rules {
+    threshold_percent = 1.0
+    spend_basis       = "CURRENT_SPEND"
+  }
+  threshold_rules {
+    threshold_percent = 1.0
+    spend_basis       = "FORECASTED_SPEND"
+  }
+  all_updates_rule {
+    monitoring_notification_channels = ["projects/example-aero-ciam-standby/notificationChannels/1001"]
+  }
+}

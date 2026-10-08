@@ -25,6 +25,7 @@ SCRIPTS = SHOWCASE / "scripts"
 # directory, when it was taken.
 ImportStep = NamedTuple("ImportStep", [("spec", str), ("root", pathlib.Path), ("at", str)])
 REGIONS = SHOWCASE / "exports" / "regions"
+QUOTAS = SHOWCASE / "exports" / "quotas"
 # the approved changes the showcase applies, in order: (change id, LDIF file or ImportStep)
 APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ldif"),
             ("CHG-2003", SHOWCASE / "changes" / "CHG-2003-stable-ldaps-name.ldif"),
@@ -40,7 +41,11 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2021", ImportStep("azure/regions", REGIONS / "azure", "20260923090000Z")),
             ("CHG-2022", ImportStep("gcp/regions", REGIONS / "gcp", "20260923090000Z")),
             ("CHG-2023", SHOWCASE / "changes" / "CHG-2023-us-residency.ldif"),
-            ("CHG-2024", SHOWCASE / "changes" / "CHG-2024-target-config-history.ldif"))
+            ("CHG-2024", SHOWCASE / "changes" / "CHG-2024-target-config-history.ldif"),
+            ("CHG-2025", ImportStep("aws/quotas", QUOTAS / "aws", "20260923090000Z")),
+            ("CHG-2026", ImportStep("azure/quotas", QUOTAS / "azure", "20260923090000Z")),
+            ("CHG-2027", ImportStep("gcp/quotas", QUOTAS / "gcp", "20260923090000Z")),
+            ("CHG-2028", SHOWCASE / "changes" / "CHG-2028-target-budget-and-quota.ldif"))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
 # night before, all of them)
 IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", "20260920030000Z"),

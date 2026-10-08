@@ -1,0 +1,33 @@
+# CHG-2028 (approved): the source is held to a monthly budget (AWS Budgets, alerting its paging channel) and the target
+# was set up without one, which the planner blocks on: hold the target to its own, 25000 USD a month, alerting its
+# paging action group at 80% and 100% spent and 100% forecast. Once its quota limits were fetched (CHG-2026), the target's
+# region grants 50 vCPUs where its environments need 96: the operator takes the planner's fix with its approve option
+# (fix quota:prod:vcpus: request what the environments need), so the increase is requested at 96. Azure has no
+# Terraform resource for it: the target's root names the request, and the planner asks for the quotas to be fetched
+# again once Microsoft grants it.
+dn: cn=monthly-spend,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamBudget
+cn: monthly-spend
+ciamBindingRole: budget
+ciamBudgetAmount: 25000
+ciamCurrency: USD
+ciamBudgetPeriod: monthly
+ciamActualThreshold: 80
+ciamActualThreshold: 100
+ciamForecastThreshold: 100
+ciamAlertRole: alerts-page
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamChangeRef: cn=CHG-2028,ou=changes,dc=ciam-ops
+
+dn: cn=quota-vcpus,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: modify
+replace: ciamQuotaDecision
+ciamQuotaDecision: request
+-
+replace: ciamQuotaRequested
+ciamQuotaRequested: 96
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2028,ou=changes,dc=ciam-ops

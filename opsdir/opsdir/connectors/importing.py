@@ -44,6 +44,12 @@ def importer_named(spec, installed=ADAPTERS):
     return adapter, found
 
 
+def import_commands(importer, d):
+    """The provider commands ((path, argv), ...) whose output is an importer's export: its own, or those it derives from
+    the record d (one per region the record's clouds run in, say) when its commands are a function of the record."""
+    return tuple(importer.commands(d) if callable(importer.commands) else importer.commands)
+
+
 def _outside(scope, entries):
     return [e.dn for e in entries if not within(e.norm, scope)]
 

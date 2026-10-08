@@ -25,8 +25,8 @@ from opsdir.domains.network.stack import sites_by_port
 from .access import ACCT, AWS_IDENTITIES
 from .cloud_common import by_role, hex_id, listed, rows_of, servers_of, service_named
 from .infrastructure import SECRET_ROLES, SOURCE
-from .observability import MONITORING
-from .estate import CONFIG_BUCKET, SECURITY
+from .observability import MONITORING, PAGE_TOPIC
+from .estate import CONFIG_BUCKET, COSTS, SECURITY
 
 ACCOUNT, REGION = "111122223333", "us-east-1"
 
@@ -276,6 +276,23 @@ def _aws_security():
                     "tags": {"ManagedBy": "opsdir"}}),
                 _res("managed", "aws_cloudwatch_event_target", f"{cn}-findings", {
                     "rule": f"{cn}-findings", "arn": topic, "target_id": "security-topic"})))]
+
+
+def _aws_budgets():
+    """The source's budget as Terraform holds it: AWS Budgets' monthly cost budget filtered by the Environment tag,
+    alerting the paging topic at 80% and 100% spent and 100% forecast."""
+    return [_res("managed", "aws_budgets_budget", cn, {
+                "id": f"111122223333:source-prod-{cn}", "arn": a["ciamProviderRef"], "name": f"source-prod-{cn}",
+                "account_id": "111122223333", "budget_type": "COST", "limit_amount": f"{a['ciamBudgetAmount']}.0",
+                "limit_unit": a["ciamCurrency"], "time_unit": "MONTHLY",
+                "cost_filter": [{"name": "TagKeyValue", "values": ["user:Environment$source/prod"]}],
+                "notification": [{"comparison_operator": "GREATER_THAN", "threshold": p, "threshold_type": "PERCENTAGE",
+                                  "notification_type": kind, "subscriber_email_addresses": [],
+                                  "subscriber_sns_topic_arns": [PAGE_TOPIC]}
+                                 for kind, ps in (("ACTUAL", a["ciamActualThreshold"]),
+                                                  ("FORECASTED", (a["ciamForecastThreshold"],))) for p in ps],
+                "tags": {"Role": role}})
+            for oc, cn, role, a in COSTS["source"] if oc == "ciamBudget"]
 
 
 def _drifted_source(p, subnets, groups):
@@ -574,7 +591,7 @@ def source_state():
     subnets, instances, groups = _source_ids(p)
     resources = [*_aws_network(p, subnets), *_aws_servers(p, subnets, instances, groups, {"pf-engine-2": "m6i.xlarge"}),
                  *_aws_firewall(p, groups), *_aws_services(p, instances), *_aws_keys(p, rotation=False),
-                 *_aws_monitoring(), *_aws_audit(), *_aws_security(), *_drifted_source(p, subnets, groups), *_source_iam(), *_aws_dns(p),
+                 *_aws_monitoring(), *_aws_audit(), *_aws_security(), *_aws_budgets(), *_drifted_source(p, subnets, groups), *_source_iam(), *_aws_dns(p),
                  *_aws_network_depth(p), *_aws_databases(p, groups), *_aws_volumes(p, instances),
                  *_aws_backups(p)]
     return indented({"version": 4, "terraform_version": "1.9.5", "serial": 214, "lineage": "5e0c-ciam-prod",

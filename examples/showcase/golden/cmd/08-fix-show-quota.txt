@@ -1,0 +1,22 @@
+quota:prod:vcpus (Quotas): Decide on raising `vcpus` for target/prod
+
+Choose one (--option):
+  approve: request 96, what the environments need
+      modify cn=quota-vcpus,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+          replace ciamQuotaDecision: request
+          replace ciamQuotaRequested: 96
+  amount: request a limit of your own
+      modify cn=quota-vcpus,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+          replace ciamQuotaDecision: request
+          replace ciamQuotaRequested: <ciamQuotaRequested>
+      give (--input KEY=VALUE):
+      ciamQuotaRequested: the limit of `vcpus` to request for target/prod's account (e.g. 96) (matching [1-9][0-9]*)
+      risk: A limit below the need leaves the target short.
+  deny: deny the increase: the move stops
+      modify cn=quota-vcpus,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+          replace ciamQuotaDecision: deny
+      risk: The move is blocked until the need is lowered or the decision changes.
+
+Outside the record:
+  - Apply the rendered request in target/prod's root (or ask the provider where the cloud takes none), then fetch the quotas again once it is granted.
+exit 0

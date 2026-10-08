@@ -1,0 +1,13 @@
+environment   quota               need  needed on the account  limit       usage  decision  requested  verdict
+------------  ------------------  ----  ---------------------  ----------  -----  --------  ---------  -------------------------
+source/prod   database-instances  2     2                      40                                      ok
+source/prod   public-ips          8     8                      20                                      ok
+source/prod   vcpus               96    96                     256                                     ok
+standby/prod  database-instances  1     1                      not listed                              confirm with the provider
+standby/prod  public-ips          4     4                      8           2                           ok
+standby/prod  vcpus               48    48                     72          12                          ok
+target/prod   database-instances  2     2                      not listed                              confirm with the provider
+target/prod   public-ips          8     8                      1000        3                           ok
+target/prod   vcpus               96    96                     50          0      request   96         requested
+(9 rows)
+exit 0

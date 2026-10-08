@@ -13,11 +13,12 @@ def account_id(m):
     return one(m.cloud, "ciamAccountRef")
 
 
-def provider_block(m, region=None, alias=None, comment=None, own_account=True):
+def provider_block(m, region=None, alias=None, comment=None, own_account=True, account=None):
     """The aws provider block of environment m: its region (the cloud's unless given), alias, the account Terraform may
-    run against (own_account: the platform's own roots; a landing zone's keeper may apply from another account), the
-    FIPS endpoints when the cloud uses them, and the tag policy's tags on every resource."""
-    tags, account = required_tags(m), account_id(m) if own_account else None
+    run against (account when given, else the cloud's own for the platform's own roots: own_account; a landing zone's
+    keeper may apply from another account), the FIPS endpoints when the cloud uses them, and the tag policy's tags on
+    every resource."""
+    tags, account = required_tags(m), account or (account_id(m) if own_account else None)
     return block("provider", ["aws"], [
         *((("#", comment),) if comment else ()), *((("alias", alias),) if alias else ()),
         ("region", region or one(m.cloud, "ciamRegion")),

@@ -1,0 +1,26 @@
+{
+    "Quotas": [
+        {
+            "ServiceCode": "rds",
+            "ServiceName": "RDS",
+            "QuotaArn": "arn:aws:servicequotas:us-east-1::rds/L-7B6409FD",
+            "QuotaCode": "L-7B6409FD",
+            "QuotaName": "DB instances",
+            "Value": 40.0,
+            "Unit": "None",
+            "Adjustable": true,
+            "GlobalQuota": false
+        },
+        {
+            "ServiceCode": "rds",
+            "ServiceName": "RDS",
+            "QuotaArn": "arn:aws:servicequotas:us-east-1::rds/L-952B80B8",
+            "QuotaCode": "L-952B80B8",
+            "QuotaName": "Parameter groups",
+            "Value": 50.0,
+            "Unit": "None",
+            "Adjustable": true,
+            "GlobalQuota": false
+        }
+    ]
+}

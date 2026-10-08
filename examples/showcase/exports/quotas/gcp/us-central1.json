@@ -1,0 +1,28 @@
+{
+  "kind": "compute#region",
+  "name": "us-central1",
+  "status": "UP",
+  "selfLink": "https://www.googleapis.com/compute/v1/projects/example-aero-ciam-standby/regions/us-central1",
+  "quotas": [
+    {
+      "metric": "CPUS",
+      "limit": 72.0,
+      "usage": 12.0
+    },
+    {
+      "metric": "IN_USE_ADDRESSES",
+      "limit": 8.0,
+      "usage": 2.0
+    },
+    {
+      "metric": "N2_CPUS",
+      "limit": 24.0,
+      "usage": 0.0
+    },
+    {
+      "metric": "DISKS_TOTAL_GB",
+      "limit": 4096.0,
+      "usage": 500.0
+    }
+  ]
+}

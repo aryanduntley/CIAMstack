@@ -620,6 +620,30 @@ ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/providers
 ciamSecurityBaseline: microsoft-cloud-security-benchmark
 ciamSecurityKind: posture
 
+dn: cn=quota-vcpus,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaNeed
+cn: quota-vcpus
+ciamBindingRole: quota-vcpus
+ciamQuotaKind: vcpus
+ciamQuotaNeeded: 96
+
+dn: cn=quota-public-ips,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaNeed
+cn: quota-public-ips
+ciamBindingRole: quota-public-ips
+ciamQuotaKind: public-ips
+ciamQuotaNeeded: 8
+
+dn: cn=quota-database-instances,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamQuotaNeed
+cn: quota-database-instances
+ciamBindingRole: quota-database-instances
+ciamQuotaKind: database-instances
+ciamQuotaNeeded: 2
+
 dn: cn=identity-pf,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamIdentityBinding

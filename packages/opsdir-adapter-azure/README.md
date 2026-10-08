@@ -380,6 +380,21 @@ opsdir import azure/regions regions.json --change CHG-…  # or run it yourself 
 
 Only physical regions are recorded; logical entries (geographies such as `unitedstates`, `global`) are left out and named. A refresh adds new regions, shows changed names as conflicts to take or keep, and keeps a region Azure stops listing, marked `not-listed`. An export listing no region is refused.
 
+## Quota limits (a provider prerequisite)
+
+Environments record what they need of Azure's limits (core `estate`: `ciamQuotaNeed`, by kind or by `ciamProviderRef`: a usage's `name.value`, such as a VM family's `standardDSv5Family`; a VM must fit both the region's total and its family's vCPU quota, so record the family's need too). The kinds: `vcpus` is the compute usage named "Total Regional vCPUs"; `public-ips` `PublicIPAddresses`, `networks` `VirtualNetworks`, `load-balancers` `LoadBalancers` (network usages). `database-instances` and `kubernetes-clusters` have no usage Azure reports (Azure SQL servers and AKS clusters per subscription and region are raised by a support request): the planner names them as limits to confirm. The prerequisite `azure-quotas` is met once every subscription and region whose environments record needs has its limits:
+
+```sh
+opsdir import azure/quotas --run --change CHG-…   # az account show, then per region az vm list-usage and
+                                                  # az network list-usages (--location <region> -o json)
+```
+
+Saved by hand, keep each region's outputs in a folder named after it (`<region>/compute.json`, `<region>/network.json`, next to `account.json`): the compute output doesn't name its region. An increase the operator decided to request has no azurerm resource: the root names it in a comment, to request through the Quota API (`az quota update`, Microsoft.Quota) or a support request; Microsoft's pages don't say whether the Quota API serves Azure Government.
+
+## Budgets
+
+Each budget the platform team keeps (core `estate`: `ciamBudget`) is rendered as `azurerm_consumption_budget_resource_group` on the environment's resource group: its amount, time grain (`Monthly`, `Quarterly`, `Annually`), `time_period` from the input `budget_start_date` (the first of a month; changing it replaces the budget), and a `GreaterThan` notification per `ciamActualThreshold` (`Actual`) and `ciamForecastThreshold` (`Forecasted`) to the action group of the channel its `ciamAlertRole` names (`contact_groups`). Azure needs a notification with a contact on every budget: without thresholds it alerts at 100% spent, without an action group the subscription's Owners (both commented), at most five (the rest named). Budgets count in the billing account's currency (another recorded currency is commented). In Azure Government, Cost Management budgets serve Enterprise Agreement and pay-as-you-go subscriptions, not CSP ones (a comment). Read back from Terraform state (`_resource_group` and `_subscription` budgets).
+
 ## Landing zone
 
 What the platform needs from the organization rather than its own Terraform is rendered per environment into `terraform/landing-zone/` (its own root: `providers.tf`, `main.tf`) for whoever keeps the landing zone: the header names them (the owners of the environment's guardrails, else of its cloud, else of the environment) and the MANIFEST marks the files `landing-zone`. Nothing is rendered when the environment needs nothing from one. When the target lacks a guardrail's prevention or a way in the source has, the planner drafts a request to that owner (`requests/<owner>.md`).

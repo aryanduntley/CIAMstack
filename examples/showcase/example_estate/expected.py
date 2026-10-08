@@ -66,6 +66,8 @@ EXPECTED = MappingProxyType({
          "source/prod runs config-recording (config, exporting its history) and target/prod runs none",
          "the source records every resource change with AWS Config and exports the history; the target records none "
          "(Azure keeps its own for 14 days: CHG-2024 records it)", "CHG-2024"),
+        ("B31", "Binding", "Role `budget` is bound in source/prod but not in target/prod",
+         "the target has no budget", "CHG-2028"),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -257,6 +259,21 @@ EXPECTED = MappingProxyType({
          "Graph", None, "CHG-2024"),
         ("A89", "Security", "source/prod keeps its config-recording records 2557 days and target/prod 14 days",
          "the source keeps seven years of configuration history; Azure keeps 14 days (CHG-2024)", None, "CHG-2024"),
+        ("A91", "Budgets", "source/prod has a budget (monthly-spend: 25000 USD monthly) and target/prod none",
+         "the source's spending is held to an AWS Budgets budget; the target was set up without one", "CHG-2028"),
+        ("A92", "Quotas", "target/prod's quota limits (azure account 00000000-0000-0000-0000-000000000000 in eastus2) "
+         "aren't fetched", "the record holds no quota limits from Azure yet (a provider prerequisite: `opsdir "
+         "prerequisites`), so the target's needs can't be checked against them", "CHG-2026"),
+        ("A93", "Quotas", "`vcpus` on azure account 00000000-0000-0000-0000-000000000000 in eastus2 is limited to 50 "
+         "and its environments need 96: decide",
+         "the target's region grants 50 vCPUs where its servers need 96; the fix offers the operator's decision "
+         "(request 96, a value of their own, or deny)", "CHG-2028", "CHG-2026"),
+        ("A94", "Quotas", "has no `database-instances` quota, which target/prod needs 2 of",
+         "Azure reports no usage limit on database servers (raised by a support request): confirm it with Microsoft",
+         None, "CHG-2026"),
+        ("A95", "Quotas", "96 is requested (rendered where the cloud takes requests)",
+         "the operator approved the vCPU increase (CHG-2028); the planner waits for the quotas to be fetched again "
+         "once Microsoft grants it", None, "CHG-2028"),
     ],
 })
 
