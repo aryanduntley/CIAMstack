@@ -1,26 +1,28 @@
-credential                type           role                      store     reference                                                               protection  auto-rotate  rotate by  replicas  users  status
-------------------------  -------------  ------------------------  --------  ----------------------------------------------------------------------  ----------  -----------  ---------  --------  -----  -----------------------------
-am-admin-password         password       am-admin-password         gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/am-admin-password                                                        ok
-am-ds-bind-password       password       am-ds-bind-password       gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/am-ds-bind-passwor                                                       ok
-am-keystore               keystore       am-keystore               gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/am-keystore                                                              carried over from source/prod
-disk-encryption           symmetric-key  disk-encryption           gcp-kms   gcp-kms://projects/example-aero-ciam-standby/locations/us-central1/key  hsm         yes                                      ok
-ds-deployment-id          deployment-id  ds-deployment-id          gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/ds-deployment-id                                                         carried over from source/prod
-ds-deployment-password    password       ds-deployment-password    gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/ds-deployment-pass                                                       carried over from source/prod
-ds-root-password          password       ds-root-password          gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/ds-root-password                                                         ok
-ds-tls-keystore           keystore       ds-tls-keystore           gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/ds-tls-keystore                                                          ok
-idm-admin-password        password       idm-admin-password        gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/idm-admin-password                                                       ok
-idm-ds-bind-password      password       idm-ds-bind-password      gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/idm-ds-bind-passwo                                                       ok
-idm-hrdb-password         password       idm-hrdb-password         gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/idm-hrdb-password                                                        ok
-idm-keystore              keystore       idm-keystore              gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/idm-keystore                                                             carried over from source/prod
-ig-keystore               keystore       ig-keystore               gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/ig-keystore                                                              ok
-pf-admin-password         password       pf-admin-password         gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/pf-admin-password                                                        ok
-pf-captcha-secret         api-token      pf-captcha-secret         gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/pf-captcha-secret                                                        carried over from source/prod
-pf-corp-ad-bind-password  password       pf-corp-ad-bind-password  gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/pf-corp-ad-bind-pa                                                       ok
-pf-ds-bind-password       password       pf-ds-bind-password       gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/pf-ds-bind-passwor                                                       ok
-pf-grants-db-password     password       pf-grants-db-password     gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/pf-grants-db-passw                                                       ok
-pf-signing-key            private-key    pf-signing-key            gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/pf-signing-key                                                           ok
-pf-smtp-password          password       pf-smtp-password          gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/pf-smtp-password                                                         ok
-sso-tls-certificate       private-key    sso-tls-certificate       gcp-cert  gcp-cert://projects/example-aero-ciam-standby/locations/us-central1/ce                                                       ok
-sso-tls-keystore          keystore       sso-tls-keystore          gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/sso-tls-keystore                                                         ok
-(22 rows)
+credential                 type           role                       store     reference                                                               protection  auto-rotate  rotate by  replicas  users  status
+-------------------------  -------------  -------------------------  --------  ----------------------------------------------------------------------  ----------  -----------  ---------  --------  -----  -----------------------------
+am-admin-password          password       am-admin-password          gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/am-admin-password                                                        ok
+am-ds-bind-password        password       am-ds-bind-password        gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/am-ds-bind-passwor                                                       ok
+am-keystore                keystore       am-keystore                gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/am-keystore                                                              carried over from source/prod
+disk-encryption            symmetric-key  disk-encryption            gcp-kms   gcp-kms://projects/example-aero-ciam-standby/locations/us-central1/key  hsm         yes                                      ok
+ds-deployment-id           deployment-id  ds-deployment-id           gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/ds-deployment-id                                                         carried over from source/prod
+ds-deployment-password     password       ds-deployment-password     gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/ds-deployment-pass                                                       carried over from source/prod
+ds-root-password           password       ds-root-password           gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/ds-root-password                                                         ok
+ds-tls-keystore            keystore       ds-tls-keystore            gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/ds-tls-keystore                                                          ok
+idm-admin-password         password       idm-admin-password         gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/idm-admin-password                                                       ok
+idm-ds-bind-password       password       idm-ds-bind-password       gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/idm-ds-bind-passwo                                                       ok
+idm-hrdb-password          password       idm-hrdb-password          gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/idm-hrdb-password                                                        ok
+idm-keystore               keystore       idm-keystore               gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/idm-keystore                                                             carried over from source/prod
+ig-keystore                keystore       ig-keystore                gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/ig-keystore                                                              ok
+pf-admin-password          password       pf-admin-password          gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/pf-admin-password                                                        ok
+pf-captcha-secret          api-token      pf-captcha-secret          gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/pf-captcha-secret                                                        carried over from source/prod
+pf-corp-ad-bind-password   password       pf-corp-ad-bind-password   gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/pf-corp-ad-bind-pa                                                       ok
+pf-ds-bind-password        password       pf-ds-bind-password        gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/pf-ds-bind-passwor                                                       ok
+pf-grants-db-password      password       pf-grants-db-password      gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/pf-grants-db-passw                                                       ok
+pf-signing-key             private-key    pf-signing-key             gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/pf-signing-key                                                           ok
+pf-signing-key-password    password       pf-signing-key-password    gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/pf-signing-key-pas                                                       ok
+pf-smtp-password           password       pf-smtp-password           gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/pf-smtp-password                                                         ok
+sso-tls-certificate        private-key    sso-tls-certificate        gcp-cert  gcp-cert://projects/example-aero-ciam-standby/locations/us-central1/ce                                                       ok
+sso-tls-keystore           keystore       sso-tls-keystore           gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/sso-tls-keystore                                                         ok
+sso-tls-keystore-password  password       sso-tls-keystore-password  gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/sso-tls-keystore-p                                                       ok
+(24 rows)
 exit 0

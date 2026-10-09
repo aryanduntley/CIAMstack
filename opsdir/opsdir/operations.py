@@ -17,6 +17,7 @@ from .connectors.stack import STATUS_HEADERS, stack_rows
 from .core import search as ldap_search
 from .core.environment import env_model
 from .core.interchange.export import export_text
+from .domains.governance.attempts import attempt_records
 from .store import migrations, postgres as db
 from .store.queries import fetch_history
 
@@ -106,9 +107,10 @@ def export(conn, base):
 
 
 # ------------------------------------------------------------------ rendering and moving
-def render(conn, spec):
-    """Effect (reads the record): an environment's rendered files."""
-    m, files = render_env(db.load_directory(conn), spec)
+def render(conn, spec, targets=None):
+    """Effect (reads the record): an environment's rendered files; targets: {adapter: (render target, ...)} chosen
+    (default: every target of every adapter)."""
+    m, files = render_env(db.load_directory(conn), spec, wanted=targets)
     return Rendered(m.label, m.dn, m.provider, files, tuple(m.unbound))
 
 
@@ -225,6 +227,12 @@ def apply_import(conn, plan, change_id, take=(), keep=(), evidence=None):
     when it did (evidence: connectors.collecting.evidence)."""
     return modify(conn, importing.import_records(db.load_directory(conn), plan, change_id, take, keep, evidence),
                   change_id)
+
+
+def record_attempts(conn, attempts, at, change_id):
+    """Effect: record collection attempts (domains.governance.attempts: Attempts run at `at`, a UTC datetime) under an
+    approved change, whatever their outcome: a failed collection stays visible with its problems and calls."""
+    return modify(conn, attempt_records(db.load_directory(conn), attempts, at, change_id), change_id)
 
 
 def apply_preview(conn, preview, change_id):

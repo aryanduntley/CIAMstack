@@ -4,9 +4,10 @@ import json
 from types import SimpleNamespace
 
 from opsdir.connectors.registry import ADAPTERS
-from opsdir.core.directory import make_directory, make_entry
+from opsdir.core.directory import get, make_directory, make_entry
 from opsdir.domains.federation.naming import IDENTITY_SERVICES, INTEGRATIONS
 from opsdir_adapter_pingfederate.adapter import ADAPTER
+from opsdir_adapter_pingfederate.connections import oauth_client
 
 
 def _servers(*products):
@@ -28,10 +29,8 @@ def test_owns_its_server_roles():
                                   "pingfedDiscoveryProtocol": ("TCPPING", "NATIVE_S3_PING", "DNS_PING")}
 
 
-def test_renders_empty_configuration_for_an_empty_directory():
-    assert ADAPTER.render_neutral(make_directory((), (), ())) == {
-        "pingfederate/sp-connections.json": "[]\n", "pingfederate/oidc-clients.json": "[]\n",
-        "pingfederate/idp-connections.json": "[]\n"}
+def test_renders_nothing_neutral_for_an_empty_directory():
+    assert ADAPTER.render_neutral(make_directory((), (), ())) == {}
 
 
 def _federation():
@@ -56,6 +55,7 @@ def test_renders_the_standard_documents_for_the_services_it_serves_at_its_paths(
 
 
 def test_maps_standard_values_to_its_api_names():
-    client = json.loads(ADAPTER.render_neutral(_federation())["pingfederate/oidc-clients.json"])[0]
+    d = _federation()
+    client = oauth_client(SimpleNamespace(d=d), get(d, f"cn=app,{INTEGRATIONS}"))
     assert client["grantTypes"] == ["AUTHORIZATION_CODE", "TOKEN_EXCHANGE"]
     assert (client["clientAuth"], client["restrictedScopes"]) == ({"type": "PRIVATE_KEY_JWT"}, ["openid"])

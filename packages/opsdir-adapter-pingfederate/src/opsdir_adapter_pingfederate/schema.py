@@ -106,6 +106,10 @@ CLASSES = (
              ('ciamStorageRef', 'ciamFqdn'),
              "Where an environment's PingFederate nodes find each other (role pf-cluster-discovery): the protocol "
              "chosen, and the bucket (NATIVE_S3_PING) or DNS name (DNS_PING) it needs; TCPPING needs neither"),
+    ClassDef(14, 'pingfedHeldSettings', 'top', 'AUXILIARY', (),
+             ('pingfedConfig', 'pingfedWithheld', 'pingfedCredentialRole'),
+             "An integration (SP connection, IdP connection, OAuth client) with PingFederate's own settings held as "
+             "the Admin API writes them (secrets withheld): rendered back with the record's standard facts in place"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES, ARC, ORIGIN)

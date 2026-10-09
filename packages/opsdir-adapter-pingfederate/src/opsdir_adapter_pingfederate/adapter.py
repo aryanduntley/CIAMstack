@@ -11,7 +11,7 @@ from .listeners import listeners
 from .proxy import proxy_settings
 from .naming import SERVER_ROLES
 from .nodes import NODE_FILES
-from .render import ENDPOINTS, render_env, render_neutral
+from .render import ENDPOINTS, TARGETS, render_env, render_neutral
 from .schema import FRAGMENT
 
 PRODUCT = "PingFederate"
@@ -29,14 +29,14 @@ ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required
                   render_neutral=render_neutral, render_env=render_env,
                   checks=(check_data_stores, check_references, check_cluster), ref_schemes=(),
                   secret_schemes={},
-                  renders="PingFederate data stores, plugin instances, cluster discovery and other resources for each "
-                          "environment",
+                  renders="PingFederate's configuration for each environment as Admin API requests checked against its "
+                          "version's spec and as Terraform for its provider, and cluster discovery",
                   neutral_label="PingFederate",
                   vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES,
                               "pingfedDiscoveryProtocol": CHOICES}, schema=FRAGMENT,
-                  formats=(("pingfederate/*.json", "json"), ("pingfederate/cluster/*.properties", "java-properties"),
+                  formats=(("pingfederate/admin-api/*.json", "json"), ("pingfederate/terraform/*.tf", "hcl"), ("pingfederate/cluster/*.properties", "java-properties"),
                            *SAML_FORMATS, *OIDC_FORMATS),
-                  products=(("PingFederate", ">=11,<13"),),
+                  products=(("PingFederate", ">=11,<14"),),
                   secret_patterns=SECRET_PATTERNS, importers=(BULK, NODE_FILES), profile_terms=None, access=None,
                   endpoints=ENDPOINTS, listeners=listeners,
-                  proxy_settings=proxy_settings, collectors=COLLECTORS)
+                  proxy_settings=proxy_settings, collectors=COLLECTORS, render_targets=TARGETS)

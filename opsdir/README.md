@@ -39,7 +39,7 @@ On a machine whose global pip config sets `user = true`, pip refuses it inside a
 ./opsdir.sh search -b BASE 'FILTER' [ATTR...] # RFC 4515 search, as LDIF or a table of attributes
 ./opsdir.sh report NAME [DN]          # portability, unowned, blast-radius DN, settings, and every domain's reports (consumers,
                                       # keys ENV, drift, ...); dates as of --as-of
-./opsdir.sh render CLOUD/ENV [-o DIR] # everything the environment's adapters render, plus MANIFEST.json
+./opsdir.sh render CLOUD/ENV [-o DIR] [--target ADAPTER=T[,T]]  # everything the environment's adapters render, plus MANIFEST.json
 ./opsdir.sh plan SRC DST [-o DIR]     # what blocks moving SRC to DST, dated actions, request drafts
 ./opsdir.sh migrate SRC DST [-o DIR]  # check both stacks, plan, render the target; exit 1 unless ready
 ./opsdir.sh export [-b BASE]          # entries as LDIF (for review)
@@ -47,6 +47,13 @@ On a machine whose global pip config sets `user = true`, pip refuses it inside a
 ./opsdir.sh workspace create|status|diff|cutover     # migration workspaces (below)
 ./opsdir.sh --workspace COMMAND …     # any command against the workspace instead of the live record
 ```
+
+An adapter may offer several render targets (`Adapter.render_targets`): PingFederate renders its configuration as
+Admin API requests (`admin-api`) and as Terraform for Ping's provider (`terraform`). `--target pingfederate=terraform`
+renders one; every target is rendered by default except those an adapter offers only when asked (PingFederate's
+`terraform-imports`, import blocks adopting an existing PingFederate's objects), and MANIFEST.json records the targets chosen. An adapter or
+target the environment doesn't have is refused, naming those it has. Plans and migrations render every target.
+
 
 ## Collecting from the live system
 
@@ -63,11 +70,18 @@ account, subscription or project the record names (nothing is read when it isn't
   in memory for the run, and reaches a tool only on its standard input or opsdir's own HTTP GET (`live.py`); a failing
   call's error output is shown with resolved values masked. Calls carrying provider debug switches are never run.
 - A collection is complete or not imported: an import makes the record's subtrees exactly what the export holds, so a
-  failed call (or a collector asking for more than 5 rounds or 2000 calls) leaves the record as it is and says why.
+  failed call (or a collector asking for more than 8 rounds or 2000 calls, or saying why it must stop) leaves the record as it is and says why.
 - An applied collection records how it was collected on its import run (its `ciamImportRun` entry): the identity the
   provider saw, each call (command or URL, never a credential) with the SHA-256 of what it returned, and the
   credential references resolved. `--save DIR` also keeps the raw export and its manifest: it may hold sensitive
   configuration, keep it on encrypted storage.
+- Every collection run under a change records its **attempt**, whatever the outcome (its `ciamCollectionAttempt`
+  entry under `ou=imports`, one per importer and environment, replaced by the next attempt; history keeps the earlier
+  ones): complete, incomplete (a call failed or was refused: nothing imported) or skipped (the identity check failed
+  or the collector couldn't start), when it ran, the change, the identity seen, the calls made (each with the hash of
+  what it returned, `absent` or `failed`) and the problems, credentials masked. A failed collection is never
+  imported, but it is not forgotten: `opsdir report collections` lists the last attempt of each. A dry run or a run
+  without `--change` records nothing (it says how many failed collections went unrecorded).
 - Without `--env`, `collect` reads provider-wide data (region lists, quota limits): the same calls `import --run` makes.
 - `--list` shows the calls each collector starts with and runs nothing.
 
@@ -83,6 +97,7 @@ CHG-…`), and a declared source of a kind that's off makes the collection say w
 |---|---|---|
 | `git+https://host/org/repo.git?ref=main&dir=gateway&prefix=routes/` (or `git+ssh://git@host/...`) | `git clone --depth 1 --single-branch [--branch REF]` into a private work directory | the files under `dir` (else all) placed under `prefix`; `.git` is never read |
 | `k8s://CONTEXT/NAMESPACE/configmap/NAME?prefix=routes/` | `kubectl --context CONTEXT -n NAMESPACE get configmap NAME -o json` | each data key a file under `prefix` (Secrets are never read) |
+| `k8s://CONTEXT/NAMESPACE/workloads?prefix=` | `kubectl --context CONTEXT -n NAMESPACE get statefulsets,deployments,daemonsets,cronjobs,services,ingresses,networkpolicies,serviceaccounts -o json` and `kubectl --context CONTEXT get namespace NAMESPACE -o json` | manifests (`kubernetes/workloads`): `CONTEXT/NAMESPACE/objects.json` and `namespace.json` under `prefix`; Secrets are never listed, and literal env values, `managedFields` and the last-applied annotation are dropped before anything is hashed, saved or imported |
 | `ssh://user@host[:port]/BASE?dir=config&match=*.json` | `ssh -o BatchMode=yes -o StrictHostKeyChecking=yes` running `find BASE/dir -type f [-name MATCH]`, then `cat --` each (`zcat --` for `.gz`, saved without `.gz`) | each file under `prefix` (default `host/`), `dir` kept in its path |
 | `ssh://user@host/BASE?files=bin/run.properties,data/x.xml` | `cat --` each listed file | the same |
 

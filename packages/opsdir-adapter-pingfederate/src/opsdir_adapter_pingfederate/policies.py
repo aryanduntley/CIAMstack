@@ -14,7 +14,6 @@ its id); a policy that names one the record doesn't have is
 named in the notices and blocked by the planner. The default policy's trees are imported as one: a tree the export
 no longer has is removed.
 """
-import json
 
 from opsdir.core.directory import children, get, make_entry, merged_attrs, one, rdn_value
 from opsdir.core.jsondata import canonical, held_json
@@ -127,20 +126,21 @@ def _in_order(entries):
     return sorted(entries, key=lambda e: (int(one(e, "pingfedPosition", "0")), rdn_value(e)))
 
 
-def policy_files(d):
-    """{pingfederate/<file>: text}: the policy contracts, the default authentication policy and the fragments the
-    record has (environment-neutral)."""
-    contracts = children(d, CONTRACTS, "pingfedPolicyContract")
-    fragments = children(d, FRAGMENTS, "pingfedAuthPolicy")
+def contract_body(c):
+    """A policy contract as the Admin API takes it (POST /authenticationPolicyContracts)."""
+    return {"id": rdn_value(c), **held_json(c, "pingfedConfig")}
+
+
+def default_policy_body(d):
+    """The default authentication policy as the Admin API takes it (PUT /authenticationPolicies/default): its
+    settings and its trees in order; None when the record has none."""
     head = get(d, DEFAULT_POLICY)
-    policy = {**held_json(head, "pingfedConfig"), "authnSelectionTrees": [
+    return {**held_json(head, "pingfedConfig"), "authnSelectionTrees": [
         {"name": rdn_value(t), "enabled": one(t, "pingfedEnabled", "TRUE") == "TRUE", **held_json(t, "pingfedConfig"),
          "rootNode": held_json(t, "pingfedPolicyTree")}
         for t in _in_order(children(d, DEFAULT_POLICY, "pingfedAuthPolicy"))]} if head is not None else None
-    out = {"authentication-policy-contracts.json": [{"id": rdn_value(c), **held_json(c, "pingfedConfig")} for c in contracts]
-           if contracts else None,
-           "authentication-policies.json": policy,
-           "authentication-policy-fragments.json": [{"id": rdn_value(f), **held_json(f, "pingfedConfig"),
-                                                     "rootNode": held_json(f, "pingfedPolicyTree")} for f in fragments]
-           if fragments else None}
-    return {f"pingfederate/{p}": json.dumps(v, indent=2) + "\n" for p, v in out.items() if v is not None}
+
+
+def fragment_body(f):
+    """A policy fragment as the Admin API takes it (POST /authenticationPolicies/fragments)."""
+    return {"id": rdn_value(f), **held_json(f, "pingfedConfig"), "rootNode": held_json(f, "pingfedPolicyTree")}

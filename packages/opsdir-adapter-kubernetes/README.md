@@ -46,6 +46,8 @@ Any YAML or JSON file is read, multi-document YAML and `List` output included. E
 
 **Secrets.** Secret objects in the manifests are never read; they are counted in the notices. Only the names of the Secrets a workload reads are recorded.
 
+**Collected live** (`opsdir collect --env CLOUD/ENV`, with the estate setting `collect-from-kubernetes` on): a collection source per namespace, `ciamImporter: kubernetes/workloads` and `ciamSourceRef: k8s://<kubectl context>/<namespace>/workloads`, read with your own kubectl context: `kubectl get statefulsets,deployments,daemonsets,cronjobs,services,ingresses,networkpolicies,serviceaccounts -n <namespace> -o json` and the namespace itself (its pod-security label). Secrets are never listed; literal env values, `managedFields` and the last-applied annotation are dropped before the export. A live namespace has no `roles.json`, so label the workloads (`opsdir.io/role` or `app.kubernetes.io/component`). The context name must be a plain name (rename an EKS ARN context with `kubectl config rename-context`). Least privilege: a Role with `get`, `list` on those eight resources in the namespace, and a ClusterRole with `get` on `namespaces`.
+
 **Notices:** workloads without a role, names that can't be a record name, Secret objects (counted), files that aren't YAML or JSON, manifests with no workloads.
 
 The planner (core `compute` domain) then blocks a move whose target has no cluster for a workload and no servers of its role, and a workload identity role nobody binds; a privileged workload is an action. Clusters themselves (`ciamCluster`: version, add-ons, node pools) are read by the cloud adapters (EKS, AKS).
@@ -62,6 +64,6 @@ The `k8s-secret` reference scheme. No schema of its own: workloads and clusters 
 
 ## Tests
 
-`tests/test_kubernetes.py`: registration, never rendering, resolving a key through the registry, JSONPath escaping. `tests/test_kubernetes_workloads.py`: a StatefulSet with its role, cluster, storage, identity, pod security (and namespace level), network policy, ingress host and secret names; roles from `roles.json`, a workload without one named; Secret values never reaching the record; a re-import changing nothing and keeping an owner; a CronJob as a job the cluster realizes; names across namespaces and the helpers.
+`tests/test_kubernetes.py`: registration, never rendering, resolving a key through the registry, JSONPath escaping. `tests/test_kubernetes_workloads.py`: a StatefulSet with its role, cluster, storage, identity, pod security (and namespace level), network policy, ingress host and secret names; roles from `roles.json`, a workload without one named; Secret values never reaching the record; a re-import changing nothing and keeping an owner; a CronJob as a job the cluster realizes; names across namespaces and the helpers; a namespace collected live (trimmed) importing as its saved manifests do.
 
 Installing the package registers it with opsdir (entry point `opsdir.adapters`: `kubernetes`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.

@@ -105,7 +105,7 @@
                     "fields": [
                       {
                         "name": "Password Credential Validator Instance",
-                        "value": "pcv-customers"
+                        "value": "pcvcustomers"
                       }
                     ]
                   }
@@ -129,7 +129,32 @@
                 "name": "username",
                 "pseudonym": true
               }
+            ],
+            "extendedAttributes": [
+              {
+                "name": "mail"
+              }
             ]
+          },
+          "attributeMapping": {
+            "attributeContractFulfillment": {
+              "username": {
+                "source": {
+                  "type": "ADAPTER"
+                },
+                "value": "username"
+              },
+              "mail": {
+                "source": {
+                  "type": "ADAPTER"
+                },
+                "value": "mail"
+              }
+            },
+            "attributeSources": [],
+            "issuanceCriteria": {
+              "conditionalCriteria": []
+            }
           }
         }
       ]
@@ -139,10 +164,60 @@
       "resourceType": "/oauth/accessTokenManagers",
       "items": [
         {
-          "id": "default-jwt",
+          "id": "defaultjwt",
           "name": "Default JWT",
           "pluginDescriptorRef": {
             "id": "com.pingidentity.pf.access.token.management.plugins.JwtBearerAccessTokenManagementPlugin"
+          },
+          "configuration": {
+            "tables": [
+              {
+                "name": "Symmetric Keys",
+                "rows": []
+              },
+              {
+                "name": "Certificates",
+                "rows": [
+                  {
+                    "defaultRow": true,
+                    "fields": [
+                      {
+                        "name": "Key ID",
+                        "value": "k1"
+                      },
+                      {
+                        "name": "Certificate",
+                        "value": "signing-2025"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "fields": [
+              {
+                "name": "Token Lifetime",
+                "value": "120"
+              },
+              {
+                "name": "JWS Algorithm",
+                "value": "RS256"
+              },
+              {
+                "name": "Active Signing Certificate Key ID",
+                "value": "k1"
+              }
+            ]
+          },
+          "attributeContract": {
+            "extendedAttributes": [
+              {
+                "name": "sub"
+              },
+              {
+                "name": "scope"
+              }
+            ]
           }
         }
       ]
@@ -238,15 +313,18 @@
                       "type": "LDAP_DATA_STORE",
                       "id": "user-directory"
                     },
-                    "value": "appEntitlement",
-                    "x-opsdir-transform": "keep values with prefix 'customer-portal:', strip prefix"
+                    "value": "appEntitlement"
                   }
                 },
                 "idpAdapterRef": {
                   "id": "htmlform"
                 }
               }
-            ]
+            ],
+            "assertionLifetime": {
+              "minutesBefore": 5,
+              "minutesAfter": 5
+            }
           },
           "type": "SP",
           "credentials": {
@@ -268,6 +346,9 @@
                   "status": "VALID",
                   "subjectDN": "CN=portal.example-aero.test SP",
                   "issuerDN": "CN=portal.example-aero.test SP"
+                },
+                "x509File": {
+                  "fileData": "-----BEGIN CERTIFICATE-----\nU1lOVEhFVElDIENFUlRJRklDQVRFIENOPXBvcnRhbC5leGFtcGxlLWFlcm8udGVzdCBTUA==\n-----END CERTIFICATE-----\n"
                 }
               }
             ]
@@ -343,8 +424,7 @@
                       "type": "LDAP_DATA_STORE",
                       "id": "user-directory"
                     },
-                    "value": "appEntitlement",
-                    "x-opsdir-transform": "keep values with prefix 'supplier-portal:', strip prefix"
+                    "value": "appEntitlement"
                   },
                   "sold_to": {
                     "source": {
@@ -358,7 +438,11 @@
                   "id": "htmlform"
                 }
               }
-            ]
+            ],
+            "assertionLifetime": {
+              "minutesBefore": 5,
+              "minutesAfter": 5
+            }
           },
           "type": "SP",
           "credentials": {
@@ -380,6 +464,9 @@
                   "status": "VALID",
                   "subjectDN": "CN=suppliers.example-aero.test SP",
                   "issuerDN": "CN=suppliers.example-aero.test SP"
+                },
+                "x509File": {
+                  "fileData": "-----BEGIN CERTIFICATE-----\nU1lOVEhFVElDIENFUlRJRklDQVRFIENOPXN1cHBsaWVycy5leGFtcGxlLWFlcm8udGVzdCBTUA==\n-----END CERTIFICATE-----\n"
                 }
               }
             ]
@@ -409,6 +496,9 @@
                   "status": "VALID",
                   "subjectDN": "CN=Harbor MRO SSO",
                   "issuerDN": "CN=Harbor MRO SSO"
+                },
+                "x509File": {
+                  "fileData": "-----BEGIN CERTIFICATE-----\nU1lOVEhFVElDIENFUlRJRklDQVRFIENOPUhhcmJvciBNUk8gU1NP\n-----END CERTIFICATE-----\n"
                 }
               },
               {
@@ -425,6 +515,9 @@
                   "subjectAlternativeNames": [
                     "sso.example-aero.test"
                   ]
+                },
+                "x509File": {
+                  "fileData": "-----BEGIN CERTIFICATE-----\nU1lOVEhFVElDIENFUlRJRklDQVRFIENOPXNzby5leGFtcGxlLWFlcm8udGVzdA==\n-----END CERTIFICATE-----\n"
                 }
               }
             ]
@@ -437,8 +530,64 @@
                 "baseDn": "ou=partners,ou=people,dc=partners,dc=example-aero,dc=test",
                 "dataStoreRef": {
                   "id": "user-directory"
+                },
+                "uniqueUserIdFilter": "(mail=${mail})",
+                "jitRepositoryAttributeMapping": {
+                  "mail": {
+                    "source": {
+                      "type": "ASSERTION"
+                    },
+                    "value": "mail"
+                  },
+                  "givenName": {
+                    "source": {
+                      "type": "ASSERTION"
+                    },
+                    "value": "givenName"
+                  },
+                  "sn": {
+                    "source": {
+                      "type": "ASSERTION"
+                    },
+                    "value": "sn"
+                  }
                 }
+              },
+              "eventTrigger": "NEW_USER_ONLY",
+              "errorHandling": "ABORT_SSO",
+              "userAttributes": {
+                "attributeContract": [
+                  {
+                    "name": "mail"
+                  },
+                  {
+                    "name": "givenName"
+                  },
+                  {
+                    "name": "sn"
+                  }
+                ],
+                "doAttributeQuery": false
               }
+            },
+            "idpIdentityMapping": "ACCOUNT_MAPPING",
+            "attributeContract": {
+              "coreAttributes": [
+                {
+                  "name": "SAML_SUBJECT"
+                }
+              ],
+              "extendedAttributes": [
+                {
+                  "name": "mail"
+                },
+                {
+                  "name": "givenName"
+                },
+                {
+                  "name": "sn"
+                }
+              ]
             }
           },
           "type": "IDP"
@@ -461,6 +610,9 @@
                   "status": "VALID",
                   "subjectDN": "CN=Skyline Air IdP Signing",
                   "issuerDN": "CN=Skyline Air IdP Signing"
+                },
+                "x509File": {
+                  "fileData": "-----BEGIN CERTIFICATE-----\nU1lOVEhFVElDIENFUlRJRklDQVRFIENOPVNreWxpbmUgQWlyIElkUCBTaWduaW5n\n-----END CERTIFICATE-----\n"
                 }
               },
               {
@@ -477,6 +629,9 @@
                   "subjectAlternativeNames": [
                     "sso.example-aero.test"
                   ]
+                },
+                "x509File": {
+                  "fileData": "-----BEGIN CERTIFICATE-----\nU1lOVEhFVElDIENFUlRJRklDQVRFIENOPXNzby5leGFtcGxlLWFlcm8udGVzdA==\n-----END CERTIFICATE-----\n"
                 }
               }
             ]
@@ -489,8 +644,64 @@
                 "baseDn": "ou=partners,ou=people,dc=partners,dc=example-aero,dc=test",
                 "dataStoreRef": {
                   "id": "user-directory"
+                },
+                "uniqueUserIdFilter": "(mail=${mail})",
+                "jitRepositoryAttributeMapping": {
+                  "mail": {
+                    "source": {
+                      "type": "ASSERTION"
+                    },
+                    "value": "mail"
+                  },
+                  "givenName": {
+                    "source": {
+                      "type": "ASSERTION"
+                    },
+                    "value": "givenName"
+                  },
+                  "sn": {
+                    "source": {
+                      "type": "ASSERTION"
+                    },
+                    "value": "sn"
+                  }
                 }
+              },
+              "eventTrigger": "NEW_USER_ONLY",
+              "errorHandling": "ABORT_SSO",
+              "userAttributes": {
+                "attributeContract": [
+                  {
+                    "name": "mail"
+                  },
+                  {
+                    "name": "givenName"
+                  },
+                  {
+                    "name": "sn"
+                  }
+                ],
+                "doAttributeQuery": false
               }
+            },
+            "idpIdentityMapping": "ACCOUNT_MAPPING",
+            "attributeContract": {
+              "coreAttributes": [
+                {
+                  "name": "SAML_SUBJECT"
+                }
+              ],
+              "extendedAttributes": [
+                {
+                  "name": "mail"
+                },
+                {
+                  "name": "givenName"
+                },
+                {
+                  "name": "sn"
+                }
+              ]
             }
           },
           "type": "IDP"
@@ -523,7 +734,7 @@
             "offline_access"
           ],
           "defaultAccessTokenManagerRef": {
-            "id": "default-jwt"
+            "id": "defaultjwt"
           },
           "oidcPolicy": {
             "policyGroup": {
@@ -553,7 +764,7 @@
             "email"
           ],
           "defaultAccessTokenManagerRef": {
-            "id": "default-jwt"
+            "id": "defaultjwt"
           }
         },
         {
@@ -572,7 +783,7 @@
             "encryptedSecret": "OBF:JWE:eyJhbGciOiJkaXIifQ..fictional-not-a-real-secret"
           },
           "defaultAccessTokenManagerRef": {
-            "id": "default-jwt"
+            "id": "defaultjwt"
           }
         }
       ]
@@ -582,7 +793,7 @@
       "resourceType": "/passwordCredentialValidators",
       "items": [
         {
-          "id": "pcv-customers",
+          "id": "pcvcustomers",
           "name": "Customer directory",
           "pluginDescriptorRef": {
             "id": "org.sourceid.saml20.domain.LDAPUsernamePasswordCredentialValidator"
@@ -665,6 +876,24 @@
                       "context": "Success",
                       "authenticationPolicyContractRef": {
                         "id": "default-apc"
+                      },
+                      "attributeMapping": {
+                        "attributeContractFulfillment": {
+                          "subject": {
+                            "source": {
+                              "type": "ADAPTER",
+                              "id": "htmlform"
+                            },
+                            "value": "username"
+                          },
+                          "mail": {
+                            "source": {
+                              "type": "ADAPTER",
+                              "id": "htmlform"
+                            },
+                            "value": "mail"
+                          }
+                        }
                       }
                     }
                   },
@@ -689,7 +918,7 @@
           "id": "default-oidc",
           "name": "Default",
           "accessTokenManagerRef": {
-            "id": "default-jwt"
+            "id": "defaultjwt"
           },
           "idTokenLifetime": 5,
           "attributeContract": {
@@ -703,6 +932,22 @@
                 "name": "email"
               }
             ]
+          },
+          "attributeMapping": {
+            "attributeContractFulfillment": {
+              "sub": {
+                "source": {
+                  "type": "TOKEN"
+                },
+                "value": "sub"
+              },
+              "email": {
+                "source": {
+                  "type": "TOKEN"
+                },
+                "value": "mail"
+              }
+            }
           }
         }
       ]
@@ -732,7 +977,10 @@
           ],
           "exclusiveScopes": [],
           "authorizationCodeTimeout": 60,
-          "persistentGrantLifetime": -1
+          "persistentGrantLifetime": -1,
+          "authorizationCodeEntropy": 30,
+          "refreshRollingInterval": 0,
+          "refreshTokenLength": 42
         }
       ]
     },
@@ -750,6 +998,10 @@
               "enableOauth": true,
               "enableOpenIdConnect": true
             }
+          },
+          "federationInfo": {
+            "baseUrl": "https://sso.example-aero.test",
+            "saml2EntityId": "https://sso.example-aero.test/idp"
           }
         }
       ]

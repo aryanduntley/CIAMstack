@@ -12,14 +12,13 @@ client is issued tokens by, read from the Admin API into the record and rendered
 Access token managers are plugin instances (opsdir_adapter_pingfederate.plugins); the key pairs a JWT token manager
 signs with are certificates carrying PingFederate's key pair id (pingfedKeyPairId).
 """
-import json
 
 from opsdir.core.directory import children, get, make_entry, merged_attrs, one, rdn_value, values
-from opsdir.core.jsondata import WITHHELD, canonical, held_json, with_values
+from opsdir.core.jsondata import canonical, held_json
 from opsdir.core.naming import rdn_safe
 from .naming import AUTH_SERVER, OIDC_POLICIES, named
 from .objects import NOT_EXPORTED, links, why_unresolved
-from .withheld import withheld_settings
+from .withheld import filled, withheld_settings
 
 OWNED = ("cn", "pingfedUses", "pingfedConfig")
 SETTINGS_OWNED = ("cn", "pingfedScope", "pingfedConfig", "pingfedWithheld")
@@ -99,13 +98,13 @@ def client_view(d, i):
             **({"oidcPolicy": {"policyGroup": {"id": oidc}}} if oidc else {})}
 
 
-def oauth_files(d):
-    """{pingfederate/<file>: text}: the OIDC policies and the authorization server's settings the record has."""
-    policies = children(d, OIDC_POLICIES, "pingfedOidcPolicy")
-    server = get(d, AUTH_SERVER)
-    out = {"oidc-policies.json": [{"id": rdn_value(p), **held_json(p, "pingfedConfig")}
-                                  for p in policies] if policies else None,
-           "auth-server-settings.json": with_values(held_json(server, "pingfedConfig"),
-                                                    values(server, "pingfedWithheld"), WITHHELD)
-           if server is not None else None}
-    return {f"pingfederate/{p}": json.dumps(v, indent=2) + "\n" for p, v in out.items() if v is not None}
+def oidc_policy_body(p):
+    """An OIDC policy as the Admin API takes it (POST /oauth/openIdConnect/policies)."""
+    return {"id": rdn_value(p), **held_json(p, "pingfedConfig")}
+
+
+def auth_server_body(m):
+    """The authorization server's settings as the Admin API takes them (PUT /oauth/authServerSettings), withheld values
+    from their credential role in environment m; None when the record has none."""
+    server = get(m.d, AUTH_SERVER)
+    return filled(m, server, held_json(server, "pingfedConfig")) if server is not None else None

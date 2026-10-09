@@ -50,10 +50,15 @@ def run_records(d, importer, scopes, at, change_id, evidence=None):
     read = tuple(dict.fromkeys(scopes))
     by_env = {env: tuple(s for s in read if environment_of_scope(s) == env)
               for env in dict.fromkeys(environment_of_scope(s) for s in read)}
-    container = () if get(d, IMPORTS) is not None else (new_entry(IMPORTS, ("top", "organizationalUnit"),
-                                                                  {"ou": ("imports",)}),)
-    return (*container, *(_run(d, importer, env, found, at, change_id, evidence or {})
-                          for env, found in by_env.items()))
+    return (*imports_container(d), *(_run(d, importer, env, found, at, change_id, evidence or {})
+                                     for env, found in by_env.items()))
+
+
+def imports_container(d):
+    """(the ou=imports container's record,) when the record has none yet, else (): where import runs and collection
+    attempts are kept."""
+    return () if get(d, IMPORTS) is not None else (new_entry(IMPORTS, ("top", "organizationalUnit"),
+                                                             {"ou": ("imports",)}),)
 
 
 def environment_of_scope(scope):

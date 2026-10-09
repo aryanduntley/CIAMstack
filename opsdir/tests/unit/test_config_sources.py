@@ -4,11 +4,13 @@ the setting to turn on); the exact calls each makes (a shallow clone, kubectl ge
 strict host keys running find, then cat or zcat, on quoted paths that must look like paths); what a clone or a
 ConfigMap gives placed under the source's prefix, .git never read, a link or binary file kept failing the collection;
 every adapter's importers read their sources, in the importer's one collection."""
+import json
+
 from opsdir import live
 from opsdir.connectors.collecting import collect, collectors
 from opsdir.core.contract import Collector, Command, Importer
-from opsdir.domains.governance.config_sources import (configmap_files, git_files, source_kind, source_problems,
-                                                      source_steps)
+from opsdir.domains.governance.config_sources import (configmap_files, git_files, manifest_files, source_kind,
+                                                      source_problems, source_steps)
 from network_fixtures import ALPHA, entry, model
 
 SETTINGS = "dn: ou=settings,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: settings\n"
@@ -133,3 +135,31 @@ def test_a_failing_source_call_is_reported_with_its_error_output_and_nothing_imp
     c = collect("gw/config", config, d, alpha, run)
     assert c.files is None and len(c.problems) == 1
     assert c.problems[0].endswith(": exit 1: error: context was not found for specified context: prod-east")
+
+
+def test_a_namespaces_workloads_are_read_as_manifests_never_secrets_and_trimmed():
+    d, alpha = _model(("kubernetes",), {"ns": "k8s://prod-east/identity/workloads"})
+    assert source_problems("gw/config")(d, alpha, {}) == ()
+    (objects, listed), (namespace, ns) = source_steps("gw/config")(d, alpha, {}, {})
+    assert (objects, namespace) == ("prod-east/identity/objects.json", "prod-east/identity/namespace.json")
+    assert listed.argv == ("kubectl", "--context", "prod-east", "-n", "identity", "get",
+                           "statefulsets,deployments,daemonsets,cronjobs,services,ingresses,networkpolicies,"
+                           "serviceaccounts", "-o", "json")
+    assert "secret" not in " ".join(listed.argv)
+    assert ns.argv == ("kubectl", "--context", "prod-east", "get", "namespace", "identity", "-o", "json")
+    raw = {"kind": "List", "items": [{"kind": "Deployment", "metadata": {
+        "name": "am", "managedFields": [{"manager": "kubectl"}],
+        "annotations": {"kubectl.kubernetes.io/last-applied-configuration": "{\"spec\": \"PASSWORD=hunter2\"}",
+                        "opsdir.io/role": "am"}},
+        "spec": {"template": {"spec": {"containers": [{"name": "am", "env": [
+            {"name": "JAVA_OPTS", "value": "-Dpassword=hunter2"},
+            {"name": "ADMIN", "valueFrom": {"secretKeyRef": {"name": "am-admin", "key": "pw"}}}]}]}}}}]}
+    kept = listed.keep(json.dumps(raw))
+    assert "hunter2" not in kept and "managedFields" not in kept and "last-applied" not in kept
+    assert json.loads(kept)["items"][0]["spec"]["template"]["spec"]["containers"][0]["env"] == [
+        {"name": "JAVA_OPTS"}, {"name": "ADMIN", "valueFrom": {"secretKeyRef": {"key": "pw", "name": "am-admin"}}}]
+    assert json.loads(kept)["items"][0]["metadata"]["annotations"] == {"opsdir.io/role": "am"}
+    assert manifest_files("not json") == "not json"
+    bad = {"a": "k8s://prod-east/identity/workloads/extra", "b": "k8s://prod-east/-n/workloads"}
+    d, alpha = _model(("kubernetes",), bad)
+    assert source_steps("gw/config")(d, alpha, {}, {}) == () and len(source_problems("gw/config")(d, alpha, {})) == 2

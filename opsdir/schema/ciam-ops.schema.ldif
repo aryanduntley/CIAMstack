@@ -2708,18 +2708,48 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.600 NAME 'ciamLoginName' DESC 'The a
  GLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.601 NAME 'ciamCollectionIdentity' DE
  SC 'Who the provider said the collector was when an import run\27s export w
- as collected (its identity check: account, subscription, project)' EQUALITY
-  caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTAB
- ILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+ as collected, or a collection was attempted (its identity check: account, s
+ ubscription, project)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115
+ .121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 
+ 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.602 NAME 'ciamCollectedCall' DESC 'A
-  call that collected part of an import run\27s export: the SHA-256 of what 
- it returned, the file it became and the command or URL (never a credential)
- ' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILI
- TY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+  call that collected part of an import run\27s export, or that a collection
+  attempt made: the SHA-256 of what it returned (absent: nothing there; fail
+ ed: the call failed), the file it became and the command or URL (never a cr
+ edential)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-
+ PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.603 NAME 'ciamCollectionCredential' 
- DESC 'A credential reference an import run\27s collection resolved (the ref
- erence, never the value)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.
- 115.121.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+ DESC 'A credential reference an import run\27s collection, or a collection 
+ attempt, resolved (the reference, never the value)' EQUALITY caseIgnoreMatc
+ h SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 's
+ tring' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.604 NAME 'ciamCollectionOutcome' DES
+ C 'How a collection attempt ended: complete (its export read in full), inco
+ mplete (a call failed or was refused: nothing imported) or skipped (nothing
+  collected: the identity check failed or the collector could not start)' EQ
+ UALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-
+ PORTABILITY 'meta' X-VALUE-TYPE 'enum:complete|incomplete|skipped' X-ORIGIN
+  'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.605 NAME 'ciamCollectedAt' DESC 'Whe
+ n a collection attempt read the live system' EQUALITY generalizedTimeMatch 
+ SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'meta' X-VA
+ LUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.606 NAME 'ciamCollectionProblem' DES
+ C 'Why a collection attempt was incomplete or skipped: a failing call and i
+ ts error output, a refused call, a bound reached, a failed identity check (
+ credentials masked)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.1
+ 21.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.607 NAME 'ciamCollectedEnvironment' 
+ DESC 'The environment a collection attempt read (absent: estate-wide, provi
+ der data such as regions and quotas); a DN, not a reference, like an import
+  run\27s scopes' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.11
+ 5.121.1.12 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'extdn' X-ORIGIN 
+ 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.608 NAME 'ciamPasswordRole' DESC 'Bi
+ nding role of the secret holding the password that protects the material wh
+ ere it is kept (a PKCS#12 file\27s), per environment like the material\27s 
+ own role' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SIN
+ GLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -2902,9 +2932,9 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.42 NAME 'ciamCredential' DESC 'A key
  or secret as metadata, the same in every environment: each environment bind
  s its role to where the material is kept' SUP ciamObject STRUCTURAL MUST ( 
  cn $ ciamBindingRole $ ciamCredentialType $ ciamContinuity ) MAY ( ciamKeyA
- lgorithm $ ciamKeySize $ ciamKeyUsage $ ciamMaterialFormat $ ciamHsmRequire
- d $ ciamExportable $ ciamRotationDays $ ciamContinuityReason $ ciamUsedIn $
-  ciamRotationRunbook ) X-ORIGIN 'opsdir' )
+ lgorithm $ ciamKeySize $ ciamKeyUsage $ ciamMaterialFormat $ ciamPasswordRo
+ le $ ciamHsmRequired $ ciamExportable $ ciamRotationDays $ ciamContinuityRe
+ ason $ ciamUsedIn $ ciamRotationRunbook ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.43 NAME 'ciamCertificateRef' DESC 'A 
  certificate held in a cloud certificate store' SUP ciamBinding STRUCTURAL M
  UST ( ciamRefUri $ ciamHoldsCertificate ) MAY ( ciamAutoRotate $ ciamLastRo
@@ -3404,3 +3434,12 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.128 NAME 'ciamCollectionSource' DESC
   ciamBinding STRUCTURAL MUST ciamImporter MAY ( ciamSourceRef $ ciamTargetR
  ole $ ciamPort $ ciamCredentialRole $ ciamCaRole $ ciamLoginName ) X-ORIGIN
   'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.129 NAME 'ciamCollectionAttempt' DESC
+  'The last attempt by `opsdir collect` to collect one importer\27s export o
+ f one environment (or estate-wide), recorded under the change it ran with (
+ ciamChangeRef) whatever the outcome: complete, or incomplete or skipped wit
+ h its problems and the calls it made, so a failed collection stays visible 
+ after the run' SUP ciamObject STRUCTURAL MUST ( cn $ ciamImporter $ ciamCol
+ lectionOutcome $ ciamCollectedAt ) MAY ( ciamCollectedEnvironment $ ciamCol
+ lectionProblem $ ciamCollectionIdentity $ ciamCollectedCall $ ciamCollectio
+ nCredential ) X-ORIGIN 'opsdir' )

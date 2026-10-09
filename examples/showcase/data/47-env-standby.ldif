@@ -470,6 +470,22 @@ ciamBindingRole: pf-corp-ad-bind-password
 ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/pf-corp-ad-bin
  d-password
 
+dn: cn=secret-pf-signing-key-password,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-signing-key-password
+ciamBindingRole: pf-signing-key-password
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/pf-signing-key
+ -password
+
+dn: cn=secret-sso-tls-keystore-password,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-sso-tls-keystore-password
+ciamBindingRole: sso-tls-keystore-password
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/sso-tls-keysto
+ re-password
+
 dn: cn=key-disk,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamKeyRef

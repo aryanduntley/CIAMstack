@@ -19,7 +19,8 @@ from opsdir.domains.pki.naming import CERTIFICATES
 from opsdir_adapter_pingfederate.adapter import ADAPTER
 from opsdir_adapter_pingfederate.checks import check_references
 from opsdir_adapter_pingfederate.naming import AUTH_SERVER, OIDC_POLICIES, TOKEN_MANAGERS, named
-from opsdir_adapter_pingfederate.render import render_env, render_neutral
+from opsdir_adapter_pingfederate.admin_api import OUTPUT as REQUESTS, rendered_bodies
+from opsdir_adapter_pingfederate.render import render_env
 from opsdir_adapter_pingfederate.schema import FRAGMENT
 import mini_estate
 from support import build_directory
@@ -116,17 +117,18 @@ def test_a_client_links_its_token_manager_and_oidc_policy(after):
     d, _ = after
     portal = get(d, PORTAL_DN)
     assert ("pingfedClient" in portal.classes, values(portal, "pingfedUses")) == (True, (JWT_DN, OIDC_DN))
-    client = json.loads(render_neutral(d)["pingfederate/oidc-clients.json"])[0]
+    client = next(c for c in rendered_bodies(render_env(env_model(d, "alpha/prod"), None)[REQUESTS])["/oauth/clients"]
+                  if c["clientId"] == one(portal, "ciamClientId"))
     assert (client["defaultAccessTokenManagerRef"], client["oidcPolicy"]) == \
         ({"id": "jwt"}, {"policyGroup": {"id": "default-oidc"}})
 
 
 def test_renders():
     d, _, _ = imported()
-    neutral, alpha = render_neutral(d), render_env(env_model(d, "alpha/prod"), None)
-    assert [p["id"] for p in json.loads(neutral["pingfederate/oidc-policies.json"])] == ["default-oidc", "orphan"]
-    assert json.loads(neutral["pingfederate/auth-server-settings.json"]) == SERVER
-    jwt = json.loads(alpha["pingfederate/access-token-managers.json"])[0]
+    alpha = rendered_bodies(render_env(env_model(d, "alpha/prod"), None)[REQUESTS])
+    assert [p["id"] for p in alpha["/oauth/openIdConnect/policies"]] == ["default-oidc", "orphan"]
+    assert alpha["/oauth/authServerSettings"] == [SERVER]
+    jwt = alpha["/oauth/accessTokenManagers"][0]
     assert (jwt["configuration"]["tables"][0]["rows"][0]["fields"][1]["value"],
             jwt["configuration"]["tables"][1]["rows"][0]["fields"][1]["value"]) == ("${withheld}", "signing-2025")
 
@@ -134,8 +136,7 @@ def test_renders():
 @pytest.mark.parametrize("env", ["alpha/prod", "beta/prod"])
 def test_what_it_renders_imports_back_unchanged(env):
     d, _, _ = imported()
-    files = {**render_neutral(d), **render_env(env_model(d, env), None)}
-    rendered = {p[len("pingfederate/"):]: t for p, t in files.items() if p.startswith("pingfederate/")}
+    rendered = {p: t for p, t in render_env(env_model(d, env), None).items() if p.endswith(".json")}
     again, _ = preview_import(d, "pingfederate/bulk", rendered, (ADAPTER,))
     assert again == ()
 

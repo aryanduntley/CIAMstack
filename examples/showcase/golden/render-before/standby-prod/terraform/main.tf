@@ -2430,6 +2430,12 @@ data "google_secret_manager_secret" "pf_signing_key" {
   project   = "example-aero-ciam-standby"
 }
 
+data "google_secret_manager_secret" "pf_signing_key_password" {
+  # metadata only: no secret version (value) enters Terraform state
+  secret_id = "pf-signing-key-password"
+  project   = "example-aero-ciam-standby"
+}
+
 data "google_secret_manager_secret" "pf_smtp_password" {
   # metadata only: no secret version (value) enters Terraform state
   secret_id = "pf-smtp-password"
@@ -2439,6 +2445,12 @@ data "google_secret_manager_secret" "pf_smtp_password" {
 data "google_secret_manager_secret" "sso_tls_keystore" {
   # metadata only: no secret version (value) enters Terraform state
   secret_id = "sso-tls-keystore"
+  project   = "example-aero-ciam-standby"
+}
+
+data "google_secret_manager_secret" "sso_tls_keystore_password" {
+  # metadata only: no secret version (value) enters Terraform state
+  secret_id = "sso-tls-keystore-password"
   project   = "example-aero-ciam-standby"
 }
 

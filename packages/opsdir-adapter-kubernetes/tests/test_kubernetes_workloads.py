@@ -155,3 +155,38 @@ def test_names_across_namespaces_and_the_helpers():
     pod = {"spec": {"template": {"spec": {"hostNetwork": True, "volumes": [
         {"projected": {"sources": [{"secret": {"name": "tls"}}]}}], "containers": [{"name": "x"}]}}}}
     assert pod_security(pod, {}) == ("hostNetwork",) and secret_names(pod) == ("tls",)
+
+
+def test_a_namespace_collected_live_reads_as_its_saved_manifests():
+    """`opsdir collect` with a k8s://<context>/<namespace>/workloads source: what kubectl prints for the namespace,
+    trimmed, imports as the same objects saved by hand do (except where each was read from: ciamRepoPath)."""
+    from opsdir.connectors.collecting import collect, collectors
+    from opsdir.core.environment import env_model
+    served = [o for _, o in objects(FILES) if o and (o.get("metadata") or {}).get("namespace") == "identity"
+              and o["kind"] not in ("Namespace", "Secret")]
+    namespace = next(o for _, o in objects(FILES) if o and o["kind"] == "Namespace")
+    leaky = json.loads(json.dumps(served))
+    leaky[0].setdefault("metadata", {})["managedFields"] = [{"manager": "kubectl"}]
+    for o in leaky:
+        if o["kind"] == "StatefulSet":
+            o["spec"]["template"]["spec"]["containers"][0]["env"].append({"name": "JAVA_OPTS", "value": "-Dpw=hunter2"})
+    source = ("dn: ou=settings,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: settings\n\n"
+              "dn: cn=collect-from-kubernetes,ou=settings,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamEstateSetting\n"
+              "cn: collect-from-kubernetes\nciamEstateValue: TRUE\n\n"
+              "dn: cn=k8s-identity,ou=bindings,env=prod,cloud=alpha,ou=environments,dc=ciam-ops\nobjectClass: top\n"
+              "objectClass: ciamCollectionSource\ncn: k8s-identity\nciamBindingRole: collect-k8s\n"
+              "ciamImporter: kubernetes/workloads\nciamSourceRef: k8s://prod-east/identity/workloads\n")
+    d = build_directory(REGISTRY, (*records(), *parse(source)))
+    m = env_model(d, "alpha/prod")
+    (collector,) = [c for c in collectors(ADAPTER, m) if c.importer == "workloads"]
+    answers = {"get": json.dumps({"kind": "List", "items": leaky}), "namespace": json.dumps(namespace)}
+    c = collect("kubernetes/workloads", collector, d, m,
+                lambda call: (answers["namespace" if "namespace" in call.argv else "get"], None))
+    assert c.problems == () and sorted(c.files) == ["prod-east/identity/namespace.json", "prod-east/identity/objects.json"]
+    assert "hunter2" not in "".join(c.files.values()) and "managedFields" not in "".join(c.files.values())
+    saved = {"identity/live.json": json.dumps({"kind": "List", "items": [namespace, *served]})}
+    plain = lambda changes: sorted((r.dn, sorted((a, v) for a, v in r.attrs.items() if a != "ciamRepoPath"))
+                                   for r in changes if r.changetype == "add")
+    collected, _ = preview_import(d, "kubernetes/workloads", c.files, (ADAPTER,))
+    by_hand, _ = preview_import(d, "kubernetes/workloads", saved, (ADAPTER,))
+    assert plain(collected) == plain(by_hand) and any(r.dn == workload_dn("ds-idrepo") for r in collected)

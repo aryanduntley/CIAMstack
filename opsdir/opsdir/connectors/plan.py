@@ -201,11 +201,12 @@ def render_summary(adapters):
 
 def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS):
     """Plan moving src to dst with the installed adapters: render both, run every check, collect the findings."""
-    src, src_adapters, src_neutral, src_specific = render_parts(d, src_spec, installed)
-    dst, adapters, dst_neutral, dst_specific = render_parts(d, dst_spec, installed)
+    src, src_adapters, src_neutral, src_specific, src_targets = render_parts(d, src_spec, installed)
+    dst, adapters, dst_neutral, dst_specific, dst_targets = render_parts(d, dst_spec, installed)   # every target
     cutover = date_of(dst.env, "ciamPlannedCutover")
-    dst_files = assemble(dst, adapters, dst_neutral, dst_specific)
-    ctx = PlanContext(d, src, dst, cutover, as_of, assemble(src, src_adapters, src_neutral, src_specific), dst_files,
+    dst_files = assemble(dst, adapters, dst_neutral, dst_specific, dst_targets)
+    ctx = PlanContext(d, src, dst, cutover, as_of, assemble(src, src_adapters, src_neutral, src_specific, src_targets),
+                      dst_files,
                       tuple(src_neutral))
     f = merge_findings([*(run_check(check, ctx) for check in checks(adapters, domains)),
                         run_check(access_check(src_adapters, adapters), ctx),

@@ -2254,12 +2254,20 @@ data "azurerm_key_vault_secrets" "kv_ciam_prod" {
       error_message = "Key Vault kv-ciam-prod has no secret pf-signing-key (role pf-signing-key)"
     }
     postcondition {
+      condition     = contains(self.names, "pf-signing-key-password")
+      error_message = "Key Vault kv-ciam-prod has no secret pf-signing-key-password (role pf-signing-key-password)"
+    }
+    postcondition {
       condition     = contains(self.names, "pf-smtp-password")
       error_message = "Key Vault kv-ciam-prod has no secret pf-smtp-password (role pf-smtp-password)"
     }
     postcondition {
       condition     = contains(self.names, "sso-tls-keystore")
       error_message = "Key Vault kv-ciam-prod has no secret sso-tls-keystore (role sso-tls-keystore)"
+    }
+    postcondition {
+      condition     = contains(self.names, "sso-tls-keystore-password")
+      error_message = "Key Vault kv-ciam-prod has no secret sso-tls-keystore-password (role sso-tls-keystore-password)"
     }
   }
 }

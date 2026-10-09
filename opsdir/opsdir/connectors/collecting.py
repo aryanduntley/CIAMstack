@@ -5,10 +5,12 @@ asking for what the previous ones' outputs name (a list, then each item's detail
 
 A collection is complete or it isn't imported: an import makes the record's subtrees exactly what the export holds, so
 a missing file would delete what the record holds. Any call that fails, a collector that keeps asking past ROUNDS
-rounds or CALLS calls, or a command carrying a debug switch (provider debug output can print credentials) leaves the
+rounds or CALLS calls, a step that names a problem instead of a call, or a command carrying a debug switch (provider debug output can print credentials) leaves the
 collection incomplete, with its problems. What a complete one ran is its evidence: the identity the provider saw, each
 call (the command or URL, never a credential) with the SHA-256 of what it returned and the file it became, and the
 credential references it resolved; the applied import records it with the import run (domains.governance.imports).
+Whatever the outcome, a run under a change records the attempt (attempt: domains.governance.attempts), so a failed
+one stays visible with its problems and the calls it made.
 Resolved credentials are masked (redact) wherever a call's error output or a problem would show them."""
 import hashlib
 import re
@@ -16,10 +18,12 @@ import shlex
 from typing import NamedTuple
 
 from ..core.contract import Collector, Command, Request
+from ..domains.governance.attempts import Attempt
 from ..domains.governance.config_sources import has_sources, source_problems, source_steps
 from .importing import import_commands
 
-ROUNDS = 5                  # rounds a collector may ask for more (a list, its items, their details, ...)
+ROUNDS = 8                  # rounds a collector may ask for more (a list, its items, their details, an account's
+                            # parents up to the organization's root, ...)
 WORK = "_work/"             # outputs only the collector reads (the lists it takes items from): not in the export
 CALLS = 2000                # calls one collection may make
 MASK = "****"
@@ -50,7 +54,9 @@ def credential_refs(call):
 
 
 def refused(call):
-    """Why a call is never run (a debug switch on a command), or None."""
+    """Why a call is never run (a debug switch on a command; a step that is a problem text, not a call), or None."""
+    if isinstance(call, str):
+        return call
     found = [a for a in (call.argv if isinstance(call, Command) else ()) for s in DEBUG_SWITCHES
              if a == s or a.startswith(s + "=")]
     return f"{provenance(call)}: debug switches are never run ({', '.join(found)})" if found else None
@@ -134,11 +140,24 @@ def credentials_used(collection):
 
 
 def evidence(collection):
-    """What an applied import records of a complete collection on its run: the identity the provider saw, each call
-    (the SHA-256 of its output, the file it became and what ran) and the credential references resolved."""
+    """What a collection leaves on its import run (when complete and applied) or its attempt: the identity the provider
+    saw, each call (the SHA-256 of its output, 'absent' when there was nothing to read or 'failed', the file it became
+    and what ran) and the credential references resolved."""
     return {"ciamCollectionIdentity": (collection.identity,) if collection.identity else (),
-            "ciamCollectedCall": tuple(f"{c.sha256 or 'absent'} {c.path} <- {c.provenance}" for c in collection.calls),
+            "ciamCollectedCall": tuple(f"{c.sha256 or ('failed' if c.problem else 'absent')} {c.path} <- "
+                                       f"{c.provenance}" for c in collection.calls),
             "ciamCollectionCredential": credentials_used(collection)}
+
+
+def attempt(spec, outcome, env=None):
+    """The Attempt (domains.governance.attempts) of one collection run: outcome a Collection, or why it was skipped
+    before any call (a failed identity check); env the environment's DN (None: estate-wide). Complete, incomplete (a
+    call failed or was refused) or skipped (nothing run); None when the collector had nothing to collect here."""
+    if isinstance(outcome, str):
+        return Attempt(spec, env, "skipped", (outcome,), {})
+    if not outcome.calls:
+        return Attempt(spec, env, "skipped", outcome.problems, evidence(outcome)) if outcome.problems else None
+    return Attempt(spec, env, "incomplete" if outcome.problems else "complete", outcome.problems, evidence(outcome))
 
 
 def first_calls(collector, d, m, options=None):

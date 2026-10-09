@@ -10,6 +10,7 @@ from opsdir import operations as ops
 from opsdir.connectors.importing import ImportPlan, import_conflicts
 from opsdir.core.directory import get, one, values
 from opsdir.core.interchange.ldif import LdifRecord, parse
+from opsdir.domains.governance.attempts import Attempt, attempt_dn, attempt_rows
 from opsdir.domains.governance.imports import import_rows, run_dn
 from opsdir.store import postgres as db
 
@@ -102,6 +103,28 @@ def test_a_collected_export_leaves_its_evidence_on_the_run_and_a_file_import_cle
     ops.apply_import(conn, _plan(conn)._replace(changes=()), "CHG-1")             # an export read off disk
     run = get(db.load_directory(conn), run_dn("parties/directory"))
     assert not any(values(run, a) for a in proof)
+
+
+def test_a_failed_collection_is_recorded_then_replaced_by_the_next_attempt_and_history_keeps_both(conn):
+    env = "env=prod,cloud=alpha,ou=environments,dc=ciam-ops"
+    failed = Attempt("gw/config", env, "incomplete",
+                     ("k8s/cm (kubectl get configmap cm): exit 1: error: context was not found",),
+                     {"ciamCollectionIdentity": (), "ciamCollectedCall": ("failed k8s/cm <- kubectl get configmap cm",),
+                      "ciamCollectionCredential": ("vault://kv/reader",)})
+    ops.record_attempts(conn, (failed,), AT, "CHG-1")
+    d = db.load_directory(conn)
+    assert attempt_rows(d) == [("gw/config", "alpha/prod", "incomplete", "20260920030000Z",
+                                "k8s/cm (kubectl get configmap cm): exit 1: error: context was not found", "CHG-1")]
+    assert values(get(d, attempt_dn("gw/config", env)), "ciamCollectionCredential") == ("vault://kv/reader",)
+    assert import_rows(d) == []                                            # nothing imported, but not forgotten
+    ops.record_attempts(conn, (failed._replace(outcome="complete", problems=(), evidence={}),),
+                        AT + dt.timedelta(hours=1), "CHG-1")
+    held = get(db.load_directory(conn), attempt_dn("gw/config", env))
+    assert (one(held, "ciamCollectionOutcome"), values(held, "ciamCollectionProblem"),
+            values(held, "ciamCollectedCall")) == ("complete", (), ())
+    assert [op for _, _, op, _ in ops.history(conn, attempt_dn("gw/config", env)).rows] == ["insert", "update"]
+    with pytest.raises(psycopg.Error, match="not an approved change"):
+        ops.record_attempts(conn, (failed,), AT, "CHG-9")
 
 
 def test_runs_are_written_under_an_approved_change_only(conn):

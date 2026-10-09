@@ -184,7 +184,9 @@ Request = namedtuple("Request", ("url", "headers", "credential", "ca", "absent",
                      defaults=((), None, None, (), None))
 # A collector: the importer (by name) whose export it produces; scope "environment" (one environment's, `--env`) or
 # "estate" (provider-wide data: regions, quota limits); steps(d, m, done, options) -> ((relative path, Command |
-# Request), ...): the calls still to make given what was collected so far (done: {path: output}), m the environment's
+# Request | problem text), ...): the calls still to make given what was collected so far (done: {path: output}), a
+# problem text in place of a call when an output says the collection must stop (a profile signed in to another
+# organization): the collection is then incomplete with it; m the environment's
 # EnvModel (None for estate scope), options what the operator gave at run time ({name: value}: a Terraform working
 # directory); called again until it asks for nothing new (a list, then each item's details), so it never repeats a
 # path. Paths under _work/ are what only the collector reads (the list it takes the items from): kept out of the
@@ -202,7 +204,7 @@ Adapter = namedtuple("Adapter", (
     "applies",              # (EnvModel) -> bool, from directory data only; None = declaration-only (connectors.stack)
     "required_roles",
     "render_neutral",       # (Directory) -> {path: text}, same everywhere
-    "render_env",           # (EnvModel, Services) -> {path: text}
+    "render_env",           # (EnvModel, Services) -> {path: text}; (EnvModel, Services, targets) with render_targets
     "checks",               # planner checks: (PlanContext) -> Findings
     "ref_schemes",          # ref-uri schemes it owns (secrets, keys, storage)
     "secret_schemes",       # ref-uri scheme -> (rest of uri) -> shell command
@@ -220,8 +222,11 @@ Adapter = namedtuple("Adapter", (
     "listeners",            # (EnvModel) -> Listeners: the ports its servers listen on in an environment, or None
     "proxy_settings",       # (EnvModel, ProxySettings) -> ProxySettings its servers need for an explicit proxy, or None
     "prerequisites",        # Prerequisites: data it needs fetched from its provider
-    "collectors"),          # Collectors: how `opsdir collect` reads its importers' exports from the live system
-    defaults=((), None, None, (), ()))
+    "collectors",           # Collectors: how `opsdir collect` reads its importers' exports from the live system
+    "render_targets"),      # ((name, what it renders[, False: only when asked]), ...): the outputs an operator may
+                            # choose between at render time (`opsdir render --target`); render_env gets the names
+                            # chosen (by default every one not marked only-when-asked)
+    defaults=((), None, None, (), (), ()))
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

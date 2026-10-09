@@ -25,10 +25,11 @@ def _override(o):
             "values": list(values(o, "ciamOverrideValue")), "from": overridden_in(o)}
 
 
-def manifest(m, neutral, specific, formats, captured=None, scopes=None, not_rendered=()):
-    """MANIFEST.json text: environment, provider, unbound roles, the overrides the environment rendered with (when it
-    has any: an environment-neutral file then carries its values), each file's scope, format and SHA-256 (captured
-    config files included, marked captured), and the captured files that could not be rendered, with why."""
+def manifest(m, neutral, specific, formats, captured=None, scopes=None, not_rendered=(), targets=None):
+    """MANIFEST.json text: environment, provider, unbound roles, the render targets chosen (for adapters that declare
+    any), the overrides the environment rendered with (when it has any: an environment-neutral file then carries its
+    values), each file's scope, format and SHA-256 (captured config files included, marked captured), and the
+    captured files that could not be rendered, with why."""
     captured, scopes = captured or {}, scopes or {}
     files = {p: {"scope": _scope(p, neutral, scopes), "format": formats[p],
                  **({"captured": True} if p in captured else {}), "sha256": hashlib.sha256(c.encode()).hexdigest()}
@@ -36,5 +37,7 @@ def manifest(m, neutral, specific, formats, captured=None, scopes=None, not_rend
     missing = {"captured_not_rendered": [{"file": name, "why": why} for name, why in not_rendered]} \
         if not_rendered else {}
     overrides = {"overrides": [_override(o) for o in m.overrides]} if m.overrides else {}
-    return json.dumps({"environment": m.dn, "provider": m.provider, "unbound_roles": list(m.unbound), **overrides,
+    chosen = {"render_targets": {a: list(ts) for a, ts in sorted(targets.items())}} if targets else {}
+    return json.dumps({"environment": m.dn, "provider": m.provider, "unbound_roles": list(m.unbound), **chosen,
+                       **overrides,
                        "files": files, **missing}, indent=2) + "\n"

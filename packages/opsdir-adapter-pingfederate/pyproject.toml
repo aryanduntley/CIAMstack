@@ -15,3 +15,6 @@ pingfederate = "opsdir_adapter_pingfederate.adapter:ADAPTER"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+opsdir_adapter_pingfederate = ["specs/*.json", "specs/*.md", "specs/*.txt"]

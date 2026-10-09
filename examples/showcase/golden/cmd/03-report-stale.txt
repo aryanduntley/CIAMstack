@@ -1,6 +1,7 @@
 runbook      title                           validated   dep_changed  dependency
 -----------  ------------------------------  ----------  -----------  -----------------------------------------------------------------
 WI-CIAM-004  Add or rebuild a backend index  2026-02-01  2026-06-14   cn=mail,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
+WI-CIAM-010  Onboard a SAML application      2026-03-15  <RUN-DATE>   cn=customer-portal,ou=integrations,dc=ciam-ops
 WI-CIAM-010  Onboard a SAML application      2026-03-15  <RUN-DATE>   cn=pf-signing-2025,ou=certificates,dc=ciam-ops
-(2 rows)
+(3 rows)
 exit 0

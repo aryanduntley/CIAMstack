@@ -121,14 +121,23 @@ def random_tokens(text):
                  if re.search(r"[A-Z]", t) and re.search(r"[a-z]", t) and re.search(r"[0-9]", t) and _entropy(t) >= 4.0)
 
 
+_CERTIFICATES = re.compile(r"^\s*(-----BEGIN CERTIFICATE-----[A-Za-z0-9+/=\s]+-----END CERTIFICATE-----\s*)+$")
+
+
+def certificates_only(value):
+    """Whether a value is nothing but PEM certificates: public material, however random its encoding looks."""
+    return isinstance(value, str) and bool(_CERTIFICATES.match(value))
+
+
 def withheld(locator, value, patterns):
-    """Why a captured setting's value must not be stored (it needs a secret reference instead), or None."""
+    """Why a captured setting's value must not be stored (it needs a secret reference instead), or None. PEM
+    certificates alone are public: never withheld for looking random (a private key is caught by the patterns)."""
     found = scan(value, patterns)
     if found:
         return f"its value looks like secret material ({', '.join(found)})"
     if sensitive_name(locator) and not placeholder(value):
         return "its name says it holds a secret"
-    if random_tokens(value):
+    if random_tokens(value) and not certificates_only(value):
         return "its value looks random (a key or token)"
     return None
 

@@ -58,9 +58,15 @@ Choose one (--option):
   pf-signing-key: `pf-signing-key` (azkv://kv-ciam-prod/pf-signing-key in target/prod)
       modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
           replace pingfedCredentialRole: pf-signing-key
+  pf-signing-key-password: `pf-signing-key-password` (azkv://kv-ciam-prod/pf-signing-key-password in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: pf-signing-key-password
   sso-tls-keystore: `sso-tls-keystore` (azkv://kv-ciam-prod/sso-tls-keystore in target/prod)
       modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
           replace pingfedCredentialRole: sso-tls-keystore
+  sso-tls-keystore-password: `sso-tls-keystore-password` (azkv://kv-ciam-prod/sso-tls-keystore-password in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: sso-tls-keystore-password
 
 Outside the record:
   - Make sure the chosen secret holds this credential in every environment's store (the record holds only the reference).

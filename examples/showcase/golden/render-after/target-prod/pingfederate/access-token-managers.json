@@ -1,9 +1,0 @@
-[
-  {
-    "id": "default-jwt",
-    "pluginDescriptorRef": {
-      "id": "com.pingidentity.pf.access.token.management.plugins.JwtBearerAccessTokenManagementPlugin"
-    },
-    "name": "Default JWT"
-  }
-]

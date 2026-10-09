@@ -49,6 +49,9 @@ ATTRIBUTES = (
                  'What the credential is used for'),
     AttributeDef(191, 'ciamMaterialFormat', 'enum:pem|der|pkcs12|jks|jceks|jwk|raw|text|other', 'intent', True,
                  'The form the material takes where it is used'),
+    AttributeDef(608, 'ciamPasswordRole', 'string', 'meta', True,
+                 'Binding role of the secret holding the password that protects the material where it is kept (a '
+                 'PKCS#12 file\'s), per environment like the material\'s own role'),
     AttributeDef(192, 'ciamHsmRequired', 'bool', 'intent', True,
                  'The material must be generated and kept in a hardware security module'),
     AttributeDef(193, 'ciamExportable', 'bool', 'intent', True,
@@ -103,8 +106,8 @@ CLASSES = (
              'Certificate (public facts only)'),
     ClassDef(42, 'ciamCredential', 'ciamObject', 'STRUCTURAL',
              ('cn', 'ciamBindingRole', 'ciamCredentialType', 'ciamContinuity'),
-             ('ciamKeyAlgorithm', 'ciamKeySize', 'ciamKeyUsage', 'ciamMaterialFormat', 'ciamHsmRequired',
-              'ciamExportable', 'ciamRotationDays', 'ciamContinuityReason', 'ciamUsedIn', 'ciamRotationRunbook'),
+             ('ciamKeyAlgorithm', 'ciamKeySize', 'ciamKeyUsage', 'ciamMaterialFormat', 'ciamPasswordRole',
+              'ciamHsmRequired', 'ciamExportable', 'ciamRotationDays', 'ciamContinuityReason', 'ciamUsedIn', 'ciamRotationRunbook'),
              'A key or secret as metadata, the same in every environment: each environment binds its role to where '
              'the material is kept'),
     ClassDef(43, 'ciamCertificateRef', 'ciamBinding', 'STRUCTURAL', ('ciamRefUri', 'ciamHoldsCertificate'),

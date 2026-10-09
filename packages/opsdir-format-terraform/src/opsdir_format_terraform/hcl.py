@@ -81,6 +81,68 @@ def jsonencoded(v):
     return ref("jsonencode(" + json.dumps(v, indent=2, separators=(",", " : ")).replace("\n", "\n  ") + ")")
 
 
+# ------------------------------------------------------------------ data as HCL (nested objects, laid out like fmt)
+# A raw HCL expression among data values (var.x, a resource address): written as it is, never quoted or escaped.
+Expr = NamedTuple("Expr", [("text", str)])
+# A nested block among a block's pairs (required_providers): its own (key, value) pairs, written `key { ... }`.
+NestedBlock = NamedTuple("NestedBlock", [("pairs", tuple)])
+_BARE_KEY = re.compile(r"^[A-Za-z_][A-Za-z0-9_-]*$")
+
+
+def literal(s):
+    """A string as an HCL string literal: quotes, backslashes and control characters escaped, and template sequences
+    (${, %{) doubled so a value holding them stays text."""
+    body = json.dumps(s)[1:-1]
+    return '"' + body.replace("${", "$${").replace("%{", "%%{") + '"'
+
+
+def _key(k):
+    return k if _BARE_KEY.match(k) else literal(k)
+
+
+def _items(pairs, indent):
+    """Lines of an object's or block's (key, value) pairs at indent: '=' aligned within each run of single-line values,
+    as `terraform fmt` aligns them."""
+    pad = "  " * indent
+    rendered = [(_key(k), f"{{\n" + "\n".join(_items(v.pairs, indent + 1)) + f"\n{pad}}}" if isinstance(v, NestedBlock)
+                 else data_value(v, indent), isinstance(v, NestedBlock)) for k, v in pairs]
+    runs = [(single, tuple(g)) for single, g in groupby(rendered, key=lambda kv: "\n" not in kv[1] and not kv[2])]
+    return [f"{pad}{k} {val}" if nested else f"{pad}{k.ljust(max(len(x) for x, _, _ in run) if single else 0)} = {val}"
+            for single, run in runs for k, val, nested in run]
+
+
+def data_value(v, indent=0):
+    """A JSON-like value (dict, list, str, number, bool, None, Expr) as an HCL expression laid out like `terraform fmt`:
+    objects one item per line, lists of scalars on one line and lists holding objects one element per line, literal
+    strings escaped (template sequences included)."""
+    if isinstance(v, Expr):
+        return v.text
+    if v is None:
+        return "null"
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, (int, float)):
+        return json.dumps(v)
+    if isinstance(v, str):
+        return literal(v)
+    pad = "  " * indent
+    if isinstance(v, dict):
+        return "{\n" + "\n".join(_items(v.items(), indent + 1)) + f"\n{pad}}}" if v else "{}"
+    if isinstance(v, (list, tuple)):
+        if not any(isinstance(x, (dict, list, tuple)) and not isinstance(x, Expr) for x in v):
+            return "[" + ", ".join(data_value(x) for x in v) + "]"
+        inner = "  " * (indent + 1)
+        return "[\n" + "".join(f"{inner}{data_value(x, indent + 1)},\n" for x in v) + f"{pad}]"
+    raise TypeError(v)
+
+
+def data_block(kind, labels, pairs, comments=()):
+    """A block whose body is (key, value) pairs of data values (nested objects and lists, Expr) or NestedBlocks, laid
+    out like `terraform fmt`; comments: lines above its body."""
+    head = kind + "".join(f" {literal(lab)}" for lab in labels) + " {"
+    return "\n".join((head, *(f"  # {c}" for c in comments), *_items(pairs, 1), "}"))
+
+
 def unbound_comments(roles):
     """HCL comment lines naming each required role an environment doesn't bind."""
     return "".join(f"# UNBOUND: required role '{r}' has no binding in this environment\n" for r in roles)

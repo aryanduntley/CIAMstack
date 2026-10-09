@@ -1,2 +1,2 @@
-rendered 66 files for env=prod,cloud=target,ou=environments,dc=ciam-ops (azure) → <OUT>/render-after/target-prod
+rendered 56 files for env=prod,cloud=target,ou=environments,dc=ciam-ops (azure) → <OUT>/render-after/target-prod
 exit 0

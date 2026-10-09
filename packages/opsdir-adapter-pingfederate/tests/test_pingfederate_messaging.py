@@ -13,6 +13,7 @@ from opsdir.core.standard import registry_ldif
 from opsdir.domains.messaging.naming import sender_dn, service_dn
 from opsdir_adapter_pingfederate.adapter import ADAPTER
 from opsdir_adapter_pingfederate.naming import CAPTCHA_PROVIDERS, NOTIFICATION_PUBLISHERS, named
+from opsdir_adapter_pingfederate.admin_api import OUTPUT as REQUESTS, rendered_bodies
 from opsdir_adapter_pingfederate.render import render_env
 from opsdir_adapter_pingfederate.schema import FRAGMENT
 import mini_estate
@@ -51,8 +52,8 @@ def test_plugins_of_their_own_with_secrets_withheld():
     assert (one(smtp, "pingfedPluginKind"), one(captcha, "pingfedPluginKind")) == \
         ("notification-publisher", "captcha-provider")
     assert values(smtp, "pingfedWithheld") == ("/configuration/fields/4/value",)
-    files = render_env(env_model(d, "alpha/prod"), None)
-    assert {"pingfederate/notification-publishers.json", "pingfederate/captcha-providers.json"} <= set(files)
+    bodies = rendered_bodies(render_env(env_model(d, "alpha/prod"), None)[REQUESTS])
+    assert {"/notificationPublishers", "/captchaProviders"} <= set(bodies)
     assert not any("held as is" in n and "notificationPublishers" in n for n in notices)
 
 

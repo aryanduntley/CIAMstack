@@ -25,7 +25,7 @@ Expected findings check (after changes)
            B38  cleared by CHG-2034: production's Macie examines the directory backups for sensitive data (CUI markings, employee numbers); the target runs no data discovery, a blocker once it is held to FedRAMP Moderate (DFARS) → gone
            B39  cleared by CHG-2034: the target has no data discovery binding: Macie examines the source's backups → gone
            B33  cleared by CHG-2029: production is held to DFARS 252.204-7012 (72-hour reporting on DIBNet); the target to no reporting obligation → gone
-  actions  planted 102   expected now 80   detected 80   missed 0   unexpected 0
+  actions  planted 103   expected now 81   detected 81   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone

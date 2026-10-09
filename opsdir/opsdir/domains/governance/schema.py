@@ -55,13 +55,27 @@ ATTRIBUTES = (
     AttributeDef(600, 'ciamLoginName', 'string', 'intent', True,
                  'The account a collection source\'s credential signs in as (a read-only service account)'),
     AttributeDef(601, 'ciamCollectionIdentity', 'string', 'meta', True,
-                 'Who the provider said the collector was when an import run\'s export was collected (its identity '
-                 'check: account, subscription, project)'),
+                 'Who the provider said the collector was when an import run\'s export was collected, or a collection '
+                 'was attempted (its identity check: account, subscription, project)'),
     AttributeDef(602, 'ciamCollectedCall', 'string', 'meta', False,
-                 'A call that collected part of an import run\'s export: the SHA-256 of what it returned, the file it '
-                 'became and the command or URL (never a credential)'),
+                 'A call that collected part of an import run\'s export, or that a collection attempt made: the SHA-256 '
+                 'of what it returned (absent: nothing there; failed: the call failed), the file it became and the '
+                 'command or URL (never a credential)'),
     AttributeDef(603, 'ciamCollectionCredential', 'string', 'meta', False,
-                 'A credential reference an import run\'s collection resolved (the reference, never the value)'),
+                 'A credential reference an import run\'s collection, or a collection attempt, resolved (the '
+                 'reference, never the value)'),
+    AttributeDef(604, 'ciamCollectionOutcome', 'enum:complete|incomplete|skipped', 'meta', True,
+                 'How a collection attempt ended: complete (its export read in full), incomplete (a call failed or '
+                 'was refused: nothing imported) or skipped (nothing collected: the identity check failed or the '
+                 'collector could not start)'),
+    AttributeDef(605, 'ciamCollectedAt', 'time', 'meta', True,
+                 'When a collection attempt read the live system'),
+    AttributeDef(606, 'ciamCollectionProblem', 'string', 'meta', False,
+                 'Why a collection attempt was incomplete or skipped: a failing call and its error output, a refused '
+                 'call, a bound reached, a failed identity check (credentials masked)'),
+    AttributeDef(607, 'ciamCollectedEnvironment', 'extdn', 'meta', True,
+                 'The environment a collection attempt read (absent: estate-wide, provider data such as regions and '
+                 'quotas); a DN, not a reference, like an import run\'s scopes'),
 )
 CLASSES = (
     ClassDef(29, 'ciamRunbook', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamLastValidated'),
@@ -89,6 +103,13 @@ CLASSES = (
              'Where `opsdir collect` reads an environment for an importer that needs more than the operator\'s own '
              'cloud login: a Terraform state object, or a product\'s admin endpoint (a URL, or the servers of a role '
              'on a port) with the credential and trust anchor it is read with: the operator\'s opt-in'),
+    ClassDef(129, 'ciamCollectionAttempt', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamImporter', 'ciamCollectionOutcome',
+                                                                        'ciamCollectedAt'),
+             ('ciamCollectedEnvironment', 'ciamCollectionProblem', 'ciamCollectionIdentity', 'ciamCollectedCall',
+              'ciamCollectionCredential'),
+             'The last attempt by `opsdir collect` to collect one importer\'s export of one environment (or estate-wide), '
+             'recorded under the change it ran with (ciamChangeRef) whatever the outcome: complete, or incomplete or '
+             'skipped with its problems and the calls it made, so a failed collection stays visible after the run'),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

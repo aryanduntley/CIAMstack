@@ -9,7 +9,10 @@
                                        region catalog): met, pending or not needed yet, and how to fetch each
   opsdir search [-b base] [-s scope] FILTER [attr...]
   opsdir report NAME [DN]              portability, unowned, blast-radius DN, and every domain's reports (expiring, keys ENV, …)
-  opsdir render ENV [-o dir]           e.g. prod environment of a cloud: CLOUD/ENV (default out/ here)
+  opsdir render ENV [-o dir] [--target ADAPTER=T[,T]]...
+                                       e.g. prod environment of a cloud: CLOUD/ENV (default out/ here); --target
+                                       picks the outputs of an adapter that offers several (pingfederate=admin-api,
+                                       terraform); default all, recorded in MANIFEST.json
   opsdir plan FROM TO [-o dir]         migration plan + change-request drafts for external parties
   opsdir migrate FROM TO [-o dir]      check both stacks, plan, render the target; exit 1 unless ready
   opsdir fix list FROM TO              the record changes the plan's findings offer (assisted fixes)
@@ -46,7 +49,9 @@
                                        resolved for the run, never stored), after a check that the login is the
                                        account the record names; a complete export goes through the import as
                                        `import` does (an incomplete one is never imported), and an applied one records
-                                       how it was collected; without --env: provider-wide data (regions, quotas);
+                                       how it was collected; with --change every attempt is recorded, failed ones
+                                       with their problems (`report collections`); without --env: provider-wide
+                                       data (regions, quotas);
                                        --list: the calls each collector starts with, nothing run; --save: keep the
                                        raw export (it may hold sensitive configuration: keep it on encrypted storage)
   opsdir data-profile --env CLOUD/ENV [LDIF] [--term NAME=ATTRIBUTE[=VALUE]]... [--at YYYYMMDDhhmmssZ] [-o FILE]
@@ -101,7 +106,10 @@ SUBCOMMANDS = (
                 (("-s", "--scope"), {"default": "sub", "choices": ["base", "one", "sub"]}),
                 (("filter",), {}), (("attrs",), {"nargs": "*"}))),
     ("report", ((("name",), {}), (("dn",), {"nargs": "?"}))),
-    ("render", ((("env",), {}), (("-o", "--out"), {}))),
+    ("render", ((("env",), {}), (("-o", "--out"), {}),
+                (("--target",), {"action": "append", "default": [], "metavar": "ADAPTER=T[,T]",
+                                 "help": "the render targets of an adapter (pingfederate=admin-api,terraform); "
+                                         "default: all"}))),
     ("plan", ((("src",), {}), (("dst",), {}), (("-o", "--out"), {}))),
     ("migrate", ((("src",), {}), (("dst",), {}), (("-o", "--out"), {}))),
     ("fix", ((("action",), {"choices": ["list", "show", "propose", "apply", "approved"]}), (("src",), {"nargs": "?"}),
@@ -277,8 +285,16 @@ def _cmd_report(conn, a, as_of):
     return format_table(r.rows, r.headers)
 
 
+def render_targets(given):
+    """{adapter: (target, ...)} of --target values (ADAPTER=T[,T]); refused when one isn't of that form."""
+    bad = [g for g in given if "=" not in g or not g.split("=", 1)[1]]
+    if bad:
+        raise SystemExit(f"--target takes ADAPTER=TARGET[,TARGET]: {', '.join(bad)}")
+    return {k: tuple(t for t in v.split(",") if t) for k, v in (g.split("=", 1) for g in given)}
+
+
 def _cmd_render(conn, a, as_of):
-    r = ops.render(conn, a.env)
+    r = ops.render(conn, a.env, render_targets(a.target) or None)
     out = write_tree(a.out or pathlib.Path("out") / r.label.replace("/", "-"), r.files)
     return "\n".join((f"rendered {len(r.files)} files for {r.dn} ({r.provider}) → {out}",
                       *(f"  UNBOUND role: {role}" for role in r.unbound)))
@@ -590,8 +606,22 @@ def _cmd_collect(conn, a, as_of):
                     seen[adapter.name][0])) for adapter, c in targets]
     lines = [line for adapter, c, o in outcomes for line in (
         (f"{adapter.name}/{c.importer}: skipped: {o}",) if isinstance(o, str) else _collected(conn, a, o))]
+    attempts = tuple(x for x in (collecting.attempt(f"{adapter.name}/{c.importer}", o, m.dn if m else None)
+                                 for adapter, c, o in outcomes) if x)
     failed = any(isinstance(o, str) or o.problems for _, _, o in outcomes)
-    return "\n".join(lines), (1 if failed else 0)
+    return "\n".join((*lines, *_attempts_recorded(conn, a, attempts, captured))), (1 if failed else 0)
+
+
+def _attempts_recorded(conn, a, attempts, at):
+    """What becomes of a collect's attempts: recorded under --change (not a dry run), else a word on the failed ones."""
+    if a.dry_run or not a.change:
+        failed = sum(x.outcome != "complete" for x in attempts)
+        return (f"{failed} failed collection(s) not recorded ({'dry run' if a.dry_run else 'no --change'})",) \
+            if failed else ()
+    if not attempts:
+        return ()
+    ops.record_attempts(conn, attempts, at, a.change)
+    return (f"{a.change}: {len(attempts)} collection attempt(s) recorded (opsdir report collections)",)
 
 
 def _cmd_census(conn, a, as_of):

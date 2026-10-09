@@ -8,11 +8,9 @@ as the Admin API writes it, so nothing the export holds is left out. Pure.
   (a resource that is one object, with no id: cn=settings; items without an id: cn=item-<n>)
 
 A resource type is imported as one group: an item the export no longer has is removed. Each environment renders them
-back as pingfederate/other-resources.json, in the bulk export's shape, with withheld values from the item's credential
+back as Admin API requests (opsdir_adapter_pingfederate.admin_api), with withheld values from the item's credential
 role, so a render imports back through the same importer unchanged.
 """
-import json
-
 from opsdir.core.directory import children, get, make_entry, merged_attrs, one, ou_entry, rdn_value
 from opsdir.core.jsondata import canonical, held_json
 from opsdir.core.naming import rdn_safe
@@ -72,15 +70,9 @@ def held_resources(d):
                  for r in children(d, c.dn, "pingfedResource"))
 
 
-def resources_file(m):
-    """{pingfederate/other-resources.json: text}: the resources held as is, for environment m, in the bulk export's
-    shape (nothing when there are none)."""
-    held = held_resources(m.d)
-    types = list(dict.fromkeys(one(r, "pingfedResourceType") for r in held))
-    ops = [{"operationType": "SAVE", "resourceType": t,
-            "items": [filled(m, r, held_json(r, "pingfedConfig"))
-                      for r in held if one(r, "pingfedResourceType") == t]} for t in types]
-    return {OUTPUT: json.dumps({"operations": ops}, indent=2) + "\n"} if ops else {}
+def resource_body(m, r):
+    """A resource held as is, as the Admin API takes it, for environment m (withheld values from its credential role)."""
+    return filled(m, r, held_json(r, "pingfedConfig"))
 
 
 def resource_label(r):

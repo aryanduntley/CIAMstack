@@ -55,6 +55,11 @@ CREDENTIALS = (
      None),
     ("pf-admin-password", "password", None, None, ["administration"], "text", None, "TRUE", 30, "per-environment",
      None, "cn=run.properties,ou=config-files,dc=ciam-ops", None),
+    # the passwords protecting the PKCS#12 files of PingFederate's key pairs (what an import of the file needs)
+    ("pf-signing-key-password", "password", None, None, ["signing"], "text", None, "TRUE", None, "carry-over",
+     "it protects the carried-over signing key's PKCS#12 file", None, None),
+    ("sso-tls-keystore-password", "password", None, None, ["tls"], "text", None, "TRUE", 365, "per-environment", None,
+     None, None),
     ("disk-encryption", "symmetric-key", "AES-256", 256, ["encryption", "key-wrapping"], "raw", "TRUE", "FALSE", 365,
      "per-environment", None, None, None),
     ("am-admin-password", "password", None, None, ["administration"], "text", None, "TRUE", 90, "per-environment",
@@ -89,10 +94,15 @@ CREDENTIALS = (
 )
 
 
+# the role of the password that protects a credential's material where it is kept
+PASSWORD_ROLES = {"pf-signing-key": "pf-signing-key-password", "sso-tls-keystore": "sso-tls-keystore-password"}
+
+
 def credentials():
     return tuple(spec("72-credentials", f"cn={role},{CREDS}", ["top", "ciamCredential"], cn=role,
                       ciamBindingRole=role, ciamCredentialType=kind, ciamKeyAlgorithm=alg, ciamKeySize=size,
-                      ciamKeyUsage=usage, ciamMaterialFormat=fmt, ciamHsmRequired=hsm, ciamExportable=export,
+                      ciamKeyUsage=usage, ciamMaterialFormat=fmt, ciamPasswordRole=PASSWORD_ROLES.get(role),
+                      ciamHsmRequired=hsm, ciamExportable=export,
                       ciamRotationDays=days, ciamContinuity=continuity, ciamContinuityReason=why, ciamUsedIn=used,
                       ciamRotationRunbook=f"cn={rb},{RB}" if rb else None, ciamOwner=owner("ciam-platform"))
                  for role, kind, alg, size, usage, fmt, hsm, export, days, continuity, why, used, rb in CREDENTIALS)

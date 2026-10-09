@@ -1,8 +1,9 @@
 """PingFederate's configuration read into the record. Pure.
 
 Reads the Admin API bulk export (GET /pf-admin-api/v1/bulk/export: {"metadata": {"pfVersion"}, "operations":
-[{"operationType", "resourceType", "items"}]}) and this adapter's own rendered files (pingfederate/*.json), so a
-render reads back as it was.
+[{"operationType", "resourceType", "items"}]}) and this adapter's own rendered requests
+(pingfederate/admin-api/requests.json: each request's body an item of the resource type its path names), so a render
+reads back as it was.
 
   /idp/spConnections              -> SAML service providers (saml2-sp integrations): entity ID, default ACS URL and
                                      binding, the claims of the attribute contract (linked to user-schema records),
@@ -46,7 +47,9 @@ from opsdir.domains.federation.services import identity_services, integrations
 from opsdir.domains.messaging.naming import EXTERNAL_SERVICES, MAIL_SENDERS
 from opsdir.domains.pki.credentials import certificates_by_fingerprint
 from opsdir.domains.pki.naming import CERTIFICATES
+from opsdir.core.jsondata import canonical
 from .datastores import data_store_groups
+from .withheld import withheld_settings
 from .naming import (CAPTCHA_PROVIDERS, CONTRACTS, DATA_STORES, FRAGMENTS, IDP_ADAPTERS, NOTIFICATION_PUBLISHERS,
                      OIDC_POLICIES, PINGFEDERATE, POLICIES, SELECTORS, SETTINGS, TOKEN_MANAGERS, VALIDATORS)
 from .generic import resource_groups
@@ -57,7 +60,8 @@ from .objects import CONNECTION, KEY_PAIR, ref_dn
 from .plugins import KINDS, plugin_groups
 from .policies import policy_groups
 from .naming import SERVER_ROLES
-from .render import BINDINGS, CLIENT_AUTH, GRANT_TYPES
+from .admin_api import request_type
+from .connections import BINDINGS, CLIENT_AUTH, GRANT_TYPES
 
 RESOURCES = MappingProxyType({
     "/idp/spConnections": "sp", "/sp/idpConnections": "idp", "/oauth/clients": "client",
@@ -65,12 +69,6 @@ RESOURCES = MappingProxyType({
     **{k.resource: kind for kind, k in KINDS.items()}, "/authenticationPolicyContracts": "contract",
     "/authenticationPolicies/default": "policy", "/authenticationPolicies/fragments": "fragment",
     "/oauth/openIdConnect/policies": "oidc-policy", "/oauth/authServerSettings": "auth-server"})
-RENDERED = MappingProxyType({
-    "sp-connections.json": "sp", "idp-connections.json": "idp", "oidc-clients.json": "client",
-    "data-stores.json": "datastore", **{k.output: kind for kind, k in KINDS.items()},
-    "authentication-policy-contracts.json": "contract", "authentication-policies.json": "policy",
-    "authentication-policy-fragments.json": "fragment", "oidc-policies.json": "oidc-policy",
-    "auth-server-settings.json": "auth-server"})
 # the kinds of objects other objects name by id (opsdir_adapter_pingfederate.objects)
 NAMED_KINDS = ("datastore", *KINDS, "contract", "fragment", "oidc-policy")
 KEY_ROLES = MappingProxyType({"signing": ("saml-signing", "pf-signing-key"), "ssl": ("tls-server", "sso-tls-keystore")})
@@ -93,23 +91,29 @@ DEFAULTS = MappingProxyType({"SECRET": "client_secret_basic", "CLIENT_CERT": "tl
 
 
 # ------------------------------------------------------------------ reading the export
+def _operations(doc):
+    """A document's operations: a bulk export's, or a rendered requests document's (one per request)."""
+    if isinstance(doc.get("requests"), list):                     # a key pair's import holds no record fact
+        return [{"operationType": "SAVE", "resourceType": request_type(r), "items": [r.get("body")]}
+                for r in doc["requests"] if isinstance(r, dict) and not str(r.get("path", "")).endswith("/import")]
+    return [op for op in doc.get("operations") or () if isinstance(op, dict)]
+
+
 def resources(files):
     """({kind: items}, {resource type not modeled: items}, PingFederate version, unreadable paths) from the export."""
     parsed = {p: json_document(t) for p, t in files.items() if p.endswith(".json")}
-    bulk = [op for doc in parsed.values() if isinstance(doc, dict)
-            for op in doc.get("operations") or () if isinstance(op, dict)]
-    rendered = [(RENDERED[p.rsplit("/", 1)[-1]], item) for p, doc in parsed.items()
-                if p.rsplit("/", 1)[-1] in RENDERED for item in (doc if isinstance(doc, list) else [doc])]
+    bulk = [op for doc in parsed.values() if isinstance(doc, dict) for op in _operations(doc)]
     found = ((RESOURCES.get(op.get("resourceType")), item) for op in bulk if op.get("operationType", "SAVE") == "SAVE"
              for item in op.get("items") or ())
-    pairs = [(k, i) for k, i in (*found, *rendered) if k and isinstance(i, dict)]
+    pairs = [(k, i) for k, i in found if k and isinstance(i, dict)]
     return ({kind: tuple(i for k, i in pairs if k == kind) for kind in (*RESOURCES.values(),)},
             {t: tuple(i for op in bulk if op.get("resourceType") == t and op.get("operationType", "SAVE") == "SAVE"
                       for i in op.get("items") or () if isinstance(i, dict))
              for t in dict.fromkeys(op.get("resourceType") for op in bulk)
              if isinstance(t, str) and t not in RESOURCES},
-            next((doc["metadata"].get("pfVersion") for doc in parsed.values()
-                  if isinstance(doc, dict) and isinstance(doc.get("metadata"), dict)), None),
+            next((doc["metadata"].get("pfVersion") if isinstance(doc.get("metadata"), dict) else doc["pingFederate"]
+                  for doc in parsed.values() if isinstance(doc, dict)
+                  and (isinstance(doc.get("metadata"), dict) or doc.get("pingFederate"))), None),
             tuple(p for p, doc in parsed.items() if doc is None))
 
 
@@ -230,7 +234,22 @@ def signing_of(sp, keys):
     return tuple(filter(None, (keys.get(ref),)))
 
 
-def _sp(d, sp, certs, keys, user_attrs, held, dn, name, served):
+HELD = ("pingfedConfig", "pingfedWithheld")
+
+
+def held_settings(item, patterns):
+    """The attributes holding a connection's or client's own PingFederate settings (secrets withheld), as the Admin API
+    writes them: what a render puts the record's standard facts back into."""
+    config, withheld = withheld_settings(item, patterns)
+    return {"pingfedConfig": (canonical(config),), "pingfedWithheld": withheld}
+
+
+def _held_notice(label, imported, held):
+    return ((f"{label}: its secrets are withheld; set pingfedCredentialRole to the secret role that holds them",)
+            if imported["pingfedWithheld"] and not (held is not None and one(held, "pingfedCredentialRole")) else ())
+
+
+def _sp(d, sp, certs, keys, user_attrs, held, dn, name, served, patterns):
     browser = sp.get("spBrowserSso") or {}
     endpoints = browser.get("ssoServiceEndpoints") or ()
     acs = next((e for e in endpoints if e.get("isDefault")), endpoints[0] if endpoints else {})
@@ -238,13 +257,14 @@ def _sp(d, sp, certs, keys, user_attrs, held, dn, name, served):
                            values(held, "ciamSamlBinding") if held else ())
     used = linked(held, (certs[fp].dn for fp in (*signing_of(sp, keys), *certs_of(sp)) if fp in certs))
     imported = {"ciamEntityId": (sp.get("entityId"),), "ciamAcsUrl": tuple(filter(None, (acs.get("url"),))),
-                "ciamSamlBinding": binding, "ciamUsesCertificate": used}
-    entry = _merged(held, dn, name, "saml2-sp", imported, (*OWNED["saml2-sp"], "ciamUsesCertificate"), served)
+                "ciamSamlBinding": binding, "ciamUsesCertificate": used, **held_settings(sp, patterns)}
+    entry = _merged(held, dn, name, "saml2-sp", imported, (*OWNED["saml2-sp"], "ciamUsesCertificate", *HELD), served,
+                    ("pingfedHeldSettings",))
     mapping = next(iter(browser.get("adapterMappings") or ()), {})
     claims, notices = _claims(d, dn, held, browser.get("attributeContract") or {},
                               mapping.get("attributeContractFulfillment") or {}, user_attrs, f"SP connection {name}")
     rest = _others(d, dn, held, claims)
-    return (entry, *claims, *rest), notices
+    return (entry, *claims, *rest), (*notices, *_held_notice(f"SP connection {name}", imported, held))
 
 
 def certs_of(conn):
@@ -262,19 +282,22 @@ def _others(d, dn, held, replaced):
                  and not (replaced and within(e.norm, claims_base)))
 
 
-def _idp(d, idp, certs, held, dn, name, served):
+def _idp(d, idp, certs, held, dn, name, served, patterns):
     browser = idp.get("idpBrowserSso") or {}
     jit = ((browser.get("jitProvisioning") or {}).get("userRepository") or {}).get("baseDn")
     used = linked(held, (certs[fp].dn for fp in certs_of(idp) if fp in certs))
     cid = idp.get("id")
     imported = {"ciamEntityId": (idp.get("entityId"),), "ciamJitBaseDn": tuple(filter(None, (jit,))),
-                "ciamUsesCertificate": used, "pingfedConnectionId": tuple(filter(None, (cid,)))}
-    owned = (*OWNED["saml2-idp"], *(("ciamJitBaseDn",) if jit else ()), "ciamUsesCertificate", "pingfedConnectionId")
-    return (_merged(held, dn, name, "saml2-idp", imported, owned, served, ("pingfedConnection",) if cid else ()),
-            *_others(d, dn, held, ())), ()
+                "ciamUsesCertificate": used, "pingfedConnectionId": tuple(filter(None, (cid,))),
+                **held_settings(idp, patterns)}
+    owned = (*OWNED["saml2-idp"], *(("ciamJitBaseDn",) if jit else ()), "ciamUsesCertificate", "pingfedConnectionId",
+             *HELD)
+    return (_merged(held, dn, name, "saml2-idp", imported, owned, served,
+                    (*(("pingfedConnection",) if cid else ()), "pingfedHeldSettings")),
+            *_others(d, dn, held, ())), _held_notice(f"IdP connection {name}", imported, held)
 
 
-def _client(d, client, held, dn, name, served, exported):
+def _client(d, client, held, dn, name, served, exported, patterns):
     grants, odd_grants = _standard(client.get("grantTypes") or (), PF_GRANTS, values(held, "ciamGrantType") if held else ())
     auth_type = (client.get("clientAuth") or {}).get("type")
     auth, _ = _standard([auth_type] if auth_type else [], PF_AUTH, values(held, "ciamTokenAuthMethod") if held else ())
@@ -283,17 +306,20 @@ def _client(d, client, held, dn, name, served, exported):
                 "ciamPkceRequired": ("TRUE",) if client.get("requireProofKeyForCodeExchange") else (),
                 "ciamScope": tuple(client.get("restrictedScopes") or ()) if client.get("restrictScopes") else ()}
     uses, unlinked = client_links(d, client, exported)
-    entry = _merged(held, dn, name, "oidc-client", {**imported, "pingfedUses": uses},
-                    (*OWNED["oidc-client"], "pingfedUses"), served, ("pingfedClient",) if uses else ())
+    imported = {**imported, "pingfedUses": uses, **held_settings(client, patterns)}
+    entry = _merged(held, dn, name, "oidc-client", imported, (*OWNED["oidc-client"], "pingfedUses", *HELD), served,
+                    (*(("pingfedClient",) if uses else ()), "pingfedHeldSettings"))
     secret = client.get("clientAuth") or {}
     notices = (*unlinked, *((f"client {client.get('clientId')}: grant types with no single standard name, not recorded: "
                   f"{', '.join(odd_grants)}",) if odd_grants else ()),
-               *((f"client {client.get('clientId')}: its secret is not imported; each environment binds it",)
-                 if secret.get("secret") or secret.get("encryptedSecret") else ()))
+               *((f"client {client.get('clientId')}: its secret is not imported; set pingfedCredentialRole to the "
+                   "secret role each environment binds it with",)
+                 if (secret.get("secret") or secret.get("encryptedSecret"))
+                 and not (held is not None and one(held, "pingfedCredentialRole")) else ()))
     return (entry, *_others(d, dn, held, ())), notices
 
 
-def integration_groups(d, found, certs, exported):
+def integration_groups(d, found, certs, exported, patterns=()):
     """(groups, notices, {("idp-connection", id): DN}): an integration for every SP connection, IdP connection and
     OAuth client in the export (a client linked to the token manager and OIDC policy it names: exported {(kind, id):
     DN}), and where each IdP connection's is (what policies that name it link to)."""
@@ -315,9 +341,9 @@ def integration_groups(d, found, certs, exported):
         return (*acc, (kind, item, held, name, held.dn if held else f"cn={name},{INTEGRATIONS}"))
     placed = reduce(place, wanted, ())
     keys = {kp.get("id"): fingerprint(kp.get("sha256Fingerprint")) for kp in found["signing"]}
-    built = tuple(_sp(d, item, certs, keys, user_attrs, held, dn, name, served) if kind == "sp"
-                  else _idp(d, item, certs, held, dn, name, served) if kind == "idp"
-                  else _client(d, item, held, dn, name, served, exported)
+    built = tuple(_sp(d, item, certs, keys, user_attrs, held, dn, name, served, patterns) if kind == "sp"
+                  else _idp(d, item, certs, held, dn, name, served, patterns) if kind == "idp"
+                  else _client(d, item, held, dn, name, served, exported, patterns)
                   for kind, item, held, name, dn in placed)
     return (tuple((dn, entries) for (_, _, _, _, dn), (entries, _) in zip(placed, built)),
             (*(n for _, ns in built for n in ns),
@@ -334,7 +360,7 @@ def read_export(files, d, patterns, at=None):
     keys = {fingerprint(kp.get("sha256Fingerprint")): kp.get("id") for k in ("signing", "ssl") for kp in found[k]}
     named_ = {**{(kind, item.get("id")): ref_dn(kind, item.get("id")) for kind in NAMED_KINDS for item in found[kind]},
               **{(KEY_PAIR, keys[fp]): c.dn for fp, c in certs.items() if fp in keys}}
-    groups, notices, connections = integration_groups(d, found, certs, named_)
+    groups, notices, connections = integration_groups(d, found, certs, named_, patterns)
     exported = {**named_, **connections}
     stores, store_notices = data_store_groups(d, found["datastore"], patterns)
     plugins, plugin_notices = plugin_groups(d, found, patterns, exported)

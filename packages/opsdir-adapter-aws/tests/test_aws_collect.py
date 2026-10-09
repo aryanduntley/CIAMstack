@@ -2,7 +2,8 @@
 listings in the environment's VPC and region, then each item's details), exactly the operations pinned below and none
 that returns secret material (projections leave out environment variables, inputs and custom headers); per-bucket and
 per-secret calls only for what the record holds; the collected export reads as the same export saved by hand; FIPS
-endpoints; Terraform state read from the collection source's object or with terraform state pull."""
+endpoints; Terraform state read from the collection source's object or with terraform state pull; CloudFormation stacks
+named by collection sources (and their nested stacks) read as the README's script saves them."""
 import importlib.util
 import json
 import pathlib
@@ -14,13 +15,20 @@ from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import LdifRecord
 from opsdir_adapter_aws.adapter import ADAPTER
 from opsdir_adapter_aws.cli import read_cli_inventory
-from opsdir_adapter_aws.collect import COLLECTORS, PROJECTIONS, identity_check, inventory_steps, state_steps
+from opsdir_adapter_aws.cloudformation import read_cloudformation
+from opsdir_adapter_aws.cli import cli_resources
+from opsdir_adapter_aws.collect import (COLLECTORS, PROJECTIONS, identity_check, inventory_problems, inventory_steps,
+                                        stack_of, stack_problems, stack_steps, state_steps)
 
 # the CLI reader's own fixtures (its record and the outputs saved by hand), loaded by path: one source of truth
 _SPEC = importlib.util.spec_from_file_location("aws_cli_fixtures", pathlib.Path(__file__).with_name("test_aws_cli.py"))
 _CLI = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_CLI)
 LB, SECRET, VPC, _outputs, _record = _CLI.LB, _CLI.SECRET, _CLI.VPC, _CLI._outputs, _CLI._record
+_SPEC_CFN = importlib.util.spec_from_file_location("aws_cfn_fixtures",
+                                                   pathlib.Path(__file__).with_name("test_aws_cloudformation.py"))
+_CFN = importlib.util.module_from_spec(_SPEC_CFN)
+_SPEC_CFN.loader.exec_module(_CFN)
 
 ACCOUNT = "111122223333"
 # every (service, operation) the cli-inventory collector may run: reviewed, read-only, no secret values
@@ -116,7 +124,8 @@ def _run(call):
 
 def test_the_collectors_are_declared_on_the_adapter():
     assert [(c.importer, c.scope) for c in ADAPTER.collectors] == [("cli-inventory", "environment"),
-                                                                    ("terraform-state", "environment")]
+                                                                    ("terraform-state", "environment"),
+                                                                    ("cloudformation", "environment")]
 
 
 def test_the_login_must_be_the_account_the_cloud_records():
@@ -185,3 +194,147 @@ def test_terraform_state_from_the_source_object_or_terraform_state_pull():
     ((path, call),) = state_steps(m.d, with_source, {}, {"terraform_dir": "/work/ciam-prod"})
     assert (path, call.argv) == ("main/prod/terraform.tfstate",
                                  ("terraform", "-chdir=/work/ciam-prod", "state", "pull"))
+
+
+STACKS = {"cloudformation describe-stacks", "cloudformation list-stack-resources", "cloudformation get-template"}
+NET_ARN = f"arn:aws:cloudformation:us-east-1:{ACCOUNT}:stack/ciam-prod-network/0a1b-2c3d"
+
+
+def _with_sources(m, *refs):
+    sources = tuple(make_entry(f"cn=stack-{n},ou=bindings,env=prod,cloud=main,ou=environments,dc=ciam-ops",
+                               ("top", "ciamCollectionSource"),
+                               {"cn": (f"stack-{n}",), "ciamBindingRole": (f"collect-stack-{n}",),
+                                "ciamImporter": ("aws/cloudformation",), "ciamSourceRef": (ref,)})
+                    for n, ref in enumerate(refs))
+    return m._replace(bindings=(*m.bindings, *sources))
+
+
+def _stack_answer(argv):
+    """What the AWS CLI prints for a stack call, from the CloudFormation reader's own fixtures; the app stack nests the
+    network stack."""
+    saved = {p.split("/")[2] + "/" + p.split("/")[3]: t for p, t in _CFN._files().items()}
+    folder = "network" if "ciam-prod-network" in argv[argv.index("--stack-name") + 1] else "app"
+    op = argv[2]
+    if op == "describe-stacks":
+        return saved[f"{folder}/stack.json"], None
+    if op == "get-template":
+        return (saved["app/template.json"] if folder == "app" else
+                json.dumps({"TemplateBody": saved["network/template.yaml"]})), None
+    listed = json.loads(saved[f"{folder}/resources.json"])
+    nested = [{"LogicalResourceId": "Network", "PhysicalResourceId": NET_ARN, "ResourceType": "AWS::CloudFormation::Stack",
+               "ResourceStatus": "CREATE_COMPLETE"}] if folder == "app" else []
+    return json.dumps({"StackResourceSummaries": [*listed["StackResourceSummaries"], *nested]}), None
+
+
+def test_stacks_named_by_collection_sources_and_their_nested_stacks_are_read_as_saved_by_hand():
+    m = _model(ciamAccountRef=ACCOUNT)
+    assert stack_steps(m.d, m, {}, {}) == () and stack_problems(m.d, m, {}) == ()      # no source: nothing to read
+    m = _with_sources(m, "cfn://ciam-prod-app")
+    c = collect("aws/cloudformation", COLLECTORS[2], m.d, m, lambda call: _stack_answer(call.argv))
+    assert c.problems == ()
+    assert sorted(c.files) == [f"main/prod/{s}/{f}" for s in ("ciam-prod-app", "ciam-prod-network")
+                               for f in ("resources.json", "stack.json", "template.json")]
+    ran = [shlex.split(x.provenance) for x in c.calls]
+    assert {" ".join(a[1:3]) for a in ran} == STACKS and all(a[-4:] == ["--output", "json", "--region", "us-east-1"]
+                                                             for a in ran)
+    described = next(a for a in ran if a[2] == "describe-stacks")
+    assert described[described.index("--query") + 1] == PROJECTIONS["stack"] and "Outputs" not in PROJECTIONS["stack"]
+    assert next(a for a in ran if a[2] == "get-template")[5:7] == ["--template-stage", "Processed"]
+    assert ["--stack-name", NET_ARN] == next(a for a in ran if NET_ARN in a and a[2] == "describe-stacks")[3:5]
+    by_hand = read_cloudformation(_CFN._files(), _CFN._record(), ())
+    collected = read_cloudformation(c.files, _CFN._record(), ())
+    assert collected.groups == by_hand.groups
+
+
+def test_a_source_must_name_a_stack_in_the_clouds_account():
+    assert stack_of("cfn://ciam-prod-app") == ("ciam-prod-app", "ciam-prod-app", None, None)
+    assert stack_of(NET_ARN) == ("ciam-prod-network", NET_ARN, "us-east-1", ACCOUNT)
+    assert [stack_of(r) for r in ("cfn://-oops", "cfn://a;b", "s3://bucket/key", None)] == [None] * 4
+    other = NET_ARN.replace(ACCOUNT, "999999999999").replace("us-east-1", "us-west-2")
+    m = _with_sources(_model(ciamAccountRef=ACCOUNT), "cfn://--debug", other, NET_ARN.replace("us-east-1", "us-west-2"))
+    assert stack_problems(m.d, m, {}) == (
+        "collection source `stack-0`: cfn://--debug isn't a stack (cfn://<stack name>, or the stack's ARN)",
+        f"collection source `stack-1`: {other} is a stack in account 999999999999, the cloud records {ACCOUNT}")
+    (_, call), *_ = stack_steps(m.d, m, {}, {})                 # only the stack in the cloud's account, in its region
+    assert call.argv[-2:] == ("--region", "us-west-2") and "999999999999" not in " ".join(call.argv)
+
+
+ORG, OU, ROOT = "o-abcdefghij", "ou-ab12-cdefgh34", "r-ab12"
+ORG_OPERATIONS = {("sts", "get-caller-identity"), ("organizations", "describe-organization"),
+                  ("organizations", "list-parents"), ("organizations", "list-policies-for-target"),
+                  ("organizations", "describe-policy")}
+ATTACHED = {(ACCOUNT, "SERVICE_CONTROL_POLICY"): ["p-fence0001"], (OU, "SERVICE_CONTROL_POLICY"): ["p-FullAWSAccess"],
+            (ROOT, "SERVICE_CONTROL_POLICY"): ["p-FullAWSAccess"], (OU, "RESOURCE_CONTROL_POLICY"): ["p-rcpdata01"]}
+
+
+def _policy(pid):
+    kind = "RESOURCE_CONTROL_POLICY" if pid == "p-rcpdata01" else "SERVICE_CONTROL_POLICY"
+    deny = {"Sid": "DenyKeyDeletion", "Effect": "Deny", "Action": "kms:ScheduleKeyDeletion", "Resource": "*"}
+    return {"Policy": {"PolicySummary": {"Arn": f"arn:aws:organizations::999988887777:policy/{ORG}/"
+                                                f"{kind.lower()}/{pid}", "Id": pid, "Name": pid, "Type": kind},
+                       "Content": json.dumps({"Version": "2012-10-17", "Statement": [deny]})}}
+
+
+def _org_answer(argv, org=ORG):
+    """The organization's answers to the profile's calls (the account in an OU under the root; RCPs enabled only on the
+    OU's listing), else the environment's (_answer)."""
+    if "--profile" not in argv:
+        return _answer(argv)
+    arg, op = dict(zip(argv[3::1], argv[4::1])), tuple(argv[1:3])
+    if op == ("sts", "get-caller-identity"):
+        return json.dumps({"Account": "999988887777", "Arn": "arn:aws:sts::999988887777:assumed-role/OrgRead/me"}), None
+    if op == ("organizations", "describe-organization"):
+        return json.dumps({"Organization": {"Id": org, "MasterAccountId": "999988887777"}}), None
+    if op == ("organizations", "list-parents"):
+        parent = {ACCOUNT: (OU, "ORGANIZATIONAL_UNIT"), OU: (ROOT, "ROOT")}[arg["--child-id"]]
+        return json.dumps({"Parents": [{"Id": parent[0], "Type": parent[1]}]}), None
+    if op == ("organizations", "list-policies-for-target"):
+        return json.dumps({"Policies": [{"Id": p} for p in ATTACHED.get((arg["--target-id"], arg["--filter"]), [])]}), None
+    return json.dumps(_policy(arg["--policy-id"])), None
+
+
+def _with_profile(m, *profiles):
+    return m._replace(bindings=(*m.bindings, *(
+        make_entry(f"cn=org-{n},ou=bindings,env=prod,cloud=main,ou=environments,dc=ciam-ops", ("top", "ciamCollectionSource"),
+                   {"cn": (f"org-{n}",), "ciamBindingRole": (f"collect-org-{n}",), "ciamImporter": ("aws/cli-inventory",),
+                    "ciamSourceRef": (f"aws-profile://{p}",)}) for n, p in enumerate(profiles))))
+
+
+def test_the_organizations_policies_on_the_account_and_above_it_through_the_named_profile():
+    m = _with_profile(_model(ciamAccountRef=ACCOUNT, ciamOrganizationRef=ORG), "org-mgmt")
+    assert inventory_problems(m.d, m, {}) == ()
+    c = collect("aws/cli-inventory", COLLECTORS[0], m.d, m, lambda call: _org_answer(call.argv))
+    assert c.problems == ()
+    ran = [shlex.split(x.provenance) for x in c.calls]
+    profiled = [a for a in ran if "--profile" in a]
+    assert {tuple(a[1:3]) for a in ran} <= OPERATIONS | ORG_OPERATIONS
+    assert {tuple(a[1:3]) for a in profiled} == ORG_OPERATIONS and all(
+        a[a.index("--profile") + 1] == "org-mgmt" for a in profiled)
+    assert not [a for a in ran if "--profile" not in a and a[1] == "organizations"]   # never under the env's login
+    assert sorted(" ".join(a[3:5]) for a in profiled if a[2] == "list-parents") == [f"--child-id {ACCOUNT}",
+                                                                                   f"--child-id {OU}"]
+    assert sum(a[2] == "list-policies-for-target" for a in profiled) == 6                # 3 targets x 2 types
+    assert sorted(p for p in c.files if "/org/" in p) == [
+        "main/prod/org/p-FullAWSAccess.json", "main/prod/org/p-fence0001.json", "main/prod/org/p-rcpdata01.json"]
+    assert sum(a[2] == "describe-policy" for a in profiled) == 3                         # inherited once each
+    resources, _ = cli_resources({p.split("/", 2)[2]: t for p, t in c.files.items() if "/org/" in p}, None)
+    assert {r.ref.rsplit("/", 1)[-1] for r in resources if r.kind == "guardrail"} >= {"p-fence0001"}
+
+
+def test_a_profile_signed_in_to_another_organization_reads_no_policy_and_imports_nothing():
+    m = _with_profile(_model(ciamAccountRef=ACCOUNT, ciamOrganizationRef=f"arn:aws:organizations::999988887777:"
+                                                                         f"organization/{ORG}"), "org-mgmt")
+    c = collect("aws/cli-inventory", COLLECTORS[0], m.d, m, lambda call: _org_answer(call.argv, org="o-zzzzzzzzzz"))
+    assert c.files is None and c.problems == (
+        f"profile org-mgmt is signed in to organization o-zzzzzzzzzz, the cloud records {ORG}: its policies are not read",)
+    assert not [x for x in c.calls if "list-policies-for-target" in x.provenance]
+
+
+def test_an_organization_profile_source_that_cant_be_used_safely():
+    m = _model(ciamAccountRef=ACCOUNT)
+    assert inventory_problems(m.d, _with_profile(m, "org-mgmt"), {}) == (
+        "the cloud records no AWS organization (ciamOrganizationRef o-…) to check the profile against",)
+    m = _model(ciamAccountRef=ACCOUNT, ciamOrganizationRef=ORG)
+    assert inventory_problems(m.d, _with_profile(m, "a", "--debug"), {}) == (
+        "more than one aws-profile:// collection source: name one profile for the organization's policies",
+        "aws-profile://--debug: not a profile name opsdir passes to the AWS CLI")

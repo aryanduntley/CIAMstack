@@ -8,16 +8,42 @@ from .capture import rendered_config
 from .registry import ADAPTERS, FORMATS, environment, services
 
 
-def render_parts(d, spec, installed=ADAPTERS):
+def chosen_targets(adapters, wanted=None):
+    """{adapter name: the render targets chosen} for the adapters that declare targets: those wanted ({adapter: (names,
+    ...)}), by default an adapter's targets not marked only-when-asked; refused for an adapter that declares none here
+    or a target it doesn't declare, naming those it does."""
+    wanted = wanted or {}
+    declared = {a.name: tuple(t[0] for t in a.render_targets) for a in adapters if a.render_targets}
+    defaults = {a.name: tuple(t[0] for t in a.render_targets if len(t) < 3 or t[2]) for a in adapters
+                if a.render_targets}
+    unknown = sorted(name for name in wanted if name not in declared)
+    if unknown:
+        raise SystemExit(f"no render targets to choose for {', '.join(unknown)} here (adapters with targets: "
+                         f"{', '.join(sorted(declared)) or 'none'})")
+    wrong = sorted(f"{name}={t} (it renders: {', '.join(declared[name])})" for name, ts in wanted.items()
+                   for t in ts if t not in declared[name])
+    if wrong:
+        raise SystemExit(f"unknown render targets: {', '.join(wrong)}")
+    return {name: tuple(t for t in names if t in wanted.get(name, defaults[name])) for name, names in declared.items()}
+
+
+def _env_files(a, m, found, targets):
+    return a.render_env(m, found, targets[a.name]) if a.name in targets else a.render_env(m, found)
+
+
+def render_parts(d, spec, installed=ADAPTERS, wanted=None):
     """(EnvModel as the environment sees the record (its overrides applied), applicable adapters,
-    environment-neutral files, environment-specific files)."""
+    environment-neutral files, environment-specific files, the render targets chosen); wanted: {adapter: (target,
+    ...)} (default: every target)."""
     shared, adapters = environment(d, spec, installed)
     m = as_seen(shared)
     if not any(a.kind == "provider" for a in adapters):
         raise SystemExit(f"no renderer for provider {m.provider}")
+    targets = chosen_targets(adapters, wanted)
     neutral = {p: text for a in adapters if a.render_neutral for p, text in a.render_neutral(m.d).items()}
-    specific = {p: text for a in adapters if a.render_env for p, text in a.render_env(m, services(installed)).items()}
-    return m, adapters, neutral, specific
+    found = services(installed)
+    specific = {p: text for a in adapters if a.render_env for p, text in _env_files(a, m, found, targets).items()}
+    return m, adapters, neutral, specific, targets
 
 
 def _declared(adapters, path):
@@ -39,17 +65,19 @@ def file_formats(adapters, paths, formats=FORMATS):
     return {p: name for p, (_, name) in found.items()}
 
 
-def assemble(m, adapters, neutral, specific):
-    """The environment's files: the adapters' outputs, the captured config files it receives, and the MANIFEST."""
+def assemble(m, adapters, neutral, specific, targets=None):
+    """The environment's files: the adapters' outputs, the captured config files it receives, and the MANIFEST (with
+    the render targets chosen)."""
     config = rendered_config(m.d, m)
     clash = sorted(set(config.files) & {*neutral, *specific})
     if clash:
         raise SystemExit(f"captured files and rendered files share paths: {', '.join(clash)}")
     formats = {**file_formats(adapters, (*neutral, *specific)), **config.formats}
     return {**neutral, **specific, **config.files,
-            "MANIFEST.json": manifest(m, neutral, specific, formats, config.files, config.scopes, config.not_rendered)}
+            "MANIFEST.json": manifest(m, neutral, specific, formats, config.files, config.scopes, config.not_rendered,
+                                      targets)}
 
 
-def render_env(d, spec, installed=ADAPTERS):
-    m, adapters, neutral, specific = render_parts(d, spec, installed)
-    return m, assemble(m, adapters, neutral, specific)
+def render_env(d, spec, installed=ADAPTERS, wanted=None):
+    m, adapters, neutral, specific, targets = render_parts(d, spec, installed, wanted)
+    return m, assemble(m, adapters, neutral, specific, targets)

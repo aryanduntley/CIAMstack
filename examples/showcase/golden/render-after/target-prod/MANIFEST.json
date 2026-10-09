@@ -2,6 +2,12 @@
   "environment": "env=prod,cloud=target,ou=environments,dc=ciam-ops",
   "provider": "azure",
   "unbound_roles": [],
+  "render_targets": {
+    "pingfederate": [
+      "admin-api",
+      "terraform"
+    ]
+  },
   "files": {
     "am/global/Realms/partners.json": {
       "scope": "environment-neutral",
@@ -164,80 +170,30 @@
       "format": "json",
       "sha256": "a334487beac8c8897703a40a7983df76743ebbce03efd0f131eb78cf191743df"
     },
-    "pingfederate/access-token-managers.json": {
+    "pingfederate/admin-api/requests.json": {
       "scope": "environment-specific",
       "format": "json",
-      "sha256": "7067bac30d836172489d77aba371e4d542812b54e248da80dd479f66be73654c"
-    },
-    "pingfederate/auth-server-settings.json": {
-      "scope": "environment-neutral",
-      "format": "json",
-      "sha256": "153cbf990240295ae02df11d5a6f6c1ca911f3bd4aeb9dde608af6ce63364ae5"
-    },
-    "pingfederate/authentication-policies.json": {
-      "scope": "environment-neutral",
-      "format": "json",
-      "sha256": "1623a6a79f99247a258d926d8ec62fb3d17b29a3c61d08cabf26f67c1fa211aa"
-    },
-    "pingfederate/authentication-policy-contracts.json": {
-      "scope": "environment-neutral",
-      "format": "json",
-      "sha256": "0e524f18a93aa510c329fd7394991ddab3f666fbf16476c487c54a6175265e5e"
-    },
-    "pingfederate/captcha-providers.json": {
-      "scope": "environment-specific",
-      "format": "json",
-      "sha256": "6bd2bc029fc6507f5904ea54be6d9afd8f98a3c804a8adc8cce5cb806b08d81e"
+      "sha256": "48b07af5da132da0d561cf137ba2c1db62c9cbadb28182c1908e7e1ab66f4d78"
     },
     "pingfederate/cluster/jgroups.properties": {
       "scope": "environment-specific",
       "format": "java-properties",
       "sha256": "ebf232c163ecf0ed625961fbf64735969c963c3d36544e5bbcf85aca2169fe0d"
     },
-    "pingfederate/data-stores.json": {
+    "pingfederate/terraform/main.tf": {
       "scope": "environment-specific",
-      "format": "json",
-      "sha256": "1060ac1e5318799b44440637be2b7dc07f631cea0820a9cad995e8e1ebbdb4f2"
+      "format": "hcl",
+      "sha256": "dd9683b93e0818c0e697d722ec598b188d8364901db03317f1359b914f804515"
     },
-    "pingfederate/idp-adapters.json": {
+    "pingfederate/terraform/variables.tf": {
       "scope": "environment-specific",
-      "format": "json",
-      "sha256": "465041765f6361e825dff9a7a5823d816a5621cd27fc060a86d14b10bee101c5"
+      "format": "hcl",
+      "sha256": "ed64727cc265c3730fa051d353acdfb9d2daa48b292bc87d4e178f186ee01a29"
     },
-    "pingfederate/idp-connections.json": {
-      "scope": "environment-neutral",
-      "format": "json",
-      "sha256": "23f5a0a78e550a31fe3724e180f479e965295fa0b7c8f743cca973e59657a214"
-    },
-    "pingfederate/notification-publishers.json": {
+    "pingfederate/terraform/versions.tf": {
       "scope": "environment-specific",
-      "format": "json",
-      "sha256": "617050909a8ad390d4894f06a879f272b5f66a94e41b29ba345dd25db44f7205"
-    },
-    "pingfederate/oidc-clients.json": {
-      "scope": "environment-neutral",
-      "format": "json",
-      "sha256": "9916e05b722f67db0e8fd449a47e9000f0e597630021df4c7091778d426444eb"
-    },
-    "pingfederate/oidc-policies.json": {
-      "scope": "environment-neutral",
-      "format": "json",
-      "sha256": "2284c732e9f2ebd13e15a700ae86717cbb2c1da8d8d39c4c548e8a3d9b85c9ce"
-    },
-    "pingfederate/other-resources.json": {
-      "scope": "environment-specific",
-      "format": "json",
-      "sha256": "7a37deaa4c8ab8e76de8f4679124c2a9bfd767ba6cdf96e57cf29d327287d6eb"
-    },
-    "pingfederate/password-credential-validators.json": {
-      "scope": "environment-specific",
-      "format": "json",
-      "sha256": "137dcd19c382a0a1e3a79d16b27d4a8d00504748a8f3f1a70ca04654dce8f552"
-    },
-    "pingfederate/sp-connections.json": {
-      "scope": "environment-neutral",
-      "format": "json",
-      "sha256": "dbb151dfcbf0d748796110c370accdea19c6d06f15ef5e5bcf5105c61198c2d5"
+      "format": "hcl",
+      "sha256": "4ad0837629dfc23d57c0e8d5e444df3e7c628579abfcba91d27efacdfcd34ca8"
     },
     "pinggateway/routes/partner-portal.json": {
       "scope": "environment-specific",
@@ -327,7 +283,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "aaed9041a8d8ca7a646ef00894e1578ebb1da44ff56f203c8dda437aa2081bf5"
+      "sha256": "7a0b4f62755fbaf057ab68a79c467bad3bfacd454c393ebba9f3933b21c48038"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

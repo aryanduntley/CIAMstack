@@ -9,6 +9,11 @@ the calls are built here, run by the core. A kubectl context that doesn't exist 
                                                                  under prefix; .git is never read
   k8s://<context>/<namespace>/configmap/<name>?prefix=routes/    kubectl get configmap -o json: each data key a file
                                                                  under prefix (never Secrets)
+  k8s://<context>/<namespace>/workloads?prefix=                  kubectl get of the namespace's workload objects
+                                                                 (WORKLOAD_KINDS: never Secrets) and of the namespace,
+                                                                 -o json, as manifests: <prefix><context>/<namespace>/
+                                                                 objects.json and namespace.json; literal env values,
+                                                                 managedFields and the last-applied annotation dropped
   ssh://<user>@<host>[:port]/<base>?dir=config&match=*.json      find the files under base/dir (named like match),
   ssh://<user>@<host>/<base>?files=bin/run.properties,...        then cat each (zcat a .gz, saved without .gz); or
                                                                  the files listed; placed under prefix (default
@@ -35,6 +40,9 @@ SAFE = re.compile(r"^[A-Za-z0-9_./@+=,:-]+$")          # a path or name usable o
 GLOB = re.compile(r"^[A-Za-z0-9_.*?+-]+$")
 NAME = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.-]*$")    # a host, user or object name: never taken for an option
 WORK = "_work/"
+WORKLOAD_KINDS = ("statefulsets", "deployments", "daemonsets", "cronjobs", "services", "ingresses", "networkpolicies",
+                  "serviceaccounts")
+LAST_APPLIED = "kubectl.kubernetes.io/last-applied-configuration"
 
 
 def source_kind(ref):
@@ -47,12 +55,23 @@ def _query(parsed):
     return {k: v[0] for k, v in parse_qs(parsed.query).items() if v}
 
 
-def _safe(*paths):
+def safe_path(*paths):
+    """Whether each path is usable on a remote command line (then quoted): only SAFE characters, no `..`."""
     return all(p and SAFE.match(p) and ".." not in p.split("/") for p in paths)
 
 
-def _named(*names):
+def safe_name(*names):
+    """Whether each host, user or object name (None allowed) can never be taken for an option (NAME)."""
     return all(n is None or NAME.match(n) for n in names)
+
+
+def ssh_command(target, port, *remote, absent=()):
+    """The Command running a fixed remote command line over SSH: batch mode, strict host keys, the port when given;
+    remote is joined by ssh and run by the remote shell, so only constants and quoted safe paths go in it."""
+    return Command(("ssh", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes",
+                    *(("-p", str(port)) if port else ()), target, *remote), absent=tuple(absent))
+
+
 
 
 def git_files(dir_, prefix):
@@ -81,40 +100,63 @@ def _git(parsed, q):
                          keep=git_files(q.get("dir", ""), q.get("prefix", "")))),)
 
 
+def _trimmed(value, key=None):
+    """A manifest (any JSON value) without what no importer reads and may carry secrets or noise: managedFields, the
+    last-applied annotation (a copy of the whole object as applied) and literal env values (env[].value)."""
+    if isinstance(value, dict):
+        return {k: _trimmed(v, k) for k, v in value.items()
+                if k != "managedFields" and not (key == "annotations" and k == LAST_APPLIED)
+                and not (key == "env" and k == "value")}
+    if isinstance(value, list):
+        return [_trimmed(v, key) for v in value]
+    return value
+
+
+def manifest_files(text):
+    """keep of kubectl get -o json: the objects trimmed (_trimmed); text that isn't JSON is kept as it is (the importer
+    names it)."""
+    try:
+        return json.dumps(_trimmed(json.loads(text)), indent=1, sort_keys=True) + "\n"
+    except ValueError:
+        return text
+
+
+def _workloads(context, ns, q):
+    base, kubectl = f"{q.get('prefix', '')}{context}/{ns}/", ("kubectl", "--context", context)
+    return ((f"{base}objects.json", Command((*kubectl, "-n", ns, "get", ",".join(WORKLOAD_KINDS), "-o", "json"),
+                                           keep=manifest_files)),
+            (f"{base}namespace.json", Command((*kubectl, "get", "namespace", ns, "-o", "json"), keep=manifest_files)))
+
+
 def _kubernetes(parsed, q):
     context, (ns, kind, name) = parsed.netloc, (parsed.path.strip("/").split("/") + ["", "", ""])[:3]
-    if kind != "configmap" or not (context and ns and name) or not _named(context, ns, name):
+    if kind == "workloads" and not name and context and ns and safe_name(context, ns):
+        return _workloads(context, ns, q)
+    if kind != "configmap" or not (context and ns and name) or not safe_name(context, ns, name):
         return None
     return (("", Command(("kubectl", "--context", context, "-n", ns, "get", "configmap", name, "-o", "json"),
                          keep=configmap_files(q.get("prefix", "")))),)
 
 
-def _ssh_target(parsed):
-    host, user = parsed.hostname, parsed.username
-    return (("-p", str(parsed.port)) if parsed.port else ()), (f"{user}@{host}" if user else host)
-
-
 def _ssh(parsed, q, done, n):
-    port, target = _ssh_target(parsed)
-    ssh = ("ssh", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes", *port, target)
+    target = f"{parsed.username}@{parsed.hostname}" if parsed.username else parsed.hostname
+    ssh = lambda *remote: ssh_command(target, parsed.port, *remote)
     base, prefix = parsed.path.rstrip("/") or "/", q.get("prefix", f"{parsed.hostname}/")
 
     def read(path, rel):
         gz = path.endswith(".gz")
-        return (f"{prefix}{rel[:-3] if gz else rel}",
-                Command((*ssh, "zcat" if gz else "cat", "--", shlex.quote(path))))
+        return (f"{prefix}{rel[:-3] if gz else rel}", ssh("zcat" if gz else "cat", "--", shlex.quote(path)))
     if q.get("files"):
         rels = tuple(r.strip("/") for r in q["files"].split(",") if r.strip("/"))
-        return tuple(read(posixpath.join(base, r), r) for r in rels) if _safe(base, *rels) else None
+        return tuple(read(posixpath.join(base, r), r) for r in rels) if safe_path(base, *rels) else None
     dir_, match = q.get("dir", "").strip("/"), q.get("match")
     target_dir = posixpath.join(base, dir_) if dir_ else base
-    if not _safe(target_dir) or (match and not GLOB.match(match)):
+    if not safe_path(target_dir) or (match and not GLOB.match(match)):
         return None
     listing = f"{WORK}ssh-{n}.txt"
     found = tuple(line.strip() for line in (done.get(listing) or "").splitlines()
-                  if line.strip().startswith(target_dir + "/") and _safe(line.strip()))
-    return ((listing, Command((*ssh, "find", shlex.quote(target_dir), "-type", "f",
-                               *(("-name", shlex.quote(match)) if match else ())))),
+                  if line.strip().startswith(target_dir + "/") and safe_path(line.strip()))
+    return ((listing, ssh("find", shlex.quote(target_dir), "-type", "f", *(("-name", shlex.quote(match)) if match else ()))),
             *(read(f, posixpath.join(dir_, f[len(target_dir) + 1:]) if dir_ else f[len(target_dir) + 1:])
               for f in found))
 
@@ -124,12 +166,12 @@ def _calls(ref, done, n):
     parsed, kind = urlparse(ref), source_kind(ref)
     q = _query(parsed)
     if kind == "git":
-        return _git(parsed, q) if parsed.hostname and _named(parsed.hostname, parsed.username) and parsed.path \
+        return _git(parsed, q) if parsed.hostname and safe_name(parsed.hostname, parsed.username) and parsed.path \
             else None
     if kind == "kubernetes":
         return _kubernetes(parsed, q)
     return _ssh(parsed, q, done, n) if kind == "ssh" and parsed.hostname and \
-        _named(parsed.hostname, parsed.username) else None
+        safe_name(parsed.hostname, parsed.username) else None
 
 
 def _sources(m, importer):

@@ -13,10 +13,12 @@ from opsdir.connectors import collecting
 from opsdir.connectors.collecting import MASK, chosen, collect, collectors, evidence, first_calls, provenance, redact
 from opsdir.core.contract import Collector, Command, Importer, Request
 from opsdir.domains.governance.collection import collection_sources
+from opsdir.domains.governance.attempts import Attempt, attempt_dn, attempt_records, attempt_rows
 from opsdir.domains.governance.imports import run_records
 from network_fixtures import ALPHA, entry, model
 
 AT = dt.datetime(2026, 10, 8, 12, 0, tzinfo=dt.timezone.utc)
+ENV = "env=prod,cloud=alpha,ou=environments,dc=ciam-ops"
 
 
 def _lists(d, m, done, options):
@@ -63,7 +65,11 @@ def test_bounds_and_debug_switches():
     endless = Collector("x", "environment", lambda d, m, done, o: ((f"f{len(done)}", Command(("tool", "next"))),))
     run, _ = _runner({})
     c = collect("cloud/x", endless, None, None, run)
-    assert c.files is None and "still asking for more after 5 rounds" in c.problems[0]
+    assert c.files is None and "still asking for more after 8 rounds" in c.problems[0]
+    stop = Collector("z", "environment", lambda d, m, done, o: (("a", Command(("tool", "who"))),
+                                                                 *((("b", "signed in elsewhere"),) if "a" in done else ())))
+    c = collect("cloud/z", stop, None, None, run)
+    assert (c.files, c.problems, len(c.calls)) == (None, ("signed in elsewhere",), 1)      # a step naming a problem
     noisy = Collector("y", "environment", lambda d, m, done, o: (("a", Command(("aws", "ec2", "x", "--debug"))),))
     assert collect("cloud/y", noisy, None, None, run).problems == (
         "aws ec2 x --debug: debug switches are never run (--debug)",)
@@ -181,9 +187,11 @@ def _collect_cli(monkeypatch, adapter, **given):
     import argparse
     from opsdir import cli
     from opsdir.connectors.importing import ImportPlan
-    applied = []
+    applied, recorded = [], []
     monkeypatch.setattr(cli.db, "load_directory", lambda conn: None)
-    monkeypatch.setattr(cli.registry, "environment", lambda d, spec: (SimpleNamespace(bindings=()), (adapter,)))
+    monkeypatch.setattr(cli.registry, "environment",
+                        lambda d, spec: (SimpleNamespace(bindings=(), dn=ENV), (adapter,)))
+    monkeypatch.setattr(cli.ops, "record_attempts", lambda conn, attempts, at, change: recorded.extend(attempts))
     monkeypatch.setattr(cli, "declared_adapters", lambda m: ())
     monkeypatch.setattr(cli.ops, "preview_import",
                         lambda conn, spec, files, at: ImportPlan(spec, ("change",), (f"read {sorted(files)}",), (),
@@ -191,25 +199,81 @@ def _collect_cli(monkeypatch, adapter, **given):
     monkeypatch.setattr(cli.ops, "apply_import",
                         lambda conn, plan, change, take, keep, ev: applied.append(ev) or type("R", (), {"lines": (1,)})())
     monkeypatch.setattr(cli, "_not_applied", lambda notes, changes, dry: "\n".join((*notes, "not applied")))
-    a = argparse.Namespace(env="alpha/prod", adapter=None, list=False, dry_run=False, change="CHG-9", save=None,
-                           terraform_dir=None, amster_key=None, ldapsearch=None, ldap_truststore=None, ldap_ca=None,
-                           at="20261008120000Z", take=[], keep=[], **given)
-    return cli._cmd_collect(None, a, None), applied
+    a = argparse.Namespace(**{"env": "alpha/prod", "adapter": None, "list": False, "dry_run": False,
+                              "change": "CHG-9", "save": None, "terraform_dir": None, "amster_key": None,
+                              "ldapsearch": None, "ldap_truststore": None, "ldap_ca": None,
+                              "at": "20261008120000Z", "take": [], "keep": [], **given})
+    return cli._cmd_collect(None, a, None), applied, recorded
 
 
 def test_collect_checks_the_login_then_imports_the_complete_export_with_its_evidence(monkeypatch):
-    (text, status), applied = _collect_cli(monkeypatch, _fake_adapter())
+    (text, status), applied, recorded = _collect_cli(monkeypatch, _fake_adapter())
     assert status == 0 and "fake-cloud/services: 1 call(s) as fake-account" in text
     assert "read ['services/login.url']" in text and "CHG-9: 1 change(s) applied for fake-cloud/services" in text
     assert applied[0]["ciamCollectionIdentity"] == ("fake-account",)
     assert applied[0]["ciamCollectedCall"][0].endswith(" services/login.url <- printf https://login.example.test")
+    assert [(x.importer, x.environment, x.outcome, x.problems) for x in recorded] == [
+        ("fake-cloud/services", ENV, "complete", ())]
+    assert text.endswith("CHG-9: 1 collection attempt(s) recorded (opsdir report collections)")
 
 
-def test_collect_reads_nothing_when_the_login_isnt_the_records_account(monkeypatch):
-    (text, status), applied = _collect_cli(monkeypatch, _fake_adapter("someone-else"))
+def test_collect_reads_nothing_when_the_login_isnt_the_records_account_and_records_the_skip(monkeypatch):
+    (text, status), applied, recorded = _collect_cli(monkeypatch, _fake_adapter("someone-else"))
+    why = "fake-cloud: signed in as someone-else, the record names fake-account: nothing read"
     assert status == 1 and applied == []
-    assert text == ("fake-cloud/services: skipped: fake-cloud: signed in as someone-else, the record names "
-                    "fake-account: nothing read")
+    assert text == (f"fake-cloud/services: skipped: {why}\n"
+                    "CHG-9: 1 collection attempt(s) recorded (opsdir report collections)")
+    assert recorded == [Attempt("fake-cloud/services", ENV, "skipped", (why,), {})]
+
+
+def test_a_failed_collection_without_a_change_or_in_a_dry_run_is_said_not_recorded(monkeypatch):
+    (text, status), _, recorded = _collect_cli(monkeypatch, _fake_adapter("someone-else"), change=None)
+    assert status == 1 and recorded == [] and text.endswith("1 failed collection(s) not recorded (no --change)")
+    (text, _), _, recorded = _collect_cli(monkeypatch, _fake_adapter("someone-else"), dry_run=True)
+    assert recorded == [] and text.endswith("1 failed collection(s) not recorded (dry run)")
+    (text, status), _, recorded = _collect_cli(monkeypatch, _fake_adapter(), change=None)
+    assert status == 0 and recorded == [] and "not recorded" not in text           # nothing failed: nothing to say
+
+
+def test_an_attempt_is_complete_incomplete_or_skipped_with_its_calls_and_problems():
+    run, _ = _runner({"tool list-zones": "a b", "tool list-records --zone a": "{}"},
+                     failing=("tool list-records --zone b",))
+    failed = collect("cloud/dns", TWO_STAGE, None, None, run, identity="acct-1")
+    got = collecting.attempt("cloud/dns", failed, ENV)
+    assert (got.outcome, got.environment) == ("incomplete", ENV)
+    assert got.problems == ("records/b.json (tool list-records --zone b): denied",)
+    assert got.evidence["ciamCollectionIdentity"] == ("acct-1",)
+    assert got.evidence["ciamCollectedCall"][-1] == "failed records/b.json <- tool list-records --zone b"
+    whole, _ = _runner({"tool list-zones": "a", "tool list-records --zone a": "{}"})
+    assert collecting.attempt("cloud/dns", collect("cloud/dns", TWO_STAGE, None, None, whole), None).outcome == \
+        "complete"
+    blocked = Collector("x", "environment", lambda d, m, done, o: (), problems=lambda d, m, o: ("give --amster-key",))
+    assert collecting.attempt("am/x", collect("am/x", blocked, None, None, whole)).outcome == "skipped"
+    assert collecting.attempt("am/x", "identity check failed").problems == ("identity check failed",)
+    nothing = Collector("x", "environment", lambda d, m, done, o: ())
+    assert collecting.attempt("am/x", collect("am/x", nothing, None, None, whole)) is None    # nothing to collect
+
+
+def test_attempt_records_add_then_replace_and_the_report_lists_them():
+    d, *_ = model()
+    failed = Attempt("cloud/dns", ENV, "incomplete", ("records/b.json (tool x): exit 1:\n  denied",),
+                     {"ciamCollectionIdentity": ("acct-1",), "ciamCollectedCall": ("failed b <- tool x",),
+                      "ciamCollectionCredential": ()})
+    container, new = attempt_records(d, (failed,), AT, "CHG-1")
+    assert container.dn.startswith("ou=imports,") and new.changetype == "add"
+    assert new.dn == attempt_dn("cloud/dns", ENV) == f"cn=collection.cloud.dns.alpha.prod,{container.dn}"
+    assert new.attrs["ciamCollectionOutcome"] == ("incomplete",) and new.attrs["ciamCollectedEnvironment"] == (ENV,)
+    assert new.attrs["ciamCollectionProblem"] == ("records/b.json (tool x): exit 1: denied",)   # one line
+    assert "ciamCollectionCredential" not in new.attrs
+    held, *_ = model(changes=(container, new))
+    assert attempt_rows(held) == [("cloud/dns", "alpha/prod", "incomplete", "20261008120000Z",
+                                   "records/b.json (tool x): exit 1: denied", "CHG-1")]
+    (again,) = attempt_records(held, (Attempt("cloud/dns", ENV, "complete", (), {}),), AT, "CHG-2")
+    assert again.changetype == "modify" and ("replace", "ciamCollectionOutcome", ("complete",)) in again.mods
+    assert ("replace", "ciamCollectionProblem", ()) in again.mods
+    assert ("replace", "ciamCollectedCall", ()) in again.mods and ("replace", "ciamCollectionIdentity", ()) in again.mods
+    assert attempt_records(d, (), AT, "CHG-1") == ()
+    assert attempt_dn("aws/regions") == "cn=collection.aws.regions.estate,ou=imports,dc=ciam-ops"
 
 
 def test_nothing_there_is_left_out_and_work_files_stay_out_of_the_export():

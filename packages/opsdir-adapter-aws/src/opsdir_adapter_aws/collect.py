@@ -15,8 +15,24 @@ fetched: Lambda functions (environment variables), CodeBuild projects (environme
 EventBridge targets (their input), CodePipeline pipelines (action configuration), CloudFront distributions (origin
 custom headers). Nothing reads secret values (no get-secret-value, no SSM parameters, no user data). Calls that answer
 "nothing there" for a resource without that setting (a bucket without a policy, Shield without a subscription, a key
-without rotation support) leave their file out. Organization control policies need the management account and are
-not collected here (import them as before).
+without rotation support) leave their file out.
+
+Organization control policies (service and resource control policies) can be listed only from the organization's
+management account or a delegated administrator, a login other than the environment's: a collection source for
+aws/cli-inventory names an AWS CLI profile for it (ciamSourceRef aws-profile://<profile>, from the operator's own AWS
+configuration: SSO or a role chain; opsdir never sees its credentials), and only the Organizations calls run with
+--profile. First that profile's identity and organization: its Organization.Id must be the cloud's
+ciamOrganizationRef, or the collection stops there. Then the account's parents up to the root, the policies of both
+types attached to the account and to each parent (inherited ones apply too), and each policy once (org/<id>.json).
+Without such a source the policies aren't collected, and the guardrails the record holds are kept (an import only notes
+them).
+
+CloudFormation: the stacks the environment's collection sources name (importer aws/cloudformation, ciamSourceRef
+cfn://<stack name>, or the stack's ARN, in the cloud's account), each into its own folder as the README's script saves
+it: describe-stacks projected to what the importer reads (Outputs, which may carry values, are never fetched),
+list-stack-resources, and get-template of the processed template (transforms expanded); then each nested stack
+(an AWS::CloudFormation::Stack resource that was created) the same way, in its own folder. A stack in another account
+is a problem, never read.
 
 Terraform state: (a) by default the state object a collection source names (ciamCollectionSource, importer
 aws/terraform-state, ciamSourceRef s3://bucket/key, the workspace prefix included) read with `aws s3 cp URI -`: no
@@ -31,6 +47,7 @@ from opsdir.core.environment import of_class, one_role
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.governance.collection import collection_sources
 from .account import account_id
+from .cloudformation import NOT_CREATED
 from .storage import bucket_of
 
 WORK = "_work/"
@@ -45,7 +62,18 @@ PROJECTIONS = {
                      "Comment: Comment, WebACLId: WebACLId, Origins: {Items: Origins.Items[].{DomainName: DomainName, "
                      "Id: Id}}, ViewerCertificate: {MinimumProtocolVersion: "
                      "ViewerCertificate.MinimumProtocolVersion}}}}",
+    "stack": "{Stacks: Stacks[].{StackId: StackId, StackName: StackName, StackStatus: StackStatus, "
+             "Parameters: Parameters}}",
 }
+STACK_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9-]{0,127}$")
+STACK_ARN = re.compile(r"^arn:aws[a-z-]*:cloudformation:([a-z0-9-]+):(\d{12}):stack/([A-Za-z][A-Za-z0-9-]{0,127})/"
+                       r"[A-Za-z0-9-]+$")
+NESTED = "AWS::CloudFormation::Stack"
+PROFILE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}$")
+ORGANIZATION = re.compile(r"\bo-[a-z0-9]{10,32}\b")
+TARGET = re.compile(r"^(\d{12}|ou-[0-9a-z]{4,32}-[a-z0-9]{8,32}|r-[0-9a-z]{4,32})$")
+POLICY = re.compile(r"^p-[0-9A-Za-z_]{1,128}$")
+POLICY_TYPES = ("SERVICE_CONTROL_POLICY", "RESOURCE_CONTROL_POLICY")
 BUCKET_SETTINGS = (("bucket-versioning", "get-bucket-versioning", ()),
                    ("bucket-object-lock", "get-object-lock-configuration", ("ObjectLockConfigurationNotFoundError",)),
                    ("bucket-encryption", "get-bucket-encryption", ("ServerSideEncryptionConfigurationNotFoundError",)),
@@ -55,9 +83,10 @@ BUCKET_SETTINGS = (("bucket-versioning", "get-bucket-versioning", ()),
                    ("bucket-policy", "get-bucket-policy", ("NoSuchBucketPolicy",)))
 
 
-def _aws(m, *args, query=None, absent=()):
-    """An AWS CLI call for environment m: JSON output, the cloud's region, FIPS endpoints when it records them."""
-    region = one(m.cloud, "ciamRegion")
+def _aws(m, *args, query=None, absent=(), region=None):
+    """An AWS CLI call for environment m: JSON output, the cloud's region (or the one given: a stack ARN's), FIPS
+    endpoints when it records them."""
+    region = region or one(m.cloud, "ciamRegion")
     return Command(("aws", *args, *(("--query", query) if query else ()), "--output", "json",
                     *(("--region", region) if region else ())),
                    env=(("AWS_USE_FIPS_ENDPOINT", "true"),) if fips_endpoints(m) else (), absent=tuple(absent))
@@ -276,13 +305,79 @@ def _local(m, done):
     return {(p[len(base):] if p.startswith(base) else p): t for p, t in done.items()}
 
 
+def org_profiles(m):
+    """The AWS CLI profiles environment m's aws/cli-inventory collection sources name (aws-profile://<profile>)."""
+    return tuple(loc[len("aws-profile://"):] for s in collection_sources(m, "aws/cli-inventory") for loc in s.locations
+                 if loc.startswith("aws-profile://"))
+
+
+def organization_id(m):
+    """The AWS organization (o-…) the cloud's ciamOrganizationRef names (the ID, or an ARN holding it), or None."""
+    found = ORGANIZATION.search(one(m.cloud, "ciamOrganizationRef") or "")
+    return found.group(0) if found else None
+
+
+def inventory_problems(d, m, options):
+    """Collector.problems of aws/cli-inventory: an organization profile source that can't be used safely."""
+    profiles = org_profiles(m)
+    if not profiles:
+        return ()
+    return (*(("more than one aws-profile:// collection source: name one profile for the organization's policies",)
+              if len(profiles) > 1 else ()),
+            *(f"aws-profile://{p}: not a profile name opsdir passes to the AWS CLI" for p in profiles
+              if not PROFILE.match(p)),
+            *(("the cloud records no AWS organization (ciamOrganizationRef o-…) to check the profile against",)
+              if organization_id(m) is None else ()),
+            *(("the cloud records no account (ciamAccountRef) whose policies to read",) if not account_id(m) else ()))
+
+
+def _chain(local, account):
+    """The account and its parents up to the root, as far as the listings collected so far go: ((id, is root), ...)."""
+    found, at = [(account, False)], account
+    while f"{WORK}org-parents-{at}.json" in local:
+        parent = next(iter(_items(local, f"{WORK}org-parents-{at}.json", "Parents", "Id", "Type")), (None, None))
+        if not (parent[0] and TARGET.match(parent[0])) or parent[0] in [t for t, _ in found]:
+            break
+        found.append((parent[0], parent[1] == "ROOT"))
+        if parent[1] == "ROOT":
+            break
+        at = parent[0]
+    return tuple(found)
+
+
+def _org_steps(m, local, profile):
+    """(path, call or problem) of the organization's policies, read with profile: its identity and organization first;
+    then, when that is the cloud's organization, the account's parents, the policies attached to each, each policy."""
+    org = lambda *args, absent=(): _aws(m, "organizations", *args, "--profile", profile, absent=absent)
+    first = ((f"{WORK}org-caller.json", _aws(m, "sts", "get-caller-identity", "--profile", profile)),
+             (f"{WORK}organization.json", org("describe-organization")))
+    if f"{WORK}organization.json" not in local:
+        return first
+    found, want = (_doc(local, f"{WORK}organization.json").get("Organization") or {}).get("Id"), organization_id(m)
+    if found != want:
+        return (*first, (f"{WORK}org-check", f"profile {profile} is signed in to organization {found}, the cloud "
+                                             f"records {want}: its policies are not read"))
+    chain = _chain(local, account_id(m))
+    listings = tuple((f"{WORK}org-policies-{t}-{kind}.json", t, kind) for t, _ in chain for kind in POLICY_TYPES)
+    policies = dict.fromkeys(p for path, _, _ in listings for (p,) in _items(local, path, "Policies", "Id")
+                             if p and POLICY.match(p))
+    return (*first,
+            *((f"{WORK}org-parents-{t}.json", org("list-parents", "--child-id", t)) for t, root in chain if not root),
+            *((path, org("list-policies-for-target", "--target-id", t, "--filter", kind,
+                         absent=("PolicyTypeNotEnabledException",))) for path, t, kind in listings),
+            *((f"org/{p}.json", org("describe-policy", "--policy-id", p)) for p in policies))
+
+
 def inventory_steps(d, m, done, options):
-    """The cli-inventory calls still to make (core.contract Collector.steps): the listings, then their items."""
+    """The cli-inventory calls still to make (core.contract Collector.steps): the listings, then their items; with an
+    organization profile source, the organization's policies that apply to the account."""
     vpc = _vpc(m)
     if vpc is None:
         return ()
     local = _local(m, done)
-    return _in_env(m, (*_listings(m, vpc), *_details(m, local)))
+    profiles = org_profiles(m)
+    return _in_env(m, (*_listings(m, vpc), *_details(m, local),
+                       *(_org_steps(m, local, profiles[0]) if profiles else ())))
 
 
 def state_steps(d, m, done, options):
@@ -293,6 +388,70 @@ def state_steps(d, m, done, options):
     return tuple((f"{m.label}/{loc.rsplit('/', 1)[-1] or 'terraform.tfstate'}", _aws(m, "s3", "cp", loc, "-"))
                  for s in collection_sources(m, "aws/terraform-state") for loc in s.locations
                  if loc.startswith("s3://"))
+
+
+def stack_of(ref):
+    """(stack name, the --stack-name to give, region, account) a CloudFormation collection source's ref names
+    (cfn://<name>: the cloud's region and account, both None; or a stack ARN), or None when it names no stack."""
+    found = STACK_ARN.match(ref or "")
+    if found:
+        region, account, name = found.groups()
+        return name, ref, region, account
+    name = (ref or "")[len("cfn://"):] if (ref or "").startswith("cfn://") else None
+    return (name, name, None, None) if name and STACK_NAME.match(name) else None
+
+
+def _stack_calls(m, folder, stack, region):
+    """The three calls saving one stack under folder, as the README's script does."""
+    given = ("--stack-name", stack)
+    return ((f"{folder}/stack.json", _aws(m, "cloudformation", "describe-stacks", *given, query=PROJECTIONS["stack"],
+                                          region=region)),
+            (f"{folder}/resources.json", _aws(m, "cloudformation", "list-stack-resources", *given, region=region)),
+            (f"{folder}/template.json", _aws(m, "cloudformation", "get-template", *given, "--template-stage",
+                                             "Processed", region=region)))
+
+
+def _nested(local, folder):
+    """(folder, stack ARN, region) of each nested stack a stack's resources name as created."""
+    rows = _items(local, f"{folder}/resources.json", "StackResourceSummaries", "ResourceType", "PhysicalResourceId",
+                  "ResourceStatus")
+    arns = (STACK_ARN.match(arn or "") for kind, arn, status in rows if kind == NESTED and status not in NOT_CREATED)
+    return tuple((f.group(3), f.group(0), f.group(1)) for f in arns if f)
+
+
+def _with_nested(local, stacks, seen=()):
+    """stacks ((folder, --stack-name, region), ...) and, from what was collected, the nested stacks under them."""
+    found = tuple(x for x in stacks if x[0] not in seen)
+    if not found:
+        return ()
+    names = (*seen, *(f for f, _, _ in found))
+    return (*found, *_with_nested(local, tuple(n for f, _, _ in found for n in _nested(local, f)), names))
+
+
+def _named_stacks(m):
+    """(folder, --stack-name, region) of each stack the environment's aws/cloudformation sources name in its account."""
+    want = account_id(m)
+    named = (stack_of(loc) for s in collection_sources(m, "aws/cloudformation") for loc in s.locations)
+    return tuple((name, stack, region) for name, stack, region, account in (x for x in named if x)
+                 if account is None or account == want)
+
+
+def stack_steps(d, m, done, options):
+    """The cloudformation calls still to make: each named stack's three, then each nested stack's."""
+    local = _local(m, done)
+    return _in_env(m, tuple(c for folder, stack, region in _with_nested(local, _named_stacks(m))
+                            for c in _stack_calls(m, folder, stack, region)))
+
+
+def stack_problems(d, m, options):
+    """Collector.problems: an aws/cloudformation source naming no stack, or a stack in another account."""
+    want = account_id(m)
+    return tuple(
+        f"collection source `{s.name}`: {loc} " + ("isn't a stack (cfn://<stack name>, or the stack's ARN)"
+                                                   if stack_of(loc) is None else
+                                                   f"is a stack in account {stack_of(loc)[3]}, the cloud records {want}")
+        for s in collection_sources(m, "aws/cloudformation") for loc in s.locations
+        if stack_of(loc) is None or (stack_of(loc)[3] and stack_of(loc)[3] != want))
 
 
 def identity_check(d, m):
@@ -310,5 +469,6 @@ def identity_check(d, m):
                    env=(("AWS_USE_FIPS_ENDPOINT", "true"),) if fips_endpoints(m) else ()), check
 
 
-COLLECTORS = (Collector("cli-inventory", "environment", inventory_steps, identity_check),
-              Collector("terraform-state", "environment", state_steps, identity_check))
+COLLECTORS = (Collector("cli-inventory", "environment", inventory_steps, identity_check, inventory_problems),
+              Collector("terraform-state", "environment", state_steps, identity_check),
+              Collector("cloudformation", "environment", stack_steps, identity_check, stack_problems))

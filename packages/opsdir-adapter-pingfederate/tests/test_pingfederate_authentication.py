@@ -20,7 +20,8 @@ from opsdir_adapter_pingfederate.adapter import ADAPTER
 from opsdir_adapter_pingfederate.checks import check_references
 from opsdir_adapter_pingfederate.naming import (CONTRACTS, DATA_STORES, DEFAULT_POLICY, FRAGMENTS, IDP_ADAPTERS,
                                                 SELECTORS, VALIDATORS, named)
-from opsdir_adapter_pingfederate.render import render_env, render_neutral
+from opsdir_adapter_pingfederate.admin_api import OUTPUT as REQUESTS, rendered_bodies
+from opsdir_adapter_pingfederate.render import render_env
 from opsdir_adapter_pingfederate.schema import FRAGMENT
 import mini_estate
 from support import build_directory
@@ -174,28 +175,29 @@ def test_a_tree_the_export_no_longer_has_is_removed():
     assert get(again, named(DEFAULT_POLICY, "Legacy")) is None and get(again, named(DEFAULT_POLICY, "Workforce"))
 
 
+def _bodies(d, env):
+    return rendered_bodies(render_env(env_model(d, env), None)[REQUESTS])
+
+
 def test_plugins_render_per_environment_and_policies_everywhere_the_same():
     d, _, _ = imported(SET_DUO_ROLE)
-    alpha, beta = (render_env(env_model(d, e), None) for e in ("alpha/prod", "beta/prod"))
-    duo = {e: next(p for p in json.loads(r["pingfederate/idp-adapters.json"]) if p["id"] == "duo")
-           for e, r in (("alpha", alpha), ("beta", beta))}
+    alpha, beta = (_bodies(d, e) for e in ("alpha/prod", "beta/prod"))
+    duo = {e: next(p for p in r["/idp/adapters"] if p["id"] == "duo") for e, r in (("alpha", alpha), ("beta", beta))}
     assert (duo["alpha"]["configuration"]["fields"][1]["value"], duo["beta"]["configuration"]["fields"][1]["value"]) == \
         ("${secret:fake://secrets/alpha/pf-duo}", "UNBOUND:pf-duo-secret")
     assert duo["alpha"]["pluginDescriptorRef"] == {"id": "com.pingidentity.adapters.duo.DuoSecurityAdapter"}
-    neutral = render_neutral(d)
-    policy = json.loads(neutral["pingfederate/authentication-policies.json"])
+    (policy,) = alpha["/authenticationPolicies/default"]
     assert [t["name"] for t in policy["authnSelectionTrees"]] == ["Workforce", "Legacy", "Partners"]
     assert policy["authnSelectionTrees"][0] == WORKFORCE and policy["failIfNoSelection"] is False
-    assert json.loads(neutral["pingfederate/authentication-policy-fragments.json"]) == [MFA]
-    assert {"pingfederate/password-credential-validators.json", "pingfederate/authentication-selectors.json"} <= \
-        set(alpha)
+    assert alpha["/authenticationPolicies/fragments"] == [MFA] == beta["/authenticationPolicies/fragments"]
+    assert beta["/authenticationPolicies/default"] == [policy]
+    assert {"/passwordCredentialValidators", "/authenticationSelectors"} <= set(alpha)
 
 
 @pytest.mark.parametrize("env", ["alpha/prod", "beta/prod"])
 def test_what_it_renders_imports_back_unchanged(env):
     d, _, _ = imported(SET_DUO_ROLE)
-    files = {**render_neutral(d), **render_env(env_model(d, env), None)}
-    rendered = {p[len("pingfederate/"):]: t for p, t in files.items() if p.startswith("pingfederate/")}
+    rendered = {p: t for p, t in render_env(env_model(d, env), None).items() if p.endswith(".json")}
     again, _ = preview_import(d, "pingfederate/bulk", rendered, (ADAPTER,))
     assert again == ()
 

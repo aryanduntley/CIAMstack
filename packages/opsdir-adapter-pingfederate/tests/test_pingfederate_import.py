@@ -10,11 +10,12 @@ from opsdir.connectors.importing import import_changes
 from opsdir.core.directory import fingerprint, get, make_directory, one, values
 from opsdir.domains.directory.naming import CONSUMERS, USER_SCHEMA
 from opsdir.domains.federation.naming import IDENTITY_SERVICES, INTEGRATIONS
-from opsdir.domains.federation.services import identity_services
 from opsdir.domains.pki.naming import CERTIFICATES
 from opsdir_adapter_pingfederate.importer import read_export
 from opsdir_adapter_pingfederate.naming import DATA_STORES
-from opsdir_adapter_pingfederate.render import SERVER_ROLES, pingfederate_files
+from types import SimpleNamespace
+
+from opsdir_adapter_pingfederate.admin_api import admin_api_files
 
 EXPORT = Path(__file__).resolve().parent / "bulk-export"
 SIGNING_FP = "18:50:45:3C:96:D7:6C:B8:F5:90:6A:4B:06:37:F9:99:AE:16:65:5C:A3:29:EC:90:34:04:37:FA:10:28:B6:99"
@@ -94,7 +95,8 @@ def test_partners_and_clients_new_to_the_record_are_added_and_named():
     assert (values(batch, "ciamGrantType"), one(batch, "ciamTokenAuthMethod")) == \
         (("client_credentials",), "client_secret_basic")
     assert {"client batch: grant types with no single standard name, not recorded: EXTENSION",
-            "client batch: its secret is not imported; each environment binds it",
+            "client batch: its secret is not imported; set pingfedCredentialRole to the secret role each "
+         "environment binds it with",
             "new integration partner-idp (idp), not in the record before: give it an owner"} <= set(imported.notices)
     tls = next(c for c in (get(after, dn) for dn in after.entries) if c and one(c, "ciamKeyRole") == "sso-tls-keystore")
     assert (one(tls, "ciamCertPurpose"), values(tls, "ciamSubjectAltName")) == ("tls-server", ("sso.example.test",))
@@ -130,8 +132,8 @@ def test_importing_the_same_export_again_changes_nothing():
 def test_the_adapters_own_render_reads_back_as_it_was():
     d = _record()
     after = _after(d, read_export(_files(), d, ()))
-    rendered = pingfederate_files(after, identity_services(after, SERVER_ROLES))
-    assert not import_changes(after, read_export(rendered, after, ()))
+    rendered = admin_api_files(SimpleNamespace(d=after, servers=(), bindings=()))      # an environment binding nothing
+    assert rendered and not import_changes(after, read_export(rendered, after, ()))
 
 
 def test_fingerprints_are_written_as_the_record_writes_them():

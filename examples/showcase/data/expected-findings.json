@@ -1000,6 +1000,13 @@
       "match": "source/prod runs data discovery (macie-backups, over backup-target) and target/prod runs none",
       "planted": "an action while nothing requires the target to rely on an authorization (it becomes B38 once CHG-2029 holds the target to DFARS)",
       "cleared_by": "CHG-2029"
+    },
+    {
+      "id": "A103",
+      "area": "Key",
+      "match": "Copy `pf-signing-key-password`",
+      "planted": "the password protecting the carried-over signing key's PKCS#12 file must be carried over with it (PingFederate imports the file with it)",
+      "cleared_by": null
     }
   ]
 }

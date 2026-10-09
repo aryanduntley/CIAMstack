@@ -2310,12 +2310,20 @@ data "aws_secretsmanager_secret" "pf_signing_key" {
   arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-signing-key"
 }
 
+data "aws_secretsmanager_secret" "pf_signing_key_password" {
+  arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-signing-key-password"
+}
+
 data "aws_secretsmanager_secret" "pf_smtp_password" {
   arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-smtp-password"
 }
 
 data "aws_secretsmanager_secret" "sso_tls_keystore" {
   arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/sso-tls-keystore"
+}
+
+data "aws_secretsmanager_secret" "sso_tls_keystore_password" {
+  arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/sso-tls-keystore-password"
 }
 
 data "aws_nat_gateway" "pf_egress" {

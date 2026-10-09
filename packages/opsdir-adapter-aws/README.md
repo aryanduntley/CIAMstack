@@ -250,7 +250,7 @@ A plan with several rules is named (the first is read); a selection choosing res
 
 ## Collecting from AWS (`opsdir collect`)
 
-`opsdir collect --env CLOUD/ENV --adapter aws` reads what the two importers below read, read-only, under your own
+`opsdir collect --env CLOUD/ENV --adapter aws` reads what the three importers below read, read-only, under your own
 AWS CLI login (`opsdir_adapter_aws.collect`), and imports it like an export you saved:
 
 - First `aws sts get-caller-identity`: its `Account` must be the cloud's `ciamAccountRef`, or nothing is read.
@@ -261,8 +261,25 @@ AWS CLI login (`opsdir_adapter_aws.collect`), and imports it like an export you 
   it references only. Lambda functions, CodeBuild projects, Scheduler schedules, EventBridge targets, CodePipeline
   pipelines and CloudFront distributions are projected (`--query`) to the fields the importer reads, so environment
   variables, inputs, action configuration and origin custom headers are never fetched. A resource without a setting
-  (no bucket policy, no Shield Advanced subscription, a key without rotation support) leaves its file out. Organization
-  control policies need the management account: not collected (save and import them as below).
+  (no bucket policy, no Shield Advanced subscription, a key without rotation support) leaves its file out.
+- Organization control policies (service and resource control policies, read by `aws/cli-inventory` as guardrails)
+  can be listed only from the organization's management account or a delegated administrator, so they need a second
+  login: a collection source names an AWS CLI profile from your own AWS configuration (SSO or a role chain; opsdir
+  never sees its credentials), and only the Organizations calls run with `--profile`. First `aws sts
+  get-caller-identity` and `aws organizations describe-organization` with that profile: its `Organization.Id` must be
+  the cloud's `ciamOrganizationRef` (`o-…`, or an ARN holding it), or the collection stops and nothing is imported.
+  Then the account's parents up to the root (`list-parents`), the policies of both types attached to the account and
+  to each parent (`list-policies-for-target`: inherited policies apply too), and each policy once (`describe-policy`,
+  saved as `org/<policy id>.json`). Without the source the policies aren't collected; the guardrails the record holds
+  are kept (the import notes them, it doesn't remove them).
+
+  ```ldif
+  dn: cn=org-policies,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+  objectClass: ciamCollectionSource
+  ciamBindingRole: collect-org-policies
+  ciamImporter: aws/cli-inventory
+  ciamSourceRef: aws-profile://org-mgmt
+  ```
 - `aws/terraform-state`: (a) by default the state object a collection source names, read with `aws s3 cp URI -` (no
   `terraform init`, no lock):
 
@@ -276,6 +293,21 @@ AWS CLI login (`opsdir_adapter_aws.collect`), and imports it like an export you 
 
   (b) `--terraform-dir DIR`: `terraform state pull` in that initialized working directory, the backend as configured
   there.
+- `aws/cloudformation`: the stacks collection sources name (`ciamImporter: aws/cloudformation`, `ciamSourceRef:
+  cfn://<stack name>` in the cloud's region, or the stack's ARN; a stack in another account is refused), each into its
+  own folder as the script under "Reading an environment from its CloudFormation stacks" saves it: `describe-stacks`
+  projected to the stack ID, name, status and parameters (Outputs, which can carry values, are never fetched),
+  `list-stack-resources`, and `get-template --template-stage Processed` (transforms expanded); then each nested stack
+  (an `AWS::CloudFormation::Stack` resource that was created) the same way, in its own folder. Without a source,
+  nothing is collected: which stacks belong to an environment is the operator's statement, not a guess.
+
+  ```ldif
+  dn: cn=stack-app,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+  objectClass: ciamCollectionSource
+  ciamBindingRole: collect-stack-app
+  ciamImporter: aws/cloudformation
+  ciamSourceRef: cfn://ciam-prod-app
+  ```
 
 Least privilege: a role with exactly these actions (AWS managed read-only policies grant more, some of it data):
 `ec2:DescribeVpcs`, `ec2:DescribeSubnets`, `ec2:DescribeInstances`, `ec2:DescribeSecurityGroups`,
@@ -301,7 +333,10 @@ Terraform state object only); `lambda:ListFunctions`, `lambda:ListTags`; `events
 `ListTags`, `ListBackupPlans`, `GetBackupPlan`, `ListBackupSelections`, `GetBackupSelection`;
 `cloudtrail:DescribeTrails`, `GetEventSelectors`, `ListTags`; `iam:GetAccountAuthorizationDetails`;
 `sso:ListInstances`, `ListPermissionSets`, `DescribePermissionSet`, `GetInlinePolicyForPermissionSet`,
-`ListManagedPoliciesInPermissionSet`, `ListAccountAssignments`. `sts:GetCallerIdentity` needs no permission. The
+`ListManagedPoliciesInPermissionSet`, `ListAccountAssignments`; `cloudformation:DescribeStacks`,
+`ListStackResources`, `GetTemplate` (CloudFormation stacks only). For the organization profile (the management
+account or a delegated administrator for policy management): `organizations:DescribeOrganization`, `ListParents`,
+`ListPoliciesForTarget`, `DescribePolicy`. `sts:GetCallerIdentity` needs no permission. The
 tests pin every (service, operation) the collector may run (`tests/test_aws_collect.py`, OPERATIONS) and refuse any
 call that returns secret material.
 
@@ -469,7 +504,8 @@ for ps in $(aws sso-admin list-permission-sets --instance-arn "$SSO" --query 'Pe
   aws sso-admin list-managed-policies-in-permission-set --instance-arn "$SSO" --permission-set-arn "$ps" > "$out/sso-managed/$name.json"
   aws sso-admin list-account-assignments --instance-arn "$SSO" --permission-set-arn "$ps" --account-id "$ACCOUNT" > "$out/sso-assignments-$name.json"
 done
-# signed in to the organization's management account (ACCOUNT still the environment's): its control policies
+# signed in to the organization's management account (ACCOUNT still the environment's): its control policies (the
+# account's own here; `opsdir collect` with an aws-profile:// source also reads those its OUs and the root inherit)
 for p in $(aws organizations list-policies-for-target --target-id "$ACCOUNT" --filter SERVICE_CONTROL_POLICY --query 'Policies[].Id' --output text); do
   aws organizations describe-policy --policy-id "$p"                   > "$out/org/$p.json"
 done                                                                   # and again with --filter RESOURCE_CONTROL_POLICY
@@ -511,6 +547,8 @@ for stack in ciam-prod-network ciam-prod-app; do
 done
 opsdir import --dry-run aws/cloudformation export/
 ```
+
+Or let `opsdir collect` run these calls for the stacks collection sources name (see "Collecting from AWS"); it follows nested stacks too.
 
 The template says what each resource is declared with; the stack's resources give the IDs the record matches on (`vpc-…`, `i-…`, ARNs), so a stack without its resource listing is read for nothing and named, and so is a folder without a template. Values are resolved from the stack's parameters (else the template's defaults), pseudo parameters (`AWS::Region`, `AWS::AccountId`, … from the stack ID) and physical IDs: `Ref`, `Fn::Sub`, `Fn::Join`, `Fn::Select`, and `Fn::GetAtt` where it links resources (a Route 53 alias to its load balancer, a NAT gateway or load balancer to its Elastic IP's address). JSON and YAML templates are read, short tags (`!Ref`, `!Sub`, `!GetAtt`, …) included.
 

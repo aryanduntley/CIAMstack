@@ -17,6 +17,7 @@ from opsdir.core.standard import registry_ldif
 from opsdir_adapter_pingfederate.adapter import ADAPTER
 from opsdir_adapter_pingfederate.checks import check_data_stores
 from opsdir_adapter_pingfederate.naming import DATA_STORES, named
+from opsdir_adapter_pingfederate.admin_api import OUTPUT as REQUESTS, rendered_bodies
 from opsdir_adapter_pingfederate.render import render_env
 from opsdir_adapter_pingfederate.schema import FRAGMENT
 import mini_estate
@@ -78,6 +79,11 @@ STORES = [
 USERS, GRANTS, LEGACY, PROFILE = (named(DATA_STORES, n) for n in ("users", "grants", "legacy", "profile-api"))
 SET_ROLE = tuple(parse(f"dn: {USERS}\nchangetype: modify\nreplace: pingfedCredentialRole\n"
                        "pingfedCredentialRole: pf-ds-bind-password\n-\n"))
+
+
+def _bodies(d, env):
+    """{resource type: [bodies]} of what PingFederate's render for an environment requests."""
+    return rendered_bodies(render_env(env_model(d, env), None).get(REQUESTS, '{"requests": []}'))
 
 
 def export(stores=STORES):
@@ -159,8 +165,8 @@ def test_no_secret_is_read(after):
 
 def test_data_stores_render_per_environment():
     d, _, _ = imported(SET_ROLE)
-    alpha = {s["id"]: s for s in json.loads(render_env(env_model(d, "alpha/prod"), None)["pingfederate/data-stores.json"])}
-    beta = {s["id"]: s for s in json.loads(render_env(env_model(d, "beta/prod"), None)["pingfederate/data-stores.json"])}
+    alpha = {s["id"]: s for s in _bodies(d, "alpha/prod")["/dataStores"]}
+    beta = {s["id"]: s for s in _bodies(d, "beta/prod")["/dataStores"]}
     assert (alpha["users"]["hostnames"], alpha["users"]["password"], alpha["users"]["type"]) == \
         (["ldap.example.test:1636"], "${secret:fake://secrets/alpha/pf-ds}", "LDAP")
     assert (beta["users"]["hostnames"], beta["users"]["password"]) == \
@@ -179,7 +185,7 @@ def test_no_data_stores_render_nothing():
 @pytest.mark.parametrize("env", ["alpha/prod", "beta/prod"])
 def test_what_it_renders_imports_back_unchanged(env):
     d, _, _ = imported(SET_ROLE)
-    rendered = {p[len("pingfederate/"):]: t for p, t in render_env(env_model(d, env), None).items()}
+    rendered = {p: t for p, t in render_env(env_model(d, env), None).items() if p.endswith(".json")}
     again, _ = preview_import(d, "pingfederate/bulk", rendered, (ADAPTER,))
     assert again == ()
 
@@ -260,16 +266,14 @@ def test_a_store_reaching_several_fixed_hosts_records_one_binding_each_and_rende
     store = get(d, named(DATA_STORES, "corp-ad"))
     assert (one(store, "pingfedTargetRole"), one(store, "pingfedPort")) == ("corp-ad", None)
     assert not any("corp-ad" in n and "neither" in n for n in notices)
-    hosts = lambda env: json.loads(render_env(env_model(d, env), None)[             # noqa: E731
-        "pingfederate/data-stores.json"])[0]["hostnames"]
+    hosts = lambda env: _bodies(d, env)["/dataStores"][0]["hostnames"]  # noqa: E731
     assert hosts("alpha/prod") == ["dc1.corp.example.test:636", "DC2.corp.example.test:3269"]
     assert hosts("beta/prod") == ["ad.beta.example.test:636"]          # one host there: the default
     assert not any(f.key.startswith("external-host:") for f in plan(d).fixes)
     rendered = render_env(env_model(d, "alpha/prod"), None)
     assert preview_import(d, "pingfederate/bulk", {"data.json": json.dumps({
         "metadata": {"pfVersion": "12.1.4.0"}, "operations": [{"operationType": "SAVE", "resourceType": "/dataStores",
-                                                               "items": json.loads(rendered[
-                                                                   "pingfederate/data-stores.json"])}]})},
+                                                               "items": rendered_bodies(rendered[REQUESTS])["/dataStores"]}]})},
                           (ADAPTER,))[0] == ()
 
 
@@ -283,7 +287,7 @@ def test_hosts_sharing_a_port_keep_it_on_the_store_and_a_partly_named_setting_ge
     d = build_directory(REGISTRY, records(), (*recorded, *preview_import(base, "pingfederate/bulk", export([shared]),
                                                                           (ADAPTER,))[0]))
     assert one(get(d, named(DATA_STORES, "corp-ad")), "pingfedPort") == "636"
-    assert json.loads(render_env(env_model(d, "alpha/prod"), None)["pingfederate/data-stores.json"])[0][
+    assert _bodies(d, "alpha/prod")["/dataStores"][0][
         "hostnames"] == ["dc1.corp.example.test:636", "dc2.corp.example.test:636"]
     mixed = {**CORP_AD, "hostnames": ["ldap.example.test:1636", "dc9.corp.example.test:636"]}
     d, _, _ = imported((), export([mixed]))

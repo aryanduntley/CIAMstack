@@ -20,6 +20,19 @@ opsdir import --dry-run linux/jobs hosts/
 opsdir import --change CHG-… linux/jobs hosts/
 ```
 
+**Collected over SSH** (`opsdir collect --env CLOUD/ENV --adapter linux`, with the estate setting `collect-from-ssh` on): a collection source per server role, read from every server of that role in the environment by its host name, one folder per server (the layout above):
+
+```ldif
+dn: cn=jobs-ds,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: ciamCollectionSource
+ciamBindingRole: collect-jobs-ds
+ciamImporter: linux/jobs
+ciamTargetRole: ds
+ciamLoginName: ops
+```
+
+`ciamPort` when SSH isn't on 22. The calls are the core's SSH (`BatchMode=yes`, `StrictHostKeyChecking=yes`: add the hosts to `known_hosts` first; an unknown or changed key fails) running only `cat` of `/etc/crontab`, and `find` then `cat` of the files in `/etc/cron.d` and `/etc/systemd/system`. A file or directory a server lacks is absent, not a failure. Nothing is escalated: users' crontabs (`/var/spool/cron`) are readable by root only and aren't collected; save them by hand if you need them. One host's files can also be read with an `ssh://` configuration source (core README). The showcase's end-to-end tests prove both import like the saved export (`examples/showcase/tests/unit/test_collected_sources.py`).
+
 | File | Read as |
 |---|---|
 | `etc/crontab`, `etc/cron.d/<file>` | System crontabs: `minute hour day month weekday USER command`, `@daily USER command`, `@reboot USER command` (trigger `boot`) |
@@ -49,6 +62,8 @@ opsdir import --dry-run linux/baseline hosts/
 opsdir import --change CHG-… linux/baseline hosts/
 ```
 
+**Collected over SSH** the same way (`ciamImporter: linux/baseline`, a role, a login): `cat` of the files in the table below, `find` then `cat` of `limits.d/*.conf`, `sysctl.d/*.conf` and `/etc/systemd/system` (its timers tell the services that are jobs apart), and, after `command -v java keytool rpm dpkg-query` says which tools the server has, only those: `java -version`, `keytool -list -cacerts -storepass changeit` (the JDK's documented default password; a truststore with another one fails, named) and `rpm -qa --qf '%{NAME} %{VERSION}\n'`, or `dpkg-query -W` when `os-release` says Debian or Ubuntu. `java` is the login's `PATH` Java: when the product runs another JDK, read that one by hand. A file or tool a server lacks is absent, not a failure.
+
 | File | Read as |
 |---|---|
 | `etc/os-release` | `ciamOs`: `ID VERSION_ID` (`rhel 9.4`) |
@@ -74,7 +89,7 @@ None of its own: jobs are the core `automation` domain's (`ciamJob` under `ou=jo
 
 ## Known limits
 
-- Not run against live servers yet; crontab and systemd syntax as documented (cron(5), systemd.timer(5)).
+- Not run against live servers yet; crontab and systemd syntax as documented (cron(5), systemd.timer(5)). The SSH collectors are tested with a stand-in ssh, not real hosts.
 - Not read: anacron (`/etc/anacrontab`), `/etc/cron.{hourly,daily,weekly,monthly}/` scripts (run-parts), `at` jobs, user systemd units (`~/.config/systemd/user`), timers under `/usr/lib/systemd/system` (the distribution's).
 - A job's schedule is recorded as its system writes it (cron expressions are not normalized).
 - Host baseline: not read yet are `java.security` overrides, sudoers and local accounts, auditd rules, logrotate, `/etc/systemd/system/*.service.d/` drop-ins, and units under `/usr/lib/systemd/system`. A truststore listing from a JDK 8 (no `[jdk]` markers) can't tell additions apart.
@@ -82,6 +97,8 @@ None of its own: jobs are the core `automation` domain's (`ciamJob` under `ou=jo
 ## Tests
 
 `tests/test_linux_baseline.py`: one baseline per role from its servers, truststore additions linked or named, values that differ and drift named, pins kept, a re-import changing nothing, keeping an owner and not clearing what no file gave; the parsers (JDK vendors, sysctl order, package list forms, pinned names, units, both keytool forms).
+
+`examples/showcase/tests/unit/test_collected_sources.py`: crontabs, timers and host baselines collected over SSH (per host, and per role) give the same import as the saved export; a Debian server without Java gets `dpkg-query` and no Java calls; the SSH setting and roles without servers are named.
 
 `tests/test_linux_jobs.py`: one job per role found on each server, `@reboot` and timers (schedules, boot trigger, the service's command and user), bundle links, secrets never recorded, jobs on some of a role's servers and differing schedules named, unknown folders, a re-import changing nothing and keeping an owner.
 

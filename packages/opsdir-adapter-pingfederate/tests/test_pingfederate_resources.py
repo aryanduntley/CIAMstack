@@ -16,6 +16,7 @@ from opsdir.core.standard import registry_ldif
 from opsdir_adapter_pingfederate.adapter import ADAPTER
 from opsdir_adapter_pingfederate.checks import check_references
 from opsdir_adapter_pingfederate.naming import RESOURCES
+from opsdir_adapter_pingfederate.admin_api import OUTPUT as REQUESTS, rendered_bodies
 from opsdir_adapter_pingfederate.render import render_env
 from opsdir_adapter_pingfederate.schema import FRAGMENT
 import mini_estate
@@ -79,14 +80,13 @@ def test_secrets_are_withheld_and_rendered_per_environment(after):
     assert "/idp/tokenProcessors jwt: its secrets are withheld; set pingfedCredentialRole to the secret role that " \
            "holds them" in notices
     assert "not-a-real-value" not in json.dumps([dict(e.attrs) for e in d.entries.values()])
-    ops = json.loads(render_env(env_model(d, "alpha/prod"), None)["pingfederate/other-resources.json"])["operations"]
-    out = next(op for op in ops if op["resourceType"] == "/idp/tokenProcessors")["items"][0]
+    out = rendered_bodies(render_env(env_model(d, "alpha/prod"), None)[REQUESTS])["/idp/tokenProcessors"][0]
     assert out["configuration"]["fields"][1] == {"name": "Password", "value": "${withheld}"}
 
 
 def test_what_it_renders_imports_back_unchanged():
     d, _, _ = imported()
-    rendered = {"other-resources.json": render_env(env_model(d, "alpha/prod"), None)["pingfederate/other-resources.json"]}
+    rendered = {REQUESTS: render_env(env_model(d, "alpha/prod"), None)[REQUESTS]}
     assert preview_import(d, "pingfederate/bulk", rendered, (ADAPTER,))[0] == ()
 
 

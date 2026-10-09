@@ -13,10 +13,9 @@ differs per environment:
                 store's credential role (pingfedCredentialRole), which a change sets: it is never guessed
   bind account  an LDAP store's user DN is linked to the directory consumer record with that bind DN
 
-What the record adds to a data store (its credential role, owners) is kept on import. The rendered file
-(pingfederate/data-stores.json) imports back unchanged.
+What the record adds to a data store (its credential role, owners) is kept on import. The rendered request
+(opsdir_adapter_pingfederate.admin_api) imports back unchanged.
 """
-import json
 
 from opsdir.core.directory import get, make_entry, merged_attrs, one, rdn_value
 from opsdir.core.environment import UNBOUND, published_role
@@ -28,7 +27,6 @@ from .naming import DATA_STORES, named
 
 from .withheld import filled, withheld_settings
 
-OUTPUT = "pingfederate/data-stores.json"
 OWNED = ("cn", "pingfedStoreType", "pingfedTargetRole", "pingfedPort", "pingfedConsumer", "pingfedConfig",
          "pingfedWithheld")
 
@@ -111,8 +109,3 @@ def data_store_view(m, store):
     config = held_json(store, "pingfedConfig")
     placed = _with_hosts(kind, config, role_hosts(m, role, port)) if role else config
     return {"type": kind, "id": rdn_value(store), **filled(m, store, placed)}
-
-
-def data_stores_file(m, stores):
-    """{path: text}: the data stores for environment m (nothing when there are none)."""
-    return {OUTPUT: json.dumps([data_store_view(m, s) for s in stores], indent=2) + "\n"} if stores else {}

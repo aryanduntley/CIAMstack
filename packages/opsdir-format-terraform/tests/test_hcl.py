@@ -47,3 +47,35 @@ def test_block_aligns_equals_within_runs_like_terraform_fmt():
 
 def test_registered_as_the_hcl_format():
     assert format_named("hcl") == FORMAT and FORMAT.comment == ("#",) and ".tf" in FORMAT.extensions
+
+
+def test_data_values_escape_literal_text_and_keep_expressions():
+    from opsdir_format_terraform.hcl import Expr, data_value, literal
+    assert literal('(mail=${mail}) %{if} "q" \\ x\n') == '"(mail=$${mail}) %%{if} \\"q\\" \\\\ x\\n"'
+    assert [data_value(v) for v in (None, True, 5, 1.5, "a", Expr("var.x"), [], {}, ["a", Expr("var.b")])] == \
+        ["null", "true", "5", "1.5", '"a"', "var.x", "[]", "{}", '["a", var.b]']
+
+
+def test_data_block_lays_out_nested_objects_like_terraform_fmt():
+    from opsdir_format_terraform.hcl import Expr, data_block
+    text = data_block("resource", ["kind", "name"], [
+        ("id", "a"), ("long_name", "b"),
+        ("config", {"fields": [{"name": "Lifetime", "value": "120"}], "urn:key": {}, "tables": []}),
+        ("after", True), ("depends_on", [Expr("kind.other")])], comments=("note",))
+    assert text == '''resource "kind" "name" {
+  # note
+  id        = "a"
+  long_name = "b"
+  config = {
+    fields = [
+      {
+        name  = "Lifetime"
+        value = "120"
+      },
+    ]
+    "urn:key" = {}
+    tables    = []
+  }
+  after      = true
+  depends_on = [kind.other]
+}'''

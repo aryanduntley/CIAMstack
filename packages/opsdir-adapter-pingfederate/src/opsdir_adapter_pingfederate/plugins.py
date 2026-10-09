@@ -10,7 +10,6 @@ its settings as the Admin API writes them, with what may be secret withheld (ops
 each environment renders the reference of the instance's credential role there. What the record adds to an instance
 (its credential role, owners) is kept on import, and the rendered files import back unchanged.
 """
-import json
 from types import MappingProxyType
 from typing import NamedTuple
 
@@ -22,17 +21,14 @@ from .naming import (CAPTCHA_PROVIDERS, IDP_ADAPTERS, NOTIFICATION_PUBLISHERS, S
 from .objects import NOT_EXPORTED, links, why_unresolved
 from .withheld import filled, withheld_settings
 
-Kind = NamedTuple("Kind", [("resource", str), ("base", str), ("output", str), ("label", str)])
+Kind = NamedTuple("Kind", [("resource", str), ("base", str), ("label", str)])
 KINDS = MappingProxyType({
-    "validator": Kind("/passwordCredentialValidators", VALIDATORS, "password-credential-validators.json",
-                      "password credential validator"),
-    "idp-adapter": Kind("/idp/adapters", IDP_ADAPTERS, "idp-adapters.json", "IdP adapter"),
-    "selector": Kind("/authenticationSelectors", SELECTORS, "authentication-selectors.json", "authentication selector"),
-    "access-token-manager": Kind("/oauth/accessTokenManagers", TOKEN_MANAGERS, "access-token-managers.json",
-                                 "access token manager"),
-    "notification-publisher": Kind("/notificationPublishers", NOTIFICATION_PUBLISHERS, "notification-publishers.json",
-                                   "notification publisher"),
-    "captcha-provider": Kind("/captchaProviders", CAPTCHA_PROVIDERS, "captcha-providers.json", "CAPTCHA provider")})
+    "validator": Kind("/passwordCredentialValidators", VALIDATORS, "password credential validator"),
+    "idp-adapter": Kind("/idp/adapters", IDP_ADAPTERS, "IdP adapter"),
+    "selector": Kind("/authenticationSelectors", SELECTORS, "authentication selector"),
+    "access-token-manager": Kind("/oauth/accessTokenManagers", TOKEN_MANAGERS, "access token manager"),
+    "notification-publisher": Kind("/notificationPublishers", NOTIFICATION_PUBLISHERS, "notification publisher"),
+    "captcha-provider": Kind("/captchaProviders", CAPTCHA_PROVIDERS, "CAPTCHA provider")})
 # settings fields whose value is another PingFederate object's id, by the field's name (PingFederate's own plugins;
 # verify against the target version, and add a custom plugin's fields here)
 REF_FIELDS = MappingProxyType({"Password Credential Validator Instance": "validator", "LDAP Datastore": "datastore",
@@ -97,10 +93,3 @@ def plugin_view(m, entry):
     """A plugin instance as the Admin API takes it, for environment m (withheld values from its credential role)."""
     return {"id": rdn_value(entry), "pluginDescriptorRef": {"id": one(entry, "pingfedPluginType")},
             **filled(m, entry, held_json(entry, "pingfedConfig"))}
-
-
-def plugin_files(m):
-    """{pingfederate/<kind file>: text} for every kind of plugin instance environment m's record has."""
-    held = {kind: children(m.d, k.base, "pingfedPlugin") for kind, k in KINDS.items()}
-    return {f"pingfederate/{KINDS[kind].output}": json.dumps([plugin_view(m, e) for e in entries], indent=2) + "\n"
-            for kind, entries in held.items() if entries}

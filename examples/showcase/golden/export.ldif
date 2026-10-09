@@ -1232,6 +1232,7 @@ description: Every rendered resource carries CostCenter
 dn: cn=customer-portal,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamIntegration
+objectClass: pingfedHeldSettings
 cn: customer-portal
 ciamAcsUrl: https://portal.example-aero.test/saml/acs
 ciamCriticality: critical
@@ -1246,6 +1247,31 @@ ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=customer-portal-sp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+pingfedConfig: {"active":true,"contactInfo":{"company":"customer-portal-team"}
+ ,"credentials":{"certs":[{"certView":{"expires":"2027-03-01T00:00:00.000Z","i
+ ssuerDN":"CN=portal.example-aero.test SP","keyAlgorithm":"RSA","keySize":2048
+ ,"sha256Fingerprint":"6DAEAB5CF25D9FEEBA687593B0DD8549E5C11CA7676778E51E4CE69
+ B9037C515","status":"VALID","subjectDN":"CN=portal.example-aero.test SP","val
+ idFrom":"2024-03-01T00:00:00.000Z"},"primaryVerificationCert":true,"x509File"
+ :{"fileData":"-----BEGIN CERTIFICATE-----\nU1lOVEhFVElDIENFUlRJRklDQVRFIENOPX
+ BvcnRhbC5leGFtcGxlLWFlcm8udGVzdCBTUA==\n-----END CERTIFICATE-----\n"}}],"sign
+ ingSettings":{"algorithm":"SHA256withRSA","signingKeyPairRef":{"id":"signing-
+ 2025"}}},"entityId":"https://portal.example-aero.test/saml/sp","id":"customer
+ -portal","name":"customer-portal","spBrowserSso":{"adapterMappings":[{"attrib
+ uteContractFulfillment":{"SAML_SUBJECT":{"source":{"id":"user-directory","typ
+ e":"LDAP_DATA_STORE"},"value":"uid"},"company":{"source":{"id":"user-director
+ y","type":"LDAP_DATA_STORE"},"value":"companyId"},"email":{"source":{"id":"us
+ er-directory","type":"LDAP_DATA_STORE"},"value":"mail"},"family_name":{"sourc
+ e":{"id":"user-directory","type":"LDAP_DATA_STORE"},"value":"sn"},"given_name
+ ":{"source":{"id":"user-directory","type":"LDAP_DATA_STORE"},"value":"givenNa
+ me"},"roles":{"source":{"id":"user-directory","type":"LDAP_DATA_STORE"},"valu
+ e":"appEntitlement"}},"idpAdapterRef":{"id":"htmlform"}}],"assertionLifetime"
+ :{"minutesAfter":5,"minutesBefore":5},"attributeContract":{"coreAttributes":[
+ {"name":"SAML_SUBJECT"}],"extendedAttributes":[{"name":"company"},{"name":"em
+ ail"},{"name":"family_name"},{"name":"given_name"},{"name":"roles"}]},"enable
+ dProfiles":["SP_INITIATED_SSO"],"protocol":"SAML20","ssoServiceEndpoints":[{"
+ binding":"POST","isDefault":true,"url":"https://portal.example-aero.test/saml
+ /acs"}]},"type":"SP"}
 
 dn: cn=customer-portal-egress,ou=external-allowlists,dc=ciam-ops
 objectClass: top
@@ -1889,6 +1915,7 @@ dn: cn=harbor-mro-federation,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamIntegration
 objectClass: pingfedConnection
+objectClass: pingfedHeldSettings
 cn: harbor-mro-federation
 ciamCriticality: medium
 ciamEntityId: https://sso.harbor-mro.example/idp
@@ -1901,6 +1928,32 @@ ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamSsoUrl: https://sso.harbor-mro.example/idp/SSO.saml2
 ciamUsesCertificate: cn=harbor-mro-idp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+pingfedConfig: {"active":true,"credentials":{"certs":[{"certView":{"expires":"
+ 2028-01-15T00:00:00.000Z","issuerDN":"CN=Harbor MRO SSO","keyAlgorithm":"RSA"
+ ,"keySize":2048,"sha256Fingerprint":"2DE9F6D56B7574001773F5031D9870716DBC6BED
+ 2F6EECC9528BDB91FBBF321F","status":"VALID","subjectDN":"CN=Harbor MRO SSO","v
+ alidFrom":"2025-01-15T00:00:00.000Z"},"primaryVerificationCert":true,"x509Fil
+ e":{"fileData":"-----BEGIN CERTIFICATE-----\nU1lOVEhFVElDIENFUlRJRklDQVRFIENO
+ PUhhcmJvciBNUk8gU1NP\n-----END CERTIFICATE-----\n"}},{"certView":{"expires":"
+ 2027-02-10T00:00:00.000Z","issuerDN":"CN=Public CA R11","keyAlgorithm":"RSA",
+ "keySize":2048,"sha256Fingerprint":"241F66E08778484FBF6FF4189EA7E3867FAE0D35C
+ 5DAD82C63670365E24A3C26","status":"VALID","subjectAlternativeNames":["sso.exa
+ mple-aero.test"],"subjectDN":"CN=sso.example-aero.test","validFrom":"2026-02-
+ 10T00:00:00.000Z"},"primaryVerificationCert":true,"x509File":{"fileData":"---
+ --BEGIN CERTIFICATE-----\nU1lOVEhFVElDIENFUlRJRklDQVRFIENOPXNzby5leGFtcGxlLWF
+ lcm8udGVzdA==\n-----END CERTIFICATE-----\n"}}]},"entityId":"https://sso.harbo
+ r-mro.example/idp","id":"harbor-mro-federation","idpBrowserSso":{"attributeCo
+ ntract":{"coreAttributes":[{"name":"SAML_SUBJECT"}],"extendedAttributes":[{"n
+ ame":"mail"},{"name":"givenName"},{"name":"sn"}]},"idpIdentityMapping":"ACCOU
+ NT_MAPPING","jitProvisioning":{"errorHandling":"ABORT_SSO","eventTrigger":"NE
+ W_USER_ONLY","userAttributes":{"attributeContract":[{"name":"mail"},{"name":"
+ givenName"},{"name":"sn"}],"doAttributeQuery":false},"userRepository":{"baseD
+ n":"ou=partners,ou=people,dc=partners,dc=example-aero,dc=test","dataStoreRef"
+ :{"id":"user-directory"},"jitRepositoryAttributeMapping":{"givenName":{"sourc
+ e":{"type":"ASSERTION"},"value":"givenName"},"mail":{"source":{"type":"ASSERT
+ ION"},"value":"mail"},"sn":{"source":{"type":"ASSERTION"},"value":"sn"}},"typ
+ e":"LDAP","uniqueUserIdFilter":"(mail=${mail})"}},"protocol":"SAML20"},"name"
+ :"harbor-mro-federation","type":"IDP"}
 pingfedConnectionId: harbor-mro-federation
 
 dn: cn=harbor-mro-idp-signing,ou=certificates,dc=ciam-ops
@@ -2307,6 +2360,7 @@ dn: cn=mobile-ops,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamIntegration
 objectClass: pingfedClient
+objectClass: pingfedHeldSettings
 cn: mobile-ops
 ciamClientId: mobile-ops
 ciamCriticality: medium
@@ -2325,8 +2379,14 @@ ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamTokenAuthMethod: none
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
-pingfedUses: cn=default-jwt,ou=access-token-managers,ou=pingfederate,dc=ciam-o
- ps
+pingfedConfig: {"clientAuth":{"type":"NONE"},"clientId":"mobile-ops","defaultA
+ ccessTokenManagerRef":{"id":"defaultjwt"},"enabled":true,"grantTypes":["AUTHO
+ RIZATION_CODE","REFRESH_TOKEN"],"name":"mobile-ops","oidcPolicy":{"policyGrou
+ p":{"id":"default-oidc"}},"redirectUris":["https://mobile.example-aero.test/o
+ auth2/callback"],"requireProofKeyForCodeExchange":true,"restrictScopes":true,
+ "restrictedScopes":["openid","email","offline_access"]}
+pingfedUses: cn=defaultjwt,ou=access-token-managers,ou=pingfederate,dc=ciam-op
+ s
 pingfedUses: cn=default-oidc,ou=oidc-policies,ou=pingfederate,dc=ciam-ops
 xTokenLifetimeMinutes: 30
 
@@ -2694,7 +2754,21 @@ ciamKeySize: 2048
 ciamKeyUsage: signing
 ciamMaterialFormat: pkcs12
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPasswordRole: pf-signing-key-password
 ciamRotationDays: 730
+
+dn: cn=pf-signing-key-password,ou=credentials,dc=ciam-ops
+objectClass: top
+objectClass: ciamCredential
+cn: pf-signing-key-password
+ciamBindingRole: pf-signing-key-password
+ciamContinuity: carry-over
+ciamContinuityReason: it protects the carried-over signing key's PKCS#12 file
+ciamCredentialType: password
+ciamExportable: TRUE
+ciamKeyUsage: signing
+ciamMaterialFormat: text
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 
 dn: cn=pf-smtp-password,ou=credentials,dc=ciam-ops
 objectClass: top
@@ -2802,11 +2876,11 @@ ciamImportScope: cn=reports-api,ou=integrations,dc=ciam-ops
 ciamImportScope: cn=user-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
 ciamImportScope: cn=grant-store,ou=data-stores,ou=pingfederate,dc=ciam-ops
 ciamImportScope: cn=corp-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
-ciamImportScope: cn=pcv-customers,ou=credential-validators,ou=pingfederate,dc=
- ciam-ops
+ciamImportScope: cn=pcvcustomers,ou=credential-validators,ou=pingfederate,dc=c
+ iam-ops
 ciamImportScope: cn=htmlform,ou=idp-adapters,ou=pingfederate,dc=ciam-ops
-ciamImportScope: cn=default-jwt,ou=access-token-managers,ou=pingfederate,dc=ci
- am-ops
+ciamImportScope: cn=defaultjwt,ou=access-token-managers,ou=pingfederate,dc=cia
+ m-ops
 ciamImportScope: cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-op
  s
 ciamImportScope: cn=recaptcha,ou=captcha-providers,ou=pingfederate,dc=ciam-ops
@@ -2954,6 +3028,7 @@ dn: cn=reports-api,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamIntegration
 objectClass: pingfedClient
+objectClass: pingfedHeldSettings
 cn: reports-api
 ciamClientId: reports-api
 ciamGrantType: client_credentials
@@ -2961,8 +3036,13 @@ ciamProtocolType: oidc-client
 ciamScope: reports.read
 ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamTokenAuthMethod: client_secret_basic
-pingfedUses: cn=default-jwt,ou=access-token-managers,ou=pingfederate,dc=ciam-o
- ps
+pingfedConfig: {"clientAuth":{"secret":null,"type":"SECRET"},"clientId":"repor
+ ts-api","defaultAccessTokenManagerRef":{"id":"defaultjwt"},"enabled":true,"gr
+ antTypes":["CLIENT_CREDENTIALS"],"name":"Reporting API","restrictScopes":true
+ ,"restrictedScopes":["reports.read"]}
+pingfedUses: cn=defaultjwt,ou=access-token-managers,ou=pingfederate,dc=ciam-op
+ s
+pingfedWithheld: /clientAuth/secret
 
 dn: cn=RT-2026-08-14-ds-data,ou=restore-tests,dc=ciam-ops
 objectClass: top
@@ -3054,6 +3134,7 @@ dn: cn=skyline-air-federation,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamIntegration
 objectClass: pingfedConnection
+objectClass: pingfedHeldSettings
 cn: skyline-air-federation
 ciamCriticality: high
 ciamEntityId: https://idp.skyline-air.example/saml
@@ -3067,6 +3148,32 @@ ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamSsoUrl: https://idp.skyline-air.example/saml/sso
 ciamUsesCertificate: cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+pingfedConfig: {"active":true,"credentials":{"certs":[{"certView":{"expires":"
+ 2026-11-02T00:00:00.000Z","issuerDN":"CN=Skyline Air IdP Signing","keyAlgorit
+ hm":"RSA","keySize":2048,"sha256Fingerprint":"ED9B7C432043F43B0BEE4E796BAC598
+ 53D7CCB6B549CD03E83C20E17D1647C83","status":"VALID","subjectDN":"CN=Skyline A
+ ir IdP Signing","validFrom":"2024-11-02T00:00:00.000Z"},"primaryVerificationC
+ ert":true,"x509File":{"fileData":"-----BEGIN CERTIFICATE-----\nU1lOVEhFVElDIE
+ NFUlRJRklDQVRFIENOPVNreWxpbmUgQWlyIElkUCBTaWduaW5n\n-----END CERTIFICATE-----
+ \n"}},{"certView":{"expires":"2027-02-10T00:00:00.000Z","issuerDN":"CN=Public
+  CA R11","keyAlgorithm":"RSA","keySize":2048,"sha256Fingerprint":"241F66E0877
+ 8484FBF6FF4189EA7E3867FAE0D35C5DAD82C63670365E24A3C26","status":"VALID","subj
+ ectAlternativeNames":["sso.example-aero.test"],"subjectDN":"CN=sso.example-ae
+ ro.test","validFrom":"2026-02-10T00:00:00.000Z"},"primaryVerificationCert":tr
+ ue,"x509File":{"fileData":"-----BEGIN CERTIFICATE-----\nU1lOVEhFVElDIENFUlRJR
+ klDQVRFIENOPXNzby5leGFtcGxlLWFlcm8udGVzdA==\n-----END CERTIFICATE-----\n"}}]}
+ ,"entityId":"https://idp.skyline-air.example/saml","id":"skyline-air-federati
+ on","idpBrowserSso":{"attributeContract":{"coreAttributes":[{"name":"SAML_SUB
+ JECT"}],"extendedAttributes":[{"name":"mail"},{"name":"givenName"},{"name":"s
+ n"}]},"idpIdentityMapping":"ACCOUNT_MAPPING","jitProvisioning":{"errorHandlin
+ g":"ABORT_SSO","eventTrigger":"NEW_USER_ONLY","userAttributes":{"attributeCon
+ tract":[{"name":"mail"},{"name":"givenName"},{"name":"sn"}],"doAttributeQuery
+ ":false},"userRepository":{"baseDn":"ou=partners,ou=people,dc=partners,dc=exa
+ mple-aero,dc=test","dataStoreRef":{"id":"user-directory"},"jitRepositoryAttri
+ buteMapping":{"givenName":{"source":{"type":"ASSERTION"},"value":"givenName"}
+ ,"mail":{"source":{"type":"ASSERTION"},"value":"mail"},"sn":{"source":{"type"
+ :"ASSERTION"},"value":"sn"}},"type":"LDAP","uniqueUserIdFilter":"(mail=${mail
+ })"}},"protocol":"SAML20"},"name":"skyline-air-federation","type":"IDP"}
 pingfedConnectionId: skyline-air-federation
 
 dn: cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops
@@ -3228,6 +3335,20 @@ ciamKeySize: 2048
 ciamKeyUsage: tls
 ciamMaterialFormat: pkcs12
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPasswordRole: sso-tls-keystore-password
+ciamRotationDays: 365
+
+dn: cn=sso-tls-keystore-password,ou=credentials,dc=ciam-ops
+objectClass: top
+objectClass: ciamCredential
+cn: sso-tls-keystore-password
+ciamBindingRole: sso-tls-keystore-password
+ciamContinuity: per-environment
+ciamCredentialType: password
+ciamExportable: TRUE
+ciamKeyUsage: tls
+ciamMaterialFormat: text
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationDays: 365
 
 dn: cn=SSP-CIAM-2026,ou=boundaries,dc=ciam-ops
@@ -3245,6 +3366,7 @@ ciamSspRef: SSP-CIAM-2026 v3.2 (synthetic)
 dn: cn=supplier-portal,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamIntegration
+objectClass: pingfedHeldSettings
 cn: supplier-portal
 ciamAcsUrl: https://suppliers.example-aero.test/saml/acs
 ciamCriticality: high
@@ -3259,6 +3381,30 @@ ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=supplier-portal-sp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+pingfedConfig: {"active":true,"contactInfo":{"company":"supplier-portal-team"}
+ ,"credentials":{"certs":[{"certView":{"expires":"2026-11-30T00:00:00.000Z","i
+ ssuerDN":"CN=suppliers.example-aero.test SP","keyAlgorithm":"RSA","keySize":2
+ 048,"sha256Fingerprint":"A8D9351465C62D22A2995F106F8B32C4C3EDDED8E682F9AE2881
+ 0B509A7F072B","status":"VALID","subjectDN":"CN=suppliers.example-aero.test SP
+ ","validFrom":"2023-11-30T00:00:00.000Z"},"primaryVerificationCert":true,"x50
+ 9File":{"fileData":"-----BEGIN CERTIFICATE-----\nU1lOVEhFVElDIENFUlRJRklDQVRF
+ IENOPXN1cHBsaWVycy5leGFtcGxlLWFlcm8udGVzdCBTUA==\n-----END CERTIFICATE-----\n
+ "}}],"signingSettings":{"algorithm":"SHA256withRSA","signingKeyPairRef":{"id"
+ :"signing-2025"}}},"entityId":"https://suppliers.example-aero.test/saml/sp","
+ id":"supplier-portal","name":"supplier-portal","spBrowserSso":{"adapterMappin
+ gs":[{"attributeContractFulfillment":{"SAML_SUBJECT":{"source":{"id":"user-di
+ rectory","type":"LDAP_DATA_STORE"},"value":"uid"},"company":{"source":{"id":"
+ user-directory","type":"LDAP_DATA_STORE"},"value":"companyId"},"email":{"sour
+ ce":{"id":"user-directory","type":"LDAP_DATA_STORE"},"value":"mail"},"roles":
+ {"source":{"id":"user-directory","type":"LDAP_DATA_STORE"},"value":"appEntitl
+ ement"},"sold_to":{"source":{"id":"user-directory","type":"LDAP_DATA_STORE"},
+ "value":"soldToAccount"}},"idpAdapterRef":{"id":"htmlform"}}],"assertionLifet
+ ime":{"minutesAfter":5,"minutesBefore":5},"attributeContract":{"coreAttribute
+ s":[{"name":"SAML_SUBJECT"}],"extendedAttributes":[{"name":"company"},{"name"
+ :"email"},{"name":"roles"},{"name":"sold_to"}]},"enabledProfiles":["SP_INITIA
+ TED_SSO"],"protocol":"SAML20","ssoServiceEndpoints":[{"binding":"POST","isDef
+ ault":true,"url":"https://suppliers.example-aero.test/saml/acs"}]},"type":"SP
+ "}
 
 dn: cn=supplier-portal-egress-sg,ou=external-allowlists,dc=ciam-ops
 objectClass: top
@@ -3322,6 +3468,7 @@ dn: cn=tech-pubs,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamIntegration
 objectClass: pingfedClient
+objectClass: pingfedHeldSettings
 cn: tech-pubs
 ciamClientId: tech-pubs-web
 ciamCriticality: high
@@ -3342,8 +3489,13 @@ ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamTokenAuthMethod: none
 ciamUsesCertificate: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
-pingfedUses: cn=default-jwt,ou=access-token-managers,ou=pingfederate,dc=ciam-o
- ps
+pingfedConfig: {"clientAuth":{"type":"NONE"},"clientId":"tech-pubs-web","defau
+ ltAccessTokenManagerRef":{"id":"defaultjwt"},"enabled":true,"grantTypes":["AU
+ THORIZATION_CODE","REFRESH_TOKEN"],"name":"tech-pubs","redirectUris":["https:
+ //techpubs.example-aero.test/oidc/callback"],"requireProofKeyForCodeExchange"
+ :true,"restrictScopes":true,"restrictedScopes":["openid","profile","email"]}
+pingfedUses: cn=defaultjwt,ou=access-token-managers,ou=pingfederate,dc=ciam-op
+ s
 xTokenLifetimeMinutes: 60
 
 dn: cn=tech-pubs-team,ou=owners,dc=ciam-ops
@@ -4144,26 +4296,35 @@ cn: default-apc
 pingfedConfig: {"coreAttributes":[{"name":"subject"}],"extendedAttributes":[{"
  name":"mail"}],"name":"Default"}
 
-dn: cn=default-jwt,ou=access-token-managers,ou=pingfederate,dc=ciam-ops
-objectClass: top
-objectClass: ciamObject
-objectClass: pingfedPlugin
-cn: default-jwt
-pingfedConfig: {"name":"Default JWT"}
-pingfedPluginKind: access-token-manager
-pingfedPluginType: com.pingidentity.pf.access.token.management.plugins.JwtBear
- erAccessTokenManagementPlugin
-
 dn: cn=default-oidc,ou=oidc-policies,ou=pingfederate,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: pingfedOidcPolicy
 cn: default-oidc
-pingfedConfig: {"accessTokenManagerRef":{"id":"default-jwt"},"attributeContrac
- t":{"coreAttributes":[{"name":"sub"}],"extendedAttributes":[{"name":"email"}]
- },"idTokenLifetime":5,"name":"Default"}
-pingfedUses: cn=default-jwt,ou=access-token-managers,ou=pingfederate,dc=ciam-o
- ps
+pingfedConfig: {"accessTokenManagerRef":{"id":"defaultjwt"},"attributeContract
+ ":{"coreAttributes":[{"name":"sub"}],"extendedAttributes":[{"name":"email"}]}
+ ,"attributeMapping":{"attributeContractFulfillment":{"email":{"source":{"type
+ ":"TOKEN"},"value":"mail"},"sub":{"source":{"type":"TOKEN"},"value":"sub"}}},
+ "idTokenLifetime":5,"name":"Default"}
+pingfedUses: cn=defaultjwt,ou=access-token-managers,ou=pingfederate,dc=ciam-op
+ s
+
+dn: cn=defaultjwt,ou=access-token-managers,ou=pingfederate,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: pingfedPlugin
+cn: defaultjwt
+pingfedConfig: {"attributeContract":{"extendedAttributes":[{"name":"sub"},{"na
+ me":"scope"}]},"configuration":{"fields":[{"name":"Token Lifetime","value":"1
+ 20"},{"name":"JWS Algorithm","value":"RS256"},{"name":"Active Signing Certifi
+ cate Key ID","value":"k1"}],"tables":[{"name":"Symmetric Keys","rows":[]},{"n
+ ame":"Certificates","rows":[{"defaultRow":true,"fields":[{"name":"Key ID","va
+ lue":"k1"},{"name":"Certificate","value":"signing-2025"}]}]}]},"name":"Defaul
+ t JWT"}
+pingfedPluginKind: access-token-manager
+pingfedPluginType: com.pingidentity.pf.access.token.management.plugins.JwtBear
+ erAccessTokenManagementPlugin
+pingfedUses: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 
 dn: cn=e0930981c2c28daf,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
 objectClass: top
@@ -4336,16 +4497,19 @@ objectClass: ciamObject
 objectClass: pingfedPlugin
 cn: htmlform
 pingfedConfig: {"attributeContract":{"coreAttributes":[{"name":"username","pse
- udonym":true}]},"configuration":{"fields":[{"name":"Login Template","value":"
- html.form.login.template.html"},{"name":"Allow Password Changes","value":"fal
- se"}],"tables":[{"name":"Credential Validators","rows":[{"defaultRow":false,"
- fields":[{"name":"Password Credential Validator Instance","value":"pcv-custom
- ers"}]}]}]},"name":"HTML Form"}
+ udonym":true}],"extendedAttributes":[{"name":"mail"}]},"attributeMapping":{"a
+ ttributeContractFulfillment":{"mail":{"source":{"type":"ADAPTER"},"value":"ma
+ il"},"username":{"source":{"type":"ADAPTER"},"value":"username"}},"attributeS
+ ources":[],"issuanceCriteria":{"conditionalCriteria":[]}},"configuration":{"f
+ ields":[{"name":"Login Template","value":"html.form.login.template.html"},{"n
+ ame":"Allow Password Changes","value":"false"}],"tables":[{"name":"Credential
+  Validators","rows":[{"defaultRow":false,"fields":[{"name":"Password Credenti
+ al Validator Instance","value":"pcvcustomers"}]}]}]},"name":"HTML Form"}
 pingfedPluginKind: idp-adapter
 pingfedPluginType: com.pingidentity.adapters.htmlform.idp.HtmlFormIdpAuthnAdap
  ter
-pingfedUses: cn=pcv-customers,ou=credential-validators,ou=pingfederate,dc=ciam
- -ops
+pingfedUses: cn=pcvcustomers,ou=credential-validators,ou=pingfederate,dc=ciam-
+ ops
 
 dn: cn=IN_USE_ADDRESSES,cn=gcp:example-aero-ciam-standby:us-central1,ou=quotas,dc=ciam-ops
 objectClass: top
@@ -4416,11 +4580,12 @@ objectClass: top
 objectClass: ciamObject
 objectClass: pingfedSettings
 cn: oauth-auth-server
-pingfedConfig: {"authorizationCodeTimeout":60,"exclusiveScopes":[],"persistent
- GrantLifetime":-1,"scopes":[{"description":"Email address","name":"email"},{"
- description":"Basic profile","name":"profile"},{"description":"Refresh tokens
- ","name":"offline_access"},{"description":"Read MRO reports","name":"reports.
- read"}]}
+pingfedConfig: {"authorizationCodeEntropy":30,"authorizationCodeTimeout":60,"e
+ xclusiveScopes":[],"persistentGrantLifetime":-1,"refreshRollingInterval":0,"r
+ efreshTokenLength":42,"scopes":[{"description":"Email address","name":"email"
+ },{"description":"Basic profile","name":"profile"},{"description":"Refresh to
+ kens","name":"offline_access"},{"description":"Read MRO reports","name":"repo
+ rts.read"}]}
 pingfedScope: email
 pingfedScope: profile
 pingfedScope: offline_access
@@ -4447,11 +4612,11 @@ pinggwIntegration: cn=partner-portal,ou=integrations,dc=ciam-ops
 pinggwIssuer: https://login.example-aero.test/am/oauth2/realms/root/realms/par
  tners
 
-dn: cn=pcv-customers,ou=credential-validators,ou=pingfederate,dc=ciam-ops
+dn: cn=pcvcustomers,ou=credential-validators,ou=pingfederate,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: pingfedPlugin
-cn: pcv-customers
+cn: pcvcustomers
 pingfedConfig: {"attributeContract":{"coreAttributes":[{"name":"DN"},{"name":"
  username"}]},"configuration":{"fields":[{"name":"LDAP Datastore","value":"use
  r-directory"},{"name":"Search Base","value":"ou=people,dc=partners,dc=example
@@ -4999,9 +5164,12 @@ objectClass: pingfedAuthPolicy
 cn: Customers
 pingfedEnabled: TRUE
 pingfedPolicyTree: {"action":{"authenticationSource":{"sourceRef":{"id":"htmlf
- orm"},"type":"IDP_ADAPTER"},"type":"AUTHN_SOURCE"},"children":[{"action":{"au
- thenticationPolicyContractRef":{"id":"default-apc"},"context":"Success","type
- ":"APC_MAPPING"}},{"action":{"context":"Fail","type":"DONE"}}]}
+ orm"},"type":"IDP_ADAPTER"},"type":"AUTHN_SOURCE"},"children":[{"action":{"at
+ tributeMapping":{"attributeContractFulfillment":{"mail":{"source":{"id":"html
+ form","type":"ADAPTER"},"value":"mail"},"subject":{"source":{"id":"htmlform",
+ "type":"ADAPTER"},"value":"username"}}},"authenticationPolicyContractRef":{"i
+ d":"default-apc"},"context":"Success","type":"APC_MAPPING"}},{"action":{"cont
+ ext":"Fail","type":"DONE"}}]}
 pingfedPosition: 0
 pingfedUses: cn=htmlform,ou=idp-adapters,ou=pingfederate,dc=ciam-ops
 pingfedUses: cn=default-apc,ou=policy-contracts,ou=pingfederate,dc=ciam-ops
@@ -5827,8 +5995,9 @@ objectClass: ciamObject
 objectClass: pingfedResource
 cn: settings
 pingfedConfig: {"contactInfo":{"company":"Example Aero","email":"ciam-platform
- @example-aero.test"},"rolesAndProtocols":{"oauthRole":{"enableOauth":true,"en
- ableOpenIdConnect":true}}}
+ @example-aero.test"},"federationInfo":{"baseUrl":"https://sso.example-aero.te
+ st","saml2EntityId":"https://sso.example-aero.test/idp"},"rolesAndProtocols":
+ {"oauthRole":{"enableOauth":true,"enableOpenIdConnect":true}}}
 pingfedResourceType: /serverSettings
 
 dn: cn=sn,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
@@ -9295,6 +9464,37 @@ ciamBindingRole: pf-signing-key
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /stage/pf-signing-key
 
+dn: cn=secret-pf-signing-key-password,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-signing-key-password
+ciamBindingRole: pf-signing-key-password
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /prod/pf-signing-key-password
+
+dn: cn=secret-pf-signing-key-password,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-signing-key-password
+ciamBindingRole: pf-signing-key-password
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/pf-signing-key
+ -password
+
+dn: cn=secret-pf-signing-key-password,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-signing-key-password
+ciamBindingRole: pf-signing-key-password
+ciamRefUri: azkv://kv-ciam-prod/pf-signing-key-password
+
+dn: cn=secret-pf-signing-key-password,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-pf-signing-key-password
+ciamBindingRole: pf-signing-key-password
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /stage/pf-signing-key-password
+
 dn: cn=secret-pf-smtp-password,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecretRef
@@ -9356,6 +9556,37 @@ cn: secret-sso-tls-keystore
 ciamBindingRole: sso-tls-keystore
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /stage/sso-tls-keystore
+
+dn: cn=secret-sso-tls-keystore-password,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-sso-tls-keystore-password
+ciamBindingRole: sso-tls-keystore-password
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /prod/sso-tls-keystore-password
+
+dn: cn=secret-sso-tls-keystore-password,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-sso-tls-keystore-password
+ciamBindingRole: sso-tls-keystore-password
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/sso-tls-keysto
+ re-password
+
+dn: cn=secret-sso-tls-keystore-password,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-sso-tls-keystore-password
+ciamBindingRole: sso-tls-keystore-password
+ciamRefUri: azkv://kv-ciam-prod/sso-tls-keystore-password
+
+dn: cn=secret-sso-tls-keystore-password,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-sso-tls-keystore-password
+ciamBindingRole: sso-tls-keystore-password
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /stage/sso-tls-keystore-password
 
 dn: cn=security-alerts,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top

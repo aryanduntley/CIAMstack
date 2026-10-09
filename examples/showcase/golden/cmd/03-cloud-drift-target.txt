@@ -1,5 +1,5 @@
 target/prod: subnet snet-mgmt added (role subnet-mgmt)
-target/prod: 41 resource(s) lack the required tags CostCenter, DataClassification, Environment, Owner (network vnet-ciam-prod, database psql-ciam-prod-pf-grants, egress natgw-ciam-prod and 38 more)
+target/prod: 43 resource(s) lack the required tags CostCenter, DataClassification, Environment, Owner (network vnet-ciam-prod, database psql-ciam-prod-pf-grants, egress natgw-ciam-prod and 40 more)
 standby/prod: not an Azure environment in the record; not imported
 conflict cn=ds-3,env=prod,cloud=target,ou=environments,dc=ciam-ops|ciamInstanceSize: record Standard_D4s_v5 -> live Standard_D8s_v5
 conflict cn=fw-idm-sync,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops|ciamRulePriority: record 130 -> live 400

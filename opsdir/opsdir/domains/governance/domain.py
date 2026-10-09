@@ -3,6 +3,7 @@ from pathlib import Path
 
 from ...core.contract import Domain, directory_report, sql_report
 from ...core.directory import children, one, rdn_value
+from .attempts import ATTEMPT_HEADERS, attempt_rows
 from .imports import IMPORT_HEADERS, import_rows
 from .naming import OWNERS
 from .schema import FRAGMENT
@@ -24,5 +25,6 @@ def operator(d):
 
 DOMAIN = Domain(name="governance", schema=FRAGMENT, required_roles=(), sql=(Path(__file__).parent / "sql" / "governance.sql",),
                 reports={"stale": sql_report(STALE_HEADERS, STALE_SQL),
-                         "imports": directory_report(IMPORT_HEADERS, import_rows)}, checks=(), order=50,
+                         "imports": directory_report(IMPORT_HEADERS, import_rows),
+                         "collections": directory_report(ATTEMPT_HEADERS, attempt_rows)}, checks=(), order=50,
                 vocabulary={}, settings=SETTINGS)

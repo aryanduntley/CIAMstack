@@ -182,12 +182,12 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2008  insert  cn=corp-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=default,ou=authentication-policies,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=default-apc,ou=policy-contracts,ou=pingfederate,dc=ciam-ops
-<TIMESTAMP>          CHG-2008  insert  cn=default-jwt,ou=access-token-managers,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=default-oidc,ou=oidc-policies,ou=pingfederate,dc=ciam-ops
+<TIMESTAMP>          CHG-2008  insert  cn=defaultjwt,ou=access-token-managers,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=grant-store,ou=data-stores,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=htmlform,ou=idp-adapters,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=oauth-auth-server,ou=settings,ou=pingfederate,dc=ciam-ops
-<TIMESTAMP>          CHG-2008  insert  cn=pcv-customers,ou=credential-validators,ou=pingfederate,dc=ciam-ops
+<TIMESTAMP>          CHG-2008  insert  cn=pcvcustomers,ou=credential-validators,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=recaptcha,ou=captcha-providers,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=user-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
@@ -195,6 +195,7 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2008  insert  cn=Customers,cn=default,ou=authentication-policies,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=settings,ou=serverSettings,ou=resources,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  update  cn=captcha-recaptcha,ou=external-services,dc=ciam-ops
+<TIMESTAMP>          CHG-2008  update  cn=customer-portal,ou=integrations,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  update  cn=email-smtp.us-east-1.amazonaws.com,ou=external-services,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  update  cn=harbor-mro-federation,ou=integrations,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  update  cn=mobile-ops,ou=integrations,dc=ciam-ops
@@ -202,6 +203,7 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2008  update  cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  update  cn=skyline-air-federation,ou=integrations,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  update  cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2008  update  cn=supplier-portal,ou=integrations,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  update  cn=tech-pubs,ou=integrations,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=pingfederate.bulk.shared,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2008  insert  cn=storage,ou=settings,ou=pingfederate,dc=ciam-ops
@@ -383,4 +385,4 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2033  update  cn=fwd-corp-ad,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2033  insert  cn=EXC-2026-04,ou=exceptions,dc=ciam-ops
 <TIMESTAMP>          CHG-2034  insert  cn=dspm,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
-(383 rows)
+(385 rows)

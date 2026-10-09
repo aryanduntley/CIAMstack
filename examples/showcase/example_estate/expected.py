@@ -318,6 +318,8 @@ EXPECTED = MappingProxyType({
         ("A102", "Data discovery", "source/prod runs data discovery (macie-backups, over backup-target) and target/prod "
          "runs none", "an action while nothing requires the target to rely on an authorization (it becomes B38 once "
          "CHG-2029 holds the target to DFARS)", "CHG-2029"),
+        ("A103", "Key", "Copy `pf-signing-key-password`", "the password protecting the carried-over signing key's PKCS#12 "
+         "file must be carried over with it (PingFederate imports the file with it)", None),
     ],
 })
 
