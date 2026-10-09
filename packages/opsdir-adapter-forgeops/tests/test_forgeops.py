@@ -216,6 +216,16 @@ def test_the_planner_names_what_forgeops_still_needs():
     assert not any("service account" in a for a in actions)
 
 
+def test_the_planner_names_a_ds_layout_split_between_the_cluster_and_servers():
+    actions = [a[1] for a in check_forgeops(_context(model(*DS))).actions]
+    (split,) = [a for a in actions if "on servers" in a]
+    assert split.startswith("ForgeOps in alpha/prod (namespace `identity`) runs `ds-idrepo` in the cluster and "
+                            "`ds-cts` on servers")
+    cts = (_workload("ds-cts", "ds"), _binding("ds-cts", "ciamWorkloadBinding", "ds-cts-workload"))
+    assert not any("on servers:" in a for a in [a[1] for a in check_forgeops(_context(model(*DS, *cts))).actions])
+    assert not any("on servers:" in a for a in [a[1] for a in check_forgeops(_context(model())).actions])
+
+
 def test_the_planner_names_a_second_service_account():
     text = "\n".join((mini_estate.LDIF, *(b.replace("ciamServiceAccount: identity\n", "") if "cn: idm\n" in b else b
                                           for b in BASE)))

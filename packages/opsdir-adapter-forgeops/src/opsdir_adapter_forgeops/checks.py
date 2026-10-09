@@ -3,13 +3,14 @@
 What the rendered values and overlay can't settle on their own, as actions: Secrets the release's pods read that the
 record doesn't deliver (no workload in the namespace records the key, and ForgeOps doesn't make it), the one service
 account the identity-platform chart runs every pod as, a ds workload ForgeOps can't place (it runs DS as ds-idrepo or
-ds-cts), and ForgeOps' public images (for development and testing only).
+ds-cts), one DS store in the cluster and the other on servers (unsupported: one truststore CA), and ForgeOps' public
+images (for development and testing only).
 """
 from opsdir.core.directory import rdn_value
 from opsdir.core.findings import findings, responsible
 from opsdir.domains.compute.workloads import workload_secrets
 from opsdir_adapter_kubernetes.render import namespace_of, on_kubernetes, service_account_of
-from .components import image_of, placements, unplaced
+from .components import image_of, placements, split_ds, unplaced
 from .release import HELM, IDENTITY_PLATFORM, KUSTOMIZE, SERVERS_CA, component, kit_secrets, public_image
 
 AREA = "ForgeOps"
@@ -48,9 +49,17 @@ def _accounts(m, p):
             f"`{next(iter(names))}` (the Kustomize overlay sets each).",) if len(names) > 1 else ()
 
 
+def _split(m, p):
+    split = split_ds(p)
+    return (f"ForgeOps in {m.label} (namespace `{p.namespace}`) runs `{split[0]}` in the cluster and `{split[1]}` on "
+            f"servers: ForgeOps then makes the DS certificates, so AM's and IDM's truststore holds only its own CA and "
+            f"their TLS connections to the DS servers fail. Run both stores in the cluster or both on servers.",) \
+        if split else ()
+
+
 def check_forgeops(ctx):
     """Actions on the target: ForgeOps Secrets the record doesn't deliver, one service account per Helm release, ds
-    workloads ForgeOps can't place, ForgeOps' public images."""
+    workloads ForgeOps can't place, a DS layout split between the cluster and servers, ForgeOps' public images."""
     m = ctx.dst
     spaces = placements(m)
     if not spaces and not unplaced(m):
@@ -58,6 +67,7 @@ def check_forgeops(ctx):
     owner = responsible(ctx.d, m.env)
     texts = (*(_secret_text(m, *row) for row in unrecorded_secrets(m)),
              *(t for p in spaces for t in _accounts(m, p)),
+             *(t for p in spaces for t in _split(m, p)),
              *(f"Workload `{rdn_value(w)}` runs DS on Kubernetes in {m.label}, but ForgeOps runs DS as `ds-idrepo` "
                f"or `ds-cts`: name the workload after the one it is, or it isn't deployed." for w in unplaced(m)),
              *(f"ForgeOps component `{c}` in {m.label} (namespace `{p.namespace}`) runs ForgeOps' public image "

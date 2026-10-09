@@ -5,6 +5,7 @@ reproduce, runs less safely, or leaves behind when a role moves between servers 
 import datetime as dt
 import re
 
+from opsdir.connectors.stack import unsupported_products
 from opsdir.core.contract import PlanContext
 from opsdir.core.directory import get, one
 from opsdir.core.environment import env_model
@@ -15,7 +16,7 @@ from opsdir.core.secrets import CORE_PATTERNS, scan
 from opsdir.domains.compute.hosts import baseline_rows, check_hosts, compute_rows
 from opsdir.domains.compute.naming import BASELINES, WORKLOAD_SECRET, WORKLOADS, baseline_dn, workload_dn
 from opsdir.domains.compute.workloads import (all_compute_rows, check_workloads, product_versions, runs_on_kubernetes,
-                                              runs_product, workload_rows, workload_secrets)
+                                              runs_product, version_holders, workload_rows, workload_secrets)
 from opsdir.domains.infrastructure.checks import check_versions
 import mini_estate
 from support import REGISTRY, build_directory
@@ -193,6 +194,10 @@ def test_a_product_run_on_kubernetes_has_its_version_on_the_workload_binding():
     beta, alpha = env_model(d, "beta/prod"), env_model(d, "alpha/prod")
     assert product_versions(beta) == ("PingDS 8.0.1",) and runs_product(beta, ("PingDS",))     # no servers of it
     assert not runs_product(alpha, ("PingDS",))
+    assert version_holders(beta) == (("workload ds on Kubernetes", "PingDS 8.0.1"),)
+    ds7 = mini_estate.FAKE._replace(name="ds7", products=(("PingDS", ">=7,<8"),))
+    assert unsupported_products(beta, (ds7,)) == (("workload ds on Kubernetes", ds7, "PingDS 8.0.1", ">=7,<8"),)
+    assert unsupported_products(beta, (ds7._replace(products=(("PingDS", ">=7,<9"),)),)) == ()
     unversioned = directory(_workload_binding(BETA) + "\n" + _cluster(BETA))
     (action,) = [t for _, t, _, _ in check_versions(context(unversioned)).actions]
     assert action.startswith("No product version recorded for") and "beta/prod workload ds" in action

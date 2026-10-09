@@ -14,6 +14,7 @@ from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
 from opsdir.domains.edge.dns import check_dns, dns_rows, lower_by
 from opsdir.domains.edge.headers import check_headers, header_rows
+from opsdir.domains.edge.kubernetes import check_unrendered, unrendered_edges
 from opsdir.domains.edge.naming import EDGE_FACT, EDGE_POLICIES, HEADER_CONTRACTS, RATE_LIMIT, WAF_EXCLUSION
 from opsdir.domains.edge.policies import check_policies, intended_facts, policy_for, policy_rows
 from opsdir.domains.edge.running import check_running, edge_service_rows, missing, observed_facts, unstated
@@ -372,3 +373,30 @@ def test_routed_names_zones_run_by_others_ttls_and_record_parts():
         "# Forwarder `fwd-legacy` runs on DNS servers 10.2.0.4, 10.2.0.5 (virtual machines), not the managed resolver: "
         "they forward legacy.example to 10.9.1.2 and everything else to the platform's resolver, and the network's DNS "
         "servers point at them; not managed here",)
+
+
+def test_a_service_names_edge_isnt_rendered_for_a_role_only_on_kubernetes():
+    """A service name whose role the target runs only on Kubernetes gets no edge from the cloud render (the cluster's
+    ingress serves it, and what fronts that isn't recorded): a blocker in the target."""
+    workloads = "ou=workloads,dc=ciam-ops"
+    d = _record(_ou(workloads, "workloads"),
+                _entry(f"cn=web,{workloads}", "ciamWorkload",
+                       {"cn": "web", "ciamWorkloadKind": "deployment", "ciamTargetRole": "web",
+                        "ciamClusterRole": "k8s", "ciamWorkloadRole": "web-workload"}),
+                _binding(BETA, "k8s", "ciamCluster", "k8s", ciamProviderRef="cluster-1"),
+                _binding(BETA, "web", "ciamWorkloadBinding", "web-workload"),
+                _service(BETA, "svc-web", "web-service", "web.example.test", "198.51.100.30",
+                         ciamTlsCertificate="cn=web-tls,ou=certificates,dc=ciam-ops"))
+    ctx = _ctx(d)
+    assert sorted(svc.dn.split(",")[0] for svc, _, _ in unrendered_edges(ctx.dst)) == [
+        "cn=svc-ldaps", "cn=svc-login", "cn=svc-sso", "cn=svc-web"]
+    assert unrendered_edges(ctx.src) == ()                     # alpha runs web nowhere on Kubernetes
+    f = check_unrendered(ctx)
+    assert "(load balancer, TLS certificate `web-tls`, DNS record)" in next(b[1] for b in f.blockers if "web." in b[1])
+    assert len(f.blockers) == 4 and next(b[1] for b in f.blockers if "login.example.test" in b[1]) == (
+        "`login.example.test` (`login-service`) reaches `web`, which beta/prod runs only on Kubernetes: its cloud "
+        "render writes no edge for it (load balancer, traffic policy `sso-edge`, protection policy `sso-protect`, DNS "
+        "record), and "
+        "the record doesn't say what fronts the cluster's ingress. Record what fronts it, or run the role on servers "
+        "there.")
+    assert f.actions == () and check_unrendered(_ctx(_record())).blockers == ()

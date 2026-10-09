@@ -1,50 +1,51 @@
-key                                                 area               records       manual steps  what it does
---------------------------------------------------  -----------------  ------------  ------------  ----------------------------------------------------------------------
-contract:ds-ldaps-service                           Contract           2             1             Bind the stable name `ldap.id.example-aero.test` for `ds-ldaps-service` in target/prod
-binding:acl-ds                                      Binding            1 (3 inputs)  1             Bind `acl-ds` in target/prod like source/prod does
-binding:alarm-disk-free                             Binding            1 (4 inputs)  1             Bind `alarm-disk-free` in target/prod like source/prod does
-binding:audit-events                                Binding            1 (1 input)   1             Bind `audit-events` in target/prod like source/prod does
-binding:backup-daily                                Binding            1 (4 inputs)  1             Bind `backup-daily` in target/prod like source/prod does
-binding:backup-target                               Binding            1 (4 inputs)  1             Bind `backup-target` in target/prod like source/prod does
-binding:backup-vault                                Binding            1 (2 inputs)  1             Bind `backup-vault` in target/prod like source/prod does
-binding:budget                                      Binding            1 (6 inputs)  1             Bind `budget` in target/prod like source/prod does
-binding:config-history                              Binding            1 (2 inputs)  1             Bind `config-history` in target/prod like source/prod does
-binding:config-recording                            Binding            1 (3 inputs)  1             Bind `config-recording` in target/prod like source/prod does
-binding:data-discovery                              Binding            1 (2 inputs)  1             Bind `data-discovery` in target/prod like source/prod does
-binding:forwarder-corp.example-aero.internal        Binding            1 (4 inputs)  1             Bind `forwarder-corp.example-aero.internal` in target/prod like source/prod does
-binding:fw-consumer-legacy-rptuser                  Binding            1 (2 inputs)  1             Bind `fw-consumer-legacy-rptuser` in target/prod like source/prod does
-binding:fw-consumer-mro-batch-export                Binding            1 (2 inputs)  1             Bind `fw-consumer-mro-batch-export` in target/prod like source/prod does
-binding:identity-idm                                Binding            1 (4 inputs)  1             Bind `identity-idm` in target/prod like source/prod does
-binding:pf-cluster-discovery                        Binding            1 (1 input)   1             Bind `pf-cluster-discovery` in target/prod like source/prod does
-binding:security-incidents                          Binding            1 (2 inputs)  1             Bind `security-incidents` in target/prod like source/prod does
-binding:snapshots-daily                             Binding            1 (2 inputs)  1             Bind `snapshots-daily` in target/prod like source/prod does
-credential-role:data-stores/corp-directory          Credentials        22 options    1             Name the secret role Data store `corp-directory` takes its withheld credentials from
-external-host:data-stores/corp-directory            Hosts              2 (1 input)   2             Record `dc1.corp.example-aero.test`, `dc2.corp.example-aero.test`, which data store `corp-directory` reaches, as source/prod's hosts of a role
-credential-role:data-stores/grant-store             Credentials        22 options    1             Name the secret role Data store `grant-store` takes its withheld credentials from
-credential-role:data-stores/user-directory          Credentials        22 options    1             Name the secret role Data store `user-directory` takes its withheld credentials from
-credential-role:notification-publishers/smtp        Credentials        22 options    1             Name the secret role Notification publisher `smtp` takes its withheld credentials from
-credential-role:captcha-providers/recaptcha         Credentials        22 options    1             Name the secret role CAPTCHA provider `recaptcha` takes its withheld credentials from
-external-host:route/partner-portal                  Hosts              1 (1 input)   2             Record `partners-app.apps.example-aero.test`, which route `partner-portal` reaches, as source/prod's host of a role
-credential-role:connector/hrdb                      Credentials        22 options    1             Name the secret role Connector `hrdb` takes its withheld credentials from
-external-host:connector/hrdb                        Hosts              1 (1 input)   2             Record `hrdb.corp.example-aero.test`, which connector `hrdb` reaches, as source/prod's host of a role
-credential-role:connector/ldap                      Credentials        22 options    1             Name the secret role Connector `ldap` takes its withheld credentials from
-log-retention:audit-logs                            Logs               1             1             Keep target/prod's `audit-logs` logs 400 days, as log route `audit-logs` requires
-ttl:apps.example-aero.test                          DNS                2             2             Lower the TTL of `apps.example-aero.test` in source/prod to 60 s
-ttl:login.example-aero.test                         DNS                2             2             Lower the TTL of `login.example-aero.test` in source/prod to 60 s
-ttl:sso.example-aero.test                           DNS                2             2             Lower the TTL of `sso.example-aero.test` in source/prod to 60 s
-flow-log-retention:flow-logs                        Flow logs          1             1             Keep `flow-vnet`'s flow logs 30 days in target/prod, as source/prod does
-database:pf-grants-db:ciamDbHighAvailability        Databases          1             1             Give `pf-grants-db` high availability in target/prod, as source/prod has it
-database:pf-grants-db:ciamDbDeletionProtection      Databases          1             1             Give `pf-grants-db` deletion protection in target/prod, as source/prod has it
-database:pf-grants-db:ciamRetentionDays             Databases          1             1             Keep `pf-grants-db`'s backups 14 days in target/prod, as source/prod does
-database:pf-grants-db:ciamCopyRegion                Databases          1 (1 input)   1             Copy `pf-grants-db`'s backups to another region in target/prod
-object-store:audit-archive:ciamStorageImmutability  Object stores      2             1             Lock `audit-archive`'s objects in target/prod as source/prod does (compliance 400 days)
-volume:volume-ds-data:ciamVolumeSizeGb              Volumes            1             1             Make `volume-ds-data` 500 GB in target/prod, as in source/prod
-volume:volume-ds-data:ciamSnapshotPolicyRole        Volumes            2 (2 inputs)  1             Snapshot `volume-ds-data` in target/prod with a policy like `snapshots-daily` of source/prod
-backup:volume-ds-data                               Backups            1 (4 inputs)  2             Back up `volume-ds-data` in target/prod with a plan like `backup-daily` of source/prod
-recovery:repoint:standby/prod                       Disaster recovery  2             1             Re-point standby/prod at target/prod
-ports:ds:1636:from-idm                              Ports              1             1             Replace 10.60.6.0/24 with 10.60.12.0/22 (`idm`) in rule `fw-idm-sync` (ds on tcp 1636, PingIDM connector ldap)
-stray-rule:fw-pf-cluster                            Ports              1             1             Close rule `fw-pf-cluster` in target/prod
-stray-rule:fw-pf-cluster-admin                      Ports              1             1             Close rule `fw-pf-cluster-admin` in target/prod
-egress-proxy:pf-engine:bin/run.properties           Egress proxy       6             1             Link `http.proxyHost`, `http.proxyPort`, `https.proxyHost`, `https.proxyPort`, `http.nonProxyHosts` in `pf-engine`'s bin/run.properties (run.properties) to `egress-proxy`'s proxy
-(46 rows)
+key                                                 area                        records       manual steps  what it does
+--------------------------------------------------  --------------------------  ------------  ------------  ----------------------------------------------------------------------
+contract:ds-ldaps-service                           Contract                    2             1             Bind the stable name `ldap.id.example-aero.test` for `ds-ldaps-service` in target/prod
+binding:acl-ds                                      Binding                     1 (3 inputs)  1             Bind `acl-ds` in target/prod like source/prod does
+binding:alarm-disk-free                             Binding                     1 (4 inputs)  1             Bind `alarm-disk-free` in target/prod like source/prod does
+binding:audit-events                                Binding                     1 (1 input)   1             Bind `audit-events` in target/prod like source/prod does
+binding:backup-daily                                Binding                     1 (4 inputs)  1             Bind `backup-daily` in target/prod like source/prod does
+binding:backup-target                               Binding                     1 (4 inputs)  1             Bind `backup-target` in target/prod like source/prod does
+binding:backup-vault                                Binding                     1 (2 inputs)  1             Bind `backup-vault` in target/prod like source/prod does
+binding:budget                                      Binding                     1 (6 inputs)  1             Bind `budget` in target/prod like source/prod does
+binding:config-history                              Binding                     1 (2 inputs)  1             Bind `config-history` in target/prod like source/prod does
+binding:config-recording                            Binding                     1 (3 inputs)  1             Bind `config-recording` in target/prod like source/prod does
+binding:data-discovery                              Binding                     1 (2 inputs)  1             Bind `data-discovery` in target/prod like source/prod does
+binding:forwarder-corp.example-aero.internal        Binding                     1 (4 inputs)  1             Bind `forwarder-corp.example-aero.internal` in target/prod like source/prod does
+binding:fw-consumer-legacy-rptuser                  Binding                     1 (2 inputs)  1             Bind `fw-consumer-legacy-rptuser` in target/prod like source/prod does
+binding:fw-consumer-mro-batch-export                Binding                     1 (2 inputs)  1             Bind `fw-consumer-mro-batch-export` in target/prod like source/prod does
+binding:identity-idm                                Binding                     1 (4 inputs)  1             Bind `identity-idm` in target/prod like source/prod does
+binding:pf-cluster-discovery                        Binding                     1 (1 input)   1             Bind `pf-cluster-discovery` in target/prod like source/prod does
+binding:security-incidents                          Binding                     1 (2 inputs)  1             Bind `security-incidents` in target/prod like source/prod does
+binding:snapshots-daily                             Binding                     1 (2 inputs)  1             Bind `snapshots-daily` in target/prod like source/prod does
+ping-devops-discovery:target/prod:ciam              PingFederate on Kubernetes  1             1             Bind PingFederate's cluster discovery in target/prod: DNS_PING through `pingfederate-pingfederate-cluster.ciam.svc.cluster.local`
+credential-role:data-stores/corp-directory          Credentials                 22 options    1             Name the secret role Data store `corp-directory` takes its withheld credentials from
+external-host:data-stores/corp-directory            Hosts                       2 (1 input)   2             Record `dc1.corp.example-aero.test`, `dc2.corp.example-aero.test`, which data store `corp-directory` reaches, as source/prod's hosts of a role
+credential-role:data-stores/grant-store             Credentials                 22 options    1             Name the secret role Data store `grant-store` takes its withheld credentials from
+credential-role:data-stores/user-directory          Credentials                 22 options    1             Name the secret role Data store `user-directory` takes its withheld credentials from
+credential-role:notification-publishers/smtp        Credentials                 22 options    1             Name the secret role Notification publisher `smtp` takes its withheld credentials from
+credential-role:captcha-providers/recaptcha         Credentials                 22 options    1             Name the secret role CAPTCHA provider `recaptcha` takes its withheld credentials from
+external-host:route/partner-portal                  Hosts                       1 (1 input)   2             Record `partners-app.apps.example-aero.test`, which route `partner-portal` reaches, as source/prod's host of a role
+credential-role:connector/hrdb                      Credentials                 22 options    1             Name the secret role Connector `hrdb` takes its withheld credentials from
+external-host:connector/hrdb                        Hosts                       1 (1 input)   2             Record `hrdb.corp.example-aero.test`, which connector `hrdb` reaches, as source/prod's host of a role
+credential-role:connector/ldap                      Credentials                 22 options    1             Name the secret role Connector `ldap` takes its withheld credentials from
+log-retention:audit-logs                            Logs                        1             1             Keep target/prod's `audit-logs` logs 400 days, as log route `audit-logs` requires
+ttl:apps.example-aero.test                          DNS                         2             2             Lower the TTL of `apps.example-aero.test` in source/prod to 60 s
+ttl:login.example-aero.test                         DNS                         2             2             Lower the TTL of `login.example-aero.test` in source/prod to 60 s
+ttl:sso.example-aero.test                           DNS                         2             2             Lower the TTL of `sso.example-aero.test` in source/prod to 60 s
+flow-log-retention:flow-logs                        Flow logs                   1             1             Keep `flow-vnet`'s flow logs 30 days in target/prod, as source/prod does
+database:pf-grants-db:ciamDbHighAvailability        Databases                   1             1             Give `pf-grants-db` high availability in target/prod, as source/prod has it
+database:pf-grants-db:ciamDbDeletionProtection      Databases                   1             1             Give `pf-grants-db` deletion protection in target/prod, as source/prod has it
+database:pf-grants-db:ciamRetentionDays             Databases                   1             1             Keep `pf-grants-db`'s backups 14 days in target/prod, as source/prod does
+database:pf-grants-db:ciamCopyRegion                Databases                   1 (1 input)   1             Copy `pf-grants-db`'s backups to another region in target/prod
+object-store:audit-archive:ciamStorageImmutability  Object stores               2             1             Lock `audit-archive`'s objects in target/prod as source/prod does (compliance 400 days)
+volume:volume-ds-data:ciamVolumeSizeGb              Volumes                     1             1             Make `volume-ds-data` 500 GB in target/prod, as in source/prod
+volume:volume-ds-data:ciamSnapshotPolicyRole        Volumes                     2 (2 inputs)  1             Snapshot `volume-ds-data` in target/prod with a policy like `snapshots-daily` of source/prod
+backup:volume-ds-data                               Backups                     1 (4 inputs)  2             Back up `volume-ds-data` in target/prod with a plan like `backup-daily` of source/prod
+recovery:repoint:standby/prod                       Disaster recovery           2             1             Re-point standby/prod at target/prod
+ports:ds:1636:from-idm                              Ports                       1             1             Replace 10.60.6.0/24 with 10.60.12.0/22 (`idm`) in rule `fw-idm-sync` (ds on tcp 1636, PingIDM connector ldap)
+stray-rule:fw-pf-cluster                            Ports                       1             1             Close rule `fw-pf-cluster` in target/prod
+stray-rule:fw-pf-cluster-admin                      Ports                       1             1             Close rule `fw-pf-cluster-admin` in target/prod
+egress-proxy:pf-engine:bin/run.properties           Egress proxy                6             1             Link `http.proxyHost`, `http.proxyPort`, `https.proxyHost`, `https.proxyPort`, `http.nonProxyHosts` in `pf-engine`'s bin/run.properties (run.properties) to `egress-proxy`'s proxy
+(47 rows)
 exit 0

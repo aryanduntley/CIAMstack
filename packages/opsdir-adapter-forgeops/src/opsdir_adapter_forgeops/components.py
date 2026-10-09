@@ -107,6 +107,15 @@ def ds_in_cluster(p):
     return bool(set(DS_STORES) & set(p.on))
 
 
+def split_ds(p):
+    """(the DS store run in the cluster, the one on servers) when AM or IDM runs here with only one of ds-idrepo and
+    ds-cts in the cluster, else None: ForgeOps then makes the DS certificates, so AM's and IDM's truststore holds
+    only its own CA and not the one that signed the DS servers'."""
+    inside = tuple(s for s in DS_STORES if s in p.on)
+    return ((inside[0], next(s for s in DS_STORES if s not in inside))
+            if len(inside) == 1 and {"am", "idm"} & set(p.on) else None)
+
+
 def idm_ds_env(m, p):
     """[{name, value}, ...]: when IDM runs here and its repository's store (ds-idrepo) doesn't, the environment
     variables that point IDM's repository and its user store at the DS servers (its boot properties

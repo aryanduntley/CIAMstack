@@ -94,6 +94,16 @@ def product_versions(m):
     return tuple(dict.fromkeys(v for v in found if v))
 
 
+def version_holders(m):
+    """((what, product version), ...) of everything environment m records a product version on: each server
+    ("server <name>") and each workload it runs on Kubernetes ("workload <name> on Kubernetes", its binding's
+    version), in the record's order; those recording none left out."""
+    found = (*((f"server {rdn_value(s)}", one(s, "ciamProductVersion")) for s in m.servers),
+             *((f"workload {rdn_value(w)} on Kubernetes", one(workload_binding(m, w), "ciamProductVersion"))
+               for w in workloads(m.d) if workload_binding(m, w) is not None))
+    return tuple((what, v) for what, v in found if v)
+
+
 def role_versions(m, roles):
     """((name, product version), ...) of what runs environment m's server roles: each of its servers of these roles
     and each workload of them it runs on Kubernetes (its binding's version), by name; those recording none left

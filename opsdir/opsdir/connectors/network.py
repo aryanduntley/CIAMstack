@@ -39,7 +39,8 @@ def ports_fix(m, flow, src=None):
     """The Fix admitting exactly the ranges of a flow between server roles that no firewall rule covers; None when
     nothing is uncovered or the flow comes from clients or admins. Where it goes: the rule that admits the port to the
     role from where the source role ran before it moved (src given: moved_ranges), its old ranges replaced by the new
-    ones; else added to the rule that already admits the port to the role; else a new rule."""
+    ones; else added to a rule that already admits the port to the role and isn't recorded for a consumer
+    (ciamAllowsConsumer: another party's rule, left alone); else a new rule."""
     rules, uncovered = admitting(m, flow)
     if flow.source in ("clients", "admin") or not uncovered:
         return None
@@ -57,13 +58,14 @@ def ports_fix(m, flow, src=None):
                    (f"Admits exactly {cidrs}, where `{flow.source}` runs now, and closes {', '.join(old)}: where it "
                     f"ran in {src.label}'s layout, which nothing in {m.label} runs in.",))
     cn = f"fw-{flow.source}-to-{lst.server_role}-{lst.port}"
-    record = (add_values(rules[0], "ciamSourceCidr", uncovered) if rules else
+    shared = next((fw for fw in rules if not values(fw, "ciamAllowsConsumer")), None)
+    record = (add_values(shared, "ciamSourceCidr", uncovered) if shared is not None else
               new_entry(f"cn={cn},ou=bindings,{m.dn}", ("top", "ciamFirewallRule"), {
                   "cn": (cn,), "ciamBindingRole": (cn,), "ciamSourceCidr": uncovered, "ciamPort": (str(lst.port),),
                   "ciamTargetRole": (lst.server_role,), "ciamProtocol": (lst.protocol,)}))
     return Fix(f"ports:{lst.server_role}:{lst.port}:from-{flow.source}", "Ports",
                f"Admit {cidrs} (`{flow.source}`) to `{lst.server_role}` on {lst.protocol} {lst.port} ({lst.purpose})"
-               + (f" in rule `{rdn_value(rules[0])}`" if rules else f" in a new rule `{cn}`"), (record,),
+               + (f" in rule `{rdn_value(shared)}`" if shared is not None else f" in a new rule `{cn}`"), (record,),
                (f"Apply {m.label}'s rendered firewall rules (the platform's Terraform).",),
                (f"Admits exactly {cidrs}, the ranges `{flow.source}`'s servers sit in; if they shouldn't reach "
                 f"`{lst.server_role}` on {lst.port}, what to change is the product's listener, not the rule.",))

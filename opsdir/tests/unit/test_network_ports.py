@@ -193,3 +193,13 @@ def test_a_role_moved_to_kubernetes_gets_its_own_rule_moved_not_another_consumer
     _, src, dst = model(alpha=alpha, beta=shared, tree=tree)
     fix = ports_fix(dst, flows(dst, (listener,))[0], src)          # web still runs in 10.2.3.0/24: nothing closed
     assert fix.title.startswith("Admit 10.2.8.0/22 (`app`) to `ds`") and "fw-a-portal" in fix.title
+    portal = entry(BETA, "fw-a-portal", "ciamFirewallRule", ciamBindingRole="fw-a-portal", ciamSourceCidr="192.0.2.0/24",
+                   ciamPort="1636", ciamTargetRole="ds", ciamAllowsConsumer="cn=portal,ou=consumers,dc=ciam-ops")
+    recorded = tuple(portal if x.startswith("dn: cn=fw-a-portal,") else x for x in shared)
+    _, src, dst = model(alpha=alpha, beta=recorded, tree=tree)
+    fix = ports_fix(dst, flows(dst, (listener,))[0], src)          # the consumer's rule is left alone
+    assert "in rule `fw-app-ds`" in fix.title
+    only = tuple(x for x in recorded if not x.startswith("dn: cn=fw-app-ds,"))
+    _, src, dst = model(alpha=alpha, beta=only, tree=tree)
+    fix = ports_fix(dst, flows(dst, (listener,))[0], src)          # only a consumer's rule admits 1636: a new one
+    assert "in a new rule `fw-app-to-ds-1636`" in fix.title and fix.records[0].dn.startswith("cn=fw-app-to-ds-1636,")

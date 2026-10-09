@@ -77,6 +77,7 @@ The release's pods' container ports (`release.py`, `POD_PORTS`), declared as lis
 - every Secret key ForgeOps' pods read that no workload in the namespace records and ForgeOps doesn't make;
 - ForgeOps workloads of one namespace that name different service accounts (one per Helm release);
 - a ds workload ForgeOps can't place (not named `ds-idrepo` or `ds-cts`);
+- one DS store in the cluster and the other on servers while AM or IDM runs there. This layout isn't supported: ForgeOps then makes the DS certificates, so AM's and IDM's truststore holds only ForgeOps' CA and not the CA that signed the DS servers' certificates. Run both stores in the cluster or both on servers;
 - a component running a ForgeOps public image.
 
 ## The ForgeOps source

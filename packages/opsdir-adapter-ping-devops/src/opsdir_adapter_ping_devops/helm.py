@@ -16,8 +16,9 @@ from opsdir.core.interchange.yaml_text import dump
 from opsdir.core.manifest import header
 from opsdir_adapter_kubernetes.kits import chart_image, pod_labels_of, replicas_of, resources_of, storage_of
 from opsdir_adapter_kubernetes.render import service_account_of
+from .discovery import recorded_query
 from .products import image_of, placements, secret_keys, workload_of
-from .release import CHART, EULA, PRODUCTS, RELEASE, REPOSITORY, VERSION
+from .release import CHART, DNS_QUERY, EULA, PRODUCTS, RELEASE, REPOSITORY, VERSION
 
 
 def _container(m, w):
@@ -65,9 +66,12 @@ def product_values(m, services, p, name):
 
 
 def chart_values(m, services, p):
-    """The chart's values for a placement: the image's EULA setting, PingFederate admin and engine (the chart's other
-    products stay off)."""
-    return {"global": {"envs": {EULA: "YES"}}, **{x.name: product_values(m, services, p, x.name) for x in PRODUCTS}}
+    """The chart's values for a placement: the image's EULA setting, the DNS name the nodes find each other through
+    when the record's discovery binding gives one (DNS_PING; the chart's cluster service otherwise), PingFederate
+    admin and engine (the chart's other products stay off)."""
+    query = recorded_query(m)
+    return {"global": {"envs": {EULA: "YES", **({DNS_QUERY: query} if query else {})}},
+            **{x.name: product_values(m, services, p, x.name) for x in PRODUCTS}}
 
 
 def install_command(namespace):

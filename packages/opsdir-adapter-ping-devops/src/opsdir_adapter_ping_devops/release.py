@@ -14,6 +14,10 @@ REPOSITORY = "https://helm.pingidentity.com/"
 SOURCE = f"https://github.com/pingidentity/helm-charts/releases/download/{CHART}-{VERSION}/{CHART}-{VERSION}.tgz"
 SOURCE_SHA256 = "9fac7be41a22f25fc34ad81577ed49fec762c805011510d9d634c44cdd1a0872"   # the repository index's digest
 RELEASE = "pingfederate"                # the Helm release name the values' install command uses
+# The headless service PingFederate's admin and engine pods share (services.clusterServiceName; the release's name is
+# prepended): the chart sets DNS_QUERY_LOCATION to it, so the nodes find each other by DNS_PING through it.
+CLUSTER_SERVICE = "pingfederate-cluster"
+DNS_QUERY = "DNS_QUERY_LOCATION"
 
 # One product the chart deploys. name: its values key and workload name (the release's name is prepended); role:
 # the server role a workload runs it as; containers: the record's container names whose image it runs
@@ -43,6 +47,11 @@ LICENSE_KEY = "pingfederate.lic"
 DEVOPS_KEYS = ("PING_IDENTITY_DEVOPS_USER", "PING_IDENTITY_DEVOPS_KEY")    # a license from Ping's license server
 ADMIN_PASSWORD = "PING_IDENTITY_PASSWORD"   # the image's default is published
 EULA = "PING_IDENTITY_ACCEPT_EULA"          # the image starts only with YES (the organization accepts the terms)
+
+
+def cluster_query(namespace):
+    """The DNS name the chart's PingFederate pods in a namespace find each other through (its cluster service)."""
+    return f"{RELEASE}-{CLUSTER_SERVICE}.{namespace}.svc.cluster.local"
 
 
 def product_of(role):

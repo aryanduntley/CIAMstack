@@ -119,25 +119,35 @@ _NEEDS = MappingProxyType({   # what a protocol's binding needs -> (attribute, t
                                           "Kubernetes)", (), ("pingfederate-cluster.ciam.svc.cluster.local",)))})
 
 
-def _attrs(protocol):
+def _attrs(protocol, given=None):
     needed = _NEEDS.get(protocol.needs)
-    return {"pingfedDiscoveryProtocol": (protocol.name,), **({needed[0]: (needed[1],)} if needed else {})}
+    value = (given or {}).get(needed[0], needed[1]) if needed else None
+    return {"pingfedDiscoveryProtocol": (protocol.name,), **({needed[0]: (value,)} if needed else {})}
 
 
-def _records(m, b, protocol):
+def _records(m, b, protocol, given=None):
     """The records binding environment m's discovery with protocol: a new binding when it has none, the binding's
     protocol and what it needs set on a pingfedClusterDiscovery, else (a binding of another class, an object store) the
-    binding replaced by one, under its name, its owners kept."""
+    binding replaced by one, under its name, its owners kept. What the protocol needs is an input unless given
+    ({attribute: value})."""
+    attrs = _attrs(protocol, given)
     if b is not None and is_a(b, "pingfedClusterDiscovery"):
-        stale = [a for a, _ in _NEEDS.values() if a in b.attrs and a not in _attrs(protocol)]
-        return (LdifRecord(b.dn, "modify", {}, (*(("replace", a, v) for a, v in _attrs(protocol).items()),
+        stale = [a for a, _ in _NEEDS.values() if a in b.attrs and a not in attrs]
+        return (LdifRecord(b.dn, "modify", {}, (*(("replace", a, v) for a, v in attrs.items()),
                                                  *(("delete", a, ()) for a in stale))),)
     cn = rdn_value(b) if b is not None else "pf-discovery"
     owners = {"ciamOwner": values(b, "ciamOwner")} if b is not None and values(b, "ciamOwner") else {}
     return (*bindings_container(m.d, m.dn), *((delete_entry(b),) if b is not None else ()),
             new_entry(f"cn={cn},ou=bindings,{m.dn}", ("top", "pingfedClusterDiscovery"),
-                      {"cn": (cn,), "ciamBindingRole": (DISCOVERY_ROLE,), **owners, **_attrs(protocol),
+                      {"cn": (cn,), "ciamBindingRole": (DISCOVERY_ROLE,), **owners, **attrs,
                        "description": (f"PingFederate cluster discovery ({protocol.name})",)}))
+
+
+def discovery_records(m, b, name, given=None):
+    """The records binding environment m's PingFederate cluster discovery (b: its pf-cluster-discovery binding, or
+    None) with the protocol named, what it needs given ({attribute: value}, e.g. the DNS name a deployment kit's
+    cluster service answers) or else asked for as an input."""
+    return _records(m, b, PROTOCOLS[name], given)
 
 
 def discovery_fix(m, b, protocols):

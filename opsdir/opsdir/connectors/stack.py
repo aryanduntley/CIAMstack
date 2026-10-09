@@ -6,9 +6,9 @@ adapter (`applies` is None: a generic adapter for a standard, which every compli
 inferred; it renders only where a stack declares it. A connector: it joins the directory's declarations with what
 the registry discovered. Every function here is pure.
 """
-from ..core.directory import one, rdn_value
 from ..core.naming import env_label
 from ..core.versions import in_range, product_version
+from ..domains.compute.workloads import version_holders
 
 STATUS_HEADERS = ("environment", "role", "adapter", "status")
 
@@ -49,17 +49,16 @@ def _component_status(m, c, by_name, versions):
 
 
 def unsupported_products(m, adapters):
-    """(server, adapter, product version, range) for every server running a product one of the adapters renders,
-    at a version outside the range the adapter declares."""
-    return tuple((s, a, one(s, "ciamProductVersion"), versions) for s in m.servers for a in adapters
+    """(what, adapter, product version, range) for every server, and every workload on Kubernetes, running a product
+    one of the adapters renders at a version outside the range the adapter declares (compute.version_holders)."""
+    return tuple((what, a, version, versions) for what, version in version_holders(m) for a in adapters
                  for product, versions in a.products
-                 if product_version(one(s, "ciamProductVersion"))[0] == product
-                 and not in_range(product_version(one(s, "ciamProductVersion"))[1], versions))
+                 if product_version(version)[0] == product and not in_range(product_version(version)[1], versions))
 
 
 def _product_rows(m, adapters):
-    return tuple((m.label, "-", a.name, f"server {rdn_value(s)} runs {version}; {a.name} supports {versions}")
-                 for s, a, version, versions in unsupported_products(m, adapters))
+    return tuple((m.label, "-", a.name, f"{what} runs {version}; {a.name} supports {versions}")
+                 for what, a, version, versions in unsupported_products(m, adapters))
 
 
 def _overlay_rows(m):

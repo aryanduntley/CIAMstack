@@ -290,6 +290,27 @@
       "match": "target/prod: `ds` listens on tcp 1636 (PingIDM connector ldap) for `idm`",
       "planted": "IDM moves to AKS: no firewall rule admits the cluster's nodes to the directory (a fix admits them)",
       "cleared_by": null
+    },
+    {
+      "id": "B42",
+      "area": "Edge",
+      "match": "`sso.example-aero.test` (`pf-sso-service`) reaches `pf-engine`, which target/prod runs only on Kubernetes",
+      "planted": "PingFederate's engines move to AKS: the sign-on name's App Gateway, WAF policy, TLS certificate and DNS record aren't rendered, and nothing records what fronts the cluster's ingress",
+      "cleared_by": null
+    },
+    {
+      "id": "B43",
+      "area": "Edge",
+      "match": "`login.example-aero.test` (`am-service`) reaches `am`, which target/prod runs only on Kubernetes",
+      "planted": "AM moves to AKS: the login name's edge isn't rendered",
+      "cleared_by": null
+    },
+    {
+      "id": "B44",
+      "area": "Edge",
+      "match": "`apps.example-aero.test` (`ig-service`) reaches `ig`, which target/prod runs only on Kubernetes",
+      "planted": "PingGateway moves to AKS: the apps name's load balancer and DNS record aren't rendered",
+      "cleared_by": null
     }
   ],
   "actions": [
@@ -1118,6 +1139,13 @@
       "area": "Ports",
       "match": "target/prod: firewall rules open ports no installed product listens on: `fw-pf-cluster`",
       "planted": "PingFederate's cluster rules stay behind for servers that moved to AKS (a fix closes them)",
+      "cleared_by": null
+    },
+    {
+      "id": "A118",
+      "area": "PingFederate on Kubernetes",
+      "match": "PingFederate runs on Kubernetes in target/prod (namespace `ciam`): the chart's pods find each other by DNS_PING",
+      "planted": "no cluster discovery is bound for PingFederate on AKS (a fix binds the chart's cluster service)",
       "cleared_by": null
     }
   ]

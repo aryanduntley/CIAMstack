@@ -4,7 +4,7 @@ opsdir adapter for **ping-devops**, Ping Identity's Helm chart for its DevOps im
 
 **Applies to** environments that run, on Kubernetes (a workload binding), a workload of role `pf-admin` (the chart's `pingfederate-admin`) or `pf-engine` (`pingfederate-engine`). The chart runs one of each per release, so per namespace the first workload of each role is placed. The adapter is kind `platform`, so an environment that declares a stack renders it only when the stack names it.
 
-**Depends on** `opsdir` and `opsdir-adapter-kubernetes`. That adapter renders what surrounds the workloads: the namespace, service accounts with their cloud identities, network policies (from this adapter's listeners, below) and Secret delivery. Render both.
+**Depends on** `opsdir`, `opsdir-adapter-kubernetes` and `opsdir-adapter-pingfederate` (whose `pf-cluster-discovery` binding the values and the check read). The kubernetes adapter renders what surrounds the workloads: the namespace, service accounts with their cloud identities, network policies (from this adapter's listeners, below) and Secret delivery. Render both.
 
 ## What it renders
 
@@ -32,7 +32,9 @@ Per product (the one without a workload is `enabled: false`), from the record:
   - A release first installed as a Deployment can't be changed to a StatefulSet in place.
 - **Ingress** for the hosts the workload records (`ciamIngressHost`), TLS from the chart's default TLS secret; none when it records none.
 
-What the record doesn't hold stays the chart's default. That includes the engines' wait for the admin console (an init container running the chart's `pingidentity/pingtoolkit:2609`) and PingFederate's clustering settings (`OPERATIONAL_MODE`, DNS discovery through the release's cluster service).
+- **Cluster discovery**: when the environment's `pf-cluster-discovery` binding is `DNS_PING` (opsdir-adapter-pingfederate's `pingfedClusterDiscovery`, `ciamFqdn`), `global.envs.DNS_QUERY_LOCATION` is its DNS name. The chart's own value is its cluster service, `pingfederate-pingfederate-cluster.<namespace>.svc.cluster.local` (headless, publishing unready pods), so the binding to record is that name; the planner check below offers it.
+
+What the record doesn't hold stays the chart's default. That includes the engines' wait for the admin console (an init container running the chart's `pingidentity/pingtoolkit:2609`) and PingFederate's other clustering settings (`OPERATIONAL_MODE`, `DNS_RECORD_TYPE` A).
 
 ## Listeners
 
@@ -45,7 +47,8 @@ The chart's PingFederate pods' container ports (`release.py`, `POD_PORTS`), decl
 - an admin console with no `PING_IDENTITY_PASSWORD` recorded (the image's default administrator password is published);
 - an admin console recording more than one replica (a PingFederate cluster has one admin console node);
 - engines in a namespace with no admin console (the chart clusters engines with their release's admin console);
-- a workload of a role beyond the first in its namespace (not deployed).
+- a workload of a role beyond the first in its namespace (not deployed);
+- a cluster discovery that isn't `DNS_PING` through the chart's cluster service (no binding, another protocol, another DNS name). Its fix binds it (`pingfedClusterDiscovery`, `DNS_PING`, `ciamFqdn` the service's name), replacing a binding of another class under the same name. The core's binding check may also offer to bind the role the way the source does (an S3 bucket, for instance); on Kubernetes, take this fix instead.
 
 ## The chart
 
