@@ -71,7 +71,8 @@ def held_resources(d):
 
 
 def resource_body(m, r):
-    """A resource held as is, as the Admin API takes it, for environment m (withheld values from its credential role)."""
+    """A resource held as is, as the Admin API takes it, for environment m (withheld values from its credential
+    role)."""
     return filled(m, r, held_json(r, "pingfedConfig"))
 
 

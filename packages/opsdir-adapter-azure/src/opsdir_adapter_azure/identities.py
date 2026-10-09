@@ -32,7 +32,8 @@ def scope(b):
     if storage.startswith("azblob://"):
         account, _, container = storage[9:].partition("/")
         if kept_store(b):                           # rendered in this root (storage.py): its resource, no data source
-            return f"${{azurerm_storage_account.{tf_name(account)}.id}}/blobServices/default/containers/{container}", None
+            return (f"${{azurerm_storage_account.{tf_name(account)}.id}}"
+                    f"/blobServices/default/containers/{container}", None)
         return (f"${{data.azurerm_storage_account.{tf_name(account)}.id}}/blobServices/default/containers/{container}",
                 ("azurerm_storage_account", account))
     ref_ = one(b, "ciamProviderRef", "")

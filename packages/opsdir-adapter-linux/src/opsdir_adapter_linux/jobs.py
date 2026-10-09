@@ -79,8 +79,8 @@ def job_entry(d, key, found_on, patterns, taken):
     return entry, (*((f"{label}: its command holds secret material; not recorded, record what it runs by hand",)
                      if secret else ()),
                    *((f"{label}: its schedule differs between servers "
-                      f"({', '.join(f'{rdn_value(s)}: ' + ' '.join((*f.schedules, *f.triggers)) for s, f in found_on)}); "
-                      f"recorded the first",) if len(schedules) > 1 else ()))
+                      f"({', '.join(f'{rdn_value(s)}: ' + ' '.join((*f.schedules, *f.triggers)) for s, f in found_on)}"
+                      f"); recorded the first",) if len(schedules) > 1 else ()))
 
 
 def _partial(d, key, found_on):

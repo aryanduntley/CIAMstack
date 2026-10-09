@@ -146,7 +146,8 @@ def render_object_stores(m):
     others and what to ask them for, then each account the stack keeps with its containers."""
     described = [b for b in of_class(m, "ciamObjectStore") if container_of(one(b, "ciamStorageRef")) and has_depth(b)]
     kept = sorted(kept_containers(m), key=lambda b: (container_of(one(b, "ciamStorageRef")), b.dn))
-    return (*(f"# Object store '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}, with its "
+    return (*(f"# Object store '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) "
+              f"is kept by {kept_by(m, b)}, with its "
               f"storage account: not rendered here. Ask them for: {depth_summary(b)}" for b in described
               if not owned(b)),
             *(x for account, stores in groupby(kept, key=lambda b: container_of(one(b, "ciamStorageRef"))[0])
@@ -160,7 +161,8 @@ def _first(v):
 
 
 def _metadata_role(a):
-    """A container's role from its metadata (keys role or bindingrole, any case): containers carry metadata, not tags."""
+    """A container's role from its metadata (keys role or bindingrole, any case): containers carry metadata, not
+    tags."""
     meta = {k.lower(): v for k, v in (a.get("metadata") or {}).items()}
     return meta.get("role") or meta.get("bindingrole")
 

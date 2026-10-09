@@ -88,7 +88,8 @@ def pipeline(repo, repo_url, path, doc):
     secrets = {*_groups(doc), *(g for h in (*stages, *jobs) for g in _groups(h)),
                *(s for j in jobs for step in _steps(j) for s in _vault_secrets(step))}
     return FoundPipeline(SYSTEM, repo, repo_url, path, path.rsplit("/", 1)[-1],
-                         tuple(s.get("cron") for s in _list(doc.get("schedules")) if isinstance(s, dict) and s.get("cron")),
+                         tuple(s.get("cron") for s in _list(doc.get("schedules"))
+                               if isinstance(s, dict) and s.get("cron")),
                          triggers, tuple(dict.fromkeys(r for h in (doc, *stages, *jobs) for r in _pool(h.get("pool")))),
                          tuple(sorted(secrets)),
                          tuple(dict.fromkeys(e for j in jobs for e in (_environment(j),) if e)))
@@ -111,7 +112,8 @@ def _url(text):
 def repository_pipelines(repo, texts):
     """(pipelines, templates counted, notices) of one repository folder."""
     url = _url(texts[REPOSITORY]) if REPOSITORY in texts else None
-    docs = [(p, parsed(yaml.safe_load, t, (yaml.YAMLError,))) for p, t in sorted(texts.items()) if p.endswith((".yml", ".yaml"))]
+    docs = [(p, parsed(yaml.safe_load, t, (yaml.YAMLError,))) for p, t in sorted(texts.items())
+            if p.endswith((".yml", ".yaml"))]
     found = tuple(pipeline(repo, url, p, doc) for p, doc in docs if is_pipeline(p, doc))
     return (found, sum(1 for p, doc in docs if isinstance(doc, dict) and not is_pipeline(p, doc)),
             (*(f"{repo}/{p}: not YAML; not read" for p, doc in docs if doc is None),
@@ -122,7 +124,8 @@ def read_pipelines(files, d, patterns, at=None):
     """Imported: the pipelines Azure DevOps repositories define, as jobs."""
     read = [repository_pipelines(r, texts) for r, texts in _repos(files).items()]
     templates = sum(t for _, t, _ in read)
-    return Imported(containers=(jobs_container(),), groups=pipeline_groups(d, [p for found, _, _ in read for p in found]),
+    return Imported(containers=(jobs_container(),),
+                    groups=pipeline_groups(d, [p for found, _, _ in read for p in found]),
                     notices=(*(n for _, _, ns in read for n in ns),
                              *((f"{templates} YAML file(s) without pipeline-level keys (templates) not read as "
                                 "pipelines",) if templates else ()),

@@ -55,8 +55,9 @@ def _gateways(items):
                                            "request_timeout": s.get("requestTimeout"),
                                            "connection_draining": [{"enabled": (s.get("connectionDraining") or {})
                                                                     .get("enabled"),
-                                                                    "drain_timeout_sec": (s.get("connectionDraining")
-                                                                                          or {}).get("drainTimeoutInSec")}]}
+                                                                    "drain_timeout_sec":
+                                                                        (s.get("connectionDraining") or {})
+                                                                        .get("drainTimeoutInSec")}]}
                                           for s in g.get("backendHttpSettingsCollection") or ()],
                 "probe": [{"name": p.get("name"), "protocol": p.get("protocol"), "path": p.get("path")}
                           for p in g.get("probes") or ()],
@@ -77,10 +78,11 @@ def _waf_policies(items):
     return [*(("azurerm_web_application_firewall_policy", {
                 "id": p.get("id"), "name": p.get("name"), "tags": p.get("tags") or {},
                 "policy_settings": [{"mode": (p.get("policySettings") or {}).get("mode")}],
-                "managed_rules": [{"managed_rule_set": [{"type": s.get("ruleSetType"), "version": s.get("ruleSetVersion")}
-                                                        for s in (p.get("managedRules") or {}).get("managedRuleSets") or ()],
-                                   "exclusion": [{"match_variable": x.get("matchVariable"), "selector": x.get("selector")}
-                                                 for x in (p.get("managedRules") or {}).get("exclusions") or ()]}],
+                "managed_rules": [{
+                    "managed_rule_set": [{"type": s.get("ruleSetType"), "version": s.get("ruleSetVersion")}
+                                         for s in (p.get("managedRules") or {}).get("managedRuleSets") or ()],
+                    "exclusion": [{"match_variable": x.get("matchVariable"), "selector": x.get("selector")}
+                                  for x in (p.get("managedRules") or {}).get("exclusions") or ()]}],
                 "custom_rules": [{"name": r.get("name"), "rule_type": r.get("ruleType"), "action": r.get("action"),
                                   "rate_limit_threshold": r.get("rateLimitThreshold"),
                                   "rate_limit_duration": r.get("rateLimitDuration"),
@@ -162,7 +164,8 @@ def _dns(items):
                    not private and t in ("NS",) and r.get("name") == "@"))]
     return [*((t, {"id": z.get("id"), "name": z.get("name"), "tags": z.get("tags") or {}}) for t, z in zones),
             *((tf, {"id": r.get("id"), "name": r.get("name"), "ttl": r.get("ttl") or r.get("TTL"),
-                    "zone_name": _low(arm_segment(r.get("id"), "dnszones") or arm_segment(r.get("id"), "privateDnsZones")),
+                    "zone_name": _low(arm_segment(r.get("id"), "dnszones")
+                                      or arm_segment(r.get("id"), "privateDnsZones")),
                     **_record_values(r, t)})
               for tf, t, r in records)]
 

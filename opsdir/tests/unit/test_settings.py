@@ -1,6 +1,7 @@
-"""Estate settings: domains and installed adapters declare them (name, kind, default, bounds or choices); the platform's managers give them values as
-governed entries under ou=settings; the record's value applies when it is valid, the default otherwise. The settings
-report lists every declared setting (and entries nobody declares); setting a value is a change set."""
+"""Estate settings: domains and installed adapters declare them (name, kind, default, bounds or choices); the
+platform's managers give them values as governed entries under ou=settings; the record's value applies when it is
+valid, the default otherwise. The settings report lists every declared setting (and entries nobody declares); setting
+a value is a change set."""
 import pytest
 
 from opsdir.connectors.registry import DOMAINS

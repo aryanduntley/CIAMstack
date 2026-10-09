@@ -30,6 +30,7 @@ DOMAIN = Domain(name="data", schema=FRAGMENT, required_roles=(), sql=(),
                               ImportKind("backup-plan", "ciamBackupPlan",
                                          ("ciamProtectsRole", "ciamBackupVaultRole", "ciamRetentionDays"),
                                          match="name")),
-                role_links={"ciamDbCredentialRole": "secret", "ciamSnapshotPolicyRole": ("snapshot-policy", "backup-plan"),
+                role_links={"ciamDbCredentialRole": "secret",
+                            "ciamSnapshotPolicyRole": ("snapshot-policy", "backup-plan"),
                             "ciamBackupVaultRole": "backup-vault"},
                 settings=SETTINGS)

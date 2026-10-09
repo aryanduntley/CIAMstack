@@ -18,7 +18,8 @@ def _alb(s, ip="198.51.100.90", **attrs):
 def test_a_global_load_balancer_with_cloud_cdn_and_global_cloud_armor():
     out = _alb(spec(cdn=True, ddos="application-advanced"), ciamProviderRef="ciam-sso-global")
     assert 'data "google_compute_global_address" "sso"' in out and not re.search(r"\bregion\s+= var.region", out)
-    assert 'resource "google_compute_ssl_policy" "sso"' in out and 'resource "google_compute_backend_service" "sso"' in out
+    assert ('resource "google_compute_ssl_policy" "sso"' in out
+            and 'resource "google_compute_backend_service" "sso"' in out)
     assert "enable_cdn                      = true" in out and 'cache_mode = "USE_ORIGIN_HEADERS"' in out
     assert 'resource "google_compute_security_policy" "sso"' in out and "layer_7_ddos_defense_config {" in out
     assert 'resource "google_compute_security_policy_rule" "sso_1000"' in out

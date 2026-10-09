@@ -8,7 +8,8 @@
   opsdir prerequisites                 data the installed adapters need fetched from their providers (a provider's
                                        region catalog): met, pending or not needed yet, and how to fetch each
   opsdir search [-b base] [-s scope] FILTER [attr...]
-  opsdir report NAME [DN]              portability, unowned, blast-radius DN, and every domain's reports (expiring, keys ENV, …)
+  opsdir report NAME [DN]              portability, unowned, blast-radius DN, and every domain's reports (expiring,
+                                       keys ENV, …)
   opsdir render ENV [-o dir] [--target ADAPTER=T[,T]]...
                                        e.g. prod environment of a cloud: CLOUD/ENV (default out/ here); --target
                                        picks the outputs of an adapter that offers several (pingfederate=admin-api,
@@ -719,13 +720,15 @@ COMMANDS = MappingProxyType({"init": _cmd_init, "upgrade": _cmd_upgrade, "load":
                              "history": _cmd_history, "capture": _cmd_capture, "import": _cmd_import,
                              "collect": _cmd_collect, "file": _cmd_file,
                              "prerequisites": _cmd_prerequisites,
-                             "bundle": _cmd_bundle, "verify": _cmd_verify, "census": _cmd_census, "setting": _cmd_setting,
+                             "bundle": _cmd_bundle, "verify": _cmd_verify, "census": _cmd_census,
+                             "setting": _cmd_setting,
                              "data-profile": _cmd_data_profile, "workspace": _cmd_workspace})
 NO_DATABASE = frozenset({"data-profile"})          # commands that run where only the source is reachable
 
 
 def parser():
-    ap = argparse.ArgumentParser(prog="opsdir", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(prog="opsdir", description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--as-of", help="evaluate dates as of YYYY-MM-DD (default: today)")
     ap.add_argument("--workspace", action="store_true",
                     help="run against the migration workspace (OPSDIR_WORKSPACE_DSN) instead of the live record")

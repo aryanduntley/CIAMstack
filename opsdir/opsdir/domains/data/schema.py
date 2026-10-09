@@ -44,15 +44,16 @@ ATTRIBUTES = (
     AttributeDef(438, 'ciamStorageVersioning', 'bool', 'intent', True,
                  'Whether an object store keeps every version of an object, so an overwrite or delete can be undone'),
     AttributeDef(439, 'ciamStorageImmutability', enum_type(IMMUTABILITY), 'intent', True,
-                 "Whether an object store's objects, or a backup vault's recovery points, are locked against change and "
-                 "deletion for ciamStorageLockDays: governance (a privileged user may lift it) or compliance (nobody "
-                 "may, the account root included)"),
+                 "Whether an object store's objects, or a backup vault's recovery points, are locked against "
+                 "change and deletion for ciamStorageLockDays: governance (a privileged user may lift it) or "
+                 "compliance (nobody may, the account root included)"),
     AttributeDef(440, 'ciamStorageLockDays', 'int', 'intent', True,
                  'How long each object or recovery point stays locked at least (ciamStorageImmutability)',
                  (("X-MIN", "1"),)),
     AttributeDef(441, 'ciamStorageLifecycle', 'string', 'intent', False,
-                 "A lifecycle rule: '[noncurrent ]<days> <cool|cold|archive|delete>', after days move objects (or their "
-                 "noncurrent versions) to a cheaper tier or delete them (30 cool; 365 delete; noncurrent 90 delete)",
+                 "A lifecycle rule: '[noncurrent ]<days> <cool|cold|archive|delete>', after days move objects "
+                 "(or their noncurrent versions) to a cheaper tier or delete them "
+                 "(30 cool; 365 delete; noncurrent 90 delete)",
                  (("X-PATTERN", LIFECYCLE),)),
     AttributeDef(442, 'ciamStoragePublicBlocked', 'bool', 'intent', True,
                  'Whether public access to the object store is blocked whatever its policies and ACLs say'),

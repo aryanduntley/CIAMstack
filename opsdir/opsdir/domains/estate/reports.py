@@ -33,7 +33,8 @@ def region_rows(d, dn=None):
     models = _models(d)
     return [(provider, rdn_value(r), one(r, "ciamRegionName", ""), one(r, "ciamGeography", ""),
              one(r, "ciamRegionStatus", ""), one(r, "ciamCloudEnvironment", ""),
-             ", ".join(m.label for m in models if m.provider == provider and one(m.cloud, "ciamRegion") == rdn_value(r)),
+             ", ".join(m.label for m in models
+                       if m.provider == provider and one(m.cloud, "ciamRegion") == rdn_value(r)),
              ", ".join(sorted(rdn_value(e) for _, e in referrers(d, r, "ciamAllowedRegion"))))
             for provider in (one(c, "ciamCloudProvider") for c in children(d, REGIONS, "ciamRegionCatalog"))
             for r in catalog_regions(d, provider)]

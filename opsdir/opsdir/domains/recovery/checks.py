@@ -1,11 +1,11 @@
 """The disaster-recovery planner check. Every recovery objective holds in both environments of a move for each role it
 names that they run: the best recovery point within its RPO (an action, in the target with a fix copying as often as
 the RPO allows where a snapshot policy or backup plan copies the role to another region; a copy kept in the
-environment's own region doesn't count, a disaster taking the region takes it too), the recovery time shown within its RTO, and a
-drill's data loss within the RPO. Standbys follow the move: an environment standing by for the source, or joining its
-replication deployment, is re-pointed at the target at cutover (a fix) or retired, and a target nothing stands by for
-is said; a standby in its primary's region, or one without a failover runbook, is an action. A name failing over from
-the source must fail over from the target after cutover. Pure."""
+environment's own region doesn't count, a disaster taking the region takes it too), the recovery time shown within its
+RTO, and a drill's data loss within the RPO. Standbys follow the move: an environment standing by for the source, or
+joining its replication deployment, is re-pointed at the target at cutover (a fix) or retired, and a target nothing
+stands by for is said; a standby in its primary's region, or one without a failover runbook, is an action. A name
+failing over from the source must fail over from the target after cutover. Pure."""
 from ...core.changeset import set_values
 from ...core.directory import date_of, norm_dn, one, rdn_value, values
 from ...core.findings import Fix, findings, merge_findings, responsible
@@ -81,7 +81,8 @@ def _objective(ctx, o):
     roles = [r for r in values(o, "ciamRecoversRole") if holds_role(ctx.src, r)]
     held = [(m, r) for r in roles for m in (ctx.src, ctx.dst) if _is(m, ctx.src) or holds_role(ctx.dst, r)]
     unrecovered = [] if not roles or runbooks(ctx.d, o) else [findings(actions=[(
-        AREA, f"Recovery objective `{rdn_value(o)}` names no runbook that recovers {', '.join(f'`{r}`' for r in roles)} "
+        AREA, f"Recovery objective `{rdn_value(o)}` names no runbook that recovers "
+              f"{', '.join(f'`{r}`' for r in roles)} "
               "(ciamRunbookRef).", responsible(ctx.d, o, ctx.src.env), ctx.cutover)])]
     return merge_findings([*(f(ctx, o, m, r) for m, r in held for f in (_rpo, _rto, _loss)), *unrecovered])
 
@@ -90,7 +91,8 @@ def repoint_fix(ctx, env):
     """The Fix re-pointing an environment that stands by for the source, or joins its replication deployment, at the
     target."""
     label = env_label(env.dn)
-    records = tuple(set_values(env, a, (ctx.dst.dn,)) for a in LINKS if norm_dn(one(env, a) or "") == norm_dn(ctx.src.dn))
+    records = tuple(set_values(env, a, (ctx.dst.dn,)) for a in LINKS
+                    if norm_dn(one(env, a) or "") == norm_dn(ctx.src.dn))
     return Fix(f"recovery:repoint:{label}", AREA, f"Re-point {label} at {ctx.dst.label}", records,
                (f"At cutover, re-point {label}'s replication at {ctx.dst.label} (its replicas re-initialise from "
                 f"{ctx.dst.label}'s deployment) and update its failover runbook.",),

@@ -13,7 +13,7 @@ import math
 
 from ...core.changeset import set_values
 from ...core.directory import get, one, rdn_value, subtree, values
-from ...core.environment import environment_of, of_class
+from ...core.environment import UNBOUND, environment_of, of_class
 from ...core.findings import Fix, awaiting_import, findings, pending, responsible
 from ...core.naming import branch, env_label
 
@@ -27,6 +27,13 @@ def answer(b):
     """What a service name or an address record answers with, as text ('' when nothing is recorded)."""
     return (one(b, "ciamFrontendIp") or "") if "ciamServiceName" in b.classes else \
         ", ".join(values(b, "ciamRecordValue"))
+
+
+def zone_unknown(svc, attribute):
+    """The comment a cloud renderer writes in place of service name svc's DNS record when neither the name (its
+    attribute, the zone as that cloud names it) nor a zone binding it falls in says which zone it goes in."""
+    return (f"# {UNBOUND}{one(svc, 'ciamBindingRole')}-dns-zone: no DNS zone recorded for `{one(svc, 'ciamFqdn')}` "
+            f"({attribute}, or a zone binding it falls in): its record isn't rendered")
 
 
 def zone_of(m, name):

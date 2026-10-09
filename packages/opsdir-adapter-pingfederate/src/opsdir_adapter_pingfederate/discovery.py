@@ -212,5 +212,6 @@ def discovery_file(m):
     if one_role(m, DISCOVERY_ROLE) is None and not clustered(m):
         return {}
     return {"pingfederate/cluster/jgroups.properties":
-            f"# PingFederate cluster discovery for {m.label}: the discovery lines of each node's bin/jgroups.properties "
+            f"# PingFederate cluster discovery for {m.label}: the discovery lines of each node's "
+            "bin/jgroups.properties "
             "(server/default/conf/tcp.xml holds ${DISCOVERY_TAG})\n" + "\n".join(_lines(m)) + "\n"}

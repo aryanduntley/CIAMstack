@@ -36,7 +36,8 @@ def tests_of(d, env_dn, role):
 def restore_interval(d, m, role):
     """Days within which a role's restores must be tested in environment m: the shortest a plan protecting it there
     says (ciamRestoreTestDays), else the estate setting."""
-    own = [int(one(p, "ciamRestoreTestDays")) for p in protected_roles(m).get(role, ()) if one(p, "ciamRestoreTestDays")]
+    own = [int(one(p, "ciamRestoreTestDays")) for p in protected_roles(m).get(role, ())
+           if one(p, "ciamRestoreTestDays")]
     return min(own) if own else setting_value(d, RESTORE_TEST_DAYS)
 
 

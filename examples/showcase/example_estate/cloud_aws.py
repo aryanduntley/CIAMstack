@@ -74,7 +74,8 @@ def _aws_firewall(p, groups):
                 "security_group_rule_id": f"sgr-0{hex_id(cn, cidr, port, n=16)}",
                 "security_group_id": groups[trole], "cidr_ipv4": cidr, "from_port": port, "to_port": port,
                 "ip_protocol": "tcp", "description": f"{consumer or role} ({cn})"})
-              for cn, role, cidrs, ports, trole, consumer, _ in p["fw"] for i, cidr in enumerate(cidrs) for port in ports)]
+              for cn, role, cidrs, ports, trole, consumer, _ in p["fw"] for i, cidr in enumerate(cidrs)
+              for port in ports)]
 
 
 def _lb_arn(cn):
@@ -89,7 +90,8 @@ def _aws_service(p, instances, cn, fqdn, zref, trole, ports, ip, pref):
     targets = [s[0] for s in p["servers"] if s[1] == trole]
 
     def group(port):
-        return f"arn:aws:elasticloadbalancing:{REGION}:{ACCOUNT}:targetgroup/ciam-prod-{cn}-{port}/{hex_id(cn, port, n=16)}"
+        return (f"arn:aws:elasticloadbalancing:{REGION}:{ACCOUNT}:targetgroup/ciam-prod-{cn}-{port}/"
+                f"{hex_id(cn, port, n=16)}")
     sticky = "stickiness source-ip" in (p.get("service_attrs") or {}).get(cn, {}).get("ciamEdgeFact", ())
     return [_res("managed", "aws_lb", cn, {"arn": arn, "name": f"ciam-prod-{cn}", "internal": internal,
                                            "load_balancer_type": "network", "dns_name": dns,
@@ -343,7 +345,7 @@ def _drifted_source(p, subnets, groups):
                 "description": "temporary vendor access"})]
 
 
-# ------------------------------------------------------------------ source/prod: IAM, the platform's and the landing zone's
+# ---------------------------------------------------------- source/prod: IAM, the platform's and the landing zone's
 LANDING = ("identity-ci", "identity-admins", "identity-break-glass")      # kept by the landing zone, not the platform
 
 
@@ -609,8 +611,9 @@ def _aws_backups(p):
                               "schedule": f"cron({minute} {hour} ? * * *)",
                               "start_window": int(a["ciamBackupWindowHours"]) * 60 if a.get("ciamBackupWindowHours")
                               else None, "lifecycle": keep,
-                              "copy_action": [{"destination_vault_arn": f"arn:aws:backup:{region}:{ACCOUNT}:backup-vault:"
-                                                                        f"{vault}", "lifecycle": keep}
+                              "copy_action": [{"destination_vault_arn":
+                                               f"arn:aws:backup:{region}:{ACCOUNT}:backup-vault:{vault}",
+                                               "lifecycle": keep}
                                               for region in listed(a.get("ciamCopyRegion"))]}]}),
                 _res("managed", "aws_backup_selection", cn, {
                     "id": f"{hex_id('selection', cn, n=8)}-0000-4000-8000-{hex_id('selection', cn, n=12)}",
@@ -627,7 +630,8 @@ def source_state():
     subnets, instances, groups = _source_ids(p)
     resources = [*_aws_network(p, subnets), *_aws_servers(p, subnets, instances, groups, {"pf-engine-2": "m6i.xlarge"}),
                  *_aws_firewall(p, groups), *_aws_services(p, instances), *_aws_keys(p, rotation=False),
-                 *_aws_monitoring(), *_aws_audit(), *_aws_security(), *_aws_budgets(), *_drifted_source(p, subnets, groups), *_source_iam(), *_aws_dns(p),
+                 *_aws_monitoring(), *_aws_audit(), *_aws_security(), *_aws_budgets(),
+                 *_drifted_source(p, subnets, groups), *_source_iam(), *_aws_dns(p),
                  *_aws_network_depth(p), *_aws_databases(p, groups), *_aws_volumes(p, instances),
                  *_aws_backups(p)]
     return indented({"version": 4, "terraform_version": "1.9.5", "serial": 214, "lineage": "5e0c-ciam-prod",

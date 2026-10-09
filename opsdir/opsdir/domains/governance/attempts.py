@@ -50,7 +50,8 @@ def _attempt(d, attempt, at, change):
             **{a: v for a, v in attempt.evidence.items() if v}})
     proof = tuple(("replace", a, tuple(attempt.evidence.get(a, ()))) for a in EVIDENCE
                   if attempt.evidence.get(a) or values(held, a))
-    said = (("replace", "ciamCollectionProblem", problems),) if problems or values(held, "ciamCollectionProblem") else ()
+    said = ((("replace", "ciamCollectionProblem", problems),)
+            if problems or values(held, "ciamCollectionProblem") else ())
     return LdifRecord(dn, "modify", {}, (("replace", "ciamCollectionOutcome", (attempt.outcome,)),
                                          ("replace", "ciamCollectedAt", (gtime(at),)),
                                          ("replace", "ciamChangeRef", (change,)), *said, *proof))

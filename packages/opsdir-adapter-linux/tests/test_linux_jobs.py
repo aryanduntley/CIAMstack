@@ -70,7 +70,8 @@ def test_the_same_job_on_a_roles_servers_is_one_job(after):
     d, _ = after
     job = get(d, job_dn("web-nightly-export"))
     assert (one(job, "ciamJobKind"), values(job, "ciamSchedule"), one(job, "ciamTargetRole"), one(job, "ciamRunsAs"),
-            one(job, "ciamCommand")) == ("cron", ("30 2 * * *",), "web", "root", "/opt/scripts/nightly-export.sh --to s3")
+            one(job, "ciamCommand")) == ("cron", ("30 2 * * *",), "web", "root",
+                                         "/opt/scripts/nightly-export.sh --to s3")
     assert values(job, "ciamFoundOn") == tuple(sorted((f"cn=web-1,{ALPHA}", f"cn=web-2,{ALPHA}", f"cn=web-b1,{BETA}")))
     assert one(job, "ciamCodeBundle") == "cn=ops-scripts,ou=bundles,dc=ciam-ops"
 

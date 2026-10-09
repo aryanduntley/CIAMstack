@@ -1,6 +1,6 @@
-"""Google Cloud's Compute Engine quotas (core estate: quotas). A quota's id here is its metric as Compute Engine reports it
-(CPUS, N2_CPUS, IN_USE_ADDRESSES), and a project-wide one's is global.<metric> (global.NETWORKS): what a need names as
-its ciamProviderRef when no quota kind fits. The kinds:
+"""Google Cloud's Compute Engine quotas (core estate: quotas). A quota's id here is its metric as Compute Engine
+reports it (CPUS, N2_CPUS, IN_USE_ADDRESSES), and a project-wide one's is global.<metric> (global.NETWORKS): what a
+need names as its ciamProviderRef when no quota kind fits. The kinds:
 
   vcpus        CPUS               the region's CPUs (the N1/E2 pool: other machine families have their own metric,
                                   such as N2_CPUS; record that need by its id)
@@ -17,9 +17,10 @@ record's Google Cloud clouds needing quotas run in, `gcloud compute regions desc
 region's catalog holds its regional quotas and the project-wide ones.
 
 An increase the operator decided to request is rendered in the environment's root as
-google_cloud_quotas_quota_preference (Cloud Quotas) for the quota ids Google documents, CPUS-per-project-region (with the
-region as its dimension) for CPUS and NETWORKS-per-project for global.NETWORKS, at ciamQuotaRequested (else the need),
-with deletion_policy ABANDON (destroying it leaves the granted quota alone); others are named in a comment. Pure."""
+google_cloud_quotas_quota_preference (Cloud Quotas) for the quota ids Google documents, CPUS-per-project-region
+(with the region as its dimension) for CPUS and NETWORKS-per-project for global.NETWORKS, at ciamQuotaRequested
+(else the need), with deletion_policy ABANDON (destroying it leaves the granted quota alone); others are named in a
+comment. Pure."""
 from functools import partial
 
 from opsdir.core.contract import Importer, Prerequisite
@@ -35,7 +36,8 @@ QUOTA_KINDS = {q: k for k, q in KIND_QUOTAS.items()}
 GLOBAL = "global."
 PROJECT = "quotas/project.json"
 PREFERENCE = "google_cloud_quotas_quota_preference"
-# quota id here -> (Cloud Quotas quota id, whether its dimension is the region), as Google's Cloud Quotas pages give them
+# quota id here -> (Cloud Quotas quota id, whether its dimension is the region), as Google's Cloud Quotas pages give
+# them
 PREFERENCES = {"CPUS": ("CPUS-per-project-region", True), "global.NETWORKS": ("NETWORKS-per-project", False)}
 
 

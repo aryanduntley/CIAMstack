@@ -156,7 +156,8 @@ def _certificate(d, held, facts, name, purpose, key_role=None, key_pair=None):
         return make_entry(held.dn, tuple(dict.fromkeys((*held.classes, *aux))),
                           {**{k: v for k, v in held.attrs.items() if k not in given}, **given})
     return make_entry(f"cn={name},{CERTIFICATES}", ("top", "ciamCertificate", *aux),
-                      {"cn": (name,), "ciamCertPurpose": (purpose,), **({"ciamKeyRole": (key_role,)} if key_role else {}),
+                      {"cn": (name,), "ciamCertPurpose": (purpose,),
+                       **({"ciamKeyRole": (key_role,)} if key_role else {}),
                        **{k: v for k, v in facts.items() if v}})
 
 
@@ -171,7 +172,8 @@ def certificate_entries(d, found):
                for conn in found["idp"] for c in ((conn.get("credentials") or {}).get("certs") or ())
                if not c.get("encryptionCert")),
              *((c.get("certView") or {}, "saml-encryption" if c.get("encryptionCert") else "saml-signing", None,
-                f"{conn.get('id') or conn.get('name')}-sp-{'encryption' if c.get('encryptionCert') else 'signing'}", None)
+                f"{conn.get('id') or conn.get('name')}-sp-"
+                f"{'encryption' if c.get('encryptionCert') else 'signing'}", None)
                for conn in found["sp"] for c in ((conn.get("credentials") or {}).get("certs") or ())))
     facts = [(f, purpose, role, name, kp) for view, purpose, role, name, kp in views for f in (_cert_facts(view),) if f]
 
@@ -194,7 +196,8 @@ def linked(held, found):
 
 def same_order(held, attrs):
     """attrs, each multi-valued attribute in the record's order when it holds the same values (values are a set)."""
-    return {k: (values(held, k) if held is not None and set(values(held, k)) == set(v) else v) for k, v in attrs.items()}
+    return {k: (values(held, k) if held is not None and set(values(held, k)) == set(v) else v)
+            for k, v in attrs.items()}
 
 
 def _merged(held, dn, name, protocol, imported, owned, served, aux=()):
@@ -203,7 +206,8 @@ def _merged(held, dn, name, protocol, imported, owned, served, aux=()):
     kept = {k: v for k, v in (held.attrs.items() if held else ()) if k not in owned}
     base = kept or {"cn": (name,), **({"ciamServedBy": (served.dn,)} if served else {})}
     return make_entry(dn, tuple(dict.fromkeys((*(held.classes if held else ("top", "ciamIntegration")), *aux))),
-                      {**base, "ciamProtocolType": (protocol,), **same_order(held, {k: v for k, v in imported.items() if v})})
+                      {**base, "ciamProtocolType": (protocol,),
+                       **same_order(held, {k: v for k, v in imported.items() if v})})
 
 
 def _claims(d, dn, held, contract, fulfillment, user_attrs, label):
@@ -298,7 +302,8 @@ def _idp(d, idp, certs, held, dn, name, served, patterns):
 
 
 def _client(d, client, held, dn, name, served, exported, patterns):
-    grants, odd_grants = _standard(client.get("grantTypes") or (), PF_GRANTS, values(held, "ciamGrantType") if held else ())
+    grants, odd_grants = _standard(client.get("grantTypes") or (), PF_GRANTS,
+                                   values(held, "ciamGrantType") if held else ())
     auth_type = (client.get("clientAuth") or {}).get("type")
     auth, _ = _standard([auth_type] if auth_type else [], PF_AUTH, values(held, "ciamTokenAuthMethod") if held else ())
     imported = {"ciamClientId": (client.get("clientId"),), "ciamRedirectUri": tuple(client.get("redirectUris") or ()),
@@ -310,8 +315,8 @@ def _client(d, client, held, dn, name, served, exported, patterns):
     entry = _merged(held, dn, name, "oidc-client", imported, (*OWNED["oidc-client"], "pingfedUses", *HELD), served,
                     (*(("pingfedClient",) if uses else ()), "pingfedHeldSettings"))
     secret = client.get("clientAuth") or {}
-    notices = (*unlinked, *((f"client {client.get('clientId')}: grant types with no single standard name, not recorded: "
-                  f"{', '.join(odd_grants)}",) if odd_grants else ()),
+    notices = (*unlinked, *((f"client {client.get('clientId')}: grant types with no single standard name, "
+                  f"not recorded: {', '.join(odd_grants)}",) if odd_grants else ()),
                *((f"client {client.get('clientId')}: its secret is not imported; set pingfedCredentialRole to the "
                    "secret role each environment binds it with",)
                  if (secret.get("secret") or secret.get("encryptedSecret"))
@@ -326,7 +331,8 @@ def integration_groups(d, found, certs, exported, patterns=()):
     user_attrs = attribute_records(d)
     pf_services = identity_services(d, SERVER_ROLES)
     served = pf_services[0] if len(pf_services) == 1 else None
-    by_entity = {(one(i, "ciamProtocolType"), one(i, "ciamEntityId")): i for i in integrations(d) if one(i, "ciamEntityId")}
+    by_entity = {(one(i, "ciamProtocolType"), one(i, "ciamEntityId")): i
+                 for i in integrations(d) if one(i, "ciamEntityId")}
     by_client = {one(i, "ciamClientId"): i for i in integrations(d, "oidc-client") if one(i, "ciamClientId")}
     wanted = (*(("sp", x, by_entity.get(("saml2-sp", x.get("entityId"))), x.get("id") or x.get("name"))
                 for x in found["sp"]),
@@ -386,11 +392,12 @@ def read_export(files, d, patterns, at=None):
         notices=(*((f"exported from PingFederate {version}",) if version else ()), *notices, *store_notices,
                  *plugin_notices, *policy_notices, *oauth_notices, *message_notices,
                  *held_notices,
-                 *(("where PingFederate keeps OAuth clients, grants and sessions is set in its nodes' hivemodule.xml, not "
-                    "the Admin API: import the nodes' files with pingfederate/node-files",)
+                 *(("where PingFederate keeps OAuth clients, grants and sessions is set in its nodes' hivemodule.xml, "
+                    "not the Admin API: import the nodes' files with pingfederate/node-files",)
                    if found["client"] and get(d, STORAGE) is None else ()),
                  *(f"not JSON, not read: {p}" for p in unreadable),
-                 *(("no PingFederate configuration found (a bulk export, or pingfederate/*.json)",) if nothing else ())))
+                 *(("no PingFederate configuration found (a bulk export, or pingfederate/*.json)",)
+                   if nothing else ())))
 
 
 BULK = Importer("bulk", "a PingFederate Admin API bulk export (/bulk/export), or this adapter's rendered files",

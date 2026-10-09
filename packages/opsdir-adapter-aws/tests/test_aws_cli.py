@@ -64,7 +64,8 @@ def _outputs(**over):
         "subnets.json": {"Subnets": [{"SubnetId": SUBNET, "VpcId": VPC, "CidrBlock": "10.20.1.0/24",
                                       "AvailabilityZone": "us-east-1a"}]},
         "instances.json": {"Reservations": [{"Instances": [
-            {"InstanceId": "i-0aaa", "ImageId": "ami-0abc", "InstanceType": "m6i.xlarge", "PrivateIpAddress": "10.20.1.11",
+            {"InstanceId": "i-0aaa", "ImageId": "ami-0abc", "InstanceType": "m6i.xlarge",
+             "PrivateIpAddress": "10.20.1.11",
              "PrivateDnsName": "ip-10-20-1-11.ec2.internal", "SubnetId": SUBNET, "VpcId": VPC,
              "Placement": {"AvailabilityZone": "us-east-1a"}, "State": {"Name": "running"},
              "SecurityGroups": [{"GroupId": "sg-0ds", "GroupName": "ciam-prod-ds"}],
@@ -80,7 +81,8 @@ def _outputs(**over):
         "load-balancers.json": {"LoadBalancers": [{
             "LoadBalancerArn": LB, "LoadBalancerName": "ciam-prod-svc-ldaps", "Scheme": "internal", "VpcId": VPC,
             "DNSName": "ciam-prod-svc-ldaps-0a1b.elb.us-east-1.amazonaws.com", "Type": "network",
-            "AvailabilityZones": [{"SubnetId": SUBNET, "LoadBalancerAddresses": [{"PrivateIPv4Address": "10.20.1.100"}]}]}]},
+            "AvailabilityZones": [{"SubnetId": SUBNET,
+                                   "LoadBalancerAddresses": [{"PrivateIPv4Address": "10.20.1.100"}]}]}]},
         "listeners-svc-ldaps.json": {"Listeners": [{"LoadBalancerArn": LB, "Port": 1636, "Protocol": "TCP",
                                                     "DefaultActions": [{"Type": "forward", "TargetGroupArn": TG}]}]},
         "target-groups.json": {"TargetGroups": [{"TargetGroupArn": TG, "TargetGroupName": "ciam-prod-svc-ldaps-1636",
@@ -88,7 +90,8 @@ def _outputs(**over):
         "target-health/ciam-prod-svc-ldaps-1636.json": {"TargetHealthDescriptions": [
             {"Target": {"Id": "i-0aaa", "Port": 1636}, "TargetHealth": {"State": "healthy"}}]},
         "route53/Z0PRIVATE.json": {"ResourceRecordSets": [
-            {"Name": "example.test.", "Type": "SOA", "ResourceRecords": [{"Value": "ns-1. hostmaster. 1 7200 900 1 86400"}]},
+            {"Name": "example.test.", "Type": "SOA",
+             "ResourceRecords": [{"Value": "ns-1. hostmaster. 1 7200 900 1 86400"}]},
             {"Name": "ldap.example.test.", "Type": "A", "AliasTarget": {
                 "HostedZoneId": "Z26RNL4JYFTOTI", "EvaluateTargetHealth": False,
                 "DNSName": "ciam-prod-svc-ldaps-0a1b.elb.us-east-1.amazonaws.com."}}]},
@@ -153,10 +156,12 @@ def test_what_lies_outside_the_listed_vpc_is_counted_not_read():
 
 def test_account_wide_listings_count_what_the_record_does_not_have():
     many = {"SecretList": [{"ARN": SECRET, "Name": "ciam/prod/ds-root-password"},
-                           *({"ARN": f"arn:aws:secretsmanager:us-east-1:111122223333:secret:app/{i}", "Name": f"app/{i}"}
+                           *({"ARN": f"arn:aws:secretsmanager:us-east-1:111122223333:secret:app/{i}",
+                              "Name": f"app/{i}"}
                              for i in range(5))]}
     imported = read_cli_inventory(_outputs(**{"secrets.json": many,
-                                              "buckets.json": {"Buckets": [{"Name": "ciam-backups"}, {"Name": "logs"}]}}),
+                                              "buckets.json": {"Buckets": [{"Name": "ciam-backups"},
+                                                                           {"Name": "logs"}]}}),
                                   _record(), ())
     assert "main/prod: 5 secret resource(s) not in the record and naming no role, e.g. app/0, app/1, app/2 (tag them " \
            "Role, name them in roles.json, or record them); not imported" in imported.notices

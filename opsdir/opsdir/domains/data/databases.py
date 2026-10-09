@@ -60,7 +60,8 @@ def database_rows(d, dn=None):
 def _carry(ctx, role, s, t, attrs, title, risks=()):
     """The fix giving the target's database the source's values of attrs."""
     return carry_fix(f"database:{role}:{attrs[0]}", AREA, title, s, t, attrs,
-                     (f"Apply the rendered database in {ctx.dst.label} (its keeper's root when someone else keeps it).",),
+                     (f"Apply the rendered database in {ctx.dst.label} (its keeper's root when someone else "
+                      "keeps it).",),
                      risks)
 
 

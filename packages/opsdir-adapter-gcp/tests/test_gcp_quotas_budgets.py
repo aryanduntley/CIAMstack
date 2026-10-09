@@ -60,7 +60,8 @@ def test_quota_commands_fetch_the_project_and_each_region():
 
 
 def test_quotas_are_read_with_the_project_wide_ones_in_each_region():
-    d, _ = _alpha(need("cpus", "vcpus", 16), need("nets", "networks", 3), need("n2", None, 8, ciamProviderRef="N2_CPUS"))
+    d, _ = _alpha(need("cpus", "vcpus", 16), need("nets", "networks", 3),
+                  need("n2", None, 8, ciamProviderRef="N2_CPUS"))
     files = {"quotas/project.json": json.dumps({
                  "kind": "compute#project", "name": "ciam-prod",
                  "quotas": [{"metric": "NETWORKS", "limit": 15.0, "usage": 2.0},

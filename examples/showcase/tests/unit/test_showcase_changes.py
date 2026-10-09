@@ -12,7 +12,8 @@ from support import build_directory, schema_for
 def test_the_showcase_changes_are_exactly_the_approved_ones(estate):
     records = diff(estate["before"], estate["after"])
     assert {norm_dn(r.dn): r.changetype for r in records} == approved_targets()
-    assert all({attr for _, attr, _ in r.mods} == approved_attributes(r.dn) for r in records if r.changetype == "modify")
+    assert all({attr for _, attr, _ in r.mods} == approved_attributes(r.dn) for r in records
+               if r.changetype == "modify")
 
 
 def test_applying_a_change_set_to_its_base_gives_the_other_snapshot(estate):

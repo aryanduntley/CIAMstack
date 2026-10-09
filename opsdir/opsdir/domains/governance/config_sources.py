@@ -156,7 +156,8 @@ def _ssh(parsed, q, done, n):
     listing = f"{WORK}ssh-{n}.txt"
     found = tuple(line.strip() for line in (done.get(listing) or "").splitlines()
                   if line.strip().startswith(target_dir + "/") and safe_path(line.strip()))
-    return ((listing, ssh("find", shlex.quote(target_dir), "-type", "f", *(("-name", shlex.quote(match)) if match else ()))),
+    return ((listing, ssh("find", shlex.quote(target_dir), "-type", "f",
+                          *(("-name", shlex.quote(match)) if match else ()))),
             *(read(f, posixpath.join(dir_, f[len(target_dir) + 1:]) if dir_ else f[len(target_dir) + 1:])
               for f in found))
 

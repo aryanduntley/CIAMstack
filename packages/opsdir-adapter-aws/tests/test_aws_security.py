@@ -155,7 +155,8 @@ def test_findings_at_or_above_the_incident_severity_go_to_the_incident_topic():
     compact = "".join(out.split())
     assert '"detail":{"severity":[{"numeric":[">=",7]}]}' in compact and out.count(f'arn  = "{INCIDENT_ARN}"') == 2
     assert '"detail":{"findings":{"Severity":{"Label":["CRITICAL"]}}}' in compact
-    assert "# NOTE: config's incidents to security-incidents: not rendered: AWS Config's findings have no severity" in out
+    assert ("# NOTE: config's incidents to security-incidents: not rendered: AWS Config's findings have no "
+            "severity") in out
     assert severity_filter("aws.inspector2", "medium") == {"severity": ["MEDIUM", "HIGH", "CRITICAL"]}
     assert json.loads(json.dumps(severity_filter("aws.guardduty", "low"))) == {"severity": [{"numeric": [">=", 1]}]}
 

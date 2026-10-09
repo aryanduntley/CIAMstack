@@ -11,7 +11,8 @@ The LDAP schema registry, the reference schemes and the vocabulary (values of `v
 adapters define) are synced on every upgrade from the registered schema fragments, domains and adapters. A definition
 no installed part defines any more (an uninstalled adapter's) is removed, unless entries still use it. The schema is
 composed inside the upgrade's transaction (the caller's `schema(conn)`: it may read definitions the record holds),
-and every stored entry is checked against the result, so no upgrade leaves an entry the schema no longer accepts. `upgrade` brings a database up to date in place; `init` drops the opsdir schema and upgrades from nothing.
+and every stored entry is checked against the result, so no upgrade leaves an entry the schema no longer accepts.
+`upgrade` brings a database up to date in place; `init` drops the opsdir schema and upgrades from nothing.
 """
 import hashlib
 import re
@@ -47,7 +48,8 @@ VOCABULARY_IN_USE_SQL = (
     "select e.dn, j.k, v from opsdir.entry e, jsonb_each(e.attrs) j(k, vals), jsonb_array_elements_text(j.vals) v"
     " where j.k in (select name from opsdir.attribute_type where value_type = 'vocab')"
     " and not exists (select 1 from opsdir.vocabulary w where w.attr = j.k and w.value = v) order by 1, 2 limit 20")
-REGISTERED_SQL = "select (select array_agg(name) from opsdir.attribute_type), (select array_agg(name) from opsdir.object_class)"
+REGISTERED_SQL = ("select (select array_agg(name) from opsdir.attribute_type),"
+                  " (select array_agg(name) from opsdir.object_class)")
 ATTRIBUTES_IN_USE_SQL = ("select distinct k from opsdir.entry, jsonb_object_keys(attrs) k where k = any(%s) order by 1")
 CLASSES_IN_USE_SQL = ("select distinct c from opsdir.entry, unnest(object_classes) c where c = any(%s) order by 1")
 

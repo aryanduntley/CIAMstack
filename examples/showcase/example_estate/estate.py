@@ -179,7 +179,8 @@ SECURITY = MappingProxyType({
 
 # Each environment's quota needs and budget, as bindings (class, name, binding role, attributes): the budget alerts the
 # environment's paging channel (observability's alerts-page)
-_NEEDS = (("vcpus", "quota-vcpus"), ("public-ips", "quota-public-ips"), ("database-instances", "quota-database-instances"))
+_NEEDS = (("vcpus", "quota-vcpus"), ("public-ips", "quota-public-ips"),
+          ("database-instances", "quota-database-instances"))
 BUDGET_ARN = "arn:aws:budgets::111122223333:budget/source-prod-monthly-spend"
 _BUDGET = {"ciamBudgetPeriod": "monthly", "ciamActualThreshold": [80, 100], "ciamForecastThreshold": 100,
            "ciamAlertRole": "alerts-page"}
@@ -313,7 +314,8 @@ AWS_QUOTAS = (("ec2", "L-1216C47A", "Running On-Demand Standard (A, C, D, H, I, 
               ("rds", "L-952B80B8", "Parameter groups", 50.0, None))
 AZURE_COMPUTE = (("cores", "Total Regional vCPUs", 50, 0), ("standardDSv5Family", "Standard DSv5 Family vCPUs", 10, 0),
                  ("virtualMachines", "Virtual Machines", 25000, 0))
-AZURE_NETWORK = (("VirtualNetworks", "Virtual Networks", 1000, 2), ("PublicIPAddresses", "Public IP Addresses", 1000, 3),
+AZURE_NETWORK = (("VirtualNetworks", "Virtual Networks", 1000, 2),
+                 ("PublicIPAddresses", "Public IP Addresses", 1000, 3),
                  ("LoadBalancers", "Load Balancers", 1000, 1))
 GCP_REGION_QUOTAS = (("CPUS", 72.0, 12.0), ("IN_USE_ADDRESSES", 8.0, 2.0), ("N2_CPUS", 24.0, 0.0),
                      ("DISKS_TOTAL_GB", 4096.0, 500.0))

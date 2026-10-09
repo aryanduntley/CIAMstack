@@ -12,10 +12,11 @@ origins should admit only Front Door (service tag AzureFrontDoor.Backend and the
 landing zone's network security group.
 """
 from opsdir.core.directory import one, rdn_value, values
-from opsdir.core.network import is_private
+from opsdir.domains.edge.dns import zone_unknown
+from opsdir.domains.edge.exposure import is_internal
 from opsdir.domains.edge.resolve import inspected, path_regex
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
-from .dns import record_name
+from .dns import record_name, service_zone
 from .edge import WAF_RULE_SETS, rate
 from .identities import RG
 from .account import tagged
@@ -76,8 +77,8 @@ def front_door(m, svc, spec, n):
     """Front Door in front of a service: profile, endpoint, origin group and origin (the gateway or the load balancer
     by its public address), custom domain with its certificate and validation record, route, firewall and security
     policies, and the DNS CNAME to the endpoint."""
-    name, zone, ip = one(svc, "ciamFqdn"), one(svc, "ciamDnsZone"), one(svc, "ciamFrontendIp")
-    if ip and is_private(ip):
+    name, zone = one(svc, "ciamFqdn"), service_zone(m, svc)
+    if is_internal(svc):
         return (f"# `{name}`: a CDN in front of a private address needs Front Door Premium's Private Link origin; "
                 "not rendered",)
     waf = inspected(spec)
@@ -138,7 +139,8 @@ def front_door(m, svc, spec, n):
             ("name", f"_dnsauth.{record_name(name, zone)}" if record_name(name, zone) != "@" else "_dnsauth"),
             ("zone_name", zone), ("resource_group_name", RG), ("ttl", 3600),
             ("record", Block((("value", ref(f"azurerm_cdn_frontdoor_custom_domain.{n}.validation_token")),))),
-            ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]))
+            ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))])
+        if zone else zone_unknown(svc, "ciamDnsZone"))
 
 
 def endpoint(n):

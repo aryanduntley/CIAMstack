@@ -33,7 +33,7 @@ the environment's instances without a volume label is named.
 from collections import Counter
 
 from opsdir.core.directory import is_kind, one, rdn_value, values
-from opsdir.core.environment import UNBOUND, of_class, secret
+from opsdir.core.environment import UNBOUND, of_class, recorded, secret
 from opsdir.core.inventory import of_types, resource
 from opsdir.domains.data.volumes import (POLICY, boot_volume, data_volumes, is_encrypted, snapshot_every,
                                          volume_key_role, volume_policy)
@@ -81,7 +81,7 @@ def _labels(v, **more):
 def boot_disk(m, s, kms):
     """(comments, the boot_disk Block) of instance s: its image, its role's boot volume's size, type, labels and key,
     else encrypted with the disk-encryption key (kms: its reference URI, or None when unbound)."""
-    image = _given(("image", one(s, "ciamImageRef")))
+    image = (("image", recorded(s, "ciamImageRef", "image")),)
     v = boot_volume(m, one(s, "ciamServerRole"))
     if v is None:
         key = (("kms_key_self_link", kms.split("://", 1)[1]) if kms

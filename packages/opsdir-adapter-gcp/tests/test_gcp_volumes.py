@@ -86,7 +86,8 @@ def test_a_snapshot_policy_is_a_resource_policy_with_its_schedule():
 
 def _state(*resources):
     return json.dumps({"version": 4, "terraform_version": "1.9.0", "resources": [
-        {"mode": "managed", "type": t, "name": f"r{i}", "provider": 'provider["registry.terraform.io/hashicorp/google"]',
+        {"mode": "managed", "type": t, "name": f"r{i}",
+         "provider": 'provider["registry.terraform.io/hashicorp/google"]',
          "instances": [{"attributes": a}]} for i, (t, a) in enumerate(resources)]})
 
 
@@ -95,7 +96,8 @@ INSTANCE = ("google_compute_instance", {
     "boot_disk": [{"source": "projects/p/zones/us-central1-a/disks/ds-1", "kms_key_self_link": KEY,
                    "initialize_params": [{"size": 50, "type": "pd-ssd",
                                           "labels": {"volume": "vol-ds-boot", "role": "volume-ds-boot"}}]}]})
-DISK = ("google_compute_disk", {"id": "projects/p/zones/us-central1-a/disks/ds-1-vol-ds-data", "name": "ds-1-vol-ds-data",
+DISK = ("google_compute_disk", {"id": "projects/p/zones/us-central1-a/disks/ds-1-vol-ds-data",
+                                "name": "ds-1-vol-ds-data",
                                 "size": 200, "type": "hyperdisk-balanced", "provisioned_iops": 6000,
                                 "provisioned_throughput": 250, "disk_encryption_key": [{"kms_key_self_link": KEY}],
                                 "labels": {"volume": "vol-ds-data", "role": "volume-ds-data"}})
@@ -122,7 +124,8 @@ def test_disks_boot_disks_and_schedules_are_read_back_from_state():
     by = _by(state_resources(_state(INSTANCE, DISK, ATTACHED, SCHEDULE, POLICY_ON_DISK, POLICY_ON_BOOT))[0])
     ref = "projects/p/regions/us-central1/resourcePolicies/ciam-prod-snapshots-daily"
     data = by[("volume", "vol-ds-data")]
-    assert data.attrs == {"ciamVolumeKind": ("data",), "ciamVolumeSizeGb": ("200",), "ciamVolumeClass": ("provisioned",),
+    assert data.attrs == {"ciamVolumeKind": ("data",), "ciamVolumeSizeGb": ("200",),
+                          "ciamVolumeClass": ("provisioned",),
                           "ciamIops": ("6000",), "ciamThroughputMb": ("250",), "ciamVolumeEncrypted": ("TRUE",),
                           "ciamTargetRole": ("ds",)}
     assert data.links == {"ciamEncryptedByRole": KEY, "ciamSnapshotPolicyRole": ref}
@@ -130,7 +133,8 @@ def test_disks_boot_disks_and_schedules_are_read_back_from_state():
     assert boot.attrs["ciamVolumeKind"] == ("boot",) and boot.attrs["ciamVolumeSizeGb"] == ("50",)
     assert boot.links == {"ciamEncryptedByRole": KEY, "ciamSnapshotPolicyRole": ref}
     policy = by[("snapshot-policy", ref)]
-    assert policy.attrs == {"ciamRetentionDays": ("7",), "ciamSnapshotEveryHours": ("24",), "ciamSnapshotAt": ("03:00",),
+    assert policy.attrs == {"ciamRetentionDays": ("7",), "ciamSnapshotEveryHours": ("24",),
+                            "ciamSnapshotAt": ("03:00",),
                             "ciamCopyRegion": ("us-east1",), "ciamSnapshotConsistency": ("crash",)}
     assert policy.role == "snapshots-daily" and policy.name == "snapshots-daily"      # by its snapshots' label policy
 
@@ -151,7 +155,8 @@ def test_the_asset_inventory_reads_the_same_and_names_an_unlabelled_data_disk():
             "users": [instance["selfLink"]]}
     bare = {"kind": "compute#disk", "name": "scratch", "selfLink": f"{base}/zones/us-central1-a/disks/scratch",
             "sizeGb": "10", "users": [instance["selfLink"]]}
-    policy = {"kind": "compute#resourcePolicy", "name": "ciam-prod-snapshots-daily", "region": f"{base}/regions/us-central1",
+    policy = {"kind": "compute#resourcePolicy", "name": "ciam-prod-snapshots-daily",
+              "region": f"{base}/regions/us-central1",
               "selfLink": f"{base}/regions/us-central1/resourcePolicies/ciam-prod-snapshots-daily",
               "snapshotSchedulePolicy": {"schedule": {"hourlySchedule": {"hoursInCycle": 6, "startTime": "03:00"}},
                                          "retentionPolicy": {"maxRetentionDays": 7},

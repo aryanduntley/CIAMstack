@@ -36,8 +36,8 @@ TOKEN_LIFETIMES = MappingProxyType({"tech-pubs": 60, "mobile-ops": 30})
 
 def definitions():
     file = "22-custom-schema"
-    return (*(spec(file, f"cn={name},{CUSTOM}", ["top", "ciamFieldDefinition"], cn=name, ciamOwner=owner("ciam-platform"),
-                   **attrs) for name, attrs in FIELDS),
+    return (*(spec(file, f"cn={name},{CUSTOM}", ["top", "ciamFieldDefinition"], cn=name,
+                   ciamOwner=owner("ciam-platform"), **attrs) for name, attrs in FIELDS),
             *(spec(file, f"cn={name},{CUSTOM}", ["top", "ciamRecordTypeDefinition"], cn=name,
                    ciamOwner=owner("ciam-platform"), **attrs) for name, attrs in RECORD_TYPES))
 

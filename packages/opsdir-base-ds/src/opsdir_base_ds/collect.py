@@ -14,9 +14,10 @@ Only the configuration in effect is read: the archived configurations are on dis
 
 Before anything sees the output (the export, the evidence's hash, --save), the attributes that hold credentials are
 dropped (holds_credential): password values (userPassword, authPassword, settings ending -password other than the
-password policies' ds-cfg-password-* settings), key and trust store PINs (-pin) and secrets (-secret). The ldapsearch to run and the truststore its server certificate is checked
-against are the operator's, given when collecting (--ldapsearch PATH, --ldap-truststore PATH; else `ldapsearch` on the
-path and the JVM's trust store); neither is stored."""
+password policies' ds-cfg-password-* settings), key and trust store PINs (-pin) and secrets (-secret). The ldapsearch
+to run and the truststore its server certificate is checked against are the operator's, given when collecting
+(--ldapsearch PATH, --ldap-truststore PATH; else `ldapsearch` on the path and the JVM's trust store); neither is
+stored."""
 from functools import reduce
 from urllib.parse import urlparse
 

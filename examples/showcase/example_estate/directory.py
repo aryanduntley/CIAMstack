@@ -18,7 +18,8 @@ USER_ATTRIBUTES = (
     ("companyId", "none", None, "Link to the customer / supplier organization record"),
     ("soldToAccount", "low", None, "Commercial account for aftermarket entitlements"),
     ("registrationStatus", "none", None, "Registration workflow state (pending / approved / active / disabled)"),
-    ("exportScreeningStatus", "high", "TRUE", "Result of restricted-party / export screening from the authoritative system"),
+    ("exportScreeningStatus", "high", "TRUE",
+     "Result of restricted-party / export screening from the authoritative system"),
     ("challengeAnswer", "high", None, "Legacy knowledge-based recovery answers; candidate for retirement"),
     ("lastLoginTime", "low", None, "Inactivity detection for lifecycle cleanup"),
     ("appEntitlement", "low", None, "Application entitlements (app:role)"),
@@ -78,7 +79,8 @@ CONSUMERS = (
     ("idm-sync", "uid=idm-sync,ou=service-accounts", "2024-01-03", "ciam-platform", "high", "tested", "2026-03-02"),
 )
 ACIS = (
-    ("aci-pf-read", "pf-ds-svc", ["uid", "mail", "givenName", "sn", "companyId", "appEntitlement", "registrationStatus"],
+    ("aci-pf-read", "pf-ds-svc",
+     ["uid", "mail", "givenName", "sn", "companyId", "appEntitlement", "registrationStatus"],
      ["read", "search", "compare"], "PingFederate reads profile attributes to build assertions and tokens",
      "2026-03-02", "ciam-platform", "CHG-0877"),
     ("aci-portal-write", "customer-portal-svc", ["mail", "registrationStatus", "telephoneNumber", "challengeAnswer"],

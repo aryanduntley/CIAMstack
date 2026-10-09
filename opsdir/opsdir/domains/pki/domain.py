@@ -4,6 +4,7 @@ from pathlib import Path
 
 from ...core.contract import Domain, ImportKind, directory_report, sql_report
 from .checks import check_certificates, check_credentials
+from .pem import check_certificate_pems
 from .reports import (IMPACT_HEADERS, KEYS_HEADERS, SPRAWL_HEADERS, key_placement_rows, rotation_impact_rows,
                       sprawl_rows)
 from .schema import FRAGMENT
@@ -11,7 +12,7 @@ from .settings import SETTINGS
 
 EXPIRING_SQL = ("select cert, purpose, not_after, days_left, array_to_string(names, ','),"
                 " (select string_agg(split_part(split_part(u, ',', 1), '=', 2), ',') from unnest(used_by) u)"
-                " from v_certificates order by not_after")
+                " from v_certificates order by not_after, cert")
 EXPIRING_HEADERS = ("certificate", "purpose", "not_after", "days_left", "names", "used_by")
 
 DOMAIN = Domain(name="pki", schema=FRAGMENT, required_roles=(), sql=(Path(__file__).parent / "sql" / "pki.sql",),
@@ -19,7 +20,7 @@ DOMAIN = Domain(name="pki", schema=FRAGMENT, required_roles=(), sql=(Path(__file
                          "keys": directory_report(KEYS_HEADERS, key_placement_rows, needs_dn=True, dated=True),
                          "credentials": directory_report(SPRAWL_HEADERS, sprawl_rows),
                          "rotation-impact": directory_report(IMPACT_HEADERS, rotation_impact_rows, needs_dn=True)},
-                checks=(check_certificates, check_credentials), order=40,
+                checks=(check_certificates, check_certificate_pems, check_credentials), order=40,
                 vocabulary={},
                 import_kinds=(ImportKind("secret", "ciamSecretRef", ("ciamRefUri",), match="ciamRefUri"),
                               ImportKind("key", "ciamKeyRef", ("ciamRefUri",), match="ciamRefUri")),

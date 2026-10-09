@@ -5,9 +5,9 @@ databases get their private addresses from), when the record gives its allocated
 with purpose VPC_PEERING and the service networking connection reserving it, rendered in its keeper's root like any
 plumbing. Private Google Access is a subnet setting the landing zone keeps: said in a comment. Service attachments
 exposing a service name's internal passthrough forwarding rule through a PSC NAT subnet, connections accepted
-automatically or from the allowed projects and networks. An egress firewall the stack keeps gets its allowlist as egress rules of the network firewall
-policy (opsdir_adapter_gcp.firewall_policy): FQDN rules exist only there. What someone else keeps is a comment naming
-them. Pure."""
+automatically or from the allowed projects and networks. An egress firewall the stack keeps gets its allowlist as
+egress rules of the network firewall policy (opsdir_adapter_gcp.firewall_policy): FQDN rules exist only there. What
+someone else keeps is a comment naming them. Pure."""
 import re
 
 from opsdir.core.directory import one, rdn_value, values

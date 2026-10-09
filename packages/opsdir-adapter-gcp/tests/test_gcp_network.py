@@ -61,7 +61,8 @@ def test_the_policy_model_targets_secure_tags_in_the_networks_project(network):
     assert ('parent    = "//compute.googleapis.com/projects/${var.project_id}/zones/zone-a/instances/'
             '${google_compute_instance.ds_1.instance_id}"') in out and 'location  = "zone-a"' in out
     assert 'resource "google_compute_network_firewall_policy_rule" "fw_ds"' in out
-    assert "priority        = 100" in out and 'direction       = "INGRESS"' in out and 'rule_name       = "fw-ds"' in out
+    assert ("priority        = 100" in out and 'direction       = "INGRESS"' in out
+            and 'rule_name       = "fw-ds"' in out)
     assert 'src_ip_ranges = ["10.1.2.0/24"]' in out and 'ports       = ["1636"]' in out
     assert "name = google_tags_tag_value.ds.id" in out
     assert "google_compute_firewall" not in out

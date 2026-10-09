@@ -42,7 +42,8 @@ def test_suppressions_are_read_back_merged_per_name():
                              "finding_fields_update": [{"workflow": [{"status": "SUPPRESSED"}]}]}]}),
              ("aws_guardduty_filter", {"arn": "arn:aws:guardduty:us-east-1:111122223333:detector/d/filter/exc-EXC-7",
                                        "name": "exc-EXC-7", "action": "ARCHIVE",
-                                       "finding_criteria": [{"criterion": [{"field": "type", "equals": ["Recon:X"]}]}]}),
+                                       "finding_criteria": [{"criterion": [{"field": "type",
+                                                                            "equals": ["Recon:X"]}]}]}),
              ("aws_securityhub_automation_rule", {"arn": "arn:other", "rule_name": "raise-severity", "actions": [
                  {"finding_fields_update": [{"severity": [{"label": "CRITICAL"}]}]}]})]
     (found,) = suppression_resources(pairs)

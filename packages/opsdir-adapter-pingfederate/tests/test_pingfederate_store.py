@@ -83,7 +83,8 @@ def test_a_bulk_export_is_imported_under_a_change_and_again_changes_nothing(conn
     kinds = dict(conn.execute("select attrs->'ciamProtocolType'->>0, count(*) from opsdir.entry "
                               "where 'ciamIntegration' = any (object_classes) group by 1").fetchall())
     assert kinds == {"saml2-sp": 1, "saml2-idp": 1, "oidc-client": 2}
-    certs = conn.execute("select count(*) from opsdir.entry where 'ciamCertificate' = any (object_classes)").fetchone()[0]
+    certs = conn.execute("select count(*) from opsdir.entry "
+                         "where 'ciamCertificate' = any (object_classes)").fetchone()[0]
     assert certs == 3
     dump = str(conn.execute("select jsonb_agg(attrs) from opsdir.entry").fetchone()[0])
     assert "OBF:" not in dump

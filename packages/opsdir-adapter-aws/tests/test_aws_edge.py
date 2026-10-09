@@ -14,7 +14,8 @@ CERT = "arn:aws:acm:us-east-1:111122223333:certificate/abcd"
 
 def _alb(s, ip="198.51.100.20"):
     svc = service(ip)
-    m = environment(svc, firewall("fw-sso-public", ["0.0.0.0/0"], ["443"]), firewall("fw-other", ["10.0.0.0/8"], ["22"]))
+    m = environment(svc, firewall("fw-sso-public", ["0.0.0.0/0"], ["443"]),
+                    firewall("fw-other", ["10.0.0.0/8"], ["22"]))
     return "\n".join(alb_service(m, svc, s, servers_backend(svc, (server("pf-1", "10.20.2.10"),)),
                                  (subnet("subnet-pf-a", "subnet-pf", "10.20.2.0/24"),)))
 

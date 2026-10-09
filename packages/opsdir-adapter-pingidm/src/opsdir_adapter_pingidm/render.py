@@ -43,8 +43,8 @@ def sync_file(d):
 
 
 def schedule_files(d):
-    return {f"pingidm/conf/schedule-{rdn_value(s)}.json": indented({"enabled": one(s, "pingidmEnabled", "TRUE") == "TRUE",
-                                                                  **_config(s)})
+    return {f"pingidm/conf/schedule-{rdn_value(s)}.json":
+            indented({"enabled": one(s, "pingidmEnabled", "TRUE") == "TRUE", **_config(s)})
             for s in children(d, SCHEDULES, "pingidmSchedule")}
 
 

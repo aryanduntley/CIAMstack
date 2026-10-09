@@ -64,7 +64,8 @@ def test_workspace_changes_reach_live_only_at_cutover(stores, dsn):
 def test_cutover_merges_when_live_changed_other_entries(stores, dsn, tmp_path):
     live, ws = stores
     _modify(ws, tmp_path, "ws.ldif", _edit(SVC, "workspace edit"), APPROVED[1][0])
-    _modify(live, tmp_path, "live.ldif", _edit("cn=legacy-rptuser,ou=consumers,dc=ciam-ops", "live edit"), APPROVED[0][0])
+    _modify(live, tmp_path, "live.ldif", _edit("cn=legacy-rptuser,ou=consumers,dc=ciam-ops", "live edit"),
+            APPROVED[0][0])
     assert "changed since the copy" in workspace.status(live, ws)
     workspace.cutover(live, ws, store_parts(), dsn, APPROVED[1][0], schema_sync())
     text = export_text(db.load_directory(live), SUFFIX)

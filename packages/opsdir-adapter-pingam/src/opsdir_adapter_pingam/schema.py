@@ -29,7 +29,8 @@ ATTRIBUTES = (
                  'Where an outcome of the node leads: outcome=node id (the success and failure nodes end the journey)',
                  (("X-PATTERN", "^[^=]+=.+$"),)),
     AttributeDef(10, 'pingamWithheld', 'string', 'meta', False,
-                 'Settings withheld at import because they may be secret (JSON Pointer): the environment supplies them'),
+                 'Settings withheld at import because they may be secret (JSON Pointer): '
+                 'the environment supplies them'),
     AttributeDef(11, 'pingamApplicationType', 'string', 'intent', True,
                  "A policy set's application type"),
     AttributeDef(12, 'pingamSetConfig', 'json', 'intent', True,

@@ -72,7 +72,8 @@ def main(phase):
     ok = all(passed(r) for r in results)
     print("\n".join((f"Expected findings check ({phase} changes)", *(line for r in results for line in result_lines(r)),
                      "  RESULT: PASS. The planner found every planted problem and nothing else. 'NOT READY' is the "
-                     "correct verdict\n          for this deliberately broken environment." if ok else "  RESULT: FAIL")))
+                     "correct verdict\n          for this deliberately broken environment." if ok
+                     else "  RESULT: FAIL")))
     return 0 if ok else 1
 
 

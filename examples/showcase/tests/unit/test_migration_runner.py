@@ -23,7 +23,8 @@ def test_both_directions_render_the_target_with_its_own_provider(estate, as_of, 
     r = _run(estate, as_of, src, dst)
     assert r.stack_problems == 0 and r.plan is not None
     manifest = json.loads(migration.output_files(r)["target/MANIFEST.json"])
-    assert manifest["provider"] == provider and manifest["environment"].startswith(f"env=prod,cloud={dst.split('/')[0]}")
+    assert manifest["provider"] == provider and manifest["environment"].startswith(
+        f"env=prod,cloud={dst.split('/')[0]}")
 
 
 def test_forward_outputs_are_the_golden_plan_and_render(estate, as_of):

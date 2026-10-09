@@ -137,7 +137,8 @@ def _instances(outs, roots=None):
                 "id": i.get("InstanceId"), "ami": i.get("ImageId"), "instance_type": i.get("InstanceType"),
                 "private_ip": i.get("PrivateIpAddress"), "private_dns": i.get("PrivateDnsName"),
                 "availability_zone": (i.get("Placement") or {}).get("AvailabilityZone"), "subnet_id": i.get("SubnetId"),
-                "vpc_id": i.get("VpcId"), "vpc_security_group_ids": [g.get("GroupId") for g in i.get("SecurityGroups") or ()],
+                "vpc_id": i.get("VpcId"),
+                "vpc_security_group_ids": [g.get("GroupId") for g in i.get("SecurityGroups") or ()],
                 "tags": tags_of(i.get("Tags")),
                 **({"root_block_device": [roots[i.get("InstanceId")]]} if i.get("InstanceId") in roots else {})})
             for r in items(outs, "Reservations") for i in r.get("Instances") or ()
@@ -152,7 +153,8 @@ def _security_groups(outs):
         """One Terraform-shaped ingress block per permission and description, every kind of source kept."""
         def blocks(p):
             sources = [*(("cidr_blocks", r.get("CidrIp"), r.get("Description")) for r in p.get("IpRanges") or ()),
-                       *(("ipv6_cidr_blocks", r.get("CidrIpv6"), r.get("Description")) for r in p.get("Ipv6Ranges") or ()),
+                       *(("ipv6_cidr_blocks", r.get("CidrIpv6"), r.get("Description"))
+                         for r in p.get("Ipv6Ranges") or ()),
                        *(("security_groups", r.get("GroupId"), r.get("Description"))
                          for r in p.get("UserIdGroupPairs") or ()),
                        *(("prefix_list_ids", r.get("PrefixListId"), r.get("Description"))
@@ -185,7 +187,8 @@ def _load_balancers(outs):
     return [*(("aws_lb", {"arn": lb.get("LoadBalancerArn"), "name": lb.get("LoadBalancerName"),
                           "internal": lb.get("Scheme") == "internal", "dns_name": _dns(lb.get("DNSName")),
                           "load_balancer_type": lb.get("Type"), "security_groups": lb.get("SecurityGroups") or [],
-                          "idle_timeout": settings.get(lb.get("LoadBalancerName"), {}).get("idle_timeout.timeout_seconds"),
+                          "idle_timeout": settings.get(lb.get("LoadBalancerName"), {}).get(
+                              "idle_timeout.timeout_seconds"),
                           "vpc_id": lb.get("VpcId"), "tags": tags.get(lb.get("LoadBalancerArn"), {}),
                           "subnet_mapping": [{"subnet_id": z.get("SubnetId"),
                                               "private_ipv4_address": a.get("PrivateIPv4Address"),
@@ -281,14 +284,16 @@ def _enabled(item):
 
 
 def _jobs(outs):
-    """(pairs, notices): functions, build projects and pipelines, and the enabled rules and schedules that start them."""
+    """(pairs, notices): functions, build projects and pipelines, and the enabled rules and schedules that start
+    them."""
     function_tags = {stem(p): doc["Tags"] for p, k, doc in outs if k == "Tags" and isinstance(doc.get("Tags"), dict)
                      and not is_backup_tags(p)}
     rules = items(outs, "Rules")
     schedules = [doc for _, k, doc in outs if k == "ScheduleExpression"]
     off = [r for r in rules if not _enabled(r)] + [s for s in schedules if not _enabled(s)]
     return ([*(("aws_lambda_function", {"arn": f.get("FunctionArn"), "function_name": f.get("FunctionName"),
-                                        "runtime": f.get("Runtime"), "tags": function_tags.get(f.get("FunctionName"), {})})
+                                        "runtime": f.get("Runtime"),
+                                        "tags": function_tags.get(f.get("FunctionName"), {})})
                for f in items(outs, "Functions")),
              *(("aws_cloudwatch_event_rule", {"name": r.get("Name"), "arn": r.get("Arn"),
                                               "schedule_expression": r.get("ScheduleExpression")})

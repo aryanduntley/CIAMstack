@@ -8,7 +8,9 @@ gateway's pods instead of instance groups: GKE's standalone zonal network endpoi
 plug annotates it with cloud.google.com/neg, a fixed name per port), read here as data in each zone the cluster spans,
 balanced by rate. The gateway listens on HTTP, or HTTPS (its internal certificate) when the policy re-encrypts; its
 health checks send the service name's host, so the gateway routes them to the product's health endpoint. The firewall
-rules admitting the proxies and probes apply to the cluster's node subnets (pods take addresses there).
+rules admitting the proxies and probes apply to the cluster's node subnets (pods take addresses there). They stay VPC
+firewall rules under the firewall-policy model too (decision 2218): Google Cloud evaluates both, and a policy rule would
+target the nodes' secure tags, which GKE nodes here don't carry.
 """
 import json
 

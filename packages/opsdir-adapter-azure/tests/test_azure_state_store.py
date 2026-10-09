@@ -72,7 +72,8 @@ def _res(mode, type_, name, attrs, sensitive=()):
 
 STATE = json.dumps({"version": 4, "resources": [
     _res("data", "azurerm_subnet", "snet_ds", {"id": f"{VNET}/subnets/snet-ds", "name": "snet-ds",
-                                               "virtual_network_name": "vnet-ciam-prod", "address_prefixes": ["10.60.1.0/24"]}),
+                                               "virtual_network_name": "vnet-ciam-prod",
+                                               "address_prefixes": ["10.60.1.0/24"]}),
     _res("managed", "azurerm_network_interface", "ds_1", {
         "id": "/subscriptions/0/nic-ds-1", "ip_configuration": [
             {"name": "primary", "private_ip_address": "10.60.1.11", "subnet_id": f"{VNET}/subnets/snet-ds"}]}),
@@ -81,7 +82,8 @@ STATE = json.dumps({"version": 4, "resources": [
         "zone": "1", "network_interface_ids": ["/subscriptions/0/nic-ds-1"],
         "tags": {"Role": "ds", "Hostname": "ds-1.az.internal.test"}}),
     _res("data", "azurerm_key_vault_secret", "root", {"name": "ds-root-password", "key_vault_id": KV,
-                                                      "value": "S3cr3t-Passw0rd!", "tags": {"Role": "ds-root-password"}},
+                                                      "value": "S3cr3t-Passw0rd!",
+                                                      "tags": {"Role": "ds-root-password"}},
          sensitive=("value",))]})
 
 
@@ -109,7 +111,8 @@ def test_a_state_is_imported_under_a_change_and_again_changes_nothing(conn):
 
 CLI = {"network.json": [{"id": VNET, "name": "vnet-ciam-prod", "type": "Microsoft.Network/virtualNetworks",
                          "addressSpace": {"addressPrefixes": ["10.60.0.0/16"]},
-                         "subnets": [{"id": f"{VNET}/subnets/snet-ds", "name": "snet-ds", "addressPrefix": "10.60.1.0/24"}]}],
+                         "subnets": [{"id": f"{VNET}/subnets/snet-ds", "name": "snet-ds",
+                                      "addressPrefix": "10.60.1.0/24"}]}],
        "nics.json": [{"id": "/subscriptions/0/nic-ds-1", "type": "Microsoft.Network/networkInterfaces",
                       "ipConfigurations": [{"name": "primary", "privateIPAddress": "10.60.1.11",
                                             "subnet": {"id": f"{VNET}/subnets/snet-ds"}}]}],

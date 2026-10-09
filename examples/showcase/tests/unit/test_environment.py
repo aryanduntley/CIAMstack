@@ -22,7 +22,8 @@ def test_env_model_resolves_cloud_servers_and_bindings(estate):
     assert one_role(m, "network").dn.startswith("cn=vpc,")
     assert one_role(m, "no-such-role") is None
     assert len(by_role(m, "subnet-ds")) == 3
-    assert {b.dn.split(",")[0] for b in of_class(m, "ciamServiceName")} == {"cn=svc-ldaps", "cn=svc-sso", "cn=svc-login", "cn=svc-apps"}
+    assert {b.dn.split(",")[0] for b in of_class(m, "ciamServiceName")} == {"cn=svc-ldaps", "cn=svc-sso",
+                                                                            "cn=svc-login", "cn=svc-apps"}
 
 
 def test_role_lookups_on_servers(estate):

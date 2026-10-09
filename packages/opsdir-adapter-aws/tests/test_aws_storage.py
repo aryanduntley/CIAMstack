@@ -110,7 +110,8 @@ def test_the_cli_outputs_read_the_same_and_lifecycle_rules_are_not_eventbridge_r
             "BlockPublicAcls": True, "BlockPublicPolicy": True, "IgnorePublicAcls": True,
             "RestrictPublicBuckets": True}}),
         "bucket-lifecycle/alpha-backups.json": json.dumps({"Rules": [
-            {"ID": "ciam", "Status": "Enabled", "Filter": {}, "Transitions": [{"Days": 30, "StorageClass": "GLACIER_IR"}],
+            {"ID": "ciam", "Status": "Enabled", "Filter": {},
+             "Transitions": [{"Days": 30, "StorageClass": "GLACIER_IR"}],
              "Expiration": {"Days": 400}, "NoncurrentVersionExpiration": {"NoncurrentDays": 30}}]}),
         "bucket-replication/alpha-backups.json": json.dumps({"ReplicationConfiguration": {
             "Role": "arn:aws:iam::1:role/r", "Rules": [{"Status": "Enabled",

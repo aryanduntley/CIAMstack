@@ -5,7 +5,8 @@ asking for what the previous ones' outputs name (a list, then each item's detail
 
 A collection is complete or it isn't imported: an import makes the record's subtrees exactly what the export holds, so
 a missing file would delete what the record holds. Any call that fails, a collector that keeps asking past ROUNDS
-rounds or CALLS calls, a step that names a problem instead of a call, or a command carrying a debug switch (provider debug output can print credentials) leaves the
+rounds or CALLS calls, a step that names a problem instead of a call, or a command carrying a debug switch (provider
+debug output can print credentials) leaves the
 collection incomplete, with its problems. What a complete one ran is its evidence: the identity the provider saw, each
 call (the command or URL, never a credential) with the SHA-256 of what it returned and the file it became, and the
 credential references it resolved; the applied import records it with the import run (domains.governance.imports).

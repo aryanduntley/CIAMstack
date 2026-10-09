@@ -86,7 +86,7 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.104 NAME 'ciamNotAfter' DESC 'Expires'
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.28 NAME 'ciamCertificate' DESC 'Certificate (public facts only)'
   SUP ciamObject STRUCTURAL MUST ( cn $ ciamFingerprint $ ciamNotAfter $ ciamCertPurpose )
   MAY ( ciamSubject $ ciamIssuer $ ciamNotBefore $ ciamSubjectAltName $ ciamKeyRole $
-        ciamPartnerContact $ ciamRotationRunbook ) X-ORIGIN 'opsdir' )
+        ciamPartnerContact $ ciamRotationRunbook $ ciamCertificatePem ) X-ORIGIN 'opsdir' )
 ```
 
 `X-PORTABILITY` makes the schema itself say what differs between environments; `X-VALUE-TYPE` adds stricter types than LDAP syntaxes (DNs, CIDRs, FQDNs, ports, reference URIs, enumerations, vocabularies registered by adapters). OIDs sit under the RFC 5612 documentation arc until a registered arc replaces it; each package's fragment has its own sub-arc with pinned numbers, and operators add fields and record types as entries (SPEC §2.3).

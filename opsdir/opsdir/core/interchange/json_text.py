@@ -12,7 +12,8 @@ from itertools import accumulate
 from ..contract import Codec
 from .lines import first_gap, line_col
 
-_TOKEN = re.compile(r'(\s+|//[^\n]*|/\*.*?\*/)|("(?:[^"\\]|\\.)*")|(-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null)'
+_TOKEN = re.compile(r'(\s+|//[^\n]*|/\*.*?\*/)|("(?:[^"\\]|\\.)*")'
+                    r'|(-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null)'
                     r"|([{}\[\]:,])", re.DOTALL)
 
 

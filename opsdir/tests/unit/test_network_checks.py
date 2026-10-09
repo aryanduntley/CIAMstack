@@ -56,7 +56,8 @@ def test_partners_need_a_fixed_public_egress_the_routes_use():
         "`partner-fw` (partner) allows beta/prod's `pf-egress`, but no route table sends traffic for the internet "
         "through it."]
     assert all(a[3] == CUTOVER for a in found.actions)
-    good = entry(BETA, "rt-private", "ciamRouteTable", ciamBindingRole="rt-private", ciamRoute="0.0.0.0/0 nat pf-egress")
+    good = entry(BETA, "rt-private", "ciamRouteTable", ciamBindingRole="rt-private",
+                 ciamRoute="0.0.0.0/0 nat pf-egress")
     d, alpha, beta = model(beta=(_egress(BETA), good), tree=(*OWNERS, *_allowlist()))
     assert check_egress(context(d, alpha, beta)).actions == ()
     assert [r.target for _, r in default_routes(beta)] == ["pf-egress"]
@@ -207,8 +208,9 @@ def test_flow_logs_kept_as_long_and_sent_somewhere_bound():
 def test_reports():
     table = entry(ALPHA, "rt", "ciamRouteTable", ciamBindingRole="rt", ciamMainTable="TRUE",
                   ciamRoute=("0.0.0.0/0 nat pf-egress", "10.20.0.0/16 vpn link for ds"))
-    d, _, _ = model(alpha=(table, _endpoint(ALPHA, "pe-kms", ciamPrivateService="keys", ciamPrivateEndpointKind="interface",
-                                            ciamSubnetRole="subnet-ds", ciamPrivateDns="TRUE"),
+    d, _, _ = model(alpha=(table, _endpoint(ALPHA, "pe-kms", ciamPrivateService="keys",
+                                            ciamPrivateEndpointKind="interface", ciamSubnetRole="subnet-ds",
+                                            ciamPrivateDns="TRUE"),
                            _service(ALPHA, "svc-1", ("111122223333",))),
                     beta=(_proxy(BETA, "partner.example"),), tree=SITES)
     assert route_rows(d) == [("alpha/prod", "rt", "main", "0.0.0.0/0", "nat", "pf-egress", ""),

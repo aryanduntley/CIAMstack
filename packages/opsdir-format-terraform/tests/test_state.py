@@ -14,7 +14,8 @@ def test_resource_instances_are_read_without_their_sensitive_attributes():
     found, problem = read_state(json.dumps(doc))
     assert problem is None
     assert [(r.mode, r.type, r.name, dict(r.attributes)) for r in found] == [
-        ("managed", "random_password", "db", {"id": "none", "length": 24}), ("data", "aws_vpc", "main", {"id": "vpc-1"})]
+        ("managed", "random_password", "db", {"id": "none", "length": 24}),
+        ("data", "aws_vpc", "main", {"id": "vpc-1"})]
 
 
 def test_what_is_not_a_version_4_state_is_refused():

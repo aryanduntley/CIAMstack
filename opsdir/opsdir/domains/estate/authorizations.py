@@ -158,7 +158,8 @@ def check_authorization(ctx):
                     + ": import the provider's current package overview.", owner, ctx.cutover)] \
         if dst_auth is not None and values(dst_auth, "ciamInScopeService") and (
             as_of is None or (ctx.as_of - as_of).days > SCOPE_STALE_DAYS) else []
-    unmet = sorted(set(values(dst_auth, "ciamRequiresConfiguration")) - set(values(ctx.dst.env, "ciamConfigurationMet"))) \
+    unmet = sorted(set(values(dst_auth, "ciamRequiresConfiguration"))
+                   - set(values(ctx.dst.env, "ciamConfigurationMet"))) \
         if dst_auth is not None else []
     config = [(AREA, f"Authorization `{rdn_value(dst_auth)}` requires {c} for a customer's use to be inside its "
                      f"boundary and {ctx.dst.label} doesn't record it (ciamConfigurationMet).", owner, ctx.cutover)

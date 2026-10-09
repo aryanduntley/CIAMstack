@@ -46,7 +46,8 @@ def sp_descriptor(entity_id, acs, nameid_formats=(), requested=(), certificates=
         *(element("md:RequestedAttribute", (("Name", n), ("NameFormat", ATTRNAME_BASIC))) for n in requested))),
     ) if requested else ()
     acs_elements = tuple(element("md:AssertionConsumerService", (("Binding", binding_urn(b)), ("Location", url),
-                                                                 ("index", str(n)), ("isDefault", "true" if n == 0 else None)))
+                                                                 ("index", str(n)),
+                                                                 ("isDefault", "true" if n == 0 else None)))
                          for n, (b, url) in enumerate(acs))
     return element("md:EntityDescriptor", (("xmlns:md", MD), ("entityID", entity_id)), (
         element("md:SPSSODescriptor", (("protocolSupportEnumeration", PROTOCOL),), (
@@ -56,6 +57,7 @@ def sp_descriptor(entity_id, acs, nameid_formats=(), requested=(), certificates=
 def idp_descriptor(entity_id, sso, slo=(), nameid_formats=(), certificates=()):
     """EntityDescriptor of an identity provider. sso, slo: ((binding, url), ...); certificates as for sp_descriptor."""
     return element("md:EntityDescriptor", (("xmlns:md", MD), ("entityID", entity_id)), (
-        element("md:IDPSSODescriptor", (("WantAuthnRequestsSigned", "false"), ("protocolSupportEnumeration", PROTOCOL)), (
+        element("md:IDPSSODescriptor",
+                (("WantAuthnRequestsSigned", "false"), ("protocolSupportEnumeration", PROTOCOL)), (
             *_certificates(certificates), *_endpoints("md:SingleLogoutService", slo), *_nameid_formats(nameid_formats),
             *_endpoints("md:SingleSignOnService", sso))),))

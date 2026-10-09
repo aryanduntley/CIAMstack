@@ -55,7 +55,8 @@ def test_gap_in_the_applied_migrations_is_refused():
 def test_removed_definitions():
     ats, ocs = [{"name": "cn"}, {"name": "ciamOwner"}], [{"name": "top"}]
     assert removed_definitions(["cn", "ciamOwner"], ["top"], ats, ocs) == ((), ())
-    assert removed_definitions(["cn", "ciamGone"], ["top", "ciamOldClass"], ats, ocs) == (("ciamGone",), ("ciamOldClass",))
+    assert (removed_definitions(["cn", "ciamGone"], ["top", "ciamOldClass"], ats, ocs)
+            == (("ciamGone",), ("ciamOldClass",)))
 
 
 def test_registry_upsert_updates_every_column_but_the_name():

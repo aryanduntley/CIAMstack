@@ -5,6 +5,8 @@ of the service names are bindings, read in by the cloud importers and rendered b
 products declare their endpoints (contract.Endpoint)."""
 from ...core.contract import Domain, directory_report
 from .dns import DNS_HEADERS, check_dns, dns_rows
+from .exposure import check_exposure
+from .gateways import check_gateway_trust
 from .headers import HEADER_HEADERS, check_headers, header_rows
 from .imports import IMPORT_KINDS, ROLE_LINKS
 from .kubernetes import check_unrendered
@@ -17,5 +19,7 @@ DOMAIN = Domain(name="edge", schema=FRAGMENT, required_roles=(), sql=(),
                          "edge-services": directory_report(EDGE_SERVICE_HEADERS, edge_service_rows),
                          "dns": directory_report(DNS_HEADERS, dns_rows),
                          "header-contracts": directory_report(HEADER_HEADERS, header_rows)},
-                checks=(check_policies, check_running, check_unrendered, check_headers, check_dns), order=64, vocabulary={},
+                checks=(check_policies, check_running, check_unrendered, check_exposure, check_gateway_trust,
+                        check_headers, check_dns),
+                order=64, vocabulary={},
                 import_kinds=IMPORT_KINDS, role_links=ROLE_LINKS)

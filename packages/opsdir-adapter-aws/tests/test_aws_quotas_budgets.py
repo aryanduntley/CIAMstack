@@ -26,7 +26,8 @@ TAG_POLICY = ("dn: ou=tag-policy,dc=ciam-ops\nobjectClass: top\nobjectClass: org
 def cloud(region="us-east-1", **attrs):
     """The change record placing the alpha cloud in region with an account (ciamCloudAccount attributes)."""
     return LdifRecord(CLOUD, "modify", {}, (("add", "objectClass", ("ciamCloudAccount",)),
-                                            ("replace", "ciamRegion", (region,)), ("replace", "ciamCloudProvider", ("aws",)),
+                                            ("replace", "ciamRegion", (region,)),
+                                            ("replace", "ciamCloudProvider", ("aws",)),
                                             *(("replace", k, (v,)) for k, v in attrs.items())))
 
 
@@ -51,7 +52,8 @@ def _alpha(*bindings, tree=(), **cloud_attrs):
 
 def test_quota_commands_fetch_the_services_and_regions_the_needs_name():
     d, _ = _alpha(need("cpus", "vcpus", 16), entry(ALPHA, "nlbs", "ciamQuotaNeed", ciamBindingRole="nlbs",
-                                                   ciamQuotaNeeded="4", ciamProviderRef="elasticloadbalancing.L-69A177A2"),
+                                                   ciamQuotaNeeded="4",
+                                                   ciamProviderRef="elasticloadbalancing.L-69A177A2"),
                   ciamAccountRef="111122223333")
     assert quota_commands(d) == (
         ("quotas/caller.json", ("aws", "sts", "get-caller-identity", "--output", "json")),

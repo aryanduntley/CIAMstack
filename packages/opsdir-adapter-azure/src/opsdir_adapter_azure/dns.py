@@ -6,8 +6,9 @@ forwarders as rules of the landing zone's DNS forwarding ruleset. Nothing is ren
 Pure.
 """
 from opsdir.core.directory import one, rdn_value, values
-from opsdir.core.network import is_private
-from opsdir.domains.edge.dns import zone_of
+from opsdir.core.environment import UNBOUND
+from opsdir.domains.edge.dns import zone_of, zone_unknown
+from opsdir.domains.edge.exposure import is_internal
 from opsdir.domains.edge.records import address, forwarders, hosted_notes, parts, records_in, routing, run_by, ttl
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 from .identities import RG
@@ -29,8 +30,8 @@ def _elsewhere(d, m, name):
             "them)",) if party is not None else ()
 
 
-def _traffic_manager(m, svc, n, policy, found):
-    name, zone = one(svc, "ciamFqdn"), one(svc, "ciamDnsZone")
+def _traffic_manager(m, svc, n, zone, policy, found):
+    name = one(svc, "ciamFqdn")
     weighted = policy == "weighted"
     return (block("resource", ["azurerm_traffic_manager_profile", n], [
                 ("name", f"tm-ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("resource_group_name", RG),
@@ -49,13 +50,38 @@ def _traffic_manager(m, svc, n, policy, found):
                 ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]))
 
 
-def service_record(d, m, svc, n, target=None):
+def unrecorded_answer(svc, n, layer7):
+    """The address a service name's record answers with when it records none: the public IP Azure assigns (read as
+    data by its provider ref), or an internal load balancer's dynamic private address; an Application Gateway's private
+    frontend is rendered static, so it stays UNBOUND until recorded."""
+    if not is_internal(svc):
+        return ref(f"data.azurerm_public_ip.{n}.ip_address")
+    return (f"{UNBOUND}{one(svc, 'ciamBindingRole')}-frontend-ip" if layer7
+            else ref(f"azurerm_lb.{n}.private_ip_address"))
+
+
+def public_ip_name(svc):
+    """The name of the public IP a service name's internet-facing frontend uses (its provider ref)."""
+    return one(svc, "ciamProviderRef") or f"{UNBOUND}{one(svc, 'ciamBindingRole')}-public-ip"
+
+
+def service_zone(m, svc):
+    """The DNS zone a service name's record goes in: its own ciamDnsZone, else the zone binding its name falls in;
+    None when neither says."""
+    bound = zone_of(m, one(svc, "ciamFqdn"))
+    return one(svc, "ciamDnsZone") or (one(bound, "ciamDnsZone") if bound is not None else None)
+
+
+def service_record(d, m, svc, n, target=None, answer=None):
     """A service name's DNS record (a CNAME to target when a CDN fronts it), or the Traffic Manager routing it between
-    environments."""
-    name, zone, ip = one(svc, "ciamFqdn"), one(svc, "ciamDnsZone"), one(svc, "ciamFrontendIp")
+    environments. answer: the address it answers with when it records none (unrecorded_answer)."""
+    name, ip = one(svc, "ciamFqdn"), one(svc, "ciamFrontendIp") or answer
     outside = _elsewhere(d, m, name)
     if outside:
         return outside
+    zone = service_zone(m, svc)
+    if not zone:
+        return (zone_unknown(svc, "ciamDnsZone"),)
     if target is not None:
         return (block("resource", ["azurerm_dns_cname_record", n], [
             ("name", record_name(name, zone)), ("zone_name", zone), ("resource_group_name", RG), ("ttl", ttl(svc)),
@@ -66,12 +92,12 @@ def service_record(d, m, svc, n, target=None):
         if not found:
             return (f"# `{name}` routes between environments ({policy}): the environment holding its primary "
                     "answers it",)
-        if is_private(ip):
+        if is_internal(svc):
             return (f"# `{name}` routes between environments ({policy}), but Traffic Manager answers public names "
                     "only: a single private record is rendered",
                     *_a_record(m, svc, n, name, zone, ip, True))
-        return _traffic_manager(m, svc, n, policy, found)
-    return _a_record(m, svc, n, name, zone, ip, is_private(ip))
+        return _traffic_manager(m, svc, n, zone, policy, found)
+    return _a_record(m, svc, n, name, zone, ip, is_internal(svc))
 
 
 def _a_record(m, svc, n, name, zone, ip, private):

@@ -22,13 +22,15 @@ ou=reporting-obligations: a regime's clock from discovery to report, the authori
 certificate they are filed with, how long evidence is preserved, the contracts that impose it) are the estate's to
 define, and an environment names the ones it is held to; a security service says which of its findings (at or above a
 severity) also go to the incident process; an incident (governance) may carry what its reporting needs (ciamReportable
-Incident: when it was discovered and reported, the authority's report number, malware submitted, media preserved). The plan of action and milestones (under ou=poam: each known weakness, the controls it concerns, how and when it
+Incident: when it was discovered and reported, the authority's report number, malware submitted, media preserved). The
+plan of action and milestones (under ou=poam: each known weakness, the controls it concerns, how and when it
 is fixed), the approved deviations (under ou=exceptions: accepted risks, false positives, operational requirements, each
 approved by a risk authority until a date, for named environments) and the compliance assessments (under
 ou=assessments: score, status) are the estate's record of its compliance; a cloud's suppression of findings
 (ciamSuppression) is a binding of the environment it runs in, named after the exception it carries out."""
 from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
-from .naming import (AMOUNT, ASSESSMENT_KINDS, AUTHORIZATION_STATUSES, CONFIGURATIONS, LEVELS, RESPONSIBILITY, ASSESSMENT_STATUSES, BUDGET_PERIODS, CAGE_CODE, CLASSIFICATIONS,
+from .naming import (AMOUNT, ASSESSMENT_KINDS, AUTHORIZATION_STATUSES, CONFIGURATIONS, LEVELS, RESPONSIBILITY,
+                     ASSESSMENT_STATUSES, BUDGET_PERIODS, CAGE_CODE, CLASSIFICATIONS,
                      CONTROL_REF, CURRENCY, DISCOVERY_SOURCES, EXCEPTION_KINDS, EXCEPTION_STATUSES, FINDING_REF,
                      MEDIA_REQUESTS, POAM_STATUSES, QUOTA_DECISIONS, QUOTA_KINDS, REGION_STATUSES, RISK_RATINGS,
                      SECURITY_AREAS, SECURITY_KINDS, SEVERITIES, STANDARD_ID, TAG_SOURCES, UEI, CUSTOM_IDENTIFIER)
@@ -89,9 +91,9 @@ ATTRIBUTES = (
                  "configuration) go to: an alert "
                  "channel, a log destination, an object store, a stream (a topic); none: they stay in the service"),
     AttributeDef(504, 'ciamQuotaKind', enum_type(QUOTA_KINDS), 'binding', True,
-                 "What a quota counts, by a kind every cloud limits: vcpus (the region's standard machines), public-ips, "
-                 "networks, load-balancers, database-instances, kubernetes-clusters (a provider's own quota: "
-                 "ciamProviderRef)"),
+                 "What a quota counts, by a kind every cloud limits: vcpus (the region's standard machines), "
+                 "public-ips, networks, load-balancers, database-instances, kubernetes-clusters "
+                 "(a provider's own quota: ciamProviderRef)"),
     AttributeDef(505, 'ciamQuotaNeeded', 'int', 'binding', True,
                  "How many of what a quota counts an environment needs (the environments on one account and region "
                  "need their sum)", (("X-MIN", "1"),)),
@@ -107,7 +109,8 @@ ATTRIBUTES = (
                  "How much of a quota the account used when it was fetched, when the provider says",
                  (("X-MIN", "0"),)),
     AttributeDef(510, 'ciamQuotaName', 'string', 'meta', True,
-                 "A quota's name as its provider shows it (Running On-Demand Standard instances, Total Regional vCPUs)"),
+                 "A quota's name as its provider shows it (Running On-Demand Standard instances, "
+                 "Total Regional vCPUs)"),
     AttributeDef(511, 'ciamBudgetAmount', 'string', 'binding', True,
                  "How much a budget allows an environment to spend each period, in its currency (1500, 1500.50)",
                  (("X-PATTERN", AMOUNT),)),
@@ -227,8 +230,8 @@ ATTRIBUTES = (
     AttributeDef(559, 'ciamExpiresAt', 'time', 'meta', True,
                  "When an exception (or the cloud's suppression carrying it out) ends"),
     AttributeDef(560, 'ciamAcceptsFinding', 'string', 'meta', False,
-                 "A planner finding an exception accepts, as its area and a phrase of its text (Budgets: has a budget): "
-                 "it is shown as accepted, never hidden; a changed wording makes it count again"),
+                 "A planner finding an exception accepts, as its area and a phrase of its text (Budgets: has a "
+                 "budget): it is shown as accepted, never hidden; a changed wording makes it count again"),
     AttributeDef(561, 'ciamPoamRef', 'dn', 'meta', True,
                  "The POA&M item an exception belongs to"),
     AttributeDef(562, 'ciamFramework', 'string', 'meta', True,
@@ -326,8 +329,8 @@ CLASSES = (
              ('ciamResourceGroup', 'ciamDataClassification', 'ciamResidencyRef', 'ciamReportingObligationRef',
               'ciamAuthorizationRef', 'ciamRequiredAuthorization', 'ciamConfigurationMet'),
              "Added to an environment: the resource group its resources go in (where the cloud has them), how "
-             "sensitive its data is, the residency and reporting obligations it is held to, the cloud authorization it relies on "
-             "(the level it requires, the configurations it has in place)"),
+             "sensitive its data is, the residency and reporting obligations it is held to, the cloud authorization it "
+             "relies on (the level it requires, the configurations it has in place)"),
     ClassDef(105, 'ciamChargedParty', 'top', 'AUXILIARY', (), ('ciamCostCenter',),
              "Added to a party: the cost center its spending is charged to"),
     ClassDef(106, 'ciamTagRule', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTagKey', 'ciamTagSource'), ('ciamTagValue',),
@@ -390,11 +393,11 @@ CLASSES = (
              "asked of them"),
     ClassDef(120, 'ciamPoamItem', 'ciamObject', 'STRUCTURAL',
              ('cn', 'ciamWeakness', 'ciamPoamStatus', 'ciamAffectedEnvironment'),
-             ('ciamControlRef', 'ciamDiscoverySource', 'ciamAssessmentRef', 'ciamDiscoveredAt', 'ciamScheduledCompletion',
-              'ciamMilestone', 'ciamRiskRating', 'ciamVendorDependency', 'ciamInvolved', 'ciamFindingRef',
-              'ciamEvidenceRef', 'ciamLastReviewedAt', 'ciamPointValue'),
-             "A known weakness the operator plans to correct (under ou=poam): the controls it concerns, how and when it "
-             "was found, when and how it will be corrected, its risk, the environments it affects and what it is "
+             ('ciamControlRef', 'ciamDiscoverySource', 'ciamAssessmentRef', 'ciamDiscoveredAt',
+              'ciamScheduledCompletion', 'ciamMilestone', 'ciamRiskRating', 'ciamVendorDependency', 'ciamInvolved',
+              'ciamFindingRef', 'ciamEvidenceRef', 'ciamLastReviewedAt', 'ciamPointValue'),
+             "A known weakness the operator plans to correct (under ou=poam): the controls it concerns, how and when "
+             "it was found, when and how it will be corrected, its risk, the environments it affects and what it is "
              "worth in its framework's scoring"),
     ClassDef(121, 'ciamRiskException', 'ciamObject', 'STRUCTURAL',
              ('cn', 'ciamExceptionKind', 'ciamExceptionStatus', 'ciamAffectedEnvironment'),
@@ -416,10 +419,10 @@ CLASSES = (
              "exception: the findings it covers, until when; local to its environment's cloud (a target gets its own "
              "from its own exceptions)"),
     ClassDef(124, 'ciamCloudAuthorization', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamPackageId'),
-             ('ciamOfferingName', 'ciamProviderName', 'ciamCloudProvider', 'ciamCloudEnvironment', 'ciamDeploymentModel',
-              'ciamAuthorizationLevel', 'ciamAuthorizationStatus', 'ciamCertificationType', 'ciamCertifiedAt',
-              'ciamInScopeService', 'ciamScopeAsOf', 'ciamSourceUrl', 'ciamRetrievedAt', 'ciamCrmRef',
-              'ciamRequiresConfiguration', 'ciamEvidenceRef', 'ciamDocUrl'),
+             ('ciamOfferingName', 'ciamProviderName', 'ciamCloudProvider', 'ciamCloudEnvironment',
+              'ciamDeploymentModel', 'ciamAuthorizationLevel', 'ciamAuthorizationStatus', 'ciamCertificationType',
+              'ciamCertifiedAt', 'ciamInScopeService', 'ciamScopeAsOf', 'ciamSourceUrl', 'ciamRetrievedAt',
+              'ciamCrmRef', 'ciamRequiresConfiguration', 'ciamEvidenceRef', 'ciamDocUrl'),
              "A cloud offering's authorization the estate relies on (under ou=authorizations, named by its package "
              "id): the offering, its levels and status, the services inside its boundary (imported from the "
              "provider's package overview, with where and when), its customer responsibility matrix and what customers "

@@ -166,6 +166,13 @@ def bound(m, role, attr):
     return one(b, attr) if b is not None and one(b, attr) else f"{UNBOUND}{role}"
 
 
+def recorded(e, attr, what):
+    """Entry e's attribute, or UNBOUND:<entry>-<what> when it records none: what a renderer writes for a value the
+    record leaves open (a server's image or size), so applying the render fails naming it instead of the render
+    failing (the planner names it too)."""
+    return one(e, attr) or f"{UNBOUND}{rdn_value(e)}-{what}"
+
+
 def secret_placeholder(m, role):
     """How a withheld credential is written for environment m: the reference of the role's binding, resolved at
     deployment (${secret:<ref-uri>}), or UNBOUND:<role>."""

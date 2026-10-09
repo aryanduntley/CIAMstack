@@ -153,7 +153,8 @@ PAGER = entry(ALPHA, "security-incidents", "ciamAlertChannel", ciamBindingRole="
 
 def test_findings_at_or_above_the_incident_severity_go_to_the_incident_workspace():
     out = _render(INCIDENT_LOGS,
-                  svc("defender", "threat-detection", ciamFindingsRole="security-logs", ciamIncidentRole="incident-logs",
+                  svc("defender", "threat-detection", ciamFindingsRole="security-logs",
+                      ciamIncidentRole="incident-logs",
                       ciamIncidentSeverity="medium", ciamSecurityCoverage=("control-plane",)),
                   svc("cspm", "posture", ciamIncidentRole="incident-logs", ciamIncidentSeverity="critical"))
     automation = out[out.index('resource "azurerm_security_center_automation" "defender_incidents"'):]
@@ -176,8 +177,9 @@ def test_an_action_group_is_paged_by_a_log_alert_on_security_alert():
     assert 'query                   = "SecurityAlert | where AlertSeverity in (\\"High\\")"' in out
     assert "severity             = 1" in out
     out = _render(PAGER, svc("defender", "threat-detection", ciamIncidentRole="security-incidents"))
-    assert out.endswith("# NOTE: defender's incidents to security-incidents: not rendered: a log alert on SecurityAlert "
-                        "needs the service's findings exported to a Log Analytics workspace (its ciamFindingsRole)")
+    assert out.endswith("# NOTE: defender's incidents to security-incidents: not rendered: a log alert on "
+                        "SecurityAlert needs the service's findings exported to a Log Analytics workspace "
+                        "(its ciamFindingsRole)")
 
 
 def test_incident_routes_are_read_back():
@@ -190,13 +192,16 @@ def test_incident_routes_are_read_back():
                                                          {"rule": [{"property_path": "properties.metadata.severity",
                                                                     "expected_value": "High"}]}]}]}),
              ("azurerm_security_center_automation", {"name": "unused", "action": [{"resource_id": INCIDENT_WS}],
-                                                     "source": [{"event_source": "SubAssessments", "rule_set": rules}]}),
+                                                     "source": [{"event_source": "SubAssessments",
+                                                                 "rule_set": rules}]}),
              ("azurerm_monitor_scheduled_query_rules_alert_v2", {
-                 "id": f"{SUB}/resourceGroups/rg-sec/providers/Microsoft.Insights/scheduledQueryRules/defender-incidents",
+                 "id": f"{SUB}/resourceGroups/rg-sec/providers/Microsoft.Insights/scheduledQueryRules/"
+                       "defender-incidents",
                  "criteria": [{"query": 'SecurityAlert\n| where AlertSeverity in ("High", "Medium")'}],
                  "action": [{"action_groups": [GROUP]}]})]
     found = {r.attrs["ciamSecurityKind"][0]: r for r in security_resources(state)}
-    assert (found["threat-detection"].links["ciamIncidentRole"], found["threat-detection"].attrs["ciamIncidentSeverity"]) \
+    assert (found["threat-detection"].links["ciamIncidentRole"],
+            found["threat-detection"].attrs["ciamIncidentSeverity"]) \
         == (GROUP, ("medium",))
     assert found["threat-detection"].links["ciamFindingsRole"] == WORKSPACE
     assert (found["posture"].links["ciamIncidentRole"], found["posture"].attrs["ciamIncidentSeverity"]) == (

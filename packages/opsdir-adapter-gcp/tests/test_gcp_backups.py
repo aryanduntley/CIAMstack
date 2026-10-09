@@ -109,7 +109,8 @@ ASSOCIATION_STATE = ("google_backup_dr_backup_plan_association", {
 
 def _state(*resources):
     return json.dumps({"version": 4, "terraform_version": "1.9.0", "resources": [
-        {"mode": "managed", "type": t, "name": f"r{i}", "provider": 'provider["registry.terraform.io/hashicorp/google"]',
+        {"mode": "managed", "type": t, "name": f"r{i}",
+         "provider": 'provider["registry.terraform.io/hashicorp/google"]',
          "instances": [{"attributes": a}]} for i, (t, a) in enumerate(resources)]})
 
 
@@ -166,7 +167,8 @@ def test_the_shapes_an_asset_export_holds():
     plan = {"name": "projects/my-project-123/locations/us-central1/backupPlans/my-daily-plan", "uid": "98765432-fedc",
             "resourceType": "compute.googleapis.com/Disk", "backupVault": vault["name"],
             "backupRules": [{"ruleId": "daily-retention-rule", "backupRetentionDays": 30, "standardSchedule": {
-                "recurrenceType": "DAILY", "timeZone": "UTC", "backupWindow": {"startHourOfDay": 1, "endHourOfDay": 5}}}]}
+                "recurrenceType": "DAILY", "timeZone": "UTC",
+                "backupWindow": {"startHourOfDay": 1, "endHourOfDay": 5}}}]}
     association = {"name": "projects/my-project-123/locations/us-central1/backupPlanAssociations/my-disk-association",
                    "resource": "projects/my-project-123/zones/us-central1-a/disks/my-app-disk",
                    "backupPlan": plan["name"], "state": "ACTIVE",

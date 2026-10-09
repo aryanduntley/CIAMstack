@@ -95,7 +95,8 @@ def operations(files):
     ops = tuple(Op(identity=_identity(e), kind=(e.get("request") or {}).get("operation"),
                    source=(e.get("client") or {}).get("ip") or "", tls=key in tls, at=_time(e.get("timestamp")),
                    base=_base(e.get("request") or {}) if (e.get("request") or {}).get("operation") == "SEARCH" else "",
-                   attrs=_attrs(e.get("request") or {}) if (e.get("request") or {}).get("operation") == "SEARCH" else (),
+                   attrs=(_attrs(e.get("request") or {})
+                          if (e.get("request") or {}).get("operation") == "SEARCH" else ()),
                    unindexed="unindexed" in ((e.get("response") or {}).get("additionalItems") or {}))
                 for key, e in events if (e.get("request") or {}).get("operation") in COUNTED
                 and (e.get("request") or {}).get("oid") != START_TLS)          # StartTLS sets up the connection
@@ -166,7 +167,8 @@ def _name(bind_dn, taken):
 def consumer_entries(d, ops):
     """(entries, notices): a consumer for every identity that does more than authenticate, merged with the record's
     consumer of the same bind DN; identities that only bind are counted."""
-    consumers = {norm_dn(one(c, "ciamBindDn")): c for c in children(d, CONSUMERS, "ciamConsumer") if one(c, "ciamBindDn")}
+    consumers = {norm_dn(one(c, "ciamBindDn")): c
+                 for c in children(d, CONSUMERS, "ciamConsumer") if one(c, "ciamBindDn")}
     key = lambda o: norm_dn(o.identity)  # noqa: E731
     by_identity = {k: tuple(g) for k, g in groupby(sorted(ops, key=key), key=key)}
     days = max(1, len({o.at.date() for o in ops}))

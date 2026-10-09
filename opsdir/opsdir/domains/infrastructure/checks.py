@@ -76,6 +76,20 @@ def _allowlist(ctx, xa):
     return findings(actions=[("Allowlist", text, rdn_value(mgr), by)], requests=[(mgr, xa, new, role, by)])
 
 
+SERVER_INPUTS = (("ciamImageRef", "image"), ("ciamInstanceSize", "size"))   # what a server's render can't do without
+
+
+def check_server_inputs(ctx):
+    """Blockers for the target's servers that record no image or size: their render writes UNBOUND values, so
+    applying it fails."""
+    m = ctx.dst
+    return findings(blockers=[
+        ("Servers", f"Server `{rdn_value(s)}` in {m.label} records no {' or '.join(missing)} "
+         f"({', '.join(a for a, w in SERVER_INPUTS if w in missing)}): its render writes UNBOUND values there, so "
+         "applying it fails. Record them.", responsible(ctx.d, s, m.env))
+        for s in m.servers for missing in ([w for a, w in SERVER_INPUTS if not one(s, a)],) if missing])
+
+
 def check_allowlists(ctx):
     """External allowlists: other people's firewalls that contain our addresses."""
     return merge_findings([_allowlist(ctx, xa)

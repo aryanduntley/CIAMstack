@@ -235,7 +235,8 @@ Request = namedtuple("Request", ("url", "headers", "credential", "ca", "absent",
 # directory); called again until it asks for nothing new (a list, then each item's details), so it never repeats a
 # path. Paths under _work/ are what only the collector reads (the list it takes the items from): kept out of the
 # export, kept in the evidence. problems(d, m, options) -> (problem, ...) or None: why it can't collect here (a
-# collection source's credential role unbound, an option missing), shown instead of collecting. verify(d, m) -> (call, check) or None: the identity check run first, check(output) -> a problem (the provider
+# collection source's credential role unbound, an option missing), shown instead of collecting. verify(d, m) ->
+# (call, check) or None: the identity check run first, check(output) -> a problem (the provider
 # login isn't the account, subscription or project the record names) or None.
 Collector = namedtuple("Collector", ("importer", "scope", "steps", "verify", "problems"),
                        defaults=("environment", None, None, None))

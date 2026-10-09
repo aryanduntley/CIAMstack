@@ -30,7 +30,8 @@ def test_an_application_load_balancer_beside_the_proxy_only_subnet():
     assert 'profile         = "MODERN"' in out and 'min_tls_version = "TLS_1_2"' in out
     assert 'certificate_manager_certificates = ["projects/p/locations/us-central1/certificates/sso-tls-2026"]' in out
     assert 'load_balancing_scheme           = "EXTERNAL_MANAGED"' in out and 'network_tier          = "STANDARD"' in out
-    assert 'session_affinity                = "GENERATED_COOKIE"' in out and "timeout_sec                     = 120" in out
+    assert ('session_affinity                = "GENERATED_COOKIE"' in out
+            and "timeout_sec                     = 120" in out)
     assert 'source_ranges = ["10.70.250.0/23"]' in out and '"130.211.0.0/22"' in out
     assert 'request_path = "/pf/heartbeat.ping"' in out and "https_health_check {" in out
     assert "security_policy                 = google_compute_region_security_policy.sso.self_link" in out
@@ -50,7 +51,8 @@ def test_cloud_armor_rules():
     assert 'src_ip_ranges = ["203.0.113.0/24"]' in out and "origin.region_code == 'KP'" in out
     assert "request.path.matches('^/as/token\\\\.oauth2$')" in out and "interval_sec = 300" in out
     assert out.count("evaluatePreconfiguredWaf(") == 9 and out.count("exclusion {") == 9    # one per rule set
-    assert len(re.findall(r"preview\s+= true", out)) == out.count('resource "google_compute_region_security_policy_rule"')
+    assert (len(re.findall(r"preview\s+= true", out))
+            == out.count('resource "google_compute_region_security_policy_rule"'))
     assert rate(100, 300) == (100, 300) and rate(20, 45) == (27, 60)
 
 

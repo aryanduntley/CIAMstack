@@ -30,12 +30,15 @@ STATE = _state(
     ("google_compute_network", "main", {"id": NETWORK, "name": "ciam",
                                         "network_firewall_policy_enforcement_order": "BEFORE_CLASSIC_FIREWALL"}),
     ("google_compute_subnetwork", "ds", {"id": SUBNET, "name": "ciam-ds", "ip_cidr_range": "10.70.1.0/24",
-                                         "network": NETWORK, "log_config": [{"aggregation_interval": "INTERVAL_5_SEC"}]}),
+                                         "network": NETWORK,
+                                         "log_config": [{"aggregation_interval": "INTERVAL_5_SEC"}]}),
     ("google_compute_instance", "ds_1", {"id": f"{PROJECT}/zones/us-central1-a/instances/ds-1", "name": "ds-1",
                                          "instance_id": "8812", "metadata": {"ciam-role": "ds"},
-                                         "tags": ["ciam-prod-ds"], "network_interface": [{"network_ip": "10.70.1.11"}]}),
+                                         "tags": ["ciam-prod-ds"],
+                                         "network_interface": [{"network_ip": "10.70.1.11"}]}),
     ("google_compute_network_firewall_policy", "p", {"id": POLICY, "name": "ciam-prod-fw-policy"}),
-    ("google_compute_network_firewall_policy_association", "p", {"firewall_policy": POLICY, "attachment_target": NETWORK}),
+    ("google_compute_network_firewall_policy_association", "p", {"firewall_policy": POLICY,
+                                                                  "attachment_target": NETWORK}),
     ("google_tags_tag_value", "ds", {"id": "tagValues/1", "short_name": "ds"}),
     ("google_tags_tag_value", "web", {"id": "tagValues/2", "short_name": "web"}),
     ("google_tags_location_tag_binding", "ds_1", {
@@ -53,15 +56,17 @@ STATE = _state(
                                                   "layer4_configs": [{"ip_protocol": "tcp", "ports": ["587"]}]}),
     _rule("deny", 2147483000, "EGRESS", "deny", {"dest_ip_ranges": ["0.0.0.0/0"],
                                                  "layer4_configs": [{"ip_protocol": "all"}]}),
-    ("google_compute_firewall_policy", "org", {"id": "locations/global/firewallPolicies/991", "short_name": "org-base"}),
+    ("google_compute_firewall_policy", "org", {"id": "locations/global/firewallPolicies/991",
+                                                "short_name": "org-base"}),
     ("google_compute_firewall_policy_rule", "org", {"firewall_policy": "locations/global/firewallPolicies/991"}),
     ("google_compute_route", "egress", {"id": f"{HOST}/global/routes/egress", "network": NETWORK,
                                         "dest_range": "0.0.0.0/0", "tags": ["ciam-prod-ds"],
                                         "next_hop_gateway": f"{HOST}/global/gateways/default-internet-gateway"}),
     ("google_compute_route", "dc", {"id": f"{HOST}/global/routes/dc", "network": NETWORK, "dest_range": "10.9.0.0/16",
                                     "next_hop_vpn_tunnel": f"{HOST}/regions/us-central1/vpnTunnels/to-dc"}),
-    ("google_compute_global_address", "psc", {"id": f"{HOST}/global/addresses/ciam-prod-psc-apis", "address": "10.70.255.5",
-                                              "purpose": "PRIVATE_SERVICE_CONNECT", "labels": {"role": "private-apis"}}),
+    ("google_compute_global_address", "psc", {"id": f"{HOST}/global/addresses/ciam-prod-psc-apis",
+                                              "address": "10.70.255.5", "purpose": "PRIVATE_SERVICE_CONNECT",
+                                              "labels": {"role": "private-apis"}}),
     ("google_compute_global_address", "psa", {"id": f"{HOST}/global/addresses/ciam-services", "name": "ciam-services",
                                               "address": "10.71.0.0", "prefix_length": 20, "purpose": "VPC_PEERING",
                                               "labels": {"role": "private-services"}}),
@@ -72,11 +77,13 @@ STATE = _state(
         "id": f"{PROJECT}/regions/us-central1/serviceAttachments/ciam-prod-ldaps-link", "name": "ciam-prod-ldaps-link",
         "target_service": f"{PROJECT}/regions/us-central1/forwardingRules/ciam-prod-svc-ldaps",
         "connection_preference": "ACCEPT_MANUAL", "nat_subnets": [f"{PROJECT}/regions/us-central1/subnetworks/psc"],
-        "consumer_accept_lists": [{"project_id_or_num": "consumer-a"}, {"network_url": "projects/b/global/networks/v"}]}),
+        "consumer_accept_lists": [{"project_id_or_num": "consumer-a"},
+                                  {"network_url": "projects/b/global/networks/v"}]}),
     ("google_compute_network_peering", "hub", {"name": "to-hub", "network": NETWORK, "state": "INACTIVE",
                                                "peer_network": "projects/hub/global/networks/hub-net"}),
     ("google_compute_router", "r", {"id": f"{HOST}/regions/us-central1/routers/ciam-router", "bgp": [{"asn": 64514}]}),
-    ("google_compute_router_peer", "r", {"router": f"{HOST}/regions/us-central1/routers/ciam-router", "peer_asn": 65010}),
+    ("google_compute_router_peer", "r", {"router": f"{HOST}/regions/us-central1/routers/ciam-router",
+                                         "peer_asn": 65010}),
     ("google_compute_vpn_tunnel", "dc", {"id": f"{HOST}/regions/us-central1/vpnTunnels/to-dc", "name": "to-dc",
                                          "peer_ip": "198.51.100.7",
                                          "router": f"{HOST}/regions/us-central1/routers/ciam-router"}),
@@ -101,8 +108,10 @@ def test_policy_rules_by_secure_tag_are_firewall_rules_of_the_bound_role():
 
 def test_policies_their_order_and_the_egress_allowlist():
     by = _by(state_resources(STATE)[0])
-    assert by[("firewall-policy", POLICY)].attrs == {"ciamPolicyScope": ("network",), "ciamPolicyOrder": ("policy-first",)}
-    assert by[("firewall-policy", "locations/global/firewallPolicies/991")].attrs == {"ciamPolicyScope": ("hierarchical",)}
+    assert by[("firewall-policy", POLICY)].attrs == {"ciamPolicyScope": ("network",),
+                                                     "ciamPolicyOrder": ("policy-first",)}
+    assert (by[("firewall-policy", "locations/global/firewallPolicies/991")].attrs
+            == {"ciamPolicyScope": ("hierarchical",)})
     assert by[("proxy", POLICY)].attrs == {"ciamProxyKind": ("firewall",),
                                            "ciamAllowedDestination": ("idp.partner.test", "smtp.mail.test:587")}
 
@@ -153,17 +162,21 @@ ASSETS = [
     {"assetType": "compute.googleapis.com/Instance", "resource": {"data": {
         "selfLink": f"https://www.googleapis.com/compute/v1/{PROJECT}/zones/us-central1-a/instances/ds-1", "id": "8812",
         "name": "ds-1", "labels": {"role": "ds"},
-        "networkInterfaces": [{"network": f"https://www.googleapis.com/compute/v1/{NETWORK}", "networkIP": "10.70.1.11"}]}}},
+        "networkInterfaces": [{"network": f"https://www.googleapis.com/compute/v1/{NETWORK}",
+                               "networkIP": "10.70.1.11"}]}}},
     {"assetType": "compute.googleapis.com/NetworkFirewallPolicy", "resource": {"data": {
         "selfLink": f"https://www.googleapis.com/compute/v1/{POLICY}", "name": "ciam-prod-fw-policy",
         "associations": [{"attachmentTarget": f"https://www.googleapis.com/compute/v1/{NETWORK}"}],
         "rules": [{"priority": 100, "direction": "INGRESS", "action": "allow", "ruleName": "fw-pf-ds-svc",
-                   "match": {"srcIpRanges": ["10.70.2.0/24"], "layer4Configs": [{"ipProtocol": "tcp", "ports": ["1636"]}]},
+                   "match": {"srcIpRanges": ["10.70.2.0/24"],
+                             "layer4Configs": [{"ipProtocol": "tcp", "ports": ["1636"]}]},
                    "targetSecureTags": [{"name": "tagValues/1"}]},
                   {"priority": 80001, "direction": "EGRESS", "action": "allow",
-                   "match": {"destFqdns": ["idp.partner.test"], "layer4Configs": [{"ipProtocol": "tcp", "ports": ["443"]}]},
+                   "match": {"destFqdns": ["idp.partner.test"],
+                             "layer4Configs": [{"ipProtocol": "tcp", "ports": ["443"]}]},
                    "targetSecureTags": [{"name": "tagValues/1"}]}]}}},
-    {"name": "tagBindings/x", "parent": "//compute.googleapis.com/projects/example-ciam/zones/us-central1-a/instances/8812",
+    {"name": "tagBindings/x",
+     "parent": "//compute.googleapis.com/projects/example-ciam/zones/us-central1-a/instances/8812",
      "tagValue": "tagValues/1"},
     {"name": "tagValues/1", "shortName": "ds-servers", "parent": "tagKeys/7"},
     {"assetType": "compute.googleapis.com/ServiceAttachment", "resource": {"data": {
@@ -189,7 +202,8 @@ def test_the_asset_inventory_reads_the_same_depth():
     assert by[("interconnect", f"{NETWORK}/peerings/to-hub")].attrs["ciamPeerAccepted"] == ("TRUE",)
     sa = by[("endpoint-service", f"{PROJECT}/regions/us-central1/serviceAttachments/link")]
     assert sa.attrs["ciamAcceptanceRequired"] == ("FALSE",)
-    assert by[("private-endpoint", f"{HOST}/global/forwardingRules/pscapis")].attrs["ciamFrontendIp"] == ("10.70.255.5",)
+    assert (by[("private-endpoint", f"{HOST}/global/forwardingRules/pscapis")].attrs["ciamFrontendIp"]
+            == ("10.70.255.5",))
     assert by[("private-endpoint", f"{HOST}/global/addresses/psa")].attrs["ciamCidr"] == ("10.71.0.0/20",)
     assert not [k for k, _ in by if k == "service"]
     assert not [n for n in notices if "not read" in n], notices

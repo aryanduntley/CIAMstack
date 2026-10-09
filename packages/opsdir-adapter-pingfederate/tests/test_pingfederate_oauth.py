@@ -104,7 +104,8 @@ def test_oidc_policies_link_their_token_manager(after):
     oidc = get(d, OIDC_DN)
     assert (values(oidc, "pingfedUses"), _config(oidc)["idTokenLifetime"]) == ((JWT_DN,), 5)
     assert not values(get(d, named(OIDC_POLICIES, "orphan")), "pingfedUses")
-    assert "OIDC policy Orphan: names access token manager `gone`, which neither the export nor the record has" in notices
+    assert ("OIDC policy Orphan: names access token manager `gone`, which neither the export nor the record has"
+            in notices)
 
 
 def test_the_authorization_servers_settings_list_its_scopes(after):

@@ -8,7 +8,8 @@ from types import MappingProxyType
 
 EXPECTED = MappingProxyType({
     "blockers": [
-        ("B1", "Contract", "`ds-ldaps-service` changes name", "the target environment binds a new LDAPS name (landing-zone DNS default)", "CHG-2003"),
+        ("B1", "Contract", "`ds-ldaps-service` changes name",
+         "the target environment binds a new LDAPS name (landing-zone DNS default)", "CHG-2003"),
         ("B2", "Binding", "Role `backup-target`", "the target environment has no backup target", "CHG-2017"),
         ("B3", "Binding", "Consumer `legacy-rptuser`", "no target firewall rule for the unowned legacy account", None),
         ("B4", "Binding", "Consumer `mro-batch-export`", "no target firewall rule for the MRO export", "CHG-2001"),
@@ -31,9 +32,9 @@ EXPECTED = MappingProxyType({
          "imported SMTP publisher names no secret", "CHG-2005"),
         ("B15", "PingFederate", "CAPTCHA provider `recaptcha` has withheld credentials but no credential role",
          "imported CAPTCHA provider names no secret", "CHG-2005"),
-        ("B16", "Mail", "Sender `noreply@example-aero.test`: target/prod's sending identity for example-aero.test isn't "
-         "DKIM-verified", "the target's Communication Services domain isn't DKIM-verified yet: reset mail lands in spam",
-         None),
+        ("B16", "Mail", "Sender `noreply@example-aero.test`: target/prod's sending identity for example-aero.test "
+         "isn't DKIM-verified",
+         "the target's Communication Services domain isn't DKIM-verified yet: reset mail lands in spam", None),
         ("B17", "Binding", "Role `audit-events` is bound in source/prod but not in target/prod",
          "no bus carries the identity audit stream in the target", None),
         ("B18", "Binding", "Role `alarm-disk-free` is bound in source/prod but not in target/prod",
@@ -78,9 +79,10 @@ EXPECTED = MappingProxyType({
          "`AGENCYAMAZONEW`", "AWS covers key management (SC-12) for production; on Azure it is the customer's and "
          "nothing records how it is met", "CHG-2032"),
         ("B36", "Authorization", "target/prod uses Azure Communication Services (mail-sending), which `F1209051525` "
-         "doesn't list in its boundary", "the target sends mail through Azure Communication Services, which Microsoft's "
-         "compliance-scope tables don't list; a blocker once the target must rely on FedRAMP Moderate (DFARS) (accepted "
-         "by EXC-2026-04 once CHG-2033 approves it: shown as accepted, not counted)", "CHG-2033", "CHG-2029"),
+         "doesn't list in its boundary", "the target sends mail through Azure Communication Services, which "
+         "Microsoft's compliance-scope tables don't list; a blocker once the target must rely on FedRAMP Moderate "
+         "(DFARS) (accepted by EXC-2026-04 once CHG-2033 approves it: shown as accepted, not counted)", "CHG-2033",
+         "CHG-2029"),
         ("B37", "Authorization", "target/prod uses DNS Private Resolver", "the target's forwarder to the corporate AD "
          "(CHG-2015) runs on the DNS Private Resolver, which Microsoft's compliance-scope tables don't list (CHG-2033 "
          "moves it to the landing zone's DNS servers, virtual machines)", "CHG-2033", "CHG-2015"),
@@ -115,7 +117,8 @@ EXPECTED = MappingProxyType({
         ("A13", "Key", "`pf-admin-password` loses automatic rotation", "target secret has no rotation function", None),
         ("A14", "Key", "`disk-encryption` loses automatic rotation and replicas",
          "target disk key neither rotates nor replicates", None),
-        ("A15", "IDM", "Connector `hrdb` reaches a fixed host", "HR database reached at the same host everywhere", None),
+        ("A15", "IDM", "Connector `hrdb` reaches a fixed host",
+         "HR database reached at the same host everywhere", None),
         ("A16", "Gateway", "Route `partner-portal` sends requests to a fixed backend",
          "the partner portal application is reached at the same host everywhere", None),
         ("A17", "Hard-coded", "`opt/scripts/nightly-export.sh` on ds-2 holds source/prod values",
@@ -313,7 +316,8 @@ EXPECTED = MappingProxyType({
          "carry to target/prod", "production's Security Hub IAM.6 false positive is the source's exception: the target "
          "decides for itself", None),
         ("A98", "POA&M", "POA&M item `POAM-2026-001` is open against cmmc-l2, which target/prod is assessed against",
-         "PingDS's LDAPS isn't on a FIPS-validated provider yet (SC.L2-3.13.11, allowed on the POA&M at 3 points)", None),
+         "PingDS's LDAPS isn't on a FIPS-validated provider yet (SC.L2-3.13.11, allowed on the POA&M at 3 points)",
+         None),
         ("A99", "POA&M", "Close out `CMMC-2026`'s POA&M by 2027-02-11",
          "the CMMC Level 2 assessment is Conditional since 2026-08-15: its POA&M closes out within 180 days", None),
         ("A100", "Authorization", "target/prod uses Azure Communication Services (mail-sending), which `F1209051525` "
@@ -321,11 +325,12 @@ EXPECTED = MappingProxyType({
          "becomes B36 once CHG-2029 holds the target to DFARS)", "CHG-2029"),
         ("A101", "Authorization", "source/prod is inside system boundary `SSP-CIAM-2026` and target/prod in none",
          "the system security plan covers production and the standby, not the target", "CHG-2032"),
-        ("A102", "Data discovery", "source/prod runs data discovery (macie-backups, over backup-target) and target/prod "
-         "runs none", "an action while nothing requires the target to rely on an authorization (it becomes B38 once "
-         "CHG-2029 holds the target to DFARS)", "CHG-2029"),
-        ("A103", "Key", "Copy `pf-signing-key-password`", "the password protecting the carried-over signing key's PKCS#12 "
-         "file must be carried over with it (PingFederate imports the file with it)", None),
+        ("A102", "Data discovery", "source/prod runs data discovery (macie-backups, over backup-target) and "
+         "target/prod runs none", "an action while nothing requires the target to rely on an authorization (it "
+         "becomes B38 once CHG-2029 holds the target to DFARS)", "CHG-2029"),
+        ("A103", "Key", "Copy `pf-signing-key-password`",
+         "the password protecting the carried-over signing key's PKCS#12 file must be carried over with it "
+         "(PingFederate imports the file with it)", None),
         # the target runs AM, IDM, PingGateway and PingFederate on AKS (compute)
         ("A104", "Workload", "Role `am` moves from servers in source/prod to Kubernetes in target/prod",
          "the target runs AM on AKS: what its host baseline adds goes into the image", None),
@@ -358,8 +363,8 @@ EXPECTED = MappingProxyType({
         ("A117", "Ports", "target/prod: firewall rules open ports no installed product listens on: `fw-pf-cluster`",
          "PingFederate's cluster rules stay behind for servers that moved to AKS (a fix closes them)", None),
         ("A118", "PingFederate on Kubernetes", "PingFederate runs on Kubernetes in target/prod (namespace `ciam`): the "
-         "chart's pods find each other by DNS_PING", "no cluster discovery is bound for PingFederate on AKS (a fix binds "
-         "the chart's cluster service)", None),
+         "chart's pods find each other by DNS_PING", "no cluster discovery is bound for PingFederate on AKS (a fix "
+         "binds the chart's cluster service)", None),
     ],
 })
 

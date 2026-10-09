@@ -196,13 +196,15 @@ def backup_resources(pairs):
                   "ciamStorageImmutability": {v: k for k, v in IMMUTABILITY.items()}.get(a.get("immutability"), "none"),
                   "ciamCrossRegionRestore": "TRUE" if a.get("cross_region_restore_enabled") else "FALSE"},
                   links={"ciamEncryptedByRole": keys.get(_low(a.get("id")))},
-                  name=(a.get("tags") or {}).get("Name") or a.get("name"), role=tagged_role(a.get("tags") or {}), tags=a.get("tags") or {})
+                  name=(a.get("tags") or {}).get("Name") or a.get("name"), role=tagged_role(a.get("tags") or {}),
+                  tags=a.get("tags") or {})
               for a in of_types(pairs, "azurerm_data_protection_backup_vault") if a.get("id")]
     plans, notices = [], []
     for a in of_types(pairs, "azurerm_data_protection_backup_policy_disk"):
         if not a.get("id"):
             continue
-        backed = [disks.get(_low(i.get("disk_id")), {}) for i in instances if _low(i.get("backup_policy_id")) == _low(a["id"])]
+        backed = [disks.get(_low(i.get("disk_id")), {}) for i in instances
+                  if _low(i.get("backup_policy_id")) == _low(a["id"])]
         intervals = a.get("backup_repeating_time_intervals") or []
         every, at = interval_schedule(intervals[0] if intervals else None)
         notices += [*((f"backup policy {a.get('name')}: {len(intervals)} intervals; the first is read",)

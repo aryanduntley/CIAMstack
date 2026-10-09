@@ -77,8 +77,8 @@ def test_the_report_names_who_keeps_each_trail():
     _, d = _ctx(alpha=(trail(ALPHA), logs(ALPHA, 0)),
                 beta=(trail(BETA, "org-trail", destination=None, ciamManagedBy=PARTY),))
     assert audit_rows(d) == [
-        ("alpha/prod", "cloudtrail", "account", "control-plane, data-write", "yes", "validated", "audit-logs", "forever",
-         "platform"),
+        ("alpha/prod", "cloudtrail", "account", "control-plane, data-write", "yes", "validated", "audit-logs",
+         "forever", "platform"),
         ("beta/prod", "org-trail", "account", "control-plane, data-write", "yes", "validated", "", "",
          "landing-zone")]
 

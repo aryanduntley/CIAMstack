@@ -15,8 +15,9 @@ from opsdir.domains.configuration.census import census_groups, census_rows, chec
 SRC = "env=prod,cloud=source,ou=environments,dc=ciam-ops"
 DST = "env=prod,cloud=target,ou=environments,dc=ciam-ops"
 TYPES = (("ciamHostname", "fqdn", "binding"), ("ciamPrivateIp", "ip", "binding"), ("ciamFqdn", "fqdn", "contract"),
-         ("ciamBindDn", "extdn", "intent"), ("ciamFingerprint", "string", "meta"), ("ciamOccurrenceOf", "dn", "observed"),
-         ("ciamOnServer", "dn", "observed"), ("ciamObservedSource", "cidr", "observed"))
+         ("ciamBindDn", "extdn", "intent"), ("ciamFingerprint", "string", "meta"),
+         ("ciamOccurrenceOf", "dn", "observed"), ("ciamOnServer", "dn", "observed"),
+         ("ciamObservedSource", "cidr", "observed"))
 
 
 def _row(dn, classes, **attrs):
@@ -54,8 +55,8 @@ def test_values_are_found_as_whole_tokens_and_point_at_their_entries():
     assert _found(d, FILES["ds-1.src.example.test/opt/sync.sh"]) == {
         ("cn=ds-1", "ciamHostname"): (1,), ("cn=ds-1", "ciamPrivateIp"): (2,), ("cn=app", "ciamBindDn"): (1,)}
     assert _found(d, "a 10.20.1.10 and 110.20.1.1 and ds-1.src.example.test.old and xds-1.src.example.test") == {}
-    assert _found(d, FILES["apps/web/app.properties"]) == {("cn=svc-ldaps", "ciamFqdn"): (1,), ("cn=tls",
-                                                                                                "ciamFingerprint"): (2,)}
+    assert _found(d, FILES["apps/web/app.properties"]) == {("cn=svc-ldaps", "ciamFqdn"): (1,),
+                                                           ("cn=tls", "ciamFingerprint"): (2,)}
 
 
 def test_observed_values_are_not_looked_for():

@@ -7,5 +7,6 @@ from ...core.naming import branch
 # data kept current but its servers mostly stopped (pilot-light), built only when needed (cold)
 STANDBY_MODES = ("hot", "warm", "pilot-light", "cold")
 DRILL_RESULTS = ("passed", "partial", "failed")
-OBJECTIVES = branch("recovery")              # the recovery objectives (ciamRecoveryObjective), one per protected service
+OBJECTIVES = branch("recovery")              # the recovery objectives (ciamRecoveryObjective), one per protected
+                                             # service
 DRILLS = branch("failover-drills")           # the failover-drill records (ciamFailoverDrill), one entry per drill

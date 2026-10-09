@@ -75,7 +75,8 @@ def distinct_bindings(held):
     """Each binding of (environment DN, binding) pairs once, with the environments that hold it: ((binding, (env DN,
     ...)), ...) in order of first mention."""
     first = {b.dn: b for _, b in reversed(held)}
-    return tuple((first[dn], tuple(env for env, b in held if b.dn == dn)) for dn in dict.fromkeys(b.dn for _, b in held))
+    return tuple((first[dn], tuple(env for env, b in held if b.dn == dn))
+                 for dn in dict.fromkeys(b.dn for _, b in held))
 
 
 def certificates_keyed_by(d, role):

@@ -35,7 +35,8 @@ def test_the_catalogue_is_consistent():
 
 
 def test_lookups_ignore_case():
-    assert standard_attribute("GIVENNAME").oid == "2.5.4.42" and standard_class("inetorgperson").sup == "organizationalPerson"
+    assert (standard_attribute("GIVENNAME").oid == "2.5.4.42"
+            and standard_class("inetorgperson").sup == "organizationalPerson")
     assert standard_attribute("companyId") is None
 
 
@@ -64,6 +65,7 @@ def test_a_superclass_may_be_another_recorded_class():
 def test_the_check_blocks_what_cannot_be_built_and_reports_the_rest():
     blocked = check_user_schema(SimpleNamespace(d=_d(_attr("badge"))))
     assert blocked.blockers == (("Schema", "User-directory attribute `badge`: not standard; needs ciamLdapOid, "
-                                 "ciamLdapSyntax. The target directory can't be built from the record.", "**NO OWNER**"),)
+                                 "ciamLdapSyntax. The target directory can't be built from the record.",
+                                 "**NO OWNER**"),)
     fine = check_user_schema(SimpleNamespace(d=_d(_attr("mail"), _class("x", ciamLdapOid="1.2.3"))))
     assert fine.ok == ("Every user-directory attribute and object class is standard (1) or defined in the record (1).",)

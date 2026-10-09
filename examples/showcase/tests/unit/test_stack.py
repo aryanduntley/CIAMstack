@@ -10,8 +10,8 @@ from example_estate.build import specs
 
 
 def adapter(name, kind="product", applies=True):
-    return Adapter(name, kind, lambda m: applies, (), None, None, (), (), {}, None, None, {}, None, (), (), (), (), None,
-                   None)
+    return Adapter(name, kind, lambda m: applies, (), None, None, (), (), {}, None, None, {}, None, (), (), (), (),
+                   None, None)
 
 
 def component(adapter_name, role="r", versions=">=1,<2", source=None):
@@ -26,7 +26,8 @@ def source(estate):
 def test_environments_declare_their_stack(estate, source):
     assert {(c.role, c.adapter) for c in source.stack} == {("provider", "aws"), ("directory", "pingds"),
                                                            ("federation", "pingfederate"), ("access", "pingam"),
-                                                           ("identity-management", "pingidm"), ("gateway", "pinggateway")}
+                                                           ("identity-management", "pingidm"),
+                                                           ("gateway", "pinggateway")}
     declared = {f"{dn.split(',')[1].split('=')[1]}/{dn.split(',')[0].split('=')[1]}"     # every environment entry
                 for dn in (e.dn for e in specs() if "ciamEnvironment" in e.classes)}
     assert set(environment_specs(estate["before"])) == declared and "standby/prod" in declared
@@ -35,7 +36,8 @@ def test_environments_declare_their_stack(estate, source):
 
 
 def test_the_declared_stack_decides_which_adapters_render(source):
-    assert [a.name for a in declared_adapters(source, ADAPTERS)] == ["aws", "pingam", "pingds", "pingfederate", "pinggateway", "pingidm"]
+    assert [a.name for a in declared_adapters(source, ADAPTERS)] == \
+        ["aws", "pingam", "pingds", "pingfederate", "pinggateway", "pingidm"]
     only_provider = source._replace(stack=(component("aws", "provider"),))
     assert [a.name for a in declared_adapters(only_provider, ADAPTERS)] == ["aws"]
 
@@ -54,9 +56,11 @@ def test_rendering_refuses_a_declared_adapter_that_is_not_installed(source):
 
 @pytest.mark.parametrize("stack, adapters, versions, status, problems", [
     ((component("a"),), (adapter("a"),), {"a": "1.2"}, "ok (installed 1.2)", 0),
-    ((component("a", source="https://example.test/a"),), (), {}, "NOT INSTALLED; get it from https://example.test/a", 1),
+    ((component("a", source="https://example.test/a"),), (), {},
+     "NOT INSTALLED; get it from https://example.test/a", 1),
     ((component("a"),), (adapter("a"),), {"a": "2.0"}, "installed 2.0, but the stack accepts >=1,<2", 1),
-    ((component("a", versions="not a range"),), (adapter("a"),), {"a": "1.0"}, "installed 1.0, but the stack accepts not a range", 1),
+    ((component("a", versions="not a range"),), (adapter("a"),), {"a": "1.0"},
+     "installed 1.0, but the stack accepts not a range", 1),
     ((component("a"),), (adapter("a", applies=False),), {"a": "1.0"},
      "installed 1.0, but the environment's data doesn't match it (provider or products)", 1),
     ((component("v"),), (adapter("v", kind="secret-store", applies=False),), {"v": "1.0"}, "ok (installed 1.0)", 0),
@@ -67,7 +71,8 @@ def test_each_component_is_checked(source, stack, adapters, versions, status, pr
 
 
 def test_an_adapter_that_applies_but_is_not_declared_is_a_problem(source):
-    rows, n = stack_rows(source._replace(stack=(component("a"),)), (adapter("a"), adapter("b")), {"a": "1.0", "b": "1.0"})
+    rows, n = stack_rows(source._replace(stack=(component("a"),)), (adapter("a"), adapter("b")),
+                         {"a": "1.0", "b": "1.0"})
     assert n == 1 and rows[-1][2:] == ("b", "applies to the environment's data but is not in its stack")
 
 

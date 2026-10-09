@@ -245,11 +245,13 @@ def environment_groups(d, spec, resources, summarize=()):
                *(f"{spec}: {r.kind} {r.name or r.ref} lacks {', '.join(incomplete[id(r)] + unresolved[id(r)])}; "
                  f"not imported" for r, _ in new if r.role and (incomplete[id(r)] or unresolved[id(r)])),
                *(f"{spec}: {r.kind} {name} added (role {r.role})" for r, name in added),
-               *(f"{spec}: {rdn_value(e)} ({next(c for c in e.classes if any(is_subclass(d, c, k) for k in kinds))}) is in "
+               *(f"{spec}: {rdn_value(e)} ("
+                 f"{next(c for c in e.classes if any(is_subclass(d, c, k) for k in kinds))}) is in "
                  f"the record but not in what the cloud reports"
                  for e in own if e.norm not in reported and any(is_kind(d, e, k) for k in kinds)),
                *(n for check in table.checks
-                 for n in check(d, spec, (*(r for r, held, _, _ in placed if held is not None), *(r for r, _ in added)))))
+                 for n in check(d, spec, (*(r for r, held, _, _ in placed if held is not None),
+                                          *(r for r, _ in added)))))
     return tuple((e.dn, (e,)) for e in entries), notices
 
 
@@ -343,7 +345,8 @@ def with_roles(resources, roles):
         return roles.get(r.ref) if r.ref in roles else roles.get(r.name)
     used = {k for r in resources for k in (r.ref, r.name) if k in roles}
     return (tuple(r._replace(role=given(r)) if r.role is None and given(r) else r for r in resources),
-            (*(f"{ROLE_MAP}: {r.kind} {r.name or r.ref} has role {r.role} from the source; the map's {given(r)} not used"
+            (*(f"{ROLE_MAP}: {r.kind} {r.name or r.ref} has role {r.role} from the source; "
+               f"the map's {given(r)} not used"
                for r in resources if r.role and given(r) and given(r) != r.role),
              *(f"{ROLE_MAP}: {k} matches nothing the source reports" for k in roles if k not in used)))
 

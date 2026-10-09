@@ -140,7 +140,8 @@ def _servers(found):
             "ciamInstanceSize": (a.get("machine_type") or "").rsplit("/", 1)[-1] or None,
             "ciamImageRef": resource_id(image), "ciamHostname": a.get("hostname"),
             "ciamProductVersion": _metadata(a).get("ciam-product")},
-            links={"ciamSubnet": resource_id(nic.get("subnetwork"))}, name=a.get("name"), role=_server_role(a), tags=_state_labels(a))
+            links={"ciamSubnet": resource_id(nic.get("subnetwork"))}, name=a.get("name"), role=_server_role(a),
+            tags=_state_labels(a))
     return tuple(server(a) for a in of_types(found, "google_compute_instance") if a.get("id"))
 
 
@@ -226,7 +227,9 @@ def _services(found):
             "ciamDnsZoneRef": (record or {}).get("managed_zone"),
             "ciamPort": sorted({str(p) for p in _rule_ports(fr)}, key=int),
             "ciamTargetRole": found_roles.most_common(1)[0][0] if found_roles else None,
-            "ciamFrontendIp": ip, "ciamEdgeFact": facts, "ciamEdgeSetting": settings, **dns},
+            "ciamFrontendIp": ip, "ciamEdgeFact": facts, "ciamEdgeSetting": settings, **dns,
+            "ciamExposure": None if ip else "internal" if str(fr.get("load_balancing_scheme")).startswith("INTERNAL")
+            else "internet"},
             name=fr.get("name"), role=_role(fr), tags=_state_labels(fr))
     return tuple(one_rule(fr) for fr in of_types(found, *FORWARDING) if fr.get("id") and not google_apis_endpoint(fr))
 
@@ -275,7 +278,8 @@ def _keys(found):
     return tuple(resource("key", resource_id(a.get("id")), {
         "ciamRefUri": f"gcp-kms://{resource_id(a.get('id'))}",
         "ciamProtectionLevel": PROTECTION.get(first_block(a.get("version_template")).get("protection_level")),
-        "ciamAutoRotate": "TRUE" if a.get("rotation_period") else "FALSE"}, name=a.get("name"), role=_role(a), tags=_state_labels(a))
+        "ciamAutoRotate": "TRUE" if a.get("rotation_period") else "FALSE"}, name=a.get("name"), role=_role(a),
+        tags=_state_labels(a))
         for a in of_types(found, "google_kms_crypto_key") if a.get("id"))
 
 
@@ -358,7 +362,8 @@ def _clusters(found):
 
 def _streams(found):
     return tuple(resource("stream", resource_id(a.get("id")), {"ciamStreamKind": "topic"}, name=a.get("name"),
-                          role=_role(a), tags=_state_labels(a)) for a in of_types(found, "google_pubsub_topic") if a.get("id"))
+                          role=_role(a), tags=_state_labels(a))
+                 for a in of_types(found, "google_pubsub_topic") if a.get("id"))
 
 
 # ------------------------------------------------------------------ monitoring
@@ -366,7 +371,8 @@ def _channels(found):
     def kind(t):
         return next((k for prefix, k in CHANNEL_KINDS if (t or "").startswith(prefix)), "other")
     return tuple(resource("channel", resource_id(a.get("name") or a.get("id")),
-                          {"ciamChannelKind": kind(a.get("type"))}, name=a.get("display_name"), role=_role(a), tags=_state_labels(a))
+                          {"ciamChannelKind": kind(a.get("type"))}, name=a.get("display_name"), role=_role(a),
+                          tags=_state_labels(a))
                  for a in of_types(found, "google_monitoring_notification_channel") if a.get("name") or a.get("id"))
 
 
@@ -424,7 +430,8 @@ def pairs_resources(pairs):
              *_clusters(pairs),
              *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs), *_canaries(pairs),
              *iam, *edge, *network, *database_resources(pairs), *volumes, *backups, *trail_resources(pairs),
-             *security_resources(pairs), *discovery_resources(pairs), *suppression_resources(pairs), *budget_resources(pairs)),
+             *security_resources(pairs), *discovery_resources(pairs), *suppression_resources(pairs),
+             *budget_resources(pairs)),
             (*rule_notices, *iam_notices, *edge_notices, *network_notices, *volume_notices, *backup_notices,
              *workload_notices(pairs)))
 

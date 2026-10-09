@@ -75,7 +75,8 @@ def test_aurora_is_a_cluster_with_an_instance_in_each_zone_and_others_keep_their
                         ciamDbHighAvailability="zone-redundant", ciamDbParameter="work_mem=64MB"),
                   entry(ALPHA, "db-dba", "ciamDatabase", ciamBindingRole="reports-db", ciamDbEngine="mysql",
                         ciamManagedBy="cn=dba,ou=parties,dc=ciam-ops"))
-    assert 'resource "aws_rds_cluster" "db_sess"' in out and 'engine                          = "aurora-postgresql"' in out
+    assert 'resource "aws_rds_cluster" "db_sess"' in out \
+        and 'engine                          = "aurora-postgresql"' in out
     assert "master_username                 = var.db_sess_admin_username" in out
     assert 'resource "aws_rds_cluster_parameter_group" "db_sess"' in out and 'family = "aurora-postgresql16"' in out
     assert "db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.db_sess.name" in out
@@ -232,8 +233,8 @@ def test_a_copy_region_replicates_automated_backups_through_that_region_s_provid
   kms_key_id             = "arn:aws:kms:us-west-2:111122223333:key/mrk-1234"
 }''' in out
     single = _render(KEY, entry(ALPHA, "db-grants", "ciamDatabase", **DB, ciamCopyRegion="us-west-2"))
-    assert 'variable "db_grants_copy_kms_key_arn"' in single and "kms_key_id             = var.db_grants_copy_kms_key_arn" \
-        in single
+    assert 'variable "db_grants_copy_kms_key_arn"' in single \
+        and "kms_key_id             = var.db_grants_copy_kms_key_arn" in single
     aurora = _render(KEY, entry(ALPHA, "db-grants", "ciamDatabase", **{**DB, "ciamDbService": "aurora"},
                                 ciamCopyRegion="us-west-2"))
     assert "Aurora copies backups to another region" in aurora and "automated_backups_replication\"" not in aurora

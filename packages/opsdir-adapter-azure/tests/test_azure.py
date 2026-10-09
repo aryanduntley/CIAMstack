@@ -18,8 +18,10 @@ def test_applies_to_its_provider_only():
 def test_owns_its_vocabulary_and_reference_schemes():
     assert ADAPTER.vocabulary["ciamCloudProvider"] == ("azure",)
     assert set(ADAPTER.vocabulary["ciamCloudEnvironment"]) == {"public", "usgovernment"}
-    assert set(ADAPTER.ref_schemes) == {"azkv", "azkv-key", "azkv-cert", "azblob"} and set(ADAPTER.secret_schemes) == {"azkv"}
+    assert (set(ADAPTER.ref_schemes) == {"azkv", "azkv-key", "azkv-cert", "azblob"}
+            and set(ADAPTER.secret_schemes) == {"azkv"})
 
 
 def test_secret_references_resolve_with_the_azure_cli():
-    assert keyvault_command("kv-prod/ds-root") == "az keyvault secret show --vault-name 'kv-prod' --name 'ds-root' --query value -o tsv"
+    assert keyvault_command("kv-prod/ds-root") == ("az keyvault secret show --vault-name 'kv-prod' --name 'ds-root' "
+                                                   "--query value -o tsv")

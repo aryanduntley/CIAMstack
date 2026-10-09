@@ -88,9 +88,11 @@ def _state(*changes):
                                                                                  "target_id": "i-0aaa"}),
         _res("managed", "aws_route53_record", "svc_ldaps", {"name": "ldap.example.test", "zone_id": "Z0PRIVATE",
                                                             "type": "A", "alias": [{
-                                                                "name": "ciam-prod-svc-ldaps-0a1b.elb.us-east-1.amazonaws.com",
+                                                                "name": "ciam-prod-svc-ldaps-0a1b.elb."
+                                                                        "us-east-1.amazonaws.com",
                                                                 "zone_id": "Z26RNL4JYFTOTI"}]}),
-        _res("data", "aws_secretsmanager_secret", "ds_root_password", {"arn": SECRET, "name": "ciam/prod/ds-root-password"}),
+        _res("data", "aws_secretsmanager_secret", "ds_root_password",
+             {"arn": SECRET, "name": "ciam/prod/ds-root-password"}),
         _res("managed", "aws_secretsmanager_secret_version", "ds_root_password", {
             "secret_id": SECRET, "secret_string": "S3cr3t-Passw0rd!"}, sensitive=("secret_string",)),
         _res("managed", "aws_kms_key", "disk", {"arn": KEY, "key_id": "mrk-1234", "enable_key_rotation": True}),
@@ -182,7 +184,8 @@ def test_only_aws_environments_laid_out_by_cloud_and_environment_are_imported():
 def test_a_new_binding_keeps_the_providers_reference_so_it_is_found_again():
     d = _record()
     extra = (_res("managed", "aws_subnet", "ds_b", {"id": "subnet-0b", "cidr_block": "10.20.2.0/24",
-                                                     "availability_zone": "us-east-1b", "tags": {"Role": "subnet-ds"}}),)
+                                                     "availability_zone": "us-east-1b",
+                                                     "tags": {"Role": "subnet-ds"}}),)
     files = {"main/prod/terraform.tfstate": _state(*extra)}
     after = _after(d, read_terraform_state(files, d, ()))
     assert one(get(after, f"cn=subnet-0b,{B}"), "ciamProviderRef") == "subnet-0b"
@@ -197,6 +200,7 @@ def test_a_security_groups_role_is_that_of_its_instances():
              _res("managed", "aws_security_group", "pf_engine", {"id": "sg-0pf", "name": "ciam-prod-pf-engine"}),
              _res("managed", "aws_vpc_security_group_ingress_rule", "fw_sso_public_0_443", {
                  "security_group_rule_id": "sgr-02", "security_group_id": "sg-0pf", "cidr_ipv4": "0.0.0.0/0",
-                 "from_port": 443, "to_port": 443, "ip_protocol": "tcp", "description": "fw-sso-public (fw-sso-public)"}))
+                 "from_port": 443, "to_port": 443, "ip_protocol": "tcp",
+                 "description": "fw-sso-public (fw-sso-public)"}))
     (rule,) = [r for r in state_resources(_state(*extra))[0] if r.kind == "firewall" and r.name == "fw-sso-public"]
     assert rule.attrs["ciamTargetRole"] == ("pf-engine",)

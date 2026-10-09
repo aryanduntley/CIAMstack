@@ -110,7 +110,8 @@ def test_a_connector_to_the_directory_names_its_role_and_consumer_and_withholds_
 def test_a_connector_to_a_host_the_record_doesnt_know_is_named(after):
     d, notices = after
     h = get(d, HRDB)
-    assert one(h, "pingidmTargetRole") is None and values(h, "pingidmWithheld") == ("/configurationProperties/password",)
+    assert one(h, "pingidmTargetRole") is None \
+        and values(h, "pingidmWithheld") == ("/configurationProperties/password",)
     assert "connector hrdb: no host that is a service name in the record, so it reaches the same place from every " \
            "environment" in notices
 
@@ -203,7 +204,8 @@ BETA_HR = tuple(parse(f"dn: ou=bindings,{BETA}\nchangetype: add\nobjectClass: to
 def test_a_connector_whose_host_is_in_a_jdbc_url_is_named_by_the_fix_and_renders_each_environments_host():
     d, _, _ = imported()
     (fix,) = (x for x in plan(d).fixes if x.key == "external-host:connector/hrdb")
-    assert fix.title == "Record `hrdb.corp.example.test`, which connector `hrdb` reaches, as alpha/prod's host of a role"
+    assert fix.title == \
+        "Record `hrdb.corp.example.test`, which connector `hrdb` reaches, as alpha/prod's host of a role"
     named_it = chosen(fix, given={"role": ("hr-database",)}).records
     base = build_directory(REGISTRY, records(), (*named_it, *BETA_HR))   # the fix applied, the project imported again
     changes, notices = preview_import(base, "pingidm", files_of(PROJECT), (ADAPTER,))

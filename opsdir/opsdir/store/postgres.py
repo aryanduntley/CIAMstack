@@ -80,7 +80,8 @@ def split_record(canon, attrs):
     is_oc = lambda name: name.lower() == "objectclass"  # noqa: E731
     classes = [v for name, vals in attrs.items() if is_oc(name) for v in vals]
     canonical = [(canon.get(name.lower(), name), vals) for name, vals in attrs.items() if not is_oc(name)]
-    return classes, {c: [v for n, vals in canonical if n == c for v in vals] for c in dict.fromkeys(n for n, _ in canonical)}
+    return classes, {c: [v for n, vals in canonical if n == c for v in vals]
+                     for c in dict.fromkeys(n for n, _ in canonical)}
 
 
 def _on_path(dn, branch):

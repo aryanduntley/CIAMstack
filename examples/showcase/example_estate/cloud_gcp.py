@@ -68,9 +68,10 @@ def _gcp_firewalls(p):
     network firewall policy instead under the policy model: _gcp_policy), and the rule opened by hand."""
     network = f"{GAPI}/{p['net'][1]}"
     policy = p.get("firewall_model") == "policy"
-    return [*(() if policy else ({"kind": "compute#firewall", "name": f"ciam-prod-{cn}", "description": f"{role} ({cn})",
-               "network": network, "direction": "INGRESS", "priority": 100 + 10 * i, "sourceRanges": cidrs,
-               "targetTags": [f"ciam-prod-{trole}"], "allowed": [{"IPProtocol": "tcp", "ports": [str(x) for x in ports]}]}
+    return [*(() if policy else ({"kind": "compute#firewall", "name": f"ciam-prod-{cn}",
+               "description": f"{role} ({cn})", "network": network, "direction": "INGRESS",
+               "priority": 100 + 10 * i, "sourceRanges": cidrs, "targetTags": [f"ciam-prod-{trole}"],
+               "allowed": [{"IPProtocol": "tcp", "ports": [str(x) for x in ports]}]}
               for i, (cn, role, cidrs, ports, trole, _, _) in enumerate(p["fw"]))),
             *(() if policy else ({"kind": "compute#firewall", "name": f"ciam-prod-{cn}-health-checks",
                                   "network": network, "description": f"Google Cloud health checks for {cn}",
@@ -97,11 +98,14 @@ def _gcp_policy(p):
     every = [{"name": _tag_value(p, r)} for r in roles]
     ingress = [{"priority": 100 + 10 * i, "direction": "INGRESS", "action": "allow", "ruleName": cn,
                 "description": role, "targetSecureTags": [{"name": _tag_value(p, trole)}],
-                "match": {"srcIpRanges": cidrs, "layer4Configs": [{"ipProtocol": "tcp", "ports": [str(x) for x in ports]}]}}
+                "match": {"srcIpRanges": cidrs,
+                          "layer4Configs": [{"ipProtocol": "tcp", "ports": [str(x) for x in ports]}]}}
                for i, (cn, role, cidrs, ports, trole, _, _) in enumerate(p["fw"])]
     probes = [{"priority": 70000 + i, "direction": "INGRESS", "action": "allow",
-               "description": f"Google Cloud health checks for {cn}", "targetSecureTags": [{"name": _tag_value(p, trole)}],
-               "match": {"srcIpRanges": _probe_ranges(ip), "layer4Configs": [{"ipProtocol": "tcp", "ports": [str(ports[0])]}]}}
+               "description": f"Google Cloud health checks for {cn}",
+               "targetSecureTags": [{"name": _tag_value(p, trole)}],
+               "match": {"srcIpRanges": _probe_ranges(ip),
+                         "layer4Configs": [{"ipProtocol": "tcp", "ports": [str(ports[0])]}]}}
               for i, (cn, _, _, _, _, trole, ports, ip, _, _) in enumerate(p["services"])]
     egress = [*({"priority": 80000 + i, "direction": "EGRESS", "action": "allow", "targetSecureTags": every,
                  "match": {"destFqdns": hosts, "layer4Configs": [{"ipProtocol": "tcp", "ports": [str(port)]}]}}
@@ -147,7 +151,8 @@ def _gcp_services(p):
     rules, backends, records, health = [], [], [], {}
     for cn, _, fqdn, _, zref, trole, ports, ip, _, _ in p["services"]:
         name, targets = f"ciam-prod-{cn}", [s for s in servers if s[1] == trole]
-        groups = {zone: f"{GAPI}/{PROJECT}/zones/{zone}/instanceGroups/{name}-{zone}" for zone in sorted({s[4] for s in targets})}
+        groups = {zone: f"{GAPI}/{PROJECT}/zones/{zone}/instanceGroups/{name}-{zone}"
+                  for zone in sorted({s[4] for s in targets})}
         backend = f"{REGION_URL}/backendServices/{name}"
         rules.append({"kind": "compute#forwardingRule", "name": name, "region": REGION_URL, "IPAddress": ip,
                       "ports": [str(x) for x in ports], "IPProtocol": "TCP", "backendService": backend,
@@ -174,9 +179,11 @@ def _gcp_references(p):
                                                              "replication": {"automatic": {}}})
               for role in SECRET_ROLES),
             _asset("cloudkms.googleapis.com/CryptoKey", {"name": key, "purpose": "ENCRYPT_DECRYPT",
-                                                         "rotationPeriod": "7776000s", "labels": {"role": "disk-encryption"},
-                                                         "versionTemplate": {"protectionLevel": "HSM",
-                                                                             "algorithm": "GOOGLE_SYMMETRIC_ENCRYPTION"}}),
+                                                         "rotationPeriod": "7776000s",
+                                                         "labels": {"role": "disk-encryption"},
+                                                         "versionTemplate": {
+                                                             "protectionLevel": "HSM",
+                                                             "algorithm": "GOOGLE_SYMMETRIC_ENCRYPTION"}}),
             _asset("storage.googleapis.com/Bucket", _gcp_backup(p), name=f"//storage.googleapis.com/{p['backup'][5:]}"),
             *(_asset("pubsub.googleapis.com/Topic", {"name": sref, "labels": {"role": role}})
               for _, role, sref, _ in p["streams"]),
@@ -265,7 +272,8 @@ def _gcp_monitoring():
                 "name": ref, "displayName": ref.rsplit("/", 1)[1], "conditions": [condition],
                 "notificationChannels": [attrs["ciamNotifies"]], "userLabels": {"realizes": attrs["ciamRealizes"]}})
         return _asset("monitoring.googleapis.com/UptimeCheckConfig", {
-            "name": ref, "displayName": "sso-login", "period": "300s", "userLabels": {"realizes": attrs["ciamRealizes"]}})
+            "name": ref, "displayName": "sso-login", "period": "300s",
+            "userLabels": {"realizes": attrs["ciamRealizes"]}})
     return [asset(oc, attrs) for oc, _, _, attrs in MONITORING["standby"]]
 
 
@@ -317,7 +325,8 @@ def _gcp_volumes(p):
                 "labels": {"volume": _label(cn), "role": _label(role), "server": _label(s[0]),
                            **({"snapshot_policy": _label(a["ciamSnapshotPolicyRole"])}
                               if a.get("ciamSnapshotPolicyRole") else {}), "managed_by": "opsdir"}})
-             for cn, role, a in rows_of(p.get("volumes") or (), "ciamVolume") for s in servers_of(p, a["ciamTargetRole"])]
+             for cn, role, a in rows_of(p.get("volumes") or (), "ciamVolume")
+             for s in servers_of(p, a["ciamTargetRole"])]
     schedules = [_asset("compute.googleapis.com/ResourcePolicy", {
                     "kind": "compute#resourcePolicy", "name": f"ciam-prod-{cn}", "region": REGION_URL,
                     "selfLink": policies[role], "status": "READY", "snapshotSchedulePolicy": {
@@ -377,7 +386,8 @@ def standby_inventory():
     rules, backends, records, health = _gcp_services(p)
     nat, address = p["egress"][0].split("/"), p["egress"][1][:-3]
     exported = [*(_asset("compute.googleapis.com/Instance", _gcp_instance(s, False, {})) for s in p["servers"]),
-                *(_asset("compute.googleapis.com/Disk", {"kind": "compute#disk", "name": s[0], "sourceImage": f"{GAPI}/{s[6]}",
+                *(_asset("compute.googleapis.com/Disk", {"kind": "compute#disk", "name": s[0],
+                                                         "sourceImage": f"{GAPI}/{s[6]}",
                                                          "selfLink": f"{GAPI}/{PROJECT}/zones/{s[4]}/disks/{s[0]}"})
                   for s in p["servers"]),
                 *(_asset("compute.googleapis.com/Firewall", fw) for fw in _gcp_firewalls(p)),
@@ -389,14 +399,16 @@ def standby_inventory():
                 _asset("compute.googleapis.com/Router", {"kind": "compute#router", "name": nat[2], "region": REGION_URL,
                                                          "selfLink": f"{REGION_URL}/routers/{nat[2]}",
                                                          "nats": [{"name": nat[3], "natIpAllocateOption": "MANUAL_ONLY",
-                                                                   "natIps": [f"{REGION_URL}/addresses/ciam-standby-nat-1"]}]}),
+                                                                   "natIps": [f"{REGION_URL}/addresses/"
+                                                                              "ciam-standby-nat-1"]}]}),
                 *_gcp_references(p), *_gcp_monitoring(), *_gcp_databases(p), *_gcp_volumes(p),
                 *_gcp_backups(p),
                 _asset("iam.googleapis.com/ServiceAccount", {"name": f"{PROJECT}/serviceAccounts/ciam-servers@"
                                                                      "example-aero-ciam-standby.iam.gserviceaccount.com"})]
     host = [_asset("compute.googleapis.com/Network", {"kind": "compute#network", "name": p["net"][1].rsplit("/", 1)[1],
                                                       "selfLink": f"{GAPI}/{p['net'][1]}",
-                                                      "networkFirewallPolicyEnforcementOrder": "BEFORE_CLASSIC_FIREWALL"}),
+                                                      "networkFirewallPolicyEnforcementOrder":
+                                                          "BEFORE_CLASSIC_FIREWALL"}),
             *_gcp_policy(p), *_gcp_google_apis(p),
             *(_asset("compute.googleapis.com/Subnetwork", {"kind": "compute#subnetwork", "name": ref.rsplit("/", 1)[1],
                                                            "ipCidrRange": cidr, "network": f"{GAPI}/{p['net'][1]}",

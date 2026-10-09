@@ -19,8 +19,8 @@ OU = "dn: ou={0},dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\
 AO = "cn=ao,ou=owners,dc=ciam-ops"
 OWNER = "cn=ciam,ou=owners,dc=ciam-ops"
 TREE = (OU.format("owners"), OU.format("exceptions"), OU.format("poam"), OU.format("assessments"),
-        f"dn: {AO}\nobjectClass: top\nobjectClass: ciamParty\ncn: ao\nciamOwnerKind: team\nciamDisplayName: Authorizing "
-        "official\n",
+        f"dn: {AO}\nobjectClass: top\nobjectClass: ciamParty\ncn: ao\nciamOwnerKind: team\n"
+        "ciamDisplayName: Authorizing official\n",
         f"dn: {OWNER}\nobjectClass: top\nobjectClass: ciamParty\ncn: ciam\nciamOwnerKind: team\n")
 
 
@@ -124,7 +124,8 @@ def test_cmmc_eligibility():
     ctx, _ = _ctx(tree=tree)
     f = check_poam(ctx)
     assert [b[1].split(":")[0] for b in f.blockers] == [
-        "POA&M item `POAM-A` holds requirement 3.1.20, which CMMC Level 2 never allows on a POA&M (32 CFR 170.21(a)(2)(iii))",
+        "POA&M item `POAM-A` holds requirement 3.1.20, which CMMC Level 2 never allows on a POA&M "
+        "(32 CFR 170.21(a)(2)(iii))",
         "POA&M item `POAM-B` is worth 5 points",
         "Assessment `CMMC-1` scored 85 of 110, under the 0.8 a Conditional CMMC Level 2 status needs."]
     assert [(a[1].split(" (")[0], a[3]) for a in f.actions if "Close out" in a[1] or "no point" in a[1]] == [

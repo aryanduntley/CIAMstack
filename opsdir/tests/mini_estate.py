@@ -58,6 +58,7 @@ ciamBindingRole: sso-service
 ciamFqdn: sso.example.test
 ciamPort: 443
 ciamTargetRole: web
+ciamExposure: internet
 
 dn: ou=stack,{env}
 objectClass: top

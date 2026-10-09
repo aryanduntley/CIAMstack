@@ -15,13 +15,13 @@ the bucket, the topic; log writes on the project, the narrowest Google Cloud all
 from itertools import chain
 
 from opsdir.core.directory import one, rdn_value, values
-from opsdir.core.environment import of_class, one_role, secret, servers_with_role, subnet_of
+from opsdir.core.environment import of_class, one_role, recorded, secret, servers_with_role, subnet_of
 from opsdir.domains.compute.workloads import cluster_subnets, kubernetes_note, only_on_kubernetes
 from opsdir.core.manifest import header
-from opsdir.core.network import is_private
 from opsdir.domains.infrastructure.firewall import rule_priorities, rule_purpose
 from opsdir.domains.access.evaluations import evaluation_files
 from opsdir.domains.access.workloads import identity_of, workload_identities
+from opsdir.domains.edge.exposure import exposure_unknown, is_internal, service_exposure
 from opsdir.domains.edge.gateways import role_gateway
 from opsdir.domains.edge.resolve import inspected, service_edge
 from opsdir.domains.network.stack import firewall_model
@@ -83,12 +83,13 @@ def _instance(m, s, kms, identities=()):
     w = identity_of(identities, role)
     notes, disk = boot_disk(m, s, kms)
     return (*notes, block("resource", ["google_compute_instance", tf_name(rdn_value(s))], [
-        ("name", rdn_value(s)), ("machine_type", one(s, "ciamInstanceSize")), ("zone", one(s, "ciamZone")),
+        ("name", rdn_value(s)), ("machine_type", recorded(s, "ciamInstanceSize", "size")),
+        ("zone", recorded(s, "ciamZone", "zone")),
         ("hostname", one(s, "ciamHostname")), ("tags", [_tag(m, role)]),
         ("boot_disk", disk),
         ("network_interface", Block((
             ("subnetwork", ref(f"data.google_compute_subnetwork.{tf_name(rdn_value(subnet_of(m, s)))}.self_link")),
-            ("network_ip", one(s, "ciamPrivateIp"))))),
+            *((("network_ip", one(s, "ciamPrivateIp")),) if one(s, "ciamPrivateIp") else ())))),
         ("shielded_instance_config", Block((("enable_secure_boot", True), ("enable_vtpm", True),
                                             ("enable_integrity_monitoring", True)))),
         *((("service_account", Block((("email", ref(f"google_service_account.{tf_name(w.identity_role)}.email")),
@@ -145,19 +146,22 @@ def _service(m, svc, endpoints=()):
     its Cloud DNS record. An EXTERNAL backend service names its port (port_name, each group's named_port) and scales
     its backends' capacity; INTERNAL takes neither. A forwarding rule takes at most five ports, else all ports. For a
     role run only on Kubernetes, the Application Load Balancer before its cluster's gateway
-    (opsdir_adapter_gcp.ingress), else a note."""
+    (opsdir_adapter_gcp.ingress), else a note; a note when its exposure is unknown (core edge.exposure). Without a
+    recorded address Google Cloud assigns one."""
     n, name = tf_name(rdn_value(svc)), f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"
     ip, ports = one(svc, "ciamFrontendIp"), values(svc, "ciamPort")
-    internal = is_private(ip)
-    if only_on_kubernetes(m, one(svc, "ciamTargetRole")):
-        target = one(svc, "ciamTargetRole")
-        gw = role_gateway(m, target)
+    target = one(svc, "ciamTargetRole")
+    gw = role_gateway(m, target) if only_on_kubernetes(m, target) else None
+    if only_on_kubernetes(m, target) and gw is None:
+        return (kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})", target),)
+    if service_exposure(svc) is None:
+        return (exposure_unknown(svc),)
+    internal = is_internal(svc)
+    if gw is not None:
         subnets = cluster_subnets(m, target)
         subnetwork = f"data.google_compute_subnetwork.{tf_name(rdn_value(subnets[0]))}.self_link" if subnets else None
         placement = (("subnetwork", ref(subnetwork)),) if internal and subnetwork else ()
-        return gateway_front(m, svc, gw, endpoints, _frontend(svc, n, ip, internal), placement) \
-            if gw is not None else (kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})",
-                                                    target),)
+        return gateway_front(m, svc, gw, endpoints, _frontend(svc, n, ip, internal), placement)
     scheme = "INTERNAL" if internal else "EXTERNAL"
     targets = servers_with_role(m, one(svc, "ciamTargetRole"))
     data, address = _frontend(svc, n, ip, internal)
@@ -201,7 +205,7 @@ def _service(m, svc, endpoints=()):
                   for zone in _zones(targets))]),
             block("resource", ["google_compute_forwarding_rule", n], [
                 ("name", name), ("region", REGION), ("load_balancing_scheme", scheme), ("ip_protocol", "TCP"),
-                *forwarded, ("ip_address", address),
+                *forwarded, *((("ip_address", address),) if address else ()),
                 ("backend_service", ref(f"google_compute_region_backend_service.{n}.id")), *placement,
                 ("labels", {"service": _label(one(svc, "ciamFqdn")), "managed_by": "opsdir"})]),
             *(network_ddos(m, n, spec) if spec is not None and not internal else ()), *record)
@@ -240,7 +244,8 @@ def render(m, services):
            *gateway_negs(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
-           *forwarding_zones(m), *render_trails(m), *render_security(m), *render_discovery(m), *render_suppressions(m), *render_quota_requests(m), *budget_notes(m),
+           *forwarding_zones(m), *render_trails(m), *render_security(m), *render_discovery(m), *render_suppressions(m),
+           *render_quota_requests(m), *budget_notes(m),
            *_references(m))
     main = header(m, "Google Cloud infrastructure for the CIAM platform", HCL) + unbound_comments(m.unbound) + "\n" \
         + "\n\n".join(out) + "\n"

@@ -1,11 +1,31 @@
 """PKI fixture data: certificates as public facts (70-certificates), some expiring before the planned cutover, and
 the platform's keys and secrets as credentials (72-credentials): what each is, how it rotates, whether the same
 material must reach the target environment, and where it is used. Each environment binds them by role (40/45)."""
+from opsdir.domains.pki.pem import pem_fingerprint
 from .common import CERTS, CREDS, RB, fp, owner, spec, t
+
+# the internal CA's certificate itself (public; synthetic, its key discarded when it was made): what the target's
+# cluster gateway checks PingFederate's TLS against (its backend CA bundle, 5.2d)
+INTERNAL_CA_PEM = (
+    "-----BEGIN CERTIFICATE-----\n"
+    "MIIBtDCCAVugAwIBAgIUdFFI9hcMy8nfm+SAnjZMqhhfDuYwCgYIKoZIzj0EAwIw\n"
+    "KDEmMCQGA1UEAwwdRXhhbXBsZSBBZXJvIENJQU0gSW50ZXJuYWwgQ0EwHhcNMjYw\n"
+    "MTE1MDAwMDAwWhcNMzEwMTE1MDAwMDAwWjAoMSYwJAYDVQQDDB1FeGFtcGxlIEFl\n"
+    "cm8gQ0lBTSBJbnRlcm5hbCBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABFuk\n"
+    "ceCbj6dsVm05/SKplTxvf91fajLcKAt+l+VUNyvBhiFp1zzunPDfl8MJuJDMvXw/\n"
+    "6devbWx25K7B6+8zIaqjYzBhMB0GA1UdDgQWBBSrZ9vMly7Mpiou6jznd3CshN/D\n"
+    "fjAfBgNVHSMEGDAWgBSrZ9vMly7Mpiou6jznd3CshN/DfjAPBgNVHRMBAf8EBTAD\n"
+    "AQH/MA4GA1UdDwEB/wQEAwIBBjAKBggqhkjOPQQDAgNHADBEAiAaXitzJFy+mPmo\n"
+    "BBHCWj8mb2YM+89p6Gpuas28NIh6RQIgfmcpV/B24yL5bhlmHcBfalG/tZwoya2H\n"
+    "Rk0OrpXT1sQ=\n"
+    "-----END CERTIFICATE-----\n"
+)
+PEMS = {"ciam-internal-ca": INTERNAL_CA_PEM}
 
 CERTIFICATES = (
     ("ds-ldaps-2026", "tls-server", "CN=ldap.id.example-aero.test", "CN=Example Aero Issuing CA 2",
-     "2025-12-20", "2026-12-20", ["ldap.id.example-aero.test"], "ds-tls-keystore", "ciam-platform", None, "WI-CIAM-002", None),
+     "2025-12-20", "2026-12-20", ["ldap.id.example-aero.test"], "ds-tls-keystore", "ciam-platform", None,
+     "WI-CIAM-002", None),
     ("sso-tls-2026", "tls-server", "CN=sso.example-aero.test", "CN=Public CA R11",
      "2026-02-10", "2027-02-10", ["sso.example-aero.test"], "sso-tls-keystore", "ciam-platform", None, None, None),
     ("pf-signing-2025", "saml-signing", "CN=Example Aero SSO Signing 2025", "self-signed",
@@ -30,15 +50,19 @@ CERTIFICATES = (
 
 
 def certificates():
-    return tuple(spec("70-certificates", f"cn={cn},{CERTS}", ["top", "ciamCertificate"], cn=cn, ciamFingerprint=fp(cn),
-                      ciamCertPurpose=purpose, ciamSubject=subject, ciamIssuer=issuer, ciamNotBefore=t(nb),
-                      ciamNotAfter=t(na), ciamSubjectAltName=sans, ciamKeyRole=keyrole, ciamOwner=owner(own),
-                      ciamPartnerContact=owner(partner)[0] if partner else None,
-                      ciamRotationRunbook=f"cn={rb},{RB}" if rb else None, ciamLastChanged=t(changed) if changed else None)
-                 for cn, purpose, subject, issuer, nb, na, sans, keyrole, own, partner, rb, changed in CERTIFICATES)
+    return tuple(spec("70-certificates", f"cn={cn},{CERTS}", ["top", "ciamCertificate"], cn=cn,
+                      ciamFingerprint=pem_fingerprint(PEMS[cn]) if cn in PEMS else fp(cn),
+                      ciamCertificatePem=PEMS.get(cn), ciamCertPurpose=purpose, ciamSubject=subject, ciamIssuer=issuer,
+                      ciamNotBefore=t(nb), ciamNotAfter=t(na), ciamSubjectAltName=sans, ciamKeyRole=keyrole,
+                      ciamOwner=owner(own), ciamPartnerContact=owner(partner)[0] if partner else None,
+                      ciamRotationRunbook=f"cn={rb},{RB}" if rb else None,
+                      ciamLastChanged=t(changed) if changed else None)
+                 for cn, purpose, subject, issuer, nb, na, sans, keyrole, own, partner, rb, changed
+                 in CERTIFICATES)
 
 
-# (role, type, algorithm, size, usage, format, HSM required, exportable, rotation days, continuity, why, used in, runbook)
+# (role, type, algorithm, size, usage, format, HSM required, exportable, rotation days, continuity, why, used in,
+# runbook)
 CREDENTIALS = (
     ("ds-deployment-id", "deployment-id", None, None, ["replication", "encryption"], "text", None, "TRUE", None,
      "carry-over", "DS replicas join a replication deployment only with its deployment id, which also protects the "

@@ -36,7 +36,8 @@ def _residency(cn, *codes):
 
 def _held(env, residency):
     return LdifRecord(env, "modify", {}, (("add", "objectClass", ("ciamEnvironmentPlacement",)),
-                                          ("replace", "ciamResidencyRef", (f"cn={residency},ou=residencies,dc=ciam-ops",))))
+                                          ("replace", "ciamResidencyRef",
+                                           (f"cn={residency},ou=residencies,dc=ciam-ops",))))
 
 
 def _in_region(env, region):

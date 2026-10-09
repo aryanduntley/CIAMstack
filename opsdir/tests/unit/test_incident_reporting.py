@@ -22,7 +22,8 @@ FINGERPRINT = ":".join(["AB"] * 32)
 
 def party(cn, kind="team", **more):
     lines = "".join(f"{k}: {v}\n" for k, v in more.items())
-    return f"dn: cn={cn},ou=owners,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamParty\ncn: {cn}\nciamOwnerKind: {kind}\n{lines}"
+    return (f"dn: cn={cn},ou=owners,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamParty\ncn: {cn}\n"
+            f"ciamOwnerKind: {kind}\n{lines}")
 
 
 def obligation(cn="dfars-7012", hours=72, preserve=90, filer="isso", authority="dod-dc3", cert=CERT, **more):
@@ -163,7 +164,8 @@ def test_records_kept_shorter_than_preservation_block_unless_a_hold_runbook_is_n
     runbook = (OU.format("runbooks"), "dn: cn=evidence-hold,ou=runbooks,dc=ciam-ops\nobjectClass: top\n"
                "objectClass: ciamRunbook\ncn: evidence-hold\nciamTitle: Evidence hold\n"
                "ciamLastValidated: 20260901000000Z\n")
-    ctx, _ = _ctx(beta=_kept(30), tree=(*runbook, obligation(ciamRunbookRef="cn=evidence-hold,ou=runbooks,dc=ciam-ops")),
+    ctx, _ = _ctx(beta=_kept(30),
+                  tree=(*runbook, obligation(ciamRunbookRef="cn=evidence-hold,ou=runbooks,dc=ciam-ops")),
                   changes=(held(BETA, DFARS),))
     f = check_incident_reporting(ctx)
     assert f.blockers == () and [a[1].split(", or ")[1] for a in f.actions] == [

@@ -59,7 +59,8 @@ LISTENERS = (Listener("am", 8443, "tcp", "sign-on", ("clients",)), Listener("am"
              Listener("ig", 8443, "tcp", "gateway", ("clients",)))
 CLOUD = FAKE._replace(listeners=lambda m: LISTENERS,
                       workload_identity=lambda m, b: K8sIdentity(
-                          (("cloud.example.test/identity", one(b, "ciamProviderRef")),), (("cloud.example.test/use", "true"),)))
+                          (("cloud.example.test/identity", one(b, "ciamProviderRef")),),
+                          (("cloud.example.test/use", "true"),)))
 INSTALLED = (CLOUD, ADAPTER, VAULT)
 
 
@@ -136,7 +137,8 @@ def test_external_secrets_when_asked():
     assert store["metadata"]["name"] == "vault-secret-am" and store["spec"]["provider"]["vault"]["server"] == \
         "https://vault.example.test:8200"
     assert secret["spec"]["target"] == {"name": "am-passwords", "creationPolicy": "Owner"}
-    assert secret["spec"]["data"] == [{"secretKey": "admin", "remoteRef": {"key": "ciam/am/admin", "property": "value"}}]
+    assert secret["spec"]["data"] == [{"secretKey": "admin",
+                                       "remoteRef": {"key": "ciam/am/admin", "property": "value"}}]
     assert "externalsecrets.yaml" in _docs(files, "kubernetes/identity/kustomization.yaml")[0]["resources"]
 
 

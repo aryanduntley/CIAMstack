@@ -92,8 +92,8 @@ def test_stale_scope_unmet_configuration_and_boundary_drift_give_actions():
         "current package overview.",
         "Authorization `G` requires us-person-support for a customer's use to be inside its boundary and beta/prod "
         "doesn't record it (ciamConfigurationMet).",
-        "alpha/prod is inside system boundary `ssp` and beta/prod in none: update the system security plan to cover the "
-        "target."]
+        "alpha/prod is inside system boundary `ssp` and beta/prod in none: update the system security plan to cover "
+        "the target."]
 
 
 def test_a_control_left_to_the_customer_that_the_source_covered_blocks_until_met():
@@ -103,10 +103,11 @@ def test_a_control_left_to_the_customer_that_the_source_covered_blocks_until_met
             responsibility("r3", "DST", "nist-800-53-r5:AC-2", "customer"))
     ctx, d = _ctx(tree=tree, changes=(relies(ALPHA, "SRC"), relies(BETA, "DST", required=("fedramp-high",))))
     assert [b[1] for b in check_authorization(ctx).blockers] == [
-        "nist-800-53-r5:SC-28 is the customer's under `DST` and was covered by `SRC`: encrypt at rest. Record how it is "
-        "met (ciamImplementation), or an exception or POA&M item."]
+        "nist-800-53-r5:SC-28 is the customer's under `DST` and was covered by `SRC`: encrypt at rest. Record how it "
+        "is met (ciamImplementation), or an exception or POA&M item."]
     assert responsibility_rows(d) == [("SRC", "nist-800-53-r5:SC-28", "inherited", "", ""),
-                                      ("DST", "nist-800-53-r5:SC-28", "customer", "encrypt at rest", "nothing recorded"),
+                                      ("DST", "nist-800-53-r5:SC-28", "customer", "encrypt at rest",
+                                       "nothing recorded"),
                                       ("DST", "nist-800-53-r5:AC-2", "customer", "", "nothing recorded")]
 
 
@@ -123,7 +124,8 @@ def test_services_outside_the_boundary():
 
 def test_required_levels_come_from_the_environment_and_its_obligations_and_the_report():
     obligation = _ldif("cn=dfars-7012,ou=reporting-obligations,dc=ciam-ops", ("ciamReportingObligation",),
-                       {"cn": "dfars-7012", "ciamReportingHours": "72", "ciamRequiredAuthorization": "fedramp-moderate"})
+                       {"cn": "dfars-7012", "ciamReportingHours": "72",
+                        "ciamRequiredAuthorization": "fedramp-moderate"})
     ctx, d = _ctx(tree=(OU.format("reporting-obligations"), obligation, authorization("DST")), changes=(
         relies(BETA, "DST", required=("dod-il4",)),
         LdifRecord(BETA, "modify", {}, (("replace", "ciamReportingObligationRef",

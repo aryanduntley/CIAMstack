@@ -93,7 +93,8 @@ def project_pipeline(project, files):
     return FoundPipeline(SYSTEM, project, url if isinstance(url, str) else None, DEFINITION,
                          project.rsplit("/", 1)[-1], crons,
                          tuple(t for t in triggers if t), _runners(doc, jobs), tuple(secrets),
-                         tuple(dict.fromkeys(e for j in jobs for e in (environment_name(j.get("environment")),) if e))), \
+                         tuple(dict.fromkeys(e for j in jobs for e in (environment_name(j.get("environment")),)
+                                             if e))), \
         ((f"{project}/{SCHEDULES}: {inactive} inactive schedule(s) not read",) if inactive else ())
 
 

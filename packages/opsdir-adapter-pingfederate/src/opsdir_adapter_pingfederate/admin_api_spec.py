@@ -9,7 +9,8 @@ validated against the body schema of its request as PingFederate's OpenAPI docum
   unions           oneOf, a discriminator's mapping (the value of its property picks the schema), or a base schema with
                    subtypes (DataStore: LdapDataStore, JdbcDataStore, ...): valid when one alternative is
   objects          required properties present, each property checked, a property the schema doesn't name refused (a
-                   misspelt one would be ignored by PingFederate, silently), maps (additionalProperties) checked per value
+                   misspelt one would be ignored by PingFederate, silently), maps (additionalProperties) checked per
+                   value
   values           type (string, integer, number, boolean, array, object), enum, pattern, length, unique items
 
 Formats (date-time, ...) aren't checked. Problems are lines '<JSON path>: <what>', none when the payload is valid.

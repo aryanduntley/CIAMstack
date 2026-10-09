@@ -31,6 +31,6 @@ def test_the_services_an_environment_uses_and_those_outside_its_authorization():
     f = check_boundary(context(d, a, b, cutover="2026-12-01"))
     assert [x[1].split(", which")[0] for x in f.blockers] == [
         "beta/prod uses Elastic Load Balancing (ELB) (ds-ldaps-service, sso-service)"]
-    assert f.ok == ("beta/prod uses Amazon Data Lifecycle Manager (ds-snapshots), which `F1603047866` covers as part of "
-                    "Amazon Elastic Block Store (EBS): AWS assesses it as a service capability of Amazon EBS: a program "
-                    "listing EBS applies to it (EBS user guide).",)
+    assert f.ok == ("beta/prod uses Amazon Data Lifecycle Manager (ds-snapshots), which `F1603047866` covers as "
+                    "part of Amazon Elastic Block Store (EBS): AWS assesses it as a service capability of Amazon EBS: "
+                    "a program listing EBS applies to it (EBS user guide).",)

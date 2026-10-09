@@ -32,7 +32,8 @@ def _pair(plan=None, vault=None, with_plan=True, beta_extra=(), tests=(), tree=(
     """(ctx, d, alpha, beta): alpha with the volume, PLAN, VAULT and its key; beta with the volume, its key, and PLAN /
     VAULT changed (None values left out; with_plan False: neither)."""
     d, alpha, beta = model(
-        alpha=(entry(ALPHA, "vol-ds-data", "ciamVolume", **VOLUME), entry(ALPHA, "backup-daily", "ciamBackupPlan", **PLAN),
+        alpha=(entry(ALPHA, "vol-ds-data", "ciamVolume", **VOLUME),
+               entry(ALPHA, "backup-daily", "ciamBackupPlan", **PLAN),
                entry(ALPHA, "vault-main", "ciamBackupVault", **VAULT), entry(ALPHA, "key-disk", "ciamKeyRef", **KEY)),
         beta=(entry(BETA, "vol-ds-data", "ciamVolume", **VOLUME), entry(BETA, "key-disk", "ciamKeyRef", **KEY),
               *((entry(BETA, "backup-daily", "ciamBackupPlan", **_changed(PLAN, plan)),

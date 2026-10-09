@@ -1,5 +1,1 @@
-35c35
-< 44063ef266dc462811e1f322e32ed4846ebeaffb4d5c892d207da87bd230d369  data/expected-findings.json
----
-> 466ff73d28def83c461a94f0bc3b5de6dd0edcf4405273603a97799cda1d5f3d  data/expected-findings.json
-exit 1
+exit 0

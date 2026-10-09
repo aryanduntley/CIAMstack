@@ -90,7 +90,8 @@ def test_what_others_keep_is_a_comment_naming_them():
              "dn: cn=net-team,ou=owners,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamParty\ncn: net-team\n"
              "ciamOwnerKind: team\n")
     out = _render(entry(ALPHA, "hub-fw", "ciamProxy", ciamBindingRole="hub-firewall", ciamProxyKind="firewall",
-                        ciamAllowedDestination="idp.partner.example", ciamManagedBy="cn=net-team,ou=owners,dc=ciam-ops"),
+                        ciamAllowedDestination="idp.partner.example",
+                        ciamManagedBy="cn=net-team,ou=owners,dc=ciam-ops"),
                   tree=party)
     assert out == ("# Egress firewall 'hub-fw' is kept by net-team; its allowlist is rendered in their root, not "
                    "here.")

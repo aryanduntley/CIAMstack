@@ -41,12 +41,13 @@ def test_an_account_trail_the_platform_keeps_is_the_subscription_s_diagnostic_se
     _, alpha, _ = model(alpha=(STORE, LAW, SIEM, *trails), tree=OWNERS)
     out = render_trails(alpha)
     assert out[0] == 'data "azurerm_subscription" "current" {\n}'
-    assert out[1] == '''resource "azurerm_monitor_diagnostic_setting" "activity_log" {
+    assert out[1] == ('''resource "azurerm_monitor_diagnostic_setting" "activity_log" {
   # data-write events: each resource's own diagnostic settings log them (not rendered)
-  # integrity: Azure keeps no digest of the Activity Log; keep it in a container with a locked immutability policy (ciamStorageImmutability compliance)
+  # integrity: Azure keeps no digest of the Activity Log; keep it in a container with a locked immutability '''
+                      '''policy (ciamStorageImmutability compliance)
   name               = "ciam-activity"
   target_resource_id = data.azurerm_subscription.current.id
-  storage_account_id = "''' + ACCOUNT + '''"
+  storage_account_id = "''') + ACCOUNT + '''"
   enabled_log {
     category = "Administrative"
   }

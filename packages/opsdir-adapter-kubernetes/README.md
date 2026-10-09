@@ -30,7 +30,7 @@ Checked by `opsdir/scripts/validate-kubernetes.sh` (kustomize build + kubeconfor
 A role an environment runs only on Kubernetes is reached through its cluster's in-cluster gateway when the record has one (`ciamClusterGateway`, the core edge domain). The cloud adapter renders the front before it (load balancer, WAF, TLS certificate, DNS record) from the service name's policies; `gateway.py` renders what is behind it, Gateway API standard channel (v1.6.1) plus the implementation's own objects:
 
 - `kubernetes/<gateway namespace>/gateway.yaml`: the Gateway, with an HTTP listener (80) for service names whose TLS the front terminates and an HTTPS one (443) presenting the gateway's internal certificate for those the front re-encrypts (the Secret its binding's `ciamWorkloadSecret` keys `tls.crt` and `tls.key` name, delivered like a workload's); routes allowed from the fronted roles' namespaces only. The cloud's plug (`Services.gateway_plug`) gives the gateway Service's annotations and type and any objects it needs (a target group binding on AWS).
-- `kubernetes/<role namespace>/routes.yaml`: an HTTPRoute per fronted service name (host = its `ciamFqdn`) from the routes its deployment kit declares (`Adapter.routes`: ForgeOps, ping-devops), prefix rewrites as `URLRewrite ReplacePrefixMatch`; a BackendTLSPolicy for a Service that speaks TLS (PingFederate), checked against the CA in ConfigMap `<gateway>-backend-ca` (`ca.crt`); and cookie stickiness (`route`) when the traffic policy asks for it.
+- `kubernetes/<role namespace>/routes.yaml`: an HTTPRoute per fronted service name (host = its `ciamFqdn`) from the routes its deployment kit declares (`Adapter.routes`: ForgeOps, ping-devops), prefix rewrites as `URLRewrite ReplacePrefixMatch`; a BackendTLSPolicy for a Service that speaks TLS (PingFederate), checked against ConfigMap `<gateway>-backend-ca`, rendered beside it: `ca.crt` holds the PEMs recorded (`ciamCertificatePem`, public material) for the CAs the gateway trusts (`ciamTrustsCertificate`; core `edge.gateways.backend_ca`), or `UNBOUND:<ca>-pem` while one isn't recorded (the planner's action); and cookie stickiness (`route`) when the traffic policy asks for it.
 
 Which implementation runs a gateway is data: the binding's `ciamGatewayImplementation`, else the estate setting `kubernetes-gateway-implementation` (this adapter declares it; `opsdir report settings`). Rows (`gateway.IMPLEMENTATIONS`), each pinned to the release its objects were checked against:
 
@@ -106,7 +106,6 @@ The `k8s-secret` reference scheme; the vocabulary of `ciamGatewayImplementation`
 - Not read yet: one-off Jobs, operators' custom resources (the DS operator's `DirectoryService`, ForgeOps secret agent, external-secrets `ExternalSecret`), sidecars' resource requests and limits (only the first container's), pod disruption budgets, horizontal autoscalers, NetworkPolicy rule details (only the policy and its types), Gateway API routes.
 - An Ingress backend is matched to a workload through a Service's selector in the same namespace; `ExternalName` services and cross-namespace routing aren't followed.
 
-- The gateway's backend CA ConfigMap (`<gateway>-backend-ca`) is named, not filled: the record keeps certificates' facts, not their content.
 - HTTPRoutes aren't read back (a deployment kit declares its routes); Gateways are (below).
 
 ## Tests

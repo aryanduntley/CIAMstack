@@ -18,11 +18,13 @@ from .recovery import STANDBY_INTENT
 
 SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password", "ds-tls-keystore",
                 "sso-tls-keystore", "pf-signing-key", "pf-admin-password", "am-admin-password", "am-keystore",
-                "am-ds-bind-password", "idm-admin-password", "idm-keystore", "idm-ds-bind-password", "idm-hrdb-password",
-                "ig-keystore", "pf-ds-bind-password", "pf-grants-db-password", "pf-smtp-password", "pf-captcha-secret",
-                "pf-corp-ad-bind-password", "pf-signing-key-password", "sso-tls-keystore-password")
-DS_V, PF_V, AM_V, IDM_V, IG_V = "PingDS 7.5.1", "PingFederate 12.1.4", "PingAM 7.5.1", "PingIDM 7.5.0", "PingGateway 2024.11.0"
-IMG = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/"
+                "am-ds-bind-password", "idm-admin-password", "idm-keystore", "idm-ds-bind-password",
+                "idm-hrdb-password", "ig-keystore", "pf-ds-bind-password", "pf-grants-db-password", "pf-smtp-password",
+                "pf-captcha-secret", "pf-corp-ad-bind-password", "pf-signing-key-password", "sso-tls-keystore-password")
+DS_V, PF_V, AM_V, IDM_V, IG_V = ("PingDS 7.5.1", "PingFederate 12.1.4", "PingAM 7.5.1", "PingIDM 7.5.0",
+                                 "PingGateway 2024.11.0")
+IMG = ("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/"
+       "Microsoft.Compute/images/")
 
 SOURCE = MappingProxyType({
     "stack": (("provider", "aws"), ("directory", "pingds"), ("federation", "pingfederate"), ("access", "pingam"),
@@ -42,14 +44,18 @@ SOURCE = MappingProxyType({
                  # the public names are on the corporate DNS team's Infoblox (edge: zone-public); Route 53's public
                  # zone (the pipeline may change it) delegates them there
                  ("svc-sso", "pf-sso-service", "sso.example-aero.test", "example-aero.test",
-                  "Z0EXAMPLE2PUBLIC", "pf-engine", [443], "198.51.100.20", "eipalloc-0a1b2c3d4e5f60001", "sso-tls-2026"),
+                  "Z0EXAMPLE2PUBLIC", "pf-engine", [443], "198.51.100.20", "eipalloc-0a1b2c3d4e5f60001",
+                  "sso-tls-2026"),
                  ("svc-login", "am-service", "login.example-aero.test", "example-aero.test",
                   "Z0EXAMPLE2PUBLIC", "am", [443], "198.51.100.21", "eipalloc-0a1b2c3d4e5f60003", None),
                  ("svc-apps", "ig-service", "apps.example-aero.test", "example-aero.test",
                   "Z0EXAMPLE2PUBLIC", "ig", [443], "198.51.100.22", "eipalloc-0a1b2c3d4e5f60005", None)],
-    "fw": [("fw-pf-ds-svc", "fw-consumer-pf-ds-svc", ["10.20.4.0/24", "10.20.5.0/24"], [1636], "ds", "pf-ds-svc", "CHG-0877"),
-           ("fw-customer-portal", "fw-consumer-customer-portal-svc", ["10.30.8.0/24"], [1636], "ds", "customer-portal-svc", None),
-           ("fw-supplier-portal", "fw-consumer-supplier-portal-svc", ["10.31.2.0/24"], [1636], "ds", "supplier-portal-svc", None),
+    "fw": [("fw-pf-ds-svc", "fw-consumer-pf-ds-svc", ["10.20.4.0/24", "10.20.5.0/24"], [1636], "ds", "pf-ds-svc",
+            "CHG-0877"),
+           ("fw-customer-portal", "fw-consumer-customer-portal-svc", ["10.30.8.0/24"], [1636], "ds",
+            "customer-portal-svc", None),
+           ("fw-supplier-portal", "fw-consumer-supplier-portal-svc", ["10.31.2.0/24"], [1636], "ds",
+            "supplier-portal-svc", None),
            ("fw-mro-batch", "fw-consumer-mro-batch-export", ["10.40.12.0/24"], [1636], "ds", "mro-batch-export", None),
            ("fw-legacy-rptuser", "fw-consumer-legacy-rptuser", ["10.40.7.22/32"], [1636], "ds", "legacy-rptuser", None),
            ("fw-idm-sync", "fw-consumer-idm-sync", ["10.20.6.0/24"], [1636], "ds", "idm-sync", None),
@@ -61,7 +67,8 @@ SOURCE = MappingProxyType({
            ("fw-apps-public", "fw-apps-public", ["0.0.0.0/0"], [443], "ig", None, None),
            # the PingFederate nodes' cluster traffic (JGroups bind and failure-detection ports), engines and console
            ("fw-pf-cluster", "fw-pf-cluster", ["10.20.4.0/24", "10.20.5.0/24"], [7600, 7700], "pf-engine", None, None),
-           ("fw-pf-cluster-admin", "fw-pf-cluster-admin", ["10.20.4.0/24", "10.20.5.0/24"], [7600, 7700], "pf-admin", None, None)],
+           ("fw-pf-cluster-admin", "fw-pf-cluster-admin", ["10.20.4.0/24", "10.20.5.0/24"], [7600, 7700], "pf-admin",
+            None, None)],
     "egress": ("nat-0123456789abcdef0", "203.0.113.10/32"),
     "time": (["169.254.169.123"], "provider"),        # Amazon Time Sync, the address every instance reaches
     "secret": lambda role: f"aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/{role}",
@@ -71,7 +78,8 @@ SOURCE = MappingProxyType({
         "ds-root-password": {"ciamLastRotated": t("2026-03-02"),
                              "ciamCopyRef": "cyberark://ciam-ops/CIAM-PROD/ds-root-password"},
         "pf-admin-password": {"ciamAutoRotate": "TRUE", "ciamLastRotated": t("2026-09-01"),
-                              "ciamRotationFunction": "arn:aws:lambda:us-east-1:111122223333:function:ciam-rotate-pf-admin"},
+                              "ciamRotationFunction":
+                                  "arn:aws:lambda:us-east-1:111122223333:function:ciam-rotate-pf-admin"},
         "pf-signing-key": {"ciamKeyUser": "arn:aws:iam::111122223333:role/ciam-pf-admin"},
         "disk-encryption": {"ciamProtectionLevel": "hsm", "ciamAutoRotate": "TRUE", "ciamReplicaRegion": "us-west-2",
                             "ciamKeyUser": "arn:aws:iam::111122223333:role/ciam-server-instance",
@@ -98,16 +106,26 @@ SOURCE = MappingProxyType({
                  "arn:aws:autoscaling:us-east-1:111122223333:autoScalingGroup:6d4c1f0e-0000-4000-8000-00000000a001:"
                  "autoScalingGroupName/ciam-prod-pf-engine", "ami-0fedcba9876543210", "m6i.large", 2, 2, 4,
                  ("us-east-1a", "us-east-1b"), "TRUE"),),
-    "servers": [("ds-1", "ds", "ds-1.aws.internal.example-aero.test", "10.20.1.11", "us-east-1a", "m6i.xlarge", "ami-0abcdef1234567890", "subnet-ds-a", DS_V),
-                ("ds-2", "ds", "ds-2.aws.internal.example-aero.test", "10.20.2.11", "us-east-1b", "m6i.xlarge", "ami-0abcdef1234567890", "subnet-ds-b", DS_V),
-                ("ds-3", "ds", "ds-3.aws.internal.example-aero.test", "10.20.3.11", "us-east-1c", "m6i.xlarge", "ami-0abcdef1234567890", "subnet-ds-c", DS_V),
-                ("pf-engine-1", "pf-engine", "pf-engine-1.aws.internal.example-aero.test", "10.20.4.21", "us-east-1a", "m6i.large", "ami-0fedcba9876543210", "subnet-pf-a", PF_V),
-                ("pf-engine-2", "pf-engine", "pf-engine-2.aws.internal.example-aero.test", "10.20.5.21", "us-east-1b", "m6i.large", "ami-0fedcba9876543210", "subnet-pf-b", PF_V),
-                ("pf-admin-1", "pf-admin", "pf-admin-1.aws.internal.example-aero.test", "10.20.4.10", "us-east-1a", "m6i.large", "ami-0fedcba9876543210", "subnet-pf-a", PF_V),
-                ("am-1", "am", "am-1.aws.internal.example-aero.test", "10.20.7.21", "us-east-1a", "m6i.large", "ami-0a9b8c7d6e5f40321", "subnet-am-a", AM_V),
-                ("am-2", "am", "am-2.aws.internal.example-aero.test", "10.20.8.21", "us-east-1b", "m6i.large", "ami-0a9b8c7d6e5f40321", "subnet-am-b", AM_V),
-                ("idm-1", "idm", "idm-1.aws.internal.example-aero.test", "10.20.6.21", "us-east-1a", "m6i.large", "ami-0b1c2d3e4f5a60987", "subnet-idm-a", IDM_V),
-                ("ig-1", "ig", "ig-1.aws.internal.example-aero.test", "10.20.10.21", "us-east-1a", "m6i.large", "ami-0c2d3e4f5a6b70123", "subnet-ig-a", IG_V)],
+    "servers": [("ds-1", "ds", "ds-1.aws.internal.example-aero.test", "10.20.1.11", "us-east-1a", "m6i.xlarge",
+                 "ami-0abcdef1234567890", "subnet-ds-a", DS_V),
+                ("ds-2", "ds", "ds-2.aws.internal.example-aero.test", "10.20.2.11", "us-east-1b", "m6i.xlarge",
+                 "ami-0abcdef1234567890", "subnet-ds-b", DS_V),
+                ("ds-3", "ds", "ds-3.aws.internal.example-aero.test", "10.20.3.11", "us-east-1c", "m6i.xlarge",
+                 "ami-0abcdef1234567890", "subnet-ds-c", DS_V),
+                ("pf-engine-1", "pf-engine", "pf-engine-1.aws.internal.example-aero.test", "10.20.4.21", "us-east-1a",
+                 "m6i.large", "ami-0fedcba9876543210", "subnet-pf-a", PF_V),
+                ("pf-engine-2", "pf-engine", "pf-engine-2.aws.internal.example-aero.test", "10.20.5.21", "us-east-1b",
+                 "m6i.large", "ami-0fedcba9876543210", "subnet-pf-b", PF_V),
+                ("pf-admin-1", "pf-admin", "pf-admin-1.aws.internal.example-aero.test", "10.20.4.10", "us-east-1a",
+                 "m6i.large", "ami-0fedcba9876543210", "subnet-pf-a", PF_V),
+                ("am-1", "am", "am-1.aws.internal.example-aero.test", "10.20.7.21", "us-east-1a", "m6i.large",
+                 "ami-0a9b8c7d6e5f40321", "subnet-am-a", AM_V),
+                ("am-2", "am", "am-2.aws.internal.example-aero.test", "10.20.8.21", "us-east-1b", "m6i.large",
+                 "ami-0a9b8c7d6e5f40321", "subnet-am-b", AM_V),
+                ("idm-1", "idm", "idm-1.aws.internal.example-aero.test", "10.20.6.21", "us-east-1a", "m6i.large",
+                 "ami-0b1c2d3e4f5a60987", "subnet-idm-a", IDM_V),
+                ("ig-1", "ig", "ig-1.aws.internal.example-aero.test", "10.20.10.21", "us-east-1a", "m6i.large",
+                 "ami-0c2d3e4f5a6b70123", "subnet-ig-a", IG_V)],
 })
 TARGET = MappingProxyType({
     # AM, IDM, PingGateway and PingFederate run on AKS here (compute: ForgeOps and ping-devops deploy them); the
@@ -133,8 +151,10 @@ TARGET = MappingProxyType({
                  ("svc-apps", "ig-service", "apps.example-aero.test", "example-aero.test",
                   None, "ig", [443], "198.51.100.79", "pip-ciam-apps-prod", None)],
     "fw": [("fw-pf-ds-svc", "fw-consumer-pf-ds-svc", ["10.60.2.0/24"], [1636], "ds", "pf-ds-svc", None),
-           ("fw-customer-portal", "fw-consumer-customer-portal-svc", ["10.30.8.0/24"], [1636], "ds", "customer-portal-svc", None),
-           ("fw-supplier-portal", "fw-consumer-supplier-portal-svc", ["10.31.2.0/24"], [1636], "ds", "supplier-portal-svc", None),
+           ("fw-customer-portal", "fw-consumer-customer-portal-svc", ["10.30.8.0/24"], [1636], "ds",
+            "customer-portal-svc", None),
+           ("fw-supplier-portal", "fw-consumer-supplier-portal-svc", ["10.31.2.0/24"], [1636], "ds",
+            "supplier-portal-svc", None),
            ("fw-idm-sync", "fw-consumer-idm-sync", ["10.60.6.0/24"], [1636], "ds", "idm-sync", None),
            ("fw-replication", "fw-replication", ["10.60.1.0/24", "10.20.0.0/16"], [8989], "ds", None, None),
            ("fw-admin", "fw-admin", ["10.60.9.0/28"], [4444], "ds", None, None),
@@ -148,7 +168,8 @@ TARGET = MappingProxyType({
     "time": (["ptp:/dev/ptp_hyperv"], "ptp"),          # the Azure host's clock, as chrony reads it on Linux VMs
     "secret": lambda role: f"azkv://kv-ciam-prod/{role}",
     "key": ("azkv-key://kv-ciam-prod/keys/disk-cmk",
-            "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"),
+            "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/"
+            "Microsoft.Compute/diskEncryptionSets/des-ciam-prod"),
     # planted: the disk key is software-protected (standard vault) and neither rotates nor replicates; the PingFederate
     # admin password loses its automatic rotation; the signing key is not recorded as carried over from the source
     "key_facts": {
@@ -183,9 +204,12 @@ TARGET = MappingProxyType({
     "kubernetes": KUBERNETES["target"],      # the AKS cluster and how it runs each workload (compute)
     "interconnect": ("link-source", "site-to-site VPN (landing-zone managed)", AWS, ["10.20.0.0/16"]),
     # only the directory runs on servers here: AM, IDM, PingGateway and PingFederate run on AKS (compute)
-    "servers": [("ds-1", "ds", "ds-1.az.internal.example-aero.test", "10.60.1.11", "1", "Standard_D4s_v5", IMG + "pingds-7.5.1-rhel9", "snet-ds", DS_V),
-                ("ds-2", "ds", "ds-2.az.internal.example-aero.test", "10.60.1.12", "2", "Standard_D4s_v5", IMG + "pingds-7.5.1-rhel9", "snet-ds", DS_V),
-                ("ds-3", "ds", "ds-3.az.internal.example-aero.test", "10.60.1.13", "3", "Standard_D4s_v5", IMG + "pingds-7.5.1-rhel9", "snet-ds", DS_V)],
+    "servers": [("ds-1", "ds", "ds-1.az.internal.example-aero.test", "10.60.1.11", "1", "Standard_D4s_v5",
+                 IMG + "pingds-7.5.1-rhel9", "snet-ds", DS_V),
+                ("ds-2", "ds", "ds-2.az.internal.example-aero.test", "10.60.1.12", "2", "Standard_D4s_v5",
+                 IMG + "pingds-7.5.1-rhel9", "snet-ds", DS_V),
+                ("ds-3", "ds", "ds-3.az.internal.example-aero.test", "10.60.1.13", "3", "Standard_D4s_v5",
+                 IMG + "pingds-7.5.1-rhel9", "snet-ds", DS_V)],
 })
 # A warm standby on Google Cloud: production's directory replicas join it over a VPN, the rest stands ready. Network
 # and subnetworks belong to the landing zone's Shared VPC host project; the environment's own project holds the rest.
@@ -207,8 +231,10 @@ STANDBY = MappingProxyType({
                  ("svc-apps", "ig-service", "apps.example-aero.test", "example-aero.test",
                   "example-aero-public", "ig", [443], "198.51.100.92", "ciam-standby-apps", None)],
     "fw": [("fw-pf-ds-svc", "fw-consumer-pf-ds-svc", ["10.70.2.0/24"], [1636], "ds", "pf-ds-svc", None),
-           ("fw-customer-portal", "fw-consumer-customer-portal-svc", ["10.30.8.0/24"], [1636], "ds", "customer-portal-svc", None),
-           ("fw-supplier-portal", "fw-consumer-supplier-portal-svc", ["10.31.2.0/24"], [1636], "ds", "supplier-portal-svc", None),
+           ("fw-customer-portal", "fw-consumer-customer-portal-svc", ["10.30.8.0/24"], [1636], "ds",
+            "customer-portal-svc", None),
+           ("fw-supplier-portal", "fw-consumer-supplier-portal-svc", ["10.31.2.0/24"], [1636], "ds",
+            "supplier-portal-svc", None),
            ("fw-idm-sync", "fw-consumer-idm-sync", ["10.70.6.0/24"], [1636], "ds", "idm-sync", None),
            ("fw-replication", "fw-replication", ["10.70.1.0/24", "10.20.0.0/16"], [8989], "ds", None, None),
            ("fw-admin", "fw-admin", ["10.70.9.0/28"], [4444], "ds", None, None),
@@ -245,14 +271,22 @@ STANDBY = MappingProxyType({
                  GIMG + "pingfederate-12-1-4-rhel9", "n2-standard-2", 2, 2, 4, ("us-central1-a", "us-central1-b"),
                  None),),
     "interconnect": ("link-source", "Cloud VPN to AWS (landing-zone managed)", AWS, ["10.20.0.0/16"]),
-    "servers": [("ds-1", "ds", "ds-1.gcp.internal.example-aero.test", "10.70.1.11", "us-central1-a", "n2-standard-4", GIMG + "pingds-7-5-1-rhel9", "subnet-ds", DS_V),
-                ("ds-2", "ds", "ds-2.gcp.internal.example-aero.test", "10.70.1.12", "us-central1-b", "n2-standard-4", GIMG + "pingds-7-5-1-rhel9", "subnet-ds", DS_V),
-                ("pf-engine-1", "pf-engine", "pf-engine-1.gcp.internal.example-aero.test", "10.70.2.21", "us-central1-a", "n2-standard-2", GIMG + "pingfederate-12-1-4-rhel9", "subnet-pf", PF_V),
-                ("pf-engine-2", "pf-engine", "pf-engine-2.gcp.internal.example-aero.test", "10.70.2.22", "us-central1-b", "n2-standard-2", GIMG + "pingfederate-12-1-4-rhel9", "subnet-pf", PF_V),
-                ("pf-admin-1", "pf-admin", "pf-admin-1.gcp.internal.example-aero.test", "10.70.2.10", "us-central1-a", "n2-standard-2", GIMG + "pingfederate-12-1-4-rhel9", "subnet-pf", PF_V),
-                ("am-1", "am", "am-1.gcp.internal.example-aero.test", "10.70.3.21", "us-central1-a", "n2-standard-2", GIMG + "pingam-7-5-1-rhel9", "subnet-am", AM_V),
-                ("idm-1", "idm", "idm-1.gcp.internal.example-aero.test", "10.70.6.21", "us-central1-a", "n2-standard-2", GIMG + "pingidm-7-5-0-rhel9", "subnet-idm", IDM_V),
-                ("ig-1", "ig", "ig-1.gcp.internal.example-aero.test", "10.70.10.21", "us-central1-a", "n2-standard-2", GIMG + "pinggateway-2024-11-0-rhel9", "subnet-ig", IG_V)],
+    "servers": [("ds-1", "ds", "ds-1.gcp.internal.example-aero.test", "10.70.1.11", "us-central1-a", "n2-standard-4",
+                 GIMG + "pingds-7-5-1-rhel9", "subnet-ds", DS_V),
+                ("ds-2", "ds", "ds-2.gcp.internal.example-aero.test", "10.70.1.12", "us-central1-b", "n2-standard-4",
+                 GIMG + "pingds-7-5-1-rhel9", "subnet-ds", DS_V),
+                ("pf-engine-1", "pf-engine", "pf-engine-1.gcp.internal.example-aero.test", "10.70.2.21",
+                 "us-central1-a", "n2-standard-2", GIMG + "pingfederate-12-1-4-rhel9", "subnet-pf", PF_V),
+                ("pf-engine-2", "pf-engine", "pf-engine-2.gcp.internal.example-aero.test", "10.70.2.22",
+                 "us-central1-b", "n2-standard-2", GIMG + "pingfederate-12-1-4-rhel9", "subnet-pf", PF_V),
+                ("pf-admin-1", "pf-admin", "pf-admin-1.gcp.internal.example-aero.test", "10.70.2.10", "us-central1-a",
+                 "n2-standard-2", GIMG + "pingfederate-12-1-4-rhel9", "subnet-pf", PF_V),
+                ("am-1", "am", "am-1.gcp.internal.example-aero.test", "10.70.3.21", "us-central1-a", "n2-standard-2",
+                 GIMG + "pingam-7-5-1-rhel9", "subnet-am", AM_V),
+                ("idm-1", "idm", "idm-1.gcp.internal.example-aero.test", "10.70.6.21", "us-central1-a", "n2-standard-2",
+                 GIMG + "pingidm-7-5-0-rhel9", "subnet-idm", IDM_V),
+                ("ig-1", "ig", "ig-1.gcp.internal.example-aero.test", "10.70.10.21", "us-central1-a", "n2-standard-2",
+                 GIMG + "pinggateway-2024-11-0-rhel9", "subnet-ig", IG_V)],
     # what TCPPING lists: the clustered PingFederate nodes (the source's come from its node files)
     "nodes": {"pf-engine-1": "CLUSTERED_ENGINE", "pf-engine-2": "CLUSTERED_ENGINE", "pf-admin-1": "CLUSTERED_CONSOLE"},
 })
@@ -391,7 +425,8 @@ def environments():
             spec(gcp, GCP, ["top", "ciamEnvironment", "ciamStandby", "ciamEnvironmentPlacement"], env="prod",
                  ciamLifecycle="building", ciamDataClassification=CLASSIFICATION["standby"],
                  ciamReportingObligationRef=DFARS, ciamAuthorizationRef=AUTHORIZED["standby"],
-                 ciamConfigurationMet="assured-workload", ciamJoinsDeploymentOf=AWS, **STANDBY_INTENT, ciamOwner=owner("ciam-platform"),
+                 ciamConfigurationMet="assured-workload", ciamJoinsDeploymentOf=AWS, **STANDBY_INTENT,
+                 ciamOwner=owner("ciam-platform"),
                  description="Warm standby of production: directory replicas join its deployment over a VPN"),
             *environment(gcp, GCP, STANDBY))
 
@@ -407,7 +442,8 @@ STAGE_SERVICES = (("svc-ldaps", "ds-ldaps-service", "ldap.stage.id.example-aero.
                   ("svc-apps", "ig-service", "apps.stage.example-aero.test", "example-aero.test",
                    "Z0EXAMPLE2PUBLIC", "ig", 443, "198.51.100.32", "eipalloc-0a1b2c3d4e5f60006"))
 STAGE_SERVERS = (("ds-s1", "ds", "10.20.1.31", "us-east-1a", "subnet-ds-a", "ami-0abcdef1234567890", DS_V),
-                 ("pf-engine-s1", "pf-engine", "10.20.4.31", "us-east-1a", "subnet-pf-a", "ami-0fedcba9876543210", PF_V),
+                 ("pf-engine-s1", "pf-engine", "10.20.4.31", "us-east-1a", "subnet-pf-a", "ami-0fedcba9876543210",
+                  PF_V),
                  ("pf-admin-s1", "pf-admin", "10.20.4.32", "us-east-1a", "subnet-pf-a", "ami-0fedcba9876543210", PF_V),
                  ("am-s1", "am", "10.20.7.31", "us-east-1a", "subnet-am-a", "ami-0a9b8c7d6e5f40321", AM_V),
                  ("idm-s1", "idm", "10.20.6.31", "us-east-1a", "subnet-idm-a", "ami-0b1c2d3e4f5a60987", IDM_V),
@@ -419,7 +455,8 @@ STAGE_SERVERS = (("ds-s1", "ds", "10.20.1.31", "us-east-1a", "subnet-ds-a", "ami
 # and so are its security services, the topic their findings go to and AWS Config's bucket (each covers the account);
 # its quota needs are production's (the account's limits are shared: production's needs count for both) and its
 # spending is production's budget's
-STAGE_DROPS = (*(role for _, role, *_ in SOURCE["fw"] if role.startswith("fw-consumer-") and role != "fw-consumer-pf-ds-svc"),
+STAGE_DROPS = (*(role for _, role, *_ in SOURCE["fw"]
+                 if role.startswith("fw-consumer-") and role != "fw-consumer-pf-ds-svc"),
                "ldaps-endpoint-service", "private-secrets", "egress-firewall", "snapshots-daily", "backup-daily",
                "backup-vault", "audit-trail", "audit-archive",
                *(role for oc, _, role, _ in SECURITY["source"]), *(role for oc, _, role, _ in COSTS["source"]))
@@ -460,7 +497,8 @@ def stage():
               for oc, cn, role, attrs in (*DATABASES["stage"], *VOLUMES["stage"])),
             spec(file, f"ou=overrides,{STAGE}", ["top", "organizationalUnit"], ou="overrides"),
             *(spec(file, f"cn={cn},ou=overrides,{STAGE}", ["top", "ciamOverride"], cn=cn, ciamOverrides=target,
-                   ciamOverrideAttribute=attr, ciamOverrideValue=value, description=why, ciamOwner=owner("ciam-platform"))
+                   ciamOverrideAttribute=attr, ciamOverrideValue=value, description=why,
+                   ciamOwner=owner("ciam-platform"))
               for cn, target, attr, value, why in STAGE_OVERRIDES),
             *(spec(file, f"cn={cn},{STAGE}", ["top", "ciamServer"], cn=cn, ciamServerRole=role,
                    ciamHostname=f"{cn}.aws.internal.example-aero.test", ciamPrivateIp=ip, ciamZone=zone,

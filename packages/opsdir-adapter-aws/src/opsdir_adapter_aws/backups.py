@@ -107,8 +107,8 @@ def _plan(m, p):
     target = (ref(f"aws_backup_vault.{tf_name(rdn_value(v))}.name") if v is not None and owned(v) else
               one(v, "ciamProviderRef").rsplit(":", 1)[1] if v is not None and one(v, "ciamProviderRef") else None)
     if target is None:
-        return (f"# Backup plan '{rdn_value(p)}': {UNBOUND}{one(p, 'ciamBackupVaultRole')}: no backup vault binding for "
-                f"role {one(p, 'ciamBackupVaultRole')} in this environment: not rendered",)
+        return (f"# Backup plan '{rdn_value(p)}': {UNBOUND}{one(p, 'ciamBackupVaultRole')}: no backup vault "
+                f"binding for role {one(p, 'ciamBackupVaultRole')} in this environment: not rendered",)
     copies = [(region, *_copy(p, region)) for region in s.copies]
     keep = Block((("delete_after", s.retention),)) if s.retention else None
     window = one(p, "ciamBackupWindowHours")
@@ -119,7 +119,8 @@ def _plan(m, p):
                     ("rule_name", tf_name(rdn_value(p))), ("target_vault_name", target), ("schedule", cron),
                     *((("start_window", int(window) * 60),) if window else ()),
                     *((("lifecycle", keep),) if keep else ()),
-                    *(("copy_action", Block((("destination_vault_arn", arn), *((("lifecycle", keep),) if keep else ()))))
+                    *(("copy_action", Block((("destination_vault_arn", arn),
+                                             *((("lifecycle", keep),) if keep else ()))))
                       for _, arn, _ in copies)))),
                 ("tags", _tags(p))]),
             block("resource", ["aws_backup_selection", n], [
@@ -163,7 +164,8 @@ def backup_resources(pairs):
                  "ciamStorageImmutability": locks.get(a.get("name"), ("none",))[0],
                  "ciamStorageLockDays": locks.get(a.get("name"), (None, None))[1]},
                  links={"ciamEncryptedByRole": a.get("kms_key_arn")},
-                 name=_cloud_tags(a).get("Name") or a.get("name"), role=tagged_role(_cloud_tags(a)), tags=_cloud_tags(a))
+                 name=_cloud_tags(a).get("Name") or a.get("name"), role=tagged_role(_cloud_tags(a)),
+                 tags=_cloud_tags(a))
              for a in vaults]
     for a in of_types(pairs, "aws_backup_plan"):
         name, rules = _cloud_tags(a).get("Name") or a.get("name"), blocks(a.get("rule"))
@@ -177,8 +179,9 @@ def backup_resources(pairs):
             notices.append(f"backup plan {name}: schedule {rule.get('schedule')} isn't one this adapter reads; its "
                            "frequency not read")
         selections = [s for s in of_types(pairs, "aws_backup_selection") if s.get("plan_id") == a.get("id")]
-        notices += [f"backup plan {name}: selection {s.get('name')} chooses resources by ARN, not by tag Role: what it "
-                    "protects not read" for s in selections if s.get("resources") and not blocks(s.get("selection_tag"))]
+        notices += [f"backup plan {name}: selection {s.get('name')} chooses resources by ARN, not by tag Role: "
+                    "what it protects not read"
+                    for s in selections if s.get("resources") and not blocks(s.get("selection_tag"))]
         window = rule.get("start_window")
         found.append(resource("backup-plan", a["arn"], {
             "ciamBackupEveryHours": every, "ciamBackupAt": at,

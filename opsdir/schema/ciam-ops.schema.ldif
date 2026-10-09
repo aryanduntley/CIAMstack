@@ -2827,6 +2827,17 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.622 NAME 'ciamGatewayImplementation'
  ent, that adapter\27s estate setting decides' EQUALITY caseIgnoreMatch SYNT
  AX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VAL
  UE-TYPE 'vocab' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.623 NAME 'ciamExposure' DESC 'Whethe
+ r a service name\27s load balancer is internal or internet-facing, recorded
+  when no frontend address says so (the provider assigns the address)' EQUAL
+ ITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-POR
+ TABILITY 'binding' X-VALUE-TYPE 'enum:internal|internet' X-ORIGIN 'opsdir' 
+ )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.624 NAME 'ciamCertificatePem' DESC '
+ The certificate itself as PEM: public material only, never a key; recorded 
+ for a CA something must be given to trust (a gateway checking its backends)
+ ' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALU
+ E X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -2855,9 +2866,9 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.7 NAME 'ciamSubnetBinding' DESC 'Subn
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.8 NAME 'ciamServiceName' DESC 'Stable
   service name + load balancer (its DNS answer, and what the load balancer r
  uns)' SUP ciamBinding STRUCTURAL MUST ( ciamFqdn $ ciamTargetRole $ ciamPor
- t ) MAY ( ciamDnsZone $ ciamDnsZoneRef $ ciamFrontendIp $ ciamTlsCertificat
- e $ ciamTtlSeconds $ ciamRoutingPolicy $ ciamRoutingWeight $ ciamEdgeFact $
-  ciamEdgeSetting ) X-ORIGIN 'opsdir' )
+ t ) MAY ( ciamDnsZone $ ciamDnsZoneRef $ ciamFrontendIp $ ciamExposure $ ci
+ amTlsCertificate $ ciamTtlSeconds $ ciamRoutingPolicy $ ciamRoutingWeight $
+  ciamEdgeFact $ ciamEdgeSetting ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.9 NAME 'ciamFirewallRule' DESC 'Inbou
  nd allow rule' SUP ciamBinding STRUCTURAL MUST ( ciamSourceCidr $ ciamPort 
  $ ciamTargetRole ) MAY ( ciamProtocol $ ciamAllowsConsumer $ ciamRulePriori
@@ -2946,7 +2957,7 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.28 NAME 'ciamCertificate' DESC 'Certi
  ficate (public facts only)' SUP ciamObject STRUCTURAL MUST ( cn $ ciamFinge
  rprint $ ciamNotAfter $ ciamCertPurpose ) MAY ( ciamSubject $ ciamIssuer $ 
  ciamNotBefore $ ciamSubjectAltName $ ciamKeyRole $ ciamPartnerContact $ cia
- mRotationRunbook ) X-ORIGIN 'opsdir' )
+ mRotationRunbook $ ciamCertificatePem ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.29 NAME 'ciamRunbook' DESC 'Work inst
  ruction' SUP ciamObject STRUCTURAL MUST ( cn $ ciamTitle $ ciamLastValidate
  d ) MAY ( ciamVersion $ ciamAppliesTo $ ciamDocUrl ) X-ORIGIN 'opsdir' )

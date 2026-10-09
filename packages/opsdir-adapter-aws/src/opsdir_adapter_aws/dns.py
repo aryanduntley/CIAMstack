@@ -6,7 +6,7 @@ planner drafts the request). Pure.
 """
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.domains.edge.records import address, forwarders, hosted_notes, records_in, routing, run_by, ttl
-from opsdir.domains.edge.dns import zone_of
+from opsdir.domains.edge.dns import zone_of, zone_unknown
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 
 RESOLVER_ENDPOINT = "resolver_endpoint_id"      # the landing zone's outbound Resolver endpoint, an input
@@ -32,11 +32,15 @@ def service_record(d, m, svc, n, target=None):
     outside = _elsewhere(d, m, name)
     if outside:
         return outside
+    bound = zone_of(m, name)
+    zone = one(svc, "ciamDnsZoneRef") or (one(bound, "ciamProviderRef") if bound is not None else None)
+    if not zone:
+        return (zone_unknown(svc, "ciamDnsZoneRef"),)
     dns_name, zone_id = target or (ref(f"aws_lb.{n}.dns_name"), ref(f"aws_lb.{n}.zone_id"))
     alias = ("alias", Block((("name", dns_name), ("zone_id", zone_id), ("evaluate_target_health", True))))
     note = (("#", f"an alias takes the load balancer's TTL; the recorded {one(svc, 'ciamTtlSeconds')} s doesn't "
                   "apply"),) if one(svc, "ciamTtlSeconds") else ()
-    head = (("zone_id", one(svc, "ciamDnsZoneRef")), ("name", name), ("type", "A"))
+    head = (("zone_id", zone), ("name", name), ("type", "A"))
     routed = routing(d, m, svc)
     if routed is None:
         return (block("resource", ["aws_route53_record", n], [*head, *note, alias]),)

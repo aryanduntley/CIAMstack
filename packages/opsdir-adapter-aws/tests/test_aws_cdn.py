@@ -39,7 +39,8 @@ def test_the_viewer_certificate_must_be_in_us_east_1():
 def test_an_alb_behind_cloudfront_admits_only_cloudfront_and_has_no_web_acl():
     svc = service()
     out = "\n".join(alb_service(environment(svc, firewall("fw-sso-public", ["0.0.0.0/0"], ["443"])), svc,
-                                spec(cdn=True, ddos="network-advanced"), servers_backend(svc, (server("pf-1", "10.20.2.10"),)),
+                                spec(cdn=True, ddos="network-advanced"),
+                                servers_backend(svc, (server("pf-1", "10.20.2.10"),)),
                                 (subnet("subnet-pf-a", "subnet-pf", "10.20.2.0/24"),)))
     assert 'name = "com.amazonaws.global.cloudfront.origin-facing"' in out
     assert "prefix_list_id    = data.aws_ec2_managed_prefix_list.sso_cloudfront.id" in out

@@ -20,7 +20,8 @@ NAMES = {
     "ciamKeyRef": "Cloud Key Management Service (Cloud KMS)", "ciamSecretRef": "Secret Manager",
     "ciamCertificateRef": "Certificate Manager",
     "ciamAlertChannel": MONITORING, "ciamAlarmBinding": MONITORING, "ciamCanaryBinding": MONITORING,
-    "ciamLogDestination": lambda b: {"log-group": "Cloud Logging", "bucket": STORAGE}.get(one(b, "ciamDestinationKind")),
+    "ciamLogDestination": lambda b: {"log-group": "Cloud Logging", "bucket": STORAGE}.get(
+        one(b, "ciamDestinationKind")),
     "ciamAuditTrail": "Cloud Logging",
     "ciamSecurityService": lambda b: "Cloud Asset Inventory" if one(b, "ciamSecurityKind") == "config-recording"
     else "Security Command Center", "ciamDataDiscovery": "Sensitive Data Protection",
@@ -31,8 +32,8 @@ NAMES = {
     "ciamDnsForwarder": lambda b: "Compute Engine" if is_hosted(b) else "Cloud DNS",
     "ciamIdentityBinding": "Identity and Access Management (IAM)", "ciamGuardrail": "Organization Policy Service",
     "ciamFirewallPolicy": "Cloud Next Generation Firewall Essentials",
-    "ciamInterconnect": lambda b: "Cloud Interconnect" if "interconnect" in (one(b, "ciamInterconnectKind") or "").lower()
-    else "Cloud VPN",
+    "ciamInterconnect": lambda b: "Cloud Interconnect"
+    if "interconnect" in (one(b, "ciamInterconnectKind") or "").lower() else "Cloud VPN",
     **{oc: VPC for oc in ("ciamNetwork", "ciamSubnetBinding", "ciamRouteTable", "ciamNetworkAcl", "ciamFirewallRule",
                           "ciamFlowLog", "ciamPrivateEndpoint", "ciamEndpointService", "ciamEgress")},
 }
@@ -64,7 +65,8 @@ def render_workload(m):
                                  ("its organization (ciamOrganizationRef)", org),
                                  ("its billing account (ciamBillingAccountRef)", billing)) if not have]
     if missing:
-        return (f"# NOTE: {m.label}'s Assured Workloads workload: not rendered: the record names no {', '.join(missing)}",)
+        return (f"# NOTE: {m.label}'s Assured Workloads workload: not rendered: "
+                f"the record names no {', '.join(missing)}",)
     return (block("resource", [WORKLOAD, tf_name(f"ciam_{rdn_value(m.env)}")], [
         ("compliance_regime", regime), ("display_name", f"ciam-{rdn_value(m.env)}"[:30]),
         ("location", one(m.cloud, "ciamRegion")), ("organization", org),

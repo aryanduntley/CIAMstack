@@ -65,10 +65,12 @@ def test_cli_output_names_the_same():
 
 def test_cloudformation_names_the_same():
     template = {"Resources": {
-        "AppSg": {"Type": "AWS::EC2::SecurityGroup", "Properties": {"GroupName": "ciam-prod-app", "SecurityGroupIngress": [
+        "AppSg": {"Type": "AWS::EC2::SecurityGroup",
+                  "Properties": {"GroupName": "ciam-prod-app", "SecurityGroupIngress": [
             {"FromPort": 8000, "ToPort": 8100, "IpProtocol": "tcp", "CidrIp": "10.0.0.0/16",
              "Description": "app range (fw-app-range)"},
-            {"FromPort": 0, "ToPort": 0, "IpProtocol": "-1", "CidrIp": "10.9.0.0/16", "Description": "anything (fw-any)"},
+            {"FromPort": 0, "ToPort": 0, "IpProtocol": "-1", "CidrIp": "10.9.0.0/16",
+             "Description": "anything (fw-any)"},
             {"FromPort": 443, "ToPort": 443, "IpProtocol": "tcp", "CidrIpv6": "2001:db8::/32",
              "Description": "https (fw-https)"}]}},
         "Ldaps": {"Type": "AWS::EC2::SecurityGroupIngress", "Properties": {
@@ -79,6 +81,7 @@ def test_cloudformation_names_the_same():
     physical = {"StackResourceSummaries": [{"LogicalResourceId": k, "PhysicalResourceId": v, "ResourceType": "",
                                             "ResourceStatus": "CREATE_COMPLETE"}
                                            for k, v in (("AppSg", "sg-app"), ("Ldaps", "sgr-1"))]}
-    _, notices = cloudformation_resources({"app/stack.json": json.dumps(stack), "app/resources.json": json.dumps(physical),
+    _, notices = cloudformation_resources({"app/stack.json": json.dumps(stack),
+                                           "app/resources.json": json.dumps(physical),
                                            "app/template.json": json.dumps(template)})
     assert set(EXPECTED) <= set(notices)

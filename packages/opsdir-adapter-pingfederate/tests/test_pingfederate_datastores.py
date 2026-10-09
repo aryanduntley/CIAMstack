@@ -153,7 +153,8 @@ def test_a_custom_store_withholds_its_encrypted_fields(after):
     d, _ = after
     s = get(d, PROFILE)
     fields = _config(s)["configuration"]["fields"]
-    assert fields == [{"name": "Base URL", "value": "https://profiles.example.test"}, {"name": "API Token", "value": None}]
+    assert fields == [{"name": "Base URL", "value": "https://profiles.example.test"},
+                      {"name": "API Token", "value": None}]
     assert values(s, "pingfedWithheld") == ("/configuration/fields/1/value",)
 
 
@@ -272,8 +273,9 @@ def test_a_store_reaching_several_fixed_hosts_records_one_binding_each_and_rende
     assert not any(f.key.startswith("external-host:") for f in plan(d).fixes)
     rendered = render_env(env_model(d, "alpha/prod"), None)
     assert preview_import(d, "pingfederate/bulk", {"data.json": json.dumps({
-        "metadata": {"pfVersion": "12.1.4.0"}, "operations": [{"operationType": "SAVE", "resourceType": "/dataStores",
-                                                               "items": rendered_bodies(rendered[REQUESTS])["/dataStores"]}]})},
+        "metadata": {"pfVersion": "12.1.4.0"},
+        "operations": [{"operationType": "SAVE", "resourceType": "/dataStores",
+                        "items": rendered_bodies(rendered[REQUESTS])["/dataStores"]}]})},
                           (ADAPTER,))[0] == ()
 
 

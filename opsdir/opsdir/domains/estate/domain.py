@@ -2,14 +2,15 @@
 above it, its resource group, how sensitive its data is and who pays for it; the tag policy every rendered resource
 follows (renderers tag with required_tags, importers say what the cloud has untagged); the region catalog (each
 provider's regions, fetched from the provider), the residencies the estate defines and the one each environment's data
-is held to; FIPS endpoints; the cloud security services each environment runs and the data discovery services that find where its
-sensitive data lies; the provider limits each environment
+is held to; FIPS endpoints; the cloud security services each environment runs and the data discovery services that
+find where its sensitive data lies; the provider limits each environment
 needs (quotas, checked against the limits fetched from the provider) and the budgets its spending is held to; the
 incident reporting obligations each environment is held to, the findings its security services send to the incident
 process and the incidents that fall under an obligation; the plan of action and milestones, the exceptions a risk
 authority approved (and the planner findings they accept), the compliance assessments, and the clouds' suppressions of
 findings that carry exceptions out; the cloud authorizations the environments rely on, the operator's system
-boundaries and who meets each control under an authorization. Vendor-neutral: the cloud adapters render and read what it records."""
+boundaries and who meets each control under an authorization. Vendor-neutral: the cloud adapters render and read
+what it records."""
 from ...core.contract import Domain, ImportKind, directory_report
 from .budgets import BUDGET_HEADERS, budget_role, budget_rows, check_budgets
 from .checks import check_fips, check_regions, check_residency, check_tags

@@ -6,14 +6,17 @@ from .custom import TOKEN_LIFETIMES
 INTEGRATIONS = (
     ("customer-portal", "saml2-sp", dict(
         ciamEntityId="https://portal.example-aero.test/saml/sp", ciamAcsUrl="https://portal.example-aero.test/saml/acs",
-        ciamSamlBinding="HTTP-POST", ciamNameIdFormat="persistent", ciamPopulation="customers", ciamMfaRequired="TRUE", ciamCriticality="critical",
+        ciamSamlBinding="HTTP-POST", ciamNameIdFormat="persistent", ciamPopulation="customers",
+        ciamMfaRequired="TRUE", ciamCriticality="critical",
         ciamUsesCertificate=cert("pf-signing-2025", "customer-portal-sp-signing", "sso-tls-2026"),
         ciamOwner=owner("customer-portal-team")),
      [("email", "mail", None), ("given_name", "givenName", None), ("family_name", "sn", None),
-      ("company", "companyId", None), ("roles", "appEntitlement", "keep values with prefix 'customer-portal:', strip prefix")]),
+      ("company", "companyId", None),
+      ("roles", "appEntitlement", "keep values with prefix 'customer-portal:', strip prefix")]),
     ("supplier-portal", "saml2-sp", dict(
         ciamEntityId="https://suppliers.example-aero.test/saml/sp", ciamAcsUrl="https://suppliers.example-aero.test/saml/acs",
-        ciamSamlBinding="HTTP-POST", ciamNameIdFormat="emailAddress", ciamPopulation="suppliers", ciamMfaRequired="TRUE", ciamCriticality="high",
+        ciamSamlBinding="HTTP-POST", ciamNameIdFormat="emailAddress", ciamPopulation="suppliers",
+        ciamMfaRequired="TRUE", ciamCriticality="high",
         ciamUsesCertificate=cert("pf-signing-2025", "supplier-portal-sp-signing", "sso-tls-2026"),
         ciamOwner=owner("supplier-portal-team")),
      [("email", "mail", None), ("company", "companyId", None), ("sold_to", "soldToAccount", None),

@@ -75,7 +75,8 @@ def test_checked_against_the_spec_of_the_environments_version():
 
 
 def _portal(d):
-    return next(b for b in rendered_bodies(admin_api_files(_env(d, "PingFederate 12.1.4"))[OUTPUT])["/idp/spConnections"]
+    return next(b for b in rendered_bodies(
+                    admin_api_files(_env(d, "PingFederate 12.1.4"))[OUTPUT])["/idp/spConnections"]
                 if b["id"] == "portal-sp")
 
 
@@ -135,9 +136,11 @@ def test_key_pairs_are_imported_first_from_where_the_environment_keeps_their_mat
         "ciamContinuity": ("carry-over",), "ciamMaterialFormat": ("pkcs12",),
         "ciamPasswordRole": ("pf-signing-key-password",)}),
              make_entry(f"cn=sso-tls-keystore,{CREDENTIALS}", ("top", "ciamCredential"), {
-                 "cn": ("sso-tls-keystore",), "ciamBindingRole": ("sso-tls-keystore",), "ciamCredentialType": ("keystore",),
-                 "ciamContinuity": ("per-environment",), "ciamMaterialFormat": ("pkcs12",)}))
-    vault = tuple(make_entry(f"cn={r},ou=bindings,env=prod,cloud=main,ou=environments,dc=ciam-ops", ("top", "ciamSecretRef"),
+                 "cn": ("sso-tls-keystore",), "ciamBindingRole": ("sso-tls-keystore",),
+                 "ciamCredentialType": ("keystore",), "ciamContinuity": ("per-environment",),
+                 "ciamMaterialFormat": ("pkcs12",)}))
+    vault = tuple(make_entry(f"cn={r},ou=bindings,env=prod,cloud=main,ou=environments,dc=ciam-ops",
+                             ("top", "ciamSecretRef"),
                              {"cn": (r,), "ciamBindingRole": (r,), "ciamRefUri": (f"vault://kv/pf/{r}",)})
                   for r in ("pf-signing-key", "pf-signing-key-password"))
     doc = _doc(_env(_with(d, *creds), "PingFederate 12.1.4", bindings=vault))

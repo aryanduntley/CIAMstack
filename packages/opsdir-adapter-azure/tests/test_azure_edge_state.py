@@ -44,7 +44,8 @@ def _state():
     return json.dumps({"version": 4, "terraform_version": "1.9.5", "serial": 1, "lineage": "e", "outputs": {},
                        "resources": [
         _res("azurerm_network_interface", "pf_1", {"id": nic, "ip_configuration": [
-            {"primary": True, "private_ip_address": "10.60.2.10", "subnet_id": f"{RG}/x/virtualNetworks/v/subnets/s"}]}),
+            {"primary": True, "private_ip_address": "10.60.2.10",
+             "subnet_id": f"{RG}/x/virtualNetworks/v/subnets/s"}]}),
         _res("azurerm_linux_virtual_machine", "pf_1", {"id": "vm-pf-1", "name": "pf-1", "network_interface_ids": [nic],
                                                        "tags": {"Role": "pf-engine"}}),
         _res("azurerm_public_ip", "sso", {"id": PIP, "name": "pip-sso", "ip_address": "198.51.100.77"}),
@@ -71,7 +72,8 @@ def _state():
                 {"name": "ratetoken", "rule_type": "RateLimitRule", "action": "Block", "rate_limit_threshold": 100,
                  "rate_limit_duration": "FiveMins",
                  "match_conditions": [{"operator": "Regex", "match_values": ["^/as/token\\.oauth2$"]}]}]}),
-        _res("azurerm_cdn_frontdoor_profile", "sso", {"id": FD, "name": "afd-sso", "sku_name": "Premium_AzureFrontDoor"}),
+        _res("azurerm_cdn_frontdoor_profile", "sso", {"id": FD, "name": "afd-sso",
+                                                      "sku_name": "Premium_AzureFrontDoor"}),
         _res("azurerm_cdn_frontdoor_endpoint", "sso", {"id": f"{FD}/afdEndpoints/e", "cdn_frontdoor_profile_id": FD,
                                                        "host_name": "e-abc.z01.azurefd.net"}),
         _res("azurerm_cdn_frontdoor_origin_group", "sso", {"id": f"{FD}/originGroups/servers",

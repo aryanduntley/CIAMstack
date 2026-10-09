@@ -43,7 +43,8 @@ FILES = {"example-aero/ciam-ops/.github/workflows/nightly.yml": NIGHTLY,
 OWNERS = ("dn: ou=owners,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: owners\n\n"
           "dn: cn=ops,ou=owners,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamParty\ncn: ops\nciamOwnerKind: team\n")
 NIGHTLY_DN = job_dn("github-actions-ciam-ops-nightly")
-OWNER = tuple(parse(f"dn: {NIGHTLY_DN}\nchangetype: modify\nadd: ciamOwner\nciamOwner: cn=ops,ou=owners,dc=ciam-ops\n-\n"))
+OWNER = tuple(parse(f"dn: {NIGHTLY_DN}\nchangetype: modify\nadd: ciamOwner\n"
+                    "ciamOwner: cn=ops,ou=owners,dc=ciam-ops\n-\n"))
 
 
 def records():

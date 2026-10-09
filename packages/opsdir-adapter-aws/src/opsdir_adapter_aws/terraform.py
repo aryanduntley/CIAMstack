@@ -5,14 +5,14 @@ import ipaddress
 from itertools import chain
 
 from opsdir.core.directory import one, rdn_value, values
-from opsdir.core.environment import of_class, one_role, secret, servers_with_role, subnet_of
+from opsdir.core.environment import of_class, one_role, recorded, secret, servers_with_role, subnet_of
 from opsdir.domains.compute.workloads import kubernetes_note, only_on_kubernetes
 from opsdir.core.manifest import header
 from opsdir_format_terraform.format import FORMAT as HCL
-from opsdir.core.network import is_private
 from opsdir.domains.infrastructure.firewall import rule_purpose
 from opsdir.domains.access.evaluations import evaluation_files
 from opsdir.domains.access.workloads import identity_of, workload_identities
+from opsdir.domains.edge.exposure import exposure_unknown, is_internal, service_exposure
 from opsdir.domains.edge.gateways import role_gateway
 from opsdir.domains.edge.records import forwarders
 from opsdir.domains.edge.resolve import inspected, service_edge
@@ -76,9 +76,9 @@ def _instance(m, s, kms, identities=()):
     role = one(s, "ciamServerRole")
     w = identity_of(identities, role)
     return block("resource", ["aws_instance", tf_name(rdn_value(s))], [
-        ("ami", one(s, "ciamImageRef")), ("instance_type", one(s, "ciamInstanceSize")),
+        ("ami", recorded(s, "ciamImageRef", "image")), ("instance_type", recorded(s, "ciamInstanceSize", "size")),
         ("subnet_id", ref(f"data.aws_subnet.{tf_name(rdn_value(subnet_of(m, s)))}.id")),
-        ("private_ip", one(s, "ciamPrivateIp")),
+        *((("private_ip", one(s, "ciamPrivateIp")),) if one(s, "ciamPrivateIp") else ()),
         *((("iam_instance_profile", ref(f"aws_iam_instance_profile.{tf_name(w.identity_role)}.name")),) if w else ()),
         ("vpc_security_group_ids", [ref(f"aws_security_group.{tf_name(role)}.id")]),
         root_block_device(m, s, kms),
@@ -87,7 +87,7 @@ def _instance(m, s, kms, identities=()):
 
 
 def _subnet_mapping(svc, ip, internal, i, sub):
-    in_subnet = internal and ipaddress.ip_address(ip) in ipaddress.ip_network(one(sub, "ciamCidr"))
+    in_subnet = internal and bool(ip) and ipaddress.ip_address(ip) in ipaddress.ip_network(one(sub, "ciamCidr"))
     eip = not internal and i == 0 and one(svc, "ciamProviderRef")
     return ("subnet_mapping", Block((("subnet_id", ref(f"data.aws_subnet.{tf_name(rdn_value(sub))}.id")),
                                      *((("private_ipv4_address", ip),) if in_subnet else ()),
@@ -115,15 +115,19 @@ def _listener(m, n, svc, port, targets, spec=None):
 def _service(m, svc, endpoints=()):
     """A stable service name: a network load balancer with listeners per port (an application load balancer when its
     traffic policy terminates TLS at the edge; opsdir_adapter_aws.edge), and its DNS record; for a role run only on
-    Kubernetes, the ALB before its cluster's gateway (opsdir_adapter_aws.ingress), else a note."""
-    if only_on_kubernetes(m, one(svc, "ciamTargetRole")):
-        target = one(svc, "ciamTargetRole")
-        gw = role_gateway(m, target)
-        return gateway_front(m, svc, gw, endpoints) if gw is not None else (
-            kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})", target),)
+    Kubernetes, the ALB before its cluster's gateway (opsdir_adapter_aws.ingress), else a note; a note when its
+    exposure is unknown (core edge.exposure)."""
+    target = one(svc, "ciamTargetRole")
+    gw = role_gateway(m, target) if only_on_kubernetes(m, target) else None
+    if only_on_kubernetes(m, target) and gw is None:
+        return (kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})", target),)
+    if service_exposure(svc) is None:
+        return (exposure_unknown(svc),)
+    if gw is not None:
+        return gateway_front(m, svc, gw, endpoints)
     n = tf_name(rdn_value(svc))
     ip = one(svc, "ciamFrontendIp")
-    internal = is_private(ip)
+    internal = is_internal(svc)
     targets = servers_with_role(m, one(svc, "ciamTargetRole"))
     subnets = sorted({rdn_value(subnet_of(m, t)): subnet_of(m, t) for t in targets}.items())
     spec = service_edge(m, svc, endpoints)
@@ -174,7 +178,8 @@ def render(m, services):
            *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
-           *resolver_rules(m), *render_trails(m), *render_security(m), *render_discovery(m), *render_suppressions(m), *render_budgets(m), *render_quota_requests(m),
+           *resolver_rules(m), *render_trails(m), *render_security(m), *render_discovery(m), *render_suppressions(m),
+           *render_budgets(m), *render_quota_requests(m),
            *_references(m))
     unbound = unbound_comments(m.unbound)
     main = header(m, "AWS infrastructure for the CIAM platform", HCL) + unbound + "\n" + "\n\n".join(out) + "\n"

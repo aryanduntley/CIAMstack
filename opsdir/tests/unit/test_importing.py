@@ -63,6 +63,7 @@ def test_an_entry_outside_the_imported_scope_is_refused():
 
 def test_the_importer_is_told_when_the_import_runs():
     at = dt.datetime(2026, 9, 30, 14, 15, tzinfo=dt.timezone.utc)
-    clock = FAKE_IMPORTER._replace(read=lambda files, d, patterns, when: Imported((), (), (f"at {when:%Y%m%d%H%M%SZ}",)))
+    clock = FAKE_IMPORTER._replace(
+        read=lambda files, d, patterns, when: Imported((), (), (f"at {when:%Y%m%d%H%M%SZ}",)))
     adapter = FAKE._replace(importers=(clock,))
     assert preview_import(mini_estate.directory(), "fake-cloud", {}, (adapter,), at=at)[1] == ("at 20260930141500Z",)

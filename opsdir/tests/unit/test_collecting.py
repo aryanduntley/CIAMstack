@@ -67,7 +67,8 @@ def test_bounds_and_debug_switches():
     c = collect("cloud/x", endless, None, None, run)
     assert c.files is None and "still asking for more after 8 rounds" in c.problems[0]
     stop = Collector("z", "environment", lambda d, m, done, o: (("a", Command(("tool", "who"))),
-                                                                 *((("b", "signed in elsewhere"),) if "a" in done else ())))
+                                                                 *((("b", "signed in elsewhere"),)
+                                                                   if "a" in done else ())))
     c = collect("cloud/z", stop, None, None, run)
     assert (c.files, c.problems, len(c.calls)) == (None, ("signed in elsewhere",), 1)      # a step naming a problem
     noisy = Collector("y", "environment", lambda d, m, done, o: (("a", Command(("aws", "ec2", "x", "--debug"))),))
@@ -197,7 +198,8 @@ def _collect_cli(monkeypatch, adapter, **given):
                         lambda conn, spec, files, at: ImportPlan(spec, ("change",), (f"read {sorted(files)}",), (),
                                                                  (), at))
     monkeypatch.setattr(cli.ops, "apply_import",
-                        lambda conn, plan, change, take, keep, ev: applied.append(ev) or type("R", (), {"lines": (1,)})())
+                        lambda conn, plan, change, take, keep, ev:
+                            applied.append(ev) or type("R", (), {"lines": (1,)})())
     monkeypatch.setattr(cli, "_not_applied", lambda notes, changes, dry: "\n".join((*notes, "not applied")))
     a = argparse.Namespace(**{"env": "alpha/prod", "adapter": None, "list": False, "dry_run": False,
                               "change": "CHG-9", "save": None, "terraform_dir": None, "amster_key": None,
@@ -271,7 +273,8 @@ def test_attempt_records_add_then_replace_and_the_report_lists_them():
     (again,) = attempt_records(held, (Attempt("cloud/dns", ENV, "complete", (), {}),), AT, "CHG-2")
     assert again.changetype == "modify" and ("replace", "ciamCollectionOutcome", ("complete",)) in again.mods
     assert ("replace", "ciamCollectionProblem", ()) in again.mods
-    assert ("replace", "ciamCollectedCall", ()) in again.mods and ("replace", "ciamCollectionIdentity", ()) in again.mods
+    assert (("replace", "ciamCollectedCall", ()) in again.mods
+            and ("replace", "ciamCollectionIdentity", ()) in again.mods)
     assert attempt_records(d, (), AT, "CHG-1") == ()
     assert attempt_dn("aws/regions") == "cn=collection.aws.regions.estate,ou=imports,dc=ciam-ops"
 
@@ -307,7 +310,8 @@ def test_keep_trims_an_output_before_the_export_and_the_evidence_see_it():
 
 
 def test_a_workdir_command_runs_in_a_private_directory_and_its_files_are_the_output():
-    script = "mkdir -p {dir}/export/realms && printf '{\"a\": 1}' > {dir}/export/realms/one.json && printf x > {dir}/export/two.txt"
+    script = ("mkdir -p {dir}/export/realms && printf '{\"a\": 1}' > {dir}/export/realms/one.json"
+              " && printf x > {dir}/export/two.txt")
     call = Command(("sh", "{dir}/run.sh"), workdir=True, inputs=(("run.sh", script),))
     out, problem = live.run_call(call, lambda ref: (None, None))
     assert problem is None and out == {"realms/one.json": '{"a": 1}', "two.txt": "x"}

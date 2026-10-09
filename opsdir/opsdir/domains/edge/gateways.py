@@ -2,11 +2,15 @@
 roles it alone runs through. A cloud's front (load balancer, WAF, TLS certificate, DNS record, rendered from the
 service name's policies as for servers) reaches the gateway, which routes to the roles' pods. Which service names a
 gateway fronts follows from the record: a service name's role runs only on Kubernetes, in a cluster with a gateway.
-Every cloud and the planner read this one answer. Pure.
+Every cloud and the planner read this one answer. The CAs a gateway trusts (ciamTrustsCertificate) are what its
+internal certificate chains to and what it checks its TLS backends against: their recorded PEMs make the backend CA
+bundle; a trusted CA with no PEM is the planner's action. Pure.
 """
-from ...core.directory import one
+from ...core.directory import get, one, rdn_of, rdn_value, values
 from ...core.environment import of_class
+from ...core.findings import findings, responsible
 from ..compute.workloads import only_on_kubernetes, role_clusters
+from ..pki.pem import certificate_pem
 
 GATEWAY_HTTP, GATEWAY_HTTPS = 80, 443          # the gateway's listeners: HTTP behind a terminating front, else HTTPS
 
@@ -42,3 +46,23 @@ def gateway_ca(m, gw):
     ca = one(gw, "ciamTrustsCertificate")
     held = (r for r in of_class(m, "ciamCertificateRef") if ca and one(r, "ciamHoldsCertificate") == ca)
     return next((one(r, "ciamRefUri") for r in held), None)
+
+
+def backend_ca(d, gw):
+    """(PEM bundle, missing): the PEMs of the CA certificates gateway gw trusts, joined in the record's order (what it
+    checks its TLS backends' certificates against), and the trusted certificates (DNs) with no usable PEM recorded.
+    The bundle is None when any is missing (a partial bundle would refuse some backends) or none is trusted."""
+    pems = tuple((dn, certificate_pem(get(d, dn))) for dn in values(gw, "ciamTrustsCertificate"))
+    missing = tuple(dn for dn, pem in pems if pem is None)
+    return ("".join(pem.strip() + "\n" for _, pem in pems) if pems and not missing else None), missing
+
+
+def check_gateway_trust(ctx):
+    """Actions for the target's gateways that trust a CA whose PEM isn't recorded."""
+    m = ctx.dst
+    return findings(actions=[
+        ("Edge", f"Cluster gateway `{rdn_value(gw)}` in {m.label} trusts CA `{rdn_of(dn)}`, whose certificate (PEM, "
+         "ciamCertificatePem) isn't recorded: its backend CA bundle can't be rendered, so a backend speaking TLS "
+         "behind it can't be checked. Record the CA certificate's PEM (public material).",
+         responsible(ctx.d, gw, m.env), None)
+        for gw in of_class(m, "ciamClusterGateway") for dn in backend_ca(ctx.d, gw)[1]])

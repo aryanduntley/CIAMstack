@@ -231,6 +231,26 @@ spec:
       name: ciam-edge-backend-ca
     hostname: pingfederate-pingfederate-engine.ciam.svc.cluster.local
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ciam-edge-backend-ca
+  namespace: ciam
+data:
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIBtDCCAVugAwIBAgIUdFFI9hcMy8nfm+SAnjZMqhhfDuYwCgYIKoZIzj0EAwIw
+    KDEmMCQGA1UEAwwdRXhhbXBsZSBBZXJvIENJQU0gSW50ZXJuYWwgQ0EwHhcNMjYw
+    MTE1MDAwMDAwWhcNMzEwMTE1MDAwMDAwWjAoMSYwJAYDVQQDDB1FeGFtcGxlIEFl
+    cm8gQ0lBTSBJbnRlcm5hbCBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABFuk
+    ceCbj6dsVm05/SKplTxvf91fajLcKAt+l+VUNyvBhiFp1zzunPDfl8MJuJDMvXw/
+    6devbWx25K7B6+8zIaqjYzBhMB0GA1UdDgQWBBSrZ9vMly7Mpiou6jznd3CshN/D
+    fjAfBgNVHSMEGDAWgBSrZ9vMly7Mpiou6jznd3CshN/DfjAPBgNVHRMBAf8EBTAD
+    AQH/MA4GA1UdDwEB/wQEAwIBBjAKBggqhkjOPQQDAgNHADBEAiAaXitzJFy+mPmo
+    BBHCWj8mb2YM+89p6Gpuas28NIh6RQIgfmcpV/B24yL5bhlmHcBfalG/tZwoya2H
+    Rk0OrpXT1sQ=
+    -----END CERTIFICATE-----
+---
 apiVersion: networking.istio.io/v1
 kind: DestinationRule
 metadata:

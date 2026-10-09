@@ -128,7 +128,8 @@ def test_plugin_instances_link_what_their_settings_name(after):
     d, _ = after
     pcv, form = get(d, named(VALIDATORS, "pcv-ldap")), get(d, named(IDP_ADAPTERS, "htmlform"))
     assert (one(pcv, "pingfedPluginKind"), one(pcv, "pingfedPluginType"), values(pcv, "pingfedUses")) == \
-        ("validator", "org.sourceid.saml20.domain.LDAPUsernamePasswordCredentialValidator", (named(DATA_STORES, "users"),))
+        ("validator", "org.sourceid.saml20.domain.LDAPUsernamePasswordCredentialValidator",
+         (named(DATA_STORES, "users"),))
     assert values(form, "pingfedUses") == (named(VALIDATORS, "pcv-ldap"),)
     assert "pluginDescriptorRef" not in _config(form) and _config(pcv)["attributeContract"]["coreAttributes"][0] == \
         {"name": "DN"}
@@ -170,7 +171,8 @@ def test_contracts_and_fragments(after):
 
 def test_a_tree_the_export_no_longer_has_is_removed():
     d, first, _ = imported()
-    second, _ = preview_import(d, "pingfederate/bulk", export({**POLICY, "authnSelectionTrees": [WORKFORCE]}), (ADAPTER,))
+    second, _ = preview_import(d, "pingfederate/bulk", export({**POLICY, "authnSelectionTrees": [WORKFORCE]}),
+                               (ADAPTER,))
     again = build_directory(REGISTRY, records(), (*first, *second))
     assert get(again, named(DEFAULT_POLICY, "Legacy")) is None and get(again, named(DEFAULT_POLICY, "Workforce"))
 
@@ -183,7 +185,8 @@ def test_plugins_render_per_environment_and_policies_everywhere_the_same():
     d, _, _ = imported(SET_DUO_ROLE)
     alpha, beta = (_bodies(d, e) for e in ("alpha/prod", "beta/prod"))
     duo = {e: next(p for p in r["/idp/adapters"] if p["id"] == "duo") for e, r in (("alpha", alpha), ("beta", beta))}
-    assert (duo["alpha"]["configuration"]["fields"][1]["value"], duo["beta"]["configuration"]["fields"][1]["value"]) == \
+    assert (duo["alpha"]["configuration"]["fields"][1]["value"],
+            duo["beta"]["configuration"]["fields"][1]["value"]) == \
         ("${secret:fake://secrets/alpha/pf-duo}", "UNBOUND:pf-duo-secret")
     assert duo["alpha"]["pluginDescriptorRef"] == {"id": "com.pingidentity.adapters.duo.DuoSecurityAdapter"}
     (policy,) = alpha["/authenticationPolicies/default"]

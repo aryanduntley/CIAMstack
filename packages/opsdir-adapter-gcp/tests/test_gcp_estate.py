@@ -86,7 +86,8 @@ def test_the_provider_notes_that_google_cloud_has_no_fips_endpoints_to_switch_to
 
 def _state(*resources):
     return json.dumps({"version": 4, "terraform_version": "1.9.0", "resources": [
-        {"mode": "managed", "type": t, "name": f"r{i}", "provider": 'provider["registry.terraform.io/hashicorp/google"]',
+        {"mode": "managed", "type": t, "name": f"r{i}",
+         "provider": 'provider["registry.terraform.io/hashicorp/google"]',
          "instances": [{"attributes": a}]} for i, (t, a) in enumerate(resources)]})
 
 

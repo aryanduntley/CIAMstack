@@ -14,7 +14,8 @@ CUTOVER = dt.date(2026, 12, 1)
 
 def all_findings(alpha, beta, **credential):
     d = mini_estate.directory(mini_estate.credential_changes(alpha, beta, **credential))
-    ctx = PlanContext(d, env_model(d, "alpha/prod"), env_model(d, "beta/prod"), CUTOVER, dt.date(2026, 9, 1), {}, {}, ())
+    ctx = PlanContext(d, env_model(d, "alpha/prod"), env_model(d, "beta/prod"), CUTOVER, dt.date(2026, 9, 1),
+                      {}, {}, ())
     return check_credentials(ctx)
 
 

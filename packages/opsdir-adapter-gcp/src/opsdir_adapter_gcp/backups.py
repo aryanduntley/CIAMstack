@@ -8,7 +8,8 @@ Pure.
   the minimum can't be lowered) is a comment: it is a date the operator sets
   each backup plan the stack keeps: a google_backup_dr_backup_plan for disks (compute.googleapis.com/Disk) in the
   environment's region (a plan lives where the disks it backs up are) with one backup rule (backup_rule: its
-  retention, which must be at least its vault's minimum, else the plan is a comment; a standard schedule HOURLY every ciamBackupEveryHours (6 to 23) or DAILY, in UTC,
+  retention, which must be at least its vault's minimum, else the plan is a comment; a standard schedule HOURLY
+  every ciamBackupEveryHours (6 to 23) or DAILY, in UTC,
   its window from ciamBackupAt for ciamBackupWindowHours), and a google_backup_dr_backup_plan_association per disk of
   the volumes it protects (its protected roles that are volumes, and the volumes naming it). Several copy regions:
   the first is the vault's, the rest a comment; a protected role that isn't a volume a comment
@@ -172,12 +173,15 @@ def backup_attributes(kind, d):
             "effective_time": d.get("effectiveTime")}
     if kind == "backup-plan":
         return "google_backup_dr_backup_plan", {
-            "id": rid, "name": rid, "location": name_parts(rid).get("locations"), "resource_type": d.get("resourceType"),
+            "id": rid, "name": rid, "location": name_parts(rid).get("locations"),
+            "resource_type": d.get("resourceType"),
             "backup_vault": resource_id(d.get("backupVault")), "state": d.get("state"),
             "backup_rules": [{"rule_id": r.get("ruleId"), "backup_retention_days": r.get("backupRetentionDays"),
-                              "standard_schedule": [r.get("standardSchedule") or {}]} for r in d.get("backupRules") or ()]}
+                              "standard_schedule": [r.get("standardSchedule") or {}]}
+                             for r in d.get("backupRules") or ()]}
     return "google_backup_dr_backup_plan_association", {
-        "id": rid, "name": rid, "location": name_parts(rid).get("locations"), "resource": resource_id(d.get("resource")),
+        "id": rid, "name": rid, "location": name_parts(rid).get("locations"),
+        "resource": resource_id(d.get("resource")),
         "resource_type": d.get("resourceType"), "backup_plan": resource_id(d.get("backupPlan")),
         "state": d.get("state")}
 
@@ -215,7 +219,8 @@ def backup_resources(pairs):
         days = (_seconds(a.get("backup_minimum_enforced_retention_duration")) or 0) // DAY
         elsewhere = [loc for v, loc in vault_of.items() if v == _last(vid) and loc and loc != a.get("location")]
         vaults.append(resource("backup-vault", vid, {
-            "ciamStorageImmutability": ("compliance" if a.get("effective_time") else "governance") if days > 1 else "none",
+            "ciamStorageImmutability": ("compliance" if a.get("effective_time") else "governance")
+            if days > 1 else "none",
             "ciamStorageLockDays": days if days > 1 else None,
             "ciamCrossRegionRestore": "TRUE" if elsewhere else "FALSE"},
             name=(a.get("labels") or {}).get("name") or _last(vid), role=(a.get("labels") or {}).get("role"),

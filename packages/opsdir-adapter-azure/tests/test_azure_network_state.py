@@ -27,21 +27,26 @@ STATE = _state(
                                  "ip_configuration": [{"private_ip_address": "10.0.0.4"}]}),
     ("azurerm_route_table", "pf", {"id": f"{NET}/routeTables/rt-pf", "name": "rt-pf", "tags": {"Role": "rt-pf"},
                                    "route": [{"name": "default", "address_prefix": "0.0.0.0/0",
-                                              "next_hop_type": "VirtualAppliance", "next_hop_in_ip_address": "10.0.0.4"},
+                                              "next_hop_type": "VirtualAppliance",
+                                              "next_hop_in_ip_address": "10.0.0.4"},
                                              {"name": "dc", "address_prefix": "10.9.0.0/16",
                                               "next_hop_type": "VirtualNetworkGateway"}]}),
-    ("azurerm_route", "kv", {"route_table_name": "rt-pf", "address_prefix": "AzureKeyVault", "next_hop_type": "Internet"}),
-    ("azurerm_subnet_route_table_association", "pf", {"route_table_id": f"{NET}/routeTables/rt-pf",
-                                                      "subnet_id": f"{NET}/virtualNetworks/vnet-ciam-prod/subnets/snet-pf"}),
+    ("azurerm_route", "kv", {"route_table_name": "rt-pf", "address_prefix": "AzureKeyVault",
+                             "next_hop_type": "Internet"}),
+    ("azurerm_subnet_route_table_association", "pf", {
+        "route_table_id": f"{NET}/routeTables/rt-pf",
+        "subnet_id": f"{NET}/virtualNetworks/vnet-ciam-prod/subnets/snet-pf"}),
     ("azurerm_private_endpoint", "secrets", {
-        "id": f"{NET}/privateEndpoints/pe-secrets", "name": "pe-ciam-prod-pe-secrets", "tags": {"Role": "private-secrets"},
+        "id": f"{NET}/privateEndpoints/pe-secrets", "name": "pe-ciam-prod-pe-secrets",
+        "tags": {"Role": "private-secrets"},
         "subnet_id": f"{NET}/virtualNetworks/vnet-ciam-prod/subnets/snet-pf",
         "private_service_connection": [{"private_connection_resource_id": f"{SUB}/Microsoft.KeyVault/vaults/kv",
                                         "subresource_names": ["vault"]}],
         "ip_configuration": [{"private_ip_address": "10.60.2.50"}],
         "private_dns_zone_group": [{"private_dns_zone_ids": [ZONE]}]}),
     ("azurerm_private_link_service", "ldaps", {
-        "id": f"{NET}/privateLinkServices/pls-ldaps", "name": "pls-ldaps", "alias": "pls-ldaps.abc.eastus.azure.privatelinkservice",
+        "id": f"{NET}/privateLinkServices/pls-ldaps", "name": "pls-ldaps",
+        "alias": "pls-ldaps.abc.eastus.azure.privatelinkservice",
         "load_balancer_frontend_ip_configuration_ids": [f"{LB}/frontendIPConfigurations/frontend"],
         "nat_ip_configuration": [{"subnet_id": f"{NET}/virtualNetworks/vnet-ciam-prod/subnets/snet-ds"}],
         "visibility_subscription_ids": ["sub-partner"], "tags": {"Role": "ldaps-endpoint-service"}}),
@@ -50,15 +55,19 @@ STATE = _state(
         "firewall_policy_id": POLICY,
         "application_rule_collection": [{"action": "Allow", "rule": [
             {"destination_fqdns": ["ocsp.ca.test"], "protocols": [{"type": "Http", "port": 80}]},
-            {"destination_fqdns": ["idp.partner.test", "*.okta.test"], "protocols": [{"type": "Https", "port": 443}]}]}],
+            {"destination_fqdns": ["idp.partner.test", "*.okta.test"],
+             "protocols": [{"type": "Https", "port": 443}]}]}],
         "network_rule_collection": [{"action": "Allow", "rule": [
             {"destination_fqdns": ["smtp.mail.test"], "destination_ports": ["587"]}]}]}),
-    ("azurerm_virtual_network_peering", "hub", {"id": f"{NET}/virtualNetworks/vnet-ciam-prod/virtualNetworkPeerings/to-hub",
-                                                "name": "to-hub",
-                                                "remote_virtual_network_id": f"{SUB}/Microsoft.Network/virtualNetworks/vnet-hub"}),
-    ("azurerm_local_network_gateway", "dc", {"id": f"{NET}/localNetworkGateways/lgw-dc", "gateway_address": "198.51.100.7",
+    ("azurerm_virtual_network_peering", "hub", {
+        "id": f"{NET}/virtualNetworks/vnet-ciam-prod/virtualNetworkPeerings/to-hub",
+        "name": "to-hub",
+        "remote_virtual_network_id": f"{SUB}/Microsoft.Network/virtualNetworks/vnet-hub"}),
+    ("azurerm_local_network_gateway", "dc", {"id": f"{NET}/localNetworkGateways/lgw-dc",
+                                             "gateway_address": "198.51.100.7",
                                              "address_space": ["10.9.0.0/16"], "bgp_settings": [{"asn": 65010}]}),
-    ("azurerm_virtual_network_gateway", "vgw", {"id": f"{NET}/virtualNetworkGateways/vgw", "bgp_settings": [{"asn": 65515}]}),
+    ("azurerm_virtual_network_gateway", "vgw", {"id": f"{NET}/virtualNetworkGateways/vgw",
+                                                "bgp_settings": [{"asn": 65515}]}),
     ("azurerm_virtual_network_gateway_connection", "dc", {
         "id": f"{NET}/connections/cn-dc", "name": "cn-dc", "type": "IPsec", "tags": {"PeerEnvironment": "dc/prod"},
         "local_network_gateway_id": f"{NET}/localNetworkGateways/lgw-dc",
@@ -176,12 +185,14 @@ TEMPLATE = {
          "properties": {"routes": [{"name": "dc", "properties": {"addressPrefix": "10.9.0.0/16",
                                                                  "nextHopType": "VirtualNetworkGateway"}}]}},
         {"type": "Microsoft.Network/privateEndpoints", "apiVersion": "2023-09-01", "name": "pe-secrets",
-         "properties": {"subnet": {"id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet-ciam-prod', 'snet-pf')]"},
+         "properties": {"subnet": {"id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', "
+                                         "'vnet-ciam-prod', 'snet-pf')]"},
                         "privateLinkServiceConnections": [{"name": "kv", "properties": {
                             "privateLinkServiceId": "[resourceId('Microsoft.KeyVault/vaults', 'kv')]",
                             "groupIds": ["vault"]}}]},
          "resources": [{"type": "privateDnsZoneGroups", "apiVersion": "2023-09-01", "name": "default",
-                        "properties": {"privateDnsZoneConfigs": [{"name": "kv", "properties": {"privateDnsZoneId": ZONE}}]}}]}]}
+                        "properties": {"privateDnsZoneConfigs": [{"name": "kv",
+                                                                  "properties": {"privateDnsZoneId": ZONE}}]}}]}]}
 
 
 def test_arm_deploys_the_same_depth():

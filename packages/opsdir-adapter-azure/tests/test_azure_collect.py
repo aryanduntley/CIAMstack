@@ -74,7 +74,8 @@ def _words(argv):
 def _answer(argv):
     f, cmd = _fixture(), _words(argv)
     files = {"network vnet list": "network.json", "vm list": "vms.json", "network nic list": "nics.json",
-             "network lb list": "lbs.json", "network public-ip list": "public-ips.json", "network nsg list": "nsgs.json",
+             "network lb list": "lbs.json", "network public-ip list": "public-ips.json",
+             "network nsg list": "nsgs.json",
              "network nat gateway list": "nat.json", "disk-encryption-set list": "des.json",
              "storage container-rm list": "containers.json", "keyvault secret list": "kv-secrets.json",
              "keyvault key list": "kv-keys.json", "keyvault key show": "kv-key-disk-cmk.json",

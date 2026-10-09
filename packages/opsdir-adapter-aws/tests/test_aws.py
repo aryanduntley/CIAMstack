@@ -17,7 +17,8 @@ def test_applies_to_its_provider_only():
 
 def test_owns_its_vocabulary_and_reference_schemes():
     assert ADAPTER.vocabulary["ciamCloudProvider"] == ("aws",)
-    assert set(ADAPTER.ref_schemes) == {"aws-sm", "aws-kms", "aws-acm", "s3"} and set(ADAPTER.secret_schemes) == {"aws-sm"}
+    assert (set(ADAPTER.ref_schemes) == {"aws-sm", "aws-kms", "aws-acm", "s3"}
+            and set(ADAPTER.secret_schemes) == {"aws-sm"})
 
 
 def test_secret_references_resolve_with_the_aws_cli():

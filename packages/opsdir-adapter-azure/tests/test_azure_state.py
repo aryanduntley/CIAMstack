@@ -53,7 +53,8 @@ def _record(*extra):
              ciamFrontendIp="10.60.1.100", ciamEdgeFact="tls-mode passthrough", ciamTtlSeconds="300"),
         _row(f"cn=svc-sso,{B}", ("ciamServiceName",), cn="svc-sso", ciamBindingRole="pf-sso-service",
              ciamFqdn="sso.example.test", ciamDnsZone="example.test", ciamTargetRole="pf-engine", ciamPort="443",
-             ciamFrontendIp="198.51.100.77", ciamProviderRef="pip-ciam-sso-prod", ciamEdgeFact="tls-mode passthrough", ciamTtlSeconds="300"),
+             ciamFrontendIp="198.51.100.77", ciamProviderRef="pip-ciam-sso-prod", ciamEdgeFact="tls-mode passthrough",
+             ciamTtlSeconds="300"),
         _row(f"cn=fw-app,{B}", ("ciamFirewallRule",), cn="fw-app", ciamBindingRole="fw-consumer-app",
              ciamSourceCidr=["10.30.0.0/24"], ciamPort="1636", ciamProtocol="tcp", ciamTargetRole="ds",
              ciamRulePriority="100", ciamAllowsConsumer="cn=app,ou=consumers,dc=ciam-ops"),
@@ -73,7 +74,8 @@ def _record(*extra):
 
 
 def _res(mode, type_, name, attrs, sensitive=()):
-    return {"mode": mode, "type": type_, "name": name, "provider": 'provider["registry.terraform.io/hashicorp/azurerm"]',
+    return {"mode": mode, "type": type_, "name": name,
+            "provider": 'provider["registry.terraform.io/hashicorp/azurerm"]',
             "instances": [{"schema_version": 0, "attributes": attrs,
                            "sensitive_attributes": [[{"type": "get_attr", "value": s}] for s in sensitive]}]}
 
@@ -121,7 +123,8 @@ def _lb(name, frontend, pool_nics, ports, record):
     return (_res("managed", "azurerm_lb", n, {"id": lb, "name": f"lb-ciam-prod-{name}", "sku": "Standard",
                                               "frontend_ip_configuration": [{"name": "frontend", **frontend}],
                                               "tags": {"ManagedBy": "opsdir"}}),
-            _res("managed", "azurerm_lb_backend_address_pool", n, {"id": pool, "name": "servers", "loadbalancer_id": lb}),
+            _res("managed", "azurerm_lb_backend_address_pool", n, {"id": pool, "name": "servers",
+                                                                   "loadbalancer_id": lb}),
             *(_res("managed", "azurerm_network_interface_backend_address_pool_association", f"{n}_{i}", {
                 "network_interface_id": f"{NET}/networkInterfaces/nic-{nic}", "ip_configuration_name": "primary",
                 "backend_address_pool_id": pool}) for i, nic in enumerate(pool_nics)),
@@ -153,7 +156,8 @@ def _state(*changes):
              [1636], _res("managed", "azurerm_private_dns_a_record", "svc_ldaps", {
                  "name": "ldap", "zone_name": "id.example.test", "records": ["10.60.1.100"], "ttl": 300,
                  "fqdn": "ldap.id.example.test."})),
-        _res("data", "azurerm_public_ip", "svc_sso", {"id": pip, "name": "pip-ciam-sso-prod", "ip_address": "198.51.100.77"}),
+        _res("data", "azurerm_public_ip", "svc_sso", {"id": pip, "name": "pip-ciam-sso-prod",
+                                                      "ip_address": "198.51.100.77"}),
         *_lb("svc-sso", {"public_ip_address_id": pip}, ["pf-engine-1"], [443],
              _res("managed", "azurerm_dns_a_record", "svc_sso", {
                  "name": "sso", "zone_name": "example.test", "records": ["198.51.100.77"], "ttl": 300})),
@@ -174,8 +178,10 @@ def _state(*changes):
         _res("managed", "azurerm_nat_gateway", "main", {"id": f"{NET}/natGateways/natgw-ciam-prod",
                                                         "name": "natgw-ciam-prod"}),
         _res("managed", "azurerm_nat_gateway_public_ip_association", "main", {
-            "nat_gateway_id": f"{NET}/natGateways/natgw-ciam-prod", "public_ip_address_id": f"{NET}/publicIPAddresses/pip-natgw"}),
-        _res("managed", "random_password", "admin", {"id": "none", "result": "p4ss-w0rd-not-real"}, sensitive=("result",)),
+            "nat_gateway_id": f"{NET}/natGateways/natgw-ciam-prod",
+            "public_ip_address_id": f"{NET}/publicIPAddresses/pip-natgw"}),
+        _res("managed", "random_password", "admin", {"id": "none", "result": "p4ss-w0rd-not-real"},
+             sensitive=("result",)),
         *changes]
     return json.dumps({"version": 4, "terraform_version": "1.9.5", "serial": 7, "lineage": "0c1d", "outputs": {},
                        "resources": resources})
@@ -219,7 +225,8 @@ def test_a_new_tagged_vm_is_added_and_an_untagged_one_named():
     extra = (_nic("ds-2", "snet-ds", "10.60.1.12"), _vm("ds-2", "ds", "Standard_D4s_v5", "2", "ds-2.az.internal.test"),
              _nic("jump", "snet-ds", "10.60.1.50"),
              _res("managed", "azurerm_linux_virtual_machine", "jump", {
-                 "id": f"{RG}/providers/Microsoft.Compute/virtualMachines/jump", "name": "jump", "computer_name": "jump",
+                 "id": f"{RG}/providers/Microsoft.Compute/virtualMachines/jump", "name": "jump",
+                 "computer_name": "jump",
                  "size": "Standard_B1s", "network_interface_ids": [f"{NET}/networkInterfaces/nic-jump"]}))
     imported = read_terraform_state({"main/prod/terraform.tfstate": _state(*extra)}, d, ())
     after = _after(d, imported)
@@ -239,7 +246,8 @@ def test_security_rules_are_read_by_name_with_the_role_of_the_vms_they_guard():
     rules = {r.name: r for r in resources if r.kind == "firewall"}
     assert set(rules) == {"fw-app", "fw-sso-public", "fw-debug", "fw-lb-probe"}
     assert rules["fw-sso-public"].attrs["ciamTargetRole"] == ("pf-engine",)
-    assert (rules["fw-debug"].attrs["ciamSourceCidr"], rules["fw-debug"].attrs["ciamPort"]) == (("0.0.0.0/0",), ("1636",))
+    assert (rules["fw-debug"].attrs["ciamSourceCidr"], rules["fw-debug"].attrs["ciamPort"]) == \
+        (("0.0.0.0/0",), ("1636",))
     assert "ciamSourceCidr" not in rules["fw-lb-probe"].attrs
     assert set(notices) >= {
         "security rules (1 inbound deny): not read (the record holds inbound allow rules)",
@@ -306,13 +314,14 @@ def test_the_environments_role_map_names_what_azure_cannot_tag():
              _rule("fw-admin", "ds", ["10.60.9.0/28"], ["4444"], 120))
     files = {"main/prod/terraform.tfstate": _state(*extra)}
     untagged = read_terraform_state(files, d, ())
-    assert "main/prod: subnet snet-admin (ciamCidr 10.60.9.0/28) is not in the record and names no role (tag it Role, " \
-           "name it in roles.json, or record it); not imported" in untagged.notices
+    assert "main/prod: subnet snet-admin (ciamCidr 10.60.9.0/28) is not in the record and names no role " \
+           "(tag it Role, name it in roles.json, or record it); not imported" in untagged.notices
     roles = json.dumps({"vnet-ciam-prod/snet-admin": "subnet-admin", "fw-admin": "fw-admin", "fw-gone": "fw-x"})
     imported = read_terraform_state({**files, "main/prod/roles.json": roles}, d, ())
     after = _after(d, imported)
     subnet, rule = get(after, f"cn=snet-admin,{B}"), get(after, f"cn=fw-admin,{B}")
-    assert (one(subnet, "ciamBindingRole"), one(subnet, "ciamProviderRef")) == ("subnet-admin", "vnet-ciam-prod/snet-admin")
+    assert (one(subnet, "ciamBindingRole"), one(subnet, "ciamProviderRef")) == \
+        ("subnet-admin", "vnet-ciam-prod/snet-admin")
     assert (one(rule, "ciamBindingRole"), one(rule, "ciamTargetRole"), one(rule, "ciamRulePriority")) == \
         ("fw-admin", "ds", "120")
     assert "main/prod/roles.json: fw-gone matches nothing the source reports" in imported.notices

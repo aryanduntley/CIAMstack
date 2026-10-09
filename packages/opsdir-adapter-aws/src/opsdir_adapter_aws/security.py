@@ -220,8 +220,8 @@ def _incident_routing(m, s, kind):
         return ()
     cn, dest = rdn_value(s), route.binding
     if kind not in SOURCES:
-        return (f"# NOTE: {cn}'s incidents to {route.role}: not rendered: AWS Config's findings have no severity (route "
-                "its compliance changes through a Config rule's EventBridge event)",)
+        return (f"# NOTE: {cn}'s incidents to {route.role}: not rendered: AWS Config's findings have no severity "
+                "(route its compliance changes through a Config rule's EventBridge event)",)
     if dest is None:
         return ()
     target = one(dest, "ciamProviderRef") if not is_kind(m.d, dest, "ciamObjectStore") else None
@@ -328,7 +328,8 @@ def findings_routes(pairs):
 
 
 def _incidents(pairs):
-    """{event source: (the ARN a rule filtering its findings on severity targets, the least severity it lets through)}."""
+    """{event source: (the ARN a rule filtering its findings on severity targets, the least severity it lets
+    through)}."""
     return {src: (arn, least) for src, least, arn in _targets(pairs) if least is not None}
 
 
@@ -374,8 +375,8 @@ def security_resources(pairs):
         "ciamSecurityCoverage": _detector_areas(a, features.get(a.get("id"), ())),
         "ciamAuditScope": _scope(pairs, "aws_guardduty_organization_configuration"),
         **_incident_severity(incidents, "aws.guardduty")},
-        links={"ciamFindingsRole": routes.get("aws.guardduty"), **_incident_link(incidents, "aws.guardduty")}, name=f"guardduty-{a.get('id')}",
-        role=tagged_role(state_tags(a)), tags=state_tags(a))
+        links={"ciamFindingsRole": routes.get("aws.guardduty"), **_incident_link(incidents, "aws.guardduty")},
+        name=f"guardduty-{a.get('id')}", role=tagged_role(state_tags(a)), tags=state_tags(a))
         for a in of_types(pairs, DETECTOR) if a.get("enable", True) and (a.get("arn") or a.get("id")))
     scanners = tuple(resource("security", f"inspector2:{a.get('id')}", {
         "ciamSecurityKind": "vulnerability-scanning",
@@ -383,7 +384,8 @@ def security_resources(pairs):
                                                     if t in SCANNED)),
         "ciamAuditScope": _scope(pairs, "aws_inspector2_organization_configuration"),
         **_incident_severity(incidents, "aws.inspector2")},
-        links={"ciamFindingsRole": routes.get("aws.inspector2"), **_incident_link(incidents, "aws.inspector2")}, name="inspector")
+        links={"ciamFindingsRole": routes.get("aws.inspector2"), **_incident_link(incidents, "aws.inspector2")},
+        name="inspector")
         for a in of_types(pairs, ENABLER) if a.get("id"))
     recorders = tuple(resource("security", f"config-recorder:{a.get('name')}", {
         "ciamSecurityKind": "config-recording", "ciamAuditScope": "account",
@@ -397,6 +399,7 @@ def security_resources(pairs):
         "ciamSecurityBaseline": tuple(sorted(k for k, base in standards if base)),
         "ciamAuditScope": _scope(pairs, "aws_securityhub_organization_configuration"),
         **_incident_severity(incidents, "aws.securityhub")},
-        links={"ciamFindingsRole": routes.get("aws.securityhub"), **_incident_link(incidents, "aws.securityhub")}, name="security-hub")
+        links={"ciamFindingsRole": routes.get("aws.securityhub"), **_incident_link(incidents, "aws.securityhub")},
+        name="security-hub")
         for a in of_types(pairs, HUB) if a.get("arn") or a.get("id"))
     return (*detectors, *scanners, *recorders, *hubs)

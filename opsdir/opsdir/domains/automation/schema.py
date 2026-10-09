@@ -19,7 +19,8 @@ ATTRIBUTES = (
     AttributeDef(225, 'ciamJobRole', 'string', 'intent', True,
                  'The binding role that realizes the job in each environment (its function, its pipeline)'),
     AttributeDef(226, 'ciamUsesRole', 'string', 'intent', False,
-                 'A binding role the job uses (a secret, a service name, a storage location): each environment binds it'),
+                 'A binding role the job uses (a secret, a service name, a storage location): each environment '
+                 'binds it'),
     AttributeDef(227, 'ciamSecretName', 'string', 'meta', False,
                  "A secret the job expects by name in its own system (a CI secret, an environment variable from a "
                  "secret store): the name, never the value"),

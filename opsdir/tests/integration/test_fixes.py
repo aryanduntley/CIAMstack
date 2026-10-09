@@ -57,7 +57,8 @@ def test_a_proposal_waits_for_a_person_then_applies_unchanged(conn):
     with pytest.raises(psycopg.Error, match="not an approved change"):     # the store enforces it too
         ops.modify(conn, FIX.records, "CHG-9")
     conn.rollback()
-    approve = f"dn: {change_dn('CHG-9')}\nchangetype: modify\nreplace: ciamChangeStatus\nciamChangeStatus: approved\n-\n"
+    approve = (f"dn: {change_dn('CHG-9')}\nchangetype: modify\nreplace: ciamChangeStatus\n"
+               "ciamChangeStatus: approved\n-\n")
     ops.modify(conn, parse(approve), "CHG-9")                              # a person approves (ITSM mirror)
     applied = ops.apply_proposed(conn, "CHG-9")
     assert applied.change_id == "CHG-9" and len(applied.lines) == 2

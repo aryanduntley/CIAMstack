@@ -30,7 +30,8 @@ def _estate(env, extra):
             entry(env, "subnet-web", "ciamSubnetBinding", ciamBindingRole="subnet-web", ciamCidr="10.1.2.0/24"),
             *(entry(env, n, "ciamServer", ciamServerRole=r, ciamHostname=f"{n}.example.test",
                     ciamSubnet=f"cn={s},ou=bindings,{env}", ciamZone="zone-a")
-              for n, r, s in (("ds-1", "ds", "subnet-ds"), ("ds-2", "ds", "subnet-ds"), ("web-1", "web", "subnet-web"))),
+              for n, r, s in (("ds-1", "ds", "subnet-ds"), ("ds-2", "ds", "subnet-ds"),
+                              ("web-1", "web", "subnet-web"))),
             *extra)
 
 

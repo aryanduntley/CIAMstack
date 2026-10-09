@@ -154,7 +154,8 @@ def test_what_another_party_keeps_renders_in_their_root_with_its_own_providers()
     fw = entry(ALPHA, "fw", "ciamProxy", ciamBindingRole="fw", ciamProxyKind="firewall", ciamManagedBy=NET_TEAM,
                ciamAllowedDestination="metadata.example.test")
     files = render_landing(model(alpha=(EGRESS, pe, fw), tree=OWNERS)[1])
-    assert sorted(files) == ["terraform/landing-zone/net-team/network.tf", "terraform/landing-zone/net-team/providers.tf",
+    assert sorted(files) == ["terraform/landing-zone/net-team/network.tf",
+                             "terraform/landing-zone/net-team/providers.tf",
                              "terraform/landing-zone/network.tf", "terraform/landing-zone/providers.tf"]
     theirs = files["terraform/landing-zone/net-team/network.tf"]
     assert "AWS network kept by net-team for the CIAM platform" in theirs

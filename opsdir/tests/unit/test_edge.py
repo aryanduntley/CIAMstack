@@ -19,8 +19,8 @@ from opsdir.domains.edge.kubernetes import check_unrendered, unrendered_edges
 from opsdir.domains.edge.naming import EDGE_FACT, EDGE_POLICIES, HEADER_CONTRACTS, RATE_LIMIT, WAF_EXCLUSION
 from opsdir.domains.edge.policies import check_policies, intended_facts, policy_for, policy_rows
 from opsdir.domains.edge.running import check_running, edge_service_rows, missing, observed_facts, unstated
-from opsdir.domains.edge.records import (answers, forwarders, hosted_notes, is_hosted, parts, records_in, routing, run_by,
-                                        ttl)
+from opsdir.domains.edge.records import (answers, forwarders, hosted_notes, is_hosted, parts, records_in, routing,
+                                         run_by, ttl)
 from opsdir.domains.edge.resolve import (Exclusion, Health, RateLimit, certificate_ref, declared_endpoints, inspected,
                                          path_regex, service_edge)
 from opsdir.domains.edge.schema import ATTRIBUTES
@@ -137,7 +137,8 @@ def _texts(rows):
 def test_the_policy_terms_are_patterns_the_store_enforces():
     rules = {a.name: dict(a.rules) for a in ATTRIBUTES}
     assert rules["ciamRateLimit"]["X-PATTERN"] == RATE_LIMIT and rules["ciamEdgeFact"]["X-PATTERN"] == EDGE_FACT
-    assert re.fullmatch(RATE_LIMIT, "token 100/300s per ip") and re.fullmatch(RATE_LIMIT, "login 5/60s per header:X-Key")
+    assert (re.fullmatch(RATE_LIMIT, "token 100/300s per ip")
+            and re.fullmatch(RATE_LIMIT, "login 5/60s per header:X-Key"))
     assert not re.fullmatch(RATE_LIMIT, "admin 5/60s per ip") and not re.fullmatch(RATE_LIMIT, "token 100 per ip")
     assert re.fullmatch(WAF_EXCLUSION, "core-rules on saml-post body:SAMLResponse")
     assert not re.fullmatch(WAF_EXCLUSION, "core-rules on saml-post SAMLResponse")
@@ -271,11 +272,11 @@ def test_header_setters_spoofing_and_client_addresses_behind_a_terminating_balan
         "Header `X_Remote_User` (contract `remote-user`) is set by `gw` servers, which beta/prod doesn't run: `app` "
         "would go without it (header-based sign-on stops)."]
     assert _texts(found.actions) == [
-        "Header `X-Forwarded-Proto` (contract `proto`) is set by the load balancer of `ldaps-service`, whose TLS passes "
-        "through: a layer 4 load balancer sets no header. Terminate TLS there (a traffic policy), or name the setter "
-        "that does.",
-        "Clients can send header `X_Remote_User` themselves (contract `remote-user`): `gw` must remove it from incoming "
-        "requests, since `app` trusts it.",
+        "Header `X-Forwarded-Proto` (contract `proto`) is set by the load balancer of `ldaps-service`, whose TLS "
+        "passes through: a layer 4 load balancer sets no header. Terminate TLS there (a traffic policy), or name the "
+        "setter that does.",
+        "Clients can send header `X_Remote_User` themselves (contract `remote-user`): `gw` must remove it from "
+        "incoming requests, since `app` trusts it.",
         "`login-service` changes from TLS passthrough (alpha/prod) to terminate (beta/prod): set `web` to trust "
         "`X-Forwarded-For` from beta/prod's load balancer before cutover, or they'll see its address for every "
         "client."]

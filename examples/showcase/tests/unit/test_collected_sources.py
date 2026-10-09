@@ -190,8 +190,8 @@ def test_a_debian_server_without_java_gets_dpkg_and_no_java_calls_and_a_missing_
             return "falcon-sensor 7.10\nopenssl 3.0\n", None
         if remote[:3] == ["cat", "--", "/etc/os-release"]:
             return 'ID=ubuntu\nID_LIKE="debian"\nVERSION_ID="22.04"\n', None
-        return live.run_call(call._replace(argv=("sh", "-c", f"echo \"cat: {remote[-1]}: No such file or directory\" >&2;"
-                                                             " exit 1")), lambda ref: (None, None))
+        return live.run_call(call._replace(argv=("sh", "-c", f"echo \"cat: {remote[-1]}: No such file or directory\" "
+                                                             ">&2; exit 1")), lambda ref: (None, None))
     c = collect("linux/baseline", _collector("linux", "baseline", m), d, m, run)
     assert c.problems == ()
     assert sorted(c.files) == [f"{host}/etc/os-release", f"{host}/packages.txt"]       # the rest absent, not failed

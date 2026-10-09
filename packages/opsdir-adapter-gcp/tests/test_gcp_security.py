@@ -116,7 +116,8 @@ def test_findings_at_or_above_the_incident_severity_go_to_the_incident_topic():
             'severity=\\"HIGH\\")"') in out
     assert ('(severity=\\"CRITICAL\\" OR severity=\\"HIGH\\" OR severity=\\"MEDIUM\\")' in out
             and out.count(f'pubsub_topic = "{INCIDENT_TOPIC}"') == 2)
-    assert "# NOTE: assets's incidents to security-incidents: not rendered: an asset feed's changes have no severity" in out
+    assert ("# NOTE: assets's incidents to security-incidents: not rendered: "
+            "an asset feed's changes have no severity") in out
     assert "# NOTE: shared's incidents to app-logs: not rendered: app-logs names no Pub/Sub topic" in out
 
 
@@ -125,7 +126,8 @@ def test_incident_routes_are_read_back():
              ("google_scc_v2_project_notification_config", {
                  "name": "projects/example/locations/global/notificationConfigs/scc-incidents",
                  "config_id": "scc-incidents", "pubsub_topic": INCIDENT_TOPIC, "streaming_config": [{
-                     "filter": 'finding_class="THREAT" AND state="ACTIVE" AND (severity="CRITICAL" OR severity="HIGH")'}]}),
+                     "filter": 'finding_class="THREAT" AND state="ACTIVE" '
+                               'AND (severity="CRITICAL" OR severity="HIGH")'}]}),
              ("google_scc_v2_project_notification_config", {
                  "name": "projects/example/locations/global/notificationConfigs/posture-incidents",
                  "config_id": "posture-incidents", "pubsub_topic": INCIDENT_TOPIC, "streaming_config": [{

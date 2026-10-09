@@ -61,7 +61,8 @@ ATTRIBUTES = (
 )
 CLASSES = (
     ClassDef(26, 'ciamIntegration', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamProtocolType'),
-             ('ciamEntityId', 'ciamAcsUrl', 'ciamRedirectUri', 'ciamClientId', 'ciamGrantType', 'ciamPkceRequired', 'ciamPopulation', 'ciamMfaRequired', 'ciamUsesCertificate', 'ciamJitBaseDn', 'ciamCriticality',
+             ('ciamEntityId', 'ciamAcsUrl', 'ciamRedirectUri', 'ciamClientId', 'ciamGrantType', 'ciamPkceRequired',
+              'ciamPopulation', 'ciamMfaRequired', 'ciamUsesCertificate', 'ciamJitBaseDn', 'ciamCriticality',
               'ciamTokenAuthMethod', 'ciamScope', 'ciamPostLogoutRedirectUri', 'ciamSamlBinding', 'ciamNameIdFormat',
               'ciamSsoUrl', 'ciamServedBy'),
              'Application or partner integration'),
@@ -69,8 +70,8 @@ CLASSES = (
              ('ciamTransform',),
              'One claim / SAML attribute mapping'),
     ClassDef(35, 'ciamIdentityService', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamBaseUrl'),
-             ('ciamEntityId', 'ciamOidcIssuer', 'ciamScope', 'ciamSigningAlg', 'ciamNameIdFormat', 'ciamUsesCertificate',
-              'ciamTargetRole', 'ciamCriticality'),
+             ('ciamEntityId', 'ciamOidcIssuer', 'ciamScope', 'ciamSigningAlg', 'ciamNameIdFormat',
+              'ciamUsesCertificate', 'ciamTargetRole', 'ciamCriticality'),
              'The platform\'s own identity provider / OpenID provider, as partners and applications know it'),
 )
 

@@ -4,8 +4,9 @@ The census records where the record's values are copied into files: each scanned
 found (the entry it belongs to, the attribute, the lines), never the values themselves.
 
 A bundle (code, scripts, templates, a package) is recorded by where it lives in version control and its SHA-256; its
-content is not held in the record. A captured file is one entry (its format, where it lives in version control, the servers it is deployed to, its
-layout) and one child entry per setting (its locator in the file, its value or a link to a value in the record).
+content is not held in the record. A captured file is one entry (its format, where it lives in version control, the
+servers it is deployed to, its layout) and one child entry per setting (its locator in the file, its value or a link
+to a value in the record).
 """
 from ...core.standard import AttributeDef, ClassDef, fragment
 
@@ -60,7 +61,8 @@ CLASSES = (
              'One setting of a captured config file'),
     ClassDef(41, 'ciamBundle', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamRepoPath', 'ciamBundleKind', 'ciamSha256'),
              ('ciamFormat', 'ciamBundleVersion', 'ciamTargetRole', 'ciamDeployPath'),
-             'Code, scripts, templates or a package, deployed as a unit: recorded where it lives, not held in the record'),
+             'Code, scripts, templates or a package, deployed as a unit: recorded where it lives, not held in the '
+             'record'),
     ClassDef(46, 'ciamScannedFile', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamRepoPath', 'ciamSha256'),
              ('ciamOnServer', 'ciamConcern'),
              'A file the census scanned for values of the record'),

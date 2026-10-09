@@ -58,7 +58,8 @@ def test_cli_outputs():
              "lambda-tags/cert-check.json": json.dumps({"Tags": {"Role": "cert-check-function"}}),
              "rules.json": json.dumps({"Rules": [{"Name": "daily", "Arn": "arn:x", "State": "ENABLED",
                                                   "ScheduleExpression": "rate(1 day)"},
-                                                 {"Name": "off", "State": "DISABLED", "ScheduleExpression": "rate(1 hour)"}]}),
+                                                 {"Name": "off", "State": "DISABLED",
+                                                  "ScheduleExpression": "rate(1 hour)"}]}),
              "event-targets/daily.json": json.dumps({"Targets": [{"Id": "1", "Arn": FN}]}),
              "schedule-nightly.json": json.dumps({"Name": "nightly", "Arn": "arn:s", "State": "ENABLED",
                                                   "ScheduleExpression": "cron(0 2 * * ? *)", "Target": {"Arn": BUILD}}),
@@ -81,8 +82,10 @@ def test_cloudformation():
         "CertCheck": {"Type": "AWS::Lambda::Function", "Properties": {
             "Runtime": "python3.12", "Tags": [{"Key": "Role", "Value": "cert-check-function"}]}},
         "Daily": {"Type": "AWS::Events::Rule", "Properties": {
-            "ScheduleExpression": "rate(1 day)", "Targets": [{"Id": "1", "Arn": {"Fn::GetAtt": ["CertCheck", "Arn"]}}]}},
-        "Build": {"Type": "AWS::CodeBuild::Project", "Properties": {"Environment": {"Image": "aws/codebuild/standard:7.0"}}}}}
+            "ScheduleExpression": "rate(1 day)",
+            "Targets": [{"Id": "1", "Arn": {"Fn::GetAtt": ["CertCheck", "Arn"]}}]}},
+        "Build": {"Type": "AWS::CodeBuild::Project",
+                  "Properties": {"Environment": {"Image": "aws/codebuild/standard:7.0"}}}}}
     stack = {"Stacks": [{"StackName": "ciam-jobs",
                          "StackId": f"arn:aws:cloudformation:{REGION}:{ACCT}:stack/ciam-jobs/1"}]}
     listed = {"StackResourceSummaries": [

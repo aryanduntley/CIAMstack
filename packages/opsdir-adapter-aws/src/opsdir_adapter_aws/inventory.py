@@ -104,7 +104,8 @@ def _networks(found):
 
 
 def _subnets(found):
-    return tuple(resource("subnet", a.get("id"), {"ciamCidr": a.get("cidr_block"), "ciamZone": a.get("availability_zone")},
+    return tuple(resource("subnet", a.get("id"), {"ciamCidr": a.get("cidr_block"),
+                                                  "ciamZone": a.get("availability_zone")},
                           name=_tags(a).get("Name"), role=_role(a), tags=_tags(a))
                  for a in of_types(found, "aws_subnet"))
 
@@ -138,14 +139,17 @@ def _services(found):
         mappings = lb.get("subnet_mapping") or ()
         private = next((m.get("private_ipv4_address") for m in mappings if m.get("private_ipv4_address")), None)
         allocation = next((m.get("allocation_id") for m in mappings if m.get("allocation_id")), None)
+        ip = private if lb.get("internal") else eips.get(allocation) or next(
+            (m.get("public_ip") for m in mappings if m.get("public_ip")), None)
         return resource("service", lb.get("arn"), {
             "ciamFqdn": (alias or {}).get("name") or _tags(lb).get("Service"),
             "ciamDnsZoneRef": (alias or {}).get("zone_id"),
             "ciamPort": sorted({str(ls.get("port")) for ls in listeners if ls.get("port")} |
                                {str(groups[g].get("port")) for g in forwarded if g in groups and not listeners}),
             "ciamTargetRole": roles.most_common(1)[0][0] if roles else None,
-            "ciamFrontendIp": private if lb.get("internal") else eips.get(allocation) or next(
-                (m.get("public_ip") for m in mappings if m.get("public_ip")), None),
+            "ciamFrontendIp": ip,
+            # an ALB has no fixed address (an NLB without an Elastic IP neither): its exposure says what it is
+            "ciamExposure": None if ip else "internal" if lb.get("internal") else "internet",
             "ciamProviderRef": None if lb.get("internal") else allocation,
             "ciamEdgeFact": facts, "ciamEdgeSetting": settings, **(service_dns(alias) if alias else {})},
             name=lb.get("name"), role=_role(lb), tags=_tags(lb))
@@ -286,8 +290,10 @@ def base_arn(arn):
 def _jobs(found):
     """Functions, pipelines and build projects, each with the schedules EventBridge rules and Scheduler run it on."""
     rules = {a.get("name"): a.get("schedule_expression") for a in of_types(found, "aws_cloudwatch_event_rule")}
-    started = [*((base_arn(t.get("arn")), rules.get(t.get("rule"))) for t in of_types(found, "aws_cloudwatch_event_target")),
-               *((base_arn(b.get("arn")), a.get("schedule_expression")) for a in of_types(found, "aws_scheduler_schedule")
+    started = [*((base_arn(t.get("arn")), rules.get(t.get("rule")))
+                 for t in of_types(found, "aws_cloudwatch_event_target")),
+               *((base_arn(b.get("arn")), a.get("schedule_expression"))
+                 for a in of_types(found, "aws_scheduler_schedule")
                  for b in blocks(a.get("target")))]
 
     def schedules(arn):
@@ -487,11 +493,13 @@ def pairs_resources(pairs):
     volumes, volume_notices = volume_resources(pairs)
     backups, backup_notices = backup_resources(pairs)
     return ((*_networks(pairs), *_subnets(pairs), *_servers(pairs), *_services(pairs), *rules, *_secrets(pairs),
-             *_keys(pairs), *object_store_resources(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs), *_clusters(pairs),
+             *_keys(pairs), *object_store_resources(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs),
+             *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
              *_canaries(pairs), *iam, *edge_services(pairs), *zones, *records, *forwarders, *network,
              *database_resources(pairs), *volumes, *backups, *trail_resources(pairs),
-             *security_resources(pairs), *discovery_resources(pairs), *suppression_resources(pairs), *budget_resources(pairs)),
+             *security_resources(pairs), *discovery_resources(pairs), *suppression_resources(pairs),
+             *budget_resources(pairs)),
             (*rule_notices, *iam_notices, *dns_notices, *network_notices, *volume_notices, *backup_notices))
 
 

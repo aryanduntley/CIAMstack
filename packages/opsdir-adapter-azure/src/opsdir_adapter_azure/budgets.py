@@ -112,7 +112,8 @@ def _group(a):
 def budget_resources(pairs):
     """Budgets of (Terraform resource type, attributes) pairs: resource group and subscription consumption budgets."""
     return tuple(resource("budget", a.get("id"), {
-        "ciamBudgetAmount": _amount(a.get("amount")), "ciamBudgetPeriod": PERIOD_OF.get(a.get("time_grain") or "Monthly"),
+        "ciamBudgetAmount": _amount(a.get("amount")),
+        "ciamBudgetPeriod": PERIOD_OF.get(a.get("time_grain") or "Monthly"),
         "ciamActualThreshold": _percents(a, "Actual"), "ciamForecastThreshold": _percents(a, "Forecasted")},
         links={"ciamAlertRole": _group(a)}, name=a.get("name"))
         for a in of_types(pairs, BUDGET, SUBSCRIPTION_BUDGET) if a.get("id"))

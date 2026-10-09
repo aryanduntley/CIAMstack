@@ -25,8 +25,9 @@ COVERED = {
 }
 S3 = "Amazon Simple Storage Service (S3)"
 SNS = "Amazon Simple Notification Service (SNS)"
-ENGINES = {"postgresql": "Amazon RDS for Postgres", "mysql": "Amazon RDS for MySQL", "mariadb": "Amazon RDS for MariaDB",
-           "sqlserver": "Amazon RDS for SQL Server", "oracle": "Amazon RDS for Oracle"}
+ENGINES = {"postgresql": "Amazon RDS for Postgres", "mysql": "Amazon RDS for MySQL",
+           "mariadb": "Amazon RDS for MariaDB", "sqlserver": "Amazon RDS for SQL Server",
+           "oracle": "Amazon RDS for Oracle"}
 SECURITY = {"threat-detection": "Amazon GuardDuty", "vulnerability-scanning": "Amazon Inspector",
             "config-recording": "AWS Config", "posture": "AWS Security Hub CSPM"}
 STREAMS = {"topic": SNS, "queue": "Amazon Simple Queue Service (SQS)", "bus": "Amazon EventBridge",

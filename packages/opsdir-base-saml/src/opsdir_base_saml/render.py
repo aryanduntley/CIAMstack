@@ -42,8 +42,9 @@ def _at(service, paths):
 
 
 def idp_metadata(d, service, endpoints):
-    return document(idp_descriptor(one(service, "ciamEntityId"), _at(service, endpoints.sso), _at(service, endpoints.slo),
-                                   values(service, "ciamNameIdFormat"), certificates(d, service)))
+    return document(idp_descriptor(one(service, "ciamEntityId"), _at(service, endpoints.sso),
+                                   _at(service, endpoints.slo), values(service, "ciamNameIdFormat"),
+                                   certificates(d, service)))
 
 
 def saml_files(d, services, endpoints):
@@ -52,4 +53,5 @@ def saml_files(d, services, endpoints):
     return {**{f"saml/sp/{rdn_value(i)}.xml": sp_metadata(d, i) for i in integrations_served(d, services, "saml2-sp")},
             **{f"saml/partner-idp/{rdn_value(i)}.xml": partner_idp_metadata(d, i)
                for i in integrations_served(d, services, "saml2-idp")},
-            **{f"saml/idp/{rdn_value(s)}.xml": idp_metadata(d, s, endpoints) for s in services if one(s, "ciamEntityId")}}
+            **{f"saml/idp/{rdn_value(s)}.xml": idp_metadata(d, s, endpoints)
+               for s in services if one(s, "ciamEntityId")}}

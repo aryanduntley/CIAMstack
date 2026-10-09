@@ -86,14 +86,15 @@ def test_a_weaker_or_shorter_lock_is_named_and_a_stronger_one_is_not():
         "ransomware or a mistake could delete or change what it holds."]
     shorter = check_object_stores(_pair({"ciamStorageLockDays": "7"}))
     assert len(shorter.actions) == 1 and "beta/prod compliance 7 days" in shorter.actions[0][1]
-    stronger = check_object_stores(_pair({"ciamStorageLockDays": "90"}, source={"ciamStorageImmutability": "governance"}))
+    stronger = check_object_stores(_pair({"ciamStorageLockDays": "90"},
+                                         source={"ciamStorageImmutability": "governance"}))
     assert stronger.actions == ()
 
 
 def test_a_lifecycle_deleting_backups_before_their_retention_is_named_in_either_environment():
     f = check_object_stores(_pair({"ciamStorageLifecycle": ("30 cool", "14 delete")}))
-    assert _texts(f.actions) == ["Object store `backup-target` in beta/prod deletes backups after 14 days but must keep "
-                                 "them 35: its lifecycle undoes its retention."]
+    assert _texts(f.actions) == ["Object store `backup-target` in beta/prod deletes backups after 14 days but must "
+                                 "keep them 35: its lifecycle undoes its retention."]
     source = check_object_stores(_pair(source={"ciamStorageLifecycle": "noncurrent 7 delete"}))
     assert source.actions == ()                          # noncurrent versions only: the backups themselves are kept
 

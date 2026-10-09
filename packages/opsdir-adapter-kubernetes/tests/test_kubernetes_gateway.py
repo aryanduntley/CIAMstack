@@ -19,6 +19,7 @@ from opsdir_adapter_kubernetes.adapter import ADAPTER
 from opsdir_adapter_kubernetes.gateway import CHOICES, SETTING
 from opsdir_adapter_kubernetes.render import render
 import mini_estate
+from pki_samples import CA_PEM, CERTIFICATES, ca_records
 from mini_estate import FAKE
 from support import REGISTRY, build_directory
 
@@ -128,11 +129,24 @@ def test_routes_backend_tls_and_stickiness_in_the_roles_namespace():
     assert tls["validation"] == {
         "caCertificateRefs": [{"group": "", "kind": "ConfigMap", "name": "edge-gw-backend-ca"}],
         "hostname": "pf-engine.identity.svc.cluster.local"}
+    assert routes[("ConfigMap", "edge-gw-backend-ca")]["data"] == {"ca.crt": "UNBOUND:gateway-ca-pem"}  # no CA trusted
     cookie = routes[("DestinationRule", "am-affinity")]["spec"]
     assert cookie["host"] == "am.identity.svc.cluster.local"
     assert cookie["trafficPolicy"]["loadBalancer"]["consistentHash"]["httpCookie"] == {
         "name": "route", "ttl": "3600s", "path": "/"}
     assert ("DestinationRule", "ig-affinity") not in routes                             # no stickiness asked
+
+
+def test_the_backend_ca_bundle_holds_the_pems_of_the_cas_the_gateway_trusts():
+    trusting = GATEWAY + f"ciamTrustsCertificate: cn=internal-ca,{CERTIFICATES}\n"
+    routes = _kinds(_docs(render(model(trusting, *ca_records()), services(INSTALLED)),
+                          "kubernetes/identity/routes.yaml"))
+    assert routes[("ConfigMap", "edge-gw-backend-ca")] == {
+        "apiVersion": "v1", "kind": "ConfigMap", "metadata": {"name": "edge-gw-backend-ca", "namespace": "identity"},
+        "data": {"ca.crt": CA_PEM}}
+    routes = _kinds(_docs(render(model(trusting, *ca_records(pem=None)), services(INSTALLED)),
+                          "kubernetes/identity/routes.yaml"))
+    assert routes[("ConfigMap", "edge-gw-backend-ca")]["data"] == {"ca.crt": "UNBOUND:internal-ca-pem"}
 
 
 def test_envoy_gateway_by_the_binding_or_the_estate_setting():

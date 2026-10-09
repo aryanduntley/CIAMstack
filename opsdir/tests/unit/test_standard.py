@@ -30,7 +30,8 @@ def test_the_registered_fragments_compose_cleanly():
     (fragment((A, A._replace(number=901)), ()), "attribute name reused: ciamTestAttr"),
     (fragment((A,), (C, C._replace(name="ciamOther"))), f"OID reused: {ARC}.2.900"),
     (fragment((A,), (C._replace(may=("ciamNobody",)),)), "class ciamTestClass uses undefined attribute ciamNobody"),
-    (fragment((A,), (C._replace(sup="ciamNoSuchClass"),)), "class ciamTestClass has undefined superclass ciamNoSuchClass"),
+    (fragment((A,), (C._replace(sup="ciamNoSuchClass"),)),
+     "class ciamTestClass has undefined superclass ciamNoSuchClass"),
 ])
 def test_fragment_problems_are_reported(extra, problem):
     assert problem in check_fragments((CORE, extra))
@@ -60,8 +61,10 @@ def test_new_fragment_publishes_with_pinned_oids_that_parse_back():
     ats, ocs = schema_rows(registry_ldif((CORE, fragment((A,), (C,)))))
     at = next(a for a in ats if a["name"] == "ciamTestAttr")
     oc = next(o for o in ocs if o["name"] == "ciamTestClass")
-    assert (at["oid"], at["value_type"], at["portability"], at["single_value"]) == (f"{ARC}.1.900", "port", "intent", True)
-    assert (oc["oid"], oc["sup"], oc["kind"], oc["must"]) == (f"{ARC}.2.900", "ciamObject", "AUXILIARY", ["ciamTestAttr"])
+    assert ((at["oid"], at["value_type"], at["portability"], at["single_value"])
+            == (f"{ARC}.1.900", "port", "intent", True))
+    assert ((oc["oid"], oc["sup"], oc["kind"], oc["must"])
+            == (f"{ARC}.2.900", "ciamObject", "AUXILIARY", ["ciamTestAttr"]))
 
 
 def test_published_schema_is_exactly_what_the_core_fragments_generate():

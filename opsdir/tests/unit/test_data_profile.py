@@ -17,8 +17,8 @@ from opsdir import cli
 from opsdir.connectors.profiling import profile_file, profile_terms
 from opsdir.domains.directory.profile import (NO_SCHEME, STANDARD, UNRECOGNIZED, Terms, age_bucket,
                                               attribute_rows, branch_of, check_data_profile, combined,
-                                              defined_terms, entry_facts, masked, profile, profile_dn, profile_entries, profile_json, profile_rows,
-                                              read_profile, scheme_of)
+                                              defined_terms, entry_facts, masked, profile, profile_dn, profile_entries,
+                                              profile_json, profile_rows, read_profile, scheme_of)
 import mini_estate
 from support import REGISTRY, build_directory
 

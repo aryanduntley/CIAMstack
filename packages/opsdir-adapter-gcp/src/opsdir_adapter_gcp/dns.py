@@ -8,7 +8,7 @@ Known limit: a failover pair is rendered as a plain record with a comment; Cloud
 health-checked external endpoints is to be configured by hand.
 """
 from opsdir.core.directory import one, rdn_value, values
-from opsdir.domains.edge.dns import zone_of
+from opsdir.domains.edge.dns import zone_of, zone_unknown
 from opsdir.domains.edge.records import address, forwarders, hosted_notes, records_in, routing, run_by, ttl
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 from .names import NETWORK, label
@@ -32,8 +32,12 @@ def service_record(d, m, svc, n, world=False):
     outside = _elsewhere(d, m, name)
     if outside:
         return outside
+    bound = zone_of(m, name)
+    named = any(one(svc, a) for a in ("ciamDnsZoneRef", "ciamProviderRef", "ciamDnsZone"))
+    if not named and bound is None:
+        return (zone_unknown(svc, "ciamDnsZoneRef or ciamDnsZone"),)
     own = ref(f"google_compute_{'global_' if world else ''}forwarding_rule.{n}.ip_address")
-    head = (("managed_zone", _zone(svc)), ("name", f"{name}."), ("type", "A"), ("ttl", ttl(svc)))
+    head = (("managed_zone", _zone(svc if named else bound)), ("name", f"{name}."), ("type", "A"), ("ttl", ttl(svc)))
     routed = routing(d, m, svc)
     if routed is None:
         return (block("resource", ["google_dns_record_set", n], [*head, ("rrdatas", [own])]),)

@@ -30,8 +30,8 @@ def entries():
                  ciamRunbookRef=[f"cn=WI-CIAM-015,{RB}", f"cn=WI-CIAM-016,{RB}"], ciamOwner=owner("ciam-platform"),
                  description="The directory's data: back within two hours of a disaster, at most an hour of changes "
                              "lost"),
-            *(spec("87-recovery", f"cn={cn},{DRILLS}", ["top", "ciamFailoverDrill"], cn=cn, ciamDrilledOn=t(on, "060000"),
-                   ciamDrillFrom=frm, ciamDrillTo=to, ciamDrillResult=result, ciamServiceMinutes=service,
-                   ciamDataLossMinutes=lost, ciamRecoversRole="volume-ds-data", ciamRunbookRef=f"cn=WI-CIAM-016,{RB}",
-                   description=what, ciamOwner=owner("ciam-platform"))
+            *(spec("87-recovery", f"cn={cn},{DRILLS}", ["top", "ciamFailoverDrill"], cn=cn,
+                   ciamDrilledOn=t(on, "060000"), ciamDrillFrom=frm, ciamDrillTo=to, ciamDrillResult=result,
+                   ciamServiceMinutes=service, ciamDataLossMinutes=lost, ciamRecoversRole="volume-ds-data",
+                   ciamRunbookRef=f"cn=WI-CIAM-016,{RB}", description=what, ciamOwner=owner("ciam-platform"))
               for cn, on, frm, to, result, service, lost, what in DRILLS_DONE))

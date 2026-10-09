@@ -10,7 +10,8 @@ def test_a_failover_pair_is_answered_from_the_primarys_zone():
     out = "\n".join(service_record(d, alpha, binding(alpha, "svc-login"), "svc_login"))
     assert 'set_identifier = "alpha/prod"' in out and 'type = "PRIMARY"' in out and "alias {" in out
     assert "# an alias takes the load balancer's TTL; the recorded 60 s doesn't apply" in out
-    assert 'resource "aws_route53_health_check" "svc_login_beta_prod"' in out and 'ip_address        = "198.51.100.20"' in out
+    assert 'resource "aws_route53_health_check" "svc_login_beta_prod"' in out \
+        and 'ip_address        = "198.51.100.20"' in out
     assert 'type = "SECONDARY"' in out and "health_check_id = aws_route53_health_check.svc_login_beta_prod.id" in out
     (note,) = service_record(d, beta, binding(beta, "svc-login"), "svc_login")
     assert note.startswith("# `login.example.test` routes between environments (failover-secondary)")

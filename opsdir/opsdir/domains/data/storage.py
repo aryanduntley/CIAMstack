@@ -144,7 +144,8 @@ def _early_deletes(ctx, m, owner_of):
         early = [r for r in lifecycle_rules(b) if r.action == "delete" and not r.noncurrent and keep
                  and r.days < int(keep)]
         out += [(AREA, f"Object store `{one(b, 'ciamBindingRole')}` in {m.label} deletes backups after {r.days} days "
-                 f"but must keep them {keep}: its lifecycle undoes its retention.", owner_of(b), ctx.cutover) for r in early[:1]]
+                 f"but must keep them {keep}: its lifecycle undoes its retention.", owner_of(b), ctx.cutover)
+                for r in early[:1]]
     return out
 
 

@@ -16,8 +16,8 @@ ALPHA = "alpha/prod"
 def test_the_core_registers_the_standard_formats_by_name():
     names = [f.name for f in FORMATS]
     assert names == sorted(names) and len(set(names)) == len(names)
-    assert {"ldif", "json", "xml", "yaml", "shell", "java-properties", "ini", "toml", "csv", "c", "javascript", "groovy",
-            "python", "powershell", "sql", "html", "markdown", "pem", "text"} <= set(names)
+    assert {"ldif", "json", "xml", "yaml", "shell", "java-properties", "ini", "toml", "csv", "c", "javascript",
+            "groovy", "python", "powershell", "sql", "html", "markdown", "pem", "text"} <= set(names)
     assert format_named("c") == C and format_named("nosuch") is None
 
 

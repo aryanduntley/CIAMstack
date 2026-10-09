@@ -11,7 +11,8 @@ EDGE = subnet("subnet-edge", "subnet-edge", "10.60.250.0/24")
 
 def _gateway(s, ip="198.51.100.77", *bindings):
     svc = service(ip, ciamProviderRef="pip-ciam-sso-prod")
-    return "\n".join(gateway_service(environment(svc, *bindings), svc, s, servers_backend((server("pf-1", "10.60.2.10"),))))
+    return "\n".join(gateway_service(environment(svc, *bindings), svc, s,
+                                     servers_backend((server("pf-1", "10.60.2.10"),))))
 
 
 def test_tls_terms_map_to_predefined_policies_and_back():

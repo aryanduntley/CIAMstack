@@ -201,6 +201,7 @@ def _service(kind_ref, name, role, found, ip, pip, ports, roles, facts, settings
         "ciamFqdn": fqdn(record) if record else tags.get("Service"),
         "ciamDnsZone": (record or {}).get("zone_name"),
         "ciamPort": ports, "ciamTargetRole": roles.most_common(1)[0][0] if roles else None, "ciamFrontendIp": ip,
+        "ciamExposure": "internet" if pip is not None and not ip else None,      # a public IP not yet allocated
         "ciamProviderRef": (pip or {}).get("name"), "ciamTtlSeconds": (record or {}).get("ttl"),
         "ciamEdgeFact": facts, "ciamEdgeSetting": settings, **routed}, name=name, role=role, tags=tags)
 
@@ -315,7 +316,8 @@ def _vault(a):
 
 
 def _secrets(found):
-    """Secret references from the secrets' vault and name alone; the value (and the version holding it) is never read."""
+    """Secret references from the secrets' vault and name alone; the value (and the version holding it) is never
+    read."""
     return tuple(resource("secret", f"azkv://{_vault(a)}/{a.get('name')}",
                           {"ciamRefUri": f"azkv://{_vault(a)}/{a.get('name')}"},
                           name=_tags(a).get("Name") or a.get("name"), role=_role(a), tags=_tags(a))
@@ -484,7 +486,8 @@ def _sending(found):
         return resource("sending", a.get("id") or domain, {
             "ciamSenderDomain": domain, "ciamDkimVerified": _dkim(a, found),
             "ciamSpfAuthorized": spf_authorizes(_txt(found, domain), ACS_SPF),
-            "ciamDmarcPolicy": dmarc_policy(_txt(found, f"_dmarc.{domain}"))}, name=f"acs-{domain}", role=_role(a), tags=_tags(a))
+            "ciamDmarcPolicy": dmarc_policy(_txt(found, f"_dmarc.{domain}"))}, name=f"acs-{domain}", role=_role(a),
+            tags=_tags(a))
     return tuple(identity(a) for a in of_types(found, "azurerm_email_communication_service_domain")
                  if a.get("domain_management") != "AzureManaged" and a.get("name"))
 
@@ -544,7 +547,8 @@ def _canaries(found):
 
 def _streams(found):
     """Service Bus queues and topics, Event Hubs and Event Grid topics as stream carriers."""
-    return tuple(resource("stream", a.get("id"), {"ciamStreamKind": kind}, name=a.get("name"), role=_role(a), tags=_tags(a))
+    return tuple(resource("stream", a.get("id"), {"ciamStreamKind": kind}, name=a.get("name"), role=_role(a),
+                          tags=_tags(a))
                  for t, kind in STREAM_TYPES for a in of_types(found, t) if a.get("id"))
 
 
@@ -563,7 +567,8 @@ def pairs_resources(pairs):
              *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
              *_canaries(pairs), *iam, *edge, *network, *database_resources(pairs), *volumes, *backups,
-             *trail_resources(pairs), *security_resources(pairs), *discovery_resources(pairs), *suppression_resources(pairs),
+             *trail_resources(pairs), *security_resources(pairs), *discovery_resources(pairs),
+             *suppression_resources(pairs),
              *budget_resources(pairs)),
             (*rule_notices, *iam_notices, *edge_notices, *network_notices, *volume_notices, *backup_notices,
              *geo_backup_notices(pairs)))

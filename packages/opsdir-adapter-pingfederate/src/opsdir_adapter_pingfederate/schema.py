@@ -1,9 +1,10 @@
 """PingFederate schema fragment, under this package's own OID arc: PingFederate's own configuration objects, beyond
 what the standard bases describe (integrations, certificates and identity services are the federation and PKI
 domains'): data stores, plugin instances (validators, adapters, selectors, access token managers), authentication
-policy contracts, policies and fragments, OIDC policies, settings resources (the authorization server's). Each object keeps its settings as the Admin API writes them (JSON), with values that may be secret
-withheld; what differs per environment is not in them: an object names the binding role of the system it reaches and
-the secret role of its credentials, and each environment renders its own hosts and secret references."""
+policy contracts, policies and fragments, OIDC policies, settings resources (the authorization server's). Each object
+keeps its settings as the Admin API writes them (JSON), with values that may be secret withheld; what differs per
+environment is not in them: an object names the binding role of the system it reaches and the secret role of its
+credentials, and each environment renders its own hosts and secret references."""
 from opsdir.core.standard import AttributeDef, ClassDef, fragment
 
 ARC = "1.3.6.1.4.1.32473.3.4"      # packages in this repository: .3.<n> of the documentation PEN (SPEC 2.1)
@@ -60,7 +61,8 @@ ATTRIBUTES = (
                  "The JGroups discovery protocol a node uses, as found on the node (bin/jgroups.properties, or "
                  "an upgraded install's tcp.xml): TCPPING, NATIVE_S3_PING, DNS_PING, ..."),
     AttributeDef(22, 'pingfedResourceType', 'string', 'intent', True,
-                 "The Admin API resource a held-as-is item comes from (/serverSettings, /oauth/accessTokenMappings, ...)"),
+                 "The Admin API resource a held-as-is item comes from (/serverSettings, "
+                 "/oauth/accessTokenMappings, ...)"),
     AttributeDef(23, 'pingfedDiscoveryProtocol', 'vocab', 'binding', True,
                  "The JGroups discovery protocol an environment's PingFederate nodes find each other with, chosen per "
                  "environment from the protocols the adapter renders (TCPPING, NATIVE_S3_PING, DNS_PING)"),
@@ -83,14 +85,16 @@ CLASSES = (
              ('pingfedPosition', 'pingfedEnabled', 'pingfedUses', 'pingfedConfig'),
              'An authentication policy tree (cn: its name), or a policy fragment (cn: its id)'),
     ClassDef(6, 'pingfedConnection', 'top', 'AUXILIARY', ('pingfedConnectionId',), (),
-             'An integration that is a PingFederate partner connection (an IdP connection): the id policies name it by'),
+             'An integration that is a PingFederate partner connection (an IdP connection): '
+             'the id policies name it by'),
     ClassDef(7, 'pingfedKeyPair', 'top', 'AUXILIARY', ('pingfedKeyPairId',), (),
              "A certificate of one of PingFederate's own key pairs: the id its token managers name it by"),
     ClassDef(8, 'pingfedOidcPolicy', 'ciamObject', 'STRUCTURAL', ('cn',), ('pingfedUses', 'pingfedConfig'),
              'An OpenID Connect policy (cn: its id): the ID token it issues, from the token manager it names'),
     ClassDef(9, 'pingfedSettings', 'ciamObject', 'STRUCTURAL', ('cn',),
              ('pingfedScope', 'pingfedUses', 'pingfedCredentialRole', 'pingfedConfig', 'pingfedWithheld'),
-             "One of PingFederate's settings resources (cn: which: oauth-auth-server, ...), as the Admin API writes it"),
+             "One of PingFederate's settings resources (cn: which: oauth-auth-server, ...), "
+             "as the Admin API writes it"),
     ClassDef(10, 'pingfedClient', 'top', 'AUXILIARY', (), ('pingfedUses',),
              'An OAuth client of PingFederate: the token manager and OIDC policy it is issued tokens by'),
     ClassDef(11, 'pingfedNode', 'top', 'AUXILIARY', (),
@@ -100,8 +104,8 @@ CLASSES = (
              "cluster discovery protocol it uses"),
     ClassDef(12, 'pingfedResource', 'ciamObject', 'STRUCTURAL', ('cn', 'pingfedResourceType'),
              ('pingfedCredentialRole', 'pingfedConfig', 'pingfedWithheld'),
-             'An item of an Admin API resource the adapter does not model, held as the Admin API writes it (cn: its id; '
-             'settings for a resource that is one object)'),
+             'An item of an Admin API resource the adapter does not model, held as the Admin API writes it '
+             '(cn: its id; settings for a resource that is one object)'),
     ClassDef(13, 'pingfedClusterDiscovery', 'ciamBinding', 'STRUCTURAL', ('pingfedDiscoveryProtocol',),
              ('ciamStorageRef', 'ciamFqdn'),
              "Where an environment's PingFederate nodes find each other (role pf-cluster-discovery): the protocol "

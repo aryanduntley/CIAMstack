@@ -18,7 +18,8 @@ def _state(*resources):
 def _domain(*cnames):
     return _state(
         ("azurerm_email_communication_service_domain", "d", {
-            "id": DOMAIN, "name": "example.test", "domain_management": "CustomerManaged", "tags": {"Role": "mail-sending"},
+            "id": DOMAIN, "name": "example.test", "domain_management": "CustomerManaged",
+            "tags": {"Role": "mail-sending"},
             "verification_records": [{"dkim": [{"name": "selector1-azurecomm-prod-net._domainkey"}],
                                       "dkim2": [{"name": "selector2-azurecomm-prod-net._domainkey"}]}]}),
         *(("azurerm_dns_cname_record", c, {"name": c, "zone_name": "example.test"}) for c in cnames),
@@ -26,7 +27,8 @@ def _domain(*cnames):
                                            "record": [{"value": "v=spf1 include:spf.protection.outlook.com -all"}]}),
         ("azurerm_dns_txt_record", "dmarc", {"name": "_dmarc", "zone_name": "example.test",
                                              "record": [{"value": "v=DMARC1; p=quarantine"}]}),
-        ("azurerm_servicebus_queue", "crm", {"id": f"{RG}/Microsoft.ServiceBus/namespaces/sb/queues/crm", "name": "crm"}),
+        ("azurerm_servicebus_queue", "crm", {"id": f"{RG}/Microsoft.ServiceBus/namespaces/sb/queues/crm",
+                                             "name": "crm"}),
         ("azurerm_eventgrid_topic", "audit", {"id": f"{RG}/Microsoft.EventGrid/topics/audit", "name": "audit",
                                               "tags": {"Role": "audit-events"}}))
 

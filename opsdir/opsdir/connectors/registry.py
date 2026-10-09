@@ -26,7 +26,8 @@ DOMAIN_GROUP = "opsdir.domains"
 ADAPTER_GROUP = "opsdir.adapters"
 FORMAT_GROUP = "opsdir.formats"
 FORMAT_ATTRIBUTE = "ciamFormat"                          # its values are the registered formats' names
-KIND_ORDER = ("provider", "platform", "product", "host", "delivery", "secret-store", "compliance")   # providers first: their files lead a render
+KIND_ORDER = ("provider", "platform", "product", "host", "delivery", "secret-store",
+              "compliance")   # providers first: their files lead a render
 ENVIRONMENTS = branch("environments")
 CONNECTOR_SQL = (Path(__file__).resolve().parent / "sql" / "connectors.sql",)
 
@@ -121,7 +122,8 @@ def secret_patterns(installed=ADAPTERS):
 
 def pattern_records(installed=ADAPTERS):
     """The secret patterns as SecretPattern records (what capture and importers withhold values with)."""
-    return tuple(SecretPattern(name, pattern, description) for name, pattern, _, description in secret_patterns(installed))
+    return tuple(SecretPattern(name, pattern, description)
+                 for name, pattern, _, description in secret_patterns(installed))
 
 
 def format_named(name, formats=FORMATS):
@@ -138,7 +140,8 @@ def store_parts(installed=ADAPTERS):
     """Effect (reads the migration files): what `init` and `upgrade` build the store from: (migrations, definition
     files, the schema (a function of the connection: code-owned fragments composed with the record's custom
     definitions), reference schemes, vocabulary, secret patterns)."""
-    return (read_migrations(), definition_files(), partial(schema.store_schema, fragments=schema_fragments(adapters=installed)),
+    return (read_migrations(), definition_files(),
+            partial(schema.store_schema, fragments=schema_fragments(adapters=installed)),
             ref_schemes(installed), vocabulary(adapters=installed), secret_patterns(installed))
 
 

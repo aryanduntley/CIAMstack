@@ -48,7 +48,8 @@ def test_change_records_round_trip_through_ldif():
 
 def test_a_change_is_described_with_what_each_modification_does():
     modify = LdifRecord("cn=ds-1,ou=x", "modify", {}, (("replace", "ciamInstanceSize", ("m6i.2xlarge",)),
-                                                       ("add", "ciamPort", ("1636", "4444")), ("delete", "ciamZone", ())))
+                                                       ("add", "ciamPort", ("1636", "4444")),
+                                                       ("delete", "ciamZone", ())))
     assert describe(modify) == ("modify cn=ds-1,ou=x", "    replace ciamInstanceSize: m6i.2xlarge",
                                 "    add ciamPort: 1636 | 4444", "    delete ciamZone")
     assert describe(LdifRecord("cn=n,ou=x", "add", {"cn": ("n",)}, ())) == ("add cn=n,ou=x",)

@@ -449,7 +449,8 @@ def stack_problems(d, m, options):
     return tuple(
         f"collection source `{s.name}`: {loc} " + ("isn't a stack (cfn://<stack name>, or the stack's ARN)"
                                                    if stack_of(loc) is None else
-                                                   f"is a stack in account {stack_of(loc)[3]}, the cloud records {want}")
+                                                   f"is a stack in account {stack_of(loc)[3]}, "
+                                                   f"the cloud records {want}")
         for s in collection_sources(m, "aws/cloudformation") for loc in s.locations
         if stack_of(loc) is None or (stack_of(loc)[3] and stack_of(loc)[3] != want))
 

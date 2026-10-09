@@ -186,8 +186,8 @@ def _not_carried(ctx):
     """Actions for the source's exceptions in force that no target exception covers the same controls or findings of."""
     target = set().union(*(_covers(e) for e in exceptions_for(ctx.dst)))
     return [(AREA_EXCEPTIONS, f"{ctx.src.label}'s exception `{rdn_value(e)}` ({one(e, 'ciamExceptionKind')}: "
-                              f"{', '.join(sorted(_covers(e)) or values(e, 'ciamFindingRef')) or 'no control named'}) doesn't "
-                              f"carry to {ctx.dst.label}: "
+                              f"{', '.join(sorted(_covers(e)) or values(e, 'ciamFindingRef')) or 'no control named'}"
+                              f") doesn't carry to {ctx.dst.label}: "
                               "correct the weakness there, or have the risk authority decide for the target.",
              responsible(ctx.d, e, ctx.dst.env), ctx.cutover)
             for e in exceptions_for(ctx.src) if in_force(e, ctx.as_of) and not (_covers(e) & target)]
@@ -241,8 +241,9 @@ def _cmmc(ctx):
            and int(one(a, "ciamAssessmentScore")) < CMMC_MIN_RATIO * int(one(a, "ciamAssessmentMaxScore"))]
     lapsed = [a for a in assessments if _closeout(a) and _closeout(a) < ctx.as_of and items]
     due = [a for a in assessments if _closeout(a) and _closeout(a) >= ctx.as_of and items]
-    blockers = [*((AREA_POAM, f"POA&M item `{rdn_value(i)}` holds requirement {n}, which CMMC Level 2 never allows on a "
-                              "POA&M (32 CFR 170.21(a)(2)(iii)): it must be met before a Conditional status.", owner)
+    blockers = [*((AREA_POAM, f"POA&M item `{rdn_value(i)}` holds requirement {n}, which CMMC Level 2 never allows "
+                              "on a POA&M (32 CFR 170.21(a)(2)(iii)): it must be met before a Conditional status.",
+                   owner)
                   for i, n in never),
                 *((AREA_POAM, f"POA&M item `{rdn_value(i)}` is worth {one(i, 'ciamPointValue')} points: CMMC Level 2 "
                               "allows only 1-point requirements on a POA&M (SC.L2-3.13.11 at 3 when encryption isn't "
@@ -253,8 +254,9 @@ def _cmmc(ctx):
                 *((AREA_POAM, f"Assessment `{rdn_value(a)}`'s Conditional status passed its {CMMC_CLOSEOUT_DAYS}-day "
                               f"POA&M closeout on {_closeout(a)} with items still open: the status has expired.", owner)
                   for a in lapsed)]
-    actions = [*((AREA_POAM, f"Close out `{rdn_value(a)}`'s POA&M by {_closeout(a)} ({CMMC_CLOSEOUT_DAYS} days after its "
-                             "Conditional status): a closeout assessment must confirm every item.", owner, _closeout(a))
+    actions = [*((AREA_POAM, f"Close out `{rdn_value(a)}`'s POA&M by {_closeout(a)} ({CMMC_CLOSEOUT_DAYS} days "
+                             "after its Conditional status): a closeout assessment must confirm every item.",
+                  owner, _closeout(a))
                  for a in due),
                *((AREA_POAM, f"POA&M item `{rdn_value(i)}` records no point value: CMMC eligibility can't be checked "
                              "(ciamPointValue).", owner, ctx.cutover) for i in unscored)]
@@ -272,7 +274,8 @@ def _suppressions(ctx):
                                   f"{', '.join(values(s, 'ciamFindingRef')) or 'findings'} and "
                                   + (f"carries out exception `{rdn_value(e)}`, which isn't in force for it"
                                      if e is not None else "no exception covers it")
-                                  + ": findings nobody approved hiding. Record the exception, or remove the suppression.",
+                                  + ": findings nobody approved hiding. Record the exception, or remove the "
+                                    "suppression.",
                  responsible(ctx.d, s, ctx.dst.env))
                 for s, e in pairs if e is None or not in_force(e, ctx.as_of) or not _names(e, ctx.dst.dn)]
     wider = [(s, e, sorted(set(values(s, "ciamFindingRef")) - set(values(e, "ciamFindingRef")))) for s, e in pairs
@@ -299,7 +302,8 @@ def check_poam(ctx):
 
 # ------------------------------------------------------------------ reports
 def _labels(d, refs):
-    return ", ".join(env_model(d, r).label for r in refs if get(d, r) is not None and is_a(get(d, r), "ciamEnvironment"))
+    return ", ".join(env_model(d, r).label for r in refs
+                     if get(d, r) is not None and is_a(get(d, r), "ciamEnvironment"))
 
 
 def _date(e, attr):

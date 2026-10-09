@@ -122,6 +122,8 @@ def test_the_alb_runs_what_its_policies_would_ask_as_facts_on_its_service_name()
         "tls-mode reencrypt", "tls-min 1.2", "tls-profile intermediate", "health https /pf/heartbeat.ping",
         "stickiness cookie 3600", "drain 30", "idle-timeout 120"}
     assert (one(sso, "ciamTtlSeconds"), one(sso, "ciamRoutingPolicy")) == ("60", "failover-primary")
+    # an internet-facing ALB has no fixed address: its exposure is recorded instead
+    assert (one(sso, "ciamFrontendIp"), one(sso, "ciamExposure")) == (None, "internet")
     policy = imported_directory((), {}, (_row("cn=p,ou=edge-policies,dc=ciam-ops", ("ciamTrafficPolicy",), cn="p",
                                           ciamServiceRole="pf-sso-service", ciamTlsMode="reencrypt",
                                           ciamTlsMinVersion="1.2", ciamTlsProfile="intermediate",

@@ -43,7 +43,8 @@ ACCOUNT_WIDE = ("secret", "key", "storage", "job")
 READ_TYPES = ("microsoft.network/virtualnetworks", "microsoft.network/virtualnetworks/subnets",
               "microsoft.compute/virtualmachines", "microsoft.network/networkinterfaces",
               "microsoft.network/loadbalancers", "microsoft.network/publicipaddresses",
-              "microsoft.network/publicipprefixes", "microsoft.network/dnszones/a", "microsoft.network/privatednszones/a",
+              "microsoft.network/publicipprefixes", "microsoft.network/dnszones/a",
+              "microsoft.network/privatednszones/a",
               "microsoft.network/networksecuritygroups", "microsoft.network/networksecuritygroups/securityrules",
               "microsoft.network/natgateways", "microsoft.compute/diskencryptionsets",
               "microsoft.storage/storageaccounts/blobservices/containers", "microsoft.keyvault/vaults/secrets",
@@ -88,7 +89,8 @@ def _call(name, args, ctx):
         return {"name": ctx["group"], "id": f"/subscriptions/{ctx['subscription']}/resourceGroups/{ctx['group']}"} \
             if ctx["group"] and ctx["subscription"] else _UNKNOWN
     simple = {"equals": lambda a: a[0] == a[1], "toLower": lambda a: str(a[0]).lower(),
-              "toUpper": lambda a: str(a[0]).upper(), "string": lambda a: a[0] if isinstance(a[0], str) else json.dumps(a[0]),
+              "toUpper": lambda a: str(a[0]).upper(),
+              "string": lambda a: a[0] if isinstance(a[0], str) else json.dumps(a[0]),
               "replace": lambda a: str(a[0]).replace(a[1], a[2]), "split": lambda a: str(a[0]).split(a[1]),
               "first": lambda a: a[0][0], "last": lambda a: a[0][-1]}
     if name == "if":
@@ -268,7 +270,8 @@ def _documents(texts):
     typed = [(f, p, kind(doc), doc) for f, p, doc in found]
     folders = dict.fromkeys(f for f, _, k, _ in typed if k)
     return ({f: {k: doc for f2, _, k, doc in typed if f2 == f and k} for f in folders},
-            tuple(f"{p}: not an ARM template, deployment or parameters file; not read" for _, p, k, _ in typed if not k))
+            tuple(f"{p}: not an ARM template, deployment or parameters file; not read"
+                  for _, p, k, _ in typed if not k))
 
 
 def _context(folder):

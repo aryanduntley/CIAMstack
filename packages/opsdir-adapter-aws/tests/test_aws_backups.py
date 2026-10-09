@@ -11,8 +11,8 @@ from network_fixtures import BETA, entry, model
 
 ARN = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234"
 KEY = entry(BETA, "key-disk", "ciamKeyRef", ciamBindingRole="disk-encryption", ciamRefUri=f"aws-kms://{ARN}")
-VAULT = entry(BETA, "vault-main", "ciamBackupVault", ciamBindingRole="vault-main", ciamEncryptedByRole="disk-encryption",
-              ciamStorageImmutability="compliance", ciamStorageLockDays="35",
+VAULT = entry(BETA, "vault-main", "ciamBackupVault", ciamBindingRole="vault-main",
+              ciamEncryptedByRole="disk-encryption", ciamStorageImmutability="compliance", ciamStorageLockDays="35",
               ciamProviderRef="arn:aws:backup:us-east-1:111122223333:backup-vault:ciam-prod-vault-main")
 PLAN = entry(BETA, "backup-daily", "ciamBackupPlan", ciamBindingRole="backup-daily",
              ciamProtectsRole=("volume-ds-data", "pf-grants-db"), ciamBackupVaultRole="vault-main",
@@ -133,7 +133,8 @@ def test_the_cli_reads_the_same():
     texts = {"backup-vaults.json": json.dumps({"BackupVaultList": [
                  {"BackupVaultName": "ciam-prod-vault-main", "BackupVaultArn": VAULT_ARN, "EncryptionKeyArn": ARN,
                   "Locked": True, "MinRetentionDays": 35, "LockDate": "2026-09-01T00:00:00Z"}]}),
-             "backup-plans/plan-1.json": json.dumps({"BackupPlanId": "plan-1", "BackupPlanArn": PLAN_ARN, "BackupPlan": {
+             "backup-plans/plan-1.json": json.dumps({"BackupPlanId": "plan-1", "BackupPlanArn": PLAN_ARN,
+                                                     "BackupPlan": {
                  "BackupPlanName": "ciam-prod-backup-daily", "Rules": [{
                      "RuleName": "backup_daily", "TargetBackupVaultName": "ciam-prod-vault-main",
                      "ScheduleExpression": "cron(0 5 ? * * *)", "StartWindowMinutes": 120,
@@ -145,7 +146,8 @@ def test_the_cli_reads_the_same():
                  "BackupSelection": {"SelectionName": "ciam-prod-backup-daily", "IamRoleArn": "arn:aws:iam::1:role/b",
                                      "ListOfTags": [{"ConditionType": "STRINGEQUALS", "ConditionKey": "Role",
                                                      "ConditionValue": "volume-ds-data"}]}}),
-             "backup-tags/ciam-prod-vault-main.json": json.dumps({"Tags": {"Name": "vault-main", "Role": "vault-main"}}),
+             "backup-tags/ciam-prod-vault-main.json": json.dumps({"Tags": {"Name": "vault-main",
+                                                                           "Role": "vault-main"}}),
              "backup-tags/ciam-prod-backup-daily.json": json.dumps({"Tags": {"Name": "backup-daily",
                                                                              "Role": "backup-daily"}})}
     resources, notices = cli_resources(texts)

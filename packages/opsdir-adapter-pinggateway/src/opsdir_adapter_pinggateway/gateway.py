@@ -76,7 +76,8 @@ def read_config(files, d, patterns, at=None):
     parts = tuple(_route(d, name, r, patterns) for name, r in named if rdn_safe(name))
     captured = tuple(_captured(p, t, patterns) for p, t in sorted(files.items())
                      if p.startswith("config/") and p.endswith(".json"))
-    other = sorted(p for p in files if not ((p.startswith("routes/") or p.startswith("config/")) and p.endswith(".json")))
+    other = sorted(p for p in files
+                   if not ((p.startswith("routes/") or p.startswith("config/")) and p.endswith(".json")))
     return Imported(
         containers=tuple(ou_entry(dn) for dn in (PINGGATEWAY, ROUTES, CONFIG_FILES)),
         groups=(*((dn, (entry,)) for dn, entry, _ in parts), *(g for g, _ in captured)),

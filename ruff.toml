@@ -1,0 +1,7 @@
+# The repository's one lint rule: lines at most 120 characters (E501), checked by opsdir/tests/unit/test_line_length.py
+# (so the default pytest run and scripts/test.sh enforce it). Formatting is not ruff's: the code's own layout stays.
+line-length = 120
+extend-exclude = ["tools"]
+
+[lint]
+select = ["E501"]

@@ -225,7 +225,7 @@
     "kubernetes/ciam/routes.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "4aee27640608bbcf11eb2e576d442ae4f24eb0e34a4b544ab7574836522c2464"
+      "sha256": "11add202d687da5f5c308e82d8da797833ddb041c19978bbb5ea125bbdca3404"
     },
     "kubernetes/ciam/secrets-required.yaml": {
       "scope": "environment-specific",

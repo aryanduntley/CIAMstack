@@ -13,8 +13,10 @@ from network_fixtures import BETA, entry, model
 
 SUB = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam/providers"
 DP = f"{SUB}/Microsoft.DataProtection/backupVaults/ciam-prod-vault-main"
-KEY = entry(BETA, "key-disk", "ciamKeyRef", ciamBindingRole="disk-encryption", ciamRefUri="azkv-key://kv-ciam/keys/disk")
-VAULT = entry(BETA, "vault-main", "ciamBackupVault", ciamBindingRole="vault-main", ciamEncryptedByRole="disk-encryption",
+KEY = entry(BETA, "key-disk", "ciamKeyRef", ciamBindingRole="disk-encryption",
+            ciamRefUri="azkv-key://kv-ciam/keys/disk")
+VAULT = entry(BETA, "vault-main", "ciamBackupVault", ciamBindingRole="vault-main",
+              ciamEncryptedByRole="disk-encryption",
               ciamStorageImmutability="compliance", ciamStorageLockDays="35", ciamCrossRegionRestore="TRUE")
 DATA = entry(BETA, "vol-ds-data", "ciamVolume", ciamBindingRole="volume-ds-data", ciamTargetRole="ds",
              ciamVolumeKind="data", ciamVolumeSizeGb="256", ciamVolumeClass="ssd",
@@ -88,7 +90,8 @@ POLICY_STATE = ("azurerm_data_protection_backup_policy_disk", {
     "id": POLICY_ID, "name": "snapshots-daily", "vault_id": DP,
     "backup_repeating_time_intervals": ["R/2024-01-01T03:00:00+00:00/P1D"], "default_retention_duration": "P7D"})
 DISK_ID = f"{SUB}/Microsoft.Compute/disks/disk-ds-1-vol-ds-data"
-DISK_STATE = ("azurerm_managed_disk", {"id": DISK_ID, "name": "disk-ds-1-vol-ds-data", "storage_account_type": "Premium_LRS",
+DISK_STATE = ("azurerm_managed_disk", {"id": DISK_ID, "name": "disk-ds-1-vol-ds-data",
+                                       "storage_account_type": "Premium_LRS",
                                        "disk_size_gb": 256, "tags": {"Volume": "vol-ds-data", "Role": "volume-ds-data",
                                                                      "SnapshotPolicy": "snapshots-daily"}})
 INSTANCE_STATE = ("azurerm_data_protection_backup_instance_disk", {
@@ -97,7 +100,8 @@ INSTANCE_STATE = ("azurerm_data_protection_backup_instance_disk", {
 
 def _state(*resources):
     return json.dumps({"version": 4, "terraform_version": "1.9.0", "resources": [
-        {"mode": "managed", "type": t, "name": f"r{i}", "provider": 'provider["registry.terraform.io/hashicorp/azurerm"]',
+        {"mode": "managed", "type": t, "name": f"r{i}",
+         "provider": 'provider["registry.terraform.io/hashicorp/azurerm"]',
          "instances": [{"attributes": a}]} for i, (t, a) in enumerate(resources)]})
 
 
@@ -125,7 +129,8 @@ def test_the_cli_and_an_arm_template_read_the_same():
              "properties": {"storageSettings": [{"datastoreType": "VaultStore", "type": "GeoRedundant"}],
                             "featureSettings": {"crossRegionRestoreSettings": {"state": "Enabled"}},
                             "securitySettings": {"immutabilitySettings": {"state": "Unlocked"}}}}
-    policy = {"id": POLICY_ID, "name": "snapshots-daily", "type": "Microsoft.DataProtection/backupVaults/backupPolicies",
+    policy = {"id": POLICY_ID, "name": "snapshots-daily",
+              "type": "Microsoft.DataProtection/backupVaults/backupPolicies",
               "properties": {"datasourceTypes": ["Microsoft.Compute/disks"], "policyRules": [
                   {"objectType": "AzureBackupRule", "name": "BackupDaily", "trigger": {
                       "objectType": "ScheduleBasedTriggerContext",
@@ -136,7 +141,8 @@ def test_the_cli_and_an_arm_template_read_the_same():
                 "type": "Microsoft.DataProtection/backupVaults/backupInstances",
                 "properties": {"dataSourceInfo": {"resourceID": DISK_ID, "datasourceType": "Microsoft.Compute/disks"},
                                "policyInfo": {"policyId": POLICY_ID}}}
-    disk = {"id": DISK_ID, "name": "disk-ds-1-vol-ds-data", "type": "Microsoft.Compute/disks", "sku": {"name": "Premium_LRS"},
+    disk = {"id": DISK_ID, "name": "disk-ds-1-vol-ds-data", "type": "Microsoft.Compute/disks",
+            "sku": {"name": "Premium_LRS"},
             "diskSizeGB": 256, "tags": {"Volume": "vol-ds-data", "Role": "volume-ds-data",
                                         "SnapshotPolicy": "snapshots-daily"}}
     resources, notices = cli_resources({"backup.json": json.dumps([vault, policy, instance]),

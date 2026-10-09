@@ -56,10 +56,12 @@ BASE = (
     _workload("ig", "ig", "ciamIngressHost: gw.example.test\n"),
     _binding("k8s", "ciamCluster", "k8s", "ciamProviderRef: cluster-1\n"),
     _binding("am", "ciamWorkloadBinding", "am-workload",
-             f"ciamContainerImage: openam={AM_IMAGE}\nciamContainerImage: amster=registry.example.test/ciam/amster:7.5.1\n"
+             f"ciamContainerImage: openam={AM_IMAGE}\n"
+             "ciamContainerImage: amster=registry.example.test/ciam/amster:7.5.1\n"
              "ciamContainerImage: admin-ui=registry.example.test/ciam/admin-ui:7.5.1\n"
              "ciamWorkloadReplicas: 2\nciamCpuRequest: 500m\nciamMemoryLimit: 2Gi\n"),
-    _binding("idm", "ciamWorkloadBinding", "idm-workload", "ciamContainerImage: main=registry.example.test/ciam/idm:7.5.1\n"),
+    _binding("idm", "ciamWorkloadBinding", "idm-workload",
+             "ciamContainerImage: main=registry.example.test/ciam/idm:7.5.1\n"),
     _binding("ig", "ciamWorkloadBinding", "ig-workload",
              "ciamContainerImage: ig=us-docker.pkg.dev/forgeops-public/images/ig:2026.3.1\n"),
     _binding("identity-am", "ciamIdentityBinding", "identity-am", "ciamProviderRef: am-identity\n"),
@@ -120,7 +122,7 @@ def test_identity_platform_values():
     assert v["serviceAccount"] == {"create": False, "name": "identity"}
     assert v["platform"] == {
         "disable_secret_agent_config": True, "secrets_enabled": True, "base_generate": True, "secrets": {},
-        "ds_certs": {"enabled": False},                     # no DS in the cluster: the servers' CA comes from the record
+        "ds_certs": {"enabled": False},  # no DS in the cluster: the servers' CA comes from the record
         "ingress": {"hosts": ["id.example.test"]},
         "external_ds": {"enabled": True, "cts_hosts": ["ldap.example.test:1636"],
                         "idrepo_hosts": ["ldap.example.test:1636"]}}
@@ -272,7 +274,8 @@ def test_the_render_builds_and_is_valid_kubernetes(tmp_path, extra):
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(text)
     helm = [x for chart in ("identity-platform", "ping-gateway")
-            for x in ("--helm", str(SOURCE / "charts" / chart), str(tmp_path / "helm" / "identity" / f"{chart}-values.yaml"))]
+            for x in ("--helm", str(SOURCE / "charts" / chart),
+                      str(tmp_path / "helm" / "identity" / f"{chart}-values.yaml"))]
     done = subprocess.run([str(ROOT / "opsdir" / "scripts" / "validate-kubernetes.sh"), *helm,
                            str(tmp_path / "kustomize" / "overlay")], capture_output=True, text=True)
     assert done.returncode == 0, done.stdout + done.stderr

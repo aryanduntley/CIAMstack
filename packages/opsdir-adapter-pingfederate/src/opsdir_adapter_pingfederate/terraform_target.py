@@ -96,7 +96,8 @@ def _argument(attrs, key):
 
 
 def _variant(attrs, value):
-    """The provider's variant argument for a discriminated object (its type LDAP -> ldap_data_store or ldap), or None."""
+    """The provider's variant argument for a discriminated object (its type LDAP -> ldap_data_store or ldap), or
+    None."""
     kind = value.get("type") if isinstance(value, dict) and "type" not in attrs else None
     if not isinstance(kind, str):
         return None

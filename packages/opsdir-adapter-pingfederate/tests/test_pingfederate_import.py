@@ -33,7 +33,8 @@ def _record():
         *(_row(f"cn={a},{USER_SCHEMA}", ("ciamUserAttribute",), cn=a, ciamLdapName=a, ciamPiiClass="low")
           for a in ("mail", "companyId")),
         *(_row(f"cn={o},ou=owners,dc=ciam-ops", ("ciamParty",), cn=o) for o in ("portal-team", "platform")),
-        _row(SSO, ("ciamIdentityService",), cn="sso", ciamBaseUrl="https://sso.example.test", ciamTargetRole="pf-engine"),
+        _row(SSO, ("ciamIdentityService",), cn="sso", ciamBaseUrl="https://sso.example.test",
+             ciamTargetRole="pf-engine"),
         _row(PORTAL, ("ciamIntegration",), cn="customer-portal", ciamProtocolType="saml2-sp",
              ciamEntityId="https://portal.example.test/saml/sp", ciamAcsUrl="https://old.example.test/acs",
              ciamOwner="cn=portal-team,ou=owners,dc=ciam-ops", ciamPopulation="customers", ciamServedBy=SSO),
@@ -45,7 +46,8 @@ def _record():
              ciamKeyRole="pf-signing-key", ciamOwner="cn=platform,ou=owners,dc=ciam-ops"),
         _row(f"cn=pf-ds-svc,{CONSUMERS}", ("ciamConsumer",), cn="pf-ds-svc",
              ciamBindDn="uid=pf-svc,ou=service-accounts,dc=example,dc=test"),
-        _row(f"cn=ds-1,{ENV}", ("ciamServer",), cn="ds-1", ciamServerRole="ds", ciamHostname="ds-1.internal.example.test"),
+        _row(f"cn=ds-1,{ENV}", ("ciamServer",), cn="ds-1", ciamServerRole="ds",
+             ciamHostname="ds-1.internal.example.test"),
         _row(f"cn=svc-ldaps,ou=bindings,{ENV}", ("ciamServiceName",), cn="svc-ldaps", ciamFqdn="ldap.example.test",
              ciamBindingRole="ds-ldaps-service")))
 
@@ -90,7 +92,8 @@ def test_partners_and_clients_new_to_the_record_are_added_and_named():
         ("partner-signing", "20261102000000Z", "self-signed")
     mobile = get(after, f"cn=mobile,{INTEGRATIONS}")
     assert (values(mobile, "ciamGrantType"), one(mobile, "ciamTokenAuthMethod"), one(mobile, "ciamPkceRequired"),
-            values(mobile, "ciamScope")) == (("authorization_code", "refresh_token"), "none", "TRUE", ("openid", "email"))
+            values(mobile, "ciamScope")) == (("authorization_code", "refresh_token"), "none", "TRUE",
+                                             ("openid", "email"))
     batch = get(after, f"cn=batch,{INTEGRATIONS}")
     assert (values(batch, "ciamGrantType"), one(batch, "ciamTokenAuthMethod")) == \
         (("client_credentials",), "client_secret_basic")

@@ -193,7 +193,8 @@ def test_the_cli_reads_the_same_depth():
     by = {(r.kind, r.ref): r for r in resources}
     rt = by[("route-table", "rtb-1")]
     assert rt.attrs["ciamRoute"] == ("0.0.0.0/0 nat nat-1", "pl-63a5400a endpoint vpce-s3")   # no local route
-    assert rt.links["ciamSubnetRole"] == ("subnet-ds",) and by[("route-table", "rtb-main")].attrs["ciamMainTable"] == ("TRUE",)
+    assert (rt.links["ciamSubnetRole"] == ("subnet-ds",)
+            and by[("route-table", "rtb-main")].attrs["ciamMainTable"] == ("TRUE",))
     assert by[("acl", "acl-1")].attrs["ciamAclRule"] == ("100 allow in tcp 1636 10.0.0.0/8",)       # no 32767
     assert by[("private-endpoint", "vpce-sm")].attrs["ciamPrivateDns"] == ("TRUE",)
     assert by[("endpoint-service", "vpce-svc-1")].attrs["ciamAllowedPrincipal"] == ("arn:aws:iam::444455556666:root",)
@@ -262,7 +263,8 @@ def test_cloudformation_declares_the_same_depth():
     rt = by[("route-table", "rtb-1")]
     assert rt.attrs["ciamRoute"] == ("0.0.0.0/0 nat nat-1",) and rt.links["ciamSubnetRole"] == ("subnet-ds",)
     acl = by[("acl", "acl-1")]
-    assert acl.attrs["ciamAclRule"] == ("100 allow in tcp 1636 10.0.0.0/8",) and acl.links["ciamSubnetRole"] == ("subnet-ds",)
+    assert (acl.attrs["ciamAclRule"] == ("100 allow in tcp 1636 10.0.0.0/8",)
+            and acl.links["ciamSubnetRole"] == ("subnet-ds",))
     assert by[("private-endpoint", "vpce-sm")].attrs["ciamPrivateDns"] == ("TRUE",)
     service = by[("endpoint-service", "vpce-svc-1")]
     assert service.attrs["ciamAllowedPrincipal"] == ("arn:aws:iam::444455556666:root",)

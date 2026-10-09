@@ -89,7 +89,8 @@ def test_azure_always_encrypts_and_a_key_without_a_disk_encryption_set_is_said()
 
 def _state(*resources):
     return json.dumps({"version": 4, "terraform_version": "1.9.0", "resources": [
-        {"mode": "managed", "type": t, "name": f"r{i}", "provider": 'provider["registry.terraform.io/hashicorp/azurerm"]',
+        {"mode": "managed", "type": t, "name": f"r{i}",
+         "provider": 'provider["registry.terraform.io/hashicorp/azurerm"]',
          "instances": [{"attributes": a}]} for i, (t, a) in enumerate(resources)]})
 
 
@@ -115,7 +116,8 @@ def _by(resources):
 def test_disks_are_read_back_from_state():
     by = _by(state_resources(_state(ENCRYPTION_SET, DISK, ATTACH, VM_STATE))[0])
     data = by[("volume", "vol-ds-data")]
-    assert data.attrs == {"ciamVolumeKind": ("data",), "ciamVolumeSizeGb": ("256",), "ciamVolumeClass": ("provisioned",),
+    assert data.attrs == {"ciamVolumeKind": ("data",), "ciamVolumeSizeGb": ("256",),
+                          "ciamVolumeClass": ("provisioned",),
                           "ciamIops": ("6000",), "ciamThroughputMb": ("250",), "ciamVolumeEncrypted": ("TRUE",),
                           "ciamTargetRole": ("ds",)}
     assert data.links == {"ciamEncryptedByRole": "azkv-key://kv-ciam/keys/disk"} and data.role == "volume-ds-data"

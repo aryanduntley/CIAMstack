@@ -75,7 +75,8 @@ def test_the_texts_the_clouds_write_read_back():
     assert route_text(Route("10.0.0.0/8", "vpn", "", ("ds", "pf"))) == "10.0.0.0/8 vpn for ds,pf"
     assert parse_route(route_text(Route("pl-1a", "endpoint", "vpce-1", ()))) == Route("pl-1a", "endpoint", "vpce-1", ())
     assert acl_rule_text(100, "allow", "in", "tcp", (636, 636), "10.0.0.0/8") == "100 allow in tcp 636 10.0.0.0/8"
-    assert acl_rule_text(110, "allow", "in", "tcp", (1024, 65535), "0.0.0.0/0") == "110 allow in tcp 1024-65535 0.0.0.0/0"
+    assert (acl_rule_text(110, "allow", "in", "tcp", (1024, 65535), "0.0.0.0/0")
+            == "110 allow in tcp 1024-65535 0.0.0.0/0")
     assert acl_rule_text(200, "deny", "out", "all", (0, 65535), "0.0.0.0/0") == "200 deny out all all 0.0.0.0/0"
 
 
@@ -102,7 +103,8 @@ def _hub():
             (PEER_ENV, ("top", "ciamEnvironment"), {"env": ["prod"]}),
             (f"ou=bindings,{PEER_ENV}", ("top", "organizationalUnit"), {"ou": ["bindings"]}),
             (f"cn=net,ou=bindings,{PEER_ENV}", ("top", "ciamNetwork"),
-             {"cn": ["net"], "ciamBindingRole": ["network"], "ciamCidr": ["10.9.0.0/16"], "ciamProviderRef": ["vpc-hub"]}))
+             {"cn": ["net"], "ciamBindingRole": ["network"], "ciamCidr": ["10.9.0.0/16"],
+              "ciamProviderRef": ["vpc-hub"]}))
 
 
 def test_the_other_side_is_the_environment_whose_network_has_the_peer_ref():
@@ -113,7 +115,8 @@ def test_the_other_side_is_the_environment_whose_network_has_the_peer_ref():
                                            name="pcx-1", role="peering-hub"))
     assert values(entries[f"cn=pcx-1,{B}"], "ciamPeerEnvironment") == (PEER_ENV,)        # our own network skipped
     assert "main/prod: interconnect pcx-1 added (role peering-hub)" in notices
-    tagged = resource("interconnect", "pcx-2", {**link, "ciamPeerEnvironment": "env=prod,cloud=dc,ou=environments,dc=ciam-ops"},
+    tagged = resource("interconnect", "pcx-2",
+                      {**link, "ciamPeerEnvironment": "env=prod,cloud=dc,ou=environments,dc=ciam-ops"},
                       links={"ciamPeerEnvironment": "vpc-hub"}, name="pcx-2", role="peering-dc")
     entries, _ = _placed(d, tagged)
     assert values(entries[f"cn=pcx-2,{B}"], "ciamPeerEnvironment") == ("env=prod,cloud=dc,ou=environments,dc=ciam-ops",)
@@ -131,4 +134,5 @@ def test_a_flow_log_without_a_role_takes_its_subnets():
                                resource("flow-log", "sub-a/logConfig", {"ciamFlowScope": "subnet"},
                                         links={"ciamSubnetRole": "sub-a"}, name="ciam-ds-flow-logs"))
     log = entries[f"cn=ciam-ds-flow-logs,{B}"]
-    assert values(log, "ciamBindingRole") == ("flow-logs-subnet-ds",) and values(log, "ciamSubnetRole") == ("subnet-ds",)
+    assert (values(log, "ciamBindingRole") == ("flow-logs-subnet-ds",)
+            and values(log, "ciamSubnetRole") == ("subnet-ds",))

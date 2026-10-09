@@ -18,7 +18,8 @@ REPORTS = f"uid=reports,ou=service-accounts,{USERS}"
 
 
 def _event(conn, op, at, ip="10.20.4.21", protocol="LDAPS", user=None, status="SUCCESSFUL", **request):
-    e = {"eventName": "DJ-LDAP", "client": {"ip": ip, "port": 40000 + conn}, "server": {"ip": "10.20.1.11", "port": 1636},
+    e = {"eventName": "DJ-LDAP", "client": {"ip": ip, "port": 40000 + conn},
+         "server": {"ip": "10.20.1.11", "port": 1636},
          "request": {"protocol": protocol, "operation": op, "connId": conn, "msgId": 1, **request},
          "transactionId": "0", "response": {"status": status, "statusCode": "0", "elapsedTime": 1,
                                             "elapsedTimeUnits": "MILLISECONDS"},
@@ -69,7 +70,8 @@ def _record():
     return make_directory((), {}, (
         *(_row(f"cn={a},{USER_SCHEMA}", ("ciamUserAttribute",), cn=a, ciamLdapName=a, ciamPiiClass="low")
           for a in ("uid", "mail", "companyId")),
-        _row(f"cn=pf-ds-svc,{CONSUMERS}", ("ciamConsumer",), cn="pf-ds-svc", ciamBindDn=PF, ciamOwner="cn=team,ou=owners",
+        _row(f"cn=pf-ds-svc,{CONSUMERS}", ("ciamConsumer",), cn="pf-ds-svc", ciamBindDn=PF,
+             ciamOwner="cn=team,ou=owners",
              ciamCriticality="critical", ciamMigrationStatus="tested", ciamFirstSeen="20240103000000Z",
              ciamObservedSource="10.99.0.0/16"),
         _row(f"cn=idle,{CONSUMERS}", ("ciamConsumer",), cn="idle", ciamBindDn=f"uid=idle,{USERS}")))

@@ -17,19 +17,20 @@ objects were checked against: how the Gateway names and annotates its Service, t
 keeps a client on one backend pod. Only standard-channel Gateway API objects are shared; the rest is the row's.
 
 The gateway's Secrets (its internal TLS key pair) are read like a workload's (ciamWorkloadSecret on the binding,
-delivered by render.py); the CA its backends' certificates are checked against is a ConfigMap the BackendTLSPolicy
-names (<gateway>-backend-ca, key ca.crt). Values the record can't give are UNBOUND:<what>.
+delivered by render.py); the CAs its backends' certificates are checked against are a ConfigMap beside each
+BackendTLSPolicy (<gateway>-backend-ca, key ca.crt: the PEMs recorded for the CAs the gateway trusts, core
+edge.gateways.backend_ca; public material). Values the record can't give are UNBOUND:<what>.
 """
 from collections import namedtuple
 from types import MappingProxyType
 
 from opsdir.core.contract import GatewayPlug, Setting
-from opsdir.core.directory import one, rdn_value
+from opsdir.core.directory import one, rdn_of, rdn_value
 from opsdir.core.environment import UNBOUND, of_class
 from opsdir.core.settings import setting_value
 from opsdir.domains.compute.workloads import namespace_of, runs_on_kubernetes, workload_secrets, workloads
-from opsdir.domains.edge.gateways import GATEWAY_HTTP as HTTP_PORT, GATEWAY_HTTPS as HTTPS_PORT, fronted_services, \
-    gateway_port
+from opsdir.domains.edge.gateways import GATEWAY_HTTP as HTTP_PORT, GATEWAY_HTTPS as HTTPS_PORT, backend_ca, \
+    fronted_services, gateway_port
 from opsdir.domains.edge.resolve import front_edge
 from .names import k8s_name
 
@@ -192,11 +193,14 @@ def gateway_docs(m, services, gw):
 
 def route_docs(m, services, gw):
     """{namespace: objects}: per service name a cluster gateway fronts, its HTTPRoute in its role's namespace, the
-    BackendTLSPolicies of the Services there that speak TLS, and cookie stickiness when its policy asks for it."""
+    BackendTLSPolicies of the Services there that speak TLS with the backend CA bundle they check against, and cookie
+    stickiness when its policy asks for it."""
     impl = implementation_of(m, gw)
     if impl is None:
         return {}
     gns, name, out = gateway_namespace(m, gw), gateway_name(gw), {}
+    bundle, missing = backend_ca(m.d, gw)
+    ca = bundle or f"{UNBOUND}{rdn_of(missing[0]) if missing else 'gateway-ca'}-pem"
     for svc, spec, routes, ns in _fronted(m, services, gw):
         route = k8s_name(rdn_value(svc))
         section = "https" if gateway_port(spec) == HTTPS_PORT else "http"
@@ -217,6 +221,8 @@ def route_docs(m, services, gw):
                         "validation": {"caCertificateRefs": [{"group": "", "kind": "ConfigMap",
                                                               "name": f"{name}-backend-ca"}],
                                        "hostname": f"{service}.{ns}.svc.cluster.local"}}} for service in tls),
+            *(({"apiVersion": "v1", "kind": "ConfigMap", "metadata": {"name": f"{name}-backend-ca", "namespace": ns},
+                "data": {"ca.crt": ca}},) if tls else ()),
             *sticky))
     return {ns: tuple({(d["kind"], d["metadata"]["name"]): d for d in docs}.values()) for ns, docs in out.items()}
 

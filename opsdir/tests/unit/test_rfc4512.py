@@ -45,8 +45,9 @@ def test_quote_and_name_list():
 
 
 def test_written_definitions_parse_back():
-    at = attribute_type_definition("1.2.3.5", "ciamNote", "Owner's note", "caseIgnoreMatch", "1.3.6.1.4.1.1466.115.121.1.15",
-                                   True, (("X-PORTABILITY", "meta"), ("X-VALUE-TYPE", "string")))
+    at = attribute_type_definition("1.2.3.5", "ciamNote", "Owner's note", "caseIgnoreMatch",
+                                   "1.3.6.1.4.1.1466.115.121.1.15", True,
+                                   (("X-PORTABILITY", "meta"), ("X-VALUE-TYPE", "string")))
     assert attribute_type(at)["description"] == "Owner's note"
     assert attribute_type(at)["single_value"] is True
     oc = object_class_definition("1.2.3.6", "ciamNoted", "Has notes", "ciamObject", "AUXILIARY", ("cn",),

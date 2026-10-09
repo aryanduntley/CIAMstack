@@ -15,7 +15,7 @@ from functools import partial
 from itertools import chain
 
 from opsdir.core.directory import one, rdn_value, values
-from opsdir.core.network import is_private
+from opsdir.domains.edge.exposure import is_internal
 from opsdir.domains.edge.resolve import inspected, path_regex, tls_policy
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 
@@ -28,7 +28,8 @@ TLS_POLICIES = (("1.3", "modern", "ELBSecurityPolicy-TLS13-1-3-2021-06", True),
                 ("1.2", "compatible", "ELBSecurityPolicy-TLS13-1-2-Ext2-2021-06", False))
 # WAF category -> AWS managed rule group
 WAF_GROUPS = {"core-rules": "AWSManagedRulesCommonRuleSet", "known-bad-inputs": "AWSManagedRulesKnownBadInputsRuleSet",
-              "ip-reputation": "AWSManagedRulesAmazonIpReputationList", "bot-control": "AWSManagedRulesBotControlRuleSet",
+              "ip-reputation": "AWSManagedRulesAmazonIpReputationList",
+              "bot-control": "AWSManagedRulesBotControlRuleSet",
               "account-takeover": "AWSManagedRulesATPRuleSet", "account-creation-fraud": "AWSManagedRulesACFPRuleSet"}
 US_EAST_1 = "us_east_1"               # the provider alias CloudFront's certificate and web ACL are created through
 WINDOWS = (60, 120, 300, 600)           # rate-based rule evaluation windows, seconds
@@ -308,7 +309,7 @@ def alb_service(m, svc, spec, backend, subnets):
     return (*_alb_security_group(m, n, svc, ports, backend, spec.cdn),
             block("resource", ["aws_lb", n], [
                 *((("#", f"an ALB's addresses are AWS's: frontend address {ip} isn't kept"),) if ip else ()),
-                ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("internal", bool(ip) and is_private(ip)),
+                ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("internal", is_internal(svc)),
                 ("load_balancer_type", "application"),
                 ("security_groups", [ref(f"aws_security_group.{n}_alb.id")]),
                 ("subnets", [ref(f"data.aws_subnet.{tf_name(rdn_value(s))}.id") for s in subnets]),

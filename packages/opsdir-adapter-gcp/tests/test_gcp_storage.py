@@ -29,7 +29,8 @@ def _flat(text):
 
 
 def test_a_kept_bucket_with_every_setting_and_its_copy_named():
-    out = _flat(_render(KEY_ENTRY, entry(ALPHA, "backup", "ciamBackupTarget", **STORE, ciamProviderRef="alpha-backups")))
+    out = _flat(_render(KEY_ENTRY, entry(ALPHA, "backup", "ciamBackupTarget", **STORE,
+                                         ciamProviderRef="alpha-backups")))
     for text in ('resource "google_storage_bucket" "backup"', 'name = "alpha-backups"', "location = var.region",
                  "uniform_bucket_level_access = true", 'public_access_prevention = "enforced"',
                  "versioning { enabled = true }", "retention_period = 3024000", "is_locked = true",
@@ -58,8 +59,8 @@ def test_others_buckets_are_named_and_references_left_alone():
     out = _render(entry(ALPHA, "store", "ciamObjectStore", ciamBindingRole="exports", ciamStorageRef="gs://b",
                         ciamStorageImmutability="governance", ciamStorageLockDays="7",
                         ciamManagedBy="cn=storage-team,ou=owners,dc=ciam-ops"))
-    assert out == ("# Object store 'store' (role exports) is kept by cn=storage-team,ou=owners,dc=ciam-ops: not rendered "
-                   "here. Ask them for: governance lock 7 days")
+    assert out == ("# Object store 'store' (role exports) is kept by cn=storage-team,ou=owners,dc=ciam-ops: "
+                   "not rendered here. Ask them for: governance lock 7 days")
     referenced = entry(ALPHA, "backup", "ciamBackupTarget", ciamBindingRole="backup-target",
                        ciamStorageRef="gs://alpha-backups")
     assert _render(referenced) == "" and kept_buckets(model(alpha=(referenced,))[1]) == ()
@@ -81,7 +82,8 @@ BUCKET = {"name": "alpha-backups", "labels": {"role": "backup-target", "managed_
                "action": [{"type": "Delete"}]}]}
 READ = {"ciamStorageRef": ("gs://alpha-backups",), "ciamStorageVersioning": ("TRUE",),
         "ciamStorageImmutability": ("compliance",), "ciamStorageLockDays": ("35",),
-        "ciamStorageLifecycle": ("30 cold", "400 delete", "noncurrent 30 delete"), "ciamStoragePublicBlocked": ("TRUE",)}
+        "ciamStorageLifecycle": ("30 cold", "400 delete", "noncurrent 30 delete"),
+        "ciamStoragePublicBlocked": ("TRUE",)}
 
 
 JOB = {"name": "transferJobs/123", "status": "ENABLED", "replication_spec": [{

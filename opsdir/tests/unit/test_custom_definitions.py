@@ -14,7 +14,8 @@ from opsdir.store.postgres import schema_phases, schema_rows
 def field(name, number, vt="int", **attrs):
     return make_entry(f"cn={name},{CUSTOM_SCHEMA}", ("top", "ciamFieldDefinition"),
                       {"cn": [name], "ciamDefinitionNumber": [str(number)], "ciamValueType": [vt],
-                       "ciamPortability": ["intent"], **{k: v if isinstance(v, list) else [v] for k, v in attrs.items()}})
+                       "ciamPortability": ["intent"],
+                       **{k: v if isinstance(v, list) else [v] for k, v in attrs.items()}})
 
 
 def record_type(name, number, **attrs):
@@ -39,8 +40,10 @@ def _rows(entries):
 def test_fields_become_attribute_types_under_the_custom_arc_with_their_rules():
     ats, _ = _rows(ALL)
     at = next(a for a in ats if a["name"] == "xRetentionDays")
-    assert (at["oid"], at["value_type"], at["single_value"], at["origin"]) == (f"{CUSTOM_ARC}.1.1", "int", True, "custom")
-    assert at["rules"] == {"X-MIN": "7", "X-MAX": "90"} and at["description"] == "Soft-delete retention of the secret store"
+    assert ((at["oid"], at["value_type"], at["single_value"], at["origin"])
+            == (f"{CUSTOM_ARC}.1.1", "int", True, "custom"))
+    assert (at["rules"] == {"X-MIN": "7", "X-MAX": "90"}
+            and at["description"] == "Soft-delete retention of the secret store")
     tag = next(a for a in ats if a["name"] == "xTag")
     assert tag["single_value"] is False and tag["rules"] == {"X-PATTERN": "^[a-z-]+$", "X-MAX-LENGTH": "40"}
 
@@ -70,10 +73,12 @@ def test_valid_definitions_compose_cleanly():
     ((field("xBad", 9, "vocab"),), "field xBad: value type 'vocab' is not one of"),
     ((field("xBad", 9, "string", ciamMinValue="1"),), "field xBad: min/max apply to int and port fields, not string"),
     ((field("xBad", 9, ciamMinValue="9", ciamMaxValue="1"),), "field xBad: min 9 is above max 1"),
-    ((field("xBad", 9, "string", ciamPattern="(unclosed"),), "field xBad: pattern '(unclosed' is not a regular expression"),
+    ((field("xBad", 9, "string", ciamPattern="(unclosed"),),
+     "field xBad: pattern '(unclosed' is not a regular expression"),
     ((field("xBad", 9, "bool", ciamMaxLength="3"),), "field xBad: pattern and max length don't apply to bool fields"),
     ((field("xBad", 9, ciamCarriedBy="ciamNothing"),), "field xBad applies to unknown record type ciamNothing"),
-    ((field("xBad", 9, ciamCarriedBy="organizationalUnit"),), "field xBad can't apply to the standard class organizationalUnit"),
+    ((field("xBad", 9, ciamCarriedBy="organizationalUnit"),),
+     "field xBad can't apply to the standard class organizationalUnit"),
     ((field("xOne", 9), field("xTwo", 9)), f"OID reused: {CUSTOM_ARC}.1.9"),
     ((record_type("xThing", 9, ciamRequiredField="xNobody"),), "class xThing uses undefined attribute xNobody"),
     ((record_type("xThing", 9, ciamParentType="xNoParent"),), "class xThing has undefined superclass xNoParent"),

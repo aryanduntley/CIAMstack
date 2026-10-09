@@ -58,9 +58,9 @@ ATTRIBUTES = (
                  'Who the provider said the collector was when an import run\'s export was collected, or a collection '
                  'was attempted (its identity check: account, subscription, project)'),
     AttributeDef(602, 'ciamCollectedCall', 'string', 'meta', False,
-                 'A call that collected part of an import run\'s export, or that a collection attempt made: the SHA-256 '
-                 'of what it returned (absent: nothing there; failed: the call failed), the file it became and the '
-                 'command or URL (never a credential)'),
+                 'A call that collected part of an import run\'s export, or that a collection attempt made: '
+                 'the SHA-256 of what it returned (absent: nothing there; failed: the call failed), the file it '
+                 'became and the command or URL (never a credential)'),
     AttributeDef(603, 'ciamCollectionCredential', 'string', 'meta', False,
                  'A credential reference an import run\'s collection, or a collection attempt, resolved (the '
                  'reference, never the value)'),
@@ -107,9 +107,10 @@ CLASSES = (
                                                                         'ciamCollectedAt'),
              ('ciamCollectedEnvironment', 'ciamCollectionProblem', 'ciamCollectionIdentity', 'ciamCollectedCall',
               'ciamCollectionCredential'),
-             'The last attempt by `opsdir collect` to collect one importer\'s export of one environment (or estate-wide), '
-             'recorded under the change it ran with (ciamChangeRef) whatever the outcome: complete, or incomplete or '
-             'skipped with its problems and the calls it made, so a failed collection stays visible after the run'),
+             'The last attempt by `opsdir collect` to collect one importer\'s export of one environment '
+             '(or estate-wide), recorded under the change it ran with (ciamChangeRef) whatever the outcome: '
+             'complete, or incomplete or skipped with its problems and the calls it made, so a failed collection '
+             'stays visible after the run'),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

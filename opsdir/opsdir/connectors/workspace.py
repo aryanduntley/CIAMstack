@@ -53,8 +53,10 @@ def cutover_changes(base, live, workspace):
 def status_text(base, changes, live_changed):
     counts = {t: sum(r.changetype == t for r in changes) for t in ("add", "modify", "delete")}
     return "\n".join((f"workspace copied from {base.source} at {base.created_at:%Y-%m-%d %H:%M:%S}",
-                      f"changes since then: {counts['add']} added, {counts['modify']} modified, {counts['delete']} deleted",
-                      "live record: changed since the copy" if live_changed else "live record: unchanged since the copy"))
+                      f"changes since then: {counts['add']} added, {counts['modify']} modified, "
+                      f"{counts['delete']} deleted",
+                      "live record: changed since the copy" if live_changed
+                      else "live record: unchanged since the copy"))
 
 
 # ------------------------------------------------------------------ effects

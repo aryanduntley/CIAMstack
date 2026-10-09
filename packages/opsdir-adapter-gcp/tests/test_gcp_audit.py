@@ -34,7 +34,8 @@ def test_a_project_trail_the_platform_keeps_is_a_sink_with_its_grant_and_audit_c
               _trail("org-trail", "audit-logs", ciamManagedBy=PARTY))
     _, alpha, _ = model(alpha=(_bucket(), *trails), tree=OWNERS)
     assert render_trails(alpha) == ('''resource "google_logging_project_sink" "audit_sink" {
-  # integrity: Google keeps no digest of audit logs; keep them in a bucket whose retention policy is locked (ciamStorageImmutability compliance)
+  # integrity: Google keeps no digest of audit logs; keep them in a bucket whose retention policy is locked '''
+                                    '''(ciamStorageImmutability compliance)
   name                   = "ciam-audit"
   destination            = "storage.googleapis.com/example-ciam-audit"
   filter                 = "logName:\\"cloudaudit.googleapis.com\\""

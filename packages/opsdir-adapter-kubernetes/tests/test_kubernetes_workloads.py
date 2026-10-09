@@ -195,7 +195,8 @@ def test_a_namespace_collected_live_reads_as_its_saved_manifests():
         if o["kind"] == "StatefulSet":
             o["spec"]["template"]["spec"]["containers"][0]["env"].append({"name": "JAVA_OPTS", "value": "-Dpw=hunter2"})
     source = ("dn: ou=settings,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: settings\n\n"
-              "dn: cn=collect-from-kubernetes,ou=settings,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamEstateSetting\n"
+              "dn: cn=collect-from-kubernetes,ou=settings,dc=ciam-ops\n"
+              "objectClass: top\nobjectClass: ciamEstateSetting\n"
               "cn: collect-from-kubernetes\nciamEstateValue: TRUE\n\n"
               "dn: cn=k8s-identity,ou=bindings,env=prod,cloud=alpha,ou=environments,dc=ciam-ops\nobjectClass: top\n"
               "objectClass: ciamCollectionSource\ncn: k8s-identity\nciamBindingRole: collect-k8s\n"
@@ -206,7 +207,8 @@ def test_a_namespace_collected_live_reads_as_its_saved_manifests():
     answers = {"get": json.dumps({"kind": "List", "items": leaky}), "namespace": json.dumps(namespace)}
     c = collect("kubernetes/workloads", collector, d, m,
                 lambda call: (answers["namespace" if "namespace" in call.argv else "get"], None))
-    assert c.problems == () and sorted(c.files) == ["prod-east/identity/namespace.json", "prod-east/identity/objects.json"]
+    assert c.problems == () and sorted(c.files) == ["prod-east/identity/namespace.json",
+                                                    "prod-east/identity/objects.json"]
     assert "hunter2" not in "".join(c.files.values()) and "managedFields" not in "".join(c.files.values())
     saved = {"identity/live.json": json.dumps({"kind": "List", "items": [namespace, *served]})}
     plain = lambda changes: sorted((r.dn, sorted((a, v) for a, v in r.attrs.items() if a != "ciamRepoPath"))

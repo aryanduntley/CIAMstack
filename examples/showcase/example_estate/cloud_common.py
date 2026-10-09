@@ -35,6 +35,7 @@ def servers_of(p, role):
 
 
 def edge_subnets(p):
-    """(binding name, role, provider ref, CIDR, zone) of the environment's edge subnets (the gateways', the proxies')."""
+    """(binding name, role, provider ref, CIDR, zone) of the environment's edge subnets (the gateways', the
+    proxies')."""
     return [(cn, role, attrs["ciamProviderRef"], attrs["ciamCidr"], None)
             for oc, cn, role, attrs in p["edge"] if oc == "ciamSubnetBinding"]

@@ -80,7 +80,8 @@ def _azure_lb(cn, fqdn, ports, ip, pref):
     return {"id": lb, "name": f"lb-ciam-prod-{cn}", "type": "Microsoft.Network/loadBalancers",
             "frontendIPConfigurations": [{"name": "frontend", **frontend}],
             "backendAddressPools": [{"id": f"{lb}/backendAddressPools/servers", "name": "servers"}],
-            "loadBalancingRules": [{"name": f"tcp-{port}", "frontendPort": port, "backendPort": port} for port in ports],
+            "loadBalancingRules": [{"name": f"tcp-{port}", "frontendPort": port, "backendPort": port}
+                                   for port in ports],
             "tags": {"Service": fqdn, "ManagedBy": "opsdir"}}
 
 
@@ -149,7 +150,8 @@ def _azure_network_depth(p):
                            "type": "Microsoft.Network/privateEndpoints", "tags": {"Role": role, "ManagedBy": "opsdir"},
                            "subnet": {"id": _subnet_id(subnet)},
                            "privateLinkServiceConnections": [{
-                               "name": cn, "privateLinkServiceId": f"{RG}/providers/Microsoft.KeyVault/vaults/kv-ciam-prod",
+                               "name": cn,
+                               "privateLinkServiceId": f"{RG}/providers/Microsoft.KeyVault/vaults/kv-ciam-prod",
                                "groupIds": ["vault"]}],
                            "ipConfigurations": [{"name": "primary", "privateIPAddress": a["ciamFrontendIp"]}]},
                           {"id": f"{a['ciamProviderRef']}/privateDnsZoneGroups/default",
@@ -158,7 +160,8 @@ def _azure_network_depth(p):
         elif oc == "ciamEndpointService":
             lb = f"{NET}/loadBalancers/lb-ciam-prod-{service_named(p, a['ciamServiceRole'])}"
             links.append({"id": a["ciamProviderRef"], "name": a["ciamProviderRef"].rsplit("/", 1)[1],
-                          "type": "Microsoft.Network/privateLinkServices", "tags": {"Role": role, "ManagedBy": "opsdir"},
+                          "type": "Microsoft.Network/privateLinkServices",
+                          "tags": {"Role": role, "ManagedBy": "opsdir"},
                           "alias": f"pls-ciam-prod-{cn}.{hex_id('alias', cn, n=8)}.eastus2.azure.privatelinkservice",
                           "loadBalancerFrontendIpConfigurations": [{"id": f"{lb}/frontendIPConfigurations/frontend"}],
                           "ipConfigurations": [{"name": "primary", "subnet": {
@@ -198,12 +201,14 @@ def _azure_databases(p):
                         "storage": {"storageSizeGb": int(a["ciamDbStorageGb"]), "autoGrow": "Disabled"},
                         "availabilityZone": a["ciamZone"], "fullyQualifiedDomainName": a["ciamFqdn"],
                         "highAvailability": {"mode": "ZoneRedundant" if ha else "Disabled"},
-                        "backup": {"backupRetentionDays": int(a["ciamRetentionDays"]), "geoRedundantBackup": "Disabled"},
+                        "backup": {"backupRetentionDays": int(a["ciamRetentionDays"]),
+                                   "geoRedundantBackup": "Disabled"},
                         "network": {"delegatedSubnetResourceId": _subnet_id(subnet),
                                     "publicNetworkAccess": "Disabled"},
                         "dataEncryption": {"type": "AzureKeyVault",
-                                           "primaryKeyURI": f"https://{p['key'][0].split('://')[1].split('/')[0]}"
-                                                            f".vault.azure.net/keys/{p['key'][0].rsplit('/', 1)[1]}/4f1e"},
+                                           "primaryKeyURI":
+                                               f"https://{p['key'][0].split('://')[1].split('/')[0]}"
+                                               f".vault.azure.net/keys/{p['key'][0].rsplit('/', 1)[1]}/4f1e"},
                         "tags": {"Role": role, "ManagedBy": "opsdir"}})
         configs += [{"id": f"{ref}/configurations/{k}", "name": k, "value": v, "source": "user-override",
                      "type": "Microsoft.DBforPostgreSQL/flexibleServers/configurations"}
@@ -230,9 +235,10 @@ def target_inventory():
             "nat-gateways.json": [{"id": f"{NET}/natGateways/{p['egress'][0]}", "name": p["egress"][0],
                                    "type": "Microsoft.Network/natGateways",
                                    "publicIpAddresses": [{"id": nat_ip["id"]}]}],
-            "disk-encryption-sets.json": sets, "disks.json": _azure_disks(p), "kv-secrets.json": secrets, "kv-keys.json": keys,
-            "kv-key-disk-cmk.json": key_show,
-            "private-endpoints.json": _azure_network_depth(p)[0], "private-link-services.json": _azure_network_depth(p)[1],
+            "disk-encryption-sets.json": sets, "disks.json": _azure_disks(p), "kv-secrets.json": secrets,
+            "kv-keys.json": keys, "kv-key-disk-cmk.json": key_show,
+            "private-endpoints.json": _azure_network_depth(p)[0],
+            "private-link-services.json": _azure_network_depth(p)[1],
             "postgres-servers.json": _azure_databases(p)[0], "postgres-parameters.json": _azure_databases(p)[1],
             "locks.json": _azure_databases(p)[2],
             "roles.json": {f"{p['net'][1]}/snet-mgmt": "subnet-mgmt"}}

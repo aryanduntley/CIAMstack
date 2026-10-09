@@ -84,7 +84,8 @@ def test_state_tags_include_the_provider_s_default_tags():
 
 def _state(provider, *resources):
     return json.dumps({"version": 4, "terraform_version": "1.9.0", "resources": [
-        {"mode": "managed", "type": t, "name": f"r{i}", "provider": f'provider["registry.terraform.io/hashicorp/{provider}"]',
+        {"mode": "managed", "type": t, "name": f"r{i}",
+         "provider": f'provider["registry.terraform.io/hashicorp/{provider}"]',
          "instances": [{"attributes": a}]} for i, (t, a) in enumerate(resources)]})
 
 

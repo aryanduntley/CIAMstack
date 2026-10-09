@@ -109,11 +109,13 @@ def _ebs(n, server, size=200, **extra):
     return [("aws_ebs_volume", {"id": f"vol-{n}", "size": size, "type": "io2", "iops": 6000, "encrypted": True,
                                 "kms_key_id": ARN, "tags": {"Volume": "vol-ds-data", "Role": "volume-ds-data",
                                                             "SnapshotPolicy": "snapshots-daily", **extra}}),
-            ("aws_volume_attachment", {"volume_id": f"vol-{n}", "instance_id": f"i-{server}", "device_name": "/dev/sdf"})]
+            ("aws_volume_attachment", {"volume_id": f"vol-{n}", "instance_id": f"i-{server}",
+                                       "device_name": "/dev/sdf"})]
 
 
 DLM_POLICY = ("aws_dlm_lifecycle_policy", {
-    "id": "policy-0123456789abcdef0", "state": "ENABLED", "tags": {"Name": "snapshots-daily", "Role": "snapshots-daily"},
+    "id": "policy-0123456789abcdef0", "state": "ENABLED",
+    "tags": {"Name": "snapshots-daily", "Role": "snapshots-daily"},
     "policy_details": [{"resource_types": ["VOLUME"], "target_tags": {"SnapshotPolicy": "snapshots-daily"},
                         "schedule": [{"name": "snapshots-daily",
                                       "create_rule": [{"interval": 24, "interval_unit": "HOURS", "times": ["03:00"]}],
@@ -133,14 +135,16 @@ def test_volumes_boot_disks_and_lifecycle_policies_are_read_back_from_state():
     by = _by(resources)
     data = by[("volume", "vol-ds-data")]
     assert (data.name, data.role) == ("vol-ds-data", "volume-ds-data")
-    assert data.attrs == {"ciamVolumeKind": ("data",), "ciamVolumeSizeGb": ("200",), "ciamVolumeClass": ("provisioned",),
+    assert data.attrs == {"ciamVolumeKind": ("data",), "ciamVolumeSizeGb": ("200",),
+                          "ciamVolumeClass": ("provisioned",),
                           "ciamIops": ("6000",), "ciamVolumeEncrypted": ("TRUE",), "ciamTargetRole": ("ds",)}
     assert data.links == {"ciamEncryptedByRole": ARN, "ciamSnapshotPolicyRole": "policy-0123456789abcdef0"}
     boot = by[("volume", "vol-ds-boot")]
     assert boot.attrs == {"ciamVolumeKind": ("boot",), "ciamVolumeSizeGb": ("50",), "ciamVolumeClass": ("ssd",),
                           "ciamThroughputMb": ("250",), "ciamVolumeEncrypted": ("TRUE",), "ciamTargetRole": ("ds",)}
     policy = by[("snapshot-policy", "policy-0123456789abcdef0")]
-    assert policy.attrs == {"ciamRetentionDays": ("7",), "ciamSnapshotEveryHours": ("24",), "ciamSnapshotAt": ("03:00",),
+    assert policy.attrs == {"ciamRetentionDays": ("7",), "ciamSnapshotEveryHours": ("24",),
+                            "ciamSnapshotAt": ("03:00",),
                             "ciamCopyRegion": ("us-west-2",), "ciamSnapshotConsistency": ("crash",)}
     assert policy.role == "snapshots-daily"
     assert "volume vol-ds-data: ds-2's disk is 300 GB, the others' 200; recorded as 200" in notices
@@ -175,7 +179,8 @@ def test_the_cli_reads_the_same():
                                     {"DeviceName": "/dev/sdf", "Ebs": {"VolumeId": "vol-a"}}]}]}]}),
         "volumes.json": json.dumps({"Volumes": [
             {"VolumeId": "vol-root", "Size": 50, "VolumeType": "gp3", "Throughput": 250, "Encrypted": True,
-             "KmsKeyId": ARN, "Tags": [{"Key": "Volume", "Value": "vol-ds-boot"}, {"Key": "Role", "Value": "volume-ds-boot"}]},
+             "KmsKeyId": ARN, "Tags": [{"Key": "Volume", "Value": "vol-ds-boot"},
+                                       {"Key": "Role", "Value": "volume-ds-boot"}]},
             {"VolumeId": "vol-a", "Size": 200, "VolumeType": "io2", "Iops": 6000, "Encrypted": True, "KmsKeyId": ARN,
              "Attachments": [{"InstanceId": "i-ds-1", "Device": "/dev/sdf", "State": "attached"}],
              "Tags": [{"Key": "Volume", "Value": "vol-ds-data"}, {"Key": "Role", "Value": "volume-ds-data"},
@@ -183,9 +188,11 @@ def test_the_cli_reads_the_same():
         "dlm-policies/policy-0123456789abcdef0.json": json.dumps({"Policy": {
             "PolicyId": "policy-0123456789abcdef0", "State": "ENABLED",
             "Tags": {"Name": "snapshots-daily", "Role": "snapshots-daily"},
-            "PolicyDetails": {"ResourceTypes": ["VOLUME"], "TargetTags": [{"Key": "SnapshotPolicy", "Value": "snapshots-daily"}],
+            "PolicyDetails": {"ResourceTypes": ["VOLUME"],
+                              "TargetTags": [{"Key": "SnapshotPolicy", "Value": "snapshots-daily"}],
                               "Schedules": [{"Name": "snapshots-daily",
-                                             "CreateRule": {"Interval": 24, "IntervalUnit": "HOURS", "Times": ["03:00"]},
+                                             "CreateRule": {"Interval": 24, "IntervalUnit": "HOURS",
+                                                            "Times": ["03:00"]},
                                              "RetainRule": {"Interval": 7, "IntervalUnit": "DAYS"},
                                              "CrossRegionCopyRules": [{"Target": "us-west-2", "Encrypted": True}]}]}}})}
     resources, notices = cli_resources(texts)

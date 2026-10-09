@@ -25,7 +25,8 @@ def cloud(region="eastus2", gov=False):
                                             ("replace", "ciamRegion", (region,)),
                                             ("replace", "ciamCloudProvider", ("azure",)),
                                             ("replace", "ciamAccountRef", (SUB,)),
-                                            *((("replace", "ciamCloudEnvironment", ("usgovernment",)),) if gov else ())))
+                                            *((("replace", "ciamCloudEnvironment", ("usgovernment",)),) if gov
+                                              else ())))
 
 
 def need(cn, kind, n, **more):

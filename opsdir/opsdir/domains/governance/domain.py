@@ -23,7 +23,8 @@ def operator(d):
     return next((p for p in children(d, OWNERS, "ciamParty") if one(p, "ciamOwnerKind") == "operator"), None)
 
 
-DOMAIN = Domain(name="governance", schema=FRAGMENT, required_roles=(), sql=(Path(__file__).parent / "sql" / "governance.sql",),
+DOMAIN = Domain(name="governance", schema=FRAGMENT, required_roles=(),
+                sql=(Path(__file__).parent / "sql" / "governance.sql",),
                 reports={"stale": sql_report(STALE_HEADERS, STALE_SQL),
                          "imports": directory_report(IMPORT_HEADERS, import_rows),
                          "collections": directory_report(ATTEMPT_HEADERS, attempt_rows)}, checks=(), order=50,

@@ -61,7 +61,8 @@ def _template(size="Standard_D4s_v5", kty="RSA"):
                                                                                         "defaultValue": size},
                        "rootPassword": {"type": "securestring"}, "pfPassword": {"type": "securestring"}},
         "variables": {"vnet": "[format('vnet-ciam-{0}', parameters('env'))]",
-                      "subnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnet'), 'snet-ds')]",
+                      "subnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', "
+                                  "variables('vnet'), 'snet-ds')]",
                       "lb": "[concat('lb-ciam-', parameters('env'), '-svc-ldaps')]"},
         "resources": [
             {"type": f"{net}/networkSecurityGroups", "apiVersion": "2023-09-01",
@@ -84,8 +85,9 @@ def _template(size="Standard_D4s_v5", kty="RSA"):
                             "ipConfigurations": [{"name": "primary", "properties": {
                                 "primary": True, "privateIPAddress": "10.60.1.11",
                                 "subnet": {"id": "[variables('subnetId')]"},
-                                "loadBalancerBackendAddressPools": [{"id": "[resourceId('Microsoft.Network/loadBalancers/"
-                                                                           "backendAddressPools', variables('lb'), 'servers')]"}]}}]}},
+                                "loadBalancerBackendAddressPools": [
+                                    {"id": "[resourceId('Microsoft.Network/loadBalancers/"
+                                           "backendAddressPools', variables('lb'), 'servers')]"}]}}]}},
             {"type": "Microsoft.Compute/virtualMachines", "apiVersion": "2024-03-01", "name": "ds-1", "zones": ["1"],
              "tags": {"Role": "ds", "Hostname": "ds-1.az.internal.test"},
              "properties": {"hardwareProfile": {"vmSize": "[parameters('vmSize')]"},
@@ -96,7 +98,8 @@ def _template(size="Standard_D4s_v5", kty="RSA"):
             {"type": f"{net}/privateDnsZones/A", "apiVersion": "2020-06-01", "name": "id.example.test/ldap",
              "properties": {"ttl": 300, "aRecords": [{"ipv4Address": "10.60.1.100"}]}},
             {"type": f"{net}/natGateways", "apiVersion": "2023-09-01", "name": "natgw-ciam-prod",
-             "properties": {"publicIpAddresses": [{"id": "[resourceId('Microsoft.Network/publicIPAddresses', 'pip-natgw')]"}]}},
+             "properties": {"publicIpAddresses": [
+                 {"id": "[resourceId('Microsoft.Network/publicIPAddresses', 'pip-natgw')]"}]}},
             {"type": "Microsoft.KeyVault/vaults", "apiVersion": "2023-07-01", "name": "kv-ciam-prod",
              "properties": {"tenantId": "[subscription().tenantId]"},
              "resources": [{"type": "secrets", "apiVersion": "2023-07-01", "name": "pf-admin-password",
@@ -170,14 +173,16 @@ def test_resource_id_links_resolve():
 def test_secure_parameters_and_secret_values_are_never_read():
     params = {"$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
               "parameters": {"rootPassword": {"value": "S3cr3t-Passw0rd!"}, "pfPassword": {"value": "An0ther!"}}}
-    resources, notices = arm_resources({p.split("/", 2)[2]: t for p, t in _files(extra={"params.json": params}).items()})
+    resources, notices = arm_resources({p.split("/", 2)[2]: t for p, t in
+                                        _files(extra={"params.json": params}).items()})
     assert "S3cr3t" not in str(resources) and "An0ther" not in str(resources)
 
 
 def test_what_the_deployment_did_not_produce_and_unknown_files_are_named():
     produced = [f"{RG}/providers/Microsoft.Compute/virtualMachines/ds-1"]
     resources, notices = arm_resources({p.split("/", 2)[2]: t for p, t in
-                                        _files(deployment=_deployment(produced), extra={"notes.json": {"a": 1}}).items()})
+                                        _files(deployment=_deployment(produced),
+                                               extra={"notes.json": {"a": 1}}).items()})
     assert [r.kind for r in resources] == ["server"]
     assert "ciam/notes.json: not an ARM template, deployment or parameters file; not read" in notices
     assert any(n.startswith("ciam: 12 declared resource(s) the deployment didn't produce") for n in notices), notices
@@ -186,7 +191,8 @@ def test_what_the_deployment_did_not_produce_and_unknown_files_are_named():
 def test_a_template_and_parameters_file_without_a_deployment_still_link():
     params = {"$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
               "parameters": {"env": {"value": "prod"}, "dsImage": {"value": IMG}}}
-    resources, notices = arm_resources({"t/template.json": json.dumps(_template()), "t/params.json": json.dumps(params)})
+    resources, notices = arm_resources({"t/template.json": json.dumps(_template()),
+                                        "t/params.json": json.dumps(params)})
     assert "t: no deployment (az deployment group show): subscription and resource group unknown; links within the " \
            "template resolve, disk encryption sets aren't read" in notices
     (server,) = [r for r in resources if r.kind == "server"]

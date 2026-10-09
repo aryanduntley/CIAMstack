@@ -32,7 +32,8 @@ RECORDS = "\n".join((
     "dn: cn=ops,ou=owners,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamParty\ncn: ops\nciamOwnerKind: team\n"))
 CACERTS = ("Keystore type: JKS\nKeystore provider: SUN\n\nYour keystore contains 3 entries\n\n"
            "digicertglobalrootg2 [jdk], Aug 25, 2016, trustedCertEntry,\n"
-           "Certificate fingerprint (SHA-256): CB:3C:CB:B7:60:31:E5:E0:13:8F:8D:D3:9A:23:F9:DE:47:FF:C3:5E:43:C1:14:4C\n"
+           "Certificate fingerprint (SHA-256): "
+           "CB:3C:CB:B7:60:31:E5:E0:13:8F:8D:D3:9A:23:F9:DE:47:FF:C3:5E:43:C1:14:4C\n"
            f"partner-root-ca, Jan 2, 2026, trustedCertEntry,\nCertificate fingerprint (SHA-256): {CA_FP}\n")
 JAVA = ('openjdk version "17.0.11" 2024-04-16\nOpenJDK Runtime Environment Temurin-17.0.11+9 (build 17.0.11+9)\n'
         "OpenJDK 64-Bit Server VM Temurin-17.0.11+9 (build 17.0.11+9, mixed mode)\n")
@@ -42,7 +43,8 @@ def server(host, extra=None):
     base = {"etc/os-release": 'NAME="Red Hat Enterprise Linux"\nID="rhel"\nVERSION_ID="9.4"\n',
             "java/version.txt": JAVA, "java/cacerts.txt": CACERTS,
             "etc/security/limits.conf": "# limits\nds soft nofile 65536\nds hard nofile 65536\n",
-            "etc/sysctl.conf": "net.core.somaxconn = 4096\n", "etc/sysctl.d/10-ds.conf": "net.ipv4.tcp_keepalive_time=600\n",
+            "etc/sysctl.conf": "net.core.somaxconn = 4096\n",
+            "etc/sysctl.d/10-ds.conf": "net.ipv4.tcp_keepalive_time=600\n",
             "sys/kernel/mm/transparent_hugepage/enabled": "always madvise [never]\n",
             "proc/sys/crypto/fips_enabled": "0\n", "etc/selinux/config": "SELINUX=enforcing\nSELINUXTYPE=targeted\n",
             "packages.txt": "falcon-sensor-7.10.0-16303.el9.x86_64\nopenssl-3.0.7-27.el9.x86_64\n"

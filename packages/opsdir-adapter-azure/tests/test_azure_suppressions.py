@@ -28,7 +28,8 @@ def _model(*refs, kind="risk-acceptance", add_on=False, gov=False):
 
 
 def test_policy_refs_render_an_exemption_per_framework():
-    out = "\n\n".join(render_suppressions(_model("azure:policy:nist-800-171-r2/ref-a", "azure:policy:nist-800-171-r2/ref-b",
+    out = "\n\n".join(render_suppressions(_model("azure:policy:nist-800-171-r2/ref-a",
+                                                 "azure:policy:nist-800-171-r2/ref-b",
                                                  "azure:policy:cis", kind="compensating-control")))
     assert 'resource "azurerm_subscription_policy_exemption" "exc_exc_7_nist_800_171_r2"' in out
     assert ('policy_assignment_id            = "${data.azurerm_subscription.current.id}/providers/'
@@ -53,11 +54,13 @@ def test_alert_suppression_rules_need_the_azapi_add_on():
 
 def test_suppressions_are_read_back_merged_per_exception():
     pairs = [("azurerm_subscription_policy_exemption", {
-                 "id": f"{SUB}/providers/Microsoft.Authorization/policyExemptions/exc-EXC-7-cis", "name": "exc-EXC-7-cis",
+                 "id": f"{SUB}/providers/Microsoft.Authorization/policyExemptions/exc-EXC-7-cis",
+                 "name": "exc-EXC-7-cis",
                  "policy_assignment_id": f"{SUB}/providers/Microsoft.Authorization/policyAssignments/ciam-cis",
                  "policy_definition_reference_ids": ["ref-a"], "metadata": '{"exception":"EXC-7"}'}),
              ("azapi_resource", {"id": f"{SUB}/providers/Microsoft.Security/alertsSuppressionRules/exc-EXC-7",
-                                 "name": "exc-EXC-7", "type": "Microsoft.Security/alertsSuppressionRules@2019-01-01-preview",
+                                 "name": "exc-EXC-7",
+                                 "type": "Microsoft.Security/alertsSuppressionRules@2019-01-01-preview",
                                  "body": {"properties": {"alertType": "IpAnomaly", "comment": "exception EXC-7"}}}),
              ("azapi_resource", {"id": "x", "name": "y", "type": "Microsoft.Storage/storageAccounts@2023-01-01"})]
     (found,) = suppression_resources(pairs)

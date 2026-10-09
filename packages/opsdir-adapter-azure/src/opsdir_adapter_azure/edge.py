@@ -15,11 +15,12 @@ from itertools import chain
 
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import by_role
-from opsdir.core.network import is_private
+from opsdir.domains.edge.exposure import is_internal
 from opsdir.domains.edge.resolve import inspected, path_regex, tls_policy
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 from .identities import LOC, RG
 from .account import tagged
+from .dns import public_ip_name, unrecorded_answer
 
 EDGE_SUBNET = "subnet-edge"            # the binding role of the subnet the gateways go in
 # (min version, profile, predefined Application Gateway TLS policy, exact)
@@ -145,10 +146,10 @@ def _certificate(m, n, spec):
 
 
 def _frontend(svc, n, ip, subnet):
-    if ip and is_private(ip):
+    if is_internal(svc):
         return (("frontend_ip_configuration", Block((("name", "frontend"), ("subnet_id", subnet),
                                                      ("private_ip_address_allocation", "Static"),
-                                                     ("private_ip_address", ip)))),)
+                                                     ("private_ip_address", ip or unrecorded_answer(svc, n, True))))),)
     return (("frontend_ip_configuration", Block((("name", "frontend"),
                                                  ("public_ip_address_id", ref(f"data.azurerm_public_ip.{n}.id"))))),)
 
@@ -244,9 +245,9 @@ def gateway_service(m, svc, spec, backend):
         *((("firewall_policy_id", ref(f"azurerm_web_application_firewall_policy.{n}.id")),) if waf else ()),
         ("tags", tagged(m, {"Service": one(svc, "ciamFqdn"), "ManagedBy": "opsdir"})),
         *((("depends_on", [ref(f"azurerm_role_assignment.{n}_gateway_certificate")]),) if access else ()))
-    public = (block("data", ["azurerm_public_ip", n], [("name", one(svc, "ciamProviderRef")),
+    public = (block("data", ["azurerm_public_ip", n], [("name", public_ip_name(svc)),
                                                        ("resource_group_name", RG)]),) \
-        if not (ip and is_private(ip)) else ()
+        if not is_internal(svc) else ()
     return (*public, *access, *trust_blocks, *((waf_policy(m, n, spec),) if waf else ()),
             *ddos_note(spec), block("resource", ["azurerm_application_gateway", n], list(body)))
 

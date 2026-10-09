@@ -39,7 +39,8 @@ def replication_source(m, server):
 def _replication(x, source, base):
     host = one(x.server, "ciamHostname")
     if not source:
-        return "# First replica of a new topology: nothing to join. The next replica enables replication with this one.\n"
+        return ("# First replica of a new topology: nothing to join. "
+                "The next replica enables replication with this one.\n")
     admin = ('  --trustStorePath "$DS_TRUSTSTORE" \\\n'
              '  --adminUID admin --adminPassword "$REPLICATION_ADMIN_PASSWORD" \\\n'
              f"  --baseDN {base} \\\n")

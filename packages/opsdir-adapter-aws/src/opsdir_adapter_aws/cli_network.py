@@ -51,7 +51,8 @@ def _route(r):
 
 def _route_tables(outs):
     tables = items(outs, "RouteTables")
-    return [*(("aws_route_table", {"id": t.get("RouteTableId"), "vpc_id": t.get("VpcId"), "tags": tags_of(t.get("Tags")),
+    return [*(("aws_route_table", {"id": t.get("RouteTableId"), "vpc_id": t.get("VpcId"),
+                                   "tags": tags_of(t.get("Tags")),
                                    "route": [_route(r) for r in t.get("Routes") or ()
                                              if r.get("GatewayId") != "local"]}) for t in tables),
             *(("aws_main_route_table_association", {"route_table_id": t.get("RouteTableId"), "vpc_id": t.get("VpcId")})

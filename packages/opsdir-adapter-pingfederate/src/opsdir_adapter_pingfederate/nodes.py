@@ -118,7 +118,8 @@ def node_entries(d, server, files, patterns):
                *((f"node {host}: discovers its cluster with {protocol}, but its environment's {DISCOVERY_ROLE} binding "
                   f"uses {bound.name if bound else 'no protocol'} ({where(binding)})",)
                  if protocol and binding is not None and (bound is None or bound.name != protocol) else ()),
-               *((f"node {host}: its secrets are withheld; set pingfedCredentialRole to the secret role that holds them",)
+               *((f"node {host}: its secrets are withheld; set pingfedCredentialRole to the secret role that "
+                  "holds them",)
                  if held and not one(node, "pingfedCredentialRole") else ()))
     return (node, *(e for e in subtree(d, server.dn) if e.norm != server.norm)), notices
 

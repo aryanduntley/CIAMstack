@@ -172,7 +172,8 @@ def _routing(ctx, held, restricted):
 def _kept(*entries):
     """How many days these entries keep records, the longest (INDEFINITE: forever; None: none of them says): each
     keeps them its retention (ciamRetentionDays) or, when longer, its immutability lock (ciamStorageLockDays)."""
-    days = [int(v) for e in entries if e is not None for v in (one(e, "ciamRetentionDays"), one(e, "ciamStorageLockDays"))
+    days = [int(v) for e in entries if e is not None
+            for v in (one(e, "ciamRetentionDays"), one(e, "ciamStorageLockDays"))
             if v is not None]
     return INDEFINITE if any(one(e, "ciamRetentionDays") == str(INDEFINITE) for e in entries if e is not None) \
         else max(days) if days else None
@@ -190,6 +191,11 @@ def _short(days, need):
     return days is None or (days != INDEFINITE and days < need)
 
 
+def _kept_text(short):
+    """'logs 30 days, alerts (not recorded)': how long each short-kept record is kept."""
+    return ", ".join(f"{what} " + ("(not recorded)" if days is None else f"{days} days") for what, days in short)
+
+
 def _preservation(ctx, owner):
     """(blockers, actions) for the target's records kept fewer days than an obligation preserves evidence."""
     found = [(o, int(one(o, "ciamPreservationDays")), [(what, days) for what, days in _records(ctx.dst)
@@ -197,7 +203,7 @@ def _preservation(ctx, owner):
              for o in obligations_of(ctx.dst) if one(o, "ciamPreservationDays")]
     texts = [(o, f"Reporting obligation `{rdn_value(o)}` preserves evidence {need} days after a report and "
                  f"{ctx.dst.label} keeps less: "
-                 f"{', '.join(f'{what} ' + ('(not recorded)' if days is None else f'{days} days') for what, days in short)}."
+                 f"{_kept_text(short)}."
                  f" Keep them at least {need} days") for o, need, short in found if short]
     return ([(AREA, text + ", or record the runbook placing a preservation hold at discovery (ciamRunbookRef).", owner)
              for o, text in texts if not values(o, "ciamRunbookRef")],
@@ -253,7 +259,8 @@ def _routes_text(m):
 def incident_reporting_rows(d, dn=None):
     """One row per environment and reporting obligation it is held to (one with no obligation for an environment that
     only routes findings to the incident process): the clocks, the authority and who files the reports (each with how
-    to reach them: mail, telephone, where reports are filed), the certificate and its expiry, how long evidence is preserved, and the environment's incident routes."""
+    to reach them: mail, telephone, where reports are filed), the certificate and its expiry, how long evidence is
+    preserved, and the environment's incident routes."""
     models = [env_model(d, e.dn) for e in subtree(d, branch("environments"), "ciamEnvironment")]
     return [(m.label, rdn_value(o) if o is not None else "",
              one(o, "ciamReportingHours", "") if o is not None else "",
@@ -287,7 +294,8 @@ def reportable_incident_rows(d, dn=None, as_of=None):
     day = as_of or dt.date.today()
     return [(rdn_value(i), ", ".join(rdn_value(o) for o in obligations),
              ", ".join(m.label for m in _affected(d, i)),
-             _when(_at(i, "ciamDiscoveredAt")), _when(due), _when(_at(i, "ciamReportedAt")), one(i, "ciamReportRef", ""),
+             _when(_at(i, "ciamDiscoveredAt")), _when(due), _when(_at(i, "ciamReportedAt")),
+             one(i, "ciamReportRef", ""),
              _status(due, _at(i, "ciamReportedAt"), day), _when(_at(i, "ciamMalwareSubmittedAt")),
              _when(_at(i, "ciamPreservedUntil")), one(i, "ciamMediaRequest", ""))
             for i in subtree(d, SUFFIX, INCIDENT)

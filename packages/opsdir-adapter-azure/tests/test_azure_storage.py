@@ -52,7 +52,8 @@ def test_a_kept_container_renders_its_account_with_every_setting():
 def test_others_containers_are_named_with_what_to_ask_and_references_are_left_alone():
     out = _render(entry(ALPHA, "backup", "ciamBackupTarget", **STORE,
                         ciamManagedBy="cn=storage-team,ou=owners,dc=ciam-ops"))
-    assert out == ("# Object store 'backup' (role backup-target) is kept by cn=storage-team,ou=owners,dc=ciam-ops, with "
+    assert out == ("# Object store 'backup' (role backup-target) "
+                   "is kept by cn=storage-team,ou=owners,dc=ciam-ops, with "
                    "its storage account: not rendered here. Ask them for: versioning; compliance lock 35 days; key "
                    "disk-encryption; lifecycle 30 cold, 400 delete, noncurrent 30 delete; public access blocked; "
                    "copied to azblob://stciambackupsdr/ds-backups")
@@ -98,10 +99,12 @@ def test_a_container_is_read_back_from_state_with_its_accounts_settings():
 
 def test_the_cli_outputs_read_the_same():
     texts = {
-        "accounts.json": json.dumps([{"id": ACCOUNT, "name": "stciambackups", "type": "Microsoft.Storage/storageAccounts",
+        "accounts.json": json.dumps([{"id": ACCOUNT, "name": "stciambackups",
+                                      "type": "Microsoft.Storage/storageAccounts",
                                       "allowBlobPublicAccess": False, "encryption": {
                                           "keySource": "Microsoft.Keyvault", "keyVaultProperties": {
-                                              "keyVaultUri": "https://kv-ciam.vault.azure.net/", "keyName": "disk-cmk"}}}]),
+                                              "keyVaultUri": "https://kv-ciam.vault.azure.net/",
+                                              "keyName": "disk-cmk"}}}]),
         "blob-service.json": json.dumps({"id": f"{ACCOUNT}/blobServices/default", "isVersioningEnabled": True,
                                          "changeFeed": {"enabled": True},
                                          "type": "Microsoft.Storage/storageAccounts/blobServices"}),
@@ -113,10 +116,14 @@ def test_the_cli_outputs_read_the_same():
                                               "type": "Microsoft.Storage/storageAccounts/managementPolicies",
                                               "policy": {"rules": [{"name": "ciam-ds-backups", "enabled": True,
                                                                     "definition": {
-                                                  "filters": {"prefixMatch": ["ds-backups/"], "blobTypes": ["blockBlob"]},
-                                                  "actions": {"baseBlob": {"tierToCold": {"daysAfterModificationGreaterThan": 30},
-                                                                           "delete": {"daysAfterModificationGreaterThan": 400}},
-                                                              "version": {"delete": {"daysAfterCreationGreaterThan": 30}}}}}]}}),
+                                                  "filters": {"prefixMatch": ["ds-backups/"],
+                                                              "blobTypes": ["blockBlob"]},
+                                                  "actions": {
+                                                      "baseBlob": {
+                                                          "tierToCold": {"daysAfterModificationGreaterThan": 30},
+                                                          "delete": {"daysAfterModificationGreaterThan": 400}},
+                                                      "version": {
+                                                          "delete": {"daysAfterCreationGreaterThan": 30}}}}}]}}),
         "or-policies.json": json.dumps([{"id": f"{ACCOUNT}/objectReplicationPolicies/p1",
                                          "type": "Microsoft.Storage/storageAccounts/objectReplicationPolicies",
                                          "sourceAccount": "stciambackups", "destinationAccount": "stciambackupsdr",

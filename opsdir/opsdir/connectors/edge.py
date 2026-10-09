@@ -60,8 +60,8 @@ def edge_check(src_adapters, dst_adapters):
                                 f"sensitive endpoints ({paths}) that no protection policy covers: give it one with "
                                 f"rate limits on them{behind}.", owner, None))
             else:
-                actions.append(("Edge", f"`{name}` (`{role}`) answers the internet in {' and '.join(where)}; protection "
-                                f"policy `{rdn_value(p)}` sets no rate limit on {paths}: add one per kind.", owner,
-                                None))
+                actions.append(("Edge", f"`{name}` (`{role}`) answers the internet in {' and '.join(where)}; "
+                                f"protection policy `{rdn_value(p)}` sets no rate limit on {paths}: add one per kind.",
+                                owner, None))
         return findings(actions=actions)
     return check_endpoints

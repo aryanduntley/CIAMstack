@@ -2,7 +2,8 @@
 build, helm template, kubeconform -strict), with the deployment kits' own sources: each render's kubernetes/ folders as
 they are, its ForgeOps overlay built inside the pinned ForgeOps release's bases, and each Helm values file rendered with
 its chart (ForgeOps' identity-platform and ping-gateway, Ping's ping-devops). Runs with the local tools
-(opsdir/scripts/fetch-tools.sh) and the kits' sources (fetch-forgeops.sh, fetch-ping-devops.sh); skipped without them."""
+(opsdir/scripts/fetch-tools.sh) and the kits' sources (fetch-forgeops.sh, fetch-ping-devops.sh); skipped without
+them."""
 import pathlib
 import shutil
 import subprocess

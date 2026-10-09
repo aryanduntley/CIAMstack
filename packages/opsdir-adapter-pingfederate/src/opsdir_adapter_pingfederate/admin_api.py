@@ -8,7 +8,8 @@ before those that name it), as pingfederate/admin-api/requests.json:
    "problems": what the spec refuses (none when it is valid), "requests": [{"method", "path", "createWith", "body"}]}
 
   key pairs                          /keyPairs/signing/import,         imported from where the environment keeps their
-                                     /keyPairs/sslServer/import        key material (opsdir_adapter_pingfederate.keypairs)
+                                     /keyPairs/sslServer/import        key material
+                                                                       (opsdir_adapter_pingfederate.keypairs)
   data stores                        /dataStores                       hosts and secrets of this environment
   plugin instances                   /passwordCredentialValidators, /notificationPublishers, /captchaProviders,
                                      /idp/adapters, /authenticationSelectors, /oauth/accessTokenManagers (a parent
@@ -22,11 +23,12 @@ before those that name it), as pingfederate/admin-api/requests.json:
   resources held as is               their own resource type's path, last
 
 An object with an id is a PUT to <collection>/<id>, createWith the POST that creates it where it doesn't exist yet (a
-PUT answers 404); a settings object is a PUT; a key pair is a POST import, once (an id PingFederate has is refused). Secrets are never values: `${secret:<reference>}` (the reference its
-credential role binds in this environment), `UNBOUND:<role>` or `${withheld}` where nothing supplies one (the planner
-blocks on both): the operator's pipeline puts the value in when it applies the requests, which opsdir never does. The
-body of each request is checked against the Admin API spec of the environment's PingFederate version
-(opsdir_adapter_pingfederate.admin_api_spec); a version with no vendored spec is rendered unchecked and says so.
+PUT answers 404); a settings object is a PUT; a key pair is a POST import, once (an id PingFederate has is refused).
+Secrets are never values: `${secret:<reference>}` (the reference its credential role binds in this environment),
+`UNBOUND:<role>` or `${withheld}` where nothing supplies one (the planner blocks on both): the operator's pipeline puts
+the value in when it applies the requests, which opsdir never does. The body of each request is checked against the
+Admin API spec of the environment's PingFederate version (opsdir_adapter_pingfederate.admin_api_spec); a version with
+no vendored spec is rendered unchecked and says so.
 """
 import json
 from typing import NamedTuple

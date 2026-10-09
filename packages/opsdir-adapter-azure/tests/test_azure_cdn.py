@@ -18,11 +18,14 @@ def test_front_door_over_the_gateway_with_its_firewall_policy():
     out = _fd(spec(cdn=True, certificate="azkv-cert://kv-ciam-prod/sso-tls-2026"))
     assert 'sku_name            = "Premium_AzureFrontDoor"' in out
     assert "host_name                      = data.azurerm_public_ip.sso.ip_address" in out
-    assert 'origin_host_header             = "sso.example.test"' in out and 'name                           = "application-gateway"' in out
+    assert ('origin_host_header             = "sso.example.test"' in out
+            and 'name                           = "application-gateway"' in out)
     assert 'certificate_type        = "CustomerCertificate"' in out
-    assert 'key_vault_certificate_id = "${data.azurerm_key_vault.sso_cdn_tls.vault_uri}certificates/sso-tls-2026"' in out
+    assert ('key_vault_certificate_id = "${data.azurerm_key_vault.sso_cdn_tls.vault_uri}'
+            'certificates/sso-tls-2026"') in out
     assert re.search(r'forwarding_protocol\s+= "HttpsOnly"', out) and "cache {" not in out
-    assert 'type                           = "RateLimitRule"' in out and 'match_values   = ["^/as/token\\\\.oauth2$"]' in out
+    assert ('type                           = "RateLimitRule"' in out
+            and 'match_values   = ["^/as/token\\\\.oauth2$"]' in out)
     assert 'type    = "Microsoft_DefaultRuleSet"' in out and 'match_variable = "RequestBodyPostArgNames"' in out
     assert 'resource "azurerm_cdn_frontdoor_security_policy" "sso"' in out
     assert 'name                = "_dnsauth.sso"' in out and "custom_domain.sso.validation_token" in out
@@ -32,7 +35,8 @@ def test_front_door_over_the_gateway_with_its_firewall_policy():
 def test_without_inspection_standard_front_door_over_the_load_balancer_with_a_managed_certificate():
     out = _fd(spec(cdn=True, mode="passthrough", layer7=False, waf_mode=None, categories=(), rate_limits=(),
                    ip_rules=(), geo_rules=()))
-    assert 'sku_name            = "Standard_AzureFrontDoor"' in out and 'name                           = "load-balancer"' in out
+    assert ('sku_name            = "Standard_AzureFrontDoor"' in out
+            and 'name                           = "load-balancer"' in out)
     assert 'certificate_type    = "ManagedCertificate"' in out and "firewall_policy" not in out
     assert _fd(spec(cdn=True), "10.60.250.10").startswith("# `sso.example.test`: a CDN in front of a private address")
 

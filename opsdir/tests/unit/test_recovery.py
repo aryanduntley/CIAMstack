@@ -27,10 +27,12 @@ def _standby(env, cloud_region=None, runbook=True, of=ALPHA, joins=ALPHA):
     cloud, name = env.split(",")[1].split("=")[1], env.split(",")[0].split("=")[1]
     head = (f"dn: cloud={cloud},ou=environments,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamCloud\ncloud: {cloud}\n"
             f"ciamCloudProvider: fakecloud\nciamRegion: {cloud_region}\n\n") if cloud_region else ""
-    extra = "".join((f"ciamJoinsDeploymentOf: {joins}\n" if joins else "", f"ciamRunbookRef: {RUNBOOK}\n" if runbook else ""))
+    extra = "".join((f"ciamJoinsDeploymentOf: {joins}\n" if joins else "",
+                     f"ciamRunbookRef: {RUNBOOK}\n" if runbook else ""))
     return (f"{head}dn: {env}\nobjectClass: top\nobjectClass: ciamEnvironment\nobjectClass: ciamStandby\nenv: {name}\n"
             f"ciamStandbyOf: {of}\nciamStandbyMode: warm\n{extra}",
-            *(entry(env, n, "ciamServer", ciamServerRole="ds", ciamHostname=f"{n}.{name}.test") for n in ("ds-1", "ds-2")))
+            *(entry(env, n, "ciamServer", ciamServerRole="ds", ciamHostname=f"{n}.{name}.test")
+              for n in ("ds-1", "ds-2")))
 
 
 def _objective(rto="120", rpo="60", runbook=True):
@@ -168,12 +170,14 @@ def test_standbys_in_the_same_region_or_without_a_runbook_and_objectives_without
     assert ("alpha/dr stands by for alpha/prod in the same region (region-1): a disaster in that region takes both."
             in texts)
     assert "No runbook says how to fail over to alpha/dr from alpha/prod (ciamRunbookRef on its environment)." in texts
-    assert "Recovery objective `directory-data` names no runbook that recovers `volume-ds-data` (ciamRunbookRef)." in texts
+    assert ("Recovery objective `directory-data` names no runbook that recovers `volume-ds-data` (ciamRunbookRef)."
+            in texts)
 
 
 def test_a_name_failing_over_from_the_source():
-    primary = entry(ALPHA, "sso-primary", "ciamDnsRecord", ciamBindingRole="sso-primary", ciamRecordName="login.example.test",
-                    ciamRecordType="A", ciamRecordValue="192.0.2.1", ciamRoutingPolicy="failover-primary")
+    primary = entry(ALPHA, "sso-primary", "ciamDnsRecord", ciamBindingRole="sso-primary",
+                    ciamRecordName="login.example.test", ciamRecordType="A", ciamRecordValue="192.0.2.1",
+                    ciamRoutingPolicy="failover-primary")
     ctx, *_ = _pair(objective=False, alpha_extra=(primary,), standbys=())
     assert _texts(check_recovery(ctx)) == [
         "`login.example.test` fails over from alpha/prod (the primary) to nothing: at cutover make beta/prod's answer "

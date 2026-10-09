@@ -152,7 +152,8 @@ def _interconnects(found):
         return resource("interconnect", a.get("id"), {"ciamLinkKind": kind, "ciamInterconnectKind": text,
                                                       "ciamPeerEnvironment": peer_environment(_tags(a)),
                                                       **(extra or {})},
-                        links={"ciamPeerEnvironment": network}, name=a.get("name"), role=tagged_role(_tags(a)), tags=_tags(a))
+                        links={"ciamPeerEnvironment": network}, name=a.get("name"), role=tagged_role(_tags(a)),
+                        tags=_tags(a))
 
     def connection(c):
         kind, text = LINK_TYPES.get(_low(c.get("type")), ("vpn", "VPN"))

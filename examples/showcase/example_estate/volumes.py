@@ -1,8 +1,8 @@
-"""Disk and backup fixture data, per environment (VOLUMES below, used by infrastructure: SOURCE / TARGET / STANDBY and stage):
-PingDS's data volume, the disk each directory server keeps its database on (/opt/ds/db), as a volume every server of
-role ds has (volume-ds-data), and the snapshot policy that copies it (snapshots-daily). Each is (object class, cn,
-binding role, attributes), rendered by the cloud adapters into the stack's own Terraform and read back from what each
-cloud reports (cloud_aws, cloud_azure, cloud_gcp). Encryption is recorded explicitly (TRUE), as each cloud reports
+"""Disk and backup fixture data, per environment (VOLUMES below, used by infrastructure: SOURCE / TARGET / STANDBY and
+stage): PingDS's data volume, the disk each directory server keeps its database on (/opt/ds/db), as a volume every
+server of role ds has (volume-ds-data), and the snapshot policy that copies it (snapshots-daily). Each is (object class,
+cn, binding role, attributes), rendered by the cloud adapters into the stack's own Terraform and read back from what
+each cloud reports (cloud_aws, cloud_azure, cloud_gcp). Encryption is recorded explicitly (TRUE), as each cloud reports
 it.
 
   source   500 GB io2 with 6000 provisioned IOPS, encrypted with the platform's key; snapshotted daily at 03:00 UTC by
@@ -37,8 +37,8 @@ DATA = {"ciamTargetRole": "ds", "ciamVolumeKind": "data", "ciamMountPath": "/opt
         "ciamEncryptedByRole": KEY, "ciamOwner": owner("ciam-platform")}
 DAILY = {"ciamRetentionDays": "7", "ciamSnapshotEveryHours": "24", "ciamSnapshotAt": "03:00",
          "ciamSnapshotConsistency": "crash", "ciamOwner": owner("ciam-platform")}
-NIGHTLY = {"ciamProtectsRole": ROLE, "ciamBackupVaultRole": VAULT, "ciamBackupEveryHours": "24", "ciamBackupAt": "05:00",
-           "ciamRetentionDays": "35", "ciamOwner": owner("ciam-platform")}
+NIGHTLY = {"ciamProtectsRole": ROLE, "ciamBackupVaultRole": VAULT, "ciamBackupEveryHours": "24",
+           "ciamBackupAt": "05:00", "ciamRetentionDays": "35", "ciamOwner": owner("ciam-platform")}
 VOLUMES = {
     "source": (
         ("ciamVolume", "vol-ds-data", ROLE,
@@ -71,7 +71,8 @@ VOLUMES = {
                              "ciam-prod-snapshots-daily"}),
         ("ciamBackupVault", "ciam-backups", VAULT,
          {"ciamStorageImmutability": "governance", "ciamStorageLockDays": "14", "ciamCrossRegionRestore": "TRUE",
-          "ciamProviderRef": "projects/example-aero-ciam-standby/locations/us-east1/backupVaults/ciam-prod-ciam-backups",
+          "ciamProviderRef": "projects/example-aero-ciam-standby/locations/us-east1/backupVaults/"
+                             "ciam-prod-ciam-backups",
           "ciamOwner": owner("ciam-platform")}),
         ("ciamBackupPlan", "backup-daily", BACKUP,
          {**NIGHTLY, "ciamCopyRegion": "us-east1",

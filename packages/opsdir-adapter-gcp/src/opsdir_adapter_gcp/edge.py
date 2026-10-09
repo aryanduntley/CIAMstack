@@ -16,7 +16,7 @@ from collections import namedtuple
 
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import by_role
-from opsdir.core.network import is_private
+from opsdir.domains.edge.exposure import is_internal
 from opsdir.domains.edge.resolve import inspected, path_regex, tls_policy
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 from .health_checks import probe_ranges
@@ -199,7 +199,7 @@ def application_lb(m, svc, spec, backend, frontend, placement, admit=None):
     aren't VPC firewall rules (m, svc, n, ranges, port[, kind] -> rule)."""
     n, name = tf_name(rdn_value(svc)), f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"
     ip, port = one(svc, "ciamFrontendIp"), values(svc, "ciamPort")[0]
-    internal = bool(ip) and is_private(ip)
+    internal = is_internal(svc)
     world = spec.cdn
     if world and internal:
         return (f"# `{one(svc, 'ciamFqdn')}`: Cloud CDN serves external load balancers only; its frontend address "
@@ -216,13 +216,14 @@ def application_lb(m, svc, spec, backend, frontend, placement, admit=None):
     kind = (lambda what: _kind(world, what))
     forwarding = (block("resource", ["google_compute_global_forwarding_rule", n], [
                       ("name", name), ("load_balancing_scheme", scheme), ("ip_protocol", "TCP"),
-                      ("port_range", str(port)), ("ip_address", address),
+                      ("port_range", str(port)), *((("ip_address", address),) if address else ()),
                       ("target", ref(f"google_compute_target_https_proxy.{n}.id")),
                       ("labels", {"service": label(one(svc, "ciamFqdn")), "managed_by": "opsdir"})])
                   if world else
                   block("resource", ["google_compute_forwarding_rule", n], [
                       ("name", name), ("region", REGION), ("load_balancing_scheme", scheme), ("ip_protocol", "TCP"),
-                      ("port_range", str(port)), ("ip_address", address), ("network", NETWORK),
+                      ("port_range", str(port)), *((("ip_address", address),) if address else ()),
+                      ("network", NETWORK),
                       *((("network_tier", "STANDARD"),) if not internal else ()), *placement,
                       ("target", ref(f"google_compute_region_target_https_proxy.{n}.id")),
                       ("labels", {"service": label(one(svc, "ciamFqdn")), "managed_by": "opsdir"})]))

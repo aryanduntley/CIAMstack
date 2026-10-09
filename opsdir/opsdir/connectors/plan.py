@@ -222,7 +222,8 @@ def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS):
 
 
 def accept_findings(ctx, domains, blockers, actions):
-    """(blockers, actions, accepted): the findings each domain's approved decisions accept taken out, in domain order."""
+    """(blockers, actions, accepted): the findings each domain's approved decisions accept taken out, in domain
+    order."""
     def step(acc, accept):
         b, a, done = acc
         nb, na, more = accept(ctx, b, a)

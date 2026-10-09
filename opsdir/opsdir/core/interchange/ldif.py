@@ -111,7 +111,8 @@ def _record_body(r, width):
         return _entry_lines(r.attrs.get("objectClass", ()),
                             {k: v for k, v in r.attrs.items() if k != "objectClass"}, width)
     if r.changetype == "modify":
-        return tuple(line for op, attr, vals in r.mods for line in (f"{op}: {attr}", *_value_lines(attr, vals, width), "-"))
+        return tuple(line for op, attr, vals in r.mods
+                     for line in (f"{op}: {attr}", *_value_lines(attr, vals, width), "-"))
     return ()
 
 

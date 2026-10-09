@@ -5,7 +5,9 @@ edge.gateways), is fronted as a service on servers is: an Application Gateway v2
 for inspection) with its TLS policy and certificate, a Front Door when a CDN fronts it, its DNS record. Its backend is
 the gateway instead of the servers: the private address of the gateway's internal load balancer (the AKS Service the
 plug annotates), on HTTP, or on HTTPS to the gateway's internal certificate when the policy re-encrypts, trusting the
-CA that certificate chains to (Key Vault).
+CA that certificate chains to (Key Vault). No rule admits the Application Gateway's subnet to that address: the AKS
+node subnet's NSG (AKS's own) allows traffic within the virtual network by its default rule AllowVnetInBound; a
+landing zone that adds its own NSG there keeps that flow open itself.
 """
 from opsdir.core.contract import GatewayPlug
 from opsdir.core.directory import one, rdn_value
@@ -13,7 +15,7 @@ from opsdir.core.environment import UNBOUND, one_role
 from opsdir.domains.edge.gateways import gateway_ca, gateway_port
 from opsdir.domains.edge.resolve import front_edge
 from opsdir_format_terraform.hcl import tf_name
-from .dns import service_record
+from .dns import service_record, unrecorded_answer
 from .edge import Backend, gateway_service
 from .frontdoor import endpoint, front_door
 
@@ -47,4 +49,4 @@ def gateway_front(m, svc, gw, endpoints):
     n, spec = tf_name(rdn_value(svc)), front_edge(m, svc, endpoints)
     return (*gateway_service(m, svc, spec, gateway_backend(m, gw, spec)),
             *(front_door(m, svc, spec, n) if spec.cdn else ()),
-            *service_record(m.d, m, svc, n, endpoint(n) if spec.cdn else None))
+            *service_record(m.d, m, svc, n, endpoint(n) if spec.cdn else None, unrecorded_answer(svc, n, True)))

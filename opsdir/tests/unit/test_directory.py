@@ -2,8 +2,8 @@ import datetime as dt
 
 import pytest
 
-from opsdir.core.directory import (children, classes_with_supers, follow, follow_all, get, gtime_date, in_scope, make_directory,
-                                   norm_dn, one, rdn_value, referrers, subtree, value_type, values)
+from opsdir.core.directory import (children, classes_with_supers, follow, follow_all, get, gtime_date, in_scope,
+                                   make_directory, norm_dn, one, rdn_value, referrers, subtree, value_type, values)
 
 TYPES = (("cn", "string", "meta"), ("ciamOwner", "dn", "meta"), ("ciamPort", "port", "intent"),
          ("description", "string", "meta"))

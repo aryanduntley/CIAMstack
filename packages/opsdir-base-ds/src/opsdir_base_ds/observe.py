@@ -31,7 +31,8 @@ _DN_SPECIAL = re.compile(r'[,+"\\<>;=]')
 # ------------------------------------------------------------------ reading config.ldif
 def _records(text):
     """(dn, {lowercase attribute: values}) of every entry in the file."""
-    return tuple((r.dn, {k.lower(): tuple(v) for k, v in r.attrs.items()}) for r in parse(text) if r.changetype == "add")
+    return tuple((r.dn, {k.lower(): tuple(v) for k, v in r.attrs.items()})
+                 for r in parse(text) if r.changetype == "add")
 
 
 def _classes(attrs):

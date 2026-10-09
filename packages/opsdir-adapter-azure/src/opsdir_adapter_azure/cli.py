@@ -116,7 +116,8 @@ def _of(items, kind):
 
 def _vnets(items):
     vnets = _of(items, "Microsoft.Network/virtualNetworks")
-    listed = [(s, arm_segment(s.get("id"), "virtualNetworks")) for s in _of(items, "Microsoft.Network/virtualNetworks/subnets")]
+    listed = [(s, arm_segment(s.get("id"), "virtualNetworks"))
+              for s in _of(items, "Microsoft.Network/virtualNetworks/subnets")]
     subnets = [*((s, v.get("name")) for v in vnets for s in v.get("subnets") or ()), *listed]
     return [*(("azurerm_virtual_network", {"id": v.get("id"), "name": v.get("name"), "tags": v.get("tags") or {},
                                            "resource_group_name": v.get("resourceGroup"),
@@ -135,14 +136,16 @@ def _vms(items):
         ref = ((vm.get("storageProfile") or {}).get("imageReference")) or {}
         return {"source_image_id": ref.get("id"),
                 "source_image_reference": [{"publisher": ref.get("publisher"), "offer": ref.get("offer"),
-                                            "sku": ref.get("sku"), "version": ref.get("exactVersion") or ref.get("version")}]
+                                            "sku": ref.get("sku"),
+                                            "version": ref.get("exactVersion") or ref.get("version")}]
                 if ref.get("offer") else []}
     return [("azurerm_linux_virtual_machine", {
                 "id": vm.get("id"), "name": vm.get("name"), "tags": vm.get("tags") or {},
                 "computer_name": (vm.get("osProfile") or {}).get("computerName"),
                 "size": (vm.get("hardwareProfile") or {}).get("vmSize"), "zone": (vm.get("zones") or [None])[0],
                 "private_ip_address": (vm.get("privateIps") or "").split(",")[0] or None,
-                "network_interface_ids": [n.get("id") for n in (vm.get("networkProfile") or {}).get("networkInterfaces") or ()
+                "network_interface_ids": [n.get("id")
+                                          for n in (vm.get("networkProfile") or {}).get("networkInterfaces") or ()
                                           if n.get("id")], "os_disk": os_disk_of(vm), **image(vm)})
             for vm in _of(items, "Microsoft.Compute/virtualMachines")]
 
@@ -179,7 +182,8 @@ def _lbs(items):
                                   {"name": f.get("name"),
                                    "private_ip_address": f.get("privateIPAddress") or f.get("privateIpAddress"),
                                    "public_ip_address_id": _id(f.get("publicIPAddress") or f.get("publicIpAddress")),
-                                   "subnet_id": _id(f.get("subnet"))} for f in lb.get("frontendIPConfigurations") or ()]})
+                                   "subnet_id": _id(f.get("subnet"))}
+                                  for f in lb.get("frontendIPConfigurations") or ()]})
               for lb in lbs),
             *(("azurerm_lb_backend_address_pool", {"id": p.get("id"), "loadbalancer_id": lb.get("id")})
               for lb in lbs for p in lb.get("backendAddressPools") or ()),
@@ -206,7 +210,8 @@ def _addresses(items):
 def _records(items):
     def one(r, zone_key, type_):
         fqdn = _low(r.get("fqdn")).rstrip(".")
-        zone = arm_segment(r.get("id"), zone_key) or (fqdn[len(r.get("name", "")) + 1:] if r.get("name") != "@" else fqdn)
+        zone = arm_segment(r.get("id"), zone_key) or (fqdn[len(r.get("name", "")) + 1:]
+                                                      if r.get("name") != "@" else fqdn)
         return (type_, {"name": r.get("name"), "zone_name": _low(zone), "ttl": r.get("ttl") or r.get("TTL"),
                         "records": [a.get("ipv4Address") for a in r.get("aRecords") or r.get("ARecords") or ()],
                         "target_resource_id": _id(r.get("targetResource"))})
@@ -236,7 +241,8 @@ def _nsgs(items):
             *(("azurerm_subnet_network_security_group_association",
                {"subnet_id": s.get("id"), "network_security_group_id": g.get("id")})
               for g in nsgs for s in g.get("subnets") or ()),
-            *(("azurerm_network_security_rule", {**_rule(r), "resource_group_name": arm_segment(r.get("id"), "resourceGroups"),
+            *(("azurerm_network_security_rule", {**_rule(r),
+                                                 "resource_group_name": arm_segment(r.get("id"), "resourceGroups"),
                                                  "network_security_group_name": arm_segment(r.get("id"),
                                                                                          "networkSecurityGroups")})
               for r in _of(items, "Microsoft.Network/networkSecurityGroups/securityRules"))]
@@ -272,9 +278,11 @@ def _vault_items(items):
     def rotation(at):
         if at not in policies:
             return {}
-        rotate = [a for a in policies[at].get("lifetimeActions") or () if _low((a.get("action") or {}).get("type")) == "rotate"]
+        rotate = [a for a in policies[at].get("lifetimeActions") or ()
+                  if _low((a.get("action") or {}).get("type")) == "rotate"]
         return {"rotation_policy": [{"automatic": rotate}]}
-    return [*(("azurerm_key_vault_secret", {"name": name, "key_vault_id": f"/vaults/{vault}", "tags": s.get("tags") or {}})
+    return [*(("azurerm_key_vault_secret", {"name": name, "key_vault_id": f"/vaults/{vault}",
+                                            "tags": s.get("tags") or {}})
               for (vault, name), s in secrets.items() if not s.get("managed")),
             *(("azurerm_key_vault_key", {"name": name, "key_vault_id": f"/vaults/{vault}", "tags": k.get("tags") or {},
                                          "key_type": (k.get("key") or {}).get("kty"), **rotation((vault, name))})
@@ -285,7 +293,8 @@ def _stores(items):
     return [*(("azurerm_disk_encryption_set", {"id": s.get("id"), "name": s.get("name"),
                                                "key_vault_key_id": (s.get("activeKey") or {}).get("keyUrl")})
               for s in _of(items, "Microsoft.Compute/diskEncryptionSets")),
-            *(("azurerm_storage_container", {"id": c.get("id"), "name": c.get("name"), "metadata": c.get("metadata") or {},
+            *(("azurerm_storage_container", {"id": c.get("id"), "name": c.get("name"),
+                                             "metadata": c.get("metadata") or {},
                                              "storage_account_name": arm_segment(c.get("id"), "storageAccounts")})
               for c in _of(items, "Microsoft.Storage/storageAccounts/blobServices/containers"))]
 

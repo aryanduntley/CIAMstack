@@ -30,7 +30,8 @@ def _binding(client=None):
 
 def test_workload_identity_names_the_client_and_tenant():
     i = workload_identity(_m(), _binding("c1d2"))
-    assert i.annotations == (("azure.workload.identity/client-id", "c1d2"), ("azure.workload.identity/tenant-id", TENANT))
+    assert i.annotations == (("azure.workload.identity/client-id", "c1d2"),
+                             ("azure.workload.identity/tenant-id", TENANT))
     assert i.pod_labels == (("azure.workload.identity/use", "true"),)
     assert workload_identity(_m(tenant=None), _binding()).annotations == \
         (("azure.workload.identity/client-id", "UNBOUND:identity-am-client-id"),)
@@ -38,7 +39,8 @@ def test_workload_identity_names_the_client_and_tenant():
 
 def test_key_vault_through_external_secrets_and_csi_in_each_cloud():
     d = SECRET_DELIVERY["azkv"]
-    assert d.store_key("kv-ciam-prod/am-admin") == "kv-ciam-prod" and d.eso_ref("kv-ciam-prod/am-admin") == {"key": "am-admin"}
+    assert (d.store_key("kv-ciam-prod/am-admin") == "kv-ciam-prod"
+            and d.eso_ref("kv-ciam-prod/am-admin") == {"key": "am-admin"})
     public = d.eso_provider(_m(), None, "kv-ciam-prod", "am", None)["azurekv"]
     gov = d.eso_provider(_m("usgovernment"), None, "kv-ciam-prod", "am", None)["azurekv"]
     assert (public["vaultUrl"], public["environmentType"], public["tenantId"]) == \

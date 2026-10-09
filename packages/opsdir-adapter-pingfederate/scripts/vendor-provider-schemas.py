@@ -9,9 +9,12 @@ The schemas are the provider's own (github.com/pingidentity/terraform-provider-p
 with its flags (required, optional, computed, sensitive), its type and its nested attributes (descriptions left out).
 Reads schema dumps made beforehand (terraform needs network access to install the provider once):
 
-  mkdir /tmp/pf && printf 'terraform {\\n  required_providers {\\n    pingfederate = {\\n      source  = "pingidentity/pingfederate"\\n      version = "1.10.0"\\n    }\\n  }\\n}\\n' > /tmp/pf/main.tf
-  tools/bin/terraform -chdir=/tmp/pf init -backend=false && tools/bin/terraform -chdir=/tmp/pf providers schema -json > /tmp/pf-1.10.0.json
-  packages/opsdir-adapter-pingfederate/scripts/vendor-provider-schemas.py 1.10.0=/tmp/pf-1.10.0.json 1.8.1=/tmp/pf-1.8.1.json
+  mkdir /tmp/pf && printf 'terraform {\\n  required_providers {\\n    pingfederate = {\\n'\\
+'      source  = "pingidentity/pingfederate"\\n      version = "1.10.0"\\n    }\\n  }\\n}\\n' > /tmp/pf/main.tf
+  tools/bin/terraform -chdir=/tmp/pf init -backend=false && \\
+    tools/bin/terraform -chdir=/tmp/pf providers schema -json > /tmp/pf-1.10.0.json
+  packages/opsdir-adapter-pingfederate/scripts/vendor-provider-schemas.py 1.10.0=/tmp/pf-1.10.0.json \\
+    1.8.1=/tmp/pf-1.8.1.json
 """
 import json
 import pathlib

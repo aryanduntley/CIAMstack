@@ -231,7 +231,8 @@ def _vpn(m, b, n):
         for i, c in enumerate(values(b, "ciamAcceptedCidr"))) if peer_asn is None else ()
     return Rendered((
         block("resource", ["aws_customer_gateway", n], [
-            ("bgp_asn", int(peer_asn or 65000)), ("ip_address", gateway), ("type", "ipsec.1"), ("tags", binding_tags(b))]),
+            ("bgp_asn", int(peer_asn or 65000)), ("ip_address", gateway), ("type", "ipsec.1"),
+            ("tags", binding_tags(b))]),
         block("resource", ["aws_vpn_connection", n], [
             ("customer_gateway_id", ref(f"aws_customer_gateway.{n}.id")),
             ("vpn_gateway_id", ref("aws_vpn_gateway.main.id")), ("type", "ipsec.1"),

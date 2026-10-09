@@ -67,7 +67,7 @@ def test_a_terminating_front_sends_http_on_80():
     assert re.search(r'name\s+= "ciam-prod-svc-login-443"\s+port\s+= 80\s+protocol\s+= "HTTP"', out)
 
 
-def test_the_plug_binds_each_target_group_to_the_gateway_service():
+def test_the_plug_binds_each_target_group_to_the_gateway_service_admitting_the_albs_subnets():
     m = _model(*RECORDS)
     _, gw = _parts(m)
     plug = gateway_plug(m, gw, ("gw", (443,)))
@@ -75,4 +75,8 @@ def test_the_plug_binds_each_target_group_to_the_gateway_service():
     assert plug.objects == ({"apiVersion": "elbv2.k8s.aws/v1beta1", "kind": "TargetGroupBinding",
                              "metadata": {"name": "gw-svc-login-443"},
                              "spec": {"targetGroupName": "ciam-prod-svc-login-443", "targetType": "ip",
-                                      "serviceRef": {"name": "gw", "port": 443}}},)
+                                      "serviceRef": {"name": "gw", "port": 443},
+                                      "networking": {"ingress": [{
+                                          "from": [{"ipBlock": {"cidr": "10.20.8.0/22"}},
+                                                   {"ipBlock": {"cidr": "10.20.12.0/22"}}],
+                                          "ports": [{"protocol": "TCP"}]}]}}},)

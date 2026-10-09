@@ -20,7 +20,8 @@ def test_terraform_state():
     state = json.dumps({"version": 4, "terraform_version": "1.9.0", "resources": [
         {"mode": "managed", "type": t, "name": n, "provider": 'provider["registry.terraform.io/hashicorp/azurerm"]',
          "instances": [{"attributes": a}]} for t, n, a in (
-            ("azurerm_linux_function_app", "fn", {"id": APP, "name": "fn-ciam-prod", "tags": {"Role": "report-function"},
+            ("azurerm_linux_function_app", "fn", {"id": APP, "name": "fn-ciam-prod",
+                                                  "tags": {"Role": "report-function"},
                                                   "site_config": [{"application_stack": [{"python_version": "3.11",
                                                                                           "node_version": None}]}]}),
             ("azurerm_function_app_function", "nightly", {"id": f"{APP}/functions/nightly", "name": "nightly",

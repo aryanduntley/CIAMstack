@@ -11,7 +11,8 @@ def test_weighted_round_robin_and_failover_from_the_first_answer():
     assert out.count("wrr {") == 2 and "weight  = 3" in out
     assert 'rrdatas = [google_compute_forwarding_rule.svc_api.ip_address]' in out and '"198.51.100.21"' in out
     failover = "\n".join(service_record(d, alpha, binding(alpha, "svc-login"), "svc_login"))
-    assert "# failover-primary: configure Cloud DNS's primary-backup policy" in failover and "ttl          = 60" in failover
+    assert ("# failover-primary: configure Cloud DNS's primary-backup policy" in failover
+            and "ttl          = 60" in failover)
     assert service_record(d, beta, binding(beta, "svc-api"), "svc_api")[0].startswith("# `api.example.test`")
 
 

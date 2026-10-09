@@ -1,5 +1,5 @@
-"""What Cloud Asset Inventory and gcloud report about an environment's edge, normalized to the hashicorp/google attribute
-names the shared mapping reads (opsdir_adapter_gcp.edge_inventory). Pure.
+"""What Cloud Asset Inventory and gcloud report about an environment's edge, normalized to the hashicorp/google
+attribute names the shared mapping reads (opsdir_adapter_gcp.edge_inventory). Pure.
 
   compute.googleapis.com/UrlMap, RegionUrlMap,                  gcloud compute url-maps list
     TargetHttpsProxy, RegionTargetHttpsProxy                    gcloud compute target-https-proxies list

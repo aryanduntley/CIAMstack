@@ -87,7 +87,8 @@ def test_a_state_is_imported_under_a_change_and_again_changes_nothing(conn):
 
 CLI = {"vpcs.json": {"Vpcs": [{"VpcId": "vpc-1", "CidrBlock": "10.20.0.0/16"}]},
        "subnets.json": {"Subnets": [{"SubnetId": "subnet-1", "VpcId": "vpc-1", "CidrBlock": "10.20.1.0/24",
-                                     "AvailabilityZone": "us-east-1a", "Tags": [{"Key": "Role", "Value": "subnet-ds"}]}]},
+                                     "AvailabilityZone": "us-east-1a",
+                                     "Tags": [{"Key": "Role", "Value": "subnet-ds"}]}]},
        "instances.json": {"Reservations": [{"Instances": [
            {"InstanceId": "i-1", "ImageId": "ami-0abc", "InstanceType": "m6i.xlarge", "PrivateIpAddress": "10.20.1.11",
             "SubnetId": "subnet-1", "VpcId": "vpc-1", "State": {"Name": "running"},

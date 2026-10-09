@@ -83,7 +83,8 @@ ATTRIBUTES = (
     AttributeDef(615, 'ciamWorkloadSecret', 'string', 'intent', False,
                  "A Kubernetes Secret key a workload reads and the secret role that fills it: "
                  "<secret name>/<key> <- <secret role> (each environment binds the role to its secret store's "
-                 "reference; values never. Not key=role: a key named like a password would read as one)", (("X-PATTERN", WORKLOAD_SECRET),)),
+                 "reference; values never. Not key=role: a key named like a password would read as one)",
+                 (("X-PATTERN", WORKLOAD_SECRET),)),
     # ------------------------------------------------------------------ workload bindings (per environment)
     AttributeDef(610, 'ciamWorkloadReplicas', 'int', 'binding', True,
                  'The replicas an environment runs of a workload'),

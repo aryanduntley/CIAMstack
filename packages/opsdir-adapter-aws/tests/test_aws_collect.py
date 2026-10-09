@@ -110,7 +110,8 @@ def _answer(argv):
     if op in special:
         return json.dumps(special[op]), None
     if op == ("kms", "describe-key"):
-        return json.dumps(f["kms/key-mrk-1234.json" if arg.get("--key-id") == "mrk-1234" else "kms/key-aws-ebs.json"]), None
+        return json.dumps(f["kms/key-mrk-1234.json" if arg.get("--key-id") == "mrk-1234"
+                            else "kms/key-aws-ebs.json"]), None
     if op == ("kms", "get-key-rotation-status"):
         return json.dumps(f["kms/rotation-mrk-1234.json"] if arg.get("--key-id") == "mrk-1234" else {}), None
     if op[0] == "s3api" and op[1] != "list-buckets":
@@ -132,7 +133,8 @@ def test_the_login_must_be_the_account_the_cloud_records():
     call, check = identity_check(None, _model(ciamAccountRef=ACCOUNT))
     assert call.argv == ("aws", "sts", "get-caller-identity", "--output", "json", "--region", "us-east-1")
     assert check(json.dumps({"Account": ACCOUNT})) is None
-    assert check(json.dumps({"Account": "999999999999"})) == f"signed in to account 999999999999, the record names {ACCOUNT}"
+    assert check(json.dumps({"Account": "999999999999"})) == \
+        f"signed in to account 999999999999, the record names {ACCOUNT}"
     assert identity_check(None, _model())[1]("{}") == \
         "the cloud records no account (ciamAccountRef) to check the login against"
 
@@ -165,7 +167,8 @@ def test_exactly_the_reviewed_operations_and_never_a_secret():
     buckets = {a[a.index("--bucket") + 1] for a in ran if "--bucket" in a}
     assert buckets == {"ciam-backups"}                           # only the buckets the record holds
     assert [a for a in ran if a[2] == "get-resource-policy"][0][4] == SECRET
-    assert ["aws", "sso-admin", "list-account-assignments"] == next(a for a in ran if a[2] == "list-account-assignments")[:3]
+    assert ["aws", "sso-admin", "list-account-assignments"] == \
+        next(a for a in ran if a[2] == "list-account-assignments")[:3]
     assert "sso-CiamOperators.json" in {x.path.rsplit("/", 1)[-1] for x in c.calls}
 
 
@@ -221,7 +224,8 @@ def _stack_answer(argv):
         return (saved["app/template.json"] if folder == "app" else
                 json.dumps({"TemplateBody": saved["network/template.yaml"]})), None
     listed = json.loads(saved[f"{folder}/resources.json"])
-    nested = [{"LogicalResourceId": "Network", "PhysicalResourceId": NET_ARN, "ResourceType": "AWS::CloudFormation::Stack",
+    nested = [{"LogicalResourceId": "Network", "PhysicalResourceId": NET_ARN,
+               "ResourceType": "AWS::CloudFormation::Stack",
                "ResourceStatus": "CREATE_COMPLETE"}] if folder == "app" else []
     return json.dumps({"StackResourceSummaries": [*listed["StackResourceSummaries"], *nested]}), None
 
@@ -289,14 +293,17 @@ def _org_answer(argv, org=ORG):
         parent = {ACCOUNT: (OU, "ORGANIZATIONAL_UNIT"), OU: (ROOT, "ROOT")}[arg["--child-id"]]
         return json.dumps({"Parents": [{"Id": parent[0], "Type": parent[1]}]}), None
     if op == ("organizations", "list-policies-for-target"):
-        return json.dumps({"Policies": [{"Id": p} for p in ATTACHED.get((arg["--target-id"], arg["--filter"]), [])]}), None
+        return json.dumps({"Policies": [{"Id": p}
+                                        for p in ATTACHED.get((arg["--target-id"], arg["--filter"]), [])]}), None
     return json.dumps(_policy(arg["--policy-id"])), None
 
 
 def _with_profile(m, *profiles):
     return m._replace(bindings=(*m.bindings, *(
-        make_entry(f"cn=org-{n},ou=bindings,env=prod,cloud=main,ou=environments,dc=ciam-ops", ("top", "ciamCollectionSource"),
-                   {"cn": (f"org-{n}",), "ciamBindingRole": (f"collect-org-{n}",), "ciamImporter": ("aws/cli-inventory",),
+        make_entry(f"cn=org-{n},ou=bindings,env=prod,cloud=main,ou=environments,dc=ciam-ops",
+                   ("top", "ciamCollectionSource"),
+                   {"cn": (f"org-{n}",), "ciamBindingRole": (f"collect-org-{n}",),
+                    "ciamImporter": ("aws/cli-inventory",),
                     "ciamSourceRef": (f"aws-profile://{p}",)}) for n, p in enumerate(profiles))))
 
 
@@ -326,7 +333,8 @@ def test_a_profile_signed_in_to_another_organization_reads_no_policy_and_imports
                                                                          f"organization/{ORG}"), "org-mgmt")
     c = collect("aws/cli-inventory", COLLECTORS[0], m.d, m, lambda call: _org_answer(call.argv, org="o-zzzzzzzzzz"))
     assert c.files is None and c.problems == (
-        f"profile org-mgmt is signed in to organization o-zzzzzzzzzz, the cloud records {ORG}: its policies are not read",)
+        f"profile org-mgmt is signed in to organization o-zzzzzzzzzz, the cloud records {ORG}: "
+        "its policies are not read",)
     assert not [x for x in c.calls if "list-policies-for-target" in x.provenance]
 
 

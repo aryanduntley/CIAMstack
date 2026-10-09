@@ -179,7 +179,8 @@ def _resources(physical, status=None):
 
 
 def _files(app=APP, network=NETWORK, app_status=None):
-    """Two stack folders under main/prod/ as the AWS CLI saves them (the app stack's template as get-template output)."""
+    """Two stack folders under main/prod/ as the AWS CLI saves them (the app stack's template as get-template
+    output)."""
     net = {"stack.json": _stack("ciam-prod-network", {}),
            "resources.json": _resources({"Vpc": VPC, "SubnetDsA": SUBNET, "NatEip": "203.0.113.10", "Nat": NAT,
                                          "Endpoint": "vpce-0abc"}),
@@ -210,8 +211,8 @@ def test_stacks_that_match_the_record_change_nothing():
     assert set(imported.notices) == {
         "ciam-prod-network: Fn::Cidr (1) not evaluated; the attributes computed with them keep the record's values",
         "ciam-prod-network: resource types not read: AWS::EC2::InternetGateway (1)",
-        "main/prod: private-endpoint vpce-0abc (vpce-0abc) is not in the record and names no role (tag it Role, name it "
-        "in roles.json, or record it); not imported",
+        "main/prod: private-endpoint vpce-0abc (vpce-0abc) is not in the record and names no role (tag it Role, "
+        "name it in roles.json, or record it); not imported",
         "ciam-prod-app: Fn::If (1) not evaluated; the attributes computed with them keep the record's values",
         "main/prod: job rotate-fn (arn:aws:lambda:us-east-1:111122223333:function:rotate-fn) is not in the record and "
         "names no role (tag it Role, name it in roles.json, or record it); not imported"}

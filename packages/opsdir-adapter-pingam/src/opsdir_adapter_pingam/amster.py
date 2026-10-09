@@ -185,7 +185,8 @@ def _in_realm(d, service, path, found, files, patterns):
 
 def _containers(d, services):
     return tuple(ou_entry(dn) for dn in (PINGAM, JOURNEYS, POLICY_SETS, INTEGRATIONS, CONFIG_FILES,
-                                   *(realm_container(b, one(s, "cn")) for s in services for b in (JOURNEYS, POLICY_SETS))))
+                                   *(realm_container(b, one(s, "cn"))
+                                     for s in services for b in (JOURNEYS, POLICY_SETS))))
 
 
 def read_export(files, d, patterns, at=None):
@@ -199,8 +200,10 @@ def read_export(files, d, patterns, at=None):
     unplaced = [p for p, s in placed.items() if s is None]
     return Imported(
         containers=_containers(d, tuple(s for s in placed.values() if s is not None)),
-        groups=(*(g for groups, _ in results for g in groups), *((scope, entries) for scope, entries, _ in global_files)),
-        notices=(*(n for _, notices in results for n in notices), *(n for _, _, notices in global_files for n in notices),
+        groups=(*(g for groups, _ in results for g in groups),
+                *((scope, entries) for scope, entries, _ in global_files)),
+        notices=(*(n for _, notices in results for n in notices),
+                 *(n for _, _, notices in global_files for n in notices),
                  *(f"realm {p}: no identity service in the record is this realm (record one with pingamRealmPath "
                    f"{p}); its entities are not imported" for p in unplaced),
                  *(f"not an Amster entity, not imported: {p}" for p in sorted(files)

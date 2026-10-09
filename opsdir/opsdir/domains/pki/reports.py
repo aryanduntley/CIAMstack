@@ -112,7 +112,8 @@ def _certificate_steps(d, c):
     """Re-issuing a certificate: the certificate, whoever presents or trusts it, the partner to coordinate with."""
     partner = follow(d, c, "ciamPartnerContact")
     users = tuple(dict.fromkeys(e.dn for attr in CERTIFICATE_USE for _, e in referrers(d, c, attr)))
-    return (("re-issue certificate", one(c, "cn"), _joined(values(c, "ciamSubjectAltName")) or one(c, "ciamSubject", ""),
+    return (("re-issue certificate", one(c, "cn"),
+             _joined(values(c, "ciamSubjectAltName")) or one(c, "ciamSubject", ""),
              owner_label(d, c)),
             *(_certificate_user(d, get(d, u)) for u in users),
             *((("coordinate with partner", rdn_value(partner), one(partner, "mail", ""), owner_label(d, c)),)

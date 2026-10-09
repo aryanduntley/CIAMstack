@@ -53,8 +53,8 @@ def _service_account(p, chart):
 
 def identity_platform_values(m, services, p):
     """The identity-platform chart's values for a placement: the workloads' service account, no Secrets made by the
-    chart, ingress hosts (Ingresses off behind a cluster gateway), DS on servers (external_ds; with no DS in the cluster, no self-signed DS certificates: the
-    servers' CA comes from the record), each component."""
+    chart, ingress hosts (Ingresses off behind a cluster gateway), DS on servers (external_ds; with no DS in the
+    cluster, no self-signed DS certificates: the servers' CA comes from the record), each component."""
     platform = {"disable_secret_agent_config": True, "secrets_enabled": True, "base_generate": True, "secrets": {},
                 **({} if ds_in_cluster(p) else {"ds_certs": {"enabled": False}}),
                 "ingress": ({"enabled": False} if gateway_fronted(m, IDENTITY_PLATFORM) else
@@ -82,5 +82,6 @@ def helm_files(m, services, p):
     charts = ((IDENTITY_PLATFORM, identity_platform_values), (PING_GATEWAY, ping_gateway_values))
     what = lambda chart: (f"ForgeOps {VERSION} Helm values, chart {chart}: helm upgrade --install {chart} "
                           f"<ForgeOps {VERSION} checkout>/charts/{chart} --namespace {p.namespace} -f <this file>")
-    return {f"forgeops/{HELM}/{p.namespace}/{chart}-values.yaml": header(m, what(chart), YAML) + dump(values(m, services, p))
+    return {f"forgeops/{HELM}/{p.namespace}/{chart}-values.yaml":
+            header(m, what(chart), YAML) + dump(values(m, services, p))
             for chart, values in charts if on_in(p, chart)}

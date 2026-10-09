@@ -88,7 +88,8 @@ def test_the_provider_notes_that_azure_has_no_fips_endpoints_to_switch_to():
 
 def _state(provider, *resources):
     return json.dumps({"version": 4, "terraform_version": "1.9.0", "resources": [
-        {"mode": "managed", "type": t, "name": f"r{i}", "provider": f'provider["registry.terraform.io/hashicorp/{provider}"]',
+        {"mode": "managed", "type": t, "name": f"r{i}",
+         "provider": f'provider["registry.terraform.io/hashicorp/{provider}"]',
          "instances": [{"attributes": a}]} for i, (t, a) in enumerate(resources)]})
 
 

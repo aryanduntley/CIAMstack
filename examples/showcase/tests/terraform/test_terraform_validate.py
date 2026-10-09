@@ -1,6 +1,7 @@
 """Rendered Terraform checked by Terraform itself (opsdir/scripts/validate-terraform.sh: fmt -check, init without a
-backend, validate): every root of the showcase's golden renders, every kind of network plumbing as each cloud's
-landing zone renders it, and the front each cloud renders before a cluster's in-cluster gateway. Runs with the local tools/bin/terraform (opsdir/scripts/fetch-tools.sh); skipped without it.
+backend, validate): every root of the showcase's golden renders, every kind of network plumbing as each cloud's landing
+zone renders it, and the front each cloud renders before a cluster's in-cluster gateway. Runs with the local
+tools/bin/terraform (opsdir/scripts/fetch-tools.sh); skipped without it.
 The first run needs network access for the providers, cached in tools/ after that."""
 import pathlib
 import subprocess

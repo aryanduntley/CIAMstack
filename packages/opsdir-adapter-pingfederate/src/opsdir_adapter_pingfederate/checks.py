@@ -105,9 +105,9 @@ def check_references(ctx):
         *(_credentials(ctx, r, resource_label(r), responsible(ctx.d, r, ctx.dst.env)) for r in held)])
     if parts.blockers:
         return parts
-    return parts._replace(ok=(*parts.ok, f"PingFederate's {len(plugins)} plugin instance(s), {len(trees)} authentication "
-                                         f"policy tree(s) and {len(oidc)} OIDC policy(-ies) name only what the record "
-                                         "has."))
+    return parts._replace(ok=(*parts.ok, f"PingFederate's {len(plugins)} plugin instance(s), {len(trees)} "
+                                         f"authentication policy tree(s) and {len(oidc)} OIDC policy(-ies) name only "
+                                         "what the record has."))
 
 
 def _running(nodes):

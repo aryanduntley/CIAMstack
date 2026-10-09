@@ -16,7 +16,8 @@ FD = f"{RG}/Microsoft.Cdn/profiles/afd-sso"
 def _outputs():
     docs = {
         "nics.json": [{"type": "Microsoft.Network/networkInterfaces", "id": "nic-1", "ipConfigurations": [
-            {"primary": True, "privateIPAddress": "10.60.2.10", "subnet": {"id": f"{RG}/x/virtualNetworks/v/subnets/s"}}]}],
+            {"primary": True, "privateIPAddress": "10.60.2.10",
+             "subnet": {"id": f"{RG}/x/virtualNetworks/v/subnets/s"}}]}],
         "vms.json": [{"type": "Microsoft.Compute/virtualMachines", "id": "vm-1", "name": "pf-1",
                       "tags": {"Role": "pf-engine"}, "networkProfile": {"networkInterfaces": [{"id": "nic-1"}]}}],
         "pips.json": [{"type": "Microsoft.Network/publicIPAddresses", "id": PIP, "name": "pip-sso",
@@ -25,7 +26,8 @@ def _outputs():
                            "firewallPolicy": {"id": WAF},
                            "frontendIPConfigurations": [{"name": "frontend", "publicIPAddress": {"id": PIP}}],
                            "frontendPorts": [{"name": "port-443", "port": 443}],
-                           "backendAddressPools": [{"name": "servers", "backendAddresses": [{"ipAddress": "10.60.2.10"}]}],
+                           "backendAddressPools": [{"name": "servers",
+                                                    "backendAddresses": [{"ipAddress": "10.60.2.10"}]}],
                            "backendHttpSettingsCollection": [{"name": "s", "protocol": "Https",
                                                               "cookieBasedAffinity": "Enabled", "requestTimeout": 120,
                                                               "connectionDraining": {"enabled": True,
@@ -54,7 +56,8 @@ def _outputs():
         "zones.json": [{"type": "Microsoft.Network/dnszones", "id": f"{RG}/Microsoft.Network/dnszones/example.test",
                         "name": "example.test"}],
         "records.json": [
-            {"type": "Microsoft.Network/dnszones/CNAME", "id": f"{RG}/Microsoft.Network/dnszones/example.test/CNAME/sso",
+            {"type": "Microsoft.Network/dnszones/CNAME",
+             "id": f"{RG}/Microsoft.Network/dnszones/example.test/CNAME/sso",
              "name": "sso", "TTL": 300, "cnameRecord": {"cname": "e-abc.z01.azurefd.net"}},
             {"type": "Microsoft.Network/dnszones/TXT", "id": f"{RG}/Microsoft.Network/dnszones/example.test/TXT/_v",
              "name": "_v", "TTL": 3600, "txtRecords": [{"value": ["token=abc"]}]},

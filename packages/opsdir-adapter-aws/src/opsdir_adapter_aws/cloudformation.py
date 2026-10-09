@@ -112,9 +112,11 @@ def _pseudo(stack, resources):
 
 
 def _context(stack, resources, template):
-    """What names resolve to: parameters (the stack's, else the template's defaults), pseudo parameters, physical IDs."""
+    """What names resolve to: parameters (the stack's, else the template's defaults), pseudo parameters, physical
+    IDs."""
     defaults = {k: (v or {}).get("Default") for k, v in (template.get("Parameters") or {}).items()}
-    given = {p.get("ParameterKey"): p.get("ResolvedValue", p.get("ParameterValue")) for p in stack.get("Parameters") or ()}
+    given = {p.get("ParameterKey"): p.get("ResolvedValue", p.get("ParameterValue"))
+             for p in stack.get("Parameters") or ()}
     physical = {r.get("LogicalResourceId"): r.get("PhysicalResourceId") for r in resources
                 if r.get("PhysicalResourceId") and r.get("ResourceStatus") not in NOT_CREATED}
     return {**physical, **_pseudo(stack, resources), **defaults, **given}
@@ -290,7 +292,8 @@ def _records(declared):
                                       (p.get("AliasTarget") or {}).get("DNSName"))}]})
     return [*(record(p, raw, p.get("HostedZoneId")) for _, t, p, raw, _ in declared
               if t == "AWS::Route53::RecordSet" and p.get("AliasTarget")),
-            *(record(rs, rraw, p.get("HostedZoneId")) for _, t, p, raw, _ in declared if t == "AWS::Route53::RecordSetGroup"
+            *(record(rs, rraw, p.get("HostedZoneId")) for _, t, p, raw, _ in declared
+              if t == "AWS::Route53::RecordSetGroup"
               for rs, rraw in zip(p.get("RecordSets") or (), raw.get("RecordSets") or ()) if rs.get("AliasTarget"))]
 
 
@@ -366,8 +369,8 @@ def stack_pairs(stack, resources, template):
     declared = _declared(template, names)
     types = Counter(r.get("Type") for r in (template.get("Resources") or {}).values()
                     if isinstance(r, dict) and r.get("Type") not in READ)
-    not_created = [lg for lg, r in (template.get("Resources") or {}).items() if isinstance(r, dict) and not names.get(lg)
-                   and r.get("Type") in READ]
+    not_created = [lg for lg, r in (template.get("Resources") or {}).items()
+                   if isinstance(r, dict) and not names.get(lg) and r.get("Type") in READ]
     label = stack.get("StackName") or "stack"
     return ([*_network(declared), *_instances(declared, names), *_security_groups(declared), *_egress(declared, names),
              *_load_balancers(declared, names), *_forwarding(declared), *_records(declared), *_secrets(declared),
@@ -375,7 +378,8 @@ def stack_pairs(stack, resources, template):
              *(("aws_s3_bucket", {"bucket": pid}) for _, t, _, _, pid in declared if t == "AWS::S3::Bucket"),
              *_trails(declared, names), *network_stack_pairs(declared)],
             (*((f"{label}: {', '.join(f'{fn} ({n})' for fn, n in sorted(_unevaluated(template).items()))} not "
-                f"evaluated; the attributes computed with them keep the record's values",) if _unevaluated(template) else ()),
+                f"evaluated; the attributes computed with them keep the record's values",)
+               if _unevaluated(template) else ()),
              *((f"{label}: {len(not_created)} resource(s) without a physical ID (not created, or no stack resources "
                 f"listed): {', '.join(not_created[:5])}",) if not_created else ()),
              *((f"{label}: resource types not read: {', '.join(f'{t} ({n})' for t, n in sorted(types.items()))}",)

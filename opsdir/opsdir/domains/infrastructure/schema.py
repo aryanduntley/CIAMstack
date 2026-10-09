@@ -1,6 +1,7 @@
 """infrastructure domain schema fragment: its attribute types and object classes (OIDs pinned by number)."""
-from ...core.standard import AttributeDef, ClassDef, fragment
+from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
 from ..data.schema import STORAGE_DEPTH
+from .naming import EXPOSURES
 
 ATTRIBUTES = (
     AttributeDef(1, 'cloud', 'string', 'meta', True,
@@ -56,6 +57,9 @@ ATTRIBUTES = (
                  'TCP/UDP port'),
     AttributeDef(30, 'ciamFrontendIp', 'ip', 'binding', True,
                  'Load balancer frontend IP'),
+    AttributeDef(623, 'ciamExposure', enum_type(EXPOSURES), 'binding', True,
+                 'Whether a service name\'s load balancer is internal or internet-facing, recorded when no frontend '
+                 'address says so (the provider assigns the address)'),
     AttributeDef(31, 'ciamSourceCidr', 'cidr', 'binding', False,
                  'Allowed source range'),
     AttributeDef(32, 'ciamProtocol', 'enum:tcp|udp', 'intent', True,
@@ -79,7 +83,8 @@ ATTRIBUTES = (
     AttributeDef(41, 'ciamExternalSystem', 'string', 'meta', True,
                  'Where the allowlist lives (partner firewall, app egress policy, SaaS IP list)'),
     AttributeDef(42, 'ciamAllowlistDirection', 'enum:consumer-egress|partner-ingress|partner-egress', 'meta', True,
-                 'consumer-egress: their outbound rule to our service; partner-ingress: they allow our egress in; partner-egress: they send to us'),
+                 'consumer-egress: their outbound rule to our service; partner-ingress: they allow our egress in; '
+                 'partner-egress: they send to us'),
     AttributeDef(43, 'ciamRefersToRole', 'string', 'meta', True,
                  'Binding role of OUR address this allowlist contains (resolved per environment)'),
     AttributeDef(44, 'ciamRecordedCidr', 'cidr', 'observed', False,
@@ -133,8 +138,8 @@ CLASSES = (
              ('ciamZone',),
              'Subnet'),
     ClassDef(8, 'ciamServiceName', 'ciamBinding', 'STRUCTURAL', ('ciamFqdn', 'ciamTargetRole', 'ciamPort'),
-             ('ciamDnsZone', 'ciamDnsZoneRef', 'ciamFrontendIp', 'ciamTlsCertificate', 'ciamTtlSeconds',
-              'ciamRoutingPolicy', 'ciamRoutingWeight', 'ciamEdgeFact', 'ciamEdgeSetting'),
+             ('ciamDnsZone', 'ciamDnsZoneRef', 'ciamFrontendIp', 'ciamExposure', 'ciamTlsCertificate',
+              'ciamTtlSeconds', 'ciamRoutingPolicy', 'ciamRoutingWeight', 'ciamEdgeFact', 'ciamEdgeSetting'),
              'Stable service name + load balancer (its DNS answer, and what the load balancer runs)'),
     ClassDef(9, 'ciamFirewallRule', 'ciamBinding', 'STRUCTURAL', ('ciamSourceCidr', 'ciamPort', 'ciamTargetRole'),
              ('ciamProtocol', 'ciamAllowsConsumer', 'ciamRulePriority', 'ciamPolicyRole'),
@@ -142,7 +147,8 @@ CLASSES = (
     ClassDef(12, 'ciamEgress', 'ciamBinding', 'STRUCTURAL', ('ciamCidr',),
              ('ciamNatAllocation', 'ciamZone'),
              'Outbound (NAT) addresses our services send from'),
-    ClassDef(13, 'ciamExternalAllowlist', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamManagedBy', 'ciamRefersToRole', 'ciamRecordedCidr', 'ciamAllowlistDirection'),
+    ClassDef(13, 'ciamExternalAllowlist', 'ciamObject', 'STRUCTURAL',
+             ('cn', 'ciamManagedBy', 'ciamRefersToRole', 'ciamRecordedCidr', 'ciamAllowlistDirection'),
              ('ciamExternalSystem', 'ciamLeadTimeDays', 'ciamRequestStatus', 'ciamAllowsConsumer'),
              "An allowlist in someone else's system that contains our addresses"),
     ClassDef(14, 'ciamBackupTarget', 'ciamObjectStore', 'STRUCTURAL', (),
@@ -152,7 +158,8 @@ CLASSES = (
              STORAGE_DEPTH,
              'An object storage location (bucket or container) the stack uses; a backup target is one with a '
              'retention'),
-    ClassDef(15, 'ciamInterconnect', 'ciamBinding', 'STRUCTURAL', ('ciamInterconnectKind', 'ciamPeerEnvironment', 'ciamSourceCidr'),
+    ClassDef(15, 'ciamInterconnect', 'ciamBinding', 'STRUCTURAL',
+             ('ciamInterconnectKind', 'ciamPeerEnvironment', 'ciamSourceCidr'),
              ('ciamPort', 'ciamLinkKind', 'ciamPeerGateway', 'ciamLocalAsn', 'ciamPeerAsn', 'ciamAdvertisedCidr',
               'ciamAcceptedCidr', 'ciamPeerAccepted', 'ciamManagedBy'),
              'Link to another environment'),
