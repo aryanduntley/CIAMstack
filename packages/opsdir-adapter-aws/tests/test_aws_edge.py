@@ -4,7 +4,8 @@ group admitting the clients the firewall rules admit; a WAFv2 web ACL with the r
 endpoints, address and country rules and managed groups; Shield Advanced when asked. A passthrough service keeps its
 NLB, tuned by its policy."""
 from opsdir.domains.edge.resolve import Health, RateLimit, tls_level, tls_policy
-from opsdir_adapter_aws.edge import TLS_POLICIES, alb_service, health_check, rate, shield, stickiness, web_acl
+from opsdir_adapter_aws.edge import (TLS_POLICIES, alb_service, health_check, rate, servers_backend, shield, stickiness,
+                                     web_acl)
 from opsdir_format_terraform.hcl import Block
 from edge_fixtures import environment, firewall, server, service, spec, subnet
 
@@ -14,7 +15,7 @@ CERT = "arn:aws:acm:us-east-1:111122223333:certificate/abcd"
 def _alb(s, ip="198.51.100.20"):
     svc = service(ip)
     m = environment(svc, firewall("fw-sso-public", ["0.0.0.0/0"], ["443"]), firewall("fw-other", ["10.0.0.0/8"], ["22"]))
-    return "\n".join(alb_service(m, svc, s, (server("pf-1", "10.20.2.10"),),
+    return "\n".join(alb_service(m, svc, s, servers_backend(svc, (server("pf-1", "10.20.2.10"),)),
                                  (subnet("subnet-pf-a", "subnet-pf", "10.20.2.0/24"),)))
 
 

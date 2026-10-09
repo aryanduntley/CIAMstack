@@ -1,12 +1,13 @@
 """Rendered Terraform checked by Terraform itself (opsdir/scripts/validate-terraform.sh: fmt -check, init without a
-backend, validate): every root of the showcase's golden renders, and every kind of network plumbing as each cloud's
-landing zone renders it. Runs with the local tools/bin/terraform (opsdir/scripts/fetch-tools.sh); skipped without it.
+backend, validate): every root of the showcase's golden renders, every kind of network plumbing as each cloud's
+landing zone renders it, and the front each cloud renders before a cluster's in-cluster gateway. Runs with the local tools/bin/terraform (opsdir/scripts/fetch-tools.sh); skipped without it.
 The first run needs network access for the providers, cached in tools/ after that."""
 import pathlib
 import subprocess
 
 import pytest
 
+from gateway_sample import write_samples as write_gateway_samples
 from plumbing_sample import write_samples
 
 ROOT = pathlib.Path(__file__).resolve().parents[4]
@@ -27,3 +28,7 @@ def test_the_showcase_renders_are_valid_terraform():
 
 def test_every_kind_of_plumbing_is_valid_terraform_on_each_cloud(tmp_path):
     _validate(write_samples(tmp_path))
+
+
+def test_the_front_before_a_cluster_gateway_is_valid_terraform_on_each_cloud(tmp_path):
+    _validate(write_gateway_samples(tmp_path))

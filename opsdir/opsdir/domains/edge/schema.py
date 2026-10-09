@@ -2,7 +2,8 @@
 header contracts are intent, the same in every environment: a policy names the binding roles of the service names it
 applies to, so one policy means each environment's own load balancer, WAF and CDN in front of them. What realizes them
 is a binding per environment: DNS zones, records and forwarders, the WAF, CDN, DDoS protection, gateways and proxies,
-and what each actually runs (read back as facts in the policies' terms)."""
+and what each actually runs (read back as facts in the policies' terms); and the in-cluster gateway a cluster routes
+the service names of roles it alone runs through."""
 from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
 from .naming import (BACKEND_VALIDATION, DDOS_TIERS, EDGE_FACT, EDGE_KINDS, ENDPOINT_PATH, FORWARD_DIRECTIONS,
                      GEO_RULE, HEADER_KINDS, HEADER_NAME, HEALTH_PROTOCOLS, IP_RULE, RATE_LIMIT, RECORD_TYPES,
@@ -117,6 +118,9 @@ ATTRIBUTES = (
                  (("X-PATTERN", EDGE_FACT),)),
     AttributeDef(384, 'ciamEdgeSetting', 'string', 'observed', False,
                  "A setting the edge runs that the policies' terms can't express, in the provider's own terms"),
+    AttributeDef(622, 'ciamGatewayImplementation', 'vocab', 'binding', True,
+                 "Which Gateway API implementation runs a cluster's in-cluster gateway (the values the installed "
+                 "Kubernetes platform adapter renders); when absent, that adapter's estate setting decides"),
 )
 CLASSES = (
     ClassDef(74, 'ciamTrafficPolicy', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamServiceRole', 'ciamTlsMode'),
@@ -149,6 +153,15 @@ CLASSES = (
              ('ciamServiceRole', 'ciamProviderRef', 'ciamEdgeFact', 'ciamEdgeSetting'),
              'A web application firewall, CDN, DDoS protection, API gateway or reverse proxy in front of service '
              'names, and what it runs'),
+    ClassDef(132, 'ciamClusterGateway', 'ciamBinding', 'STRUCTURAL', ('ciamClusterRole',),
+             ('ciamGatewayImplementation', 'ciamNamespace', 'ciamFrontendIp', 'ciamSubnetRole', 'ciamProviderRef',
+              'ciamWorkloadSecret', 'ciamServiceAccount', 'ciamIdentityRole', 'ciamTrustsCertificate'),
+             "A cluster's in-cluster gateway: the service names whose role runs only on Kubernetes there are routed "
+             "through it, behind each cloud's front (load balancer, WAF, TLS certificate, DNS record) rendered from "
+             'their policies; its namespace, the private address and subnet the front reaches it at, and, delivered '
+             'like a workload\'s, the Secret keys it reads (its internal TLS key pair, the CA its backends\' '
+             'certificates are checked against) with the service account and identity that read them; the CA its '
+             'internal certificate chains to, which a front re-encrypting to it trusts'),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

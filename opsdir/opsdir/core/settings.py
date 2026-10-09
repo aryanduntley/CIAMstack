@@ -29,13 +29,16 @@ def _int(setting, text):
 
 def parse_setting(setting, text):
     """(value, problem) of a setting's text: the value its kind reads (an int within its bounds, TRUE or FALSE, a
-    string), or None and why the text isn't one."""
+    string, one of its choices when it lists them), or None and why the text isn't one."""
     if setting.kind == "int":
         return _int(setting, text)
     if setting.kind == "bool":
         return (_BOOLEANS[text.strip().upper()], None) if text.strip().upper() in _BOOLEANS else \
             (None, f"{text!r} isn't TRUE or FALSE")
-    return (text, None) if text.strip() else (None, "it is empty")
+    if not text.strip():
+        return None, "it is empty"
+    return (text, None) if setting.choices is None or text in setting.choices else \
+        (None, f"{text!r} isn't one of {', '.join(setting.choices)}")
 
 
 def setting_text(value):

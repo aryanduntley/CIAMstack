@@ -5,13 +5,14 @@ proxy-only subnet needed; a private address can't have one."""
 import re
 
 from opsdir_adapter_gcp.dns import service_record
-from opsdir_adapter_gcp.edge import application_lb
+from opsdir_adapter_gcp.edge import application_lb, servers_backend
 from edge_fixtures import binding, dns_estate, environment, service, spec
 
 
 def _alb(s, ip="198.51.100.90", **attrs):
     svc = service(ip, **attrs)
-    return "\n".join(application_lb(environment(svc), svc, s, ("sso_us_central1_a",), ((), ip), ()))
+    return "\n".join(application_lb(m := environment(svc), svc, s, servers_backend(m, svc, ("sso_us_central1_a",)),
+                                    ((), ip), ()))
 
 
 def test_a_global_load_balancer_with_cloud_cdn_and_global_cloud_armor():

@@ -10,6 +10,8 @@ Known limits: an ALB's addresses are AWS's (a recorded frontend address isn't ke
 field, so an exclusion keeps the whole endpoint out of that group's scope; Shield Advanced needs the account's
 subscription.
 """
+from collections import namedtuple
+from functools import partial
 from itertools import chain
 
 from opsdir.core.directory import one, rdn_value, values
@@ -181,13 +183,14 @@ def shield(n, spec, target_arn, attached=None):
               if spec.ddos == "application-advanced" and inspected(spec) else ()))
 
 
-def health_check(spec, layer7):
-    """The target group's health_check block from the spec (an ALB checks over HTTP or HTTPS only)."""
+def health_check(spec, layer7, matcher="200"):
+    """The target group's health_check block from the spec (an ALB checks over HTTP or HTTPS only); matcher: the
+    answers that count as healthy."""
     h = spec.health
     protocol = h.protocol.upper() if not layer7 or h.protocol != "tcp" else \
         ("HTTPS" if spec.mode == "reencrypt" else "HTTP")
     return ("health_check", Block((("protocol", protocol),
-                                   *((("path", h.path or "/"), ("matcher", "200")) if protocol != "TCP" else ()),
+                                   *((("path", h.path or "/"), ("matcher", matcher)) if protocol != "TCP" else ()),
                                    *((("interval", h.interval),) if h.interval else ()),
                                    *((("healthy_threshold", h.healthy),) if h.healthy else ()),
                                    *((("unhealthy_threshold", h.unhealthy),) if h.unhealthy else ()))))
@@ -216,9 +219,48 @@ def _cloudfront_ingress(n, ports):
                 ("description", "CloudFront origin-facing")]) for port in ports))
 
 
-def _alb_security_group(m, n, svc, ports, cdn=False):
+# Where an ALB sends a service name's traffic: its target groups' target type and port (None: the service name's own),
+# attachments(n, port) the blocks registering targets in a port's group (none when something else registers them),
+# peering(n, ports) the security group rules between the ALB and the targets, matcher the health check answers that
+# count as healthy. The servers of the service's role, or a cluster's in-cluster gateway.
+Backend = namedtuple("Backend", ("target_type", "port", "attachments", "peering", "matcher"), defaults=("200",))
+
+
+def target_group_name(m, svc, port):
+    """The name of a service name's target group for one of its ports (what a TargetGroupBinding names)."""
+    return f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}-{port}"
+
+
+def _instance_attachments(targets, n, port):
+    return tuple(block("resource", ["aws_lb_target_group_attachment", f"{n}_{port}_{tf_name(rdn_value(t))}"], [
+        ("target_group_arn", ref(f"aws_lb_target_group.{n}_{port}.arn")),
+        ("target_id", ref(f"aws_instance.{tf_name(rdn_value(t))}.id")), ("port", int(port))]) for t in targets)
+
+
+def _servers_peering(role, fqdn, n, ports):
+    return tuple(chain.from_iterable((
+        block("resource", ["aws_vpc_security_group_egress_rule", f"{n}_alb_to_servers_{port}"], [
+            ("security_group_id", ref(f"aws_security_group.{n}_alb.id")),
+            ("referenced_security_group_id", ref(f"aws_security_group.{tf_name(role)}.id")),
+            ("from_port", int(port)), ("to_port", int(port)), ("ip_protocol", "tcp"),
+            ("description", "to the servers")]),
+        block("resource", ["aws_vpc_security_group_ingress_rule", f"{n}_servers_from_alb_{port}"], [
+            ("security_group_id", ref(f"aws_security_group.{tf_name(role)}.id")),
+            ("referenced_security_group_id", ref(f"aws_security_group.{n}_alb.id")),
+            ("from_port", int(port)), ("to_port", int(port)), ("ip_protocol", "tcp"),
+            ("description", f"from the {fqdn} load balancer")])) for port in ports))
+
+
+def servers_backend(svc, targets):
+    """The Backend of a service name's servers: instance targets on the service's ports, attached here, reached through
+    their role's security group."""
+    return Backend("instance", None, partial(_instance_attachments, targets),
+                   partial(_servers_peering, one(svc, "ciamTargetRole"), one(svc, "ciamFqdn")))
+
+
+def _alb_security_group(m, n, svc, ports, backend, cdn=False):
     """The ALB's security group: clients in by the firewall rules that admit them to the service's servers and ports
-    (only CloudFront when a CDN fronts it), out to the servers; and the servers in from it."""
+    (only CloudFront when a CDN fronts it), and the rules between it and the backend's targets."""
     role = one(svc, "ciamTargetRole")
     rules = [] if cdn else [(fw, cidr, port) for fw in m.bindings if "ciamFirewallRule" in fw.classes
                             and one(fw, "ciamTargetRole") == role for cidr in values(fw, "ciamSourceCidr")
@@ -233,38 +275,27 @@ def _alb_security_group(m, n, svc, ports, cdn=False):
                      ("description", f"clients ({rdn_value(fw)})")])
               for i, (fw, cidr, port) in enumerate(rules)),
             *(_cloudfront_ingress(n, ports) if cdn else ()),
-            *chain.from_iterable((
-                block("resource", ["aws_vpc_security_group_egress_rule", f"{n}_alb_to_servers_{port}"], [
-                    ("security_group_id", ref(f"aws_security_group.{n}_alb.id")),
-                    ("referenced_security_group_id", ref(f"aws_security_group.{tf_name(role)}.id")),
-                    ("from_port", int(port)), ("to_port", int(port)), ("ip_protocol", "tcp"),
-                    ("description", "to the servers")]),
-                block("resource", ["aws_vpc_security_group_ingress_rule", f"{n}_servers_from_alb_{port}"], [
-                    ("security_group_id", ref(f"aws_security_group.{tf_name(role)}.id")),
-                    ("referenced_security_group_id", ref(f"aws_security_group.{n}_alb.id")),
-                    ("from_port", int(port)), ("to_port", int(port)), ("ip_protocol", "tcp"),
-                    ("description", f"from the {one(svc, 'ciamFqdn')} load balancer")])) for port in ports))
+            *backend.peering(n, ports))
 
 
-def alb_service(m, svc, spec, targets, subnets):
+def alb_service(m, svc, spec, backend, subnets):
     """An ALB for a service name whose TLS terminates at the edge: listeners per port with the TLS policy and the
-    environment's certificate, target groups, its security group, the DNS alias, and the web ACL and Shield
-    protection its protection policy asks for. targets: the servers; subnets: their subnet bindings."""
+    environment's certificate, target groups for a Backend (its servers, or a cluster's gateway), its security group,
+    the DNS alias, and the web ACL and Shield protection its protection policy asks for. subnets: the subnet bindings
+    it sits in (its backend's)."""
     n, ip = tf_name(rdn_value(svc)), one(svc, "ciamFrontendIp")
     ports = tuple(values(svc, "ciamPort"))
     policy, exact = tls_policy(TLS_POLICIES, spec.tls_min, spec.tls_profile)
     cert = spec.certificate.split("://", 1)[1] if spec.certificate and spec.certificate.startswith("aws-acm://") \
         else None
-    backend = "HTTPS" if spec.mode == "reencrypt" else "HTTP"
+    protocol = "HTTPS" if spec.mode == "reencrypt" else "HTTP"
     groups = chain.from_iterable((
         block("resource", ["aws_lb_target_group", f"{n}_{port}"], [
-            ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}-{port}"), ("port", int(port)), ("protocol", backend),
-            ("vpc_id", ref("data.aws_vpc.main.id")), ("target_type", "instance"),
+            ("name", target_group_name(m, svc, port)), ("port", int(backend.port or port)),
+            ("protocol", protocol), ("vpc_id", ref("data.aws_vpc.main.id")), ("target_type", backend.target_type),
             *((("deregistration_delay", spec.drain),) if spec.drain is not None else ()),
-            health_check(spec, True), *stickiness(spec, True)]),
-        *(block("resource", ["aws_lb_target_group_attachment", f"{n}_{port}_{tf_name(rdn_value(t))}"], [
-            ("target_group_arn", ref(f"aws_lb_target_group.{n}_{port}.arn")),
-            ("target_id", ref(f"aws_instance.{tf_name(rdn_value(t))}.id")), ("port", int(port))]) for t in targets),
+            health_check(spec, True, backend.matcher), *stickiness(spec, True)]),
+        *backend.attachments(n, port),
         block("resource", ["aws_lb_listener", f"{n}_{port}"], [
             ("load_balancer_arn", ref(f"aws_lb.{n}.arn")), ("port", int(port)), ("protocol", "HTTPS"),
             ("ssl_policy", policy),
@@ -274,7 +305,7 @@ def alb_service(m, svc, spec, targets, subnets):
             ("default_action", Block((("type", "forward"),
                                       ("target_group_arn", ref(f"aws_lb_target_group.{n}_{port}.arn")))))]))
         for port in ports)
-    return (*_alb_security_group(m, n, svc, ports, spec.cdn),
+    return (*_alb_security_group(m, n, svc, ports, backend, spec.cdn),
             block("resource", ["aws_lb", n], [
                 *((("#", f"an ALB's addresses are AWS's: frontend address {ip} isn't kept"),) if ip else ()),
                 ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("internal", bool(ip) and is_private(ip)),

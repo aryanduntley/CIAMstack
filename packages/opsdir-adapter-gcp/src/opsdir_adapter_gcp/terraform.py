@@ -16,22 +16,24 @@ from itertools import chain
 
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import of_class, one_role, secret, servers_with_role, subnet_of
-from opsdir.domains.compute.workloads import kubernetes_note, only_on_kubernetes
+from opsdir.domains.compute.workloads import cluster_subnets, kubernetes_note, only_on_kubernetes
 from opsdir.core.manifest import header
 from opsdir.core.network import is_private
 from opsdir.domains.infrastructure.firewall import rule_priorities, rule_purpose
 from opsdir.domains.access.evaluations import evaluation_files
 from opsdir.domains.access.workloads import identity_of, workload_identities
+from opsdir.domains.edge.gateways import role_gateway
 from opsdir.domains.edge.resolve import inspected, service_edge
 from opsdir.domains.network.stack import firewall_model
 from opsdir_adapter_gcp.access import ACCESS
 from opsdir_adapter_gcp.databases import render_databases
 from opsdir_adapter_gcp.storage import kept_buckets, render_object_stores
 from opsdir_adapter_gcp.dns import forwarding_zones, records, service_record
-from opsdir_adapter_gcp.edge import application_lb, network_ddos
+from opsdir_adapter_gcp.edge import application_lb, network_ddos, servers_backend
 from opsdir_adapter_gcp.firewall_policy import health_check_rule, policy_firewall
 from opsdir_adapter_gcp.health_checks import probe_ranges
 from opsdir_adapter_gcp.identities import identity, project_of
+from opsdir_adapter_gcp.ingress import gateway_front, gateway_negs
 from opsdir_adapter_gcp.landing import render_landing
 from opsdir_adapter_gcp.names import name_parts
 from opsdir_adapter_gcp.names import NETWORK, PRIORITIES, REGION, label, network_tag
@@ -141,14 +143,21 @@ def _service(m, svc, endpoints=()):
     """A stable service name: a passthrough network load balancer over the role's servers (zonal instance groups,
     a regional backend service with a TCP health check and the firewall rule its probes need, a forwarding rule) and
     its Cloud DNS record. An EXTERNAL backend service names its port (port_name, each group's named_port) and scales
-    its backends' capacity; INTERNAL takes neither. A forwarding rule takes at most five ports, else all ports. A
-    note for a role run only on Kubernetes (the cluster's ingress serves it)."""
-    if only_on_kubernetes(m, one(svc, "ciamTargetRole")):
-        return (kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})",
-                                one(svc, "ciamTargetRole")),)
+    its backends' capacity; INTERNAL takes neither. A forwarding rule takes at most five ports, else all ports. For a
+    role run only on Kubernetes, the Application Load Balancer before its cluster's gateway
+    (opsdir_adapter_gcp.ingress), else a note."""
     n, name = tf_name(rdn_value(svc)), f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"
     ip, ports = one(svc, "ciamFrontendIp"), values(svc, "ciamPort")
     internal = is_private(ip)
+    if only_on_kubernetes(m, one(svc, "ciamTargetRole")):
+        target = one(svc, "ciamTargetRole")
+        gw = role_gateway(m, target)
+        subnets = cluster_subnets(m, target)
+        subnetwork = f"data.google_compute_subnetwork.{tf_name(rdn_value(subnets[0]))}.self_link" if subnets else None
+        placement = (("subnetwork", ref(subnetwork)),) if internal and subnetwork else ()
+        return gateway_front(m, svc, gw, endpoints, _frontend(svc, n, ip, internal), placement) \
+            if gw is not None else (kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})",
+                                                    target),)
     scheme = "INTERNAL" if internal else "EXTERNAL"
     targets = servers_with_role(m, one(svc, "ciamTargetRole"))
     data, address = _frontend(svc, n, ip, internal)
@@ -166,7 +175,8 @@ def _service(m, svc, endpoints=()):
     record = service_record(m.d, m, svc, n, cdn)
     if layer7:
         admit = health_check_rule if firewall_model(m) == "policy" else None
-        return (*groups, *application_lb(m, svc, spec, tuple(f"{n}_{tf_name(z)}" for z in _zones(targets)),
+        return (*groups, *application_lb(m, svc, spec,
+                                         servers_backend(m, svc, tuple(f"{n}_{tf_name(z)}" for z in _zones(targets))),
                                          (data, address), placement[1:], admit), *record)
     (check, kind), tuning = _l4_tuning(spec) if spec is not None else ((None, ()), ())
     health = kind[0] if kind else ("tcp_health_check", ())
@@ -227,6 +237,7 @@ def render(m, services):
     out = (*network_data(m), *_firewall(m), *chain.from_iterable(identity(m, w) for w in identities),
            *chain.from_iterable(_instance(m, s, kms, identities) for s in m.servers),
            *render_snapshot_policies(m), *render_backups(m),
+           *gateway_negs(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
            *forwarding_zones(m), *render_trails(m), *render_security(m), *render_discovery(m), *render_suppressions(m), *render_quota_requests(m), *budget_notes(m),

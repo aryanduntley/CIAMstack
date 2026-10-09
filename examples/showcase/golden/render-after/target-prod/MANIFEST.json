@@ -138,22 +138,22 @@
     "forgeops/helm/ciam/identity-platform-values.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "3e8b909abe5ea2f6399ab5a59928596313b74810008cf73991338909a1424e0b"
+      "sha256": "c4db5f03fc79c9bbc2cc7d5ce473e22ebb7c83735469a74a88e9c828e8246d66"
     },
     "forgeops/helm/ciam/ping-gateway-values.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "9f9b12da949e85d9254f0ddc5f97ed50d991d3341f2cb2318e1a8346b8bc29d9"
+      "sha256": "784179979c4da3f3d3f72bb691cc834eec92075bdf08832570bef507bcaefaeb"
     },
     "forgeops/kustomize/overlay/ciam/admin-ui/kustomization.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "af2a5adb33da4f64dc19095081a723ffe248126d4768b004fbba1a1897a15463"
+      "sha256": "eaf34744181a70cefdf380406828c36e4ade99d5d52b87893ab918cfe1b4c616"
     },
     "forgeops/kustomize/overlay/ciam/am/kustomization.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "41180a9cc2cd2607da0b156de1e82ffe54c5e256bbe39ca1f418d3371e3012cf"
+      "sha256": "08a0e4f2c6d44eb664b580911889e363c955eb6b0fd8733486f0fe0877333e50"
     },
     "forgeops/kustomize/overlay/ciam/amster/kustomization.yaml": {
       "scope": "environment-specific",
@@ -173,17 +173,17 @@
     "forgeops/kustomize/overlay/ciam/end-user-ui/kustomization.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "30644a7be8afc7c5c4bd2e4319dcafd3fef580e4b3bbf1c5ede633a02e050ea8"
+      "sha256": "ef3896cfef0164ce1a5b7d54c7e3ab320defd8da102e2bef3bc173fa05efb20c"
     },
     "forgeops/kustomize/overlay/ciam/idm/kustomization.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "56b0b33e35e5b7eb78c79edb50e40851a92bfb8c1367e770e9df0abf2f2757d6"
+      "sha256": "d30a0326922c3bc2a2bb14ded26d459320bfab52e3bcaf0366324c93f81c05fc"
     },
     "forgeops/kustomize/overlay/ciam/ig/kustomization.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "a248419db2f0d9078b8962525f358f1032cd776db559357dcb57c82c454651ff"
+      "sha256": "c76c70730a6ff9e2dfacfd94c768b0f9c8f7da5d2e106a0e5e54f7e6b4f2003d"
     },
     "forgeops/kustomize/overlay/ciam/keystore-create/kustomization.yaml": {
       "scope": "environment-specific",
@@ -198,12 +198,17 @@
     "forgeops/kustomize/overlay/ciam/login-ui/kustomization.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "7668b854a4cc2ca18a5a9542a2e8e619913e1ea7dcc39b7f57972b917009f01c"
+      "sha256": "fc9a20605811fb65056209dbcf16183192560031abed79d432e8765ef9c3ef44"
+    },
+    "kubernetes/ciam/gateway.yaml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "0a0eeaeb1e9ef93022dd5f8dd4875251e0e4e0c999172ea81d49a1b614c443e1"
     },
     "kubernetes/ciam/kustomization.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "42495295885d9c589a81fb46e9b01fe36decc2875d9b1b78b2dfa341c4097427"
+      "sha256": "afc8f9bdd8f50702dc28028a1d387eeff356220a59e1e045e2cca837459c7555"
     },
     "kubernetes/ciam/namespace.yaml": {
       "scope": "environment-specific",
@@ -215,15 +220,20 @@
       "format": "yaml",
       "sha256": "d51de7ace53ac4f2f7135428c988d53c5151338f2ec30c48e3bdcca00495d731"
     },
+    "kubernetes/ciam/routes.yaml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "4aee27640608bbcf11eb2e576d442ae4f24eb0e34a4b544ab7574836522c2464"
+    },
     "kubernetes/ciam/secrets-required.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "752c6d29edbce025abfbc45ff01676f98d2e011a41c8c5121171d0d2c41170d9"
+      "sha256": "708319e639f3c502c2f32bf83bea494f888f2337fd0d23f6362bc70a015f53a1"
     },
     "kubernetes/ciam/serviceaccounts.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "4c0e061f6d9b11701b7ea3c760582ab49cfd7c47eee276d73000917f4ebb3c8a"
+      "sha256": "a36c24e0a04c8ea86a3bb02580b4712a6df7def9f3dbdfede083a1efe19cad95"
     },
     "ldap/dit.ldif": {
       "scope": "environment-neutral",
@@ -268,7 +278,7 @@
     "ping-devops/helm/ciam/ping-devops-values.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "698e3bb6a0ddd0381c8260fc9c9a6f69b440f4fa04850e3ad665c359980c2f41"
+      "sha256": "7eb4ddde39ae90756c8c8679219ab4d38e99e45eb7a7e6604f4f0699d8224d13"
     },
     "pingfederate/admin-api/requests.json": {
       "scope": "environment-specific",
@@ -378,7 +388,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "40262736bd43636c620eaeb86595ff9faa897e11a5372e083f6a67e0fc21d419"
+      "sha256": "f317922731b2c55558ebeaeeb95605afc4cbf7c91a388a131831a466eb9ce39a"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

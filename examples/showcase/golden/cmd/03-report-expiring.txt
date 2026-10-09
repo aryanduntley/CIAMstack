@@ -8,5 +8,6 @@ customer-portal-sp-signing  saml-signing     2027-03-01  159                    
 dibnet-eca                  client-auth      2027-06-30  280
 pf-signing-2025             saml-signing     2027-06-30  280                                   customer-portal,mobile-ops,sso,supplier-portal,tech-pubs
 harbor-mro-idp-signing      partner-signing  2028-01-15  479                                   harbor-mro-federation
-(8 rows)
+ciam-internal-ca            ca               2031-01-15  1575
+(9 rows)
 exit 0

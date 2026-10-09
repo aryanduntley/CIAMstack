@@ -5,6 +5,7 @@ from .checks import check_ping_devops
 from .helm import render
 from .listeners import listeners
 from .products import applies
+from .routes import routes
 
 ADAPTER = Adapter(name="ping-devops", kind="platform", applies=applies, required_roles=(),
                   render_neutral=None, render_env=render, checks=(check_ping_devops,), ref_schemes=(),
@@ -12,4 +13,4 @@ ADAPTER = Adapter(name="ping-devops", kind="platform", applies=applies, required
                   renders="ping-devops Helm values for the PingFederate admin and engine run on Kubernetes",
                   neutral_label=None, vocabulary={}, schema=None, formats=(("ping-devops/*", "yaml"),), products=(),
                   secret_patterns=(), importers=(), profile_terms=None, access=None, render_targets=(),
-                  listeners=listeners)
+                  listeners=listeners, routes=routes)

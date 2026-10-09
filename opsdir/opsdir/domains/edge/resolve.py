@@ -80,10 +80,22 @@ def service_edge(m, svc, endpoints):
     policy names its role."""
     d, role = m.d, one(svc, "ciamBindingRole")
     t, p = policy_for(d, "ciamTrafficPolicy", role), policy_for(d, "ciamProtectionPolicy", role)
-    if t is None and p is None:
-        return None
+    return None if t is None and p is None else _edge(m, svc, endpoints, t, p, _one(t, "ciamTlsMode", "passthrough"))
+
+
+def front_edge(m, svc, endpoints):
+    """The EdgeSpec of the cloud front before a cluster's in-cluster gateway (edge.gateways): the service name's
+    policies, terminating TLS when they pass it through or there are none (the gateway routes HTTP by host and path, so
+    the front is layer 7 whatever the policy; the planner names a passthrough policy that can't be kept)."""
+    d, role = m.d, one(svc, "ciamBindingRole")
+    t, p = policy_for(d, "ciamTrafficPolicy", role), policy_for(d, "ciamProtectionPolicy", role)
+    mode = _one(t, "ciamTlsMode", "terminate")
+    return _edge(m, svc, endpoints, t, p, mode if mode in LAYER7 else "terminate")
+
+
+def _edge(m, svc, endpoints, t, p, mode):
+    role = one(svc, "ciamBindingRole")
     paths = declared_endpoints(endpoints, one(svc, "ciamTargetRole"), t, p)
-    mode = _one(t, "ciamTlsMode", "passthrough")
     rates = tuple(RateLimit(k, int(n), int(s), key, paths.get(k, ()))
                   for k, n, s, key in (_RATE.match(v).groups() for v in _many(p, "ciamRateLimit")))
     exclusions = tuple(Exclusion(c, k, part, name, paths.get(k, ()))

@@ -12,6 +12,7 @@ from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir.core.network import is_private
 from opsdir.domains.infrastructure.firewall import rule_priorities, rule_purpose
 from opsdir.domains.access.workloads import identity_of, workload_identities
+from opsdir.domains.edge.gateways import role_gateway
 from opsdir.domains.edge.records import forwarders
 from opsdir.domains.edge.resolve import inspected, service_edge
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
@@ -27,9 +28,10 @@ from .security import render_security
 from .backups import render_backups
 from .volumes import boot_tag, os_disk, server_volumes, snapshot_policy_notes
 from .dns import FORWARDING_RULESET, forwarding_rules, records, service_record
-from .edge import ddos_note, gateway_service
+from .edge import ddos_note, gateway_service, servers_backend
 from .frontdoor import endpoint, front_door
 from .identities import LOC, RG, aks_data, identity, scope_data
+from .ingress import gateway_front
 from .landing import render_landing
 from .network import render_network
 from .plumbing import network_data
@@ -133,11 +135,13 @@ def _lb_port(n, port, spec=None):
 
 def _service(m, svc, endpoints=()):
     """A stable service name: load balancer, backend pool, probes and rules per port (an Application Gateway when its
-    traffic policy terminates TLS at the edge; opsdir_adapter_azure.edge), and its DNS record; a note for a role run
-    only on Kubernetes (the cluster's ingress serves it)."""
+    traffic policy terminates TLS at the edge; opsdir_adapter_azure.edge), and its DNS record; for a role run only on
+    Kubernetes, the Application Gateway before its cluster's gateway (opsdir_adapter_azure.ingress), else a note."""
     if only_on_kubernetes(m, one(svc, "ciamTargetRole")):
-        return (kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})",
-                                one(svc, "ciamTargetRole")),)
+        role = one(svc, "ciamTargetRole")
+        gw = role_gateway(m, role)
+        return gateway_front(m, svc, gw, endpoints) if gw is not None else (
+            kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})", role),)
     n = tf_name(rdn_value(svc))
     ip = one(svc, "ciamFrontendIp")
     internal = is_private(ip)
@@ -147,7 +151,7 @@ def _service(m, svc, endpoints=()):
     fronted = front_door(m, svc, spec, n) if cdn else ()
     record = service_record(m.d, m, svc, n, endpoint(n) if cdn else None)
     if spec is not None and spec.layer7:
-        return (*gateway_service(m, svc, spec, targets), *fronted, *record)
+        return (*gateway_service(m, svc, spec, servers_backend(targets)), *fronted, *record)
     data, fe = _frontend(m, svc, n, ip, internal, targets)
     blind = ("# the protection policy's request inspection needs TLS terminated at the edge; not rendered",) \
         if spec is not None and inspected(spec) and not cdn else ()

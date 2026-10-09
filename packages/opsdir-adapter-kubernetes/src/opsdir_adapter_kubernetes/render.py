@@ -22,8 +22,6 @@ kubernetes/<namespace>/, a kustomization of:
 How a reference is read is the adapter's that owns its scheme (Services.secret_delivery); a scheme none delivers is
 named for the operator. Values the record can't give are written UNBOUND:<what>.
 """
-import re
-
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import UNBOUND, one_role, secret, servers_with_role
 from opsdir.core.formats import YAML
@@ -33,6 +31,8 @@ from opsdir.domains.compute.workloads import (namespace_of, service_account_of, 
                                               workload_secrets, workloads)
 from opsdir.domains.network.ports import pod_listeners, role_cidrs
 from opsdir.domains.pki.credentials import secret_store, split_ref
+from .gateway import cluster_gateways, gateway_docs, gateway_namespace, route_docs
+from .names import k8s_name
 
 ROLE_LABEL = "opsdir.io/role"
 LEVELS = ("privileged", "baseline", "restricted")
@@ -51,11 +51,6 @@ def on_kubernetes(m):
 def applies(m):
     """Whether environment m runs any workload on Kubernetes."""
     return bool(on_kubernetes(m))
-
-
-def k8s_name(text):
-    """A Kubernetes object name (DNS label) from any text."""
-    return re.sub(r"[^a-z0-9-]+", "-", text.lower()).strip("-")[:63].strip("-") or "x"
 
 
 def _level(ws):
@@ -217,14 +212,15 @@ def _file(m, what, body):
     return header(m, what, YAML) + body
 
 
-def namespace_files(m, services, targets, listeners, here, ns, ws):
-    """{path: text} of one namespace's folder."""
+def namespace_files(m, services, targets, listeners, here, ns, ws, gateways=(), extra=()):
+    """{path: text} of one namespace's folder: its workloads' (ws), and the cluster gateways in it (their Secrets and
+    service accounts like a workload's; extra: ((file, what, objects), ...) the gateway module renders here)."""
     base = f"kubernetes/{ns}"
-    items = secret_items(m, ws)
+    items = secret_items(m, (*ws, *gateways))
     objects = {
         "namespace.yaml": ("The namespace", [namespace_doc(ns, ws)]),
         "serviceaccounts.yaml": ("Service accounts and the cloud identities they assume",
-                                 service_account_docs(m, services, ns, ws)),
+                                 service_account_docs(m, services, ns, (*ws, *gateways))),
         "networkpolicies.yaml": ("Network policies from the products' listeners",
                                  network_policy_docs(m, listeners, here, ns, ws)),
         **({"externalsecrets.yaml": ("External Secrets Operator stores and secrets",
@@ -232,7 +228,8 @@ def namespace_files(m, services, targets, listeners, here, ns, ws):
            if EXTERNAL_SECRETS in targets and items else {}),
         **({"secretproviderclasses.yaml": ("Secrets Store CSI driver provider classes",
                                            provider_class_docs(m, services, ns, items))}
-           if CSI in targets and items else {})}
+           if CSI in targets and items else {}),
+        **{f: (what, list(docs)) for f, what, docs in extra}}
     kept = {f: (what, docs) for f, (what, docs) in objects.items() if docs}
     kustomization = {"apiVersion": "kustomize.config.k8s.io/v1beta1", "kind": "Kustomization", "resources": list(kept)}
     return {**{f"{base}/{f}": _file(m, what, documents(docs)) for f, (what, docs) in kept.items()},
@@ -243,11 +240,33 @@ def namespace_files(m, services, targets, listeners, here, ns, ws):
                if items else {})}
 
 
+def _gateway_objects(m, services):
+    """({namespace: ((file, what, objects), ...)}, {namespace: gateways}): what the cluster gateways render where (a
+    gateway's own objects in its namespace, its routes in each fronted role's)."""
+    files, readers = {}, {}
+    for gw in cluster_gateways(m):
+        ns, docs = gateway_namespace(m, gw), gateway_docs(m, services, gw)
+        if docs:
+            what = "The in-cluster gateway behind the cloud's front"
+            files.setdefault((ns, "gateway.yaml"), (what, []))[1].extend(docs)
+            readers.setdefault(ns, []).append(gw)
+        for rns, rdocs in route_docs(m, services, gw).items():
+            what = "The service names' routes through the gateway"
+            files.setdefault((rns, "routes.yaml"), (what, []))[1].extend(rdocs)
+    extra = {}
+    for (ns, f), (what, docs) in files.items():
+        extra.setdefault(ns, []).append((f, what, tuple(docs)))
+    return extra, readers
+
+
 def render(m, services, targets=()):
-    """{path: text}: a folder per namespace of the workloads environment m runs on Kubernetes."""
+    """{path: text}: a folder per namespace of the workloads environment m runs on Kubernetes, and of the in-cluster
+    gateways it records (gateway.py)."""
     here = on_kubernetes(m)
     listeners = services.listeners(m)
-    spaces = dict.fromkeys(namespace_of(w) for w in here)
+    extra, readers = _gateway_objects(m, services)
+    spaces = dict.fromkeys((*(namespace_of(w) for w in here), *extra))
     return {p: text for ns in spaces
             for p, text in namespace_files(m, services, targets, listeners, here, ns,
-                                           [w for w in here if namespace_of(w) == ns]).items()}
+                                           [w for w in here if namespace_of(w) == ns], readers.get(ns, ()),
+                                           extra.get(ns, ())).items()}

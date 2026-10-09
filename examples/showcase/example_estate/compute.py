@@ -1,6 +1,9 @@
 """Compute fixture data: the server roles the target runs as containers (48-workloads: ciamWorkload, intent shared by
 every environment) and, in the target environment, the AKS cluster they run in and how it runs each (its workload
-bindings: images, the product version they run, replicas, resources, storage). The source and the standby run these
+bindings: images, the product version they run, replicas, resources, storage), and the in-cluster gateway behind the
+Application Gateways that front the sign-on names (ciamClusterGateway: Istio by the estate setting's default, an
+internal load balancer address in the AKS subnet, its internal certificate's key pair from Key Vault, the CA it chains
+to). The source and the standby run these
 roles on servers, so the planner sees AM, IDM, PingGateway and PingFederate move from virtual machines to Kubernetes
 while the directory stays on servers.
 
@@ -70,5 +73,17 @@ KUBERNETES = MappingProxyType({
         _binding("pf-admin", (("pingfederate", "pingfederate:12.1.4"),), "PingFederate 12.1.4", 1, "1", "4Gi",
                  ("8Gi", "managed-csi-premium")),
         _binding("pf-engine", (("pingfederate", "pingfederate:12.1.4"),), "PingFederate 12.1.4", 2, "1", "4Gi"),
+        ("ciamClusterGateway", "ciam-edge", "ciam-edge", {
+            "ciamClusterRole": "k8s-cluster", "ciamNamespace": NAMESPACE, "ciamFrontendIp": "10.60.15.250",
+            "ciamSubnetRole": "subnet-aks", "ciamServiceAccount": "ciam-edge",
+            "ciamTrustsCertificate": f"cn=ciam-internal-ca,ou=certificates,{R}",
+            "ciamWorkloadSecret": ["ciam-edge-tls/tls.crt <- ciam-edge-tls-cert",
+                                   "ciam-edge-tls/tls.key <- ciam-edge-tls-key"],
+            "description": "The in-cluster gateway the Application Gateways send the sign-on names to"}),
+        ("ciamCertificateRef", "cert-internal-ca", "internal-ca-certificate", {
+            "ciamRefUri": "azkv-cert://kv-ciam-prod/ciam-internal-ca",
+            "ciamHoldsCertificate": f"cn=ciam-internal-ca,ou=certificates,{R}"}),
+        *(("ciamSecretRef", f"secret-{role}", role, {"ciamRefUri": f"azkv://kv-ciam-prod/{role}"})
+          for role in ("ciam-edge-tls-cert", "ciam-edge-tls-key")),
     ),
 })

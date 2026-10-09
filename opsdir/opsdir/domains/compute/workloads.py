@@ -148,12 +148,18 @@ def placed_on_kubernetes(m, b):
     return is_a(b, "ciamComputeGroup") and one(b, "ciamTargetRole") in kubernetes_roles(m)
 
 
+def role_clusters(m, role):
+    """The clusters (bindings) environment m runs a server role's workloads in on Kubernetes, without repeats, in the
+    record's order."""
+    found = (one_role(m, one(w, "ciamClusterRole")) for w in workloads(m.d)
+             if one(w, "ciamTargetRole") == role and one(w, "ciamClusterRole") and runs_on_kubernetes(m, w))
+    return tuple({c.dn: c for c in found if c is not None}.values())
+
+
 def cluster_subnets(m, role):
     """The subnets (bindings) the nodes of the clusters environment m runs a server role's workloads in sit in (the
     clusters' ciamSubnetRole), without repeats: where its pods' traffic comes from outside the cluster."""
-    clusters = (one_role(m, one(w, "ciamClusterRole")) for w in workloads(m.d)
-                if one(w, "ciamTargetRole") == role and one(w, "ciamClusterRole") and runs_on_kubernetes(m, w))
-    found = (one_role(m, r) for c in clusters if c is not None for r in values(c, "ciamSubnetRole"))
+    found = (one_role(m, r) for c in role_clusters(m, role) for r in values(c, "ciamSubnetRole"))
     return tuple({s.dn: s for s in found if s is not None}.values())
 
 

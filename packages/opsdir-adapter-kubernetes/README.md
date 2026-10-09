@@ -25,6 +25,22 @@ The deployment kit (`opsdir-adapter-forgeops`, `opsdir-adapter-ping-devops`, pla
 
 Checked by `opsdir/scripts/validate-kubernetes.sh` (kustomize build + kubeconform -strict with the External Secrets and CSI schemas).
 
+## The in-cluster gateway behind the cloud's front
+
+A role an environment runs only on Kubernetes is reached through its cluster's in-cluster gateway when the record has one (`ciamClusterGateway`, the core edge domain). The cloud adapter renders the front before it (load balancer, WAF, TLS certificate, DNS record) from the service name's policies; `gateway.py` renders what is behind it, Gateway API standard channel (v1.6.1) plus the implementation's own objects:
+
+- `kubernetes/<gateway namespace>/gateway.yaml`: the Gateway, with an HTTP listener (80) for service names whose TLS the front terminates and an HTTPS one (443) presenting the gateway's internal certificate for those the front re-encrypts (the Secret its binding's `ciamWorkloadSecret` keys `tls.crt` and `tls.key` name, delivered like a workload's); routes allowed from the fronted roles' namespaces only. The cloud's plug (`Services.gateway_plug`) gives the gateway Service's annotations and type and any objects it needs (a target group binding on AWS).
+- `kubernetes/<role namespace>/routes.yaml`: an HTTPRoute per fronted service name (host = its `ciamFqdn`) from the routes its deployment kit declares (`Adapter.routes`: ForgeOps, ping-devops), prefix rewrites as `URLRewrite ReplacePrefixMatch`; a BackendTLSPolicy for a Service that speaks TLS (PingFederate), checked against the CA in ConfigMap `<gateway>-backend-ca` (`ca.crt`); and cookie stickiness (`route`) when the traffic policy asks for it.
+
+Which implementation runs a gateway is data: the binding's `ciamGatewayImplementation`, else the estate setting `kubernetes-gateway-implementation` (this adapter declares it; `opsdir report settings`). Rows (`gateway.IMPLEMENTATIONS`), each pinned to the release its objects were checked against:
+
+| Implementation | Default | Service name, type, annotations | Trusted X-Forwarded-For | Stickiness |
+|---|---|---|---|---|
+| `istio` (gateway only, no mesh; 1.31.1) | yes | Gateway annotations `gateway.istio.io/name-override`, `networking.istio.io/service-type`; `spec.infrastructure.annotations` (copied to the Service and pods) | `proxy.istio.io/config` `numTrustedProxies: 1` | DestinationRule `httpCookie` per backend Service |
+| `envoy-gateway` (v1.9.2) | | EnvoyProxy `envoyService` (name, type, annotations) the Gateway names; GatewayClass `envoy` rendered | ClientTrafficPolicy `numTrustedHops: 1` | BackendTrafficPolicy consistent-hash cookie on the HTTPRoute |
+
+The platform team installs the implementation (Istio: the `base` and `istiod` charts, images from the registry it chooses, e.g. Iron Bank or a FIPS distribution, through `global.hub`/`global.tag`; Envoy Gateway: `gateway-helm`) and the Gateway API v1.6.1 standard CRDs. Rendered objects are checked offline with kubeconform against the pinned CRDs catalog.
+
 ## Secret references
 
 A binding's `ciamRefUri` of the form `k8s-secret://<namespace>/<secret>/<key>` names one key of a Kubernetes secret. `opsdir` resolves it at run time with `kubectl get secret -n <namespace> <secret> -o jsonpath='{.data.<key>}' | base64 -d` (dots in a key are escaped for JSONPath). The value never reaches the database or a rendered file.
@@ -78,15 +94,20 @@ The Secret keys a workload reads and the secret roles that fill them (`ciamWorkl
 
 The planner (core `compute` domain) then blocks a move whose target neither runs a workload on Kubernetes (its workload binding) nor has servers of its role, a target workload binding without its cluster, and identity or secret roles nobody binds; a role moving between servers and Kubernetes (what its host baseline carries must move into the image, or back) and a privileged workload are actions. Workload bindings are local to their environment, so the core role check doesn't ask the target to bind them. Clusters themselves (`ciamCluster`: version, add-ons, node pools) are read by the cloud adapters (EKS, AKS).
 
+**Gateways** (`gateway_import.py`): a Gateway API Gateway in manifests under `<cloud>/<env>/` is that environment's cluster gateway binding (`ciamClusterGateway`), named like the Gateway: the implementation whose GatewayClass it names (`istio`, `envoy` -> `envoy-gateway`; another class is named in a notice), its namespace, the cluster role (`opsdir.io/cluster-role`, else `cluster`), the binding role (`opsdir.io/gateway-role`, else `<name>-gateway`), and the private address its Service takes when its infrastructure annotations give Azure's (`azure-load-balancer-ipv4`). The rendered Gateway carries both opsdir annotations, so a render reads back as the same binding. What the record adds (its CA, Secret keys, owners) is kept.
+
 ## References, vocabulary and schema
 
-The `k8s-secret` reference scheme. No schema of its own: workloads, workload bindings and clusters are the core `compute` domain's, secret stores (`ciamSecretStore`) the `pki` domain's. Adapter kind `platform`; render targets `external-secrets`, `csi`.
+The `k8s-secret` reference scheme; the vocabulary of `ciamGatewayImplementation` (`istio`, `envoy-gateway`) and the estate setting `kubernetes-gateway-implementation`. No schema of its own (the cluster gateway binding is the core edge domain's): workloads, workload bindings and clusters are the core `compute` domain's, secret stores (`ciamSecretStore`) the `pki` domain's. Adapter kind `platform`; render targets `external-secrets`, `csi`.
 
 ## Known limits
 
 - Not run against a live cluster yet; manifests as the Kubernetes API documents them (apps/v1, networking.k8s.io/v1).
 - Not read yet: one-off Jobs, operators' custom resources (the DS operator's `DirectoryService`, ForgeOps secret agent, external-secrets `ExternalSecret`), sidecars' resource requests and limits (only the first container's), pod disruption budgets, horizontal autoscalers, NetworkPolicy rule details (only the policy and its types), Gateway API routes.
 - An Ingress backend is matched to a workload through a Service's selector in the same namespace; `ExternalName` services and cross-namespace routing aren't followed.
+
+- The gateway's backend CA ConfigMap (`<gateway>-backend-ca`) is named, not filled: the record keeps certificates' facts, not their content.
+- HTTPRoutes aren't read back (a deployment kit declares its routes); Gateways are (below).
 
 ## Tests
 

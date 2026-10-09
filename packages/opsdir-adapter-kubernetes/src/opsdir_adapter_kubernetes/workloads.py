@@ -27,6 +27,8 @@ A CronJob is a job (ciamJob, the core automation domain), realized by the cluste
 role): kind cron, its schedule, the command it runs (not recorded when it holds secret material), its image
 (ciamRuntime), service account (ciamRunsAs) and the Secrets it reads by name. It is named k8s-<name>.
 
+A Gateway API Gateway under <cloud>/<env>/ is that environment's cluster gateway binding (gateway_import.py).
+
 A workload is named by its metadata name (namespace-name when two namespaces use the name); a re-import finds it by
 name and changes nothing; what the record adds (owners, criticality) is kept.
 """
@@ -41,6 +43,7 @@ from opsdir.core.sources import json_document, parsed
 from opsdir.domains.automation.naming import job_dn
 from opsdir.domains.automation.pipelines import jobs_container
 from opsdir.domains.compute.naming import WORKLOADS, workload_dn
+from .gateway_import import read_gateways
 
 KINDS = (("StatefulSet", "statefulset"), ("Deployment", "deployment"), ("DaemonSet", "daemonset"))
 ROLE_MAP = "roles.json"
@@ -272,12 +275,13 @@ def read_workloads(files, d, patterns, at=None):
     entries = [workload_entry(d, n, p, o, r, context) for p, o, n, r in kept]
     bindings = [binding_entry(d, environment_at(d, p), n, o) for p, o, n, r in kept if environment_at(d, p)]
     unplaced = sorted({p for p, o, n, r in kept if not environment_at(d, p)})
+    gateways, gateway_notices = read_gateways(d, found, environment_at, rdn_safe)
     cron = [(p, o) for p, o in found if o and o.get("kind") == "CronJob"]
     jobs = [cron_job_entry(d, p, o, patterns) for p, o in cron if rdn_safe(f"k8s-{_meta(o).get('name')}")]
     return Imported(
         containers=(ou_entry(WORKLOADS), *((jobs_container(),) if jobs else ()),
-                    *(ou_entry(b) for b in dict.fromkeys(e.dn.split(",", 1)[1] for e in bindings))),
-        groups=(*((e.dn, (e,)) for e in entries), *((e.dn, (e,)) for e in bindings),
+                    *(ou_entry(b) for b in dict.fromkeys(e.dn.split(",", 1)[1] for e in (*bindings, *gateways)))),
+        groups=(*((e.dn, (e,)) for e in entries), *((e.dn, (e,)) for e in bindings), *((e.dn, (e,)) for e in gateways),
                 *((e.dn, (e,)) for e, _ in jobs)),
         notices=(*(f"{p}: {o.get('kind')} {n}: no role (label opsdir.io/role or app.kubernetes.io/component, or "
                    f"{ROLE_MAP}); not imported" for p, o, n, r in placed if not r),
@@ -288,10 +292,10 @@ def read_workloads(files, d, patterns, at=None):
                  *((f"{len(unplaced)} manifest file(s) not under <cloud>/<env>/ of an environment the record "
                     f"holds ({', '.join(unplaced)}): workloads only, no environment's images, replicas, resources "
                     "or storage",) if unplaced else ()),
-                 *(n for _, ns in jobs for n in ns),
+                 *(n for _, ns in jobs for n in ns), *gateway_notices,
                  *(f"not YAML or JSON, not read: {p}" for p, o in found if o is None),
                  *(("no workloads (StatefulSets, Deployments, DaemonSets, CronJobs) in the manifests",)
-                   if not workloads and not cron else ())))
+                   if not workloads and not cron and not gateways else ())))
 
 
 WORKLOADS_IMPORTER = Importer("workloads", "Kubernetes manifests (kubectl get -o yaml/json, rendered Helm or "

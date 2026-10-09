@@ -6,8 +6,7 @@ serviceAccount:
   name: ciam-gateway
 platform:
   ingress:
-    hosts:
-    - apps.example-aero.test
+    enabled: false
 ig:
   enabled: true
   image:

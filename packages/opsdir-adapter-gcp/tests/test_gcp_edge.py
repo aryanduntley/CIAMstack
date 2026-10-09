@@ -6,7 +6,7 @@ rules with their exclusions; advanced network DDoS protection for a passthrough 
 import re
 
 from opsdir.domains.edge.resolve import Health, tls_level, tls_policy
-from opsdir_adapter_gcp.edge import TLS_POLICIES, application_lb, armor, network_ddos, rate
+from opsdir_adapter_gcp.edge import TLS_POLICIES, application_lb, armor, network_ddos, rate, servers_backend
 from edge_fixtures import environment, service, spec, subnet
 
 EDGE = subnet("subnet-edge", "subnet-edge", "10.70.250.0/23")
@@ -14,7 +14,8 @@ EDGE = subnet("subnet-edge", "subnet-edge", "10.70.250.0/23")
 
 def _alb(s, ip="198.51.100.90", *bindings):
     svc = service(ip)
-    return "\n".join(application_lb(environment(svc, *bindings), svc, s, ("sso_us_central1_a",), ((), ip), ()))
+    return "\n".join(application_lb(m := environment(svc, *bindings), svc, s,
+                                    servers_backend(m, svc, ("sso_us_central1_a",)), ((), ip), ()))
 
 
 def test_tls_terms_are_ssl_policy_profiles_and_minimums():

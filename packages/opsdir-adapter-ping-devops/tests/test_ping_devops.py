@@ -10,7 +10,7 @@ import pytest
 import yaml
 
 from opsdir.connectors.registry import core_fragments, services
-from opsdir.core.contract import K8sIdentity, PlanContext
+from opsdir.core.contract import K8sIdentity, PlanContext, Route
 from opsdir.core.directory import one
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
@@ -23,6 +23,7 @@ from opsdir_adapter_ping_devops.checks import check_ping_devops
 from opsdir_adapter_ping_devops.helm import render
 from opsdir_adapter_ping_devops.listeners import listeners
 from opsdir_adapter_ping_devops.products import applies, placements, unplaced
+from opsdir_adapter_ping_devops.routes import routes
 from opsdir_adapter_pingfederate.schema import FRAGMENT
 import mini_estate
 from mini_estate import FAKE
@@ -189,6 +190,16 @@ def test_the_nodes_find_each_other_through_the_charts_cluster_service():
     (fix,) = _fixes(model(base=elsewhere))
     assert fix.records[0].mods[0] == ("replace", "pingfedDiscoveryProtocol", ("DNS_PING",))
     assert ("replace", "ciamFqdn", (QUERY,)) in fix.records[0].mods
+
+
+def test_pingfederate_declares_its_routes_and_turns_its_ingress_off_behind_a_cluster_gateway():
+    assert set(routes(model())) == {
+        Route("pf-admin", "/", "prefix", "pingfederate-pingfederate-admin", 9999, None, True),
+        Route("pf-engine", "/", "prefix", "pingfederate-pingfederate-engine", 9031, None, True)}
+    assert _values(model())["pingfederate-engine"]["ingress"]["enabled"] is True
+    gateway = _binding("gw", "ciamClusterGateway", "k8s-gateway", "ciamClusterRole: k8s\n")
+    fronted = _values(model(gateway))
+    assert "ingress" not in fronted["pingfederate-engine"] and "ingress" not in fronted["pingfederate-admin"]
 
 
 def test_the_fetch_script_pins_the_chart():

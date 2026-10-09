@@ -13,6 +13,7 @@ from opsdir.core.contract import Endpoint, PlanContext
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
 from opsdir.domains.edge.dns import check_dns, dns_rows, lower_by
+from opsdir.domains.edge.gateways import fronted_services, role_gateway
 from opsdir.domains.edge.headers import check_headers, header_rows
 from opsdir.domains.edge.kubernetes import check_unrendered, unrendered_edges
 from opsdir.domains.edge.naming import EDGE_FACT, EDGE_POLICIES, HEADER_CONTRACTS, RATE_LIMIT, WAF_EXCLUSION
@@ -375,19 +376,23 @@ def test_routed_names_zones_run_by_others_ttls_and_record_parts():
         "servers point at them; not managed here",)
 
 
-def test_a_service_names_edge_isnt_rendered_for_a_role_only_on_kubernetes():
-    """A service name whose role the target runs only on Kubernetes gets no edge from the cloud render (the cluster's
-    ingress serves it, and what fronts that isn't recorded): a blocker in the target."""
+def _on_kubernetes(*extra):
+    """beta runs role web only on Kubernetes (workload web in cluster k8s)."""
     workloads = "ou=workloads,dc=ciam-ops"
-    d = _record(_ou(workloads, "workloads"),
-                _entry(f"cn=web,{workloads}", "ciamWorkload",
-                       {"cn": "web", "ciamWorkloadKind": "deployment", "ciamTargetRole": "web",
-                        "ciamClusterRole": "k8s", "ciamWorkloadRole": "web-workload"}),
-                _binding(BETA, "k8s", "ciamCluster", "k8s", ciamProviderRef="cluster-1"),
-                _binding(BETA, "web", "ciamWorkloadBinding", "web-workload"),
-                _service(BETA, "svc-web", "web-service", "web.example.test", "198.51.100.30",
-                         ciamTlsCertificate="cn=web-tls,ou=certificates,dc=ciam-ops"))
-    ctx = _ctx(d)
+    return _record(_ou(workloads, "workloads"),
+                   _entry(f"cn=web,{workloads}", "ciamWorkload",
+                          {"cn": "web", "ciamWorkloadKind": "deployment", "ciamTargetRole": "web",
+                           "ciamClusterRole": "k8s", "ciamWorkloadRole": "web-workload"}),
+                   _binding(BETA, "k8s", "ciamCluster", "k8s", ciamProviderRef="cluster-1"),
+                   _binding(BETA, "web", "ciamWorkloadBinding", "web-workload"),
+                   _service(BETA, "svc-web", "web-service", "web.example.test", "198.51.100.30",
+                            ciamTlsCertificate="cn=web-tls,ou=certificates,dc=ciam-ops"), *extra)
+
+
+def test_a_service_names_edge_isnt_rendered_for_a_role_only_on_kubernetes():
+    """A service name whose role the target runs only on Kubernetes, in a cluster with no gateway, gets no edge from the
+    cloud render (nothing records what fronts the cluster's ingress): a blocker in the target."""
+    ctx = _ctx(_on_kubernetes())
     assert sorted(svc.dn.split(",")[0] for svc, _, _ in unrendered_edges(ctx.dst)) == [
         "cn=svc-ldaps", "cn=svc-login", "cn=svc-sso", "cn=svc-web"]
     assert unrendered_edges(ctx.src) == ()                     # alpha runs web nowhere on Kubernetes
@@ -396,7 +401,20 @@ def test_a_service_names_edge_isnt_rendered_for_a_role_only_on_kubernetes():
     assert len(f.blockers) == 4 and next(b[1] for b in f.blockers if "login.example.test" in b[1]) == (
         "`login.example.test` (`login-service`) reaches `web`, which beta/prod runs only on Kubernetes: its cloud "
         "render writes no edge for it (load balancer, traffic policy `sso-edge`, protection policy `sso-protect`, DNS "
-        "record), and "
-        "the record doesn't say what fronts the cluster's ingress. Record what fronts it, or run the role on servers "
-        "there.")
+        "record), and the record doesn't say what fronts the cluster's ingress (its cluster has no gateway). Record "
+        "the cluster's gateway (ciamClusterGateway), or run the role on servers there.")
     assert f.actions == () and check_unrendered(_ctx(_record())).blockers == ()
+
+
+def test_a_cluster_gateway_fronts_the_service_names_of_roles_only_on_kubernetes():
+    """With the cluster's gateway recorded, every cloud reads one answer: which service names it fronts; the blocker
+    clears."""
+    gw = _binding(BETA, "gw", "ciamClusterGateway", "k8s-gateway", ciamClusterRole="k8s", ciamNamespace="edge",
+                  ciamFrontendIp="10.2.9.10")
+    ctx = _ctx(_on_kubernetes(gw))
+    assert role_gateway(ctx.dst, "web").dn == f"cn=gw,ou=bindings,{BETA}" and role_gateway(ctx.src, "web") is None
+    assert sorted(svc.dn.split(",")[0] for svc, _ in fronted_services(ctx.dst)) == [
+        "cn=svc-ldaps", "cn=svc-login", "cn=svc-sso", "cn=svc-web"]
+    assert unrendered_edges(ctx.dst) == () and check_unrendered(ctx).blockers == ()
+    other = _binding(BETA, "gw", "ciamClusterGateway", "k8s-gateway", ciamClusterRole="other-cluster")
+    assert fronted_services(_ctx(_on_kubernetes(other)).dst) == ()          # a gateway of another cluster

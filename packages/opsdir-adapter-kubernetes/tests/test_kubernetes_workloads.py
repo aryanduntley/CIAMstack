@@ -214,3 +214,41 @@ def test_a_namespace_collected_live_reads_as_its_saved_manifests():
     collected, _ = preview_import(d, "kubernetes/workloads", c.files, (ADAPTER,))
     by_hand, _ = preview_import(d, "kubernetes/workloads", saved, (ADAPTER,))
     assert plain(collected) == plain(by_hand) and any(r.dn == workload_dn("ds-idrepo") for r in collected)
+
+
+GATEWAYS = """apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: edge-gw
+  namespace: edge
+  annotations: {opsdir.io/cluster-role: k8s, gateway.istio.io/name-override: edge-gw}
+spec:
+  gatewayClassName: istio
+  infrastructure:
+    annotations: {service.beta.kubernetes.io/azure-load-balancer-ipv4: 10.1.9.10}
+  listeners: [{name: http, protocol: HTTP, port: 80}]
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata: {name: other-gw, namespace: edge}
+spec: {gatewayClassName: nginx, listeners: [{name: http, protocol: HTTP, port: 80}]}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata: {name: login, namespace: ciam}
+spec: {hostnames: [login.example.test]}
+"""
+
+
+def test_gateways_under_an_environment_are_its_cluster_gateways():
+    d, _, notices = imported(files={**FILES, "alpha/prod/edge/gateways.yaml": GATEWAYS,
+                                    "edge/stray.yaml": GATEWAYS.split("---")[1]})
+    gw = get(d, "cn=edge-gw,ou=bindings,env=prod,cloud=alpha,ou=environments,dc=ciam-ops")
+    assert (one(gw, "ciamClusterRole"), one(gw, "ciamNamespace"), one(gw, "ciamGatewayImplementation"),
+            one(gw, "ciamFrontendIp"), one(gw, "ciamBindingRole")) == ("k8s", "edge", "istio", "10.1.9.10",
+                                                                       "edge-gw-gateway")
+    other = get(d, "cn=other-gw,ou=bindings,env=prod,cloud=alpha,ou=environments,dc=ciam-ops")
+    assert other is not None and one(other, "ciamGatewayImplementation") is None
+    assert any("GatewayClass 'nginx' isn't one opsdir renders (envoy, istio)" in n for n in notices)
+    assert "1 HTTPRoute(s): not read (a deployment kit declares its routes)" in notices
+    assert any(n.startswith("edge/stray.yaml: Gateway other-gw: not under <cloud>/<env>/") for n in notices)

@@ -31,6 +31,7 @@ Per product (the one without a workload is `enabled: false`), from the record:
 - **Storage**: when the binding records `ciamStorageSize` or `ciamStorageClass`, the product runs as a StatefulSet with a volume for `/opt/out`.
   - A release first installed as a Deployment can't be changed to a StatefulSet in place.
 - **Ingress** for the hosts the workload records (`ciamIngressHost`), TLS from the chart's default TLS secret; none when it records none.
+- **Behind a cluster gateway** (`ciamClusterGateway` in front of the role's cluster): no Ingress. The role's whole host goes to the chart's Service (`pingfederate-pingfederate-admin:9999`, `pingfederate-pingfederate-engine:9031`, both TLS) as a route (`routes.py`) that opsdir-adapter-kubernetes renders as an HTTPRoute, re-encrypted to the pods.
 
 - **Cluster discovery**: when the environment's `pf-cluster-discovery` binding is `DNS_PING` (opsdir-adapter-pingfederate's `pingfedClusterDiscovery`, `ciamFqdn`), `global.envs.DNS_QUERY_LOCATION` is its DNS name. The chart's own value is its cluster service, `pingfederate-pingfederate-cluster.<namespace>.svc.cluster.local` (headless, publishing unready pods), so the binding to record is that name; the planner check below offers it.
 

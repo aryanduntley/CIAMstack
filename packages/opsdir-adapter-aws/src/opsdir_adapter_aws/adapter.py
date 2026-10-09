@@ -7,6 +7,7 @@ from .cli import CLI_INVENTORY
 from .collect import COLLECTORS
 from .cloudformation import CLOUDFORMATION
 from .inventory import TERRAFORM_STATE
+from .ingress import gateway_plug
 from .kubernetes import SECRET_DELIVERY, workload_identity
 from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
 from .regions import PREREQUISITE, REGIONS
@@ -31,4 +32,5 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                   importers=(TERRAFORM_STATE, CLI_INVENTORY, CLOUDFORMATION, REGIONS, QUOTAS),
                   profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE),
                   collectors=COLLECTORS,
-                  workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY)
+                  workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY,
+                  gateway_plug=gateway_plug)

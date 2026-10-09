@@ -24,6 +24,7 @@ from opsdir_adapter_kubernetes.kits import split_image
 from opsdir_adapter_forgeops.helm import helm_image
 from opsdir_adapter_forgeops.listeners import listeners
 from opsdir_adapter_forgeops.render import applies, render
+from opsdir_adapter_forgeops.routes import routes
 from opsdir_adapter_kubernetes.adapter import ADAPTER as KUBERNETES
 import mini_estate
 from mini_estate import FAKE
@@ -68,6 +69,7 @@ DS = (_workload("ds-idrepo", "ds"),
       _binding("ds-idrepo", "ciamWorkloadBinding", "ds-idrepo-workload",
                "ciamContainerImage: ds=registry.example.test/ciam/ds:8.0.1\nciamStorageSize: 100Gi\n"
                "ciamStorageClass: managed-csi-premium\n"))
+GATEWAY = (_binding("gw", "ciamClusterGateway", "k8s-gateway", "ciamClusterRole: k8s\nciamNamespace: edge\n"),)
 CLOUD = FAKE._replace(workload_identity=lambda m, b: K8sIdentity(
     (("cloud.example.test/identity", one(b, "ciamProviderRef")),), (("cloud.example.test/use", "true"),)))
 INSTALLED = (CLOUD, KUBERNETES, ADAPTER)
@@ -234,6 +236,24 @@ def test_the_planner_names_a_second_service_account():
     assert any("one service account" in a and "(identity, idm)" in a for a in actions)
 
 
+def test_forgeops_declares_its_routes_and_turns_its_ingresses_off_behind_a_cluster_gateway():
+    declared = {(r.server_role, r.path, r.service, r.port, r.rewrite) for r in routes(model())}
+    assert {("am", "/am", "am", 80, None), ("am", "/am/XUI", "login-ui", 8080, None),
+            ("am", "/platform", "admin-ui", 8080, None), ("am", "/openidm", "idm", 80, None),
+            ("idm", "/openidm", "idm", 80, None), ("ig", "/ig", "ig", 80, "/"),
+            ("ig", "/igadmin", "ig", 8085, "/")} <= declared            # IDM's paths on AM's host too
+    files = render(model(), services(INSTALLED), ("helm", "kustomize"))
+    assert _doc(files, "forgeops/helm/identity/identity-platform-values.yaml")["platform"]["ingress"]["hosts"]
+    fronted = render(model(*GATEWAY), services(INSTALLED), ("helm", "kustomize"))
+    assert _doc(fronted, "forgeops/helm/identity/identity-platform-values.yaml")["platform"]["ingress"] == {
+        "enabled": False}
+    assert _doc(fronted, "forgeops/helm/identity/ping-gateway-values.yaml")["platform"]["ingress"] == {
+        "enabled": False}
+    am = _doc(fronted, "forgeops/kustomize/overlay/identity/am/kustomization.yaml")
+    assert {"$patch": "delete", "apiVersion": "networking.k8s.io/v1", "kind": "Ingress", "metadata": {"name": "am"}} \
+        in [yaml.safe_load(x["patch"]) for x in am["patches"]]
+
+
 def test_the_fetch_script_pins_the_release():
     script = (ROOT / "packages" / "opsdir-adapter-forgeops" / "scripts" / "fetch-forgeops.sh").read_text()
     pins = dict(re.findall(r"^(VERSION|COMMIT|SHA256)=(\S+)$", script, re.M))
@@ -243,7 +263,7 @@ def test_the_fetch_script_pins_the_release():
 @pytest.mark.kubernetes
 @pytest.mark.skipif(not (ROOT / "tools" / "bin" / "kubeconform").exists() or not (SOURCE / ".complete").exists(),
                     reason="no tools (opsdir/scripts/fetch-tools.sh) or ForgeOps source (fetch-forgeops.sh)")
-@pytest.mark.parametrize("extra", [(), DS], ids=["ds-on-servers", "ds-in-the-cluster"])
+@pytest.mark.parametrize("extra", [(), DS, GATEWAY], ids=["ds-on-servers", "ds-in-the-cluster", "behind-a-gateway"])
 def test_the_render_builds_and_is_valid_kubernetes(tmp_path, extra):
     files = render(model(*extra), services(INSTALLED), ("helm", "kustomize"))
     shutil.copytree(SOURCE / "kustomize" / "base", tmp_path / "kustomize" / "base")
@@ -258,5 +278,6 @@ def test_the_render_builds_and_is_valid_kubernetes(tmp_path, extra):
     assert done.returncode == 0, done.stdout + done.stderr
     built = subprocess.run([str(ROOT / "tools" / "bin" / "kustomize"), "build",
                             str(tmp_path / "kustomize" / "overlay" / "identity")], capture_output=True, text=True)
+    assert ("kind: Ingress" in built.stdout) == (extra != GATEWAY)          # behind a gateway, its routes serve
     images = set(re.findall(r"^\s+image: (\S+)$", built.stdout, re.M))
     assert images and not [i for i in images if not re.search(r"[:@]", i)], images    # no base placeholder left

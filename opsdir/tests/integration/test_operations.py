@@ -80,5 +80,5 @@ def test_an_estate_setting_is_set_under_a_change_and_read_back(conn):
     ops.apply_preview(conn, preview, "CHG-1")
     assert _restore_interval(conn)[4:7] == ("60", "60", "set")
     assert ops.preview_setting(conn, "restore-test-interval-days", "60").changes == ()
-    with pytest.raises(ValueError, match="no installed domain declares"):
+    with pytest.raises(ValueError, match="no installed domain or adapter declares"):
         ops.preview_setting(conn, "nonsense", "1")

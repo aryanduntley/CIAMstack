@@ -1,11 +1,11 @@
-"""Estate settings: domains declare them (name, kind, default, bounds); the platform's managers give them values as
+"""Estate settings: domains and installed adapters declare them (name, kind, default, bounds or choices); the platform's managers give them values as
 governed entries under ou=settings; the record's value applies when it is valid, the default otherwise. The settings
 report lists every declared setting (and entries nobody declares); setting a value is a change set."""
 import pytest
 
 from opsdir.connectors.registry import DOMAINS
 from opsdir.connectors.settings import changes_for_setting, declared_settings, settings_rows
-from opsdir.core.contract import Domain, Setting
+from opsdir.core.contract import Adapter, Domain, Setting
 from opsdir.core.directory import make_directory
 from opsdir.core.settings import parse_setting, recorded_setting, setting_changes, setting_dn, setting_value
 
@@ -56,19 +56,31 @@ def test_setting_a_value_adds_the_branch_once_and_changes_only_what_differs():
 
 def test_the_report_lists_declared_settings_then_undeclared_entries():
     d = _d(("restore-test-interval-days", "0"), ("strict-mode", "TRUE"), ("old-knob", "7"))
-    rows = settings_rows(d, (DOMAIN,))
+    rows = settings_rows(d, (DOMAIN,), ())
     assert rows == [
         ("estate-name", "test", "string", "example", "", "example", "default", NAME.description),
         ("restore-test-interval-days", "test", "int (min 1, max 3650)", "90", "0", "90",
          "invalid: 0 is less than 1; the default applies", DAYS.description),
         ("strict-mode", "test", "bool", "FALSE", "TRUE", "TRUE", "set", FLAG.description),
-        ("old-knob", "", "", "", "7", "", "not declared by any installed domain", "")]
+        ("old-knob", "", "", "", "7", "", "not declared by any installed domain or adapter", "")]
 
 
 def test_only_declared_settings_can_be_set():
-    assert [r.changetype for r in changes_for_setting(_d(), "strict-mode", "TRUE", (DOMAIN,))] == ["add"]
-    with pytest.raises(ValueError, match="no installed domain declares setting old-knob"):
-        changes_for_setting(_d(), "old-knob", "7", (DOMAIN,))
+    assert [r.changetype for r in changes_for_setting(_d(), "strict-mode", "TRUE", (DOMAIN,), ())] == ["add"]
+    with pytest.raises(ValueError, match="no installed domain or adapter declares setting old-knob"):
+        changes_for_setting(_d(), "old-knob", "7", (DOMAIN,), ())
+
+
+def test_a_string_setting_may_list_its_choices_and_an_adapter_may_declare_it():
+    kind = Setting("gateway-kind", "string", "alpha", "Which gateway", choices=("alpha", "beta"))
+    assert parse_setting(kind, "beta") == ("beta", None)
+    assert parse_setting(kind, "gamma") == (None, "'gamma' isn't one of alpha, beta")
+    kit = Adapter(*(None,) * 19)._replace(name="kit", settings=(kind,))
+    assert ("kit", kind) in declared_settings((DOMAIN,), (kit,))
+    assert settings_rows(_d(("gateway-kind", "gamma")), (), (kit,)) == [
+        ("gateway-kind", "kit", "string (one of alpha, beta)", "alpha", "gamma", "alpha",
+         "invalid: 'gamma' isn't one of alpha, beta; the default applies", "Which gateway")]
+    assert [r.changetype for r in changes_for_setting(_d(), "gateway-kind", "beta", (), (kit,))] == ["add"]
 
 
 def test_the_data_domain_declares_the_restore_test_interval():

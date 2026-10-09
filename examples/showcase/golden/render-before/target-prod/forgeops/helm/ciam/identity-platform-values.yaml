@@ -12,8 +12,7 @@ platform:
   ds_certs:
     enabled: false
   ingress:
-    hosts:
-    - login.example-aero.test
+    enabled: false
   external_ds:
     enabled: true
     cts_hosts:

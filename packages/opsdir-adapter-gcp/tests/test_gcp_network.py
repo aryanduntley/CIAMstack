@@ -176,10 +176,12 @@ def test_a_service_attachment_on_an_internal_passthrough_forwarding_rule():
 def test_an_application_load_balancers_proxies_and_probes_are_policy_rules_when_admit_builds_them():
     m = _m()
     svc = next(b for b in m.bindings if b.dn.startswith("cn=svc-sso,"))
-    out = "\n\n".join(edge._firewall(m, svc, "svc_sso", "ciam-prod-svc-sso", "443", "10.1.250.0/24", health_check_rule))
+    out = "\n\n".join(edge._firewall(m, svc, "svc_sso", "ciam-prod-svc-sso", "443", "10.1.250.0/24", None,
+                                      admit=health_check_rule))
     assert 'resource "google_compute_network_firewall_policy_rule" "svc_sso_proxies"' in out
     assert "priority        = 75000" in out and 'src_ip_ranges = ["10.1.250.0/24"]' in out
     assert "Load balancer proxies for svc-sso" in out and "Google Cloud health checks for svc-sso" in out
     assert "google_compute_firewall" not in out
     assert 'resource "google_compute_firewall" "svc_sso_proxies"' in "\n\n".join(
-        edge._firewall(m, svc, "svc_sso", "ciam-prod-svc-sso", "443", "10.1.250.0/24"))
+        edge._firewall(m, svc, "svc_sso", "ciam-prod-svc-sso", "443", "10.1.250.0/24",
+                       edge.servers_backend(m, svc, ())))

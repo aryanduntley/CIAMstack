@@ -13,6 +13,7 @@ from opsdir.core.formats import YAML
 from opsdir.core.interchange.yaml_text import dump
 from opsdir.core.manifest import header
 from opsdir_adapter_kubernetes.kits import chart_image
+from .routes import gateway_fronted
 from .components import (ds_in_cluster, ds_servers, external_ds, idm_ds_env, image_of, ingress_hosts, on_in,
                          pod_labels, replicas, resources, service_account, storage)
 from .release import COMPONENTS, HELM, IDENTITY_PLATFORM, PING_GATEWAY, VERSION
@@ -52,11 +53,12 @@ def _service_account(p, chart):
 
 def identity_platform_values(m, services, p):
     """The identity-platform chart's values for a placement: the workloads' service account, no Secrets made by the
-    chart, ingress hosts, DS on servers (external_ds; with no DS in the cluster, no self-signed DS certificates: the
+    chart, ingress hosts (Ingresses off behind a cluster gateway), DS on servers (external_ds; with no DS in the cluster, no self-signed DS certificates: the
     servers' CA comes from the record), each component."""
     platform = {"disable_secret_agent_config": True, "secrets_enabled": True, "base_generate": True, "secrets": {},
                 **({} if ds_in_cluster(p) else {"ds_certs": {"enabled": False}}),
-                "ingress": {"hosts": ingress_hosts(p, ("am", "idm"), "forgeops")}}
+                "ingress": ({"enabled": False} if gateway_fronted(m, IDENTITY_PLATFORM) else
+                            {"hosts": ingress_hosts(p, ("am", "idm"), "forgeops")})}
     if external_ds(p):
         platform["external_ds"] = {"enabled": True, "cts_hosts": ds_servers(m, p, "ds-cts"),
                                    "idrepo_hosts": ds_servers(m, p, "ds-idrepo")}
@@ -66,10 +68,12 @@ def identity_platform_values(m, services, p):
 
 
 def ping_gateway_values(m, services, p):
-    """The ping-gateway chart's values for a placement: service account, ingress hosts, ig."""
+    """The ping-gateway chart's values for a placement: service account, ingress hosts (off behind a cluster gateway),
+    ig."""
     (ig,) = (c for c in COMPONENTS if c.chart == PING_GATEWAY)
     return {"serviceAccount": _service_account(p, PING_GATEWAY),
-            "platform": {"ingress": {"hosts": ingress_hosts(p, ("ig",), "ig")}},
+            "platform": {"ingress": ({"enabled": False} if gateway_fronted(m, PING_GATEWAY) else
+                                     {"hosts": ingress_hosts(p, ("ig",), "ig")})},
             ig.values: component_values(m, services, p, ig)}
 
 

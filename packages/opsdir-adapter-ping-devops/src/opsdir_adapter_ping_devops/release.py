@@ -28,6 +28,9 @@ PRODUCTS = (
     Product("pingfederate-engine", "pf-engine", ("pingfederate-engine", "pingfederate")),
 )
 _BY_ROLE = {p.role: p for p in PRODUCTS}
+# The port each product's Service serves its traffic on (services.https.servicePort; TLS, PingFederate's own), the
+# chart's Service being <release>-<product>.
+SERVICE_PORTS = (("pingfederate-admin", 9999), ("pingfederate-engine", 9031))
 
 # What the chart's PingFederate pods listen on (its services' containerPort), per server role: (role, port, purpose,
 # peers) as contract.Listener's. The admin console for the operators and the engines' wait for it, the runtime for
@@ -52,6 +55,11 @@ EULA = "PING_IDENTITY_ACCEPT_EULA"          # the image starts only with YES (th
 def cluster_query(namespace):
     """The DNS name the chart's PingFederate pods in a namespace find each other through (its cluster service)."""
     return f"{RELEASE}-{CLUSTER_SERVICE}.{namespace}.svc.cluster.local"
+
+
+def service_of(product):
+    """The name of the Service the chart makes for a product (the release's name prepended)."""
+    return f"{RELEASE}-{product}"
 
 
 def product_of(role):

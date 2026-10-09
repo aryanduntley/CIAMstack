@@ -2821,6 +2821,12 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.621 NAME 'ciamIdentityClientId' DESC
  rkload identity and the Key Vault CSI provider name)' EQUALITY caseIgnoreMa
  tch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'bindin
  g' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.622 NAME 'ciamGatewayImplementation'
+  DESC 'Which Gateway API implementation runs a cluster\27s in-cluster gatew
+ ay (the values the installed Kubernetes platform adapter renders); when abs
+ ent, that adapter\27s estate setting decides' EQUALITY caseIgnoreMatch SYNT
+ AX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VAL
+ UE-TYPE 'vocab' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -3527,3 +3533,16 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.131 NAME 'ciamSecretStore' DESC 'Wher
  n to it' SUP ciamBinding STRUCTURAL MUST ciamRefScheme MAY ( ciamStoreEndpo
  int $ ciamStoreAuthRole $ ciamStoreAuthMount $ ciamStoreKvVersion $ ciamPro
  viderRef ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.132 NAME 'ciamClusterGateway' DESC 'A
+  cluster\27s in-cluster gateway: the service names whose role runs only on 
+ Kubernetes there are routed through it, behind each cloud\27s front (load b
+ alancer, WAF, TLS certificate, DNS record) rendered from their policies; it
+ s namespace, the private address and subnet the front reaches it at, and, d
+ elivered like a workload\27s, the Secret keys it reads (its internal TLS ke
+ y pair, the CA its backends\27 certificates are checked against) with the s
+ ervice account and identity that read them; the CA its internal certificate
+  chains to, which a front re-encrypting to it trusts' SUP ciamBinding STRUC
+ TURAL MUST ciamClusterRole MAY ( ciamGatewayImplementation $ ciamNamespace 
+ $ ciamFrontendIp $ ciamSubnetRole $ ciamProviderRef $ ciamWorkloadSecret $ 
+ ciamServiceAccount $ ciamIdentityRole $ ciamTrustsCertificate ) X-ORIGIN 'o
+ psdir' )

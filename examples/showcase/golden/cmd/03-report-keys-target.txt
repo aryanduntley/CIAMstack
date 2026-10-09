@@ -24,5 +24,8 @@ pf-smtp-password           password       pf-smtp-password           azkv       
 sso-tls-certificate        private-key    sso-tls-certificate        azkv-cert  azkv-cert://kv-ciam-prod/sso-tls-2026                                                                                                                                ok
 sso-tls-keystore           keystore       sso-tls-keystore           azkv       azkv://kv-ciam-prod/sso-tls-keystore                                                                                                                                 ok
 sso-tls-keystore-password  password       sso-tls-keystore-password  azkv       azkv://kv-ciam-prod/sso-tls-keystore-password                                                                                                                        ok
-(24 rows)
+-                                         internal-ca-certificate    azkv-cert  azkv-cert://kv-ciam-prod/ciam-internal-ca                                                                                                                            undocumented: no credential describes this role
+-                                         ciam-edge-tls-cert         azkv       azkv://kv-ciam-prod/ciam-edge-tls-cert                                                                                                                               undocumented: no credential describes this role
+-                                         ciam-edge-tls-key          azkv       azkv://kv-ciam-prod/ciam-edge-tls-key                                                                                                                                undocumented: no credential describes this role
+(27 rows)
 exit 0

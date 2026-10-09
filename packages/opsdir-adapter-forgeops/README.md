@@ -67,6 +67,17 @@ Everything else comes from the record (`ciamWorkloadSecret`, delivered by the ku
 - under Kustomize also `amster`, `ds-ssl-keypair` and `ds-master-keypair`
 - with DS on servers only, `ds-ssl-keypair` `ca.crt` (the servers' CA), under both targets
 
+## Routes behind a cluster gateway
+
+ForgeOps' own Ingresses use the `nginx` class and nginx annotations, a controller the Kubernetes project has retired. When the record has a cluster gateway (`ciamClusterGateway`, the core edge domain) in front of the roles a chart serves, that chart's Ingresses are off: Helm `platform.ingress.enabled: false` (identity-platform for AM and IDM, ping-gateway for IG), and the Kustomize overlay deletes them (`$patch: delete`). Their paths are declared as routes (`release.ROUTES`, `routes.py`), which opsdir-adapter-kubernetes renders as Gateway API HTTPRoutes:
+
+| Component | Path | Service:port | Hosts |
+|---|---|---|---|
+| am | `/am` | am:80 | AM's service names |
+| login-ui, admin-ui, end-user-ui | `/am/XUI`, `/platform`, `/enduser` | their own :8080 | AM's |
+| idm | `/openidm`, `/upload`, `/export`, `/admin`, `/openicf` | idm:80 | IDM's and AM's (the platform UIs call both on one host) |
+| ig | `/ig`, `/igadmin` (prefix replaced by `/`, as the release's `rewrite-target /$2` does) | ig:80, ig:8085 | IG's |
+
 ## Listeners
 
 The release's pods' container ports (`release.py`, `POD_PORTS`), declared as listeners `on="kubernetes"` for each role the environment runs with ForgeOps: AM, IDM and IG HTTP on 8080 (behind the ingress); DS LDAP 1389 and LDAPS 1636 (from AM, IDM and its peers), administration 4444, replication 8989. The kubernetes adapter's network policies admit these to the role's pods instead of the products' own ports on servers (PingAM's 8443), and the firewall checks leave them out.

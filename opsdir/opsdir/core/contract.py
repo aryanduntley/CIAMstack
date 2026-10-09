@@ -53,9 +53,10 @@ ImportKind = namedtuple("ImportKind", ("kind", "object_class", "required", "matc
 
 # An estate setting a domain declares: a value the platform's managers may change for the whole estate (a governed
 # entry under ou=settings, read by core.settings). kind: "int", "bool" or "string"; default: the value when the record
-# holds none (or one that isn't valid); minimum, maximum: the bounds of an int.
-Setting = namedtuple("Setting", ("name", "kind", "default", "description", "minimum", "maximum"),
-                     defaults=(None, None))
+# holds none (or one that isn't valid); minimum, maximum: the bounds of an int; choices: the values a string may take
+# (None: any non-empty text). Domains and installed adapters declare them.
+Setting = namedtuple("Setting", ("name", "kind", "default", "description", "minimum", "maximum", "choices"),
+                     defaults=(None, None, None))
 
 Domain = namedtuple("Domain", (
     "name", "schema",           # its SchemaFragment
@@ -135,9 +136,19 @@ SecretDelivery = NamedTuple("SecretDelivery", [("store_key", Callable), ("eso_pr
 # endpoints: the installed adapters' Endpoints (what the edge aims health checks, rate limits and exclusions at);
 # listeners(m): the ports the installed adapters' products listen on in an environment; workload_identity(m, binding):
 # the K8sIdentity of an identity binding from the provider adapter that applies to m, or None; secret_delivery(scheme):
-# the SecretDelivery of the adapter owning a ref-uri scheme, or None
+# the SecretDelivery of the adapter owning a ref-uri scheme, or None; routes(m): the HTTP routes the installed
+# deployment kits declare in an environment; gateway_plug(m, gateway, service): the GatewayPlug of a cluster gateway
+# binding (its data-plane Service as (name, ports), from opsdir-adapter-kubernetes) from the provider adapter that
+# applies to m, or None
 Services = NamedTuple("Services", [("secret_command", Callable), ("endpoints", tuple), ("listeners", Callable),
-                                   ("workload_identity", Callable), ("secret_delivery", Callable)])
+                                   ("workload_identity", Callable), ("secret_delivery", Callable),
+                                   ("routes", Callable), ("gateway_plug", Callable)])
+
+# How a cloud's L7 front reaches a cluster's in-cluster gateway, from the provider adapter that owns the cloud:
+# annotations on the gateway's Service ((name, value), ...), further Kubernetes objects the plug needs (dicts, e.g. a
+# target group binding), and the Service's type (ClusterIP, or LoadBalancer for an internal load balancer the front
+# targets); a value the record can't give is UNBOUND:<what>.
+GatewayPlug = namedtuple("GatewayPlug", ("annotations", "objects", "service_type"), defaults=("ClusterIP",))
 
 # One row of a cloud's permission table: what a neutral verb (read-secret, use-key, ...) on a binding of a class
 # (ciamSecretRef, ciamKeyRef, ...; kind: a stream's kind, or None for any) needs in the cloud's terms. needs is a tuple
@@ -169,6 +180,14 @@ Endpoint = namedtuple("Endpoint", ("kind", "path", "server_role"))
 # listens, None wherever the role runs (servers and Kubernetes pods alike), "servers" only on servers, "kubernetes"
 # only in pods: a deployment kit's container ports, which replace the product's for the role's pods.
 Listener = namedtuple("Listener", ("server_role", "port", "protocol", "purpose", "peers", "on"), defaults=(None,))
+
+# An HTTP route a deployment kit serves a role's traffic through when a cluster gateway fronts it: server_role the role
+# whose service name's host it is reached on, path and match (prefix | exact), service and port the Kubernetes Service
+# that answers (in the role's workload's namespace), rewrite the prefix the path is replaced with before it reaches the
+# Service (None: unchanged), tls whether the Service's port speaks TLS (the gateway then re-encrypts to it). Kits
+# declare them from their release's layout; opsdir-adapter-kubernetes renders them.
+Route = namedtuple("Route", ("server_role", "path", "match", "service", "port", "rewrite", "tls"),
+                   defaults=(None, False))
 
 # A setting a product needs so its outside traffic goes through an environment's explicit proxy (network.proxies):
 # server_role the servers that need it, place where it is set (a file, an admin setting, the JVM options) in words,
@@ -252,8 +271,12 @@ Adapter = namedtuple("Adapter", (
                             # choose between at render time (`opsdir render --target`); render_env gets the names
                             # chosen (by default every one not marked only-when-asked)
     "workload_identity",    # (EnvModel, identity binding) -> K8sIdentity: its cloud's workload identity, or None
-    "secret_delivery"),     # {ref-uri scheme: SecretDelivery}: how Kubernetes reads its schemes' secrets, or None
-    defaults=((), None, None, (), (), (), None, None))
+    "secret_delivery",      # {ref-uri scheme: SecretDelivery}: how Kubernetes reads its schemes' secrets, or None
+    "routes",               # (EnvModel) -> Routes: the HTTP routes its deployment kit serves through a cluster gateway
+    "gateway_plug",         # (EnvModel, cluster gateway binding, (Service name, ports)) -> GatewayPlug: its cloud's
+                            # front to the gateway's data-plane Service
+    "settings"),            # Settings: the estate settings it declares (core.settings), beside the domains'
+    defaults=((), None, None, (), (), (), None, None, None, None, ()))
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

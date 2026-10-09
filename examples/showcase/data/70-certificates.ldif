@@ -103,6 +103,19 @@ ciamPartnerContact: cn=harbor-mro,ou=owners,dc=ciam-ops
 ciamRotationRunbook: cn=WI-CIAM-001,ou=runbooks,dc=ciam-ops
 ciamSubject: CN=Harbor MRO SSO
 
+dn: cn=ciam-internal-ca,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: ciam-internal-ca
+ciamCertPurpose: ca
+ciamFingerprint: 4B:A9:8A:8A:4A:60:62:2E:96:AD:77:30:EF:A2:4F:C2:12:A0:CA:43:8
+ 0:17:2A:21:F7:70:DA:9F:03:4B:11:92
+ciamIssuer: self-signed
+ciamNotAfter: 20310115000000Z
+ciamNotBefore: 20260115000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSubject: CN=Example Aero CIAM Internal CA
+
 dn: cn=dibnet-eca,ou=certificates,dc=ciam-ops
 objectClass: top
 objectClass: ciamCertificate

@@ -15,16 +15,9 @@ labels:
   includeSelectors: false
   includeTemplates: true
 patches:
-- target:
-    group: networking.k8s.io
-    version: v1
+- patch: |
+    "$patch": delete
+    apiVersion: networking.k8s.io/v1
     kind: Ingress
-    name: login-ui
-  patch: |
-    - op: replace
-      path: /spec/rules/0/host
-      value: login.example-aero.test
-    - op: replace
-      path: /spec/tls/0/hosts
-      value:
-      - login.example-aero.test
+    metadata:
+      name: login-ui

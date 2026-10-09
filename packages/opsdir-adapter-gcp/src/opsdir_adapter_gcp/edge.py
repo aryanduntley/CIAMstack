@@ -12,6 +12,8 @@ Known limits: a preconfigured rule's exclusions apply to every path; IP reputati
 threat intelligence; bot management needs reCAPTCHA keys; account takeover and account creation fraud have no
 preconfigured rules; Adaptive Protection is for global backend services.
 """
+from collections import namedtuple
+
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import by_role
 from opsdir.core.network import is_private
@@ -124,7 +126,7 @@ def network_ddos(m, n, spec):
                 ("security_policy", ref(f"google_compute_region_security_policy.{n}_network.self_link"))]))
 
 
-def _health_check(n, name, spec, port, world=False):
+def _health_check(n, name, spec, port, world=False, host=None):
     h = spec.health
     protocol = h.protocol if h.protocol != "tcp" else ("http" if spec.mode == "terminate" else "https")
     return block("resource", [_kind(world, "health_check"), n], [
@@ -132,7 +134,8 @@ def _health_check(n, name, spec, port, world=False):
         *((("check_interval_sec", h.interval),) if h.interval else ()),
         *((("healthy_threshold", h.healthy),) if h.healthy else ()),
         *((("unhealthy_threshold", h.unhealthy),) if h.unhealthy else ()),
-        (f"{protocol}_health_check", Block((("port", int(port)), ("request_path", h.path or "/"))))])
+        (f"{protocol}_health_check", Block((("port", int(port)), *((("host", host),) if host else ()),
+                                            ("request_path", h.path or "/"))))])
 
 
 def _affinity(spec):
@@ -142,24 +145,40 @@ def _affinity(spec):
     return (("session_affinity", "CLIENT_IP"),) if spec.stickiness == "source-ip" else ()
 
 
-def _firewall(m, svc, n, name, port, proxies, admit=None):
+# Where an Application Load Balancer sends a service name's traffic: backends, its backend service's ("backend",
+# Block) entries; port_name, the named port it uses (None for endpoints that carry their port); port, the port the
+# backends listen on (None: the service name's own); target, what the VPC firewall rules admitting the proxies and
+# health checks apply to (("target_tags", [...]),), host the Host header its health checks send (None: none). The
+# servers of the service's role, or a cluster's gateway.
+Backend = namedtuple("Backend", ("backends", "port_name", "port", "target", "host"), defaults=(None,))
+
+
+def servers_backend(m, svc, groups):
+    """The Backend of a service name's servers: their instance groups (terraform names, named port "ciam"), reached
+    by the role's network tag."""
+    return Backend(tuple(("backend", Block((("group", ref(f"google_compute_instance_group.{g}.self_link")),
+                                            ("balancing_mode", "UTILIZATION"), ("capacity_scaler", 1.0))))
+                         for g in groups),
+                   "ciam", None, (("target_tags", [network_tag(m, one(svc, "ciamTargetRole"))]),))
+
+
+def _firewall(m, svc, n, name, port, proxies, backend, admit=None):
     """The rules admitting the proxies (the proxy-only subnet; none for a global load balancer, whose front ends
-    connect from the health-check ranges) and the health checks to the servers: VPC firewall rules by network tag, or
+    connect from the health-check ranges) and the health checks to the backend: VPC firewall rules on its target, or
     the rules admit builds (a firewall policy's, by secure tag: firewall_policy.health_check_rule)."""
     if admit is not None:
         return (*((admit(m, svc, n, (proxies,), port, "proxies"),) if proxies else ()),
                 admit(m, svc, n, probe_ranges("MANAGED"), port))
-    target = [network_tag(m, one(svc, "ciamTargetRole"))]
     return (*((block("resource", ["google_compute_firewall", f"{n}_proxies"], [
                 ("name", f"{name}-proxies"), ("description", f"Load balancer proxies for {rdn_value(svc)}"),
                 ("network", NETWORK), ("direction", "INGRESS"),
                 ("allow", Block((("protocol", "tcp"), ("ports", [port])))),
-                ("source_ranges", [proxies]), ("target_tags", target)]),) if proxies else ()),
+                ("source_ranges", [proxies]), *backend.target]),) if proxies else ()),
             block("resource", ["google_compute_firewall", f"{n}_health_checks"], [
                 ("name", f"{name}-health-checks"), ("description", f"Google Cloud health checks for {rdn_value(svc)}"),
                 ("network", NETWORK), ("direction", "INGRESS"),
                 ("allow", Block((("protocol", "tcp"), ("ports", [port])))),
-                ("source_ranges", list(probe_ranges("MANAGED"))), ("target_tags", target)]))
+                ("source_ranges", list(probe_ranges("MANAGED"))), *backend.target]))
 
 
 def _global_address(svc, n, ip):
@@ -171,11 +190,11 @@ def _global_address(svc, n, ip):
             ref(f"data.google_compute_global_address.{n}.address"))
 
 
-def application_lb(m, svc, spec, groups, frontend, placement, admit=None):
-    """An Application Load Balancer for a service name whose TLS terminates at the edge, and the Cloud Armor policy
-    its protection policy asks for: regional, beside the proxy-only subnet; global when a CDN fronts it (Cloud CDN is
-    the global load balancer's), with the CDN on its backend service. groups: the terraform names of its instance
-    groups (with named port "ciam"); frontend: (data sources, address) of a regional one; placement: the regional
+def application_lb(m, svc, spec, backend, frontend, placement, admit=None):
+    """An Application Load Balancer for a service name whose TLS terminates at the edge, and the Cloud Armor policy its
+    protection policy asks for: regional, beside the proxy-only subnet; global when a CDN fronts it (Cloud CDN is the
+    global load balancer's), with the CDN on its backend service. backend: where it sends traffic (its servers' instance
+    groups, or a cluster's gateway); frontend: (data sources, address) of a regional one; placement: the regional
     forwarding rule's subnetwork when internal; admit: what builds the rules admitting the proxies and probes when they
     aren't VPC firewall rules (m, svc, n, ranges, port[, kind] -> rule)."""
     n, name = tf_name(rdn_value(svc)), f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"
@@ -210,12 +229,14 @@ def application_lb(m, svc, spec, groups, frontend, placement, admit=None):
     return (*data,
             block("resource", [kind("ssl_policy"), n], [
                 ("name", name), *_where(world), ("profile", profile), ("min_tls_version", version)]),
-            _health_check(n, name, spec, port, world),
-            *_firewall(m, svc, n, name, port, None if world else one(edge[0], "ciamCidr"), admit),
+            _health_check(n, name, spec, backend.port or port, world, backend.host),
+            *_firewall(m, svc, n, name, backend.port or port, None if world else one(edge[0], "ciamCidr"), backend,
+                       admit),
             *(armor(m, n, spec, world) if waf else ()),
             block("resource", [kind("backend_service"), n], [
                 ("name", name), *_where(world), ("load_balancing_scheme", scheme),
-                ("protocol", "HTTP" if spec.mode == "terminate" else "HTTPS"), ("port_name", "ciam"),
+                ("protocol", "HTTP" if spec.mode == "terminate" else "HTTPS"),
+                *((("port_name", backend.port_name),) if backend.port_name else ()),
                 ("health_checks", [ref(f"{kind('health_check')}.{n}.id")]),
                 *_affinity(spec),
                 *((("timeout_sec", spec.idle_timeout),) if spec.idle_timeout else ()),
@@ -224,8 +245,7 @@ def application_lb(m, svc, spec, groups, frontend, placement, admit=None):
                    ("#", "the origin's Cache-Control decides: sign-in pages and tokens send no-store"),
                    ("cdn_policy", Block((("cache_mode", "USE_ORIGIN_HEADERS"),)))) if world else ()),
                 *((("security_policy", ref(f"{kind('security_policy')}.{n}.self_link")),) if waf else ()),
-                *(("backend", Block((("group", ref(f"google_compute_instance_group.{g}.self_link")),
-                                     ("balancing_mode", "UTILIZATION"), ("capacity_scaler", 1.0)))) for g in groups)]),
+                *backend.backends]),
             block("resource", [kind("url_map"), n], [
                 ("name", name), *_where(world), ("default_service", ref(f"{kind('backend_service')}.{n}.id"))]),
             block("resource", [kind("target_https_proxy"), n], [

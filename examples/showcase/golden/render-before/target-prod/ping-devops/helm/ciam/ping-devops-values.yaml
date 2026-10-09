@@ -59,16 +59,3 @@ pingfederate-engine:
     labels:
       opsdir.io/role: pf-engine
       azure.workload.identity/use: "true"
-  ingress:
-    enabled: true
-    hosts:
-    - host: sso.example-aero.test
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          serviceName: https
-    tls:
-    - secretName: _defaultTlsSecret_
-      hosts:
-      - sso.example-aero.test

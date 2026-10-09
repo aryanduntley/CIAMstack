@@ -1015,6 +1015,44 @@ ciamMemoryRequest: 4Gi
 ciamProductVersion: PingFederate 12.1.4
 ciamWorkloadReplicas: 2
 
+dn: cn=ciam-edge,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamClusterGateway
+cn: ciam-edge
+ciamBindingRole: ciam-edge
+ciamClusterRole: k8s-cluster
+ciamFrontendIp: 10.60.15.250
+ciamNamespace: ciam
+ciamServiceAccount: ciam-edge
+ciamSubnetRole: subnet-aks
+ciamTrustsCertificate: cn=ciam-internal-ca,ou=certificates,dc=ciam-ops
+ciamWorkloadSecret: ciam-edge-tls/tls.crt <- ciam-edge-tls-cert
+ciamWorkloadSecret: ciam-edge-tls/tls.key <- ciam-edge-tls-key
+description: The in-cluster gateway the Application Gateways send the sign-on 
+ names to
+
+dn: cn=cert-internal-ca,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificateRef
+cn: cert-internal-ca
+ciamBindingRole: internal-ca-certificate
+ciamHoldsCertificate: cn=ciam-internal-ca,ou=certificates,dc=ciam-ops
+ciamRefUri: azkv-cert://kv-ciam-prod/ciam-internal-ca
+
+dn: cn=secret-ciam-edge-tls-cert,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-ciam-edge-tls-cert
+ciamBindingRole: ciam-edge-tls-cert
+ciamRefUri: azkv://kv-ciam-prod/ciam-edge-tls-cert
+
+dn: cn=secret-ciam-edge-tls-key,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-ciam-edge-tls-key
+ciamBindingRole: ciam-edge-tls-key
+ciamRefUri: azkv://kv-ciam-prod/ciam-edge-tls-key
+
 dn: cn=link-source,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamInterconnect

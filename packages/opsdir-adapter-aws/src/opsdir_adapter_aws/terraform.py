@@ -13,6 +13,7 @@ from opsdir.core.network import is_private
 from opsdir.domains.infrastructure.firewall import rule_purpose
 from opsdir.domains.access.evaluations import evaluation_files
 from opsdir.domains.access.workloads import identity_of, workload_identities
+from opsdir.domains.edge.gateways import role_gateway
 from opsdir.domains.edge.records import forwarders
 from opsdir.domains.edge.resolve import inspected, service_edge
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
@@ -25,8 +26,9 @@ from .budgets import BILLING, BILLING_REGION, billing_account, needs_billing_pro
 from .quotas import render_quota_requests
 from .cdn import alias, distribution
 from .dns import RESOLVER_ENDPOINT, records, resolver_rules, service_record
-from .edge import US_EAST_1, alb_service, health_check, shield, stickiness
+from .edge import US_EAST_1, alb_service, health_check, servers_backend, shield, stickiness
 from .identities import EC2_TRUST, eks_data, notes, pod_trust, role
+from .ingress import gateway_front
 from .landing import render_landing
 from .network import render_network
 from .backups import render_backups
@@ -112,11 +114,13 @@ def _listener(m, n, svc, port, targets, spec=None):
 
 def _service(m, svc, endpoints=()):
     """A stable service name: a network load balancer with listeners per port (an application load balancer when its
-    traffic policy terminates TLS at the edge; opsdir_adapter_aws.edge), and its DNS record; a note for a role run
-    only on Kubernetes (the cluster's ingress serves it)."""
+    traffic policy terminates TLS at the edge; opsdir_adapter_aws.edge), and its DNS record; for a role run only on
+    Kubernetes, the ALB before its cluster's gateway (opsdir_adapter_aws.ingress), else a note."""
     if only_on_kubernetes(m, one(svc, "ciamTargetRole")):
-        return (kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})",
-                                one(svc, "ciamTargetRole")),)
+        target = one(svc, "ciamTargetRole")
+        gw = role_gateway(m, target)
+        return gateway_front(m, svc, gw, endpoints) if gw is not None else (
+            kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})", target),)
     n = tf_name(rdn_value(svc))
     ip = one(svc, "ciamFrontendIp")
     internal = is_private(ip)
@@ -124,7 +128,7 @@ def _service(m, svc, endpoints=()):
     subnets = sorted({rdn_value(subnet_of(m, t)): subnet_of(m, t) for t in targets}.items())
     spec = service_edge(m, svc, endpoints)
     if spec is not None and spec.layer7:
-        balancer = alb_service(m, svc, spec, targets, tuple(sub for _, sub in subnets))
+        balancer = alb_service(m, svc, spec, servers_backend(svc, targets), tuple(sub for _, sub in subnets))
     else:
         mappings = tuple(_subnet_mapping(svc, ip, internal, i, sub) for i, (_, sub) in enumerate(subnets))
         blind = (("#", "the protection policy's request inspection needs TLS terminated at the edge; not rendered"),) \

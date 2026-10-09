@@ -69,6 +69,23 @@ UIS = ("admin-ui", "end-user-ui", "login-ui")
 # reaches DS as its peers do. Jobs that only call out (amster, keystore-create) need none.
 COMPANION_ROLES = (("admin-ui", "am"), ("end-user-ui", "am"), ("login-ui", "am"), ("ds-set-passwords", "ds"))
 
+# The HTTP routes of the release's own Ingresses (kustomize/base/*/*-ingress.yaml, the charts' *-ingress.yaml), for a
+# cluster gateway to serve instead: (component, roles whose service names' hosts carry it, path, match, Service, port,
+# rewrite). The platform's UIs and IDM call AM and IDM on their own host, so IDM's paths are on AM's host too (and on an
+# IDM service name when the record has one). IG's regex paths /ig(/|$)(.*) and /igadmin(/|$)(.*) with rewrite-target
+# /$2 are prefixes replaced by /.
+ROUTES = (("am", ("am",), "/am", "prefix", "am", 80, None),
+          ("login-ui", ("am",), "/am/XUI", "prefix", "login-ui", 8080, None),
+          ("admin-ui", ("am",), "/platform", "prefix", "admin-ui", 8080, None),
+          ("end-user-ui", ("am",), "/enduser", "prefix", "end-user-ui", 8080, None),
+          *(("idm", ("idm", "am"), path, "prefix", "idm", 80, None)
+            for path in ("/openidm", "/upload", "/export", "/admin", "/openicf")),
+          ("ig", ("ig",), "/ig", "prefix", "ig", 80, "/"),
+          ("ig", ("ig",), "/igadmin", "prefix", "ig", 8085, "/"))
+# The roles whose service names a chart's Ingresses serve: with any of them behind a cluster gateway, the chart's
+# Ingresses are off (the gateway serves its routes).
+CHART_ROLES = ((IDENTITY_PLATFORM, ("am", "idm")), (PING_GATEWAY, ("ig",)))
+
 # What the release's pods listen on, per server role (the bases' and charts' containerPort): (role, port, purpose,
 # peers) as contract.Listener's. AM, IDM and IG serve HTTP behind the ingress; DS serves LDAP and LDAPS to AM, IDM
 # and its peers, its administration connector, and replication to its peers.

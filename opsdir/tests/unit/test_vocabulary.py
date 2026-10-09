@@ -4,7 +4,8 @@ from opsdir.core.standard import registry_ldif
 from opsdir.store.migrations import misdeclared_vocabulary
 from opsdir.store.postgres import schema_rows
 
-VOCAB_ATTRIBUTES = {"ciamCloudProvider", "ciamCloudEnvironment", "ciamServerRole", "ciamTargetRole", "ciamFormat"}
+VOCAB_ATTRIBUTES = {"ciamCloudProvider", "ciamCloudEnvironment", "ciamServerRole", "ciamTargetRole", "ciamFormat",
+                    "ciamGatewayImplementation"}
 
 
 def _attribute_rows(fragments=None):

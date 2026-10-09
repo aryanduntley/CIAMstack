@@ -98,13 +98,6 @@ EXPECTED = MappingProxyType({
          "Kubernetes", "the audit shipping cron runs on the engines' servers; on AKS it must become a CronJob", None),
         ("B41", "Ports", "target/prod: `ds` listens on tcp 1636 (PingIDM connector ldap) for `idm`",
          "IDM moves to AKS: no firewall rule admits the cluster's nodes to the directory (a fix admits them)", None),
-        ("B42", "Edge", "`sso.example-aero.test` (`pf-sso-service`) reaches `pf-engine`, which target/prod runs only on "
-         "Kubernetes", "PingFederate's engines move to AKS: the sign-on name's App Gateway, WAF policy, TLS certificate "
-         "and DNS record aren't rendered, and nothing records what fronts the cluster's ingress", None),
-        ("B43", "Edge", "`login.example-aero.test` (`am-service`) reaches `am`, which target/prod runs only on Kubernetes",
-         "AM moves to AKS: the login name's edge isn't rendered", None),
-        ("B44", "Edge", "`apps.example-aero.test` (`ig-service`) reaches `ig`, which target/prod runs only on Kubernetes",
-         "PingGateway moves to AKS: the apps name's load balancer and DNS record aren't rendered", None),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),

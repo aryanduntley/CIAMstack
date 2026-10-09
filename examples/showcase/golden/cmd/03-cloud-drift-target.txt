@@ -4,6 +4,8 @@ target/prod: fw-login-public (ciamFirewallRule) is in the record but not in what
 target/prod: fw-pf-cluster (ciamFirewallRule) is in the record but not in what the cloud reports
 target/prod: fw-pf-cluster-admin (ciamFirewallRule) is in the record but not in what the cloud reports
 target/prod: fw-sso-public (ciamFirewallRule) is in the record but not in what the cloud reports
+target/prod: secret-ciam-edge-tls-cert (ciamSecretRef) is in the record but not in what the cloud reports
+target/prod: secret-ciam-edge-tls-key (ciamSecretRef) is in the record but not in what the cloud reports
 target/prod: 36 resource(s) lack the required tags CostCenter, DataClassification, Environment, Owner (network vnet-ciam-prod, database psql-ciam-prod-pf-grants, egress natgw-ciam-prod and 33 more)
 standby/prod: not an Azure environment in the record; not imported
 conflict cn=ds-3,env=prod,cloud=target,ou=environments,dc=ciam-ops|ciamInstanceSize: record Standard_D4s_v5 -> live Standard_D8s_v5

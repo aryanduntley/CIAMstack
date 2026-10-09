@@ -3,7 +3,7 @@ to subnet-edge, its listener's TLS policy and Key Vault certificate read by its 
 policy's probe, affinity, timeout and draining; a WAF policy with custom rules for addresses, countries and rate limits
 aimed at the products' endpoints, the Default Rule Set and exclusions. Without the subnet, nothing but a comment."""
 from opsdir.domains.edge.resolve import RateLimit, tls_level, tls_policy
-from opsdir_adapter_azure.edge import TLS_POLICIES, ddos_note, gateway_service, rate, waf_policy
+from opsdir_adapter_azure.edge import TLS_POLICIES, ddos_note, gateway_service, rate, servers_backend, waf_policy
 from edge_fixtures import environment, server, service, spec, subnet
 
 EDGE = subnet("subnet-edge", "subnet-edge", "10.60.250.0/24")
@@ -11,7 +11,7 @@ EDGE = subnet("subnet-edge", "subnet-edge", "10.60.250.0/24")
 
 def _gateway(s, ip="198.51.100.77", *bindings):
     svc = service(ip, ciamProviderRef="pip-ciam-sso-prod")
-    return "\n".join(gateway_service(environment(svc, *bindings), svc, s, (server("pf-1", "10.60.2.10"),)))
+    return "\n".join(gateway_service(environment(svc, *bindings), svc, s, servers_backend((server("pf-1", "10.60.2.10"),))))
 
 
 def test_tls_terms_map_to_predefined_policies_and_back():

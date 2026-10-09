@@ -202,6 +202,18 @@ def workload_identity_of(m, binding, installed=ADAPTERS):
     return hook(m, binding) if hook else None
 
 
+def routes_of(m, installed=ADAPTERS):
+    """The HTTP routes the installed adapters' deployment kits serve through a cluster gateway in environment m."""
+    return tuple(r for a in installed if a.routes for r in a.routes(m))
+
+
+def gateway_plug_of(m, gateway, service, installed=ADAPTERS):
+    """The GatewayPlug of a cluster gateway binding whose data-plane Service is service ((name, ports)) from the first
+    installed adapter that applies to m and declares a gateway plug (its cloud's provider adapter), or None."""
+    hook = next((a.gateway_plug for a in installed if a.gateway_plug and a.applies and a.applies(m)), None)
+    return hook(m, gateway, service) if hook else None
+
+
 def secret_delivery_of(scheme, installed=ADAPTERS):
     """The SecretDelivery of the installed adapter owning a ref-uri scheme, or None."""
     return next((a.secret_delivery[scheme] for a in installed if a.secret_delivery and scheme in a.secret_delivery),
@@ -214,4 +226,6 @@ def services(installed=ADAPTERS):
                     endpoints=tuple(e for a in installed for e in a.endpoints),
                     listeners=partial(listeners_of, installed=installed),
                     workload_identity=partial(workload_identity_of, installed=installed),
-                    secret_delivery=partial(secret_delivery_of, installed=installed))
+                    secret_delivery=partial(secret_delivery_of, installed=installed),
+                    routes=partial(routes_of, installed=installed),
+                    gateway_plug=partial(gateway_plug_of, installed=installed))

@@ -5,6 +5,7 @@ from opsdir.core.contract import Adapter
 from .checks import check_forgeops
 from .listeners import listeners
 from .render import TARGETS, applies, render
+from .routes import routes
 
 ADAPTER = Adapter(name="forgeops", kind="platform", applies=applies, required_roles=(),
                   render_neutral=None, render_env=render, checks=(check_forgeops,), ref_schemes=(),
@@ -13,4 +14,4 @@ ADAPTER = Adapter(name="forgeops", kind="platform", applies=applies, required_ro
                           "workloads run on Kubernetes",
                   neutral_label=None, vocabulary={}, schema=None, formats=(("forgeops/*", "yaml"),), products=(),
                   secret_patterns=(), importers=(), profile_terms=None, access=None, render_targets=TARGETS,
-                  listeners=listeners)
+                  listeners=listeners, routes=routes)

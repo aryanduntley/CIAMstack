@@ -10,6 +10,7 @@ the policy's health probe, idle timeout and source-address affinity. Pure.
 Known limits: Azure's WAF exclusions apply to every path, not only the endpoint kind named; a rate limit keyed by a
 header is grouped by client address; DDoS Network Protection is a plan on the virtual network the landing zone keeps.
 """
+from collections import namedtuple
 from itertools import chain
 
 from opsdir.core.directory import one, rdn_value, values
@@ -37,6 +38,18 @@ WAF_RULE_SETS = {"core-rules": ("Microsoft_DefaultRuleSet", "2.1"),
                  "account-creation-fraud": None}
 EXCLUDED_VARIABLE = {"body": "RequestArgNames", "query": "RequestArgNames", "header": "RequestHeaderNames",
                      "cookie": "RequestCookieNames"}
+
+# Where an Application Gateway sends a service name's traffic: its backend pool's name and addresses, the port they
+# listen on (None: the service name's own port), and when it re-encrypts to a certificate a private CA issued, that CA
+# (an azkv-cert:// reference the gateway trusts as its root; UNBOUND:<what> when the record holds none; None for
+# servers, whose certificates it checks against its own trust). The servers of the service's role, or a cluster's
+# in-cluster gateway.
+Backend = namedtuple("Backend", ("name", "addresses", "port", "trusted_root"), defaults=(None,))
+
+
+def servers_backend(targets):
+    """The Backend of a service name's servers (their private addresses, on the service's ports)."""
+    return Backend("servers", tuple(one(t, "ciamPrivateIp") for t in targets), None)
 
 
 def rate(requests, seconds):
@@ -150,9 +163,33 @@ def _probe(svc, spec, port):
                             ("match", Block((("status_code", ["200-399"]),))))))
 
 
-def gateway_service(m, svc, spec, targets):
-    """An Application Gateway v2 for a service name whose TLS terminates at the edge, its certificate access, its
-    WAF policy, and the DNS record's address; or comments naming what's unbound."""
+def _trusted_root(n, backend, protocol, identity):
+    """(blocks, gateway body, backend settings body) trusting the backend's private CA from Key Vault (read by the
+    gateway's identity, which reads its own certificate there), a comment when the record holds none or the gateway has
+    no identity, nothing for a backend that needs none."""
+    root = backend.trusted_root
+    if protocol != "Https" or root is None:
+        return (), (), ()
+    if not root.startswith("azkv-cert://"):
+        return (), (("#", f"UNBOUND: the CA the backend's certificate chains to, in Key Vault ({root})"),), ()
+    if not identity:
+        return (), (("#", "the backend's CA is read from Key Vault by the gateway's identity, which exists once the "
+                          "service's own certificate is there"),), ()
+    vault, name = root.split("://", 1)[1].split("/", 1)
+    return ((block("data", ["azurerm_key_vault", f"{n}_ca"], [("name", vault), ("resource_group_name", RG)]),
+             block("resource", ["azurerm_role_assignment", f"{n}_gateway_ca"], [
+                 ("scope", ref(f"data.azurerm_key_vault.{n}_ca.id")),
+                 ("role_definition_name", "Key Vault Secrets User"),
+                 ("principal_id", ref(f"azurerm_user_assigned_identity.{n}_gateway.principal_id"))])),
+            (("trusted_root_certificate", Block((("name", "backend-ca"), ("key_vault_secret_id", ref(
+                f'"${{data.azurerm_key_vault.{n}_ca.vault_uri}}secrets/{name}"'))))),),
+            (("trusted_root_certificate_names", ["backend-ca"]),))
+
+
+def gateway_service(m, svc, spec, backend):
+    """An Application Gateway v2 for a service name whose TLS terminates at the edge, sending to a Backend (its
+    servers, or a cluster's gateway), its certificate access, its WAF policy, and the DNS record's address; or comments
+    naming what's unbound."""
     n, ip = tf_name(rdn_value(svc)), one(svc, "ciamFrontendIp")
     ports = tuple(values(svc, "ciamPort"))
     subnets = by_role(m, EDGE_SUBNET)
@@ -163,7 +200,8 @@ def gateway_service(m, svc, spec, targets):
     policy, exact = tls_policy(TLS_POLICIES, spec.tls_min, spec.tls_profile)
     access, certificate, identity = _certificate(m, n, spec)
     waf = inspected(spec) and not spec.cdn          # with a CDN in front, the CDN inspects
-    backend = "Https" if spec.mode == "reencrypt" else "Http"
+    protocol = "Https" if spec.mode == "reencrypt" else "Http"
+    trust_blocks, trust, trust_settings = _trusted_root(n, backend, protocol, bool(access))
     sku = "WAF_v2" if waf else "Standard_v2"
     body = (
         ("name", f"agw-ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("resource_group_name", RG), ("location", LOC),
@@ -174,18 +212,18 @@ def gateway_service(m, svc, spec, targets):
         ("gateway_ip_configuration", Block((("name", "gateway"), ("subnet_id", subnet)))),
         *_frontend(svc, n, ip, subnet),
         *(("frontend_port", Block((("name", f"port-{p}"), ("port", int(p))))) for p in ports),
-        ("backend_address_pool", Block((("name", "servers"),
-                                        ("ip_addresses", [one(t, "ciamPrivateIp") for t in targets])))),
+        ("backend_address_pool", Block((("name", backend.name), ("ip_addresses", list(backend.addresses))))),
         *chain.from_iterable((
             ("backend_http_settings", Block((
-                ("name", f"servers-{p}"), ("port", int(p)), ("protocol", backend),
+                ("name", f"{backend.name}-{p}"), ("port", int(backend.port or p)), ("protocol", protocol),
                 ("cookie_based_affinity", "Enabled" if spec.stickiness == "cookie" else "Disabled"),
                 *((("#", f"{spec.stickiness} affinity isn't offered by Application Gateway"),)
                   if spec.stickiness == "source-ip" else ()),
                 ("request_timeout", spec.idle_timeout or 30),
-                *((("host_name", one(svc, "ciamFqdn")),) if backend == "Https" else ()),
+                *((("host_name", one(svc, "ciamFqdn")),) if protocol == "Https" else ()),
                 *((("#", "Application Gateway v2 validates the servers' certificates (chain and name)"),)
-                  if backend == "Https" and spec.backend_validation == "none" else ()),
+                  if protocol == "Https" and spec.backend_validation == "none" else ()),
+                *trust_settings,
                 ("probe_name", f"health-{p}"),
                 *((("connection_draining", Block((("enabled", True), ("drain_timeout_sec", spec.drain)))),)
                   if spec.drain else ())))),
@@ -196,10 +234,10 @@ def gateway_service(m, svc, spec, targets):
                                        certificate[0][0] == "ssl_certificate" else ())))),
             ("request_routing_rule", Block((("name", f"route-{p}"), ("priority", 100 + i), ("rule_type", "Basic"),
                                             ("http_listener_name", f"listener-{p}"),
-                                            ("backend_address_pool_name", "servers"),
-                                            ("backend_http_settings_name", f"servers-{p}")))))
+                                            ("backend_address_pool_name", backend.name),
+                                            ("backend_http_settings_name", f"{backend.name}-{p}")))))
             for i, p in enumerate(ports)),
-        *certificate,
+        *certificate, *trust,
         ("ssl_policy", Block((("policy_type", "Predefined"), ("policy_name", policy),
                               *((("#", f"nearest policy to TLS {spec.tls_min} {spec.tls_profile}"),)
                                 if not exact else ())))),
@@ -209,7 +247,7 @@ def gateway_service(m, svc, spec, targets):
     public = (block("data", ["azurerm_public_ip", n], [("name", one(svc, "ciamProviderRef")),
                                                        ("resource_group_name", RG)]),) \
         if not (ip and is_private(ip)) else ()
-    return (*public, *access, *((waf_policy(m, n, spec),) if waf else ()),
+    return (*public, *access, *trust_blocks, *((waf_policy(m, n, spec),) if waf else ()),
             *ddos_note(spec), block("resource", ["azurerm_application_gateway", n], list(body)))
 
 

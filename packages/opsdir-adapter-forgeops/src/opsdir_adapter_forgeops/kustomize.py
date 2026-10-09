@@ -16,6 +16,7 @@ from opsdir.core.interchange.yaml_text import dump
 from opsdir.core.manifest import header
 from opsdir_adapter_kubernetes.kits import split_image
 from opsdir_adapter_kubernetes.render import service_account_of
+from .routes import gateway_fronted
 from .components import ds_servers, idm_ds_env, image_of, ingress_hosts, pod_labels, replicas, resources, storage, \
     workload_of
 from .release import COMPONENTS, IDENTITY_PLATFORM, KUSTOMIZE, TOOLING_IMAGES, VERSION
@@ -65,6 +66,17 @@ def _storage_ops(m, p, c):
             *([{"op": "add", "path": f"{at}/storageClassName", "value": storage_class}] if storage_class else [])]
 
 
+def _ingress_patch(m, c, host):
+    """The patch of a component's Ingress: deleted when a cluster gateway serves its chart's roles (its routes are
+    the gateway's), else its host set."""
+    if gateway_fronted(m, c.chart):
+        return {"patch": dump({"$patch": "delete", "apiVersion": "networking.k8s.io/v1", "kind": "Ingress",
+                               "metadata": {"name": c.name}})}
+    return {"target": {**INGRESS, "name": c.name},
+            "patch": dump([{"op": "replace", "path": "/spec/rules/0/host", "value": host},
+                           {"op": "replace", "path": "/spec/tls/0/hosts", "value": [host]}])}
+
+
 def component_kustomization(m, services, p, c):
     """One component's overlay kustomization: its base, image, pod-template labels, and patches for what the record
     holds."""
@@ -72,10 +84,7 @@ def component_kustomization(m, services, p, c):
     host = _host(p, c)
     patches = [*([{"patch": dump(workload)}] if workload else []),
                *([{"target": {"kind": c.kind, "name": c.name}, "patch": dump(ops)}] if ops else []),
-               *([{"target": {**INGRESS, "name": c.name},
-                   "patch": dump([{"op": "replace", "path": "/spec/rules/0/host", "value": host},
-                                  {"op": "replace", "path": "/spec/tls/0/hosts", "value": [host]}])}]
-                 if c.ingress else [])]
+               *([_ingress_patch(m, c, host)] if c.ingress else [])]
     labels = pod_labels(m, services, p, c.name)
     return {**KUSTOMIZATION, "resources": [f"../../../base/{c.base}"],
             "images": [kustomize_image(c.image, image_of(m, p, c.name))],

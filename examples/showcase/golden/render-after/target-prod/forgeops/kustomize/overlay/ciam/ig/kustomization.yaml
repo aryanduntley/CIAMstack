@@ -33,16 +33,9 @@ patches:
                 memory: "2Gi"
               limits:
                 memory: "2Gi"
-- target:
-    group: networking.k8s.io
-    version: v1
+- patch: |
+    "$patch": delete
+    apiVersion: networking.k8s.io/v1
     kind: Ingress
-    name: ig
-  patch: |
-    - op: replace
-      path: /spec/rules/0/host
-      value: apps.example-aero.test
-    - op: replace
-      path: /spec/tls/0/hosts
-      value:
-      - apps.example-aero.test
+    metadata:
+      name: ig

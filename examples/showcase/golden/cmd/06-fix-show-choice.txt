@@ -13,6 +13,14 @@ Choose one (--option):
   am-keystore: `am-keystore` (azkv://kv-ciam-prod/am-keystore in target/prod)
       modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
           replace pingfedCredentialRole: am-keystore
+  ciam-edge-tls-cert: `ciam-edge-tls-cert` (azkv://kv-ciam-prod/ciam-edge-tls-cert in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: ciam-edge-tls-cert
+      risk: source/prod binds no `ciam-edge-tls-cert`: its render then lacks the secret.
+  ciam-edge-tls-key: `ciam-edge-tls-key` (azkv://kv-ciam-prod/ciam-edge-tls-key in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: ciam-edge-tls-key
+      risk: source/prod binds no `ciam-edge-tls-key`: its render then lacks the secret.
   ds-deployment-id: `ds-deployment-id` (azkv://kv-ciam-prod/ds-deployment-id in target/prod)
       modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
           replace pingfedCredentialRole: ds-deployment-id
