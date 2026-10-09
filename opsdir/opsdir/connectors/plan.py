@@ -25,6 +25,7 @@ from ..core.findings import (Fix, bindings_container, findings, merge_findings, 
                              templated_entry)
 from ..core.naming import env_label
 from ..core.overlays import override_differences
+from ..domains.compute.workloads import placed_on_kubernetes
 from ..domains.directory.domain import consumers_of_role
 from ..domains.governance.domain import display_name, operator
 from ..domains.pki.naming import CERTIFICATES
@@ -134,9 +135,11 @@ def _local(d, b):
 
 
 def _check_roles(ctx):
-    """Every role bound in the source must be bound in the target (except bindings local to the source's cloud); each
-    one it lacks offers the fix binding it like the source does, the target's own values given."""
-    src_roles = {one(b, "ciamBindingRole") for b in ctx.src.bindings if not _local(ctx.d, b)}
+    """Every role bound in the source must be bound in the target (except bindings local to the source's cloud, and
+    those placing servers of a role the target runs on Kubernetes); each one it lacks offers the fix binding it like
+    the source does, the target's own values given."""
+    src_roles = {one(b, "ciamBindingRole") for b in ctx.src.bindings
+                 if not _local(ctx.d, b) and not placed_on_kubernetes(ctx.dst, b)}
     dst_roles = {one(b, "ciamBindingRole") for b in ctx.dst.bindings}
     return merge_findings([*(_missing_role(ctx, r) for r in sorted(src_roles - dst_roles)),
                            findings(ok=[f"New in {ctx.dst.label}: `{r}`." for r in sorted(dst_roles - src_roles)])])

@@ -30,7 +30,8 @@ From Terraform state (terraform.tfstate, format version 4), managed resources an
                                                  template's image, instance type and whether the metadata service
                                                  requires tokens (http_tokens required: IMDSv2)
   aws_eks_cluster (+ aws_eks_node_group,     -> cluster (kind cluster, ciamCluster): version, add-ons, node pools
-    aws_eks_addon)                               (name: instance types, min-max), zones of its subnets
+    aws_eks_addon)                               (name: instance types, min-max), zones of its subnets, the
+                                                 subnets its nodes sit in (its node groups', else its own)
   aws_sesv2_email_identity,                   -> sending identity (kind sending, ciamSendingIdentity) for a domain: DKIM
     aws_ses_domain_identity (+ the domain's     verified (DKIM signing status SUCCESS), SPF authorizing SES (include:
     Route 53 TXT records)                        amazonses.com) and the DMARC policy, from the domain's TXT records
@@ -359,13 +360,17 @@ def _clusters(found):
     def cluster(c):
         name = c.get("name")
         subnets = [s for v in blocks(c.get("vpc_config")) for s in v.get("subnet_ids") or ()]
+        nodes = [s for n in of_types(found, "aws_eks_node_group") if n.get("cluster_name") == name
+                 for s in n.get("subnet_ids") or ()]
         return resource("cluster", c.get("arn") or name, {
             "ciamClusterVersion": c.get("version"),
             "ciamClusterAddon": sorted(f"{a.get('addon_name')} {a.get('addon_version') or ''}".strip()
                                        for a in of_types(found, "aws_eks_addon") if a.get("cluster_name") == name),
             "ciamNodePool": sorted(pool(n) for n in of_types(found, "aws_eks_node_group")
                                    if n.get("cluster_name") == name),
-            "ciamSpansZone": _zones_of(subnets, zones)}, name=name, role=cluster_role(_tags(c)), tags=_tags(c))
+            "ciamSpansZone": _zones_of(subnets, zones)},
+            links={"ciamSubnetRole": tuple(dict.fromkeys(nodes or subnets))}, name=name, role=cluster_role(_tags(c)),
+            tags=_tags(c))
     return tuple(cluster(c) for c in of_types(found, "aws_eks_cluster") if c.get("arn") or c.get("name"))
 
 

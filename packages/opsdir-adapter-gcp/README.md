@@ -32,6 +32,14 @@ Not rendered here: networks, subnetworks, DNS managed zones (the landing zone cr
 PingFederate's cluster discovery on Google Cloud: Ping documents no Cloud Storage protocol, so a Google Cloud environment binds `pf-cluster-discovery` with `pingfedDiscoveryProtocol` `DNS_PING` (GKE) or `TCPPING` (VMs) (see the PingFederate adapter).
 
 
+## Kubernetes workloads
+
+For an environment that runs workloads on GKE, the `kubernetes` adapter asks this one how a workload's Kubernetes service account acts as its Google service account and how `gcp-sm://` references reach the cluster (`kubernetes.py`):
+
+- **Workload Identity Federation**: annotation `iam.gke.io/gcp-service-account`, the identity binding's provider ref when it is an email, else `<name>@<project>.iam.gserviceaccount.com` with the cloud's `ciamAccountRef`. The platform's Terraform grants each Kubernetes service account that acts as it `roles/iam.workloadIdentityUser` on the Google service account (member `serviceAccount:<project>.svc.id.goog[<namespace>/<name>]`, the project the cluster binding's provider ref names, else the cloud's).
+- **External Secrets Operator**: a SecretStore per project (and location, for regional secrets) with provider `gcpsm` and `auth.workloadIdentity` naming the cluster the workload runs in (from its `ciamCluster` provider ref, `projects/<p>/locations/<l>/clusters/<name>`; `UNBOUND` otherwise) and the workload's service account; `remoteRef` the secret's name, version `latest`.
+- **Secrets Store CSI driver** (Google provider, provider `gcp`): each secret's `.../versions/latest` under its alias. GKE's managed Secret Manager add-on uses its own driver and provider (`gke`); this renders for the upstream driver.
+
 ## Planner checks
 
 - `check_boundary`: the Google Cloud services the target uses, named as Google's Assured Workloads supported-products page names them (Compute Engine, Virtual Private Cloud (VPC), Cloud Load Balancing, Cloud SQL, Cloud Storage, Persistent Disk, Cloud KMS, Secret Manager, Cloud Logging, Cloud Monitoring, Pub/Sub, ...; footnote markers match), checked against the in-scope list of the authorization the target relies on.

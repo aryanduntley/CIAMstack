@@ -28,7 +28,9 @@ STATE = _state(
         "workload_identity_enabled": True, "oidc_issuer_enabled": True, "oms_agent": [],
         "key_vault_secrets_provider": [{"secret_rotation_enabled": True}],
         "default_node_pool": [{"name": "system", "vm_size": "Standard_D2s_v5", "min_count": 2, "max_count": 3,
-                               "zones": ["1", "2"]}], "tags": {"BindingRole": "k8s"}}),
+                               "zones": ["1", "2"],
+                               "vnet_subnet_id": f"{RG}/Microsoft.Network/virtualNetworks/vnet-ciam/subnets/aks"}],
+        "tags": {"BindingRole": "k8s"}}),
     ("azurerm_kubernetes_cluster_node_pool", "ds", {"kubernetes_cluster_id": AKS, "name": "ds",
                                                    "vm_size": "Standard_E4s_v5", "node_count": 3, "zones": ["3"]}))
 
@@ -54,3 +56,4 @@ def test_an_aks_cluster_with_its_pools_and_enabled_addons():
                                               "workload-identity"),
                          "ciamNodePool": ("ds: Standard_E4s_v5, 3-3", "system: Standard_D2s_v5, 2-3"),
                          "ciamSpansZone": ("1", "2", "3")}
+    assert aks.links == {"ciamSubnetRole": ("vnet-ciam/aks",)}     # the subnets its pools' nodes sit in

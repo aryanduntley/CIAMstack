@@ -11,6 +11,7 @@ from opsdir.connectors.access import access_check, access_model
 from opsdir.domains.access.grants import covered, escalating, grant_of, granted, wildcard
 from opsdir.domains.access.naming import PERMISSION_SETS, PRINCIPALS
 from opsdir.domains.access.workloads import identity_of, workload_identities
+from opsdir.domains.compute.naming import WORKLOADS
 import mini_estate
 from support import REGISTRY, build_directory
 
@@ -42,7 +43,7 @@ def _binding(env, cn, oc, role, attrs):
 
 
 def _record(alpha_grants, beta_grants, permits=("read-secret app-password", "read-secret unbound-secret"),
-            beta_attrs=None):
+            beta_attrs=None, extra=()):
     entries = (
         "dn: ou=owners,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: owners\n",
         f"dn: {OPS}\nobjectClass: top\nobjectClass: ciamParty\ncn: ops\nciamOwnerKind: team\n",
@@ -61,7 +62,8 @@ def _record(alpha_grants, beta_grants, permits=("read-secret app-password", "rea
         *(_binding(env, "identity-app", "ciamIdentityBinding", "identity-app",
                    {"ciamProviderRef": f"id-{cloud}", **({"ciamGrant": grants} if grants else {}), **extra})
           for env, cloud, grants, extra in ((ALPHA, "alpha", alpha_grants, {}),
-                                            (BETA, "beta", beta_grants, beta_attrs or {}))))
+                                            (BETA, "beta", beta_grants, beta_attrs or {}))),
+        *extra)
     return build_directory(REGISTRY, tuple(parse(mini_estate.LDIF + "\n" + "\n".join(entries))))
 
 
@@ -126,6 +128,24 @@ def test_the_workload_identities_an_environment_renders():
     assert w.notes == ("read-secret unbound-secret: role `unbound-secret` has no binding in this environment",)
     assert workload_identities(env_model(d, "beta/prod"), MODEL) == ()          # no server of role web there
     assert identity_of((w,), "web") == w and identity_of((w,), "db") is None
+
+
+def test_kubernetes_service_accounts_assume_the_identity_where_the_role_runs_there():
+    pods = (f"dn: {WORKLOADS}\nobjectClass: top\nobjectClass: organizationalUnit\nou: workloads\n",
+            *(_entry(f"cn={name},{WORKLOADS}", "ciamWorkload",
+                     {"cn": name, "ciamWorkloadKind": "deployment", "ciamTargetRole": "web", "ciamNamespace": "apps",
+                      "ciamClusterRole": "k8s", "ciamWorkloadRole": f"{name}-workload",
+                      "ciamIdentityRole": "identity-app",
+                      **({"ciamServiceAccount": "app"} if name == "web" else {})}) for name in ("web", "web-jobs")),
+            _binding(BETA, "k8s", "ciamCluster", "k8s", {"ciamProviderRef": "cluster-beta"}),
+            *(_binding(BETA, name, "ciamWorkloadBinding", f"{name}-workload", {}) for name in ("web", "web-jobs")))
+    d = _record((), (), extra=pods)
+    (alpha,) = workload_identities(env_model(d, "alpha/prod"), MODEL)
+    assert (alpha.servers, alpha.pods) == (True, ())                          # alpha runs web on servers only
+    (beta,) = workload_identities(env_model(d, "beta/prod"), MODEL)
+    assert beta.servers is False and beta.name == "id-beta"
+    assert [(p.namespace, p.service_account, p.cluster.dn.split(",")[0]) for p in beta.pods] == [
+        ("apps", "app", "cn=k8s"), ("apps", "web-jobs", "cn=k8s")]
 
 
 def test_a_denied_target_permission_blocks_and_an_unknown_one_is_to_verify():

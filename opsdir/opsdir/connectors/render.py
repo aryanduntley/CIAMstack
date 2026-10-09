@@ -34,11 +34,14 @@ def _env_files(a, m, found, targets):
 def render_parts(d, spec, installed=ADAPTERS, wanted=None):
     """(EnvModel as the environment sees the record (its overrides applied), applicable adapters,
     environment-neutral files, environment-specific files, the render targets chosen); wanted: {adapter: (target,
-    ...)} (default: every target)."""
+    ...)} (default: every target). No provider adapter is needed: an environment whose infrastructure no installed
+    adapter renders (a Kubernetes cluster on the operator's own hardware) still gets what its other adapters render;
+    one that no installed adapter renders anything for is refused."""
     shared, adapters = environment(d, spec, installed)
     m = as_seen(shared)
-    if not any(a.kind == "provider" for a in adapters):
-        raise SystemExit(f"no renderer for provider {m.provider}")
+    if not any(a.render_neutral or a.render_env for a in adapters):
+        raise SystemExit(f"nothing renders {m.label}: no installed adapter that renders applies to it (provider "
+                         f"{m.provider})")
     targets = chosen_targets(adapters, wanted)
     neutral = {p: text for a in adapters if a.render_neutral for p, text in a.render_neutral(m.d).items()}
     found = services(installed)

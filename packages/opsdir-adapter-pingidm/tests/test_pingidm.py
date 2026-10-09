@@ -14,7 +14,7 @@ from opsdir.connectors.fixes import chosen
 from opsdir.connectors.importing import preview_import
 from opsdir.connectors.registry import ADAPTERS, core_fragments
 from opsdir.core.contract import PlanContext
-from opsdir.core.directory import get, one, values
+from opsdir.core.directory import get, make_directory, one, values
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
 from opsdir.core.standard import registry_ldif
@@ -85,11 +85,14 @@ def after():
     return d, notices
 
 
+NO_RECORDS = make_directory((), {}, ())        # an environment's directory with nothing in it
+
+
 def test_registered_and_chosen_from_the_products_on_the_servers():
     assert ADAPTER in ADAPTERS and ADAPTER.schema.arc == "1.3.6.1.4.1.32473.3.2"
     server = lambda v: SimpleNamespace(attrs={"ciamProductVersion": (v,)})   # noqa: E731
-    assert ADAPTER.applies(SimpleNamespace(servers=(server("PingIDM 7.5.0"),)))
-    assert not ADAPTER.applies(SimpleNamespace(servers=(server("PingAM 7.5.1"),)))
+    assert ADAPTER.applies(SimpleNamespace(servers=(server("PingIDM 7.5.0"),), d=NO_RECORDS))
+    assert not ADAPTER.applies(SimpleNamespace(servers=(server("PingAM 7.5.1"),), d=NO_RECORDS))
 
 
 def test_a_connector_to_the_directory_names_its_role_and_consumer_and_withholds_its_credentials(after):

@@ -14,6 +14,7 @@ from ...core.contract import Listener
 from ...core.directory import is_kind, one, rdn_value, values
 from ...core.environment import of_class, one_role, servers_with_role, subnet_of
 from ...core.network import covers
+from ..compute.workloads import cluster_subnets, kubernetes_roles
 from .naming import ACL_RULE, EPHEMERAL
 
 Flow = NamedTuple("Flow", [("listener", object), ("source", str), ("cidrs", tuple)])
@@ -23,27 +24,62 @@ PORTS_HEADERS = ("environment", "role", "port", "protocol", "purpose", "from", "
 OPEN, UNCOVERED, BLOCKED, UNCHECKED = "open", "no rule", "blocked by ACL", "not checked"
 
 
+def _subnets(m, role):
+    """The subnets environment m runs a server role in: its servers', then its clusters' when it runs on Kubernetes."""
+    found = (*(subnet_of(m, s) for s in servers_with_role(m, role)), *cluster_subnets(m, role))
+    return tuple({s.dn: s for s in found if s is not None}.values())
+
+
 def role_cidrs(m, role):
-    """The ranges of the subnets environment m's servers of a role sit in (sorted, without repeats)."""
-    return tuple(sorted({one(subnet_of(m, s), "ciamCidr") for s in servers_with_role(m, role)
-                         if subnet_of(m, s) is not None and one(subnet_of(m, s), "ciamCidr")}))
+    """The ranges of the subnets environment m runs a server role in: its servers' and, when it runs on Kubernetes,
+    its clusters' nodes' (sorted, without repeats)."""
+    return tuple(sorted({one(s, "ciamCidr") for s in _subnets(m, role) if one(s, "ciamCidr")}))
 
 
 def _subnet_roles(m, role):
-    """The binding roles of the subnets environment m's servers of a role sit in."""
-    return {one(subnet_of(m, s), "ciamBindingRole") for s in servers_with_role(m, role) if subnet_of(m, s) is not None}
+    """The binding roles of the subnets environment m runs a server role in."""
+    return {one(s, "ciamBindingRole") for s in _subnets(m, role)}
+
+
+def moved_ranges(src, dst, role):
+    """The ranges of environment dst's subnets bound like those src runs a server role in (the same binding role)
+    when nothing runs in them in dst: where the role ran, or was to run, before it moved (to Kubernetes, to another
+    subnet). Sorted, without repeats."""
+    roles = _subnet_roles(src, role)
+    counterparts = {one(b, "ciamCidr") for b in dst.bindings if is_kind(dst.d, b, "ciamSubnetBinding")
+                    and one(b, "ciamBindingRole") in roles and one(b, "ciamCidr")}
+    running = {*(one(s, "ciamServerRole") for s in dst.servers), *kubernetes_roles(dst)}
+    used = {c for r in running for c in role_cidrs(dst, r)}
+    return tuple(sorted(counterparts - used))
+
+
+def server_listeners(listeners):
+    """The listeners that apply on servers (not a deployment kit's container ports): what firewall rules admit."""
+    return tuple(lst for lst in listeners if lst.on != "kubernetes")
+
+
+def pod_listeners(listeners, role):
+    """What a server role's pods listen on: the container ports a deployment kit declares for it, else the product's
+    listeners that apply wherever it runs."""
+    kit = tuple(lst for lst in listeners if lst.server_role == role and lst.on == "kubernetes")
+    return kit or tuple(lst for lst in listeners if lst.server_role == role and lst.on is None)
 
 
 def flows(m, listeners):
-    """The flows environment m needs: for each listener whose role has servers here, one per kind of source; a server
-    role source only when it has servers here too (peers only when the role has more than one)."""
+    """The flows environment m's firewall rules must let through: for each listener on servers whose role has servers
+    here, one per kind of source; a server role source only when it runs here too, on servers or on Kubernetes (from
+    its clusters' subnets); peers only when the role has more than one server. A role's pods are reached through the
+    cluster's network policies, not firewall rules."""
+    here = set(kubernetes_roles(m))
+
     def sources(listener):
         alone = len(servers_with_role(m, listener.server_role)) < 2
         named = (listener.server_role if p == "peers" else p for p in listener.peers if not (p == "peers" and alone))
         return tuple(dict.fromkeys(named))
     return tuple(Flow(listener, src, () if src in ("clients", "admin") else role_cidrs(m, src))
-                 for listener in listeners if servers_with_role(m, listener.server_role)
-                 for src in sources(listener) if src in ("clients", "admin") or servers_with_role(m, src))
+                 for listener in server_listeners(listeners) if servers_with_role(m, listener.server_role)
+                 for src in sources(listener)
+                 if src in ("clients", "admin") or servers_with_role(m, src) or src in here)
 
 
 def _rules_for(m, listener):
@@ -93,7 +129,7 @@ def stray_ports(m, listeners, fw):
     declares and no service name sends traffic to (in the rule's order; () for a role nothing declares)."""
     if one(fw, "ciamTargetRole") not in {lst.server_role for lst in listeners}:
         return ()
-    declared = {(lst.server_role, str(lst.port), lst.protocol) for lst in listeners} | \
+    declared = {(lst.server_role, str(lst.port), lst.protocol) for lst in server_listeners(listeners)} | \
         {(one(s, "ciamTargetRole"), p, "tcp") for s in of_class(m, "ciamServiceName") for p in values(s, "ciamPort")}
     return tuple(p for p in values(fw, "ciamPort")
                  if (one(fw, "ciamTargetRole"), p, one(fw, "ciamProtocol") or "tcp") not in declared)

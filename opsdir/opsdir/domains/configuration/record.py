@@ -18,6 +18,7 @@ from ...core.capture import Captured, Slot, attempt_capture, render_captured
 from ...core.directory import children, is_a, make_entry, one
 from ...core.environment import one_role
 from ...core.secrets import text_concerns, withheld
+from ..compute.workloads import kubernetes_roles
 from ..network.proxies import derived
 from .naming import CONFIG_FILES, file_dn, setting_dn, setting_rdn
 
@@ -167,8 +168,9 @@ def captured_files(d):
 
 
 def deployed_files(d, m):
-    """The captured files environment m receives: those whose deploy role runs on its servers, or that name none."""
-    roles = {one(s, "ciamServerRole") for s in m.servers}
+    """The captured files environment m receives: those whose deploy role it runs, on its servers or on Kubernetes
+    (the file goes into the image or the pod's configuration there), or that name none."""
+    roles = {*(one(s, "ciamServerRole") for s in m.servers), *kubernetes_roles(m)}
     return tuple(f for f in captured_files(d) if one(f, "ciamTargetRole") in (None, *roles))
 
 

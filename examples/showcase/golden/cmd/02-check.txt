@@ -17,6 +17,9 @@ target/prod   directory            pingds        ok (installed 0.1.0)
 target/prod   federation           pingfederate  ok (installed 0.1.0)
 target/prod   gateway              pinggateway   ok (installed 0.1.0)
 target/prod   identity-management  pingidm       ok (installed 0.1.0)
+target/prod   kit-forgeops         forgeops      ok (installed 0.1.0)
+target/prod   kit-ping-devops      ping-devops   ok (installed 0.1.0)
+target/prod   platform             kubernetes    ok (installed 0.1.0)
 target/prod   provider             azure         ok (installed 0.1.0)
 source/stage  -                    -             overlay of source/prod: inherits the bindings, stack, required roles and overrides it doesn't set itself
 source/stage  access               pingam        ok (installed 0.1.0)
@@ -25,7 +28,7 @@ source/stage  federation           pingfederate  ok (installed 0.1.0)
 source/stage  gateway              pinggateway   ok (installed 0.1.0)
 source/stage  identity-management  pingidm       ok (installed 0.1.0)
 source/stage  provider             aws           ok (installed 0.1.0)
-(25 rows)
+(28 rows)
 0 problem(s)
 prerequisite pending: aws-regions (aws): `opsdir import aws/regions --run`, or run `aws ec2 describe-regions --all-regions --output json > regions.json` and import its output
 prerequisite pending: aws-quotas (aws): `opsdir import aws/quotas --run`, or run `aws sts get-caller-identity --output json > quotas/caller.json; aws service-quotas list-aws-default-service-quotas --service-code ec2 --region us-east-1 --output json > quotas/us-east-1/ec2-defaults.json; aws service-quotas list-service-quotas --service-code ec2 --region us-east-1 --output json > quotas/us-east-1/ec2.json; aws service-quotas list-aws-default-service-quotas --service-code rds --region us-east-1 --output json > quotas/us-east-1/rds-defaults.json; aws service-quotas list-service-quotas --service-code rds --region us-east-1 --output json > quotas/us-east-1/rds.json` and import its output

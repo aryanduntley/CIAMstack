@@ -22,7 +22,8 @@ def _directory():
 
 
 def test_a_product_is_recognized_from_the_servers_it_runs_on():
-    m = SimpleNamespace(servers=(make_entry("cn=a,dc=x", ["ciamServer"], {"ciamProductVersion": ["SomeDS 2.0"]}),))
+    m = SimpleNamespace(servers=(make_entry("cn=a,dc=x", ["ciamServer"], {"ciamProductVersion": ["SomeDS 2.0"]}),),
+                        d=make_directory((), {}, ()))
     assert runs(PRODUCT, m) and not runs(PRODUCT._replace(name="Other"), m)
 
 

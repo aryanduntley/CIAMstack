@@ -42,6 +42,9 @@ volume:volume-ds-data:ciamVolumeSizeGb              Volumes            1        
 volume:volume-ds-data:ciamSnapshotPolicyRole        Volumes            2 (2 inputs)  1             Snapshot `volume-ds-data` in target/prod with a policy like `snapshots-daily` of source/prod
 backup:volume-ds-data                               Backups            1 (4 inputs)  2             Back up `volume-ds-data` in target/prod with a plan like `backup-daily` of source/prod
 recovery:repoint:standby/prod                       Disaster recovery  2             1             Re-point standby/prod at target/prod
+ports:ds:1636:from-idm                              Ports              1             1             Replace 10.60.6.0/24 with 10.60.12.0/22 (`idm`) in rule `fw-idm-sync` (ds on tcp 1636, PingIDM connector ldap)
+stray-rule:fw-pf-cluster                            Ports              1             1             Close rule `fw-pf-cluster` in target/prod
+stray-rule:fw-pf-cluster-admin                      Ports              1             1             Close rule `fw-pf-cluster-admin` in target/prod
 egress-proxy:pf-engine:bin/run.properties           Egress proxy       6             1             Link `http.proxyHost`, `http.proxyPort`, `https.proxyHost`, `https.proxyPort`, `http.nonProxyHosts` in `pf-engine`'s bin/run.properties (run.properties) to `egress-proxy`'s proxy
-(43 rows)
+(46 rows)
 exit 0

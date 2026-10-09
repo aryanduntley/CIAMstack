@@ -26,7 +26,7 @@ DOMAIN_GROUP = "opsdir.domains"
 ADAPTER_GROUP = "opsdir.adapters"
 FORMAT_GROUP = "opsdir.formats"
 FORMAT_ATTRIBUTE = "ciamFormat"                          # its values are the registered formats' names
-KIND_ORDER = ("provider", "product", "host", "delivery", "secret-store", "compliance")   # providers first: their files lead a render
+KIND_ORDER = ("provider", "platform", "product", "host", "delivery", "secret-store", "compliance")   # providers first: their files lead a render
 ENVIRONMENTS = branch("environments")
 CONNECTOR_SQL = (Path(__file__).resolve().parent / "sql" / "connectors.sql",)
 
@@ -190,7 +190,28 @@ def secret_command(uri, installed=ADAPTERS):
     return resolvers[scheme](rest)
 
 
+def listeners_of(m, installed=ADAPTERS):
+    """The ports the installed adapters' products listen on in environment m."""
+    return tuple(lst for a in installed if a.listeners for lst in a.listeners(m))
+
+
+def workload_identity_of(m, binding, installed=ADAPTERS):
+    """The K8sIdentity of an identity binding from the first installed adapter that applies to m and declares workload
+    identity (its cloud's provider adapter), or None."""
+    hook = next((a.workload_identity for a in installed if a.workload_identity and a.applies and a.applies(m)), None)
+    return hook(m, binding) if hook else None
+
+
+def secret_delivery_of(scheme, installed=ADAPTERS):
+    """The SecretDelivery of the installed adapter owning a ref-uri scheme, or None."""
+    return next((a.secret_delivery[scheme] for a in installed if a.secret_delivery and scheme in a.secret_delivery),
+                None)
+
+
 def services(installed=ADAPTERS):
     """What connectors provide to adapters while rendering, resolved against the installed adapters."""
     return Services(secret_command=partial(secret_command, installed=installed),
-                    endpoints=tuple(e for a in installed for e in a.endpoints))
+                    endpoints=tuple(e for a in installed for e in a.endpoints),
+                    listeners=partial(listeners_of, installed=installed),
+                    workload_identity=partial(workload_identity_of, installed=installed),
+                    secret_delivery=partial(secret_delivery_of, installed=installed))

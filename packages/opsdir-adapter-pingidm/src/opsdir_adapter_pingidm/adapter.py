@@ -1,6 +1,6 @@
 """PingIDM (ForgeRock IDM) adapter: applies to environments whose servers run PingIDM."""
 from opsdir.core.contract import Adapter
-from opsdir.core.directory import one
+from opsdir.domains.compute.workloads import runs_product
 from .collect import COLLECTORS
 from .checks import check_idm
 from .listeners import listeners
@@ -15,7 +15,7 @@ REQUIRED_ROLES = ("subnet-idm", "idm-admin-password", "idm-keystore")
 
 
 def applies(m):
-    return any(one(s, "ciamProductVersion", "").startswith(PRODUCTS) for s in m.servers)
+    return runs_product(m, PRODUCTS)
 
 
 ADAPTER = Adapter(name="pingidm", kind="product", applies=applies, required_roles=REQUIRED_ROLES,

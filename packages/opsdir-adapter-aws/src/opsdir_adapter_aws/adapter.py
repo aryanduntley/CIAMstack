@@ -7,6 +7,7 @@ from .cli import CLI_INVENTORY
 from .collect import COLLECTORS
 from .cloudformation import CLOUDFORMATION
 from .inventory import TERRAFORM_STATE
+from .kubernetes import SECRET_DELIVERY, workload_identity
 from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
 from .regions import PREREQUISITE, REGIONS
 from .secrets import SECRET_PATTERNS, secretsmanager_command
@@ -29,4 +30,5 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                   secret_patterns=SECRET_PATTERNS,
                   importers=(TERRAFORM_STATE, CLI_INVENTORY, CLOUDFORMATION, REGIONS, QUOTAS),
                   profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE),
-                  collectors=COLLECTORS)
+                  collectors=COLLECTORS,
+                  workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY)

@@ -2,16 +2,22 @@
 
 Takes manifests as files: `kubectl get … -o yaml` (or -o json) output, rendered Helm or Kustomize output, any multi-
 document YAML. Every StatefulSet, Deployment and DaemonSet is one workload (ciamWorkload, the core compute domain): a
-server role run as containers, intent, the same in every environment.
+server role run as containers, intent, the same in every environment. Manifests under <cloud>/<env>/ (an environment
+the record holds) also give that environment's workload binding (ciamWorkloadBinding: how it runs the workload on
+Kubernetes); manifests anywhere else give the intent only, and the notices say so.
 
   role             label or annotation opsdir.io/role, else label app.kubernetes.io/component, else
                    app.kubernetes.io/name, else roles.json beside the manifests ({workload name: role}); without one
                    the workload is named, not imported
   cluster          annotation opsdir.io/cluster-role: the binding role of the cluster it runs in, else `cluster`
-  recorded         namespace, replicas, container images, the storage each replica claims (its first volume claim
-                   template: size and storage class), service account, pod security facts (runAsNonRoot,
-                   readOnlyRootFilesystem, privileged, hostNetwork, hostPID, the namespace's pod-security level),
-                   network policies that select its pods, ingress hosts that reach it through a Service
+  recorded         namespace, service account, pod security facts (runAsNonRoot, readOnlyRootFilesystem,
+                   privileged, hostNetwork, hostPID, the namespace's pod-security level), network policies that select
+                   its pods, ingress hosts that reach it through a Service
+  workload role    annotation opsdir.io/workload-role, else <name>-workload: the binding role of its workload binding
+  binding          (manifests under <cloud>/<env>/) named like the workload under the environment's bindings: each
+                   container's image (container=image), replicas, the main (first) container's CPU and memory
+                   requests and limits, the storage each replica claims (its first volume claim template: size and
+                   storage class)
   identity         when its service account carries a cloud identity (EKS IRSA, Azure workload identity, GKE), the
                    binding role each environment gives it: annotation opsdir.io/identity-role, else <role>-identity
   secrets          the names of the Secrets it reads (env, envFrom, volumes): names only. Secret objects in the
@@ -28,6 +34,7 @@ import yaml
 
 from opsdir.core.contract import Imported, Importer
 from opsdir.core.directory import get, make_entry, merged_attrs, ou_entry
+from opsdir.core.environment import env_dn
 from opsdir.core.naming import rdn_safe
 from opsdir.core.secrets import text_concerns
 from opsdir.core.sources import json_document, parsed
@@ -39,9 +46,11 @@ KINDS = (("StatefulSet", "statefulset"), ("Deployment", "deployment"), ("DaemonS
 ROLE_MAP = "roles.json"
 IDENTITY_ANNOTATIONS = ("eks.amazonaws.com/role-arn", "azure.workload.identity/client-id",
                         "iam.gke.io/gcp-service-account")
-OWNED = ("cn", "ciamWorkloadKind", "ciamTargetRole", "ciamClusterRole", "ciamNamespace", "ciamReplicaCount",
-         "ciamContainerImage", "ciamStorageSize", "ciamStorageClass", "ciamServiceAccount", "ciamIdentityRole",
-         "ciamPodSecurity", "ciamNetworkPolicy", "ciamSecretName", "ciamIngressHost", "ciamRepoPath")
+OWNED = ("cn", "ciamWorkloadKind", "ciamTargetRole", "ciamClusterRole", "ciamNamespace", "ciamWorkloadRole",
+         "ciamServiceAccount", "ciamIdentityRole", "ciamPodSecurity", "ciamNetworkPolicy", "ciamSecretName",
+         "ciamIngressHost", "ciamRepoPath")
+BINDING_OWNED = ("cn", "ciamBindingRole", "ciamContainerImage", "ciamWorkloadReplicas", "ciamCpuRequest",
+                 "ciamCpuLimit", "ciamMemoryRequest", "ciamMemoryLimit", "ciamStorageSize", "ciamStorageClass")
 
 
 def _load_all(text):
@@ -163,18 +172,18 @@ def _identity(o, role, accounts):
         or f"{role}-identity"
 
 
+def workload_role_of(o, name):
+    """The binding role of a workload's workload binding: annotation opsdir.io/workload-role, else <name>-workload."""
+    return _annotations(o).get("opsdir.io/workload-role") or f"{name}-workload"
+
+
 def workload_entry(d, name, path, o, role, context):
     """The ciamWorkload entry for one workload object; context: namespaces, policies, services, ingresses, accounts."""
     dn = workload_dn(name)
-    size, storage_class = _storage(o)
     kind = dict(KINDS)[o.get("kind")]
     owned = {"cn": (name,), "ciamWorkloadKind": (kind,), "ciamTargetRole": (role,),
              "ciamClusterRole": (_annotations(o).get("opsdir.io/cluster-role") or "cluster",),
-             "ciamNamespace": (_namespace(o),),
-             "ciamReplicaCount": (str((o.get("spec") or {}).get("replicas")) if kind != "daemonset"
-                                  and (o.get("spec") or {}).get("replicas") is not None else None,),
-             "ciamContainerImage": tuple(dict.fromkeys(c.get("image") for c in _containers(o) if c.get("image"))),
-             "ciamStorageSize": (size,), "ciamStorageClass": (storage_class,),
+             "ciamNamespace": (_namespace(o),), "ciamWorkloadRole": (workload_role_of(o, name),),
              "ciamServiceAccount": (_pod_spec(o).get("serviceAccountName"),),
              "ciamIdentityRole": (_identity(o, role, context["accounts"]),),
              "ciamPodSecurity": pod_security(o, context["namespaces"]),
@@ -182,6 +191,43 @@ def workload_entry(d, name, path, o, role, context):
              "ciamSecretName": secret_names(o),
              "ciamIngressHost": _hosts(o, context["services"], context["ingresses"]), "ciamRepoPath": (path,)}
     return make_entry(dn, ("top", "ciamObject", "ciamWorkload"), merged_attrs(get(d, dn), owned, OWNED))
+
+
+def _main_resources(o):
+    resources = next(iter(_containers(o)), {}).get("resources") or {}
+    return resources.get("requests") or {}, resources.get("limits") or {}
+
+
+def _quantity(v):
+    return None if v is None else str(v)
+
+
+def binding_entry(d, env, name, o):
+    """Environment env's ciamWorkloadBinding for one workload object: images per container, replicas, the main
+    container's resources, the storage each replica claims."""
+    dn = f"cn={name},ou=bindings,{env}"
+    size, storage_class = _storage(o)
+    requests, limits = _main_resources(o)
+    replicas = (o.get("spec") or {}).get("replicas")
+    owned = {"cn": (name,), "ciamBindingRole": (workload_role_of(o, name),),
+             "ciamContainerImage": tuple(dict.fromkeys(f"{c.get('name')}={c.get('image')}" for c in _containers(o)
+                                                       if c.get("image") and c.get("name"))),
+             "ciamWorkloadReplicas": (str(replicas) if o.get("kind") != "DaemonSet" and replicas is not None
+                                      else None,),
+             "ciamCpuRequest": (_quantity(requests.get("cpu")),), "ciamCpuLimit": (_quantity(limits.get("cpu")),),
+             "ciamMemoryRequest": (_quantity(requests.get("memory")),),
+             "ciamMemoryLimit": (_quantity(limits.get("memory")),),
+             "ciamStorageSize": (size,), "ciamStorageClass": (storage_class,)}
+    return make_entry(dn, ("top", "ciamWorkloadBinding"), merged_attrs(get(d, dn), owned, BINDING_OWNED))
+
+
+def environment_at(d, path):
+    """The environment a manifest's <cloud>/<env>/ folder names, when the record holds it; else None."""
+    parts = path.split("/")
+    if len(parts) < 3 or not all(rdn_safe(p) for p in parts[:2]):
+        return None
+    env = env_dn(f"{parts[0]}/{parts[1]}")
+    return env if get(d, env) is not None else None
 
 
 def entry_names(workloads):
@@ -222,18 +268,26 @@ def read_workloads(files, d, patterns, at=None):
                "accounts": {(_namespace(a), _meta(a).get("name")): a for a in of["ServiceAccount"]}}
     workloads = [(p, o) for p, o in found if o and o.get("kind") in dict(KINDS)]
     placed = [(p, o, n, workload_role(o, roles)) for (p, o), n in zip(workloads, entry_names(workloads))]
-    entries = [workload_entry(d, n, p, o, r, context) for p, o, n, r in placed if r and rdn_safe(n or "")]
+    kept = [(p, o, n, r) for p, o, n, r in placed if r and rdn_safe(n or "")]
+    entries = [workload_entry(d, n, p, o, r, context) for p, o, n, r in kept]
+    bindings = [binding_entry(d, environment_at(d, p), n, o) for p, o, n, r in kept if environment_at(d, p)]
+    unplaced = sorted({p for p, o, n, r in kept if not environment_at(d, p)})
     cron = [(p, o) for p, o in found if o and o.get("kind") == "CronJob"]
     jobs = [cron_job_entry(d, p, o, patterns) for p, o in cron if rdn_safe(f"k8s-{_meta(o).get('name')}")]
     return Imported(
-        containers=(ou_entry(WORKLOADS), *((jobs_container(),) if jobs else ())),
-        groups=(*((e.dn, (e,)) for e in entries), *((e.dn, (e,)) for e, _ in jobs)),
+        containers=(ou_entry(WORKLOADS), *((jobs_container(),) if jobs else ()),
+                    *(ou_entry(b) for b in dict.fromkeys(e.dn.split(",", 1)[1] for e in bindings))),
+        groups=(*((e.dn, (e,)) for e in entries), *((e.dn, (e,)) for e in bindings),
+                *((e.dn, (e,)) for e, _ in jobs)),
         notices=(*(f"{p}: {o.get('kind')} {n}: no role (label opsdir.io/role or app.kubernetes.io/component, or "
                    f"{ROLE_MAP}); not imported" for p, o, n, r in placed if not r),
                  *(f"{p}: {o.get('kind')} {n!r} can't be a record name; not imported" for p, o, n, r in placed
                    if r and not rdn_safe(n or "")),
                  *((f"{len(of['Secret'])} Secret object(s) in the manifests: never read (their values stay in the "
                     "cluster)",) if of["Secret"] else ()),
+                 *((f"{len(unplaced)} manifest file(s) not under <cloud>/<env>/ of an environment the record "
+                    f"holds ({', '.join(unplaced)}): workloads only, no environment's images, replicas, resources "
+                    "or storage",) if unplaced else ()),
                  *(n for _, ns in jobs for n in ns),
                  *(f"not YAML or JSON, not read: {p}" for p, o in found if o is None),
                  *(("no workloads (StatefulSets, Deployments, DaemonSets, CronJobs) in the manifests",)

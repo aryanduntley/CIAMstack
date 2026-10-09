@@ -1,6 +1,6 @@
 """PingFederate adapter: applies to environments whose servers run PingFederate."""
 from opsdir.core.contract import Adapter, SecretPattern
-from opsdir.core.directory import one
+from opsdir.domains.compute.workloads import runs_product
 from .collect import COLLECTORS
 from opsdir_base_oidc.render import FORMATS as OIDC_FORMATS
 from opsdir_base_saml.render import FORMATS as SAML_FORMATS
@@ -22,7 +22,7 @@ REQUIRED_ROLES = ("subnet-pf", "pf-sso-service", "pf-egress", "sso-tls-keystore"
 
 
 def applies(m):
-    return any(one(s, "ciamProductVersion", "").startswith(PRODUCT) for s in m.servers)
+    return runs_product(m, PRODUCT)
 
 
 ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required_roles=REQUIRED_ROLES,

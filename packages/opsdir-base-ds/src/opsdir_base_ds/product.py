@@ -2,7 +2,7 @@
 renderers read. Everything else the lineage has in common (dsconfig, the ACI syntax, replication) is in this base."""
 from typing import Mapping, NamedTuple
 
-from opsdir.core.directory import one
+from opsdir.domains.compute.workloads import runs_product
 
 DsProduct = NamedTuple("DsProduct", [("name", str),                # as servers record it in ciamProductVersion
                                      ("root_dn", str),             # directory administrator's bind DN
@@ -17,5 +17,6 @@ def handler_name(product, record_name):
 
 
 def runs(product, m):
-    """Whether any server of the environment runs this product (its ciamProductVersion starts with the name)."""
-    return any(one(s, "ciamProductVersion", "").startswith(product.name) for s in m.servers)
+    """Whether the environment runs this product (a ciamProductVersion starting with its name), on servers or on
+    Kubernetes."""
+    return runs_product(m, product.name)

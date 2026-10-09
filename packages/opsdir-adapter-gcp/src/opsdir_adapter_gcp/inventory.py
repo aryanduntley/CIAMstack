@@ -30,7 +30,8 @@ alike; resource names (projects/<p>/...) are the provider refs, self links read 
     google_cloudbuild_trigger
   google_compute_(region_)instance_group_     -> compute group: the role its template's labels name, size (autoscaler
     manager (+ autoscaler, template)             min/max else target size), zones, the template's image and type
-  google_container_cluster (+ node pools)     -> cluster: version, enabled add-ons, node pools, zones
+  google_container_cluster (+ node pools)     -> cluster: version, enabled add-ons, node pools, zones, the
+                                                 subnetwork its nodes sit in
   google_pubsub_topic                         -> stream carrier: topic
   google_monitoring_notification_channel      -> alert channel: its type (pagerduty: paging-service, email, pubsub:
                                                  topic, webhook)
@@ -349,8 +350,9 @@ def _clusters(found):
             "ciamClusterAddon": _addons(c),
             "ciamNodePool": sorted(pool(n) for n in of_types(found, "google_container_node_pool")
                                    if resource_id(n.get("cluster")) in (resource_id(c.get("id")), name)),
-            "ciamSpansZone": sorted(c.get("node_locations") or ())}, name=name, role=cluster_role(_tags(c)),
-            tags=_state_labels(c))
+            "ciamSpansZone": sorted(c.get("node_locations") or ())},
+            links={"ciamSubnetRole": resource_id(c.get("subnetwork")) if c.get("subnetwork") else None}, name=name,
+            role=cluster_role(_tags(c)), tags=_state_labels(c))
     return tuple(cluster(c) for c in of_types(found, "google_container_cluster") if c.get("id"))
 
 

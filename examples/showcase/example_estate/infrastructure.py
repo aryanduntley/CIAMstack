@@ -12,6 +12,7 @@ from .access import ACCESS
 from .edge import EDGE, SERVICE_ATTRS
 from .network import NETWORK
 from .observability import MONITORING
+from .compute import KUBERNETES
 from .estate import ACCOUNTS, AUTHORIZED, BILLING_ACCOUNTS, CLASSIFICATION, COSTS, DFARS, ORGANIZATIONS, SECURITY
 from .recovery import STANDBY_INTENT
 
@@ -109,15 +110,20 @@ SOURCE = MappingProxyType({
                 ("ig-1", "ig", "ig-1.aws.internal.example-aero.test", "10.20.10.21", "us-east-1a", "m6i.large", "ami-0c2d3e4f5a6b70123", "subnet-ig-a", IG_V)],
 })
 TARGET = MappingProxyType({
+    # AM, IDM, PingGateway and PingFederate run on AKS here (compute: ForgeOps and ping-devops deploy them); the
+    # directory stays on servers
     "stack": (("provider", "azure"), ("directory", "pingds"), ("federation", "pingfederate"), ("access", "pingam"),
-              ("identity-management", "pingidm"), ("gateway", "pinggateway")),
+              ("identity-management", "pingidm"), ("gateway", "pinggateway"), ("platform", "kubernetes"),
+              ("kit-forgeops", "forgeops"), ("kit-ping-devops", "ping-devops")),
     "net": ("vnet", "vnet-ciam-prod", "10.60.0.0/16"), "rg": "rg-ciam-prod", "pinned_priorities": True,
     "subnets": [("snet-ds", "subnet-ds", "vnet-ciam-prod/snet-ds", "10.60.1.0/24", None),
                 ("snet-pf", "subnet-pf", "vnet-ciam-prod/snet-pf", "10.60.2.0/24", None),
                 ("snet-am", "subnet-am", "vnet-ciam-prod/snet-am", "10.60.3.0/24", None),
                 ("snet-idm", "subnet-idm", "vnet-ciam-prod/snet-idm", "10.60.6.0/24", None),
                 ("snet-ig", "subnet-ig", "vnet-ciam-prod/snet-ig", "10.60.10.0/24", None),
-                ("snet-db", "subnet-db", "vnet-ciam-prod/snet-db", "10.60.8.0/24", None)],     # Flexible Server's
+                ("snet-db", "subnet-db", "vnet-ciam-prod/snet-db", "10.60.8.0/24", None),     # Flexible Server's
+                ("snet-aks", "subnet-aks", "vnet-ciam-prod/snet-aks", "10.60.12.0/22", None)],   # the AKS nodes'
+
     "services": [("svc-ldaps", "ds-ldaps-service", "ldap.id.cloud.example-aero.test", "id.cloud.example-aero.test",
                   None, "ds", [1636], "10.60.1.100", None, None),     # no certificate covers this (planted) name
                  ("svc-sso", "pf-sso-service", "sso.example-aero.test", "example-aero.test",
@@ -174,24 +180,12 @@ TARGET = MappingProxyType({
                  "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/"
                  "Microsoft.Communication/emailServices/ecs-ciam-prod/domains/example-aero.test", "FALSE", "TRUE",
                  "quarantine"),),
-    # planted: the engines' scale set sits in one zone (the source spreads them over two)
-    "compute": (("vmss-pf-engine", "compute-pf-engine", "pf-engine",
-                 "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/"
-                 "Microsoft.Compute/virtualMachineScaleSets/vmss-ciam-pf-engine", IMG + "pingfederate-12.1.4-rhel9",
-                 "Standard_D2s_v5", 2, 2, 4, ("1",), None),),
+    "kubernetes": KUBERNETES["target"],      # the AKS cluster and how it runs each workload (compute)
     "interconnect": ("link-source", "site-to-site VPN (landing-zone managed)", AWS, ["10.20.0.0/16"]),
+    # only the directory runs on servers here: AM, IDM, PingGateway and PingFederate run on AKS (compute)
     "servers": [("ds-1", "ds", "ds-1.az.internal.example-aero.test", "10.60.1.11", "1", "Standard_D4s_v5", IMG + "pingds-7.5.1-rhel9", "snet-ds", DS_V),
                 ("ds-2", "ds", "ds-2.az.internal.example-aero.test", "10.60.1.12", "2", "Standard_D4s_v5", IMG + "pingds-7.5.1-rhel9", "snet-ds", DS_V),
-                ("ds-3", "ds", "ds-3.az.internal.example-aero.test", "10.60.1.13", "3", "Standard_D4s_v5", IMG + "pingds-7.5.1-rhel9", "snet-ds", DS_V),
-                ("pf-engine-1", "pf-engine", "pf-engine-1.az.internal.example-aero.test", "10.60.2.21", "1", "Standard_D2s_v5", IMG + "pingfederate-12.1.4-rhel9", "snet-pf", PF_V),
-                ("pf-engine-2", "pf-engine", "pf-engine-2.az.internal.example-aero.test", "10.60.2.22", "2", "Standard_D2s_v5", IMG + "pingfederate-12.1.4-rhel9", "snet-pf", PF_V),
-                ("pf-admin-1", "pf-admin", "pf-admin-1.az.internal.example-aero.test", "10.60.2.10", "1", "Standard_D2s_v5", IMG + "pingfederate-12.1.4-rhel9", "snet-pf", PF_V),
-                ("am-1", "am", "am-1.az.internal.example-aero.test", "10.60.3.21", "1", "Standard_D2s_v5", IMG + "pingam-7.5.1-rhel9", "snet-am", AM_V),
-                ("am-2", "am", "am-2.az.internal.example-aero.test", "10.60.3.22", "2", "Standard_D2s_v5", IMG + "pingam-7.5.1-rhel9", "snet-am", AM_V),
-                ("idm-1", "idm", "idm-1.az.internal.example-aero.test", "10.60.6.21", "1", "Standard_D2s_v5", IMG + "pingidm-7.5.0-rhel9", "snet-idm", IDM_V),
-                ("ig-1", "ig", "ig-1.az.internal.example-aero.test", "10.60.10.21", "1", "Standard_D2s_v5", IMG + "pinggateway-2024.11.0-rhel9", "snet-ig", IG_V)],
-    # the PingFederate nodes run clustered here too (what discovery they use is the planted gap, not whether)
-    "nodes": {"pf-engine-1": "CLUSTERED_ENGINE", "pf-engine-2": "CLUSTERED_ENGINE", "pf-admin-1": "CLUSTERED_CONSOLE"},
+                ("ds-3", "ds", "ds-3.az.internal.example-aero.test", "10.60.1.13", "3", "Standard_D4s_v5", IMG + "pingds-7.5.1-rhel9", "snet-ds", DS_V)],
 })
 # A warm standby on Google Cloud: production's directory replicas join it over a VPN, the rest stands ready. Network
 # and subnetworks belong to the landing zone's Shared VPC host project; the environment's own project holds the rest.
@@ -332,7 +326,8 @@ def _bindings(file, env, p):
                                           *(p.get("costs") or ()),
                                           *(p.get("access") or ()),
                                           *(p.get("edge") or ()), *(p.get("network") or ()),
-                                          *(p.get("databases") or ()), *(p.get("volumes") or ()))),
+                                          *(p.get("databases") or ()), *(p.get("volumes") or ()),
+                                          *(p.get("kubernetes") or ()))),
             *((_interconnect(file, b, *p["interconnect"]),) if p.get("interconnect") else ()))
 
 

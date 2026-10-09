@@ -1,7 +1,12 @@
-environment   binding         role               runs                image                                                                   size             scale  zones                         metadata tokens
-------------  --------------  -----------------  ------------------  ----------------------------------------------------------------------  ---------------  -----  ----------------------------  ---------------
-source/prod   asg-pf-engine   compute-pf-engine  servers: pf-engine  ami-0fedcba9876543210                                                   m6i.large        2/2/4  us-east-1a, us-east-1b        yes
-standby/prod  mig-pf-engine   compute-pf-engine  servers: pf-engine  projects/example-aero-images/global/images/pingfederate-12-1-4-rhel9    n2-standard-2    2/2/4  us-central1-a, us-central1-b
-target/prod   vmss-pf-engine  compute-pf-engine  servers: pf-engine  /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-  Standard_D2s_v5  2/2/4  1
-(3 rows)
+environment   binding        role                runs                            image                                                                   size                                               scale  zones                         metadata tokens
+------------  -------------  ------------------  ------------------------------  ----------------------------------------------------------------------  -------------------------------------------------  -----  ----------------------------  ---------------
+source/prod   asg-pf-engine  compute-pf-engine   servers: pf-engine              ami-0fedcba9876543210                                                   m6i.large                                          2/2/4  us-east-1a, us-east-1b        yes
+standby/prod  mig-pf-engine  compute-pf-engine   servers: pf-engine              projects/example-aero-images/global/images/pingfederate-12-1-4-rhel9    n2-standard-2                                      2/2/4  us-central1-a, us-central1-b
+target/prod   aks            k8s-cluster         kubernetes 1.33.3               azure-policy, oidc-issuer, workload-identity                            system: Standard_D4s_v5, 3-6                              1, 2, 3
+target/prod   am             am-workload         workload am (am)                openam=crciamprod.azurecr.io/ciam/am:7.5.1, amster=crciamprod.azurecr.  cpu 2/-, memory 4Gi/4Gi                            2
+target/prod   idm            idm-workload        workload idm (idm)              openidm=crciamprod.azurecr.io/ciam/idm:7.5.0                            cpu 1/-, memory 2Gi/2Gi                            2
+target/prod   ig             ig-workload         workload ig (ig)                ig=crciamprod.azurecr.io/ciam/ig:2024.11.0                              cpu 1/-, memory 2Gi/2Gi                            2
+target/prod   pf-admin       pf-admin-workload   workload pf-admin (pf-admin)    pingfederate=crciamprod.azurecr.io/ciam/pingfederate:12.1.4             cpu 1/-, memory 4Gi/4Gi 8Gi (managed-csi-premium)  1
+target/prod   pf-engine      pf-engine-workload  workload pf-engine (pf-engine)  pingfederate=crciamprod.azurecr.io/ciam/pingfederate:12.1.4             cpu 1/-, memory 4Gi/4Gi                            2
+(8 rows)
 exit 0

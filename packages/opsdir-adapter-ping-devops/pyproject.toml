@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-adapter-ping-devops"
+version = "0.1.0"
+description = "opsdir adapter for Ping Identity's ping-devops Helm chart: values for PingFederate admin and engine on Kubernetes."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1", "opsdir-adapter-kubernetes>=0.1"]
+
+[project.entry-points."opsdir.adapters"]
+ping-devops = "opsdir_adapter_ping_devops.adapter:ADAPTER"
+
+[tool.setuptools.packages.find]
+where = ["src"]

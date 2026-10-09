@@ -1,7 +1,7 @@
 package         offering                provider                   levels            status     certification  certified   in-scope services  scope as of  environments
 --------------  ----------------------  -------------------------  ----------------  ---------  -------------  ----------  -----------------  -----------  ------------
 AGENCYAMAZONEW  AWS US East/West        Amazon Web Services, Inc.  fedramp-moderate  certified  Rev5           2013-05-01  23                 2026-08-26   source/prod
-F1209051525     Azure Commercial Cloud  Microsoft                  fedramp-high      certified  Rev5           2019-05-03  21                 2026-09-15   target/prod
+F1209051525     Azure Commercial Cloud  Microsoft                  fedramp-high      certified  Rev5           2019-05-03  23                 2026-09-15   target/prod
 FR1805751477    Google Services         Google                     fedramp-high      certified  Rev5           2019-12-04  19                 2026-09-15   standby/prod
 (3 rows)
 exit 0

@@ -1,7 +1,8 @@
-"""Kubernetes manifests read as workloads: a StatefulSet's role, cluster, replicas, images, storage, service account
-and the cloud identity it carries, pod security (with its namespace's level), the network policies and ingress hosts
-that reach it, the Secrets it reads by name (never their values); roles from labels or roles.json; a re-import
-changes nothing and keeps what the record adds."""
+"""Kubernetes manifests read as workloads: a StatefulSet's role, cluster, workload role, service account and the cloud
+identity it carries, pod security (with its namespace's level), the network policies and ingress hosts that reach it,
+the Secrets it reads by name (never their values); manifests under <cloud>/<env>/ also give that environment's
+workload binding (images, replicas, resources, storage), others the intent only; roles from labels or roles.json; a
+re-import changes nothing and keeps what the record adds."""
 import json
 
 from opsdir.connectors.importing import preview_import
@@ -9,8 +10,9 @@ from opsdir.core.directory import get, one, values
 from opsdir.core.interchange.ldif import parse
 from opsdir.domains.automation.naming import job_dn
 from opsdir.domains.compute.naming import workload_dn
+from opsdir.domains.compute.workloads import workload_binding
 from opsdir_adapter_kubernetes.adapter import ADAPTER
-from opsdir_adapter_kubernetes.workloads import entry_names, objects, pod_security, secret_names
+from opsdir_adapter_kubernetes.workloads import entry_names, environment_at, objects, pod_security, secret_names
 import mini_estate
 from support import REGISTRY, build_directory
 
@@ -40,6 +42,7 @@ spec:
       - name: ds
         image: registry.example.test/ds:7.5.0
         securityContext: {readOnlyRootFilesystem: true}
+        resources: {requests: {cpu: 500m, memory: 2Gi}, limits: {memory: 4Gi}}
         env:
         - {name: ADMIN_PASSWORD, valueFrom: {secretKeyRef: {name: ds-passwords, key: admin}}}
         envFrom: [{secretRef: {name: ds-env}}]
@@ -83,7 +86,7 @@ AM = json.dumps({"apiVersion": "v1", "kind": "List", "items": [
          "serviceAccountName": "backup", "containers": [{
              "name": "backup", "image": "registry.example.test/ds-backup:1.2", "command": ["/opt/backup.sh"],
              "args": ["--to", "s3://backups"], "envFrom": [{"secretRef": {"name": "backup-creds"}}]}]}}}}}}]})
-FILES = {"identity/ds.yaml": DS, "identity/am.json": AM, "roles.json": json.dumps({"am": "am"}),
+FILES = {"alpha/prod/identity/ds.yaml": DS, "identity/am.json": AM, "roles.json": json.dumps({"am": "am"}),
          "notes.txt": "key: [unclosed"}
 OWNER = tuple(parse(f"dn: {workload_dn('ds-idrepo')}\nchangetype: modify\nadd: ciamOwner\n"
                     "ciamOwner: cn=ops,ou=owners,dc=ciam-ops\n-\n"))
@@ -105,14 +108,35 @@ def test_a_statefulset_is_a_workload_with_what_reaches_it():
     d, _, _ = imported()
     w = get(d, workload_dn("ds-idrepo"))
     assert (one(w, "ciamWorkloadKind"), one(w, "ciamTargetRole"), one(w, "ciamClusterRole"), one(w, "ciamNamespace"),
-            one(w, "ciamReplicaCount"), one(w, "ciamStorageSize"), one(w, "ciamStorageClass"),
-            one(w, "ciamServiceAccount"), one(w, "ciamIdentityRole"), one(w, "ciamRepoPath")) == \
-        ("statefulset", "ds", "k8s", "identity", "3", "100Gi", "fast", "ds", "ds-identity", "identity/ds.yaml")
-    assert values(w, "ciamContainerImage") == ("registry.example.test/ds:7.5.0",)
+            one(w, "ciamWorkloadRole"), one(w, "ciamServiceAccount"), one(w, "ciamIdentityRole"),
+            one(w, "ciamRepoPath")) == \
+        ("statefulset", "ds", "k8s", "identity", "ds-idrepo-workload", "ds", "ds-identity",
+         "alpha/prod/identity/ds.yaml")
     assert values(w, "ciamPodSecurity") == ("runAsNonRoot", "readOnlyRootFilesystem", "level=restricted")
     assert values(w, "ciamNetworkPolicy") == ("ds-ldap: Ingress",)
     assert values(w, "ciamIngressHost") == ("ds-admin.example.test",)
     assert values(w, "ciamSecretName") == ("ds-env", "ds-keystore", "ds-passwords")
+
+
+def test_manifests_under_an_environment_give_its_workload_binding():
+    from opsdir.core.environment import env_model
+    d, _, notices = imported()
+    b = workload_binding(env_model(d, "alpha/prod"), get(d, workload_dn("ds-idrepo")))
+    assert b is not None and b.dn == "cn=ds-idrepo,ou=bindings,env=prod,cloud=alpha,ou=environments,dc=ciam-ops"
+    assert (one(b, "ciamBindingRole"), values(b, "ciamContainerImage"), one(b, "ciamWorkloadReplicas"),
+            one(b, "ciamCpuRequest"), one(b, "ciamCpuLimit"), one(b, "ciamMemoryRequest"), one(b, "ciamMemoryLimit"),
+            one(b, "ciamStorageSize"), one(b, "ciamStorageClass")) == \
+        ("ds-idrepo-workload", ("ds=registry.example.test/ds:7.5.0",), "3", "500m", None, "2Gi", "4Gi", "100Gi",
+         "fast")
+    assert workload_binding(env_model(d, "alpha/prod"), get(d, workload_dn("am"))) is None
+    assert "1 manifest file(s) not under <cloud>/<env>/ of an environment the record holds (identity/am.json): " \
+           "workloads only, no environment's images, replicas, resources or storage" in notices
+
+
+def test_an_environment_folder_counts_only_when_the_record_holds_it():
+    d, _, _ = imported()
+    assert environment_at(d, "alpha/prod/x.yaml") == "env=prod,cloud=alpha,ou=environments,dc=ciam-ops"
+    assert environment_at(d, "gamma/prod/x.yaml") is None and environment_at(d, "alpha/x.yaml") is None
 
 
 def test_roles_from_the_role_map_and_what_has_none_is_named():

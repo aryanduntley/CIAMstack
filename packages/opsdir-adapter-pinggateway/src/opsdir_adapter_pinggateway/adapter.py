@@ -1,6 +1,6 @@
 """PingGateway (ForgeRock Identity Gateway) adapter: applies to environments whose servers run PingGateway."""
 from opsdir.core.contract import Adapter
-from opsdir.core.directory import one
+from opsdir.domains.compute.workloads import runs_product
 from .checks import check_routes
 from .gateway import GATEWAY_CONFIG
 from .listeners import listeners
@@ -14,7 +14,7 @@ REQUIRED_ROLES = ("subnet-ig", "ig-service", "ig-keystore")
 
 
 def applies(m):
-    return any(one(s, "ciamProductVersion", "").startswith(PRODUCTS) for s in m.servers)
+    return runs_product(m, PRODUCTS)
 
 
 ADAPTER = Adapter(name="pinggateway", kind="product", applies=applies, required_roles=REQUIRED_ROLES,

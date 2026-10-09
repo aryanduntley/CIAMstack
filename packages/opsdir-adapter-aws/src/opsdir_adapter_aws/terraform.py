@@ -6,6 +6,7 @@ from itertools import chain
 
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import of_class, one_role, secret, servers_with_role, subnet_of
+from opsdir.domains.compute.workloads import kubernetes_note, only_on_kubernetes
 from opsdir.core.manifest import header
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir.core.network import is_private
@@ -25,7 +26,7 @@ from .quotas import render_quota_requests
 from .cdn import alias, distribution
 from .dns import RESOLVER_ENDPOINT, records, resolver_rules, service_record
 from .edge import US_EAST_1, alb_service, health_check, shield, stickiness
-from .identities import EC2_TRUST, notes, role
+from .identities import EC2_TRUST, eks_data, notes, pod_trust, role
 from .landing import render_landing
 from .network import render_network
 from .backups import render_backups
@@ -46,6 +47,8 @@ def _security_groups(m):
 
 
 def _ingress_rules(m, fw):
+    if only_on_kubernetes(m, one(fw, "ciamTargetRole")):
+        return (kubernetes_note(m, f"firewall rule `{rdn_value(fw)}`", one(fw, "ciamTargetRole")),)
     why = rule_purpose(m, fw)
     return tuple(block("resource", ["aws_vpc_security_group_ingress_rule", tf_name(f"{rdn_value(fw)}_{i}_{port}")], [
         ("security_group_id", ref(f"aws_security_group.{tf_name(one(fw, 'ciamTargetRole'))}.id")),
@@ -55,11 +58,16 @@ def _ingress_rules(m, fw):
 
 
 def _identity(m, w):
-    """A workload principal's IAM role EC2 may assume, its least-privilege policy and its instance profile."""
+    """A workload principal's IAM role (assumed by EC2 when its servers run here, and by the Kubernetes service
+    accounts its workloads run as through their cluster's OIDC provider), its least-privilege policy and, for servers,
+    its instance profile."""
     n = tf_name(w.identity_role)
-    return (*notes(w), *role(m, w, EC2_TRUST),
-            block("resource", ["aws_iam_instance_profile", n], [("name", w.name),
-                                                                 ("role", ref(f"aws_iam_role.{n}.name"))]))
+    trust, unbound = pod_trust(w) if w.pods else (None, ())
+    profile = (block("resource", ["aws_iam_instance_profile", n], [("name", w.name),
+                                                                   ("role", ref(f"aws_iam_role.{n}.name"))]),)
+    return (*notes(w), *unbound, *((trust,) if trust else ()),
+            *role(m, w, ref(f"data.aws_iam_policy_document.{n}_trust.json") if trust else EC2_TRUST),
+            *(profile if w.servers else ()))
 
 
 def _instance(m, s, kms, identities=()):
@@ -104,7 +112,11 @@ def _listener(m, n, svc, port, targets, spec=None):
 
 def _service(m, svc, endpoints=()):
     """A stable service name: a network load balancer with listeners per port (an application load balancer when its
-    traffic policy terminates TLS at the edge; opsdir_adapter_aws.edge), and its DNS record."""
+    traffic policy terminates TLS at the edge; opsdir_adapter_aws.edge), and its DNS record; a note for a role run
+    only on Kubernetes (the cluster's ingress serves it)."""
+    if only_on_kubernetes(m, one(svc, "ciamTargetRole")):
+        return (kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})",
+                                one(svc, "ciamTargetRole")),)
     n = tf_name(rdn_value(svc))
     ip = one(svc, "ciamFrontendIp")
     internal = is_private(ip)
@@ -151,7 +163,8 @@ def _fronted(m, endpoints):
 def render(m, services):
     endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     kms, identities = secret(m, "disk-encryption"), workload_identities(m, ACCESS)
-    out = (*network_data(m), *_security_groups(m), *chain.from_iterable(_identity(m, w) for w in identities),
+    out = (*network_data(m), *_security_groups(m), *eks_data(identities),
+           *chain.from_iterable(_identity(m, w) for w in identities),
            *(_instance(m, s, kms, identities) for s in m.servers),
            *chain.from_iterable(server_volumes(m, s) for s in m.servers), *render_snapshot_policies(m),
            *render_backups(m),

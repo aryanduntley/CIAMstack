@@ -2,8 +2,9 @@
 (opsdir.core.inventory), from (Terraform resource type, attributes) pairs like every Azure source. Pure.
 
   azurerm_user_assigned_identity          -> identity (kind managed-identity; federated when a federated identity
-    (+ azurerm_federated_identity_           credential trusts it: '<issuer URL> <subject>'); role from its tag Role
-    credential)                              (or BindingRole)
+    (+ azurerm_federated_identity_           credential trusts it: '<issuer URL> <subject>'); its client id (what
+    credential)                              AKS workload identity annotates service accounts with); role from its
+                                             tag Role (or BindingRole)
   azurerm_role_assignment,                -> its principal's grants: '<role> on <scope>', ' (if <condition>)' when the
     azurerm_pim_active_role_assignment       assignment has one; a custom role (azurerm_role_definition) as its actions
                                              and data actions, NotActions excluded ('a!b'); a principal that isn't an
@@ -139,6 +140,7 @@ def _identities(found):
         trusted = trust.get((i.get("id") or "").lower(), ())
         return resource("identity", i.get("id"), {
             "ciamIdentityKind": "federated" if trusted else "managed-identity", "ciamTrustedBy": trusted,
+            "ciamIdentityClientId": i.get("client_id"),
             "ciamGrant": sorted(set(grants.get(pid, ()))), "ciamDenial": _denied(denials, pid)},
             name=i.get("name"), role=tagged_role(_tags(i)), tags=_tags(i))
     others = [pid for pid in grants if pid and pid not in managed]

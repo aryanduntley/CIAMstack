@@ -3,8 +3,9 @@ admit them and network ACLs let them (and their replies) through, rules nothing 
 findings in the source and the target."""
 from types import SimpleNamespace
 
-from opsdir.connectors.network import network_check
+from opsdir.connectors.network import network_check, ports_fix
 from opsdir.core.contract import Listener
+from opsdir.domains.compute.naming import WORKLOADS
 from opsdir.domains.network.ports import (BLOCKED, OPEN, UNCHECKED, UNCOVERED, acl_allows, acl_rules, admitting,
                                           flow_status, flows, ports_rows, role_cidrs, stray_rules, via_service)
 from network_fixtures import ALPHA, BETA, context, entry, model, rule
@@ -142,3 +143,53 @@ def test_connections_through_a_service_name_reach_the_role_behind_it():
     assert via_service(m, "ds-ldaps-service", "store", ("web",), port=1636) == \
         (Listener("ds", 1636, "tcp", "store", ("web",)),)
     assert via_service(m, "subnet-ds", "x", ("web",)) == () and via_service(m, "nowhere", "x", ("web",)) == ()
+
+
+def test_a_role_on_kubernetes_reaches_server_roles_from_its_clusters_subnets():
+    tree = (f"dn: {WORKLOADS}\nobjectClass: top\nobjectClass: organizationalUnit\nou: workloads\n",
+            entry(WORKLOADS, "am", "ciamWorkload", ciamWorkloadKind="deployment", ciamTargetRole="am",
+                  ciamClusterRole="aks", ciamWorkloadRole="am-workload"))
+    alpha = (entry(ALPHA, "subnet-aks", "ciamSubnetBinding", ciamBindingRole="subnet-aks", ciamCidr="10.1.8.0/22"),
+             entry(ALPHA, "aks", "ciamCluster", ciamBindingRole="aks", ciamProviderRef="aks-1",
+                   ciamSubnetRole="subnet-aks"),
+             entry(ALPHA, "am", "ciamWorkloadBinding", ciamBindingRole="am-workload"),
+             rule(ALPHA, "fw-pods", "10.1.9.0/24", "8080", "ds"))
+    _, m, beta = model(alpha=alpha, tree=tree)
+    listeners = (Listener("ds", 1636, "tcp", "LDAPS", ("am",)),
+                 Listener("am", 8080, "tcp", "HTTP", ("clients",), "kubernetes"),
+                 Listener("ds", 8080, "tcp", "HTTP", ("clients",), "kubernetes"))
+    assert role_cidrs(m, "am") == ("10.1.8.0/22",)
+    assert [(f.listener.port, f.source, f.cidrs) for f in flows(m, listeners)] == [(1636, "am", ("10.1.8.0/22",))]
+    assert flow_status(m, flows(m, listeners)[0])[0] == UNCOVERED          # no rule admits the cluster's nodes
+    assert [r.dn for r in stray_rules(m, listeners)] == [f"cn=fw-pods,ou=bindings,{ALPHA}"]   # a pod port
+    assert flows(beta, listeners) == ()                                       # beta runs am nowhere
+
+
+def test_a_role_moved_to_kubernetes_gets_its_own_rule_moved_not_another_consumers():
+    tree = (f"dn: {WORKLOADS}\nobjectClass: top\nobjectClass: organizationalUnit\nou: workloads\n",
+            entry(WORKLOADS, "app", "ciamWorkload", ciamWorkloadKind="deployment", ciamTargetRole="app",
+                  ciamClusterRole="aks", ciamWorkloadRole="app-workload"))
+    alpha = (entry(ALPHA, "subnet-app", "ciamSubnetBinding", ciamBindingRole="subnet-app", ciamCidr="10.1.3.0/24"),
+             entry(ALPHA, "app-1", "ciamServer", ciamServerRole="app", ciamHostname="app-1.example.test",
+                   ciamSubnet=f"cn=subnet-app,ou=bindings,{ALPHA}", ciamZone="zone-a"))
+    beta = (entry(BETA, "subnet-app", "ciamSubnetBinding", ciamBindingRole="subnet-app", ciamCidr="10.2.3.0/24"),
+            entry(BETA, "subnet-aks", "ciamSubnetBinding", ciamBindingRole="subnet-aks", ciamCidr="10.2.8.0/22"),
+            entry(BETA, "aks", "ciamCluster", ciamBindingRole="aks", ciamProviderRef="aks-1",
+                  ciamSubnetRole="subnet-aks"),
+            entry(BETA, "app", "ciamWorkloadBinding", ciamBindingRole="app-workload"),
+            rule(BETA, "fw-a-portal", "192.0.2.0/24", "1636", "ds"),          # sorts first: another consumer's
+            rule(BETA, "fw-app-ds", ("10.2.3.0/24", "10.2.9.0/24"), "1636", "ds"))
+    d, src, dst = model(alpha=alpha, beta=beta, tree=tree)
+    listener = Listener("ds", 1636, "tcp", "LDAPS", ("app",))
+    (flow,) = flows(dst, (listener,))
+    assert flow.cidrs == ("10.2.8.0/22",)
+    fix = ports_fix(dst, flow, src)
+    assert fix.title.startswith("Replace 10.2.3.0/24 with 10.2.8.0/22 (`app`) in rule `fw-app-ds`")
+    (record,) = fix.records
+    assert record.dn == f"cn=fw-app-ds,ou=bindings,{BETA}" and record.mods == (
+        ("replace", "ciamSourceCidr", ("10.2.9.0/24", "10.2.8.0/22")),)               # its other range kept
+    shared = (*beta, entry(BETA, "web-2", "ciamServer", ciamServerRole="web", ciamHostname="web-2.example.test",
+                           ciamSubnet=f"cn=subnet-app,ou=bindings,{BETA}", ciamZone="zone-a"))
+    _, src, dst = model(alpha=alpha, beta=shared, tree=tree)
+    fix = ports_fix(dst, flows(dst, (listener,))[0], src)          # web still runs in 10.2.3.0/24: nothing closed
+    assert fix.title.startswith("Admit 10.2.8.0/22 (`app`) to `ds`") and "fw-a-portal" in fix.title

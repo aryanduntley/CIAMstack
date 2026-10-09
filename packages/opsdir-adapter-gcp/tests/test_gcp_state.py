@@ -120,6 +120,7 @@ STATE = _state(
     ("google_container_cluster", "gke", {
         "id": f"{P}/locations/us-central1/clusters/ciam", "name": "ciam", "master_version": "1.33.4-gke.1000",
         "node_locations": ["us-central1-a", "us-central1-b"],
+        "subnetwork": f"{P}/regions/us-central1/subnetworks/gke-nodes",
         "addons_config": [{"http_load_balancing": [{"disabled": False}], "gcp_filestore_csi_driver_config":
                            [{"enabled": False}]}],
         "workload_identity_config": [{"workload_pool": "ciam-prod.svc.id.goog"}]}),
@@ -211,6 +212,7 @@ def test_jobs_compute_clusters_streams():
     (gke,) = _of("cluster").values()
     assert gke.attrs["ciamClusterAddon"] == ("http_load_balancing", "workload-identity")
     assert gke.attrs["ciamNodePool"] == ("default: e2-standard-4, 1-3",) and gke.role == "cluster"
+    assert gke.links == {"ciamSubnetRole": f"{P}/regions/us-central1/subnetworks/gke-nodes"}     # its nodes' subnet
     assert [(r.role, r.attrs) for r in _of("stream").values()] == [("audit-events", {"ciamStreamKind": ("topic",)})]
 
 

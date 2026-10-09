@@ -1,17 +1,12 @@
-"""The Kubernetes adapter as the core sees it: a registered secret store that renders nothing and resolves
-k8s-secret:// references."""
-from types import SimpleNamespace
-
+"""The Kubernetes adapter as the core sees it: a registered platform adapter (it renders for environments that run
+workloads on Kubernetes) that also resolves k8s-secret:// references."""
 from opsdir.connectors.registry import ADAPTERS, secret_command
 from opsdir_adapter_kubernetes.adapter import ADAPTER
 
 
 def test_registered_through_its_entry_point():
-    assert ADAPTER in ADAPTERS and ADAPTER.kind == "secret-store"
-
-
-def test_never_renders_for_an_environment():
-    assert not ADAPTER.applies(SimpleNamespace(provider="any")) and ADAPTER.render_env is None
+    assert ADAPTER in ADAPTERS and ADAPTER.kind == "platform"
+    assert [t[0] for t in ADAPTER.render_targets] == ["external-secrets", "csi"]
 
 
 def test_resolves_one_key_of_a_secret_through_the_registry():

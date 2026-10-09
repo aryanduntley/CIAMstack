@@ -302,6 +302,11 @@ objectClass: organizationalUnit
 ou: user-schema
 description: Records describing attributes of the user directory
 
+dn: ou=workloads,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: workloads
+
 dn: cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamCloud
@@ -528,6 +533,23 @@ ciamSearchDomain: example-aero.test
 ciamSelinuxMode: enforcing
 ciamServiceUnit: pingam.service: user am, restart always
 ciamTargetRole: am
+
+dn: cn=am,ou=workloads,dc=ciam-ops
+objectClass: top
+objectClass: ciamWorkload
+cn: am
+ciamClusterRole: k8s-cluster
+ciamIngressHost: login.example-aero.test
+ciamNamespace: ciam
+ciamPodSecurity: level=restricted
+ciamServiceAccount: ciam-platform
+ciamTargetRole: am
+ciamWorkloadKind: deployment
+ciamWorkloadRole: am-workload
+ciamWorkloadSecret: am-env-secrets/AM_PASSWORDS_AMADMIN_CLEAR <- am-admin-pass
+ word
+ciamWorkloadSecret: ds-env-secrets/AM_STORES_USER_PASSWORD <- am-ds-bind-passw
+ ord
 
 dn: cn=am-admin-password,ou=credentials,dc=ciam-ops
 objectClass: top
@@ -1739,6 +1761,8 @@ ciamInScopeService: Front Door
 ciamInScopeService: Web Application Firewall
 ciamInScopeService: VPN Gateway
 ciamInScopeService: Microsoft Entra ID (P1 + P2)
+ciamInScopeService: Azure Kubernetes Service (AKS)
+ciamInScopeService: Container Registry
 ciamOfferingName: Azure Commercial Cloud
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPackageId: F1209051525
@@ -2025,6 +2049,21 @@ ciamSelinuxMode: enforcing
 ciamServiceUnit: pingidm.service: user idm, restart always
 ciamTargetRole: idm
 
+dn: cn=idm,ou=workloads,dc=ciam-ops
+objectClass: top
+objectClass: ciamWorkload
+cn: idm
+ciamClusterRole: k8s-cluster
+ciamNamespace: ciam
+ciamPodSecurity: level=restricted
+ciamServiceAccount: ciam-platform
+ciamTargetRole: idm
+ciamWorkloadKind: deployment
+ciamWorkloadRole: idm-workload
+ciamWorkloadSecret: idm-env-secrets/OPENIDM_ADMIN_PASSWORD <- idm-admin-passwo
+ rd
+ciamWorkloadSecret: ds-passwords/dirmanager.pw <- ds-root-password
+
 dn: cn=idm-admin-password,ou=credentials,dc=ciam-ops
 objectClass: top
 objectClass: ciamCredential
@@ -2145,6 +2184,19 @@ ciamSearchDomain: example-aero.test
 ciamSelinuxMode: enforcing
 ciamServiceUnit: pinggateway.service: user ig, restart always
 ciamTargetRole: ig
+
+dn: cn=ig,ou=workloads,dc=ciam-ops
+objectClass: top
+objectClass: ciamWorkload
+cn: ig
+ciamClusterRole: k8s-cluster
+ciamIngressHost: apps.example-aero.test
+ciamNamespace: ciam
+ciamPodSecurity: level=restricted
+ciamServiceAccount: ciam-gateway
+ciamTargetRole: ig
+ciamWorkloadKind: deployment
+ciamWorkloadRole: ig-workload
 
 dn: cn=ig-keystore,ou=credentials,dc=ciam-ops
 objectClass: top
@@ -2570,6 +2622,20 @@ ciamTargetRole: pf-admin
 ciamTrustsCertificate: cn=example-aero-corp-root-ca,ou=certificates,dc=ciam-op
  s
 
+dn: cn=pf-admin,ou=workloads,dc=ciam-ops
+objectClass: top
+objectClass: ciamWorkload
+cn: pf-admin
+ciamClusterRole: k8s-cluster
+ciamIdentityRole: identity-pf
+ciamNamespace: ciam
+ciamPodSecurity: level=restricted
+ciamServiceAccount: pingfederate
+ciamTargetRole: pf-admin
+ciamWorkloadKind: statefulset
+ciamWorkloadRole: pf-admin-workload
+ciamWorkloadSecret: pf-admin/PING_IDENTITY_PASSWORD <- pf-admin-password
+
 dn: cn=pf-admin-password,ou=credentials,dc=ciam-ops
 objectClass: top
 objectClass: ciamCredential
@@ -2679,6 +2745,20 @@ ciamServiceUnit: pingfederate.service: user pingfed, restart on-failure
 ciamTargetRole: pf-engine
 ciamTrustsCertificate: cn=example-aero-corp-root-ca,ou=certificates,dc=ciam-op
  s
+
+dn: cn=pf-engine,ou=workloads,dc=ciam-ops
+objectClass: top
+objectClass: ciamWorkload
+cn: pf-engine
+ciamClusterRole: k8s-cluster
+ciamIdentityRole: identity-pf
+ciamIngressHost: sso.example-aero.test
+ciamNamespace: ciam
+ciamPodSecurity: level=restricted
+ciamServiceAccount: pingfederate
+ciamTargetRole: pf-engine
+ciamWorkloadKind: deployment
+ciamWorkloadRole: pf-engine-workload
 
 dn: cn=pf-engine-pf-audit-ship,ou=jobs,dc=ciam-ops
 objectClass: top
@@ -4155,6 +4235,14 @@ ciamLocator: pf.log.eventdetail
 ciamSettingRaw: false
 ciamSettingValue: false
 
+dn: cn=c2b0c64ab8450466,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
+objectClass: top
+objectClass: ciamOccurrence
+cn: c2b0c64ab8450466
+ciamLineNumber: 7
+ciamOccurrenceOf: cn=pf-engine,ou=workloads,dc=ciam-ops
+ciamOccurringAttr: ciamIngressHost
+
 dn: cn=c3d7809625b82975,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
 objectClass: top
 objectClass: ciamOccurrence
@@ -5028,22 +5116,6 @@ ciamSubnet: cn=subnet-am,ou=bindings,env=prod,cloud=standby,ou=environments,dc
  =ciam-ops
 ciamZone: us-central1-a
 
-dn: cn=am-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
-objectClass: top
-objectClass: ciamServer
-cn: am-1
-ciamHostname: am-1.az.internal.example-aero.test
-ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
- ps/rg-ciam-images/providers/Microsoft.Compute/images/pingam-7.5.1-rhel9
-ciamInstanceSize: Standard_D2s_v5
-ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
-ciamPrivateIp: 10.60.3.21
-ciamProductVersion: PingAM 7.5.1
-ciamServerRole: am
-ciamSubnet: cn=snet-am,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
- am-ops
-ciamZone: 1
-
 dn: cn=am-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
@@ -5058,22 +5130,6 @@ ciamServerRole: am
 ciamSubnet: cn=subnet-am-b,ou=bindings,env=prod,cloud=source,ou=environments,d
  c=ciam-ops
 ciamZone: us-east-1b
-
-dn: cn=am-2,env=prod,cloud=target,ou=environments,dc=ciam-ops
-objectClass: top
-objectClass: ciamServer
-cn: am-2
-ciamHostname: am-2.az.internal.example-aero.test
-ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
- ps/rg-ciam-images/providers/Microsoft.Compute/images/pingam-7.5.1-rhel9
-ciamInstanceSize: Standard_D2s_v5
-ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
-ciamPrivateIp: 10.60.3.22
-ciamProductVersion: PingAM 7.5.1
-ciamServerRole: am
-ciamSubnet: cn=snet-am,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
- am-ops
-ciamZone: 2
 
 dn: cn=am-s1,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -5498,22 +5554,6 @@ ciamSubnet: cn=subnet-idm,ou=bindings,env=prod,cloud=standby,ou=environments,d
  c=ciam-ops
 ciamZone: us-central1-a
 
-dn: cn=idm-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
-objectClass: top
-objectClass: ciamServer
-cn: idm-1
-ciamHostname: idm-1.az.internal.example-aero.test
-ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
- ps/rg-ciam-images/providers/Microsoft.Compute/images/pingidm-7.5.0-rhel9
-ciamInstanceSize: Standard_D2s_v5
-ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
-ciamPrivateIp: 10.60.6.21
-ciamProductVersion: PingIDM 7.5.0
-ciamServerRole: idm
-ciamSubnet: cn=snet-idm,ou=bindings,env=prod,cloud=target,ou=environments,dc=c
- iam-ops
-ciamZone: 1
-
 dn: cn=idm-s1,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
@@ -5559,23 +5599,6 @@ ciamServerRole: ig
 ciamSubnet: cn=subnet-ig,ou=bindings,env=prod,cloud=standby,ou=environments,dc
  =ciam-ops
 ciamZone: us-central1-a
-
-dn: cn=ig-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
-objectClass: top
-objectClass: ciamServer
-cn: ig-1
-ciamHostname: ig-1.az.internal.example-aero.test
-ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
- ps/rg-ciam-images/providers/Microsoft.Compute/images/pinggateway-2024.11.0-rh
- el9
-ciamInstanceSize: Standard_D2s_v5
-ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
-ciamPrivateIp: 10.60.10.21
-ciamProductVersion: PingGateway 2024.11.0
-ciamServerRole: ig
-ciamSubnet: cn=snet-ig,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
- am-ops
-ciamZone: 1
 
 dn: cn=ig-s1,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -5768,25 +5791,6 @@ ciamSubnet: cn=subnet-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc
 ciamZone: us-central1-a
 pingfedOperationalMode: CLUSTERED_CONSOLE
 
-dn: cn=pf-admin-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
-objectClass: top
-objectClass: ciamServer
-objectClass: pingfedNode
-cn: pf-admin-1
-ciamHostname: pf-admin-1.az.internal.example-aero.test
-ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
- ps/rg-ciam-images/providers/Microsoft.Compute/images/pingfederate-12.1.4-rhel
- 9
-ciamInstanceSize: Standard_D2s_v5
-ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
-ciamPrivateIp: 10.60.2.10
-ciamProductVersion: PingFederate 12.1.4
-ciamServerRole: pf-admin
-ciamSubnet: cn=snet-pf,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
- am-ops
-ciamZone: 1
-pingfedOperationalMode: CLUSTERED_CONSOLE
-
 dn: cn=pf-admin-s1,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
@@ -5843,25 +5847,6 @@ ciamSubnet: cn=subnet-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc
 ciamZone: us-central1-a
 pingfedOperationalMode: CLUSTERED_ENGINE
 
-dn: cn=pf-engine-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
-objectClass: top
-objectClass: ciamServer
-objectClass: pingfedNode
-cn: pf-engine-1
-ciamHostname: pf-engine-1.az.internal.example-aero.test
-ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
- ps/rg-ciam-images/providers/Microsoft.Compute/images/pingfederate-12.1.4-rhel
- 9
-ciamInstanceSize: Standard_D2s_v5
-ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
-ciamPrivateIp: 10.60.2.21
-ciamProductVersion: PingFederate 12.1.4
-ciamServerRole: pf-engine
-ciamSubnet: cn=snet-pf,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
- am-ops
-ciamZone: 1
-pingfedOperationalMode: CLUSTERED_ENGINE
-
 dn: cn=pf-engine-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
@@ -5901,25 +5886,6 @@ ciamServerRole: pf-engine
 ciamSubnet: cn=subnet-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc
  =ciam-ops
 ciamZone: us-central1-b
-pingfedOperationalMode: CLUSTERED_ENGINE
-
-dn: cn=pf-engine-2,env=prod,cloud=target,ou=environments,dc=ciam-ops
-objectClass: top
-objectClass: ciamServer
-objectClass: pingfedNode
-cn: pf-engine-2
-ciamHostname: pf-engine-2.az.internal.example-aero.test
-ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
- ps/rg-ciam-images/providers/Microsoft.Compute/images/pingfederate-12.1.4-rhel
- 9
-ciamInstanceSize: Standard_D2s_v5
-ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
-ciamPrivateIp: 10.60.2.22
-ciamProductVersion: PingFederate 12.1.4
-ciamServerRole: pf-engine
-ciamSubnet: cn=snet-pf,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
- am-ops
-ciamZone: 2
 pingfedOperationalMode: CLUSTERED_ENGINE
 
 dn: cn=pf-engine-s1,env=stage,cloud=source,ou=environments,dc=ciam-ops
@@ -6368,6 +6334,24 @@ ciamStorageLockDays: 400
 ciamStorageRef: azblob://stciamprodaudit/insights-activity-logs
 ciamStorageVersioning: TRUE
 
+dn: cn=aks,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCluster
+cn: aks
+ciamBindingRole: k8s-cluster
+ciamClusterAddon: azure-policy
+ciamClusterAddon: oidc-issuer
+ciamClusterAddon: workload-identity
+ciamClusterVersion: 1.33.3
+ciamNodePool: system: Standard_D4s_v5, 3-6
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.ContainerService/managedClusters/aks-c
+ iam-prod
+ciamSpansZone: 1
+ciamSpansZone: 2
+ciamSpansZone: 3
+ciamSubnetRole: subnet-aks
+
 dn: cn=alerts-page,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamAlertChannel
@@ -6392,6 +6376,22 @@ ciamBindingRole: alerts-page
 ciamChannelKind: action-group
 ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
  roups/rg-ciam-prod/providers/Microsoft.Insights/actionGroups/ag-ciam-page
+
+dn: cn=am,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamWorkloadBinding
+cn: am
+ciamBindingRole: am-workload
+ciamContainerImage: openam=crciamprod.azurecr.io/ciam/am:7.5.1
+ciamContainerImage: amster=crciamprod.azurecr.io/ciam/amster:7.5.1
+ciamContainerImage: admin-ui=crciamprod.azurecr.io/ciam/admin-ui:7.5.1
+ciamContainerImage: end-user-ui=crciamprod.azurecr.io/ciam/end-user-ui:7.5.1
+ciamContainerImage: login-ui=crciamprod.azurecr.io/ciam/login-ui:7.5.1
+ciamCpuRequest: 2
+ciamMemoryLimit: 4Gi
+ciamMemoryRequest: 4Gi
+ciamProductVersion: PingAM 7.5.1
+ciamWorkloadReplicas: 2
 
 dn: cn=appEntitlement,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
@@ -7993,10 +7993,35 @@ ciamGrant: Key Vault Secrets User on /subscriptions/00000000-0000-0000-0000-00
  -ciam-prod
 ciamGrant: Monitoring Metrics Publisher on /subscriptions/00000000-0000-0000-0
  000-000000000000/resourceGroups/rg-ciam-prod
+ciamIdentityClientId: 6f1c2a40-0000-4000-8000-00000000c1d0
 ciamIdentityKind: managed-identity
 ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
  roups/rg-ciam-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities
  /id-ciam-prod-pf
+
+dn: cn=idm,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamWorkloadBinding
+cn: idm
+ciamBindingRole: idm-workload
+ciamContainerImage: openidm=crciamprod.azurecr.io/ciam/idm:7.5.0
+ciamCpuRequest: 1
+ciamMemoryLimit: 2Gi
+ciamMemoryRequest: 2Gi
+ciamProductVersion: PingIDM 7.5.0
+ciamWorkloadReplicas: 2
+
+dn: cn=ig,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamWorkloadBinding
+cn: ig
+ciamBindingRole: ig-workload
+ciamContainerImage: ig=crciamprod.azurecr.io/ciam/ig:2024.11.0
+ciamCpuRequest: 1
+ciamMemoryLimit: 2Gi
+ciamMemoryRequest: 2Gi
+ciamProductVersion: PingGateway 2024.11.0
+ciamWorkloadReplicas: 2
 
 dn: cn=inspector,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -8070,6 +8095,26 @@ ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
  roups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-pr
  od
 ciamRefUri: azkv-key://kv-ciam-prod/keys/disk-cmk
+
+dn: cn=kit-forgeops,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: kit-forgeops
+ciamAdapter: forgeops
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-forgeops
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: kit-forgeops
+
+dn: cn=kit-ping-devops,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: kit-ping-devops
+ciamAdapter: ping-devops
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-ping-devops
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: kit-ping-devops
 
 dn: cn=lastLoginTime,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
@@ -8485,6 +8530,21 @@ ciamReachesRole: pf-signing-key
 ciamReachesRole: ds-root-password
 ciamSubnetRole: subnet-pf
 
+dn: cn=pf-admin,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamWorkloadBinding
+cn: pf-admin
+ciamBindingRole: pf-admin-workload
+ciamContainerImage: pingfederate=crciamprod.azurecr.io/ciam/pingfederate:12.1.
+ 4
+ciamCpuRequest: 1
+ciamMemoryLimit: 4Gi
+ciamMemoryRequest: 4Gi
+ciamProductVersion: PingFederate 12.1.4
+ciamStorageClass: managed-csi-premium
+ciamStorageSize: 8Gi
+ciamWorkloadReplicas: 1
+
 dn: cn=pf-discovery,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamObjectStore
@@ -8508,6 +8568,19 @@ cn: pf-discovery
 ciamBindingRole: pf-cluster-discovery
 ciamStorageRef: s3://example-aero-ciam-stage-pf-cluster
 description: Stage's own PingFederate cluster discovery: never prod's
+
+dn: cn=pf-engine,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamWorkloadBinding
+cn: pf-engine
+ciamBindingRole: pf-engine-workload
+ciamContainerImage: pingfederate=crciamprod.azurecr.io/ciam/pingfederate:12.1.
+ 4
+ciamCpuRequest: 1
+ciamMemoryLimit: 4Gi
+ciamMemoryRequest: 4Gi
+ciamProductVersion: PingFederate 12.1.4
+ciamWorkloadReplicas: 2
 
 dn: cn=pf-grants,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -8596,6 +8669,16 @@ ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
  roups/rg-ciam-prod/providers/Microsoft.Insights/scheduledQueryRules/pf-login-
  failures
 ciamRealizes: login-failures
+
+dn: cn=platform,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: platform
+ciamAdapter: kubernetes
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-kubernetes
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: platform
 
 dn: cn=provider,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -9730,6 +9813,14 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamProtectsRole: volume-ds-data
 ciamRetentionDays: 7
 
+dn: cn=snet-aks,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: snet-aks
+ciamBindingRole: subnet-aks
+ciamCidr: 10.60.12.0/22
+ciamProviderRef: vnet-ciam-prod/snet-aks
+
 dn: cn=snet-am,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSubnetBinding
@@ -10287,24 +10378,6 @@ objectClass: ciamBackend
 cn: userData
 ciamBackendType: je
 ciamBaseDn: dc=partners,dc=example-aero,dc=test
-
-dn: cn=vmss-pf-engine,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
-objectClass: top
-objectClass: ciamComputeGroup
-cn: vmss-pf-engine
-ciamBindingRole: compute-pf-engine
-ciamDesiredSize: 2
-ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
- ps/rg-ciam-images/providers/Microsoft.Compute/images/pingfederate-12.1.4-rhel
- 9
-ciamInstanceSize: Standard_D2s_v5
-ciamMaxSize: 4
-ciamMinSize: 2
-ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
- roups/rg-ciam-prod/providers/Microsoft.Compute/virtualMachineScaleSets/vmss-c
- iam-pf-engine
-ciamSpansZone: 1
-ciamTargetRole: pf-engine
 
 dn: cn=vnet,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top

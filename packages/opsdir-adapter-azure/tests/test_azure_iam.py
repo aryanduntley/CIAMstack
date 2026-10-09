@@ -24,6 +24,7 @@ B = f"ou=bindings,{ENV}"
 def _pairs(*extra):
     return [
         ("azurerm_user_assigned_identity", {"id": IDENTITY, "name": "id-ciam-prod-pf", "principal_id": PID,
+                                            "client_id": "00000000-0000-0000-0000-00000000c1d0",
                                             "tags": {"Role": "identity-pf"}}),
         ("azurerm_federated_identity_credential", {"parent_id": IDENTITY.replace("resourceGroups", "resourcegroups"),
                                                    "issuer": "https://token.actions.githubusercontent.com",
@@ -70,6 +71,7 @@ def test_identities_and_what_their_assignments_grant():
     resources, notices = iam_resources(_pairs())
     pf = _one(resources, "identity", IDENTITY)
     assert pf.role == "identity-pf" and pf.attrs["ciamIdentityKind"] == ("federated",)
+    assert pf.attrs["ciamIdentityClientId"] == ("00000000-0000-0000-0000-00000000c1d0",)    # AKS annotates with it
     assert pf.attrs["ciamTrustedBy"] == (
         "https://token.actions.githubusercontent.com repo:example/ciam:environment:prod",)
     assert set(pf.attrs["ciamGrant"]) == {

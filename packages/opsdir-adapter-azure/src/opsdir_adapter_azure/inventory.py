@@ -29,7 +29,8 @@ From Terraform state (terraform.tfstate, format version 4; hashicorp/azurerm), m
     azurerm_orchestrated_virtual_machine_        autoscale setting that targets it (azurerm_monitor_autoscale_setting)
     scale_set
   azurerm_kubernetes_cluster (+ azurerm_     -> cluster (kind cluster, ciamCluster): version, add-ons it enables, node
-    kubernetes_cluster_node_pool)                pools (name: VM size, min-max), zones of its pools
+    kubernetes_cluster_node_pool)                pools (name: VM size, min-max), zones of its pools, the subnets
+                                                 its pools' nodes sit in
   azurerm_email_communication_service_       -> sending identity (kind sending, ciamSendingIdentity) for a domain: DKIM
     domain (+ azurerm_dns_cname_record,          verified when the DKIM selectors its verification records name are
     azurerm_dns_txt_record)                      published in Azure DNS, SPF authorizing it (include:
@@ -434,7 +435,7 @@ def _pool(p):
 
 
 def _clusters(found):
-    """AKS clusters, their node pools and enabled add-ons."""
+    """AKS clusters, their node pools, enabled add-ons and the subnets their nodes sit in."""
     def cluster(c):
         pools = (*(c.get("default_node_pool") or ()),
                  *(p for p in of_types(found, "azurerm_kubernetes_cluster_node_pool")
@@ -444,6 +445,7 @@ def _clusters(found):
             "ciamClusterAddon": sorted(name for arg, name in AKS_ADDONS if _enabled(c.get(arg))),
             "ciamNodePool": sorted(_pool(p) for p in pools),
             "ciamSpansZone": sorted({z for p in pools for z in p.get("zones") or ()})},
+            links={"ciamSubnetRole": tuple(sorted({subnet_ref(p.get("vnet_subnet_id")) for p in pools} - {None}))},
             name=c.get("name"), role=cluster_role(_tags(c)), tags=_tags(c))
     return tuple(cluster(c) for c in of_types(found, "azurerm_kubernetes_cluster") if c.get("id") or c.get("name"))
 

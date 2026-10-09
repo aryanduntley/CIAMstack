@@ -16,6 +16,7 @@ from itertools import chain
 
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import of_class, one_role, secret, servers_with_role, subnet_of
+from opsdir.domains.compute.workloads import kubernetes_note, only_on_kubernetes
 from opsdir.core.manifest import header
 from opsdir.core.network import is_private
 from opsdir.domains.infrastructure.firewall import rule_priorities, rule_purpose
@@ -52,6 +53,8 @@ _tag, _label = network_tag, label
 
 
 def _firewall_rule(m, fw, prio, pinned):
+    if only_on_kubernetes(m, one(fw, "ciamTargetRole")):
+        return (kubernetes_note(m, f"firewall rule `{rdn_value(fw)}`", one(fw, "ciamTargetRole")),)
     note = () if pinned else (
         f"# NOTE: {rdn_value(fw)} has no pinned ciamRulePriority; assigned {prio}. Pin it in the directory.",)
     return (*note, block("resource", ["google_compute_firewall", tf_name(rdn_value(fw))], [
@@ -138,7 +141,11 @@ def _service(m, svc, endpoints=()):
     """A stable service name: a passthrough network load balancer over the role's servers (zonal instance groups,
     a regional backend service with a TCP health check and the firewall rule its probes need, a forwarding rule) and
     its Cloud DNS record. An EXTERNAL backend service names its port (port_name, each group's named_port) and scales
-    its backends' capacity; INTERNAL takes neither. A forwarding rule takes at most five ports, else all ports."""
+    its backends' capacity; INTERNAL takes neither. A forwarding rule takes at most five ports, else all ports. A
+    note for a role run only on Kubernetes (the cluster's ingress serves it)."""
+    if only_on_kubernetes(m, one(svc, "ciamTargetRole")):
+        return (kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})",
+                                one(svc, "ciamTargetRole")),)
     n, name = tf_name(rdn_value(svc)), f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"
     ip, ports = one(svc, "ciamFrontendIp"), values(svc, "ciamPort")
     internal = is_private(ip)

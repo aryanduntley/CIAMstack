@@ -1,12 +1,13 @@
 """A workload's identity as Azure Terraform: a user-assigned managed identity, role assignments from the Azure
 permission table at the narrowest scope (the secret in its vault, the storage container), Event Grid topics given
-Event Grid's sender role, and the data sources those scopes need."""
+Event Grid's sender role, the data sources those scopes need, and a federated credential per Kubernetes service
+account that assumes it (AKS workload identity)."""
 from types import SimpleNamespace
 
 from opsdir.core.directory import make_entry
-from opsdir.domains.access.workloads import WorkloadIdentity
+from opsdir.domains.access.workloads import Pod, WorkloadIdentity
 from opsdir_adapter_azure.access import PERMISSIONS
-from opsdir_adapter_azure.identities import identity as _identity, scope_data as _scope_data
+from opsdir_adapter_azure.identities import aks_data, identity as _identity, scope_data as _scope_data
 from support import BARE
 
 SECRET = make_entry("cn=secret,ou=bindings,env=prod", ("top", "ciamSecretRef"),
@@ -41,3 +42,19 @@ def test_an_identity_with_role_assignments_at_the_narrowest_scope():
 def test_the_scopes_data_sources_not_declared_already():
     m = SimpleNamespace(d=BARE, bindings=(SECRET,))              # the secrets' vault is declared by the vault check
     assert [b.splitlines()[0] for b in _scope_data(m, (W,))] == ['data "azurerm_key_vault" "kv_ciam_keys" {']
+
+
+def test_kubernetes_service_accounts_get_federated_credentials_from_their_aks_cluster():
+    cluster = make_entry("cn=aks,ou=bindings,env=prod", ("top", "ciamCluster"), {
+        "ciamBindingRole": ["k8s"],
+        "ciamProviderRef": ["/subscriptions/0/resourceGroups/rg-aks/providers/Microsoft.ContainerService/"
+                            "managedClusters/aks-ciam"]})
+    w = W._replace(pods=(Pod("identity", "am", cluster), Pod("tools", "x", None)), servers=False)
+    data = "\n".join(aks_data((w,)))
+    assert 'data "azurerm_kubernetes_cluster" "aks_ciam"' in data and 'resource_group_name = "rg-aks"' in data
+    out = "\n".join(_identity(SimpleNamespace(d=BARE), w))
+    assert 'resource "azurerm_federated_identity_credential"' in out
+    assert "issuer              = data.azurerm_kubernetes_cluster.aks_ciam.oidc_issuer_url" in out
+    assert 'subject             = "system:serviceaccount:identity:am"' in out
+    assert 'audience            = ["api://AzureADTokenExchange"]' in out
+    assert "# NOTE: principal" in out and "service account tools/x runs in a cluster this environment doesn't" in out

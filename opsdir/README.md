@@ -97,7 +97,7 @@ CHG-…`), and a declared source of a kind that's off makes the collection say w
 |---|---|---|
 | `git+https://host/org/repo.git?ref=main&dir=gateway&prefix=routes/` (or `git+ssh://git@host/...`) | `git clone --depth 1 --single-branch [--branch REF]` into a private work directory | the files under `dir` (else all) placed under `prefix`; `.git` is never read |
 | `k8s://CONTEXT/NAMESPACE/configmap/NAME?prefix=routes/` | `kubectl --context CONTEXT -n NAMESPACE get configmap NAME -o json` | each data key a file under `prefix` (Secrets are never read) |
-| `k8s://CONTEXT/NAMESPACE/workloads?prefix=` | `kubectl --context CONTEXT -n NAMESPACE get statefulsets,deployments,daemonsets,cronjobs,services,ingresses,networkpolicies,serviceaccounts -o json` and `kubectl --context CONTEXT get namespace NAMESPACE -o json` | manifests (`kubernetes/workloads`): `CONTEXT/NAMESPACE/objects.json` and `namespace.json` under `prefix`; Secrets are never listed, and literal env values, `managedFields` and the last-applied annotation are dropped before anything is hashed, saved or imported |
+| `k8s://CONTEXT/NAMESPACE/workloads?prefix=` | `kubectl --context CONTEXT -n NAMESPACE get statefulsets,deployments,daemonsets,cronjobs,services,ingresses,networkpolicies,serviceaccounts -o json` and `kubectl --context CONTEXT get namespace NAMESPACE -o json` | manifests (`kubernetes/workloads`): `CONTEXT/NAMESPACE/objects.json` and `namespace.json` under `prefix` (`prefix=CLOUD/ENV/` records that environment's workload bindings); Secrets are never listed, and literal env values, `managedFields` and the last-applied annotation are dropped before anything is hashed, saved or imported |
 | `ssh://user@host[:port]/BASE?dir=config&match=*.json` | `ssh -o BatchMode=yes -o StrictHostKeyChecking=yes` running `find BASE/dir -type f [-name MATCH]`, then `cat --` each (`zcat --` for `.gz`, saved without `.gz`) | each file under `prefix` (default `host/`), `dir` kept in its path |
 | `ssh://user@host/BASE?files=bin/run.properties,data/x.xml` | `cat --` each listed file | the same |
 
@@ -240,7 +240,7 @@ opsdir/                      the package (names no platform, product, vendor or 
     governance/              owners (including the operator), changes, incidents, runbooks
     configuration/           config files held setting by setting, bundles, the string census
     automation/              jobs: cron, timers, scheduled tasks, functions, pipelines (what runs, when, where, owner)
-    compute/                 host baselines per server role, compute groups and clusters per environment, workloads
+    compute/                 host baselines per server role, compute groups, clusters and workload bindings per environment, workloads
                              (server roles run as containers)
     messaging/               external services (mail relays, SMS, MFA vendors, CAPTCHA), mail senders and sending
                              identities, identity event streams
@@ -254,7 +254,7 @@ opsdir/                      the package (names no platform, product, vendor or 
   cli.py                     thin orchestrator
 schema/ciam-ops.schema.ldif  the published RFC 4512 schema of the core and its domains (scripts/gen-schema.py)
 scripts/                     dev-install.sh, dev-env.sh (local defaults), gen-schema.py, test.sh, fetch-tools.sh,
-                             validate-terraform.sh
+                             validate-terraform.sh, validate-kubernetes.sh
 tests/                       core tests: unit (no database) and integration; mini_estate.py = a two-environment
                              estate and a fake provider adapter, so the core is tested without any real adapter
 ```
@@ -265,7 +265,7 @@ Dependencies point one way. Adapter packages depend on the core, never the rever
 
 An adapter is one cloud provider, product or secret store. It lives in its own installable package:
 
-1. A module that defines `ADAPTER = Adapter(...)` (`opsdir.core.contract`): its name and kind (`provider`, `product` or `secret-store`), `applies(m)` decided from directory data only (or `None` for a generic adapter of a standard, which every compliant server would match: it renders only where an environment's stack declares it), the roles it requires, its renderers (environment-neutral and environment-specific), its planner checks, the reference schemes it owns and their resolvers, how its outputs are described, and the `vocab` values it defines.
+1. A module that defines `ADAPTER = Adapter(...)` (`opsdir.core.contract`): its name and kind (`provider`, `platform` (a container platform such as Kubernetes), `product`, `host`, `delivery`, `secret-store` or `compliance`), `applies(m)` decided from directory data only (or `None` for a generic adapter of a standard, which every compliant server would match: it renders only where an environment's stack declares it), the roles it requires, its renderers (environment-neutral and environment-specific), its planner checks, the reference schemes it owns and their resolvers, how its outputs are described, and the `vocab` values it defines.
 2. Its `pyproject.toml` depends on `opsdir` and registers it:
 
    ```toml
@@ -273,7 +273,7 @@ An adapter is one cloud provider, product or secret store. It lives in its own i
    example = "opsdir_adapter_example.adapter:ADAPTER"
    ```
 3. Tests in the package's `tests/` (the repository-root `pytest.ini` collects them).
-4. The format of every file it renders, `formats=(("ds/*.ldif", "ldif"), ...)`, and the product versions it supports, `products=(("SomeProduct", ">=7,<9"),)`. A format the core doesn't register (a product's own syntax, HCL, ...) is registered by the package that brings it, as a `Format` (`opsdir.core.contract`) under `[project.entry-points."opsdir.formats"]`.
+4. The format of every file it renders, `formats=(("ds/*.ldif", "ldif"), ...)`, and the product versions it supports, `products=(("SomeProduct", ">=7,<9"),)`. A format the core doesn't register (a product's own syntax, HCL, ...) is registered by the package that brings it, as a `Format` (`opsdir.core.contract`) under `[project.entry-points."opsdir.formats"]`. For workloads on Kubernetes, a provider adapter says how a service account assumes its cloud's identity (`workload_identity(m, identity binding) -> K8sIdentity`) and an adapter owning a reference scheme how the External Secrets Operator and the Secrets Store CSI driver read it (`secret_delivery={scheme: SecretDelivery}`); renderers reach them, and the products' listeners, through `Services`.
 5. Optionally, schema definitions of its own: `schema=fragment(attributes, classes, arc, origin)` (`opsdir.core.standard`), numbered under an OID arc the package owns, so packages written independently never collide. The store composes them on `upgrade`; the core's published schema file holds only the core and its domains.
 6. Shared helpers instead of its own copies. Before writing a helper, look for it in the core:
 
@@ -284,6 +284,7 @@ An adapter is one cloud provider, product or secret store. It lives in its own i
    | A container entry, a DN's RDN value, a DN at or below a base | `opsdir.core.directory`: `ou_entry(dn)`, `rdn_of(dn)`, `within(dn, base)` |
    | Times as the record holds them (GeneralizedTime, UTC) | `opsdir.core.directory`: `gtime(datetime)`, `gtime_of_iso(text)` |
    | JSON written as files, JSON an attribute holds, values that may be secret | `opsdir.core.jsondata`: `indented`, `canonical`, `held_json(entry, attr)`, `without_secrets`, `with_values`, `rendered_in_place` |
+   | YAML written as files (manifests, Helm values, kustomizations): deterministic block style, strings quoted where any YAML reader could take them for something else | `opsdir.core.interchange.yaml_text`: `dump(value)`, `documents(values)` (the registered `yaml` format writes with `dump`; the core reads no YAML) |
    | Entries an importer re-imports (owned attributes replaced, the rest kept) | `opsdir.core.directory`: `merged_attrs(existing, owned, names)` |
    | A product's config file kept as captured settings | `opsdir.domains.configuration.record`: `captured_file(fmt, prefix, folder, path, text, patterns, role)` |
    | Cloud inventory: resources, role tags, role map, layout | `opsdir.core.inventory`: `resource`, `tagged_role(tags)`, `of_types(found, *types)`, `layout_import`, `per_file` |
@@ -302,11 +303,15 @@ opsdir/scripts/test.sh                                   # everything: unit + in
 opsdir/.venv/bin/python -m pytest                        # unit tests only, no database
 opsdir/.venv/bin/python -m pytest -m integration         # integration tests only (skipped if unreachable)
 opsdir/.venv/bin/python -m pytest opsdir/tests           # the core alone
-opsdir/scripts/fetch-tools.sh                            # once: Terraform into tools/ (gitignored), verified
+opsdir/scripts/fetch-tools.sh                            # once: Terraform, Helm, Kustomize, kubeconform into tools/, verified
 opsdir/.venv/bin/python -m pytest -m terraform           # rendered Terraform checked by terraform fmt + validate
 opsdir/scripts/validate-terraform.sh [tree ...]          # the same on any render output (default: the golden renders)
+packages/opsdir-adapter-forgeops/scripts/fetch-forgeops.sh   # once: the pinned ForgeOps release into tools/forgeops/, verified
+packages/opsdir-adapter-ping-devops/scripts/fetch-ping-devops.sh   # once: the pinned ping-devops chart into tools/ping-devops/, verified
+opsdir/.venv/bin/python -m pytest -m kubernetes          # rendered Kubernetes output checked by kustomize, helm, kubeconform
+opsdir/scripts/validate-kubernetes.sh [--helm CHART VALUES]... [tree ...]   # the same on any render output
 ```
 
-Third-party tools the tests run on rendered output live in `tools/` at the repository root: one gitignored folder per machine, fetched by `scripts/fetch-tools.sh` (Terraform's zip checked against HashiCorp's signed checksums) and removed by deleting it. The `terraform` tests check every Terraform root of the showcase's golden renders and a sample with every kind of network plumbing on each cloud (`examples/showcase/tests/terraform/`); they are skipped when `tools/bin/terraform` is absent and run by `scripts/test.sh` when it is there (the first run downloads the providers into `tools/`).
+Third-party tools the tests run on rendered output live in `tools/` at the repository root: one gitignored folder per machine, fetched by `scripts/fetch-tools.sh` (Terraform's zip checked against HashiCorp's signed checksums; Helm 4.3.0, Kustomize 5.8.2 and kubeconform 0.8.0 checked against SHA-256 digests pinned in the script, Linux amd64 and arm64) and removed by deleting it. `scripts/validate-kubernetes.sh` builds every kustomization, renders each chart given with its values file, and checks the result and every other manifest with kubeconform `-strict` against the Kubernetes schemas (default 1.36.0, `KUBERNETES_VERSION` to change) and, for custom resources, the CRDs-catalog at a pinned commit; a resource no schema describes fails, it is never passed. Schemas are cached in `tools/kubeconform-cache`. Given no folder and no chart, it checks the showcase's golden renders' `kubernetes/` folders; a deployment kit's output needs the kit's charts and bases, which the kit's own tests and the showcase's `tests/kubernetes/` fetch and use (`packages/opsdir-adapter-forgeops/scripts/fetch-forgeops.sh`, `packages/opsdir-adapter-ping-devops/scripts/fetch-ping-devops.sh`). The `kubernetes` tests (`tests/tools/`, the kit packages', the showcase's) are skipped without the tools. The `terraform` tests check every Terraform root of the showcase's golden renders and a sample with every kind of network plumbing on each cloud (`examples/showcase/tests/terraform/`); they are skipped when `tools/bin/terraform` is absent and run by `scripts/test.sh` when it is there (the first run downloads the providers into `tools/`).
 
 The core's tests use a mini estate and a fake adapter, and pass with no adapter package installed. The integration tests create, upgrade and refuse schemas against Postgres (they drop and rebuild the `opsdir` schema in the test databases). End-to-end behaviour with real adapters and golden outputs is tested by the showcase.

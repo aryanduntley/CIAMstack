@@ -6,6 +6,7 @@ from .boundary import check_boundary
 from .cli import CLI_INVENTORY
 from .collect import COLLECTORS
 from .inventory import TERRAFORM_STATE
+from .kubernetes import SECRET_DELIVERY, workload_identity
 from .secrets import SECRET_PATTERNS, secret_manager_command
 from .names import PRIORITIES
 from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
@@ -29,4 +30,5 @@ ADAPTER = Adapter(name="gcp", kind="provider", applies=applies, required_roles=(
                   products=(),
                   secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY, REGIONS, QUOTAS),
                   profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE),
-                  collectors=COLLECTORS)
+                  collectors=COLLECTORS,
+                  workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY)

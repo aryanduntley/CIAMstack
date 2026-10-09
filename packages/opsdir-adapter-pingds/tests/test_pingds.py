@@ -9,7 +9,7 @@ from opsdir_adapter_pingds.adapter import ADAPTER
 
 def _servers(*products):
     return SimpleNamespace(servers=tuple(make_entry(f"cn=s{i},dc=x", ["ciamServer"], {"ciamProductVersion": [p]})
-                                         for i, p in enumerate(products)))
+                                         for i, p in enumerate(products)), d=make_directory((), {}, ()))
 
 
 def test_registered_through_its_entry_point():

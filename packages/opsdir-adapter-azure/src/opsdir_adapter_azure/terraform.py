@@ -6,6 +6,7 @@ from itertools import chain
 
 from opsdir.core.directory import follow, one, rdn_value, values
 from opsdir.core.environment import of_class, one_role, servers_with_role, subnet_of
+from opsdir.domains.compute.workloads import kubernetes_note, only_on_kubernetes
 from opsdir.core.manifest import header
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir.core.network import is_private
@@ -28,7 +29,7 @@ from .volumes import boot_tag, os_disk, server_volumes, snapshot_policy_notes
 from .dns import FORWARDING_RULESET, forwarding_rules, records, service_record
 from .edge import ddos_note, gateway_service
 from .frontdoor import endpoint, front_door
-from .identities import LOC, RG, identity, scope_data
+from .identities import LOC, RG, aks_data, identity, scope_data
 from .landing import render_landing
 from .network import render_network
 from .plumbing import network_data
@@ -38,6 +39,8 @@ PRIORITIES = (100, 10, 4096)        # NSG rule priorities: first slot, step, las
 
 
 def _security_rule(m, fw, prio, pinned):
+    if only_on_kubernetes(m, one(fw, "ciamTargetRole")):
+        return (kubernetes_note(m, f"firewall rule `{rdn_value(fw)}`", one(fw, "ciamTargetRole")),)
     why = rule_purpose(m, fw)
     note = () if pinned else (
         f"# NOTE: {rdn_value(fw)} has no pinned ciamRulePriority; assigned {prio}. Pin it in the directory.",)
@@ -130,7 +133,11 @@ def _lb_port(n, port, spec=None):
 
 def _service(m, svc, endpoints=()):
     """A stable service name: load balancer, backend pool, probes and rules per port (an Application Gateway when its
-    traffic policy terminates TLS at the edge; opsdir_adapter_azure.edge), and its DNS record."""
+    traffic policy terminates TLS at the edge; opsdir_adapter_azure.edge), and its DNS record; a note for a role run
+    only on Kubernetes (the cluster's ingress serves it)."""
+    if only_on_kubernetes(m, one(svc, "ciamTargetRole")):
+        return (kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})",
+                                one(svc, "ciamTargetRole")),)
     n = tf_name(rdn_value(svc))
     ip = one(svc, "ciamFrontendIp")
     internal = is_private(ip)
@@ -187,7 +194,8 @@ def _interconnect_note(m, ic):
 def render(m, services):
     endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     des, identities = one_role(m, "disk-encryption"), workload_identities(m, ACCESS)
-    out = (*network_data(m), *_security_groups(m), *chain.from_iterable(identity(m, w) for w in identities),
+    out = (*network_data(m), *_security_groups(m), *aks_data(identities),
+           *chain.from_iterable(identity(m, w) for w in identities),
            *chain.from_iterable(_server(m, s, des, identities) for s in m.servers), *snapshot_policy_notes(m),
            *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),

@@ -75,6 +75,17 @@ def test_an_installed_adapters_schema_joins_the_store_but_not_the_published_file
 GENERIC = FAKE._replace(name="generic", kind="product", applies=None, ref_schemes=(), secret_schemes={}, vocabulary={})
 
 
+def test_an_environment_renders_without_a_provider_adapter(d):
+    """What an environment's other adapters render doesn't wait for an adapter that renders its infrastructure (a
+    cluster on the operator's own hardware); an environment nothing renders for is refused."""
+    product = FAKE._replace(kind="product")
+    m, files = render_env(d, ALPHA, (product,))
+    assert files["fake/env.txt"] == "alpha/prod: fake-cli get secrets/admin\n"
+    assert json.loads(files["MANIFEST.json"])["provider"] == "fakecloud"
+    with pytest.raises(SystemExit, match="nothing renders alpha/prod: no installed adapter that renders applies"):
+        render_env(d, ALPHA, (product._replace(render_neutral=None, render_env=None),))
+
+
 def test_a_declaration_only_adapter_is_never_inferred(d):
     m = env_model(d, ALPHA)
     assert declared_adapters(m._replace(stack=()), (FAKE, GENERIC)) == (FAKE,)

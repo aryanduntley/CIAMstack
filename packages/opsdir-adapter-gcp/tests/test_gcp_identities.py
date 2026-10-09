@@ -1,8 +1,9 @@
 """A workload's identity as Google Cloud Terraform: a service account and resource-level IAM members from the Google
 Cloud permission table (a global and a regional secret, a key, a bucket, a topic), log writes on the project, and a
-service account id Google accepts."""
+service account id Google accepts, and the Kubernetes service accounts that act as it (GKE Workload Identity
+Federation)."""
 from opsdir.core.directory import make_entry
-from opsdir.domains.access.workloads import WorkloadIdentity
+from opsdir.domains.access.workloads import Pod, WorkloadIdentity
 from opsdir_adapter_gcp.access import PERMISSIONS
 from opsdir_adapter_gcp.identities import account as _account, identity as _identity
 
@@ -55,3 +56,14 @@ def test_a_service_account_with_resource_level_members():
 def test_service_account_ids_google_accepts():
     long = W._replace(name="ciam-production-identity-pingfederate-engine")
     assert _account(W) == "ciam-prod-pf-engine" and len(_account(long)) <= 30 and not _account(long).endswith("-")
+
+
+def test_kubernetes_service_accounts_act_as_the_service_account_through_workload_identity():
+    cluster = _binding("ciamCluster", "k8s", ciamProviderRef=f"{P}/locations/us-central1/clusters/ciam")
+    w = WorkloadIdentity("am", "identity-am", "am", "ciam-prod-am", (), (), servers=False,
+                         pods=(Pod("identity", "am", cluster), Pod("tools", "x", None)))
+    out = "\n".join(_identity(None, w))
+    assert 'resource "google_service_account_iam_member" "identity_am_identity_am"' in out
+    assert 'role               = "roles/iam.workloadIdentityUser"' in out
+    assert 'member             = "serviceAccount:ciam-prod.svc.id.goog[identity/am]"' in out
+    assert "service account tools/x runs in a cluster this environment doesn't bind" in out

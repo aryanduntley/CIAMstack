@@ -7,6 +7,7 @@ from .arm import ARM
 from .cli import CLI_INVENTORY
 from .collect import COLLECTORS
 from .inventory import TERRAFORM_STATE
+from .kubernetes import SECRET_DELIVERY, workload_identity
 from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
 from .regions import PREREQUISITE, REGIONS
 from .secrets import SECRET_PATTERNS, keyvault_command
@@ -29,4 +30,5 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                   products=(),
                   secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY, ARM, REGIONS, QUOTAS),
                   profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE),
-                  collectors=COLLECTORS)
+                  collectors=COLLECTORS,
+                  workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY)

@@ -18,6 +18,7 @@ apps/customer-portal/application.properties               cn=sso,ou=identity-ser
 apps/customer-portal/application.properties               cn=svc-sso,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-o  ciamFqdn            7      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
 apps/customer-portal/application.properties               cn=svc-sso,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-  ciamFqdn            7      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
 apps/customer-portal/application.properties               cn=svc-sso,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-o  ciamFqdn            7      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
+apps/customer-portal/application.properties               cn=pf-engine,ou=workloads,dc=ciam-ops                                   ciamIngressHost     7      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
 apps/customer-portal/application.properties               cn=sso,ou=identity-services,dc=ciam-ops                                 ciamOidcIssuer      7      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
 apps/customer-portal/application.properties               cn=sso-tls-2026,ou=certificates,dc=ciam-ops                             ciamSubjectAltName  7      line 5: secret material (secret-assignment); line 5: ldap.password is given a value
 etc/hosts                                    pf-engine-1  cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops               ciamHostname        3
@@ -32,5 +33,5 @@ opt/scripts/nightly-export.sh                ds-2         cn=aci-pf-read,ou=acis
 opt/scripts/nightly-export.sh                ds-2         cn=aci-portal-write,ou=acis,dc=ciam-ops                                 ciamAciTargetDn     6
 opt/scripts/nightly-export.sh                ds-2         cn=aci-supplier-read,ou=acis,dc=ciam-ops                                ciamAciTargetDn     6
 opt/scripts/nightly-export.sh                ds-2         cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops               ciamPrivateIp       8
-(32 rows)
+(33 rows)
 exit 0

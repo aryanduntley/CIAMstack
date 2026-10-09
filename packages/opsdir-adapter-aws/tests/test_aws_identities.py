@@ -1,11 +1,12 @@
 """A workload's identity as AWS Terraform: an IAM role EC2 may assume, a least-privilege policy from the AWS
-permission table (the first action of each requirement, on the binding's resources), the instance profile, and notes
-for what can't be granted."""
+permission table (the first action of each requirement, on the binding's resources), the instance profile, notes
+for what can't be granted, and the trust of the Kubernetes service accounts that assume it (IRSA)."""
 from types import SimpleNamespace
 
 from opsdir.core.directory import make_entry
-from opsdir.domains.access.workloads import WorkloadIdentity
+from opsdir.domains.access.workloads import Pod, WorkloadIdentity
 from opsdir_adapter_aws.access import PERMISSIONS
+from opsdir_adapter_aws.identities import eks_data
 from opsdir_adapter_aws.terraform import _identity
 
 SECRET = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-admin-password"
@@ -47,3 +48,24 @@ def test_what_cant_be_granted_is_a_note_and_no_empty_policy_is_written():
     out = _rendered((), ("use-key disk-encryption: role `disk-encryption` has no binding in this environment",))
     assert "# NOTE: principal pf-engine: use-key disk-encryption: role `disk-encryption` has no binding" in out
     assert "aws_iam_role_policy" not in out and "aws_iam_instance_profile" in out
+
+
+def test_kubernetes_service_accounts_assume_the_role_through_their_clusters_oidc_provider():
+    cluster = make_entry("cn=eks,ou=bindings,env=prod", ("top", "ciamCluster"), {
+        "ciamBindingRole": ["k8s"], "ciamProviderRef": ["arn:aws:eks:us-east-1:111122223333:cluster/ciam-prod"]})
+    w = WorkloadIdentity("am", "identity-am", "am", "ciam-prod-am", (), (), servers=False,
+                         pods=(Pod("identity", "am", cluster), Pod("identity", "amster", cluster),
+                               Pod("tools", "x", None)))
+    data = "\n".join(eks_data((w,)))
+    assert 'data "aws_eks_cluster" "ciam_prod"' in data and 'name = "ciam-prod"' in data
+    assert "url = data.aws_eks_cluster.ciam_prod.identity[0].oidc[0].issuer" in data
+    out = "\n".join(_identity(None, w))
+    assert 'data "aws_iam_policy_document" "identity_am_trust"' in out
+    assert "identifiers = [data.aws_iam_openid_connect_provider.ciam_prod.arn]" in out
+    assert 'values   = ["system:serviceaccount:identity:am", "system:serviceaccount:identity:amster"]' in out
+    assert 'values   = ["sts.amazonaws.com"]' in out
+    assert "assume_role_policy = data.aws_iam_policy_document.identity_am_trust.json" in out
+    assert "ec2.amazonaws.com" not in out and "aws_iam_instance_profile" not in out     # no servers of am here
+    assert "# NOTE: principal am: service account tools/x runs in a cluster this environment doesn't bind" in out
+    both = "\n".join(_identity(None, w._replace(servers=True)))
+    assert '"ec2.amazonaws.com"' in both and 'resource "aws_iam_instance_profile"' in both

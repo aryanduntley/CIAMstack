@@ -379,7 +379,7 @@ AZURE_SERVICES = ("Virtual Machines", "Virtual Machine Scale Sets", "Virtual Net
                   "Azure Monitor (incl. Application Insights, Log Analytics, and Application Change Analysis)",
                   "Microsoft Defender for Cloud (formerly Azure Security Center)", "Resource Graph", "Azure Policy",
                   "DNS", "Event Hubs", "Service Bus", "Front Door", "Web Application Firewall", "VPN Gateway",
-                  "Microsoft Entra ID (P1 + P2)")
+                  "Microsoft Entra ID (P1 + P2)", "Azure Kubernetes Service (AKS)", "Container Registry")
 GCP_SERVICES = ("Compute Engine", "Virtual Private Cloud (VPC)", "Cloud Load Balancing", "Cloud SQL", "Cloud Storage",
                 "Persistent Disk", "Cloud Key Management Service (Cloud KMS)", "Secret Manager", "Cloud Logging",
                 "Cloud Monitoring", "Security Command Center", "Cloud Asset Inventory", "Pub/Sub", "Cloud DNS",

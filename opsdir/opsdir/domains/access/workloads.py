@@ -1,6 +1,8 @@
 """The identities an environment's renderers write, and what the cloud adapters' renderers share. Pure.
 
-Workloads: each workload principal some server of the environment runs as (its ciamTargetRole). For the landing zone
+Workloads: each workload principal some server of the environment runs as (its ciamTargetRole), or that its
+workloads on Kubernetes assume (their ciamIdentityRole: the Kubernetes service accounts the cloud trusts through the
+cluster's OIDC issuer, workload identity federation). For the landing zone
 (terraform/landing-zone/, applied by whoever keeps it): each deployer principal whose identity the environment binds
 with an OIDC trust (ciamTrustedBy '<issuer URL> <subject>': a CI pipeline), and each operator principal whose identity
 binding names the group it is granted to (its provider ref). For each: the cloud identity's name, and for each permit
@@ -13,14 +15,22 @@ from collections import namedtuple
 from ...core.directory import get, one, rdn_value, values
 from ...core.environment import of_class, one_role, servers_with_role
 from ...core.findings import responsible
+from ..compute.workloads import namespace_of, runs_on_kubernetes, service_account_of, workloads
 from .grants import rows_for
 from .principals import permits, principals
 
 # kind: the principal's kind; trust: (issuer, subject) of a deployer's OIDC trust; group: an operator's group (the
-# identity binding's provider ref); conditions: the principal's (jit: granted eligible, not active)
+# identity binding's provider ref); conditions: the principal's (jit: granted eligible, not active); pods: the
+# Kubernetes service accounts that assume it (Pod, one per workload run on Kubernetes here with its identity role);
+# servers: whether servers of its role run here (and assume it as their own identity)
 WorkloadIdentity = namedtuple("WorkloadIdentity", ("principal", "identity_role", "server_role", "name", "grants",
-                                                   "notes", "kind", "trust", "group", "conditions"),
-                              defaults=("workload", None, None, ()))
+                                                   "notes", "kind", "trust", "group", "conditions", "pods", "servers"),
+                              defaults=("workload", None, None, (), (), True))
+
+# A Kubernetes service account that assumes a cloud identity: its namespace and name, and the cluster binding
+# (ciamCluster) of the cluster it runs in (None when the environment doesn't bind it): the cluster's OIDC issuer is
+# what the cloud trusts.
+Pod = namedtuple("Pod", ("namespace", "service_account", "cluster"))
 
 
 def identity_name(m, role, default):
@@ -56,11 +66,29 @@ def _identity(m, model, p, default, named=True, **extra):
                             one(p, "ciamPrincipalKind"), conditions=tuple(values(p, "ciamCondition")), **extra)
 
 
+def identity_pods(m, identity_role):
+    """The Kubernetes service accounts that assume an identity role in environment m: one Pod per workload run on
+    Kubernetes here that names it (ciamIdentityRole), without repeats."""
+    if not identity_role:
+        return ()
+    found = (Pod(namespace_of(w), service_account_of(w),
+                 one_role(m, one(w, "ciamClusterRole")) if one(w, "ciamClusterRole") else None)
+             for w in workloads(m.d) if one(w, "ciamIdentityRole") == identity_role and runs_on_kubernetes(m, w))
+    return tuple({(p.namespace, p.service_account, p.cluster.dn if p.cluster is not None else None): p
+                  for p in found}.values())
+
+
 def workload_identities(m, model):
-    """The workload principals environment m's servers run as, each with what its permits need there."""
-    return tuple(_identity(m, model, p, f"ciam-{rdn_value(m.env)}-{one(p, 'ciamTargetRole')}")
-                 for p in principals(m.d) if one(p, "ciamPrincipalKind") == "workload"
-                 and one(p, "ciamTargetRole") and servers_with_role(m, one(p, "ciamTargetRole")))
+    """The workload principals environment m runs as, each with what its permits need there: those whose role has
+    servers here (the servers' identity), and those its workloads on Kubernetes assume (pods: the service accounts the
+    cloud must trust through their cluster's OIDC issuer)."""
+    def found(p):
+        role, pods = one(p, "ciamTargetRole"), identity_pods(m, one(p, "ciamIdentityRole"))
+        servers = bool(servers_with_role(m, role))
+        return (_identity(m, model, p, f"ciam-{rdn_value(m.env)}-{role}", pods=pods, servers=servers),) \
+            if servers or pods else ()
+    return tuple(w for p in principals(m.d) if one(p, "ciamPrincipalKind") == "workload" and one(p, "ciamTargetRole")
+                 for w in found(p))
 
 
 def landing_identities(m, model):

@@ -3,7 +3,7 @@ revocation checking proxy once on the admin node, and that the adapter declares 
 from types import SimpleNamespace
 
 from opsdir.core.contract import ProxySetting
-from opsdir.core.directory import make_entry
+from opsdir.core.directory import make_directory, make_entry
 from opsdir.domains.network.proxies import ProxySettings
 from opsdir_adapter_pingfederate.adapter import ADAPTER
 
@@ -12,7 +12,7 @@ PROXY = ProxySettings("proxy.corp.example", 3128, ("localhost", "10.20.*"), None
 
 def _env(*roles):
     return SimpleNamespace(servers=tuple(make_entry(f"cn=s{i}", ("ciamServer",), {"ciamServerRole": (r,)})
-                                         for i, r in enumerate(roles)))
+                                         for i, r in enumerate(roles)), d=make_directory((), {}, ()))
 
 
 def test_run_properties_on_each_node_role_and_revocation_on_the_admin_node():

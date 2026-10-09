@@ -8,27 +8,30 @@ from ...core.environment import one_role
 from ...core.findings import Fix, Option, findings, merge_findings, responsible
 from ...core.network import covers
 from ...core.overlays import override_differences
+from ..compute.workloads import product_versions, workload_binding, workloads
 from .naming import EXTERNAL_ALLOWLISTS
 
 
 def _versions(m):
-    return {one(s, "ciamProductVersion") for s in m.servers if one(s, "ciamProductVersion")}
+    return set(product_versions(m))
 
 
 def _unrecorded(ctx):
-    """Servers with no product version: whether the move upgrades them can't be told."""
-    missing = [f"{m.label} {rdn_value(s)}" for m in (ctx.src, ctx.dst) for s in m.servers
-               if not one(s, "ciamProductVersion")]
+    """Servers and workload bindings with no product version: whether the move upgrades them can't be told."""
+    missing = [*(f"{m.label} {rdn_value(s)}" for m in (ctx.src, ctx.dst) for s in m.servers
+                 if not one(s, "ciamProductVersion")),
+               *(f"{m.label} workload {rdn_value(w)}" for m in (ctx.src, ctx.dst) for w in workloads(m.d)
+                 for b in (workload_binding(m, w),) if b is not None and not one(b, "ciamProductVersion"))]
     return findings(actions=[("Versions", f"No product version recorded for {', '.join(missing)}: whether the move "
                               "is a re-host or an upgrade can't be told for them.", responsible(ctx.d, ctx.dst.env),
                               None)] if missing else [])
 
 
 def check_versions(ctx):
-    """Same product versions in both environments is a re-host; a difference is an upgrade to test separately;
-    servers with no version recorded are named."""
+    """Same product versions in both environments (their servers' and workload bindings') is a re-host; a difference
+    is an upgrade to test separately; servers and workload bindings with no version recorded are named."""
     sv, dv = _versions(ctx.src), _versions(ctx.dst)
-    if not (ctx.src.servers or ctx.dst.servers):
+    if not (ctx.src.servers or ctx.dst.servers or sv or dv):
         compared = findings(ok=["No servers recorded in either environment: no product versions to compare."])
     elif sv == dv:
         compared = findings(ok=[f"Same product versions in both environments "

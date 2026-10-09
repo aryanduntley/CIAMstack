@@ -1,4 +1,9 @@
-workload  kind  role  cluster  namespace  replicas  images  storage  identity  pod security  network policies  secrets  hosts
---------  ----  ----  -------  ---------  --------  ------  -------  --------  ------------  ----------------  -------  -----
-(0 rows)
+workload   kind         role       cluster      namespace  workload role       identity                       pod security      network policies  secrets                                                                 hosts
+---------  -----------  ---------  -----------  ---------  ------------------  -----------------------------  ----------------  ----------------  ----------------------------------------------------------------------  -----------------------
+am         deployment   am         k8s-cluster  ciam       am-workload         (as ciam-platform)             level=restricted                    am-env-secrets/AM_PASSWORDS_AMADMIN_CLEAR <- am-admin-password, ds-env  login.example-aero.test
+idm        deployment   idm        k8s-cluster  ciam       idm-workload        (as ciam-platform)             level=restricted                    idm-env-secrets/OPENIDM_ADMIN_PASSWORD <- idm-admin-password, ds-passw
+ig         deployment   ig         k8s-cluster  ciam       ig-workload         (as ciam-gateway)              level=restricted                                                                                            apps.example-aero.test
+pf-admin   statefulset  pf-admin   k8s-cluster  ciam       pf-admin-workload   identity-pf (as pingfederate)  level=restricted                    pf-admin/PING_IDENTITY_PASSWORD <- pf-admin-password
+pf-engine  deployment   pf-engine  k8s-cluster  ciam       pf-engine-workload  identity-pf (as pingfederate)  level=restricted                                                                                            sso.example-aero.test
+(5 rows)
 exit 0

@@ -11,6 +11,7 @@ from opsdir.core.environment import environment_of, of_class
 from opsdir.domains.data.storage import kept_store
 from opsdir_format_terraform.hcl import block, ref, tf_name
 from .account import tagged
+from .arm_ids import arm_segment
 
 RG = ref("data.azurerm_resource_group.main.name")
 LOC = ref("data.azurerm_resource_group.main.location")
@@ -63,10 +64,49 @@ def managed_identity(m, w):
         ("tags", tagged(m, {"Principal": w.principal, "Role": w.identity_role, "ManagedBy": "opsdir"}))])
 
 
-def identity(m, w):
-    """A workload principal's user-assigned managed identity and its role assignments."""
+AUDIENCE = "api://AzureADTokenExchange"     # the audience Microsoft Entra workload identity federation expects
+
+
+def _aks_name(cluster):
+    ref_ = one(cluster, "ciamProviderRef") or ""
+    return arm_segment(ref_, "managedClusters") or ref_.rsplit("/", 1)[-1]
+
+
+def _aks(cluster):
+    return tf_name(_aks_name(cluster))
+
+
+def aks_data(identities):
+    """The AKS clusters whose service accounts the identities trust, as data sources (their OIDC issuer URL): name
+    and resource group from the cluster binding's provider ref (an ARM ID), else its name in the environment's
+    resource group."""
+    clusters = {c.dn: c for w in identities for c in (p.cluster for p in w.pods) if c is not None}.values()
+    return tuple(block("data", ["azurerm_kubernetes_cluster", _aks(c)], [
+        ("name", _aks_name(c)),
+        ("resource_group_name", arm_segment(one(c, "ciamProviderRef"), "resourceGroups") or RG)]) for c in clusters)
+
+
+def federated_credentials(w):
+    """A federated identity credential on a workload identity per Kubernetes service account that assumes it (AKS
+    workload identity: its cluster's OIDC issuer, subject system:serviceaccount:<namespace>:<name>); notes for
+    service accounts whose cluster the environment doesn't bind."""
     n = tf_name(w.identity_role)
-    return (*notes(w), managed_identity(m, w),
+    return (*(f"# NOTE: principal {w.principal}: service account {p.namespace}/{p.service_account} runs in a cluster "
+              "this environment doesn't bind, so nothing trusts it" for p in w.pods if p.cluster is None),
+            *(block("resource", ["azurerm_federated_identity_credential", f"{n}_{tf_name(p.namespace)}_"
+                                                                          f"{tf_name(p.service_account)}"], [
+                ("name", f"{w.name}-{p.namespace}-{p.service_account}"), ("resource_group_name", RG),
+                ("parent_id", ref(f"azurerm_user_assigned_identity.{n}.id")), ("audience", [AUDIENCE]),
+                ("issuer", ref(f"data.azurerm_kubernetes_cluster.{_aks(p.cluster)}.oidc_issuer_url")),
+                ("subject", f"system:serviceaccount:{p.namespace}:{p.service_account}")])
+              for p in w.pods if p.cluster is not None))
+
+
+def identity(m, w):
+    """A workload principal's user-assigned managed identity, the federated credentials of the Kubernetes service
+    accounts that assume it, and its role assignments."""
+    n = tf_name(w.identity_role)
+    return (*notes(w), managed_identity(m, w), *federated_credentials(w),
             *assignments(w, ref(f"azurerm_user_assigned_identity.{n}.principal_id")))
 
 

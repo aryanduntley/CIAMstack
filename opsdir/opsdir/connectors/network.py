@@ -6,18 +6,13 @@ In the target a gap between server roles blocks the cutover (replication, cluste
 fail); in the source it is a question for the record (the rule may exist and not be recorded). Firewall rules that
 open a port no installed product listens on are named for review.
 """
-from ..core.changeset import add_values, delete_entry, delete_values, new_entry
+from ..core.changeset import add_values, delete_entry, delete_values, new_entry, set_values
 from ..core.contract import directory_report
 from ..core.directory import one, rdn_value, values
 from ..core.findings import Fix, findings, merge_findings, responsible
 from ..domains.network.ports import (BLOCKED, OPEN, PORTS_HEADERS, UNCOVERED, admitting, flow_status, flows,
-                                     ports_rows, stray_ports, stray_rules)
-from .registry import ADAPTERS, environment, environment_specs
-
-
-def listeners(m, adapters):
-    """The listeners the adapters declare for environment m."""
-    return tuple(lst for a in adapters if a.listeners for lst in a.listeners(m))
+                                     moved_ranges, ports_rows, stray_ports, stray_rules)
+from .registry import ADAPTERS, environment, environment_specs, listeners_of as listeners
 
 
 def _gaps(m, declared):
@@ -40,14 +35,27 @@ def _gap_text(m, lst, sources, reasons):
             f"{'; '.join(reasons)}.")
 
 
-def ports_fix(m, flow):
-    """The Fix admitting exactly the ranges of a flow between server roles that no firewall rule covers: added to the
-    rule that already admits the port to the role, else a new rule; None when nothing is uncovered or the flow comes
-    from clients or admins."""
+def ports_fix(m, flow, src=None):
+    """The Fix admitting exactly the ranges of a flow between server roles that no firewall rule covers; None when
+    nothing is uncovered or the flow comes from clients or admins. Where it goes: the rule that admits the port to the
+    role from where the source role ran before it moved (src given: moved_ranges), its old ranges replaced by the new
+    ones; else added to the rule that already admits the port to the role; else a new rule."""
     rules, uncovered = admitting(m, flow)
     if flow.source in ("clients", "admin") or not uncovered:
         return None
     lst, cidrs = flow.listener, ", ".join(uncovered)
+    moved = moved_ranges(src, m, flow.source) if src is not None else ()
+    own = next((fw for fw in rules if set(values(fw, "ciamSourceCidr")) & set(moved)), None)
+    if own is not None:
+        old = tuple(c for c in values(own, "ciamSourceCidr") if c in moved)
+        return Fix(f"ports:{lst.server_role}:{lst.port}:from-{flow.source}", "Ports",
+                   f"Replace {', '.join(old)} with {cidrs} (`{flow.source}`) in rule `{rdn_value(own)}` "
+                   f"({lst.server_role} on {lst.protocol} {lst.port}, {lst.purpose})",
+                   (set_values(own, "ciamSourceCidr",
+                               (*(c for c in values(own, "ciamSourceCidr") if c not in moved), *uncovered)),),
+                   (f"Apply {m.label}'s rendered firewall rules (the platform's Terraform).",),
+                   (f"Admits exactly {cidrs}, where `{flow.source}` runs now, and closes {', '.join(old)}: where it "
+                    f"ran in {src.label}'s layout, which nothing in {m.label} runs in.",))
     cn = f"fw-{flow.source}-to-{lst.server_role}-{lst.port}"
     record = (add_values(rules[0], "ciamSourceCidr", uncovered) if rules else
               new_entry(f"cn={cn},ou=bindings,{m.dn}", ("top", "ciamFirewallRule"), {
@@ -95,7 +103,8 @@ def _environment(ctx, m, declared, target):
                         "Close them, or record what listens there.", owner, None))
     flowing = sum(1 for f in flows(m, declared) if flow_status(m, f)[0] == OPEN)
     ok = [f"{m.label}: {flowing} flow(s) of the ports matrix get through."] if flowing and not gaps else []
-    fixes = [*(x for f, status, _ in gaps if target and status == UNCOVERED for x in (ports_fix(m, f),) if x),
+    fixes = [*(x for f, status, _ in gaps if target and status == UNCOVERED
+               for x in (ports_fix(m, f, ctx.src),) if x),
              *(stray_fix(m, declared, fw) for fw in stray if target)]
     return findings(blockers=blockers, actions=actions, ok=ok, fixes=fixes)
 

@@ -1,7 +1,9 @@
 """Compute domain schema: what the platform's servers and containers run, beyond its products. A server role's host
 baseline and a workload are intent, the same in every environment; the compute an environment runs a role on (an
-autoscaling group, a scale set) and the managed Kubernetes cluster it runs workloads in are bindings."""
+autoscaling group, a scale set), the managed Kubernetes cluster it runs workloads in and how it runs each workload
+there (images, replicas, resources, storage: its workload binding) are bindings."""
 from ...core.standard import AttributeDef, ClassDef, fragment
+from .naming import QUANTITY, WORKLOAD_SECRET
 
 ATTRIBUTES = (
     # ------------------------------------------------------------------ host baseline (per server role)
@@ -53,12 +55,14 @@ ATTRIBUTES = (
     AttributeDef(254, 'ciamWorkloadKind', 'enum:statefulset|deployment|daemonset|other', 'intent', True,
                  'How a workload runs: a StatefulSet, a Deployment, a DaemonSet'),
     AttributeDef(255, 'ciamNamespace', 'string', 'intent', True, 'The Kubernetes namespace a workload runs in'),
-    AttributeDef(256, 'ciamContainerImage', 'string', 'intent', False,
-                 "A container image a workload runs (repository and tag; sidecars included)"),
-    AttributeDef(257, 'ciamStorageSize', 'string', 'intent', True,
-                 'The persistent storage each replica claims, as Kubernetes writes it (100Gi)'),
-    AttributeDef(258, 'ciamStorageClass', 'string', 'intent', True,
-                 'The storage class a workload claims its storage from'),
+    AttributeDef(256, 'ciamContainerImage', 'string', 'binding', False,
+                 "A container image an environment runs for a workload: container=repository:tag or "
+                 "container=repository@sha256:digest (sidecars included)"),
+    AttributeDef(257, 'ciamStorageSize', 'string', 'binding', True,
+                 'The persistent storage each replica claims, as Kubernetes writes it (100Gi)',
+                 (("X-PATTERN", QUANTITY),)),
+    AttributeDef(258, 'ciamStorageClass', 'string', 'binding', True,
+                 'The storage class a workload claims its storage from in an environment'),
     AttributeDef(259, 'ciamServiceAccount', 'string', 'intent', True,
                  'The Kubernetes service account a workload runs as'),
     AttributeDef(260, 'ciamIdentityRole', 'string', 'intent', True,
@@ -73,6 +77,28 @@ ATTRIBUTES = (
                  'A network policy that selects a workload: its name and what it allows'),
     AttributeDef(264, 'ciamIngressHost', 'fqdn', 'contract', False,
                  "A host name an ingress serves a workload at"),
+    AttributeDef(609, 'ciamWorkloadRole', 'string', 'intent', True,
+                 "The binding role of a workload's workload binding: an environment that binds it runs the workload "
+                 "on Kubernetes, with the binding's images, replicas, resources and storage"),
+    AttributeDef(615, 'ciamWorkloadSecret', 'string', 'intent', False,
+                 "A Kubernetes Secret key a workload reads and the secret role that fills it: "
+                 "<secret name>/<key> <- <secret role> (each environment binds the role to its secret store's "
+                 "reference; values never. Not key=role: a key named like a password would read as one)", (("X-PATTERN", WORKLOAD_SECRET),)),
+    # ------------------------------------------------------------------ workload bindings (per environment)
+    AttributeDef(610, 'ciamWorkloadReplicas', 'int', 'binding', True,
+                 'The replicas an environment runs of a workload'),
+    AttributeDef(611, 'ciamCpuRequest', 'string', 'binding', True,
+                 "The CPU a workload's main container requests, as Kubernetes writes it (500m, 2)",
+                 (("X-PATTERN", QUANTITY),)),
+    AttributeDef(612, 'ciamCpuLimit', 'string', 'binding', True,
+                 "The CPU a workload's main container is limited to, as Kubernetes writes it",
+                 (("X-PATTERN", QUANTITY),)),
+    AttributeDef(613, 'ciamMemoryRequest', 'string', 'binding', True,
+                 "The memory a workload's main container requests, as Kubernetes writes it (2Gi)",
+                 (("X-PATTERN", QUANTITY),)),
+    AttributeDef(614, 'ciamMemoryLimit', 'string', 'binding', True,
+                 "The memory a workload's main container is limited to, as Kubernetes writes it",
+                 (("X-PATTERN", QUANTITY),)),
 )
 CLASSES = (
     ClassDef(50, 'ciamHostBaseline', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTargetRole'),
@@ -87,13 +113,19 @@ CLASSES = (
              "Where an environment runs a server role's instances as a group (an autoscaling group, a scale set): "
              "image, size, scale, zones"),
     ClassDef(52, 'ciamCluster', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef',),
-             ('ciamClusterVersion', 'ciamClusterAddon', 'ciamNodePool', 'ciamSpansZone'),
-             'A managed Kubernetes cluster an environment runs workloads in: version, add-ons, node pools'),
+             ('ciamClusterVersion', 'ciamClusterAddon', 'ciamNodePool', 'ciamSpansZone', 'ciamSubnetRole'),
+             'A managed Kubernetes cluster an environment runs workloads in: version, add-ons, node pools, the '
+             'subnets its nodes sit in'),
     ClassDef(53, 'ciamWorkload', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamWorkloadKind', 'ciamTargetRole'),
-             ('ciamNamespace', 'ciamReplicaCount', 'ciamContainerImage', 'ciamStorageSize', 'ciamStorageClass',
-              'ciamServiceAccount', 'ciamIdentityRole', 'ciamClusterRole', 'ciamPodSecurity', 'ciamNetworkPolicy',
-              'ciamSecretName', 'ciamIngressHost', 'ciamRepoPath'),
-             'A server role run as containers: how, where, with which storage, identity, security and secrets'),
+             ('ciamNamespace', 'ciamWorkloadRole', 'ciamServiceAccount', 'ciamIdentityRole', 'ciamClusterRole',
+              'ciamPodSecurity', 'ciamNetworkPolicy', 'ciamWorkloadSecret', 'ciamSecretName', 'ciamIngressHost',
+              'ciamRepoPath'),
+             'A server role run as containers: how, where, with which identity, security and secrets'),
+    ClassDef(130, 'ciamWorkloadBinding', 'ciamBinding', 'STRUCTURAL', (),
+             ('ciamContainerImage', 'ciamWorkloadReplicas', 'ciamCpuRequest', 'ciamCpuLimit', 'ciamMemoryRequest',
+              'ciamMemoryLimit', 'ciamStorageSize', 'ciamStorageClass', 'ciamProviderRef', 'ciamProductVersion'),
+             "How an environment runs a workload on Kubernetes (its role is the workload's ciamWorkloadRole): "
+             "images, the product version they run, replicas, resources, storage"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

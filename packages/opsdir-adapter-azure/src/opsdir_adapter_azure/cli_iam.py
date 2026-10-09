@@ -64,7 +64,8 @@ def iam_items(items):
         return ((p.get("expandedProperties") or {}).get("roleDefinition") or {}).get("displayName")
     return [
         *(("azurerm_user_assigned_identity", {"id": i.get("id"), "name": i.get("name"),
-                                              "principal_id": i.get("principalId"), "tags": i.get("tags") or {}})
+                                              "principal_id": i.get("principalId"), "client_id": i.get("clientId"),
+                                              "tags": i.get("tags") or {}})
           for i in _of(items, "microsoft.managedidentity/userassignedidentities")),
         *(("azurerm_federated_identity_credential", {"parent_id": _CREDENTIAL.sub("", c.get("id") or ""),
                                                      "issuer": c.get("issuer"), "subject": c.get("subject")})

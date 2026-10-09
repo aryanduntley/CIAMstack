@@ -32,6 +32,7 @@ import json
 from typing import NamedTuple
 
 from opsdir.core.directory import children, one, rdn_value
+from opsdir.domains.compute.workloads import role_versions
 from opsdir.domains.federation.services import identity_services, integrations_served
 from .admin_api_spec import load_spec, request_problems, spec_version
 from .connections import integration_body
@@ -66,11 +67,9 @@ def settings_request(path, body):
 
 
 def pingfederate_version(m):
-    """(the PingFederate version environment m's servers run, the first by server name, or None; the other versions
-    they run)."""
-    found = sorted((rdn_value(s), one(s, "ciamProductVersion")) for s in m.servers
-                   if one(s, "ciamServerRole") in SERVER_ROLES and one(s, "ciamProductVersion"))
-    versions = tuple(dict.fromkeys(v for _, v in found))
+    """(the PingFederate version environment m runs, the first by server or workload name, or None; the other
+    versions it runs). Its servers' and, on Kubernetes, its workload bindings' (compute.role_versions)."""
+    versions = tuple(dict.fromkeys(v for _, v in role_versions(m, SERVER_ROLES)))
     return (versions[0], versions[1:]) if versions else (None, ())
 
 

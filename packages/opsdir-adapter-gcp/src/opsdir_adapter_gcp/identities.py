@@ -9,6 +9,8 @@ import re
 from opsdir.core.directory import one
 from opsdir_adapter_gcp.names import name_parts
 from opsdir_format_terraform.hcl import block, ref, tf_name
+from .account import project_id
+from .kubernetes import cluster_parts
 
 
 def project_of(path):
@@ -66,6 +68,23 @@ def service_account(w):
         ("account_id", account(w)), ("display_name", f"{w.principal} ({w.identity_role})")])
 
 
+def pod_members(m, w):
+    """The Kubernetes service accounts that act as a workload identity (GKE Workload Identity Federation): a
+    roles/iam.workloadIdentityUser member serviceAccount:<project>.svc.id.goog[<namespace>/<name>] each, the project
+    the cluster's (its provider ref's, else the environment's); notes for those whose cluster isn't bound."""
+    n = tf_name(w.identity_role)
+    pool = lambda p: f"{cluster_parts(p.cluster)[0] or project_id(m) or ref('var.project_id')}.svc.id.goog"
+    return (*(f"# NOTE: principal {w.principal}: service account {p.namespace}/{p.service_account} runs in a cluster "
+              "this environment doesn't bind, so nothing trusts it" for p in w.pods if p.cluster is None),
+            *(block("resource", ["google_service_account_iam_member",
+                                 f"{n}_{tf_name(p.namespace)}_{tf_name(p.service_account)}"], [
+                ("service_account_id", ref(f"google_service_account.{n}.name")),
+                ("role", "roles/iam.workloadIdentityUser"),
+                ("member", f"serviceAccount:{pool(p)}[{p.namespace}/{p.service_account}]")])
+              for p in w.pods if p.cluster is not None))
+
+
 def identity(m, w):
-    """A workload principal's service account and its resource-level IAM members."""
-    return (*notes(w), service_account(w), *members(w, sa_member(tf_name(w.identity_role))))
+    """A workload principal's service account, the Kubernetes service accounts that act as it, and its
+    resource-level IAM members."""
+    return (*notes(w), service_account(w), *pod_members(m, w), *members(w, sa_member(tf_name(w.identity_role))))

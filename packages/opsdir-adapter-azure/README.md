@@ -29,6 +29,16 @@ Per environment, `terraform/providers.tf` (`hashicorp/azurerm ~> 4.0`; `subscrip
 Not rendered: egress (NAT gateways), backup targets (`azblob://`), Key Vault keys and disk encryption sets (referenced by ID, not created), Windows VMs.
 
 
+## Kubernetes workloads
+
+For an environment that runs workloads on AKS, the `kubernetes` adapter asks this one how a workload's service account federates with its managed identity and how `azkv://` references reach the cluster (`kubernetes.py`):
+
+- **Workload identity**: annotation `azure.workload.identity/client-id`, the identity binding's `ciamIdentityClientId` (`UNBOUND:<role>-client-id` until the record holds it), and `azure.workload.identity/tenant-id` when the cloud records its tenant (`ciamOrganizationRef`); pods carry the label `azure.workload.identity/use: "true"` (the deployment kit adds it). The importers read a user-assigned identity's client id into `ciamIdentityClientId` (Terraform state `client_id`, `az identity` `clientId`). The platform's Terraform renders the trust: an `azurerm_federated_identity_credential` on the managed identity per service account that assumes it (issuer the AKS cluster's `oidc_issuer_url`, read as a data source from the cluster binding's ARM ID; subject `system:serviceaccount:<namespace>:<name>`; audience `api://AzureADTokenExchange`). A service account whose cluster the environment doesn't bind is a `# NOTE`.
+- **External Secrets Operator**: a SecretStore per vault with provider `azurekv` (`vaultUrl` `https://<vault>.vault.azure.net`, or `.vault.usgovcloudapi.net` in Azure Government; `authType: WorkloadIdentity` as the workload's service account; `tenantId`; `environmentType` `PublicCloud` or `USGovernmentCloud`); `remoteRef.key` the secret's name.
+- **Secrets Store CSI driver** (Azure Key Vault provider, provider `azure`): `keyvaultName`, `clientID`, `tenantId`, `cloudName` `AzurePublicCloud` or `AzureUSGovernmentCloud`, each secret under its alias.
+
+Azure Government: no Microsoft page found confirming AKS workload identity or the Key Vault CSI add-on there; both are rendered with the government endpoints, as add-ons to confirm.
+
 ## Planner checks
 
 - `check_boundary`: the Azure services the target uses, named as Microsoft's compliance-scope page names them (Virtual Machines, Virtual Network, Load Balancer, Azure Database for PostgreSQL, Storage: Blobs, Storage: Disks, Key Vault, Azure Monitor, Microsoft Defender for Cloud, ...; the page's qualifiers such as `(incl. ...)` match), checked against the in-scope list of the authorization the target relies on (core `estate`: blockers where the target must rely on one). Neither of the page's tables (Azure, Azure Government; 2026-10) names Azure Communication Services or the DNS Private Resolver: a target using them is told so; a forwarder on the environment's own DNS servers (`ciamResolverHost`) counts as Virtual Machines. In Azure Government, Microsoft's GA roadmap (2026-10-07) lists Azure DNS Private Resolver as GA and authorized at FedRAMP High (DoD IL4 and IL5 forecasted: forwarders on virtual machines there), and Communication Services is FedRAMP High as part of the Microsoft 365 GCC High offering (a separate package, FR1824057433) with no SMTP endpoint.

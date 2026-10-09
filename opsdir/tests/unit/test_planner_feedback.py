@@ -17,7 +17,7 @@ def entry(dn, oc, **attrs):
 
 def env(label, servers=(), bindings=()):
     return NS(label=label, env=entry(ENV, "ciamEnvironment", env="prod"), servers=tuple(servers),
-              bindings=tuple(bindings))
+              bindings=tuple(bindings), d=make_directory((), {}, ()))
 
 
 def ctx(d=None, src=None, dst=None):

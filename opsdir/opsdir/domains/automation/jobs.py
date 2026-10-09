@@ -9,6 +9,7 @@ after a move, so a job nobody owns is an action.
 from ...core.directory import children, follow, get, one, rdn_value, values
 from ...core.environment import bound_nowhere, servers_with_role
 from ...core.findings import findings, merge_findings, responsible
+from ..compute.workloads import kubernetes_roles
 from .naming import JOBS, ON_SERVERS, REALIZED
 
 JOBS_HEADERS = ("job", "kind", "schedule", "runs on", "owner", "code", "uses", "found on")
@@ -42,9 +43,12 @@ def _job(ctx, j):
     name, kind, owner = rdn_value(j), one(j, "ciamJobKind"), responsible(ctx.d, j, ctx.dst.env)
     role, realized_by = one(j, "ciamTargetRole"), one(j, "ciamJobRole")
     nobody = bound_nowhere(values(j, "ciamUsesRole"), ctx.src, ctx.dst)
-    blockers = (*((("Job", f"Job `{name}` runs on servers of role `{role}`, which {ctx.dst.label} has none of.",
-                    owner),) if role and servers_with_role(ctx.src, role) and not servers_with_role(ctx.dst, role)
-                  else ()),
+    moved = role and servers_with_role(ctx.src, role) and not servers_with_role(ctx.dst, role)
+    pods = moved and role in kubernetes_roles(ctx.dst)
+    blockers = (*((("Job", f"Job `{name}` runs on servers of role `{role}`, which {ctx.dst.label} "
+                    + (f"runs on Kubernetes instead: run it there (a CronJob; record the role that realizes it, "
+                       f"ciamJobRole) or somewhere else that reaches what it needs." if pods else "has none of."),
+                    owner),) if moved else ()),
                 *(("Job", f"Job `{name}` uses role `{r}`, which neither {ctx.src.label} nor {ctx.dst.label} binds.",
                    owner) for r in nobody),
                 *((("Job", f"Job `{name}` is realized by role `{realized_by}`, which neither {ctx.src.label} nor "

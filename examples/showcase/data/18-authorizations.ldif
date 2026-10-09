@@ -50,6 +50,8 @@ ciamInScopeService: Front Door
 ciamInScopeService: Web Application Firewall
 ciamInScopeService: VPN Gateway
 ciamInScopeService: Microsoft Entra ID (P1 + P2)
+ciamInScopeService: Azure Kubernetes Service (AKS)
+ciamInScopeService: Container Registry
 ciamOfferingName: Azure Commercial Cloud
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPackageId: F1209051525

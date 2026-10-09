@@ -2,7 +2,9 @@
 
 A credential (ciamCredential) is joined to its bindings by role: every secret, key or certificate reference whose
 ciamBindingRole is the credential's holds its material in that environment. Certificates name the role of their
-private key (ciamKeyRole); captured config settings link to a binding by `role#attribute` (ciamValueFrom).
+private key (ciamKeyRole); captured config settings link to a binding by `role#attribute` (ciamValueFrom). An
+environment's secret store of a scheme (ciamSecretStore) says what its references of that scheme don't: where the
+store is and how Kubernetes workloads log in to it.
 """
 import datetime as dt
 import re
@@ -14,6 +16,17 @@ from ...core.naming import branch
 from .naming import CERTIFICATES, CREDENTIALS
 
 HOLDS_MATERIAL = ("ciamSecretRef", "ciamKeyRef", "ciamCertificateRef")   # binding classes that hold key material
+
+
+def split_ref(uri):
+    """(scheme, rest) of a ref-uri: vault://secret/x -> ('vault', 'secret/x'); ('', uri) when it has no scheme."""
+    head, sep, rest = (uri or "").partition("://")
+    return (head, rest) if sep else ("", uri or "")
+
+
+def secret_store(m, scheme):
+    """Environment m's secret store for a ref-uri scheme (its ciamSecretStore), or None."""
+    return next((b for b in m.bindings if is_a(b, "ciamSecretStore") and one(b, "ciamRefScheme") == scheme), None)
 
 
 def certificates_by_fingerprint(d):

@@ -11,6 +11,7 @@ servers unless they trust its client-address header.
 from ...core.directory import children, get, one, rdn_value, values
 from ...core.environment import of_class, servers_with_role
 from ...core.findings import findings, merge_findings, responsible
+from ..compute.workloads import kubernetes_roles
 from .naming import HEADER_CONTRACTS, LAYER7
 from .policies import inspects, policy_for
 from .running import observed_facts
@@ -56,7 +57,8 @@ def _contract(ctx, c):
         blockers = (("Edge", f"Header `{header}` (contract `{rdn_value(c)}`) is set by `{setter}` servers, which "
                      f"{ctx.dst.label} doesn't run: {who} would go without it"
                      + (" (header-based sign-on stops)." if one(c, "ciamHeaderKind") == "identity" else "."),
-                     owner),) if servers_with_role(ctx.src, setter) and not servers_with_role(ctx.dst, setter) else ()
+                     owner),) if servers_with_role(ctx.src, setter) and not servers_with_role(ctx.dst, setter) \
+            and setter not in kubernetes_roles(ctx.dst) else ()
     spoofable = (("Edge", f"Clients can send header `{header}` themselves (contract `{rdn_value(c)}`): `{setter}` must "
                   f"remove it from incoming requests, since {who} {'trust' if len(trusting) > 1 else 'trusts'} it.",
                   owner, None),) \

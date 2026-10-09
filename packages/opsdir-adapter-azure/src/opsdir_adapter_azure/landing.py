@@ -20,11 +20,9 @@ from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 from .access import ACCESS
 from .guardrails import render_guardrails
-from .identities import RG, assignments, managed_identity, notes, role_of, scope, scope_data
+from .identities import AUDIENCE, RG, assignments, managed_identity, notes, role_of, scope, scope_data
 from .plumbing import render_plumbing
 from .account import provider_block, subscription_variable
-
-AUDIENCE = "api://AzureADTokenExchange"
 
 
 def _deployer(m, w):

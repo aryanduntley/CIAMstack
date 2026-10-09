@@ -57,6 +57,10 @@ ATTRIBUTES = (
                  "A cloud evaluator's verdict on one of an identity's permissions: '<verb> <role>: allowed|denied|"
                  "unknown (<evaluator> <YYYY-MM-DD>)', preferred over evaluating the recorded policies",
                  (("X-PATTERN", "^[a-z-]+ [a-z0-9][a-z0-9-]*: (allowed|denied|unknown) \\(.+\\)$"),)),
+    AttributeDef(621, 'ciamIdentityClientId', 'string', 'binding', True,
+                 "The client id of a cloud identity, where the cloud addresses it by one apart from its resource "
+                 "(an Azure user-assigned managed identity: what AKS workload identity and the Key Vault CSI provider "
+                 "name)"),
 )
 CLASSES = (
     ClassDef(69, 'ciamPermissionSet', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamPermits'), (),
@@ -68,7 +72,8 @@ CLASSES = (
              'permission sets it holds, the server role that runs as it, its conditions and reviews; a break-glass '
              "account's credential role, procedure and last test"),
     ClassDef(71, 'ciamIdentityBinding', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef',),
-             ('ciamIdentityKind', 'ciamGrant', 'ciamTrustedBy', 'ciamDenial', 'ciamBoundary', 'ciamEvaluated'),
+             ('ciamIdentityKind', 'ciamGrant', 'ciamTrustedBy', 'ciamDenial', 'ciamBoundary', 'ciamEvaluated',
+              'ciamIdentityClientId'),
              'The cloud identity a principal acts as in an environment, what the cloud grants it and who may act as '
              'it'),
     ClassDef(72, 'ciamGuardrail', 'ciamBinding', 'STRUCTURAL', ('ciamGuardrailKind',),

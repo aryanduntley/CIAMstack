@@ -13,6 +13,12 @@ data "azurerm_virtual_network" "main" {
   resource_group_name = data.azurerm_resource_group.main.name
 }
 
+data "azurerm_subnet" "snet_aks" {
+  name                 = "snet-aks"
+  virtual_network_name = "vnet-ciam-prod"
+  resource_group_name  = data.azurerm_resource_group.main.name
+}
+
 data "azurerm_subnet" "snet_am" {
   name                 = "snet-am"
   virtual_network_name = "vnet-ciam-prod"
@@ -55,68 +61,8 @@ data "azurerm_subnet" "snet_pf" {
   resource_group_name  = data.azurerm_resource_group.main.name
 }
 
-resource "azurerm_network_security_group" "am" {
-  name                = "nsg-ciam-prod-am"
-  location            = data.azurerm_resource_group.main.location
-  resource_group_name = data.azurerm_resource_group.main.name
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    ManagedBy   = "opsdir"
-  }
-}
-
 resource "azurerm_network_security_group" "ds" {
   name                = "nsg-ciam-prod-ds"
-  location            = data.azurerm_resource_group.main.location
-  resource_group_name = data.azurerm_resource_group.main.name
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    ManagedBy   = "opsdir"
-  }
-}
-
-resource "azurerm_network_security_group" "idm" {
-  name                = "nsg-ciam-prod-idm"
-  location            = data.azurerm_resource_group.main.location
-  resource_group_name = data.azurerm_resource_group.main.name
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    ManagedBy   = "opsdir"
-  }
-}
-
-resource "azurerm_network_security_group" "ig" {
-  name                = "nsg-ciam-prod-ig"
-  location            = data.azurerm_resource_group.main.location
-  resource_group_name = data.azurerm_resource_group.main.name
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    ManagedBy   = "opsdir"
-  }
-}
-
-resource "azurerm_network_security_group" "pf_admin" {
-  name                = "nsg-ciam-prod-pf-admin"
-  location            = data.azurerm_resource_group.main.location
-  resource_group_name = data.azurerm_resource_group.main.name
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    ManagedBy   = "opsdir"
-  }
-}
-
-resource "azurerm_network_security_group" "pf_engine" {
-  name                = "nsg-ciam-prod-pf-engine"
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   tags = {
@@ -142,20 +88,7 @@ resource "azurerm_network_security_rule" "fw_admin" {
   network_security_group_name = azurerm_network_security_group.ds.name
 }
 
-resource "azurerm_network_security_rule" "fw_apps_public" {
-  name                        = "fw-apps-public"
-  description                 = "fw-apps-public"
-  priority                    = 180
-  direction                   = "Inbound"
-  access                      = "Allow"
-  protocol                    = "Tcp"
-  source_port_range           = "*"
-  destination_port_ranges     = ["443"]
-  source_address_prefixes     = ["0.0.0.0/0"]
-  destination_address_prefix  = "*"
-  resource_group_name         = data.azurerm_resource_group.main.name
-  network_security_group_name = azurerm_network_security_group.ig.name
-}
+# NOTE: firewall rule `fw-apps-public` reaches role `ig`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
 
 resource "azurerm_network_security_rule" "fw_customer_portal" {
   name                        = "fw-customer-portal"
@@ -187,50 +120,11 @@ resource "azurerm_network_security_rule" "fw_idm_sync" {
   network_security_group_name = azurerm_network_security_group.ds.name
 }
 
-resource "azurerm_network_security_rule" "fw_login_public" {
-  name                        = "fw-login-public"
-  description                 = "fw-login-public"
-  priority                    = 170
-  direction                   = "Inbound"
-  access                      = "Allow"
-  protocol                    = "Tcp"
-  source_port_range           = "*"
-  destination_port_ranges     = ["443"]
-  source_address_prefixes     = ["0.0.0.0/0"]
-  destination_address_prefix  = "*"
-  resource_group_name         = data.azurerm_resource_group.main.name
-  network_security_group_name = azurerm_network_security_group.am.name
-}
+# NOTE: firewall rule `fw-login-public` reaches role `am`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
 
-resource "azurerm_network_security_rule" "fw_pf_cluster" {
-  name                        = "fw-pf-cluster"
-  description                 = "fw-pf-cluster"
-  priority                    = 190
-  direction                   = "Inbound"
-  access                      = "Allow"
-  protocol                    = "Tcp"
-  source_port_range           = "*"
-  destination_port_ranges     = ["7600", "7700"]
-  source_address_prefixes     = ["10.60.2.0/24"]
-  destination_address_prefix  = "*"
-  resource_group_name         = data.azurerm_resource_group.main.name
-  network_security_group_name = azurerm_network_security_group.pf_engine.name
-}
+# NOTE: firewall rule `fw-pf-cluster` reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
 
-resource "azurerm_network_security_rule" "fw_pf_cluster_admin" {
-  name                        = "fw-pf-cluster-admin"
-  description                 = "fw-pf-cluster-admin"
-  priority                    = 200
-  direction                   = "Inbound"
-  access                      = "Allow"
-  protocol                    = "Tcp"
-  source_port_range           = "*"
-  destination_port_ranges     = ["7600", "7700"]
-  source_address_prefixes     = ["10.60.2.0/24"]
-  destination_address_prefix  = "*"
-  resource_group_name         = data.azurerm_resource_group.main.name
-  network_security_group_name = azurerm_network_security_group.pf_admin.name
-}
+# NOTE: firewall rule `fw-pf-cluster-admin` reaches role `pf-admin`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
 
 resource "azurerm_network_security_rule" "fw_pf_ds_svc" {
   name                        = "fw-pf-ds-svc"
@@ -262,20 +156,7 @@ resource "azurerm_network_security_rule" "fw_replication" {
   network_security_group_name = azurerm_network_security_group.ds.name
 }
 
-resource "azurerm_network_security_rule" "fw_sso_public" {
-  name                        = "fw-sso-public"
-  description                 = "fw-sso-public"
-  priority                    = 160
-  direction                   = "Inbound"
-  access                      = "Allow"
-  protocol                    = "Tcp"
-  source_port_range           = "*"
-  destination_port_ranges     = ["443"]
-  source_address_prefixes     = ["0.0.0.0/0"]
-  destination_address_prefix  = "*"
-  resource_group_name         = data.azurerm_resource_group.main.name
-  network_security_group_name = azurerm_network_security_group.pf_engine.name
-}
+# NOTE: firewall rule `fw-sso-public` reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
 
 resource "azurerm_network_security_rule" "fw_supplier_portal" {
   name                        = "fw-supplier-portal"
@@ -290,6 +171,11 @@ resource "azurerm_network_security_rule" "fw_supplier_portal" {
   destination_address_prefix  = "*"
   resource_group_name         = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.ds.name
+}
+
+data "azurerm_kubernetes_cluster" "aks_ciam_prod" {
+  name                = "aks-ciam-prod"
+  resource_group_name = "rg-ciam-prod"
 }
 
 # NOTE: principal pingds: write-storage backup-target: role `backup-target` has no binding in this environment
@@ -340,6 +226,15 @@ resource "azurerm_user_assigned_identity" "identity_pf" {
   }
 }
 
+resource "azurerm_federated_identity_credential" "identity_pf_ciam_pingfederate" {
+  name                = "id-ciam-prod-pf-ciam-pingfederate"
+  resource_group_name = data.azurerm_resource_group.main.name
+  parent_id           = azurerm_user_assigned_identity.identity_pf.id
+  audience            = ["api://AzureADTokenExchange"]
+  issuer              = data.azurerm_kubernetes_cluster.aks_ciam_prod.oidc_issuer_url
+  subject             = "system:serviceaccount:ciam:pingfederate"
+}
+
 resource "azurerm_role_assignment" "identity_pf_read_secret_pf_admin_password" {
   scope                = "${data.azurerm_key_vault.kv_ciam_prod.id}/secrets/pf-admin-password"
   role_definition_name = "Key Vault Secrets User"
@@ -362,114 +257,6 @@ resource "azurerm_role_assignment" "identity_pf_write_logs_audit_logs" {
   scope                = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-ciam-prod-audit"
   role_definition_name = "Monitoring Metrics Publisher"
   principal_id         = azurerm_user_assigned_identity.identity_pf.principal_id
-}
-
-resource "azurerm_network_interface" "am_1" {
-  name                = "nic-am-1"
-  location            = data.azurerm_resource_group.main.location
-  resource_group_name = data.azurerm_resource_group.main.name
-  ip_configuration {
-    name                          = "primary"
-    subnet_id                     = data.azurerm_subnet.snet_am.id
-    private_ip_address_allocation = "Static"
-    private_ip_address            = "10.60.3.21"
-  }
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    Role        = "am"
-    ManagedBy   = "opsdir"
-  }
-}
-
-resource "azurerm_network_interface_security_group_association" "am_1" {
-  network_interface_id      = azurerm_network_interface.am_1.id
-  network_security_group_id = azurerm_network_security_group.am.id
-}
-
-resource "azurerm_linux_virtual_machine" "am_1" {
-  name                  = "am-1"
-  computer_name         = "am-1"
-  resource_group_name   = data.azurerm_resource_group.main.name
-  location              = data.azurerm_resource_group.main.location
-  size                  = "Standard_D2s_v5"
-  zone                  = "1"
-  admin_username        = "ciamadmin"
-  network_interface_ids = [azurerm_network_interface.am_1.id]
-  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingam-7.5.1-rhel9"
-  admin_ssh_key {
-    username   = "ciamadmin"
-    public_key = var.admin_ssh_public_key
-  }
-  os_disk {
-    caching                = "ReadWrite"
-    storage_account_type   = "Premium_LRS"
-    disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
-  }
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    Role        = "am"
-    Hostname    = "am-1.az.internal.example-aero.test"
-    Product     = "PingAM 7.5.1"
-    ManagedBy   = "opsdir"
-  }
-}
-
-resource "azurerm_network_interface" "am_2" {
-  name                = "nic-am-2"
-  location            = data.azurerm_resource_group.main.location
-  resource_group_name = data.azurerm_resource_group.main.name
-  ip_configuration {
-    name                          = "primary"
-    subnet_id                     = data.azurerm_subnet.snet_am.id
-    private_ip_address_allocation = "Static"
-    private_ip_address            = "10.60.3.22"
-  }
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    Role        = "am"
-    ManagedBy   = "opsdir"
-  }
-}
-
-resource "azurerm_network_interface_security_group_association" "am_2" {
-  network_interface_id      = azurerm_network_interface.am_2.id
-  network_security_group_id = azurerm_network_security_group.am.id
-}
-
-resource "azurerm_linux_virtual_machine" "am_2" {
-  name                  = "am-2"
-  computer_name         = "am-2"
-  resource_group_name   = data.azurerm_resource_group.main.name
-  location              = data.azurerm_resource_group.main.location
-  size                  = "Standard_D2s_v5"
-  zone                  = "2"
-  admin_username        = "ciamadmin"
-  network_interface_ids = [azurerm_network_interface.am_2.id]
-  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingam-7.5.1-rhel9"
-  admin_ssh_key {
-    username   = "ciamadmin"
-    public_key = var.admin_ssh_public_key
-  }
-  os_disk {
-    caching                = "ReadWrite"
-    storage_account_type   = "Premium_LRS"
-    disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
-  }
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    Role        = "am"
-    Hostname    = "am-2.az.internal.example-aero.test"
-    Product     = "PingAM 7.5.1"
-    ManagedBy   = "opsdir"
-  }
 }
 
 resource "azurerm_network_interface" "ds_1" {
@@ -739,337 +526,7 @@ resource "azurerm_virtual_machine_data_disk_attachment" "ds_3_vol_ds_data" {
   caching            = "None"
 }
 
-resource "azurerm_network_interface" "idm_1" {
-  name                = "nic-idm-1"
-  location            = data.azurerm_resource_group.main.location
-  resource_group_name = data.azurerm_resource_group.main.name
-  ip_configuration {
-    name                          = "primary"
-    subnet_id                     = data.azurerm_subnet.snet_idm.id
-    private_ip_address_allocation = "Static"
-    private_ip_address            = "10.60.6.21"
-  }
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    Role        = "idm"
-    ManagedBy   = "opsdir"
-  }
-}
-
-resource "azurerm_network_interface_security_group_association" "idm_1" {
-  network_interface_id      = azurerm_network_interface.idm_1.id
-  network_security_group_id = azurerm_network_security_group.idm.id
-}
-
-resource "azurerm_linux_virtual_machine" "idm_1" {
-  name                  = "idm-1"
-  computer_name         = "idm-1"
-  resource_group_name   = data.azurerm_resource_group.main.name
-  location              = data.azurerm_resource_group.main.location
-  size                  = "Standard_D2s_v5"
-  zone                  = "1"
-  admin_username        = "ciamadmin"
-  network_interface_ids = [azurerm_network_interface.idm_1.id]
-  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingidm-7.5.0-rhel9"
-  admin_ssh_key {
-    username   = "ciamadmin"
-    public_key = var.admin_ssh_public_key
-  }
-  os_disk {
-    caching                = "ReadWrite"
-    storage_account_type   = "Premium_LRS"
-    disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
-  }
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    Role        = "idm"
-    Hostname    = "idm-1.az.internal.example-aero.test"
-    Product     = "PingIDM 7.5.0"
-    ManagedBy   = "opsdir"
-  }
-}
-
-resource "azurerm_network_interface" "ig_1" {
-  name                = "nic-ig-1"
-  location            = data.azurerm_resource_group.main.location
-  resource_group_name = data.azurerm_resource_group.main.name
-  ip_configuration {
-    name                          = "primary"
-    subnet_id                     = data.azurerm_subnet.snet_ig.id
-    private_ip_address_allocation = "Static"
-    private_ip_address            = "10.60.10.21"
-  }
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    Role        = "ig"
-    ManagedBy   = "opsdir"
-  }
-}
-
-resource "azurerm_network_interface_security_group_association" "ig_1" {
-  network_interface_id      = azurerm_network_interface.ig_1.id
-  network_security_group_id = azurerm_network_security_group.ig.id
-}
-
-resource "azurerm_linux_virtual_machine" "ig_1" {
-  name                  = "ig-1"
-  computer_name         = "ig-1"
-  resource_group_name   = data.azurerm_resource_group.main.name
-  location              = data.azurerm_resource_group.main.location
-  size                  = "Standard_D2s_v5"
-  zone                  = "1"
-  admin_username        = "ciamadmin"
-  network_interface_ids = [azurerm_network_interface.ig_1.id]
-  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pinggateway-2024.11.0-rhel9"
-  admin_ssh_key {
-    username   = "ciamadmin"
-    public_key = var.admin_ssh_public_key
-  }
-  os_disk {
-    caching                = "ReadWrite"
-    storage_account_type   = "Premium_LRS"
-    disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
-  }
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    Role        = "ig"
-    Hostname    = "ig-1.az.internal.example-aero.test"
-    Product     = "PingGateway 2024.11.0"
-    ManagedBy   = "opsdir"
-  }
-}
-
-resource "azurerm_network_interface" "pf_admin_1" {
-  name                = "nic-pf-admin-1"
-  location            = data.azurerm_resource_group.main.location
-  resource_group_name = data.azurerm_resource_group.main.name
-  ip_configuration {
-    name                          = "primary"
-    subnet_id                     = data.azurerm_subnet.snet_pf.id
-    private_ip_address_allocation = "Static"
-    private_ip_address            = "10.60.2.10"
-  }
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    Role        = "pf-admin"
-    ManagedBy   = "opsdir"
-  }
-}
-
-resource "azurerm_network_interface_security_group_association" "pf_admin_1" {
-  network_interface_id      = azurerm_network_interface.pf_admin_1.id
-  network_security_group_id = azurerm_network_security_group.pf_admin.id
-}
-
-resource "azurerm_linux_virtual_machine" "pf_admin_1" {
-  name                  = "pf-admin-1"
-  computer_name         = "pf-admin-1"
-  resource_group_name   = data.azurerm_resource_group.main.name
-  location              = data.azurerm_resource_group.main.location
-  size                  = "Standard_D2s_v5"
-  zone                  = "1"
-  admin_username        = "ciamadmin"
-  network_interface_ids = [azurerm_network_interface.pf_admin_1.id]
-  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingfederate-12.1.4-rhel9"
-  admin_ssh_key {
-    username   = "ciamadmin"
-    public_key = var.admin_ssh_public_key
-  }
-  os_disk {
-    caching                = "ReadWrite"
-    storage_account_type   = "Premium_LRS"
-    disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
-  }
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    Role        = "pf-admin"
-    Hostname    = "pf-admin-1.az.internal.example-aero.test"
-    Product     = "PingFederate 12.1.4"
-    ManagedBy   = "opsdir"
-  }
-}
-
-resource "azurerm_network_interface" "pf_engine_1" {
-  name                = "nic-pf-engine-1"
-  location            = data.azurerm_resource_group.main.location
-  resource_group_name = data.azurerm_resource_group.main.name
-  ip_configuration {
-    name                          = "primary"
-    subnet_id                     = data.azurerm_subnet.snet_pf.id
-    private_ip_address_allocation = "Static"
-    private_ip_address            = "10.60.2.21"
-  }
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    Role        = "pf-engine"
-    ManagedBy   = "opsdir"
-  }
-}
-
-resource "azurerm_network_interface_security_group_association" "pf_engine_1" {
-  network_interface_id      = azurerm_network_interface.pf_engine_1.id
-  network_security_group_id = azurerm_network_security_group.pf_engine.id
-}
-
-resource "azurerm_linux_virtual_machine" "pf_engine_1" {
-  name                  = "pf-engine-1"
-  computer_name         = "pf-engine-1"
-  resource_group_name   = data.azurerm_resource_group.main.name
-  location              = data.azurerm_resource_group.main.location
-  size                  = "Standard_D2s_v5"
-  zone                  = "1"
-  admin_username        = "ciamadmin"
-  network_interface_ids = [azurerm_network_interface.pf_engine_1.id]
-  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingfederate-12.1.4-rhel9"
-  admin_ssh_key {
-    username   = "ciamadmin"
-    public_key = var.admin_ssh_public_key
-  }
-  os_disk {
-    caching                = "ReadWrite"
-    storage_account_type   = "Premium_LRS"
-    disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
-  }
-  identity {
-    type         = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.identity_pf.id]
-  }
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    Role        = "pf-engine"
-    Hostname    = "pf-engine-1.az.internal.example-aero.test"
-    Product     = "PingFederate 12.1.4"
-    ManagedBy   = "opsdir"
-  }
-}
-
-resource "azurerm_network_interface" "pf_engine_2" {
-  name                = "nic-pf-engine-2"
-  location            = data.azurerm_resource_group.main.location
-  resource_group_name = data.azurerm_resource_group.main.name
-  ip_configuration {
-    name                          = "primary"
-    subnet_id                     = data.azurerm_subnet.snet_pf.id
-    private_ip_address_allocation = "Static"
-    private_ip_address            = "10.60.2.22"
-  }
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    Role        = "pf-engine"
-    ManagedBy   = "opsdir"
-  }
-}
-
-resource "azurerm_network_interface_security_group_association" "pf_engine_2" {
-  network_interface_id      = azurerm_network_interface.pf_engine_2.id
-  network_security_group_id = azurerm_network_security_group.pf_engine.id
-}
-
-resource "azurerm_linux_virtual_machine" "pf_engine_2" {
-  name                  = "pf-engine-2"
-  computer_name         = "pf-engine-2"
-  resource_group_name   = data.azurerm_resource_group.main.name
-  location              = data.azurerm_resource_group.main.location
-  size                  = "Standard_D2s_v5"
-  zone                  = "2"
-  admin_username        = "ciamadmin"
-  network_interface_ids = [azurerm_network_interface.pf_engine_2.id]
-  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingfederate-12.1.4-rhel9"
-  admin_ssh_key {
-    username   = "ciamadmin"
-    public_key = var.admin_ssh_public_key
-  }
-  os_disk {
-    caching                = "ReadWrite"
-    storage_account_type   = "Premium_LRS"
-    disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
-  }
-  identity {
-    type         = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.identity_pf.id]
-  }
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    Role        = "pf-engine"
-    Hostname    = "pf-engine-2.az.internal.example-aero.test"
-    Product     = "PingFederate 12.1.4"
-    ManagedBy   = "opsdir"
-  }
-}
-
-data "azurerm_public_ip" "svc_apps" {
-  name                = "pip-ciam-apps-prod"
-  resource_group_name = data.azurerm_resource_group.main.name
-}
-
-resource "azurerm_lb" "svc_apps" {
-  name                = "lb-ciam-prod-svc-apps"
-  location            = data.azurerm_resource_group.main.location
-  resource_group_name = data.azurerm_resource_group.main.name
-  sku                 = "Standard"
-  frontend_ip_configuration {
-    name                 = "frontend"
-    public_ip_address_id = data.azurerm_public_ip.svc_apps.id
-  }
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    Service     = "apps.example-aero.test"
-    ManagedBy   = "opsdir"
-  }
-}
-
-resource "azurerm_lb_backend_address_pool" "svc_apps" {
-  name            = "servers"
-  loadbalancer_id = azurerm_lb.svc_apps.id
-}
-
-resource "azurerm_network_interface_backend_address_pool_association" "svc_apps_ig_1" {
-  network_interface_id    = azurerm_network_interface.ig_1.id
-  ip_configuration_name   = "primary"
-  backend_address_pool_id = azurerm_lb_backend_address_pool.svc_apps.id
-}
-
-resource "azurerm_lb_probe" "svc_apps_443" {
-  name            = "tcp-443"
-  loadbalancer_id = azurerm_lb.svc_apps.id
-  protocol        = "Tcp"
-  port            = 443
-}
-
-resource "azurerm_lb_rule" "svc_apps_443" {
-  name                           = "tcp-443"
-  loadbalancer_id                = azurerm_lb.svc_apps.id
-  protocol                       = "Tcp"
-  frontend_port                  = 443
-  backend_port                   = 443
-  frontend_ip_configuration_name = "frontend"
-  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.svc_apps.id]
-  probe_id                       = azurerm_lb_probe.svc_apps_443.id
-}
-
-# `apps.example-aero.test` is in a zone corporate-dns runs: not rendered here (the plan drafts the request to them)
+# NOTE: service name `svc-apps` (apps.example-aero.test) reaches role `ig`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
 
 resource "azurerm_lb" "svc_ldaps" {
   name                = "lb-ciam-prod-svc-ldaps"
@@ -1148,353 +605,9 @@ resource "azurerm_private_dns_a_record" "svc_ldaps" {
   }
 }
 
-data "azurerm_public_ip" "svc_login" {
-  name                = "pip-ciam-login-prod"
-  resource_group_name = data.azurerm_resource_group.main.name
-}
+# NOTE: service name `svc-login` (login.example-aero.test) reaches role `am`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
 
-resource "azurerm_web_application_firewall_policy" "svc_login" {
-  name                = "waf-ciam-prod-svc_login"
-  resource_group_name = data.azurerm_resource_group.main.name
-  location            = data.azurerm_resource_group.main.location
-  policy_settings {
-    enabled            = true
-    mode               = "Prevention"
-    request_body_check = true
-  }
-  custom_rules {
-    name                 = "ratelogin"
-    priority             = 1
-    rule_type            = "RateLimitRule"
-    rate_limit_duration  = "FiveMins"
-    rate_limit_threshold = 300
-    group_rate_limit_by  = "ClientAddr"
-    match_conditions {
-      match_variables {
-        variable_name = "RequestUri"
-      }
-      operator     = "Regex"
-      match_values = ["^/am/json/realms/[^?#]+/authenticate$"]
-    }
-    action = "Block"
-  }
-  custom_rules {
-    name                 = "ratetoken"
-    priority             = 2
-    rule_type            = "RateLimitRule"
-    rate_limit_duration  = "FiveMins"
-    rate_limit_threshold = 600
-    group_rate_limit_by  = "ClientAddr"
-    match_conditions {
-      match_variables {
-        variable_name = "RequestUri"
-      }
-      operator     = "Regex"
-      match_values = ["^/am/oauth2/access_token$", "^/am/oauth2/realms/[^?#]+/access_token$"]
-    }
-    action = "Block"
-  }
-  managed_rules {
-    # exclusions apply on every path, not only the endpoint kind named
-    exclusion {
-      match_variable          = "RequestArgNames"
-      selector                = "SAMLResponse"
-      selector_match_operator = "Equals"
-      excluded_rule_set {
-        type    = "Microsoft_DefaultRuleSet"
-        version = "2.1"
-      }
-    }
-    managed_rule_set {
-      type    = "Microsoft_DefaultRuleSet"
-      version = "2.1"
-    }
-    managed_rule_set {
-      type    = "Microsoft_BotManagerRuleSet"
-      version = "1.1"
-    }
-  }
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    ManagedBy   = "opsdir"
-  }
-}
-
-# DDoS network-advanced: DDoS Network Protection is a plan linked to the virtual network the landing zone keeps (or IP Protection on the public address): ask its owners
-
-resource "azurerm_application_gateway" "svc_login" {
-  name                = "agw-ciam-prod-svc-login"
-  resource_group_name = data.azurerm_resource_group.main.name
-  location            = data.azurerm_resource_group.main.location
-  zones               = ["1", "2", "3"]
-  sku {
-    name = "WAF_v2"
-    tier = "WAF_v2"
-  }
-  autoscale_configuration {
-    min_capacity = 2
-    max_capacity = 10
-  }
-  gateway_ip_configuration {
-    name      = "gateway"
-    subnet_id = data.azurerm_subnet.snet_edge.id
-  }
-  frontend_ip_configuration {
-    name                 = "frontend"
-    public_ip_address_id = data.azurerm_public_ip.svc_login.id
-  }
-  frontend_port {
-    name = "port-443"
-    port = 443
-  }
-  backend_address_pool {
-    name         = "servers"
-    ip_addresses = ["10.60.3.21", "10.60.3.22"]
-  }
-  backend_http_settings {
-    name                  = "servers-443"
-    port                  = 443
-    protocol              = "Https"
-    cookie_based_affinity = "Enabled"
-    request_timeout       = 30
-    host_name             = "login.example-aero.test"
-    # Application Gateway v2 validates the servers' certificates (chain and name)
-    probe_name = "health-443"
-  }
-  probe {
-    name                = "health-443"
-    protocol            = "Https"
-    host                = "login.example-aero.test"
-    path                = "/am/json/health/ready"
-    interval            = 30
-    timeout             = 30
-    unhealthy_threshold = 3
-    match {
-      status_code = ["200-399"]
-    }
-  }
-  http_listener {
-    name                           = "listener-443"
-    frontend_ip_configuration_name = "frontend"
-    frontend_port_name             = "port-443"
-    protocol                       = "Https"
-  }
-  request_routing_rule {
-    name                       = "route-443"
-    priority                   = 100
-    rule_type                  = "Basic"
-    http_listener_name         = "listener-443"
-    backend_address_pool_name  = "servers"
-    backend_http_settings_name = "servers-443"
-  }
-  # UNBOUND: no Key Vault certificate holds this service's certificate in this environment
-  ssl_policy {
-    policy_type = "Predefined"
-    policy_name = "AppGwSslPolicy20220101"
-  }
-  firewall_policy_id = azurerm_web_application_firewall_policy.svc_login.id
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    Service     = "login.example-aero.test"
-    ManagedBy   = "opsdir"
-  }
-}
-
-# `login.example-aero.test` is in a zone corporate-dns runs: not rendered here (the plan drafts the request to them)
-
-data "azurerm_public_ip" "svc_sso" {
-  name                = "pip-ciam-sso-prod"
-  resource_group_name = data.azurerm_resource_group.main.name
-}
-
-resource "azurerm_user_assigned_identity" "svc_sso_gateway" {
-  name                = "id-agw-ciam-prod-svc_sso"
-  resource_group_name = data.azurerm_resource_group.main.name
-  location            = data.azurerm_resource_group.main.location
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    ManagedBy   = "opsdir"
-  }
-}
-
-data "azurerm_key_vault" "svc_sso_tls" {
-  name                = "kv-ciam-prod"
-  resource_group_name = data.azurerm_resource_group.main.name
-}
-
-resource "azurerm_role_assignment" "svc_sso_gateway_certificate" {
-  scope                = data.azurerm_key_vault.svc_sso_tls.id
-  role_definition_name = "Key Vault Secrets User"
-  principal_id         = azurerm_user_assigned_identity.svc_sso_gateway.principal_id
-}
-
-resource "azurerm_web_application_firewall_policy" "svc_sso" {
-  name                = "waf-ciam-prod-svc_sso"
-  resource_group_name = data.azurerm_resource_group.main.name
-  location            = data.azurerm_resource_group.main.location
-  policy_settings {
-    enabled            = true
-    mode               = "Prevention"
-    request_body_check = true
-  }
-  custom_rules {
-    name                 = "ratelogin"
-    priority             = 1
-    rule_type            = "RateLimitRule"
-    rate_limit_duration  = "FiveMins"
-    rate_limit_threshold = 300
-    group_rate_limit_by  = "ClientAddr"
-    match_conditions {
-      match_variables {
-        variable_name = "RequestUri"
-      }
-      operator     = "Regex"
-      match_values = ["^/as/authorization\\.oauth2$", "^/idp/SSO\\.saml2$"]
-    }
-    action = "Block"
-  }
-  custom_rules {
-    name                 = "ratetoken"
-    priority             = 2
-    rule_type            = "RateLimitRule"
-    rate_limit_duration  = "FiveMins"
-    rate_limit_threshold = 600
-    group_rate_limit_by  = "ClientAddr"
-    match_conditions {
-      match_variables {
-        variable_name = "RequestUri"
-      }
-      operator     = "Regex"
-      match_values = ["^/as/token\\.oauth2$"]
-    }
-    action = "Block"
-  }
-  managed_rules {
-    # exclusions apply on every path, not only the endpoint kind named
-    exclusion {
-      match_variable          = "RequestArgNames"
-      selector                = "SAMLResponse"
-      selector_match_operator = "Equals"
-      excluded_rule_set {
-        type    = "Microsoft_DefaultRuleSet"
-        version = "2.1"
-      }
-    }
-    managed_rule_set {
-      type    = "Microsoft_DefaultRuleSet"
-      version = "2.1"
-    }
-    managed_rule_set {
-      type    = "Microsoft_BotManagerRuleSet"
-      version = "1.1"
-    }
-  }
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    ManagedBy   = "opsdir"
-  }
-}
-
-# DDoS network-advanced: DDoS Network Protection is a plan linked to the virtual network the landing zone keeps (or IP Protection on the public address): ask its owners
-
-resource "azurerm_application_gateway" "svc_sso" {
-  name                = "agw-ciam-prod-svc-sso"
-  resource_group_name = data.azurerm_resource_group.main.name
-  location            = data.azurerm_resource_group.main.location
-  zones               = ["1", "2", "3"]
-  sku {
-    name = "WAF_v2"
-    tier = "WAF_v2"
-  }
-  autoscale_configuration {
-    min_capacity = 2
-    max_capacity = 10
-  }
-  identity {
-    type         = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.svc_sso_gateway.id]
-  }
-  gateway_ip_configuration {
-    name      = "gateway"
-    subnet_id = data.azurerm_subnet.snet_edge.id
-  }
-  frontend_ip_configuration {
-    name                 = "frontend"
-    public_ip_address_id = data.azurerm_public_ip.svc_sso.id
-  }
-  frontend_port {
-    name = "port-443"
-    port = 443
-  }
-  backend_address_pool {
-    name         = "servers"
-    ip_addresses = ["10.60.2.21", "10.60.2.22"]
-  }
-  backend_http_settings {
-    name                  = "servers-443"
-    port                  = 443
-    protocol              = "Https"
-    cookie_based_affinity = "Enabled"
-    request_timeout       = 30
-    host_name             = "sso.example-aero.test"
-    # Application Gateway v2 validates the servers' certificates (chain and name)
-    probe_name = "health-443"
-  }
-  probe {
-    name                = "health-443"
-    protocol            = "Https"
-    host                = "sso.example-aero.test"
-    path                = "/pf/heartbeat.ping"
-    interval            = 30
-    timeout             = 30
-    unhealthy_threshold = 3
-    match {
-      status_code = ["200-399"]
-    }
-  }
-  http_listener {
-    name                           = "listener-443"
-    frontend_ip_configuration_name = "frontend"
-    frontend_port_name             = "port-443"
-    protocol                       = "Https"
-    ssl_certificate_name           = "tls"
-  }
-  request_routing_rule {
-    name                       = "route-443"
-    priority                   = 100
-    rule_type                  = "Basic"
-    http_listener_name         = "listener-443"
-    backend_address_pool_name  = "servers"
-    backend_http_settings_name = "servers-443"
-  }
-  ssl_certificate {
-    name                = "tls"
-    key_vault_secret_id = "${data.azurerm_key_vault.svc_sso_tls.vault_uri}secrets/sso-tls-2026"
-  }
-  ssl_policy {
-    policy_type = "Predefined"
-    policy_name = "AppGwSslPolicy20220101"
-  }
-  firewall_policy_id = azurerm_web_application_firewall_policy.svc_sso.id
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    Service     = "sso.example-aero.test"
-    ManagedBy   = "opsdir"
-  }
-  depends_on = [azurerm_role_assignment.svc_sso_gateway_certificate]
-}
-
-# `sso.example-aero.test` is in a zone corporate-dns runs: not rendered here (the plan drafts the request to them)
+# NOTE: service name `svc-sso` (sso.example-aero.test) reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
 
 # Egress firewall 'egress-firewall' is kept by network-security; its allowlist is rendered in their root, not here.
 

@@ -58,3 +58,4 @@ def test_an_eks_cluster_with_its_node_groups_and_addons():
     assert (eks.name, eks.role) == ("ciam-prod", "cluster")
     assert eks.attrs == {"ciamClusterVersion": ("1.30",), "ciamClusterAddon": ("aws-ebs-csi-driver", "vpc-cni v1.18.1"),
                          "ciamNodePool": ("system: m6i.large, 2-5",), "ciamSpansZone": ("us-east-1a", "us-east-1b")}
+    assert eks.links == {"ciamSubnetRole": ("subnet-a", "subnet-b")}      # its node groups' subnets

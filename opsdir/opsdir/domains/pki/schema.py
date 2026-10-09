@@ -91,6 +91,17 @@ ATTRIBUTES = (
     AttributeDef(341, 'ciamEncryptedByRole', 'string', 'binding', True,
                  "The binding role of the key that encrypts a secret in its store (a customer managed key): who reads "
                  "or writes the secret may also need to use that key"),
+    # ------------------------------------------------------------------ secret stores (per environment)
+    AttributeDef(616, 'ciamRefScheme', 'string', 'binding', True,
+                 'The ref-uri scheme whose references a secret store holds (vault, aws-sm, azkv, gcp-sm, ...)'),
+    AttributeDef(617, 'ciamStoreEndpoint', 'url', 'binding', True,
+                 "The address workloads reach a secret store at when the reference doesn't say (a Vault server)"),
+    AttributeDef(618, 'ciamStoreAuthRole', 'string', 'binding', True,
+                 "The role a Kubernetes workload logs in to a secret store as (a Vault Kubernetes auth role)"),
+    AttributeDef(619, 'ciamStoreAuthMount', 'string', 'binding', True,
+                 'The secret store auth method mount Kubernetes workloads log in through (a Vault auth mount path)'),
+    AttributeDef(620, 'ciamStoreKvVersion', 'enum:1|2', 'binding', True,
+                 "The version of a key/value secret store's engine (Vault KV 1 or 2); 2 when not recorded"),
 )
 KEY_SERVICE = ('ciamProtectionLevel', 'ciamAutoRotate', 'ciamRotationFunction', 'ciamReplicaRegion', 'ciamKeyUser',
                'ciamKeyAdmin', 'ciamLastRotated', 'ciamCopyRef', 'ciamMaterialFrom')
@@ -98,6 +109,10 @@ CLASSES = (
     ClassDef(10, 'ciamSecretRef', 'ciamBinding', 'STRUCTURAL', ('ciamRefUri',),
              (*KEY_SERVICE, 'ciamEncryptedByRole'),
              'Reference to a secret'),
+    ClassDef(131, 'ciamSecretStore', 'ciamBinding', 'STRUCTURAL', ('ciamRefScheme',),
+             ('ciamStoreEndpoint', 'ciamStoreAuthRole', 'ciamStoreAuthMount', 'ciamStoreKvVersion', 'ciamProviderRef'),
+             "Where an environment's references of one scheme are read from, beyond what each reference says: the "
+             "store's address and how Kubernetes workloads log in to it"),
     ClassDef(11, 'ciamKeyRef', 'ciamBinding', 'STRUCTURAL', ('ciamRefUri',),
              KEY_SERVICE,
              'Reference to an encryption key'),

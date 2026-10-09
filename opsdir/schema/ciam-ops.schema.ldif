@@ -1052,17 +1052,19 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.255 NAME 'ciamNamespace' DESC 'The K
  .6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE
   'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.256 NAME 'ciamContainerImage' DESC '
- A container image a workload runs (repository and tag; sidecars included)' 
- EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY
-  'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+ A container image an environment runs for a workload: container=repository:
+ tag or container=repository@sha256:digest (sidecars included)' EQUALITY cas
+ eIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'binding' X
+ -VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.257 NAME 'ciamStorageSize' DESC 'The
   persistent storage each replica claims, as Kubernetes writes it (100Gi)' E
  QUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X
- -PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+ -PORTABILITY 'binding' X-VALUE-TYPE 'string' X-PATTERN '^[0-9]+(\5C.[0-9]+)
+ ?(m|k|M|G|T|P|E|Ki|Mi|Gi|Ti|Pi|Ei)?$' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.258 NAME 'ciamStorageClass' DESC 'Th
- e storage class a workload claims its storage from' EQUALITY caseIgnoreMatc
- h SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' 
- X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+ e storage class a workload claims its storage from in an environment' EQUAL
+ ITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-POR
+ TABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.259 NAME 'ciamServiceAccount' DESC '
  The Kubernetes service account a workload runs as' EQUALITY caseIgnoreMatch
   SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X
@@ -2750,6 +2752,75 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.608 NAME 'ciamPasswordRole' DESC 'Bi
  ere it is kept (a PKCS#12 file\27s), per environment like the material\27s 
  own role' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SIN
  GLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.609 NAME 'ciamWorkloadRole' DESC 'Th
+ e binding role of a workload\27s workload binding: an environment that bind
+ s it runs the workload on Kubernetes, with the binding\27s images, replicas
+ , resources and storage' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.1
+ 15.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORI
+ GIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.610 NAME 'ciamWorkloadReplicas' DESC
+  'The replicas an environment runs of a workload' EQUALITY integerMatch SYN
+ TAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'binding' X-VA
+ LUE-TYPE 'int' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.611 NAME 'ciamCpuRequest' DESC 'The 
+ CPU a workload\27s main container requests, as Kubernetes writes it (500m, 
+ 2)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VA
+ LUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-PATTERN '^[0-9]+(\5C.[0
+ -9]+)?(m|k|M|G|T|P|E|Ki|Mi|Gi|Ti|Pi|Ei)?$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.612 NAME 'ciamCpuLimit' DESC 'The CP
+ U a workload\27s main container is limited to, as Kubernetes writes it' EQU
+ ALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-P
+ ORTABILITY 'binding' X-VALUE-TYPE 'string' X-PATTERN '^[0-9]+(\5C.[0-9]+)?(
+ m|k|M|G|T|P|E|Ki|Mi|Gi|Ti|Pi|Ei)?$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.613 NAME 'ciamMemoryRequest' DESC 'T
+ he memory a workload\27s main container requests, as Kubernetes writes it (
+ 2Gi)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-
+ VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-PATTERN '^[0-9]+(\5C.
+ [0-9]+)?(m|k|M|G|T|P|E|Ki|Mi|Gi|Ti|Pi|Ei)?$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.614 NAME 'ciamMemoryLimit' DESC 'The
+  memory a workload\27s main container is limited to, as Kubernetes writes i
+ t' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VAL
+ UE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-PATTERN '^[0-9]+(\5C.[0-
+ 9]+)?(m|k|M|G|T|P|E|Ki|Mi|Gi|Ti|Pi|Ei)?$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.615 NAME 'ciamWorkloadSecret' DESC '
+ A Kubernetes Secret key a workload reads and the secret role that fills it:
+  <secret name>/<key> <- <secret role> (each environment binds the role to i
+ ts secret store\27s reference; values never. Not key=role: a key named like
+  a password would read as one)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1
+ .1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-PATTERN '
+ ^[a-z0-9]([-a-z0-9.]*[a-z0-9])?/[-._A-Za-z0-9]+ <- [^\5Cs]+$' X-ORIGIN 'ops
+ dir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.616 NAME 'ciamRefScheme' DESC 'The r
+ ef-uri scheme whose references a secret store holds (vault, aws-sm, azkv, g
+ cp-sm, ...)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 
+ SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir
+ ' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.617 NAME 'ciamStoreEndpoint' DESC 'T
+ he address workloads reach a secret store at when the reference doesn\27t s
+ ay (a Vault server)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.1
+ 21.1.26 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'url' X-ORIGIN 'o
+ psdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.618 NAME 'ciamStoreAuthRole' DESC 'T
+ he role a Kubernetes workload logs in to a secret store as (a Vault Kuberne
+ tes auth role)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.
+ 15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'ops
+ dir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.619 NAME 'ciamStoreAuthMount' DESC '
+ The secret store auth method mount Kubernetes workloads log in through (a V
+ ault auth mount path)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115
+ .121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIG
+ IN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.620 NAME 'ciamStoreKvVersion' DESC '
+ The version of a key/value secret store\27s engine (Vault KV 1 or 2); 2 whe
+ n not recorded' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.
+ 15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'enum:1|2' X-ORIGIN 'o
+ psdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.621 NAME 'ciamIdentityClientId' DESC
+  'The client id of a cloud identity, where the cloud addresses it by one ap
+ art from its resource (an Azure user-assigned managed identity: what AKS wo
+ rkload identity and the Key Vault CSI provider name)' EQUALITY caseIgnoreMa
+ tch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'bindin
+ g' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -2983,16 +3054,16 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.51 NAME 'ciamComputeGroup' DESC 'Wher
  mSpansZone $ ciamMetadataTokens ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.52 NAME 'ciamCluster' DESC 'A managed
   Kubernetes cluster an environment runs workloads in: version, add-ons, nod
- e pools' SUP ciamBinding STRUCTURAL MUST ciamProviderRef MAY ( ciamClusterV
- ersion $ ciamClusterAddon $ ciamNodePool $ ciamSpansZone ) X-ORIGIN 'opsdir
- ' )
+ e pools, the subnets its nodes sit in' SUP ciamBinding STRUCTURAL MUST ciam
+ ProviderRef MAY ( ciamClusterVersion $ ciamClusterAddon $ ciamNodePool $ ci
+ amSpansZone $ ciamSubnetRole ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.53 NAME 'ciamWorkload' DESC 'A server
-  role run as containers: how, where, with which storage, identity, security
-  and secrets' SUP ciamObject STRUCTURAL MUST ( cn $ ciamWorkloadKind $ ciam
- TargetRole ) MAY ( ciamNamespace $ ciamReplicaCount $ ciamContainerImage $ 
- ciamStorageSize $ ciamStorageClass $ ciamServiceAccount $ ciamIdentityRole 
- $ ciamClusterRole $ ciamPodSecurity $ ciamNetworkPolicy $ ciamSecretName $ 
- ciamIngressHost $ ciamRepoPath ) X-ORIGIN 'opsdir' )
+  role run as containers: how, where, with which identity, security and secr
+ ets' SUP ciamObject STRUCTURAL MUST ( cn $ ciamWorkloadKind $ ciamTargetRol
+ e ) MAY ( ciamNamespace $ ciamWorkloadRole $ ciamServiceAccount $ ciamIdent
+ ityRole $ ciamClusterRole $ ciamPodSecurity $ ciamNetworkPolicy $ ciamWorkl
+ oadSecret $ ciamSecretName $ ciamIngressHost $ ciamRepoPath ) X-ORIGIN 'ops
+ dir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.54 NAME 'ciamExternalService' DESC 'A
   service outside the platform it depends on: a mail relay or API, an SMS or
   voice provider, an MFA vendor, CAPTCHA' SUP ciamObject STRUCTURAL MUST ( c
@@ -3082,7 +3153,7 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.71 NAME 'ciamIdentityBinding' DESC 'T
  he cloud identity a principal acts as in an environment, what the cloud gra
  nts it and who may act as it' SUP ciamBinding STRUCTURAL MUST ciamProviderR
  ef MAY ( ciamIdentityKind $ ciamGrant $ ciamTrustedBy $ ciamDenial $ ciamBo
- undary $ ciamEvaluated ) X-ORIGIN 'opsdir' )
+ undary $ ciamEvaluated $ ciamIdentityClientId ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.72 NAME 'ciamGuardrail' DESC 'An orga
  nization guardrail over an environment and what it prevents (kept by the la
  nding zone)' SUP ciamBinding STRUCTURAL MUST ciamGuardrailKind MAY ( ciamPr
@@ -3443,3 +3514,16 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.129 NAME 'ciamCollectionAttempt' DESC
  lectionOutcome $ ciamCollectedAt ) MAY ( ciamCollectedEnvironment $ ciamCol
  lectionProblem $ ciamCollectionIdentity $ ciamCollectedCall $ ciamCollectio
  nCredential ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.130 NAME 'ciamWorkloadBinding' DESC '
+ How an environment runs a workload on Kubernetes (its role is the workload\
+ 27s ciamWorkloadRole): images, the product version they run, replicas, reso
+ urces, storage' SUP ciamBinding STRUCTURAL MAY ( ciamContainerImage $ ciamW
+ orkloadReplicas $ ciamCpuRequest $ ciamCpuLimit $ ciamMemoryRequest $ ciamM
+ emoryLimit $ ciamStorageSize $ ciamStorageClass $ ciamProviderRef $ ciamPro
+ ductVersion ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.131 NAME 'ciamSecretStore' DESC 'Wher
+ e an environment\27s references of one scheme are read from, beyond what ea
+ ch reference says: the store\27s address and how Kubernetes workloads log i
+ n to it' SUP ciamBinding STRUCTURAL MUST ciamRefScheme MAY ( ciamStoreEndpo
+ int $ ciamStoreAuthRole $ ciamStoreAuthMount $ ciamStoreKvVersion $ ciamPro
+ viderRef ) X-ORIGIN 'opsdir' )

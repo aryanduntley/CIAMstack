@@ -25,7 +25,8 @@ EXPECTED = MappingProxyType({
         ("B12", "PingFederate", "Data store `user-directory` has withheld credentials but no credential role",
          "imported directory data store names no secret", "CHG-2005"),
         ("B13", "Binding", "Role `pf-cluster-discovery`",
-         "the target binds no PingFederate cluster discovery: the nodes' tcp.xml uses S3 on AWS", None),
+         "the target binds no PingFederate cluster discovery: the nodes' tcp.xml uses S3 on AWS; on AKS the "
+         "chart's DNS_PING through the cluster service is what to record", None),
         ("B14", "PingFederate", "Notification publisher `smtp` has withheld credentials but no credential role",
          "imported SMTP publisher names no secret", "CHG-2005"),
         ("B15", "PingFederate", "CAPTCHA provider `recaptcha` has withheld credentials but no credential role",
@@ -92,6 +93,11 @@ EXPECTED = MappingProxyType({
         ("B33", "Incident reporting", "source/prod is held to reporting obligation `dfars-7012` and target/prod isn't",
          "production is held to DFARS 252.204-7012 (72-hour reporting on DIBNet); the target to no reporting "
          "obligation", "CHG-2029"),
+        # the target runs AM, IDM, PingGateway and PingFederate on AKS (compute)
+        ("B40", "Job", "Job `pf-engine-pf-audit-ship` runs on servers of role `pf-engine`, which target/prod runs on "
+         "Kubernetes", "the audit shipping cron runs on the engines' servers; on AKS it must become a CronJob", None),
+        ("B41", "Ports", "target/prod: `ds` listens on tcp 1636 (PingIDM connector ldap) for `idm`",
+         "IDM moves to AKS: no firewall rule admits the cluster's nodes to the directory (a fix admits them)", None),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -134,8 +140,8 @@ EXPECTED = MappingProxyType({
          "the engines' truststore adds the corporate root CA, which the record lacks", "CHG-2013"),
         ("A27", "Host", "Servers of role `pf-admin` trust 1 certificate(s)",
          "the admin node's truststore adds it too", "CHG-2013"),
-        ("A28", "Compute", "Compute group `vmss-pf-engine` (role `pf-engine`) in target/prod spans 1 zone(s)",
-         "the target's engine scale set sits in one zone; the source spreads them over two", None),
+        ("A28", "Workload", "Role `pf-engine` moves from servers in source/prod to Kubernetes in target/prod",
+         "the target runs PingFederate's engines on AKS: what their host baseline adds goes into the image", None),
         ("A29", "Mail", "Sender `noreply@example-aero.test`: target/prod's DMARC policy for example-aero.test is "
          "quarantine", "the target's DMARC policy is weaker than the source's reject", None),
         ("A30", "Data", "24 password value(s) in source/prod are hashed with SSHA512",
@@ -320,6 +326,37 @@ EXPECTED = MappingProxyType({
          "CHG-2029 holds the target to DFARS)", "CHG-2029"),
         ("A103", "Key", "Copy `pf-signing-key-password`", "the password protecting the carried-over signing key's PKCS#12 "
          "file must be carried over with it (PingFederate imports the file with it)", None),
+        # the target runs AM, IDM, PingGateway and PingFederate on AKS (compute)
+        ("A104", "Workload", "Role `am` moves from servers in source/prod to Kubernetes in target/prod",
+         "the target runs AM on AKS: what its host baseline adds goes into the image", None),
+        ("A105", "Workload", "Role `idm` moves from servers in source/prod to Kubernetes in target/prod",
+         "the target runs IDM on AKS: what its host baseline adds goes into the image", None),
+        ("A106", "Workload", "Role `ig` moves from servers in source/prod to Kubernetes in target/prod",
+         "the target runs PingGateway on AKS: what its host baseline adds goes into the image", None),
+        ("A107", "Workload", "Role `pf-admin` moves from servers in source/prod to Kubernetes in target/prod",
+         "the target runs PingFederate's admin console on AKS: what its host baseline adds goes into the image", None),
+        ("A108", "ForgeOps", "ForgeOps in target/prod (namespace `ciam`) reads Secret `am-env-secrets`",
+         "AM's own secrets (encryption, session and OIDC keys) are recorded for none", None),
+        ("A109", "ForgeOps", "ForgeOps in target/prod (namespace `ciam`) reads Secret `ds-env-secrets`",
+         "AM's CTS and application store passwords aren't recorded", None),
+        ("A110", "ForgeOps", "ForgeOps in target/prod (namespace `ciam`) reads Secret `amster-env-secrets`",
+         "the IDM clients AM registers have no recorded secrets", None),
+        ("A111", "ForgeOps", "ForgeOps in target/prod (namespace `ciam`) reads Secret `ds-passwords`",
+         "the DS monitor password isn't recorded", None),
+        ("A112", "ForgeOps", "ForgeOps in target/prod (namespace `ciam`) reads Secret `keystore-create`",
+         "the AM/IDM keystore password isn't recorded", None),
+        ("A113", "ForgeOps", "ForgeOps in target/prod (namespace `ciam`) reads Secret `amster`",
+         "amster's SSH key pair (made by Helm, not by Kustomize) isn't recorded", None),
+        ("A114", "ForgeOps", "ForgeOps in target/prod (namespace `ciam`) reads Secret `ds-ssl-keypair`",
+         "the CA that signed the DS servers' certificates isn't recorded: AM and IDM can't trust them", None),
+        ("A115", "PingFederate on Kubernetes",
+         "PingFederate workload `pf-admin` in target/prod (namespace `ciam`) has no license",
+         "no PingFederate license is recorded for the admin console on AKS", None),
+        ("A116", "PingFederate on Kubernetes",
+         "PingFederate workload `pf-engine` in target/prod (namespace `ciam`) has no license",
+         "no PingFederate license is recorded for the engines on AKS", None),
+        ("A117", "Ports", "target/prod: firewall rules open ports no installed product listens on: `fw-pf-cluster`",
+         "PingFederate's cluster rules stay behind for servers that moved to AKS (a fix closes them)", None),
     ],
 })
 

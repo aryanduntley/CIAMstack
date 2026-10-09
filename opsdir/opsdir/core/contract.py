@@ -112,9 +112,32 @@ Importer = namedtuple("Importer", ("name", "description", "read", "commands"), d
 # DN, entries that should exist in that subtree), ...), each replacing the record's subtree at its scope; notices.
 Imported = NamedTuple("Imported", [("containers", tuple), ("groups", tuple), ("notices", tuple)])
 
+# How a Kubernetes workload assumes a cloud identity, from the provider adapter that owns the cloud: annotations on its
+# service account and labels on its pods, as ((name, value), ...); a value the record can't give is UNBOUND:<what>.
+K8sIdentity = NamedTuple("K8sIdentity", [("annotations", tuple), ("pod_labels", tuple)])
+
+# How Kubernetes reads the secrets a ref-uri scheme names, from the adapter that owns the scheme (refs are passed as the
+# rest of the uri, after <scheme>://; store: the environment's ciamSecretStore for the scheme, or None; a value the
+# record can't give is UNBOUND:<what>):
+#   store_key(rest) -> which store of the scheme a reference lives in ('' when the scheme has one): a Key Vault's
+#     name, a Vault KV mount, a project; one SecretStore / SecretProviderClass serves one key
+#   eso_provider(m, store, key, service_account, cluster) -> an External Secrets Operator SecretStore's spec.provider
+#     block (cluster: the ciamCluster the workload runs in, or None)
+#   eso_ref(rest) -> an ExternalSecret's remoteRef for one reference
+#   csi_provider: the Secrets Store CSI driver provider name
+#   csi_parameters(m, store, key, objects, identity) -> a SecretProviderClass's spec.parameters; objects ((object
+#     name, rest), ...), identity the workload's ciamIdentityBinding or None
+SecretDelivery = NamedTuple("SecretDelivery", [("store_key", Callable), ("eso_provider", Callable),
+                                               ("eso_ref", Callable), ("csi_provider", str),
+                                               ("csi_parameters", Callable)])
+
 # What connectors provide to adapters while rendering: secret_command(ref-uri) -> shell command that resolves it;
-# endpoints: the installed adapters' Endpoints (what the edge aims health checks, rate limits and exclusions at)
-Services = NamedTuple("Services", [("secret_command", Callable), ("endpoints", tuple)])
+# endpoints: the installed adapters' Endpoints (what the edge aims health checks, rate limits and exclusions at);
+# listeners(m): the ports the installed adapters' products listen on in an environment; workload_identity(m, binding):
+# the K8sIdentity of an identity binding from the provider adapter that applies to m, or None; secret_delivery(scheme):
+# the SecretDelivery of the adapter owning a ref-uri scheme, or None
+Services = NamedTuple("Services", [("secret_command", Callable), ("endpoints", tuple), ("listeners", Callable),
+                                   ("workload_identity", Callable), ("secret_delivery", Callable)])
 
 # One row of a cloud's permission table: what a neutral verb (read-secret, use-key, ...) on a binding of a class
 # (ciamSecretRef, ciamKeyRef, ...; kind: a stream's kind, or None for any) needs in the cloud's terms. needs is a tuple
@@ -142,8 +165,10 @@ Endpoint = namedtuple("Endpoint", ("kind", "path", "server_role"))
 # words (LDAPS, replication, cluster), peers who connects: any of clients (consumers, directly or through service
 # names), peers (other servers of the same role), admin (the operators' ways in), and server roles by name. Products
 # derive them from the record where it says (a connection handler's port, a node's run.properties), else their
-# defaults; the connectors turn them into the ports matrix the firewall rules are checked against.
-Listener = namedtuple("Listener", ("server_role", "port", "protocol", "purpose", "peers"))
+# defaults; the connectors turn them into the ports matrix the firewall rules are checked against. on: where it
+# listens, None wherever the role runs (servers and Kubernetes pods alike), "servers" only on servers, "kubernetes"
+# only in pods: a deployment kit's container ports, which replace the product's for the role's pods.
+Listener = namedtuple("Listener", ("server_role", "port", "protocol", "purpose", "peers", "on"), defaults=(None,))
 
 # A setting a product needs so its outside traffic goes through an environment's explicit proxy (network.proxies):
 # server_role the servers that need it, place where it is set (a file, an admin setting, the JVM options) in words,
@@ -200,7 +225,7 @@ Collector = namedtuple("Collector", ("importer", "scope", "steps", "verify", "pr
 # settings None, one that names no prerequisites none.
 Adapter = namedtuple("Adapter", (
     "name",
-    "kind",                 # provider | product | host | delivery | secret-store | compliance
+    "kind",                 # provider | platform | product | host | delivery | secret-store | compliance
     "applies",              # (EnvModel) -> bool, from directory data only; None = declaration-only (connectors.stack)
     "required_roles",
     "render_neutral",       # (Directory) -> {path: text}, same everywhere
@@ -223,10 +248,12 @@ Adapter = namedtuple("Adapter", (
     "proxy_settings",       # (EnvModel, ProxySettings) -> ProxySettings its servers need for an explicit proxy, or None
     "prerequisites",        # Prerequisites: data it needs fetched from its provider
     "collectors",           # Collectors: how `opsdir collect` reads its importers' exports from the live system
-    "render_targets"),      # ((name, what it renders[, False: only when asked]), ...): the outputs an operator may
+    "render_targets",       # ((name, what it renders[, False: only when asked]), ...): the outputs an operator may
                             # choose between at render time (`opsdir render --target`); render_env gets the names
                             # chosen (by default every one not marked only-when-asked)
-    defaults=((), None, None, (), (), ()))
+    "workload_identity",    # (EnvModel, identity binding) -> K8sIdentity: its cloud's workload identity, or None
+    "secret_delivery"),     # {ref-uri scheme: SecretDelivery}: how Kubernetes reads its schemes' secrets, or None
+    defaults=((), None, None, (), (), (), None, None))
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

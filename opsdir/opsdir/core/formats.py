@@ -7,6 +7,7 @@ from fnmatch import fnmatchcase
 
 from .contract import Format
 from .interchange import ini, json_text, properties, xml_text
+from .interchange.yaml_text import dump as yaml_dump
 from .jsondata import indented
 from .interchange.ldif import CODEC as LDIF_CODEC, parse, write_records
 
@@ -23,7 +24,7 @@ LDIF = _format("ldif", "LDAP Data Interchange Format (RFC 2849)", "text/x-ldif",
                _ldif_records, write_records, LDIF_CODEC)
 JSON = _format("json", "JSON (RFC 8259)", "application/json", (".json",), (), json.loads, indented, json_text.CODEC)
 XML = _format("xml", "XML", "application/xml", (".xml",), ("<!--", "-->"), codec=xml_text.CODEC)
-YAML = _format("yaml", "YAML", "application/yaml", (".yaml", ".yml"), ("#",))
+YAML = _format("yaml", "YAML", "application/yaml", (".yaml", ".yml"), ("#",), write=yaml_dump)
 SHELL = _format("shell", "POSIX shell / bash script", "text/x-shellscript", (".sh",), ("#",))
 JAVA_PROPERTIES = _format("java-properties", "Java properties", "text/x-java-properties", (".properties",), ("#",),
                           codec=properties.CODEC)

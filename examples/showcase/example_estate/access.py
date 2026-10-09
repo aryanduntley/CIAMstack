@@ -12,6 +12,8 @@ Planted for the planner to find:
   - the target's guardrails don't stop audit logs being disabled; operators can't come in by a session manager there
   - in the target the admins' Key Vault rights are PIM-eligible only: whether they may manage the keys can't be told
 """
+from types import MappingProxyType
+
 from .common import RB, R, ou, owner, spec, t
 
 FILE = "80-access"
@@ -127,11 +129,16 @@ GCP_IDENTITIES = (
 )
 
 
-def _identities(rows):
+def _identities(rows, client_ids=MappingProxyType({})):
     return tuple(("ciamIdentityBinding", cn, cn, {"ciamIdentityKind": kind, "ciamProviderRef": ref,
                                                   "ciamTrustedBy": list(trusted) or None,
-                                                  "ciamGrant": list(grants) or None})
+                                                  "ciamGrant": list(grants) or None,
+                                                  "ciamIdentityClientId": client_ids.get(cn)})
                  for cn, kind, ref, trusted, grants in rows)
+
+
+# The client ids of the target's managed identities that AKS workload identity annotates service accounts with
+CLIENT_IDS = MappingProxyType({"identity-pf": "6f1c2a40-0000-4000-8000-00000000c1d0"})
 
 
 def _guardrail(kind, ref, denies):
@@ -154,7 +161,7 @@ ACCESS = {
                      "d-9067a1b2c3"),
                _path("operator-console", "session",
                      "arn:aws:ssm:us-east-1:111122223333:document/SSM-SessionManagerRunShell")),
-    "target": (*_identities(AZURE_IDENTITIES),
+    "target": (*_identities(AZURE_IDENTITIES, CLIENT_IDS),
                # planted: nothing stops audit logs being disabled in the target
                _guardrail("policy-assignment", f"{SUB}/providers/Microsoft.Authorization/policyAssignments",
                           ("region-escape", "public-storage", "key-deletion")),

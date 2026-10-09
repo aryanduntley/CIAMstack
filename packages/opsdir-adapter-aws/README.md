@@ -29,6 +29,16 @@ Per environment, `terraform/providers.tf` (`hashicorp/aws ~> 5.0`; `region` from
 
 Not rendered: the VPC, subnets, NAT gateways, buckets, Elastic IPs and Route 53 zones themselves (referenced, the landing zone creates them); KMS keys (referenced by ARN); egress security group rules; key pairs, IAM instance profiles and user data; application load balancers and TLS listeners (services are TCP pass-through).
 
+## Kubernetes workloads
+
+For an environment that runs workloads on EKS, the `kubernetes` adapter asks this one how a workload's service account assumes its IAM role and how `aws-sm://` references reach the cluster (`kubernetes.py`):
+
+- **Workload identity** (IAM roles for service accounts): annotation `eks.amazonaws.com/role-arn` with the identity binding's provider ref when it is an ARN, else `arn:aws:iam::<account>:role/<name>` from the cloud's `ciamAccountRef`; `UNBOUND:<role>-role-arn` without them. The platform's Terraform renders that role's trust: an `aws_iam_policy_document` letting each EKS cluster's OIDC provider assume it for its service accounts (`sts:AssumeRoleWithWebIdentity`, `<issuer host>:sub` = `system:serviceaccount:<namespace>:<name>`, `:aud` = `sts.amazonaws.com`), the cluster and provider read as data sources from the cluster binding's provider ref (its name or ARN); EC2 too, with the instance profile, only where servers of the role run as well. A service account whose cluster the environment doesn't bind is a `# NOTE`.
+- **External Secrets Operator**: a SecretStore with provider `aws` (service `SecretsManager`, the reference's region from its ARN or the cloud's `ciamRegion`, `auth.jwt.serviceAccountRef` the workload's service account); `remoteRef.key` the secret's name or ARN (its whole SecretString).
+- **Secrets Store CSI driver** (provider `aws`): `region`, `usePodIdentity: "false"`, each secret a `secretsmanager` object under its alias.
+
+Not rendered here: the IAM role's trust of the cluster's OIDC provider (the role's Terraform still trusts EC2 for servers).
+
 ## Planner checks
 
 - `check_boundary`: the AWS services the target uses, named as AWS's FedRAMP Certification Package Overviews name them (servers: Amazon Elastic Compute Cloud (EC2); databases by engine: Amazon RDS for Postgres, ...; object stores: Amazon Simple Storage Service (S3); service names: Elastic Load Balancing (ELB); and so on), checked against the in-scope list of the authorization the target relies on (core `estate`: blockers where the target must rely on one). Neither of AWS's lists (2026-08) nor its services-in-scope page (2026-10-08) names Elastic Load Balancing, EC2 Auto Scaling, Data Lifecycle Manager, Site-to-Site VPN, Transit Gateway or CloudWatch Synthetics. Two are covered by a listed service on AWS's own word, shown as in place with the basis: Data Lifecycle Manager (the EBS user guide: assessed as a capability of Amazon EBS; any program listing EBS applies to it) and Site-to-Site VPN (a feature of Amazon VPC in the EC2 API; the scope page counts generally available features of a listed service in scope unless specifically excluded). The others have APIs of their own and no row: a target using them is told so, to check AWS's SSP (the FedRAMP Partner Package in AWS Artifact), use a service in scope, or record an exception.
@@ -671,7 +681,7 @@ It adds no required roles, planner checks or schema of its own; the environment'
 
 `tests/test_aws_landing.py`: the landing zone: a deployer's OIDC trust and permissions, an operator group's access, the guardrails, the owner in the header, nothing rendered without need.
 
-`tests/test_aws_access.py`: the AWS access table: a secret by its suffixed ARN or a pattern (not a longer name, not the bare ARN), objects in a bucket (reading also needs `s3:ListBucket`), a topic by stream kind, escalation actions. `tests/test_aws_identities.py`: a workload's IAM role, least-privilege policy and instance profile; notes for what can't be granted.
+`tests/test_aws_access.py`: the AWS access table: a secret by its suffixed ARN or a pattern (not a longer name, not the bare ARN), objects in a bucket (reading also needs `s3:ListBucket`), a topic by stream kind, escalation actions. `tests/test_aws_identities.py`: a workload's IAM role, least-privilege policy and instance profile; notes for what can't be granted; the trust of the Kubernetes service accounts that assume it (IRSA), with EC2 only alongside servers.
 
 `tests/test_aws_network.py`: the network depth the stack keeps: an interface endpoint with its security group and private DNS, a gateway endpoint on its subnets' and the main route tables, what AWS has no endpoint for, an endpoint service on an L4 service's NLB and not an ALB, the egress firewall's domain list (web traffic only), what others keep named, nothing rendered without records.
 

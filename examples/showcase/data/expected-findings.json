@@ -89,7 +89,7 @@
       "id": "B13",
       "area": "Binding",
       "match": "Role `pf-cluster-discovery`",
-      "planted": "the target binds no PingFederate cluster discovery: the nodes' tcp.xml uses S3 on AWS",
+      "planted": "the target binds no PingFederate cluster discovery: the nodes' tcp.xml uses S3 on AWS; on AKS the chart's DNS_PING through the cluster service is what to record",
       "cleared_by": null
     },
     {
@@ -276,6 +276,20 @@
       "match": "source/prod is held to reporting obligation `dfars-7012` and target/prod isn't",
       "planted": "production is held to DFARS 252.204-7012 (72-hour reporting on DIBNet); the target to no reporting obligation",
       "cleared_by": "CHG-2029"
+    },
+    {
+      "id": "B40",
+      "area": "Job",
+      "match": "Job `pf-engine-pf-audit-ship` runs on servers of role `pf-engine`, which target/prod runs on Kubernetes",
+      "planted": "the audit shipping cron runs on the engines' servers; on AKS it must become a CronJob",
+      "cleared_by": null
+    },
+    {
+      "id": "B41",
+      "area": "Ports",
+      "match": "target/prod: `ds` listens on tcp 1636 (PingIDM connector ldap) for `idm`",
+      "planted": "IDM moves to AKS: no firewall rule admits the cluster's nodes to the directory (a fix admits them)",
+      "cleared_by": null
     }
   ],
   "actions": [
@@ -470,9 +484,9 @@
     },
     {
       "id": "A28",
-      "area": "Compute",
-      "match": "Compute group `vmss-pf-engine` (role `pf-engine`) in target/prod spans 1 zone(s)",
-      "planted": "the target's engine scale set sits in one zone; the source spreads them over two",
+      "area": "Workload",
+      "match": "Role `pf-engine` moves from servers in source/prod to Kubernetes in target/prod",
+      "planted": "the target runs PingFederate's engines on AKS: what their host baseline adds goes into the image",
       "cleared_by": null
     },
     {
@@ -1006,6 +1020,104 @@
       "area": "Key",
       "match": "Copy `pf-signing-key-password`",
       "planted": "the password protecting the carried-over signing key's PKCS#12 file must be carried over with it (PingFederate imports the file with it)",
+      "cleared_by": null
+    },
+    {
+      "id": "A104",
+      "area": "Workload",
+      "match": "Role `am` moves from servers in source/prod to Kubernetes in target/prod",
+      "planted": "the target runs AM on AKS: what its host baseline adds goes into the image",
+      "cleared_by": null
+    },
+    {
+      "id": "A105",
+      "area": "Workload",
+      "match": "Role `idm` moves from servers in source/prod to Kubernetes in target/prod",
+      "planted": "the target runs IDM on AKS: what its host baseline adds goes into the image",
+      "cleared_by": null
+    },
+    {
+      "id": "A106",
+      "area": "Workload",
+      "match": "Role `ig` moves from servers in source/prod to Kubernetes in target/prod",
+      "planted": "the target runs PingGateway on AKS: what its host baseline adds goes into the image",
+      "cleared_by": null
+    },
+    {
+      "id": "A107",
+      "area": "Workload",
+      "match": "Role `pf-admin` moves from servers in source/prod to Kubernetes in target/prod",
+      "planted": "the target runs PingFederate's admin console on AKS: what its host baseline adds goes into the image",
+      "cleared_by": null
+    },
+    {
+      "id": "A108",
+      "area": "ForgeOps",
+      "match": "ForgeOps in target/prod (namespace `ciam`) reads Secret `am-env-secrets`",
+      "planted": "AM's own secrets (encryption, session and OIDC keys) are recorded for none",
+      "cleared_by": null
+    },
+    {
+      "id": "A109",
+      "area": "ForgeOps",
+      "match": "ForgeOps in target/prod (namespace `ciam`) reads Secret `ds-env-secrets`",
+      "planted": "AM's CTS and application store passwords aren't recorded",
+      "cleared_by": null
+    },
+    {
+      "id": "A110",
+      "area": "ForgeOps",
+      "match": "ForgeOps in target/prod (namespace `ciam`) reads Secret `amster-env-secrets`",
+      "planted": "the IDM clients AM registers have no recorded secrets",
+      "cleared_by": null
+    },
+    {
+      "id": "A111",
+      "area": "ForgeOps",
+      "match": "ForgeOps in target/prod (namespace `ciam`) reads Secret `ds-passwords`",
+      "planted": "the DS monitor password isn't recorded",
+      "cleared_by": null
+    },
+    {
+      "id": "A112",
+      "area": "ForgeOps",
+      "match": "ForgeOps in target/prod (namespace `ciam`) reads Secret `keystore-create`",
+      "planted": "the AM/IDM keystore password isn't recorded",
+      "cleared_by": null
+    },
+    {
+      "id": "A113",
+      "area": "ForgeOps",
+      "match": "ForgeOps in target/prod (namespace `ciam`) reads Secret `amster`",
+      "planted": "amster's SSH key pair (made by Helm, not by Kustomize) isn't recorded",
+      "cleared_by": null
+    },
+    {
+      "id": "A114",
+      "area": "ForgeOps",
+      "match": "ForgeOps in target/prod (namespace `ciam`) reads Secret `ds-ssl-keypair`",
+      "planted": "the CA that signed the DS servers' certificates isn't recorded: AM and IDM can't trust them",
+      "cleared_by": null
+    },
+    {
+      "id": "A115",
+      "area": "PingFederate on Kubernetes",
+      "match": "PingFederate workload `pf-admin` in target/prod (namespace `ciam`) has no license",
+      "planted": "no PingFederate license is recorded for the admin console on AKS",
+      "cleared_by": null
+    },
+    {
+      "id": "A116",
+      "area": "PingFederate on Kubernetes",
+      "match": "PingFederate workload `pf-engine` in target/prod (namespace `ciam`) has no license",
+      "planted": "no PingFederate license is recorded for the engines on AKS",
+      "cleared_by": null
+    },
+    {
+      "id": "A117",
+      "area": "Ports",
+      "match": "target/prod: firewall rules open ports no installed product listens on: `fw-pf-cluster`",
+      "planted": "PingFederate's cluster rules stay behind for servers that moved to AKS (a fix closes them)",
       "cleared_by": null
     }
   ]
