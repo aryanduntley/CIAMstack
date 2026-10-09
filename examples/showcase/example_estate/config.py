@@ -26,12 +26,13 @@ TOKEN_MANAGER = """{
   "reuseExistingTokens": true
 }
 """
-# (name, format, repo path, deploy role, text, {locator: role#attribute})
+# (name, format, repo path, deploy role, text, {locator: role#attribute}, deploy path or None)
 FILES = (
     ("run.properties", JAVA_PROPERTIES, "pingfederate/bin/run.properties", "pf-engine", RUN_PROPERTIES,
-     {"pf.engine.hostname": "pf-sso-service#ciamFqdn", "pf.admin.pwd": "pf-admin-password#ciamRefUri"}),
+     {"pf.engine.hostname": "pf-sso-service#ciamFqdn", "pf.admin.pwd": "pf-admin-password#ciamRefUri"},
+     "/opt/pingfederate/bin/run.properties"),
     ("default-atm.json", JSON, "pingfederate/server/default/data/atm/default-atm.json", "pf-engine", TOKEN_MANAGER,
-     {}),
+     {}, None),
 )
 LOGIN_TEMPLATES = MappingProxyType({
     "html.form.login.template.html": b"<!DOCTYPE html>\n<html><body><form>Sign in</form></body></html>\n",
@@ -49,8 +50,8 @@ def _spec(file, e, extra):
     return spec(file, e.dn, e.classes, **{k: list(v) for k, v in e.attrs.items()}, **extra)
 
 
-def _file_specs(name, fmt, repo_path, role, text, links):
-    entries, _ = file_entries(fmt, text, name, repo_path, _patterns(), role)
+def _file_specs(name, fmt, repo_path, role, text, links, deploy_path):
+    entries, _ = file_entries(fmt, text, name, repo_path, _patterns(), role, deploy_path)
     return tuple(_spec("95-config-files", e, {"ciamOwner": owner("ciam-platform")} if e.dn.startswith(f"cn={name},")
                        else {"ciamValueFrom": links.get(e.attrs["ciamLocator"][0])})
                  for e in entries)

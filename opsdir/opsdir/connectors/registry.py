@@ -16,8 +16,10 @@ from ..core.directory import get, rdn_value, subtree
 from ..core.environment import env_model, with_required_roles
 from ..core.inventory import imports
 from ..core.naming import branch
+from ..core.interchange import jinja
 from ..core.secrets import CORE_OWNER, CORE_PATTERNS, dialect_problems
 from ..core.standard import CORE
+from ..domains.pki.credentials import secret_store, split_ref
 from ..store.migrations import DEFINITIONS as STORE_DEFINITIONS, read_migrations
 from . import schema
 from .stack import declared_adapters, missing_adapters
@@ -223,6 +225,21 @@ def secret_delivery_of(scheme, installed=ADAPTERS):
                 None)
 
 
+def ansible_lookup_of(m, uri, installed=ADAPTERS):
+    """The Jinja expression reading a secret reference at run time in environment m: the native lookup of the adapter
+    owning its scheme, else a pipe to the scheme's resolver command."""
+    scheme, rest = split_ref(uri)
+    native = next((a.ansible_lookup[scheme] for a in installed if a.ansible_lookup and scheme in a.ansible_lookup),
+                  None)
+    expr = native(m, secret_store(m, scheme), rest) if native is not None else None
+    return expr or jinja.lookup("ansible.builtin.pipe", secret_command(uri, installed))
+
+
+def _deployable_config(m):
+    from .capture import deployable_config        # capture imports the registry: resolved when first asked
+    return deployable_config(m.d, m)
+
+
 def services(installed=ADAPTERS):
     """What connectors provide to adapters while rendering, resolved against the installed adapters."""
     return Services(secret_command=partial(secret_command, installed=installed),
@@ -231,4 +248,6 @@ def services(installed=ADAPTERS):
                     workload_identity=partial(workload_identity_of, installed=installed),
                     secret_delivery=partial(secret_delivery_of, installed=installed),
                     routes=partial(routes_of, installed=installed),
-                    gateway_plug=partial(gateway_plug_of, installed=installed))
+                    gateway_plug=partial(gateway_plug_of, installed=installed),
+                    ansible_lookup=partial(ansible_lookup_of, installed=installed),
+                    deployable_config=_deployable_config)

@@ -81,7 +81,8 @@ SERVER_INPUTS = (("ciamImageRef", "image"), ("ciamInstanceSize", "size"))   # wh
 
 def check_server_inputs(ctx):
     """Blockers for the target's servers that record no image or size: their render writes UNBOUND values, so
-    applying it fails."""
+    applying it fails. Registered by the providers that render servers (the cloud adapters), not by the domain: an
+    on-prem site's servers already exist."""
     m = ctx.dst
     return findings(blockers=[
         ("Servers", f"Server `{rdn_value(s)}` in {m.label} records no {' or '.join(missing)} "

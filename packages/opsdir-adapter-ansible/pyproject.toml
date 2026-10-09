@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-adapter-ansible"
+version = "0.1.0"
+description = "opsdir configuration-management adapter: an environment's servers as an Ansible inventory, and the host configuration the record holds for them as playbooks."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1"]
+
+[project.entry-points."opsdir.adapters"]
+ansible = "opsdir_adapter_ansible.adapter:ADAPTER"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,5 +1,6 @@
 """Google Cloud adapter: applies to environments in clouds whose ciamCloudProvider is gcp."""
 from opsdir.core.contract import Adapter
+from opsdir.domains.infrastructure.checks import check_server_inputs
 from opsdir.domains.infrastructure.firewall import priority_check
 from .access import ACCESS
 from .boundary import check_boundary
@@ -22,7 +23,8 @@ def applies(m):
 
 
 ADAPTER = Adapter(name="gcp", kind="provider", applies=applies, required_roles=(),
-                  render_neutral=None, render_env=render, checks=(priority_check(*PRIORITIES), check_boundary),
+                  render_neutral=None, render_env=render,
+                  checks=(priority_check(*PRIORITIES), check_boundary, check_server_inputs),
                   ref_schemes=("gcp-sm", "gcp-kms", "gcp-cert", "gs"),
                   secret_schemes={"gcp-sm": secret_manager_command}, renders="Terraform for the target cloud",
                   neutral_label=None,

@@ -4,6 +4,8 @@ opsdir adapter for HashiCorp Vault: vault:// secret references.
 
 A secret-store adapter: owns the `vault://` reference scheme and resolves it with the Vault CLI at run time. The secret value never reaches the database or a rendered file.
 
+Configuration management (`opsdir-adapter-ansible`) reads `vault://` references at run time with `community.hashi_vault.vault_kv2_get` (or `vault_kv1_get` when the environment's Vault store records `ciamStoreKvVersion: 1`): the reference's first segment is the KV mount, the rest the path, field `value`; `url` from the store's `ciamStoreEndpoint` when recorded; token and auth from the controller's Vault settings (`ansible_lookup`).
+
 A reference is `vault://<mount>/<path>` in a key/value engine, read as the field `value`.
 
 ## Kubernetes workloads

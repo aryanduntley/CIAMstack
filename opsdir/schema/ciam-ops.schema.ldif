@@ -2838,6 +2838,28 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.624 NAME 'ciamCertificatePem' DESC '
  for a CA something must be given to trust (a gateway checking its backends)
  ' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALU
  E X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.625 NAME 'ciamHardeningProfile' DESC
+  'A hardening profile the role\27s servers are configured to beyond the bas
+ eline (e.g. disa-stig), as the configuration-management adapter names it; a
+ pplied alongside what the baseline records' EQUALITY caseIgnoreMatch SYNTAX
+  1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-
+ TYPE 'vocab' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.626 NAME 'ciamManagementAddress' DES
+ C 'Where an appliance\27s management API answers: a host name or address (a
+ nd port when not the default)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.
+ 1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string
+ ' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.627 NAME 'ciamApplianceScope' DESC '
+ Where on an appliance the platform\27s objects go, as its vendor names it (
+ an F5 AS3 tenant, a PAN-OS device group or vsys, an Infoblox DNS view, the 
+ Windows DNS server)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.1
+ 21.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN
+  'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.628 NAME 'ciamLoginSecretRole' DESC 
+ 'Binding role of the secret holding the password or API key an appliance\27
+ s login signs in with, read at run time' EQUALITY caseIgnoreMatch SYNTAX 1.
+ 3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TY
+ PE 'string' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -2868,11 +2890,11 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.8 NAME 'ciamServiceName' DESC 'Stable
  uns)' SUP ciamBinding STRUCTURAL MUST ( ciamFqdn $ ciamTargetRole $ ciamPor
  t ) MAY ( ciamDnsZone $ ciamDnsZoneRef $ ciamFrontendIp $ ciamExposure $ ci
  amTlsCertificate $ ciamTtlSeconds $ ciamRoutingPolicy $ ciamRoutingWeight $
-  ciamEdgeFact $ ciamEdgeSetting ) X-ORIGIN 'opsdir' )
+  ciamEdgeFact $ ciamEdgeSetting $ ciamManagedBy ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.9 NAME 'ciamFirewallRule' DESC 'Inbou
  nd allow rule' SUP ciamBinding STRUCTURAL MUST ( ciamSourceCidr $ ciamPort 
  $ ciamTargetRole ) MAY ( ciamProtocol $ ciamAllowsConsumer $ ciamRulePriori
- ty $ ciamPolicyRole ) X-ORIGIN 'opsdir' )
+ ty $ ciamPolicyRole $ ciamManagedBy ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.10 NAME 'ciamSecretRef' DESC 'Referen
  ce to a secret' SUP ciamBinding STRUCTURAL MUST ciamRefUri MAY ( ciamProtec
  tionLevel $ ciamAutoRotate $ ciamRotationFunction $ ciamReplicaRegion $ cia
@@ -3061,8 +3083,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.50 NAME 'ciamHostBaseline' DESC 'What
  Object STRUCTURAL MUST ( cn $ ciamTargetRole ) MAY ( ciamOs $ ciamJdk $ cia
  mTrustsCertificate $ ciamTrustedFingerprint $ ciamOsLimit $ ciamKernelSetti
  ng $ ciamHugePages $ ciamFipsMode $ ciamSelinuxMode $ ciamHostAgent $ ciamS
- erviceUnit $ ciamPinnedHost $ ciamSearchDomain $ ciamFoundOn ) X-ORIGIN 'op
- sdir' )
+ erviceUnit $ ciamPinnedHost $ ciamSearchDomain $ ciamFoundOn $ ciamHardenin
+ gProfile ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.51 NAME 'ciamComputeGroup' DESC 'Wher
  e an environment runs a server role\27s instances as a group (an autoscalin
  g group, a scale set): image, size, scale, zones' SUP ciamBinding STRUCTURA
@@ -3557,3 +3579,10 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.132 NAME 'ciamClusterGateway' DESC 'A
  $ ciamFrontendIp $ ciamSubnetRole $ ciamProviderRef $ ciamWorkloadSecret $ 
  ciamServiceAccount $ ciamIdentityRole $ ciamTrustsCertificate ) X-ORIGIN 'o
  psdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.133 NAME 'ciamAppliance' DESC 'An app
+ liance the platform\27s configuration is pushed to (a load balancer, a DNS 
+ server, a network firewall), filling a stack role: where its management API
+  answers and how the push signs in' SUP ciamBinding STRUCTURAL MUST ( ciamS
+ tackRole $ ciamManagementAddress ) MAY ( ciamApplianceScope $ ciamLoginName
+  $ ciamLoginSecretRole $ ciamManagedBy $ ciamProviderRef ) X-ORIGIN 'opsdir
+ ' )

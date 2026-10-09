@@ -4,7 +4,7 @@ environment can reference, and the workloads clusters run, read from their manif
 from opsdir.core.contract import Adapter
 from .gateway import SETTING, VOCABULARY
 from .render import TARGETS, applies, render
-from .secrets import secret_command
+from .secrets import secret_command, secret_lookup
 from .workloads import WORKLOADS_IMPORTER
 
 ADAPTER = Adapter(name="kubernetes", kind="platform", applies=applies, required_roles=(),
@@ -15,4 +15,4 @@ ADAPTER = Adapter(name="kubernetes", kind="platform", applies=applies, required_
                   formats=(("kubernetes/*", "yaml"),),
                   products=(),
                   secret_patterns=(), importers=(WORKLOADS_IMPORTER,), profile_terms=None, access=None,
-                  render_targets=TARGETS, settings=(SETTING,))
+                  render_targets=TARGETS, settings=(SETTING,), ansible_lookup={"k8s-secret": secret_lookup})

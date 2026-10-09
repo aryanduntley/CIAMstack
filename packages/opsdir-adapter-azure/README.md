@@ -499,6 +499,8 @@ A role assigned at a parent scope (the vault, the storage account, a resource gr
 | `azkv-cert` | Key Vault certificate | not resolved |
 | `azblob` | `azblob://<account>/<container>` (Blob Storage container) | not resolved |
 
+Configuration management (`opsdir-adapter-ansible`) reads `azkv://` references at run time with the `azure.azcollection.azure_keyvault_secret` lookup (`ansible_lookup`), its `vault_url` built from the environment's Key Vault store's `ciamStoreEndpoint` (`https://<vault>.vault.azure.net/`, or `.vault.usgovcloudapi.net/` in Azure Government); without a recorded endpoint, through the `az` command above.
+
 Values of `ciamCloudProvider` (`azure`) and `ciamCloudEnvironment` (`public`, `usgovernment`) are validated against this adapter. The store refuses Azure credential forms anywhere in the record: storage account keys (`AccountKey=…`) and shared access signatures (`sig=…`).
 
 It adds no required roles, planner checks or schema of its own; the environment's product adapters say which roles it must bind.

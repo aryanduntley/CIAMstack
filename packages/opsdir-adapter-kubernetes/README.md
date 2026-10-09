@@ -45,6 +45,8 @@ The platform team installs the implementation (Istio: the `base` and `istiod` ch
 
 A binding's `ciamRefUri` of the form `k8s-secret://<namespace>/<secret>/<key>` names one key of a Kubernetes secret. `opsdir` resolves it at run time with `kubectl get secret -n <namespace> <secret> -o jsonpath='{.data.<key>}' | base64 -d` (dots in a key are escaped for JSONPath). The value never reaches the database or a rendered file.
 
+Configuration management (`opsdir-adapter-ansible`) reads such a reference at run time with the `kubernetes.core.k8s` lookup (kind Secret, the key's data base64-decoded; `ansible_lookup`), with the controller's kubeconfig.
+
 ## Reading workloads from manifests
 
 ```bash

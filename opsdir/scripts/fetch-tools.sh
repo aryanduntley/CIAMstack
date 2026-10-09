@@ -7,6 +7,10 @@
 # Helm, Kustomize, kubeconform (Kubernetes output, opsdir/scripts/validate-kubernetes.sh): each release archive checked
 # against the SHA-256 pinned below (Linux amd64 and arm64), taken from the project's own published sums when the
 # version was pinned (Helm's archives also verified then against their signatures by a key in Helm's KEYS file).
+# Ansible (opsdir/scripts/validate-ansible.sh): ansible-core and ansible-lint at the versions pinned below in their own
+# venv (tools/ansible/venv; their own dependencies resolved by pip, not hash-pinned), and the Galaxy collections and
+# roles opsdir-adapter-ansible pins (requirements.py) into tools/ansible/collections and tools/ansible/roles; F5's AS3
+# JSON schema (checked against the SHA-256 pinned below) into tools/ansible.
 set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 TOOLS=$ROOT/tools
@@ -15,6 +19,10 @@ HASHICORP_KEY=C874011F0AB405110D02105534365D9472D7468F    # https://www.hashicor
 HELM_VERSION=4.3.0                # 2026-09-09; ForgeOps 2026.3 works with Helm 3 or 4 and recommends the latest
 KUSTOMIZE_VERSION=5.8.2           # 2026-09-30
 KUBECONFORM_VERSION=0.8.0         # 2026-06-04
+ANSIBLE_CORE_VERSION=2.21.4       # 2026-09-08 (controller Python 3.12-3.14)
+ANSIBLE_LINT_VERSION=26.9.0       # 2026-09-22
+AS3_SCHEMA=3.54.0-6               # F5 AS3 LTS JSON schema (opsdir-adapter-f5's declarations)
+AS3_SHA256=9bef9d9e8f2fc6e52eef7491683f09dbacd572d87018b68c49013f9857d38fd3
 
 os=$(uname -s | tr '[:upper:]' '[:lower:]')
 case "$(uname -m)" in x86_64|amd64) arch=amd64 ;; aarch64|arm64) arch=arm64 ;; *) echo "unsupported: $(uname -m)" >&2; exit 1 ;; esac
@@ -91,3 +99,31 @@ else
   pinned_fetch kubeconform "https://github.com/yannh/kubeconform/releases/download/v$KUBECONFORM_VERSION/kubeconform-$os-$arch.tar.gz" kubeconform &&
     echo "kubeconform $KUBECONFORM_VERSION: tools/bin/kubeconform (verified)"
 fi
+
+# Ansible: a venv of its own, run without the caller's PYTHONPATH (packages there would shadow the venv's)
+ANSIBLE=$TOOLS/ansible
+if [ -x "$ANSIBLE/venv/bin/ansible-playbook" ] &&
+   env -u PYTHONPATH "$ANSIBLE/venv/bin/python" -m pip show ansible-core 2>/dev/null | grep -x "Version: $ANSIBLE_CORE_VERSION" >/dev/null &&
+   env -u PYTHONPATH "$ANSIBLE/venv/bin/python" -m pip show ansible-lint 2>/dev/null | grep -x "Version: $ANSIBLE_LINT_VERSION" >/dev/null; then
+  echo "ansible-core $ANSIBLE_CORE_VERSION, ansible-lint $ANSIBLE_LINT_VERSION: already in tools/ansible/venv"
+else
+  python3 -m venv "$ANSIBLE/venv"
+  env -u PYTHONPATH PIP_USER=0 "$ANSIBLE/venv/bin/pip" install --no-cache-dir -q \
+    "ansible-core==$ANSIBLE_CORE_VERSION" "ansible-lint==$ANSIBLE_LINT_VERSION"
+  echo "ansible-core $ANSIBLE_CORE_VERSION, ansible-lint $ANSIBLE_LINT_VERSION: tools/ansible/venv"
+fi
+"$ROOT/opsdir/.venv/bin/python" -c '
+from opsdir.core.interchange.yaml_text import dump
+from opsdir_adapter_ansible.requirements import all_requirements
+print(dump(all_requirements()), end="")' > "$ANSIBLE/requirements.yml"
+env -u PYTHONPATH ANSIBLE_COLLECTIONS_PATH="$ANSIBLE/collections" "$ANSIBLE/venv/bin/ansible-galaxy" collection install -r "$ANSIBLE/requirements.yml" \
+  -p "$ANSIBLE/collections" >/dev/null
+env -u PYTHONPATH "$ANSIBLE/venv/bin/ansible-galaxy" role install -r "$ANSIBLE/requirements.yml" -p "$ANSIBLE/roles" \
+  >/dev/null
+echo "ansible collections and roles (opsdir-adapter-ansible's pins): tools/ansible/collections, tools/ansible/roles"
+schema=$ANSIBLE/as3-schema-$AS3_SCHEMA.json
+if ! { [ -f "$schema" ] && echo "$AS3_SHA256  $schema" | sha256sum -c --quiet - 2>/dev/null; }; then
+  curl -fsSL "https://raw.githubusercontent.com/F5Networks/f5-appsvcs-extension/main/schema/${AS3_SCHEMA%-*}/as3-schema-$AS3_SCHEMA.json" -o "$schema"
+  echo "$AS3_SHA256  $schema" | sha256sum -c --quiet - || { rm -f "$schema"; echo "AS3 schema doesn't match its checksum" >&2; exit 1; }
+fi
+echo "AS3 schema $AS3_SCHEMA: tools/ansible (verified)"

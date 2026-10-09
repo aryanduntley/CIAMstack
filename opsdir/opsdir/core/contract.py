@@ -139,10 +139,14 @@ SecretDelivery = NamedTuple("SecretDelivery", [("store_key", Callable), ("eso_pr
 # the SecretDelivery of the adapter owning a ref-uri scheme, or None; routes(m): the HTTP routes the installed
 # deployment kits declare in an environment; gateway_plug(m, gateway, service): the GatewayPlug of a cluster gateway
 # binding (its data-plane Service as (name, ports), from opsdir-adapter-kubernetes) from the provider adapter that
-# applies to m, or None
+# applies to m, or None; ansible_lookup(m, ref-uri): the Jinja expression configuration management reads a reference
+# with at run time (its scheme owner's native lookup, else a pipe to the scheme's resolver command);
+# deployable_config(m): ((target role, deploy path, repo path, text), ...) of the captured files m receives that say
+# where they go on its servers
 Services = NamedTuple("Services", [("secret_command", Callable), ("endpoints", tuple), ("listeners", Callable),
                                    ("workload_identity", Callable), ("secret_delivery", Callable),
-                                   ("routes", Callable), ("gateway_plug", Callable)])
+                                   ("routes", Callable), ("gateway_plug", Callable), ("ansible_lookup", Callable),
+                                   ("deployable_config", Callable)])
 
 # How a cloud's L7 front reaches a cluster's in-cluster gateway, from the provider adapter that owns the cloud:
 # annotations on the gateway's Service ((name, value), ...), further Kubernetes objects the plug needs (dicts, e.g. a
@@ -276,8 +280,11 @@ Adapter = namedtuple("Adapter", (
     "routes",               # (EnvModel) -> Routes: the HTTP routes its deployment kit serves through a cluster gateway
     "gateway_plug",         # (EnvModel, cluster gateway binding, (Service name, ports)) -> GatewayPlug: its cloud's
                             # front to the gateway's data-plane Service
-    "settings"),            # Settings: the estate settings it declares (core.settings), beside the domains'
-    defaults=((), None, None, (), (), (), None, None, None, None, ()))
+    "settings",             # Settings: the estate settings it declares (core.settings), beside the domains'
+    "ansible_lookup"),      # {ref-uri scheme: (EnvModel, secret store binding or None, rest) -> a Jinja expression
+                            # reading the secret at run time (core.interchange.jinja), or None to fall back to its
+                            # resolver command}: how configuration management reads its schemes' secrets
+    defaults=((), None, None, (), (), (), None, None, None, None, (), None))
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-adapter-f5"
+version = "0.1.0"
+description = "opsdir load-balancer add-on: F5 BIG-IP in front of an environment's service names, as an AS3 declaration deployed by Ansible (the default on-prem load balancer)."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1", "opsdir-adapter-ansible>=0.1"]
+
+[project.entry-points."opsdir.adapters"]
+f5-bigip = "opsdir_adapter_f5.adapter:ADAPTER"
+
+[tool.setuptools.packages.find]
+where = ["src"]

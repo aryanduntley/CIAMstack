@@ -115,6 +115,15 @@ def rendered_config(d, m, formats=FORMATS):
                           tuple((one(f, "cn"), why) for f, _, why in results if why))
 
 
+def deployable_config(d, m, formats=FORMATS):
+    """((target role, deploy path, repo path, text), ...): the captured files environment m receives that say where
+    they go (ciamTargetRole and ciamDeployPath), rebuilt with its bindings; files that can't be rendered there are left
+    out (rendered_config names them)."""
+    return tuple((one(f, "ciamTargetRole"), one(f, "ciamDeployPath"), one(f, "ciamRepoPath").lstrip("/"), text)
+                 for f in deployed_files(d, m) if one(f, "ciamTargetRole") and one(f, "ciamDeployPath")
+                 for text, why in (_rendered(d, f, m, formats),) if not why)
+
+
 def verify_paths(d):
     """The repo paths verification reads: every bundle's and every captured file's."""
     return tuple(dict.fromkeys(one(e, "ciamRepoPath") for e in (*bundles(d), *captured_files(d))))

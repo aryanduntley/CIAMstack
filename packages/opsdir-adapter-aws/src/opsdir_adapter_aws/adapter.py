@@ -1,5 +1,6 @@
 """AWS adapter: applies to environments in clouds whose ciamCloudProvider is aws."""
 from opsdir.core.contract import Adapter
+from opsdir.domains.infrastructure.checks import check_server_inputs
 from .boundary import check_boundary
 from .discovery import check_discovery_availability
 from .access import ACCESS
@@ -11,7 +12,7 @@ from .ingress import gateway_plug
 from .kubernetes import SECRET_DELIVERY, workload_identity
 from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
 from .regions import PREREQUISITE, REGIONS
-from .secrets import SECRET_PATTERNS, secretsmanager_command
+from .secrets import SECRET_PATTERNS, secretsmanager_command, secretsmanager_lookup
 from .terraform import render
 
 PROVIDER = "aws"
@@ -22,7 +23,8 @@ def applies(m):
 
 
 ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(),
-                  render_neutral=None, render_env=render, checks=(check_boundary, check_discovery_availability),
+                  render_neutral=None, render_env=render,
+                  checks=(check_boundary, check_discovery_availability, check_server_inputs),
                   ref_schemes=("aws-sm", "aws-kms", "aws-acm", "s3"),
                   secret_schemes={"aws-sm": secretsmanager_command}, renders="Terraform for the target cloud",
                   neutral_label=None,
@@ -34,4 +36,4 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                   profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE),
                   collectors=COLLECTORS,
                   workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY,
-                  gateway_plug=gateway_plug)
+                  gateway_plug=gateway_plug, ansible_lookup={"aws-sm": secretsmanager_lookup})

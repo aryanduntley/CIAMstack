@@ -35,6 +35,9 @@ ATTRIBUTES = (
                  'A name pinned in /etc/hosts: address and names. Pinned names are migration landmines'),
     AttributeDef(244, 'ciamSearchDomain', 'string', 'observed', False,
                  'A DNS search domain of the role\'s servers (resolv.conf)'),
+    AttributeDef(625, 'ciamHardeningProfile', 'vocab', 'intent', True,
+                 "A hardening profile the role's servers are configured to beyond the baseline (e.g. disa-stig), as "
+                 "the configuration-management adapter names it; applied alongside what the baseline records"),
     # ------------------------------------------------------------------ compute groups and clusters (per environment)
     AttributeDef(245, 'ciamImageBuild', 'string', 'binding', True,
                  'What builds the image a compute group runs (an image pipeline, a recipe, a template)'),
@@ -105,7 +108,7 @@ CLASSES = (
     ClassDef(50, 'ciamHostBaseline', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTargetRole'),
              ('ciamOs', 'ciamJdk', 'ciamTrustsCertificate', 'ciamTrustedFingerprint', 'ciamOsLimit',
               'ciamKernelSetting', 'ciamHugePages', 'ciamFipsMode', 'ciamSelinuxMode', 'ciamHostAgent',
-              'ciamServiceUnit', 'ciamPinnedHost', 'ciamSearchDomain', 'ciamFoundOn'),
+              'ciamServiceUnit', 'ciamPinnedHost', 'ciamSearchDomain', 'ciamFoundOn', 'ciamHardeningProfile'),
              "What a server role's servers run beyond its product: OS, Java runtime and truststore additions, "
              "limits, kernel settings, agents, service units"),
     ClassDef(51, 'ciamComputeGroup', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef', 'ciamTargetRole'),

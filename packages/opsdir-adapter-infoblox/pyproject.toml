@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-adapter-infoblox"
+version = "0.1.0"
+description = "opsdir DNS add-on: the records an environment publishes, on Infoblox NIOS (WAPI), applied by Ansible (the option beside Windows DNS)."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1", "opsdir-adapter-ansible>=0.1"]
+
+[project.entry-points."opsdir.adapters"]
+infoblox = "opsdir_adapter_infoblox.adapter:ADAPTER"
+
+[tool.setuptools.packages.find]
+where = ["src"]

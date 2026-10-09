@@ -11,6 +11,7 @@ objectClass: top
 objectClass: ciamConfigFile
 cn: run.properties
 ciamCaptureLevel: settings
+ciamDeployPath: /opt/pingfederate/bin/run.properties
 ciamFormat: java-properties
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRepoPath: pingfederate/bin/run.properties

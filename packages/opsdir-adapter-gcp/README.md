@@ -458,6 +458,8 @@ A role bound on a parent (a key ring, the project) covers what is under it; a bu
 | `gcp-cert` | Certificate Manager certificate | not resolved |
 | `gs` | `gs://<bucket>` (Cloud Storage bucket) | not resolved |
 
+Configuration management (`opsdir-adapter-ansible`) reads `gcp-sm://` references at run time through the `gcloud` command above (`ansible.builtin.pipe`); a native `google.cloud.gcp_secret_manager` lookup would need authentication parameters the record doesn't hold.
+
 Values of `ciamCloudProvider` (`gcp`) and `ciamCloudEnvironment` (`public`) are validated against this adapter. The store refuses Google Cloud credential forms anywhere in the record: service account key files (`"private_key_id": "<40 hex>"`; the private key itself is refused by the core's private-key pattern), API keys (`AIza…`) and OAuth client secrets (`GOCSPX-…`). Cloud Storage HMAC secrets have no recognizable form; the core's secret-assignment pattern catches them in configuration syntax.
 
 It adds no required roles, planner checks or schema of its own; the environment's product adapters say which roles it must bind.

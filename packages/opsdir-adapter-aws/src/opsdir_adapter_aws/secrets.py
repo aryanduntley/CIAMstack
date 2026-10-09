@@ -1,6 +1,7 @@
 """AWS secrets: aws-sm:// references resolved at run time with the AWS CLI (the value never touches disk), and the AWS
 credential forms the store refuses."""
 from opsdir.core.contract import SecretPattern
+from opsdir.core.interchange import jinja
 
 # AWS credential forms the store refuses (SPEC R4)
 SECRET_PATTERNS = (
@@ -13,3 +14,9 @@ SECRET_PATTERNS = (
 
 def secretsmanager_command(rest):
     return f"aws secretsmanager get-secret-value --secret-id '{rest}' --query SecretString --output text"
+
+
+def secretsmanager_lookup(m, store, rest):
+    """The Ansible lookup reading an aws-sm:// secret at run time, as the CLI does (amazon.aws.aws_secret: the secret's
+    string; the region and credentials from the controller's AWS configuration)."""
+    return jinja.lookup("amazon.aws.aws_secret", rest)

@@ -57,6 +57,15 @@ ATTRIBUTES = (
                  'TCP/UDP port'),
     AttributeDef(30, 'ciamFrontendIp', 'ip', 'binding', True,
                  'Load balancer frontend IP'),
+    AttributeDef(626, 'ciamManagementAddress', 'string', 'binding', True,
+                 "Where an appliance's management API answers: a host name or address (and port when not the "
+                 "default)"),
+    AttributeDef(627, 'ciamApplianceScope', 'string', 'binding', True,
+                 "Where on an appliance the platform's objects go, as its vendor names it (an F5 AS3 tenant, a "
+                 "PAN-OS device group or vsys, an Infoblox DNS view, the Windows DNS server)"),
+    AttributeDef(628, 'ciamLoginSecretRole', 'string', 'binding', True,
+                 "Binding role of the secret holding the password or API key an appliance's login signs in with, "
+                 "read at run time"),
     AttributeDef(623, 'ciamExposure', enum_type(EXPOSURES), 'binding', True,
                  'Whether a service name\'s load balancer is internal or internet-facing, recorded when no frontend '
                  'address says so (the provider assigns the address)'),
@@ -139,10 +148,15 @@ CLASSES = (
              'Subnet'),
     ClassDef(8, 'ciamServiceName', 'ciamBinding', 'STRUCTURAL', ('ciamFqdn', 'ciamTargetRole', 'ciamPort'),
              ('ciamDnsZone', 'ciamDnsZoneRef', 'ciamFrontendIp', 'ciamExposure', 'ciamTlsCertificate',
-              'ciamTtlSeconds', 'ciamRoutingPolicy', 'ciamRoutingWeight', 'ciamEdgeFact', 'ciamEdgeSetting'),
+              'ciamTtlSeconds', 'ciamRoutingPolicy', 'ciamRoutingWeight', 'ciamEdgeFact', 'ciamEdgeSetting',
+              'ciamManagedBy'),
              'Stable service name + load balancer (its DNS answer, and what the load balancer runs)'),
+    ClassDef(133, 'ciamAppliance', 'ciamBinding', 'STRUCTURAL', ('ciamStackRole', 'ciamManagementAddress'),
+             ('ciamApplianceScope', 'ciamLoginName', 'ciamLoginSecretRole', 'ciamManagedBy', 'ciamProviderRef'),
+             "An appliance the platform's configuration is pushed to (a load balancer, a DNS server, a network "
+             "firewall), filling a stack role: where its management API answers and how the push signs in"),
     ClassDef(9, 'ciamFirewallRule', 'ciamBinding', 'STRUCTURAL', ('ciamSourceCidr', 'ciamPort', 'ciamTargetRole'),
-             ('ciamProtocol', 'ciamAllowsConsumer', 'ciamRulePriority', 'ciamPolicyRole'),
+             ('ciamProtocol', 'ciamAllowsConsumer', 'ciamRulePriority', 'ciamPolicyRole', 'ciamManagedBy'),
              'Inbound allow rule'),
     ClassDef(12, 'ciamEgress', 'ciamBinding', 'STRUCTURAL', ('ciamCidr',),
              ('ciamNatAllocation', 'ciamZone'),

@@ -93,6 +93,8 @@ CHANGES = (
      "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2034", "Turn on the target's sensitive data discovery over its backups (Defender CSPM)", "approved",
      "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2035", "Record the organization's sites (the on-prem provider's region catalog)", "approved",
+     "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

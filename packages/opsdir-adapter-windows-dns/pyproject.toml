@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-adapter-windows-dns"
+version = "0.1.0"
+description = "opsdir DNS add-on: the records an environment publishes, on Microsoft Windows (Active Directory) DNS servers, applied by Ansible (the default on-prem DNS)."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1", "opsdir-adapter-ansible>=0.1"]
+
+[project.entry-points."opsdir.adapters"]
+ad-dns = "opsdir_adapter_windows_dns.adapter:ADAPTER"
+
+[tool.setuptools.packages.find]
+where = ["src"]

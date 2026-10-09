@@ -1,0 +1,4 @@
+[
+  {"code": "hq-dc1", "name": "Headquarters data center 1", "geography": "United States", "status": "available"},
+  {"code": "hq-dc2", "name": "Headquarters data center 2", "geography": "United States", "status": "available"}
+]

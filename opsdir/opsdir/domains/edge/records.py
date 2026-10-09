@@ -9,7 +9,7 @@ weighted set, the first by label) renders the routing with the others' addresses
 from collections import namedtuple
 
 from ...core.directory import get, one, rdn_value, subtree, values
-from ...core.environment import environment_of
+from ...core.environment import UNBOUND, environment_of, of_class
 from ...core.naming import branch, env_label
 from .dns import answer, zone_of
 
@@ -17,6 +17,9 @@ DEFAULT_TTL = 300
 ROUTED = ("failover-primary", "failover-secondary", "weighted")
 # A routed name's answer in one environment: its label, the binding, the routing policy, the weight
 Answer = namedtuple("Answer", ("label", "binding", "policy", "weight"))
+# A record an environment publishes in a zone the platform runs: the zone (its name), the name relative to it ('@' for
+# the apex), the full name, the type, the values, the TTL, and the binding it comes from
+Published = namedtuple("Published", ("zone", "name", "fqdn", "type", "values", "ttl", "binding"))
 
 
 def ttl(b, default=DEFAULT_TTL):
@@ -106,3 +109,24 @@ def hosted_notes(m, machines):
         return (f"# Forwarder `{rdn_value(f)}` runs on DNS servers {hosts} ({machines}), not the managed resolver: "
                 f"they {does}, and the network's DNS servers point at them; not managed here")
     return tuple(note(f) for direction in ("outbound", "inbound") for f in forwarders(m, direction, hosted=True))
+
+
+def _relative(fqdn, zone):
+    fqdn, zone = fqdn.lower().rstrip("."), zone.lower().rstrip(".")
+    return "@" if fqdn == zone else fqdn[: -len(zone) - 1]
+
+
+def published(m):
+    """(Published, ...) the records environment m publishes in zones the platform runs, for a DNS server's renderer
+    (an appliance add-on): each service name's A record (its frontend address, UNBOUND:<role>-frontend-ip when none is
+    recorded) and every other record (ciamDnsRecord), in the zone binding its name falls in. Names in no bound zone,
+    or in a zone another party runs, are left out: the planner's DNS check and the keepers' requests name them."""
+    names = ((svc, one(svc, "ciamFqdn"), "A",
+              (one(svc, "ciamFrontendIp") or f"{UNBOUND}{one(svc, 'ciamBindingRole')}-frontend-ip",))
+             for svc in of_class(m, "ciamServiceName"))
+    others = ((r, one(r, "ciamRecordName"), one(r, "ciamRecordType"), values(r, "ciamRecordValue"))
+              for r in records_in(m))
+    return tuple(Published(one(z, "ciamDnsZone").rstrip("."), _relative(fqdn, one(z, "ciamDnsZone")),
+                           fqdn.rstrip("."), rtype, tuple(vals), ttl(b), b)
+                 for b, fqdn, rtype, vals in (*names, *others) if fqdn
+                 for z in (zone_of(m, fqdn),) if z is not None and not one(z, "ciamManagedBy"))

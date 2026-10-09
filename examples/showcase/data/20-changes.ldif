@@ -344,6 +344,16 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Turn on the target's sensitive data discovery over its backups (Def
  ender CSPM)
 
+dn: cn=CHG-2035,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2035
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the organization's sites (the on-prem provider's region cata
+ log)
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

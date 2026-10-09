@@ -309,7 +309,9 @@ opsdir/scripts/validate-terraform.sh [tree ...]          # the same on any rende
 packages/opsdir-adapter-forgeops/scripts/fetch-forgeops.sh   # once: the pinned ForgeOps release into tools/forgeops/, verified
 packages/opsdir-adapter-ping-devops/scripts/fetch-ping-devops.sh   # once: the pinned ping-devops chart into tools/ping-devops/, verified
 opsdir/.venv/bin/python -m pytest -m kubernetes          # rendered Kubernetes output checked by kustomize, helm, kubeconform
+opsdir/.venv/bin/python -m pytest -m ansible             # rendered Ansible checked by ansible-inventory, --syntax-check, ansible-lint
 opsdir/scripts/validate-kubernetes.sh [--helm CHART VALUES]... [tree ...]   # the same on any render output
+opsdir/scripts/validate-ansible.sh tree [tree ...]                         # every ansible/ folder in the trees
 ```
 
 Line length is the one lint rule: no line of the repository's Python over 120 characters (`ruff.toml` at the root, E501 only; the layout is the code's own, never `ruff format`). `opsdir/tests/unit/test_line_length.py` runs the `ruff` the `test` extras pin, so the default `pytest` run and `scripts/test.sh` enforce it; `opsdir/.venv/bin/ruff check .` lists offenders. On a machine whose `PYTHONPATH` already holds a ruff package without its binary, install it into the venv with `PIP_USER=0 opsdir/.venv/bin/pip install --ignore-installed ruff==0.15.13`.

@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-adapter-haproxy"
+version = "0.1.0"
+description = "opsdir load-balancer add-on: HAProxy in front of an environment's service names, configured by Ansible (the open-source option beside F5 BIG-IP)."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1", "opsdir-adapter-ansible>=0.1"]
+
+[project.entry-points."opsdir.adapters"]
+haproxy = "opsdir_adapter_haproxy.adapter:ADAPTER"
+
+[project.entry-points."opsdir.formats"]
+haproxy-cfg = "opsdir_adapter_haproxy.format:FORMAT"
+
+[tool.setuptools.packages.find]
+where = ["src"]

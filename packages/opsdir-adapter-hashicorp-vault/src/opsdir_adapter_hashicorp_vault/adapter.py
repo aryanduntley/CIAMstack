@@ -2,7 +2,7 @@
 Kubernetes renderers how the External Secrets Operator and the Secrets Store CSI driver read its references."""
 from opsdir.core.contract import Adapter
 from .kubernetes import SECRET_DELIVERY
-from .secrets import SECRET_PATTERNS, kv_command
+from .secrets import SECRET_PATTERNS, kv_command, kv_lookup
 
 
 def applies(m):
@@ -16,4 +16,4 @@ ADAPTER = Adapter(name="hashicorp-vault", kind="secret-store", applies=applies, 
                   vocabulary={}, schema=None, formats=(),
                   products=(),
                   secret_patterns=SECRET_PATTERNS, importers=(), profile_terms=None, access=None,
-                  secret_delivery=SECRET_DELIVERY)
+                  secret_delivery=SECRET_DELIVERY, ansible_lookup={"vault": kv_lookup})
