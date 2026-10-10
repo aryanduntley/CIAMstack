@@ -1,28 +1,30 @@
-provider  region                   name            geography       status     partition  environments               residencies
---------  -----------------------  --------------  --------------  ---------  ---------  -------------------------  -----------
-aws       af-south-1                                               opt-in     public
-aws       ca-central-1                                             available  public
-aws       eu-central-1                                             available  public
-aws       eu-west-1                                                available  public
-aws       me-south-1                                               opt-in     public
-aws       us-east-1                                                available  public     source/prod, source/stage  us
-aws       us-east-2                                                available  public                                us
-aws       us-west-1                                                available  public
-aws       us-west-2                                                available  public                                us
-azure     canadacentral            Canada Central  Canada          available
-azure     centralus                Central US      United States   available                                        us
-azure     eastus                   East US         United States   available                                        us
-azure     eastus2                  East US 2       United States   available             target/prod                us
-azure     northeurope              North Europe    Europe          available
-azure     uksouth                  UK South        United Kingdom  available
-azure     westeurope               West Europe     Europe          available
-azure     westus2                  West US 2       United States   available
-gcp       europe-west1                                             available  public
-gcp       europe-west2                                             available  public
-gcp       northamerica-northeast1                                  available  public
-gcp       us-central1                                              available  public     standby/prod               us
-gcp       us-east1                                                 available  public
-gcp       us-east4                                                 available  public                                us
-gcp       us-west1                                                 available  public
-(24 rows)
+provider  region                   name                        geography       status     partition    environments               residencies
+--------  -----------------------  --------------------------  --------------  ---------  -----------  -------------------------  -----------
+aws       af-south-1                                                           opt-in     public
+aws       ca-central-1                                                         available  public
+aws       eu-central-1                                                         available  public
+aws       eu-west-1                                                            available  public
+aws       me-south-1                                                           opt-in     public
+aws       us-east-1                                                            available  public       source/prod, source/stage  us
+aws       us-east-2                                                            available  public                                  us
+aws       us-west-1                                                            available  public
+aws       us-west-2                                                            available  public                                  us
+azure     canadacentral            Canada Central              Canada          available
+azure     centralus                Central US                  United States   available                                          us
+azure     eastus                   East US                     United States   available                                          us
+azure     eastus2                  East US 2                   United States   available               target/prod                us
+azure     northeurope              North Europe                Europe          available
+azure     uksouth                  UK South                    United Kingdom  available
+azure     westeurope               West Europe                 Europe          available
+azure     westus2                  West US 2                   United States   available
+gcp       europe-west1                                                         available  public
+gcp       europe-west2                                                         available  public
+gcp       northamerica-northeast1                                              available  public
+gcp       us-central1                                                          available  public       standby/prod               us
+gcp       us-east1                                                             available  public
+gcp       us-east4                                                             available  public                                  us
+gcp       us-west1                                                             available  public
+onprem    hq-dc1                   Headquarters data center 1  United States   available  on-premises  hq/lab
+onprem    hq-dc2                   Headquarters data center 2  United States   available  on-premises
+(26 rows)
 exit 0

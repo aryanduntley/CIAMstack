@@ -1,5 +1,9 @@
 environment   tag                 source          value
 ------------  ------------------  --------------  ---------------------------------------------------------------------
+hq/lab        CostCenter          cost-center     CC-1001
+hq/lab        DataClassification  classification  internal
+hq/lab        Environment         environment     hq/lab
+hq/lab        Owner               owner           ciam-platform
 source/prod   CostCenter          cost-center     CC-1001
 source/prod   DataClassification  classification  confidential
 source/prod   Environment         environment     source/prod
@@ -16,5 +20,5 @@ source/stage  CostCenter          cost-center     CC-1001
 source/stage  DataClassification  classification  internal
 source/stage  Environment         environment     source/stage
 source/stage  Owner               owner           ciam-platform
-(16 rows)
+(20 rows)
 exit 0

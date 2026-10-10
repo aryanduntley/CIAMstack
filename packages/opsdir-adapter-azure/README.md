@@ -499,7 +499,7 @@ A role assigned at a parent scope (the vault, the storage account, a resource gr
 | `azkv-cert` | Key Vault certificate | not resolved |
 | `azblob` | `azblob://<account>/<container>` (Blob Storage container) | not resolved |
 
-Configuration management (`opsdir-adapter-ansible`) reads `azkv://` references at run time with the `azure.azcollection.azure_keyvault_secret` lookup (`ansible_lookup`), its `vault_url` built from the environment's Key Vault store's `ciamStoreEndpoint` (`https://<vault>.vault.azure.net/`, or `.vault.usgovcloudapi.net/` in Azure Government); without a recorded endpoint, through the `az` command above.
+Configuration management (`opsdir-adapter-ansible`) reads `azkv://` references at run time with the `azure.azcollection.azure_keyvault_secret` lookup (`ansible_lookup`), its `vault_url` built from the environment's Key Vault store's `ciamStoreEndpoint` (`https://<vault>.vault.azure.net`, or `.vault.usgovcloudapi.net` in Azure Government), read as the operator's `az login` (`auth_source=cli`, `use_msi=false`: the lookup's managed-identity probe would sign in as the controller VM, only for the public cloud, and wait out a timeout off Azure; in Azure Government the operator runs `az cloud set --name AzureUSGovernment` first, as for the CLI); without a recorded endpoint, through the `az` command above.
 
 Values of `ciamCloudProvider` (`azure`) and `ciamCloudEnvironment` (`public`, `usgovernment`) are validated against this adapter. The store refuses Azure credential forms anywhere in the record: storage account keys (`AccountKey=…`) and shared access signatures (`sig=…`).
 

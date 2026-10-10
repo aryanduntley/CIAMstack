@@ -28,7 +28,7 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                   ref_schemes=("azkv", "azkv-key", "azkv-cert", "azblob"),
                   secret_schemes={"azkv": keyvault_command}, renders="Terraform for the target cloud",
                   neutral_label=None,
-                  vocabulary={"ciamCloudProvider": (PROVIDER,),
+                  vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamOnProvider": (PROVIDER,),
                               "ciamCloudEnvironment": ("public", "usgovernment")}, schema=None,
                   formats=(("terraform/*.tf", "hcl"),),
                   products=(),

@@ -216,7 +216,7 @@ def _moves(ctx, w, name, role, owner):
         and runs_on_kubernetes(ctx.dst, w)
     to_servers = runs_on_kubernetes(ctx.src, w) and not runs_on_kubernetes(ctx.dst, w) \
         and servers_with_role(ctx.dst, role)
-    baseline = baseline_for(ctx.d, role)
+    baseline = baseline_for(ctx.d, role, ctx.src if to_k8s else ctx.dst)
     if to_k8s:
         return (("Workload", f"Role `{role}` moves from servers in {ctx.src.label} to Kubernetes in {ctx.dst.label} "
                  f"(workload `{name}`): "

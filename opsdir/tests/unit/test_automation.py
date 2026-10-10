@@ -47,8 +47,8 @@ def plan(d, src="alpha/prod", dst="beta/prod"):
 
 def test_the_jobs_report():
     rows = {r[0]: r for r in job_rows(directory())}
-    assert rows["nightly-export"] == ("nightly-export", "cron", "30 2 * * *", "servers: web", "ops", "",
-                                      "export-password", "")
+    assert rows["nightly-export"] == ("nightly-export", "cron", "30 2 * * *", "servers: web", "every environment",
+                                      "ops", "", "export-password", "")
     assert rows["cert-check"][2:4] == ("rate(1 day); manual", "binding: cert-check-function")
 
 
@@ -79,3 +79,15 @@ def test_a_function_realization_is_a_job_binding_a_cloud_reads():
     after = build_directory(REGISTRY, tuple(parse(mini_estate.LDIF + "\n" + RECORDS)))
     assert not any("cert-check-function" in t for _, t, _ in plan(after._replace(
         entries={**after.entries, entry.norm: entry})).blockers)          # alpha binds it: no longer nobody's
+
+
+def test_a_job_scoped_to_the_source_is_named_not_asked_of_the_target():
+    scoped = _job("alpha-only", "cron", f"ciamSchedule: @daily\nciamTargetRole: web\nciamInEnvironment: {ALPHA}\n"
+                  "ciamOwner: cn=ops,ou=owners,dc=ciam-ops\n")
+    f = plan(directory(scoped))
+    assert not any("alpha-only" in t for _, t, _ in f.blockers)
+    assert "Job `alpha-only` applies in alpha/prod, not in beta/prod: it won't run there. Scope it to beta/prod too " \
+        "if it should (ciamInEnvironment, ciamOnProvider)." in [t for _, t, _, _ in f.actions]
+    assert {r[0]: r[4] for r in job_rows(directory(scoped))}["alpha-only"] == "alpha/prod"
+    backwards = plan(directory(scoped), src="beta/prod", dst="alpha/prod")      # applies in neither the source: skipped
+    assert not any("alpha-only" in t for _, t, *_ in (*backwards.blockers, *backwards.actions))

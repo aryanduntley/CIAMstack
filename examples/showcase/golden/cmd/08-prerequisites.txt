@@ -6,5 +6,6 @@ azure-regions  azure    met     opsdir import azure/regions --run  az account li
 azure-quotas   azure    met     opsdir import azure/quotas --run   az account show -o json > quotas/account.json; az vm list-usage --location eastus2 -o json > quotas/eastus2/compute.json; az network list-usages --location eastus2 -o json > quotas/eastus2/network.json
 gcp-regions    gcp      met     opsdir import gcp/regions --run    gcloud compute regions list --format=json > regions.json
 gcp-quotas     gcp      met     opsdir import gcp/quotas --run     gcloud compute project-info describe --format=json > quotas/project.json; gcloud compute regions describe us-central1 --format=json > quotas/us-central1.json
-(6 rows)
+onprem-sites   onprem   met     opsdir import onprem/sites --run
+(7 rows)
 exit 0

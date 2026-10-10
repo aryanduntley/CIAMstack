@@ -16,7 +16,6 @@ from ..core.directory import get, rdn_value, subtree
 from ..core.environment import env_model, with_required_roles
 from ..core.inventory import imports
 from ..core.naming import branch
-from ..core.interchange import jinja
 from ..core.secrets import CORE_OWNER, CORE_PATTERNS, dialect_problems
 from ..core.standard import CORE
 from ..domains.pki.credentials import secret_store, split_ref
@@ -226,13 +225,13 @@ def secret_delivery_of(scheme, installed=ADAPTERS):
 
 
 def ansible_lookup_of(m, uri, installed=ADAPTERS):
-    """The Jinja expression reading a secret reference at run time in environment m: the native lookup of the adapter
-    owning its scheme, else a pipe to the scheme's resolver command."""
+    """The native lookup expression reading a secret reference at run time in environment m, from the adapter owning
+    its scheme; None when that adapter has none for it (configuration management then runs the scheme's resolver
+    command, secret_command)."""
     scheme, rest = split_ref(uri)
     native = next((a.ansible_lookup[scheme] for a in installed if a.ansible_lookup and scheme in a.ansible_lookup),
                   None)
-    expr = native(m, secret_store(m, scheme), rest) if native is not None else None
-    return expr or jinja.lookup("ansible.builtin.pipe", secret_command(uri, installed))
+    return native(m, secret_store(m, scheme), rest) if native is not None else None
 
 
 def _deployable_config(m):

@@ -5,7 +5,7 @@ released at least two weeks before it was pinned (2026-10-09). Pure."""
 COLLECTIONS = (                            # (name, version)
     ("ansible.posix", "2.2.2"),            # sysctl, selinux, firewalld
     ("community.general", "13.4.0"),       # pam_limits
-    ("amazon.aws", "11.4.0"),              # aws_secret lookup
+    ("amazon.aws", "11.4.0"),              # secretsmanager_secret lookup
     ("azure.azcollection", "4.0.0"),       # azure_keyvault_secret lookup
     ("community.hashi_vault", "7.1.0"),    # vault_kv1_get / vault_kv2_get lookups
     ("kubernetes.core", "6.6.0"),          # k8s lookup

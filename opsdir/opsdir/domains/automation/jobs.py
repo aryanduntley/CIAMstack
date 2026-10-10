@@ -4,15 +4,18 @@ A job runs on servers of a role (cron, timers, scheduled tasks: ciamTargetRole) 
 a binding (functions, pipelines: ciamJobRole), and uses binding roles (ciamUsesRole). The check asks of the target
 what the source has: servers of the job's role, a realization, the roles it uses. A role the source binds and the
 target doesn't is the core binding check's; what nobody records is this check's. Hidden automation breaks silently
-after a move, so a job nobody owns is an action.
+after a move, so a job nobody owns is an action. A job may apply only in some environments or providers'
+(ciamInEnvironment, ciamOnProvider: core environment.applies_in): the check asks the target only for the jobs that
+apply in the source, and names those that don't apply in the target (they won't run there).
 """
 from ...core.directory import children, follow, get, one, rdn_value, values
-from ...core.environment import bound_nowhere, servers_with_role
+from ...core.environment import applies_in, bound_nowhere, servers_with_role
 from ...core.findings import findings, merge_findings, responsible
+from ..compute.hosts import scope_text
 from ..compute.workloads import kubernetes_roles
 from .naming import JOBS, ON_SERVERS, REALIZED
 
-JOBS_HEADERS = ("job", "kind", "schedule", "runs on", "owner", "code", "uses", "found on")
+JOBS_HEADERS = ("job", "kind", "schedule", "runs on", "applies in", "owner", "code", "uses", "found on")
 
 
 def jobs(d):
@@ -33,7 +36,8 @@ def job_rows(d, dn=None):
     def owners(j):
         return ", ".join(rdn_value(get(d, o)) for o in values(j, "ciamOwner") if get(d, o))
     return [(rdn_value(j), one(j, "ciamJobKind"), "; ".join((*values(j, "ciamSchedule"), *values(j, "ciamTrigger"))),
-             runs_on(j), owners(j), rdn_value(follow(d, j, "ciamCodeBundle")) if one(j, "ciamCodeBundle") else "",
+             runs_on(j), scope_text(d, j), owners(j),
+             rdn_value(follow(d, j, "ciamCodeBundle")) if one(j, "ciamCodeBundle") else "",
              ", ".join((*values(j, "ciamUsesRole"), *(f"secret {s}" for s in values(j, "ciamSecretName")))),
              ", ".join(rdn_value(get(d, s)) for s in values(j, "ciamFoundOn") if get(d, s)))
             for j in jobs(d)]
@@ -65,10 +69,16 @@ def _job(ctx, j):
 def check_jobs(ctx):
     """Jobs the target can't run (no servers of their role, roles nobody binds) are blockers; jobs without an owner
     or a place to run are actions."""
-    held = jobs(ctx.d)
+    held = tuple(j for j in jobs(ctx.d) if applies_in(j, ctx.src))
     if not held:
         return findings()
-    parts = merge_findings([_job(ctx, j) for j in held])
+    stays = [j for j in held if not applies_in(j, ctx.dst)]
+    parts = merge_findings([*(_job(ctx, j) for j in held if j not in stays),
+                            findings(actions=[("Job", f"Job `{rdn_value(j)}` applies in {scope_text(ctx.d, j)}, not "
+                                               f"in {ctx.dst.label}: it won't run there. Scope it to "
+                                               f"{ctx.dst.label} too if it should (ciamInEnvironment, "
+                                               "ciamOnProvider).", responsible(ctx.d, j, ctx.dst.env), None)
+                                              for j in stays])])
     if parts.blockers or parts.actions:
         return parts
     return parts._replace(ok=(*parts.ok, f"The {len(held)} job(s) have owners and run in {ctx.dst.label} on what "

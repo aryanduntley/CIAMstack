@@ -128,6 +128,36 @@ ciamNotBefore: 20260115000000Z
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamSubject: CN=Example Aero CIAM Internal CA
 
+dn: cn=ds-ldaps-lab,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: ds-ldaps-lab
+ciamCertPurpose: tls-server
+ciamFingerprint: 20:F8:59:A1:12:71:13:71:FC:D5:8B:90:CA:9F:14:D0:57:7B:24:E2:B
+ 2:49:A6:AD:5C:64:2D:E8:1D:8D:62:15
+ciamIssuer: CN=Example Aero CIAM Internal CA
+ciamKeyRole: ds-tls-keystore
+ciamNotAfter: 20270901000000Z
+ciamNotBefore: 20260901000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSubject: CN=ldap.lab.example-aero.test
+ciamSubjectAltName: ldap.lab.example-aero.test
+
+dn: cn=sso-tls-lab,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: sso-tls-lab
+ciamCertPurpose: tls-server
+ciamFingerprint: 7E:67:7D:61:CD:B9:FC:D4:9C:CE:B1:2B:EB:20:A4:D8:53:78:F3:B0:D
+ E:24:45:AF:75:40:13:29:56:A0:8B:D4
+ciamIssuer: CN=Example Aero CIAM Internal CA
+ciamKeyRole: sso-tls-keystore
+ciamNotAfter: 20270901000000Z
+ciamNotBefore: 20260901000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSubject: CN=sso.lab.example-aero.test
+ciamSubjectAltName: sso.lab.example-aero.test
+
 dn: cn=dibnet-eca,ou=certificates,dc=ciam-ops
 objectClass: top
 objectClass: ciamCertificate

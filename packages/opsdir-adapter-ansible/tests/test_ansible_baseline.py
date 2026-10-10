@@ -1,6 +1,6 @@
 """A server role's host baseline as the variables the host-config playbook reads (intent applied, installation
 verified, observed facts never applied), and the playbook itself."""
-import yaml
+from ansible_yaml import load
 
 from opsdir.connectors.registry import services
 from opsdir_adapter_ansible.baseline import baseline_vars
@@ -10,8 +10,8 @@ from pki_samples import CA_PEM
 
 
 def test_the_baselines_intent_and_installation_checks():
-    d, _ = _d()
-    assert baseline_vars(d, "ds") == {
+    _, alpha = _d()
+    assert baseline_vars(alpha, "ds") == {
         "ciam_os": "rhel 9.4", "ciam_jdk": "temurin 17.0.11",
         "ciam_kernel_settings": [{"name": "net.core.somaxconn", "value": "4096"}],
         "ciam_limits": [{"domain": "ds", "type": "soft", "item": "nofile", "value": "65536"}],
@@ -20,7 +20,7 @@ def test_the_baselines_intent_and_installation_checks():
         "ciam_trusted_unrecorded": ["AB:CD"],
         "ciam_host_agents": [{"package": "falcon-sensor", "recorded": "falcon-sensor 7.10.0"}],
         "ciam_service_units": ["pingds.service"], "ciam_hardening_profile": "disa-stig"}
-    assert baseline_vars(d, "web") == {}
+    assert baseline_vars(alpha, "web") == {}
 
 
 def test_observed_facts_are_never_applied():
@@ -32,15 +32,15 @@ def test_observed_facts_are_never_applied():
 def test_the_role_group_vars_carry_the_baseline():
     _, alpha = _d()
     files = render(alpha, services())
-    ds = yaml.safe_load(files["ansible/inventory/group_vars/ds.yml"])
+    ds = load(files["ansible/inventory/group_vars/ds.yml"])
     assert ds["ciam_role"] == "ds" and ds["ciam_selinux_mode"] == "enforcing"
-    assert yaml.safe_load(files["ansible/inventory/group_vars/web.yml"]) == {"ciam_role": "web"}
+    assert load(files["ansible/inventory/group_vars/web.yml"]) == {"ciam_role": "web"}
 
 
 def test_the_host_config_playbook():
     _, alpha = _d()
-    (play,) = yaml.safe_load(render(alpha, services())["ansible/host-config.yml"])
-    assert (play["hosts"], play["become"]) == ("all", True)
+    (play,) = load(render(alpha, services())["ansible/host-config.yml"])
+    assert (play["hosts"], play["become"]) == ("ciam_servers", True)
     by_name = {t["name"]: t for t in play["tasks"]}
     assert by_name["Kernel settings"]["ansible.posix.sysctl"]["sysctl_file"] == "/etc/sysctl.d/90-ciam.conf"
     assert by_name["Resource limits"]["community.general.pam_limits"]["dest"] == "/etc/security/limits.d/90-ciam.conf"
@@ -54,5 +54,6 @@ def test_the_host_config_playbook():
         "OS release", "OS as recorded", "Installed packages", "Agents installed", "Services",
         "Service units enabled"}
     assert [h["name"] for h in play["handlers"]] == [
-        "Apply transparent huge pages", "Update the system trust store", "FIPS mode needs a reboot"]
+        "Apply transparent huge pages", "Update the system trust store", "Restart time sync",
+        "FIPS mode needs a reboot"]
     assert by_name["FIPS mode on (RHEL 8, 9)"]["notify"] == "FIPS mode needs a reboot"

@@ -25,7 +25,7 @@ DS_JOBS = (f"dn: {JOBS}\nobjectClass: top\nobjectClass: organizationalUnit\nou: 
            "ciamCommand: /opt/scripts/nightly-export.sh\nciamRunsAs: ds\nciamTargetRole: ds\n",
            f"dn: cn=ds-audit-ship,{JOBS}\nobjectClass: top\nobjectClass: ciamObject\nobjectClass: ciamJob\n"
            "cn: ds-audit-ship\nciamJobKind: timer\nciamSchedule: OnCalendar=*:0/15\n"
-           "ciamCommand: /opt/scripts/ship-audit.sh\nciamRunsAs: ds\nciamTargetRole: ds\n",
+           "ciamCommand: /opt/scripts/ship-audit.sh --stamp '{{.Time}}' --day %F\nciamRunsAs: ds\nciamTargetRole: ds\n",
            f"dn: cn=ds-rotate,{JOBS}\nobjectClass: top\nobjectClass: ciamObject\nobjectClass: ciamJob\n"
            "cn: ds-rotate\nciamJobKind: cron\nciamSchedule: 0 3 * * 0\nciamTargetRole: ds\n")
 

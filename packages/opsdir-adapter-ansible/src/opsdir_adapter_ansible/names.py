@@ -4,6 +4,7 @@ import re
 
 ROOT = "ansible"
 INVENTORY = f"{ROOT}/inventory"
+SERVERS = "ciam_servers"          # the group of every server role's group (appliances are in groups of their own)
 
 
 def ansible_name(text):

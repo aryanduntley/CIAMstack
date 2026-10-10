@@ -95,7 +95,8 @@ TAG_RULES = (("owner", "Owner", "owner"), ("cost-center", "CostCenter", "cost-ce
 COST_CENTERS = MappingProxyType({"ciam-platform": "CC-1001", "customer-portal-team": "CC-2040",
                                  "supplier-portal-team": "CC-2041"})
 # environment -> data classification (the target has none yet: planted)
-CLASSIFICATION = MappingProxyType({"source": "confidential", "stage": "internal", "standby": "confidential"})
+CLASSIFICATION = MappingProxyType({"source": "confidential", "stage": "internal", "standby": "confidential",
+                                   "lab": "internal"})
 ACCOUNTS = MappingProxyType({"source": "111122223333", "target": "00000000-0000-0000-0000-000000000000",
                              "standby": "example-aero-ciam-standby"})
 SECURITY_TOPIC = "arn:aws:sns:us-east-1:111122223333:ciam-prod-security"

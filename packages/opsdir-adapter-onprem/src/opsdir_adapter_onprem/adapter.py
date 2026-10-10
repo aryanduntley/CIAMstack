@@ -14,6 +14,7 @@ def applies(m):
 ADAPTER = Adapter(name="onprem", kind="provider", applies=applies, required_roles=(),
                   render_neutral=None, render_env=None, checks=(check_keepers,), ref_schemes=(),
                   secret_schemes={}, renders=None, neutral_label=None,
-                  vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamCloudEnvironment": (PARTITION,)}, schema=None,
+                  vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamOnProvider": (PROVIDER,),
+                              "ciamCloudEnvironment": (PARTITION,)}, schema=None,
                   formats=(), products=(), secret_patterns=(), importers=(SITES,), profile_terms=None, access=None,
                   prerequisites=(PREREQUISITE,))

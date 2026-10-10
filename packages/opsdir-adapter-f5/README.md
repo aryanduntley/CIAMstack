@@ -1,6 +1,6 @@
 # opsdir-adapter-f5
 
-opsdir load-balancer add-on: an environment's service names on F5 BIG-IP, as one AS3 declaration deployed by Ansible (`f5networks.f5_bigip.bigip_as3_deploy`). It is the default on-prem load balancer (milestone 5.3, decision 2230: the DoD/defense norm, with a DISA STIG); HAProxy (`opsdir-adapter-haproxy`) is the open-source option.
+opsdir load-balancer add-on: an environment's service names on F5 BIG-IP, as an AS3 declaration per tenant deployed by Ansible (`f5networks.f5_bigip.bigip_as3_deploy`). It is the default on-prem load balancer (milestone 5.3, decision 2230: the DoD/defense norm, with a DISA STIG); HAProxy (`opsdir-adapter-haproxy`) is the open-source option.
 
 **Applies to** environments whose stack declares it (`ciamStackRole: load-balancer`, `ciamAdapter: f5-bigip`), beside `opsdir-adapter-ansible`. With it declared, the on-prem provider's planner check no longer asks the site's team for these load balancers. **Depends on** `opsdir` (the edge domain's policies, the infrastructure domain's appliances) and `opsdir-adapter-ansible`.
 
@@ -16,17 +16,18 @@ ciamManagementAddress: bigip-1.mgmt.example.test
 ciamApplianceScope: CIAM_Prod
 ciamLoginName: opsdir-as3
 ciamLoginSecretRole: bigip-login
+ciamApplianceSource: 10.80.9.0/28
 ```
 
-`ciamApplianceScope` is the AS3 tenant (else `opsdir_<cloud>_<env>`); `ciamLoginSecretRole` names the binding (a secret reference) holding the login's password, read when the play runs.
+`ciamApplianceScope` is the AS3 tenant (else `opsdir_<cloud>_<env>`). AS3 replaces a tenant whole, so the tenant must be this environment's alone: another team's applications in it would be removed by the next deployment. BIG-IPs with the same scope are one device cluster (an HA pair syncing its configuration): the play deploys to the first of them only. `ciamLoginSecretRole` names the binding (a secret reference) holding the login's password, read when the play runs. `ciamApplianceSource` (any number) is where the BIG-IP's own traffic to the servers comes from: its source NAT pool and self addresses, health monitors included.
 
 ## What it renders
 
 | File | Content |
 |---|---|
-| `ansible/f5/as3.json` | The AS3 request (`class AS3`, `action deploy`, `persist`), declaration schema 3.54.0 (the AS3 LTS): the tenant, an application per service name |
-| `ansible/f5-bigip.yml` | The play on group `f5_bigip`: `bigip_as3_deploy` of the declaration for the tenant |
-| `ansible/inventory/f5-bigip.yml` | Each BIG-IP (`ciamAppliance` with stack role `load-balancer`) in group `f5_bigip`: `ansible.netcommon.httpapi` to its `ciamManagementAddress` (HTTPS, certificate validated), `ansible_user` its `ciamLoginName`, `ansible_httpapi_password` a lookup of its login secret |
+| `ansible/f5/as3-<tenant>.json` | Per tenant, the AS3 request (`class AS3`, `action deploy`, `persist`), declaration schema 3.54.0 (the AS3 LTS): the tenant, an application per service name. None when the environment has no service names: an empty declaration would remove everything in the tenant |
+| `ansible/f5-bigip.yml` | A play per tenant on the first BIG-IP of its group (`f5_<tenant>[0]`): `bigip_as3_deploy` of its declaration (tag `deploy`), and the same with `controls.dry_run` (tags `dry-run`, `never`: `--tags dry-run` asks AS3 to check it without deploying). With no service names, a message saying nothing is deployed |
+| `ansible/inventory/f5-bigip.yml` | Each BIG-IP (`ciamAppliance` with stack role `load-balancer`) in group `f5_bigip` and its tenant's group `f5_<tenant>`: `ansible.netcommon.httpapi` to its `ciamManagementAddress` (HTTPS, certificate validated), `ansible_user` its `ciamLoginName`, `ansible_httpapi_password` a lookup of its login secret |
 | `ansible/requirements-f5-bigip.yml` | `f5networks.f5_bigip` 3.14.0, `ansible.netcommon` 8.7.1 |
 
 Per service name and port, from its policies (the core edge domain's `EdgeSpec`, as every cloud's front):
@@ -43,11 +44,11 @@ A value the record can't give is `UNBOUND:<what>` (a server or frontend address)
 
 ## Planner check
 
-`check_appliances`: a target that declares F5 BIG-IP but records no load-balancer appliance is a blocker.
+`check_appliances`: a target that declares F5 BIG-IP but records no load-balancer appliance is a blocker. The infrastructure domain's `check_appliance_sources` (any load balancer) names each service name's port that no firewall rule admits the BIG-IP's `ciamApplianceSource` ranges on, to the role behind it: without such a rule the servers' host firewall (and a network firewall the record drives) drops the BIG-IP's connections and health monitors.
 
 ## Validation
 
-`opsdir/scripts/validate-ansible.sh` checks `ansible/f5/*.json` against AS3's JSON schema 3.54.0 (`fetch-tools.sh` fetches it, SHA-256 pinned) besides the play's syntax and lint (pytest marker `ansible`). Before a first deployment, `bigip_as3_deploy`'s `controls.dry_run` asks the BIG-IP itself.
+`opsdir/scripts/validate-ansible.sh` checks `ansible/f5/*.json` against AS3's JSON schema 3.54.0 (`fetch-tools.sh` fetches it, SHA-256 pinned) besides the play's syntax and lint (pytest marker `ansible`). Before deploying, `--tags dry-run` asks the BIG-IP itself (`controls.dry_run`).
 
 ## Known limits
 
@@ -57,4 +58,4 @@ A value the record can't give is `UNBOUND:<what>` (a server or frontend address)
 
 ## Tests
 
-`tests/test_f5.py`: an HTTPS virtual server for a terminating service name, a TCP one without a policy, the BIG-IPs' inventory with the password read at run time, the play and requirements, the planner check, and the declaration against the AS3 schema with the real Ansible tools (marker `ansible`).
+`tests/test_f5.py`: an HTTPS virtual server for a terminating service name, a TCP one without a policy, the BIG-IPs' inventory with the password read at run time, a play per tenant on its first BIG-IP with the dry run, no declaration for an environment without service names, the requirements, the planner check, and the declaration against the AS3 schema with the real Ansible tools (marker `ansible`).

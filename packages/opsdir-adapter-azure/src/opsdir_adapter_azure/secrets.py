@@ -22,12 +22,14 @@ def keyvault_command(rest):
 def keyvault_lookup(m, store, rest):
     """The Ansible lookup reading an azkv:// secret at run time (azure.azcollection.azure_keyvault_secret), when the
     environment's Key Vault store records its endpoint (ciamStoreEndpoint, e.g. https://<vault>.vault.azure.net/ or
-    .vault.usgovcloudapi.net/ in Azure Government): the reference's vault under that endpoint's domain. None without
-    one (the az CLI's own cloud setting then decides, through its resolver command)."""
+    .vault.usgovcloudapi.net/ in Azure Government): the reference's vault under that endpoint's domain, read as the
+    operator's az login (auth_source cli; the managed-identity probe off: it would sign in as the controller VM, for
+    the public cloud only, and wait for a timeout off Azure). None without one (the az CLI's own cloud setting then
+    decides, through its resolver command)."""
     endpoint = one(store, "ciamStoreEndpoint") if store is not None else None
     host = urlsplit(endpoint).hostname if endpoint else None
     if not host or "." not in host:
         return None
     vault, name = rest.split("/", 1)
     return jinja.lookup("azure.azcollection.azure_keyvault_secret", name,
-                        vault_url=f"https://{vault}.{host.split('.', 1)[1]}/")
+                        vault_url=f"https://{vault}.{host.split('.', 1)[1]}", use_msi=False, auth_source="cli")

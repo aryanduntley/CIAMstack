@@ -351,8 +351,17 @@ cn: CHG-2035
 ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
-ciamTitle: Record the organization's sites (the on-prem provider's region cata
- log)
+ciamTitle: Record the organization's sites (prerequisite onprem-sites)
+
+dn: cn=CHG-2036,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2036
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Scope the cloud agents and the MRO export to where they run; the la
+ b's own agents
 
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top

@@ -139,8 +139,8 @@ SecretDelivery = NamedTuple("SecretDelivery", [("store_key", Callable), ("eso_pr
 # the SecretDelivery of the adapter owning a ref-uri scheme, or None; routes(m): the HTTP routes the installed
 # deployment kits declare in an environment; gateway_plug(m, gateway, service): the GatewayPlug of a cluster gateway
 # binding (its data-plane Service as (name, ports), from opsdir-adapter-kubernetes) from the provider adapter that
-# applies to m, or None; ansible_lookup(m, ref-uri): the Jinja expression configuration management reads a reference
-# with at run time (its scheme owner's native lookup, else a pipe to the scheme's resolver command);
+# applies to m, or None; ansible_lookup(m, ref-uri): the native lookup expression configuration management reads a
+# reference with at run time (its scheme owner's), or None (it runs the scheme's resolver command instead);
 # deployable_config(m): ((target role, deploy path, repo path, text), ...) of the captured files m receives that say
 # where they go on its servers
 Services = NamedTuple("Services", [("secret_command", Callable), ("endpoints", tuple), ("listeners", Callable),

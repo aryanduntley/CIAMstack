@@ -6,7 +6,7 @@ import subprocess
 from types import SimpleNamespace
 
 import pytest
-import yaml
+from ansible_yaml import load
 
 from opsdir.connectors.registry import services
 from opsdir.core.environment import StackComponent
@@ -51,15 +51,37 @@ def test_without_a_policy_tls_passes_through_a_tcp_virtual_server():
 
 def test_the_bigips_inventory_reads_the_password_at_run_time():
     files = render(alpha_with_policy(KEY, *BIGIP), services())
-    host = yaml.safe_load(files["ansible/inventory/f5-bigip.yml"])["all"]["children"]["f5_bigip"]["hosts"]["bigip-1"]
+    group = load(files["ansible/inventory/f5-bigip.yml"])["all"]["children"]["f5_bigip"]["children"]
+    host = group["f5_CIAM_Prod"]["hosts"]["bigip-1"]
     assert (host["ansible_host"], host["ansible_user"], host["ansible_connection"]) == (
         "bigip-1.mgmt.example.test", "opsdir-as3", "ansible.netcommon.httpapi")
     assert host["ansible_httpapi_password"] == ('{{ lookup("community.hashi_vault.vault_kv2_get", "ciam/bigip", '
                                                 'engine_mount_point="secret").secret.value }}')
-    (play,) = yaml.safe_load(files["ansible/f5-bigip.yml"])
-    assert play["tasks"][0]["f5networks.f5_bigip.bigip_as3_deploy"]["tenant"] == "CIAM_Prod"
-    assert json.loads(files["ansible/f5/as3.json"])["declaration"]["CIAM_Prod"]["class"] == "Tenant"
+    (play,) = load(files["ansible/f5-bigip.yml"])
+    assert play["hosts"] == "f5_CIAM_Prod[0]"                       # one request per tenant: the cluster syncs
+    dry, deploy = play["tasks"]
+    assert (dry["tags"], dry["f5networks.f5_bigip.bigip_as3_deploy"]["controls"]) == (["dry-run", "never"],
+                                                                                       {"dry_run": True})
+    assert deploy["f5networks.f5_bigip.bigip_as3_deploy"]["tenant"] == "CIAM_Prod" and deploy["tags"] == ["deploy"]
+    assert json.loads(files["ansible/f5/as3-CIAM_Prod.json"])["declaration"]["CIAM_Prod"]["class"] == "Tenant"
     assert "f5networks.f5_bigip" in files["ansible/requirements-f5-bigip.yml"]
+
+
+def test_bigips_by_scope_and_no_empty_tenant():
+    second = entry(ALPHA, "bigip-2", "ciamAppliance", ciamBindingRole="lb-bigip-2", ciamStackRole="load-balancer",
+                   ciamManagementAddress="bigip-2.mgmt.example.test", ciamLoginName="opsdir-as3")
+    files = render(alpha_with_policy(KEY, *BIGIP, second), services())
+    plays = load(files["ansible/f5-bigip.yml"])
+    assert [p["hosts"] for p in plays] == ["f5_CIAM_Prod[0]", "f5_opsdir_alpha_prod[0]"]
+    assert {p for p in files if p.startswith("ansible/f5/")} == {"ansible/f5/as3-CIAM_Prod.json",
+                                                                "ansible/f5/as3-opsdir_alpha_prod.json"}
+    svc = (f"dn: cn=svc-sso,ou=bindings,{ALPHA}\nchangetype: delete\n",)
+    from opsdir.core.interchange.ldif import parse
+    _, bare, _ = model(alpha=BIGIP, changes=tuple(r for t in svc for r in parse(t)))
+    files = render(bare, services())
+    (play,) = load(files["ansible/f5-bigip.yml"])
+    assert [t["name"] for t in play["tasks"]] == ["Nothing to deploy"]
+    assert not [p for p in files if p.startswith("ansible/f5/")]
 
 
 def test_a_target_declaring_f5_without_an_appliance_is_blocked():
@@ -80,4 +102,4 @@ def test_the_play_and_declaration_pass_ansible_and_the_as3_schema(tmp_path):
         (tmp_path / path).write_text(text)
     done = subprocess.run([str(ROOT / "opsdir" / "scripts" / "validate-ansible.sh"), str(tmp_path)],
                           capture_output=True, text=True)
-    assert done.returncode == 0 and "as3.json (AS3 schema)" in done.stdout, done.stdout + done.stderr
+    assert done.returncode == 0 and "as3-CIAM_Prod.json (AS3 schema)" in done.stdout, done.stdout + done.stderr

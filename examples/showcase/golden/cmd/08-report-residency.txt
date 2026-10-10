@@ -1,8 +1,9 @@
 environment   residency  provider  region       verdict
-------------  ---------  --------  -----------  -------
+------------  ---------  --------  -----------  -----------------------
+hq/lab        none       onprem    hq-dc1       not held to a residency
 source/prod   us         aws       us-east-1    ok
 standby/prod  us         gcp       us-central1  ok
 target/prod   us         azure     eastus2      ok
 source/stage  us         aws       us-east-1    ok
-(4 rows)
+(5 rows)
 exit 0

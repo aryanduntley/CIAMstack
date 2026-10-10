@@ -1,0 +1,110 @@
+{
+  "class": "AS3",
+  "action": "deploy",
+  "persist": true,
+  "declaration": {
+    "class": "ADC",
+    "schemaVersion": "3.54.0",
+    "id": "opsdir-CIAM_Lab",
+    "CIAM_Lab": {
+      "class": "Tenant",
+      "svc_ldaps": {
+        "class": "Application",
+        "template": "generic",
+        "label": "ldap.lab.example-aero.test",
+        "vs_1636": {
+          "class": "Service_TCP",
+          "virtualAddresses": [
+            "10.80.1.100"
+          ],
+          "virtualPort": 1636,
+          "pool": "pool_1636"
+        },
+        "pool_1636": {
+          "class": "Pool",
+          "monitors": [
+            "tcp"
+          ],
+          "members": [
+            {
+              "servicePort": 1636,
+              "serverAddresses": [
+                "10.80.1.11",
+                "10.80.1.12"
+              ]
+            }
+          ]
+        }
+      },
+      "svc_sso": {
+        "class": "Application",
+        "template": "generic",
+        "label": "sso.lab.example-aero.test",
+        "vs_443": {
+          "class": "Service_HTTPS",
+          "redirect80": false,
+          "serverTLS": "tls_server",
+          "virtualAddresses": [
+            "10.80.4.100"
+          ],
+          "virtualPort": 443,
+          "pool": "pool_443",
+          "persistenceMethods": [
+            "cookie"
+          ],
+          "clientTLS": "tls_client",
+          "policyWAF": {
+            "bigip": "/Common/sign-on-protection"
+          }
+        },
+        "pool_443": {
+          "class": "Pool",
+          "monitors": [
+            {
+              "use": "monitor"
+            }
+          ],
+          "members": [
+            {
+              "servicePort": 443,
+              "serverAddresses": [
+                "10.80.4.11"
+              ]
+            }
+          ]
+        },
+        "tls_server": {
+          "class": "TLS_Server",
+          "certificates": [
+            {
+              "certificate": "certificate"
+            }
+          ],
+          "tls1_0Enabled": false,
+          "tls1_1Enabled": false
+        },
+        "certificate": {
+          "class": "Certificate",
+          "certificate": {
+            "bigip": "/Common/sso-tls-lab.crt"
+          },
+          "privateKey": {
+            "bigip": "/Common/sso-tls-lab.key"
+          }
+        },
+        "tls_client": {
+          "class": "TLS_Client",
+          "validateCertificate": false,
+          "tls1_0Enabled": false,
+          "tls1_1Enabled": false
+        },
+        "monitor": {
+          "class": "Monitor",
+          "monitorType": "https",
+          "send": "GET /pf/heartbeat.ping HTTP/1.1\\r\\nHost: sso.lab.example-aero.test\\r\\nConnection: close\\r\\n\\r\\n",
+          "receive": "HTTP/1\\.1 (2|3)"
+        }
+      }
+    }
+  }
+}

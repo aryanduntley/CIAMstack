@@ -1,0 +1,17 @@
+CHG-2036: modify cn=am,ou=baselines,dc=ciam-ops
+CHG-2036: modify cn=ds,ou=baselines,dc=ciam-ops
+CHG-2036: modify cn=idm,ou=baselines,dc=ciam-ops
+CHG-2036: modify cn=ig,ou=baselines,dc=ciam-ops
+CHG-2036: modify cn=pf-admin,ou=baselines,dc=ciam-ops
+CHG-2036: modify cn=pf-engine,ou=baselines,dc=ciam-ops
+CHG-2036: add cn=am-aws,ou=baselines,dc=ciam-ops
+CHG-2036: add cn=ds-aws,ou=baselines,dc=ciam-ops
+CHG-2036: add cn=idm-aws,ou=baselines,dc=ciam-ops
+CHG-2036: add cn=ig-aws,ou=baselines,dc=ciam-ops
+CHG-2036: add cn=pf-admin-aws,ou=baselines,dc=ciam-ops
+CHG-2036: add cn=pf-engine-aws,ou=baselines,dc=ciam-ops
+CHG-2036: add cn=ds-onprem,ou=baselines,dc=ciam-ops
+CHG-2036: add cn=pf-admin-onprem,ou=baselines,dc=ciam-ops
+CHG-2036: add cn=pf-engine-onprem,ou=baselines,dc=ciam-ops
+CHG-2036: modify cn=ds-nightly-export,ou=jobs,dc=ciam-ops
+exit 0

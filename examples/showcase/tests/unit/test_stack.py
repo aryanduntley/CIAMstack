@@ -7,6 +7,7 @@ from opsdir.connectors.stack import declared_adapters, missing_adapters, stack_r
 from opsdir.core.contract import Adapter
 from opsdir.core.environment import StackComponent, env_model
 from example_estate.build import specs
+from example_estate.infrastructure import SOURCE
 
 
 def adapter(name, kind="product", applies=True):
@@ -24,10 +25,8 @@ def source(estate):
 
 
 def test_environments_declare_their_stack(estate, source):
-    assert {(c.role, c.adapter) for c in source.stack} == {("provider", "aws"), ("directory", "pingds"),
-                                                           ("federation", "pingfederate"), ("access", "pingam"),
-                                                           ("identity-management", "pingidm"),
-                                                           ("gateway", "pinggateway")}
+    assert {(c.role, c.adapter) for c in source.stack} == set(SOURCE["stack"])
+    assert ("configuration-management", "ansible") in set(SOURCE["stack"])
     declared = {f"{dn.split(',')[1].split('=')[1]}/{dn.split(',')[0].split('=')[1]}"     # every environment entry
                 for dn in (e.dn for e in specs() if "ciamEnvironment" in e.classes)}
     assert set(environment_specs(estate["before"])) == declared and "standby/prod" in declared
@@ -37,7 +36,7 @@ def test_environments_declare_their_stack(estate, source):
 
 def test_the_declared_stack_decides_which_adapters_render(source):
     assert [a.name for a in declared_adapters(source, ADAPTERS)] == \
-        ["aws", "pingam", "pingds", "pingfederate", "pinggateway", "pingidm"]
+        ["aws", "ansible", "pingam", "pingds", "pingfederate", "pinggateway", "pingidm"]
     only_provider = source._replace(stack=(component("aws", "provider"),))
     assert [a.name for a in declared_adapters(only_provider, ADAPTERS)] == ["aws"]
 

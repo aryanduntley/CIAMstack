@@ -7,13 +7,13 @@ import re
 
 from opsdir.connectors.stack import unsupported_products
 from opsdir.core.contract import PlanContext
-from opsdir.core.directory import get, one
+from opsdir.core.directory import get, one, values
 from opsdir.core.environment import env_model
 from opsdir.core.findings import findings
 from opsdir.core.interchange.ldif import parse
 from opsdir.core.inventory import environment_groups, resource
 from opsdir.core.secrets import CORE_PATTERNS, scan
-from opsdir.domains.compute.hosts import baseline_rows, check_hosts, compute_rows
+from opsdir.domains.compute.hosts import baseline_for, baseline_rows, check_hosts, compute_rows
 from opsdir.domains.compute.naming import BASELINES, WORKLOAD_SECRET, WORKLOADS, baseline_dn, workload_dn
 from opsdir.domains.compute.workloads import (all_compute_rows, check_workloads, product_versions, runs_on_kubernetes,
                                               runs_product, version_holders, workload_rows, workload_secrets)
@@ -87,8 +87,8 @@ def context(d, src="alpha/prod", dst="beta/prod"):
 
 def test_the_baselines_report():
     (row,) = baseline_rows(directory())
-    assert row == ("web", "rhel 9.4", "temurin 17.0.11", "partner-root-ca, 1 not recorded", "ds soft nofile 65536",
-                   "net.core.somaxconn=4096", "never", "no", "", "falcon-sensor 7.10", "",
+    assert row == ("web", "every environment", "rhel 9.4", "temurin 17.0.11", "partner-root-ca, 1 not recorded",
+                   "ds soft nofile 65536", "net.core.somaxconn=4096", "never", "no", "", "falcon-sensor 7.10", "",
                    "10.1.9.9 legacy-db.internal", "web-1")
 
 
@@ -108,9 +108,9 @@ def test_the_planner_names_what_a_rebuild_loses_and_weaker_target_compute():
         "(AB:CD:EF:01:23:45:67:89…): record them, or a server rebuilt from a stock image loses them silently.",
         "Servers of role `web` pin 1 name(s) in /etc/hosts (10.1.9.9 legacy-db.internal): pinned addresses don't "
         "move with the platform. Replace them with names beta/prod resolves.",
-        "Server role `app` has no host baseline: what its servers run beyond the product (Java truststore "
-        "additions, limits, agents) isn't recorded, so servers built for beta/prod can't be checked against the "
-        "source's.",
+        "Server role `app` has no host baseline that applies in beta/prod: what its servers run beyond the product "
+        "(Java truststore additions, limits, agents) isn't recorded there, so servers built for beta/prod can't be "
+        "checked against the source's.",
         "Compute group `web-group` (role `web`) in beta/prod lets the instance metadata service answer without "
         "session tokens: a request forged through a server reads its credentials. Require session tokens.",
         "Compute group `web-group` (role `web`) in beta/prod spans 1 zone(s); alpha/prod spreads the role over 3.",
@@ -231,3 +231,36 @@ def test_a_workload_secret_named_like_a_password_is_not_taken_for_one():
     value = "pf-admin/PING_IDENTITY_PASSWORD <- pf-admin-password"      # the store refuses what the scan finds
     assert scan(value, CORE_PATTERNS) == () and re.match(WORKLOAD_SECRET, value)
     assert scan(value.replace(" <- ", "="), CORE_PATTERNS) == ("secret-assignment",)   # why the form isn't key=role
+
+
+SCOPED = "\n".join((
+    f"dn: cn=web-alpha,{BASELINES}\nobjectClass: top\nobjectClass: ciamHostBaseline\ncn: web-alpha\n"
+    f"ciamTargetRole: web\nciamInEnvironment: {ALPHA}\nciamOs: rhel 9.6\nciamHostAgent: cloud-agent 1.2\n",
+    f"dn: cn=web-fake,{BASELINES}\nobjectClass: top\nobjectClass: ciamHostBaseline\ncn: web-fake\n"
+    f"ciamTargetRole: web\nciamOnProvider: {mini_estate.PROVIDER}\nciamOs: rhel 9.5\nciamJdk: temurin 21\n"
+    "ciamHostAgent: provider-agent 3\n",
+    f"dn: cn=app-alpha,{BASELINES}\nobjectClass: top\nobjectClass: ciamHostBaseline\ncn: app-alpha\n"
+    f"ciamTargetRole: app\nciamInEnvironment: {ALPHA}\nciamOs: rhel 9.6\n"))
+
+
+def test_an_environments_baseline_merges_those_that_apply_there_the_most_specific_first():
+    d = directory(SCOPED)
+    alpha, beta = env_model(d, "alpha/prod"), env_model(d, "beta/prod")
+    a, b = baseline_for(d, "web", alpha), baseline_for(d, "web", beta)
+    assert (one(a, "ciamOs"), one(a, "ciamJdk")) == ("rhel 9.6", "temurin 21")        # env over provider over all
+    assert values(a, "ciamHostAgent") == ("falcon-sensor 7.10", "provider-agent 3", "cloud-agent 1.2")
+    assert (one(b, "ciamOs"), values(b, "ciamHostAgent")) == ("rhel 9.5", ("falcon-sensor 7.10", "provider-agent 3"))
+    assert one(baseline_for(d, "web"), "ciamOs") == "rhel 9.4"                          # no environment: everywhere's
+    assert baseline_for(d, "app", beta) is None and one(baseline_for(d, "app", alpha), "ciamOs") == "rhel 9.6"
+
+
+def test_the_baselines_report_says_where_each_applies():
+    rows = {r[0] + r[1]: r for r in baseline_rows(directory(SCOPED))}
+    assert sorted(r[1] for r in rows.values()) == ["alpha/prod", "alpha/prod", "every environment",
+                                                   f"{mini_estate.PROVIDER} environments"]
+
+
+def test_a_role_whose_baselines_apply_elsewhere_has_none_in_the_target():
+    f = check_hosts(context(directory(SCOPED)))
+    assert any(t.startswith("Server role `app` has no host baseline that applies in beta/prod") for _, t, _, _ in
+               f.actions)

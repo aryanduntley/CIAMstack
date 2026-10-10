@@ -115,6 +115,8 @@ cap 08-apply-chg-2031 od import --change CHG-2031 --at 20260923090000Z fedramp/c
 cap 08-apply-chg-2032 od modify --change CHG-2032 changes/CHG-2032-target-ssp-and-key-management.ldif
 cap 08-apply-chg-2033 od modify --change CHG-2033 changes/CHG-2033-target-boundary.ldif
 cap 08-apply-chg-2034 od modify --change CHG-2034 changes/CHG-2034-target-data-discovery.ldif
+cap 08-apply-chg-2035 od import --change CHG-2035 --at 20260923090000Z onprem/sites exports/sites/onprem
+cap 08-apply-chg-2036 od modify --change CHG-2036 changes/CHG-2036-scoped-agents-and-jobs.ldif
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions
 cap 08-report-residency od report residency
@@ -131,6 +133,11 @@ od history 2>&1 | sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{
   > "$OUT/cmd/09-history.txt"
 
 cap 10-render-target-after od render target/prod -o "$OUT/render-after/target-prod"
+cap 10-render-lab-after od render hq/lab -o "$OUT/render-after/hq-lab"
+cap 10-report-keys-lab od report keys hq/lab
+cap 10-file-run-properties-lab od file run.properties --env hq/lab
+cap 10-report-baselines-after od report baselines
+cap 10-report-jobs-after od report jobs
 cap 11-plan-after  od plan source/prod target/prod -o "$OUT/plan-after"
 cap 11-check-after "$PY" scripts/check-findings.py after
 od export > "$OUT/export.ldif" 2>&1

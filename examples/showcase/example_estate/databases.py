@@ -59,6 +59,13 @@ DATABASES = {
           "ciamProviderRef": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/"
                              "providers/Microsoft.DBforPostgreSQL/flexibleServers/psql-ciam-prod-pf-grants"}),
     ),
+    # the on-prem lab's: PostgreSQL the operators run on the site's own hardware (no provider offering)
+    "lab": (
+        ("ciamDatabase", "pf-grants-lab", ROLE,
+         {**SHARED, "ciamDbEngineVersion": "16", "ciamDbService": "self-managed", "ciamDbStorageGb": "50",
+          "ciamDbHighAvailability": "none", "ciamRetentionDays": "7", "ciamDbDeletionProtection": "TRUE",
+          "ciamSourceCidr": ["10.80.4.0/24"], "ciamFqdn": "pf-grants.db.lab.example-aero.test"}),
+    ),
     "standby": (
         ("ciamDatabase", "ciam-standby-pf-grants", ROLE,
          {**SHARED, "ciamDbEngineVersion": "16", "ciamDbService": "cloud-sql", "ciamInstanceSize": "db-custom-2-8192",

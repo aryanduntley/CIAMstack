@@ -17,6 +17,6 @@ def secretsmanager_command(rest):
 
 
 def secretsmanager_lookup(m, store, rest):
-    """The Ansible lookup reading an aws-sm:// secret at run time, as the CLI does (amazon.aws.aws_secret: the secret's
-    string; the region and credentials from the controller's AWS configuration)."""
-    return jinja.lookup("amazon.aws.aws_secret", rest)
+    """The Ansible lookup reading an aws-sm:// secret at run time, as the CLI does (amazon.aws.secretsmanager_secret:
+    the secret's string; the region and credentials from the controller's AWS configuration)."""
+    return jinja.lookup("amazon.aws.secretsmanager_secret", rest)

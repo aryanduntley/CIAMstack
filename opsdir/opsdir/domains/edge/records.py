@@ -6,6 +6,7 @@ resolver, or on DNS servers the environment runs (what those must do is a commen
 A name that routes between environments is answered from one place: the environment holding the primary (or, for a
 weighted set, the first by label) renders the routing with the others' addresses; the others render a comment.
 """
+import ipaddress
 from collections import namedtuple
 
 from ...core.directory import get, one, rdn_value, subtree, values
@@ -116,17 +117,69 @@ def _relative(fqdn, zone):
     return "@" if fqdn == zone else fqdn[: -len(zone) - 1]
 
 
+def _values(m, b, own):
+    """The values environment m publishes for binding b's name: its own (own), or for a name routing between
+    environments, the routing's answers when m renders it (a failover pair: the primary's address only, since a DNS
+    server doesn't fail over by itself; a weighted set: every answer's addresses, as round robin), () when another
+    environment does."""
+    routed = routing(m.d, m, b)
+    if routed is None:
+        return own
+    policy, found = routed
+    picked = found[:1] if policy.startswith("failover") else found
+    return tuple(v.strip() for a in picked for v in address(a).split(",") if v.strip())
+
+
+def _address_type(value):
+    """A or AAAA by an address's version (an UNBOUND placeholder counts as IPv4)."""
+    try:
+        return "AAAA" if ipaddress.ip_address(value).version == 6 else "A"
+    except ValueError:
+        return "A"
+
+
+def _by_type(vals):
+    """((A or AAAA, addresses), ...) of addresses, in the order their types first appear."""
+    return tuple((t, tuple(v for v in vals if _address_type(v) == t)) for t in dict.fromkeys(map(_address_type, vals)))
+
+
+def _wanted(m):
+    """(binding, fqdn, type, values) of every name environment m answers: service names' addresses (an A and/or an
+    AAAA record by address version), then its other records; routed names as _values gives them."""
+    def frontend(svc):
+        return _values(m, svc, (one(svc, "ciamFrontendIp") or f"{UNBOUND}{one(svc, 'ciamBindingRole')}-frontend-ip",))
+    names = ((svc, one(svc, "ciamFqdn"), rtype, vals)
+             for svc in of_class(m, "ciamServiceName") for rtype, vals in _by_type(frontend(svc)))
+    others = ((r, one(r, "ciamRecordName"), one(r, "ciamRecordType"), _values(m, r, values(r, "ciamRecordValue")))
+              for r in records_in(m))
+    return tuple((b, fqdn, rtype, tuple(vals)) for b, fqdn, rtype, vals in (*names, *others) if fqdn and vals)
+
+
 def published(m):
     """(Published, ...) the records environment m publishes in zones the platform runs, for a DNS server's renderer
-    (an appliance add-on): each service name's A record (its frontend address, UNBOUND:<role>-frontend-ip when none is
-    recorded) and every other record (ciamDnsRecord), in the zone binding its name falls in. Names in no bound zone,
-    or in a zone another party runs, are left out: the planner's DNS check and the keepers' requests name them."""
-    names = ((svc, one(svc, "ciamFqdn"), "A",
-              (one(svc, "ciamFrontendIp") or f"{UNBOUND}{one(svc, 'ciamBindingRole')}-frontend-ip",))
-             for svc in of_class(m, "ciamServiceName"))
-    others = ((r, one(r, "ciamRecordName"), one(r, "ciamRecordType"), values(r, "ciamRecordValue"))
-              for r in records_in(m))
+    (an appliance add-on): each service name's A or AAAA record (its frontend address, UNBOUND:<role>-frontend-ip when
+    none is recorded) and every other record (ciamDnsRecord), in the zone binding its name falls in; a name routing
+    between environments only from the environment rendering its routing. What it leaves out (unpublished: names in no
+    bound zone, in a zone another party runs, or kept by another party) the keepers' requests name."""
     return tuple(Published(one(z, "ciamDnsZone").rstrip("."), _relative(fqdn, one(z, "ciamDnsZone")),
-                           fqdn.rstrip("."), rtype, tuple(vals), ttl(b), b)
-                 for b, fqdn, rtype, vals in (*names, *others) if fqdn
+                           fqdn.rstrip("."), rtype, vals, ttl(b), b)
+                 for b, fqdn, rtype, vals in _wanted(m) if not one(b, "ciamManagedBy")
                  for z in (zone_of(m, fqdn),) if z is not None and not one(z, "ciamManagedBy"))
+
+
+def platform_zones(m):
+    """The zones (their names, no trailing dot) environment m binds and the platform runs: where a DNS add-on writes,
+    and tidies what it wrote before."""
+    return tuple(dict.fromkeys(one(z, "ciamDnsZone").rstrip(".") for z in of_class(m, "ciamDnsZoneBinding")
+                               if one(z, "ciamDnsZone") and not one(z, "ciamManagedBy")))
+
+
+def unpublished(m):
+    """((binding, fqdn, why), ...) the names environment m answers that published leaves out: in no zone it binds, in
+    a zone another party runs (the zone binding's ciamManagedBy), or kept by another party (the binding's)."""
+    def why(b, fqdn):
+        z = zone_of(m, fqdn)
+        return ("kept by another party" if one(b, "ciamManagedBy")
+                else "in no DNS zone the environment binds" if z is None
+                else f"in zone {one(z, 'ciamDnsZone')}, run by another party" if one(z, "ciamManagedBy") else None)
+    return tuple((b, fqdn, reason) for b, fqdn, _, _ in _wanted(m) for reason in (why(b, fqdn),) if reason)

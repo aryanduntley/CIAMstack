@@ -1,25 +1,35 @@
 """The host-config playbook: the same for every environment, everything environment- or role-specific in the
-inventory's variables (baseline.py). One play over all hosts, by tag:
+inventory's variables (baseline.py). One play over the servers (group ciam_servers: never the appliances add-ons
+list), by tag:
 
   baseline  (run by default) kernel settings (ansible.posix.sysctl into /etc/sysctl.d/90-ciam.conf), limits
             (community.general.pam_limits into /etc/security/limits.d/90-ciam.conf), transparent huge pages (a oneshot
-            unit setting them at boot), SELinux mode (ansible.posix.selinux, targeted policy), FIPS mode (on RHEL 8 and
-            9 fips-mode-setup --enable, then a reboot the play names; RHEL 10 can't switch after installation, so it
-            only checks: reinstall with fips=1), the certificates the truststore adds as system trust anchors (Red Hat
+            unit setting them at boot), SELinux mode (ansible.posix.selinux, targeted policy), FIPS mode (on Red Hat
+            Enterprise Linux and its rebuilds 8 and 9 fips-mode-setup --enable, then a reboot the play names; 10 can't
+            switch after installation, so it only checks: reinstall with fips=1; other systems are named, not
+            changed), the certificates the truststore adds as system trust anchors (Red Hat
             update-ca-trust, Debian update-ca-certificates); a FIPS mode recorded off is never switched off
   stig      (run by default when the role's baseline names the disa-stig profile) Red Hat's DISA STIG role for the
-            host's RHEL major version (RedHatOfficial.rhel<major>_stig)
-  jobs      (default) the role's cron jobs (ansible.builtin.cron) and timers (a oneshot service and its timer unit,
-            opsdir-<job>, enabled); jobs whose command the record withholds are named
+            host's RHEL major version (RedHatOfficial.rhel<major>_stig, RHEL 8 to 10); other hosts are named
+  jobs      (default) the role's cron jobs (ansible.builtin.cron) and timers (a oneshot service running the command
+            through /bin/sh and its timer unit, opsdir-<job>, enabled); jobs whose command the record withholds are
+            named
+  time      (default) the environment's time servers (ciamTimeSource) as chrony's: chrony installed, the servers
+            in a managed block of chrony.conf (the distribution's default pool lines removed: only the recorded
+            sources), chronyd enabled, restarted when they change
   firewall  (default) the role's firewall rules as firewalld rich rules (ansible.posix.firewalld, permanent and
             immediate), firewalld enabled and running
   files     (default) the product configuration files the role receives, from their templates (secrets read at run
-            time), to their deploy paths, mode 0640
+            time; never shown by --diff), to their deploy paths, mode 0640; files not deployed are named
   verify    (only when asked: --tags verify) what installing the servers brings: the OS (os-release ID VERSION_ID),
             the agents' packages, the service units enabled
 Pure."""
+from .names import SERVERS
+
 REBOOT = "reboot the host for it to take effect (this play doesn't reboot)"
 THP_UNIT = "ciam-transparent-hugepages.service"
+EL = "ansible_facts.distribution in ['RedHat', 'Rocky', 'AlmaLinux', 'CentOS', 'OracleLinux']"   # fips-mode-setup
+STIG_HOSTS = ("ansible_facts.distribution == 'RedHat' and ansible_facts.distribution_major_version | int in [8, 9, 10]")
 TRUST_DIR = ("{{ '/etc/pki/ca-trust/source/anchors' if ansible_facts.os_family == 'RedHat' "
              "else '/usr/local/share/ca-certificates' }}")
 
@@ -62,16 +72,22 @@ def _baseline():
         _task("FIPS mode now", "ansible.builtin.slurp", {"src": "/proc/sys/crypto/fips_enabled"},
               when="ciam_fips_mode | default(false)", register="ciam_fips_now"),
         _task("FIPS mode on (RHEL 8, 9)", "ansible.builtin.command", {"cmd": "fips-mode-setup --enable"},
-              when=["ciam_fips_mode | default(false)", "ansible_facts.os_family == 'RedHat'",
-                    "ansible_facts.distribution_major_version | int < 10",
+              when=["ciam_fips_mode | default(false)", EL,
+                    "ansible_facts.distribution_major_version | int in [8, 9]",
                     "(ciam_fips_now.content | b64decode | trim) != '1'"],
               changed_when=True, notify="FIPS mode needs a reboot"),
         _task("FIPS mode on (RHEL 10: chosen at installation)", "ansible.builtin.assert",
               {"that": "(ciam_fips_now.content | b64decode | trim) == '1'",
                "fail_msg": "RHEL 10 can't switch to FIPS mode after installation: reinstall with fips=1 on the kernel "
                            "command line"},
-              when=["ciam_fips_mode | default(false)", "ansible_facts.os_family == 'RedHat'",
+              when=["ciam_fips_mode | default(false)", EL,
                     "ansible_facts.distribution_major_version | int >= 10"]),
+        _task("FIPS mode not set here", "ansible.builtin.debug",
+              {"msg": "FIPS mode is recorded on, but this play sets it only on RHEL 8 and 9 (and their rebuilds); "
+                      "{{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}: set it as its "
+                      "vendor documents"},
+              when=["ciam_fips_mode | default(false)",
+                    f"not ({EL}) or ansible_facts.distribution_major_version | int < 8"]),
         _task("Certificates the truststore adds, as system trust anchors", "ansible.builtin.copy",
               {"dest": "{{ ciam_trust_dir }}/opsdir-{{ item.name }}.crt", "content": "{{ item.pem }}", "mode": "0644"},
               loop="{{ ciam_trusted_certificates | default([]) }}", loop_control={"label": "{{ item.name }}"},
@@ -84,7 +100,7 @@ def _baseline():
 def _jobs():
     cron_fields = ("minute", "hour", "day", "month", "weekday", "special_time")
     service = ("[Unit]\nDescription={{ item.description }}\n\n[Service]\nType=oneshot\nUser={{ item.user }}\n"
-               "ExecStart={{ item.command }}\n")
+               "ExecStart={{ item.exec_start }}\n")
     timer = ("[Unit]\nDescription={{ item.description }}\n\n[Timer]\n{{ item.schedule | join('\\n') }}\n\n"
              "[Install]\nWantedBy=timers.target\n")
     timers = {"loop": "{{ ciam_timer_jobs | default([]) }}", "loop_control": {"label": "{{ item.unit }}"}}
@@ -107,6 +123,26 @@ def _jobs():
               ("jobs",), when="ciam_jobs_not_deployed | default([]) | length > 0")]
 
 
+CHRONY_CONF = "{{ '/etc/chrony.conf' if ansible_facts.os_family == 'RedHat' else '/etc/chrony/chrony.conf' }}"
+CHRONYD = "{{ 'chronyd' if ansible_facts.os_family == 'RedHat' else 'chrony' }}"
+
+
+def _time():
+    tags, has = ("time",), "ciam_time_sources | default([]) | length > 0"
+    return [
+        _task("Time sync installed", "ansible.builtin.package", {"name": "chrony", "state": "present"}, tags,
+              when=has),
+        _task("Only the recorded time sources (the distribution's default pools removed)", "ansible.builtin.lineinfile",
+              {"path": CHRONY_CONF, "regexp": "^pool ", "state": "absent"}, tags, when=has,
+              notify="Restart time sync"),
+        _task("The recorded time sources", "ansible.builtin.blockinfile",
+              {"path": CHRONY_CONF, "marker": "# {mark} opsdir time sources",
+               "block": "{% for s in ciam_time_sources %}server {{ s }} iburst\n{% endfor %}"}, tags, when=has,
+              notify="Restart time sync"),
+        _task("Time sync running", "ansible.builtin.systemd_service",
+              {"name": CHRONYD, "enabled": True, "state": "started"}, tags, when=has)]
+
+
 def _firewall():
     return [
         _task("Host firewall running", "ansible.builtin.systemd_service",
@@ -120,15 +156,22 @@ def _firewall():
 def _files():
     return [_task("Product configuration files", "ansible.builtin.template",
                   {"src": "{{ item.src }}", "dest": "{{ item.dest }}", "mode": "0640"},
-                  ("files",), loop="{{ ciam_config_files | default([]) }}", loop_control={"label": "{{ item.dest }}"})]
+                  ("files",), loop="{{ ciam_config_files | default([]) }}", loop_control={"label": "{{ item.dest }}"},
+                  diff=False),
+            _task("Product configuration files not deployed", "ansible.builtin.debug",
+                  {"msg": "{{ ciam_config_files_not_deployed | join('; ') }}"},
+                  ("files",), when="ciam_config_files_not_deployed | default([]) | length > 0", run_once=True)]
 
 
 def _stig():
     return [_task("DISA STIG (Red Hat's role for this RHEL release)", "ansible.builtin.include_role",
                   {"name": "RedHatOfficial.rhel{{ ansible_facts.distribution_major_version }}_stig",
                    "apply": {"tags": ["stig"]}},
-                  tags=("stig",), when=["ciam_hardening_profile | default('') == 'disa-stig'",
-                                        "ansible_facts.os_family == 'RedHat'"])]
+                  tags=("stig",), when=["ciam_hardening_profile | default('') == 'disa-stig'", STIG_HOSTS]),
+            _task("DISA STIG not applied here", "ansible.builtin.debug",
+                  {"msg": "The disa-stig profile is recorded, but its roles are Red Hat's, for RHEL 8 to 10: "
+                          "{{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }} isn't hardened"},
+                  tags=("stig",), when=["ciam_hardening_profile | default('') == 'disa-stig'", f"not ({STIG_HOSTS})"])]
 
 
 def _verify():
@@ -154,14 +197,16 @@ def _verify():
 
 def host_config():
     """The host-config playbook (a list of plays)."""
-    return [{"name": "Host baseline of each server role (opsdir)", "hosts": "all", "become": True,
+    return [{"name": "Host baseline of each server role (opsdir)", "hosts": SERVERS, "become": True,
              "vars": {"ciam_trust_dir": TRUST_DIR},
-             "tasks": [*_baseline(), *_stig(), *_jobs(), *_firewall(), *_files(), *_verify()],
+             "tasks": [*_baseline(), *_stig(), *_jobs(), *_time(), *_firewall(), *_files(), *_verify()],
              "handlers": [
                  {"name": "Apply transparent huge pages", "ansible.builtin.systemd_service":
                   {"name": THP_UNIT, "state": "restarted", "daemon_reload": True}},
                  {"name": "Update the system trust store", "ansible.builtin.command":
                   {"cmd": "{{ 'update-ca-trust extract' if ansible_facts.os_family == 'RedHat' "
                           "else 'update-ca-certificates' }}"}, "changed_when": True},
+                 {"name": "Restart time sync", "ansible.builtin.systemd_service":
+                  {"name": CHRONYD, "state": "restarted"}},
                  {"name": "FIPS mode needs a reboot", "ansible.builtin.debug":
                   {"msg": f"FIPS mode enabled: {REBOOT}"}}]}]

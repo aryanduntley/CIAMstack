@@ -647,7 +647,7 @@ A granted pattern (`secretsmanager:*`, `arn:…:secret:ciam/*`) counts as granti
 | `aws-acm` | Certificate Manager certificate | not resolved |
 | `s3` | `s3://<bucket>` (S3 bucket) | not resolved |
 
-Configuration management (`opsdir-adapter-ansible`) reads `aws-sm://` references at run time with the `amazon.aws.aws_secret` lookup (`ansible_lookup`; region and credentials from the controller's AWS configuration, as the CLI).
+Configuration management (`opsdir-adapter-ansible`) reads `aws-sm://` references at run time with the `amazon.aws.secretsmanager_secret` lookup (`ansible_lookup`; region and credentials from the controller's AWS configuration, as the CLI).
 
 Values of `ciamCloudProvider` (`aws`) and `ciamCloudEnvironment` (`public`) are validated against this adapter. The store refuses AWS credential forms anywhere in the record: access key IDs (`AKIA…`, `ASIA…`) and secret access keys (`aws_secret_access_key = …`).
 

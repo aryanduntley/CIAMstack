@@ -7,7 +7,7 @@ An overlay environment's bindings, stack, declared roles and overrides include w
 """
 from typing import NamedTuple, Optional
 
-from .directory import Directory, Entry, children, follow, get, is_kind, one, rdn_value, subtree
+from .directory import Directory, Entry, children, follow, get, is_kind, norm_dn, one, rdn_value, subtree, values
 from .naming import branch
 from .overlays import (apply_overrides, declared_roles, effective_bindings, effective_overrides, effective_stack,
                        lineage)
@@ -143,6 +143,20 @@ def bound_nowhere(roles, *models):
 def of_class(m, oc):
     """Environment m's bindings of an object class or one of its subclasses."""
     return tuple(b for b in m.bindings if is_kind(m.d, b, oc))
+
+
+def scope_of(entry):
+    """(environment DNs, providers) a shared entry (a host baseline, a job) is scoped to: its ciamInEnvironment and
+    ciamOnProvider values; both empty when it applies everywhere."""
+    return values(entry, "ciamInEnvironment"), values(entry, "ciamOnProvider")
+
+
+def applies_in(entry, m):
+    """Whether a shared entry applies in environment m: it names neither environments nor providers, or it names m's
+    environment (or one m is an overlay of), or m's provider."""
+    envs, providers = scope_of(entry)
+    return (not envs and not providers) or m.provider in providers \
+        or bool({norm_dn(e) for e in envs} & {e.norm for e in m.lineage})
 
 
 def servers_with_role(m, role):

@@ -1,21 +1,27 @@
 """Host baselines and compute: the reports and the planner's check. Pure.
 
 A host baseline is what a server role's servers run beyond its product (OS, Java runtime, truststore additions,
-limits, kernel settings, agents, service units), the same in every environment. A compute group is where an
+limits, kernel settings, agents, service units). A role may have several: one for every environment, and others
+scoped to some environments or providers (ciamInEnvironment, ciamOnProvider: core environment.applies_in), say the
+agents only a cloud's servers run. An environment's baseline for a role merges those that apply in it, the more
+specific over the less (environment over provider over unscoped): values of a multi-valued attribute together, a
+single-valued one from the most specific that records it. A compute group is where an
 environment runs a role's instances as a group (an autoscaling group, a scale set); a cluster is a managed Kubernetes
 cluster. Both are bindings, so the core's role check asks the target to bind what the source binds; this check asks
 what the record alone can tell: truststore additions it can't reproduce, names pinned to addresses, roles a target
 runs servers of without a recorded baseline, and a target's compute that is less safe or less spread than the source's.
 """
-from ...core.directory import children, get, is_a, one, rdn_value, values
-from ...core.environment import environment_of, servers_with_role
+from ...core.directory import children, get, is_a, make_entry, one, rdn_value, values
+from ...core.environment import applies_in, environment_of, scope_of, servers_with_role
 from ...core.changeset import set_values
 from ...core.findings import Fix, findings, merge_findings, responsible
 from ...core.naming import env_label
 from .naming import BASELINES
+from .schema import ATTRIBUTES
 
-BASELINE_HEADERS = ("role", "os", "java", "trusts", "limits", "kernel", "huge pages", "fips", "selinux", "agents",
-                    "units", "pinned hosts", "found on")
+BASELINE_HEADERS = ("role", "applies in", "os", "java", "trusts", "limits", "kernel", "huge pages", "fips", "selinux",
+                    "agents", "units", "pinned hosts", "found on")
+SINGLE = frozenset(a.name for a in ATTRIBUTES if a.single_value)      # a baseline's single-valued attributes
 COMPUTE_HEADERS = ("environment", "binding", "role", "runs", "image", "size", "scale", "zones", "metadata tokens")
 
 
@@ -23,9 +29,39 @@ def baselines(d):
     return children(d, BASELINES, "ciamHostBaseline")
 
 
-def baseline_for(d, role):
-    """The host baseline of a server role, or None."""
-    return next((b for b in baselines(d) if one(b, "ciamTargetRole") == role), None)
+def _specificity(b):
+    envs, providers = scope_of(b)
+    return 2 if envs else 1 if providers else 0
+
+
+def baselines_for(d, role, m=None):
+    """A server role's host baselines that apply in environment m (all of them without m), least specific first."""
+    found = (b for b in baselines(d) if one(b, "ciamTargetRole") == role and (m is None or applies_in(b, m)))
+    return tuple(sorted(found, key=_specificity))
+
+
+def _merged(found):
+    attrs = {}
+    for b in found:                     # least specific first: a single value is replaced, others added
+        for k, vs in b.attrs.items():
+            attrs[k] = tuple(vs) if k in SINGLE or k not in attrs else tuple(dict.fromkeys((*attrs[k], *vs)))
+    return make_entry(found[-1].dn, found[-1].classes, attrs)
+
+
+def baseline_for(d, role, m=None):
+    """The host baseline of a server role in environment m (the baselines that apply there, merged), or None; without
+    m, the role's baseline that applies everywhere (else its first)."""
+    found = baselines_for(d, role, m)
+    if not found:
+        return None
+    return _merged(found) if m is not None else next((b for b in found if _specificity(b) == 0), found[0])
+
+
+def scope_text(d, e):
+    """Where a shared entry applies, in words: 'every environment', or its environments' and providers' names."""
+    envs, providers = scope_of(e)
+    return ", ".join((*(env_label(x) for x in envs), *(f"{p} environments" for p in providers))) \
+        or "every environment"
 
 
 def _yes_no(v):
@@ -41,7 +77,7 @@ def trusted(d, b):
 
 def baseline_rows(d, dn=None):
     """One row per server role's host baseline."""
-    return [(one(b, "ciamTargetRole"), one(b, "ciamOs") or "", one(b, "ciamJdk") or "", trusted(d, b),
+    return [(one(b, "ciamTargetRole"), scope_text(d, b), one(b, "ciamOs") or "", one(b, "ciamJdk") or "", trusted(d, b),
              "; ".join(values(b, "ciamOsLimit")), "; ".join(values(b, "ciamKernelSetting")),
              one(b, "ciamHugePages") or "", _yes_no(one(b, "ciamFipsMode")), one(b, "ciamSelinuxMode") or "",
              ", ".join(values(b, "ciamHostAgent")), "; ".join(values(b, "ciamServiceUnit")),
@@ -94,11 +130,11 @@ def _missing_baselines(ctx):
     if not baselines(ctx.d):
         return findings()
     roles = dict.fromkeys(one(s, "ciamServerRole") for s in ctx.dst.servers)
-    missing = [r for r in roles if servers_with_role(ctx.src, r) and baseline_for(ctx.d, r) is None]
-    return findings(actions=[("Host", f"Server role `{r}` has no host baseline: what its servers run beyond the "
-                              f"product (Java truststore additions, limits, agents) isn't recorded, so servers built "
-                              f"for {ctx.dst.label} can't be checked against the source's.",
-                              responsible(ctx.d, ctx.dst.env), None) for r in missing])
+    missing = [r for r in roles if servers_with_role(ctx.src, r) and baseline_for(ctx.d, r, ctx.dst) is None]
+    return findings(actions=[("Host", f"Server role `{r}` has no host baseline that applies in {ctx.dst.label}: what "
+                              f"its servers run beyond the product (Java truststore additions, limits, agents) isn't "
+                              f"recorded there, so servers built for {ctx.dst.label} can't be checked against the "
+                              "source's.", responsible(ctx.d, ctx.dst.env), None) for r in missing])
 
 
 def _zones(e):
@@ -137,7 +173,7 @@ def _group(ctx, t):
 def check_hosts(ctx):
     """Truststore additions the record lacks, pinned names, missing baselines and weaker target compute are
     actions."""
-    held = baselines(ctx.d)
+    held = tuple(b for b in baselines(ctx.d) if applies_in(b, ctx.src) or applies_in(b, ctx.dst))
     groups = compute_groups(ctx.dst)
     if not held and not groups:
         return findings()

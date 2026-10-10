@@ -1,0 +1,8 @@
+{% raw %}# PingFederate engine run.properties (Example Aero, synthetic)
+pf.operational.mode=CLUSTERED_ENGINE
+pf.engine.hostname=sso.example-aero.test
+pf.https.port=9031
+pf.admin.https.port=9999
+pf.admin.pwd={% endraw %}{{ lookup("amazon.aws.secretsmanager_secret", "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-admin-password") }}{% raw %}
+pf.log.eventdetail=false
+{% endraw %}

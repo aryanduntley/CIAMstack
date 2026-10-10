@@ -86,3 +86,13 @@ def test_a_cloud_target_is_not_asked():
     p = plan(d, "alpha/prod", "beta/prod", AS_OF, (FAKE, ADAPTER))
     assert not [a for a in p.actions if a[0] == "On-prem"]
     assert not [i for _, items in p.requests for i in items if i[2] == "on-prem"]
+
+
+def test_a_dns_add_on_still_leaves_the_names_it_cant_write_to_their_keepers():
+    owned = "add: ciamOwner\nciamOwner: cn=site-infra,ou=parties,dc=ciam-ops\n-\n"
+    add_on = (f"dn: cn=dns,ou=stack,{BETA}\nobjectClass: top\nobjectClass: ciamStackComponent\ncn: dns\n"
+              "ciamStackRole: dns\nciamAdapter: some-appliance\nciamAdapterVersion: >=1\n"
+              "ciamAdapterSource: https://example.test/some-appliance\n")
+    _, requests = _onprem_findings(_directory(*OWNER, add_on, changes=owned))
+    assert ("site-infra", "beta/prod: set up DNS record `sso.example.test` (in no DNS zone the environment binds: "
+                          "the DNS add-on writes only the zones the platform runs).") in requests

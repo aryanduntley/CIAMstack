@@ -61,11 +61,21 @@ ATTRIBUTES = (
                  "Where an appliance's management API answers: a host name or address (and port when not the "
                  "default)"),
     AttributeDef(627, 'ciamApplianceScope', 'string', 'binding', True,
-                 "Where on an appliance the platform's objects go, as its vendor names it (an F5 AS3 tenant, a "
-                 "PAN-OS device group or vsys, an Infoblox DNS view, the Windows DNS server)"),
+                 "Where on an appliance the platform's objects go, in the appliance's own terms (a tenant, a "
+                 "partition, a device group or virtual system, a DNS view or server): the adapter that renders for "
+                 "it says which"),
     AttributeDef(628, 'ciamLoginSecretRole', 'string', 'binding', True,
                  "Binding role of the secret holding the password or API key an appliance's login signs in with, "
                  "read at run time"),
+    AttributeDef(629, 'ciamInEnvironment', 'dn', 'intent', False,
+                 "An environment a shared entry (a host baseline, a job) applies in; an overlay of it too. With "
+                 "neither this nor ciamOnProvider, the entry applies in every environment"),
+    AttributeDef(630, 'ciamOnProvider', 'vocab', 'intent', False,
+                 "A provider (a ciamCloudProvider value) in whose environments a shared entry (a host baseline, a "
+                 "job) applies"),
+    AttributeDef(631, 'ciamApplianceSource', 'cidr', 'binding', False,
+                 "A range an appliance's own traffic to the servers comes from (a load balancer's source NAT pool "
+                 "and self addresses, its health monitors too): the servers' firewall rules must admit it"),
     AttributeDef(623, 'ciamExposure', enum_type(EXPOSURES), 'binding', True,
                  'Whether a service name\'s load balancer is internal or internet-facing, recorded when no frontend '
                  'address says so (the provider assigns the address)'),
@@ -152,7 +162,8 @@ CLASSES = (
               'ciamManagedBy'),
              'Stable service name + load balancer (its DNS answer, and what the load balancer runs)'),
     ClassDef(133, 'ciamAppliance', 'ciamBinding', 'STRUCTURAL', ('ciamStackRole', 'ciamManagementAddress'),
-             ('ciamApplianceScope', 'ciamLoginName', 'ciamLoginSecretRole', 'ciamManagedBy', 'ciamProviderRef'),
+             ('ciamApplianceScope', 'ciamLoginName', 'ciamLoginSecretRole', 'ciamManagedBy', 'ciamProviderRef',
+              'ciamApplianceSource'),
              "An appliance the platform's configuration is pushed to (a load balancer, a DNS server, a network "
              "firewall), filling a stack role: where its management API answers and how the push signs in"),
     ClassDef(9, 'ciamFirewallRule', 'ciamBinding', 'STRUCTURAL', ('ciamSourceCidr', 'ciamPort', 'ciamTargetRole'),

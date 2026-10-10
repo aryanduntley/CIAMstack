@@ -1,10 +1,11 @@
 """Infrastructure fixture data: the current AWS environment (40-env-source), its stage environment (42-env-source-
 stage: an overlay of production that shares its network and overrides a few values), the target environment being
-built (45-env-target, with planted gaps), a warm standby on Google Cloud being built (47-env-standby), and external
-allowlists that hold our addresses (80-external-allowlists)."""
+built (45-env-target, with planted gaps), a warm standby on Google Cloud being built (47-env-standby), the on-prem lab
+at headquarters configured by Ansible (49-env-hq), and external allowlists that hold our addresses
+(80-external-allowlists)."""
 from types import MappingProxyType
 
-from .common import AWS, AZ, CON, DECL, ENVS, GCP, INTS, XA, cert, chg, owner, spec, t
+from .common import AWS, AZ, CON, DECL, ENVS, GCP, IDS, INTS, XA, cert, chg, owner, spec, t
 from .databases import DATABASES
 from .storage import BACKUP
 from .volumes import VOLUMES
@@ -333,7 +334,8 @@ def _bindings(file, env, p):
                     ciamTimeServer=p["time"][0], ciamTimeKind=p["time"][1], ciamOwner=owner("network-security")),)
               if p.get("time") else ()),
             *(spec(file, b(f"secret-{role}"), ["top", "ciamSecretRef"], cn=f"secret-{role}", ciamBindingRole=role,
-                   ciamRefUri=p["secret"](role), **p["key_facts"].get(role, {})) for role in SECRET_ROLES),
+                   ciamRefUri=p["secret"](role), **p["key_facts"].get(role, {}))
+              for role in p.get("secret_roles", SECRET_ROLES)),
             spec(file, b("key-disk"), ["top", "ciamKeyRef"], cn="key-disk", ciamBindingRole="disk-encryption",
                  ciamRefUri=p["key"][0], ciamProviderRef=p["key"][1], **p["key_facts"].get("disk-encryption", {})),
             *((spec(file, b("backup"), ["top", "ciamBackupTarget"], cn="backup", ciamBindingRole="backup-target",
@@ -388,6 +390,8 @@ def _stack(file, env, p):
 # imported under CHG-2035); its servers are configured by Ansible, and what fronts and connects them by the appliance
 # add-ons its stack declares (F5 BIG-IP, Windows DNS, Palo Alto through Panorama), whose logins are CyberArk references
 LAB_DOMAIN = "lab.example-aero.test"
+LAB_SECRET_ROLES = tuple(r for r in SECRET_ROLES if r.split("-")[0] in ("ds", "pf", "sso"))   # what it runs: DS, PF
+LAB_SNAT = "10.80.9.32/28"     # where the BIG-IP's own traffic to the servers comes from (its SNAT pool, self IPs)
 LAB = MappingProxyType({
     "stack": (("provider", "onprem"), ("configuration-management", "ansible"), ("directory", "pingds"),
               ("federation", "pingfederate"), ("load-balancer", "f5-bigip"), ("dns", "ad-dns"),
@@ -396,20 +400,31 @@ LAB = MappingProxyType({
     "subnets": [("subnet-ds", "subnet-ds", None, "10.80.1.0/24", None),
                 ("subnet-pf", "subnet-pf", None, "10.80.4.0/24", None)],
     "services": [("svc-ldaps", "ds-ldaps-service", f"ldap.{LAB_DOMAIN}", LAB_DOMAIN, None, "ds", [1636], "10.80.1.100",
-                  None, "ds-ldaps-2026"),
+                  None, "ds-ldaps-lab"),
                  ("svc-sso", "pf-sso-service", f"sso.{LAB_DOMAIN}", LAB_DOMAIN, None, "pf-engine", [443],
-                  "10.80.4.100", None, "sso-tls-2026")],
+                  "10.80.4.100", None, "sso-tls-lab")],
     "fw": [("fw-pf-ds-svc", "fw-consumer-pf-ds-svc", ["10.80.4.0/24"], [1636], "ds", None, None),
+           ("fw-lb-ldaps", "fw-lb-ldaps", [LAB_SNAT], [1636], "ds", None, None),   # the BIG-IP and its monitors
+           ("fw-replication", "fw-replication", ["10.80.1.0/24"], [8989], "ds", None, None),
            ("fw-admin", "fw-admin", ["10.80.9.0/28"], [4444], "ds", None, None),
-           ("fw-sso", "fw-sso", ["10.0.0.0/8"], [443], "pf-engine", None, None)],
+           ("fw-sso", "fw-sso", ["10.0.0.0/8"], [443], "pf-engine", None, None),
+           # the PingFederate nodes' cluster traffic (JGroups bind and failure-detection ports), engines and console
+           ("fw-pf-cluster", "fw-pf-cluster", ["10.80.4.0/24"], [7600, 7700], "pf-engine", None, None),
+           ("fw-pf-cluster-admin", "fw-pf-cluster-admin", ["10.80.4.0/24"], [7600, 7700], "pf-admin", None, None)],
+    "pinned_priorities": True,      # the order the network team's Panorama keeps them in
     "egress": (None, "10.80.255.10/32"),
     "time": (["ntp1.corp.example-aero.internal", "ntp2.corp.example-aero.internal"], "ntp"),
-    "secret": lambda role: f"cyberark://ciam-lab/CIAM-Lab/{role}",
+    "secret": lambda role: f"cyberark://ciam-lab/CIAM-Lab/{role}", "secret_roles": LAB_SECRET_ROLES,
     "key": ("vault://transit/ciam-lab-disk", None), "key_facts": {},
-    "edge": (("ciamDnsZoneBinding", "zone-lab", "zone-lab", {"ciamDnsZone": LAB_DOMAIN, "ciamZoneVisibility": "private"}),
+    "databases": DATABASES["lab"],
+    "backup": "nfs://backup01.corp.example-aero.internal/export/ciam-lab-ds",   # the site's backup filer
+    "discovery_protocol": "TCPPING",       # PingFederate's nodes listed: no cloud discovery on-prem
+    "edge": (("ciamDnsZoneBinding", "zone-lab", "zone-lab",
+              {"ciamDnsZone": LAB_DOMAIN, "ciamZoneVisibility": "private"}),
              *(("ciamAppliance", cn, f"appliance-{cn}",
                 {"ciamStackRole": stack_role, "ciamManagementAddress": address, "ciamApplianceScope": scope,
                  "ciamLoginName": "svc-opsdir", "ciamLoginSecretRole": f"{cn}-login",
+                 "ciamApplianceSource": LAB_SNAT if stack_role == "load-balancer" else None,
                  "ciamOwner": owner("network-security")})
                for cn, stack_role, address, scope in (
                    ("bigip-hq", "load-balancer", "bigip-1.mgmt.hq.example-aero.internal", "CIAM_Lab"),
@@ -423,16 +438,33 @@ LAB = MappingProxyType({
                  "subnet-pf", PF_V),
                 ("pf-admin-1", "pf-admin", f"pf-admin-1.{LAB_DOMAIN}", "10.80.4.12", None, None, None, "subnet-pf",
                  PF_V)],
+    # what TCPPING lists: the clustered PingFederate nodes
+    "nodes": {"pf-engine-1": "CLUSTERED_ENGINE", "pf-admin-1": "CLUSTERED_CONSOLE"},
+    # the lab answers under its own names (the federation service's contract names, overridden: decision 2283)
+    "overrides": tuple((cn, f"cn=sso,{IDS}", attr, value, "the lab answers under its own names, never production's")
+                       for cn, attr, value in (("sso-base-url", "ciamBaseUrl", f"https://sso.{LAB_DOMAIN}"),
+                                               ("sso-entity-id", "ciamEntityId", f"https://sso.{LAB_DOMAIN}/idp"),
+                                               ("sso-issuer", "ciamOidcIssuer", f"https://sso.{LAB_DOMAIN}"))),
 })
 LAB_ENV = f"env=lab,cloud=hq,{ENVS}"
 
 
+def _overrides(file, env, p):
+    """The environment's own values of shared entries' overridable attributes (ciamOverride), when it has any."""
+    found = p.get("overrides") or ()
+    return (*((spec(file, f"ou=overrides,{env}", ["top", "organizationalUnit"], ou="overrides"),) if found else ()),
+            *(spec(file, f"cn={cn},ou=overrides,{env}", ["top", "ciamOverride"], cn=cn, ciamOverrides=target,
+                   ciamOverrideAttribute=attr, ciamOverrideValue=value, description=why,
+                   ciamOwner=owner("ciam-platform"))
+              for cn, target, attr, value, why in found))
+
+
 def environment(file, env, p):
-    """An environment's bindings, its declared stack, then its servers (placed in bindings by role; a PingFederate
-    node's operational mode where the environment states it)."""
+    """An environment's bindings, its declared stack, its overrides, then its servers (placed in bindings by role; a
+    PingFederate node's operational mode where the environment states it)."""
     b = lambda cn: f"cn={cn},ou=bindings,{env}"  # noqa: E731
     nodes = p.get("nodes") or {}
-    return (*_bindings(file, env, p), *_stack(file, env, p),
+    return (*_bindings(file, env, p), *_stack(file, env, p), *_overrides(file, env, p),
             *(spec(file, f"cn={cn},{env}", ["top", "ciamServer", *(("pingfedNode",) if cn in nodes else ())], cn=cn,
                    ciamServerRole=role, ciamHostname=host, ciamPrivateIp=ip, ciamZone=zone, ciamInstanceSize=size,
                    ciamImageRef=image, ciamSubnet=b(subnet), ciamProductVersion=version,
@@ -476,7 +508,8 @@ def environments():
             spec("49-env-hq", f"cloud=hq,{ENVS}", ["top", "ciamCloud"], cloud="hq", ciamCloudProvider="onprem",
                  ciamRegion="hq-dc1", ciamCloudEnvironment="on-premises", ciamLifecycle="active",
                  ciamOwner=owner("network-security"), description="Headquarters data center (on-prem)"),
-            spec("49-env-hq", LAB_ENV, ["top", "ciamEnvironment"], env="lab", ciamLifecycle="active",
+            spec("49-env-hq", LAB_ENV, ["top", "ciamEnvironment", "ciamEnvironmentPlacement"], env="lab",
+                 ciamLifecycle="active", ciamDataClassification=CLASSIFICATION["lab"],
                  ciamOwner=owner("ciam-platform"), description="Lab on the operators' own hardware"),
             *environment("49-env-hq", LAB_ENV, LAB))
 

@@ -42,6 +42,11 @@ CERTIFICATES = (
     # re-encrypts to the gateway (5.2c)
     ("ciam-internal-ca", "ca", "CN=Example Aero CIAM Internal CA", "self-signed",
      "2026-01-15", "2031-01-15", None, None, "ciam-platform", None, None, None),
+    # the on-prem lab's own service names (hq/lab, milestone 5.3), issued by the internal CA
+    ("ds-ldaps-lab", "tls-server", "CN=ldap.lab.example-aero.test", "CN=Example Aero CIAM Internal CA",
+     "2026-09-01", "2027-09-01", ["ldap.lab.example-aero.test"], "ds-tls-keystore", "ciam-platform", None, None, None),
+    ("sso-tls-lab", "tls-server", "CN=sso.lab.example-aero.test", "CN=Example Aero CIAM Internal CA",
+     "2026-09-01", "2027-09-01", ["sso.lab.example-aero.test"], "sso-tls-keystore", "ciam-platform", None, None, None),
     # the DoD-approved medium assurance certificate incident reports are filed with on DIBNet (synthetic)
     ("dibnet-eca", "client-auth", "CN=Example Aero Security Operations, OU=ECA, O=Example Aero",
      "CN=ECA Medium Assurance Issuing CA (synthetic)", "2025-06-30", "2027-06-30", None, None,
@@ -119,6 +124,13 @@ CREDENTIALS = (
      None),
     ("ig-keystore", "keystore", "RSA", 2048, ["tls"], "pkcs12", None, "TRUE", 365, "per-environment", None, None,
      None),
+    # the logins the lab's appliance add-ons sign in with (the network team's service accounts, held in CyberArk)
+    ("bigip-hq-login", "password", None, None, ["administration"], "text", None, "TRUE", 90, "per-environment",
+     None, None, None),
+    ("dc-hq-login", "password", None, None, ["administration"], "text", None, "TRUE", 90, "per-environment",
+     None, None, None),
+    ("panorama-hq-login", "password", None, None, ["administration"], "text", None, "TRUE", 90, "per-environment",
+     None, None, None),
 )
 
 

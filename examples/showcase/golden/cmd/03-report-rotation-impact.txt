@@ -1,6 +1,7 @@
 step                  what                                                                    where                             owner
 --------------------  ----------------------------------------------------------------------  --------------------------------  --------------------
 carry-over            every environment receives the same new material, together: partners a                                    ciam-platform
+rotate                cyberark://ciam-lab/CIAM-Lab/pf-signing-key                             hq/lab                            ciam-platform
 rotate                aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/pro  source/prod                       ciam-platform
 rotate                gcp-sm://projects/example-aero-ciam-standby/secrets/pf-signing-key      standby/prod                      ciam-platform
 rotate                azkv://kv-ciam-prod/pf-signing-key                                      target/prod                       ciam-platform
@@ -11,5 +12,5 @@ uses the certificate  customer-portal                                           
 uses the certificate  supplier-portal                                                                                           supplier-portal-team
 uses the certificate  tech-pubs                                                                                                 tech-pubs-team
 uses the certificate  mobile-ops                                                                                                mobile-team
-(11 rows)
+(12 rows)
 exit 0

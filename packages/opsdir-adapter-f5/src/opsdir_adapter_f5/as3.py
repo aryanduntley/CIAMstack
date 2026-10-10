@@ -1,5 +1,6 @@
-"""An environment's service names as an F5 AS3 declaration (schema 3.54.0, the AS3 LTS): one tenant (the appliance's
-scope, else opsdir_<cloud>_<env>), an application per service name, and per port a virtual server shaped by the service
+"""An environment's service names as an F5 AS3 declaration (schema 3.54.0, the AS3 LTS): one tenant (an appliance's
+scope, else opsdir_<cloud>_<env>; AS3 replaces a tenant whole, so the tenant is this environment's alone), an
+application per service name, and per port a virtual server shaped by the service
 name's traffic and protection policies as every cloud's front is (the core edge domain's EdgeSpec):
 
   passthrough, or no policy   Service_TCP over a pool of the target role's servers, a TCP monitor
@@ -14,19 +15,18 @@ name's traffic and protection policies as every cloud's front is (the core edge 
 
 A value the record can't give (a frontend address, a server address) is UNBOUND:<what>: AS3 refuses the
 declaration, naming it. Pure."""
-import re
-
 from opsdir.core.directory import get, one, rdn_value, values
 from opsdir.core.environment import UNBOUND, of_class, servers_with_role
 from opsdir.domains.edge.resolve import inspected, service_edge
+from opsdir_adapter_ansible.names import ansible_name
 
 SCHEMA_VERSION = "3.54.0"
 TLS_VERSIONS = ("1.0", "1.1", "1.2", "1.3")
 
 
 def _id(text):
-    """An AS3 object name: letters, digits and underscores, starting with a letter."""
-    name = re.sub(r"[^A-Za-z0-9_]", "_", text)
+    """An AS3 object name: letters, digits and underscores (as an Ansible name), starting with a letter."""
+    name = ansible_name(text)
     return name if name[:1].isalpha() else f"x{name}"
 
 
@@ -93,9 +93,14 @@ def _application(m, svc, endpoints):
     return app
 
 
+def applications(m, endpoints=()):
+    """{AS3 name: Application} of environment m's service names ({} when it has none)."""
+    return {_id(rdn_value(svc)): _application(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")}
+
+
 def declaration(m, endpoints=(), appliance=None):
-    """The AS3 request deploying environment m's service names (class AS3, action deploy, its ADC declaration)."""
-    apps = {_id(rdn_value(svc)): _application(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")}
+    """The AS3 request deploying environment m's service names (class AS3, action deploy, its ADC declaration) into
+    the appliance's tenant."""
     return {"class": "AS3", "action": "deploy", "persist": True,
             "declaration": {"class": "ADC", "schemaVersion": SCHEMA_VERSION, "id": f"opsdir-{tenant(m, appliance)}",
-                            tenant(m, appliance): {"class": "Tenant", **apps}}}
+                            tenant(m, appliance): {"class": "Tenant", **applications(m, endpoints)}}}

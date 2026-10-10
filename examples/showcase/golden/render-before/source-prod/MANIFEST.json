@@ -74,6 +74,111 @@
       "format": "json",
       "sha256": "5b4ef2dc500317b2ef3a5c42cb81045ba988138a390b811dd24379535da4bf61"
     },
+    "ansible/host-config.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "aac356a6632c8a1502d8d8ae257101eb7b48d343305df9258656220b37bc7b44"
+    },
+    "ansible/inventory/group_vars/all.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "5fdd020cc562465118880a66ceb7d87e110b32b9428573ff493960101e2ac2f0"
+    },
+    "ansible/inventory/group_vars/am.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "8a67b14f690fce243bc6f4acf2029b124b46a3784b8bf75f5dcdbfcf4bb30e22"
+    },
+    "ansible/inventory/group_vars/ds.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "a13d822416f42be7d1443257b4752e9d1a2cef51abff95b4e815ae8a151cac31"
+    },
+    "ansible/inventory/group_vars/idm.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "b4b718235e72b522952c5758230c003a0fb20797ccdbbc0cdde977cb6d03a7b3"
+    },
+    "ansible/inventory/group_vars/ig.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "8d9ec32c40a874bce496a33bbf5528762998038917b5ff47b4ade6e87b4fec17"
+    },
+    "ansible/inventory/group_vars/pf_admin.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "cdfbe833974cd6f2b7203690c46c05d61779ff397741d571da3f2309b4909bc2"
+    },
+    "ansible/inventory/group_vars/pf_engine.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "032a0e62a7947c608881253e550e0a14caf8c6655c13b689449906e10f2b5e84"
+    },
+    "ansible/inventory/host_vars/am-1.aws.internal.example-aero.test.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "e5019f8c52ddd9d05cae309730eecea289d2acf47f05abccb9ee212a1c799a4b"
+    },
+    "ansible/inventory/host_vars/am-2.aws.internal.example-aero.test.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "dcaca23904058b9a57faa06954a2c71d7955d959516e6ba48749df3d4f367be9"
+    },
+    "ansible/inventory/host_vars/ds-1.aws.internal.example-aero.test.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "f20c5b55d223befa0b3f946621e6f874a0a538da345755d245188067248a9761"
+    },
+    "ansible/inventory/host_vars/ds-2.aws.internal.example-aero.test.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "b3dcc01d943fd80a318351fc40115c72eb3ea39737c3ea460b479c86797c0ad4"
+    },
+    "ansible/inventory/host_vars/ds-3.aws.internal.example-aero.test.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "e784f05b02ad65dfc2505b807e02951889fc12c511f1c4e58830f723c3cfd182"
+    },
+    "ansible/inventory/host_vars/idm-1.aws.internal.example-aero.test.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "191ae4cd55b7a81cf7558c350a973956e35511c0939e63f18d531804c894e8b3"
+    },
+    "ansible/inventory/host_vars/ig-1.aws.internal.example-aero.test.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "771ecfd3240487dbd30d3182ae171e837c5a156acbb1c226d2dc7c8fd64d1ec1"
+    },
+    "ansible/inventory/host_vars/pf-admin-1.aws.internal.example-aero.test.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "36a9d0b3d17b25d67799b04645e3955021de4485d82668cee574c6c0065fb826"
+    },
+    "ansible/inventory/host_vars/pf-engine-1.aws.internal.example-aero.test.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "9fb135f3f14a56f4e37fb5104db233b1522ca2e3fc5b7fb48e64b3e9f17eee16"
+    },
+    "ansible/inventory/host_vars/pf-engine-2.aws.internal.example-aero.test.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "d72eb9cfd6e423c657e45706368dfdf9b823acfae2941c12399afa8c16fb6de2"
+    },
+    "ansible/inventory/hosts.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "6842311d16a697a0a26c33df8efb95f27325e8a100bd0c3ec444399e75cac693"
+    },
+    "ansible/requirements.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "505f263c60450e0ea884316c7d23657b8395b657ed0d6c0f866d5e7bfeea22cc"
+    },
+    "ansible/templates/pingfederate/bin/run.properties.j2": {
+      "scope": "environment-specific",
+      "format": "text",
+      "sha256": "845bc1e98d3a8acf70f57b0cffdcee67628249e2744982cbbcb0e17ef8e55708"
+    },
     "ds/acis.ldif": {
       "scope": "environment-neutral",
       "format": "ldif",

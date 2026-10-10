@@ -1,0 +1,10 @@
+{
+  "client_id": "reports-api",
+  "client_name": "reports-api",
+  "grant_types": [
+    "client_credentials"
+  ],
+  "response_types": [],
+  "token_endpoint_auth_method": "client_secret_basic",
+  "scope": "reports.read"
+}

@@ -37,7 +37,7 @@ CLASSES = (
     ClassDef(48, 'ciamJob', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamJobKind'),
              ('ciamSchedule', 'ciamTrigger', 'ciamCommand', 'ciamRunsAs', 'ciamRuntime', 'ciamTargetRole',
               'ciamJobRole', 'ciamUsesRole', 'ciamSecretName', 'ciamCodeBundle', 'ciamRepoPath', 'ciamRepoUrl',
-              'ciamDeploysTo', 'ciamFoundOn', 'ciamCriticality'),
+              'ciamDeploysTo', 'ciamFoundOn', 'ciamCriticality', 'ciamInEnvironment', 'ciamOnProvider'),
              'A piece of the platform\'s automation: what runs, when, on what, with which secrets, from which code'),
     ClassDef(49, 'ciamJobBinding', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef',),
              ('ciamSchedule', 'ciamRuntime'),

@@ -1,7 +1,10 @@
-environment   entry                                                                attribute                shared  value  from          why
-------------  -------------------------------------------------------------------  -----------------------  ------  -----  ------------  -----------------------------------
-source/stage  cn=customers,ou=password-policies,ou=declared,ou=config,dc=ciam-ops  ciamLockoutFailureCount  5       20     source/stage  test automation signs in repeatedly
-source/stage  cn=topology,ou=replication,ou=declared,ou=config,dc=ciam-ops         ciamReplicaCount         3       1      source/stage  stage runs one directory replica
-source/stage  cn=tech-pubs,ou=integrations,dc=ciam-ops                             xTokenLifetimeMinutes    60      5      source/stage  short tokens to test refresh
-(3 rows)
+environment   entry                                                                attribute                shared                             value                                  from          why
+------------  -------------------------------------------------------------------  -----------------------  ---------------------------------  -------------------------------------  ------------  -------------------------------------------------------
+hq/lab        cn=sso,ou=identity-services,dc=ciam-ops                              ciamBaseUrl              https://sso.example-aero.test      https://sso.lab.example-aero.test      hq/lab        the lab answers under its own names, never production's
+hq/lab        cn=sso,ou=identity-services,dc=ciam-ops                              ciamEntityId             https://sso.example-aero.test/idp  https://sso.lab.example-aero.test/idp  hq/lab        the lab answers under its own names, never production's
+hq/lab        cn=sso,ou=identity-services,dc=ciam-ops                              ciamOidcIssuer           https://sso.example-aero.test      https://sso.lab.example-aero.test      hq/lab        the lab answers under its own names, never production's
+source/stage  cn=customers,ou=password-policies,ou=declared,ou=config,dc=ciam-ops  ciamLockoutFailureCount  5                                  20                                     source/stage  test automation signs in repeatedly
+source/stage  cn=topology,ou=replication,ou=declared,ou=config,dc=ciam-ops         ciamReplicaCount         3                                  1                                      source/stage  stage runs one directory replica
+source/stage  cn=tech-pubs,ou=integrations,dc=ciam-ops                             xTokenLifetimeMinutes    60                                 5                                      source/stage  short tokens to test refresh
+(6 rows)
 exit 0

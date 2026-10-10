@@ -7,8 +7,9 @@
     + <unit>.service                       OnActiveSec, and the service it starts (Unit=, else <name>.service):
                                            its ExecStart and User
 
-Each found job is a Found: its kind, schedules, triggers, command, the account it runs as, and where it was found
-(path and line). Lines that set an environment variable are kept apart (an assignment may hold a secret).
+Each found job is a Found: its kind, schedules, triggers, command (the shell command line: crontab's \\% and
+systemd's %% and $$ escapes undone), the account it runs as, and where it was found (path and line). Lines that set an
+environment variable are kept apart (an assignment may hold a secret).
 """
 import re
 from functools import reduce
@@ -43,6 +44,7 @@ def _cron_line(line, system):
     if len(parts) <= need:
         return None
     when, user, command = " ".join(parts[:when_n]), (parts[when_n] if system else None), " ".join(parts[need:])
+    command = command.replace("\\%", "%")          # the record holds the shell command; crontab escapes % as \%
     return (None, "boot", user, command) if when == "@reboot" else (when, None, user, command)
 
 
@@ -77,7 +79,8 @@ def unit_settings(text):
 
 
 def _exec(value):
-    return value.lstrip("-@+!:")
+    """An ExecStart= command as the shell would run it: its prefixes off, systemd's %% and $$ escapes undone."""
+    return value.lstrip("-@+!:").replace("%%", "%").replace("$$", "$")
 
 
 def _started(path, settings):

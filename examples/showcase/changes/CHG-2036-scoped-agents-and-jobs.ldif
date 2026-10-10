@@ -1,0 +1,173 @@
+# CHG-2036 (approved): host baselines and jobs that apply only where they run (milestone 5.3, decision 2243). The
+# imported baselines hold the AWS agents (CloudWatch, SSM): they move to baselines scoped to AWS environments
+# (ciamOnProvider aws), so the on-prem lab's servers aren't asked to run them, and the lab's on-prem servers get the
+# Red Hat Satellite and Insights clients its site runs. The MRO nightly export reads production only: it applies in
+# the production environments (source/prod, and target/prod after the move), not in stage, standby or the lab.
+dn: cn=am,ou=baselines,dc=ciam-ops
+changetype: modify
+delete: ciamHostAgent
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2036,ou=changes,dc=ciam-ops
+-
+
+dn: cn=ds,ou=baselines,dc=ciam-ops
+changetype: modify
+delete: ciamHostAgent
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2036,ou=changes,dc=ciam-ops
+-
+
+dn: cn=idm,ou=baselines,dc=ciam-ops
+changetype: modify
+delete: ciamHostAgent
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2036,ou=changes,dc=ciam-ops
+-
+
+dn: cn=ig,ou=baselines,dc=ciam-ops
+changetype: modify
+delete: ciamHostAgent
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2036,ou=changes,dc=ciam-ops
+-
+
+dn: cn=pf-admin,ou=baselines,dc=ciam-ops
+changetype: modify
+delete: ciamHostAgent
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2036,ou=changes,dc=ciam-ops
+-
+
+dn: cn=pf-engine,ou=baselines,dc=ciam-ops
+changetype: modify
+delete: ciamHostAgent
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2036,ou=changes,dc=ciam-ops
+-
+
+dn: cn=am-aws,ou=baselines,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamHostBaseline
+cn: am-aws
+ciamTargetRole: am
+ciamOnProvider: aws
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+ciamChangeRef: cn=CHG-2036,ou=changes,dc=ciam-ops
+
+dn: cn=ds-aws,ou=baselines,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamHostBaseline
+cn: ds-aws
+ciamTargetRole: ds
+ciamOnProvider: aws
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+ciamChangeRef: cn=CHG-2036,ou=changes,dc=ciam-ops
+
+dn: cn=idm-aws,ou=baselines,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamHostBaseline
+cn: idm-aws
+ciamTargetRole: idm
+ciamOnProvider: aws
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+ciamChangeRef: cn=CHG-2036,ou=changes,dc=ciam-ops
+
+dn: cn=ig-aws,ou=baselines,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamHostBaseline
+cn: ig-aws
+ciamTargetRole: ig
+ciamOnProvider: aws
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+ciamChangeRef: cn=CHG-2036,ou=changes,dc=ciam-ops
+
+dn: cn=pf-admin-aws,ou=baselines,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamHostBaseline
+cn: pf-admin-aws
+ciamTargetRole: pf-admin
+ciamOnProvider: aws
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+ciamChangeRef: cn=CHG-2036,ou=changes,dc=ciam-ops
+
+dn: cn=pf-engine-aws,ou=baselines,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamHostBaseline
+cn: pf-engine-aws
+ciamTargetRole: pf-engine
+ciamOnProvider: aws
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+ciamChangeRef: cn=CHG-2036,ou=changes,dc=ciam-ops
+
+dn: cn=ds-onprem,ou=baselines,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamHostBaseline
+cn: ds-onprem
+ciamTargetRole: ds
+ciamOnProvider: onprem
+ciamHostAgent: katello-host-tools 4.4.0
+ciamHostAgent: insights-client 3.2.2
+ciamChangeRef: cn=CHG-2036,ou=changes,dc=ciam-ops
+
+dn: cn=pf-admin-onprem,ou=baselines,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamHostBaseline
+cn: pf-admin-onprem
+ciamTargetRole: pf-admin
+ciamOnProvider: onprem
+ciamHostAgent: katello-host-tools 4.4.0
+ciamHostAgent: insights-client 3.2.2
+ciamChangeRef: cn=CHG-2036,ou=changes,dc=ciam-ops
+
+dn: cn=pf-engine-onprem,ou=baselines,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamHostBaseline
+cn: pf-engine-onprem
+ciamTargetRole: pf-engine
+ciamOnProvider: onprem
+ciamHostAgent: katello-host-tools 4.4.0
+ciamHostAgent: insights-client 3.2.2
+ciamChangeRef: cn=CHG-2036,ou=changes,dc=ciam-ops
+
+dn: cn=ds-nightly-export,ou=jobs,dc=ciam-ops
+changetype: modify
+add: ciamInEnvironment
+ciamInEnvironment: env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamInEnvironment: env=prod,cloud=target,ou=environments,dc=ciam-ops
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2036,ou=changes,dc=ciam-ops
+-

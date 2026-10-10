@@ -43,7 +43,7 @@ def test_required_roles_decide_what_is_unbound(estate):
 
 def test_adapters_are_chosen_from_directory_data(estate):
     kits = ("forgeops", "kubernetes", "ping-devops")       # the target runs AM, IDM, IG and PingFederate on AKS
-    for spec, provider, platform in (("source/prod", "aws", ()), ("target/prod", "azure", kits)):
+    for spec, provider, platform in (("source/prod", "aws", ("ansible",)), ("target/prod", "azure", kits)):
         m, adapters = environment(estate["before"], spec)
         assert [a.name for a in adapters] == [provider, *platform, "pingam", "pingds", "pingfederate", "pinggateway",
                                               "pingidm"]

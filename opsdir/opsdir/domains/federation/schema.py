@@ -1,5 +1,5 @@
 """federation domain schema fragment: its attribute types and object classes (OIDs pinned by number)."""
-from ...core.standard import AttributeDef, ClassDef, fragment
+from ...core.standard import OVERRIDABLE, AttributeDef, ClassDef, fragment
 
 # Standard values (the protocols' own names), so every product adapter maps from one vocabulary.
 GRANT_TYPES = ("authorization_code", "client_credentials", "refresh_token",
@@ -15,7 +15,7 @@ ATTRIBUTES = (
     AttributeDef(86, 'ciamProtocolType', 'enum:saml2-sp|oidc-client|saml2-idp|ldap', 'intent', True,
                  'Integration type'),
     AttributeDef(87, 'ciamEntityId', 'url', 'contract', True,
-                 'SAML entity ID'),
+                 'SAML entity ID', OVERRIDABLE),
     AttributeDef(88, 'ciamAcsUrl', 'url', 'contract', True,
                  'SAML assertion consumer service URL'),
     AttributeDef(89, 'ciamRedirectUri', 'url', 'contract', False,
@@ -51,9 +51,9 @@ ATTRIBUTES = (
     AttributeDef(145, 'ciamSsoUrl', 'url', 'contract', True,
                  'Single sign-on service URL of a partner identity provider'),
     AttributeDef(146, 'ciamOidcIssuer', 'url', 'contract', True,
-                 'OIDC issuer identifier'),
+                 'OIDC issuer identifier', OVERRIDABLE),
     AttributeDef(147, 'ciamBaseUrl', 'url', 'contract', True,
-                 'Public base URL of an identity service (its endpoints are paths under it)'),
+                 'Public base URL of an identity service (its endpoints are paths under it)', OVERRIDABLE),
     AttributeDef(148, 'ciamSigningAlg', 'enum:' + '|'.join(SIGNING_ALGS), 'intent', False,
                  'Token signing algorithms (JWS)'),
     AttributeDef(213, 'ciamServedBy', 'dn', 'intent', True,

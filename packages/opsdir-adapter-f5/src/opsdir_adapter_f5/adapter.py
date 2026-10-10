@@ -9,5 +9,5 @@ ADAPTER = Adapter(name="f5-bigip", kind="platform", applies=None, required_roles
                   render_neutral=None, render_env=render, checks=(check_appliances,), ref_schemes=(),
                   secret_schemes={}, renders="the AS3 declaration of its BIG-IPs, and the play deploying it",
                   neutral_label=None, vocabulary={}, schema=None,
-                  formats=(("ansible/f5/*", "json"), ("ansible/*", "yaml")), products=(), secret_patterns=(),
+                  formats=(("ansible/f5/*", "json"), ("ansible/*.yml", "yaml")), products=(), secret_patterns=(),
                   importers=(), profile_terms=None, access=None)

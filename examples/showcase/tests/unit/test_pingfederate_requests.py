@@ -9,7 +9,7 @@ from opsdir.core.environment import env_model
 from opsdir_adapter_pingfederate.admin_api import OUTPUT, admin_api_files
 from showcase_support import APPROVED, fixture_directory
 
-ENVIRONMENTS = ("source/prod", "source/stage", "target/prod", "standby/prod")
+ENVIRONMENTS = ("source/prod", "source/stage", "target/prod", "standby/prod", "hq/lab")
 
 
 @pytest.fixture(scope="module")

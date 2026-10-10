@@ -3,7 +3,7 @@ that a YAML 1.1 or 1.2 reader would take for something else are quoted; multi-li
 import pytest
 
 from opsdir.core.formats import YAML
-from opsdir.core.interchange.yaml_text import documents, dump, scalar
+from opsdir.core.interchange.yaml_text import Tagged, documents, dump, scalar
 
 yaml = pytest.importorskip("yaml")      # PyYAML reads by YAML 1.1 rules: the strictest reader at hand
 
@@ -78,3 +78,52 @@ def test_what_isnt_json_shaped_is_refused():
 
 def test_the_registered_format_writes_with_it():
     assert YAML.write is dump and YAML.write({"a": 1}) == "a: 1\n"
+
+
+class _Tags(yaml.SafeLoader):
+    """A reader that takes a !tag'ed scalar as its string."""
+
+
+_Tags.add_constructor("!tag", lambda loader, node: loader.construct_scalar(node))
+
+
+def test_lists_under_a_key_indented_when_asked():
+    value = {"hosts": ["a", "b"], "vars": {"x": [{"k": 1}]}}
+    assert dump(value, indent_sequences=True) == "hosts:\n  - a\n  - b\nvars:\n  x:\n    - k: 1\n"
+    assert yaml.safe_load(dump(value, indent_sequences=True)) == value
+
+
+@pytest.mark.parametrize("s", [" ".join(["word"] * 60), "a " + "x" * 200 + " b", "ünïcode " * 30,
+                               "lookup('pipe', 'cmd --flag value') " * 8])
+def test_long_strings_fold_within_the_width_and_read_back(s):
+    s = s.strip()
+    text = dump({"key": s, "list": [s]}, indent_sequences=True, width=40)
+    assert yaml.safe_load(text) == {"key": s, "list": [s]}
+    assert all(len(line) <= 40 for line in text.splitlines() if " " in line.strip())
+
+
+@pytest.mark.parametrize("s", ["aaaa bbbb \tcccc dddd " * 5, "a\u2028b " * 20, "a\u0085b " * 20,
+                               "a\u2029b " * 20, "double  spaces " * 10, " leading " * 10, "x\x07y " * 20])
+def test_strings_that_would_not_read_back_folded_are_never_folded(s):
+    text = dump({"k": s}, width=20)
+    assert yaml.safe_load(text) == {"k": s}
+    assert ">-" not in text
+
+
+def test_a_tagged_scalar_is_written_with_its_tag_in_every_shape():
+    value = {"one": Tagged("!tag", "run {{ x }}"), "block": Tagged("!tag", "a\nb\n"),
+             "list": [Tagged("!tag", "z")], "long": Tagged("!tag", " ".join(["w"] * 40)), "empty": Tagged("!tag", "")}
+    text = dump(value, indent_sequences=True, width=30)
+    assert "one: !tag \"run {{ x }}\"" in text and "block: !tag |" in text and "  - !tag z" in text
+    assert "long: !tag >-" in text and 'empty: !tag ""' in text
+    assert yaml.load(text, _Tags) == {"one": "run {{ x }}", "block": "a\nb\n", "list": ["z"],
+                                      "long": " ".join(["w"] * 40), "empty": ""}
+    with pytest.raises(TypeError):
+        dump({"k": Tagged("!tag", ["not", "a", "scalar"])})
+
+
+def test_a_string_behind_a_long_key_folds_onto_one_block_line():
+    s = '{{ lookup("pipe", "tool get -p Query=\'Safe=X;Object=y\' -o Password") }}'
+    text = dump({"a_rather_long_variable_name": s}, width=80)
+    assert text.splitlines()[0] == "a_rather_long_variable_name: >-" and len(text.splitlines()) == 2
+    assert yaml.safe_load(text) == {"a_rather_long_variable_name": s}

@@ -1,0 +1,261 @@
+{
+  "environment": "env=lab,cloud=hq,ou=environments,dc=ciam-ops",
+  "provider": "onprem",
+  "unbound_roles": [],
+  "render_targets": {
+    "pingfederate": [
+      "admin-api",
+      "terraform"
+    ]
+  },
+  "overrides": [
+    {
+      "entry": "cn=sso,ou=identity-services,dc=ciam-ops",
+      "attribute": "ciamBaseUrl",
+      "values": [
+        "https://sso.lab.example-aero.test"
+      ],
+      "from": "hq/lab"
+    },
+    {
+      "entry": "cn=sso,ou=identity-services,dc=ciam-ops",
+      "attribute": "ciamEntityId",
+      "values": [
+        "https://sso.lab.example-aero.test/idp"
+      ],
+      "from": "hq/lab"
+    },
+    {
+      "entry": "cn=sso,ou=identity-services,dc=ciam-ops",
+      "attribute": "ciamOidcIssuer",
+      "values": [
+        "https://sso.lab.example-aero.test"
+      ],
+      "from": "hq/lab"
+    }
+  ],
+  "files": {
+    "ansible/ad-dns.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "634f1c8085ebceffcabda34686a0d9b8f348fa789660d823555b62e367e578ef"
+    },
+    "ansible/f5-bigip.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "b2ea899c22fb1fff61574a1ef7478b20a395e47bf382c74c6b9b839bd65e8021"
+    },
+    "ansible/f5/as3-CIAM_Lab.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "234fc05356c23e36d50908fde047ba38c307996217575125f7d93a2bcec4f3dd"
+    },
+    "ansible/host-config.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "fb7f0c68be7cb1ffe0062ee814467c9738e1cdd1786eef74379b47e0f77f77ba"
+    },
+    "ansible/inventory/ad-dns.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "3dcef6741e5bf872dc1b32123d775a67f6999fc532c5633ec738d78e11b89f67"
+    },
+    "ansible/inventory/f5-bigip.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "580786fbe399e59da2d69f67517662489e1453d352ffd72a0de5c455a5a0b959"
+    },
+    "ansible/inventory/group_vars/all.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "b60292e54ce875a4ff3c479d0669bfd74ad6fe80709d0aadbb4c73da39b45fee"
+    },
+    "ansible/inventory/group_vars/ds.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "4e7ec6887ea1b998a2cfc20fa79e8d3cf22b4905ca73f5e58d500de4fcfbfcff"
+    },
+    "ansible/inventory/group_vars/pf_admin.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "99ff52ac5b3828621cfacfb5da572493226658f6ea043e90e92b3bff6223f452"
+    },
+    "ansible/inventory/group_vars/pf_engine.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "ec5dfe8c7136b2aeb55bf32753d96bd1cb807877ee3408059c6571f7034f8096"
+    },
+    "ansible/inventory/host_vars/ds-1.lab.example-aero.test.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "1b1dd6ab3777223a6f5973f3b4972121da1952ea41102a63f39bd69236ead4c8"
+    },
+    "ansible/inventory/host_vars/ds-2.lab.example-aero.test.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "2a09542998f581200d256fa1e9635e2b28d6d2a3181882bb2bb8a58880bbd96a"
+    },
+    "ansible/inventory/host_vars/pf-admin-1.lab.example-aero.test.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "da8f740022325c492b7999160c352eaf51eeefa56ded50eb88f96152d83f8193"
+    },
+    "ansible/inventory/host_vars/pf-engine-1.lab.example-aero.test.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "aaeb2ae4001769d9dec01e0f3b4f53ce4800bc498ebdae918b48a5eb91f2ab4c"
+    },
+    "ansible/inventory/hosts.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "8fc1eb13a19da3d85f6b746b45ea4de98439ade86cd0ee0494e455b1e31cb745"
+    },
+    "ansible/inventory/panos.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "8740a694b105ed40912108919d68403819ec09c7f76267c2229a50f63dad98fd"
+    },
+    "ansible/panos.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "e4f195fa08a118397fdcfb0ef7fb20c98680b0a738fa0efed3a9c5fce252ac73"
+    },
+    "ansible/requirements-ad-dns.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "7ed95f4b8cbfad49bcb4406717c57d1dd5c52caf114818b04ff1d8332f74b286"
+    },
+    "ansible/requirements-f5-bigip.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "0fce3af44d12db14e51ca31606e0f92d164e946fe18b309fbe3fe7912780d08f"
+    },
+    "ansible/requirements-panos.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "e31dc1cf69c4c7da28768c8d00e3232aeded386cd926375f625e3cdcdfdc94a9"
+    },
+    "ansible/requirements.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "1e1e2ff42403b27889c4bcd80bc5e00a64ce2095add2ee26b2978aad906fa083"
+    },
+    "ansible/templates/pingfederate/bin/run.properties.j2": {
+      "scope": "environment-specific",
+      "format": "text",
+      "sha256": "171b92b60fdc3fadbbaaccd71bddcd74fa301c61113693a61ca886833cd391bf"
+    },
+    "ds/acis.ldif": {
+      "scope": "environment-neutral",
+      "format": "ldif",
+      "sha256": "48d21fe0ad6ed3587aa7a6c9dc64cf4dd32e27e975a7f01c04b2806e5d884b82"
+    },
+    "ds/dsconfig.batch": {
+      "scope": "environment-neutral",
+      "format": "dsconfig-batch",
+      "sha256": "e48e1c229c468d9330727b496754c7bda5c92ef9e3969da4a6a552184862f9fb"
+    },
+    "ds/setup-ds-1.sh": {
+      "scope": "environment-specific",
+      "format": "shell",
+      "sha256": "6b9c1ce9c31b8bda4e74cd22b6921ce7a10ad8ce50f6f817b67b97bdac13b82b"
+    },
+    "ds/setup-ds-2.sh": {
+      "scope": "environment-specific",
+      "format": "shell",
+      "sha256": "8e3c4befe3e69b42840ad7668193ddc8e1815d124b4d5b09591434defab23cfd"
+    },
+    "files/pingfederate/bin/run.properties": {
+      "scope": "environment-specific",
+      "format": "java-properties",
+      "captured": true,
+      "sha256": "200f02551d0ecb78e76fe9d3f5c9697dac807afaed3d342bcd7ef265815f3d1f"
+    },
+    "files/pingfederate/server/default/data/atm/default-atm.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "captured": true,
+      "sha256": "5d64b31420d4627260d1bd2cf0b9dd3bdea95d85f02350aa7bc5bb115da37904"
+    },
+    "ldap/dit.ldif": {
+      "scope": "environment-neutral",
+      "format": "ldif",
+      "sha256": "6b13c8b376f14ea90c12cc4a46c436fe0a83b56351810d7afbb78886eb2002cd"
+    },
+    "ldap/schema.ldif": {
+      "scope": "environment-neutral",
+      "format": "ldif",
+      "sha256": "ebe0e8a50905a8bb95003372251836c2a30bd4c8436ba59ac8ad56b8273fc017"
+    },
+    "oidc/clients/mobile-ops.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "92e59f02f4d45b2c44e386086f6204a2f331e7ed77147f907417b1d224b2462e"
+    },
+    "oidc/clients/reports-api.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "61235e88f367a8e677527038d57eeb01feb7b3aefb2327a35dfd77084ab35bda"
+    },
+    "oidc/clients/tech-pubs.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "9806619723885da5108609dd53ab1edb614a41a2bcc3adef9f177bd8ae8dd156"
+    },
+    "oidc/discovery/sso.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "9440855329d64300ff38bf19908896a7b042ce2d25f1f0de849c36beecdaaa1e"
+    },
+    "pingfederate/admin-api/requests.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "a944b776eb9d3cdb27876aacb26169f6894ad562842cdd8b243e3ff1060d62e1"
+    },
+    "pingfederate/cluster/jgroups.properties": {
+      "scope": "environment-specific",
+      "format": "java-properties",
+      "sha256": "ca34d8e5d6c2bf31bfda76c382377578791c1767ad4d826b701b4f86a2f97ac7"
+    },
+    "pingfederate/terraform/main.tf": {
+      "scope": "environment-specific",
+      "format": "hcl",
+      "sha256": "e8111b35ca3fb5f557401f8a5cbeb4f90dd99c6d1238fe3e97944599178ed9d7"
+    },
+    "pingfederate/terraform/variables.tf": {
+      "scope": "environment-specific",
+      "format": "hcl",
+      "sha256": "0e85c573a439947a765612cea762873b7354ee48b01b40eb092f009996ccbdf0"
+    },
+    "pingfederate/terraform/versions.tf": {
+      "scope": "environment-specific",
+      "format": "hcl",
+      "sha256": "4ad0837629dfc23d57c0e8d5e444df3e7c628579abfcba91d27efacdfcd34ca8"
+    },
+    "saml/idp/sso.xml": {
+      "scope": "environment-neutral",
+      "format": "xml",
+      "sha256": "a3a0eadf2e4539d5803153c3e1374266228a2b98a203b69126d968efafe672c7"
+    },
+    "saml/partner-idp/harbor-mro-federation.xml": {
+      "scope": "environment-neutral",
+      "format": "xml",
+      "sha256": "f6ca69c84de46d746e4f70819cf87872436e17aad0b31a557c403277a51529c6"
+    },
+    "saml/partner-idp/skyline-air-federation.xml": {
+      "scope": "environment-neutral",
+      "format": "xml",
+      "sha256": "6a7c98a9160a8c56c5952d837594aa3ed09c53eca16029e6882c4570b0429ddd"
+    },
+    "saml/sp/customer-portal.xml": {
+      "scope": "environment-neutral",
+      "format": "xml",
+      "sha256": "d8e8a6fb1914c0a2780140f061b15a2f168c74a63cdb78e238f7b9f0e9d3d846"
+    },
+    "saml/sp/supplier-portal.xml": {
+      "scope": "environment-neutral",
+      "format": "xml",
+      "sha256": "6bb13c0304722ca9b2942a2ef00ea6fd2648469d599edcdd4c48e099f6b80d37"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+credential                 type           role                       store     reference                                               protection  auto-rotate  rotate by  replicas  users  status
+-------------------------  -------------  -------------------------  --------  ------------------------------------------------------  ----------  -----------  ---------  --------  -----  -----------------------------------------------
+am-admin-password          password       am-admin-password                                                                                                                                 UNBOUND
+am-ds-bind-password        password       am-ds-bind-password                                                                                                                               UNBOUND
+am-keystore                keystore       am-keystore                                                                                                                                       UNBOUND
+bigip-hq-login             password       bigip-hq-login             cyberark  cyberark://ciam-lab/CIAM-Lab/bigip-hq                                                                        ok
+dc-hq-login                password       dc-hq-login                cyberark  cyberark://ciam-lab/CIAM-Lab/dc-hq                                                                           ok
+disk-encryption            symmetric-key  disk-encryption            vault     vault://transit/ciam-lab-disk                                                                                HSM required, the store protects it in software
+ds-deployment-id           deployment-id  ds-deployment-id           cyberark  cyberark://ciam-lab/CIAM-Lab/ds-deployment-id                                                                ok
+ds-deployment-password     password       ds-deployment-password     cyberark  cyberark://ciam-lab/CIAM-Lab/ds-deployment-password                                                          ok
+ds-root-password           password       ds-root-password           cyberark  cyberark://ciam-lab/CIAM-Lab/ds-root-password                                                                ok
+ds-tls-keystore            keystore       ds-tls-keystore            cyberark  cyberark://ciam-lab/CIAM-Lab/ds-tls-keystore                                                                 ok
+idm-admin-password         password       idm-admin-password                                                                                                                                UNBOUND
+idm-ds-bind-password       password       idm-ds-bind-password                                                                                                                              UNBOUND
+idm-hrdb-password          password       idm-hrdb-password                                                                                                                                 UNBOUND
+idm-keystore               keystore       idm-keystore                                                                                                                                      UNBOUND
+ig-keystore                keystore       ig-keystore                                                                                                                                       UNBOUND
+panorama-hq-login          password       panorama-hq-login          cyberark  cyberark://ciam-lab/CIAM-Lab/panorama-hq                                                                     ok
+pf-admin-password          password       pf-admin-password          cyberark  cyberark://ciam-lab/CIAM-Lab/pf-admin-password                                                               ok
+pf-captcha-secret          api-token      pf-captcha-secret          cyberark  cyberark://ciam-lab/CIAM-Lab/pf-captcha-secret                                                               ok
+pf-corp-ad-bind-password   password       pf-corp-ad-bind-password   cyberark  cyberark://ciam-lab/CIAM-Lab/pf-corp-ad-bind-password                                                        ok
+pf-ds-bind-password        password       pf-ds-bind-password        cyberark  cyberark://ciam-lab/CIAM-Lab/pf-ds-bind-password                                                             ok
+pf-grants-db-password      password       pf-grants-db-password      cyberark  cyberark://ciam-lab/CIAM-Lab/pf-grants-db-password                                                           ok
+pf-signing-key             private-key    pf-signing-key             cyberark  cyberark://ciam-lab/CIAM-Lab/pf-signing-key                                                                  ok
+pf-signing-key-password    password       pf-signing-key-password    cyberark  cyberark://ciam-lab/CIAM-Lab/pf-signing-key-password                                                         ok
+pf-smtp-password           password       pf-smtp-password           cyberark  cyberark://ciam-lab/CIAM-Lab/pf-smtp-password                                                                ok
+sso-tls-certificate        private-key    sso-tls-certificate                                                                                                                               UNBOUND
+sso-tls-keystore           keystore       sso-tls-keystore           cyberark  cyberark://ciam-lab/CIAM-Lab/sso-tls-keystore                                                                ok
+sso-tls-keystore-password  password       sso-tls-keystore-password  cyberark  cyberark://ciam-lab/CIAM-Lab/sso-tls-keystore-password                                                       ok
+(27 rows)
+exit 0

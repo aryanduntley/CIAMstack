@@ -51,7 +51,9 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2031", ImportStep("fedramp/cpo", SHOWCASE / "exports" / "fedramp", "20260923090000Z")),
             ("CHG-2032", SHOWCASE / "changes" / "CHG-2032-target-ssp-and-key-management.ldif"),
             ("CHG-2033", SHOWCASE / "changes" / "CHG-2033-target-boundary.ldif"),
-            ("CHG-2034", SHOWCASE / "changes" / "CHG-2034-target-data-discovery.ldif"))
+            ("CHG-2034", SHOWCASE / "changes" / "CHG-2034-target-data-discovery.ldif"),
+            ("CHG-2035", ImportStep("onprem/sites", SHOWCASE / "exports" / "sites" / "onprem", "20260923090000Z")),
+            ("CHG-2036", SHOWCASE / "changes" / "CHG-2036-scoped-agents-and-jobs.ldif"))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
 # night before, all of them)
 IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", "20260920030000Z"),

@@ -6,15 +6,20 @@ metadata, spec); lists sit at their key's indent, as kubectl writes them. A stri
 1.2 reader can take it for anything else (a boolean, null, a number, a date, an indicator); otherwise it is written as
 JSON writes it, which is a valid YAML double-quoted scalar. Multi-line strings are literal blocks (|, |-, |+). Where a
 reader wants short lines (yamllint, ansible-lint), a dump can be given a width: a one-line string that would run past
-it is written folded (>-), broken only at single spaces, which folding reads back as the same string.
+it is written folded (>-), broken only at single spaces, which folding reads back as the same string. A scalar can
+carry a YAML tag (Tagged), written before it: a reader acts on it (one marking text a template engine must leave
+unevaluated, say).
 """
 import json
 import math
 import re
+from collections import namedtuple
 
 _PLAIN = re.compile(r"[A-Za-z_/][A-Za-z0-9_./@+=:,()~ -]*")
 _RESERVED = {"y", "n", "yes", "no", "true", "false", "on", "off", "null"}
-_BLOCK_LINE = re.compile(r"[^\x00-\x08\x0b-\x1f\x7f]*")
+_BLOCK_LINE = re.compile(r"[^\x00-\x08\x0b-\x1f\x7f\x85\u2028\u2029]*")   # YAML reads U+0085/2028/2029 as breaks
+
+Tagged = namedtuple("Tagged", ("tag", "value"))   # a scalar written with a YAML tag: Tagged("!tag", "text")
 
 
 def _plain(s):
@@ -25,6 +30,8 @@ def _plain(s):
 def scalar(v):
     """One scalar or mapping key as YAML: null, true, false, a number as JSON writes it, a string plain when safe,
     else JSON-quoted."""
+    if isinstance(v, Tagged):
+        return f"{v.tag} {scalar(v.value)}"
     if v is None or isinstance(v, bool):
         return {None: "null", True: "true", False: "false"}[v]
     if isinstance(v, (int, float)):
@@ -48,26 +55,28 @@ def _block(s):
 
 
 def _folded(s, width):
-    """A one-line string's folded block lines, each at most width characters where its words allow; None when it can't
-    be folded exactly (line breaks, leading, trailing or double spaces, control characters) or fits on one line."""
+    """A one-line string's folded block lines, each at most width characters where its words allow (one line when it
+    fits: the block form still drops the key and the quoting that made its line too long); None when it can't be
+    folded exactly (line breaks, tabs: a line starting with one is read as more indented, leading, trailing or double
+    spaces, control characters)."""
     words = s.split(" ")
-    if width is None or "\n" in s or "" in words or not _BLOCK_LINE.fullmatch(s):
+    if width is None or "\n" in s or "\t" in s or "" in words or not _BLOCK_LINE.fullmatch(s):
         return None
     lines = []
     for w in words:
         lines = [*lines[:-1], f"{lines[-1]} {w}"] if lines and len(lines[-1]) + 1 + len(w) <= width \
             else [*lines, w]
-    return lines if len(lines) > 1 else None
+    return lines
 
 
 def _is_nested(v):
-    return isinstance(v, (dict, list, tuple)) and len(v) > 0
+    return isinstance(v, (dict, list, tuple)) and not isinstance(v, Tagged) and len(v) > 0
 
 
 def _inline(v):
     if isinstance(v, dict):
         return "{}"
-    if isinstance(v, (list, tuple)):
+    if isinstance(v, (list, tuple)) and not isinstance(v, Tagged):
         return "[]"
     return scalar(v)
 
@@ -76,6 +85,10 @@ def _value_lines(v, indent, prefix, seq=0, width=None):
     """Lines of a value placed after prefix ('key:' or '-') at the given indent; seq: how far a list under a key is
     indented (0, or 2 where a linter wants sequences indented); width: the longest line wanted (None: any)."""
     pad = " " * indent
+    if isinstance(v, Tagged):
+        if isinstance(v.value, (dict, list, tuple)):
+            raise TypeError(f"YAML: only a scalar is tagged here, not a {type(v.value).__name__}")
+        return _value_lines(v.value, indent, f"{prefix} {v.tag}", seq, width)
     if isinstance(v, str) and _block(v):
         header, lines = _block(v)
         return [f"{pad}{prefix} {header}", *(f"{pad}  {x}" if x else "" for x in lines)]

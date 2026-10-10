@@ -116,9 +116,9 @@ fi
 from opsdir.core.interchange.yaml_text import dump
 from opsdir_adapter_ansible.requirements import all_requirements
 print(dump(all_requirements()), end="")' > "$ANSIBLE/requirements.yml"
-env -u PYTHONPATH ANSIBLE_COLLECTIONS_PATH="$ANSIBLE/collections" "$ANSIBLE/venv/bin/ansible-galaxy" collection install -r "$ANSIBLE/requirements.yml" \
+env -u PYTHONPATH ANSIBLE_COLLECTIONS_PATH="$ANSIBLE/collections" "$ANSIBLE/venv/bin/ansible-galaxy" collection install --force -r "$ANSIBLE/requirements.yml" \
   -p "$ANSIBLE/collections" >/dev/null
-env -u PYTHONPATH "$ANSIBLE/venv/bin/ansible-galaxy" role install -r "$ANSIBLE/requirements.yml" -p "$ANSIBLE/roles" \
+env -u PYTHONPATH "$ANSIBLE/venv/bin/ansible-galaxy" role install --force -r "$ANSIBLE/requirements.yml" -p "$ANSIBLE/roles" \
   >/dev/null
 echo "ansible collections and roles (opsdir-adapter-ansible's pins): tools/ansible/collections, tools/ansible/roles"
 schema=$ANSIBLE/as3-schema-$AS3_SCHEMA.json

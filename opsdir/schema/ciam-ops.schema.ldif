@@ -356,7 +356,8 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.86 NAME 'ciamProtocolType' DESC 'Int
  nt|saml2-idp|ldap' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.87 NAME 'ciamEntityId' DESC 'SAML en
  tity ID' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SING
- LE-VALUE X-PORTABILITY 'contract' X-VALUE-TYPE 'url' X-ORIGIN 'opsdir' )
+ LE-VALUE X-PORTABILITY 'contract' X-VALUE-TYPE 'url' X-OVERRIDABLE 'TRUE' X
+ -ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.88 NAME 'ciamAcsUrl' DESC 'SAML asse
  rtion consumer service URL' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.146
  6.115.121.1.26 SINGLE-VALUE X-PORTABILITY 'contract' X-VALUE-TYPE 'url' X-O
@@ -589,12 +590,13 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.145 NAME 'ciamSsoUrl' DESC 'Single s
   X-VALUE-TYPE 'url' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.146 NAME 'ciamOidcIssuer' DESC 'OIDC
   issuer identifier' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.12
- 1.1.26 SINGLE-VALUE X-PORTABILITY 'contract' X-VALUE-TYPE 'url' X-ORIGIN 'o
- psdir' )
+ 1.1.26 SINGLE-VALUE X-PORTABILITY 'contract' X-VALUE-TYPE 'url' X-OVERRIDAB
+ LE 'TRUE' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.147 NAME 'ciamBaseUrl' DESC 'Public 
  base URL of an identity service (its endpoints are paths under it)' EQUALIT
  Y caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE X-PORTA
- BILITY 'contract' X-VALUE-TYPE 'url' X-ORIGIN 'opsdir' )
+ BILITY 'contract' X-VALUE-TYPE 'url' X-OVERRIDABLE 'TRUE' X-ORIGIN 'opsdir'
+  )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.148 NAME 'ciamSigningAlg' DESC 'Toke
  n signing algorithms (JWS)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.146
  6.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:RS256|RS384|RS512|
@@ -2850,16 +2852,32 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.626 NAME 'ciamManagementAddress' DES
  1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string
  ' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.627 NAME 'ciamApplianceScope' DESC '
- Where on an appliance the platform\27s objects go, as its vendor names it (
- an F5 AS3 tenant, a PAN-OS device group or vsys, an Infoblox DNS view, the 
- Windows DNS server)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.1
- 21.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN
-  'opsdir' )
+ Where on an appliance the platform\27s objects go, in the appliance\27s own
+  terms (a tenant, a partition, a device group or virtual system, a DNS view
+  or server): the adapter that renders for it says which' EQUALITY caseIgnor
+ eMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'bin
+ ding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.628 NAME 'ciamLoginSecretRole' DESC 
  'Binding role of the secret holding the password or API key an appliance\27
  s login signs in with, read at run time' EQUALITY caseIgnoreMatch SYNTAX 1.
  3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TY
  PE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.629 NAME 'ciamInEnvironment' DESC 'A
+ n environment a shared entry (a host baseline, a job) applies in; an overla
+ y of it too. With neither this nor ciamOnProvider, the entry applies in eve
+ ry environment' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115
+ .121.1.12 X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.630 NAME 'ciamOnProvider' DESC 'A pr
+ ovider (a ciamCloudProvider value) in whose environments a shared entry (a 
+ host baseline, a job) applies' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.
+ 1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'vocab' X-ORIGIN 'ops
+ dir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.631 NAME 'ciamApplianceSource' DESC 
+ 'A range an appliance\27s own traffic to the servers comes from (a load bal
+ ancer\27s source NAT pool and self addresses, its health monitors too): the
+  servers\27 firewall rules must admit it' EQUALITY caseIgnoreMatch SYNTAX 1
+ .3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'cidr' X-
+ ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -3071,8 +3089,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.48 NAME 'ciamJob' DESC 'A piece of th
  om which code' SUP ciamObject STRUCTURAL MUST ( cn $ ciamJobKind ) MAY ( ci
  amSchedule $ ciamTrigger $ ciamCommand $ ciamRunsAs $ ciamRuntime $ ciamTar
  getRole $ ciamJobRole $ ciamUsesRole $ ciamSecretName $ ciamCodeBundle $ ci
- amRepoPath $ ciamRepoUrl $ ciamDeploysTo $ ciamFoundOn $ ciamCriticality ) 
- X-ORIGIN 'opsdir' )
+ amRepoPath $ ciamRepoUrl $ ciamDeploysTo $ ciamFoundOn $ ciamCriticality $ 
+ ciamInEnvironment $ ciamOnProvider ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.49 NAME 'ciamJobBinding' DESC 'Where 
  an environment runs a job (a function, a pipeline): the provider\27s refere
  nce for it' SUP ciamBinding STRUCTURAL MUST ciamProviderRef MAY ( ciamSched
@@ -3084,7 +3102,7 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.50 NAME 'ciamHostBaseline' DESC 'What
  mTrustsCertificate $ ciamTrustedFingerprint $ ciamOsLimit $ ciamKernelSetti
  ng $ ciamHugePages $ ciamFipsMode $ ciamSelinuxMode $ ciamHostAgent $ ciamS
  erviceUnit $ ciamPinnedHost $ ciamSearchDomain $ ciamFoundOn $ ciamHardenin
- gProfile ) X-ORIGIN 'opsdir' )
+ gProfile $ ciamInEnvironment $ ciamOnProvider ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.51 NAME 'ciamComputeGroup' DESC 'Wher
  e an environment runs a server role\27s instances as a group (an autoscalin
  g group, a scale set): image, size, scale, zones' SUP ciamBinding STRUCTURA
@@ -3584,5 +3602,5 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.133 NAME 'ciamAppliance' DESC 'An app
  server, a network firewall), filling a stack role: where its management API
   answers and how the push signs in' SUP ciamBinding STRUCTURAL MUST ( ciamS
  tackRole $ ciamManagementAddress ) MAY ( ciamApplianceScope $ ciamLoginName
-  $ ciamLoginSecretRole $ ciamManagedBy $ ciamProviderRef ) X-ORIGIN 'opsdir
- ' )
+  $ ciamLoginSecretRole $ ciamManagedBy $ ciamProviderRef $ ciamApplianceSou
+ rce ) X-ORIGIN 'opsdir' )

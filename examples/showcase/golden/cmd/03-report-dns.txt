@@ -1,5 +1,8 @@
 environment   name                             type              answers                     ttl   routing  zone                        visibility / run by
 ------------  -------------------------------  ----------------  --------------------------  ----  -------  --------------------------  ----------------------
+hq/lab        lab.example-aero.test            zone                                                                                     private
+hq/lab        ldap.lab.example-aero.test       A                 10.80.1.100                                lab.example-aero.test
+hq/lab        sso.lab.example-aero.test        A                 10.80.4.100                                lab.example-aero.test
 source/prod   example-aero.test                zone                                                                                     public / corporate-dns
 source/prod   id.example-aero.test             zone              Z0EXAMPLE1PRIVATE                                                      private
 source/prod   apps.example-aero.test           A                 198.51.100.22               3600           example-aero.test
@@ -22,5 +25,5 @@ target/prod   apps.example-aero.test           A                 198.51.100.79  
 target/prod   ldap.id.cloud.example-aero.test  A                 10.60.1.100                                id.cloud.example-aero.test
 target/prod   login.example-aero.test          A                 198.51.100.78                              example-aero.test
 target/prod   sso.example-aero.test            A                 198.51.100.77                              example-aero.test
-(22 rows)
+(25 rows)
 exit 0

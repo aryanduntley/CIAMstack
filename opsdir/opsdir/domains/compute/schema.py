@@ -108,7 +108,8 @@ CLASSES = (
     ClassDef(50, 'ciamHostBaseline', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTargetRole'),
              ('ciamOs', 'ciamJdk', 'ciamTrustsCertificate', 'ciamTrustedFingerprint', 'ciamOsLimit',
               'ciamKernelSetting', 'ciamHugePages', 'ciamFipsMode', 'ciamSelinuxMode', 'ciamHostAgent',
-              'ciamServiceUnit', 'ciamPinnedHost', 'ciamSearchDomain', 'ciamFoundOn', 'ciamHardeningProfile'),
+              'ciamServiceUnit', 'ciamPinnedHost', 'ciamSearchDomain', 'ciamFoundOn', 'ciamHardeningProfile',
+              'ciamInEnvironment', 'ciamOnProvider'),
              "What a server role's servers run beyond its product: OS, Java runtime and truststore additions, "
              "limits, kernel settings, agents, service units"),
     ClassDef(51, 'ciamComputeGroup', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef', 'ciamTargetRole'),

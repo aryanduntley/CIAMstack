@@ -1,0 +1,8 @@
+# PingFederate engine run.properties (Example Aero, synthetic)
+pf.operational.mode=CLUSTERED_ENGINE
+pf.engine.hostname=sso.lab.example-aero.test
+pf.https.port=9031
+pf.admin.https.port=9999
+pf.admin.pwd=${secret:cyberark://ciam-lab/CIAM-Lab/pf-admin-password}
+pf.log.eventdetail=false
+exit 0

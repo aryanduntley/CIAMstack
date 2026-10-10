@@ -198,6 +198,19 @@ echo "-- data discovery: the target turns on Defender's sensitive data discovery
 od modify --change CHG-2034 changes/CHG-2034-target-data-discovery.ldif
 od report data-discovery
 od report authorizations; od report responsibilities
+echo "-- the on-prem lab (hq/lab): the organization's sites become the on-prem provider's regions; the AWS agents and"
+echo "   the MRO export apply only where they run, the lab's servers get its site's agents"
+od import --change CHG-2035 --at 20260923090000Z onprem/sites exports/sites/onprem
+od modify --change CHG-2036 changes/CHG-2036-scoped-agents-and-jobs.ldif
+od report baselines
+rm -rf out/hq-lab
+od render hq/lab
+od report keys hq/lab
+ANSIBLE_TOOLS=$(cd ../.. && pwd)/tools/ansible/venv/bin/ansible-playbook   # opsdir/scripts/fetch-tools.sh
+if [ -x "$ANSIBLE_TOOLS" ]; then
+  echo "-- every rendered Ansible folder, checked by ansible-inventory, syntax, ansible-lint and the AS3 schema"
+  "$CORE/scripts/validate-ansible.sh" out/source-prod/ansible out/hq-lab/ansible
+fi
 od history
 od render target/prod >/dev/null
 diff -ru out/before/terraform out/target-prod/terraform
@@ -205,5 +218,5 @@ echo "-- the plan (after changes)"
 od plan source/prod target/prod | sed -n '1,20p'
 "$PY" scripts/check-findings.py after
 echo
-echo "Full outputs: out/source-prod, out/source-stage, out/target-prod, out/standby-prod,"
+echo "Full outputs: out/source-prod, out/source-stage, out/target-prod, out/standby-prod, out/hq-lab,"
 echo "              out/plan-source-prod-to-target-prod"
