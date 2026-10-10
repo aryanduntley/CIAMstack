@@ -81,3 +81,4 @@ ciamCheckedService: pf-sso-service
 ciamFeedsAlert: cn=login-failures,ou=alert-rules,dc=ciam-ops
 ciamInterval: 5m
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamUsesRole: canary-client

@@ -13,6 +13,9 @@ Choose one (--option):
   am-keystore: `am-keystore` (azkv://kv-ciam-prod/am-keystore in target/prod)
       modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
           replace pingfedCredentialRole: am-keystore
+  canary-client: `canary-client` (azkv://kv-ciam-prod/canary-client in target/prod)
+      modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
+          replace pingfedCredentialRole: canary-client
   ciam-edge-tls-cert: `ciam-edge-tls-cert` (azkv://kv-ciam-prod/ciam-edge-tls-cert in target/prod)
       modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
           replace pingfedCredentialRole: ciam-edge-tls-cert

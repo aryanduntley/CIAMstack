@@ -142,11 +142,11 @@ SecretDelivery = NamedTuple("SecretDelivery", [("store_key", Callable), ("eso_pr
 # applies to m, or None; ansible_lookup(m, ref-uri): the native lookup expression configuration management reads a
 # reference with at run time (its scheme owner's), or None (it runs the scheme's resolver command instead);
 # deployable_config(m): ((target role, deploy path, repo path, text), ...) of the captured files m receives that say
-# where they go on its servers
+# where they go on its servers; signals(m): the Signals the adapters rendering environment m declare
 Services = NamedTuple("Services", [("secret_command", Callable), ("endpoints", tuple), ("listeners", Callable),
                                    ("workload_identity", Callable), ("secret_delivery", Callable),
                                    ("routes", Callable), ("gateway_plug", Callable), ("ansible_lookup", Callable),
-                                   ("deployable_config", Callable)])
+                                   ("deployable_config", Callable), ("signals", Callable)])
 
 # How a cloud's L7 front reaches a cluster's in-cluster gateway, from the provider adapter that owns the cloud:
 # annotations on the gateway's Service ((name, value), ...), further Kubernetes objects the plug needs (dicts, e.g. a
@@ -175,6 +175,14 @@ AccessModel = namedtuple("AccessModel", ("permissions", "escalations", "covers",
 # segments (/am/json/realms/*/authenticate), server_role the role of the servers serving it. Products declare their
 # defaults; a policy's ciamEndpointPath says where an estate moved one.
 Endpoint = namedtuple("Endpoint", ("kind", "path", "server_role"))
+
+# A neutral signal a product's servers expose (domains/observability: what an alert rule's ciamSignal names): signal
+# the neutral name (replication-delay), server_role the role of the servers exposing it, expr the PromQL expression
+# over the product's own Prometheus metrics giving one value per server or scope (a rate for counters), unit the unit
+# of that value (s, bytes, /s, ratio: what a rule's threshold is converted to), description what it measures. Products
+# declare only what their documentation names; a rule on a signal no product declares needs the metric its
+# environment's cloud runs (its alarm binding's ciamMetric).
+Signal = namedtuple("Signal", ("signal", "server_role", "expr", "unit", "description"))
 
 # A port a product's servers listen on: server_role the role of the servers, port and protocol (tcp or udp), purpose in
 # words (LDAPS, replication, cluster), peers who connects: any of clients (consumers, directly or through service
@@ -281,10 +289,11 @@ Adapter = namedtuple("Adapter", (
     "gateway_plug",         # (EnvModel, cluster gateway binding, (Service name, ports)) -> GatewayPlug: its cloud's
                             # front to the gateway's data-plane Service
     "settings",             # Settings: the estate settings it declares (core.settings), beside the domains'
-    "ansible_lookup"),      # {ref-uri scheme: (EnvModel, secret store binding or None, rest) -> a Jinja expression
+    "ansible_lookup",       # {ref-uri scheme: (EnvModel, secret store binding or None, rest) -> a Jinja expression
                             # reading the secret at run time (core.interchange.jinja), or None to fall back to its
                             # resolver command}: how configuration management reads its schemes' secrets
-    defaults=((), None, None, (), (), (), None, None, None, None, (), None))
+    "signals"),             # Signals: the neutral signals its products' servers expose as Prometheus metrics
+    defaults=((), None, None, (), (), (), None, None, None, None, (), None, ()))
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

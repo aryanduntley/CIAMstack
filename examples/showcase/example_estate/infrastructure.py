@@ -21,7 +21,8 @@ SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password"
                 "sso-tls-keystore", "pf-signing-key", "pf-admin-password", "am-admin-password", "am-keystore",
                 "am-ds-bind-password", "idm-admin-password", "idm-keystore", "idm-ds-bind-password",
                 "idm-hrdb-password", "ig-keystore", "pf-ds-bind-password", "pf-grants-db-password", "pf-smtp-password",
-                "pf-captcha-secret", "pf-corp-ad-bind-password", "pf-signing-key-password", "sso-tls-keystore-password")
+                "pf-captcha-secret", "pf-corp-ad-bind-password", "pf-signing-key-password", "sso-tls-keystore-password",
+                "canary-client")
 DS_V, PF_V, AM_V, IDM_V, IG_V = ("PingDS 7.5.1", "PingFederate 12.1.4", "PingAM 7.5.1", "PingIDM 7.5.0",
                                  "PingGateway 2024.11.0")
 IMG = ("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/"
@@ -134,7 +135,7 @@ TARGET = MappingProxyType({
     # directory stays on servers
     "stack": (("provider", "azure"), ("directory", "pingds"), ("federation", "pingfederate"), ("access", "pingam"),
               ("identity-management", "pingidm"), ("gateway", "pinggateway"), ("platform", "kubernetes"),
-              ("kit-forgeops", "forgeops"), ("kit-ping-devops", "ping-devops")),
+              ("kit-forgeops", "forgeops"), ("kit-ping-devops", "ping-devops"), ("monitoring", "prometheus")),
     "net": ("vnet", "vnet-ciam-prod", "10.60.0.0/16"), "rg": "rg-ciam-prod", "pinned_priorities": True,
     "subnets": [("snet-ds", "subnet-ds", "vnet-ciam-prod/snet-ds", "10.60.1.0/24", None),
                 ("snet-pf", "subnet-pf", "vnet-ciam-prod/snet-pf", "10.60.2.0/24", None),
@@ -395,10 +396,11 @@ LAB_SNAT = "10.80.9.32/28"     # where the BIG-IP's own traffic to the servers c
 LAB = MappingProxyType({
     "stack": (("provider", "onprem"), ("configuration-management", "ansible"), ("directory", "pingds"),
               ("federation", "pingfederate"), ("load-balancer", "f5-bigip"), ("dns", "ad-dns"),
-              ("network-firewall", "panos")),
+              ("network-firewall", "panos"), ("monitoring", "prometheus")),
     "net": ("net-hq", None, "10.80.0.0/16"),
     "subnets": [("subnet-ds", "subnet-ds", None, "10.80.1.0/24", None),
-                ("subnet-pf", "subnet-pf", None, "10.80.4.0/24", None)],
+                ("subnet-pf", "subnet-pf", None, "10.80.4.0/24", None),
+                ("subnet-mon", "subnet-mon", None, "10.80.6.0/24", None)],
     "services": [("svc-ldaps", "ds-ldaps-service", f"ldap.{LAB_DOMAIN}", LAB_DOMAIN, None, "ds", [1636], "10.80.1.100",
                   None, "ds-ldaps-lab"),
                  ("svc-sso", "pf-sso-service", f"sso.{LAB_DOMAIN}", LAB_DOMAIN, None, "pf-engine", [443],
@@ -437,7 +439,9 @@ LAB = MappingProxyType({
                 ("pf-engine-1", "pf-engine", f"pf-engine-1.{LAB_DOMAIN}", "10.80.4.11", None, None, None,
                  "subnet-pf", PF_V),
                 ("pf-admin-1", "pf-admin", f"pf-admin-1.{LAB_DOMAIN}", "10.80.4.12", None, None, None, "subnet-pf",
-                 PF_V)],
+                 PF_V),
+                # the lab's Prometheus: the stack's monitoring add-on writes the record's alerting rules on it
+                ("mon-1", "monitoring", f"mon-1.{LAB_DOMAIN}", "10.80.6.11", None, None, None, "subnet-mon", None)],
     # what TCPPING lists: the clustered PingFederate nodes
     "nodes": {"pf-engine-1": "CLUSTERED_ENGINE", "pf-admin-1": "CLUSTERED_CONSOLE"},
     # the lab answers under its own names (the federation service's contract names, overridden: decision 2283)

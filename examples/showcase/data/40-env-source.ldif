@@ -527,6 +527,14 @@ ciamBindingRole: sso-tls-keystore-password
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/sso-tls-keystore-password
 
+dn: cn=secret-canary-client,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-canary-client
+ciamBindingRole: canary-client
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /prod/canary-client
+
 dn: cn=key-disk,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamKeyRef
@@ -668,9 +676,9 @@ objectClass: ciamCanaryBinding
 cn: sso-login
 ciamBindingRole: canary-sso-login
 ciamInterval: 5m
-ciamProviderRef: arn:aws:synthetics:us-east-1:111122223333:canary:ciam-sso-log
- in
+ciamProviderRef: arn:aws:synthetics:us-east-1:111122223333:canary:sso-login
 ciamRealizes: sso-login
+ciamStorageRef: s3://example-aero-ciam-prod-canaries/sso-login
 
 dn: cn=audit-archive,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top

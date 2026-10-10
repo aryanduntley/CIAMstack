@@ -1,2 +1,2 @@
-loaded 742 entries from 34 files; 459 DN references verified
+loaded 751 entries from 34 files; 463 DN references verified
 exit 0

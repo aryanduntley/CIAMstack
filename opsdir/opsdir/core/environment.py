@@ -8,7 +8,7 @@ An overlay environment's bindings, stack, declared roles and overrides include w
 from typing import NamedTuple, Optional
 
 from .directory import Directory, Entry, children, follow, get, is_kind, norm_dn, one, rdn_value, subtree, values
-from .naming import branch
+from .naming import branch, env_label
 from .overlays import (apply_overrides, declared_roles, effective_bindings, effective_overrides, effective_stack,
                        lineage)
 
@@ -89,6 +89,13 @@ def published_role(d, host):
 def environment_of(binding):
     """The DN of the environment a binding belongs to."""
     return binding.dn.split(",ou=bindings,", 1)[1]
+
+
+def inherited_from(m, binding):
+    """The label of the environment overlay m inherits a binding from (a base in its lineage), or None when the
+    binding is m's own: what the base renders is the base's, never rendered again by the overlay."""
+    src = norm_dn(environment_of(binding))
+    return None if src == norm_dn(m.dn) else env_label(src)
 
 
 def server_location(server):

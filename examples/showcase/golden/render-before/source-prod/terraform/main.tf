@@ -1927,6 +1927,94 @@ resource "aws_cloudtrail" "cloudtrail" {
   enable_log_file_validation    = true
 }
 
+resource "aws_cloudwatch_log_group" "audit_logs" {
+  name              = "/ciam/prod/audit"
+  retention_in_days = 400
+  tags = {
+    BindingRole = "audit-logs"
+  }
+}
+
+resource "aws_cloudwatch_log_group" "ops_logs" {
+  name              = "/ciam/prod/access"
+  retention_in_days = 30
+  tags = {
+    BindingRole = "ops-logs"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "pf_login_failures" {
+  alarm_name          = "pf-login-failures"
+  alarm_description   = "Alert rule login-failures: login-failures gt 50 /min (opsdir)"
+  namespace           = "CIAM/PingFederate"
+  metric_name         = "LoginFailures"
+  statistic           = "Sum"
+  period              = 60
+  evaluation_periods  = 5
+  comparison_operator = "GreaterThanThreshold"
+  threshold           = 50
+  unit                = "Count"
+  alarm_actions       = ["arn:aws:sns:us-east-1:111122223333:ciam-prod-page"]
+  ok_actions          = ["arn:aws:sns:us-east-1:111122223333:ciam-prod-page"]
+  tags = {
+    Realizes    = "login-failures"
+    BindingRole = "alarm-login-failures"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "ds_replication_lag" {
+  alarm_name          = "ds-replication-lag"
+  alarm_description   = "Alert rule replication-lag: replication-delay gt 5000 ms (opsdir)"
+  namespace           = "CIAM/DS"
+  metric_name         = "ReplicationDelay"
+  statistic           = "Average"
+  period              = 60
+  evaluation_periods  = 5
+  comparison_operator = "GreaterThanThreshold"
+  threshold           = 5000
+  unit                = "Milliseconds"
+  alarm_actions       = ["arn:aws:sns:us-east-1:111122223333:ciam-prod-page"]
+  ok_actions          = ["arn:aws:sns:us-east-1:111122223333:ciam-prod-page"]
+  tags = {
+    Realizes    = "replication-lag"
+    BindingRole = "alarm-replication-lag"
+  }
+}
+
+data "archive_file" "canary_sso_login" {
+  type        = "zip"
+  source_dir  = "${path.module}/canaries/sso-login"
+  output_path = "${path.module}/.build/canary-sso-login.zip"
+}
+
+resource "aws_synthetics_canary" "sso_login" {
+  name                 = "sso-login"
+  runtime_version      = "syn-python-selenium-12.0"
+  handler              = "canary.handler"
+  zip_file             = data.archive_file.canary_sso_login.output_path
+  artifact_s3_location = "s3://example-aero-ciam-prod-canaries/sso-login/"
+  execution_role_arn   = aws_iam_role.canaries.arn
+  start_canary         = true
+  schedule {
+    expression = "rate(5 minutes)"
+  }
+  tags = {
+    Realizes    = "sso-login"
+    BindingRole = "canary-sso-login"
+  }
+}
+
+resource "aws_iam_role" "canaries" {
+  name               = "ciam-prod-canaries"
+  assume_role_policy = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+}
+
+resource "aws_iam_role_policy" "canaries" {
+  name   = "synthetics"
+  role   = aws_iam_role.canaries.id
+  policy = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"s3:PutObject\",\"s3:GetObject\"],\"Resource\":[\"arn:aws:s3:::example-aero-ciam-prod-canaries/sso-login/*\"]},{\"Effect\":\"Allow\",\"Action\":[\"s3:GetBucketLocation\"],\"Resource\":[\"arn:aws:s3:::example-aero-ciam-prod-canaries\"]},{\"Effect\":\"Allow\",\"Action\":[\"logs:CreateLogStream\",\"logs:PutLogEvents\",\"logs:CreateLogGroup\"],\"Resource\":[\"arn:aws:logs:*:*:log-group:/aws/lambda/cwsyn-sso-login-*\"]},{\"Effect\":\"Allow\",\"Action\":[\"s3:ListAllMyBuckets\",\"xray:PutTraceSegments\"],\"Resource\":[\"*\"]},{\"Effect\":\"Allow\",\"Action\":\"cloudwatch:PutMetricData\",\"Resource\":\"*\",\"Condition\":{\"StringEquals\":{\"cloudwatch:namespace\":\"CloudWatchSynthetics\"}}},{\"Effect\":\"Allow\",\"Action\":[\"secretsmanager:GetSecretValue\"],\"Resource\":[\"arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/canary-client\"]}]}"
+}
+
 data "aws_partition" "current" {
 }
 
@@ -2248,6 +2336,10 @@ data "aws_secretsmanager_secret" "am_ds_bind_password" {
 
 data "aws_secretsmanager_secret" "am_keystore" {
   arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/am-keystore"
+}
+
+data "aws_secretsmanager_secret" "canary_client" {
+  arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/canary-client"
 }
 
 data "aws_secretsmanager_secret" "ds_deployment_id" {

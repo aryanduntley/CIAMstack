@@ -48,6 +48,15 @@ def holds_material(b):
     return any(is_a(b, oc) for oc in HOLDS_MATERIAL)
 
 
+def hsm_shortfall(credential, b):
+    """How a binding falls short of a credential that must stay in an HSM: 'software' (its store protects it in
+    software), 'unrecorded' (its protection level isn't recorded, so it can't be told), or None."""
+    if one(credential, "ciamHsmRequired") != "TRUE":
+        return None
+    level = one(b, "ciamProtectionLevel")
+    return "unrecorded" if level is None else "software" if level == "software" else None
+
+
 def material_bindings(m):
     """The environment's bindings that hold key material (secret, key and certificate references)."""
     return tuple(b for b in m.bindings if holds_material(b))

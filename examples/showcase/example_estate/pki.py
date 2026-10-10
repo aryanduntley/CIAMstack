@@ -3,6 +3,7 @@ the platform's keys and secrets as credentials (72-credentials): what each is, h
 material must reach the target environment, and where it is used. Each environment binds them by role (40/45)."""
 from opsdir.domains.pki.pem import pem_fingerprint
 from .common import CERTS, CREDS, RB, fp, owner, spec, t
+from .observability import CANARIES
 
 # the internal CA's certificate itself (public; synthetic, its key discarded when it was made): what the target's
 # cluster gateway checks PingFederate's TLS against (its backend CA bundle, 5.2d)
@@ -124,6 +125,9 @@ CREDENTIALS = (
      None),
     ("ig-keystore", "keystore", "RSA", 2048, ["tls"], "pkcs12", None, "TRUE", 365, "per-environment", None, None,
      None),
+    # the OAuth client the synthetic sign-in check uses (a JSON secret holding client_id and client_secret)
+    ("canary-client", "client-secret", None, None, ["authentication"], "text", None, "TRUE", 90, "per-environment",
+     None, f"cn=sso-login,{CANARIES}", None),
     # the logins the lab's appliance add-ons sign in with (the network team's service accounts, held in CyberArk)
     ("bigip-hq-login", "password", None, None, ["administration"], "text", None, "TRUE", 90, "per-environment",
      None, None, None),

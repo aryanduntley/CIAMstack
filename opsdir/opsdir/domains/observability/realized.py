@@ -7,14 +7,27 @@ or copied without anyone knowing why. A rule the source doesn't realize while it
 nothing runs today. Both are actions; rendering what the target runs is the renderers' (path 6).
 """
 from ...core.directory import is_a, one, rdn_value, sorted_by_dn, subtree, values
-from ...core.environment import environment_of, of_class
+from ...core.environment import environment_of, inherited_from, of_class
 from ...core.findings import findings, responsible
 from ...core.naming import branch, env_label
+from ..network.stack import kept_by
 from .alerts import alert_rules, canaries
 
 MONITOR_HEADERS = ("environment", "monitor", "kind", "realizes", "evaluates", "notifies", "every", "provider ref")
 # (binding class, what the cloud runs, what it realizes, the record's entries of that)
 KINDS = (("ciamAlarmBinding", "alarm", "alert rule", alert_rules), ("ciamCanaryBinding", "check", "canary", canaries))
+
+
+def keeper_of(m, b):
+    """Who keeps a monitoring binding's resource when environment m's root doesn't render it: the party it names
+    (ciamManagedBy: network.stack.kept_by), or the base environment overlay m inherits it from; None when it is m's
+    to render (or b is None)."""
+    if b is None:
+        return None
+    if one(b, "ciamManagedBy"):
+        return kept_by(m, b)
+    base = inherited_from(m, b)
+    return f"{base} (this environment inherits it)" if base else None
 
 
 def monitors(m):

@@ -4,7 +4,8 @@
 #   opsdir/scripts/fetch-tools.sh
 # Terraform: the release zip, checked against HashiCorp's SHA256SUMS, whose signature is checked against HashiCorp's
 # release key (fingerprint pinned below) in a keyring inside tools/, never the user's.
-# Helm, Kustomize, kubeconform (Kubernetes output, opsdir/scripts/validate-kubernetes.sh): each release archive checked
+# Helm, Kustomize, kubeconform (Kubernetes output, opsdir/scripts/validate-kubernetes.sh) and Prometheus's promtool
+# (rule files): each release archive checked
 # against the SHA-256 pinned below (Linux amd64 and arm64), taken from the project's own published sums when the
 # version was pinned (Helm's archives also verified then against their signatures by a key in Helm's KEYS file).
 # Ansible (opsdir/scripts/validate-ansible.sh): ansible-core and ansible-lint at the versions pinned below in their own
@@ -19,6 +20,7 @@ HASHICORP_KEY=C874011F0AB405110D02105534365D9472D7468F    # https://www.hashicor
 HELM_VERSION=4.3.0                # 2026-09-09; ForgeOps 2026.3 works with Helm 3 or 4 and recommends the latest
 KUSTOMIZE_VERSION=5.8.2           # 2026-09-30
 KUBECONFORM_VERSION=0.8.0         # 2026-06-04
+PROMETHEUS_VERSION=3.15.0         # 2026-09-24: its promtool checks opsdir-adapter-prometheus's rule files
 ANSIBLE_CORE_VERSION=2.21.4       # 2026-09-08 (controller Python 3.12-3.14)
 ANSIBLE_LINT_VERSION=26.9.0       # 2026-09-22
 AS3_SCHEMA=3.54.0-6               # F5 AS3 LTS JSON schema (opsdir-adapter-f5's declarations)
@@ -64,6 +66,8 @@ pinned_sha() {
     kustomize-linux-arm64) echo 0991957191951cb7dddd142403b5bb98a1fcd6378ba0079dddc1e2c309080a7f ;;
     kubeconform-linux-amd64) echo 9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883 ;;
     kubeconform-linux-arm64) echo 1f53fc8e81258197a35e8603054162a5af1de8c5af13746c71ab680d9534ed87 ;;
+    promtool-linux-amd64) echo 2a542df32eac02ee17b9d844fb2aa1de00dafa5476579ba8a3ba862e9d572ea0 ;;
+    promtool-linux-arm64) echo f1f90ec08e849d494ca66c611470afc50192f0355f1a61c33f2cbde02d067823 ;;
     *) return 1 ;;
   esac
 }
@@ -98,6 +102,13 @@ if [ -x "$TOOLS/bin/kubeconform" ] && "$TOOLS/bin/kubeconform" -v | grep -qx "v$
 else
   pinned_fetch kubeconform "https://github.com/yannh/kubeconform/releases/download/v$KUBECONFORM_VERSION/kubeconform-$os-$arch.tar.gz" kubeconform &&
     echo "kubeconform $KUBECONFORM_VERSION: tools/bin/kubeconform (verified)"
+fi
+if [ -x "$TOOLS/bin/promtool" ] && "$TOOLS/bin/promtool" --version 2>&1 | grep -q "version $PROMETHEUS_VERSION "; then
+  echo "promtool $PROMETHEUS_VERSION: already in tools/bin"
+else
+  pinned_fetch promtool "https://github.com/prometheus/prometheus/releases/download/v$PROMETHEUS_VERSION/prometheus-$PROMETHEUS_VERSION.$os-$arch.tar.gz" \
+    "prometheus-$PROMETHEUS_VERSION.$os-$arch/promtool" &&
+    echo "promtool $PROMETHEUS_VERSION: tools/bin/promtool (verified)"
 fi
 
 # Ansible: a venv of its own, run without the caller's PYTHONPATH (packages there would shadow the venv's)

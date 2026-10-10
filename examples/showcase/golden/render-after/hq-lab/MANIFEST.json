@@ -75,6 +75,11 @@
       "format": "yaml",
       "sha256": "4e7ec6887ea1b998a2cfc20fa79e8d3cf22b4905ca73f5e58d500de4fcfbfcff"
     },
+    "ansible/inventory/group_vars/monitoring.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "9461ee9d6562899cd9886c04b10421843ce37f7cbf7aed02955a87082dc5252f"
+    },
     "ansible/inventory/group_vars/pf_admin.yml": {
       "scope": "environment-specific",
       "format": "yaml",
@@ -95,6 +100,11 @@
       "format": "yaml",
       "sha256": "2a09542998f581200d256fa1e9635e2b28d6d2a3181882bb2bb8a58880bbd96a"
     },
+    "ansible/inventory/host_vars/mon-1.lab.example-aero.test.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "f4fd647ecb0f18cc463fa3e0bca433bb9c87a14390a9c6d86407647ea253a5c4"
+    },
     "ansible/inventory/host_vars/pf-admin-1.lab.example-aero.test.yml": {
       "scope": "environment-specific",
       "format": "yaml",
@@ -108,7 +118,7 @@
     "ansible/inventory/hosts.yml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "8fc1eb13a19da3d85f6b746b45ea4de98439ade86cd0ee0494e455b1e31cb745"
+      "sha256": "99ef68ded662e1d5b57785b0d6f716910f524c1a8ea19236c11b7ed904bcc319"
     },
     "ansible/inventory/panos.yml": {
       "scope": "environment-specific",
@@ -119,6 +129,11 @@
       "scope": "environment-specific",
       "format": "yaml",
       "sha256": "e4f195fa08a118397fdcfb0ef7fb20c98680b0a738fa0efed3a9c5fce252ac73"
+    },
+    "ansible/prometheus-rules.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "b9743ec43a90dabc094f5895d326e2c0ffd0c2ea567ce8d50b8692c70ae7803b"
     },
     "ansible/requirements-ad-dns.yml": {
       "scope": "environment-specific",
@@ -231,6 +246,11 @@
       "scope": "environment-specific",
       "format": "hcl",
       "sha256": "4ad0837629dfc23d57c0e8d5e444df3e7c628579abfcba91d27efacdfcd34ca8"
+    },
+    "prometheus/rules/ciam.rules.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "4fb8d36fa25c586180f5bcc7a9070eacaa296c7603a6684c3dba719188ebcd91"
     },
     "saml/idp/sso.xml": {
       "scope": "environment-neutral",

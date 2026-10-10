@@ -7,6 +7,7 @@ import sys
 from ..core.contract import fetch_report, sql_report
 from ..store.postgres import load_directory
 from ..store.queries import fetch_blast_radius, fetch_rows
+from .keys import keys_report
 from .network import ports_report
 from .registry import DOMAINS
 from .settings import SETTINGS_REPORT
@@ -19,10 +20,11 @@ HISTORY_HEADERS = ("at", "change", "op", "dn")
 
 def catalogue(domains=DOMAINS):
     """report name → Report: store reports, every domain's reports, cross-domain reports (the ports matrix, from the
-    installed adapters' listeners, the estate settings every installed domain declares)."""
+    installed adapters' listeners; where an environment keeps its keys, against the roles its installed adapters
+    require; the estate settings every installed domain declares)."""
     return {"portability": PORTABILITY, "blast-radius": BLAST_RADIUS,
             **{name: r for domain in domains for name, r in domain.reports.items()}, "unowned": UNOWNED,
-            "ports": ports_report(), "settings": SETTINGS_REPORT}
+            "ports": ports_report(), "keys": keys_report(), "settings": SETTINGS_REPORT}
 
 
 def run_report(conn, report, dn=None, as_of=None):

@@ -20,6 +20,8 @@ from .access import ACCESS
 from .databases import render_databases
 from .storage import render_object_stores
 from .audit import render_trails
+from .observability import render_alerts, render_workspaces
+from .canaries import render_tests
 from .budgets import budget_inputs, render_budgets
 from .quotas import quota_request_notes
 from .suppressions import azapi_provider, render_suppressions, uses_azapi
@@ -212,7 +214,9 @@ def render(m, services):
            *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
-           *forwarding_rules(m), *render_trails(m), *render_security(m, discovery_plans(m)), *render_discovery(m),
+           *forwarding_rules(m), *render_trails(m), *render_workspaces(m), *render_alerts(m),
+           *render_tests(m, endpoints),
+           *render_security(m, discovery_plans(m)), *render_discovery(m),
            *render_suppressions(m), *render_budgets(m), *quota_request_notes(m),
            *_key_vault_secrets(m), *scope_data(m, identities))
     out = tuple(x for i, x in enumerate(out) if not (x.startswith('data "') and x in out[:i]))   # a data source once

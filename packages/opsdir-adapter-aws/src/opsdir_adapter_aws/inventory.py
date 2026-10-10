@@ -46,7 +46,8 @@ From Terraform state (terraform.tfstate, format version 4), managed resources an
                                                  metric, or a metric query), the topics it notifies, the alert rule it
                                                  realizes (tag Realizes)
   aws_synthetics_canary                       -> synthetic check (kind canary, ciamCanaryBinding): its rate as an
-                                                 interval, the canary it realizes (tag Realizes)
+                                                 interval, the canary it realizes (tag Realizes), its artifact
+                                                 location (ciamStorageRef)
   aws_cloudtrail                              -> audit trail (kind audit, ciamAuditTrail): scope, the activity its
                                                  event selectors record, all regions, integrity validation, where its
                                                  records go (its bucket's or log group's role): see audit.py
@@ -462,13 +463,20 @@ def _interval(schedule):
     return duration_text(int(m.group(1)) * _UNIT_SECONDS[m.group(2).rstrip("s")]) if m else None
 
 
+def _artifact_location(location):
+    """An artifact location as the record holds it (s3://bucket/prefix, no trailing /), else None."""
+    path = (location or "").removeprefix("s3://").strip("/")
+    return f"s3://{path}" if path else None
+
+
 def _canaries(found):
-    """CloudWatch Synthetics canaries: how often each runs, the canary it realizes."""
+    """CloudWatch Synthetics canaries: how often each runs, the canary it realizes, where it keeps its artifacts."""
     def canary(a):
         role, realizes = realization_roles(_tags(a), "canary")
         return resource("canary", a.get("arn"), {"ciamInterval": _interval(a.get("schedule")),
-                                                 "ciamRealizes": realizes}, name=a.get("name"), role=role,
-                        tags=_tags(a))
+                                                 "ciamRealizes": realizes,
+                                                 "ciamStorageRef": _artifact_location(a.get("artifact_s3_location"))},
+                        name=a.get("name"), role=role, tags=_tags(a))
     return tuple(canary(a) for a in of_types(found, "aws_synthetics_canary") if a.get("arn"))
 
 

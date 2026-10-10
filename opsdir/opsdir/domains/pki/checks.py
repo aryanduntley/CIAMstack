@@ -6,7 +6,7 @@ from ...core.environment import environment_of
 from ...core.findings import findings, merge_findings, owner_label, responsible
 from ...core.naming import env_label
 from ...core.settings import setting_value
-from .credentials import binding_for, credentials, material_bindings
+from .credentials import binding_for, credentials, hsm_shortfall, material_bindings
 from .naming import CERTIFICATES
 from .settings import EXPIRY_MARGIN_DAYS
 
@@ -41,11 +41,16 @@ PROTECTED_OUTSIDE_SOFTWARE = ("hsm", "managed-hsm", "external")
 
 
 def _hsm(ctx, cred, t):
-    """A credential that must stay in an HSM, kept in software by the target."""
-    if one(cred, "ciamHsmRequired") != "TRUE" or one(t, "ciamProtectionLevel", "software") != "software":
+    """A credential that must stay in an HSM, kept in software by the target, or kept where the target doesn't record
+    how it is protected."""
+    shortfall = hsm_shortfall(cred, t)
+    if shortfall is None:
         return findings()
+    how = (f"keeps it in software ({one(t, 'ciamRefUri')})." if shortfall == "software" else
+           f"doesn't record how it protects it ({one(t, 'ciamRefUri')}): record ciamProtectionLevel (hsm, managed-hsm "
+           "or external meet the requirement).")
     return findings(blockers=[("Key", f"`{one(cred, 'ciamBindingRole')}` must be kept in an HSM, but {ctx.dst.label} "
-                               f"keeps it in software ({one(t, 'ciamRefUri')}).", responsible(ctx.d, t, ctx.dst.env))])
+                               f"{how}", responsible(ctx.d, t, ctx.dst.env))])
 
 
 def _carry_over(ctx, cred, s, t):

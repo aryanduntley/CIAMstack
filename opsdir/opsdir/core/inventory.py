@@ -312,6 +312,16 @@ def duration_text(seconds):
     return next(f"{seconds // n}{u}" for n, u in ((86400, "d"), (3600, "h"), (60, "m"), (1, "s")) if seconds % n == 0)
 
 
+DURATION_UNITS = {"s": 1, "m": 60, "h": 3600, "d": 86400}
+
+
+def duration_seconds(text):
+    """A duration as the record writes it (30s, 5m, 2h, 1d) in seconds, or None when it isn't one."""
+    t = (text or "").strip()
+    return int(t[:-1]) * DURATION_UNITS[t[-1]] if len(t) > 1 and t[-1] in DURATION_UNITS and t[:-1].isdigit() \
+        else None
+
+
 def cluster_role(tags):
     """The binding role a managed cluster's tags name (BindingRole, else Role), else cluster."""
     return tagged_role(tags) or "cluster"

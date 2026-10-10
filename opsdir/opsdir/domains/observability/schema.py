@@ -90,8 +90,10 @@ CLASSES = (
              'An alarm a cloud runs in an environment: the alert rule it realizes, what it evaluates, what it '
              'notifies'),
     ClassDef(68, 'ciamCanaryBinding', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef',),
-             ('ciamRealizes', 'ciamInterval'),
-             'A synthetic check a cloud runs in an environment: the canary it realizes, how often'),
+             ('ciamRealizes', 'ciamInterval', 'ciamStorageRef'),
+             'A synthetic check a cloud runs in an environment: the canary it realizes, how often, and where it keeps '
+             'its results when the cloud asks for a place (ciamStorageRef: CloudWatch Synthetics\' S3 artifact '
+             'location)'),
     ClassDef(111, 'ciamAuditTrail', 'ciamBinding', 'STRUCTURAL', ('ciamAuditScope',),
              ('ciamAuditEvents', 'ciamAllRegions', 'ciamIntegrityValidation', 'ciamLogDestinationRole',
               'ciamProviderRef', 'ciamManagedBy'),

@@ -1,12 +1,15 @@
-"""Key reports on the mini estate (in memory): where an environment keeps each key and secret, how spread out each
-credential is (rotations overdue as of a day marked), and everything a rotation touches."""
+"""Key reports on the mini estate (in memory): where an environment keeps each key and secret (rotations overdue as of
+a day marked; a credential it doesn't bind unbound only where its adapters require it), how spread out each credential
+is, and everything a rotation touches."""
 import datetime as dt
 
 import pytest
 
+from opsdir.connectors.keys import keys_report
+from opsdir.core.environment import env_dn
 from opsdir.core.interchange.ldif import parse
 from opsdir.domains.pki.naming import credential_dn
-from opsdir.domains.pki.reports import key_placement_rows, rotation_impact_rows, sprawl_rows
+from opsdir.domains.pki.reports import rotation_impact_rows, sprawl_rows
 import mini_estate
 
 ALPHA = "env=prod,cloud=alpha,ou=environments,dc=ciam-ops"
@@ -66,6 +69,16 @@ def estate(alpha=None, beta=None, extra=(), **credential):
     return mini_estate.directory((*mini_estate.credential_changes(alpha, beta, **credential), *extra))
 
 
+# the fake provider requires the signing key; a product no environment runs requires it too
+SIGNING = mini_estate.FAKE._replace(required_roles=("signing-key",))
+OTHER = mini_estate.FAKE._replace(name="other", applies=lambda m: False, required_roles=("signing-key",),
+                                  products=(("Other", ">=1"),))
+
+
+def placement(d, spec, as_of=None, installed=(SIGNING,)):
+    return keys_report(installed).from_directory(d, env_dn(spec), as_of)
+
+
 def by_name(rows, role_column=2):
     """Rows by credential name, or by role when no credential describes it."""
     return {r[0] if r[0] != "-" else r[role_column]: r for r in rows}
@@ -74,23 +87,33 @@ def by_name(rows, role_column=2):
 def test_placement_lists_every_credential_where_the_environment_keeps_it():
     d = estate(alpha={"ciamProtectionLevel": "hsm", "ciamAutoRotate": "TRUE", "ciamLastRotated": "20260301000000Z",
                       "ciamReplicaRegion": ("region-2", "region-3"), "ciamKeyUser": "role/web"})
-    row = by_name(key_placement_rows(d, "alpha/prod"))["signing-key"]
+    row = by_name(placement(d, "alpha/prod"))["signing-key"]
     assert row == ("signing-key", "private-key", "signing-key", "fake", "fake://secrets/alpha/signing", "hsm", "yes",
                    "2026-05-30", "region-2, region-3", "role/web", "ok")
 
 
 def test_placement_shows_unbound_credentials_and_undocumented_bindings():
-    rows = by_name(key_placement_rows(estate(alpha={}), "beta/prod"))
+    rows = by_name(placement(estate(alpha={}), "beta/prod"))
     assert rows["signing-key"][-1] == "UNBOUND"
-    alpha = by_name(key_placement_rows(estate(alpha={}), "alpha/prod"))
+    alpha = by_name(placement(estate(alpha={}), "alpha/prod"))
     assert alpha["disk-encryption"][-1] == "undocumented: no credential describes this role"
+
+
+def test_a_credential_nothing_in_the_environment_requires_is_not_used_there():
+    d = estate(alpha={})
+    assert by_name(placement(d, "beta/prod", installed=(mini_estate.FAKE, OTHER)))["signing-key"][-1] == \
+        "not used here: only Other requires it"
+    assert by_name(placement(d, "beta/prod", installed=(mini_estate.FAKE,)))["signing-key"][-1] == \
+        "not used here: nothing here requires it"
 
 
 def test_placement_flags_software_protection_of_a_key_that_requires_an_hsm_and_names_the_carried_over_source():
     d = estate(alpha={}, beta={"ciamMaterialFrom": f"cn=secret-signing-key,ou=bindings,{ALPHA}",
                                "ciamProtectionLevel": "software"}, ciamHsmRequired="TRUE")
-    assert by_name(key_placement_rows(d, "beta/prod"))["signing-key"][-1] == \
+    assert by_name(placement(d, "beta/prod"))["signing-key"][-1] == \
         "HSM required, the store protects it in software; carried over from alpha/prod"
+    assert by_name(placement(estate(alpha={}, ciamHsmRequired="TRUE"), "alpha/prod"))["signing-key"][-1] == \
+        "HSM required, protection level not recorded"
 
 
 def test_sprawl_counts_environments_stores_copies_certificates_and_linked_settings():
@@ -142,6 +165,6 @@ def test_an_overlay_shares_its_bases_key_and_rotation_impact_says_so():
 
 def test_a_rotation_due_before_the_as_of_date_is_marked_overdue():
     d = estate(alpha={"ciamLastRotated": "20260301000000Z"})           # rotated every 90 days: due 2026-05-30
-    assert by_name(key_placement_rows(d, "alpha/prod", dt.date(2026, 5, 30)))["signing-key"][-1] == "ok"
-    assert by_name(key_placement_rows(d, "alpha/prod", dt.date(2026, 5, 31)))["signing-key"][-1] == \
+    assert by_name(placement(d, "alpha/prod", dt.date(2026, 5, 30)))["signing-key"][-1] == "ok"
+    assert by_name(placement(d, "alpha/prod", dt.date(2026, 5, 31)))["signing-key"][-1] == \
         "rotation overdue (due 2026-05-30)"

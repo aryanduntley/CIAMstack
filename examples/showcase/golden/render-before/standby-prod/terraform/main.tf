@@ -2215,6 +2215,53 @@ resource "google_project_iam_audit_config" "audit_sink" {
   }
 }
 
+resource "google_logging_project_bucket_config" "audit_logs" {
+  # under legal hold: lock it (locked = true) once its retention is confirmed; a locked bucket's retention can't be lowered nor the bucket deleted, ever
+  project        = "example-aero-ciam-standby"
+  location       = "global"
+  bucket_id      = "ciam-audit"
+  retention_days = 400
+}
+
+resource "google_logging_project_bucket_config" "ops_logs" {
+  project        = "example-aero-ciam-standby"
+  location       = "global"
+  bucket_id      = "ciam-ops"
+  retention_days = 30
+}
+
+# NOTE: alert rule login-failures: not rendered: its alarm is a log-based alert and the record holds no query
+
+resource "google_monitoring_alert_policy" "ds_replication_lag" {
+  display_name = "ds-replication-lag"
+  combiner     = "OR"
+  conditions {
+    display_name = "replication-delay gt 5000 ms"
+    condition_threshold {
+      # compared in milliseconds: the metric must report milliseconds
+      filter          = "metric.type = \"custom.googleapis.com/ds/replication_delay\""
+      comparison      = "COMPARISON_GT"
+      threshold_value = 5000
+      duration        = "300s"
+      aggregations {
+        alignment_period   = "60s"
+        per_series_aligner = "ALIGN_MEAN"
+      }
+    }
+  }
+  documentation {
+    content   = "Alert rule replication-lag (opsdir)"
+    mime_type = "text/markdown"
+  }
+  notification_channels = ["projects/example-aero-ciam-standby/notificationChannels/1001"]
+  user_labels = {
+    realizes    = "replication-lag"
+    bindingrole = "alarm-replication-lag"
+  }
+}
+
+# NOTE: canary sso-login: not rendered: an uptime check could only hold an oidc-token check's client secret in its configuration
+
 # assets: Cloud Asset Inventory keeps 35 days of resource history itself
 
 resource "google_cloud_asset_project_feed" "assets" {
@@ -2337,6 +2384,12 @@ data "google_secret_manager_secret" "am_ds_bind_password" {
 data "google_secret_manager_secret" "am_keystore" {
   # metadata only: no secret version (value) enters Terraform state
   secret_id = "am-keystore"
+  project   = "example-aero-ciam-standby"
+}
+
+data "google_secret_manager_secret" "canary_client" {
+  # metadata only: no secret version (value) enters Terraform state
+  secret_id = "canary-client"
   project   = "example-aero-ciam-standby"
 }
 

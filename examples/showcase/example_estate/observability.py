@@ -48,7 +48,8 @@ def entries():
             ou(FILE, "canaries"),
             spec(FILE, f"cn=sso-login,{CANARIES}", ["top", "ciamObject", "ciamCanary"], cn="sso-login",
                  ciamCheckedService="pf-sso-service", ciamCanaryFlow="oidc-token", ciamInterval="5m",
-                 ciamFeedsAlert=f"cn=login-failures,{RULES}", ciamOwner=owner("ciam-platform")))
+                 ciamUsesRole="canary-client", ciamFeedsAlert=f"cn=login-failures,{RULES}",
+                 ciamOwner=owner("ciam-platform")))
 
 
 GCP_PROJECT = "projects/example-aero-ciam-standby"
@@ -83,9 +84,10 @@ MONITORING = {
         ("ciamAlarmBinding", "ds-disk-free", "alarm-disk-free",
          {"ciamProviderRef": _aws("cloudwatch", "alarm:ds-disk-free"), "ciamRealizes": "disk-free",
           "ciamMetric": "CWAgent disk_used_percent", "ciamNotifies": PAGE_TOPIC}),
+        # its artifacts in the source's own bucket (CloudWatch Synthetics asks for a place; the other clouds don't)
         ("ciamCanaryBinding", "sso-login", "canary-sso-login",
-         {"ciamProviderRef": _aws("synthetics", "canary:ciam-sso-login"), "ciamRealizes": "sso-login",
-          "ciamInterval": "5m"}),
+         {"ciamProviderRef": _aws("synthetics", "canary:sso-login"), "ciamRealizes": "sso-login",
+          "ciamInterval": "5m", "ciamStorageRef": "s3://example-aero-ciam-prod-canaries/sso-login"}),
         ("ciamObjectStore", "audit-archive", "audit-archive",
          {"ciamStorageRef": f"s3://{CLOUDTRAIL_BUCKET}", "ciamProviderRef": f"arn:aws:s3:::{CLOUDTRAIL_BUCKET}",
           "ciamStorageVersioning": "TRUE", "ciamStorageImmutability": "compliance", "ciamStorageLockDays": "400"}),

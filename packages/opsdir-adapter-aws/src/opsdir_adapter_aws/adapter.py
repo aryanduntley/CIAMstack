@@ -14,6 +14,7 @@ from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
 from .regions import PREREQUISITE, REGIONS
 from .secrets import SECRET_PATTERNS, secretsmanager_command, secretsmanager_lookup
 from .terraform import render
+from .canaries import RUNTIME
 
 PROVIDER = "aws"
 
@@ -30,11 +31,13 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                   neutral_label=None,
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamOnProvider": (PROVIDER,),
                               "ciamCloudEnvironment": ("public",)}, schema=None,
-                  formats=(("terraform/*.tf", "hcl"), ("access/*.sh", "shell")),
+                  formats=(("terraform/*.tf", "hcl"), ("terraform/canaries/*/python/*.py", "python"),
+                           ("access/*.sh", "shell")),
                   products=(),
                   secret_patterns=SECRET_PATTERNS,
                   importers=(TERRAFORM_STATE, CLI_INVENTORY, CLOUDFORMATION, REGIONS, QUOTAS),
                   profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE),
                   collectors=COLLECTORS,
                   workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY,
-                  gateway_plug=gateway_plug, ansible_lookup={"aws-sm": secretsmanager_lookup})
+                  gateway_plug=gateway_plug, ansible_lookup={"aws-sm": secretsmanager_lookup},
+                  settings=(RUNTIME,))

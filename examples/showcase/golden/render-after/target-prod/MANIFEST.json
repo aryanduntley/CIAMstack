@@ -235,6 +235,11 @@
       "format": "yaml",
       "sha256": "a36c24e0a04c8ea86a3bb02580b4712a6df7def9f3dbdfede083a1efe19cad95"
     },
+    "kubernetes/prometheus/prometheusrule.yaml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "4a82e3e86e76a6f13df3a0395e25a9f4a2e32c485377ee0c00df1ae17dd1fe5a"
+    },
     "ldap/dit.ldif": {
       "scope": "environment-neutral",
       "format": "ldif",
@@ -330,6 +335,11 @@
       "format": "json",
       "sha256": "3d8cd9c31ffd2d5814c3c34e18ba71d193acfd7ee94e776f0e0bb5343e584318"
     },
+    "prometheus/rules/ciam.rules.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "ef9d9344360d75bf3d35fabe191d8c54a7985b9aa9771c310ea6b40d99704e79"
+    },
     "saml/idp/partners.xml": {
       "scope": "environment-neutral",
       "format": "xml",
@@ -388,7 +398,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "f317922731b2c55558ebeaeeb95605afc4cbf7c91a388a131831a466eb9ce39a"
+      "sha256": "14c06766228d14e6604942ceb0215e6f9a8483453bed2637bcf5ee458a9b9822"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

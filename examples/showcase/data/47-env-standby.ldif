@@ -486,6 +486,13 @@ ciamBindingRole: sso-tls-keystore-password
 ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/sso-tls-keysto
  re-password
 
+dn: cn=secret-canary-client,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-canary-client
+ciamBindingRole: canary-client
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/canary-client
+
 dn: cn=key-disk,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamKeyRef

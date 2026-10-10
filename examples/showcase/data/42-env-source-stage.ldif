@@ -270,6 +270,14 @@ ciamBindingRole: sso-tls-keystore-password
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /stage/sso-tls-keystore-password
 
+dn: cn=secret-canary-client,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-canary-client
+ciamBindingRole: canary-client
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /stage/canary-client
+
 dn: cn=backup,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamBackupTarget

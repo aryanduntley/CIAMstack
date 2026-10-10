@@ -34,6 +34,15 @@ def test_hsm_only_material_kept_in_software_by_the_target_blocks():
         "`signing-key` must be kept in an HSM, but beta/prod keeps it in software (fake://secrets/beta/signing)."]
 
 
+def test_hsm_only_material_whose_protection_the_target_doesnt_record_blocks_until_recorded():
+    f = plan({"ciamProtectionLevel": "hsm"}, {"ciamMaterialFrom": ALPHA_SECRET}, ciamHsmRequired="TRUE",
+             ciamContinuity="per-environment")
+    assert [text for _, text, _ in f.blockers] == [
+        "`signing-key` must be kept in an HSM, but beta/prod doesn't record how it protects it "
+        "(fake://secrets/beta/signing): record ciamProtectionLevel (hsm, managed-hsm or external meet the "
+        "requirement)."]
+
+
 def test_carry_over_material_is_copied_before_cutover():
     f = plan({}, {}, ciamContinuityReason="partners trust the signing certificate")
     (area, text, _, by), = f.actions

@@ -1,12 +1,12 @@
 """Key reports, pure functions of a snapshot: where an environment keeps every key and secret (placement), how
 spread out each credential is (sprawl), and everything a rotation touches (rotation impact)."""
 from ...core.directory import follow, follow_all, get, is_a, one, rdn_value, referrers, values
-from ...core.environment import env_model, environment_of
+from ...core.environment import environment_of
 from ...core.findings import owner_label, responsible
 from ...core.naming import env_label
 from .checks import CERTIFICATE_USE
 from .credentials import (all_material_bindings, binding_for, bindings_everywhere, certificates_keyed_by,
-                          credential_for_role, credentials, distinct_bindings, linked_settings,
+                          credential_for_role, credentials, distinct_bindings, hsm_shortfall, linked_settings,
                           material_bindings, rotate_by)
 
 KEYS_HEADERS = ("credential", "type", "role", "store", "reference", "protection", "auto-rotate", "rotate by",
@@ -14,6 +14,8 @@ KEYS_HEADERS = ("credential", "type", "role", "store", "reference", "protection"
 SPRAWL_HEADERS = ("credential", "role", "type", "continuity", "environments", "stores", "copies", "certificates",
                   "linked settings", "used in", "problem")
 IMPACT_HEADERS = ("step", "what", "where", "owner")
+HSM_NOTES = {"software": "HSM required, the store protects it in software",
+             "unrecorded": "HSM required, protection level not recorded"}
 
 
 def scheme(uri):
@@ -30,13 +32,12 @@ def _yes_no(v):
 
 # ------------------------------------------------------------------ placement
 def binding_status(d, credential, b):
-    """What to know about how an environment holds a credential: HSM required but protected in software, and where
-    its material was carried over from; else 'ok'. (Whether carry-over material still has to be copied depends on
-    the move, so the planner says so, not this report.)"""
+    """What to know about how an environment holds a credential: HSM required but protected in software (or its
+    protection level not recorded), and where its material was carried over from; else 'ok'. (Whether carry-over
+    material still has to be copied depends on the move, so the planner says so, not this report.)"""
     source = follow(d, b, "ciamMaterialFrom")
-    in_software = one(b, "ciamProtectionLevel", "software") == "software"
-    notes = (*(("HSM required, the store protects it in software",)
-               if one(credential, "ciamHsmRequired") == "TRUE" and in_software else ()),
+    shortfall = hsm_shortfall(credential, b)
+    notes = (*((HSM_NOTES[shortfall],) if shortfall else ()),
              *((f"carried over from {env_label(environment_of(source))}",) if source else ()))
     return "; ".join(notes) or "ok"
 
@@ -47,11 +48,22 @@ def _due(credential, b, as_of):
     return f"rotation overdue (due {due})" if due and as_of and due < as_of else None
 
 
-def _placement_row(m, credential, as_of=None):
+def unbound_status(m, role, elsewhere):
+    """Status of a credential environment m doesn't bind: UNBOUND when m must bind its role (its domains', its
+    adapters' or its own declaration: m.unbound, what the planner blocks on); else not used here, naming the products
+    that require it (elsewhere: {role: (product, ...)} of installed adapters that don't apply to m)."""
+    if role in m.unbound:
+        return "UNBOUND"
+    products = elsewhere.get(role, ())
+    return (f"not used here: only {_joined(products)} require{'s' if len(products) == 1 else ''} it" if products
+            else "not used here: nothing here requires it")
+
+
+def _placement_row(m, credential, as_of, elsewhere):
     b = binding_for(m, credential)
     name, kind, role = one(credential, "cn"), one(credential, "ciamCredentialType"), one(credential, "ciamBindingRole")
     if b is None:
-        return (name, kind, role, "", "", "", "", "", "", "", "UNBOUND")
+        return (name, kind, role, "", "", "", "", "", "", "", unbound_status(m, role, elsewhere))
     uri = one(b, "ciamRefUri")
     return (name, kind, role, scheme(uri), uri, one(b, "ciamProtectionLevel", ""), _yes_no(one(b, "ciamAutoRotate")),
             str(rotate_by(credential, b) or ""), _joined(values(b, "ciamReplicaRegion")),
@@ -67,13 +79,13 @@ def _undocumented_row(b):
             _joined(values(b, "ciamKeyUser")), "undocumented: no credential describes this role")
 
 
-def key_placement_rows(d, dn, as_of=None):
-    """Where the environment (spec or DN) keeps every credential (rotations overdue as of as_of marked), credentials it
-    doesn't bind, and material bindings no credential describes."""
-    m = env_model(d, dn)
-    creds = credentials(d)
+def placement_rows(m, as_of=None, elsewhere=None):
+    """Where environment m (its required roles resolved) keeps every credential (rotations overdue as of as_of
+    marked), the ones it doesn't bind (unbound_status; elsewhere: {role: (product, ...)} of installed adapters that
+    don't apply to it), and material bindings no credential describes."""
+    creds = credentials(m.d)
     described = {one(c, "ciamBindingRole") for c in creds}
-    return [*(_placement_row(m, c, as_of) for c in creds),
+    return [*(_placement_row(m, c, as_of, elsewhere or {}) for c in creds),
             *(_undocumented_row(b) for b in material_bindings(m) if one(b, "ciamBindingRole") not in described)]
 
 

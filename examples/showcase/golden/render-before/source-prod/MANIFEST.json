@@ -365,6 +365,11 @@
       "format": "xml",
       "sha256": "6bb13c0304722ca9b2942a2ef00ea6fd2648469d599edcdd4c48e099f6b80d37"
     },
+    "terraform/canaries/sso-login/python/canary.py": {
+      "scope": "environment-specific",
+      "format": "python",
+      "sha256": "97e34061c1fce15110f66fad51785848df42133756a1d1bd47e7f8b39f718d4f"
+    },
     "terraform/landing-zone/main.tf": {
       "scope": "landing-zone",
       "format": "hcl",
@@ -383,12 +388,12 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "d0d708e372d2e36dc867d4050f15f0d073d42557bffc4c4eeed3f03ad131d1ad"
+      "sha256": "605e85a453760d83a468d58bc7b1a45da6a576ec8d1acf7312678e25316ae354"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "7133771bd5c332d1d395cb7e0543983381cc6cc49b282286e0ce8925a832b609"
+      "sha256": "4fe0daf2f8cd5b2b725e842f2940e22ebcc7c7375ad6cfef3ac9b1fe8f86fccc"
     }
   }
 }

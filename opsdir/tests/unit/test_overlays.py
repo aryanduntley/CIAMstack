@@ -4,9 +4,10 @@ Overrides change what an environment sees of a shared entry and nothing else."""
 import pytest
 
 from opsdir.core.directory import get, one
-from opsdir.core.environment import env_model, with_required_roles
+from opsdir.core.environment import env_model, inherited_from, with_required_roles
 from opsdir.core.interchange.ldif import parse
 from opsdir.core.overlays import apply_overrides, overridden_in
+from opsdir.domains.observability.realized import keeper_of
 import mini_estate
 
 PROD = "env=prod,cloud=alpha,ou=environments,dc=ciam-ops"
@@ -90,3 +91,14 @@ def test_an_overlay_of_something_else_or_of_another_provider_is_refused():
 def _overlay_of(base, *records):
     return mini_estate.directory(tuple(parse("\n".join((
         add(STAGE, "ciamEnvironment", env="stage", ciamOverlayOf=base), *records)))))
+
+
+def test_what_an_overlay_inherits_is_its_bases_to_render():
+    own = add(f"cn=svc-sso,ou=bindings,{STAGE}", "ciamServiceName", cn="svc-sso", ciamBindingRole="sso-service",
+              ciamFqdn="sso-stage.example.test", ciamPort="443", ciamTargetRole="web")
+    m = env_model(estate(own), "alpha/stage")
+    by_role = {one(b, "ciamBindingRole"): b for b in m.bindings}
+    assert inherited_from(m, by_role["network"]) == "alpha/prod" and inherited_from(m, by_role["sso-service"]) is None
+    assert keeper_of(m, by_role["network"]) == "alpha/prod (this environment inherits it)"
+    assert keeper_of(m, by_role["sso-service"]) is None and keeper_of(m, None) is None
+    assert keeper_of(env_model(estate(own), "alpha/prod"), by_role["network"]) is None

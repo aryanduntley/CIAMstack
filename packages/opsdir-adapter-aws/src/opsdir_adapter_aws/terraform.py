@@ -19,6 +19,8 @@ from opsdir.domains.edge.resolve import inspected, service_edge
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
 from .access import ACCESS
 from .audit import render_trails
+from .observability import render_alarms, render_log_groups
+from .canaries import render_canaries
 from .discovery import render_discovery
 from .security import render_security
 from .suppressions import render_suppressions
@@ -171,6 +173,7 @@ def _fronted(m, endpoints):
 def render(m, services):
     endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     kms, identities = secret(m, "disk-encryption"), workload_identities(m, ACCESS)
+    canaries, scripts = render_canaries(m, endpoints)
     out = (*network_data(m), *_security_groups(m), *eks_data(identities),
            *chain.from_iterable(_identity(m, w) for w in identities),
            *(_instance(m, s, kms, identities) for s in m.servers),
@@ -178,14 +181,17 @@ def render(m, services):
            *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
-           *resolver_rules(m), *render_trails(m), *render_security(m), *render_discovery(m), *render_suppressions(m),
+           *resolver_rules(m), *render_trails(m), *render_log_groups(m), *render_alarms(m), *canaries,
+           *render_security(m),
+           *render_discovery(m), *render_suppressions(m),
            *render_budgets(m), *render_quota_requests(m),
            *_references(m))
     unbound = unbound_comments(m.unbound)
     main = header(m, "AWS infrastructure for the CIAM platform", HCL) + unbound + "\n" + "\n\n".join(out) + "\n"
     providers = header(m, "Providers", HCL) + "\n" + "\n\n".join([
         block("terraform", [], [("required_providers", Block((
-            ("aws", {"source": "hashicorp/aws", "version": "~> 5.0"}),)))]),
+            ("aws", {"source": "hashicorp/aws", "version": "~> 5.0"}),
+            *((("archive", {"source": "hashicorp/archive", "version": "~> 2.0"}),) if scripts else ()))))]),
         provider_block(m),
         *((provider_block(m, "us-east-1", US_EAST_1, "CloudFront's certificates and web ACLs live in us-east-1"),)
           if _fronted(m, endpoints) else ()),
@@ -197,5 +203,5 @@ def render(m, services):
             ("description", "The landing zone's outbound Route 53 Resolver endpoint the forwarding rules use"),
             ("type", ref("string"))]),) if forwarders(m, hosted=False) else ()),
     ]) + "\n"
-    return {"terraform/providers.tf": providers, "terraform/main.tf": main, **render_landing(m),
+    return {"terraform/providers.tf": providers, "terraform/main.tf": main, **scripts, **render_landing(m),
             **evaluation_files(m, ACCESS, "AWS")}

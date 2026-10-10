@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-adapter-prometheus"
+version = "0.1.0"
+description = "opsdir monitoring add-on: the record's alert rules as Prometheus alerting rules, on the environment's monitoring servers (Ansible) and as a PrometheusRule on Kubernetes."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1", "opsdir-adapter-ansible>=0.1"]
+
+[project.entry-points."opsdir.adapters"]
+prometheus = "opsdir_adapter_prometheus.adapter:ADAPTER"
+
+[tool.setuptools.packages.find]
+where = ["src"]

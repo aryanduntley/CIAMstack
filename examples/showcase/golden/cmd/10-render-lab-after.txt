@@ -1,2 +1,2 @@
-rendered 45 files for env=lab,cloud=hq,ou=environments,dc=ciam-ops (onprem) → <OUT>/render-after/hq-lab
+rendered 49 files for env=lab,cloud=hq,ou=environments,dc=ciam-ops (onprem) → <OUT>/render-after/hq-lab
 exit 0

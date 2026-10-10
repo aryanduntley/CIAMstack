@@ -1309,6 +1309,82 @@ resource "azurerm_monitor_diagnostic_setting" "activity_log" {
   }
 }
 
+resource "azurerm_log_analytics_workspace" "audit_logs" {
+  name                = "law-ciam-prod-audit"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 90
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    BindingRole = "audit-logs"
+  }
+}
+
+resource "azurerm_log_analytics_workspace" "ops_logs" {
+  name                = "law-ciam-prod-ops"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    BindingRole = "ops-logs"
+  }
+}
+
+resource "azurerm_log_analytics_workspace" "security_logs" {
+  name                = "law-ciam-prod-security"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 400
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    BindingRole = "security-findings"
+  }
+}
+
+# NOTE: alert rule login-failures: not rendered: its alarm is a log query alert and the record holds no query
+
+resource "azurerm_monitor_metric_alert" "ds_replication_lag" {
+  name                     = "ds-replication-lag"
+  resource_group_name      = data.azurerm_resource_group.main.name
+  scopes                   = [azurerm_linux_virtual_machine.ds_1.id, azurerm_linux_virtual_machine.ds_2.id, azurerm_linux_virtual_machine.ds_3.id]
+  target_resource_type     = "Microsoft.Compute/virtualMachines"
+  target_resource_location = data.azurerm_resource_group.main.location
+  description              = "Alert rule replication-lag: replication-delay gt 5000 ms (opsdir)"
+  severity                 = 2
+  frequency                = "PT1M"
+  window_size              = "PT5M"
+  criteria {
+    # compared in milliseconds: the metric must report milliseconds
+    metric_namespace = "Microsoft.Compute/virtualMachines"
+    metric_name      = "ReplicationDelay"
+    aggregation      = "Average"
+    operator         = "GreaterThan"
+    threshold        = 5000
+  }
+  action {
+    action_group_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Insights/actionGroups/ag-ciam-page"
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Realizes    = "replication-lag"
+    BindingRole = "alarm-replication-lag"
+  }
+}
+
+# NOTE: canary sso-login: not rendered: a standard web test sends one request and can't read credentials when it runs: an oidc-token check would hold its secret in the test
+
 resource "azurerm_security_center_subscription_pricing" "arm" {
   tier          = "Standard"
   resource_type = "Arm"
@@ -1442,6 +1518,10 @@ data "azurerm_key_vault_secrets" "kv_ciam_prod" {
     postcondition {
       condition     = contains(self.names, "am-keystore")
       error_message = "Key Vault kv-ciam-prod has no secret am-keystore (role am-keystore)"
+    }
+    postcondition {
+      condition     = contains(self.names, "canary-client")
+      error_message = "Key Vault kv-ciam-prod has no secret canary-client (role canary-client)"
     }
     postcondition {
       condition     = contains(self.names, "ciam-edge-tls-cert")

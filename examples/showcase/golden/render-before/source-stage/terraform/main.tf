@@ -1342,6 +1342,16 @@ resource "aws_route53_resolver_rule_association" "fwd_corp_ad_0" {
   vpc_id           = data.aws_vpc.main.id
 }
 
+# Log group audit-logs: kept by source/prod (this environment inherits it), not rendered here
+
+# Log group ops-logs: kept by source/prod (this environment inherits it), not rendered here
+
+# Alarm pf-login-failures (alert rule login-failures): kept by source/prod (this environment inherits it), not rendered here
+
+# Alarm ds-replication-lag (alert rule replication-lag): kept by source/prod (this environment inherits it), not rendered here
+
+# Canary sso-login (sso-login): kept by source/prod (this environment inherits it), not rendered here
+
 data "aws_secretsmanager_secret" "am_admin_password" {
   arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/stage/am-admin-password"
 }
@@ -1352,6 +1362,10 @@ data "aws_secretsmanager_secret" "am_ds_bind_password" {
 
 data "aws_secretsmanager_secret" "am_keystore" {
   arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/stage/am-keystore"
+}
+
+data "aws_secretsmanager_secret" "canary_client" {
+  arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/stage/canary-client"
 }
 
 data "aws_secretsmanager_secret" "ds_deployment_id" {

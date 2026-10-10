@@ -133,6 +133,19 @@ The core `data` domain's backup vaults (`ciamBackupVault`) and plans (`ciamBacku
 | `ciamBackupPlan` the stack keeps | A `google_backup_dr_backup_plan` with `backup_plan_id` its name, in the environment's region (where the disks are), for `compute.googleapis.com/Disk`, writing to its vault, with one backup rule: `backup_retention_days` (less than the vault enforces, which Backup and DR refuses: the plan is a comment), a `standard_schedule` `HOURLY` every `ciamBackupEveryHours` (6 to 23: Google's console guide sets six hours as the least) or `DAILY`, `UTC`, its `backup_window` from `ciamBackupAt`'s hour for `ciamBackupWindowHours` (6 when not stated); and a `google_backup_dr_backup_plan_association` per disk of the volumes it protects (its protected roles that are volumes, and the volumes naming it). Another interval, more copy regions than the first, a protected role that isn't a volume, and a vault the stack doesn't keep are comments |
 | One someone else keeps (`ciamManagedBy`) | A comment naming them |
 
+### Monitoring: alert policies, log buckets and uptime checks
+
+The core `observability` domain's alerting, log destinations and synthetic checks render into `main.tf` (`opsdir_adapter_gcp.observability`, `opsdir_adapter_gcp.canaries`), from the core's cloud-neutral view (`domains/observability/alarms`, `canaries`).
+
+| Record | Renders as |
+|---|---|
+| An alert rule the environment delivers, realized by an alarm binding recording a metric type (`ciamMetric`: `custom.googleapis.com/...`, `agent.googleapis.com/...`) | `google_monitoring_alert_policy` named as the binding with one `condition_threshold` on `metric.type = "<metric>"`: the comparison (`COMPARISON_*`), the threshold in the unit written (a comment says which unit the metric must report), each series aligned over a minute (`ALIGN_MEAN`; a rate `ALIGN_DELTA` over its window, compared as a count), `duration` the evaluation period; `notification_channels` the channel's; user labels `realizes`, `bindingrole` |
+| A rule realized by a log-based alarm (`ciamMetric` `log query`), whose metric isn't a metric type, or with no alarm here | A NOTE (Prometheus may evaluate it) |
+| A log destination whose `ciamProviderRef` is a Cloud Logging bucket (`projects/<p>/locations/<l>/buckets/<b>`) | `google_logging_project_bucket_config`, `retention_days` as recorded within 1..3650 (longer, or never expire, kept 3650 with a comment). A bucket a log route under legal hold sends to gets a comment to lock it once its retention is confirmed: never `locked = true` here, since a locked bucket's retention can't be lowered nor the bucket deleted, ever |
+| A canary whose checked service is internet-facing, flow `health` or `login-page` | `google_monitoring_uptime_check_config` named as its canary binding: an HTTPS GET of its path and port (TLS validated) on the monitored resource `uptime_url` of its host in `var.project_id`, every 1, 5, 10 or 15 minutes (its interval, raised to the next); user labels `realizes`, `bindingrole` |
+| Not rendered, as a NOTE | An `oidc-token` canary (an uptime check could only hold the client's secret in its configuration), a service name that isn't internet-facing, a SAML or LDAP flow |
+| Kept elsewhere: someone else keeps it (`ciamManagedBy`), or an overlay inherits it from its base | A comment naming the keeper |
+
 ## Reading an environment back from Terraform state
 
 ```bash

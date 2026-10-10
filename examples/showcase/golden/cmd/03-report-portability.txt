@@ -1,10 +1,10 @@
 portability  values
 -----------  ------
-meta         2481
-intent       1579
-binding      1239
+meta         2499
+intent       1587
+binding      1252
 observed     381
-secret-ref   117
+secret-ref   121
 contract     106
 (6 rows)
 exit 0

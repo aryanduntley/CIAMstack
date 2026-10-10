@@ -234,6 +234,11 @@ def ansible_lookup_of(m, uri, installed=ADAPTERS):
     return native(m, secret_store(m, scheme), rest) if native is not None else None
 
 
+def signals_of(m, installed=ADAPTERS):
+    """The Signals the adapters rendering environment m (its declared stack's) declare."""
+    return tuple(s for a in declared_adapters(m, installed) for s in a.signals)
+
+
 def _deployable_config(m):
     from .capture import deployable_config        # capture imports the registry: resolved when first asked
     return deployable_config(m.d, m)
@@ -249,4 +254,5 @@ def services(installed=ADAPTERS):
                     routes=partial(routes_of, installed=installed),
                     gateway_plug=partial(gateway_plug_of, installed=installed),
                     ansible_lookup=partial(ansible_lookup_of, installed=installed),
-                    deployable_config=_deployable_config)
+                    deployable_config=_deployable_config,
+                    signals=partial(signals_of, installed=installed))

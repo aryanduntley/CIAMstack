@@ -795,6 +795,20 @@ ciamReviewedOn: 20260301000000Z
 ciamRunbookRef: cn=WI-CIAM-012,ou=runbooks,dc=ciam-ops
 ciamUsesRole: ds-root-password
 
+dn: cn=canary-client,ou=credentials,dc=ciam-ops
+objectClass: top
+objectClass: ciamCredential
+cn: canary-client
+ciamBindingRole: canary-client
+ciamContinuity: per-environment
+ciamCredentialType: client-secret
+ciamExportable: TRUE
+ciamKeyUsage: authentication
+ciamMaterialFormat: text
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRotationDays: 90
+ciamUsedIn: cn=sso-login,ou=canaries,dc=ciam-ops
+
 dn: cn=captcha-recaptcha,ou=external-services,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -3579,6 +3593,7 @@ ciamCheckedService: pf-sso-service
 ciamFeedsAlert: cn=login-failures,ou=alert-rules,dc=ciam-ops
 ciamInterval: 5m
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamUsesRole: canary-client
 
 dn: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 objectClass: top
@@ -5949,6 +5964,17 @@ ciamHolderCount: 2
 ciamLargestValueBytes: 75
 ciamLdapName: member
 ciamMostValues: 3
+
+dn: cn=mon-1,env=lab,cloud=hq,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: mon-1
+ciamHostname: mon-1.lab.example-aero.test
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.80.6.11
+ciamServerRole: monitoring
+ciamSubnet: cn=subnet-mon,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam
+ -ops
 
 dn: cn=objectclass,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
 objectClass: top
@@ -8861,6 +8887,26 @@ ciamSpansZone: us-central1-a
 ciamSpansZone: us-central1-b
 ciamTargetRole: pf-engine
 
+dn: cn=monitoring,ou=stack,env=lab,cloud=hq,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: monitoring
+ciamAdapter: prometheus
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-prometheus
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: monitoring
+
+dn: cn=monitoring,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: monitoring
+ciamAdapter: prometheus
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-prometheus
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: monitoring
+
 dn: cn=monthly-spend,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamBudget
@@ -9681,6 +9727,36 @@ cn: secret-am-keystore
 ciamBindingRole: am-keystore
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /stage/am-keystore
+
+dn: cn=secret-canary-client,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-canary-client
+ciamBindingRole: canary-client
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /prod/canary-client
+
+dn: cn=secret-canary-client,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-canary-client
+ciamBindingRole: canary-client
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/canary-client
+
+dn: cn=secret-canary-client,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-canary-client
+ciamBindingRole: canary-client
+ciamRefUri: azkv://kv-ciam-prod/canary-client
+
+dn: cn=secret-canary-client,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-canary-client
+ciamBindingRole: canary-client
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /stage/canary-client
 
 dn: cn=secret-ciam-edge-tls-cert,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -10655,9 +10731,9 @@ objectClass: ciamCanaryBinding
 cn: sso-login
 ciamBindingRole: canary-sso-login
 ciamInterval: 5m
-ciamProviderRef: arn:aws:synthetics:us-east-1:111122223333:canary:ciam-sso-log
- in
+ciamProviderRef: arn:aws:synthetics:us-east-1:111122223333:canary:sso-login
 ciamRealizes: sso-login
+ciamStorageRef: s3://example-aero-ciam-prod-canaries/sso-login
 
 dn: cn=sso-login,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
@@ -10794,6 +10870,13 @@ ciamBindingRole: subnet-ig
 ciamCidr: 10.20.10.0/24
 ciamProviderRef: subnet-0e99fa00b11c22d3a
 ciamZone: us-east-1a
+
+dn: cn=subnet-mon,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: subnet-mon
+ciamBindingRole: subnet-mon
+ciamCidr: 10.80.6.0/24
 
 dn: cn=subnet-pf,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
 objectClass: top

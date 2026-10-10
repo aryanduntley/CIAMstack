@@ -130,6 +130,19 @@ The core `data` domain's backup vaults (`ciamBackupVault`) and plans (`ciamBacku
 | `ciamBackupPlan` the stack keeps | For the volumes it protects (the roles it lists that are volumes, and the volumes naming it): an `azurerm_data_protection_backup_policy_disk` named as the plan in its vault (`backup_repeating_time_intervals` `R/2024-01-01T<at>:00+00:00/PT<n>H`, `P1D` daily: every 1, 2, 4, 6, 8 or 12 hours or daily, another interval is a comment; `default_retention_duration` `P<days>D`, at most 360), and per disk of those volumes' VMs an `azurerm_data_protection_backup_instance_disk` (snapshots kept in the environment's resource group) after the vault identity's grants: Disk Backup Reader on the disk, Disk Snapshot Contributor on the resource group (once per vault). Copies to another region are a comment (disk backup keeps snapshots in the disk's region), and so is a protected role that isn't a volume, or a vault the stack doesn't keep |
 | One someone else keeps (`ciamManagedBy`) | A comment naming them |
 
+### Monitoring: metric alerts, workspaces and availability tests
+
+The core `observability` domain's alerting, log destinations and synthetic checks render into `main.tf` (`opsdir_adapter_azure.observability`, `opsdir_adapter_azure.canaries`), from the core's cloud-neutral view (`domains/observability/alarms`, `canaries`).
+
+| Record | Renders as |
+|---|---|
+| An alert rule the environment delivers, realized by an alarm binding recording `ciamMetric` `<metric namespace> <metric name>` | `azurerm_monitor_metric_alert` named as the binding, scoped to the virtual machines of the rule's target role (with more than one, `target_resource_type` and `target_resource_location`): the comparison (`ne` isn't a metric alert's: a NOTE), the threshold in the unit written (a comment says which unit the metric must report: a metric alert has none), a rate as the `Total` over the window, the evaluation period as `window_size` raised to one Azure allows (PT1M … P1D), `frequency` PT1M (PT5M past five minutes), `ciamSeverity` `sev0`..`sev4` as `severity`, the channel's action group; tags `Realizes`, `BindingRole` |
+| A rule realized by a log query alarm (`ciamMetric` `log query`), with no target role or no virtual machine of it here, or with no alarm here | A NOTE (Prometheus may evaluate it) |
+| A log destination of kind `workspace` (its `ciamProviderRef` a workspace ID) | `azurerm_log_analytics_workspace` of that name, `PerGB2018`, `retention_in_days` as recorded within 30..730 (fewer raised to 30; more, or never expire, kept 730 with a comment: a table's total retention keeps logs longer, up to 4383 days) |
+| A canary whose checked service is internet-facing, flow `health` or `login-page` | `azurerm_application_insights_standard_web_test` named as its canary binding: a GET of its URL expecting 200, TLS checked, retries on, every 5, 10 or 15 minutes (its interval, raised to the next), from five test locations (Azure Government's when the cloud's region is a US Gov or DoD region); the Application Insights resource is the root's input `application_insights_id` (the record doesn't name it); tags `Realizes`, `BindingRole` |
+| Not rendered, as a NOTE | An `oidc-token` canary (a standard test can't read a secret when it runs: its credentials would sit in the test), a service name that isn't internet-facing, a SAML or LDAP flow |
+| Kept elsewhere: someone else keeps it (`ciamManagedBy`), or an overlay inherits it from its base | A comment naming the keeper |
+
 ## Reading an environment back from Terraform state
 
 ```bash
