@@ -4,6 +4,7 @@ from opsdir.domains.compute.workloads import runs_product
 from .collect import COLLECTORS
 from .checks import check_idm
 from .listeners import listeners
+from .logs import LOGS
 from .proxy import proxy_settings
 from .naming import ENDPOINTS, SERVER_ROLES
 from .project import IDM_PROJECT
@@ -28,4 +29,5 @@ ADAPTER = Adapter(name="pingidm", kind="product", applies=applies, required_role
                   products=(("PingIDM", ">=7,<9"), ("ForgeRock IDM", ">=7,<8")),
                   secret_patterns=(), importers=(IDM_PROJECT,), profile_terms=None, access=None,
                   endpoints=ENDPOINTS, listeners=listeners,
-                  proxy_settings=proxy_settings, collectors=COLLECTORS, signals=SIGNALS)
+                  proxy_settings=proxy_settings, collectors=COLLECTORS, signals=SIGNALS,
+                  logs=LOGS)

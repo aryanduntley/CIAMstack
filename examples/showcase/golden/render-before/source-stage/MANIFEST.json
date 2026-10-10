@@ -103,7 +103,7 @@
     "ansible/host-config.yml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "5bc04a0e9eba4ae8cbe74991314bd6dda21cbae1a55e24f905d6948e29dadf21"
+      "sha256": "262f3a87c7a7bf53188ab0b38336ec19db9b5048df5b0f0da458a2656b0da2f6"
     },
     "ansible/inventory/group_vars/all.yml": {
       "scope": "environment-specific",

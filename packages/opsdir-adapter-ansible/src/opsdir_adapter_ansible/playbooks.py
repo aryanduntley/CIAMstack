@@ -21,6 +21,10 @@ list), by tag:
             immediate), firewalld enabled and running
   files     (default) the product configuration files the role receives, from their templates (secrets read at run
             time; never shown by --diff), to their deploy paths, mode 0640; files not deployed are named
+  host-files (default) the files other adapters render for the role's servers (agents' configuration: the
+            CloudWatch agent's, the Ops Agent's), from their templates to their paths with their modes (never shown by
+            --diff), then each changed file's reload command (argv, no shell) so what reads it takes it up; nothing
+            is installed: the agents come with the host's baseline
   verify    (only when asked: --tags verify) what installing the servers brings: the OS (os-release ID VERSION_ID),
             the agents' packages, the service units enabled
 Pure."""
@@ -158,9 +162,22 @@ def _files():
                   {"src": "{{ item.src }}", "dest": "{{ item.dest }}", "mode": "0640"},
                   ("files",), loop="{{ ciam_config_files | default([]) }}", loop_control={"label": "{{ item.dest }}"},
                   diff=False),
-            _task("Product configuration files not deployed", "ansible.builtin.debug",
+            _task("Files not deployed", "ansible.builtin.debug",
                   {"msg": "{{ ciam_config_files_not_deployed | join('; ') }}"},
-                  ("files",), when="ciam_config_files_not_deployed | default([]) | length > 0", run_once=True)]
+                  ("files", "host-files"), when="ciam_config_files_not_deployed | default([]) | length > 0",
+                  run_once=True)]
+
+
+def _host_files():
+    changed = ("{{ ciam_host_files_written.results | selectattr('changed') "
+               "| selectattr('item.reload', 'defined') | list }}")
+    return [_task("Files other adapters render for the servers", "ansible.builtin.template",
+                  {"src": "{{ item.src }}", "dest": "{{ item.dest }}", "mode": "{{ item.mode }}"},
+                  ("host-files",), loop="{{ ciam_host_files | default([]) }}",
+                  loop_control={"label": "{{ item.dest }}"}, register="ciam_host_files_written", diff=False),
+            _task("What reads a changed file takes it up", "ansible.builtin.command",
+                  {"argv": "{{ item.item.reload }}"}, ("host-files",), loop=changed,
+                  loop_control={"label": "{{ item.item.dest }}"}, changed_when=True)]
 
 
 def _stig():
@@ -199,7 +216,8 @@ def host_config():
     """The host-config playbook (a list of plays)."""
     return [{"name": "Host baseline of each server role (opsdir)", "hosts": SERVERS, "become": True,
              "vars": {"ciam_trust_dir": TRUST_DIR},
-             "tasks": [*_baseline(), *_stig(), *_jobs(), *_time(), *_firewall(), *_files(), *_verify()],
+             "tasks": [*_baseline(), *_stig(), *_jobs(), *_time(), *_firewall(), *_files(), *_host_files(),
+                       *_verify()],
              "handlers": [
                  {"name": "Apply transparent huge pages", "ansible.builtin.systemd_service":
                   {"name": THP_UNIT, "state": "restarted", "daemon_reload": True}},

@@ -25,6 +25,10 @@ SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password"
                 "canary-client")
 DS_V, PF_V, AM_V, IDM_V, IG_V = ("PingDS 7.5.1", "PingFederate 12.1.4", "PingAM 7.5.1", "PingIDM 7.5.0",
                                  "PingGateway 2024.11.0")
+# where each role's product is installed on its servers (ciamInstallRoot): the base its log files are found under
+INSTALL_ROOTS = {"ds": "/opt/ping/opendj", "pf-engine": "/opt/ping/pingfederate-12.1.4",
+                 "pf-admin": "/opt/ping/pingfederate-12.1.4", "am": "/opt/ping/am", "idm": "/opt/ping/openidm",
+                 "ig": "/opt/ping/ig"}
 IMG = ("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/"
        "Microsoft.Compute/images/")
 
@@ -472,7 +476,8 @@ def environment(file, env, p):
             *(spec(file, f"cn={cn},{env}", ["top", "ciamServer", *(("pingfedNode",) if cn in nodes else ())], cn=cn,
                    ciamServerRole=role, ciamHostname=host, ciamPrivateIp=ip, ciamZone=zone, ciamInstanceSize=size,
                    ciamImageRef=image, ciamSubnet=b(subnet), ciamProductVersion=version,
-                   pingfedOperationalMode=nodes.get(cn), ciamOwner=owner("ciam-platform"))
+                   ciamInstallRoot=INSTALL_ROOTS.get(role), pingfedOperationalMode=nodes.get(cn),
+                   ciamOwner=owner("ciam-platform"))
               for cn, role, host, ip, zone, size, image, subnet, version in p["servers"]))
 
 
@@ -590,7 +595,8 @@ def stage():
             *(spec(file, f"cn={cn},{STAGE}", ["top", "ciamServer"], cn=cn, ciamServerRole=role,
                    ciamHostname=f"{cn}.aws.internal.example-aero.test", ciamPrivateIp=ip, ciamZone=zone,
                    ciamInstanceSize="m6i.large", ciamImageRef=image, ciamSubnet=f"cn={subnet},ou=bindings,{AWS}",
-                   ciamProductVersion=version, ciamOwner=owner("ciam-platform"))
+                   ciamProductVersion=version, ciamInstallRoot=INSTALL_ROOTS.get(role),
+                   ciamOwner=owner("ciam-platform"))
               for cn, role, ip, zone, subnet, image, version in STAGE_SERVERS))
 
 

@@ -4,6 +4,7 @@ from opsdir.core.contract import Adapter
 from .checks import check_ping_devops
 from .helm import render
 from .listeners import listeners
+from .logs import LOGS
 from .products import applies
 from .routes import routes
 
@@ -13,4 +14,4 @@ ADAPTER = Adapter(name="ping-devops", kind="platform", applies=applies, required
                   renders="ping-devops Helm values for the PingFederate admin and engine run on Kubernetes",
                   neutral_label=None, vocabulary={}, schema=None, formats=(("ping-devops/*", "yaml"),), products=(),
                   secret_patterns=(), importers=(), profile_terms=None, access=None, render_targets=(),
-                  listeners=listeners, routes=routes)
+                  listeners=listeners, routes=routes, logs=LOGS)

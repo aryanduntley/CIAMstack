@@ -1,0 +1,15 @@
+log route    server role  runs on  log                                      lines  status
+-----------  -----------  -------  ---------------------------------------  -----  ------
+access-logs  ds           servers  logs/ldap-access.audit.json              all
+access-logs  ds           servers  logs/http-access.audit.json              all
+access-logs  pf-engine    servers  pingfederate/log/runtime-request.log     all
+access-logs  pf-engine    servers  pingfederate/log/request.log             all
+audit-logs   ds           servers  logs/audit                               all
+audit-logs   pf-engine    servers  pingfederate/log/audit.log               all
+audit-logs   pf-engine    servers  pingfederate/log/provisioner-audit.log   all
+audit-logs   pf-admin     servers  pingfederate/log/admin.log               all
+audit-logs   pf-admin     servers  pingfederate/log/admin-event-detail.log  all
+audit-logs   pf-admin     servers  pingfederate/log/admin-api.log           all
+audit-logs   pf-admin     servers  pingfederate/log/admin-request.log       all
+(11 rows)
+exit 0

@@ -1272,6 +1272,7 @@ objectClass: ciamServer
 cn: ds-1
 ciamHostname: ds-1.aws.internal.example-aero.test
 ciamImageRef: ami-0abcdef1234567890
+ciamInstallRoot: /opt/ping/opendj
 ciamInstanceSize: m6i.xlarge
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.20.1.11
@@ -1287,6 +1288,7 @@ objectClass: ciamServer
 cn: ds-2
 ciamHostname: ds-2.aws.internal.example-aero.test
 ciamImageRef: ami-0abcdef1234567890
+ciamInstallRoot: /opt/ping/opendj
 ciamInstanceSize: m6i.xlarge
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.20.2.11
@@ -1302,6 +1304,7 @@ objectClass: ciamServer
 cn: ds-3
 ciamHostname: ds-3.aws.internal.example-aero.test
 ciamImageRef: ami-0abcdef1234567890
+ciamInstallRoot: /opt/ping/opendj
 ciamInstanceSize: m6i.xlarge
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.20.3.11
@@ -1317,6 +1320,7 @@ objectClass: ciamServer
 cn: pf-engine-1
 ciamHostname: pf-engine-1.aws.internal.example-aero.test
 ciamImageRef: ami-0fedcba9876543210
+ciamInstallRoot: /opt/ping/pingfederate-12.1.4
 ciamInstanceSize: m6i.large
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.20.4.21
@@ -1332,6 +1336,7 @@ objectClass: ciamServer
 cn: pf-engine-2
 ciamHostname: pf-engine-2.aws.internal.example-aero.test
 ciamImageRef: ami-0fedcba9876543210
+ciamInstallRoot: /opt/ping/pingfederate-12.1.4
 ciamInstanceSize: m6i.large
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.20.5.21
@@ -1347,6 +1352,7 @@ objectClass: ciamServer
 cn: pf-admin-1
 ciamHostname: pf-admin-1.aws.internal.example-aero.test
 ciamImageRef: ami-0fedcba9876543210
+ciamInstallRoot: /opt/ping/pingfederate-12.1.4
 ciamInstanceSize: m6i.large
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.20.4.10
@@ -1362,6 +1368,7 @@ objectClass: ciamServer
 cn: am-1
 ciamHostname: am-1.aws.internal.example-aero.test
 ciamImageRef: ami-0a9b8c7d6e5f40321
+ciamInstallRoot: /opt/ping/am
 ciamInstanceSize: m6i.large
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.20.7.21
@@ -1377,6 +1384,7 @@ objectClass: ciamServer
 cn: am-2
 ciamHostname: am-2.aws.internal.example-aero.test
 ciamImageRef: ami-0a9b8c7d6e5f40321
+ciamInstallRoot: /opt/ping/am
 ciamInstanceSize: m6i.large
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.20.8.21
@@ -1392,6 +1400,7 @@ objectClass: ciamServer
 cn: idm-1
 ciamHostname: idm-1.aws.internal.example-aero.test
 ciamImageRef: ami-0b1c2d3e4f5a60987
+ciamInstallRoot: /opt/ping/openidm
 ciamInstanceSize: m6i.large
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.20.6.21
@@ -1407,6 +1416,7 @@ objectClass: ciamServer
 cn: ig-1
 ciamHostname: ig-1.aws.internal.example-aero.test
 ciamImageRef: ami-0c2d3e4f5a6b70123
+ciamInstallRoot: /opt/ping/ig
 ciamInstanceSize: m6i.large
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.20.10.21

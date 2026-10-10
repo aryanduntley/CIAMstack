@@ -4,6 +4,7 @@ from opsdir.domains.compute.workloads import runs_product
 from .checks import check_routes
 from .gateway import GATEWAY_CONFIG
 from .listeners import listeners
+from .logs import LOGS
 from .proxy import proxy_settings
 from .naming import ENDPOINTS, SERVER_ROLES
 from .render import FORMATS, render_env
@@ -25,4 +26,4 @@ ADAPTER = Adapter(name="pinggateway", kind="product", applies=applies, required_
                   products=(("PingGateway", ">=2023,<2027"), ("ForgeRock Identity Gateway", ">=7,<8")),
                   secret_patterns=(), importers=(GATEWAY_CONFIG,), profile_terms=None, access=None,
                   endpoints=ENDPOINTS, listeners=listeners,
-                  proxy_settings=proxy_settings)
+                  proxy_settings=proxy_settings, logs=LOGS)

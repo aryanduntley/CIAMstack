@@ -1183,6 +1183,7 @@ cn: ds-1
 ciamHostname: ds-1.az.internal.example-aero.test
 ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
  ps/rg-ciam-images/providers/Microsoft.Compute/images/pingds-7.5.1-rhel9
+ciamInstallRoot: /opt/ping/opendj
 ciamInstanceSize: Standard_D4s_v5
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.60.1.11
@@ -1199,6 +1200,7 @@ cn: ds-2
 ciamHostname: ds-2.az.internal.example-aero.test
 ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
  ps/rg-ciam-images/providers/Microsoft.Compute/images/pingds-7.5.1-rhel9
+ciamInstallRoot: /opt/ping/opendj
 ciamInstanceSize: Standard_D4s_v5
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.60.1.12
@@ -1215,6 +1217,7 @@ cn: ds-3
 ciamHostname: ds-3.az.internal.example-aero.test
 ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
  ps/rg-ciam-images/providers/Microsoft.Compute/images/pingds-7.5.1-rhel9
+ciamInstallRoot: /opt/ping/opendj
 ciamInstanceSize: Standard_D4s_v5
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.60.1.13

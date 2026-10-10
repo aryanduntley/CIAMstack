@@ -2878,6 +2878,12 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.631 NAME 'ciamApplianceSource' DESC
   servers\27 firewall rules must admit it' EQUALITY caseIgnoreMatch SYNTAX 1
  .3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'cidr' X-
  ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.632 NAME 'ciamInstallRoot' DESC 'Whe
+ re the server\27s product is installed (an absolute path: the opendj direct
+ ory, AM\27s base directory, <pf_install>): the base its log files are found
+  under; none recorded, none guessed' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.
+ 1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE '
+ string' X-PATTERN '^(/|[A-Za-z]:[\5C\5C/]).*$' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -2893,7 +2899,7 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.3 NAME 'ciamEnvironment' DESC 'A depl
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.4 NAME 'ciamServer' DESC 'A server in
  stance' SUP ciamObject STRUCTURAL MUST ( cn $ ciamServerRole $ ciamHostname
   $ ciamSubnet ) MAY ( ciamProductVersion $ ciamPrivateIp $ ciamZone $ ciamI
- nstanceSize $ ciamImageRef ) X-ORIGIN 'opsdir' )
+ nstanceSize $ ciamImageRef $ ciamInstallRoot ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.5 NAME 'ciamBinding' DESC 'Environmen
  t-specific binding of an abstract role' SUP ciamObject ABSTRACT MUST ( cn $
   ciamBindingRole ) MAY ciamProviderRef X-ORIGIN 'opsdir' )

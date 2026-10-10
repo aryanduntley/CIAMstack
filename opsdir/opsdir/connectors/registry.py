@@ -239,6 +239,17 @@ def signals_of(m, installed=ADAPTERS):
     return tuple(s for a in declared_adapters(m, installed) for s in a.signals)
 
 
+def logs_of(m, installed=ADAPTERS):
+    """The LogSources the adapters rendering environment m (its declared stack's) declare."""
+    return tuple(s for a in declared_adapters(m, installed) for s in a.logs)
+
+
+def host_files_of(m, installed=ADAPTERS):
+    """The HostFiles the adapters rendering environment m (its declared stack's) render for its servers."""
+    found = tuple(a for a in declared_adapters(m, installed) if a.host_files is not None)
+    return tuple(f for a in found for f in a.host_files(m, services(installed))) if found else ()
+
+
 def _deployable_config(m):
     from .capture import deployable_config        # capture imports the registry: resolved when first asked
     return deployable_config(m.d, m)
@@ -255,4 +266,6 @@ def services(installed=ADAPTERS):
                     gateway_plug=partial(gateway_plug_of, installed=installed),
                     ansible_lookup=partial(ansible_lookup_of, installed=installed),
                     deployable_config=_deployable_config,
-                    signals=partial(signals_of, installed=installed))
+                    signals=partial(signals_of, installed=installed),
+                    logs=partial(logs_of, installed=installed),
+                    host_files=partial(host_files_of, installed=installed))

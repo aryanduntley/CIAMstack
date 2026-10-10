@@ -3,7 +3,8 @@ with its bindings, with their target role and deploy path) as Jinja templates th
 role's servers: the file's own text kept verbatim in raw blocks, each secret placeholder (${secret:<ref-uri>}) a lookup
 read at run time on the controller (output.secret_lookup). A file isn't deployed, and is named with why, when a
 placeholder can't be read (no scheme, or one no installed adapter resolves) or its target role has no servers here.
-Pure."""
+The files other adapters render for the servers (Services.host_files: agents' configuration) become templates the
+same way, under host-files/<role>/, each with the command that makes what reads it take it up. Pure."""
 import re
 
 from opsdir.core.directory import one
@@ -28,6 +29,11 @@ def template(m, services, text):
             "".join(_raw(p) if i % 2 == 0 else lookups[p] for i, p in enumerate(parts))), unreadable
 
 
+def _not_deployed(dest, role, bad):
+    return f"{dest}: " + (f"secret references it can't read: {', '.join(bad)}" if bad
+                          else f"role {role} has no servers here")
+
+
 def config_templates(m, services):
     """({path under ansible/templates/: template text}, {role: [{src, dest}]}, [not deployed: why]) of the files m's
     servers receive."""
@@ -35,10 +41,23 @@ def config_templates(m, services):
     found = [(role, dest, repo, *template(m, services, text))
              for role, dest, repo, text in services.deployable_config(m)]
     deployed = [(role, dest, repo, t) for role, dest, repo, t, _ in found if t is not None and role in served]
-    not_deployed = [f"{dest}: " + (f"secret references it can't read: {', '.join(bad)}" if bad
-                                   else f"role {role} has no servers here")
-                    for role, dest, _, t, bad in found if t is None or role not in served]
     return ({f"{TEMPLATES}/{repo}.j2": t for _, _, repo, t in deployed},
             {role: [{"src": f"{repo}.j2", "dest": dest} for r, dest, repo, _ in deployed if r == role]
              for role in dict.fromkeys(r for r, *_ in deployed)},
-            not_deployed)
+            [_not_deployed(dest, role, bad) for role, dest, _, t, bad in found if t is None or role not in served])
+
+
+def host_file_templates(m, services):
+    """({path under ansible/templates/: template text}, {role: [{src, dest, mode[, reload]}]}, [not deployed: why])
+    of the files the adapters rendering m render for its servers (Services.host_files)."""
+    served = {one(s, "ciamServerRole") for s in m.servers}
+    found = [(f, f"host-files/{f.server_role}/{f.path.lstrip('/')}", *template(m, services, f.text))
+             for f in services.host_files(m)]
+    deployed = [(f, repo, t) for f, repo, t, _ in found if t is not None and f.server_role in served]
+    return ({f"{TEMPLATES}/{repo}.j2": t for _, repo, t in deployed},
+            {role: [{"src": f"{repo}.j2", "dest": f.path, "mode": f.mode,
+                     **({"reload": list(f.reload)} if f.reload else {})}
+                    for f, repo, _ in deployed if f.server_role == role]
+             for role in dict.fromkeys(f.server_role for f, *_ in deployed)},
+            [_not_deployed(f.path, f.server_role, bad) for f, _, t, bad in found
+             if t is None or f.server_role not in served])

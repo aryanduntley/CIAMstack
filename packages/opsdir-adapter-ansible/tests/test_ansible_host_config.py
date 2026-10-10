@@ -1,9 +1,11 @@
 """A role's jobs, host firewall and product configuration files as the host-config playbook applies them: commands run
 through /bin/sh with cron's and systemd's escapes, record text never templated, secrets never shown by --diff, files
-that can't be deployed named."""
+that can't be deployed named; and the files other adapters render for the servers (agents' configuration), each
+reloaded by its own command when it changes."""
 from ansible_yaml import load, untagged_strings
 
 from opsdir.connectors.registry import services
+from opsdir.core.contract import HostFile
 from opsdir_adapter_ansible.files import template
 from opsdir_adapter_ansible.jobs import cron_command, exec_start, job_vars
 from opsdir_adapter_ansible.render import render
@@ -60,6 +62,8 @@ def test_the_playbook_tags():
     tags = {t["name"]: t["tags"] for t in play["tasks"]}
     assert tags["Cron jobs"] == tags["Timer jobs enabled"] == ["jobs"]
     assert tags["Host firewall rules"] == ["firewall"] and tags["Product configuration files"] == ["files"]
+    assert tags["Files other adapters render for the servers"] == ["host-files"]
+    assert tags["Files not deployed"] == ["files", "host-files"]
 
 
 def test_commands_run_through_the_shell_with_their_schedulers_escapes():
@@ -126,3 +130,30 @@ def test_the_recorded_time_sources_are_chronys():
         "ansible.builtin.lineinfile"]["regexp"] == "^pool "
     _, bare, _ = model()
     assert "ciam_time_sources" not in load(render(bare, _services())["ansible/inventory/group_vars/all.yml"])
+
+
+AGENT = HostFile("ds", "/opt/aws/amazon-cloudwatch-agent/etc/cloudwatch-agent.json", '{"logs": {"x": "{{ y }}"}}\n',
+                 ("/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl", "-a", "fetch-config", "-m",
+                  "ec2", "-s", "-c", "file:/opt/aws/amazon-cloudwatch-agent/etc/cloudwatch-agent.json"))
+
+
+def test_other_adapters_files_are_placed_and_reloaded_when_they_change():
+    _, alpha = host_config_model()
+    nobody = HostFile("nobody", "/etc/x.yaml", "a: 1\n")
+    files = render(alpha, _services()._replace(host_files=lambda m: (AGENT, nobody)))
+    template_path = "ansible/templates/host-files/ds/opt/aws/amazon-cloudwatch-agent/etc/cloudwatch-agent.json.j2"
+    assert files[template_path] == '{% raw %}{"logs": {"x": "{{ y }}"}}\n{% endraw %}'    # never templated
+    assert load(files["ansible/inventory/group_vars/ds.yml"])["ciam_host_files"] == [
+        {"src": "host-files/ds/opt/aws/amazon-cloudwatch-agent/etc/cloudwatch-agent.json.j2",
+         "dest": "/opt/aws/amazon-cloudwatch-agent/etc/cloudwatch-agent.json", "mode": "0644",
+         "reload": list(AGENT.reload)}]
+    assert load(files["ansible/inventory/group_vars/all.yml"])["ciam_config_files_not_deployed"] == [
+        "/etc/x.yaml: role nobody has no servers here"]
+    (play,) = load(files["ansible/host-config.yml"])
+    by_name = {t["name"]: t for t in play["tasks"]}
+    written, reload = by_name["Files other adapters render for the servers"], by_name[
+        "What reads a changed file takes it up"]
+    assert written["register"] == "ciam_host_files_written" and written["diff"] is False
+    assert reload["ansible.builtin.command"] == {"argv": "{{ item.item.reload }}"}      # no shell
+    assert "selectattr('changed')" in reload["loop"]
+    assert "ciam_host_files" not in load(render(alpha, _services())["ansible/inventory/group_vars/ds.yml"])

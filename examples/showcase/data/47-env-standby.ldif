@@ -1096,6 +1096,7 @@ objectClass: ciamServer
 cn: ds-1
 ciamHostname: ds-1.gcp.internal.example-aero.test
 ciamImageRef: projects/example-aero-images/global/images/pingds-7-5-1-rhel9
+ciamInstallRoot: /opt/ping/opendj
 ciamInstanceSize: n2-standard-4
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.70.1.11
@@ -1111,6 +1112,7 @@ objectClass: ciamServer
 cn: ds-2
 ciamHostname: ds-2.gcp.internal.example-aero.test
 ciamImageRef: projects/example-aero-images/global/images/pingds-7-5-1-rhel9
+ciamInstallRoot: /opt/ping/opendj
 ciamInstanceSize: n2-standard-4
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.70.1.12
@@ -1128,6 +1130,7 @@ cn: pf-engine-1
 ciamHostname: pf-engine-1.gcp.internal.example-aero.test
 ciamImageRef: projects/example-aero-images/global/images/pingfederate-12-1-4-r
  hel9
+ciamInstallRoot: /opt/ping/pingfederate-12.1.4
 ciamInstanceSize: n2-standard-2
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.70.2.21
@@ -1146,6 +1149,7 @@ cn: pf-engine-2
 ciamHostname: pf-engine-2.gcp.internal.example-aero.test
 ciamImageRef: projects/example-aero-images/global/images/pingfederate-12-1-4-r
  hel9
+ciamInstallRoot: /opt/ping/pingfederate-12.1.4
 ciamInstanceSize: n2-standard-2
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.70.2.22
@@ -1164,6 +1168,7 @@ cn: pf-admin-1
 ciamHostname: pf-admin-1.gcp.internal.example-aero.test
 ciamImageRef: projects/example-aero-images/global/images/pingfederate-12-1-4-r
  hel9
+ciamInstallRoot: /opt/ping/pingfederate-12.1.4
 ciamInstanceSize: n2-standard-2
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.70.2.10
@@ -1180,6 +1185,7 @@ objectClass: ciamServer
 cn: am-1
 ciamHostname: am-1.gcp.internal.example-aero.test
 ciamImageRef: projects/example-aero-images/global/images/pingam-7-5-1-rhel9
+ciamInstallRoot: /opt/ping/am
 ciamInstanceSize: n2-standard-2
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.70.3.21
@@ -1195,6 +1201,7 @@ objectClass: ciamServer
 cn: idm-1
 ciamHostname: idm-1.gcp.internal.example-aero.test
 ciamImageRef: projects/example-aero-images/global/images/pingidm-7-5-0-rhel9
+ciamInstallRoot: /opt/ping/openidm
 ciamInstanceSize: n2-standard-2
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.70.6.21
@@ -1211,6 +1218,7 @@ cn: ig-1
 ciamHostname: ig-1.gcp.internal.example-aero.test
 ciamImageRef: projects/example-aero-images/global/images/pinggateway-2024-11-0
  -rhel9
+ciamInstallRoot: /opt/ping/ig
 ciamInstanceSize: n2-standard-2
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.70.10.21

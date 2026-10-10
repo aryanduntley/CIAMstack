@@ -365,6 +365,12 @@ EXPECTED = MappingProxyType({
         ("A118", "PingFederate on Kubernetes", "PingFederate runs on Kubernetes in target/prod (namespace `ciam`): the "
          "chart's pods find each other by DNS_PING", "no cluster discovery is bound for PingFederate on AKS (a fix "
          "binds the chart's cluster service)", None),
+        ("A119", "Logs", "Log route `audit-logs` collects audit, admin logs, but in target/prod nothing declares such "
+         "a log for `pf-engine` on kubernetes", "on AKS the chart's PingFederate pods stream only the server log: the "
+         "audit logs under legal hold reach no collector there", None),
+        ("A120", "Logs", "Log route `access-logs` collects access logs, but in target/prod nothing declares such a log "
+         "for `pf-engine` on kubernetes", "on AKS the chart's PingFederate engines stream only the server log: their "
+         "request logs reach no collector there", None),
     ],
 })
 

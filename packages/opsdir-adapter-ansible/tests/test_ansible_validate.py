@@ -7,6 +7,7 @@ import subprocess
 import pytest
 
 from opsdir.connectors.registry import services
+from opsdir.core.contract import HostFile
 from opsdir_adapter_ansible.render import render
 from host_samples import host_config_model
 
@@ -23,7 +24,10 @@ CONFIG = (("ds", "/opt/ds/config/tools.properties", "ds/config/tools.properties"
 
 def test_a_render_with_every_host_config_feature_passes_ansibles_own_checks(tmp_path):
     _, alpha = host_config_model()
-    for path, text in render(alpha, services()._replace(deployable_config=lambda m: CONFIG)).items():
+    agent = HostFile("ds", "/etc/google-cloud-ops-agent/config.yaml", "logging: {}\n",
+                     ("systemctl", "restart", "google-cloud-ops-agent"))
+    for path, text in render(alpha, services()._replace(deployable_config=lambda m: CONFIG,
+                                                        host_files=lambda m: (agent,))).items():
         target = tmp_path / path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(text)

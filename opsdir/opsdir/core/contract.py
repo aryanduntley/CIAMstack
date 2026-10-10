@@ -142,11 +142,13 @@ SecretDelivery = NamedTuple("SecretDelivery", [("store_key", Callable), ("eso_pr
 # applies to m, or None; ansible_lookup(m, ref-uri): the native lookup expression configuration management reads a
 # reference with at run time (its scheme owner's), or None (it runs the scheme's resolver command instead);
 # deployable_config(m): ((target role, deploy path, repo path, text), ...) of the captured files m receives that say
-# where they go on its servers; signals(m): the Signals the adapters rendering environment m declare
+# where they go on its servers; signals(m): the Signals the adapters rendering environment m declare; logs(m): the
+# LogSources they declare; host_files(m): the HostFiles they render for m's servers
 Services = NamedTuple("Services", [("secret_command", Callable), ("endpoints", tuple), ("listeners", Callable),
                                    ("workload_identity", Callable), ("secret_delivery", Callable),
                                    ("routes", Callable), ("gateway_plug", Callable), ("ansible_lookup", Callable),
-                                   ("deployable_config", Callable), ("signals", Callable)])
+                                   ("deployable_config", Callable), ("signals", Callable), ("logs", Callable),
+                                   ("host_files", Callable)])
 
 # How a cloud's L7 front reaches a cluster's in-cluster gateway, from the provider adapter that owns the cloud:
 # annotations on the gateway's Service ((name, value), ...), further Kubernetes objects the plug needs (dicts, e.g. a
@@ -184,6 +186,18 @@ Endpoint = namedtuple("Endpoint", ("kind", "path", "server_role"))
 # environment's cloud runs (its alarm binding's ciamMetric).
 Signal = namedtuple("Signal", ("signal", "server_role", "expr", "unit", "description"))
 
+# A log a product's servers write (domains/observability.sources: what a log route's ciamLogKind picks lines from):
+# server_role the role of the servers writing it; on "servers" (a file under the server's install root) or "kubernetes"
+# (the standard output and error of the role's containers, as a deployment kit runs them); path the file's glob
+# relative to the install root (None on kubernetes); format "json-lines" (one JSON object per line), "text", or "mixed"
+# (JSON lines among text lines); kind the log kind of every line no match rule classifies (every line when there are
+# none); match ((JSON field, value prefix, kind), ...): the first rule whose field's value starts with the prefix gives
+# a JSON line's kind ("" for any value: the field is there); line_start the regular expression a record's first line
+# starts with, when records span lines (stack traces), else None; requires the product setting that must be on for the
+# log to exist, in words, or None. Products and kits declare only what their documentation states.
+LogSource = namedtuple("LogSource", ("server_role", "on", "path", "format", "kind", "match", "line_start",
+                                     "requires"), defaults=((), None, None))
+
 # A port a product's servers listen on: server_role the role of the servers, port and protocol (tcp or udp), purpose in
 # words (LDAPS, replication, cluster), peers who connects: any of clients (consumers, directly or through service
 # names), peers (other servers of the same role), admin (the operators' ways in), and server roles by name. Products
@@ -209,6 +223,13 @@ Route = namedtuple("Route", ("server_role", "path", "match", "service", "port", 
 # compare them with the captured files the environment receives, and offer to add or link them (core.findings.Fix).
 ProxySetting = namedtuple("ProxySetting", ("server_role", "place", "file", "locator", "value", "link"),
                           defaults=(None,))
+
+# A file an adapter renders for an environment's servers of a role that configuration management places on them (an
+# agent's configuration: the CloudWatch agent's, the Ops Agent's): server_role the servers that receive it, path where
+# it goes on them (absolute), text its content (a secret placeholder ${secret:<ref-uri>} is read at run time, as in a
+# captured file), reload the command that makes what reads it take it up (run when the file changes; argv words, no
+# shell), or None; mode the file's permissions. Configure-only: what reads it is installed by the host's baseline.
+HostFile = namedtuple("HostFile", ("server_role", "path", "text", "reload", "mode"), defaults=(None, "0644"))
 
 # Data an adapter needs from its provider before the record is complete (a provider's region catalog): fetched with one
 # of its importers (by name; its commands say how), met when met(directory) says the record holds it. Needed once the
@@ -292,8 +313,11 @@ Adapter = namedtuple("Adapter", (
     "ansible_lookup",       # {ref-uri scheme: (EnvModel, secret store binding or None, rest) -> a Jinja expression
                             # reading the secret at run time (core.interchange.jinja), or None to fall back to its
                             # resolver command}: how configuration management reads its schemes' secrets
-    "signals"),             # Signals: the neutral signals its products' servers expose as Prometheus metrics
-    defaults=((), None, None, (), (), (), None, None, None, None, (), None, ()))
+    "signals",              # Signals: the neutral signals its products' servers expose as Prometheus metrics
+    "logs",                 # LogSources: the logs its products' servers (or, for a kit, the role's containers) write
+    "host_files"),          # (EnvModel, Services) -> HostFiles: files configuration management places on the
+                            # environment's servers (agents' configuration), or None
+    defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None))
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

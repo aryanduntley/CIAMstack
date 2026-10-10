@@ -510,6 +510,7 @@ objectClass: top
 objectClass: ciamServer
 cn: ds-1
 ciamHostname: ds-1.lab.example-aero.test
+ciamInstallRoot: /opt/ping/opendj
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.80.1.11
 ciamProductVersion: PingDS 7.5.1
@@ -522,6 +523,7 @@ objectClass: top
 objectClass: ciamServer
 cn: ds-2
 ciamHostname: ds-2.lab.example-aero.test
+ciamInstallRoot: /opt/ping/opendj
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.80.1.12
 ciamProductVersion: PingDS 7.5.1
@@ -535,6 +537,7 @@ objectClass: ciamServer
 objectClass: pingfedNode
 cn: pf-engine-1
 ciamHostname: pf-engine-1.lab.example-aero.test
+ciamInstallRoot: /opt/ping/pingfederate-12.1.4
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.80.4.11
 ciamProductVersion: PingFederate 12.1.4
@@ -549,6 +552,7 @@ objectClass: ciamServer
 objectClass: pingfedNode
 cn: pf-admin-1
 ciamHostname: pf-admin-1.lab.example-aero.test
+ciamInstallRoot: /opt/ping/pingfederate-12.1.4
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.80.4.12
 ciamProductVersion: PingFederate 12.1.4

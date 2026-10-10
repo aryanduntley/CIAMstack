@@ -1,0 +1,10 @@
+log route    server role  runs on     log                          lines  status
+-----------  -----------  ----------  ---------------------------  -----  -----------------------------
+access-logs  ds           servers     logs/ldap-access.audit.json  all
+access-logs  ds           servers     logs/http-access.audit.json  all
+access-logs  pf-engine    kubernetes                                      its logs here hold only error
+audit-logs   ds           servers     logs/audit                   all
+audit-logs   pf-engine    kubernetes                                      its logs here hold only error
+audit-logs   pf-admin     kubernetes                                      its logs here hold only error
+(6 rows)
+exit 0
