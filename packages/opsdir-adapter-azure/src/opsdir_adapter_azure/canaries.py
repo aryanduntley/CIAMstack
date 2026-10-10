@@ -19,7 +19,7 @@ from opsdir.core.environment import one_role
 from opsdir.domains.edge.exposure import service_exposure
 from opsdir.domains.observability.canaries import canary_specs
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
-from .account import tagged
+from .account import government, tagged
 from .identities import LOC, RG
 
 TEST = "azurerm_application_insights_standard_web_test"
@@ -28,11 +28,6 @@ FREQUENCIES = (300, 600, 900)
 PUBLIC_LOCATIONS = ("us-va-ash-azr", "us-il-ch1-azr", "us-tx-sn1-azr", "us-ca-sjc-azr", "us-fl-mia-edge")
 GOVERNMENT_LOCATIONS = ("usgov-va-azr", "usgov-phx-azr", "usgov-tx-azr", "usgov-ddeast-azr", "usgov-ddcentral-azr")
 GET_FLOWS = ("health", "login-page")
-
-
-def government(m):
-    """Whether environment m's cloud runs in Azure Government (a US Gov or US DoD region)."""
-    return (one(m.cloud, "ciamRegion") or "").lower().startswith(("usgov", "usdod"))
 
 
 def _why(m, spec):

@@ -12,6 +12,11 @@ FIPS_NOTE = ("FIPS endpoints: Azure has no separate FIPS endpoints for the provi
              "services' own validated modules, or by Azure Government (ciamCloudEnvironment usgovernment)")
 
 
+
+def government(m):
+    """Whether environment m's cloud runs in Azure Government (a US Gov or US DoD region)."""
+    return (one(m.cloud, "ciamRegion") or "").lower().startswith(("usgov", "usdod"))
+
 def provider_block(m):
     """The azurerm provider block of a root of environment m."""
     gov = (("environment", "usgovernment"),) if one(m.cloud, "ciamCloudEnvironment") == "usgovernment" else ()

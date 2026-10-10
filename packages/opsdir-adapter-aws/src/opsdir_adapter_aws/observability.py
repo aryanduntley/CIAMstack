@@ -102,14 +102,15 @@ def retention(days):
     return allowed, (None if allowed == days else f"{days} days isn't a CloudWatch retention: raised to {allowed}")
 
 
-def _group_name(b):
+def group_name(b):
+    """The CloudWatch log group name a log destination's provider ref (a log group ARN) gives, or None."""
     ref = one(b, "ciamProviderRef") or ""
     return ref.split(":log-group:", 1)[1].removesuffix(":*") if ref.startswith("arn:") and ":log-group:" in ref \
         else None
 
 
 def _log_group(m, b):
-    cn, name, keeper = rdn_value(b), _group_name(b), keeper_of(m, b)
+    cn, name, keeper = rdn_value(b), group_name(b), keeper_of(m, b)
     if one(b, "ciamDestinationKind") != "log-group":
         return ()
     if keeper:

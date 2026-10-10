@@ -1346,6 +1346,12 @@ resource "aws_route53_resolver_rule_association" "fwd_corp_ad_0" {
 
 # Log group ops-logs: kept by source/prod (this environment inherits it), not rendered here
 
+# NOTE: role ds ships logs to ops-logs, but no workload principal acting for it holds the permit `write-logs ops-logs`: its servers' instance role isn't granted the writes
+
+# NOTE: role pf-engine ships logs to ops-logs, but no workload principal acting for it holds the permit `write-logs ops-logs`: its servers' instance role isn't granted the writes
+
+# NOTE: role pf-admin ships logs to audit-logs, but no workload principal acting for it holds the permit `write-logs audit-logs`: its servers' instance role isn't granted the writes
+
 # Alarm pf-login-failures (alert rule login-failures): kept by source/prod (this environment inherits it), not rendered here
 
 # Alarm ds-replication-lag (alert rule replication-lag): kept by source/prod (this environment inherits it), not rendered here

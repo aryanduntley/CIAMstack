@@ -20,7 +20,7 @@ from opsdir.core.environment import of_class
 from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.poam import exception_of, suppression_name
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
-from .budgets import govcloud
+from .account import govcloud
 
 RULE, FILTER = "aws_securityhub_automation_rule", "aws_guardduty_filter"
 DETECTOR = "data.aws_guardduty_detector.suppressions"

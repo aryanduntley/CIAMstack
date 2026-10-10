@@ -20,6 +20,8 @@ from .access import ACCESS
 from .databases import render_databases
 from .storage import render_object_stores
 from .audit import render_trails
+from .container_logs import container_log_notes, render_container_logs
+from .log_collection import log_collection_notes, render_log_collection
 from .observability import render_alerts, render_workspaces
 from .canaries import render_tests
 from .budgets import budget_inputs, render_budgets
@@ -208,13 +210,17 @@ def _interconnect_note(m, ic):
 def render(m, services):
     endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     des, identities = one_role(m, "disk-encryption"), workload_identities(m, ACCESS)
+    containers, container_files = render_container_logs(m, services) if services else ((), {})
     out = (*network_data(m), *_security_groups(m), *aks_data(identities),
            *chain.from_iterable(identity(m, w) for w in identities),
            *chain.from_iterable(_server(m, s, des, identities) for s in m.servers), *snapshot_policy_notes(m),
            *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
-           *forwarding_rules(m), *render_trails(m), *render_workspaces(m), *render_alerts(m),
+           *forwarding_rules(m), *render_trails(m), *render_workspaces(m),
+           *(render_log_collection(m, services) + log_collection_notes(m, services) if services else ()),
+           *containers, *(container_log_notes(m, services) if services else ()),
+           *render_alerts(m),
            *render_tests(m, endpoints),
            *render_security(m, discovery_plans(m)), *render_discovery(m),
            *render_suppressions(m), *render_budgets(m), *quota_request_notes(m),
@@ -237,4 +243,4 @@ def render(m, services):
             ("description", "The landing zone's DNS forwarding ruleset the forwarding rules join"),
             ("type", ref("string"))]),) if forwarders(m, hosted=False) else ()),
     ]) + "\n"
-    return {"terraform/providers.tf": providers, "terraform/main.tf": main, **render_landing(m)}
+    return {"terraform/providers.tf": providers, "terraform/main.tf": main, **container_files, **render_landing(m)}

@@ -217,3 +217,63 @@ def test_the_values_template_to_valid_kubernetes(tmp_path):
     done = subprocess.run([str(ROOT / "opsdir" / "scripts" / "validate-kubernetes.sh"), "--helm", str(CHART),
                            str(values)], capture_output=True, text=True)
     assert done.returncode == 0, done.stdout + done.stderr
+
+
+def _route(cn, kinds, roles):
+    from opsdir.domains.observability.naming import LOG_ROUTES
+    return (f"dn: cn={cn},{LOG_ROUTES}\nobjectClass: top\nobjectClass: ciamObject\nobjectClass: ciamLogRoute\n"
+            f"cn: {cn}\n" + "".join(f"ciamLogKind: {k}\n" for k in kinds)
+            + "".join(f"ciamPublishedBy: {r}\n" for r in roles) + f"ciamLogDestinationRole: {cn}\n")
+
+
+def _routed():
+    from opsdir.domains.observability.naming import LOG_ROUTES
+    return model(f"dn: {LOG_ROUTES}\nobjectClass: top\nobjectClass: organizationalUnit\nou: log-routes\n",
+                 _route("audit-logs", ("audit",), ("pf-engine", "pf-admin")),
+                 _route("admin-logs", ("admin",), ("pf-admin",)))
+
+
+def test_each_log_file_a_route_picks_is_its_own_sidecars_output():
+    from opsdir_adapter_ping_devops.logs import LOGS
+    assert [(s.server_role, s.container, s.kind) for s in LOGS if s.container is None] == [
+        ("pf-engine", None, "error"), ("pf-admin", None, "error")]       # server.log and init.log, as the image tails
+    assert "pf-log-server" not in {s.container for s in LOGS}
+    values = _values(_routed())
+    engine, admin = values["pingfederate-engine"], values["pingfederate-admin"]
+    assert engine["includeSidecars"] == ["pf-log-audit", "pf-log-provisioner-audit"]     # audit only: no access
+    assert admin["includeSidecars"] == ["pf-log-admin", "pf-log-admin-event-detail", "pf-log-admin-api",
+                                        "pf-log-admin-request"]
+    assert engine["includeVolumes"] == ["out-dir"] and engine["volumeMounts"] == [
+        {"name": "out-dir", "mountPath": "/opt/out"}]          # a Deployment: /opt/out shared, never its log dir
+    assert "includeVolumes" not in admin and "volumeMounts" not in admin  # a StatefulSet: its out-dir volume
+    assert values["volumes"] == {"out-dir": {"emptyDir": {}}}
+    audit = values["sidecars"]["pf-log-audit"]
+    assert audit["command"] == ["tail"] and audit["args"] == ["-n", "+1", "-F", "/pf-out/instance/log/audit.log"]
+    assert audit["volumeMounts"] == [{"name": "out-dir", "mountPath": "/pf-out", "readOnly": True}]
+    assert audit["image"].startswith("registry.example.test:5000/ciam/pingfederate")
+    assert audit["securityContext"]["allowPrivilegeEscalation"] is False
+    assert "sidecars" not in _values(model()) and "includeSidecars" not in _values(model())["pingfederate-engine"]
+
+
+@pytest.mark.kubernetes
+@pytest.mark.skipif(not (ROOT / "tools" / "bin" / "helm").exists() or not (CHART.parent / ".complete").exists(),
+                    reason="no tools (opsdir/scripts/fetch-tools.sh) or chart (fetch-ping-devops.sh)")
+def test_the_chart_runs_the_sidecars_beside_pingfederate(tmp_path):
+    values = tmp_path / "values.yaml"
+    values.write_text(render(_routed(), services(INSTALLED))[VALUES])
+    done = subprocess.run([str(ROOT / "opsdir" / "scripts" / "validate-kubernetes.sh"), "--helm", str(CHART),
+                           str(values)], capture_output=True, text=True)
+    assert done.returncode == 0, done.stdout + done.stderr
+    out = subprocess.run([str(ROOT / "tools" / "bin" / "helm"), "template", "pingfederate", str(CHART), "-f",
+                          str(values)], capture_output=True, text=True, check=True).stdout
+    pods = {o["metadata"]["name"]: o["spec"]["template"]["spec"] for o in yaml.safe_load_all(out)
+            if o and o["kind"] in ("Deployment", "StatefulSet")}
+    engine = pods["pingfederate-pingfederate-engine"]
+    names = [c["name"] for c in engine["containers"]]
+    assert names[1:] == ["pf-log-audit", "pf-log-provisioner-audit"]
+    main = engine["containers"][0]
+    assert {"name": "out-dir", "mountPath": "/opt/out"} in main["volumeMounts"]
+    assert {"name": "out-dir", "emptyDir": {}} in engine["volumes"]
+    admin = pods["pingfederate-pingfederate-admin"]
+    assert {"name": "out-dir", "mountPath": "/pf-out", "readOnly": True} in admin["containers"][1]["volumeMounts"]
+    assert any(v["name"] == "out-dir" and "persistentVolumeClaim" in v for v in admin["volumes"])

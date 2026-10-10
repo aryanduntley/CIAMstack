@@ -174,7 +174,8 @@ def _host_files():
     return [_task("Files other adapters render for the servers", "ansible.builtin.template",
                   {"src": "{{ item.src }}", "dest": "{{ item.dest }}", "mode": "{{ item.mode }}"},
                   ("host-files",), loop="{{ ciam_host_files | default([]) }}",
-                  loop_control={"label": "{{ item.dest }}"}, register="ciam_host_files_written", diff=False),
+                  loop_control={"label": "{{ item.dest }}"}, register="ciam_host_files_written", diff=False,
+                  when="item.hosts is not defined or inventory_hostname in item.hosts"),
             _task("What reads a changed file takes it up", "ansible.builtin.command",
                   {"argv": "{{ item.item.reload }}"}, ("host-files",), loop=changed,
                   loop_control={"label": "{{ item.item.dest }}"}, changed_when=True)]

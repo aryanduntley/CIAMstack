@@ -30,3 +30,6 @@ the password policies' settings are kept. Only the configuration in effect is re
 disk only, as are the access logs. Least privilege: an account with the `config-read` privilege and a global ACI on
 `cn=config` allowing `read,search,compare` (targetattr `*||+`).
 
+## Log files (log routes)
+
+`logs.py` declares, relative to `ciamInstallRoot`: `logs/ldap-access.audit.json` and `logs/http-access.audit.json` (access, JSON lines), `logs/errors` and `logs/server.out` (error), `logs/replication` (replication; PingDS 7 only: PingDS 8 writes these to `logs/errors`), and `logs/audit` (audit, LDIF; only once the File-Based Audit Logger is enabled, which it isn't by default).

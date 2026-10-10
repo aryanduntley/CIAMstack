@@ -11,7 +11,9 @@ Required roles: `subnet-ds`, `ds-ldaps-service`, `backup-target`, `ds-root-passw
 
 Reads servers' configuration back with the lineage's importers, `opendj/config` (observed snapshots, for drift), `opendj/declared` (one server's configuration as the declared configuration) and `opendj/access-log` (consumers from the JSON access log); OpenDJ's handler names are read back as the record's names. See `opsdir-base-ds`.
 
-Command and option names follow the OpenDJ 4.x documentation; verify them against the exact target version before use.
+Log files it declares for log routes (`logs.py`, relative to `ciamInstallRoot`): `logs/access` and `logs/http-access` (access), `logs/errors` and `logs/server.out` (error), `logs/replication` (replication), as the Open Identity Platform's administration guide names its defaults; the JSON access logger ships disabled and the audit log's default isn't stated, so neither is declared.
+
+The Open Identity Platform fork is at 5.x (5.1.2, 2026-07-17); this adapter still accepts OpenDJ >=4,<5 until milestone 5.13 verifies its commands against 5.x. Command and option names follow the OpenDJ 4.x documentation; verify them against the exact target version before use.
 
 Installing the package registers it with opsdir (entry point `opsdir.adapters`: `opendj`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.
 

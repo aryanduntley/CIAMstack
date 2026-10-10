@@ -25,7 +25,7 @@ from opsdir.core.inventory import of_types, resource, tagged_role
 from opsdir.domains.estate.budgets import budget_channel, budgets, currency, thresholds
 from opsdir.domains.estate.tags import tag_rules
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
-from .account import account_id
+from .account import account_id, govcloud
 from .tags import state_tags
 
 BUDGET = "aws_budgets_budget"
@@ -34,11 +34,6 @@ BILLING_REGION = "us-east-1"
 PERIODS = {"monthly": "MONTHLY", "quarterly": "QUARTERLY", "annually": "ANNUALLY"}
 PERIOD_OF = {v: k for k, v in PERIODS.items()}
 NOTIFIED = (("ciamActualThreshold", "ACTUAL"), ("ciamForecastThreshold", "FORECASTED"))
-
-
-def govcloud(m):
-    """Whether environment m's cloud runs in an AWS GovCloud (US) region."""
-    return (one(m.cloud, "ciamRegion") or "").startswith("us-gov-")
 
 
 def billing_account(m):

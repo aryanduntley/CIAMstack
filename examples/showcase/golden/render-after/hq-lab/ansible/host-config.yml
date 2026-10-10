@@ -299,6 +299,7 @@
         label: "{{ item.dest }}"
       register: ciam_host_files_written
       diff: false
+      when: item.hosts is not defined or inventory_hostname in item.hosts
       tags:
         - host-files
     - name: What reads a changed file takes it up

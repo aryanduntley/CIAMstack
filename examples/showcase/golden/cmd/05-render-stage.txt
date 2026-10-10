@@ -1,2 +1,2 @@
-rendered 70 files for env=stage,cloud=source,ou=environments,dc=ciam-ops (aws) → <OUT>/render-before/source-stage
+rendered 73 files for env=stage,cloud=source,ou=environments,dc=ciam-ops (aws) → <OUT>/render-before/source-stage
 exit 0

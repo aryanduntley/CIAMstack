@@ -35,7 +35,7 @@ from opsdir.core.settings import setting_value
 from opsdir.domains.edge.exposure import service_exposure
 from opsdir.domains.observability.canaries import canary_specs
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
-from .budgets import govcloud
+from .account import partition
 
 CANARY = "aws_synthetics_canary"
 SECRETS = "aws-sm://"
@@ -47,10 +47,6 @@ RUNTIME = Setting("aws-canary-runtime", "string", "syn-python-selenium-12.0",
 def canary_name(name):
     """A canary name as CloudWatch Synthetics allows it (lowercase letters, digits, - and _)."""
     return re.sub(r"[^a-z0-9_-]", "-", name.lower())
-
-
-def _partition(m):
-    return "aws-us-gov" if govcloud(m) else "aws"
 
 
 def _secret_arn(spec):
@@ -164,7 +160,7 @@ def _canary(m, spec, why, runtime):
 
 
 def _role(m, specs):
-    names, part = [canary_name(s.name) for s in specs], _partition(m)
+    names, part = [canary_name(s.name) for s in specs], partition(m)
     places = sorted({artifact_location(s) for s in specs})
     secrets = sorted({_secret_arn(s) for s in specs if s.flow == "oidc-token"})
     statements = [

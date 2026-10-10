@@ -6,6 +6,7 @@ from opsdir_base_ds.importers import importers
 from opsdir_base_ds.listeners import ds_listeners
 from opsdir_base_ds.profile import TERMS
 from opsdir_base_ds.product import runs
+from .logs import LOGS
 from .render import OPENDJ, render_neutral, setup_scripts
 from .replication import check_replication
 
@@ -25,4 +26,4 @@ ADAPTER = Adapter(name="opendj", kind="product", applies=applies, required_roles
                   formats=(*LINEAGE_FORMATS, ("ds/setup-*.sh", "shell")),
                   products=(("OpenDJ", ">=4,<5"),),
                   secret_patterns=(), importers=importers(OPENDJ), profile_terms=TERMS, access=None,
-                  listeners=ds_listeners, collectors=config_collectors("opendj", OPENDJ_FLAGS))
+                  listeners=ds_listeners, collectors=config_collectors("opendj", OPENDJ_FLAGS), logs=LOGS)

@@ -53,7 +53,7 @@
     "ansible/host-config.yml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "39cea0b569f010885486a7254d5525d20f5e98c410c2a17a8bd3613064bbf247"
+      "sha256": "40dc69cf93b359f447af54279837f9abc3178d2d51029502f4483f5538037e4c"
     },
     "ansible/inventory/ad-dns.yml": {
       "scope": "environment-specific",

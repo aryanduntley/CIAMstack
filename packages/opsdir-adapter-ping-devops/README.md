@@ -35,6 +35,12 @@ Per product (the one without a workload is `enabled: false`), from the record:
 
 - **Cluster discovery**: when the environment's `pf-cluster-discovery` binding is `DNS_PING` (opsdir-adapter-pingfederate's `pingfedClusterDiscovery`, `ciamFqdn`), `global.envs.DNS_QUERY_LOCATION` is its DNS name. The chart's own value is its cluster service, `pingfederate-pingfederate-cluster.<namespace>.svc.cluster.local` (headless, publishing unready pods), so the binding to record is that name; the planner check below offers it.
 
+- **Log sidecars** (`log_sidecars.py`, user decision 2348): one sidecar per PingFederate log file the environment's log routes pick (core `observability`: `ciamLogRoute` kinds from `pf-admin` / `pf-engine`), so each file's lines are its own container's output and the clouds' collectors tell them apart by container name. The image streams only `server.log` and `init.log` (`TAIL_LOG_FILES`) on its main container, with nothing marking which file a line is from.
+  - The files and their kinds are opsdir-adapter-pingfederate's declarations (`pingfederate/log/<file>`), declared here on kubernetes as container `pf-log-<file>` (`logs.py`), e.g. `pf-log-audit` (audit), `pf-log-runtime-request` (access), `pf-log-admin` (admin). The main container is the server log's (error).
+  - Each sidecar (top-level `sidecars`, the product's `includeSidecars`, as the pinned chart's `pinglib/_workload.tpl` reads them) runs the product's own image: `tail -n +1 -F /pf-out/instance/log/<file>`, with `out-dir` mounted read-only at `/pf-out`, 10m CPU and 16Mi requested, 64Mi limit, no privilege escalation.
+  - A StatefulSet shares its `out-dir` volume (`/opt/out`). A Deployment's `/opt/out` is the container's own, so the values add `out-dir` as an `emptyDir` (top-level `volumes`, `includeVolumes`) mounted at `/opt/out` on the main container. It is mounted at `/opt/out`, never at `/opt/out/instance/log`: the image's start hooks take an existing server root for a restart, and the kubelet would create it for that mount.
+  - Only the files a route picks get a sidecar; with no log routes the values have none.
+
 What the record doesn't hold stays the chart's default. That includes the engines' wait for the admin console (an init container running the chart's `pingidentity/pingtoolkit:2609`) and PingFederate's other clustering settings (`OPERATIONAL_MODE`, `DNS_RECORD_TYPE` A).
 
 ## Listeners

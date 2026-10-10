@@ -1943,6 +1943,12 @@ resource "aws_cloudwatch_log_group" "ops_logs" {
   }
 }
 
+# NOTE: role ds ships logs to ops-logs, but no workload principal acting for it holds the permit `write-logs ops-logs`: its servers' instance role isn't granted the writes
+
+# NOTE: role pf-engine ships logs to ops-logs, but no workload principal acting for it holds the permit `write-logs ops-logs`: its servers' instance role isn't granted the writes
+
+# NOTE: role pf-admin ships logs to audit-logs, but no workload principal acting for it holds the permit `write-logs audit-logs`: its servers' instance role isn't granted the writes
+
 resource "aws_cloudwatch_metric_alarm" "pf_login_failures" {
   alarm_name          = "pf-login-failures"
   alarm_description   = "Alert rule login-failures: login-failures gt 50 /min (opsdir)"

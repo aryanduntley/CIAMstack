@@ -19,6 +19,7 @@ from opsdir.domains.edge.resolve import inspected, service_edge
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
 from .access import ACCESS
 from .audit import render_trails
+from .log_agent import log_notes
 from .observability import render_alarms, render_log_groups
 from .canaries import render_canaries
 from .discovery import render_discovery
@@ -29,7 +30,8 @@ from .quotas import render_quota_requests
 from .cdn import alias, distribution
 from .dns import RESOLVER_ENDPOINT, records, resolver_rules, service_record
 from .edge import US_EAST_1, alb_service, health_check, servers_backend, shield, stickiness
-from .identities import EC2_TRUST, eks_data, notes, pod_trust, role
+from .fluent_bit import fluent_bit_clusters, fluent_bit_notes, render_fluent_bit
+from .identities import EC2_TRUST, eks_cluster_data, identity_clusters, notes, pod_trust, role
 from .ingress import gateway_front
 from .landing import render_landing
 from .network import render_network
@@ -174,14 +176,18 @@ def render(m, services):
     endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     kms, identities = secret(m, "disk-encryption"), workload_identities(m, ACCESS)
     canaries, scripts = render_canaries(m, endpoints)
-    out = (*network_data(m), *_security_groups(m), *eks_data(identities),
+    shipping, shipping_files = render_fluent_bit(m, services) if services else ((), {})
+    clusters = (*identity_clusters(identities), *(fluent_bit_clusters(m, services) if services else ()))
+    out = (*network_data(m), *_security_groups(m), *eks_cluster_data(clusters),
            *chain.from_iterable(_identity(m, w) for w in identities),
            *(_instance(m, s, kms, identities) for s in m.servers),
            *chain.from_iterable(server_volumes(m, s) for s in m.servers), *render_snapshot_policies(m),
            *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
-           *resolver_rules(m), *render_trails(m), *render_log_groups(m), *render_alarms(m), *canaries,
+           *resolver_rules(m), *render_trails(m), *render_log_groups(m),
+           *(log_notes(m, services) if services else ()), *shipping,
+           *(fluent_bit_notes(m, services) if services else ()), *render_alarms(m), *canaries,
            *render_security(m),
            *render_discovery(m), *render_suppressions(m),
            *render_budgets(m), *render_quota_requests(m),
@@ -203,5 +209,6 @@ def render(m, services):
             ("description", "The landing zone's outbound Route 53 Resolver endpoint the forwarding rules use"),
             ("type", ref("string"))]),) if forwarders(m, hosted=False) else ()),
     ]) + "\n"
-    return {"terraform/providers.tf": providers, "terraform/main.tf": main, **scripts, **render_landing(m),
+    return {"terraform/providers.tf": providers, "terraform/main.tf": main, **scripts, **shipping_files,
+            **render_landing(m),
             **evaluation_files(m, ACCESS, "AWS")}

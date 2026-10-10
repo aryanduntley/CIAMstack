@@ -147,7 +147,8 @@ def workspace_retention(days):
     return days, None
 
 
-def _workspace_name(b):
+def workspace_name(b):
+    """The Log Analytics workspace name a log destination's provider ref (a workspace ID) gives, or None."""
     ref_ = one(b, "ciamProviderRef") or ""
     marker = "/providers/microsoft.operationalinsights/workspaces/"
     i = ref_.lower().find(marker)
@@ -155,7 +156,7 @@ def _workspace_name(b):
 
 
 def _workspace(m, b):
-    cn, name = rdn_value(b), _workspace_name(b)
+    cn, name = rdn_value(b), workspace_name(b)
     if one(b, "ciamDestinationKind") != "workspace":
         return ()
     if keeper_of(m, b):
@@ -168,6 +169,14 @@ def _workspace(m, b):
         *((("#", why),) if why else ()), ("name", name), ("location", LOC), ("resource_group_name", RG),
         ("sku", "PerGB2018"), *((("retention_in_days", days),) if days is not None else ()),
         ("tags", tagged(m, {"BindingRole": one(b, "ciamBindingRole")}))]),)
+
+
+def workspace_id(m, b):
+    """The ID Terraform gives a log destination of kind workspace: the workspace rendered here when this root
+    renders it, else its recorded ID; None for another kind or no workspace ID."""
+    if b is None or one(b, "ciamDestinationKind") != "workspace" or workspace_name(b) is None:
+        return None
+    return one(b, "ciamProviderRef") if keeper_of(m, b) else ref(f"{WORKSPACE}.{tf_name(rdn_value(b))}.id")
 
 
 def render_workspaces(m):

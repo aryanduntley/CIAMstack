@@ -8,6 +8,16 @@ from opsdir.domains.estate.tags import required_tags
 from opsdir_format_terraform.hcl import Block, block
 
 
+def govcloud(m):
+    """Whether environment m's cloud runs in an AWS GovCloud (US) region."""
+    return (one(m.cloud, "ciamRegion") or "").startswith("us-gov-")
+
+
+def partition(m):
+    """The ARN partition environment m's cloud is in: aws-us-gov in GovCloud (US), else aws."""
+    return "aws-us-gov" if govcloud(m) else "aws"
+
+
 def account_id(m):
     """The AWS account environment m's cloud records (ciamAccountRef), or None."""
     return one(m.cloud, "ciamAccountRef")

@@ -10,6 +10,7 @@ from .cloudformation import CLOUDFORMATION
 from .inventory import TERRAFORM_STATE
 from .ingress import gateway_plug
 from .kubernetes import SECRET_DELIVERY, workload_identity
+from .log_agent import host_files
 from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
 from .regions import PREREQUISITE, REGIONS
 from .secrets import SECRET_PATTERNS, secretsmanager_command, secretsmanager_lookup
@@ -32,7 +33,7 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamOnProvider": (PROVIDER,),
                               "ciamCloudEnvironment": ("public",)}, schema=None,
                   formats=(("terraform/*.tf", "hcl"), ("terraform/canaries/*/python/*.py", "python"),
-                           ("access/*.sh", "shell")),
+                           ("access/*.sh", "shell"), ("kubernetes/fluent-bit/*", "yaml")),
                   products=(),
                   secret_patterns=SECRET_PATTERNS,
                   importers=(TERRAFORM_STATE, CLI_INVENTORY, CLOUDFORMATION, REGIONS, QUOTAS),
@@ -40,4 +41,4 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                   collectors=COLLECTORS,
                   workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY,
                   gateway_plug=gateway_plug, ansible_lookup={"aws-sm": secretsmanager_lookup},
-                  settings=(RUNTIME,))
+                  settings=(RUNTIME,), host_files=host_files)

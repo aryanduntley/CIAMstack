@@ -40,6 +40,11 @@ pingfederate-admin:
               resources:
                 requests:
                   storage: "8Gi"
+  includeSidecars:
+  - pf-log-admin
+  - pf-log-admin-event-detail
+  - pf-log-admin-api
+  - pf-log-admin-request
 pingfederate-engine:
   enabled: true
   image:
@@ -59,3 +64,209 @@ pingfederate-engine:
     labels:
       opsdir.io/role: pf-engine
       azure.workload.identity/use: "true"
+  includeSidecars:
+  - pf-log-runtime-request
+  - pf-log-request
+  - pf-log-audit
+  - pf-log-provisioner-audit
+  includeVolumes:
+  - out-dir
+  volumeMounts:
+  - name: out-dir
+    mountPath: /opt/out
+sidecars:
+  pf-log-admin:
+    image: crciamprod.azurecr.io/ciam/pingfederate:12.1.4
+    command:
+    - tail
+    args:
+    - "-n"
+    - "+1"
+    - "-F"
+    - /pf-out/instance/log/admin.log
+    volumeMounts:
+    - name: out-dir
+      mountPath: /pf-out
+      readOnly: true
+    resources:
+      requests:
+        cpu: "10m"
+        memory: "16Mi"
+      limits:
+        memory: "64Mi"
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+  pf-log-admin-event-detail:
+    image: crciamprod.azurecr.io/ciam/pingfederate:12.1.4
+    command:
+    - tail
+    args:
+    - "-n"
+    - "+1"
+    - "-F"
+    - /pf-out/instance/log/admin-event-detail.log
+    volumeMounts:
+    - name: out-dir
+      mountPath: /pf-out
+      readOnly: true
+    resources:
+      requests:
+        cpu: "10m"
+        memory: "16Mi"
+      limits:
+        memory: "64Mi"
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+  pf-log-admin-api:
+    image: crciamprod.azurecr.io/ciam/pingfederate:12.1.4
+    command:
+    - tail
+    args:
+    - "-n"
+    - "+1"
+    - "-F"
+    - /pf-out/instance/log/admin-api.log
+    volumeMounts:
+    - name: out-dir
+      mountPath: /pf-out
+      readOnly: true
+    resources:
+      requests:
+        cpu: "10m"
+        memory: "16Mi"
+      limits:
+        memory: "64Mi"
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+  pf-log-admin-request:
+    image: crciamprod.azurecr.io/ciam/pingfederate:12.1.4
+    command:
+    - tail
+    args:
+    - "-n"
+    - "+1"
+    - "-F"
+    - /pf-out/instance/log/admin-request.log
+    volumeMounts:
+    - name: out-dir
+      mountPath: /pf-out
+      readOnly: true
+    resources:
+      requests:
+        cpu: "10m"
+        memory: "16Mi"
+      limits:
+        memory: "64Mi"
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+  pf-log-runtime-request:
+    image: crciamprod.azurecr.io/ciam/pingfederate:12.1.4
+    command:
+    - tail
+    args:
+    - "-n"
+    - "+1"
+    - "-F"
+    - /pf-out/instance/log/runtime-request.log
+    volumeMounts:
+    - name: out-dir
+      mountPath: /pf-out
+      readOnly: true
+    resources:
+      requests:
+        cpu: "10m"
+        memory: "16Mi"
+      limits:
+        memory: "64Mi"
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+  pf-log-request:
+    image: crciamprod.azurecr.io/ciam/pingfederate:12.1.4
+    command:
+    - tail
+    args:
+    - "-n"
+    - "+1"
+    - "-F"
+    - /pf-out/instance/log/request.log
+    volumeMounts:
+    - name: out-dir
+      mountPath: /pf-out
+      readOnly: true
+    resources:
+      requests:
+        cpu: "10m"
+        memory: "16Mi"
+      limits:
+        memory: "64Mi"
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+  pf-log-audit:
+    image: crciamprod.azurecr.io/ciam/pingfederate:12.1.4
+    command:
+    - tail
+    args:
+    - "-n"
+    - "+1"
+    - "-F"
+    - /pf-out/instance/log/audit.log
+    volumeMounts:
+    - name: out-dir
+      mountPath: /pf-out
+      readOnly: true
+    resources:
+      requests:
+        cpu: "10m"
+        memory: "16Mi"
+      limits:
+        memory: "64Mi"
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+  pf-log-provisioner-audit:
+    image: crciamprod.azurecr.io/ciam/pingfederate:12.1.4
+    command:
+    - tail
+    args:
+    - "-n"
+    - "+1"
+    - "-F"
+    - /pf-out/instance/log/provisioner-audit.log
+    volumeMounts:
+    - name: out-dir
+      mountPath: /pf-out
+      readOnly: true
+    resources:
+      requests:
+        cpu: "10m"
+        memory: "16Mi"
+      limits:
+        memory: "64Mi"
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+volumes:
+  out-dir:
+    emptyDir: {}

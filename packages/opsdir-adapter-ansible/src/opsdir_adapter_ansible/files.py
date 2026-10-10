@@ -4,10 +4,12 @@ role's servers: the file's own text kept verbatim in raw blocks, each secret pla
 read at run time on the controller (output.secret_lookup). A file isn't deployed, and is named with why, when a
 placeholder can't be read (no scheme, or one no installed adapter resolves) or its target role has no servers here.
 The files other adapters render for the servers (Services.host_files: agents' configuration) become templates the
-same way, under host-files/<role>/, each with the command that makes what reads it take it up. Pure."""
+same way, under host-files/<role>/ (host-files/<role>/<first server>/ for a file only some of the role's servers
+receive: those a file is for don't overlap with another file's at the same path), each with the command that makes
+what reads it take it up and, when it isn't for all of them, the host names of the servers that receive it. Pure."""
 import re
 
-from opsdir.core.directory import one
+from opsdir.core.directory import one, rdn_value
 from .names import ROOT
 from .output import secret_lookup
 
@@ -47,16 +49,21 @@ def config_templates(m, services):
             [_not_deployed(dest, role, bad) for role, dest, _, t, bad in found if t is None or role not in served])
 
 
+def _host_repo(f):
+    return "/".join(("host-files", f.server_role, *f.hosts[:1], f.path.lstrip("/")))
+
+
 def host_file_templates(m, services):
-    """({path under ansible/templates/: template text}, {role: [{src, dest, mode[, reload]}]}, [not deployed: why])
-    of the files the adapters rendering m render for its servers (Services.host_files)."""
+    """({path under ansible/templates/: template text}, {role: [{src, dest, mode[, reload][, hosts]}]}, [not deployed:
+    why]) of the files the adapters rendering m render for its servers (Services.host_files)."""
     served = {one(s, "ciamServerRole") for s in m.servers}
-    found = [(f, f"host-files/{f.server_role}/{f.path.lstrip('/')}", *template(m, services, f.text))
-             for f in services.host_files(m)]
+    hostname = {rdn_value(s): one(s, "ciamHostname") for s in m.servers}
+    found = [(f, _host_repo(f), *template(m, services, f.text)) for f in services.host_files(m)]
     deployed = [(f, repo, t) for f, repo, t, _ in found if t is not None and f.server_role in served]
     return ({f"{TEMPLATES}/{repo}.j2": t for _, repo, t in deployed},
             {role: [{"src": f"{repo}.j2", "dest": f.path, "mode": f.mode,
-                     **({"reload": list(f.reload)} if f.reload else {})}
+                     **({"reload": list(f.reload)} if f.reload else {}),
+                     **({"hosts": [hostname[h] for h in f.hosts if h in hostname]} if f.hosts else {})}
                     for f, repo, _ in deployed if f.server_role == role]
              for role in dict.fromkeys(f.server_role for f, *_ in deployed)},
             [_not_deployed(f.path, f.server_role, bad) for f, _, t, bad in found

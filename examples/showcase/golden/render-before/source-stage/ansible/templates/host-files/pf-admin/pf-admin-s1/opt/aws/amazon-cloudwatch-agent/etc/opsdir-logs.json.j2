@@ -1,0 +1,31 @@
+{% raw %}{
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/opt/ping/pingfederate-12.1.4/pingfederate/log/admin.log",
+            "log_group_name": "/ciam/prod/audit",
+            "log_stream_name": "{instance_id}/pingfederate/log/admin.log"
+          },
+          {
+            "file_path": "/opt/ping/pingfederate-12.1.4/pingfederate/log/admin-event-detail.log",
+            "log_group_name": "/ciam/prod/audit",
+            "log_stream_name": "{instance_id}/pingfederate/log/admin-event-detail.log"
+          },
+          {
+            "file_path": "/opt/ping/pingfederate-12.1.4/pingfederate/log/admin-api.log",
+            "log_group_name": "/ciam/prod/audit",
+            "log_stream_name": "{instance_id}/pingfederate/log/admin-api.log"
+          },
+          {
+            "file_path": "/opt/ping/pingfederate-12.1.4/pingfederate/log/admin-request.log",
+            "log_group_name": "/ciam/prod/audit",
+            "log_stream_name": "{instance_id}/pingfederate/log/admin-request.log"
+          }
+        ]
+      }
+    }
+  }
+}
+{% endraw %}

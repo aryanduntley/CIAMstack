@@ -77,7 +77,7 @@
     "ansible/host-config.yml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "1f7532e3330727dae6474c4873640bac867d44f9e71c764b3fbc6350abf2fd10"
+      "sha256": "06957034bb3dba52ed23f79e411f4475a276827a1598fa5632697cd8ad1b25e4"
     },
     "ansible/inventory/group_vars/all.yml": {
       "scope": "environment-specific",
@@ -92,7 +92,7 @@
     "ansible/inventory/group_vars/ds.yml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "a13d822416f42be7d1443257b4752e9d1a2cef51abff95b4e815ae8a151cac31"
+      "sha256": "49391d172b84fb845b995e3932b70ee859e0d62aa4c4335819d824c5a3b8313a"
     },
     "ansible/inventory/group_vars/idm.yml": {
       "scope": "environment-specific",
@@ -107,12 +107,12 @@
     "ansible/inventory/group_vars/pf_admin.yml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "cdfbe833974cd6f2b7203690c46c05d61779ff397741d571da3f2309b4909bc2"
+      "sha256": "24a49cf2188dbfc0eeb35fc4bf746cce3ae8318293204584db972503ac11bff0"
     },
     "ansible/inventory/group_vars/pf_engine.yml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "032a0e62a7947c608881253e550e0a14caf8c6655c13b689449906e10f2b5e84"
+      "sha256": "507286bccf2ae61a3f871e55f4f1f1e6f995280fac426c5adb512d3ea635b759"
     },
     "ansible/inventory/host_vars/am-1.aws.internal.example-aero.test.yml": {
       "scope": "environment-specific",
@@ -173,6 +173,21 @@
       "scope": "environment-specific",
       "format": "yaml",
       "sha256": "505f263c60450e0ea884316c7d23657b8395b657ed0d6c0f866d5e7bfeea22cc"
+    },
+    "ansible/templates/host-files/ds/ds-1/opt/aws/amazon-cloudwatch-agent/etc/opsdir-logs.json.j2": {
+      "scope": "environment-specific",
+      "format": "text",
+      "sha256": "ffef8e39db2095afb1b83f8e4d17ff5be323f36da2416a76e5c650de30b985ef"
+    },
+    "ansible/templates/host-files/pf-admin/pf-admin-1/opt/aws/amazon-cloudwatch-agent/etc/opsdir-logs.json.j2": {
+      "scope": "environment-specific",
+      "format": "text",
+      "sha256": "4372e52c0813088173f83628c26a44be31afe232db585e856feb39c32fc18d0f"
+    },
+    "ansible/templates/host-files/pf-engine/pf-engine-1/opt/aws/amazon-cloudwatch-agent/etc/opsdir-logs.json.j2": {
+      "scope": "environment-specific",
+      "format": "text",
+      "sha256": "7409126988dad94e2f9c3990ee16da29fe2f5af3f42d67d74a2db933e395843c"
     },
     "ansible/templates/pingfederate/bin/run.properties.j2": {
       "scope": "environment-specific",
@@ -388,7 +403,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "605e85a453760d83a468d58bc7b1a45da6a576ec8d1acf7312678e25316ae354"
+      "sha256": "4e9f501cbe28298493c3dc6c6df8a9bc8ca6da13c129b331b63fda349a19575c"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

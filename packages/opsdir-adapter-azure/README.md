@@ -143,6 +143,18 @@ The core `observability` domain's alerting, log destinations and synthetic check
 | Not rendered, as a NOTE | An `oidc-token` canary (a standard test can't read a secret when it runs: its credentials would sit in the test), a service name that isn't internet-facing, a SAML or LDAP flow |
 | Kept elsewhere: someone else keeps it (`ciamManagedBy`), or an overlay inherits it from its base | A comment naming the keeper |
 
+### Log routing: product logs to their workspaces
+
+Each log route (core `observability`: `ciamLogRoute`) ships the logs its server roles' products declare (`LogSource`s; what a route picks: `domains/observability/sources`) to the Log Analytics workspace its `ciamLogDestinationRole` names here. Terraform only; opsdir configures what the Azure Monitor Agent collects and doesn't install it. Sources: research notes 2352 and 2354.
+
+| Where the role runs | Renders as |
+|---|---|
+| Virtual machines (`log_collection.py`) | Per route: `azurerm_log_analytics_workspace_table_custom_log` `Ciam<Route>_CL` (TimeGenerated, RawData, FilePath, Computer) and `azurerm_monitor_data_collection_rule` `dcr-ciam-<env>-<route>` to that one workspace: a text `log_file` source and stream per file under each install root (`ciamInstallRoot`), each with its transformation (`source`, or `source \| where` the route's kinds on `parse_json(RawData)`, `kql.py`) into `Custom-Ciam<Route>_CL`; an `azurerm_monitor_data_collection_rule_association` per server's VM |
+| AKS (`container_logs.py`) | Container insights multitenant logging. Per cluster a data collection endpoint (`kind Linux`; high-scale logging ingests through it); per cluster and route a `ContainerLogV2Extension` rule (stream `Microsoft-ContainerLogV2-HighScale`, settings `{"dataCollectionSettings":{"namespaces":[...]}}`, the route's workspace) whose transformation keeps a role's pods (`KubernetesMetadata.podLabels["opsdir.io/role"]`, set by the deployment kits), its source's container (a kit's log sidecar, e.g. ping-devops's `pf-log-<file>`; the role's other containers for its main source) and the route's kinds (`LogMessage`); its association to the cluster. `kubernetes/azure-monitor/<cluster>/container-azm-ms-agentconfig.yaml`: the agent's ConfigMap in `kube-system` turning on high-scale logging, multitenancy and pod-label metadata (it replaces a ConfigMap of that name: merge it with one the cluster has) |
+| Named in `main.tf` (`# NOTE`) | A destination that isn't a workspace here; a file whose records span lines (the agent starts a record only at a timestamp of a fixed set of formats: each line arrives as one); that the VMs need the Azure Monitor Agent extension (`Microsoft.Azure.Monitor` `AzureMonitorLinuxAgent`); a role on Kubernetes in no bound cluster; more than 30 multitenant rules on a cluster; in Azure Government, that custom text logs and multitenant logging are to be confirmed there |
+
+Known limits: not validated against a live workspace or cluster (7.2). Azure Government availability of custom text log collection and of multitenant logging has no Government-specific row in Microsoft's docs (the agent itself is GA there). Off-Azure servers (Arc) aren't rendered.
+
 ## Reading an environment back from Terraform state
 
 ```bash

@@ -24,7 +24,7 @@ from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.discovery import custom_identifiers, destination, discovery_services
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 from .account import account_id
-from .budgets import govcloud
+from .account import govcloud
 from .security import findings_routes, findings_routing
 from .storage import bucket_of, key_arn
 

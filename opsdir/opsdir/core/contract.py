@@ -194,9 +194,11 @@ Signal = namedtuple("Signal", ("signal", "server_role", "expr", "unit", "descrip
 # none); match ((JSON field, value prefix, kind), ...): the first rule whose field's value starts with the prefix gives
 # a JSON line's kind ("" for any value: the field is there); line_start the regular expression a record's first line
 # starts with, when records span lines (stack traces), else None; requires the product setting that must be on for the
-# log to exist, in words, or None. Products and kits declare only what their documentation states.
+# log to exist, in words, or None; container (on kubernetes) the container of the role's pods whose output it is (a
+# kit's log sidecar), None for the role's containers no other of its sources names. Products and kits declare only
+# what their documentation states.
 LogSource = namedtuple("LogSource", ("server_role", "on", "path", "format", "kind", "match", "line_start",
-                                     "requires"), defaults=((), None, None))
+                                     "requires", "container"), defaults=((), None, None, None))
 
 # A port a product's servers listen on: server_role the role of the servers, port and protocol (tcp or udp), purpose in
 # words (LDAPS, replication, cluster), peers who connects: any of clients (consumers, directly or through service
@@ -228,8 +230,11 @@ ProxySetting = namedtuple("ProxySetting", ("server_role", "place", "file", "loca
 # agent's configuration: the CloudWatch agent's, the Ops Agent's): server_role the servers that receive it, path where
 # it goes on them (absolute), text its content (a secret placeholder ${secret:<ref-uri>} is read at run time, as in a
 # captured file), reload the command that makes what reads it take it up (run when the file changes; argv words, no
-# shell), or None; mode the file's permissions. Configure-only: what reads it is installed by the host's baseline.
-HostFile = namedtuple("HostFile", ("server_role", "path", "text", "reload", "mode"), defaults=(None, "0644"))
+# shell), or None; mode the file's permissions; hosts the names of the role's servers that receive it (their record
+# names), () for every one (a file whose text differs per server, as each server's install root does, is one HostFile
+# per group of servers it is the same for). Configure-only: what reads it is installed by the host's baseline.
+HostFile = namedtuple("HostFile", ("server_role", "path", "text", "reload", "mode", "hosts"),
+                      defaults=(None, "0644", ()))
 
 # Data an adapter needs from its provider before the record is complete (a provider's region catalog): fetched with one
 # of its importers (by name; its commands say how), met when met(directory) says the record holds it. Needed once the

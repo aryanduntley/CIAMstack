@@ -52,19 +52,42 @@ def _eks(cluster):
     return tf_name(eks_cluster_name(cluster))
 
 
-def eks_data(identities):
-    """The EKS clusters (and their IAM OIDC providers) whose service accounts the identities trust, as data sources:
-    the provider is whoever made the cluster's (the issuer is the cluster's)."""
-    clusters = {c.dn: c for w in identities for c in (p.cluster for p in w.pods) if c is not None}.values()
-    return tuple(x for c in clusters for x in (
+def identity_clusters(identities):
+    """The EKS clusters (bindings) whose service accounts the identities trust, without repeats."""
+    return tuple({c.dn: c for w in identities for c in (p.cluster for p in w.pods) if c is not None}.values())
+
+
+def eks_cluster_data(clusters):
+    """EKS clusters and their IAM OIDC providers as data sources (once each): the provider is whoever made the
+    cluster's (the issuer is the cluster's)."""
+    return tuple(x for c in {c.dn: c for c in clusters}.values() for x in (
         block("data", ["aws_eks_cluster", _eks(c)], [("name", eks_cluster_name(c))]),
         block("data", ["aws_iam_openid_connect_provider", _eks(c)], [
             ("url", ref(f"data.aws_eks_cluster.{_eks(c)}.identity[0].oidc[0].issuer"))])))
 
 
+def eks_data(identities):
+    """The EKS clusters (and their IAM OIDC providers) whose service accounts the identities trust, as data
+    sources."""
+    return eks_cluster_data(identity_clusters(identities))
+
+
 def _issuer_key(c, claim):
     return ref(f'join(":", [trimprefix(data.aws_eks_cluster.{_eks(c)}.identity[0].oidc[0].issuer, "https://"), '
                f'"{claim}"])')
+
+
+def irsa_statement(cluster, subjects):
+    """A trust policy statement (IRSA) letting service accounts (subjects: system:serviceaccount:<namespace>:<name>)
+    of an EKS cluster assume a role through the cluster's OIDC provider, audience sts.amazonaws.com."""
+    return ("statement", Block((
+        ("actions", ["sts:AssumeRoleWithWebIdentity"]),
+        ("principals", Block((("type", "Federated"),
+                              ("identifiers", [ref(f"data.aws_iam_openid_connect_provider.{_eks(cluster)}.arn")])))),
+        ("condition", Block((("test", "StringEquals"), ("variable", _issuer_key(cluster, "sub")),
+                             ("values", list(subjects))))),
+        ("condition", Block((("test", "StringEquals"), ("variable", _issuer_key(cluster, "aud")),
+                             ("values", ["sts.amazonaws.com"])))))))
 
 
 def pod_trust(w):
@@ -80,15 +103,9 @@ def pod_trust(w):
         return None, unbound
     ec2 = (("statement", Block((("actions", ["sts:AssumeRole"]), ("principals", Block((
         ("type", "Service"), ("identifiers", ["ec2.amazonaws.com"]))))))),) if w.servers else ()
-    pods = tuple(("statement", Block((
-        ("actions", ["sts:AssumeRoleWithWebIdentity"]),
-        ("principals", Block((("type", "Federated"),
-                              ("identifiers", [ref(f"data.aws_iam_openid_connect_provider.{_eks(c)}.arn")])))),
-        ("condition", Block((("test", "StringEquals"), ("variable", _issuer_key(c, "sub")),
-                             ("values", [f"system:serviceaccount:{p.namespace}:{p.service_account}"
-                                         for p in w.pods if p.cluster is not None and p.cluster.dn == c.dn])))),
-        ("condition", Block((("test", "StringEquals"), ("variable", _issuer_key(c, "aud")),
-                             ("values", ["sts.amazonaws.com"]))))))) for c in clusters)
+    pods = tuple(irsa_statement(c, [f"system:serviceaccount:{p.namespace}:{p.service_account}"
+                                    for p in w.pods if p.cluster is not None and p.cluster.dn == c.dn])
+                 for c in clusters)
     return block("data", ["aws_iam_policy_document", f"{n}_trust"], [*ec2, *pods]), unbound
 
 

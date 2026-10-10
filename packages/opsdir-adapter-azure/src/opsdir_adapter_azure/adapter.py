@@ -30,7 +30,7 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                   neutral_label=None,
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamOnProvider": (PROVIDER,),
                               "ciamCloudEnvironment": ("public", "usgovernment")}, schema=None,
-                  formats=(("terraform/*.tf", "hcl"),),
+                  formats=(("terraform/*.tf", "hcl"), ("kubernetes/azure-monitor/*", "yaml")),
                   products=(),
                   secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY, ARM, REGIONS, QUOTAS),
                   profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE),

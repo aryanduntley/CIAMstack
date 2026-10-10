@@ -49,3 +49,18 @@ ciam_firewall_rules:
   - "rule family=\"ipv4\" source address=\"10.20.2.0/24\" port port=\"8989\" protocol=\"tcp\" accept"
   - "rule family=\"ipv4\" source address=\"10.20.3.0/24\" port port=\"8989\" protocol=\"tcp\" accept"
   - "rule family=\"ipv4\" source address=\"10.60.1.0/24\" port port=\"8989\" protocol=\"tcp\" accept"
+ciam_host_files:
+  - src: host-files/ds/ds-s1/opt/aws/amazon-cloudwatch-agent/etc/opsdir-logs.json.j2
+    dest: /opt/aws/amazon-cloudwatch-agent/etc/opsdir-logs.json
+    mode: "0644"
+    reload:
+      - /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl
+      - "-a"
+      - append-config
+      - "-m"
+      - ec2
+      - "-s"
+      - "-c"
+      - file:/opt/aws/amazon-cloudwatch-agent/etc/opsdir-logs.json
+    hosts:
+      - ds-s1.aws.internal.example-aero.test

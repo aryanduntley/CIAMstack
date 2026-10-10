@@ -157,3 +157,19 @@ def test_other_adapters_files_are_placed_and_reloaded_when_they_change():
     assert reload["ansible.builtin.command"] == {"argv": "{{ item.item.reload }}"}      # no shell
     assert "selectattr('changed')" in reload["loop"]
     assert "ciam_host_files" not in load(render(alpha, _services())["ansible/inventory/group_vars/ds.yml"])
+
+
+def test_a_file_for_some_of_a_roles_servers_goes_only_to_them():
+    _, alpha = host_config_model()
+    path = "/opt/aws/amazon-cloudwatch-agent/etc/opsdir-logs.json"
+    first, second = (HostFile("ds", path, f'{{"root": "{root}"}}\n', hosts=(host,))
+                     for root, host in (("/opt/ds", "ds-1"), ("/srv/ds", "ds-2")))
+    files = render(alpha, _services()._replace(host_files=lambda m: (first, second)))
+    assert files["ansible/templates/host-files/ds/ds-2/opt/aws/amazon-cloudwatch-agent/etc/opsdir-logs.json.j2"] == (
+        '{% raw %}{"root": "/srv/ds"}\n{% endraw %}')
+    assert load(files["ansible/inventory/group_vars/ds.yml"])["ciam_host_files"] == [
+        {"src": f"host-files/ds/{h}{path}.j2", "dest": path, "mode": "0644", "hosts": [f"{h}.example.test"]}
+        for h in ("ds-1", "ds-2")]
+    (play,) = load(files["ansible/host-config.yml"])
+    written = next(t for t in play["tasks"] if t["name"] == "Files other adapters render for the servers")
+    assert written["when"] == "item.hosts is not defined or inventory_hostname in item.hosts"

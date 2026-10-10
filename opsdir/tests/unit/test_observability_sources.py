@@ -11,8 +11,10 @@ from opsdir.core.interchange.ldif import parse
 from opsdir.domains.compute.naming import WORKLOADS, workload_dn
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.naming import LOG_ROUTES
-from opsdir.domains.observability.sources import (ALL, NONE, SOME, collection_rows, collections, declaration_problems,
-                                                  kind_of, kinds_of, picks, route_sources, unrooted)
+from opsdir.domains.observability.sources import (ALL, Clause, NONE, SOME, collection_rows, collections,
+                                                  declaration_problems, kind_of, kinds_of, kept_clauses, picks,
+                                                  route_sources, shipments, under, unpermitted,
+                                                  unrooted)
 import mini_estate
 from support import REGISTRY, build_directory
 
@@ -39,6 +41,24 @@ def test_a_route_picks_all_some_or_none_of_a_source():
     assert picks(ERRORS, ("error",)) == ALL
 
 
+def test_the_clauses_keep_exactly_the_lines_of_the_wanted_kinds():
+    access, any_event = ("eventName", "AM-ACCESS-"), ("eventName", "")
+    assert kept_clauses(AM, ("access",)) == (Clause(access, ()),)
+    assert kept_clauses(AM, ("audit",)) == (Clause(any_event, (access,)),)       # an access event isn't audit
+    assert kept_clauses(AM, ("debug",)) == (Clause(None, (access, any_event)),)
+    assert kept_clauses(AM, ("access", "debug")) == (Clause(access, ()), Clause(None, (any_event,)))
+    assert kept_clauses(AM, ("error",)) == ()
+    lines = ({"eventName": "AM-ACCESS-OUTCOME"}, {"eventName": "AM-CONFIG"}, {"message": "x"}, None)
+
+    def holds(clause, record):
+        def hit(rule):
+            return record is not None and isinstance(record.get(rule[0]), str) and record[rule[0]].startswith(rule[1])
+        return (clause.match is None or hit(clause.match)) and not any(hit(r) for r in clause.excluded)
+    for kinds in (("access",), ("audit",), ("debug",), ("access", "debug"), ("audit", "debug"), ("access", "audit")):
+        assert [any(holds(c, r) for c in kept_clauses(AM, kinds)) for r in lines] == [
+            kind_of(AM, r) in kinds for r in lines]
+
+
 def test_a_route_reads_the_sources_of_its_roles_and_kinds():
     sources = (AM, ERRORS, ACCESS)
     assert route_sources(sources, ("ds", "am"), ("access",)) == ((AM, SOME), (ACCESS, ALL))
@@ -55,17 +75,20 @@ def test_declarations_are_checked():
         "a file on servers needs a path relative to the install root", "match rules need JSON lines")
     assert declaration_problems(LogSource("am", "kubernetes", "x", "text", "error")) == (
         "container output has no path",)
+    assert declaration_problems(LogSource("ds", "servers", "x", "text", "error", container="tail")) == (
+        "a file on servers has no container",)
 
 
 def _adapters():
     from opsdir_adapter_forgeops.adapter import ADAPTER as FORGEOPS
+    from opsdir_adapter_opendj.adapter import ADAPTER as OPENDJ
     from opsdir_adapter_ping_devops.adapter import ADAPTER as PING_DEVOPS
     from opsdir_adapter_pingam.adapter import ADAPTER as PINGAM
     from opsdir_adapter_pingds.adapter import ADAPTER as PINGDS
     from opsdir_adapter_pingfederate.adapter import ADAPTER as PINGFEDERATE
     from opsdir_adapter_pinggateway.adapter import ADAPTER as PINGGATEWAY
     from opsdir_adapter_pingidm.adapter import ADAPTER as PINGIDM
-    return {a.name: a for a in (FORGEOPS, PING_DEVOPS, PINGAM, PINGDS, PINGFEDERATE, PINGGATEWAY, PINGIDM)}
+    return {a.name: a for a in (FORGEOPS, OPENDJ, PING_DEVOPS, PINGAM, PINGDS, PINGFEDERATE, PINGGATEWAY, PINGIDM)}
 
 
 def test_every_declared_source_is_well_formed():
@@ -108,6 +131,7 @@ def _destination(env):
 
 RECORDS = (
     _server(ALPHA, "web-1", "web", "/opt/web"), _server(ALPHA, "web-2", "web"), _server(BETA, "web-b1", "web"),
+    _server(ALPHA, "web-3", "web", "/srv/web/"), _server(ALPHA, "web-4", "web", "/opt/web"),
     _destination(ALPHA), _destination(BETA),
     f"dn: {WORKLOADS}\nobjectClass: top\nobjectClass: organizationalUnit\nou: workloads\n",
     f"dn: {workload_dn('app')}\nobjectClass: top\nobjectClass: ciamWorkload\ncn: app\nciamWorkloadKind: deployment\n"
@@ -130,7 +154,7 @@ def _record():
 
 def test_servers_without_an_install_root_are_named():
     d = _record()
-    assert unrooted(env_model(d, "alpha/prod"), "web") == ("web-2",)
+    assert unrooted(env_model(d, "alpha/prod"), "web") == ("web-2",)       # web-1, 3, 4 record one
     assert unrooted(env_model(d, "beta/prod"), "web") == ("web-b1",)
 
 
@@ -146,6 +170,8 @@ def test_each_route_collects_from_where_its_roles_run():
         ("errors", "web", "servers", "", "", "its logs here hold only audit")]
     assert collection_rows(beta, log_routes(d), (APP,))[0] == (
         "audit", "web", "servers", "", "", "no product declares its logs here")
+    assert collection_rows(beta, log_routes(d), (APP._replace(container="audit-tail"),))[1][3] == (
+        "container audit-tail output")
 
 
 def _plan(d, *sources):
@@ -168,3 +194,38 @@ def test_what_the_target_cant_collect_is_an_action():
         "servers (its logs here hold only error): nothing ships them from there."]
     assert _plan(_record(), WEB._replace(path=None, on="kubernetes", server_role="app"),
                  WEB._replace(path="logs/x", kind="audit")).actions[0][1].startswith("Servers of role `web`")
+
+
+def test_a_route_ships_per_install_root_to_the_binding_its_destination_role_names():
+    d = _record()
+    alpha, beta = env_model(d, "alpha/prod"), env_model(d, "beta/prod")
+    assert under("/srv/web/", "/logs/x") == "/srv/web/logs/x"
+    assert [(x.route.dn.split(",")[0], x.role, x.on, x.lines, x.destination.dn.split(",")[0], x.root, x.path, x.hosts)
+            for x in shipments(alpha, log_routes(d), (WEB, APP))] == [
+        ("cn=audit", "web", "servers", ALL, "cn=audit", "/opt/web", "/opt/web/logs/audit.log", ("web-1", "web-4")),
+        ("cn=audit", "web", "servers", ALL, "cn=audit", "/srv/web/", "/srv/web/logs/audit.log", ("web-3",))]
+    (container,) = shipments(beta, log_routes(d), (WEB, APP))          # web-b1 records no root: nothing on servers
+    assert (container.role, container.on, container.lines, container.root, container.path, container.hosts) == (
+        "app", "kubernetes", SOME, None, None, ())
+    errors = WEB._replace(kind="error")
+    (shipped,) = [x for x in shipments(alpha, log_routes(d), (errors,)) if x.hosts == ("web-3",)]
+    assert shipped.destination is None                                 # alpha binds no ops-logs
+
+
+def test_a_role_shipping_where_no_principal_lets_it_write_is_named():
+    from opsdir.domains.access.naming import PERMISSION_SETS, PRINCIPALS
+    d = _record()
+    alpha = env_model(d, "alpha/prod")
+    found = shipments(alpha, log_routes(d), (WEB, WEB._replace(kind="error")))
+    assert unpermitted(alpha, found) == (("web", "audit-logs"), ("web", "ops-logs"))
+    granted = build_directory(REGISTRY, tuple(parse(mini_estate.LDIF + "\n" + "\n".join((*RECORDS,
+        f"dn: {PERMISSION_SETS}\nobjectClass: top\nobjectClass: organizationalUnit\nou: permission-sets\n",
+        f"dn: cn=web-runtime,{PERMISSION_SETS}\nobjectClass: top\nobjectClass: ciamObject\n"
+        "objectClass: ciamPermissionSet\ncn: web-runtime\nciamPermits: write-logs audit-logs\n",
+        f"dn: {PRINCIPALS}\nobjectClass: top\nobjectClass: organizationalUnit\nou: principals\n",
+        f"dn: cn=web,{PRINCIPALS}\nobjectClass: top\nobjectClass: ciamObject\nobjectClass: ciamPrincipal\n"
+        f"cn: web\nciamPrincipalKind: workload\nciamIdentityRole: identity-web\nciamTargetRole: web\n"
+        f"ciamHoldsSet: cn=web-runtime,{PERMISSION_SETS}\n")))))
+    alpha = env_model(granted, "alpha/prod")
+    assert unpermitted(alpha, shipments(alpha, log_routes(granted), (WEB, WEB._replace(kind="error")))) == (
+        ("web", "ops-logs"),)

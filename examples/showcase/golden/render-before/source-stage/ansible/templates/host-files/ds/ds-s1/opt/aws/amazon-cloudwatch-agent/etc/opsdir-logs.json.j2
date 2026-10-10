@@ -1,0 +1,26 @@
+{% raw %}{
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/opt/ping/opendj/logs/ldap-access.audit.json",
+            "log_group_name": "/ciam/prod/access",
+            "log_stream_name": "{instance_id}/logs/ldap-access.audit.json"
+          },
+          {
+            "file_path": "/opt/ping/opendj/logs/http-access.audit.json",
+            "log_group_name": "/ciam/prod/access",
+            "log_stream_name": "{instance_id}/logs/http-access.audit.json"
+          },
+          {
+            "file_path": "/opt/ping/opendj/logs/audit",
+            "log_group_name": "/ciam/prod/audit",
+            "log_stream_name": "{instance_id}/logs/audit"
+          }
+        ]
+      }
+    }
+  }
+}
+{% endraw %}

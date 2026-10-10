@@ -39,3 +39,18 @@ ciam_firewall_rules:
   - "rule family=\"ipv4\" source address=\"10.20.4.0/24\" port port=\"7700\" protocol=\"tcp\" accept"
   - "rule family=\"ipv4\" source address=\"10.20.5.0/24\" port port=\"7600\" protocol=\"tcp\" accept"
   - "rule family=\"ipv4\" source address=\"10.20.5.0/24\" port port=\"7700\" protocol=\"tcp\" accept"
+ciam_host_files:
+  - src: host-files/pf-admin/pf-admin-s1/opt/aws/amazon-cloudwatch-agent/etc/opsdir-logs.json.j2
+    dest: /opt/aws/amazon-cloudwatch-agent/etc/opsdir-logs.json
+    mode: "0644"
+    reload:
+      - /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl
+      - "-a"
+      - append-config
+      - "-m"
+      - ec2
+      - "-s"
+      - "-c"
+      - file:/opt/aws/amazon-cloudwatch-agent/etc/opsdir-logs.json
+    hosts:
+      - pf-admin-s1.aws.internal.example-aero.test
