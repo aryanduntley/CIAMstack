@@ -19,7 +19,7 @@ from typing import Callable, NamedTuple, Optional
 import xml.etree.ElementTree as ET
 
 from opsdir.core.changeset import delete_entry, new_entry
-from opsdir.core.directory import is_a, one, rdn_value, values
+from opsdir.core.directory import is_a, make_entry, one, rdn_value, values
 from opsdir.core.environment import one_role
 from opsdir.core.findings import Fix, Input, Option, bindings_container
 from opsdir.core.interchange.ldif import LdifRecord
@@ -125,6 +125,21 @@ def _attrs(protocol, given=None):
     return {"pingfedDiscoveryProtocol": (protocol.name,), **({needed[0]: (value,)} if needed else {})}
 
 
+def discovery_entry(m, b, protocol, attrs):
+    """The pingfedClusterDiscovery entry binding environment m's discovery with protocol (attrs: its
+    pingfedDiscoveryProtocol and what the protocol needs, {attribute: (value,)}): b with them set when b is one (what
+    the protocol doesn't need dropped), else a new binding under b's name (pf-discovery when m binds none) in m, b's
+    owners kept."""
+    if b is not None and is_a(b, "pingfedClusterDiscovery"):
+        stale = {a for a, _ in _NEEDS.values() if a not in attrs}
+        return make_entry(b.dn, b.classes, {**{k: v for k, v in b.attrs.items() if k not in stale}, **attrs})
+    cn = rdn_value(b) if b is not None else "pf-discovery"
+    owners = {"ciamOwner": values(b, "ciamOwner")} if b is not None and values(b, "ciamOwner") else {}
+    return make_entry(f"cn={cn},ou=bindings,{m.dn}", ("top", "pingfedClusterDiscovery"),
+                      {"cn": (cn,), "ciamBindingRole": (DISCOVERY_ROLE,), **owners, **attrs,
+                       "description": (f"PingFederate cluster discovery ({protocol.name})",)})
+
+
 def _records(m, b, protocol, given=None):
     """The records binding environment m's discovery with protocol: a new binding when it has none, the binding's
     protocol and what it needs set on a pingfedClusterDiscovery, else (a binding of another class, an object store) the
@@ -135,12 +150,9 @@ def _records(m, b, protocol, given=None):
         stale = [a for a, _ in _NEEDS.values() if a in b.attrs and a not in attrs]
         return (LdifRecord(b.dn, "modify", {}, (*(("replace", a, v) for a, v in attrs.items()),
                                                  *(("delete", a, ()) for a in stale))),)
-    cn = rdn_value(b) if b is not None else "pf-discovery"
-    owners = {"ciamOwner": values(b, "ciamOwner")} if b is not None and values(b, "ciamOwner") else {}
+    bound = discovery_entry(m, b, protocol, attrs)
     return (*bindings_container(m.d, m.dn), *((delete_entry(b),) if b is not None else ()),
-            new_entry(f"cn={cn},ou=bindings,{m.dn}", ("top", "pingfedClusterDiscovery"),
-                      {"cn": (cn,), "ciamBindingRole": (DISCOVERY_ROLE,), **owners, **attrs,
-                       "description": (f"PingFederate cluster discovery ({protocol.name})",)}))
+            new_entry(bound.dn, bound.classes, bound.attrs))
 
 
 def discovery_records(m, b, name, given=None):

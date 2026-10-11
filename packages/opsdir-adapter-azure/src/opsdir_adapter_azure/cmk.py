@@ -15,7 +15,6 @@ from opsdir.core.directory import one, rdn_value
 from opsdir.core.environment import UNBOUND, bound
 from opsdir_format_terraform.hcl import block, ref
 from .identities import LOC, RG
-from .network import binding_tags
 from .account import tagged
 
 CMK_ROLE = "Key Vault Crypto Service Encryption User"
@@ -65,7 +64,8 @@ def customer_key(m, b, n):
         (*sources,
          block("resource", ["azurerm_user_assigned_identity", f"{n}_cmk"], [
              ("name", f"id-{rdn_value(b)}-cmk"), ("location", LOC), ("resource_group_name", RG),
-             ("tags", tagged(m, binding_tags(b)))]),
+             # the binding's helper, not the binding: no Role, so reading it back never binds the binding's role twice
+             ("tags", tagged(m, {"ManagedBy": "opsdir"}))]),
          block("resource", ["azurerm_role_assignment", f"{n}_cmk"], [
              ("scope", ref(f"{key}.resource_versionless_id")),
              ("role_definition_name", CMK_ROLE), ("principal_id", ref(f"{ident}.principal_id"))])),

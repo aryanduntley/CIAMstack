@@ -9,8 +9,9 @@ merged into one azurerm_security_center_subscription_pricing (tier Standard) per
                           P2 (Defender for Servers Plan 2 carries DNS threat detection); containers Containers;
                           storage StorageAccounts DefenderForStorageV2 (malware scanning on upload); databases
                           SqlServers, SqlServerVirtualMachines, OpenSourceRelationalDatabases, CosmosDbs; key-vaults
-                          KeyVaults PerKeyVault; applications AppServices, Api; identity has no Defender for Cloud plan
-                          (Entra ID Protection watches sign-ins: a comment)
+                          KeyVaults PerKeyVault; applications AppServices, Api; identity has no Defender for Cloud plan:
+                          Microsoft Entra ID Protection (identity_protection.py: the risk-log export, and the risk-based
+                          Conditional Access policies the record states)
   vulnerability-scanning  compute: VirtualMachines P2 and the server vulnerability assessment setting (Microsoft
                           Defender Vulnerability Management, MdeTvm); containers: Containers with registry vulnerability
                           assessment; applications: no Defender scanner (a comment); compute when no area is named
@@ -54,10 +55,11 @@ import re
 from opsdir.core.directory import get, is_kind, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.incidents import incident_routes
-from opsdir.domains.estate.naming import SEVERITIES
+from opsdir.domains.estate.naming import ALL_USERS, SEVERITIES
 from opsdir.domains.estate.security import findings_destination, security_services
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 from .identities import LOC, RG
+from .identity_protection import identity_read, render_identity_protection
 
 PRICING = "azurerm_security_center_subscription_pricing"
 VA_SETTING = "azurerm_security_center_server_vulnerability_assessments_setting"
@@ -293,8 +295,7 @@ def _service(m, s):
     body = (_scanner(m, s) if kind == "vulnerability-scanning" else _posture(m, s) if kind == "posture" else
             (f"# {cn}: Azure records resource changes itself (Resource Graph change history, about 14 days): nothing "
              "to enable; keeping them longer needs an export (not rendered)",) if kind == "config-recording" else
-            (f"# {cn}: Defender for Cloud has no plan for identity: Microsoft Entra ID Protection watches sign-ins "
-             "(not rendered)",) if "identity" in values(s, "ciamSecurityCoverage") else ())
+            render_identity_protection(m, s))
     return (*body, *_export(m, s, kind), *_incident_routing(m, s, kind),
             *((f"# {cn}: organization-wide: enable it on the management group with Azure Policy (not rendered here)",)
               if one(s, "ciamAuditScope") == "organization" else ()))
@@ -384,6 +385,17 @@ def _incident(incidents, kind):
     return {"ciamIncidentRole": dest}, {"ciamIncidentSeverity": least}
 
 
+def security_notices(pairs):
+    """What reading Azure's security services can't place: identity protection it can't express (identity_protection.
+    identity_read), and identity protection read with no Defender threat detection to belong to."""
+    ident = identity_read(pairs)
+    defended = any((a.get("tier") or "").lower() == "standard" and PLAN_AREAS.get(a.get("resource_type"))
+                   for a in of_types(pairs, PRICING))
+    orphan = ("Entra ID Protection (risk logs or risk policies) read, but no Defender for Cloud threat detection "
+              "plan to record it on; not imported")
+    return (*ident.notices, *((orphan,) if ident.watched and not defended else ()))
+
+
 def security_resources(pairs):
     """Security services of (azurerm type, attributes) pairs."""
     pricings = [a for a in of_types(pairs, PRICING) if (a.get("tier") or "").lower() == "standard"]
@@ -392,10 +404,15 @@ def security_resources(pairs):
     every = {"ciamAuditScope": "account", "ciamAllRegions": "TRUE"}
     watched = {PLAN_AREAS[p] for p in plans if p in PLAN_AREAS} | (
         {"network"} if (plans.get("VirtualMachines") or {}).get("subplan") == "P2" else set())
+    ident = identity_read(pairs)
+    areas = watched | ({"identity"} if ident.watched else set())
+    covers = ({"ciamPolicyCovers": ALL_USERS} if ident.all_users else {})
     threat = tuple(resource("security", _subscription_ref(pricings[0], "/defender"), {
-        "ciamSecurityKind": "threat-detection", "ciamSecurityCoverage": tuple(a for a in AREAS if a in watched),
-        **every, **_incident(incidents, "threat-detection")[1]},
-        links={"ciamFindingsRole": routes.get("threat-detection"), **_incident(incidents, "threat-detection")[0]},
+        "ciamSecurityKind": "threat-detection", "ciamSecurityCoverage": tuple(a for a in AREAS if a in areas),
+        **every, **_incident(incidents, "threat-detection")[1], "ciamRiskPolicy": ident.policies,
+        "ciamPolicyMode": ident.mode, **covers},
+        links={"ciamFindingsRole": routes.get("threat-detection"), **_incident(incidents, "threat-detection")[0],
+               "ciamPolicyCovers": ident.covers, "ciamPolicyExcludes": ident.excludes},
         name="defender-for-cloud")
         for _ in (1,) if watched and _subscription_ref(pricings[0], "/defender"))
     va = next(iter(of_types(pairs, VA_SETTING)), None)

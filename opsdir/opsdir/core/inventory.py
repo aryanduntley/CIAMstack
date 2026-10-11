@@ -9,6 +9,9 @@ attributes), and what it derives or resolves; each domain's imports module lists
 networks, subnets, servers, service names, firewall rules, object stores, egress and interconnects; network's,
 edge's, access's, and the kinds other domains declare in their Domain). Servers are placed under the environment and
 matched also by hostname or private address; every other kind is a binding under ou=bindings.
+A binding the record designed and the cloud hasn't created yet (no provider reference) is the one a resource of its
+kind realizes when the resource names its role and nothing else matches it: the first read after applying the design
+records its reference instead of adding a copy.
 What a source says replaces the record's value for the attributes it gives; the rest of the entry is kept (the same
 values in another order, or an allowlist a source reports without the ports it can't express, change nothing). A
 resource the record doesn't have is added only when the source names its role (a tag), and is named otherwise: a role
@@ -178,10 +181,24 @@ def _label(d, dn):
     return f"{parts.get('cloud')}/{parts.get('env')}"
 
 
+def _designed(d, r, own, claimed):
+    """The one binding of r's kind the record designed for the role r's source names, not created yet (no provider
+    reference) and not claimed by a resource placed before it: what a resource matched by its reference realizes the
+    first time it is read (the record's design, applied). None when there is none or more than one."""
+    k = _imports(d).kinds[r.kind]
+    role = r.role or (k.role(r, {}) if k.role is not None else None)      # the kind's own, for untagged resources
+    if k.match != "ref" or k.server or not role:
+        return None
+    found = [e for e in own if is_kind(d, e, k.object_class) and not one(e, "ciamProviderRef")
+             and one(e, "ciamBindingRole") == role and e.norm not in claimed]
+    return found[0] if len(found) == 1 else None
+
+
 def _placed(d, own, bases):
     """((resource, own entry or None, inherited entry or None, name) for each resource), names never clashing."""
     def place(acc, r):
-        held, inherited = _match(d, r, own), _match(d, r, bases)
+        matched, inherited = _match(d, r, own), _match(d, r, bases)
+        held = matched or (None if inherited else _designed(d, r, own, {h.norm for _, h, _, _ in acc if h}))
         taken = {rdn_value(e).lower() for e in own} | {name.lower() for *_, name in acc}
         base = _UNSAFE.sub("-", r.name or r.ref or r.kind).strip("-") or r.kind
         name = rdn_value(held) if held else next(n for n in (base, *(f"{base}-{i}" for i in range(2, 1000)))

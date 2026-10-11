@@ -28,4 +28,5 @@ GovCloud (US) `F1603047866`, Class D High). FedRAMP requires a package overview 
 ## Tests
 
 `tests/test_fedramp_cpo.py`: reading an overview, a refresh keeping the record's own attributes, refusal of files with
-no overview.
+no overview, and importing the same overview again changing nothing (the adapter renders nothing, so this is its
+round-trip guarantee instead of a read-back).

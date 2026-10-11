@@ -5,9 +5,11 @@ import json
 
 import pytest
 
+from opsdir.connectors.importing import import_changes
 from opsdir.core.directory import get
 from opsdir_adapter_fedramp.cpo import cpo_row, read_cpo
 from network_fixtures import model
+from support import after_import
 
 
 def _cpo(package="F0000000001", services=("Service A", "Service B"), category="High (FedRAMP Certification Level "
@@ -61,3 +63,14 @@ def test_the_import_time_may_be_a_datetime():
     d, _, _ = model()
     imported = read_cpo({"egc.json": json.dumps(_cpo())}, d, (), at=dt.datetime(2026, 9, 23, 9, tzinfo=dt.timezone.utc))
     assert imported.groups[0][1][0].attrs["ciamRetrievedAt"] == ("20260923090000Z",)
+
+
+def test_importing_the_same_package_again_changes_nothing():
+    """The importer's guarantee (the adapter renders nothing, so it has no read-back): a second import of the same
+    overview, retrieved at the same time, finds the record as the first left it."""
+    d, _, _ = model(tree=("dn: ou=authorizations,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\n"
+                          "ou: authorizations\n",))
+    files = {"egc.json": json.dumps(_cpo())}
+    once = after_import(d, read_cpo(files, d, (), at="20260920000000Z"))
+    assert get(once, "cn=F0000000001,ou=authorizations,dc=ciam-ops") is not None
+    assert import_changes(once, read_cpo(files, once, (), at="20260920000000Z")) == ()

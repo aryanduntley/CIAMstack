@@ -273,6 +273,19 @@ A data disk the environment's instances use without a `volume` label is named.
 
 A vault, plan or association whose `state` says it is being deleted, deleted or inactive is named, not read.
 
+**Reading its own render back** (the round trip, `reads_back`; `rendered_state.py`). Each rendered root becomes the state applying it would record (`opsdir_format_terraform.state_builder`), read by `gcp/terraform-state`:
+- Every resource gets the id the google provider gives it (`ID_TEMPLATES`, in the project, region and zone it names or the root's provider's). Where Google names a resource by its full resource name (SCC notification configs), that is its `name` too.
+- `effective_labels` is the provider's `default_labels` under the resource's labels.
+- What Google assigns comes from `ASSIGNS`: a service account's email, name and unique id; a workload identity pool's name with the project number.
+- A resource realizing a binding the record holds (`REALIZES`) gets its provider reference: as email for a service account, as id, and as name where Google assigns the name (alert policies, channels, uptime checks, budgets).
+- A data source realizing one gets what the record holds of what it finds (`RECORDED`: a service name's address).
+
+The render is the record's intent, so the read-back is marked `intent`: no copies, and the render must be a fixed point.
+
+In standby/prod, applying would record scoped grants, edge facts and DNS TTLs on the service names, and the designed budget's reference. One gap is known: Sensitive Data Protection profiles daily or monthly, so the record's every-7-days rescan reads back as daily.
+
+Found by the round trip and fixed: a DNS forwarder's reference was its zone's short name, where every other GCP reference is the full resource name. It is now `projects/<p>/managedZones/<name>`.
+
 ## Collecting from Google Cloud (`opsdir collect`)
 
 `opsdir collect --env CLOUD/ENV --adapter gcp` reads what the two importers below read, read-only, under your own

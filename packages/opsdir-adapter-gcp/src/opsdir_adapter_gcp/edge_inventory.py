@@ -24,7 +24,7 @@ from opsdir.domains.edge.imports import forwarder_role, record_role, zone_role
 from opsdir.domains.edge.resolve import endpoint_kind_named, rate_limit_fact, tls_level
 from opsdir_format_terraform.state import blocks, first_block
 from .edge import TLS_POLICIES, WAF_RULES
-from .names import state_labels
+from .names import resource_id, state_labels
 
 CATEGORIES = {rule_set: category for category, sets in WAF_RULES.items() for rule_set in sets}
 _REGION_CODE = re.compile(r"origin\.region_code == '([A-Z]{2})'")
@@ -204,7 +204,7 @@ def dns_resources(found, served):
                 "ciamForwardDomain": zones[z.get("name")], "ciamForwardDirection": "outbound",
                 "ciamForwardTarget": [t.get("ipv4_address") for t in blocks(
                     first_block(z.get("forwarding_config")).get("target_name_servers"))],
-                "ciamProviderRef": z.get("name")}, name=z.get("name"),
+                "ciamProviderRef": resource_id(z.get("id")) or z.get("name")}, name=z.get("name"),
                 role=_role(z) or forwarder_role((zones[z.get("name")],)))
                   for z in forwarding))
 

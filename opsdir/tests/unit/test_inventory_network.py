@@ -136,3 +136,31 @@ def test_a_flow_log_without_a_role_takes_its_subnets():
     log = entries[f"cn=ciam-ds-flow-logs,{B}"]
     assert (values(log, "ciamBindingRole") == ("flow-logs-subnet-ds",)
             and values(log, "ciamSubnetRole") == ("subnet-ds",))
+
+
+def test_a_designed_binding_is_the_one_its_first_read_realizes():
+    """A binding the record designed and the cloud hasn't created yet (no provider ref) is what a resource of its kind
+    naming its role realizes: the first read records the ref instead of adding a copy. Only one, and never one a
+    resource placed before claimed."""
+    designed = _binding("rt-private", "ciamRouteTable", "rt-private", ciamMainTable=["FALSE"])
+    d = _d(*SUBNETS, designed)
+    table = {"ciamMainTable": "FALSE", "ciamRoute": "10.9.0.0/16 vpn vgw-9"}
+    first = resource("route-table", "rtb-1", table, name="ciam-prod-private", role="rt-private")
+    again = resource("route-table", "rtb-2", table, name="ciam-prod-private-2", role="rt-private")
+    entries, notices = _placed(d, first, again)
+    assert values(entries[f"cn=rt-private,{B}"], "ciamProviderRef") == ("rtb-1",)
+    assert values(entries[f"cn=ciam-prod-private-2,{B}"], "ciamProviderRef") == ("rtb-2",)    # a second one: new
+    assert notices == ("main/prod: route-table ciam-prod-private-2 added (role rt-private)",)
+    created = _binding("rt-private", "ciamRouteTable", "rt-private", ciamProviderRef=["rtb-0"])
+    entries, _ = _placed(_d(*SUBNETS, created), first)                 # created already: a different table is new
+    assert f"cn=rt-private,{B}" not in entries and values(entries[f"cn=ciam-prod-private,{B}"],
+                                                          "ciamProviderRef") == ("rtb-1",)
+
+
+def test_an_untagged_resource_realizes_a_designed_binding_by_its_kinds_role():
+    """A kind whose role the source can't tag (a budget: always 'budget') finds its designed binding the same way."""
+    designed = _binding("monthly-spend", "ciamBudget", "budget", ciamBudgetAmount=["1000"])
+    entries, notices = _placed(_d(designed), resource("budget", "/subscriptions/s/budgets/b-1",
+                                                      {"ciamBudgetAmount": "1000"}, name="target-prod-monthly"))
+    assert values(entries[f"cn=monthly-spend,{B}"], "ciamProviderRef") == ("/subscriptions/s/budgets/b-1",)
+    assert not any("added" in n for n in notices)

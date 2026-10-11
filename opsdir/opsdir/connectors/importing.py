@@ -7,13 +7,15 @@ live value or keeping the record's (`decided`). Adding what the record lacks is 
 clears what it confirms (values a fix set ahead of the live system: `confirmations`) and records an import run of each
 scope it read (domains.governance.imports).
 """
+from types import MappingProxyType
 from typing import NamedTuple, Optional
 
 from ..core.changeset import delete_values, diff
-from ..core.directory import get, subtree, values, within
+from ..core.directory import get, make_entry, norm_dn, subtree, values, within
 from ..core.findings import pending
 from ..core.inventory import with_imports
 from ..domains.governance.imports import run_records
+from ..store.postgres import entries_after
 from .registry import ADAPTERS, import_table, pattern_records
 
 # Where an import and the record disagree: key (what to pass to --take or --keep: "<dn>|<attribute>", or the DN when
@@ -52,6 +54,15 @@ def import_commands(importer, d):
 
 def _outside(scope, entries):
     return [e.dn for e in entries if not within(e.norm, scope)]
+
+
+def record_after(d, changes):
+    """Snapshot d after change records (add / modify / delete) in order, as the store would leave it (its rules not
+    checked): what a preview renders or plans from."""
+    touched = {norm_dn(r.dn) for r in changes}
+    rows = entries_after(d.lower_types, {e.norm: (e.dn, e.classes, e.attrs) for e in d.entries.values()}, changes)
+    made = {norm_dn(dn): make_entry(dn, classes, attrs) for dn, classes, attrs in rows}
+    return d._replace(entries=MappingProxyType({**{k: e for k, e in d.entries.items() if k not in touched}, **made}))
 
 
 def import_changes(d, imported):

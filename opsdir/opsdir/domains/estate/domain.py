@@ -58,4 +58,5 @@ DOMAIN = Domain(name="estate", schema=FRAGMENT, required_roles=(), sql=(),
                 local_classes=("ciamSuppression",), accept=accept_exceptions,
                 role_links={"ciamFindingsRole": ("channel", "logs", "storage", "stream"), "ciamAlertRole": "channel",
                             "ciamScansRole": ("storage", "database", "volume"), "ciamResultsRole": "storage",
-                            "ciamIncidentRole": ("channel", "logs", "stream")})
+                            "ciamIncidentRole": ("channel", "logs", "stream"),
+                            "ciamPolicyCovers": "identity", "ciamPolicyExcludes": "identity"})

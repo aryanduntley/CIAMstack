@@ -56,7 +56,8 @@ def suppression_role(resource, roles):
     """The binding role of a suppression a cloud reports without one (ImportKind role): suppression-<exception>."""
     exc = resource.attrs.get("ciamExceptionRef")
     exc = exc[0] if isinstance(exc, (tuple, list)) else exc
-    return f"suppression-{exc}" if exc else f"suppression-{resource.name}"
+    named = exc.split(",", 1)[0].split("=", 1)[-1] if exc else None      # an exception's DN: its name
+    return f"suppression-{named}" if named else f"suppression-{resource.name}"
 
 
 def suppression_prepare(d, dn, r):

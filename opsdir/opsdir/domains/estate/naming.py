@@ -50,6 +50,17 @@ REPORTING_OBLIGATIONS = branch("reporting-obligations")
 # how severe a security finding is, least first: the clouds' own scales map onto these (a cloud without critical
 # routes its highest as high)
 SEVERITIES = ("low", "medium", "high", "critical")
+# a risk-based sign-in policy a threat-detection service watching identity enforces: whose risk (a sign-in's, the
+# user's), the least level it applies at, and what it requires then (another factor, a password change, the
+# provider's own risk remediation, no access); password-change and risk-remediation answer a user's risk only
+RISK_SUBJECTS = ("sign-in", "user")
+RISK_LEVELS = ("low", "medium", "high")
+RISK_GRANTS = ("mfa", "password-change", "risk-remediation", "block")
+USER_RISK_GRANTS = ("password-change", "risk-remediation")
+RISK_POLICY = (f"^({'|'.join(RISK_SUBJECTS)}) ({'|'.join(RISK_LEVELS)})\\+: ({'|'.join(RISK_GRANTS)})$")
+ALL_USERS = "all-users"                         # whom a risk policy covers when it names no identity
+POLICY_SUBJECT = r"^[A-Za-z0-9][A-Za-z0-9._-]*$"   # an identity binding's role, or all-users
+POLICY_MODES = ("report-only", "enforced")      # a policy only reporting what it would do, or enforcing it
 # what an authority asked of an incident's preserved images and monitoring data: nothing yet, the media, which the
 # operator provided, or it declined interest
 MEDIA_REQUESTS = ("none", "requested", "provided", "declined")

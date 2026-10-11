@@ -2910,6 +2910,30 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.636 NAME 'ciamTokenEndpoint' DESC 'T
  cess tokens from' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.
  1.26 SINGLE-VALUE X-PORTABILITY 'contract' X-VALUE-TYPE 'url' X-ORIGIN 'ops
  dir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.637 NAME 'ciamRiskPolicy' DESC 'A ri
+ sk-based sign-in policy a threat-detection service watching identity enforc
+ es: \27<sign-in|user> <low|medium|high>+: <mfa|password-change|risk-remedia
+ tion|block>\27 (sign-in medium+: mfa; password-change and risk-remediation 
+ answer a user\27s risk only)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1
+ 466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-PATTERN '^(
+ sign-in|user) (low|medium|high)\5C+: (mfa|password-change|risk-remediation|
+ block)$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.638 NAME 'ciamPolicyCovers' DESC 'Wh
+ om a security service\27s risk policies cover: identity bindings\27 roles (
+ users, groups), or all-users' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1
+ 466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-PATTERN '^[
+ A-Za-z0-9][A-Za-z0-9._-]*$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.639 NAME 'ciamPolicyExcludes' DESC '
+ Whom a security service\27s risk policies leave out: identity bindings\27 r
+ oles (the break-glass accounts, so a policy can never lock everyone out)' E
+ QUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 
+ 'intent' X-VALUE-TYPE 'string' X-PATTERN '^[A-Za-z0-9][A-Za-z0-9._-]*$' X-O
+ RIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.640 NAME 'ciamPolicyMode' DESC 'Whet
+ her a security service\27s risk policies are enforced or only report what t
+ hey would do (report-only when not given)' EQUALITY caseIgnoreMatch SYNTAX 
+ 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-T
+ YPE 'enum:report-only|enforced' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -3477,7 +3501,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.112 NAME 'ciamSecurityService' DESC '
  tyKind MAY ( ciamSecurityCoverage $ ciamComplianceStandard $ ciamSecurityBa
  seline $ ciamAuditScope $ ciamAllRegions $ ciamFindingsRole $ ciamIncidentR
  ole $ ciamIncidentSeverity $ ciamRetentionDays $ ciamProviderRef $ ciamMana
- gedBy ) X-ORIGIN 'opsdir' )
+ gedBy $ ciamRiskPolicy $ ciamPolicyCovers $ ciamPolicyExcludes $ ciamPolicy
+ Mode ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.113 NAME 'ciamQuotaNeed' DESC 'What a
  n environment needs of a provider limit: a quota kind (or the provider\27s 
  own quota, ciamProviderRef) and how many; and, when the provider grants les

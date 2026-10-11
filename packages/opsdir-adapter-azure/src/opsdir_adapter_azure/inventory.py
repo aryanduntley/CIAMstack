@@ -87,7 +87,7 @@ from .storage import object_store_resources
 from .audit import trail_resources
 from .budgets import budget_resources
 from .discovery import discovery_resources
-from .security import is_incident_alert, security_resources
+from .security import is_incident_alert, security_notices, security_resources
 from .suppressions import suppression_resources
 
 PROVIDER = "azure"
@@ -573,7 +573,7 @@ def pairs_resources(pairs):
              *suppression_resources(pairs),
              *budget_resources(pairs)),
             (*rule_notices, *iam_notices, *edge_notices, *network_notices, *volume_notices, *backup_notices,
-             *geo_backup_notices(pairs)))
+             *geo_backup_notices(pairs), *security_notices(pairs)))
 
 
 def state_resources(text):

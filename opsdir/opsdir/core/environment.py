@@ -8,7 +8,7 @@ An overlay environment's bindings, stack, declared roles and overrides include w
 from typing import NamedTuple, Optional
 
 from .directory import Directory, Entry, children, follow, get, is_kind, norm_dn, one, rdn_value, subtree, values
-from .naming import branch, env_label
+from .naming import branch, env_label, rdn_safe
 from .overlays import (apply_overrides, declared_roles, effective_bindings, effective_overrides, effective_stack,
                        lineage)
 
@@ -32,6 +32,16 @@ def env_dn(spec):
         return spec
     cloud, env = spec.split("/")
     return f"env={env},cloud={cloud},{branch('environments')}"
+
+
+def environment_at(d, path):
+    """The environment DN a file path's <cloud>/<env>/ folder names, when record d holds that environment; else None:
+    how an importer of files kept one folder per environment places them."""
+    parts = path.split("/")
+    if len(parts) < 3 or not all(rdn_safe(p) for p in parts[:2]):
+        return None
+    env = env_dn(f"{parts[0]}/{parts[1]}")
+    return env if get(d, env) is not None else None
 
 
 def stack_component(e):

@@ -116,8 +116,16 @@ Imported = NamedTuple("Imported", [("containers", tuple), ("groups", tuple), ("n
 # rendered files whose paths match paths (an fnmatch glob, '*' crossing '/'), each with the prefix strip removed (''
 # keeps the path as rendered) and the prefix place put in front ({environment}: the cloud/env rendered, for importers
 # that read an environment's files from its own folder), read by the importer named; reading them back must change
-# nothing.
-ReadBack = namedtuple("ReadBack", ("importer", "paths", "strip", "place"), defaults=("", ""))
+# nothing. optional: the render holds these files only for some environments (PingFederate's cluster discovery, only
+# where the nodes cluster), so a render that has none of them has nothing to read back, not a gap. prepare: (files,
+# record, environment) -> the files the importer reads, when they aren't the rendered files themselves (a cloud's
+# rendered Terraform roots become the states applying them would record; the record the render was made from gives what
+# the provider assigns); None reads the files as they are. intent: the render is the record's intent (a cloud's
+# policies applied), not a projection of it, so where the record still holds what was observed, reading the render back
+# records what applying it would change: then only copies (an entry added for a role the environment already binds with
+# that class, or one deleted) are drift, and the render must be a fixed point (connectors.roundtrip.fixed_point).
+ReadBack = namedtuple("ReadBack", ("importer", "paths", "strip", "place", "optional", "prepare", "intent"),
+                      defaults=("", "", False, None, False))
 
 # How a Kubernetes workload assumes a cloud identity, from the provider adapter that owns the cloud: annotations on its
 # service account and labels on its pods, as ((name, value), ...); a value the record can't give is UNBOUND:<what>.

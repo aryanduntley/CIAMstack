@@ -10,6 +10,7 @@ import pytest
 
 from opsdir.connectors.fixes import chosen
 from opsdir.connectors.importing import preview_import
+from opsdir.connectors.roundtrip import read_back
 from opsdir.connectors.registry import core_fragments
 from opsdir.core.contract import PlanContext
 from opsdir.core.directory import get, one, values
@@ -163,6 +164,16 @@ def test_importing_the_same_files_again_changes_nothing():
     assert preview_import(d, "pingfederate/node-files", files(), (ADAPTER,))[0] == ()
 
 
+def test_a_folder_with_only_some_files_keeps_what_the_others_would_say():
+    d, _, _ = imported()
+    only_jgroups = {"pf-1.alpha.example.test/bin/jgroups.properties": "pf.cluster.discovery.protocol=NATIVE_S3_PING\n"}
+    changes, _ = preview_import(d, "pingfederate/node-files", only_jgroups, (ADAPTER,))
+    assert changes == ()
+    only_run = {"pf-1.alpha.example.test/bin/run.properties": "pf.operational.mode=CLUSTERED_ENGINE\n"}
+    (change,) = preview_import(d, "pingfederate/node-files", only_run, (ADAPTER,))[0]
+    assert (change.dn, sorted(m[1] for m in change.mods)) == (ENGINE, ["pingfedListener", "pingfedNodeTags"])
+
+
 def _jgroups(d, env):
     return render_env(env_model(d, env), None)["pingfederate/cluster/jgroups.properties"].splitlines()[1:]
 
@@ -277,3 +288,82 @@ def test_an_unsupported_or_incomplete_target_binding_is_fixed_in_place():
 def test_redis_backed_storage_is_recognised():
     assert storage_kind("com.pingidentity.sdk.oauth20.registration.RedisClientStorageManager") == "Redis"
     assert storage_kind("org.sourceid.oauth20.domain.ClientManagerJdbcImpl") == "JDBC"
+
+
+# ------------------------------------------------------------------ the cluster file read back (pingfederate/cluster)
+def _read(env_files, extra="", discovery=True):
+    """(the record after importing the node files, then {env spec: jgroups.properties text}, the second import's change
+    records, its notices)."""
+    d, nodes, _ = imported(extra=extra, discovery=discovery)
+    files = {f"{spec}/jgroups.properties": text for spec, text in env_files.items()}
+    changes, notices = preview_import(d, "pingfederate/cluster", files, (ADAPTER,))
+    return build_directory(REGISTRY, records(extra, discovery), (*nodes, *changes)), changes, notices
+
+
+def _rendered(d, env):
+    return render_env(env_model(d, env), None)["pingfederate/cluster/jgroups.properties"]
+
+
+@pytest.mark.parametrize("extra, discovery", [("", True), (BETA_DNS, True), (_chosen(ALPHA, "TCPPING"), False)])
+def test_the_rendered_discovery_reads_back_unchanged(extra, discovery):
+    d, _, _ = imported(extra=extra, discovery=discovery)
+    for env in ("alpha/prod", *(("beta/prod",) if extra == BETA_DNS else ())):
+        (cluster,) = [rt for rt in read_back(d, ADAPTER, render_env(env_model(d, env), None), (ADAPTER,),
+                                             environment=env) if rt.importer == "pingfederate/cluster"]
+        assert (cluster.files, cluster.changes, cluster.notices) == ((f"{env}/jgroups.properties",), (), ())
+
+
+def test_a_bucket_the_record_holds_with_a_path_reads_back_as_that_bucket():
+    d, _, _ = imported()                                         # alpha binds s3://alpha-pf-cluster/pf
+    assert "bucket_name=alpha-pf-cluster\n" in _rendered(d, "alpha/prod")
+    assert _read({"alpha/prod": _rendered(d, "alpha/prod")})[1] == ()
+
+
+def test_a_file_that_disagrees_changes_the_binding():
+    s3 = "pf.cluster.discovery.protocol=NATIVE_S3_PING\npf.cluster.NATIVE_S3_PING.bucket_name=other-bucket\n"
+    moved, _, _ = _read({"alpha/prod": s3})
+    binding = get(moved, f"cn=pf-discovery,ou=bindings,{ALPHA}")
+    assert (binding.classes, one(binding, "ciamStorageRef")) == (("top", "ciamBackupTarget"), "s3://other-bucket")
+    dns, _, _ = _read({"alpha/prod": "pf.cluster.discovery.protocol=DNS_PING\n"
+                                     "pf.cluster.DNS_PING.dns_query=pf.alpha.example.test\n"})
+    binding = get(dns, f"cn=pf-discovery,ou=bindings,{ALPHA}")
+    assert (binding.classes, one(binding, "pingfedDiscoveryProtocol"), one(binding, "ciamFqdn"),
+            one(binding, "ciamStorageRef")) == (("top", "pingfedClusterDiscovery"), "DNS_PING",
+                                                "pf.alpha.example.test", None)
+    listed, changes, _ = _read({"alpha/prod": "pf.cluster.discovery.protocol=TCPPING\n"}, discovery=False)
+    assert [(c.changetype, c.dn) for c in changes] == [("add", f"cn=pf-discovery,ou=bindings,{ALPHA}")]
+    assert one(get(listed, f"cn=pf-discovery,ou=bindings,{ALPHA}"), "pingfedDiscoveryProtocol") == "TCPPING"
+
+
+def test_what_the_rest_of_the_record_decides_is_compared_never_changed():
+    d, _, _ = imported(extra=_chosen(ALPHA, "TCPPING"), discovery=False)
+    text = _rendered(d, "alpha/prod").replace("pf-admin.alpha.example.test[7600]", "pf-old.alpha.example.test[7600]")
+    _, changes, notices = _read({"alpha/prod": text + "pf.cluster.TCPPING.extra=1\npf.cluster.DNS_PING.x=y\n"},
+                                _chosen(ALPHA, "TCPPING"), False)
+    assert changes == ()
+    assert set(notices) == {
+        "alpha/prod/jgroups.properties: pf.cluster.TCPPING.initial_hosts is pf-1.alpha.example.test[7600],"
+        "pf-old.alpha.example.test[7600], the record renders pf-1.alpha.example.test[7600],"
+        "pf-admin.alpha.example.test[7600]; not read",
+        "alpha/prod/jgroups.properties: pf.cluster.TCPPING.extra=1 is no setting the record holds; not read",
+        "alpha/prod/jgroups.properties: pf.cluster.DNS_PING.x isn't a setting of TCPPING; not read"}
+    region = _rendered(imported()[0], "alpha/prod").replace("region_name=region-1", "region_name=region-9")
+    assert _read({"alpha/prod": region})[2] == (
+        "alpha/prod/jgroups.properties: pf.cluster.NATIVE_S3_PING.region_name is region-9, the record renders "
+        "region-1; not read",)
+
+
+def test_files_the_importer_cannot_read_are_named():
+    d, _, _ = imported()
+    _, changes, notices = _read({"alpha/prod": "pf.cluster.discovery.protocol=AZURE_PING\n",
+                                 "beta/prod": "pf.cluster.discovery.protocol=DNS_PING\n",
+                                 "gamma/prod": "pf.cluster.discovery.protocol=TCPPING\n"})
+    assert changes == ()
+    assert set(notices) == {
+        "alpha/prod/jgroups.properties: discovers with AZURE_PING, a community JGroups extension (jgroups-azure) "
+        "PingFederate doesn't document; the binding is left as it is",
+        "beta/prod/jgroups.properties: DNS_PING needs pf.cluster.DNS_PING.dns_query; the binding is left as it is",
+        "gamma/prod/jgroups.properties: not under <cloud>/<env>/ of an environment the record holds; not read"}
+    assert preview_import(d, "pingfederate/cluster", {"alpha/prod/tcp.xml": "<config/>"}, (ADAPTER,))[1] == (
+        "alpha/prod/tcp.xml: not a jgroups.properties; not read",
+        "no jgroups.properties (one per environment, in its <cloud>/<env>/ folder)")

@@ -1,5 +1,5 @@
 """AWS adapter: applies to environments in clouds whose ciamCloudProvider is aws."""
-from opsdir.core.contract import Adapter
+from opsdir.core.contract import Adapter, ReadBack
 from opsdir.domains.infrastructure.checks import check_server_inputs
 from .boundary import check_boundary
 from .discovery import check_discovery_availability
@@ -16,6 +16,7 @@ from .regions import PREREQUISITE, REGIONS
 from .secrets import SECRET_PATTERNS, secretsmanager_command, secretsmanager_lookup
 from .terraform import render
 from .canaries import RUNTIME
+from .rendered_state import rendered_states
 
 PROVIDER = "aws"
 
@@ -41,4 +42,6 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                   collectors=COLLECTORS,
                   workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY,
                   gateway_plug=gateway_plug, ansible_lookup={"aws-sm": secretsmanager_lookup},
-                  settings=(RUNTIME,), host_files=host_files)
+                  settings=(RUNTIME,), host_files=host_files,
+                  reads_back=(ReadBack("terraform-state", "terraform/*.tf", "terraform/", "{environment}/", False,
+                                       rendered_states, intent=True),))

@@ -983,7 +983,6 @@ resource "aws_route53_record" "svc_ldaps" {
   zone_id = "Z0EXAMPLE1PRIVATE"
   name    = "ldap.id.example-aero.test"
   type    = "A"
-  # an alias takes the load balancer's TTL; the recorded 60 s doesn't apply
   alias {
     name                   = aws_lb.svc_ldaps.dns_name
     zone_id                = aws_lb.svc_ldaps.zone_id

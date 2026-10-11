@@ -40,7 +40,7 @@ def test_defender_plans_are_merged_one_per_plan():
             if f'resource_type = "{p}"' in out] == ["Arm", "VirtualMachines", "Containers", "StorageAccounts"]
     assert 'subplan       = "P2"' in out and '"ContainerRegistriesVulnerabilityAssessments"' in out
     assert 'vulnerability_assessment_provider = "MdeTvm"' in out
-    assert "# defender: Defender for Cloud has no plan for identity" in out
+    assert "# defender: identity: Microsoft Entra ID Protection (Defender for Cloud has no plan for identity)" in out
     assert "Azure Government" not in out
 
 

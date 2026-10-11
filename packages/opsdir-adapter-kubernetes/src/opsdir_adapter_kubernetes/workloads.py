@@ -37,7 +37,7 @@ import yaml
 
 from opsdir.core.contract import Imported, Importer
 from opsdir.core.directory import get, make_entry, merged_attrs, ou_entry
-from opsdir.core.environment import env_dn
+from opsdir.core.environment import environment_at
 from opsdir.core.naming import rdn_safe
 from opsdir.core.secrets import text_concerns
 from opsdir.core.sources import json_document, parsed
@@ -240,15 +240,6 @@ def binding_entry(d, env, name, o):
              "ciamMemoryLimit": (_quantity(limits.get("memory")),),
              "ciamStorageSize": (size,), "ciamStorageClass": (storage_class,)}
     return make_entry(dn, ("top", "ciamWorkloadBinding"), merged_attrs(get(d, dn), owned, BINDING_OWNED))
-
-
-def environment_at(d, path):
-    """The environment a manifest's <cloud>/<env>/ folder names, when the record holds it; else None."""
-    parts = path.split("/")
-    if len(parts) < 3 or not all(rdn_safe(p) for p in parts[:2]):
-        return None
-    env = env_dn(f"{parts[0]}/{parts[1]}")
-    return env if get(d, env) is not None else None
 
 
 def entry_names(workloads):

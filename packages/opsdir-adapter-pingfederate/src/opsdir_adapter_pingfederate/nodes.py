@@ -43,8 +43,6 @@ LISTENERS = MappingProxyType({"pf.http.port": "runtime-http", "pf.https.port": "
 # hivemodule.xml service points -> what they keep (verify against the target version)
 STORAGE_POINTS = MappingProxyType({"ClientManager": "clients", "AccessGrantManager": "grants",
                                    "SessionStorageManager": "sessions"})
-NODE_OWNED = ("pingfedOperationalMode", "pingfedNodeTags", "pingfedListener", "pingfedDiscovery", "pingfedConfig",
-              "pingfedWithheld")
 
 
 # ------------------------------------------------------------------ reading the files
@@ -89,7 +87,8 @@ def _env_of(d, server):
 
 # ------------------------------------------------------------------ import
 def node_entries(d, server, files, patterns):
-    """(entries for the server's subtree, notices): the server with what its run.properties and tcp.xml say."""
+    """(entries for the server's subtree, notices): the server with what its run.properties and its jgroups.properties
+    or tcp.xml say; a fact whose file the folder lacks is kept as the record has it."""
     host = one(server, "ciamHostname") or rdn_value(server)
     props = properties(files[RUN_PROPERTIES]) if RUN_PROPERTIES in files else {}
     mode = props.get("pf.operational.mode")
@@ -98,11 +97,12 @@ def node_entries(d, server, files, patterns):
     config, held = withheld_settings({k: v for k, v in props.items()
                                       if k not in ("pf.operational.mode", "node.tags", *LISTENERS)}, patterns)
     protocol = node_protocol(files)
-    owned = {"pingfedOperationalMode": (mode if mode in MODES else None,), "pingfedNodeTags": tuple(tags),
-             "pingfedListener": tuple(ports), "pingfedDiscovery": (protocol,),
-             "pingfedConfig": (canonical(config) if props else None,), "pingfedWithheld": held}
+    run = {"pingfedOperationalMode": (mode if mode in MODES else None,), "pingfedNodeTags": tuple(tags),
+           "pingfedListener": tuple(ports), "pingfedConfig": (canonical(config) if props else None,),
+           "pingfedWithheld": held} if RUN_PROPERTIES in files else {}
+    owned = {**run, **({"pingfedDiscovery": (protocol,)} if JGROUPS_PROPERTIES in files or TCP_XML in files else {})}
     node = make_entry(server.dn, tuple(dict.fromkeys((*server.classes, "pingfedNode"))),
-                      merged_attrs(server, owned, NODE_OWNED))
+                      merged_attrs(server, owned, tuple(owned)))
     binding = one_role(_env_of(d, server), DISCOVERY_ROLE)
     known, bound = PROTOCOLS.get(protocol), binding_protocol(binding) if binding is not None else None
     notices = (*((f"node {host}: pf.operational.mode {mode!r} is none of {', '.join(MODES)}; not recorded",)

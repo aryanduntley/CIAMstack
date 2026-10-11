@@ -290,6 +290,13 @@ An EBS volume attached to one of the environment's instances without a `Volume` 
 
 A plan with several rules is named (the first is read); a selection choosing resources by ARN rather than by tag is named (what it protects isn't read).
 
+**Reading its own render back** (the round trip, `reads_back`; `rendered_state.py`). Each rendered root (`terraform/`, `terraform/landing-zone/`) becomes the state applying it would record (`opsdir_format_terraform.state_builder`), read by `aws/terraform-state`. What AWS would assign comes from the record the render was made from:
+- a resource realizing a binding the record holds (`REALIZES`: its type and the binding's class; the block named after the binding) gets that binding's provider reference, an ARN as `arn` or another reference as `id`, as the importer reads it;
+- any other resource gets an id and an ARN in the root's partition (GovCloud for `us-gov-*`), region and account, plus what AWS assigns its type (`ASSIGNS`: a load balancer's DNS name and zone, an OIDC provider's `oidc-provider/<host>` ARN);
+- `tags_all` is the provider's `default_tags` under the resource's own tags, and `aws_partition`, `aws_caller_identity` and `aws_region` are answered.
+
+The render is the record's intent (its edge policies, the permission table, the guardrails), so the read-back is marked `intent`. It must read back as the bindings it came from, with no copies, and rendering again must give the same files. Where the record still holds what was observed, the changes are what applying would record. In the showcase's source/prod: NLB passthrough becomes the ALB the policies ask for, WAF and Shield come back as edge bindings, and broad grants become least-privilege ones. One gap is known: CloudTrail data events aren't rendered yet (milestone 5.7), so they don't survive.
+
 ## Collecting from AWS (`opsdir collect`)
 
 `opsdir collect --env CLOUD/ENV --adapter aws` reads what the three importers below read, read-only, under your own

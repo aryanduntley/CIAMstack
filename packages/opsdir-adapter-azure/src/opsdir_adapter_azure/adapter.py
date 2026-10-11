@@ -1,5 +1,5 @@
 """Azure adapter: applies to environments in clouds whose ciamCloudProvider is azure."""
-from opsdir.core.contract import Adapter
+from opsdir.core.contract import Adapter, ReadBack
 from opsdir.domains.infrastructure.checks import check_server_inputs
 from opsdir.domains.infrastructure.firewall import priority_check
 from .access import ACCESS
@@ -14,6 +14,7 @@ from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
 from .regions import PREREQUISITE, REGIONS
 from .secrets import SECRET_PATTERNS, keyvault_command, keyvault_lookup
 from .terraform import PRIORITIES, render
+from .rendered_state import rendered_states
 
 PROVIDER = "azure"
 
@@ -36,4 +37,6 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                   profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE),
                   collectors=COLLECTORS,
                   workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY,
-                  gateway_plug=gateway_plug, ansible_lookup={"azkv": keyvault_lookup})
+                  gateway_plug=gateway_plug, ansible_lookup={"azkv": keyvault_lookup},
+                  reads_back=(ReadBack("terraform-state", "terraform/*.tf", "terraform/", "{environment}/", False,
+                                       rendered_states, intent=True),))

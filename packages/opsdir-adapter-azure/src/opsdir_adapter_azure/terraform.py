@@ -42,7 +42,8 @@ from .landing import render_landing
 from .resource_providers import registration_note, resource_providers
 from .network import render_network
 from .plumbing import network_data
-from .account import provider_block, required_providers, subscription_variable, tagged
+from .account import azuread_provider, provider_block, required_providers, subscription_variable, tagged
+from .identity_protection import uses_azuread
 
 PRIORITIES = (100, 10, 4096)        # NSG rule priorities: first slot, step, last (pinned ones kept)
 
@@ -251,9 +252,10 @@ def render(m, services):
         tuple(x for x in (registration_note(*resource_providers((main, *landing.values()))),) if x)
     providers = header(m, "Providers and inputs", HCL) + "\n" + "\n\n".join([
         *alone,
-        required_providers(uses_azapi(m)),
+        required_providers(uses_azapi(m), uses_azuread(m)),
         provider_block(m),
         *((azapi_provider(m),) if uses_azapi(m) else ()),
+        *((azuread_provider(m),) if uses_azuread(m) else ()),
         subscription_variable(m),
         block("variable", ["admin_ssh_public_key"], [("type", ref("string"))]),
         *budget_inputs(m),

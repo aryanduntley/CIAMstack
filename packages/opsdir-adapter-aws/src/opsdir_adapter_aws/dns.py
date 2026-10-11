@@ -9,6 +9,8 @@ from opsdir.domains.edge.records import address, forwarders, hosted_notes, recor
 from opsdir.domains.edge.dns import zone_of, zone_unknown
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 
+ALIAS_TTL = "60"     # the TTL Route 53 answers an alias to a load balancer with (the record can't set its own)
+
 RESOLVER_ENDPOINT = "resolver_endpoint_id"      # the landing zone's outbound Resolver endpoint, an input
 
 
@@ -42,7 +44,7 @@ def service_record(d, m, svc, n, target=None, cname=None):
     dns_name, zone_id = target or (ref(f"aws_lb.{n}.dns_name"), ref(f"aws_lb.{n}.zone_id"))
     alias = ("alias", Block((("name", dns_name), ("zone_id", zone_id), ("evaluate_target_health", True))))
     note = (("#", f"an alias takes the load balancer's TTL; the recorded {one(svc, 'ciamTtlSeconds')} s doesn't "
-                  "apply"),) if one(svc, "ciamTtlSeconds") else ()
+                  "apply"),) if one(svc, "ciamTtlSeconds") not in (None, ALIAS_TTL) else ()
     head = (("zone_id", zone), ("name", name), ("type", "A"))
     routed = routing(d, m, svc)
     if routed is None:

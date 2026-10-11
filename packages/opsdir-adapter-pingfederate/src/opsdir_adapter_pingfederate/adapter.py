@@ -7,6 +7,7 @@ from opsdir_base_saml.render import FORMATS as SAML_FORMATS
 from .checks import (check_client_auth, check_cluster, check_data_stores, check_jdbc_drivers,
                      check_references, check_service_roles, check_smtp_auth)
 from .discovery import CHOICES
+from .discovery_import import CLUSTER
 from .importer import BULK
 from .listeners import listeners
 from .logs import LOGS
@@ -42,8 +43,10 @@ ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required
                            ("pingfederate/cluster/*.properties", "java-properties"),
                            *SAML_FORMATS, *OIDC_FORMATS),
                   products=(("PingFederate", ">=11,<14"),),
-                  secret_patterns=SECRET_PATTERNS, importers=(BULK, NODE_FILES), profile_terms=None, access=None,
-                  endpoints=ENDPOINTS, listeners=listeners,
+                  secret_patterns=SECRET_PATTERNS, importers=(BULK, NODE_FILES, CLUSTER), profile_terms=None,
+                  access=None, endpoints=ENDPOINTS, listeners=listeners,
                   proxy_settings=proxy_settings, collectors=COLLECTORS, render_targets=TARGETS,
                   logs=LOGS, version_changes=VERSION_CHANGES,
-                  reads_back=(ReadBack("bulk", "pingfederate/*.json"),))
+                  reads_back=(ReadBack("bulk", "pingfederate/*.json"),
+                              ReadBack("cluster", "pingfederate/cluster/jgroups.properties", "pingfederate/cluster/",
+                                       "{environment}/", True)))

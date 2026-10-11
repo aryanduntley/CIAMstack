@@ -1,6 +1,7 @@
 """DNS as AWS Terraform: a service name's alias record, a failover pair and a weighted set routed from the environment
 holding the primary (the others' answers health-checked), records in their Route 53 zones, nothing in a zone someone
 else runs, outbound forwarders as Resolver rules on the VPC."""
+from opsdir.core.directory import make_entry
 from opsdir_adapter_aws.dns import records, resolver_rules, service_record
 from edge_fixtures import binding, dns_estate
 
@@ -9,7 +10,11 @@ def test_a_failover_pair_is_answered_from_the_primarys_zone():
     d, alpha, beta = dns_estate()
     out = "\n".join(service_record(d, alpha, binding(alpha, "svc-login"), "svc_login"))
     assert 'set_identifier = "alpha/prod"' in out and 'type = "PRIMARY"' in out and "alias {" in out
-    assert "# an alias takes the load balancer's TTL; the recorded 60 s doesn't apply" in out
+    assert "an alias takes the load balancer's TTL" not in out          # 60 s: what an alias answers with
+    svc = binding(alpha, "svc-login")
+    longer = make_entry(svc.dn, svc.classes, {**svc.attrs, "ciamTtlSeconds": ("300",)})
+    assert "# an alias takes the load balancer's TTL; the recorded 300 s doesn't apply" in \
+        "\n".join(service_record(d, alpha, longer, "svc_login"))
     assert 'resource "aws_route53_health_check" "svc_login_beta_prod"' in out \
         and 'ip_address        = "198.51.100.20"' in out
     assert 'type = "SECONDARY"' in out and "health_check_id = aws_route53_health_check.svc_login_beta_prod.id" in out

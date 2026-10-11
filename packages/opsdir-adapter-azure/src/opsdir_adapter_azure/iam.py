@@ -28,6 +28,7 @@ from collections import defaultdict
 from opsdir.core.inventory import of_types, resource, tagged_role
 from opsdir.domains.access.grants import excluding, grant_text
 from .guardrails import denial_of
+from .identity_protection import policy_principals
 
 KV = "Microsoft.KeyVault/vaults/"
 # Key Vault access policy permissions as the data actions Key Vault's RBAC names them
@@ -116,7 +117,9 @@ def _denied(denials, pid):
 
 
 def _identities(found):
-    """(resources, notices): managed identities and every other principal role assignments name, with their grants."""
+    """(resources, notices): managed identities and every other principal role assignments name, with their grants;
+    the users and groups risk-based Conditional Access policies cover or leave out, so the policies' users resolve to
+    identity roles (identity_protection.policy_principals)."""
     custom, names, denials = _custom_roles(found), _role_names(found), _denials(found)
     managed = {i.get("principal_id"): i for i in of_types(found, "azurerm_user_assigned_identity") if i.get("id")}
     trust = defaultdict(tuple)
@@ -144,11 +147,13 @@ def _identities(found):
             "ciamGrant": sorted(set(grants.get(pid, ()))), "ciamDenial": _denied(denials, pid)},
             name=i.get("name"), role=tagged_role(_tags(i)), tags=_tags(i))
     others = [pid for pid in grants if pid and pid not in managed]
+    covered = {pid: kind for pid, kind in policy_principals(found).items() if pid not in grants and pid not in managed}
     return ((*(one_managed(pid, i) for pid, i in managed.items()),
              *(resource("identity", pid, {"ciamIdentityKind": PRINCIPAL_KINDS.get(kinds.get(pid))
                                           or ("other" if kinds.get(pid) else None),               # unknown: kept
                                           "ciamGrant": sorted(set(grants[pid])), "ciamDenial": _denied(denials, pid)},
-                        name=pid) for pid in others)),
+                        name=pid) for pid in others),
+             *(resource("identity", pid, {"ciamIdentityKind": kind}, name=pid) for pid, kind in covered.items())),
             tuple(f"role definition {d}: its name isn't in the state (add a data azurerm_role_definition); recorded by "
                   "its ID" for d in unnamed))
 

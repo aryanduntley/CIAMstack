@@ -25,6 +25,7 @@ service fronting a service takes <kind>-<the service's role> (core inventory).
 from opsdir.core.inventory import of_types, resource, tagged_role
 from opsdir.domains.edge.imports import forwarder_role, record_role, zone_role
 from opsdir.domains.edge.resolve import endpoint_kind_named, rate_limit_fact, tls_level
+from .dns import ALIAS_TTL
 from .edge import TLS_POLICIES, WAF_GROUPS
 from .tags import state_tags as _tags
 
@@ -104,9 +105,11 @@ def _rule_facts(rule, ip_sets):
 
 
 def aliased_names(found, lb):
-    """The DNS names a load balancer answers under: its own, and its CloudFront distributions'."""
-    return {lb.get("dns_name"), *(d.get("domain_name") for d in of_types(found, "aws_cloudfront_distribution")
-                                  for o in d.get("origin") or () if o.get("domain_name") == lb.get("dns_name"))}
+    """The DNS names a load balancer answers under: its own, and its CloudFront distributions'; none when the source
+    doesn't give its own (a name nothing answers under matches no record)."""
+    own = lb.get("dns_name")
+    return {own, *(d.get("domain_name") for d in of_types(found, "aws_cloudfront_distribution")
+                   for o in d.get("origin") or () if o.get("domain_name") == own)} if own else set()
 
 
 def fronted(found):
@@ -166,7 +169,7 @@ def routing(record):
 def service_dns(record):
     """What a service name's own Route 53 record says of its DNS: TTL (an alias takes the load balancer's 60 s) and
     routing."""
-    return {"ciamTtlSeconds": "60" if record.get("alias") else record.get("ttl"), **routing(record)}
+    return {"ciamTtlSeconds": ALIAS_TTL if record.get("alias") else record.get("ttl"), **routing(record)}
 
 
 def _name(record):

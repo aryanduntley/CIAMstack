@@ -12,7 +12,8 @@ from opsdir.core.findings import findings
 from opsdir.core.inventory import resource
 from opsdir.core.interchange.ldif import LdifRecord
 from opsdir.domains.estate.poam import (accept_exceptions, acceptable, assessment_rows, check_poam, exception_of,
-                                        exception_rows, in_force, poam_rows, requirement_number, suppression_prepare)
+                                        exception_rows, in_force, poam_rows, requirement_number, suppression_prepare,
+                                        suppression_role)
 from network_fixtures import ALPHA, BETA, context, entry, model
 
 OU = "dn: ou={0},dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: {0}\n"
@@ -190,3 +191,11 @@ def test_reports():
          "Authorizing official", "CAB 2026-09-18 2026-09-15", "2027-01-01", "yes")]
     assert assessment_rows(d) == [("CMMC-1", "cmmc-l2", "c3pao", "100/110", "conditional", "2026-08-01", "2027-01-28",
                                    "", "beta/prod")]
+
+
+def test_a_suppression_read_without_a_role_takes_its_exceptions_name():
+    """Its exception as a DN (as a suppression's prepare resolves it) or as its name: the record's role either way."""
+    by_dn = resource("suppression", "rule-1", {"ciamExceptionRef": ("cn=EXC-2026-03,ou=exceptions,dc=ciam-ops",)})
+    assert suppression_role(by_dn, {}) == suppression_role(resource("suppression", "rule-1", {
+        "ciamExceptionRef": "EXC-2026-03"}), {}) == "suppression-EXC-2026-03"
+    assert suppression_role(resource("suppression", "rule-1", {}, name="rule-1"), {}) == "suppression-rule-1"

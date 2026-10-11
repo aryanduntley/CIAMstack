@@ -36,6 +36,8 @@ of the matching hashicorp/azurerm resource, so the same mapping reads them as re
   storage accounts' settings, container immutability, lifecycle and object replication   see cli_storage.py
   az monitor diagnostic-settings subscription list   Microsoft.Insights/diagnosticSettings of the subscription: the
                                         Activity Log's export, as an audit trail (see audit.py)
+  identity protection: Graph's Conditional Access policies (az rest) and Entra ID's diagnostic settings (az monitor
+  diagnostic-settings list --resource /providers/Microsoft.AADIAM)   see cli_identity.py
 Subnets, interfaces and VMs outside the listed virtual networks are counted, not read; secrets, keys and containers
 are listed per vault and account, and function apps per resource group, so the importer counts rather than lists the
 ones the record doesn't have and nothing names a role for.
@@ -48,6 +50,7 @@ from opsdir.core.contract import Importer
 from opsdir.core.inventory import layout_import
 from .cli_edge import edge_items
 from .cli_iam import iam_items
+from .cli_identity import CA_KIND, identity_items, is_policy
 from .cli_backup import backup_items
 from .cli_disk import disk_items, os_disk_of
 from .cli_database import database_items
@@ -81,9 +84,12 @@ def vault_object(url):
 
 
 def kind_of(item):
-    """What an item is: its ARM type (lower case), or 'kv-secret' / 'kv-key' / 'kv-rotation' for Key Vault objects."""
+    """What an item is: its ARM type (lower case), 'kv-secret' / 'kv-key' / 'kv-rotation' for Key Vault objects, or
+    'graph-ca-policy' for a Conditional Access policy as Graph returns it."""
     if not isinstance(item, dict):
         return None
+    if is_policy(item):
+        return CA_KIND
     if item.get("type"):
         return _low(item["type"])
     if "lifetimeActions" in item:
@@ -353,7 +359,7 @@ def items_resources(items):
                                             *_vault_items(items), *_stores(items), *_functions(items),
                                             *iam_items(items), *edge_items(items), *network_items(items),
                                             *database_items(items), *storage_items(items), *disk_items(items),
-                                            *backup_items(items), *audit_items(items)]))
+                                            *backup_items(items), *audit_items(items), *identity_items(items)]))
     resources, notices = pairs_resources(pairs)
     return resources, (*scope_notices, *notices)
 

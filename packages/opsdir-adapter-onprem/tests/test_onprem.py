@@ -11,7 +11,8 @@ from opsdir_adapter_onprem.adapter import ADAPTER
 from opsdir_adapter_onprem.sites import read_sites
 import mini_estate
 from mini_estate import FAKE
-from support import REGISTRY, build_directory
+from opsdir.connectors.importing import import_changes
+from support import REGISTRY, after_import, build_directory
 
 AS_OF = dt.date(2026, 1, 1)
 BETA = "env=prod,cloud=beta,ou=environments,dc=ciam-ops"
@@ -96,3 +97,11 @@ def test_a_dns_add_on_still_leaves_the_names_it_cant_write_to_their_keepers():
     _, requests = _onprem_findings(_directory(*OWNER, add_on, changes=owned))
     assert ("site-infra", "beta/prod: set up DNS record `sso.example.test` (in no DNS zone the environment binds: "
                           "the DNS add-on writes only the zones the platform runs).") in requests
+
+
+def test_importing_the_same_sites_again_changes_nothing():
+    """The importer's guarantee (the adapter renders nothing, so it has no read-back): a second import of the same list
+    finds the record as the first left it."""
+    files = {"sites.json": json.dumps(SITES)}
+    once = after_import(_directory(), read_sites(files, _directory(), ()))
+    assert import_changes(once, read_sites(files, once, ())) == ()

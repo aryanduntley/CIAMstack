@@ -13,6 +13,7 @@ FIPS_NOTE = ("FIPS endpoints: Azure has no separate FIPS endpoints for the provi
              "services' own validated modules, or by Azure Government (ciamCloudEnvironment usgovernment)")
 AZURERM_VERSION = "~> 5.9"          # validated against hashicorp/azurerm 5.9.0
 AZAPI_VERSION = "~> 2.13"           # validated against Azure/azapi 2.13.0
+AZUREAD_VERSION = "~> 3.10"         # validated against hashicorp/azuread 3.10.0
 
 
 
@@ -20,11 +21,22 @@ def government(m):
     """Whether environment m's cloud runs in Azure Government (a US Gov or US DoD region)."""
     return (one(m.cloud, "ciamRegion") or "").lower().startswith(("usgov", "usdod"))
 
-def required_providers(azapi=False):
-    """The terraform block of an Azure root: azurerm, and azapi when the root renders azapi resources."""
+def required_providers(azapi=False, azuread=False):
+    """The terraform block of an Azure root: azurerm, azapi when the root renders azapi resources, azuread when it
+    renders Microsoft Entra ID policy (risk-based Conditional Access)."""
     return block("terraform", [], [("required_providers", Block((
         ("azurerm", {"source": "hashicorp/azurerm", "version": AZURERM_VERSION}),
-        *((("azapi", {"source": "Azure/azapi", "version": AZAPI_VERSION}),) if azapi else ()))))])
+        *((("azapi", {"source": "Azure/azapi", "version": AZAPI_VERSION}),) if azapi else ()),
+        *((("azuread", {"source": "hashicorp/azuread", "version": AZUREAD_VERSION}),) if azuread else ()))))])
+
+
+def azuread_provider(m):
+    """The azuread provider block of a root of environment m: Microsoft Graph in the cloud's environment (Azure
+    Government: usgovernment, its DoD regions usgovernmentl5; Graph at graph.microsoft.us / dod-graph.microsoft.us)."""
+    region = (one(m.cloud, "ciamRegion") or "").lower()
+    env = "usgovernmentl5" if region.startswith("usdod") else \
+        "usgovernment" if one(m.cloud, "ciamCloudEnvironment") == "usgovernment" else None
+    return block("provider", ["azuread"], [("environment", env)] if env else [])
 
 
 def provider_block(m, register=()):

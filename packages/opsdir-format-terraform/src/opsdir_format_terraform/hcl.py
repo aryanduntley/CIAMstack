@@ -15,6 +15,10 @@ def tf_name(s):
 # ------------------------------------------------------------------ HCL
 # A nested HCL block, rendered under its key: ("root_block_device", Block(body)).
 Block = NamedTuple("Block", [("body", tuple)])
+# A top-level block of a Terraform file (resource, data, variable, provider, terraform, ...) as data: what block()
+# writes it from. body: (key, value) pairs, a value a nested Block, ("#", comment), str (a '${...}' string is a raw
+# expression), int, float, bool, a list (tuple) or an object (dict, keys as written) of such values.
+TfBlock = NamedTuple("TfBlock", [("kind", str), ("labels", tuple), ("body", tuple)])
 
 
 def hcl(v, indent=0):

@@ -273,6 +273,33 @@ A disk an Azure Backup backup instance protects follows that instance's disk bac
 
 A data disk attached to one of the environment's VMs without a `Volume` tag is named. The CLI's `az disk list` gives the data disks (an OS disk is the VM's, from its `storageProfile`), `az vm list` the OS disks and the data disks' LUNs; an ARM template's `Microsoft.Compute/disks` read the same way.
 
+**Identity: Microsoft Entra ID Protection** (`identity_protection.py`). Defender for Cloud has no plan for identity, so a threat-detection service covering `identity` renders as Entra ID Protection:
+- **The risk logs, always:** an `azurerm_monitor_aad_diagnostic_setting` with `RiskyUsers`, `UserRiskEvents`, `RiskyServicePrincipals` and `ServicePrincipalRiskEvents`, to the Log Analytics workspace its findings go to. Elsewhere, a NOTE.
+- **Its risk-based policies, only when the record states them completely** (core estate `risk_policies`: `ciamRiskPolicy`, `ciamPolicyCovers`, `ciamPolicyExcludes`, `ciamPolicyMode`): one `azuread_conditional_access_policy` each.
+  - Users and groups go by their identity bindings' object ids; the break-glass accounts are left out.
+  - Report-only (`enabledForReportingButNotEnforced`) unless the record says enforced.
+  - `mfa` is the built-in Multifactor authentication strength; `password-change` is `mfa` + `passwordChange` (AND); `block` is block.
+  - `risk-remediation` (Microsoft's current user-risk control) is a NOTE: azuread 3.10.0 doesn't accept `riskRemediation`.
+- **The `azuread` provider** (`~> 3.10`) joins the root only then, in Azure Government's environment there (`usgovernment`, DoD regions `usgovernmentl5`).
+- **Prerequisites:** Entra ID P2, plus Conditional Access rights in Microsoft Graph for the deploying identity and Security Administrator for the export (the planner names them).
+
+**Read back** from state, and from the CLI (Graph's Conditional Access policies through `az rest`, and `az monitor diagnostic-settings list --resource /providers/Microsoft.AADIAM`; `cli_identity.py`), onto the Defender threat-detection service:
+- coverage `identity`;
+- the policies, their mode, and whom they cover (`all-users`, or the users and groups, which the IAM reader reports so they resolve to identity roles).
+
+Named, not read: disabled policies, grants the record doesn't express, policies needing both risks, and levels that don't run from one level up. Graph lists the whole tenant's policies, so every risk-based one is read onto the environment.
+
+**Reading its own render back** (the round trip, `reads_back`; `rendered_state.py`). Each rendered root becomes the state applying it would record (`opsdir_format_terraform.state_builder`), read by `azure/terraform-state`:
+- Every resource gets the id Azure would give it: its resource group, its resource provider (`resource_providers.namespace_of`) and ARM type (`ARM_TYPES`), and its name. Children go under their parents; Defender pricings and policy assignments go under the subscription. The importers read ids by their segments.
+- So a data source looking something up by name and resource group finds what the record holds.
+- A resource realizing a binding the record holds (`REALIZES`) gets its provider reference, plus what the record holds of what Azure assigned it (`RECORDED`: a managed identity's client id). A helper identity gets synthetic principal and client ids.
+
+The render is the record's intent, so the read-back is marked `intent`: no copies, and the render must be a fixed point. Provider references aren't fed back into the second render: in the round trip they're synthetic, and identity is checked as drift.
+
+In target/prod, applying would record the edge facts the policies ask for, WAF policies as edge bindings, scoped Key Vault grants, and references for the designed route table and flow log. One gap is known: Defender for Cloud has no plan for identity (Entra ID Protection isn't rendered), so the record's identity coverage doesn't survive.
+
+Found by the round trip and fixed: the CMK's helper identity carried the database's `Role` tag. Reading it back bound the database's role twice, and PingFederate's JDBC URL became UNBOUND. It is tagged `ManagedBy` only now.
+
 ## Collecting from Azure (`opsdir collect`)
 
 `opsdir collect --env CLOUD/ENV --adapter azure` reads what the two importers below read, read-only, under your own

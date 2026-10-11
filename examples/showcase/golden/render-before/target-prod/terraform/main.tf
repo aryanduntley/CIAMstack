@@ -1155,7 +1155,6 @@ resource "azurerm_user_assigned_identity" "psql_ciam_prod_pf_grants_cmk" {
     CostCenter  = "CC-1001"
     Environment = "target/prod"
     Owner       = "ciam-platform"
-    Role        = "pf-grants-db"
     ManagedBy   = "opsdir"
   }
 }
@@ -1813,7 +1812,24 @@ resource "azurerm_security_center_subscription_pricing" "cloudposture" {
   resource_type = "CloudPosture"
 }
 
-# defender: Defender for Cloud has no plan for identity: Microsoft Entra ID Protection watches sign-ins (not rendered)
+# defender: identity: Microsoft Entra ID Protection (Defender for Cloud has no plan for identity); its risk signals and policies need Entra ID P2
+
+resource "azurerm_monitor_aad_diagnostic_setting" "defender_identity_risk" {
+  name                       = "defender-identity-risk"
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.security_logs.id
+  enabled_log {
+    category = "RiskyUsers"
+  }
+  enabled_log {
+    category = "UserRiskEvents"
+  }
+  enabled_log {
+    category = "RiskyServicePrincipals"
+  }
+  enabled_log {
+    category = "ServicePrincipalRiskEvents"
+  }
+}
 
 resource "azurerm_security_center_automation" "defender_export" {
   name                = "defender-export"

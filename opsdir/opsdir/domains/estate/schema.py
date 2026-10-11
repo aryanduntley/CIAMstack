@@ -33,7 +33,8 @@ from .naming import (AMOUNT, ASSESSMENT_KINDS, AUTHORIZATION_STATUSES, CONFIGURA
                      ASSESSMENT_STATUSES, BUDGET_PERIODS, CAGE_CODE, CLASSIFICATIONS,
                      CONTROL_REF, CURRENCY, DISCOVERY_SOURCES, EXCEPTION_KINDS, EXCEPTION_STATUSES, FINDING_REF,
                      MEDIA_REQUESTS, POAM_STATUSES, QUOTA_DECISIONS, QUOTA_KINDS, REGION_STATUSES, RISK_RATINGS,
-                     SECURITY_AREAS, SECURITY_KINDS, SEVERITIES, STANDARD_ID, TAG_SOURCES, UEI, CUSTOM_IDENTIFIER)
+                     SECURITY_AREAS, SECURITY_KINDS, SEVERITIES, STANDARD_ID, TAG_SOURCES, UEI, CUSTOM_IDENTIFIER,
+                     POLICY_MODES, POLICY_SUBJECT, RISK_POLICY)
 
 ATTRIBUTES = (
     AttributeDef(482, 'ciamAccountRef', 'string', 'binding', True,
@@ -319,6 +320,20 @@ ATTRIBUTES = (
     AttributeDef(596, 'ciamResultsRole', 'string', 'intent', True,
                  "The role of the binding a data discovery service keeps its detailed results in (an object store): "
                  "the record of where sensitive data was found"),
+    AttributeDef(637, 'ciamRiskPolicy', 'string', 'intent', False,
+                 "A risk-based sign-in policy a threat-detection service watching identity enforces: '<sign-in|user> "
+                 "<low|medium|high>+: <mfa|password-change|risk-remediation|block>' (sign-in medium+: mfa; "
+                 "password-change and risk-remediation answer a user's risk only)",
+                 (("X-PATTERN", RISK_POLICY),)),
+    AttributeDef(638, 'ciamPolicyCovers', 'string', 'intent', False,
+                 "Whom a security service's risk policies cover: identity bindings' roles (users, groups), or "
+                 "all-users", (("X-PATTERN", POLICY_SUBJECT),)),
+    AttributeDef(639, 'ciamPolicyExcludes', 'string', 'intent', False,
+                 "Whom a security service's risk policies leave out: identity bindings' roles (the break-glass "
+                 "accounts, so a policy can never lock everyone out)", (("X-PATTERN", POLICY_SUBJECT),)),
+    AttributeDef(640, 'ciamPolicyMode', enum_type(POLICY_MODES), 'intent', True,
+                 "Whether a security service's risk policies are enforced or only report what they would do "
+                 "(report-only when not given)"),
 )
 CLASSES = (
     ClassDef(103, 'ciamCloudAccount', 'top', 'AUXILIARY', (),
@@ -350,7 +365,8 @@ CLASSES = (
     ClassDef(112, 'ciamSecurityService', 'ciamBinding', 'STRUCTURAL', ('ciamSecurityKind',),
              ('ciamSecurityCoverage', 'ciamComplianceStandard', 'ciamSecurityBaseline', 'ciamAuditScope',
               'ciamAllRegions', 'ciamFindingsRole', 'ciamIncidentRole', 'ciamIncidentSeverity', 'ciamRetentionDays',
-              'ciamProviderRef', 'ciamManagedBy'),
+              'ciamProviderRef', 'ciamManagedBy', 'ciamRiskPolicy', 'ciamPolicyCovers', 'ciamPolicyExcludes',
+              'ciamPolicyMode'),
              "A cloud security service an environment runs (threat detection, vulnerability scanning, configuration "
              "recording, posture assessment): what it watches or assesses, one account or the whole organization, "
              "every region or one, where its findings go (and those at or above a severity, to the incident process), "

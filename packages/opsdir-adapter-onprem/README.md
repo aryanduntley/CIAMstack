@@ -32,7 +32,7 @@ opsdir import --dry-run onprem/sites sites.json
 opsdir import --change CHG-… onprem/sites sites.json
 ```
 
-`code` is required (what `ciamRegion` names); `name` and `geography` as the organization calls them; `status` `available` (default) or `not-listed` (a site retired). A refresh keeps what the file doesn't give; a site the record holds that the file lacks stays, marked not-listed. So residencies allow sites as they allow cloud regions (`ciamAllowedRegion` naming `cn=<site>,cn=onprem,ou=regions,dc=ciam-ops`), and the planner's region check names a site the catalog doesn't list.
+`code` is required (what `ciamRegion` names); `name` and `geography` as the organization calls them; `status` `available` (default) or `not-listed` (a site retired). A refresh keeps what the file doesn't give; a site the record holds that the file lacks stays, marked not-listed. So residencies allow sites as they allow cloud regions (`ciamAllowedRegion` naming `cn=<site>,cn=onprem,ou=regions,dc=ciam-ops`), and the planner's region check names a site the catalog doesn't list. The adapter renders nothing, so it has no read-back (`reads_back`); its guarantee is that importing the same list again changes nothing.
 
 ## Planner check: the site's keepers
 
@@ -53,4 +53,4 @@ Who keeps it: the binding's `ciamManagedBy` (service names and firewall rules ma
 
 ## Tests
 
-`tests/test_onprem.py`: sites read into the catalog; requests to the site's owner; actions with no keeper; an add-on in the stack removes its part; a cloud target isn't asked.
+`tests/test_onprem.py`: sites read into the catalog; the same list imported again changes nothing; requests to the site's owner; actions with no keeper; an add-on in the stack removes its part; a cloud target isn't asked.
