@@ -43,6 +43,7 @@ NAMESPACES = (
     ("azurerm_private_endpoint", "Microsoft.Network"),
     ("azurerm_private_link_service", "Microsoft.Network"),
     ("azurerm_public_ip", "Microsoft.Network"),
+    ("azurerm_purview_", "Microsoft.Purview"),
     ("azurerm_resource_group", "Microsoft.Resources"),
     ("azurerm_resource_group_policy_", "Microsoft.Authorization"),
     ("azurerm_role_", "Microsoft.Authorization"),
@@ -63,7 +64,9 @@ NAMESPACES = (
     ("azurerm_windows_virtual_machine", "Microsoft.Compute"),
 )
 _RESOURCE = re.compile(r'^resource "(azurerm_[a-z0-9_]+)"', re.MULTILINE)
-_AZAPI = re.compile(r'^\s*type\s*=\s*"(Microsoft\.[A-Za-z]+)/[^"]*@', re.MULTILINE)
+# an azapi_resource's ARM type (its first line): data-plane resources and data sources register nothing
+_AZAPI = re.compile(r'^resource "azapi_resource" "[^"]+" \{\n\s*type\s*=\s*"(Microsoft\.[A-Za-z]+)/[^"]*@',
+                    re.MULTILINE)
 
 
 def namespace_of(type_):
@@ -77,7 +80,7 @@ def resource_providers(texts):
     Terraform texts belong to, and the azurerm resource types no namespace is known for."""
     types = {t for x in texts for t in _RESOURCE.findall(x)}
     known = {t: namespace_of(t) for t in types}
-    azapi = {ns for x in texts if 'resource "azapi_resource"' in x for ns in _AZAPI.findall(x)}
+    azapi = {ns for x in texts for ns in _AZAPI.findall(x)}
     return (tuple(sorted({ns for ns in known.values() if ns} | azapi)),
             tuple(sorted(t for t, ns in known.items() if ns is None)))
 

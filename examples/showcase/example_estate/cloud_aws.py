@@ -26,7 +26,7 @@ from .access import ACCT, AWS_IDENTITIES
 from .cloud_common import by_role, hex_id, listed, rows_of, servers_of, service_named
 from .infrastructure import SECRET_ROLES, SOURCE
 from .observability import MONITORING, PAGE_TOPIC
-from .estate import CONFIG_BUCKET, COSTS, MACIE_JOB, OWN_DATA_TYPES, SECURITY
+from .estate import CONFIG_BUCKET, COSTS, MACIE_RESCAN, OWN_DATA_TYPES, SECURITY
 
 ACCOUNT, REGION = "111122223333", "us-east-1"
 
@@ -290,12 +290,19 @@ def _aws_security():
                 "id": cid, "name": name, "regex": rx, "arn": f"arn:aws:macie2:us-east-1:111122223333:custom-data-"
                                                             f"identifier/{cid}"})
               for cid, name, rx in identifiers),
-            _res("managed", "aws_macie2_classification_job", "macie-backups", {
-                "id": MACIE_JOB.rsplit("/", 1)[1], "arn": MACIE_JOB, "name": "macie-backups", "job_type": "SCHEDULED",
-                "job_status": "RUNNING", "schedule_frequency": [{"weekly_schedule": "SUNDAY"}],
-                "custom_data_identifier_ids": [cid for cid, _, _ in identifiers],
-                "s3_job_definition": [{"bucket_definitions": [{"account_id": "111122223333",
-                                                              "buckets": ["example-aero-ciam-prod-ds-backups"]}]}]}),
+            # every 3 days: the rescan function EventBridge Scheduler invokes daily (one-time Macie jobs)
+            _res("managed", "aws_lambda_function", "macie-backups", {
+                "id": MACIE_RESCAN.rsplit(":", 1)[1], "arn": MACIE_RESCAN,
+                "function_name": MACIE_RESCAN.rsplit(":", 1)[1],
+                "runtime": "python3.14", "handler": "handler.handler",
+                "environment": [{"variables": {
+                    "JOB_NAME": "macie-backups", "RESCAN_DAYS": "3", "ACCOUNT_ID": "111122223333",
+                    "BUCKETS": "example-aero-ciam-prod-ds-backups",
+                    "CUSTOM_DATA_IDENTIFIER_IDS": ",".join(cid for cid, _, _ in identifiers)}}],
+                "tags": {"Realizes": "macie-backups", "RescanDays": "3"}}),
+            _res("managed", "aws_scheduler_schedule", "macie-backups", {
+                "id": "default/ciam-prod-macie-macie-backups", "name": "ciam-prod-macie-macie-backups",
+                "schedule_expression": "rate(1 day)", "target": [{"arn": MACIE_RESCAN}]}),
             _res("managed", "aws_sns_topic", "security-incidents", {
                 "arn": incidents, "name": incidents.rsplit(":", 1)[1],
                 "tags": {"Role": "security-incidents", "ManagedBy": "opsdir"}}),

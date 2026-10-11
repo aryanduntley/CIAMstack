@@ -4,7 +4,7 @@ import json
 
 from opsdir_format_terraform.hcl import Block, TfBlock, jsonencoded, ref
 from opsdir_format_terraform.state import read_state
-from opsdir_format_terraform.state_builder import synthetic, tf_state
+from opsdir_format_terraform.state_builder import root_states, synthetic, tf_state
 
 TERRAFORM = TfBlock("terraform", (), (("required_providers", Block((("aws", {"source": "hashicorp/aws"}),))),))
 VPC = TfBlock("data", ("aws_vpc", "main"), (("id", "vpc-1"),))
@@ -82,3 +82,11 @@ def test_what_cannot_be_evaluated_is_left_out_and_named():
         "aws_instance.x.port: no value for var.port", "aws_instance.x.arn: data.aws_vpc.main has no arn",
         "aws_instance.x.odd: not evaluated: a + b",
         "aws_instance.x.missing: aws_vpc_security_group_ingress_rule.r: no instance 5")
+
+
+def test_root_states_take_the_inputs_an_operator_gives():
+    files = {"x/prod/terraform/main.tf": 'variable "start" {\n  type = string\n}\n\nresource "t_thing" "a" {\n'
+                                         '  body = {\n    when = var.start\n  }\n}\n'}
+    found = lambda states: read_state(states["x/prod/terraform.tfstate"])[0][0].attributes
+    assert "body" not in found(root_states(files, "x/prod"))             # never guessed
+    assert found(root_states(files, "x/prod", variables={"start": "now"}))["body"] == {"when": "now"}

@@ -2256,20 +2256,70 @@ resource "aws_macie2_custom_data_identifier" "cdi_employee_id" {
   depends_on = [aws_macie2_account.macie]
 }
 
-resource "aws_macie2_classification_job" "macie_backups" {
-  job_type = "SCHEDULED"
-  name     = "macie-backups"
-  schedule_frequency {
-    weekly_schedule = "SUNDAY"
-  }
-  custom_data_identifier_ids = [aws_macie2_custom_data_identifier.cdi_cui_marking.id, aws_macie2_custom_data_identifier.cdi_employee_id.id]
-  s3_job_definition {
-    bucket_definitions {
-      account_id = "111122223333"
-      buckets    = ["example-aero-ciam-prod-ds-backups"]
+# macie-backups: every 3 days: Macie's schedule runs daily or weekly, so EventBridge Scheduler invokes ciam-prod-macie-macie-backups daily and it starts a one-time classification job once 3 days have passed since the last successful one
+
+data "archive_file" "macie_backups" {
+  type        = "zip"
+  source_dir  = "${path.module}/discovery/ciam-prod-macie-macie-backups"
+  output_path = "${path.module}/.build/ciam-prod-macie-macie-backups.zip"
+}
+
+resource "aws_iam_role" "macie_backups" {
+  name               = "ciam-prod-macie-macie-backups"
+  assume_role_policy = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"sts:AssumeRole\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"}}]}"
+}
+
+resource "aws_iam_role_policy" "macie_backups" {
+  name   = "macie-jobs"
+  role   = aws_iam_role.macie_backups.id
+  policy = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"macie2:CreateClassificationJob\",\"macie2:DescribeClassificationJob\"],\"Resource\":\"arn:aws:macie2:us-east-1:111122223333:classification-job/*\"},{\"Effect\":\"Allow\",\"Action\":\"macie2:ListClassificationJobs\",\"Resource\":\"*\"},{\"Effect\":\"Allow\",\"Action\":[\"logs:CreateLogGroup\",\"logs:CreateLogStream\",\"logs:PutLogEvents\"],\"Resource\":\"arn:aws:logs:us-east-1:111122223333:log-group:/aws/lambda/ciam-prod-macie-macie-backups:*\"}]}"
+}
+
+resource "aws_lambda_function" "macie_backups" {
+  function_name    = "ciam-prod-macie-macie-backups"
+  role             = aws_iam_role.macie_backups.arn
+  runtime          = "python3.14"
+  handler          = "handler.handler"
+  timeout          = 60
+  filename         = data.archive_file.macie_backups.output_path
+  source_code_hash = data.archive_file.macie_backups.output_base64sha256
+  environment {
+    variables = {
+      JOB_NAME                   = "macie-backups"
+      RESCAN_DAYS                = "3"
+      ACCOUNT_ID                 = "111122223333"
+      BUCKETS                    = "example-aero-ciam-prod-ds-backups"
+      CUSTOM_DATA_IDENTIFIER_IDS = "${aws_macie2_custom_data_identifier.cdi_cui_marking.id},${aws_macie2_custom_data_identifier.cdi_employee_id.id}"
     }
   }
+  tags = {
+    Realizes   = "macie-backups"
+    RescanDays = "3"
+  }
   depends_on = [aws_macie2_account.macie]
+}
+
+resource "aws_iam_role" "macie_backups_scheduler" {
+  name               = "ciam-prod-macie-macie-backups-scheduler"
+  assume_role_policy = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"sts:AssumeRole\",\"Principal\":{\"Service\":\"scheduler.amazonaws.com\"},\"Condition\":{\"StringEquals\":{\"aws:SourceAccount\":\"111122223333\",\"aws:SourceArn\":\"arn:aws:scheduler:us-east-1:111122223333:schedule-group/default\"}}}]}"
+}
+
+resource "aws_iam_role_policy" "macie_backups_scheduler" {
+  name   = "invoke"
+  role   = aws_iam_role.macie_backups_scheduler.id
+  policy = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"lambda:InvokeFunction\",\"Resource\":\"arn:aws:lambda:us-east-1:111122223333:function:ciam-prod-macie-macie-backups\"}]}"
+}
+
+resource "aws_scheduler_schedule" "macie_backups" {
+  name                = "ciam-prod-macie-macie-backups"
+  schedule_expression = "rate(1 day)"
+  flexible_time_window {
+    mode = "OFF"
+  }
+  target {
+    arn      = aws_lambda_function.macie_backups.arn
+    role_arn = aws_iam_role.macie_backups_scheduler.arn
+  }
 }
 
 resource "aws_cloudwatch_event_rule" "macie_backups_findings" {

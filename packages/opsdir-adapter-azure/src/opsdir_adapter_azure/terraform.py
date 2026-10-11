@@ -30,6 +30,7 @@ from .budgets import budget_inputs, render_budgets
 from .quotas import quota_request_notes
 from .suppressions import azapi_provider, render_suppressions, uses_azapi
 from .discovery import discovery_plans, render_discovery
+from .purview import purview_inputs, render_purview, renders as purview_renders
 from .security import render_security
 from .backups import render_backups
 from .volumes import boot_tag, os_disk, server_volumes, snapshot_policy_notes
@@ -239,7 +240,7 @@ def render(m, services):
            *containers, *(container_log_notes(m, services) if services else ()),
            *render_alerts(m),
            *render_tests(m, endpoints),
-           *render_security(m, discovery_plans(m)), *render_discovery(m),
+           *render_security(m, discovery_plans(m)), *render_discovery(m), *render_purview(m),
            *render_suppressions(m), *render_budgets(m), *quota_request_notes(m),
            *_key_vault_secrets(m), *scope_data(m, identities))
     out = tuple(x for i, x in enumerate(out) if not (x.startswith('data "') and x in out[:i]))   # a data source once
@@ -252,13 +253,14 @@ def render(m, services):
         tuple(x for x in (registration_note(*resource_providers((main, *landing.values()))),) if x)
     providers = header(m, "Providers and inputs", HCL) + "\n" + "\n\n".join([
         *alone,
-        required_providers(uses_azapi(m), uses_azuread(m)),
+        required_providers(uses_azapi(m) or purview_renders(m), uses_azuread(m)),
         provider_block(m),
-        *((azapi_provider(m),) if uses_azapi(m) else ()),
+        *((azapi_provider(m),) if uses_azapi(m) or purview_renders(m) else ()),
         *((azuread_provider(m),) if uses_azuread(m) else ()),
         subscription_variable(m),
         block("variable", ["admin_ssh_public_key"], [("type", ref("string"))]),
         *budget_inputs(m),
+        *purview_inputs(m),
         *((block("variable", [FORWARDING_RULESET], [
             ("description", "The landing zone's DNS forwarding ruleset the forwarding rules join"),
             ("type", ref("string"))]),) if forwarders(m, hosted=False) else ()),

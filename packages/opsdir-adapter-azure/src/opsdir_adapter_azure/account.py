@@ -4,7 +4,7 @@ its input names, Azure Government when the cloud is in it, the resource provider
 zone's, a note when the cloud says its clients use FIPS endpoints: azurerm has no switch for them), the subscription
 the record names (ciamAccountRef) as the default of each root's subscription_id input, and the estate's tag policy
 merged into each resource's own tags (azurerm has no provider-wide default tags). Pure."""
-from opsdir.core.directory import one, rdn_value
+from opsdir.core.directory import one, rdn_value, values
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.estate.tags import required_tags
 from opsdir_format_terraform.hcl import Block, block, ref
@@ -14,7 +14,14 @@ FIPS_NOTE = ("FIPS endpoints: Azure has no separate FIPS endpoints for the provi
 AZURERM_VERSION = "~> 5.9"          # validated against hashicorp/azurerm 5.9.0
 AZAPI_VERSION = "~> 2.13"           # validated against Azure/azapi 2.13.0
 AZUREAD_VERSION = "~> 3.10"         # validated against hashicorp/azuread 3.10.0
+AZAPI_ADD_ON = "azapi"              # ciamProviderAddOn: the cloud allows Microsoft's azapi provider
 
+
+
+def azapi_allowed(m):
+    """Whether environment m's cloud allows Microsoft's azapi provider for what azurerm doesn't manage
+    (ciamProviderAddOn azapi)."""
+    return AZAPI_ADD_ON in values(m.cloud, "ciamProviderAddOn")
 
 
 def government(m):

@@ -1,0 +1,25 @@
+# CHG-2037 (approved): the target's users come from the corporate AD (corp.example-aero.internal) by pass-through
+# sign-in. Entra ID Protection's leaked-credential detection, and the password change its risk policy asks of a risky
+# user, need their password hashes synced and the change written back to the AD; and nothing watches the directory
+# itself. The target syncs password hashes beside pass-through, turns on password writeback, and security operations
+# run Microsoft Defender for Identity on the domain controllers (its sensors are theirs, not the platform's Terraform).
+dn: cloud=target,ou=environments,dc=ciam-ops
+changetype: modify
+add: ciamDirectorySync
+ciamDirectorySync: password-hash
+-
+replace: ciamPasswordWriteback
+ciamPasswordWriteback: TRUE
+-
+
+dn: cn=defender-identity,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamSecurityService
+cn: defender-identity
+ciamBindingRole: directory-threat-detection
+ciamSecurityKind: threat-detection
+ciamSecurityCoverage: on-prem-directory
+ciamFindingsRole: security-findings
+ciamManagedBy: cn=security-operations,ou=owners,dc=ciam-ops
+ciamChangeRef: cn=CHG-2037,ou=changes,dc=ciam-ops

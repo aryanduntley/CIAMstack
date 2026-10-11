@@ -31,12 +31,12 @@ from opsdir.core.environment import of_class
 from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.poam import exception_of, suppression_name
 from opsdir_format_terraform.hcl import block, jsonencoded, ref, tf_name
+from .account import azapi_allowed
 
 EXEMPTION = "azurerm_subscription_policy_exemption"
 AZAPI = "azapi_resource"
 ALERT_RULES = "Microsoft.Security/alertsSuppressionRules"
 ALERT_RULES_API = f"{ALERT_RULES}@2019-01-01-preview"
-ADD_ON = "azapi"
 SUBSCRIPTION = "data.azurerm_subscription.current"
 ASSIGNMENT_PREFIX = "ciam-"           # the posture renderer's assignment names: ciam-<framework>
 SUPPRESSION = "ciamSuppression"
@@ -98,7 +98,7 @@ def _government(m):
 
 
 def _add_on(m):
-    return ADD_ON in values(m.cloud, "ciamProviderAddOn")
+    return azapi_allowed(m)
 
 
 def _alert_rules(m, s):

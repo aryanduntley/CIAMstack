@@ -33,11 +33,17 @@ am:
       memory: "4Gi"
   podLabels:
     opsdir.io/role: am
+  podAnnotations:
+    opsdir.io/cluster-role: k8s-cluster
+    opsdir.io/workload-role: am-workload
+    opsdir.io/workload: am
 amster:
   enabled: true
   image:
     repository: crciamprod.azurecr.io/ciam/amster
     tag: "8.1.1"
+  podAnnotations:
+    opsdir.io/image-of: am/amster
 idm:
   enabled: true
   image:
@@ -52,6 +58,10 @@ idm:
       memory: "2Gi"
   podLabels:
     opsdir.io/role: idm
+  podAnnotations:
+    opsdir.io/cluster-role: k8s-cluster
+    opsdir.io/workload-role: idm-workload
+    opsdir.io/workload: idm
   env:
   - name: OPENIDM_REPO_HOST
     value: ldap.id.example-aero.test
@@ -80,6 +90,8 @@ admin_ui:
     tag: "8.1.1"
   podLabels:
     opsdir.io/role: am
+  podAnnotations:
+    opsdir.io/image-of: am/admin-ui
 end_user_ui:
   enabled: true
   image:
@@ -87,6 +99,8 @@ end_user_ui:
     tag: "8.1.1"
   podLabels:
     opsdir.io/role: am
+  podAnnotations:
+    opsdir.io/image-of: am/end-user-ui
 login_ui:
   enabled: true
   image:
@@ -94,6 +108,8 @@ login_ui:
     tag: "8.1.1"
   podLabels:
     opsdir.io/role: am
+  podAnnotations:
+    opsdir.io/image-of: am/login-ui
 idm_admin_ui:
   enabled: false
 ssh_keygen:

@@ -79,3 +79,12 @@ def test_data_block_lays_out_nested_objects_like_terraform_fmt():
   after      = true
   depends_on = [kind.other]
 }'''
+
+
+def test_objects_align_within_single_line_runs_and_lists_of_objects_go_one_per_line():
+    out = hcl({"kind": "Custom", "properties": {"name": "x", "patterns": [{"kind": "Regex", "pattern": "a"}],
+                                                "minimum": 60, "status": "on"}})
+    assert out == ('{\n  kind = "Custom"\n  properties = {\n    name = "x"\n    patterns = [\n      {\n'
+                   '        kind    = "Regex"\n        pattern = "a"\n      },\n    ]\n    minimum = 60\n'
+                   '    status  = "on"\n  }\n}')                                # as terraform fmt lays it out
+    assert hcl([1, 2]) == "[1, 2]" and hcl({"a": 1, "bb": 2}) == "{\n  a  = 1\n  bb = 2\n}"

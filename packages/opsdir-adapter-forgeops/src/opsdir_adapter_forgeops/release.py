@@ -67,6 +67,11 @@ TOOLING_IMAGES = (("am-custom", "busybox:musl"), ("idm-custom", "busybox:musl"),
 # The components a server role runs as (ds: by the workload's name, ForgeOps' ds-idrepo or ds-cts).
 ROLE_COMPONENTS = {"am": ("am",), "idm": ("idm",), "ig": ("ig",), "ds": ("ds-idrepo", "ds-cts")}
 UIS = ("admin-ui", "end-user-ui", "login-ui")
+# Components without a workload of their own whose image the record keeps in a workload's binding under their first
+# container name (Component.containers), the container of their pods that runs it (amster's: its init container):
+# their pods carry opsdir.io/image-of, so the kubernetes importer folds the image back into that binding. Not the jobs
+# that borrow another component's image (keystore-create, ds-set-passwords).
+COMPANION_IMAGES = ("amster", "admin-ui", "end-user-ui", "login-ui", "idm-admin-ui")
 IDM_ADMIN_UI, IDM_ADMIN_UI_VERSIONS = "idm-admin-ui", ">=8.1"
 
 # The role a component without a workload of its own labels its pods with (opsdir.io/role), so the namespace's default

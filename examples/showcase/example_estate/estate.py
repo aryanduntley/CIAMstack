@@ -114,7 +114,9 @@ _INCIDENTS = {"ciamIncidentRole": "security-incidents", "ciamIncidentSeverity": 
 OWN_DATA_TYPES = ("cui-marking: CUI//[A-Z][A-Z/-]*", "employee-id: EA[0-9]{6}")
 _DISCOVERY = {"ciamScansRole": "backup-target", "ciamCustomIdentifier": list(OWN_DATA_TYPES), "ciamRescanDays": 7,
               "ciamFindingsRole": "security-findings"}
-MACIE_JOB = "arn:aws:macie2:us-east-1:111122223333:classification-job/3ce05dbb7ec5505def334104bf1b1fd5"
+# production examines its backups every 3 days, which Macie's own schedule (daily, weekly) doesn't offer: a daily
+# EventBridge Scheduler schedule runs the rescan function, which starts a one-time job once 3 days have passed
+MACIE_RESCAN = "arn:aws:lambda:us-east-1:111122223333:function:ciam-prod-macie-macie-backups"
 # Each environment's security bindings: (class, name, binding role, attributes).
 SECURITY = MappingProxyType({
     "source": (
@@ -143,16 +145,21 @@ SECURITY = MappingProxyType({
          {"ciamSecurityKind": "posture", "ciamAuditScope": "account", "ciamFindingsRole": "security-findings",
           "ciamComplianceStandard": ["nist-800-53-r5", "nist-800-171-r2"],
           "ciamSecurityBaseline": "aws-foundational", "ciamProviderRef": HUB}),
-        ("ciamDataDiscovery", "macie-backups", "data-discovery", {**_DISCOVERY, "ciamProviderRef": MACIE_JOB})),
+        ("ciamDataDiscovery", "macie-backups", "data-discovery",
+         {**_DISCOVERY, "ciamRescanDays": 3, "ciamProviderRef": MACIE_RESCAN})),
     # planted: no Defender for Containers (no containers watched or scanned), not assessed against NIST SP 800-171
     # Rev. 2, no configuration history recorded, no incident routing (CHG-2029 routes Defender's high alerts), no data
     # discovery (CHG-2034 records Defender's sensitive data discovery)
     "target": (
         ("ciamLogDestination", "security-logs", "security-findings",
          {"ciamDestinationKind": "workspace", "ciamRetentionDays": 400, "ciamProviderRef": _WORKSPACE}),
+        # Entra ID Protection's risk-based Conditional Access for the platform's admins, report-only first
         ("ciamSecurityService", "defender", "threat-detection",
          {"ciamSecurityKind": "threat-detection", **_ALL,
           "ciamSecurityCoverage": ["control-plane", "identity", "network", "compute", "storage", "databases"],
+          "ciamRiskPolicy": ["sign-in medium+: mfa", "user high+: password-change"],
+          "ciamPolicyCovers": "identity-admins", "ciamPolicyExcludes": "identity-break-glass",
+          "ciamPolicyMode": "report-only",
           "ciamProviderRef": f"{_SUB}/providers/Microsoft.Security/pricings/defender"}),
         ("ciamSecurityService", "defender-vulnerability", "vulnerability-scanning",
          {"ciamSecurityKind": "vulnerability-scanning", **_ALL, "ciamSecurityCoverage": "compute",

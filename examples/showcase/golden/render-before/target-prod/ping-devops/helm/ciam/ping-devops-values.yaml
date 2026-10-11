@@ -16,6 +16,7 @@ pingfederate-admin:
         cpu: "1"
         memory: "4Gi"
       limits:
+        cpu: "2"
         memory: "4Gi"
     env:
     - name: PING_IDENTITY_PASSWORD
@@ -29,6 +30,12 @@ pingfederate-admin:
     labels:
       opsdir.io/role: pf-admin
       azure.workload.identity/use: "true"
+    annotations:
+      opsdir.io/cluster-role: k8s-cluster
+      opsdir.io/workload-role: pf-admin-workload
+      opsdir.io/identity-role: identity-pf
+      opsdir.io/workload: pf-admin
+      opsdir.io/derived-containers: pf-log-admin,pf-log-admin-event-detail,pf-log-admin-api,pf-log-admin-request
     type: StatefulSet
     statefulSet:
       persistentvolume:
@@ -57,6 +64,7 @@ pingfederate-engine:
         cpu: "1"
         memory: "4Gi"
       limits:
+        cpu: "2"
         memory: "4Gi"
   rbac:
     serviceAccountName: pingfederate
@@ -64,6 +72,12 @@ pingfederate-engine:
     labels:
       opsdir.io/role: pf-engine
       azure.workload.identity/use: "true"
+    annotations:
+      opsdir.io/cluster-role: k8s-cluster
+      opsdir.io/workload-role: pf-engine-workload
+      opsdir.io/identity-role: identity-pf
+      opsdir.io/workload: pf-engine
+      opsdir.io/derived-containers: pf-log-runtime-request,pf-log-request,pf-log-runtime-api,pf-log-audit,pf-log-provisioner-audit
   includeSidecars:
   - pf-log-runtime-request
   - pf-log-request

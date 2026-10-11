@@ -4,7 +4,9 @@ admin and engine, for `helm upgrade --install` of the pinned chart. Pure.
 Helm merges these values over the chart's own, so what the record doesn't hold stays the chart's default. Each
 product on gets its image (repositoryFqn, so the record's registry is used as is), replicas, resources, the
 workload's service account (made by the kubernetes adapter; the chart makes none), pod labels (opsdir.io/role and
-the cloud's workload identity: pod templates only, the chart's selectors are its own), the Secret keys the workload
+the cloud's workload identity: pod templates only, the chart's selectors are its own), pod annotations with the
+workload's marks (kits.workload_marks: the chart names it <release>-<product>, the mark gives the record's name; and
+the log sidecars as derived containers), the Secret keys the workload
 reads (environment variables by secretKeyRef; the license as a file), a volume when the binding records storage (a
 StatefulSet, as the chart persists /opt/out), and an ingress for the hosts the workload records (none when a cluster
 gateway fronts its role: routes.py declares its route), and a sidecar per log file the environment's log routes
@@ -16,7 +18,9 @@ from opsdir.core.directory import one, values
 from opsdir.core.formats import YAML
 from opsdir.core.interchange.yaml_text import dump
 from opsdir.core.manifest import header
-from opsdir_adapter_kubernetes.kits import chart_image, pod_labels_of, replicas_of, resources_of, storage_of
+from opsdir_adapter_kubernetes.kits import chart_image, pod_labels_of, replicas_of, resources_of, storage_of, \
+    workload_marks
+from opsdir_adapter_kubernetes.names import DERIVED
 from opsdir_adapter_kubernetes.render import service_account_of
 from .discovery import recorded_query
 from .log_sidecars import picked, product_logs, shared_logs
@@ -44,11 +48,14 @@ def _claim(m, w):
             **({"resources": {"requests": {"storage": size}}} if size else {})}
 
 
-def _workload(m, services, w):
+def _workload(m, services, w, sidecars=()):
+    """The product's workload values: pod labels, pod annotations (the workload's marks, and the log sidecars as
+    containers derived from the record), StatefulSet storage."""
     claim = _claim(m, w)
     stateful = {"type": "StatefulSet", "statefulSet": {"persistentvolume": {
         "enabled": True, "volumes": {"out-dir": {"persistentVolumeClaim": claim}}}}} if claim else {}
-    return {"labels": pod_labels_of(m, services, w), **stateful}
+    marks = {**workload_marks(w), **({DERIVED: ",".join(c for c, _ in sidecars)} if sidecars else {})}
+    return {"labels": pod_labels_of(m, services, w), "annotations": marks, **stateful}
 
 
 def _logs(m, p, product):
@@ -81,7 +88,7 @@ def product_values(m, services, p, product):
     _, found, stateful = _logs(m, p, product)
     return {"enabled": True, "image": {"repositoryFqn": repository, "tag": tag},
             **({"container": container} if container else {}),
-            "rbac": {"serviceAccountName": service_account_of(w)}, "workload": _workload(m, services, w),
+            "rbac": {"serviceAccountName": service_account_of(w)}, "workload": _workload(m, services, w, found),
             **({"secretVolumes": files} if files else {}), **({"ingress": ingress} if ingress else {}),
             **product_logs(found, stateful)}
 

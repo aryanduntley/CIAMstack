@@ -9,3 +9,11 @@ images:
 - name: amster
   newName: crciamprod.azurecr.io/ciam/amster
   newTag: "8.1.1"
+patches:
+- patch: |
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: amster
+      annotations:
+        opsdir.io/image-of: am/amster

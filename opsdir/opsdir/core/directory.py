@@ -191,3 +191,11 @@ def merged_attrs(existing, owned, names):
     everything else the record holds on the entry (owners, a credential role, what operators add) kept."""
     return {**{k: v for k, v in (existing.attrs.items() if existing else ()) if k not in names},
             **{k: tuple(x for x in v if x is not None) for k, v in owned.items() if any(x is not None for x in v)}}
+
+
+def in_record_order(existing, attrs):
+    """An imported entry's attributes with each one that holds the record's values in another order given in the
+    record's order: the same values read in another order are no change."""
+    held = existing.attrs if existing else {}
+    return {k: held[k] if k in held and len(held[k]) == len(v) and set(held[k]) == set(v) else v
+            for k, v in attrs.items()}

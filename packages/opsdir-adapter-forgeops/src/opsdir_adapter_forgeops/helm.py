@@ -15,7 +15,7 @@ from opsdir.core.manifest import header
 from opsdir_adapter_kubernetes.kits import chart_image
 from .routes import gateway_fronted
 from .components import (ds_in_cluster, ds_servers, external_ds, idm_ds_env, image_of, ingress_hosts, on_in,
-                         pod_labels, replicas, resources, service_account, storage)
+                         pod_annotations, pod_labels, replicas, resources, service_account, storage)
 from .release import COMPONENTS, HELM, IDENTITY_PLATFORM, PING_GATEWAY, VERSION
 
 
@@ -32,16 +32,19 @@ def _volume_claim(size, storage_class):
 
 
 def component_values(m, services, p, c):
-    """One component's values: enabled, and when on its image, replicas, resources, pod labels, (DS) volume claim
-    from the record, and (IDM with DS on servers) the variables pointing it at them."""
+    """One component's values: enabled, and when on its image, replicas, resources, pod labels, the pod annotations
+    that make it read back as the record (components.pod_annotations), (DS) volume claim from the record, and (IDM
+    with DS on servers) the variables pointing it at them."""
     if c.name not in p.on:
         return {"enabled": False}
     n, r, labels = replicas(m, p, c.name), resources(m, p, c.name), pod_labels(m, services, p, c.name)
+    marks = pod_annotations(m, p, c.name)
     claim = _volume_claim(*storage(m, p, c.name)) if c.kind == "StatefulSet" else {}
     env = idm_ds_env(m, p) if c.name == "idm" else []
     return {"enabled": True, c.helm_image: helm_image(image_of(m, p, c.name)),
             **({"replicaCount": n} if n is not None and c.kind != "Job" else {}),
             **({"resources": r} if r else {}), **({"podLabels": labels} if labels else {}),
+            **({"podAnnotations": marks} if marks else {}),
             **({"volumeClaimSpec": claim} if claim else {}), **({"env": env} if env else {}),
             **({"force": True} if c.name == "keystore-create" else {})}
 

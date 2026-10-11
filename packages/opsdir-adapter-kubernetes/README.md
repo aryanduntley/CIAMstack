@@ -58,14 +58,16 @@ opsdir import --change CHG-… kubernetes/workloads manifests/
 
 Any YAML or JSON file is read, multi-document YAML and `List` output included. Every StatefulSet, Deployment and DaemonSet is one workload (`ciamWorkload`, `cn=<name>,ou=workloads`): intent, the same in every environment. Manifests under `<cloud>/<env>/` of an environment the record holds (`manifests/aws/prod/cluster.yaml`) also give that environment's **workload binding** (`ciamWorkloadBinding`, `cn=<name>,ou=bindings,<environment>`): how it runs the workload on Kubernetes. Manifests anywhere else give the intent only (named in the notices).
 
+**Marks** (`names.py`) are annotations on the workload object, else on its pod template (a deployment kit's chart may allow only one; ForgeOps' takes pod annotations only). The kits set them so what they deploy reads back as the record's workloads.
+
 | From | Recorded |
 |---|---|
-| label or annotation `opsdir.io/role`, else label `app.kubernetes.io/component`, else `app.kubernetes.io/name`, else `roles.json` (`{workload name: role}`) | `ciamTargetRole`: the server role it realizes. Without one the workload is named, not imported |
-| annotation `opsdir.io/cluster-role` | `ciamClusterRole`: the binding role of the cluster it runs in (each environment binds it with a `ciamCluster`), else `cluster` |
+| label or annotation `opsdir.io/role` (on the object, else its pod template), else label `app.kubernetes.io/component`, else `app.kubernetes.io/name`, else `roles.json` (`{workload name: role}`) | `ciamTargetRole`: the server role it realizes. Without one the workload is named, not imported |
+| mark `opsdir.io/cluster-role` | `ciamClusterRole`: the binding role of the cluster it runs in (each environment binds it with a `ciamCluster`), else `cluster` |
 | `metadata.namespace` | `ciamNamespace` |
-| annotation `opsdir.io/workload-role` | `ciamWorkloadRole`: the binding role of its workload binding, else `<name>-workload` |
+| mark `opsdir.io/workload-role` | `ciamWorkloadRole`: the binding role of its workload binding, else `<name>-workload` |
 | `serviceAccountName` | `ciamServiceAccount` |
-| its ServiceAccount's cloud identity annotation (`eks.amazonaws.com/role-arn`, `azure.workload.identity/client-id`, `iam.gke.io/gcp-service-account`) | `ciamIdentityRole`: the binding role each environment gives it (annotation `opsdir.io/identity-role` on the workload or account, else `<role>-identity`); the identity itself is the environment's binding (milestone 4.7) |
+| its ServiceAccount's cloud identity annotation (`eks.amazonaws.com/role-arn`, `azure.workload.identity/client-id`, `iam.gke.io/gcp-service-account`) | `ciamIdentityRole`: the binding role each environment gives it (mark `opsdir.io/identity-role` on the workload, annotation on the account, else `<role>-identity`); the identity itself is the environment's binding (milestone 4.7) |
 | security contexts; the namespace's `pod-security.kubernetes.io/enforce` label | `ciamPodSecurity`: `runAsNonRoot`, `readOnlyRootFilesystem` (every container), `privileged`, `hostNetwork`, `hostPID`, `level=<level>` |
 | NetworkPolicies in its namespace whose pod selector selects it, but those labelled `app.kubernetes.io/managed-by: opsdir` (this adapter's own, derived from the record's listeners) | `ciamNetworkPolicy`: `name: policy types` |
 | Ingress rules, and HTTPRoutes' hostnames (a cluster gateway's routes), whose backend is a Service selecting it | `ciamIngressHost` |
@@ -77,7 +79,7 @@ The workload binding (manifests under `<cloud>/<env>/`):
 | From | Recorded |
 |---|---|
 | the workload role | `ciamBindingRole` |
-| the pod template's containers | `ciamContainerImage`: `container=image`, one per container |
+| the pod template's containers, then its companions' | `ciamContainerImage`: `container=image`, one per container; not those the mark `opsdir.io/derived-containers` names (comma-separated: a kit's log sidecars, derived from the record's log routes) |
 | `spec.replicas` (not for a DaemonSet) | `ciamWorkloadReplicas` |
 | the first container's `resources` | `ciamCpuRequest`, `ciamCpuLimit`, `ciamMemoryRequest`, `ciamMemoryLimit` |
 | its first volume claim template | `ciamStorageSize`, `ciamStorageClass` |
@@ -86,7 +88,9 @@ The Secret keys a workload reads and the secret roles that fill them (`ciamWorkl
 
 **CronJobs** are jobs (`ciamJob`, `cn=k8s-<name>,ou=jobs`): kind `cron`, the schedule, the command and arguments of the first container (not recorded when they hold secret material: named), its image (`ciamRuntime`), service account (`ciamRunsAs`), the Secrets it reads by name, and the cluster role that realizes it (`ciamJobRole`, from `opsdir.io/cluster-role`, else `cluster`). The automation domain's planner check then asks the target to bind that cluster.
 
-**Names.** A workload is named by its metadata name, `namespace-name` when two namespaces use the name. A re-import finds it by name and changes nothing; what the record adds (owners, criticality) is kept.
+**Names.** A workload is named by its mark `opsdir.io/workload` (the record's name, when a kit names the object otherwise: ping-devops' `<release>-pingfederate-admin`), else its metadata name, `namespace-name` when two namespaces use the name. A re-import finds it by name and changes nothing (values read in another order included); what the record adds (owners, criticality) is kept.
+
+**Companions.** A StatefulSet, Deployment, DaemonSet or Job marked `opsdir.io/image-of: <workload>/<container>` is part of that workload, as a kit runs it with it (ForgeOps' UIs and amster with AM): no workload of its own; the named container's image (its containers' or init containers') goes into that workload's binding in the same environment as `<container>=<image>`. A mark naming no such workload is a notice.
 
 **Secrets.** Secret objects in the manifests are never read; they are counted in the notices. Only the names of the Secrets a workload reads are recorded.
 
@@ -105,7 +109,7 @@ The `k8s-secret` reference scheme; the vocabulary of `ciamGatewayImplementation`
 ## Known limits
 
 - Not run against a live cluster yet; manifests as the Kubernetes API documents them (apps/v1, networking.k8s.io/v1).
-- Round trip (`reads_back`, milestone 5.5): the rendered `kubernetes/` files read back by `kubernetes/workloads` under `<cloud>/<env>/` change nothing (the gateway; the namespace's own objects carry no workloads). Deployed, the kits' workloads read back through `examples/showcase/tests/kubernetes/test_kubernetes_round_trip.py` (helm template, kustomize build); what doesn't match yet is listed there and is milestone 5.5b's (kit workload identity marks and names, ForgeOps' UIs).
+- Round trip (`reads_back`, milestone 5.5): the rendered `kubernetes/` files read back by `kubernetes/workloads` under `<cloud>/<env>/` change nothing (the gateway; the namespace's own objects carry no workloads). Deployed, the kits' workloads read back as the record through `examples/showcase/tests/kubernetes/test_kubernetes_round_trip.py` (helm template under each kit's own release name, kustomize build): with the marks, nothing is left over (milestone 5.5b).
 - Not read yet: one-off Jobs, operators' custom resources (the DS operator's `DirectoryService`, ForgeOps secret agent, external-secrets `ExternalSecret`), sidecars' resource requests and limits (only the first container's), pod disruption budgets, horizontal autoscalers, NetworkPolicy rule details (only the policy and its types), Gateway API routes.
 - An Ingress backend is matched to a workload through a Service's selector in the same namespace; `ExternalName` services and cross-namespace routing aren't followed.
 

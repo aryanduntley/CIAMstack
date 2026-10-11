@@ -128,8 +128,13 @@ def test_identity_platform_values():
                         "idrepo_hosts": ["ldap.example.test:1636"]}}
     assert v["am"] == {"enabled": True, "image": helm_image(AM_IMAGE), "replicaCount": 2,
                        "resources": {"requests": {"cpu": "500m"}, "limits": {"memory": "2Gi"}},
-                       "podLabels": {"opsdir.io/role": "am", "cloud.example.test/use": "true"}}
+                       "podLabels": {"opsdir.io/role": "am", "cloud.example.test/use": "true"},
+                       "podAnnotations": {"opsdir.io/cluster-role": "k8s", "opsdir.io/workload-role": "am-workload",
+                                          "opsdir.io/identity-role": "identity-am",
+                                          "opsdir.io/workload": "am"}}     # read back as the record's workload
     assert v["idm"]["podLabels"] == {"opsdir.io/role": "idm"}
+    assert v["amster"]["podAnnotations"] == {"opsdir.io/image-of": "am/amster"}   # its image is in AM's binding
+    assert "podAnnotations" not in v["keystore_create"]                     # borrows AM's image: no image of its own
     assert v["idm"]["env"] == [{"name": "OPENIDM_REPO_HOST", "value": "ldap.example.test"},
                                {"name": "OPENIDM_REPO_PORT", "value": "1636"},
                                {"name": "USERSTORE_HOST", "value": "ldap.example.test"},
@@ -175,11 +180,17 @@ def test_the_kustomize_overlay_in_forgeops_layout():
                              "digest": "sha256:" + "a" * 64}]
     assert am["labels"] == [{"pairs": {"opsdir.io/role": "am", "cloud.example.test/use": "true"},
                              "includeSelectors": False, "includeTemplates": True}]
-    workload, ingress = am["patches"]
+    workload, marks, ingress = am["patches"]
+    assert yaml.safe_load(marks["patch"]) == {"apiVersion": "apps/v1", "kind": "Deployment", "metadata": {
+        "name": "am", "annotations": {"opsdir.io/cluster-role": "k8s", "opsdir.io/workload-role": "am-workload",
+                                      "opsdir.io/identity-role": "identity-am", "opsdir.io/workload": "am"}}}
     assert yaml.safe_load(workload["patch"])["spec"] == {
         "replicas": 2, "template": {"spec": {"serviceAccountName": "identity", "containers": [
             {"name": "openam", "resources": {"requests": {"cpu": "500m"}, "limits": {"memory": "2Gi"}}}]}}}
-    idm, _ = _doc(files, f"{root}/idm/kustomization.yaml")["patches"]
+    idm, _, _ = _doc(files, f"{root}/idm/kustomization.yaml")["patches"]
+    (amster,) = _doc(files, f"{root}/amster/kustomization.yaml")["patches"]
+    assert yaml.safe_load(amster["patch"]) == {"apiVersion": "batch/v1", "kind": "Job", "metadata": {
+        "name": "amster", "annotations": {"opsdir.io/image-of": "am/amster"}}}
     (container,) = yaml.safe_load(idm["patch"])["spec"]["template"]["spec"]["containers"]
     assert container["name"] == "openidm" and container["env"][0] == {"name": "OPENIDM_REPO_HOST",
                                                                       "value": "ldap.example.test"}

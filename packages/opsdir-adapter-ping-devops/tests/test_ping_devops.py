@@ -105,7 +105,11 @@ def test_admin_values_come_from_the_record():
                  "valueFrom": {"secretKeyRef": {"name": "pf-admin", "key": "PING_IDENTITY_PASSWORD"}}}]}
     assert v["rbac"] == {"serviceAccountName": "pingfederate"}
     assert v["workload"] == {
-        "labels": {"opsdir.io/role": "pf-admin", "cloud.example.test/use": "true"}, "type": "StatefulSet",
+        "labels": {"opsdir.io/role": "pf-admin", "cloud.example.test/use": "true"},
+        # the chart names it <release>-pingfederate-admin: the mark gives the record's name
+        "annotations": {"opsdir.io/cluster-role": "k8s", "opsdir.io/workload-role": "pf-admin-workload",
+                        "opsdir.io/identity-role": "identity-pf", "opsdir.io/workload": "pf-admin"},
+        "type": "StatefulSet",
         "statefulSet": {"persistentvolume": {"enabled": True, "volumes": {"out-dir": {"persistentVolumeClaim": {
             "storageClassName": "managed-csi", "resources": {"requests": {"storage": "8Gi"}}}}}}}}
     assert v["secretVolumes"] == {"pf-license": {"items": {
@@ -118,7 +122,9 @@ def test_the_engine_shares_the_admin_image_and_scales():
     v = _values(model())["pingfederate-engine"]
     assert v["image"]["tag"] == "b" * 64                     # the admin binding's pingfederate container
     assert v["container"] == {"replicaCount": 3}
-    assert v["workload"] == {"labels": {"opsdir.io/role": "pf-engine"}}
+    assert v["workload"] == {"labels": {"opsdir.io/role": "pf-engine"}, "annotations": {
+        "opsdir.io/cluster-role": "k8s", "opsdir.io/workload-role": "pf-engine-workload",
+        "opsdir.io/workload": "pf-engine"}}
     assert "env" not in v["container"] and v["ingress"]["hosts"][0]["host"] == "sso.example.test"
 
 
@@ -243,6 +249,8 @@ def test_each_log_file_a_route_picks_is_its_own_sidecars_output():
     assert engine["includeSidecars"] == ["pf-log-audit", "pf-log-provisioner-audit"]     # audit only: no access
     assert admin["includeSidecars"] == ["pf-log-admin", "pf-log-admin-event-detail", "pf-log-admin-api",
                                         "pf-log-admin-request"]
+    assert engine["workload"]["annotations"]["opsdir.io/derived-containers"] == \
+        "pf-log-audit,pf-log-provisioner-audit"           # derived from the log routes: no images of the workload
     assert engine["includeVolumes"] == ["out-dir"] and engine["volumeMounts"] == [
         {"name": "out-dir", "mountPath": "/opt/out"}]          # a Deployment: /opt/out shared, never its log dir
     assert "includeVolumes" not in admin and "volumeMounts" not in admin  # a StatefulSet: its out-dir volume

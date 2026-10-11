@@ -408,4 +408,6 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2036  insert  cn=pf-admin-onprem,ou=baselines,dc=ciam-ops
 <TIMESTAMP>          CHG-2036  insert  cn=pf-engine-onprem,ou=baselines,dc=ciam-ops
 <TIMESTAMP>          CHG-2036  update  cn=ds-nightly-export,ou=jobs,dc=ciam-ops
-(408 rows)
+<TIMESTAMP>          CHG-2037  update  cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2037  insert  cn=defender-identity,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+(410 rows)

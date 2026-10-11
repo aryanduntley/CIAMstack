@@ -25,7 +25,7 @@ Expected findings check (after changes)
            B38  cleared by CHG-2034: production's Macie examines the directory backups for sensitive data (CUI markings, employee numbers); the target runs no data discovery, a blocker once it is held to FedRAMP Moderate (DFARS) → gone
            B39  cleared by CHG-2034: the target has no data discovery binding: Macie examines the source's backups → gone
            B33  cleared by CHG-2029: production is held to DFARS 252.204-7012 (72-hour reporting on DIBNet); the target to no reporting obligation → gone
-  actions  planted 124   expected now 102   detected 102   missed 0   unexpected 0
+  actions  planted 130   expected now 105   detected 105   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone
@@ -48,6 +48,9 @@ Expected findings check (after changes)
            A100 cleared by CHG-2029: an action while nothing requires the target to rely on an authorization (it becomes B36 once CHG-2029 holds the target to DFARS) → gone
            A101 cleared by CHG-2032: the system security plan covers production and the standby, not the target → gone
            A102 cleared by CHG-2029: an action while nothing requires the target to rely on an authorization (it becomes B38 once CHG-2029 holds the target to DFARS) → gone
+           A128 cleared by CHG-2037: the corporate AD's users sign in by pass-through only: no leaked-credential detection, no password change for a risky user → gone
+           A129 cleared by CHG-2037: a password changed in Entra wouldn't reach the corporate AD → gone
+           A130 cleared by CHG-2037: nothing watches the corporate AD the target's users come from (Defender for Identity) → gone
            A70  raised by CHG-2017: the target's backup container (CHG-2017) has no immutability policy: a backup can be deleted early → reported
            A71  raised by CHG-2017: nothing copies the target's backups to another region; the source replicates to us-west-2 → reported
            A75  raised by CHG-2019: the target's disk backup (CHG-2019) keeps snapshots in its own region: Azure disk backup can't copy them → reported
@@ -55,6 +58,8 @@ Expected findings check (after changes)
            A89  raised by CHG-2024: the source keeps seven years of configuration history; Azure keeps 14 days (CHG-2024) → reported
            A94  raised by CHG-2026: Azure reports no usage limit on database servers (raised by a support request): confirm it with Microsoft → reported
            A95  raised by CHG-2028: the operator approved the vCPU increase (CHG-2028); the planner waits for the quotas to be fetched again once Microsoft grants it → reported
+           A125 raised by CHG-2034: the target records no Purview roles for the identity that registers the backups' storage account and sets up its scan → reported
+           A126 raised by CHG-2034: the CUI-marking and employee-number rules need a custom scan rule set in Purview, which azapi can't make → reported
   RESULT: PASS. The planner found every planted problem and nothing else. 'NOT READY' is the correct verdict
           for this deliberately broken environment.
 exit 0

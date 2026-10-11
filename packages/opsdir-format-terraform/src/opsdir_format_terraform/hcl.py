@@ -32,11 +32,17 @@ def hcl(v, indent=0):
             return v[2:-1]
         return '"' + v.replace("\\", "\\\\").replace('"', '\\"') + '"'
     if isinstance(v, (list, tuple)):
+        if any(isinstance(x, dict) for x in v):                 # objects one element per line, as terraform fmt
+            inner = "  " * (indent + 1)
+            return "[\n" + "".join(f"{inner}{hcl(x, indent + 1)},\n" for x in v) + "  " * indent + "]"
         return "[" + ", ".join(hcl(x) for x in v) + "]"
     if isinstance(v, dict):
         pad = "  " * (indent + 1)
-        w = max(len(k) for k in v)
-        body = "\n".join(f"{pad}{k.ljust(w)} = {hcl(x, indent + 1)}" for k, x in v.items())
+        rendered = [(k, hcl(x, indent + 1)) for k, x in v.items()]
+        # '=' aligned within each run of single-line values, as terraform fmt aligns them
+        runs = [(single, tuple(g)) for single, g in groupby(rendered, key=lambda kx: "\n" not in kx[1])]
+        body = "\n".join(f"{pad}{k.ljust(max(len(x) for x, _ in run) if single else 0)} = {text}"
+                         for single, run in runs for k, text in run)
         return "{\n" + body + "\n" + "  " * indent + "}"
     raise TypeError(v)
 

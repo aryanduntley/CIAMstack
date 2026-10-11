@@ -6,21 +6,25 @@ server role run as containers, intent, the same in every environment. Manifests 
 the record holds) also give that environment's workload binding (ciamWorkloadBinding: how it runs the workload on
 Kubernetes); manifests anywhere else give the intent only, and the notices say so.
 
-  role             label or annotation opsdir.io/role, else label app.kubernetes.io/component, else
+  role             label or annotation opsdir.io/role (on the object, else its pod template), else label
+                   app.kubernetes.io/component, else
                    app.kubernetes.io/name, else roles.json beside the manifests ({workload name: role}); without one
                    the workload is named, not imported
-  cluster          annotation opsdir.io/cluster-role: the binding role of the cluster it runs in, else `cluster`
+  marks            annotations on the workload object, else on its pod template (a kit's chart may allow only one):
+                   names.CLUSTER_ROLE, WORKLOAD_ROLE, IDENTITY_ROLE, WORKLOAD_NAME, IMAGE_OF, DERIVED
+  cluster          mark opsdir.io/cluster-role: the binding role of the cluster it runs in, else `cluster`
   recorded         namespace, service account, pod security facts (runAsNonRoot, readOnlyRootFilesystem,
                    privileged, hostNetwork, hostPID, the namespace's pod-security level), network policies that select
                    its pods (but those opsdir rendered, labelled app.kubernetes.io/managed-by: opsdir), host
                    names that reach it through a Service (Ingress rules' hosts, HTTPRoutes' hostnames)
-  workload role    annotation opsdir.io/workload-role, else <name>-workload: the binding role of its workload binding
+  workload role    mark opsdir.io/workload-role, else <name>-workload: the binding role of its workload binding
   binding          (manifests under <cloud>/<env>/) named like the workload under the environment's bindings: each
                    container's image (container=image), replicas, the main (first) container's CPU and memory
                    requests and limits, the storage each replica claims (its first volume claim template: size and
-                   storage class)
+                   storage class); not the containers the mark opsdir.io/derived-containers names (a kit's log
+                   sidecars, derived from the record's log routes)
   identity         when its service account carries a cloud identity (EKS IRSA, Azure workload identity, GKE), the
-                   binding role each environment gives it: annotation opsdir.io/identity-role, else <role>-identity
+                   binding role each environment gives it: mark opsdir.io/identity-role, else <role>-identity
   secrets          the names of the Secrets it reads (env, envFrom, volumes): names only. Secret objects in the
                    manifests are never read (counted in the notices)
 
@@ -30,13 +34,19 @@ role): kind cron, its schedule, the command it runs (not recorded when it holds 
 
 A Gateway API Gateway under <cloud>/<env>/ is that environment's cluster gateway binding (gateway_import.py).
 
-A workload is named by its metadata name (namespace-name when two namespaces use the name); a re-import finds it by
-name and changes nothing; what the record adds (owners, criticality) is kept.
+A workload is named by its mark opsdir.io/workload, else its metadata name (namespace-name when two namespaces use
+the name); a re-import finds it by name and changes nothing (values read in another order included); what the record
+adds (owners, criticality) is kept.
+
+A companion (a StatefulSet, Deployment, DaemonSet or Job marked opsdir.io/image-of: <workload>/<container>) is part of
+another workload, as a deployment kit runs it with that workload (ForgeOps' UIs and amster with AM): it is no workload
+of its own, and the named container's image (its containers' or init containers') is that workload's binding's, under
+that container name, after the workload's own.
 """
 import yaml
 
 from opsdir.core.contract import Imported, Importer
-from opsdir.core.directory import get, make_entry, merged_attrs, ou_entry
+from opsdir.core.directory import get, in_record_order, make_entry, merged_attrs, ou_entry
 from opsdir.core.environment import environment_at
 from opsdir.core.naming import rdn_safe
 from opsdir.core.secrets import text_concerns
@@ -45,7 +55,8 @@ from opsdir.domains.automation.naming import job_dn
 from opsdir.domains.automation.pipelines import jobs_container
 from opsdir.domains.compute.naming import WORKLOADS, workload_dn
 from .gateway_import import read_gateways
-from .names import MANAGED_BY
+from .names import CLUSTER_ROLE, DERIVED, IDENTITY_ROLE, IMAGE_OF, MANAGED_BY, WORKLOAD_NAME, WORKLOAD_ROLE
+from .render import ROLE_LABEL
 
 KINDS = (("StatefulSet", "statefulset"), ("Deployment", "deployment"), ("DaemonSet", "daemonset"))
 ROLE_MAP = "roles.json"
@@ -86,6 +97,11 @@ def _annotations(o):
     return _meta(o).get("annotations") or {}
 
 
+def mark(o, key):
+    """An opsdir mark on a workload: its annotation on the object, else on its pod template; None without one."""
+    return _annotations(o).get(key) or ((_pod(o).get("metadata") or {}).get("annotations") or {}).get(key)
+
+
 def _namespace(o):
     return _meta(o).get("namespace") or "default"
 
@@ -106,9 +122,10 @@ def _containers(o):
 
 def workload_role(o, roles):
     """The server role a workload realizes, or None."""
-    labels, notes = _labels(o), _annotations(o)
-    return (labels.get("opsdir.io/role") or notes.get("opsdir.io/role") or labels.get("app.kubernetes.io/component")
-            or labels.get("app.kubernetes.io/name") or roles.get(_meta(o).get("name")))
+    labels, pod_labels = _labels(o), (_pod(o).get("metadata") or {}).get("labels") or {}
+    return (labels.get(ROLE_LABEL) or mark(o, ROLE_LABEL) or pod_labels.get(ROLE_LABEL)
+            or labels.get("app.kubernetes.io/component") or labels.get("app.kubernetes.io/name")
+            or roles.get(_meta(o).get("name")))
 
 
 def _selects(selector, labels):
@@ -187,13 +204,13 @@ def _identity(o, role, accounts):
     account = accounts.get((_namespace(o), _pod_spec(o).get("serviceAccountName") or "default")) or {}
     if not any(a in _annotations(account) for a in IDENTITY_ANNOTATIONS):
         return None
-    return _annotations(o).get("opsdir.io/identity-role") or _annotations(account).get("opsdir.io/identity-role") \
+    return mark(o, IDENTITY_ROLE) or _annotations(account).get(IDENTITY_ROLE) \
         or f"{role}-identity"
 
 
 def workload_role_of(o, name):
-    """The binding role of a workload's workload binding: annotation opsdir.io/workload-role, else <name>-workload."""
-    return _annotations(o).get("opsdir.io/workload-role") or f"{name}-workload"
+    """The binding role of a workload's workload binding: mark opsdir.io/workload-role, else <name>-workload."""
+    return mark(o, WORKLOAD_ROLE) or f"{name}-workload"
 
 
 def workload_entry(d, name, path, o, role, context):
@@ -202,7 +219,7 @@ def workload_entry(d, name, path, o, role, context):
     dn = workload_dn(name)
     kind = dict(KINDS)[o.get("kind")]
     owned = {"cn": (name,), "ciamWorkloadKind": (kind,), "ciamTargetRole": (role,),
-             "ciamClusterRole": (_annotations(o).get("opsdir.io/cluster-role") or "cluster",),
+             "ciamClusterRole": (mark(o, CLUSTER_ROLE) or "cluster",),
              "ciamNamespace": (_namespace(o),), "ciamWorkloadRole": (workload_role_of(o, name),),
              "ciamServiceAccount": (_pod_spec(o).get("serviceAccountName"),),
              "ciamIdentityRole": (_identity(o, role, context["accounts"]),),
@@ -211,7 +228,8 @@ def workload_entry(d, name, path, o, role, context):
              "ciamSecretName": secret_names(o),
              "ciamIngressHost": _hosts(o, context["services"], context["ingresses"], context["routes"]),
              "ciamRepoPath": (path,)}
-    return make_entry(dn, ("top", "ciamObject", "ciamWorkload"), merged_attrs(get(d, dn), owned, OWNED))
+    return make_entry(dn, ("top", "ciamObject", "ciamWorkload"),
+                      in_record_order(get(d, dn), merged_attrs(get(d, dn), owned, OWNED)))
 
 
 def _main_resources(o):
@@ -223,30 +241,46 @@ def _quantity(v):
     return None if v is None else str(v)
 
 
-def binding_entry(d, env, name, o):
-    """Environment env's ciamWorkloadBinding for one workload object: images per container, replicas, the main
-    container's resources, the storage each replica claims."""
+def binding_entry(d, env, name, o, companions=()):
+    """Environment env's ciamWorkloadBinding for one workload object: images per container (then its companions',
+    ((container, image), ...)), replicas, the main container's resources, the storage each replica claims."""
     dn = f"cn={name},ou=bindings,{env}"
     size, storage_class = _storage(o)
     requests, limits = _main_resources(o)
+    derived = {c.strip() for c in (mark(o, DERIVED) or "").split(",")}
     replicas = (o.get("spec") or {}).get("replicas")
     owned = {"cn": (name,), "ciamBindingRole": (workload_role_of(o, name),),
-             "ciamContainerImage": tuple(dict.fromkeys(f"{c.get('name')}={c.get('image')}" for c in _containers(o)
-                                                       if c.get("image") and c.get("name"))),
+             "ciamContainerImage": tuple(dict.fromkeys((*(f"{c.get('name')}={c.get('image')}" for c in _containers(o)
+                                                         if c.get("image") and c.get("name")
+                                                         and c.get("name") not in derived),
+                                                       *(f"{c}={i}" for c, i in companions)))),
              "ciamWorkloadReplicas": (str(replicas) if o.get("kind") != "DaemonSet" and replicas is not None
                                       else None,),
              "ciamCpuRequest": (_quantity(requests.get("cpu")),), "ciamCpuLimit": (_quantity(limits.get("cpu")),),
              "ciamMemoryRequest": (_quantity(requests.get("memory")),),
              "ciamMemoryLimit": (_quantity(limits.get("memory")),),
              "ciamStorageSize": (size,), "ciamStorageClass": (storage_class,)}
-    return make_entry(dn, ("top", "ciamWorkloadBinding"), merged_attrs(get(d, dn), owned, BINDING_OWNED))
+    return make_entry(dn, ("top", "ciamWorkloadBinding"),
+                      in_record_order(get(d, dn), merged_attrs(get(d, dn), owned, BINDING_OWNED)))
 
 
 def entry_names(workloads):
-    """Each workload's entry name, in order: its metadata name, namespace-name when two namespaces use the name."""
-    names = [_meta(o).get("name") for _, o in workloads]
-    shared = {n for n in names if names.count(n) > 1}
+    """Each workload's entry name, in order: its mark opsdir.io/workload, else its metadata name (namespace-name when
+    two namespaces use the name)."""
+    names = [mark(o, WORKLOAD_NAME) or _meta(o).get("name") for _, o in workloads]
+    shared = {n for (_, o), n in zip(workloads, names) if names.count(n) > 1 and not mark(o, WORKLOAD_NAME)}
     return [f"{_namespace(o)}-{n}" if n in shared else n for (_, o), n in zip(workloads, names)]
+
+
+def companion_image(o):
+    """(workload, container, image) of a companion (mark opsdir.io/image-of: <workload>/<container>): the image of
+    that container among its containers and init containers, None when it has none; None for an unmarked object."""
+    target, _, container = (mark(o, IMAGE_OF) or "").partition("/")
+    if not (target and container):
+        return None
+    every = [*_containers(o), *(c for c in _pod_spec(o).get("initContainers") or () if isinstance(c, dict))]
+    return target, container, next((c.get("image") for c in every if c.get("name") == container and c.get("image")),
+                                   None)
 
 
 JOB_OWNED = ("cn", "ciamJobKind", "ciamSchedule", "ciamCommand", "ciamRuntime", "ciamRunsAs", "ciamJobRole",
@@ -263,7 +297,7 @@ def cron_job_entry(d, path, o, patterns):
     owned = {"cn": (name,), "ciamJobKind": ("cron",), "ciamSchedule": ((o.get("spec") or {}).get("schedule"),),
              "ciamCommand": (None if secret else command,), "ciamRuntime": (first.get("image"),),
              "ciamRunsAs": (_pod_spec(o).get("serviceAccountName"),),
-             "ciamJobRole": (_annotations(o).get("opsdir.io/cluster-role") or "cluster",),
+             "ciamJobRole": (mark(o, CLUSTER_ROLE) or "cluster",),
              "ciamSecretName": secret_names(o), "ciamRepoPath": (path,)}
     return (make_entry(dn, ("top", "ciamObject", "ciamJob"), merged_attrs(get(d, dn), owned, JOB_OWNED)),
             ((f"job {name} ({path}): its command holds secret material; not recorded",) if secret else ()))
@@ -278,11 +312,19 @@ def read_workloads(files, d, patterns, at=None):
     context = {"namespaces": {_meta(n).get("name"): n for n in of["Namespace"]}, "policies": of["NetworkPolicy"],
                "services": of["Service"], "ingresses": of["Ingress"], "routes": of["HTTPRoute"],
                "accounts": {(_namespace(a), _meta(a).get("name")): a for a in of["ServiceAccount"]}}
-    workloads = [(p, o) for p, o in found if o and o.get("kind") in dict(KINDS)]
+    marked = [(p, o) for p, o in found if o and o.get("kind") in (*dict(KINDS), "Job") and mark(o, IMAGE_OF)]
+    workloads = [(p, o) for p, o in found if o and o.get("kind") in dict(KINDS) and not mark(o, IMAGE_OF)]
     placed = [(p, o, n, workload_role(o, roles)) for (p, o), n in zip(workloads, entry_names(workloads))]
     kept = [(p, o, n, r) for p, o, n, r in placed if r and rdn_safe(n or "")]
     entries = [workload_entry(d, n, p, o, r, context) for p, o, n, r in kept]
-    bindings = [binding_entry(d, environment_at(d, p), n, o) for p, o, n, r in kept if environment_at(d, p)]
+    # (environment, workload, container, image) of each companion whose container has an image
+    companions = [(environment_at(d, p), *x) for p, o in marked for x in (companion_image(o),) if x and x[2]]
+    homes = {(environment_at(d, p), n) for p, _, n, _ in kept}
+    bindings = [binding_entry(d, environment_at(d, p), n, o,
+                              tuple((c, i) for e, w, c, i in companions if (e, w) == (environment_at(d, p), n)))
+                for p, o, n, r in kept if environment_at(d, p)]
+    orphans = [(p, o) for p, o in marked for x in (companion_image(o),)
+               if not (x and x[2] and (environment_at(d, p), x[0]) in homes)]
     unplaced = sorted({p for p, o, n, r in kept if not environment_at(d, p)})
     gateways, gateway_notices = read_gateways(d, found, environment_at, rdn_safe)
     cron = [(p, o) for p, o in found if o and o.get("kind") == "CronJob"]
@@ -302,6 +344,9 @@ def read_workloads(files, d, patterns, at=None):
                     f"holds ({', '.join(unplaced)}): workloads only, no environment's images, replicas, resources "
                     "or storage",) if unplaced else ()),
                  *(n for _, ns in jobs for n in ns), *gateway_notices,
+                 *(f"{p}: {o.get('kind')} {_meta(o).get('name')}: {IMAGE_OF} {mark(o, IMAGE_OF)!r} names no "
+                   "workload of the same environment in the manifests, or no container with an image; its image is "
+                   "not read" for p, o in orphans),
                  *(f"not YAML or JSON, not read: {p}" for p, o in found if o is None),
                  *(("no workloads (StatefulSets, Deployments, DaemonSets, CronJobs) in the manifests",)
                    if not workloads and not cron and not gateways else ())))

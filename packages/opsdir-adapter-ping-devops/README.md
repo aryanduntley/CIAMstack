@@ -25,6 +25,7 @@ Per product (the one without a workload is `enabled: false`), from the record:
 - **Replicas, CPU and memory** (`container.replicaCount`, `container.resources`) from the binding.
 - **Service account**: `rbac.serviceAccountName`, the workload's (`ciamServiceAccount`, else its name). The kubernetes adapter makes it; the chart makes none.
 - **Pod labels** (`workload.labels`): `opsdir.io/role: <role>`, which the network policies select, plus the pod labels the cloud's workload identity needs. The chart puts them on pod templates only; its selectors are its own.
+- **Marks** (`workload.annotations`, pod annotations): the workload's `opsdir.io/cluster-role`, `workload-role`, `identity-role` and `workload` (the chart names it `<release>-pingfederate-admin`; the mark gives the record's name), and `opsdir.io/derived-containers` naming the log sidecars, so the deployment reads back as the record (opsdir-adapter-kubernetes).
 - **Secrets**: each key the workload reads (`ciamWorkloadSecret <secret>/<key> <- <role>`) is set as the environment variable of its name (`secretKeyRef`).
   - The exception is `pingfederate.lic`, which is mounted as the license file at `/opt/in/instance/server/default/conf/pingfederate.lic`, as in the chart's own example.
   - The chart writes no Secret; they come from the kubernetes adapter (`external-secrets`) or the operator.

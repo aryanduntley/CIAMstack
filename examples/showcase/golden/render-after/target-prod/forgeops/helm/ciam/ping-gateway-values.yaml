@@ -21,3 +21,7 @@ ig:
       memory: "2Gi"
   podLabels:
     opsdir.io/role: ig
+  podAnnotations:
+    opsdir.io/cluster-role: k8s-cluster
+    opsdir.io/workload-role: ig-workload
+    opsdir.io/workload: ig

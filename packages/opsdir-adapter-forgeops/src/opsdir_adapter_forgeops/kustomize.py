@@ -5,7 +5,8 @@ checkout's kustomize/overlay/ at the pinned release and built there. Pure.
 The bases are the secret-generator ones with no generator: no Secret comes from the overlay (the keystore-create job
 makes the AM/IDM keystore; the rest come from the record, opsdir-adapter-kubernetes, or the operator). Each component
 sets its image (never ForgeOps' public ones, which are for development and testing only), labels its pod templates
-with opsdir.io/role and its cloud's workload identity labels (not its selectors), and patches what the record holds:
+with opsdir.io/role and its cloud's workload identity labels (not its selectors), annotates its workload object with
+the marks that make it read back as the record (components.pod_annotations), and patches what the record holds:
 replicas, the workload's service account, container resources, DS storage, the ingress host (ForgeOps' own overlay
 patches the same paths), and IDM's DS host and port when DS runs on servers. The overlay sets the bases' tooling
 images (busybox, kubectl) to the chart's defaults at the release. base/ patches platform-config: the platform's host
@@ -17,8 +18,8 @@ from opsdir.core.manifest import header
 from opsdir_adapter_kubernetes.kits import split_image
 from opsdir_adapter_kubernetes.render import service_account_of
 from .routes import gateway_fronted
-from .components import ds_servers, idm_ds_env, image_of, ingress_hosts, pod_labels, replicas, resources, storage, \
-    workload_of
+from .components import ds_servers, idm_ds_env, image_of, ingress_hosts, pod_annotations, pod_labels, replicas, \
+    resources, storage, workload_of
 from .release import COMPONENTS, IDENTITY_PLATFORM, KUSTOMIZE, TOOLING_IMAGES, VERSION
 
 KUSTOMIZATION = {"apiVersion": "kustomize.config.k8s.io/v1beta1", "kind": "Kustomization"}
@@ -59,6 +60,14 @@ def _workload_patch(m, p, c):
             "spec": {**({"replicas": n} if n is not None else {}), "template": {"spec": pod}}}
 
 
+def _marks_patch(m, p, c):
+    """The patch annotating a component's workload object with its marks (the importer reads them there first), or
+    None without any."""
+    marks = pod_annotations(m, p, c.name)
+    return {"patch": dump({"apiVersion": "batch/v1" if c.kind == "Job" else "apps/v1", "kind": c.kind,
+                           "metadata": {"name": c.name, "annotations": marks}})} if marks else None
+
+
 def _storage_ops(m, p, c):
     size, storage_class = storage(m, p, c.name) if c.kind == "StatefulSet" else (None, None)
     at = "/spec/volumeClaimTemplates/0/spec"
@@ -78,11 +87,11 @@ def _ingress_patch(m, c, host):
 
 
 def component_kustomization(m, services, p, c):
-    """One component's overlay kustomization: its base, image, pod-template labels, and patches for what the record
-    holds."""
-    workload, ops = _workload_patch(m, p, c), _storage_ops(m, p, c)
+    """One component's overlay kustomization: its base, image, pod-template labels, its marks, and patches for what
+    the record holds."""
+    workload, ops, marks = _workload_patch(m, p, c), _storage_ops(m, p, c), _marks_patch(m, p, c)
     host = _host(p, c)
-    patches = [*([{"patch": dump(workload)}] if workload else []),
+    patches = [*([{"patch": dump(workload)}] if workload else []), *([marks] if marks else []),
                *([{"target": {"kind": c.kind, "name": c.name}, "patch": dump(ops)}] if ops else []),
                *([_ingress_patch(m, c, host)] if c.ingress else [])]
     labels = pod_labels(m, services, p, c.name)

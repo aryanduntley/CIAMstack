@@ -27,7 +27,8 @@ WORKLOAD_ROWS = (
     ("am", "deployment", "am", "ciam-platform", None, "login.example-aero.test",
      ("am-env-secrets/AM_PASSWORDS_AMADMIN_CLEAR <- am-admin-password",
       "ds-env-secrets/AM_STORES_USER_PASSWORD <- am-ds-bind-password")),
-    ("idm", "deployment", "idm", "ciam-platform", None, None,
+    # ForgeOps serves IDM under AM's host (its UIs call both there): one ingress, or the cluster gateway's routes
+    ("idm", "deployment", "idm", "ciam-platform", None, "login.example-aero.test",
      ("idm-env-secrets/OPENIDM_ADMIN_PASSWORD <- idm-admin-password",
       "ds-passwords/dirmanager.pw <- ds-root-password")),
     ("ig", "deployment", "ig", "ciam-gateway", None, "apps.example-aero.test", ()),
@@ -35,6 +36,9 @@ WORKLOAD_ROWS = (
      ("pf-admin/PING_IDENTITY_PASSWORD <- pf-admin-password",)),
     ("pf-engine", "deployment", "pf-engine", "pingfederate", "identity-pf", "sso.example-aero.test", ()),
 )
+
+# The roles whose deployment kit runs their pods as non-root by default (ping-devops' securityContext for PingFederate)
+NON_ROOT = ("pf-admin", "pf-engine")
 
 
 def workloads():
@@ -45,14 +49,14 @@ def workloads():
                    ciamTargetRole=role, ciamNamespace=NAMESPACE, ciamClusterRole="k8s-cluster",
                    ciamWorkloadRole=f"{name}-workload", ciamServiceAccount=account, ciamIdentityRole=identity,
                    ciamIngressHost=host, ciamWorkloadSecret=list(secrets) or None,
-                   ciamPodSecurity="level=restricted")
+                   ciamPodSecurity=[*(("runAsNonRoot",) if role in NON_ROOT else ()), "level=restricted"])
               for name, kind, role, account, identity, host, secrets in WORKLOAD_ROWS))
 
 
-def _binding(name, images, version, replicas, cpu, memory, storage=None):
+def _binding(name, images, version, replicas, cpu, memory, storage=None, cpu_limit=None):
     return ("ciamWorkloadBinding", name, f"{name}-workload", {
         "ciamContainerImage": [f"{c}={REGISTRY}/{i}" for c, i in images], "ciamProductVersion": version,
-        "ciamWorkloadReplicas": replicas, "ciamCpuRequest": cpu, "ciamMemoryRequest": memory,
+        "ciamWorkloadReplicas": replicas, "ciamCpuRequest": cpu, "ciamCpuLimit": cpu_limit, "ciamMemoryRequest": memory,
         "ciamMemoryLimit": memory, **({"ciamStorageSize": storage[0], "ciamStorageClass": storage[1]}
                                       if storage else {})})
 
@@ -70,9 +74,10 @@ KUBERNETES = MappingProxyType({
                  "PingAM 8.1.1", 2, "2", "4Gi"),
         _binding("idm", (("openidm", "idm:8.1.2"),), "PingIDM 8.1.2", 2, "1", "2Gi"),
         _binding("ig", (("ig", "ig:2026.9.0"),), "PingGateway 2026.9.0", 2, "1", "2Gi"),
-        _binding("pf-admin", (("pingfederate", "pingfederate:13.1.3"),), "PingFederate 13.1.3", 1, "1", "4Gi",
-                 ("8Gi", "managed-csi-premium")),
-        _binding("pf-engine", (("pingfederate", "pingfederate:13.1.3"),), "PingFederate 13.1.3", 2, "1", "4Gi"),
+        _binding("pf-admin", (("pingfederate-admin", "pingfederate:13.1.3"),), "PingFederate 13.1.3", 1, "1", "4Gi",
+                 ("8Gi", "managed-csi-premium"), cpu_limit="2"),
+        _binding("pf-engine", (("pingfederate-engine", "pingfederate:13.1.3"),), "PingFederate 13.1.3", 2, "1", "4Gi",
+                 cpu_limit="2"),
         ("ciamClusterGateway", "ciam-edge", "ciam-edge", {
             "ciamClusterRole": "k8s-cluster", "ciamNamespace": NAMESPACE, "ciamFrontendIp": "10.60.15.250",
             "ciamSubnetRole": "subnet-aks", "ciamServiceAccount": "ciam-edge",

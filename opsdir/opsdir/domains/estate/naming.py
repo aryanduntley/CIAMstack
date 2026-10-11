@@ -122,7 +122,12 @@ CONFIGURATIONS = ("assured-workload", "us-data-location", "us-person-support", "
 # write sign-in policies and to export the risk logs
 IDENTITY_PREREQUISITES = ("identity-risk-license", "workload-risk-license", "risk-policy-permission",
                           "risk-log-permission")
-MET_CONFIGURATIONS = CONFIGURATIONS + IDENTITY_PREREQUISITES
+# what a data discovery service scanning through the organization's data catalog account (ciamCatalogRef) needs in
+# place that the platform's Terraform can't grant: the deploying identity's rights in the catalog to register sources
+# and set up scans, the catalog's identity's read access to the databases it scans, and the catalog's custom scan rule
+# set applying the organization's own data types
+DISCOVERY_PREREQUISITES = ("catalog-scan-permission", "catalog-database-access", "catalog-custom-rules")
+MET_CONFIGURATIONS = CONFIGURATIONS + IDENTITY_PREREQUISITES + DISCOVERY_PREREQUISITES
 # how the users of an organization's own directory sign in to a cloud: their password hashes synced to it, checked by
 # an agent on the directory's side, or federated to the organization's sign-in service (password-hash may sit beside
 # the others, for the cloud's leaked-credential detection)

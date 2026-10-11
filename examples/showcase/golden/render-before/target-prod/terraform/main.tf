@@ -1831,6 +1831,46 @@ resource "azurerm_monitor_aad_diagnostic_setting" "defender_identity_risk" {
   }
 }
 
+resource "azuread_conditional_access_policy" "defender_sign_in_medium_mfa" {
+  display_name = "defender (target/prod): sign-in risk medium+: mfa"
+  state        = "enabledForReportingButNotEnforced"
+  conditions {
+    client_app_types    = ["all"]
+    sign_in_risk_levels = ["medium", "high"]
+    applications {
+      included_applications = ["All"]
+    }
+    users {
+      included_groups = ["5b2c0000-0000-4000-8000-0000000000a1"]
+      excluded_users  = ["7e1d0000-0000-4000-8000-0000000000b9"]
+    }
+  }
+  grant_controls {
+    operator                          = "OR"
+    authentication_strength_policy_id = "/policies/authenticationStrengthPolicies/00000000-0000-0000-0000-000000000002"
+  }
+}
+
+resource "azuread_conditional_access_policy" "defender_user_high_password_change" {
+  display_name = "defender (target/prod): user risk high+: password-change"
+  state        = "enabledForReportingButNotEnforced"
+  conditions {
+    client_app_types = ["all"]
+    user_risk_levels = ["high"]
+    applications {
+      included_applications = ["All"]
+    }
+    users {
+      included_groups = ["5b2c0000-0000-4000-8000-0000000000a1"]
+      excluded_users  = ["7e1d0000-0000-4000-8000-0000000000b9"]
+    }
+  }
+  grant_controls {
+    operator          = "AND"
+    built_in_controls = ["mfa", "passwordChange"]
+  }
+}
+
 resource "azurerm_security_center_automation" "defender_export" {
   name                = "defender-export"
   location            = data.azurerm_resource_group.main.location

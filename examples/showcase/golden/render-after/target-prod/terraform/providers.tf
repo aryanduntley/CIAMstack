@@ -12,6 +12,10 @@ terraform {
       source  = "Azure/azapi"
       version = "~> 2.13"
     }
+    azuread = {
+      source  = "hashicorp/azuread"
+      version = "~> 3.10"
+    }
   }
 }
 
@@ -27,6 +31,9 @@ provider "azapi" {
   skip_provider_registration = true
 }
 
+provider "azuread" {
+}
+
 variable "subscription_id" {
   type    = string
   default = "00000000-0000-0000-0000-000000000000"
@@ -39,4 +46,9 @@ variable "admin_ssh_public_key" {
 variable "budget_start_date" {
   description = "The first day of the month the budgets start from (YYYY-MM-01T00:00:00Z; changing it replaces them)"
   type        = string
+}
+
+variable "purview_scan_start" {
+  type        = string
+  description = "When the Microsoft Purview scans first run (RFC 3339, UTC: 2026-11-01T02:00:00Z); each then recurs every ciamRescanDays days"
 }

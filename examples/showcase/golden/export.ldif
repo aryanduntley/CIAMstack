@@ -353,7 +353,11 @@ ciamAccountRef: 00000000-0000-0000-0000-000000000000
 ciamChangeRef: cn=CHG-2030,ou=changes,dc=ciam-ops
 ciamCloudEnvironment: public
 ciamCloudProvider: azure
+ciamDirectorySync: pass-through
+ciamDirectorySync: password-hash
 ciamLifecycle: building
+ciamOnPremDirectory: corp.example-aero.internal
+ciamPasswordWriteback: TRUE
 ciamProviderAddOn: azapi
 ciamRegion: eastus2
 description: Second hosting environment (Azure)
@@ -1174,7 +1178,7 @@ ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Turn on the target's sensitive data discovery over its backups (Def
- ender CSPM)
+ ender CSPM, Purview every 3 days)
 
 dn: cn=CHG-2035,ou=changes,dc=ciam-ops
 objectClass: top
@@ -1194,6 +1198,16 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Scope the cloud agents and the MRO export to where they run; the la
  b's own agents
+
+dn: cn=CHG-2037,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2037
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Sync the target's password hashes, write passwords back, watch the 
+ corporate AD (Defender for Identity)
 
 dn: cn=CHG-2040,ou=changes,dc=ciam-ops
 objectClass: top
@@ -2199,6 +2213,7 @@ objectClass: top
 objectClass: ciamWorkload
 cn: idm
 ciamClusterRole: k8s-cluster
+ciamIngressHost: login.example-aero.test
 ciamNamespace: ciam
 ciamPodSecurity: level=restricted
 ciamServiceAccount: ciam-platform
@@ -2820,6 +2835,7 @@ cn: pf-admin
 ciamClusterRole: k8s-cluster
 ciamIdentityRole: identity-pf
 ciamNamespace: ciam
+ciamPodSecurity: runAsNonRoot
 ciamPodSecurity: level=restricted
 ciamServiceAccount: pingfederate
 ciamTargetRole: pf-admin
@@ -2963,6 +2979,7 @@ ciamClusterRole: k8s-cluster
 ciamIdentityRole: identity-pf
 ciamIngressHost: sso.example-aero.test
 ciamNamespace: ciam
+ciamPodSecurity: runAsNonRoot
 ciamPodSecurity: level=restricted
 ciamServiceAccount: pingfederate
 ciamTargetRole: pf-engine
@@ -7300,8 +7317,13 @@ ciamChangeRef: cn=CHG-2029,ou=changes,dc=ciam-ops
 ciamFindingsRole: security-findings
 ciamIncidentRole: security-incidents
 ciamIncidentSeverity: high
+ciamPolicyCovers: identity-admins
+ciamPolicyExcludes: identity-break-glass
+ciamPolicyMode: report-only
 ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/providers
  /Microsoft.Security/pricings/defender
+ciamRiskPolicy: sign-in medium+: mfa
+ciamRiskPolicy: user high+: password-change
 ciamSecurityCoverage: control-plane
 ciamSecurityCoverage: identity
 ciamSecurityCoverage: network
@@ -7323,6 +7345,17 @@ ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/providers
  /Microsoft.Security/pricings/CloudPosture
 ciamSecurityBaseline: microsoft-cloud-security-benchmark
 ciamSecurityKind: posture
+
+dn: cn=defender-identity,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecurityService
+cn: defender-identity
+ciamBindingRole: directory-threat-detection
+ciamChangeRef: cn=CHG-2037,ou=changes,dc=ciam-ops
+ciamFindingsRole: security-findings
+ciamManagedBy: cn=security-operations,ou=owners,dc=ciam-ops
+ciamSecurityCoverage: on-prem-directory
+ciamSecurityKind: threat-detection
 
 dn: cn=defender-vulnerability,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -7435,13 +7468,16 @@ objectClass: top
 objectClass: ciamDataDiscovery
 cn: dspm
 ciamBindingRole: data-discovery
+ciamCatalogRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGr
+ oups/rg-data-governance/providers/Microsoft.Purview/accounts/pview-example-ae
+ ro
 ciamChangeRef: cn=CHG-2034,ou=changes,dc=ciam-ops
 ciamCustomIdentifier: cui-marking: CUI//[A-Z][A-Z/-]*
 ciamCustomIdentifier: employee-id: EA[0-9]{6}
 ciamFindingsRole: security-findings
 ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/providers
  /Microsoft.Security/pricings/CloudPosture/SensitiveDataDiscovery
-ciamRescanDays: 7
+ciamRescanDays: 3
 ciamScansRole: backup-target
 
 dn: cn=egress-firewall,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
@@ -8878,9 +8914,9 @@ ciamBindingRole: data-discovery
 ciamCustomIdentifier: cui-marking: CUI//[A-Z][A-Z/-]*
 ciamCustomIdentifier: employee-id: EA[0-9]{6}
 ciamFindingsRole: security-findings
-ciamProviderRef: arn:aws:macie2:us-east-1:111122223333:classification-job/3ce0
- 5dbb7ec5505def334104bf1b1fd5
-ciamRescanDays: 7
+ciamProviderRef: arn:aws:lambda:us-east-1:111122223333:function:ciam-prod-maci
+ e-macie-backups
+ciamRescanDays: 3
 ciamScansRole: backup-target
 
 dn: cn=mail,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
@@ -9208,8 +9244,9 @@ objectClass: top
 objectClass: ciamWorkloadBinding
 cn: pf-admin
 ciamBindingRole: pf-admin-workload
-ciamContainerImage: pingfederate=crciamprod.azurecr.io/ciam/pingfederate:13.1.
- 3
+ciamContainerImage: pingfederate-admin=crciamprod.azurecr.io/ciam/pingfederate
+ :13.1.3
+ciamCpuLimit: 2
 ciamCpuRequest: 1
 ciamMemoryLimit: 4Gi
 ciamMemoryRequest: 4Gi
@@ -9255,8 +9292,9 @@ objectClass: top
 objectClass: ciamWorkloadBinding
 cn: pf-engine
 ciamBindingRole: pf-engine-workload
-ciamContainerImage: pingfederate=crciamprod.azurecr.io/ciam/pingfederate:13.1.
- 3
+ciamContainerImage: pingfederate-engine=crciamprod.azurecr.io/ciam/pingfederat
+ e:13.1.3
+ciamCpuLimit: 2
 ciamCpuRequest: 1
 ciamMemoryLimit: 4Gi
 ciamMemoryRequest: 4Gi

@@ -385,6 +385,28 @@ EXPECTED = MappingProxyType({
         ("A124", "Identity protection", "target/prod's threat detection watching identity (defender): Microsoft Entra "
          "Workload ID Premium", "the target records no Workload ID Premium license for service principals' risk",
          None),
+        # the target's data discovery scans through the organization's Purview account every 7 days (CHG-2034,
+        # milestone 5.5e): what Terraform can't set up there, until the record says it is (ciamConfigurationMet)
+        ("A125", "Data discovery", "target/prod's data discovery `dspm` through Microsoft Purview: the identity "
+         "deploying its Terraform needs Data Source Administrator and Data Curator", "the target records no Purview "
+         "roles for the identity that registers the backups' storage account and sets up its scan", None,
+         "CHG-2034"),
+        ("A126", "Data discovery", "target/prod's data discovery `dspm` through Microsoft Purview: Purview applies its "
+         "classification rules only through a custom scan rule set", "the CUI-marking and employee-number rules "
+         "need a custom scan rule set in Purview, which azapi can't make", None, "CHG-2034"),
+        # the target's risk-based Conditional Access (report-only) and its users from the corporate AD (milestone 5.5e)
+        ("A127", "Identity protection", "target/prod's threat detection watching identity (defender): the identity "
+         "deploying its Terraform needs the Microsoft Graph permissions", "the target records no Graph permission for "
+         "its deploying identity to write the risk policies", None),
+        ("A128", "Identity protection", "target/prod's users from corp.example-aero.internal don't have their "
+         "password hashes synced", "the corporate AD's users sign in by pass-through only: no leaked-credential "
+         "detection, no password change for a risky user", "CHG-2037"),
+        ("A129", "Identity protection", "target/prod's risk policies ask users for password-change, and its cloud "
+         "doesn't write passwords back to corp.example-aero.internal", "a password changed in Entra wouldn't reach "
+         "the corporate AD", "CHG-2037"),
+        ("A130", "Identity protection", "target/prod's cloud takes its users from corp.example-aero.internal and no "
+         "threat detection covers the directory", "nothing watches the corporate AD the target's users come from "
+         "(Defender for Identity)", "CHG-2037"),
     ],
 })
 

@@ -342,7 +342,7 @@ ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Turn on the target's sensitive data discovery over its backups (Def
- ender CSPM)
+ ender CSPM, Purview every 3 days)
 
 dn: cn=CHG-2035,ou=changes,dc=ciam-ops
 objectClass: top
@@ -362,6 +362,16 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Scope the cloud agents and the MRO export to where they run; the la
  b's own agents
+
+dn: cn=CHG-2037,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2037
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Sync the target's password hashes, write passwords back, watch the 
+ corporate AD (Defender for Identity)
 
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top

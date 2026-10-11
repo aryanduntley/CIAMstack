@@ -91,12 +91,14 @@ CHANGES = (
      "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2033", "Move the target's AD forwarder to the landing zone's DNS servers; accept its reset mail's service",
      "approved", "CAB 2026-09-18", "2026-09-24"),
-    ("CHG-2034", "Turn on the target's sensitive data discovery over its backups (Defender CSPM)", "approved",
-     "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2034", "Turn on the target's sensitive data discovery over its backups (Defender CSPM, Purview every 3 "
+     "days)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2035", "Record the organization's sites (prerequisite onprem-sites)", "approved",
      "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2036", "Scope the cloud agents and the MRO export to where they run; the lab's own agents", "approved",
      "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2037", "Sync the target's password hashes, write passwords back, watch the corporate AD (Defender for "
+     "Identity)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

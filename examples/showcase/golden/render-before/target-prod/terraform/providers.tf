@@ -8,6 +8,10 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 5.9"
     }
+    azuread = {
+      source  = "hashicorp/azuread"
+      version = "~> 3.10"
+    }
   }
 }
 
@@ -16,6 +20,9 @@ provider "azurerm" {
   }
   subscription_id                 = var.subscription_id
   resource_provider_registrations = "none"
+}
+
+provider "azuread" {
 }
 
 variable "subscription_id" {

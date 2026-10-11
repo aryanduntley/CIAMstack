@@ -6,7 +6,7 @@ target/prod   aks            k8s-cluster         kubernetes 1.33.3              
 target/prod   am             am-workload         workload am (am)                openam=crciamprod.azurecr.io/ciam/am:8.1.1, amster=crciamprod.azurecr.  cpu 2/-, memory 4Gi/4Gi                            2
 target/prod   idm            idm-workload        workload idm (idm)              openidm=crciamprod.azurecr.io/ciam/idm:8.1.2                            cpu 1/-, memory 2Gi/2Gi                            2
 target/prod   ig             ig-workload         workload ig (ig)                ig=crciamprod.azurecr.io/ciam/ig:2026.9.0                               cpu 1/-, memory 2Gi/2Gi                            2
-target/prod   pf-admin       pf-admin-workload   workload pf-admin (pf-admin)    pingfederate=crciamprod.azurecr.io/ciam/pingfederate:13.1.3             cpu 1/-, memory 4Gi/4Gi 8Gi (managed-csi-premium)  1
-target/prod   pf-engine      pf-engine-workload  workload pf-engine (pf-engine)  pingfederate=crciamprod.azurecr.io/ciam/pingfederate:13.1.3             cpu 1/-, memory 4Gi/4Gi                            2
+target/prod   pf-admin       pf-admin-workload   workload pf-admin (pf-admin)    pingfederate-admin=crciamprod.azurecr.io/ciam/pingfederate:13.1.3       cpu 1/2, memory 4Gi/4Gi 8Gi (managed-csi-premium)  1
+target/prod   pf-engine      pf-engine-workload  workload pf-engine (pf-engine)  pingfederate-engine=crciamprod.azurecr.io/ciam/pingfederate:13.1.3      cpu 1/2, memory 4Gi/4Gi                            2
 (8 rows)
 exit 0

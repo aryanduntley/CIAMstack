@@ -18,10 +18,11 @@ from opsdir.core.environment import UNBOUND, one_role
 from opsdir.core.versions import holds
 from opsdir.domains.compute.workloads import recorded_versions
 from opsdir.domains.infrastructure.external import role_hosts
-from opsdir_adapter_kubernetes.kits import image_named, only_image, pod_labels_of, replicas_of, resources_of, storage_of
+from opsdir_adapter_kubernetes.kits import (image_named, image_of_mark, only_image, pod_labels_of, replicas_of,
+                                             resources_of, storage_of, workload_marks)
 from opsdir_adapter_kubernetes.render import ROLE_LABEL, namespace_of, on_kubernetes, service_account_of
-from .release import (COMPANION_ROLES, COMPONENTS, DS_LDAPS_PORT, IDM_ADMIN_UI, IDM_ADMIN_UI_VERSIONS, ROLE_COMPONENTS,
-                      UIS, component)
+from .release import (COMPANION_IMAGES, COMPANION_ROLES, COMPONENTS, DS_LDAPS_PORT, IDM_ADMIN_UI, IDM_ADMIN_UI_VERSIONS,
+                      ROLE_COMPONENTS, UIS, component)
 
 DS_SERVICE_ROLE = "ds-ldaps-service"
 DS_STORES = ("ds-idrepo", "ds-cts")
@@ -156,6 +157,17 @@ def pod_labels(m, services, p, name):
     w = workload_of(p, name)
     lead = dict(COMPANION_ROLES).get(name)
     return pod_labels_of(m, services, w) if w is not None else {ROLE_LABEL: lead} if lead else {}
+
+
+def pod_annotations(m, p, name):
+    """The marks a component's pods carry so the deployment reads back as the record: its workload's (cluster role,
+    workload role, name), or a companion's opsdir.io/image-of naming the workload whose binding keeps its image
+    (release.COMPANION_IMAGES); {} otherwise."""
+    w = workload_of(p, name)
+    if w is not None:
+        return workload_marks(w)
+    return image_of_mark(m, [x for _, x in p.placed], component(name).containers[0]) if name in COMPANION_IMAGES \
+        else {}
 
 
 def on_in(p, chart):

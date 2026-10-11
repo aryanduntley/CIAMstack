@@ -2062,6 +2062,46 @@ resource "azurerm_monitor_aad_diagnostic_setting" "defender_identity_risk" {
   }
 }
 
+resource "azuread_conditional_access_policy" "defender_sign_in_medium_mfa" {
+  display_name = "defender (target/prod): sign-in risk medium+: mfa"
+  state        = "enabledForReportingButNotEnforced"
+  conditions {
+    client_app_types    = ["all"]
+    sign_in_risk_levels = ["medium", "high"]
+    applications {
+      included_applications = ["All"]
+    }
+    users {
+      included_groups = ["5b2c0000-0000-4000-8000-0000000000a1"]
+      excluded_users  = ["7e1d0000-0000-4000-8000-0000000000b9"]
+    }
+  }
+  grant_controls {
+    operator                          = "OR"
+    authentication_strength_policy_id = "/policies/authenticationStrengthPolicies/00000000-0000-0000-0000-000000000002"
+  }
+}
+
+resource "azuread_conditional_access_policy" "defender_user_high_password_change" {
+  display_name = "defender (target/prod): user risk high+: password-change"
+  state        = "enabledForReportingButNotEnforced"
+  conditions {
+    client_app_types = ["all"]
+    user_risk_levels = ["high"]
+    applications {
+      included_applications = ["All"]
+    }
+    users {
+      included_groups = ["5b2c0000-0000-4000-8000-0000000000a1"]
+      excluded_users  = ["7e1d0000-0000-4000-8000-0000000000b9"]
+    }
+  }
+  grant_controls {
+    operator          = "AND"
+    built_in_controls = ["mfa", "passwordChange"]
+  }
+}
+
 resource "azurerm_security_center_automation" "defender_export" {
   name                = "defender-export"
   location            = data.azurerm_resource_group.main.location
@@ -2126,6 +2166,8 @@ resource "azurerm_security_center_automation" "defender_cspm_export" {
   }
 }
 
+# Security service defender-identity (threat-detection): kept by security-operations, not rendered here
+
 resource "azurerm_security_center_server_vulnerability_assessments_setting" "defender_vulnerability" {
   vulnerability_assessment_provider = "MdeTvm"
 }
@@ -2146,11 +2188,120 @@ resource "azurerm_security_center_automation" "defender_vulnerability_export" {
 
 # resource-changes: Azure records resource changes itself (Resource Graph change history, about 14 days): nothing to enable; keeping them longer needs an export (not rendered)
 
-# dspm: Defender for Cloud's sensitive data discovery (Defender CSPM, SensitiveDataDiscovery) examines every block blob, Azure Files and ADLS Gen2 storage account and Azure SQL database in the subscription, by sampling (complete cataloguing needs Microsoft Purview scanning, not rendered)
+# dspm: Defender for Cloud's sensitive data discovery (Defender CSPM, SensitiveDataDiscovery) examines every block blob, Azure Files and ADLS Gen2 storage account and Azure SQL database in the subscription, by sampling (complete cataloguing needs Microsoft Purview scanning: its scans below)
 
-# dspm: its own data types (cui-marking: CUI//[A-Z][A-Z/-]*, employee-id: EA[0-9]{6}) are Microsoft Purview custom sensitive information types imported into Defender's data sensitivity settings: not rendered
+# dspm: its own data types (cui-marking: CUI//[A-Z][A-Z/-]*, employee-id: EA[0-9]{6}) are Microsoft Purview custom sensitive information types imported into Defender's data sensitivity settings: not rendered (the Purview scans have classification rules of them below)
 
 # dspm: its findings are Defender recommendations and alerts: they reach security-findings through the security services' continuous export
+
+data "azapi_resource" "purview_pview_example_aero" {
+  type                   = "Microsoft.Purview/accounts@2021-12-01"
+  resource_id            = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-data-governance/providers/Microsoft.Purview/accounts/pview-example-aero"
+  response_export_values = ["identity.principalId"]
+}
+
+# dspm: Microsoft Purview account pview-example-aero scans stciamprodbackups every 3 days (its trigger), each storage account whole
+
+resource "azapi_data_plane_resource" "dspm_stciamprodbackups_source" {
+  type      = "Microsoft.Purview/accounts/Scanning/datasources@2023-09-01"
+  parent_id = "pview-example-aero.purview.azure.com/scan"
+  name      = "dspm-stciamprodbackups"
+  body = {
+    kind = "AzureStorage"
+    properties = {
+      endpoint = "https://stciamprodbackups.blob.core.windows.net/"
+      collection = {
+        referenceName = "pview-example-aero"
+        type          = "CollectionReference"
+      }
+    }
+  }
+}
+
+resource "azapi_data_plane_resource" "dspm_stciamprodbackups_scan" {
+  type      = "Microsoft.Purview/accounts/Scanning/datasources/scans@2023-09-01"
+  parent_id = "pview-example-aero.purview.azure.com/scan/datasources/dspm-stciamprodbackups"
+  name      = "dspm"
+  body = {
+    kind = "AzureStorageMsi"
+    properties = {
+      scanRulesetName = "AzureStorage"
+      scanRulesetType = "System"
+      collection = {
+        referenceName = "pview-example-aero"
+        type          = "CollectionReference"
+      }
+    }
+  }
+  depends_on = [azapi_data_plane_resource.dspm_stciamprodbackups_source]
+}
+
+resource "azapi_data_plane_resource" "dspm_stciamprodbackups_trigger" {
+  type      = "Microsoft.Purview/accounts/Scanning/datasources/scans/triggers@2023-09-01"
+  parent_id = "pview-example-aero.purview.azure.com/scan/datasources/dspm-stciamprodbackups/scans/dspm"
+  name      = "default"
+  body = {
+    properties = {
+      state     = "Enabled"
+      scanLevel = "Full"
+      recurrence = {
+        frequency = "Day"
+        interval  = 3
+        startTime = var.purview_scan_start
+        timeZone  = "UTC"
+      }
+    }
+  }
+  depends_on = [azapi_data_plane_resource.dspm_stciamprodbackups_scan]
+}
+
+resource "azurerm_role_assignment" "dspm_stciamprodbackups_purview_reader" {
+  scope                = azurerm_storage_account.stciamprodbackups.id
+  role_definition_name = "Storage Blob Data Reader"
+  principal_id         = data.azapi_resource.purview_pview_example_aero.output.identity.principalId
+}
+
+resource "azapi_data_plane_resource" "dspm_cui_marking_rule" {
+  type      = "Microsoft.Purview/accounts/Scanning/classificationrules@2023-09-01"
+  parent_id = "pview-example-aero.purview.azure.com/scan"
+  name      = "dspm-cui-marking"
+  body = {
+    kind = "Custom"
+    properties = {
+      classificationName = "CIAM.DSPM.CUI_MARKING"
+      dataPatterns = [
+        {
+          kind    = "Regex"
+          pattern = "CUI//[A-Z][A-Z/-]*"
+        },
+      ]
+      minimumPercentageMatch = 60
+      ruleStatus             = "Enabled"
+      description            = "cui-marking: an own data type of data discovery dspm (ciamCustomIdentifier)"
+    }
+  }
+}
+
+resource "azapi_data_plane_resource" "dspm_employee_id_rule" {
+  type      = "Microsoft.Purview/accounts/Scanning/classificationrules@2023-09-01"
+  parent_id = "pview-example-aero.purview.azure.com/scan"
+  name      = "dspm-employee-id"
+  body = {
+    kind = "Custom"
+    properties = {
+      classificationName = "CIAM.DSPM.EMPLOYEE_ID"
+      dataPatterns = [
+        {
+          kind    = "Regex"
+          pattern = "EA[0-9]{6}"
+        },
+      ]
+      minimumPercentageMatch = 60
+      ruleStatus             = "Enabled"
+      description            = "employee-id: an own data type of data discovery dspm (ciamCustomIdentifier)"
+    }
+  }
+}
 
 resource "azapi_resource" "exc_exc_2026_03_ipanomaly" {
   type      = "Microsoft.Security/alertsSuppressionRules@2019-01-01-preview"

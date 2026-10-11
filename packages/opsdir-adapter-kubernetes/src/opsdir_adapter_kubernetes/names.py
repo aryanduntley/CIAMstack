@@ -5,6 +5,19 @@ import re
 # output, derived from what the record holds, not another fact about the cluster.
 MANAGED_BY = ("app.kubernetes.io/managed-by", "opsdir")
 
+# The annotations a rendered workload carries so it reads back as the record's (workloads.py; on the workload object or
+# its pod template, as the deployment kit's chart allows): the binding role of the cluster it runs in, the binding role
+# of its workload binding, the binding role of its cloud identity, its record name when the kit names the object
+# otherwise; on a pod that is part of another workload (a kit's companion: ForgeOps' UIs and amster with AM),
+# "<workload>/<container>": the record's workload whose binding holds its image, under that container name; and the
+# containers (comma-separated) the kit derives from the record (log sidecars), which are no images of the workload.
+CLUSTER_ROLE = "opsdir.io/cluster-role"
+WORKLOAD_ROLE = "opsdir.io/workload-role"
+IDENTITY_ROLE = "opsdir.io/identity-role"
+WORKLOAD_NAME = "opsdir.io/workload"
+IMAGE_OF = "opsdir.io/image-of"
+DERIVED = "opsdir.io/derived-containers"
+
 
 def k8s_name(text):
     """A Kubernetes object name (DNS label) from any text."""

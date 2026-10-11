@@ -297,3 +297,65 @@ def test_the_network_policies_opsdir_rendered_are_not_recorded_again():
                       "metadata: {name: ds-ldap, namespace: identity, labels: {app.kubernetes.io/managed-by: opsdir}}")
     d, _, _ = imported(files={**FILES, "alpha/prod/identity/ds.yaml": ours})
     assert values(get(d, workload_dn("ds-idrepo")), "ciamNetworkPolicy") == ()     # derived from the record's listeners
+
+
+KIT = """apiVersion: apps/v1
+kind: StatefulSet
+metadata: {name: ciam-pingfederate-admin, namespace: identity}
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels: {opsdir.io/role: pf-admin}
+      annotations: {opsdir.io/cluster-role: k8s, opsdir.io/workload-role: pf-admin-run, opsdir.io/workload: pf-admin,
+                    opsdir.io/derived-containers: "log-tail"}
+    spec:
+      containers: [{name: pingfederate, image: registry.example.test/pf:13.1.3},
+                   {name: log-tail, image: registry.example.test/pf:13.1.3}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: admin-ui, namespace: identity, labels: {opsdir.io/role: pf-admin}}
+spec:
+  template:
+    metadata: {annotations: {opsdir.io/image-of: pf-admin/admin-ui}}
+    spec:
+      containers: [{name: admin-ui, image: registry.example.test/admin-ui:1}]
+---
+apiVersion: batch/v1
+kind: Job
+metadata: {name: setup, namespace: identity}
+spec:
+  template:
+    metadata: {annotations: {opsdir.io/image-of: pf-admin/setup}}
+    spec:
+      initContainers: [{name: setup, image: registry.example.test/setup:1}]
+      containers: [{name: pause, image: registry.example.test/setup:1}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: stray, namespace: identity}
+spec:
+  template:
+    metadata: {annotations: {opsdir.io/image-of: nowhere/stray}}
+    spec:
+      containers: [{name: stray, image: registry.example.test/stray:1}]
+"""
+
+
+def test_a_kits_marks_on_pod_templates_name_the_workload_fold_its_companions_and_drop_derived_containers():
+    from opsdir.core.environment import env_model
+    d, _, notices = imported(files={**FILES, "alpha/prod/identity/kit.yaml": KIT})
+    w = get(d, workload_dn("pf-admin"))
+    assert (one(w, "ciamClusterRole"), one(w, "ciamWorkloadRole"), one(w, "ciamTargetRole")) == \
+        ("k8s", "pf-admin-run", "pf-admin")
+    assert get(d, workload_dn("ciam-pingfederate-admin")) is None
+    assert all(get(d, workload_dn(n)) is None for n in ("admin-ui", "setup", "stray"))   # companions aren't workloads
+    b = workload_binding(env_model(d, "alpha/prod"), w)
+    assert values(b, "ciamContainerImage") == ("pingfederate=registry.example.test/pf:13.1.3",
+                                              "admin-ui=registry.example.test/admin-ui:1",
+                                              "setup=registry.example.test/setup:1")   # an init container's too;
+    # not log-tail: the kit derives it from the record (opsdir.io/derived-containers)
+    assert ["alpha/prod/identity/kit.yaml: Deployment stray: opsdir.io/image-of 'nowhere/stray' names no workload of "
+            "the same environment in the manifests, or no container with an image; its image is not read"] == \
+        [n for n in notices if "image-of" in n]

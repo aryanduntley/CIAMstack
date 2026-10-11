@@ -385,6 +385,11 @@
       "format": "python",
       "sha256": "97e34061c1fce15110f66fad51785848df42133756a1d1bd47e7f8b39f718d4f"
     },
+    "terraform/discovery/ciam-prod-macie-macie-backups/handler.py": {
+      "scope": "environment-specific",
+      "format": "python",
+      "sha256": "98d3130e25873abe6b189f408b31fe026d47604ff02dbf7be0e9ce88a521f7c0"
+    },
     "terraform/landing-zone/main.tf": {
       "scope": "landing-zone",
       "format": "hcl",
@@ -403,7 +408,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "9a313445a951451771a35147cce277f936dafc29875e6a6d95156194b4e32e8c"
+      "sha256": "cc5d4456f88712cc62f1421bb8ead79ddd4e49c4e68d272856fb67336293b37a"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

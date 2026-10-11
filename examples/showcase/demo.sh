@@ -202,6 +202,9 @@ echo "-- the on-prem lab (hq/lab): the organization's sites become the on-prem p
 echo "   the MRO export apply only where they run, the lab's servers get its site's agents"
 od import --change CHG-2035 --at 20260923090000Z onprem/sites exports/sites/onprem
 od modify --change CHG-2036 changes/CHG-2036-scoped-agents-and-jobs.ldif
+echo "-- the target's hybrid identity: password hashes synced beside pass-through, passwords written back to the"
+echo "   corporate AD, and Defender for Identity (kept by security operations) watching the AD"
+od modify --change CHG-2037 changes/CHG-2037-target-hybrid-identity.ldif
 od report baselines
 rm -rf out/hq-lab
 od render hq/lab

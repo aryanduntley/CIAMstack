@@ -310,9 +310,11 @@ ATTRIBUTES = (
                  "assured-workload, us-data-location, us-person-support, il5-isolation"),
     AttributeDef(587, 'ciamConfigurationMet', enum_type(MET_CONFIGURATIONS), 'intent', False,
                  "A configuration an environment has in place: for its authorization (an Assured Workloads workload, "
-                 "US data location, US-person support, IL5 isolation), or for its threat detection watching identity "
+                 "US data location, US-person support, IL5 isolation), for its threat detection watching identity "
                  "(the identity and workload risk licenses, the deploying identity's rights to write sign-in policies "
-                 "and export the risk logs)"),
+                 "and export the risk logs), or for its data discovery scanning through a data catalog account (the "
+                 "deploying identity's rights in the catalog, the catalog's read access to the databases it scans, "
+                 "its custom scan rule set for the organization's own data types)"),
     AttributeDef(588, 'ciamSspRef', 'string', 'meta', True,
                  "The system security plan a system boundary is documented in: its id and version"),
     AttributeDef(589, 'ciamResponsibility', enum_type(RESPONSIBILITY), 'meta', True,
@@ -331,6 +333,10 @@ ATTRIBUTES = (
     AttributeDef(595, 'ciamRescanDays', 'int', 'intent', True,
                  "How often a data discovery service examines its stores again, in days (1 daily, 7 weekly, 30 "
                  "monthly)", (("X-MIN", "1"),)),
+    AttributeDef(644, 'ciamCatalogRef', 'string', 'binding', True,
+                 "The organization's data catalog account a data discovery service scans through (the provider's id "
+                 "of an account that exists: Microsoft Purview allows one per tenant), which lets its scans recur "
+                 "exactly every ciamRescanDays days"),
     AttributeDef(596, 'ciamResultsRole', 'string', 'intent', True,
                  "The role of the binding a data discovery service keeps its detailed results in (an object store): "
                  "the record of where sensitive data was found"),
@@ -465,7 +471,7 @@ CLASSES = (
              "the environments inside it and its authorizing official"),
     ClassDef(127, 'ciamDataDiscovery', 'ciamBinding', 'STRUCTURAL', (),
              ('ciamScansRole', 'ciamCustomIdentifier', 'ciamRescanDays', 'ciamFindingsRole', 'ciamResultsRole',
-              'ciamProviderRef', 'ciamManagedBy'),
+              'ciamCatalogRef', 'ciamProviderRef', 'ciamManagedBy'),
              "A data discovery service an environment runs (Amazon Macie, Defender for Cloud's sensitive data "
              "discovery, Sensitive Data Protection): the stores it examines, the organization's own data types it "
              "looks for, how often, where its findings go and where it keeps its results"),

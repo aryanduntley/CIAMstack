@@ -505,6 +505,11 @@ def environments():
                  ciamAccountRef=ACCOUNTS["target"],
                  ciamCloudProvider="azure", ciamRegion="eastus2", ciamCloudEnvironment="public",
                  ciamLifecycle="building",
+                 # planted: its users come from the corporate AD by pass-through sign-in, no password hash sync, no
+                 # writeback, and nothing watches the directory (CHG-2037 adds them, Defender for Identity kept by
+                 # security operations)
+                 ciamOnPremDirectory="corp.example-aero.internal", ciamDirectorySync="pass-through",
+                 ciamPasswordWriteback="FALSE",
                  description="Second hosting environment (Azure)"),
             spec(az, AZ, ["top", "ciamEnvironment", "ciamEnvironmentPlacement"], env="prod", ciamLifecycle="building",
                  ciamAuthorizationRef=AUTHORIZED["target"],

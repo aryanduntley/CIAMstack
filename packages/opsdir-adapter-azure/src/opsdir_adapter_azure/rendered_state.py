@@ -20,6 +20,7 @@ from opsdir.core.directory import one
 from opsdir.core.environment import env_dn, env_model
 from opsdir_format_terraform.realized import realized
 from opsdir_format_terraform.state_builder import root_states, synthetic
+from .purview import START
 from .resource_providers import namespace_of
 
 # Resource types realizing a binding the record matches by its provider reference -> the binding's object class
@@ -136,8 +137,13 @@ def azure_assigned(m, blocks):
     return assigned
 
 
+# Inputs an operator gives at apply that what is read back depends on: a synthetic value each (the Purview triggers'
+# first run, without which their recurrence isn't in the state)
+INPUTS = MappingProxyType({START: "2026-01-01T02:00:00Z"})
+
+
 def rendered_states(files, d, environment):
     """The ReadBack's prepare: the rendered Terraform roots of an environment ({<cloud>/<env>/...tf: text}) as the
     states applying them would record ({<cloud>/<env>/<root>.tfstate: text}), what Azure assigns from record d."""
     m = env_model(d, env_dn(environment))
-    return root_states(files, environment, lambda blocks: azure_assigned(m, blocks))
+    return root_states(files, environment, lambda blocks: azure_assigned(m, blocks), dict(INPUTS))

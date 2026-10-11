@@ -1,11 +1,13 @@
 """What a deployment kit (ForgeOps, ping-devops) reads from a workload and its workload binding: the images its
-containers run, replicas, cpu and memory, storage, and the labels its pods carry. Shared by the kit adapters, which
-set them in their own charts' and bases' terms. Pure.
+containers run, replicas, cpu and memory, storage, the labels its pods carry, and the marks (names.py) that make what
+it deploys read back as the record's workloads (workloads.py). Shared by the kit adapters, which set them in their own
+charts' and bases' terms. Pure.
 
 What the record doesn't hold is None or left out, so the kit's own default stays.
 """
-from opsdir.core.directory import one, values
+from opsdir.core.directory import one, rdn_value, values
 from opsdir.domains.compute.workloads import workload_binding
+from .names import CLUSTER_ROLE, IDENTITY_ROLE, IMAGE_OF, WORKLOAD_NAME, WORKLOAD_ROLE
 from .render import ROLE_LABEL, identity_binding
 
 
@@ -74,3 +76,20 @@ def pod_labels_of(m, services, w):
     b = identity_binding(m, w)
     identity = services.workload_identity(m, b) if b is not None else None
     return {ROLE_LABEL: one(w, "ciamTargetRole"), **dict(identity.pod_labels if identity else ())}
+
+
+def workload_marks(w):
+    """The marks a kit sets on a workload it deploys, so it reads back as the record's (whatever the kit names the
+    object): {opsdir.io/cluster-role, opsdir.io/workload-role, opsdir.io/identity-role (when it has one),
+    opsdir.io/workload: the record's values}."""
+    found = ((CLUSTER_ROLE, one(w, "ciamClusterRole")), (WORKLOAD_ROLE, one(w, "ciamWorkloadRole")),
+             (IDENTITY_ROLE, one(w, "ciamIdentityRole")), (WORKLOAD_NAME, rdn_value(w)))
+    return {k: v for k, v in found if v}
+
+
+def image_of_mark(m, ws, container):
+    """The mark of a kit's companion pod (no workload of its own) whose image the record keeps under this container
+    name in a workload's binding: {opsdir.io/image-of: <workload>/<container>} for the first of workloads ws whose
+    binding records it, {} when none does."""
+    home = next((w for w in ws if container in dict(container_images(workload_binding(m, w)))), None)
+    return {IMAGE_OF: f"{rdn_value(home)}/{container}"} if home is not None else {}

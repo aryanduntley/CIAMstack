@@ -27,6 +27,7 @@ objectClass: top
 objectClass: ciamWorkload
 cn: idm
 ciamClusterRole: k8s-cluster
+ciamIngressHost: login.example-aero.test
 ciamNamespace: ciam
 ciamPodSecurity: level=restricted
 ciamServiceAccount: ciam-platform
@@ -57,6 +58,7 @@ cn: pf-admin
 ciamClusterRole: k8s-cluster
 ciamIdentityRole: identity-pf
 ciamNamespace: ciam
+ciamPodSecurity: runAsNonRoot
 ciamPodSecurity: level=restricted
 ciamServiceAccount: pingfederate
 ciamTargetRole: pf-admin
@@ -72,6 +74,7 @@ ciamClusterRole: k8s-cluster
 ciamIdentityRole: identity-pf
 ciamIngressHost: sso.example-aero.test
 ciamNamespace: ciam
+ciamPodSecurity: runAsNonRoot
 ciamPodSecurity: level=restricted
 ciamServiceAccount: pingfederate
 ciamTargetRole: pf-engine

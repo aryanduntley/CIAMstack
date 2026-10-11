@@ -229,16 +229,17 @@ def tf_state(blocks, assigned=None, variables=None):
     return json.dumps(document, indent=2), notices
 
 
-def root_states(files, environment, assigned_for=None):
+def root_states(files, environment, assigned_for=None, variables=None):
     """{state path: state text} of the Terraform roots among files ({path: .tf text}, under the environment's folder):
     each folder's files are one root, its state named after the folder below the environment's (the environment's own
     folder: terraform.tfstate; <env>/landing-zone/: landing-zone.tfstate), placed in the environment's folder.
     assigned_for(blocks) -> the root's assigned() (see tf_state), from what the cloud adapter knows; default
-    synthetic."""
+    synthetic. variables: {name: value} for inputs an operator gives at apply (no default), the same for every root."""
     folders = sorted({p.rsplit("/", 1)[0] for p in files if p.endswith(".tf")})
     roots = {f: tuple(b for p in sorted(files) if p.endswith(".tf") and p.rsplit("/", 1)[0] == f
                       for b in read_hcl(files[p]) if isinstance(b, TfBlock)) for f in folders}
     named = {f: (f[len(environment) + 1:] if f.startswith(environment + "/") else
                  "" if f == environment else f).replace("/", "-") or "terraform" for f in folders}
-    return {f"{environment}/{named[f]}.tfstate": tf_state(blocks, assigned_for(blocks) if assigned_for else None)[0]
+    return {f"{environment}/{named[f]}.tfstate": tf_state(blocks, assigned_for(blocks) if assigned_for else None,
+                                                          variables)[0]
             for f, blocks in roots.items()}

@@ -34,6 +34,15 @@ patches:
               limits:
                 memory: "2Gi"
 - patch: |
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: ig
+      annotations:
+        opsdir.io/cluster-role: k8s-cluster
+        opsdir.io/workload-role: ig-workload
+        opsdir.io/workload: ig
+- patch: |
     "$patch": delete
     apiVersion: networking.k8s.io/v1
     kind: Ingress

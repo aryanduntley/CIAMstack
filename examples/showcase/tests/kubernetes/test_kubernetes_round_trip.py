@@ -2,7 +2,9 @@
 folder, rendered from the record as `opsdir render` writes it, is expanded as it is deployed (each Helm values file
 rendered with its kit's chart, `helm template`, into the namespace its folder names, as `helm install -n` places it;
 each kubernetes/<namespace> folder built with `kustomize build`), then read back by the kubernetes adapter's
-workloads importer against the record the render came from (connectors.roundtrip.read_back). ForgeOps' Kustomize
+workloads importer against the record the render came from (connectors.roundtrip.read_back). Each chart is installed
+under the release name its kit's install command gives (ForgeOps: the chart's name; ping-devops: its RELEASE), which
+the Services the render's routes name carry. ForgeOps' Kustomize
 overlay is the deprecated alternative to its Helm values, so only the values are deployed. Runs with the local tools
 and kit sources; skipped without them."""
 import pathlib
@@ -32,139 +34,11 @@ pytestmark = [pytest.mark.kubernetes,
 CLUSTER_SCOPED = {"Namespace", "ClusterRole", "ClusterRoleBinding", "CustomResourceDefinition", "GatewayClass",
                   "StorageClass", "PriorityClass", "PersistentVolume", "MutatingWebhookConfiguration",
                   "ValidatingWebhookConfiguration", "IngressClass"}
-# What target/prod's deployment doesn't read back as yet, before and after the approved changes ((changetype, DN,
-# attributes), meta attributes aside): the kits' workloads carry no cluster-role mark, ping-devops names its
-# workloads after the Helm release, ForgeOps' AM container is `openam` and its UIs aren't in the record, and IDM is
-# served under AM's host, which the record doesn't say. Milestone 88 (5.5b Kubernetes read-back parity) empties it.
-TARGET_REMAINING = (('add',
-                     'cn=admin-ui,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops',
-                     ('ciamBindingRole',
-                      'ciamContainerImage',
-                      'ciamCpuRequest',
-                      'ciamMemoryLimit',
-                      'ciamMemoryRequest',
-                      'ciamWorkloadReplicas',
-                      'cn',
-                      'objectClass')),
-                    ('add',
-                     'cn=admin-ui,ou=workloads,dc=ciam-ops',
-                     ('ciamClusterRole',
-                      'ciamIngressHost',
-                      'ciamNamespace',
-                      'ciamPodSecurity',
-                      'ciamRepoPath',
-                      'ciamServiceAccount',
-                      'ciamTargetRole',
-                      'ciamWorkloadKind',
-                      'ciamWorkloadRole',
-                      'cn',
-                      'objectClass')),
-                    ('add',
-                     'cn=ciam-pingfederate-admin,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops',
-                     ('ciamBindingRole',
-                      'ciamContainerImage',
-                      'ciamCpuLimit',
-                      'ciamCpuRequest',
-                      'ciamMemoryLimit',
-                      'ciamMemoryRequest',
-                      'ciamStorageClass',
-                      'ciamStorageSize',
-                      'ciamWorkloadReplicas',
-                      'cn',
-                      'objectClass')),
-                    ('add',
-                     'cn=ciam-pingfederate-admin,ou=workloads,dc=ciam-ops',
-                     ('ciamClusterRole',
-                      'ciamIdentityRole',
-                      'ciamNamespace',
-                      'ciamPodSecurity',
-                      'ciamRepoPath',
-                      'ciamSecretName',
-                      'ciamServiceAccount',
-                      'ciamTargetRole',
-                      'ciamWorkloadKind',
-                      'ciamWorkloadRole',
-                      'cn',
-                      'objectClass')),
-                    ('add',
-                     'cn=ciam-pingfederate-engine,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops',
-                     ('ciamBindingRole',
-                      'ciamContainerImage',
-                      'ciamCpuLimit',
-                      'ciamCpuRequest',
-                      'ciamMemoryLimit',
-                      'ciamMemoryRequest',
-                      'ciamWorkloadReplicas',
-                      'cn',
-                      'objectClass')),
-                    ('add',
-                     'cn=ciam-pingfederate-engine,ou=workloads,dc=ciam-ops',
-                     ('ciamClusterRole',
-                      'ciamIdentityRole',
-                      'ciamNamespace',
-                      'ciamPodSecurity',
-                      'ciamRepoPath',
-                      'ciamSecretName',
-                      'ciamServiceAccount',
-                      'ciamTargetRole',
-                      'ciamWorkloadKind',
-                      'ciamWorkloadRole',
-                      'cn',
-                      'objectClass')),
-                    ('add',
-                     'cn=end-user-ui,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops',
-                     ('ciamBindingRole',
-                      'ciamContainerImage',
-                      'ciamCpuRequest',
-                      'ciamMemoryLimit',
-                      'ciamMemoryRequest',
-                      'ciamWorkloadReplicas',
-                      'cn',
-                      'objectClass')),
-                    ('add',
-                     'cn=end-user-ui,ou=workloads,dc=ciam-ops',
-                     ('ciamClusterRole',
-                      'ciamIngressHost',
-                      'ciamNamespace',
-                      'ciamPodSecurity',
-                      'ciamRepoPath',
-                      'ciamServiceAccount',
-                      'ciamTargetRole',
-                      'ciamWorkloadKind',
-                      'ciamWorkloadRole',
-                      'cn',
-                      'objectClass')),
-                    ('add',
-                     'cn=login-ui,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops',
-                     ('ciamBindingRole',
-                      'ciamContainerImage',
-                      'ciamCpuRequest',
-                      'ciamMemoryLimit',
-                      'ciamMemoryRequest',
-                      'ciamWorkloadReplicas',
-                      'cn',
-                      'objectClass')),
-                    ('add',
-                     'cn=login-ui,ou=workloads,dc=ciam-ops',
-                     ('ciamClusterRole',
-                      'ciamIngressHost',
-                      'ciamNamespace',
-                      'ciamPodSecurity',
-                      'ciamRepoPath',
-                      'ciamServiceAccount',
-                      'ciamTargetRole',
-                      'ciamWorkloadKind',
-                      'ciamWorkloadRole',
-                      'cn',
-                      'objectClass')),
-                    ('modify',
-                     'cn=am,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops',
-                     ('ciamContainerImage',)),
-                    ('modify', 'cn=am,ou=workloads,dc=ciam-ops', ('ciamClusterRole',)),
-                    ('modify', 'cn=idm,ou=workloads,dc=ciam-ops', ('ciamClusterRole', 'ciamIngressHost')),
-                    ('modify', 'cn=ig,ou=workloads,dc=ciam-ops', ('ciamClusterRole',)))
-# (environment, state) -> what doesn't read back yet
-REMAINING = {("target/prod", state): list(TARGET_REMAINING) for state in ("before", "after")}
+# What a deployment doesn't read back as yet, (environment, state) -> [(changetype, DN, attributes)], meta attributes
+# aside. Empty since milestone 88 (5.5b): the kits mark what they deploy (opsdir-adapter-kubernetes names.py) so it
+# reads back as the record's workloads, whatever the chart names it, with its companions' images folded into the
+# workload they belong to. Anything new fails the test.
+REMAINING = {}
 
 
 def _run(*argv):
@@ -183,13 +57,14 @@ def _namespaced(text, namespace):
 
 def deployed(render):
     """{kubernetes/<name>.yaml: manifests} of a render, expanded as it is deployed."""
-    charts = [(FORGEOPS / "charts" / f.name.removesuffix("-values.yaml"), f)
+    charts = [(f.name.removesuffix("-values.yaml"), FORGEOPS / "charts" / f.name.removesuffix("-values.yaml"), f)
               for f in sorted(render.glob("forgeops/helm/*/*-values.yaml"))]
-    charts += [(PING_DEVOPS, f) for f in sorted(render.glob(f"{ping_devops.CHART}/helm/*/*-values.yaml"))]
+    charts += [(ping_devops.RELEASE, PING_DEVOPS, f)
+               for f in sorted(render.glob(f"{ping_devops.CHART}/helm/*/*-values.yaml"))]
     helm = {f"kubernetes/helm-{values.parent.name}-{values.name}":
-            _namespaced(_run(BIN / "helm", "template", "ciam", chart, "-f", values, "-n", values.parent.name),
+            _namespaced(_run(BIN / "helm", "template", release, chart, "-f", values, "-n", values.parent.name),
                         values.parent.name)
-            for chart, values in charts}
+            for release, chart, values in charts}
     built = {f"kubernetes/kustomize-{k.parent.name}.yaml": _namespaced(_run(BIN / "kustomize", "build", k.parent),
                                                                        k.parent.name)
              for k in sorted((render / "kubernetes").glob("*/kustomization.yaml"))}

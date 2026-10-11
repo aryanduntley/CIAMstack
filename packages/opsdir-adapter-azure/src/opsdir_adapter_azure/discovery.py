@@ -20,6 +20,7 @@ data discovery (kind discovery)."""
 from opsdir.core.directory import get, is_kind, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.discovery import custom_identifiers, discovery_services, rescan_days
+from .purview import purview_read, renders as purview_renders, scanned
 from .security import CSPM, PRICING
 
 EXTENSION = "SensitiveDataDiscovery"
@@ -56,14 +57,17 @@ def _unsupported(m, s):
 def _notes(m, s):
     cn, days = rdn_value(s), rescan_days([s])
     others, own = _unsupported(m, s), custom_identifiers(s)
+    purview = purview_renders(m) and any(x.dn == s.dn for x, _, _ in scanned(m))
     return (f"# {cn}: Defender for Cloud's sensitive data discovery (Defender CSPM, SensitiveDataDiscovery) "
             "examines every block blob, Azure Files and ADLS Gen2 storage account and Azure SQL database in the "
-            "subscription, by sampling (complete cataloguing needs Microsoft Purview scanning, not rendered)",
+            f"subscription, by sampling (complete cataloguing needs Microsoft Purview scanning: "
+            f"{'its scans below' if purview else 'not rendered'})",
             *((f"# {cn}: {', '.join(others)}: not a store it examines",) if others else ()),
             *((f"# {cn}: it refreshes object storage within eight days of a change and databases weekly; the record "
-               f"asks every {days} days",) if days is not None and days < 7 else ()),
+               f"asks every {days} days",) if days is not None and days < 7 and not purview else ()),
             *((f"# {cn}: its own data types ({', '.join(f'{n}: {rx}' for n, rx in own)}) are Microsoft Purview custom "
-               "sensitive information types imported into Defender's data sensitivity settings: not rendered",)
+               "sensitive information types imported into Defender's data sensitivity settings: not rendered"
+               f"{' (the Purview scans have classification rules of them below)' if purview else ''}",)
               if own else ()),
             *((f"# {cn}: its findings are Defender recommendations and alerts: they reach "
                f"{one(s, 'ciamFindingsRole')} through the security services' continuous export",)
@@ -83,8 +87,11 @@ def render_discovery(m):
 
 
 def discovery_resources(pairs):
-    """Data discovery of (azurerm type, attributes) pairs: a Standard CloudPosture pricing with the extension."""
-    return tuple(resource("discovery", f"{a.get('id')}/{EXTENSION}", {}, name="defender-sensitive-data")
+    """Data discovery of (azurerm type, attributes) pairs: a Standard CloudPosture pricing with the extension, and
+    the subscription's Purview scan triggers' interval (the fewest days) as its rescan interval."""
+    days = min((r.days for r in purview_read(pairs)), default=None)
+    return tuple(resource("discovery", f"{a.get('id')}/{EXTENSION}", {"ciamRescanDays": days},
+                          name="defender-sensitive-data")
                  for a in of_types(pairs, PRICING)
                  if a.get("resource_type") == CSPM and (a.get("tier") or "").lower() == "standard" and a.get("id")
                  and EXTENSION in {(e.get("name") or "") for e in a.get("extension") or ()})

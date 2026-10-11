@@ -2,8 +2,9 @@ import datetime as dt
 
 import pytest
 
-from opsdir.core.directory import (children, classes_with_supers, follow, follow_all, get, gtime_date, in_scope,
-                                   make_directory, norm_dn, one, rdn_value, referrers, subtree, value_type, values)
+from opsdir.core.directory import (children, classes_with_supers, follow, follow_all, get, gtime_date, in_record_order,
+                                   in_scope, make_directory, norm_dn, one, rdn_value, referrers, subtree, value_type,
+                                   values)
 
 TYPES = (("cn", "string", "meta"), ("ciamOwner", "dn", "meta"), ("ciamPort", "port", "intent"),
          ("description", "string", "meta"))
@@ -75,3 +76,12 @@ def test_referrers_follow_only_dn_valued_attributes(d):
 
 def test_gtime_date():
     assert gtime_date("20261102000000Z") == dt.date(2026, 11, 2)
+
+
+def test_values_read_in_another_order_keep_the_records_order(d):
+    held = get(d, "cn=ds-1,ou=servers,dc=x")
+    assert in_record_order(held, {"description": ("b", "a"), "cn": ("ds-1",)}) == \
+        {"description": ("a", "b"), "cn": ("ds-1",)}                       # the same values: no change
+    assert in_record_order(held, {"description": ("b", "c")}) == {"description": ("b", "c")}
+    assert in_record_order(held, {"description": ("a", "b", "a")}) == {"description": ("a", "b", "a")}
+    assert in_record_order(None, {"description": ("b", "a")}) == {"description": ("b", "a")}
