@@ -8,7 +8,7 @@ import json
 from opsdir.connectors.importing import import_changes
 from opsdir.core.directory import get, make_directory, one
 from opsdir_adapter_azure.arm import arm_resources, evaluate, read_arm
-from support import SUPERS, imported_directory
+from support import SUPERS, after_import, imported_directory
 
 ENV = "env=prod,cloud=main,ou=environments,dc=ciam-ops"
 B = f"ou=bindings,{ENV}"
@@ -133,14 +133,6 @@ def _files(template=None, deployment=None, extra=None):
     return {f"main/prod/ciam/{p}": json.dumps(d) for p, d in docs.items()}
 
 
-def _after(d, imported):
-    scopes = [s.lower() for s, _ in imported.groups]
-    kept = {n: e for n, e in d.entries.items() if n not in scopes}
-    added = {e.norm: e for e in (*(c for c in imported.containers if c.norm not in d.entries),
-                                 *(e for _, es in imported.groups for e in es))}
-    return d._replace(entries={**kept, **added})
-
-
 def test_a_deployment_that_matches_the_record_changes_nothing():
     d = _record()
     imported = read_arm(_files(), d, ())
@@ -155,7 +147,7 @@ def test_a_deployment_that_matches_the_record_changes_nothing():
 
 def test_a_changed_template_replaces_the_records_values():
     d = _record()
-    after = _after(d, read_arm(_files(template=_template(size="Standard_D8s_v5", kty="RSA-HSM")), d, ()))
+    after = after_import(d, read_arm(_files(template=_template(size="Standard_D8s_v5", kty="RSA-HSM")), d, ()))
     assert one(get(after, f"cn=ds-1,{ENV}"), "ciamInstanceSize") == "Standard_D8s_v5"
     assert (one(get(after, f"cn=key-disk,{B}"), "ciamProtectionLevel"),
             one(get(after, f"cn=key-disk,{B}"), "ciamProviderRef")) == ("hsm", DES)

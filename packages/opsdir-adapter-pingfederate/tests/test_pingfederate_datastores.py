@@ -9,6 +9,7 @@ import pytest
 from opsdir.connectors.fixes import chosen
 from opsdir.connectors.importing import preview_import
 from opsdir.connectors.registry import ADAPTERS, core_fragments
+from opsdir.connectors.roundtrip import read_back
 from opsdir.core.contract import PlanContext
 from opsdir.core.directory import get, one, values
 from opsdir.core.environment import env_model
@@ -186,9 +187,8 @@ def test_no_data_stores_render_nothing():
 @pytest.mark.parametrize("env", ["alpha/prod", "beta/prod"])
 def test_what_it_renders_imports_back_unchanged(env):
     d, _, _ = imported(SET_ROLE)
-    rendered = {p: t for p, t in render_env(env_model(d, env), None).items() if p.endswith(".json")}
-    again, _ = preview_import(d, "pingfederate/bulk", rendered, (ADAPTER,))
-    assert again == ()
+    (rt,) = read_back(d, ADAPTER, render_env(env_model(d, env), None), (ADAPTER,))
+    assert rt.files and rt.changes == ()
 
 
 def plan(d, dst="beta/prod"):

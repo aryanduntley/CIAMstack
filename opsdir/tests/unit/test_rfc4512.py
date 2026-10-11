@@ -13,12 +13,17 @@ def test_attribute_type_reads_standard_fields_and_x_extensions():
                        "X-VALUE-TYPE 'port' X-ORIGIN 'opsdir' )")
     assert a == {"name": "ciamPort", "oid": "1.2.3.1", "syntax_oid": "1.3.6.1.4.1.1466.115.121.1.27",
                  "equality": "integerMatch", "value_type": "port", "portability": "intent", "single_value": True,
-                 "description": "It's a port", "origin": "opsdir", "rules": {}}
+                 "description": "It's a port", "origin": "opsdir", "rules": {}, "ordering": None, "substr": None}
 
 
 def test_attribute_type_defaults():
     a = attribute_type("( 1.2.3.2 NAME 'plain' )")
     assert (a["value_type"], a["portability"], a["single_value"], a["equality"]) == ("string", "meta", False, None)
+
+
+def test_attribute_type_reads_ordering_and_substring_rules():
+    a = attribute_type("( 1.2.3.3 NAME 'seen' ORDERING generalizedTimeOrderingMatch SUBSTR caseIgnoreSubstringsMatch )")
+    assert (a["ordering"], a["substr"]) == ("generalizedTimeOrderingMatch", "caseIgnoreSubstringsMatch")
 
 
 def test_object_class_reads_kind_superclass_and_attribute_lists():

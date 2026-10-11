@@ -1,5 +1,5 @@
 """PingGateway (ForgeRock Identity Gateway) adapter: applies to environments whose servers run PingGateway."""
-from opsdir.core.contract import Adapter
+from opsdir.core.contract import Adapter, ReadBack
 from opsdir.domains.compute.workloads import runs_product
 from .checks import check_routes
 from .gateway import GATEWAY_CONFIG
@@ -27,4 +27,5 @@ ADAPTER = Adapter(name="pinggateway", kind="product", applies=applies, required_
                   products=(("PingGateway", ">=2023,<2027"), ("ForgeRock Identity Gateway", ">=7,<8")),
                   secret_patterns=(), importers=(GATEWAY_CONFIG,), profile_terms=None, access=None,
                   endpoints=ENDPOINTS, listeners=listeners,
-                  proxy_settings=proxy_settings, logs=LOGS, version_changes=VERSION_CHANGES)
+                  proxy_settings=proxy_settings, logs=LOGS, version_changes=VERSION_CHANGES,
+                  reads_back=(ReadBack("config", "pinggateway/*", "pinggateway/"),))

@@ -9,7 +9,7 @@ from opsdir.connectors.importing import import_changes
 from opsdir.core.directory import get, make_directory, one, values
 from opsdir_adapter_azure.inventory import read_terraform_state, state_resources
 from opsdir_format_terraform.state import read_state
-from support import SUPERS, imported_directory
+from support import SUPERS, after_import, imported_directory
 
 ENV = "env=prod,cloud=main,ou=environments,dc=ciam-ops"
 B = f"ou=bindings,{ENV}"
@@ -188,14 +188,6 @@ def _state(*changes):
                        "resources": resources})
 
 
-def _after(d, imported):
-    scopes = [s.lower() for s, _ in imported.groups]
-    kept = {n: e for n, e in d.entries.items() if n not in scopes}
-    added = {e.norm: e for e in (*(c for c in imported.containers if c.norm not in d.entries),
-                                 *(e for _, es in imported.groups for e in es))}
-    return d._replace(entries={**kept, **added})
-
-
 def test_a_state_that_matches_the_record_changes_nothing():
     d = _record()
     imported = read_terraform_state({"main/prod/terraform.tfstate": _state()}, d, ())
@@ -211,7 +203,7 @@ def test_what_the_cloud_says_replaces_the_records_values_and_keeps_the_rest():
                  '"key_type": "RSA-HSM", "key_size": 3072, "rotation_policy": [{"automatic": [{"time_before_expiry": '
                  '"P30D"}], "expire_after": "P1Y"}]') \
         .replace('"priority": 110', '"priority": 120')
-    after = _after(d, read_terraform_state({"main/prod/terraform.tfstate": changed}, d, ()))
+    after = after_import(d, read_terraform_state({"main/prod/terraform.tfstate": changed}, d, ()))
     assert one(get(after, f"cn=ds-1,{ENV}"), "ciamInstanceSize") == "Standard_D8s_v5"
     key = get(after, f"cn=key-disk,{B}")
     assert (one(key, "ciamProtectionLevel"), one(key, "ciamAutoRotate"), one(key, "ciamProviderRef")) == \
@@ -230,7 +222,7 @@ def test_a_new_tagged_vm_is_added_and_an_untagged_one_named():
                  "computer_name": "jump",
                  "size": "Standard_B1s", "network_interface_ids": [f"{NET}/networkInterfaces/nic-jump"]}))
     imported = read_terraform_state({"main/prod/terraform.tfstate": _state(*extra)}, d, ())
-    after = _after(d, imported)
+    after = after_import(d, imported)
     ds2 = get(after, f"cn=ds-2,{ENV}")
     assert (one(ds2, "ciamServerRole"), one(ds2, "ciamSubnet"), one(ds2, "ciamPrivateIp"), one(ds2, "ciamZone")) == \
         ("ds", f"cn=snet-ds,{B}", "10.60.1.12", "2")
@@ -294,7 +286,7 @@ def test_a_kind_the_state_does_not_report_is_left_as_recorded():
     without["resources"] = [r for r in without["resources"] if r["type"] != "azurerm_storage_container"]
     imported = read_terraform_state({"main/prod/terraform.tfstate": json.dumps(without)}, d, ())
     assert not [n for n in imported.notices if n.startswith("main/prod: backup ")]
-    assert values(get(_after(d, imported), f"cn=backup,{B}"), "ciamStorageRef") == ("azblob://stciamprod/ds-backups",)
+    assert values(get(after_import(d, imported), f"cn=backup,{B}"), "ciamStorageRef") == ("azblob://stciamprod/ds-backups",)
 
 
 def test_a_containers_role_comes_from_its_metadata():
@@ -303,7 +295,7 @@ def test_a_containers_role_comes_from_its_metadata():
                  "id": "https://stciamprod.blob.core.windows.net/ds-archive", "name": "ds-archive",
                  "storage_account_name": "stciamprod", "metadata": {"Role": "backup-archive"}}),)
     imported = read_terraform_state({"main/prod/terraform.tfstate": _state(*extra)}, d, ())
-    assert values(get(_after(d, imported), f"cn=ds-archive,{B}"), "ciamBindingRole") == ("backup-archive",)
+    assert values(get(after_import(d, imported), f"cn=ds-archive,{B}"), "ciamBindingRole") == ("backup-archive",)
     assert "main/prod: storage ds-archive added (role backup-archive)" in imported.notices
 
 
@@ -319,7 +311,7 @@ def test_the_environments_role_map_names_what_azure_cannot_tag():
            "(tag it Role, name it in roles.json, or record it); not imported" in untagged.notices
     roles = json.dumps({"vnet-ciam-prod/snet-admin": "subnet-admin", "fw-admin": "fw-admin", "fw-gone": "fw-x"})
     imported = read_terraform_state({**files, "main/prod/roles.json": roles}, d, ())
-    after = _after(d, imported)
+    after = after_import(d, imported)
     subnet, rule = get(after, f"cn=snet-admin,{B}"), get(after, f"cn=fw-admin,{B}")
     assert (one(subnet, "ciamBindingRole"), one(subnet, "ciamProviderRef")) == \
         ("subnet-admin", "vnet-ciam-prod/snet-admin")

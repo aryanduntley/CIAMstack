@@ -16,6 +16,7 @@ from opsdir_adapter_pingfederate.naming import DATA_STORES
 from types import SimpleNamespace
 
 from opsdir_adapter_pingfederate.admin_api import admin_api_files
+from support import after_import
 
 EXPORT = Path(__file__).resolve().parent / "bulk-export"
 SIGNING_FP = "18:50:45:3C:96:D7:6C:B8:F5:90:6A:4B:06:37:F9:99:AE:16:65:5C:A3:29:EC:90:34:04:37:FA:10:28:B6:99"
@@ -56,18 +57,10 @@ def _files():
     return {p.relative_to(EXPORT).as_posix(): p.read_text() for p in EXPORT.rglob("*") if p.is_file()}
 
 
-def _after(d, imported):
-    scopes = [s.lower() for s, _ in imported.groups]
-    kept = {n: e for n, e in d.entries.items() if not any(n == s or n.endswith("," + s) for s in scopes)}
-    added = {e.norm: e for e in (*(c for c in imported.containers if c.norm not in d.entries),
-                                 *(e for _, es in imported.groups for e in es))}
-    return d._replace(entries={**kept, **added})
-
-
 def test_an_sp_connection_updates_the_integration_keeping_what_the_export_doesnt_hold():
     d = _record()
     imported = read_export(_files(), d, ())
-    after = _after(d, imported)
+    after = after_import(d, imported)
     portal = get(after, PORTAL)
     assert (one(portal, "ciamAcsUrl"), one(portal, "ciamSamlBinding"), one(portal, "ciamOwner"),
             one(portal, "ciamPopulation")) == ("https://portal.example.test/saml/acs", "HTTP-POST",
@@ -83,7 +76,7 @@ def test_an_sp_connection_updates_the_integration_keeping_what_the_export_doesnt
 def test_partners_and_clients_new_to_the_record_are_added_and_named():
     d = _record()
     imported = read_export(_files(), d, ())
-    after = _after(d, imported)
+    after = after_import(d, imported)
     partner = get(after, f"cn=partner-idp,{INTEGRATIONS}")
     assert (one(partner, "ciamProtocolType"), one(partner, "ciamJitBaseDn"), one(partner, "ciamServedBy")) == \
         ("saml2-idp", "ou=partners,ou=people,dc=example,dc=test", SSO)
@@ -114,7 +107,7 @@ def test_no_secret_is_read():
 def test_data_stores_are_recorded_and_every_resource_read():
     d = _record()
     imported = read_export(_files(), d, ())
-    after = _after(d, imported)
+    after = after_import(d, imported)
     users = get(after, f"cn=user-directory,{DATA_STORES}")
     assert (one(users, "pingfedStoreType"), one(users, "pingfedConsumer")) == ("LDAP", f"cn=pf-ds-svc,{CONSUMERS}")
     assert {"exported from PingFederate 12.1.4.0",
@@ -128,13 +121,13 @@ def test_data_stores_are_recorded_and_every_resource_read():
 
 def test_importing_the_same_export_again_changes_nothing():
     d = _record()
-    after = _after(d, read_export(_files(), d, ()))
+    after = after_import(d, read_export(_files(), d, ()))
     assert not import_changes(after, read_export(_files(), after, ()))
 
 
 def test_the_adapters_own_render_reads_back_as_it_was():
     d = _record()
-    after = _after(d, read_export(_files(), d, ()))
+    after = after_import(d, read_export(_files(), d, ()))
     rendered = admin_api_files(SimpleNamespace(d=after, servers=(), bindings=()))      # an environment binding nothing
     assert rendered and not import_changes(after, read_export(rendered, after, ()))
 
@@ -145,12 +138,12 @@ def test_fingerprints_are_written_as_the_record_writes_them():
 
 def test_a_certificate_keeps_the_facts_the_export_doesnt_give():
     d = _record()
-    after = _after(d, read_export(_files(), d, ()))
+    after = after_import(d, read_export(_files(), d, ()))
     signing = get(after, f"cn=pf-signing-2025,{CERTIFICATES}")
     assert (one(signing, "ciamSubject"), one(signing, "ciamIssuer"), one(signing, "ciamOwner")) == \
         ("CN=sso.example.test", "self-signed", "cn=platform,ou=owners,dc=ciam-ops")
     bare = {"data.json": json.dumps({"operations": [{"operationType": "SAVE", "resourceType": "/keyPairs/signing",
                                                       "items": [{"id": "signing-2025", "sha256Fingerprint": SIGNING_FP,
                                                                  "expires": "2027-06-30T00:00:00Z"}]}]})}
-    again = _after(after, read_export(bare, after, ()))
+    again = after_import(after, read_export(bare, after, ()))
     assert one(get(again, f"cn=pf-signing-2025,{CERTIFICATES}"), "ciamSubject") == "CN=sso.example.test"

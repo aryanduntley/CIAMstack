@@ -252,5 +252,48 @@ def test_gateways_under_an_environment_are_its_cluster_gateways():
     other = get(d, "cn=other-gw,ou=bindings,env=prod,cloud=alpha,ou=environments,dc=ciam-ops")
     assert other is not None and one(other, "ciamGatewayImplementation") is None
     assert any("GatewayClass 'nginx' isn't one opsdir renders (envoy, istio)" in n for n in notices)
-    assert "1 HTTPRoute(s): not read (a deployment kit declares its routes)" in notices
+    assert not any("HTTPRoute" in n for n in notices)              # routes give hosts, nothing to name
     assert any(n.startswith("edge/stray.yaml: Gateway other-gw: not under <cloud>/<env>/") for n in notices)
+
+
+ROUTE = """apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata: {name: ds-console, namespace: edge}
+spec:
+  parentRefs: [{name: edge-gw}]
+  hostnames: [ds-console.example.test]
+  rules: [{backendRefs: [{name: ds, namespace: identity, port: 8443}]}]
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata: {name: elsewhere, namespace: identity}
+spec:
+  hostnames: [other.example.test]
+  rules: [{backendRefs: [{name: not-ds, port: 80}]}]
+"""
+
+
+def test_a_routes_hostnames_reach_the_workload_its_service_selects():
+    d, _, _ = imported(files={**FILES, "alpha/prod/edge/routes.yaml": ROUTE})
+    assert values(get(d, workload_dn("ds-idrepo")), "ciamIngressHost") == \
+        ("ds-admin.example.test", "ds-console.example.test")          # the Ingress's and the gateway route's
+
+
+def test_a_gateway_left_to_the_estate_setting_stays_left_to_it():
+    gw = "cn=edge-gw,ou=bindings,env=prod,cloud=alpha,ou=environments,dc=ciam-ops"
+    files = {**FILES, "alpha/prod/edge/gateways.yaml": GATEWAYS}
+    _, first, _ = imported(files=files)
+    left = tuple(parse(f"dn: {gw}\nchangetype: modify\ndelete: ciamGatewayImplementation\n-\n"))
+    d, again, _ = imported((*first, *left), files)                   # runs istio, the setting's default
+    assert one(get(d, gw), "ciamGatewayImplementation") is None and not again
+    envoy = {**files, "alpha/prod/edge/gateways.yaml": GATEWAYS.replace("gatewayClassName: istio",
+                                                                       "gatewayClassName: envoy", 1)}
+    d, _, _ = imported((*first, *left), envoy)
+    assert one(get(d, gw), "ciamGatewayImplementation") == "envoy-gateway"
+
+
+def test_the_network_policies_opsdir_rendered_are_not_recorded_again():
+    ours = DS.replace("metadata: {name: ds-ldap, namespace: identity}",
+                      "metadata: {name: ds-ldap, namespace: identity, labels: {app.kubernetes.io/managed-by: opsdir}}")
+    d, _, _ = imported(files={**FILES, "alpha/prod/identity/ds.yaml": ours})
+    assert values(get(d, workload_dn("ds-idrepo")), "ciamNetworkPolicy") == ()     # derived from the record's listeners

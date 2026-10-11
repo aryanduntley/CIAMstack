@@ -11,6 +11,7 @@ from opsdir.core.contract import Imported
 from opsdir.core.directory import make_directory
 from opsdir.core.secrets import CORE_PATTERNS as GENERIC
 from opsdir.domains.configuration.census import census_groups, census_rows, check_census, found_in, needles
+from support import after_import
 
 SRC = "env=prod,cloud=source,ou=environments,dc=ciam-ops"
 DST = "env=prod,cloud=target,ou=environments,dc=ciam-ops"
@@ -76,21 +77,15 @@ def test_a_scanned_file_is_recorded_with_its_server_its_occurrences_and_its_conc
                        "apps/web/app.properties: may hold secret material (see its concerns; nothing of it is stored)")
 
 
-def _after(d, groups):
-    scopes = [s.lower() for s, _ in groups]
-    kept = {n: e for n, e in d.entries.items() if not any(n == s or n.endswith("," + s) for s in scopes)}
-    return d._replace(entries={**kept, **{e.norm: e for _, es in groups for e in es}})
-
-
 def test_scanning_an_unchanged_file_again_changes_nothing():
     d = _record()
-    after = _after(d, census_groups(d, FILES, GENERIC)[0])
+    after = after_import(d, Imported((), census_groups(d, FILES, GENERIC)[0], ()))
     assert not import_changes(after, Imported((), census_groups(after, FILES, GENERIC)[0], ()))
 
 
 def test_the_report_lists_every_value_found_or_one_entrys():
     d = _record()
-    after = _after(d, census_groups(d, FILES, GENERIC)[0])
+    after = after_import(d, Imported((), census_groups(d, FILES, GENERIC)[0], ()))
     assert len(census_rows(after)) == 6        # the service name belongs to both environments' bindings
     assert [r[:5] for r in census_rows(after, f"cn=ds-1,{SRC}")] == [
         ("opt/sync.sh", "ds-1", f"cn=ds-1,{SRC}", "ciamHostname", "1"),
@@ -99,7 +94,7 @@ def test_the_report_lists_every_value_found_or_one_entrys():
 
 def test_the_planner_asks_to_change_files_that_hard_code_source_values_the_target_doesnt_keep():
     d = _record()
-    after = _after(d, census_groups(d, FILES, GENERIC)[0])
+    after = after_import(d, Imported((), census_groups(d, FILES, GENERIC)[0], ()))
     env = lambda dn: SimpleNamespace(label=dn.split(",")[1].split("=")[1] + "/prod", env=None,  # noqa: E731
                                      servers=tuple(e for e in after.entries.values() if "ciamServer" in e.classes
                                                    and e.norm.endswith(dn)),
@@ -138,7 +133,7 @@ def test_operators_define_what_else_the_census_looks_for():
 def test_a_replacing_scan_drops_files_it_did_not_see():
     d = _record()
     groups, _ = census_groups(d, FILES, GENERIC)
-    scanned = _after(d, groups)
+    scanned = after_import(d, Imported((), groups, ()))
     kept = {"apps/web/app.properties": FILES["apps/web/app.properties"]}
     groups_again, notices = census_groups(scanned, kept, GENERIC, replace=True)
     assert [bool(entries) for _, entries in groups_again] == [True, False]   # the file seen, the one gone

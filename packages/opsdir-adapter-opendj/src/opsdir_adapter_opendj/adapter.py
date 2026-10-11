@@ -2,7 +2,7 @@
 from opsdir.core.contract import Adapter
 from opsdir_base_ds.config import FORMATS as LINEAGE_FORMATS
 from opsdir_base_ds.collect import OPENDJ_FLAGS, config_collectors
-from opsdir_base_ds.importers import importers
+from opsdir_base_ds.importers import READS_BACK, importers
 from opsdir_base_ds.listeners import ds_listeners
 from opsdir_base_ds.profile import TERMS
 from opsdir_base_ds.product import runs
@@ -28,4 +28,4 @@ ADAPTER = Adapter(name="opendj", kind="product", applies=applies, required_roles
                   products=(("OpenDJ", ">=4,<6"),),
                   secret_patterns=(), importers=importers(OPENDJ), profile_terms=TERMS, access=None,
                   listeners=ds_listeners, collectors=config_collectors("opendj", OPENDJ_FLAGS), logs=LOGS,
-                  version_changes=VERSION_CHANGES)
+                  version_changes=VERSION_CHANGES, reads_back=READS_BACK)

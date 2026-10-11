@@ -5,4 +5,6 @@ CHG-2005: modify cn=grant-store,ou=data-stores,ou=pingfederate,dc=ciam-ops
 CHG-2005: modify cn=corp-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
 CHG-2005: modify cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
 CHG-2005: modify cn=recaptcha,ou=captcha-providers,ou=pingfederate,dc=ciam-ops
+CHG-2005: modify cn=email-smtp.us-east-1.amazonaws.com,ou=external-services,dc=ciam-ops
+CHG-2005: modify cn=captcha-recaptcha,ou=external-services,dc=ciam-ops
 exit 0

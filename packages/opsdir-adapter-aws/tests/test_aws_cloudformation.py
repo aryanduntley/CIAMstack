@@ -8,7 +8,7 @@ import json
 from opsdir.connectors.importing import import_changes
 from opsdir.core.directory import get, make_directory, one
 from opsdir_adapter_aws.cloudformation import cloudformation_resources, read_cloudformation, read_document, resolve
-from support import SUPERS, imported_directory
+from support import SUPERS, after_import, imported_directory
 
 ENV = "env=prod,cloud=main,ou=environments,dc=ciam-ops"
 B = f"ou=bindings,{ENV}"
@@ -196,14 +196,6 @@ def _files(app=APP, network=NETWORK, app_status=None):
             **{f"main/prod/app/{p}": json.dumps(t) for p, t in appl.items()}}
 
 
-def _after(d, imported):
-    scopes = [s.lower() for s, _ in imported.groups]
-    kept = {n: e for n, e in d.entries.items() if n not in scopes}
-    added = {e.norm: e for e in (*(c for c in imported.containers if c.norm not in d.entries),
-                                 *(e for _, es in imported.groups for e in es))}
-    return d._replace(entries={**kept, **added})
-
-
 def test_stacks_that_match_the_record_change_nothing():
     d = _record()
     imported = read_cloudformation(_files(), d, ())
@@ -222,7 +214,7 @@ def test_a_changed_template_replaces_the_records_values():
     d = _record()
     changed = APP.replace("InstanceType: m6i.xlarge", "InstanceType: m6i.2xlarge") \
         .replace("EnableKeyRotation: true", "EnableKeyRotation: false")
-    after = _after(d, read_cloudformation(_files(app=changed), d, ()))
+    after = after_import(d, read_cloudformation(_files(app=changed), d, ()))
     assert one(get(after, f"cn=ds-1,{ENV}"), "ciamInstanceSize") == "m6i.2xlarge"
     key = get(after, f"cn=key-disk,{B}")
     assert (one(key, "ciamAutoRotate"), one(key, "ciamProtectionLevel")) == ("FALSE", "hsm")

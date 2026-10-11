@@ -3,6 +3,7 @@ neutral files with OpenDJ's handler names. Full renders are exercised by the sho
 from types import SimpleNamespace
 
 from opsdir.connectors.registry import ADAPTERS
+from opsdir.connectors.roundtrip import read_back
 from opsdir.core.directory import make_directory, make_entry
 from opsdir.core.versions import in_range
 from opsdir_adapter_opendj.adapter import ADAPTER
@@ -42,7 +43,7 @@ def test_renders_the_lineage_files_as_opendj():
 
 
 def test_its_servers_configuration_is_read_back_under_the_records_handler_names():
-    assert [i.name for i in ADAPTER.importers] == ["config", "declared", "access-log"]
+    assert [i.name for i in ADAPTER.importers] == ["config", "declared", "access-log", "rendered", "schema"]
     config = ("dn: cn=LDAPS Connection Handler,cn=Connection Handlers,cn=config\nobjectClass: top\n"
               "objectClass: ds-cfg-connection-handler\ncn: LDAPS Connection Handler\nds-cfg-enabled: true\n"
               "ds-cfg-listen-port: 1636\n")
@@ -57,3 +58,23 @@ def test_5_1_2_changes_the_storage_formats():
     assert change[0].effect == "action" and "indexes must be rebuilt" in change[0].change
     assert crossing(None, None, ADAPTER, ("ds",), "5.1.2", "5.1.3") == ((), 0)
     assert crossing(None, None, ADAPTER, ("ds",), "4.4.11", "5.0.1") == ((), 0)
+
+
+def _row(dn, classes, **attrs):
+    return dn, ("top", *classes), {k: [v] for k, v in attrs.items()}
+
+
+def test_its_render_reads_back_unchanged():
+    declared = "ou=declared,ou=config,dc=ciam-ops"
+    d = make_directory((), {}, (
+        _row("ou=config,dc=ciam-ops", ("organizationalUnit",), ou="config"),
+        _row(declared, ("organizationalUnit",), ou="declared"),
+        _row(f"ou=connection-handlers,{declared}", ("organizationalUnit",), ou="connection-handlers"),
+        _row(f"cn=LDAPS,ou=connection-handlers,{declared}", ("ciamConnectionHandler",), cn="LDAPS", ciamEnabled="TRUE",
+             ciamListenPort="1636")))
+    rendered = ADAPTER.render_neutral(d)
+    assert "--handler-name \"LDAPS Connection Handler\"" in rendered["ds/dsconfig.batch"]      # OpenDJ's name
+    trips = read_back(d, ADAPTER, rendered, (ADAPTER,))
+    assert [(t.importer, t.files, t.changes) for t in trips] == [
+        ("opendj/rendered", ("acis.ldif", "dsconfig.batch"), ()), ("opendj/schema", ("schema.ldif",), ())]
+

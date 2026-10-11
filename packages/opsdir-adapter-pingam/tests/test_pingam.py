@@ -10,6 +10,7 @@ import pytest
 
 from opsdir.connectors.importing import preview_import
 from opsdir.connectors.registry import ADAPTERS, core_fragments
+from opsdir.connectors.roundtrip import read_back
 from opsdir.core.directory import children, get, make_directory, make_entry, one, values
 from opsdir.core.interchange.ldif import parse
 from opsdir.core.standard import registry_ldif
@@ -151,9 +152,8 @@ def test_rendered_as_amster_entities_and_standard_documents_at_ams_paths(after):
 
 def test_what_it_renders_imports_back_unchanged(after):
     d, _ = after
-    rendered = {p[len("am/"):]: t for p, t in render_neutral(d).items() if p.startswith("am/")}
-    _, changes, _ = imported(rendered, d)
-    assert changes == ()
+    (rt,) = read_back(d, ADAPTER, render_neutral(d), (ADAPTER,))
+    assert rt.files and rt.changes == ()
 
 
 def test_a_journey_leading_to_a_node_it_doesnt_have_cant_run(after):

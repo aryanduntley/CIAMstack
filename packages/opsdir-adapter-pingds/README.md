@@ -6,6 +6,10 @@ Applies to environments with directory servers whose `ciamProductVersion` is Pin
 
 Installing the package registers it with opsdir (entry point `opsdir.adapters`: `pingds`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.
 
+## Reading its own render back
+
+`pingds/rendered` reads `ds/dsconfig.batch` and `ds/acis.ldif` back as the declared configuration and the ACIs, and `pingds/schema` reads `ldap/schema.ldif` back onto the user schema (`reads_back`; see `opsdir-base-ds`). Every showcase environment's render reads back unchanged.
+
 ## Collecting the configuration (`opsdir collect`)
 
 `opsdir collect --env CLOUD/ENV --adapter pingds [--ldapsearch PATH] [--ldap-truststore PATH]` reads each directory

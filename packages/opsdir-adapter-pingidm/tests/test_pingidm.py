@@ -13,6 +13,7 @@ import pytest
 from opsdir.connectors.fixes import chosen
 from opsdir.connectors.importing import preview_import
 from opsdir.connectors.registry import ADAPTERS, core_fragments
+from opsdir.connectors.roundtrip import read_back
 from opsdir.domains.edge.resolve import declared_endpoints
 from opsdir.core.contract import PlanContext
 from opsdir.core.directory import get, make_directory, one, values
@@ -155,9 +156,8 @@ def test_connectors_render_per_environment(after):
 def test_what_it_renders_imports_back_unchanged():
     d, import_changes, _ = imported(SET_ROLE)
     files = {**render_neutral(d), **render_env(env_model(d, "alpha/prod"), None)}
-    rendered = {p[len("pingidm/"):]: t for p, t in files.items()}
-    again, _ = preview_import(d, "pingidm", rendered, (ADAPTER,))
-    assert again == ()
+    (rt,) = read_back(d, ADAPTER, files, (ADAPTER,))
+    assert rt.files and rt.changes == ()
 
 
 def plan(d, dst="beta/prod"):

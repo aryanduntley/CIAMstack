@@ -1,7 +1,7 @@
 """Kubernetes adapter: what every workload an environment runs on Kubernetes needs around it (namespaces, service
 accounts with their cloud identities, network policies, secret delivery), Kubernetes secrets as a secret store any
 environment can reference, and the workloads clusters run, read from their manifests (kubernetes/workloads)."""
-from opsdir.core.contract import Adapter
+from opsdir.core.contract import Adapter, ReadBack
 from .gateway import SETTING, VOCABULARY
 from .render import TARGETS, applies, render
 from .secrets import secret_command, secret_lookup
@@ -15,4 +15,5 @@ ADAPTER = Adapter(name="kubernetes", kind="platform", applies=applies, required_
                   formats=(("kubernetes/*", "yaml"),),
                   products=(),
                   secret_patterns=(), importers=(WORKLOADS_IMPORTER,), profile_terms=None, access=None,
-                  render_targets=TARGETS, settings=(SETTING,), ansible_lookup={"k8s-secret": secret_lookup})
+                  render_targets=TARGETS, settings=(SETTING,), ansible_lookup={"k8s-secret": secret_lookup},
+                  reads_back=(ReadBack("workloads", "kubernetes/*", "kubernetes/", "{environment}/"),))

@@ -8,6 +8,7 @@ from functools import reduce
 import psycopg
 import pytest
 
+from opsdir.connectors.importing import import_changes
 from opsdir.connectors.registry import core_fragments, import_table, schema_fragments
 from opsdir.connectors.schema import composed_schema
 from opsdir.core.directory import make_directory, make_entry, norm_dn
@@ -72,6 +73,20 @@ def build_directory(schema_text, records, change_records=()):
     rows = reduce(lambda acc, r: apply_record(canon, acc, r), change_records, entry_rows(canon, records))
     return with_imports(make_directory([(a["name"], a["value_type"], a["portability"]) for a in ats],
                                        [(o["name"], o["sup"]) for o in ocs], rows), import_table())
+
+
+def applied(d, change_records):
+    """Snapshot d after the change records in order (the store's rules are not checked); its registry and import
+    kinds kept."""
+    rows = reduce(lambda acc, r: apply_record(d.lower_types, acc, r), change_records,
+                  tuple((e.dn, e.classes, e.attrs) for e in d.entries.values()))
+    return d._replace(entries=make_directory((), (), rows).entries)
+
+
+def after_import(d, imported):
+    """The record after an Imported is applied as the store would apply it: its containers added when missing, each
+    group's subtree made exactly its entries (connectors.importing.import_changes)."""
+    return applied(d, import_changes(d, imported))
 
 
 def imported_directory(type_rows, class_rows, entry_rows):

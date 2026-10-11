@@ -9,6 +9,7 @@ from opsdir.core.directory import get, make_directory, one, values
 from opsdir.domains.directory.naming import CONSUMERS, USER_SCHEMA
 from opsdir_base_ds.access_log import LOG_FILE, operations
 from opsdir_base_ds.importers import access_log_reader
+from support import after_import
 
 USERS = "dc=example,dc=test"
 PEOPLE = f"ou=people,{USERS}"
@@ -77,13 +78,6 @@ def _record():
         _row(f"cn=idle,{CONSUMERS}", ("ciamConsumer",), cn="idle", ciamBindDn=f"uid=idle,{USERS}")))
 
 
-def _after(d, imported):
-    kept = {n: e for n, e in d.entries.items() if all(n != s.lower() for s, _ in imported.groups)}
-    added = {e.norm: e for e in (*(c for c in imported.containers if c.norm not in d.entries),
-                                 *(e for _, es in imported.groups for e in es))}
-    return d._replace(entries={**kept, **added})
-
-
 def test_operations_are_attributed_to_who_performed_them_and_anonymous_ones_counted():
     ops, unreadable, anonymous = operations(FILES)
     assert (unreadable, anonymous) == (1, 1)
@@ -94,7 +88,7 @@ def test_operations_are_attributed_to_who_performed_them_and_anonymous_ones_coun
 def test_a_consumer_the_record_has_is_updated_keeping_what_the_logs_dont_say():
     d = _record()
     imported = access_log_reader(FILES, d, ())
-    pf = get(_after(d, imported), f"cn=pf-ds-svc,{CONSUMERS}")
+    pf = get(after_import(d, imported), f"cn=pf-ds-svc,{CONSUMERS}")
     assert values(pf, "ciamObservedSource") == ("10.20.4.0/24",)
     assert one(pf, "ciamOperationMix") == "search 75%, bind 25%"
     assert values(pf, "ciamSubtreeRead") == (PEOPLE,)
@@ -111,7 +105,7 @@ def test_a_consumer_the_record_has_is_updated_keeping_what_the_logs_dont_say():
 def test_new_consumers_are_found_values_free_and_end_users_are_only_counted():
     d = _record()
     imported = access_log_reader(FILES, d, ())
-    after = _after(d, imported)
+    after = after_import(d, imported)
     portal, reports = get(after, f"cn=portal-svc,{CONSUMERS}"), get(after, f"cn=reports,{CONSUMERS}")
     assert (one(portal, "ciamBindDn"), one(portal, "ciamTlsOnly"), one(portal, "ciamMigrationStatus")) == \
         (PORTAL, "TRUE", "unknown")
@@ -134,7 +128,7 @@ def test_new_consumers_are_found_values_free_and_end_users_are_only_counted():
 
 def test_importing_the_same_logs_again_changes_nothing():
     d = _record()
-    after = _after(d, access_log_reader(FILES, d, ()))
+    after = after_import(d, access_log_reader(FILES, d, ()))
     assert not import_changes(after, access_log_reader(FILES, after, ()))
 
 

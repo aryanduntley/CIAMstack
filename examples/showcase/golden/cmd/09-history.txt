@@ -304,6 +304,8 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2005  update  cn=corp-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2005  update  cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops
 <TIMESTAMP>          CHG-2005  update  cn=recaptcha,ou=captcha-providers,ou=pingfederate,dc=ciam-ops
+<TIMESTAMP>          CHG-2005  update  cn=email-smtp.us-east-1.amazonaws.com,ou=external-services,dc=ciam-ops
+<TIMESTAMP>          CHG-2005  update  cn=captcha-recaptcha,ou=external-services,dc=ciam-ops
 <TIMESTAMP>          CHG-2011  update  cn=ds-nightly-export,ou=jobs,dc=ciam-ops
 <TIMESTAMP>          CHG-2011  update  cn=pf-engine-pf-audit-ship,ou=jobs,dc=ciam-ops
 <TIMESTAMP>          CHG-2011  update  cn=github-actions-ciam-ops-directory-backup,ou=jobs,dc=ciam-ops
@@ -406,4 +408,4 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2036  insert  cn=pf-admin-onprem,ou=baselines,dc=ciam-ops
 <TIMESTAMP>          CHG-2036  insert  cn=pf-engine-onprem,ou=baselines,dc=ciam-ops
 <TIMESTAMP>          CHG-2036  update  cn=ds-nightly-export,ou=jobs,dc=ciam-ops
-(406 rows)
+(408 rows)

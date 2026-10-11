@@ -140,3 +140,44 @@ def test_a_relay_moved_to_oauth_renders_the_publishers_sign_in_from_13_1_and_the
     assert action.startswith("Notification publisher `smtp` sends through `email-smtp.region-1.example.cloud`, which "
                              "the record signs in to with OAuth (oauth-private-key-jwt), but alpha/prod runs "
                              "PingFederate 12.3.8")
+
+
+def _plan(d, dst="alpha/prod"):
+    import datetime as dt
+    from opsdir.core.contract import PlanContext
+    return PlanContext(d, env_model(d, "beta/prod"), env_model(d, dst), None, dt.date(2026, 10, 1), {}, {}, ())
+
+
+def _record(*changes):
+    return build_directory(REGISTRY, tuple(parse(mini_estate.LDIF)), changes)
+
+
+def test_the_credential_role_fix_also_gives_the_service_the_role():
+    from opsdir_adapter_pingfederate.checks import check_references
+    _, first, _ = imported()
+    d = _record(*first, *mini_estate.credential_changes(alpha={}, beta={}))     # alpha binds a secret: signing-key
+    fixes = {f.key: f for f in check_references(_plan(d)).fixes}
+    for key, service in (("credential-role:notification-publishers/smtp", RELAY),
+                         ("credential-role:captcha-providers/recaptcha", service_dn("captcha-recaptcha"))):
+        (option,) = fixes[key].options
+        assert [(r.dn, r.mods) for r in option.records if "external-services" in r.dn] == \
+            [(service, (("replace", "ciamUsesRole", ("signing-key",)),))]
+
+
+def test_a_credential_role_set_after_the_import_is_named_on_its_service_and_fixed():
+    from opsdir_adapter_pingfederate.checks import check_service_roles
+    _, first, _ = imported()
+    roles = tuple(parse(f"dn: {named(NOTIFICATION_PUBLISHERS, 'smtp')}\nchangetype: modify\n"
+                        "replace: pingfedCredentialRole\npingfedCredentialRole: smtp-credentials\n-\n\n"
+                        f"dn: {named(CAPTCHA_PROVIDERS, 'recaptcha')}\nchangetype: modify\n"
+                        "replace: pingfedCredentialRole\npingfedCredentialRole: captcha-credentials\n-\n"))
+    found = check_service_roles(_plan(_record(*first, *roles)))                 # set by a change, not imported again
+    assert [t.split(":")[0] for _, t, _, _ in found.actions] == \
+        ["`email-smtp.region-1.example.cloud` records credential role none, but notification publisher `smtp`, "
+         "which stands for it, takes its credentials from `smtp-credentials`",
+         "`captcha-recaptcha` records credential role none, but CAPTCHA provider `recaptcha`, which stands for it, "
+         "takes its credentials from `captcha-credentials`"]
+    fixed = _record(*first, *roles, *(r for f in found.fixes for r in f.records))
+    assert check_service_roles(_plan(fixed)) == check_service_roles(_plan(_record(*first)))
+    assert not check_service_roles(_plan(fixed)).actions
+    assert values(get(fixed, RELAY), "ciamUsesRole") == ("smtp-credentials",)

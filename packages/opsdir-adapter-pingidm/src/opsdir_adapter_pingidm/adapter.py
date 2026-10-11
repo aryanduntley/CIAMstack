@@ -1,5 +1,5 @@
 """PingIDM (ForgeRock IDM) adapter: applies to environments whose servers run PingIDM."""
-from opsdir.core.contract import Adapter
+from opsdir.core.contract import Adapter, ReadBack
 from opsdir.domains.compute.workloads import runs_product
 from .collect import COLLECTORS
 from .checks import check_idm
@@ -31,4 +31,5 @@ ADAPTER = Adapter(name="pingidm", kind="product", applies=applies, required_role
                   secret_patterns=(), importers=(IDM_PROJECT,), profile_terms=None, access=None,
                   endpoints=ENDPOINTS, listeners=listeners,
                   proxy_settings=proxy_settings, collectors=COLLECTORS, signals=SIGNALS,
-                  logs=LOGS, version_changes=VERSION_CHANGES)
+                  logs=LOGS, version_changes=VERSION_CHANGES,
+                  reads_back=(ReadBack("project", "pingidm/*", "pingidm/"),))

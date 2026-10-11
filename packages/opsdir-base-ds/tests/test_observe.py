@@ -12,6 +12,7 @@ from opsdir.domains.directory.naming import DECLARED, OBSERVED, USER_SCHEMA
 from opsdir_base_ds.importers import declared_reader, snapshot_reader
 from opsdir_base_ds.observe import config_entries, server_id
 from opsdir_base_ds.product import DsProduct
+from support import after_import
 
 PRODUCT = DsProduct(name="SomeDS", root_dn="uid=admin", dsconfig_apply=(), handler_names={"LDAPS": "Secure Handler"},
                     builtin_policies=("Default Password Policy",))
@@ -135,17 +136,6 @@ def _record(*extra):
         *extra))
 
 
-def _after(d, imported):
-    """The record after applying what an import says (containers and groups), as the store would."""
-    rows = {e.norm: e for e in d.entries.values()}
-    scoped = {e.norm for scope, _ in imported.groups for e in d.entries.values()
-              if e.norm == scope.lower() or e.norm.endswith("," + scope.lower())}
-    kept = {n: e for n, e in rows.items() if n not in scoped}
-    added = {e.norm: e for e in (*(c for c in imported.containers if c.norm not in rows),
-                                 *(e for _, entries in imported.groups for e in entries))}
-    return d._replace(entries={**kept, **added})
-
-
 def _snapshots(d):
     return sorted(e.dn.split(",", 1)[0] for e in subtree(d, OBSERVED, "ciamSnapshot"))
 
@@ -183,7 +173,7 @@ def test_each_server_folder_becomes_a_dated_snapshot_of_that_server():
     d = _record()
     imported = snapshot_reader(PRODUCT)({"ds-1.source.example.test/config/config.ldif": CONFIG,
                                          "ds-2/config.ldif": CONFIG, "ds-2/keystore.pin.txt": "x"}, d, (), AT)
-    after = _after(d, imported)
+    after = after_import(d, imported)
     assert _snapshots(after) == ["snap=source-prod-ds-1-20260930141500Z", "snap=source-prod-ds-2-20260930141500Z"]
     snap = get(after, f"snap=source-prod-ds-1-20260930141500Z,{OBSERVED}")
     assert (one(snap, "ciamServerRef"), one(snap, "ciamCapturedAt")) == (DS1, "20260930141500Z")
@@ -192,7 +182,7 @@ def test_each_server_folder_becomes_a_dated_snapshot_of_that_server():
 
 def test_importing_an_unchanged_configuration_again_adds_nothing():
     d = _record()
-    first = _after(d, snapshot_reader(PRODUCT)({"ds-1.source.example.test/config.ldif": CONFIG}, d, (), AT))
+    first = after_import(d, snapshot_reader(PRODUCT)({"ds-1.source.example.test/config.ldif": CONFIG}, d, (), AT))
     again = snapshot_reader(PRODUCT)({"ds-1.source.example.test/config.ldif": CONFIG}, first, (),
                                      AT + dt.timedelta(days=1))
     assert again.groups == () and not import_changes(first, again)
@@ -207,7 +197,7 @@ def test_archived_configurations_are_snapshots_dated_by_their_names():
     d = _record()
     imported = snapshot_reader(PRODUCT)({"ds-1.source.example.test/archived-configs/config-20260920030000Z": EARLIER,
                                          "ds-1.source.example.test/config.ldif": CONFIG}, d, (), AT)
-    after = _after(d, imported)
+    after = after_import(d, imported)
     assert _snapshots(after) == ["snap=source-prod-ds-1-20260920030000Z", "snap=source-prod-ds-1-20260930141500Z"]
     archived = get(after, f"snap=source-prod-ds-1-20260920030000Z,{OBSERVED}")
     assert one(archived, "description") == ("archived by the server at 20260920030000Z: the configuration in effect "
@@ -251,7 +241,7 @@ def test_drift_compares_the_imported_snapshot_with_the_declared_configuration():
                      ciamStorageScheme="PBKDF2-HMAC-SHA256", ciamLockoutFailureCount="5", ciamLockoutDuration="15 m",
                      ciamPasswordHistoryCount="5", ciamPopulation="customers", ciamOwner="cn=team,ou=owners"))
     d = _record(*declared)
-    after = _after(d, snapshot_reader(PRODUCT)({"ds-1.source.example.test/config.ldif": EARLIER}, d, (), AT))
+    after = after_import(d, snapshot_reader(PRODUCT)({"ds-1.source.example.test/config.ldif": EARLIER}, d, (), AT))
     found = drift(after)
     assert ("ds-1", "differs", "cn=customers,ou=password-policies",
             "ciamLockoutFailureCount: declared ['5'] observed ['3']") in found         # ciamPopulation isn't config
@@ -270,7 +260,7 @@ def test_the_declared_configuration_is_set_from_one_server_keeping_what_the_impo
                      ciamStorageScheme="SSHA512"))
     d = _record(*declared)
     imported = declared_reader(PRODUCT)({"ds-1/config.ldif": CONFIG}, d, (), AT)
-    after = _after(d, imported)
+    after = after_import(d, imported)
     policy = get(after, f"cn=customers,ou=password-policies,{DECLARED}")
     assert (one(policy, "ciamStorageScheme"), one(policy, "ciamPopulation"), one(policy, "ciamOwner")) == \
         ("PBKDF2-HMAC-SHA256", "customers", "cn=team,ou=owners")

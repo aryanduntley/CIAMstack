@@ -32,7 +32,7 @@ from opsdir.domains.compute.workloads import (namespace_of, service_account_of, 
 from opsdir.domains.network.ports import pod_listeners, role_cidrs
 from opsdir.domains.pki.credentials import secret_store, split_ref
 from .gateway import cluster_gateways, gateway_docs, gateway_namespace, route_docs
-from .names import k8s_name
+from .names import MANAGED_BY, k8s_name
 
 ROLE_LABEL = "opsdir.io/role"
 LEVELS = ("privileged", "baseline", "restricted")
@@ -110,15 +110,16 @@ def policy_doc(m, listeners, here, ns, w):
         froms = [] if anyone else [s for p in listener.peers for s in _sources(m, here, p, role)]
         rules += [{**({"from": froms} if froms else {}), "ports": [_port(listener)]}] if anyone or froms else []
     return {"apiVersion": "networking.k8s.io/v1", "kind": "NetworkPolicy",
-            "metadata": {"name": f"{k8s_name(rdn_value(w))}-ingress", "namespace": ns},
+            "metadata": {"name": f"{k8s_name(rdn_value(w))}-ingress", "namespace": ns,
+                         "labels": {MANAGED_BY[0]: MANAGED_BY[1]}},
             "spec": {"podSelector": {"matchLabels": {ROLE_LABEL: role}}, "policyTypes": ["Ingress"],
                      "ingress": rules}}
 
 
 def network_policy_docs(m, listeners, here, ns, ws):
-    """The namespace's default deny of ingress, then one policy per workload."""
+    """The namespace's default deny of ingress, then one policy per workload, each marked as opsdir's (MANAGED_BY)."""
     deny = {"apiVersion": "networking.k8s.io/v1", "kind": "NetworkPolicy",
-            "metadata": {"name": "default-deny-ingress", "namespace": ns},
+            "metadata": {"name": "default-deny-ingress", "namespace": ns, "labels": {MANAGED_BY[0]: MANAGED_BY[1]}},
             "spec": {"podSelector": {}, "policyTypes": ["Ingress"]}}
     return [deny, *(policy_doc(m, listeners, here, ns, w) for w in ws)]
 

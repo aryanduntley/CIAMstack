@@ -816,9 +816,11 @@ objectClass: ciamExternalService
 cn: captcha-recaptcha
 ciamAllowedDomain: sso.example-aero.test
 ciamAllowedDomain: login.example-aero.test
+ciamChangeRef: cn=CHG-2005,ou=changes,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamReachedFrom: pf-engine
 ciamServiceKind: captcha
+ciamUsesRole: pf-captcha-secret
 ciamVendor: Google reCAPTCHA
 
 dn: cn=challengeAnswer,ou=user-schema,dc=ciam-ops
@@ -1728,12 +1730,14 @@ objectClass: top
 objectClass: ciamObject
 objectClass: ciamExternalService
 cn: email-smtp.us-east-1.amazonaws.com
+ciamChangeRef: cn=CHG-2005,ou=changes,dc=ciam-ops
 ciamEndpointHost: email-smtp.us-east-1.amazonaws.com
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPort: 587
 ciamReachedFrom: pf-engine
 ciamServiceKind: smtp-relay
 ciamSmtpAuth: basic
+ciamUsesRole: pf-smtp-password
 ciamVendor: Amazon SES
 
 dn: cn=environment,ou=tag-policy,dc=ciam-ops

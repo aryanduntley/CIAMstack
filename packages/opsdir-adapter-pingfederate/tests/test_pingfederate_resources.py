@@ -8,6 +8,7 @@ import pytest
 
 from opsdir.connectors.importing import preview_import
 from opsdir.connectors.registry import core_fragments
+from opsdir.connectors.roundtrip import read_back
 from opsdir.core.contract import PlanContext
 from opsdir.core.directory import get, one, values
 from opsdir.core.environment import env_model
@@ -86,8 +87,8 @@ def test_secrets_are_withheld_and_rendered_per_environment(after):
 
 def test_what_it_renders_imports_back_unchanged():
     d, _, _ = imported()
-    rendered = {REQUESTS: render_env(env_model(d, "alpha/prod"), None)[REQUESTS]}
-    assert preview_import(d, "pingfederate/bulk", rendered, (ADAPTER,))[0] == ()
+    (rt,) = read_back(d, ADAPTER, render_env(env_model(d, "alpha/prod"), None), (ADAPTER,))
+    assert REQUESTS in rt.files and rt.changes == ()
 
 
 def test_an_item_the_export_no_longer_has_is_removed():

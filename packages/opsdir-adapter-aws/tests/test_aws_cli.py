@@ -9,7 +9,7 @@ from opsdir.connectors.importing import import_changes
 from opsdir.core.directory import get, make_directory, one
 from opsdir_adapter_aws.adapter import ADAPTER
 from opsdir_adapter_aws.cli import cli_resources, generalized_time, read_cli_inventory
-from support import SUPERS, imported_directory
+from support import SUPERS, after_import, imported_directory
 
 ENV = "env=prod,cloud=main,ou=environments,dc=ciam-ops"
 B = f"ou=bindings,{ENV}"
@@ -108,14 +108,6 @@ def _outputs(**over):
     return {f"main/prod/{p}": json.dumps(doc) for p, doc in {**base, **over}.items()}
 
 
-def _after(d, imported):
-    scopes = [s.lower() for s, _ in imported.groups]
-    kept = {n: e for n, e in d.entries.items() if n not in scopes}
-    added = {e.norm: e for e in (*(c for c in imported.containers if c.norm not in d.entries),
-                                 *(e for _, es in imported.groups for e in es))}
-    return d._replace(entries={**kept, **added})
-
-
 def test_the_importer_is_registered_on_the_adapter():
     assert [i.name for i in ADAPTER.importers] == ["terraform-state", "cli-inventory", "cloudformation", "regions",
                                                    "quotas"]
@@ -133,7 +125,7 @@ def test_what_the_cli_says_replaces_the_records_values_with_facts_state_lacks():
     rotated = {"SecretList": [{"ARN": SECRET, "Name": "ciam/prod/ds-root-password", "RotationEnabled": True,
                                "RotationLambdaARN": "arn:aws:lambda:us-east-1:111122223333:function:rotate",
                                "LastRotatedDate": "2026-09-01T12:00:00.123000+00:00"}]}
-    after = _after(d, read_cli_inventory(_outputs(**{"secrets.json": rotated,
+    after = after_import(d, read_cli_inventory(_outputs(**{"secrets.json": rotated,
                                                      "kms/rotation-mrk-1234.json": {"KeyRotationEnabled": False,
                                                                                     "KeyId": KEY}}), d, ()))
     secret = get(after, f"cn=secret-root,{B}")

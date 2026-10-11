@@ -11,6 +11,10 @@ Environment-neutral outputs, rendered from the directory domain's records:
 
 The generic adapter `ldap` is **declaration-only**: every compliant server would match it, so it is never inferred from the data. An environment whose directory is a plain LDAP server names it in its stack (`ciamStackRole: directory`, `ciamAdapter: ldap`). Indexes, password policies, access control and replication are not standardized in LDAPv3; product adapters render them.
 
+## The schema read back: `ldap/schema`
+
+`schema_import.py` reads a subschema LDIF (its own `ldap/schema.ldif`, or a server's schema export: any record holding `attributeTypes` / `objectClasses` values) onto the user-schema records of the same LDAP names: an attribute type's OID, DESC (its purpose), EQUALITY, SUBSTR, ORDERING, SYNTAX and SINGLE-VALUE; an object class's OID, DESC, SUP, kind and MUST/MAY (as the attributes' records). What only the record says (PII class, retention, export control, owners) is kept; where the render writes a default for an unset value (`SUP top`, no `SINGLE-VALUE`) the record's absence (or `FALSE`) stays. A definition with no record is named, not recorded: an attribute record needs its PII class, which no schema gives. The DS lineage registers it as `pingds/schema` and `opendj/schema`, so their renders read back (milestone 5.5).
+
 ## The shape of the user data: `ldap/data-profile`
 
 ```bash

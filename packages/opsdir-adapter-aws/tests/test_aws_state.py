@@ -8,7 +8,7 @@ from opsdir.connectors.importing import import_changes
 from opsdir.core.directory import get, make_directory, one, values
 from opsdir_adapter_aws.inventory import read_terraform_state, state_resources
 from opsdir_format_terraform.state import read_state
-from support import SUPERS, imported_directory
+from support import SUPERS, after_import, imported_directory
 
 ENV = "env=prod,cloud=main,ou=environments,dc=ciam-ops"
 STAGE = "env=stage,cloud=main,ou=environments,dc=ciam-ops"
@@ -103,14 +103,6 @@ def _state(*changes):
                        "resources": resources})
 
 
-def _after(d, imported):
-    scopes = [s.lower() for s, _ in imported.groups]
-    kept = {n: e for n, e in d.entries.items() if n not in scopes}
-    added = {e.norm: e for e in (*(c for c in imported.containers if c.norm not in d.entries),
-                                 *(e for _, es in imported.groups for e in es))}
-    return d._replace(entries={**kept, **added})
-
-
 def test_a_state_that_matches_the_record_changes_nothing():
     d = _record()
     imported = read_terraform_state({"main/prod/terraform.tfstate": _state()}, d, ())
@@ -123,7 +115,7 @@ def test_what_the_cloud_says_replaces_the_records_values_and_keeps_the_rest():
     d = _record()
     resized = _state().replace('"instance_type": "m6i.xlarge"', '"instance_type": "m6i.2xlarge"') \
         .replace('"enable_key_rotation": true', '"enable_key_rotation": false')
-    after = _after(d, read_terraform_state({"main/prod/terraform.tfstate": resized}, d, ()))
+    after = after_import(d, read_terraform_state({"main/prod/terraform.tfstate": resized}, d, ()))
     assert one(get(after, f"cn=ds-1,{ENV}"), "ciamInstanceSize") == "m6i.2xlarge"
     key = get(after, f"cn=key-disk,{B}")
     assert (one(key, "ciamAutoRotate"), one(key, "ciamProtectionLevel")) == ("FALSE", "hsm")
@@ -142,7 +134,7 @@ def test_a_new_tagged_resource_is_added_and_an_untagged_one_named():
                  "security_group_rule_id": "sgr-99", "security_group_id": "sg-0ds", "cidr_ipv4": "0.0.0.0/0",
                  "from_port": 1636, "to_port": 1636, "ip_protocol": "tcp", "description": "temporary debug"}))
     imported = read_terraform_state({"main/prod/terraform.tfstate": _state(*extra)}, d, ())
-    after = _after(d, imported)
+    after = after_import(d, imported)
     ds2 = get(after, f"cn=ds-2,{ENV}")
     assert (one(ds2, "ciamServerRole"), one(ds2, "ciamSubnet"), one(ds2, "ciamHostname")) == \
         ("ds", f"cn=subnet-ds-a,{B}", "ds-2.internal.test")
@@ -187,7 +179,7 @@ def test_a_new_binding_keeps_the_providers_reference_so_it_is_found_again():
                                                      "availability_zone": "us-east-1b",
                                                      "tags": {"Role": "subnet-ds"}}),)
     files = {"main/prod/terraform.tfstate": _state(*extra)}
-    after = _after(d, read_terraform_state(files, d, ()))
+    after = after_import(d, read_terraform_state(files, d, ()))
     assert one(get(after, f"cn=subnet-0b,{B}"), "ciamProviderRef") == "subnet-0b"
     assert not import_changes(after, read_terraform_state(files, after, ()))
 

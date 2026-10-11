@@ -155,17 +155,21 @@ def user_attributes(d):
     return attribute_records(d)
 
 
-def config_entries(product, d, text, base, label):
-    """(entries, notices): the configuration in a DS-lineage config.ldif as the record models it, laid out under base
-    as the declared configuration is (each branch's container included when the branch has entries). label names
-    the source in notices."""
-    records = _records(text)
+def records_entries(product, d, records, base, label):
+    """(entries, notices): configuration records ((dn, {lowercase attribute: values}), as a config.ldif holds them) as
+    the record models them, laid out under base as the declared configuration is (each branch's container included
+    when the branch has entries). label names the source in notices."""
     parts = (("backends", _backend_entries(records, user_attributes(d), base, label)),
              ("password-policies", _policy_entries(records, base, label)),
              ("connection-handlers", _handler_entries(product, records, base, label)),
              ("log-publishers", _publisher_entries(records, base, label)))
     entries = tuple(e for name, (es, _) in parts for e in ((ou_entry(f"ou={name},{base}"), *es) if es else ()))
     return entries, tuple(n for _, (_, ns) in parts for n in ns)
+
+
+def config_entries(product, d, text, base, label):
+    """(entries, notices): the configuration in a DS-lineage config.ldif as the record models it (records_entries)."""
+    return records_entries(product, d, _records(text), base, label)
 
 
 # the attributes config_entries sets on each kind of entry: everything else on a record entry is the operator's

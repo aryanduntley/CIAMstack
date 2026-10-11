@@ -1,11 +1,11 @@
 """PingFederate adapter: applies to environments whose servers run PingFederate."""
-from opsdir.core.contract import Adapter, SecretPattern
+from opsdir.core.contract import Adapter, ReadBack, SecretPattern
 from opsdir.domains.compute.workloads import runs_product
 from .collect import COLLECTORS
 from opsdir_base_oidc.render import FORMATS as OIDC_FORMATS
 from opsdir_base_saml.render import FORMATS as SAML_FORMATS
 from .checks import (check_client_auth, check_cluster, check_data_stores, check_jdbc_drivers,
-                     check_references, check_smtp_auth)
+                     check_references, check_service_roles, check_smtp_auth)
 from .discovery import CHOICES
 from .importer import BULK
 from .listeners import listeners
@@ -31,7 +31,7 @@ def applies(m):
 ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required_roles=REQUIRED_ROLES,
                   render_neutral=render_neutral, render_env=render_env,
                   checks=(check_data_stores, check_references, check_cluster, check_client_auth,
-                          check_smtp_auth, check_jdbc_drivers), ref_schemes=(),
+                          check_smtp_auth, check_service_roles, check_jdbc_drivers), ref_schemes=(),
                   secret_schemes={},
                   renders="PingFederate's configuration for each environment as Admin API requests checked against its "
                           "version's spec and as Terraform for its provider, and cluster discovery",
@@ -45,4 +45,5 @@ ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required
                   secret_patterns=SECRET_PATTERNS, importers=(BULK, NODE_FILES), profile_terms=None, access=None,
                   endpoints=ENDPOINTS, listeners=listeners,
                   proxy_settings=proxy_settings, collectors=COLLECTORS, render_targets=TARGETS,
-                  logs=LOGS, version_changes=VERSION_CHANGES)
+                  logs=LOGS, version_changes=VERSION_CHANGES,
+                  reads_back=(ReadBack("bulk", "pingfederate/*.json"),))

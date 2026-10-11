@@ -3,13 +3,15 @@
 Declaration-only (`applies` is None): every compliant server would match it, so it is never inferred from the data.
 An environment whose directory is a plain LDAP server names it in its stack. Product adapters of directory servers
 build on the same renderers (`render_standard`) and add what their product configures beyond the standard.
-Its importer `ldap/data-profile` records the values-free profile of any environment's directory data.
+Its importers: `ldap/data-profile` records the values-free profile of any environment's directory data;
+`ldap/schema` reads a subschema LDIF (its own schema.ldif, or a server's) onto the user-schema records.
 """
 from opsdir.core.contract import Adapter
 from .dit import dit_ldif
 from .collect import COLLECTORS
 from .profile import DATA_PROFILE_IMPORTER
 from .schema import schema_ldif
+from .schema_import import SCHEMA_IMPORTER
 
 NAME = "ldap"
 FORMATS = (("ldap/*.ldif", "ldif"),)      # the format of every file the standard base renders
@@ -24,5 +26,6 @@ ADAPTER = Adapter(name=NAME, kind="product", applies=None, required_roles=(), re
                   render_env=None, checks=(), ref_schemes=(), secret_schemes={}, renders=None, neutral_label="LDAP",
                   vocabulary={}, schema=None, formats=FORMATS,
                   products=(),
-                  secret_patterns=(), importers=(DATA_PROFILE_IMPORTER,), profile_terms=None, access=None,
+                  secret_patterns=(), importers=(DATA_PROFILE_IMPORTER, SCHEMA_IMPORTER), profile_terms=None,
+                  access=None,
                   collectors=COLLECTORS)

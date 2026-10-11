@@ -12,7 +12,8 @@ Kubernetes); manifests anywhere else give the intent only, and the notices say s
   cluster          annotation opsdir.io/cluster-role: the binding role of the cluster it runs in, else `cluster`
   recorded         namespace, service account, pod security facts (runAsNonRoot, readOnlyRootFilesystem,
                    privileged, hostNetwork, hostPID, the namespace's pod-security level), network policies that select
-                   its pods, ingress hosts that reach it through a Service
+                   its pods (but those opsdir rendered, labelled app.kubernetes.io/managed-by: opsdir), host
+                   names that reach it through a Service (Ingress rules' hosts, HTTPRoutes' hostnames)
   workload role    annotation opsdir.io/workload-role, else <name>-workload: the binding role of its workload binding
   binding          (manifests under <cloud>/<env>/) named like the workload under the environment's bindings: each
                    container's image (container=image), replicas, the main (first) container's CPU and memory
@@ -44,6 +45,7 @@ from opsdir.domains.automation.naming import job_dn
 from opsdir.domains.automation.pipelines import jobs_container
 from opsdir.domains.compute.naming import WORKLOADS, workload_dn
 from .gateway_import import read_gateways
+from .names import MANAGED_BY
 
 KINDS = (("StatefulSet", "statefulset"), ("Deployment", "deployment"), ("DaemonSet", "daemonset"))
 ROLE_MAP = "roles.json"
@@ -150,21 +152,35 @@ def _storage(o):
 
 
 def _policies(o, policies):
+    """The network policies selecting a workload's pods, but those opsdir rendered (MANAGED_BY: derived from the
+    record's listeners, not intent of their own)."""
     labels = _pod(o).get("metadata", {}).get("labels") or {}
     return tuple(f"{_meta(p).get('name')}: {', '.join((p.get('spec') or {}).get('policyTypes') or ('Ingress',))}"
-                 for p in policies if _namespace(p) == _namespace(o)
+                 for p in policies if _namespace(p) == _namespace(o) and _labels(p).get(MANAGED_BY[0]) != MANAGED_BY[1]
                  and _selects((p.get("spec") or {}).get("podSelector"), labels))
 
 
-def _hosts(o, services, ingresses):
+def _route_services(route):
+    """(namespace, name) of each Service an HTTPRoute sends to (backendRefs of kind Service, the default)."""
+    return {(b.get("namespace") or _namespace(route), b.get("name"))
+            for rule in (route.get("spec") or {}).get("rules") or () for b in rule.get("backendRefs") or ()
+            if (b.get("kind") or "Service") == "Service" and not b.get("group")}
+
+
+def _hosts(o, services, ingresses, routes=()):
+    """The host names that reach a workload through a Service selecting its pods: Ingress rules' hosts and HTTPRoutes'
+    hostnames (a cluster gateway's routes)."""
     labels = _pod(o).get("metadata", {}).get("labels") or {}
     mine = {_meta(s).get("name") for s in services if _namespace(s) == _namespace(o)
             and (s.get("spec") or {}).get("selector") and _selects((s.get("spec") or {}).get("selector"), labels)}
-    return tuple(sorted({r.get("host") for i in ingresses if _namespace(i) == _namespace(o)
-                         for r in (i.get("spec") or {}).get("rules") or () if r.get("host")
-                         for path in ((r.get("http") or {}).get("paths") or ())
-                         if (((path.get("backend") or {}).get("service") or {}).get("name")
-                             or (path.get("backend") or {}).get("serviceName")) in mine}))
+    via_ingress = {r.get("host") for i in ingresses if _namespace(i) == _namespace(o)
+                   for r in (i.get("spec") or {}).get("rules") or () if r.get("host")
+                   for path in ((r.get("http") or {}).get("paths") or ())
+                   if (((path.get("backend") or {}).get("service") or {}).get("name")
+                       or (path.get("backend") or {}).get("serviceName")) in mine}
+    via_routes = {h for r in routes if {(_namespace(o), s) for s in mine} & _route_services(r)
+                  for h in (r.get("spec") or {}).get("hostnames") or ()}
+    return tuple(sorted(via_ingress | via_routes))
 
 
 def _identity(o, role, accounts):
@@ -181,7 +197,8 @@ def workload_role_of(o, name):
 
 
 def workload_entry(d, name, path, o, role, context):
-    """The ciamWorkload entry for one workload object; context: namespaces, policies, services, ingresses, accounts."""
+    """The ciamWorkload entry for one workload object; context: namespaces, policies, services, ingresses, routes,
+    accounts."""
     dn = workload_dn(name)
     kind = dict(KINDS)[o.get("kind")]
     owned = {"cn": (name,), "ciamWorkloadKind": (kind,), "ciamTargetRole": (role,),
@@ -192,7 +209,8 @@ def workload_entry(d, name, path, o, role, context):
              "ciamPodSecurity": pod_security(o, context["namespaces"]),
              "ciamNetworkPolicy": _policies(o, context["policies"]),
              "ciamSecretName": secret_names(o),
-             "ciamIngressHost": _hosts(o, context["services"], context["ingresses"]), "ciamRepoPath": (path,)}
+             "ciamIngressHost": _hosts(o, context["services"], context["ingresses"], context["routes"]),
+             "ciamRepoPath": (path,)}
     return make_entry(dn, ("top", "ciamObject", "ciamWorkload"), merged_attrs(get(d, dn), owned, OWNED))
 
 
@@ -265,9 +283,9 @@ def read_workloads(files, d, patterns, at=None):
     roles = json_document(files.get(ROLE_MAP, ""), dict) or {}
     found = objects(files)
     of = {k: [o for _, o in found if o and o.get("kind") == k]
-          for k in ("Namespace", "NetworkPolicy", "Service", "Ingress", "ServiceAccount", "Secret")}
+          for k in ("Namespace", "NetworkPolicy", "Service", "Ingress", "HTTPRoute", "ServiceAccount", "Secret")}
     context = {"namespaces": {_meta(n).get("name"): n for n in of["Namespace"]}, "policies": of["NetworkPolicy"],
-               "services": of["Service"], "ingresses": of["Ingress"],
+               "services": of["Service"], "ingresses": of["Ingress"], "routes": of["HTTPRoute"],
                "accounts": {(_namespace(a), _meta(a).get("name")): a for a in of["ServiceAccount"]}}
     workloads = [(p, o) for p, o in found if o and o.get("kind") in dict(KINDS)]
     placed = [(p, o, n, workload_role(o, roles)) for (p, o), n in zip(workloads, entry_names(workloads))]

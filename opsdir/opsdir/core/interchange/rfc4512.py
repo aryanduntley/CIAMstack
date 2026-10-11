@@ -52,6 +52,7 @@ def attribute_type(defn):
     names = _list(d["NAME"])
     return {
         "name": names[0], "oid": d["oid"], "syntax_oid": d.get("SYNTAX"), "equality": d.get("EQUALITY"),
+        "ordering": d.get("ORDERING"), "substr": d.get("SUBSTR"),
         "value_type": d.get("X-VALUE-TYPE", "string"), "portability": d.get("X-PORTABILITY", "meta"),
         "single_value": bool(d.get("SINGLE-VALUE")), "description": d.get("DESC"), "origin": d.get("X-ORIGIN"),
         "rules": {k: d[k] for k in (*RULES, *MARKS) if k in d},

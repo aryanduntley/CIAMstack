@@ -112,6 +112,12 @@ Importer = namedtuple("Importer", ("name", "description", "read", "commands"), d
 # What an import yields: containers (branch entries to create when missing, never changed otherwise); groups: ((scope
 # DN, entries that should exist in that subtree), ...), each replacing the record's subtree at its scope; notices.
 Imported = NamedTuple("Imported", [("containers", tuple), ("groups", tuple), ("notices", tuple)])
+# What one of an adapter's own importers reads back of its render (the round-trip guarantee, connectors.roundtrip): the
+# rendered files whose paths match paths (an fnmatch glob, '*' crossing '/'), each with the prefix strip removed (''
+# keeps the path as rendered) and the prefix place put in front ({environment}: the cloud/env rendered, for importers
+# that read an environment's files from its own folder), read by the importer named; reading them back must change
+# nothing.
+ReadBack = namedtuple("ReadBack", ("importer", "paths", "strip", "place"), defaults=("", ""))
 
 # How a Kubernetes workload assumes a cloud identity, from the provider adapter that owns the cloud: annotations on its
 # service account and labels on its pods, as ((name, value), ...); a value the record can't give is UNBOUND:<what>.
@@ -339,9 +345,10 @@ Adapter = namedtuple("Adapter", (
                             # environment's servers (agents' configuration), or None
     "places_host_files",    # whether it places the other adapters' HostFiles on an environment's servers (the
                             # configuration-management adapter does): without one in the stack they go nowhere
-    "version_changes"),     # VersionChanges: what changes between the releases of its products (the planner's
+    "version_changes",      # VersionChanges: what changes between the releases of its products (the planner's
                             # upgrade check)
-    defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, ()))
+    "reads_back"),          # ReadBacks: which of its importers read which of its rendered files back (round trip)
+    defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, (), ()))
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

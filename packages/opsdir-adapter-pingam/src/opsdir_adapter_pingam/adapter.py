@@ -1,5 +1,5 @@
 """PingAM (ForgeRock AM) adapter: applies to environments whose servers run PingAM."""
-from opsdir.core.contract import Adapter, SecretPattern
+from opsdir.core.contract import Adapter, ReadBack, SecretPattern
 from opsdir.domains.compute.workloads import runs_product
 from .collect import COLLECTORS
 from opsdir_base_oidc.render import FORMATS as OIDC_FORMATS
@@ -34,4 +34,5 @@ ADAPTER = Adapter(name="pingam", kind="product", applies=applies, required_roles
                   secret_patterns=SECRET_PATTERNS, importers=(AMSTER,), profile_terms=None, access=None,
                   endpoints=ENDPOINTS, listeners=listeners,
                   proxy_settings=proxy_settings, collectors=COLLECTORS, signals=SIGNALS,
-                  logs=LOGS, version_changes=VERSION_CHANGES)
+                  logs=LOGS, version_changes=VERSION_CHANGES,
+                  reads_back=(ReadBack("amster", "am/*", "am/"),))

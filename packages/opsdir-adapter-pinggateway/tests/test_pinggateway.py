@@ -10,6 +10,7 @@ import pytest
 
 from opsdir.connectors.importing import preview_import
 from opsdir.connectors.registry import ADAPTERS, core_fragments
+from opsdir.connectors.roundtrip import read_back
 from opsdir.core.contract import PlanContext
 from opsdir.core.directory import get, make_directory, one
 from opsdir.core.environment import env_model
@@ -111,8 +112,8 @@ def test_routes_render_per_environment_and_import_back_unchanged(after):
     alpha = json.loads(render_env(env_model(d, "alpha/prod"), None)["pinggateway/routes/portal.json"])
     beta = json.loads(render_env(env_model(d, "beta/prod"), None)["pinggateway/routes/portal.json"])
     assert (alpha["baseURI"], beta["baseURI"]) == ("https://portal-backend.example.test:8443", "UNBOUND:portal-backend")
-    rendered = {p[len("pinggateway/"):]: t for p, t in render_env(env_model(d, "alpha/prod"), None).items()}
-    assert preview_import(d, "pinggateway", rendered, (ADAPTER,))[0] == ()
+    (rt,) = read_back(d, ADAPTER, render_env(env_model(d, "alpha/prod"), None), (ADAPTER,))
+    assert rt.files and rt.changes == ()
 
 
 def plan(d, dst="beta/prod"):

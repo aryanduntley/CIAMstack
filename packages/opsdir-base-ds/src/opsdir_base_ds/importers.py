@@ -9,6 +9,8 @@
               what the server runs; attributes the importer doesn't own (owners, what a policy is for, ...) are
               kept. For a record that doesn't declare its configuration yet; review it with --dry-run first.
   access-log  the servers' JSON access logs -> the directory's consumers (ou=consumers; see access_log.py)
+  rendered    the lineage's own rendered files (ds/: dsconfig.batch, acis.ldif) -> the declared configuration,
+              the topology's replication purge delay and the ACIs (see rendered.py): a render read back
 
 For config and declared, an export holds a copy of each server's config/ directory in a folder named by the
 server's hostname, or by its record name when no other environment has a server of that name; a config.ldif at the
@@ -17,14 +19,16 @@ servers' logs/ directories, in any layout.
 """
 import re
 
-from opsdir.core.contract import Imported, Importer
+from opsdir.core.contract import Imported, Importer, ReadBack
 from opsdir.core.directory import get, gtime, make_entry, norm_dn, ou_entry, rdn_value, within
 from opsdir.core.environment import server_location, server_named
 from opsdir.core.sources import by_folder
 from opsdir.domains.directory.drift import latest_snapshots
-from opsdir.domains.directory.naming import CONFIG, CONSUMERS, DECLARED, DIRECTORY_SERVER_ROLE, OBSERVED
+from opsdir.domains.directory.naming import ACIS, CONFIG, CONSUMERS, DECLARED, DIRECTORY_SERVER_ROLE, OBSERVED
+from opsdir_adapter_ldap.schema_import import SCHEMA_IMPORTER
 from .access_log import read_access_logs
-from .observe import OWNED, config_entries, server_id
+from .observe import OWNED, config_entries, records_entries, server_id
+from .rendered import aci_entries, batch_records, purge_delay
 
 ARCHIVED = re.compile(r"(?:^|/)archived-configs/config-(\d{14})Z(?:\.ldif)?$")
 BRANCHES = ("backends", "password-policies", "connection-handlers", "log-publishers")
@@ -168,6 +172,49 @@ def declared_reader(product):
     return read
 
 
+TOPOLOGY = f"cn=topology,ou=replication,{DECLARED}"
+# What a lineage product's own render reads back through (Adapter.reads_back): its ds/ files by the rendered importer,
+# the standard base's schema LDIF by the schema importer (opsdir-adapter-ldap's, which every lineage product registers)
+READS_BACK = (ReadBack("rendered", "ds/*", "ds/"), ReadBack("schema", "ldap/schema.ldif", "ldap/"))
+
+
+def _named(files, name):
+    return next((t for p, t in sorted(files.items()) if p.rsplit("/", 1)[-1] == name), None)
+
+
+def _topology(d, delay):
+    """(groups, notices) setting the topology's replication purge delay to delay (None: unset)."""
+    held = get(d, TOPOLOGY)
+    if held is None:
+        return (), ((f"ds/dsconfig.batch: a replication purge delay of {delay}, but the record holds no "
+                     f"replication topology; not read",) if delay else ())
+    attrs = {**{k: v for k, v in held.attrs.items() if k != "ciamReplicationPurgeDelay"},
+             **({"ciamReplicationPurgeDelay": (delay,)} if delay else {})}
+    return ((TOPOLOGY, (make_entry(TOPOLOGY, held.classes, attrs),)),), ()
+
+
+def rendered_reader(product):
+    """read(files, d, patterns, at) for the rendered importer of a DS-lineage product."""
+    def read(files, d, patterns, at=None):
+        batch, acis = _named(files, "dsconfig.batch"), _named(files, "acis.ldif")
+        if batch is None and acis is None:
+            return Imported((), (), ("no dsconfig.batch or acis.ldif (the files opsdir renders under ds/); nothing "
+                                     "imported",))
+        records, batch_notices = batch_records(d, batch) if batch is not None else ((), ())
+        entries, notices = records_entries(product, d, records, DECLARED, "ds/dsconfig.batch")
+        merged = tuple(_kept(d, e) for e in entries)
+        branches = tuple((s, tuple(e for e in merged if within(e.norm, s)))
+                         for s in (f"ou={b},{DECLARED}" for b in BRANCHES)) if batch is not None else ()
+        topology, topology_notices = _topology(d, purge_delay(batch)) if batch is not None else ((), ())
+        aci, aci_notices = aci_entries(d, acis, "ds/acis.ldif") if acis is not None else ((), ())
+        return Imported(containers=(ou_entry(CONFIG), ou_entry(DECLARED), *((ou_entry(ACIS),) if aci else ())),
+                        groups=(*(g for g in branches if g[1]), *topology,
+                                *(((ACIS, (get(d, ACIS) or ou_entry(ACIS), *aci)),)
+                                  if acis is not None and (aci or get(d, ACIS)) else ())),
+                        notices=(*batch_notices, *notices, *topology_notices, *aci_notices))
+    return read
+
+
 def access_log_reader(files, d, patterns, at=None):
     """read(files, d, patterns, at) for the access-log importer: each consumer found its own group."""
     entries, notices = read_access_logs(files, d, patterns, at)
@@ -181,4 +228,7 @@ def importers(product):
             Importer("declared", f"one {product.name} server's config.ldif as the declared configuration",
                      declared_reader(product)),
             Importer("access-log", f"{product.name} servers' JSON access logs (logs/ldap-access.audit.json and its "
-                                   "rotated files) as the directory's consumers", access_log_reader))
+                                   "rotated files) as the directory's consumers", access_log_reader),
+            Importer("rendered", f"opsdir's own render for {product.name} (ds/dsconfig.batch, ds/acis.ldif) read back "
+                                 "as the declared configuration and the ACIs", rendered_reader(product)),
+            SCHEMA_IMPORTER)

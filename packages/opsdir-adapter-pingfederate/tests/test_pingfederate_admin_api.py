@@ -11,6 +11,7 @@ from types import SimpleNamespace
 from opsdir.core.directory import get, make_entry
 from opsdir_adapter_pingfederate.admin_api import OUTPUT, admin_api_files, rendered_bodies, requests
 from opsdir_adapter_pingfederate.importer import read_export
+from support import after_import
 
 _SPEC = importlib.util.spec_from_file_location("pf_import_fixtures",
                                                pathlib.Path(__file__).with_name("test_pingfederate_import.py"))
@@ -21,7 +22,7 @@ PORTAL, INTEGRATIONS, USER_SCHEMA = _FX.PORTAL, _FX.INTEGRATIONS, _FX.USER_SCHEM
 
 def _after():
     d = _FX._record()
-    return _FX._after(d, read_export(_FX._files(), d, ()))
+    return after_import(d, read_export(_FX._files(), d, ()))
 
 
 def _env(d, *versions, bindings=()):

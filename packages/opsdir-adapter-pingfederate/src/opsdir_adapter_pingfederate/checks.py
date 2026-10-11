@@ -4,17 +4,18 @@ instance, authentication policy and OIDC policy names only objects the record ha
 withheld secrets come from a credential role the target binds. An OAuth client listing several authentication methods
 needs PingFederate 13.1 or later in the target (before it, a client takes one), and so does an SMTP relay its
 notification publishers sign in to with OAuth. From 13.1.3 a JDBC store outside the documented drivers and their URL
-schemes is an action (the Admin API restricts them)."""
+schemes is an action (the Admin API restricts them). An SMTP relay or CAPTCHA service whose credential role
+isn't the role of the plugin instance it stands for is an action, fixed by setting it (as a re-import would)."""
 
 from opsdir.core.directory import children, one, rdn_value, values
 from opsdir.core.environment import bound_nowhere, one_role
-from opsdir.core.findings import findings, merge_findings, responsible
+from opsdir.core.findings import Fix, findings, merge_findings, responsible
 from opsdir.core.jsondata import held_json
 from opsdir.domains.federation.services import identity_services, integrations_served
 from opsdir.domains.infrastructure.external import external_hosts_fix, unnamed
 from opsdir.domains.pki.credentials import credential_role_fix
 from .connections import MULTI_AUTH
-from .messaging import SMTP_OAUTH, is_smtp, relay_of
+from .messaging import SMTP_OAUTH, is_smtp, relay_of, served_service, service_role_records
 from .datastores import JDBC_VALIDATED, jdbc_driver_problem, store_hosts
 from .discovery import CHOICES, RENDERED, binding_protocol, clustered, discovery_fix, lacks, where
 from .generic import held_resources, resource_label
@@ -39,6 +40,9 @@ def _credentials(ctx, e, what, owner):
     fix = credential_role_fix(ctx.src, ctx.dst, e, "pingfedCredentialRole", what,
                               f"credential-role:{e.dn.split(',')[1].split('=', 1)[1]}/{rdn_value(e)}",
                               (rdn_value(e), one(e, "pingfedPluginKind") or "")) if unnamed else None
+    # each choice also sets the role on the service the instance stands for, as a re-import would
+    fix = fix and fix._replace(options=tuple(o._replace(records=(*o.records, *service_role_records(ctx.d, e, o.key)))
+                                             for o in fix.options))
     return findings(blockers=(
         *((("PingFederate", f"{what} has withheld credentials but no credential role: nothing says which secret "
             f"{ctx.dst.label} gives it. Set pingfedCredentialRole.", owner),) if unnamed else ()),
@@ -77,6 +81,25 @@ def check_smtp_auth(ctx):
          "PingFederate 13.1 or later. Record basic sign-in for the relay, or run 13.1 or later there.",
          responsible(ctx.d, r, ctx.dst.env), ctx.cutover)
         for e, r in relays if r is not None and (one(r, "ciamSmtpAuth") or "").startswith("oauth")])
+
+
+def check_service_roles(ctx):
+    """Actions: an SMTP relay or CAPTCHA service whose credential role (ciamUsesRole) isn't its PingFederate plugin
+    instance's (pingfedCredentialRole, set after the import that derived it), so the check of the service's secret
+    looks at the wrong role or none; with the fix setting it, as a re-import would."""
+    plugins = (p for k in ("notification-publisher", "captcha-provider") for p in children(ctx.d, KINDS[k].base,
+                                                                                            "pingfedPlugin"))
+    stale = tuple((p, s, one(p, "pingfedCredentialRole")) for p in plugins for s in (served_service(ctx.d, p),)
+                  if s is not None and one(p, "pingfedCredentialRole")
+                  and service_role_records(ctx.d, p, one(p, "pingfedCredentialRole")))
+    return findings(actions=[
+        ("PingFederate", f"`{rdn_value(s)}` records credential role {', '.join(values(s, 'ciamUsesRole')) or 'none'}, "
+         f"but {KINDS[one(p, 'pingfedPluginKind')].label} `{rdn_value(p)}`, which stands for it, takes its credentials "
+         f"from `{role}`: the service's secret is checked under the wrong role. Set ciamUsesRole to `{role}` (a "
+         "re-import of PingFederate would).", responsible(ctx.d, s, ctx.dst.env), ctx.cutover)
+        for p, s, role in stale],
+        fixes=[Fix(f"service-role:{rdn_value(s)}", "Credentials", f"Set `{rdn_value(s)}`'s credential role to `{role}`",
+                   service_role_records(ctx.d, p, role), (), ()) for p, s, role in stale])
 
 
 def check_jdbc_drivers(ctx):

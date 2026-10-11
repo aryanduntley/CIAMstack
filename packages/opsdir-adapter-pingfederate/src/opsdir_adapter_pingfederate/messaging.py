@@ -19,7 +19,9 @@ keyword (the documentation gives the admin console's labels: "Basic Authenticati
 """
 from types import MappingProxyType
 
+from opsdir.core.changeset import set_values
 from opsdir.core.directory import children, get, make_entry, merged_attrs, one, rdn_value, values
+from opsdir.core.jsondata import held_json
 from opsdir.core.naming import rdn_safe
 from opsdir.domains.messaging.naming import EXTERNAL_SERVICES, MAIL_SENDERS, sender_dn, service_dn
 from .naming import SERVER_ROLES, named
@@ -118,6 +120,24 @@ def captcha_entries(d, item):
 def relay_of(d, item):
     """The external service an SMTP publisher sends through (by its Email Server), or None."""
     return _held(d, EXTERNAL_SERVICES, "ciamExternalService", "ciamEndpointHost", field(item, "Email Server"))
+
+
+def served_service(d, plugin):
+    """The external service a plugin instance entry stands for (its ciamUsesRole is the instance's credential role, as
+    an import sets it): an SMTP notification publisher's relay, a CAPTCHA provider's captcha-<id>; None for any other
+    plugin, or when the record has no such service."""
+    kind = one(plugin, "pingfedPluginKind")
+    if kind == "notification-publisher" and is_smtp({"pluginDescriptorRef": {"id": one(plugin, "pingfedPluginType")}}):
+        return relay_of(d, held_json(plugin, "pingfedConfig"))
+    return get(d, service_dn(f"captcha-{rdn_value(plugin)}")) if kind == "captcha-provider" else None
+
+
+def service_role_records(d, plugin, role):
+    """The records keeping the service a plugin instance stands for in step with credential role: its ciamUsesRole
+    replaced by role; () when it stands for no recorded service or that service holds exactly that role already."""
+    service = served_service(d, plugin)
+    return () if service is None or values(service, "ciamUsesRole") == (role,) else \
+        (set_values(service, "ciamUsesRole", (role,)),)
 
 
 def _with_fields(body, values_by_name):

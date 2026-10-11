@@ -6,6 +6,8 @@ kind: NetworkPolicy
 metadata:
   name: default-deny-ingress
   namespace: ciam
+  labels:
+    app.kubernetes.io/managed-by: opsdir
 spec:
   podSelector: {}
   policyTypes:
@@ -16,6 +18,8 @@ kind: NetworkPolicy
 metadata:
   name: am-ingress
   namespace: ciam
+  labels:
+    app.kubernetes.io/managed-by: opsdir
 spec:
   podSelector:
     matchLabels:
@@ -32,6 +36,8 @@ kind: NetworkPolicy
 metadata:
   name: idm-ingress
   namespace: ciam
+  labels:
+    app.kubernetes.io/managed-by: opsdir
 spec:
   podSelector:
     matchLabels:
@@ -48,6 +54,8 @@ kind: NetworkPolicy
 metadata:
   name: ig-ingress
   namespace: ciam
+  labels:
+    app.kubernetes.io/managed-by: opsdir
 spec:
   podSelector:
     matchLabels:
@@ -64,6 +72,8 @@ kind: NetworkPolicy
 metadata:
   name: pf-admin-ingress
   namespace: ciam
+  labels:
+    app.kubernetes.io/managed-by: opsdir
 spec:
   podSelector:
     matchLabels:
@@ -104,6 +114,8 @@ kind: NetworkPolicy
 metadata:
   name: pf-engine-ingress
   namespace: ciam
+  labels:
+    app.kubernetes.io/managed-by: opsdir
 spec:
   podSelector:
     matchLabels:

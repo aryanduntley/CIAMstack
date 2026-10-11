@@ -14,7 +14,7 @@ Per environment, one folder per namespace of the workloads it runs on Kubernetes
 |---|---|
 | `namespace.yaml` | the Namespace, labelled `pod-security.kubernetes.io/enforce` with the most permissive level its workloads record (`level=` in `ciamPodSecurity`) |
 | `serviceaccounts.yaml` | a ServiceAccount per account its workloads run as (`ciamServiceAccount`, else the workload's name), annotated with the cloud identity of the workload's `ciamIdentityRole`: the provider adapter's workload identity (AWS IRSA, AKS workload identity, GKE Workload Identity Federation) |
-| `networkpolicies.yaml` | a default deny of ingress, and a policy per workload (pods labelled `opsdir.io/role: <role>`) admitting what its pods listen on: the container ports its deployment kit declares (listeners `on="kubernetes"`), else its products' listeners. Client and admin ports from anywhere; its peers and other server roles from pods with their role label when they run on Kubernetes in the environment, from their servers' subnets otherwise |
+| `networkpolicies.yaml` | a default deny of ingress, and a policy per workload (pods labelled `opsdir.io/role: <role>`) admitting what its pods listen on: the container ports its deployment kit declares (listeners `on="kubernetes"`), else its products' listeners. Client and admin ports from anywhere; its peers and other server roles from pods with their role label when they run on Kubernetes in the environment, from their servers' subnets otherwise; each is labelled `app.kubernetes.io/managed-by: opsdir`, so the workloads importer knows it as this adapter's own |
 | `externalsecrets.yaml` | target `external-secrets`: a SecretStore per secret store, scheme and service account, and an ExternalSecret per Secret (`external-secrets.io/v1`) |
 | `secretproviderclasses.yaml` | target `csi`: a SecretProviderClass per workload and secret store (`secrets-store.csi.x-k8s.io/v1`), syncing the Secrets the workload reads (`secretObjects`) |
 | `secrets-required.yaml` | not a Kubernetes object, so not in the kustomization: every Secret key the workloads read (`ciamWorkloadSecret: <secret>/<key> <- <role>`), the role and reference that fill it, what delivers it, and which workloads read it |
@@ -67,8 +67,8 @@ Any YAML or JSON file is read, multi-document YAML and `List` output included. E
 | `serviceAccountName` | `ciamServiceAccount` |
 | its ServiceAccount's cloud identity annotation (`eks.amazonaws.com/role-arn`, `azure.workload.identity/client-id`, `iam.gke.io/gcp-service-account`) | `ciamIdentityRole`: the binding role each environment gives it (annotation `opsdir.io/identity-role` on the workload or account, else `<role>-identity`); the identity itself is the environment's binding (milestone 4.7) |
 | security contexts; the namespace's `pod-security.kubernetes.io/enforce` label | `ciamPodSecurity`: `runAsNonRoot`, `readOnlyRootFilesystem` (every container), `privileged`, `hostNetwork`, `hostPID`, `level=<level>` |
-| NetworkPolicies in its namespace whose pod selector selects it | `ciamNetworkPolicy`: `name: policy types` |
-| Ingress rules whose backend is a Service selecting it | `ciamIngressHost` |
+| NetworkPolicies in its namespace whose pod selector selects it, but those labelled `app.kubernetes.io/managed-by: opsdir` (this adapter's own, derived from the record's listeners) | `ciamNetworkPolicy`: `name: policy types` |
+| Ingress rules, and HTTPRoutes' hostnames (a cluster gateway's routes), whose backend is a Service selecting it | `ciamIngressHost` |
 | env `secretKeyRef`, `envFrom` `secretRef`, secret and projected volumes | `ciamSecretName`: the Secrets' names, never their values |
 | the file | `ciamRepoPath` |
 
@@ -96,7 +96,7 @@ The Secret keys a workload reads and the secret roles that fill them (`ciamWorkl
 
 The planner (core `compute` domain) then blocks a move whose target neither runs a workload on Kubernetes (its workload binding) nor has servers of its role, a target workload binding without its cluster, and identity or secret roles nobody binds; a role moving between servers and Kubernetes (what its host baseline carries must move into the image, or back) and a privileged workload are actions. Workload bindings are local to their environment, so the core role check doesn't ask the target to bind them. Clusters themselves (`ciamCluster`: version, add-ons, node pools) are read by the cloud adapters (EKS, AKS).
 
-**Gateways** (`gateway_import.py`): a Gateway API Gateway in manifests under `<cloud>/<env>/` is that environment's cluster gateway binding (`ciamClusterGateway`), named like the Gateway: the implementation whose GatewayClass it names (`istio`, `envoy` -> `envoy-gateway`; another class is named in a notice), its namespace, the cluster role (`opsdir.io/cluster-role`, else `cluster`), the binding role (`opsdir.io/gateway-role`, else `<name>-gateway`), and the private address its Service takes when its infrastructure annotations give Azure's (`azure-load-balancer-ipv4`). The rendered Gateway carries both opsdir annotations, so a render reads back as the same binding. What the record adds (its CA, Secret keys, owners) is kept.
+**Gateways** (`gateway_import.py`): a Gateway API Gateway in manifests under `<cloud>/<env>/` is that environment's cluster gateway binding (`ciamClusterGateway`), named like the Gateway: the implementation whose GatewayClass it names (`istio`, `envoy` -> `envoy-gateway`; another class is named in a notice), its namespace, the cluster role (`opsdir.io/cluster-role`, else `cluster`), the binding role (`opsdir.io/gateway-role`, else `<name>-gateway`), and the private address its Service takes when its infrastructure annotations give Azure's (`azure-load-balancer-ipv4`). The rendered Gateway carries both opsdir annotations, so a render reads back as the same binding. An implementation the record leaves to the estate setting (`kubernetes-gateway-implementation`) stays left to it while the Gateway runs what the setting names; a gateway new to the record records what it runs. What the record adds (its CA, Secret keys, owners) is kept.
 
 ## References, vocabulary and schema
 
@@ -105,10 +105,11 @@ The `k8s-secret` reference scheme; the vocabulary of `ciamGatewayImplementation`
 ## Known limits
 
 - Not run against a live cluster yet; manifests as the Kubernetes API documents them (apps/v1, networking.k8s.io/v1).
+- Round trip (`reads_back`, milestone 5.5): the rendered `kubernetes/` files read back by `kubernetes/workloads` under `<cloud>/<env>/` change nothing (the gateway; the namespace's own objects carry no workloads). Deployed, the kits' workloads read back through `examples/showcase/tests/kubernetes/test_kubernetes_round_trip.py` (helm template, kustomize build); what doesn't match yet is listed there and is milestone 5.5b's (kit workload identity marks and names, ForgeOps' UIs).
 - Not read yet: one-off Jobs, operators' custom resources (the DS operator's `DirectoryService`, ForgeOps secret agent, external-secrets `ExternalSecret`), sidecars' resource requests and limits (only the first container's), pod disruption budgets, horizontal autoscalers, NetworkPolicy rule details (only the policy and its types), Gateway API routes.
 - An Ingress backend is matched to a workload through a Service's selector in the same namespace; `ExternalName` services and cross-namespace routing aren't followed.
 
-- HTTPRoutes aren't read back (a deployment kit declares its routes); Gateways are (below).
+- HTTPRoutes aren't read back as routes (a deployment kit declares its routes); their hostnames are the ingress hosts of the workloads their Services select. Gateways are read (below).
 
 ## Tests
 
