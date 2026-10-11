@@ -1,17 +1,21 @@
 """Identity on Azure as Microsoft Entra ID Protection: the risk logs exported where the service's findings go, and the
 risk-based Conditional Access policies the record states completely (users and groups by their object ids, the
 break-glass account left out, report-only unless enforced); what keeps them from being rendered named; the azuread
-provider only when a policy is rendered, in Azure Government's environment there."""
+provider only when a policy is rendered, in Azure Government's environment there. The planner's actions: the licenses
+and rights it needs until recorded in place, risk remediation configured in Entra, password hash sync and writeback for
+the users of an on-prem directory, Defender for Identity for the directory itself."""
 import re
 
 from opsdir.core.directory import get, make_entry
+from opsdir.core.interchange.ldif import LdifRecord
 from opsdir_adapter_azure.account import azuread_provider, required_providers
 from opsdir_adapter_azure.cli import kind_of
 from opsdir_adapter_azure.cli_identity import identity_items
 from opsdir_adapter_azure.iam import iam_resources
-from opsdir_adapter_azure.identity_protection import identity_read, render_identity_protection, uses_azuread
+from opsdir_adapter_azure.identity_protection import (check_identity_protection, identity_read,
+                                                     render_identity_protection, uses_azuread)
 from opsdir_adapter_azure.security import security_notices, security_resources
-from network_fixtures import ALPHA, entry, model
+from network_fixtures import ALPHA, context, entry, model
 
 WORKSPACE = "/subscriptions/s/resourceGroups/rg/providers/Microsoft.OperationalInsights/workspaces/sec-logs"
 ADMINS, GLASS = "5b2c0000-0000-4000-8000-0000000000a1", "7e1d0000-0000-4000-8000-0000000000b9"
@@ -164,3 +168,83 @@ def test_what_the_record_cant_express_is_named():
         "Conditional Access policy gap: its user risk levels don't run from one level up; not read")
     assert security_notices((EXPORT,)) == ("Entra ID Protection (risk logs or risk policies) read, but no Defender "
                                            "for Cloud threat detection plan to record it on; not imported",)
+
+
+# ------------------------------------------------------------------ planner
+CLOUD = "cloud=alpha,ou=environments,dc=ciam-ops"
+POLICIES = {"ciamRiskPolicy": ("sign-in medium+: mfa", "user high+: password-change"),
+            "ciamPolicyCovers": "identity-admins", "ciamPolicyExcludes": "identity-break-glass"}
+ALL_MET = ("identity-risk-license", "workload-risk-license", "risk-log-permission", "risk-policy-permission")
+
+
+def _plan(*services, cloud=(), met=()):
+    changes = (*((LdifRecord(CLOUD, "modify", {}, (("add", "objectClass", ("ciamCloudAccount",)),
+                                                   *(("replace", k, v) for k, v in cloud))),) if cloud else ()),
+               *((LdifRecord(ALPHA, "modify", {}, (("add", "objectClass", ("ciamEnvironmentPlacement",)),
+                                                   ("replace", "ciamConfigurationMet", met))),) if met else ()))
+    d, alpha, beta = model(alpha=(*RECORD, *services), changes=changes)
+    return [a[1] for a in check_identity_protection(context(d, beta, alpha, cutover="2026-12-01")).actions]
+
+
+def _service(cn="defender", **attrs):
+    base = {"ciamBindingRole": cn, "ciamSecurityKind": "threat-detection",
+            "ciamSecurityCoverage": ("control-plane", "identity"), "ciamFindingsRole": "security-logs"}
+    return entry(ALPHA, cn, "ciamSecurityService", **{**base, **attrs})
+
+
+def test_licenses_and_rights_are_actions_until_recorded_in_place():
+    actions = _plan(_service(**POLICIES))
+    assert [a.split(". Record ")[1] for a in actions] == [
+        f"{c} (ciamConfigurationMet) once it is in place." for c in (
+            "identity-risk-license", "risk-log-permission", "risk-policy-permission", "workload-risk-license")]
+    assert actions[0] == ("alpha/prod's threat detection watching identity (defender): Microsoft Entra ID P2 for "
+                          "users' risk signals and risk-based Conditional Access. Record identity-risk-license "
+                          "(ciamConfigurationMet) once it is in place.")
+    assert "Policy.ReadWrite.ConditionalAccess and Policy.Read.All" in actions[2]
+    assert _plan(_service(**POLICIES), met=ALL_MET) == []
+    # no policy rendered: no Graph right needed; kept by another team: only the licenses
+    assert not any("risk-policy-permission" in a for a in _plan(_service()))
+    kept_elsewhere = _plan(_service(ciamManagedBy="cn=identity-security,ou=owners,dc=ciam-ops", **POLICIES))
+    assert [a.split(". Record ")[1].split(" ")[0] for a in kept_elsewhere] == ["identity-risk-license",
+                                                                                 "workload-risk-license"]
+    assert _plan(_service(ciamSecurityCoverage="control-plane")) == []
+
+
+def test_risk_remediation_is_configured_in_entra():
+    actions = _plan(_service(ciamRiskPolicy="user high+: risk-remediation", ciamPolicyCovers="identity-admins"),
+                    met=ALL_MET)
+    assert actions == ["defender's policy 'user high+: risk-remediation' isn't rendered (azuread can't express "
+                       "Microsoft's risk remediation yet): configure it in Microsoft Entra Conditional Access, "
+                       "report-only first."]
+
+
+def test_on_prem_directory_users_need_hash_sync_writeback_and_defender_for_identity():
+    hybrid = (("ciamOnPremDirectory", ("corp.example.internal",)), ("ciamDirectorySync", ("federation",)))
+    actions = _plan(_service(**POLICIES), cloud=hybrid, met=ALL_MET)
+    assert actions == [
+        "alpha/prod's users from corp.example.internal don't have their password hashes synced (ciamDirectorySync "
+        "password-hash): Entra ID Protection's leaked-credential detection, and a password change it asks of them, "
+        "depend on password hash sync, whatever else they sign in with.",
+        "alpha/prod's risk policies ask users for password-change, and its cloud doesn't write passwords back to "
+        "corp.example.internal (ciamPasswordWriteback): enable password writeback in Entra Connect or Cloud Sync, or "
+        "those users' on-prem passwords stay unchanged.",
+        "alpha/prod's cloud takes its users from corp.example.internal and no threat detection covers the directory "
+        "(ciamSecurityCoverage on-prem-directory): Microsoft Defender for Identity watches it (sensors on the domain "
+        "controllers, AD FS, AD CS and Entra Connect servers; offered in GCC High and DoD; Microsoft 365 E5/G5 or its "
+        "own license)."]
+    settled = (("ciamOnPremDirectory", ("corp.example.internal",)),
+               ("ciamDirectorySync", ("password-hash", "federation")), ("ciamPasswordWriteback", ("TRUE",)))
+    watcher = _service("defender-identity", ciamSecurityCoverage="on-prem-directory",
+                       ciamManagedBy="cn=identity-security,ou=owners,dc=ciam-ops")
+    assert _plan(_service(**POLICIES), watcher, cloud=settled, met=ALL_MET) == []
+    # no identity watched: only the directory's own threat detection is asked for
+    assert [a.split(":")[0] for a in _plan(cloud=hybrid)] == [
+        "alpha/prod's cloud takes its users from corp.example.internal and no threat detection covers the directory "
+        "(ciamSecurityCoverage on-prem-directory)"]
+
+
+def test_a_service_covering_the_on_prem_directory_is_a_comment():
+    _, out = _render(ciamSecurityCoverage="on-prem-directory")
+    assert out == ("# defender: on-prem directory: Microsoft Defender for Identity has no Terraform resource: set it "
+                   "up in the Microsoft Defender portal (sensors on the domain controllers, AD FS, AD CS and Entra "
+                   "Connect servers)")

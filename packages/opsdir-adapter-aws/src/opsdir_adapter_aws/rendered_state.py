@@ -28,6 +28,7 @@ REALIZES = MappingProxyType({
     "aws_vpc_endpoint": "ciamPrivateEndpoint", "aws_vpc_endpoint_service": "ciamEndpointService",
     "aws_guardduty_detector": "ciamSecurityService", "aws_inspector2_enabler": "ciamSecurityService",
     "aws_securityhub_account": "ciamSecurityService", "aws_macie2_classification_job": "ciamDataDiscovery",
+    "aws_lambda_function": "ciamDataDiscovery",          # a data discovery's scheduler (discovery.py)
     "aws_db_instance": "ciamDatabase", "aws_rds_cluster": "ciamDatabase", "aws_budgets_budget": "ciamBudget",
     "aws_route53_resolver_rule": "ciamDnsForwarder", "aws_organizations_policy": "ciamGuardrail",
     "aws_cloudtrail": "ciamAuditTrail", "aws_cloudwatch_log_group": "ciamLogDestination",

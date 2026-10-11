@@ -4,37 +4,115 @@ Rendered in the platform's own root, for each data discovery the platform team k
 in a comment): Macie for the account (aws_macie2_account, enabled, findings published every fifteen minutes), an
 aws_macie2_custom_data_identifier per own data type (its name and regular expression), and a scheduled
 aws_macie2_classification_job over the S3 buckets of the object stores it examines, in the account the cloud records,
-daily, weekly or monthly by ciamRescanDays (1; up to 7; more), with those identifiers. A store that isn't an S3 bucket
-is named in a comment (Macie examines S3 only). Its findings go where ciamFindingsRole says through an EventBridge rule
-(source aws.macie, detail-type Macie Finding), as the security services' do; its detailed results to the S3 bucket of
-the object store ciamResultsRole names (aws_macie2_classification_export_configuration, with that store's KMS key,
-which Macie requires).
+with those identifiers. A store that isn't an S3 bucket is named in a comment (Macie examines S3 only). Its findings go
+where ciamFindingsRole says through an EventBridge rule (source aws.macie, detail-type Macie Finding), as the security
+services' do; its detailed results to the S3 bucket of the object store ciamResultsRole names
+(aws_macie2_classification_export_configuration, with that store's KMS key, which Macie requires).
 
-In GovCloud (a us-gov- region) Macie is rendered as an add-on with a comment, and the check gives an action: AWS's
-FedRAMP services-in-scope page marks Amazon Macie for US East/West only, and no GovCloud endpoint was found for it
-(2026-10-08; AWS states no availability either way).
+How often is the record's ciamRescanDays, never rounded (core estate discovery: rescan_plan). Macie's own schedule runs
+daily or weekly (monthly is a day of the month, not every 30 days): 1 or 7 days (or none recorded: weekly) is the
+scheduled job's. Any other interval is a scheduler: an EventBridge Scheduler schedule (aws_scheduler_schedule, daily)
+invokes a Lambda function (aws_lambda_function, python3.14, terraform/discovery/<name>/handler.py zipped by the archive
+provider) that starts a ONE_TIME classification job over the same buckets and identifiers, named '<service>:<UTC time>',
+once that many calendar days have passed since the last successful one (COMPLETE, lastRunErrorStatus NONE; nothing
+while one is unfinished), the rule of core estate discovery's rescan_due. Least privilege: the function's role may
+create and describe classification jobs, list them, and write its own log group; the scheduler's role (trusted by
+scheduler.amazonaws.com for the account's default schedule group) may only invoke the function. The function's
+environment and tags (Realizes, RescanDays) say what it runs, so the reader recovers the interval; the plan names which
+mechanism applies (check_discovery_availability's OK line).
+
+In GovCloud (a us-gov- region) nothing is rendered for Macie, only a comment, and the check gives an action, or a
+blocker where the environment's data is restricted (as for a missing data discovery): AWS's General Reference lists no
+GovCloud endpoint for Amazon Macie and its FedRAMP services-in-scope page marks it for US East/West only (research note
+2492, decision 2493).
 
 Read back from Terraform state: aws_macie2_classification_job (its buckets as the stores examined, its schedule as
-days, its custom identifiers by name and regular expression from aws_macie2_custom_data_identifier), with the
-EventBridge rule's target for aws.macie as the findings destination and the export configuration's bucket as the
-results destination -> data discovery (kind discovery)."""
+days, its custom identifiers by name and regular expression from aws_macie2_custom_data_identifier), or the scheduler's
+function (tag RescanDays; its environment's buckets, interval and identifier ids), with the EventBridge rule's target
+for aws.macie as the findings destination and the export configuration's bucket as the results destination -> data
+discovery (kind discovery). The function isn't read as a job binding (inventory)."""
+import json
+import re
+
 from opsdir.core.directory import get, is_kind, one, rdn_value, values
 from opsdir.core.findings import findings, responsible
+from opsdir.core.formats import PYTHON
 from opsdir.core.inventory import of_types, resource
-from opsdir.domains.estate.discovery import custom_identifiers, destination, discovery_services
+from opsdir.core.manifest import header
+from opsdir.domains.estate.discovery import (custom_identifiers, destination, discovery_services, rescan_line,
+                                             rescan_plan)
+from opsdir.domains.estate.naming import RESTRICTED
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.state import blocks
 from .account import account_id
-from .account import govcloud
+from .account import govcloud, partition
 from .security import findings_routes, findings_routing
 from .storage import bucket_of, key_arn
 
 ACCOUNT, IDENTIFIER, JOB = "aws_macie2_account", "aws_macie2_custom_data_identifier", "aws_macie2_classification_job"
 EXPORT = "aws_macie2_classification_export_configuration"
 MACIE = "macie"
-GOVCLOUD_NOTE = ("Amazon Macie in GovCloud: AWS's FedRAMP services-in-scope page marks it for US East/West only and "
-                 "no GovCloud endpoint was found (2026-10-08): rendered as an add-on, confirm it is offered before "
-                 "applying")
+GOVCLOUD_NOTE = ("Amazon Macie isn't offered in GovCloud: AWS's General Reference lists no GovCloud endpoint for it "
+                 "and its FedRAMP services-in-scope page marks it for US East/West only: not rendered")
 DAYS = {"daily_schedule": 1, "weekly_schedule": 7, "monthly_schedule": 30}
+OFFERED = (1, 7)                    # what Macie's own schedule honours exactly: daily, weekly
+SCHEDULE, FUNCTION = "aws_scheduler_schedule", "aws_lambda_function"
+RUNTIME = "python3.14"              # the newest GA Lambda Python runtime (research note 2511)
+RESCAN_TAG = "RescanDays"
+
+HANDLER = '''"""Starts a one-time Amazon Macie classification job for data discovery JOB_NAME once RESCAN_DAYS calendar
+days (UTC) have passed since the last successful one; nothing while one of its jobs is unfinished. Its jobs are named
+'<JOB_NAME>:<UTC time>'. EventBridge Scheduler invokes it daily."""
+import datetime as dt
+import os
+import uuid
+
+import boto3
+
+NAME, DAYS = os.environ["JOB_NAME"], int(os.environ["RESCAN_DAYS"])
+ACCOUNT = os.environ["ACCOUNT_ID"]
+BUCKETS = [b for b in os.environ["BUCKETS"].split(",") if b]
+IDENTIFIERS = [i for i in os.environ.get("CUSTOM_DATA_IDENTIFIER_IDS", "").split(",") if i]
+FINISHED = {"COMPLETE", "CANCELLED"}
+
+
+def due(last_success, today, days):
+    """Nothing has succeeded yet, or days calendar days have passed since the last success."""
+    return last_success is None or (today - last_success).days >= days
+
+
+def _jobs(macie):
+    criteria = {"includes": [{"key": "name", "comparator": "STARTS_WITH", "values": [f"{NAME}:"]},
+                             {"key": "jobType", "comparator": "EQ", "values": ["ONE_TIME"]}]}
+    token = None
+    while True:
+        page = macie.list_classification_jobs(filterCriteria=criteria, **({"nextToken": token} if token else {}))
+        yield from page.get("items", [])
+        token = page.get("nextToken")
+        if not token:
+            return
+
+
+def _succeeded(job):
+    return job.get("jobStatus") == "COMPLETE" and (job.get("lastRunErrorStatus") or {}).get("code") == "NONE"
+
+
+def handler(event, context):
+    macie = boto3.client("macie2")
+    jobs = list(_jobs(macie))
+    if any(j.get("jobStatus") not in FINISHED for j in jobs):
+        return {"started": None, "why": "a job is unfinished"}
+    runs = [macie.describe_classification_job(jobId=j["jobId"]).get("lastRunTime") for j in jobs if _succeeded(j)]
+    last = max((t.astimezone(dt.timezone.utc).date() for t in runs if t), default=None)
+    now = dt.datetime.now(dt.timezone.utc)
+    if not due(last, now.date(), DAYS):
+        return {"started": None, "last_success": str(last)}
+    job = macie.create_classification_job(
+        clientToken=str(uuid.uuid4()), jobType="ONE_TIME", name=f"{NAME}:{now:%Y-%m-%dT%H:%M:%SZ}",
+        s3JobDefinition={"bucketDefinitions": [{"accountId": ACCOUNT, "buckets": BUCKETS}]},
+        **({"customDataIdentifierIds": IDENTIFIERS} if IDENTIFIERS else {}))
+    return {"started": job["jobId"]}
+'''
 
 
 def _keeper(m, s):
@@ -47,10 +125,76 @@ def _kept(m):
 
 
 def _schedule(days):
-    """The classification job's schedule_frequency for examining every days (None: weekly)."""
-    d = int(days) if days is not None else 7
-    return (("daily_schedule", True),) if d <= 1 else (("weekly_schedule", "SUNDAY"),) if d <= 7 else \
-        (("monthly_schedule", 1),)
+    """The classification job's schedule_frequency for examining every days, one Macie offers (OFFERED; None:
+    weekly)."""
+    return (("daily_schedule", True),) if days == 1 else (("weekly_schedule", "SUNDAY"),)
+
+
+def function_name(m, s):
+    """The scheduler's Lambda function for data discovery s of environment m (letters, digits, - and _; up to 64)."""
+    return re.sub(r"[^A-Za-z0-9_-]", "-", f"ciam-{rdn_value(m.env)}-macie-{rdn_value(s)}")[:64]
+
+
+def _json(doc):
+    return json.dumps(doc, separators=(",", ":"))
+
+
+def _scheduled(m, s, ids, days, buckets, account):
+    """The scheduler for data discovery s examining buckets every days: its schedule, function, package and roles."""
+    cn, fn, n = rdn_value(s), function_name(m, s), tf_name(rdn_value(s))       # blocks named after the binding
+    part, region = partition(m), one(m.cloud, "ciamRegion") or ""
+    lambda_trust = {"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Action": "sts:AssumeRole",
+                                                             "Principal": {"Service": "lambda.amazonaws.com"}}]}
+    runs = {"Version": "2012-10-17", "Statement": [
+        {"Effect": "Allow", "Action": ["macie2:CreateClassificationJob", "macie2:DescribeClassificationJob"],
+         "Resource": f"arn:{part}:macie2:{region}:{account}:classification-job/*"},
+        {"Effect": "Allow", "Action": "macie2:ListClassificationJobs", "Resource": "*"},
+        {"Effect": "Allow", "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+         "Resource": f"arn:{part}:logs:{region}:{account}:log-group:/aws/lambda/{fn}:*"}]}
+    scheduler_trust = {"Version": "2012-10-17", "Statement": [{
+        "Effect": "Allow", "Action": "sts:AssumeRole", "Principal": {"Service": "scheduler.amazonaws.com"},
+        "Condition": {"StringEquals": {"aws:SourceAccount": account,
+                                       "aws:SourceArn": f"arn:{part}:scheduler:{region}:{account}:"
+                                                        "schedule-group/default"}}}]}
+    invokes = {"Version": "2012-10-17", "Statement": [{
+        "Effect": "Allow", "Action": "lambda:InvokeFunction",
+        "Resource": f"arn:{part}:lambda:{region}:{account}:function:{fn}"}]}
+    # a quoted template (the ids joined by commas), written as is
+    ident = ",".join(f"${{{IDENTIFIER}.{ids[x][0]}.id}}" for x, _ in custom_identifiers(s))
+    return (f"# {cn}: every {days} days: Macie's schedule runs daily or weekly, so EventBridge Scheduler invokes {fn} "
+            f"daily and it starts a one-time classification job once {days} days have passed since the last "
+            "successful one",
+            block("data", ["archive_file", n], [
+                ("type", "zip"), ("source_dir", f"${{path.module}}/discovery/{fn}"),
+                ("output_path", f"${{path.module}}/.build/{fn}.zip")]),
+            block("resource", ["aws_iam_role", n], [("name", fn), ("assume_role_policy", _json(lambda_trust))]),
+            block("resource", ["aws_iam_role_policy", n], [
+                ("name", "macie-jobs"), ("role", ref(f"aws_iam_role.{n}.id")), ("policy", _json(runs))]),
+            block("resource", [FUNCTION, n], [
+                ("function_name", fn), ("role", ref(f"aws_iam_role.{n}.arn")), ("runtime", RUNTIME),
+                ("handler", "handler.handler"), ("timeout", 60),
+                ("filename", ref(f"data.archive_file.{n}.output_path")),
+                ("source_code_hash", ref(f"data.archive_file.{n}.output_base64sha256")),
+                ("environment", Block((("variables", {
+                    "JOB_NAME": cn, "RESCAN_DAYS": str(days), "ACCOUNT_ID": account, "BUCKETS": ",".join(buckets),
+                    **({"CUSTOM_DATA_IDENTIFIER_IDS": ref(f'"{ident}"')} if ident else {})}),))),
+                ("tags", {"Realizes": cn, RESCAN_TAG: str(days)}),
+                ("depends_on", [ref(f"{ACCOUNT}.{MACIE}")])]),
+            block("resource", ["aws_iam_role", f"{n}_scheduler"], [
+                ("name", f"{fn}-scheduler"[:64]), ("assume_role_policy", _json(scheduler_trust))]),
+            block("resource", ["aws_iam_role_policy", f"{n}_scheduler"], [
+                ("name", "invoke"), ("role", ref(f"aws_iam_role.{n}_scheduler.id")), ("policy", _json(invokes))]),
+            block("resource", [SCHEDULE, n], [
+                ("name", fn), ("schedule_expression", "rate(1 day)"),
+                ("flexible_time_window", Block((("mode", "OFF"),))),
+                ("target", Block((("arn", ref(f"{FUNCTION}.{n}.arn")),
+                                  ("role_arn", ref(f"aws_iam_role.{n}_scheduler.arn")))))]))
+
+
+def handler_script(m, s):
+    """The scheduler function's Python source, with its do-not-edit header."""
+    return header(m, f"Lambda function {function_name(m, s)}: one-time Macie jobs for data discovery {rdn_value(s)}",
+                  PYTHON) + HANDLER
 
 
 def _stores(m, s):
@@ -77,8 +221,11 @@ def _job(m, s, ids):
     if account is None:
         return (*notes, f"# NOTE: data discovery {cn}: no classification job: the cloud records no account "
                         "(ciamAccountRef)")
+    plan = rescan_plan(s, OFFERED)
+    if plan is not None and not plan.native:
+        return (*notes, *_scheduled(m, s, ids, plan.days, buckets, account))
     return (*notes, block("resource", [JOB, n], [
-        ("job_type", "SCHEDULED"), ("name", cn), ("schedule_frequency", Block(_schedule(one(s, "ciamRescanDays")))),
+        ("job_type", "SCHEDULED"), ("name", cn), ("schedule_frequency", Block(_schedule(plan and plan.days))),
         *((("custom_data_identifier_ids", [ref(f"{IDENTIFIER}.{ids[x][0]}.id") for x, _ in custom_identifiers(s)]),)
           if custom_identifiers(s) else ()),
         ("s3_job_definition", Block((("bucket_definitions", Block((("account_id", account),
@@ -104,31 +251,57 @@ def _export(m, services):
         ("depends_on", [ref(f"{ACCOUNT}.{MACIE}")])]),)
 
 
+def _uses_scheduler(m, s):
+    plan = rescan_plan(s, OFFERED)
+    return plan is not None and not plan.native and bool(_stores(m, s)[0]) and account_id(m) is not None
+
+
 def render_discovery(m):
-    """HCL (and comments) for environment m's data discovery."""
+    """(HCL and comments, {path: script}) for environment m's data discovery: the scheduler functions' sources."""
     kept, ids = _kept(m), _identifiers(m)
     notes = tuple(f"# Data discovery {rdn_value(s)}: kept by {_keeper(m, s)}, not rendered here"
                   for s in discovery_services(m) if one(s, "ciamManagedBy"))
     if not kept:
-        return notes
-    return (*notes, *((f"# {GOVCLOUD_NOTE}",) if govcloud(m) else ()),
+        return notes, {}
+    if govcloud(m):
+        return (*notes, f"# {GOVCLOUD_NOTE}: data discovery {', '.join(rdn_value(s) for s in kept)} (the planner "
+                        "names the gap)"), {}
+    scripts = {f"terraform/discovery/{function_name(m, s)}/handler.py": handler_script(m, s)
+               for s in kept if _uses_scheduler(m, s)}
+    return (*notes,
             block("resource", [ACCOUNT, MACIE], [("finding_publishing_frequency", "FIFTEEN_MINUTES"),
                                                  ("status", "ENABLED")]),
             *(block("resource", [IDENTIFIER, tf], [("name", n), ("regex", rx),
                                                    ("depends_on", [ref(f"{ACCOUNT}.{MACIE}")])])
               for n, (tf, rx) in ids.items()),
             *(x for s in kept for x in (*_job(m, s, ids), *findings_routing(m, s, "data-discovery"))),
-            *_export(m, kept))
+            *_export(m, kept)), scripts
+
+
+def _rescan_lines(m, kept):
+    """The plan's lines naming how each kept service's interval is honoured: Macie's schedule or the scheduler."""
+    plans = [(s, rescan_plan(s, OFFERED)) for s in kept]
+    return tuple(rescan_line(m, s, plan, f"Macie's own {'daily' if plan.days == 1 else 'weekly'} classification job",
+                             f"EventBridge Scheduler invokes {function_name(m, s)} daily, which starts a one-time "
+                             f"classification job once {plan.days} days have passed since the last successful one")
+                 for s, plan in plans if plan is not None)
 
 
 def check_discovery_availability(ctx):
-    """An action for a GovCloud target that records data discovery the platform keeps (see the module)."""
+    """For a GovCloud target that records data discovery the platform keeps: an action, a blocker where its data is
+    restricted (see the module); elsewhere, how each kept service's interval is honoured (OK lines)."""
     kept = _kept(ctx.dst)
-    if not kept or not govcloud(ctx.dst):
+    if not kept:
         return findings()
-    return findings(actions=[("Data discovery", f"{ctx.dst.label} runs data discovery "
-                              f"({', '.join(rdn_value(s) for s in kept)}) in GovCloud: {GOVCLOUD_NOTE}.",
-                              responsible(ctx.d, ctx.dst.env), ctx.cutover)])
+    if not govcloud(ctx.dst):
+        return findings(ok=_rescan_lines(ctx.dst, kept))
+    restricted = one(ctx.dst.env, "ciamDataClassification") == RESTRICTED
+    text = f"{ctx.dst.label} runs data discovery ({', '.join(rdn_value(s) for s in kept)}) in GovCloud: {GOVCLOUD_NOTE}"
+    owner = responsible(ctx.d, ctx.dst.env)
+    if restricted:
+        return findings(blockers=[("Data discovery", f"{text}; its data is classified {RESTRICTED}: this blocks the "
+                                                     "move.", owner)])
+    return findings(actions=[("Data discovery", f"{text}.", owner, ctx.cutover)])
 
 
 # ------------------------------------------------------------------ read back
@@ -142,6 +315,26 @@ def _buckets(job):
     return tuple(dict.fromkeys(f"arn:aws:s3:::{b}" for d in defs for b in d.get("buckets") or ()))
 
 
+def is_rescan_function(a):
+    """Whether a Lambda function's attributes are a data discovery scheduler's (tagged RescanDays): the inventory
+    doesn't read it as a job."""
+    return bool((a.get("tags") or a.get("tags_all") or {}).get(RESCAN_TAG))
+
+
+def _scheduled_resources(pairs, ids, links):
+    """Data discovery from the scheduler functions: their environment's buckets, interval and identifier ids."""
+    def read(a):
+        env = next((b.get("variables") or {} for b in blocks(a.get("environment"))), {})
+        tags = a.get("tags") or a.get("tags_all") or {}
+        return resource("discovery", a.get("arn"), {
+            "ciamRescanDays": int(env.get("RESCAN_DAYS") or tags[RESCAN_TAG]),
+            "ciamCustomIdentifier": tuple(ids[i] for i in (env.get("CUSTOM_DATA_IDENTIFIER_IDS") or "").split(",")
+                                          if i in ids)},
+            links={"ciamScansRole": tuple(f"arn:aws:s3:::{b}" for b in (env.get("BUCKETS") or "").split(",") if b),
+                   **links}, name=env.get("JOB_NAME") or tags.get("Realizes"))
+    return tuple(read(a) for a in of_types(pairs, FUNCTION) if a.get("arn") and is_rescan_function(a))
+
+
 def discovery_resources(pairs):
     """Data discovery of (Terraform resource type, attributes) pairs."""
     ids = {a.get("id"): f"{a.get('name')}: {a.get('regex')}" for a in of_types(pairs, IDENTIFIER)
@@ -149,10 +342,10 @@ def discovery_resources(pairs):
     routes = findings_routes(pairs)
     export = next((((e.get("s3_destination") or [{}])[0] or {}).get("bucket_name") for e in of_types(pairs, EXPORT)),
                   None)
-    return tuple(resource("discovery", a.get("arn") or a.get("id"), {
+    links = {"ciamFindingsRole": routes.get("aws.macie"),
+             "ciamResultsRole": f"arn:aws:s3:::{export}" if export else None}
+    return (*_scheduled_resources(pairs, ids, links), *(resource("discovery", a.get("arn") or a.get("id"), {
         "ciamRescanDays": _days(a),
         "ciamCustomIdentifier": tuple(ids[i] for i in a.get("custom_data_identifier_ids") or () if i in ids)},
-        links={"ciamScansRole": _buckets(a), "ciamFindingsRole": routes.get("aws.macie"),
-               "ciamResultsRole": f"arn:aws:s3:::{export}" if export else None},
-        name=a.get("name") or "macie")
-        for a in of_types(pairs, JOB) if (a.get("arn") or a.get("id")) and a.get("job_type") == "SCHEDULED")
+        links={"ciamScansRole": _buckets(a), **links}, name=a.get("name") or "macie")
+        for a in of_types(pairs, JOB) if (a.get("arn") or a.get("id")) and a.get("job_type") == "SCHEDULED"))

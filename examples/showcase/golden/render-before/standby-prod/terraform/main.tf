@@ -2350,7 +2350,7 @@ resource "google_scc_v2_project_notification_config" "scc_incidents" {
   }
 }
 
-# sdp-backups: Sensitive Data Protection refreshes profiles daily or monthly: the record asks every 7 days, profiled daily
+# sdp-backups: every 7 days: Sensitive Data Protection refreshes daily or monthly, so the config stays paused and workflow sdp-rescan-sdp-backups resumes it daily once 7 days have passed since the buckets' last successful profiles, and pauses it once they are profiled again
 
 resource "google_data_loss_prevention_inspect_template" "sdp_backups" {
   parent       = "projects/${var.project_id}/locations/${var.region}"
@@ -2382,7 +2382,7 @@ resource "google_data_loss_prevention_discovery_config" "sdp_backups" {
   parent            = "projects/${var.project_id}/locations/${var.region}"
   location          = var.region
   display_name      = "sdp-backups"
-  status            = "RUNNING"
+  status            = "PAUSED"
   inspect_templates = [google_data_loss_prevention_inspect_template.sdp_backups.id]
   targets {
     cloud_storage_target {
@@ -2413,6 +2413,71 @@ resource "google_data_loss_prevention_discovery_config" "sdp_backups" {
     pub_sub_notification {
       topic = "projects/example-aero-ciam-standby/topics/ciam-security"
       event = "CHANGED_PROFILE"
+    }
+  }
+  lifecycle {
+    ignore_changes = [status]
+  }
+}
+
+resource "google_service_account" "sdp_backups_rescan" {
+  account_id   = "rescan-sdp-backups-wf"
+  display_name = "sdp-backups: resumes and pauses its discovery"
+}
+
+resource "google_project_iam_custom_role" "sdp_backups" {
+  role_id     = "ciamSdpRescan_sdp_backups"
+  title       = "sdp-backups: rescan discovery"
+  permissions = ["dlp.jobTriggers.get", "dlp.jobTriggers.update", "dlp.fileStoreProfiles.list"]
+}
+
+resource "google_project_iam_member" "sdp_backups_rescan" {
+  project = var.project_id
+  role    = google_project_iam_custom_role.sdp_backups.name
+  member  = "serviceAccount:${google_service_account.sdp_backups_rescan.email}"
+}
+
+resource "google_service_account" "sdp_backups_rescan_scheduler" {
+  account_id   = "rescan-sdp-backups-run"
+  display_name = "sdp-backups: starts its rescan workflow"
+}
+
+resource "google_project_iam_member" "sdp_backups_rescan_scheduler" {
+  # Workflows has no per-workflow IAM: invoking is granted on the project
+  project = var.project_id
+  role    = "roles/workflows.invoker"
+  member  = "serviceAccount:${google_service_account.sdp_backups_rescan_scheduler.email}"
+}
+
+resource "google_workflows_workflow" "sdp_backups" {
+  name            = "sdp-rescan-sdp-backups"
+  region          = var.region
+  description     = "Resumes and pauses discovery sdp-backups every 7 days"
+  service_account = google_service_account.sdp_backups_rescan.id
+  source_contents = file("${path.module}/discovery/sdp-rescan.yaml")
+  user_env_vars = {
+    CONFIG      = google_data_loss_prevention_discovery_config.sdp_backups.id
+    PARENT      = "projects/${var.project_id}/locations/${var.region}"
+    RESCAN_DAYS = "7"
+    BUCKETS     = "example-aero-ciam-standby-ds-backups"
+  }
+  labels = {
+    realizes    = "sdp-backups"
+    rescan-days = "7"
+  }
+}
+
+resource "google_cloud_scheduler_job" "sdp_backups" {
+  name      = "sdp-rescan-sdp-backups"
+  region    = var.region
+  schedule  = "0 6 * * *"
+  time_zone = "Etc/UTC"
+  http_target {
+    http_method = "POST"
+    uri         = "https://workflowexecutions.googleapis.com/v1/${google_workflows_workflow.sdp_backups.id}/executions"
+    oauth_token {
+      service_account_email = google_service_account.sdp_backups_rescan_scheduler.email
+      scope                 = "https://www.googleapis.com/auth/cloud-platform"
     }
   }
 }

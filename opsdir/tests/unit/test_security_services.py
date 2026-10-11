@@ -107,6 +107,14 @@ def test_a_narrower_target_gives_actions():
          "on the target cloud's.", "2026-12-01")]
 
 
+def test_a_target_not_watching_identity_or_the_on_prem_directory_is_asked_to():
+    ctx, _ = _ctx(alpha=(detector(ALPHA, ("control-plane", "identity", "on-prem-directory")), channel(ALPHA)),
+                  beta=(detector(BETA, ("control-plane",)), channel(BETA)))
+    assert [a[1] for a in check_security(ctx).actions] == [
+        "alpha/prod's threat-detection watches identity, on-prem-directory and beta/prod's doesn't: turn it on in the "
+        "target (or record what watches it there)."]
+
+
 def test_a_target_keeping_its_configuration_history_in_the_service_is_asked_to_export_it():
     ctx, _ = _ctx(alpha=(service(ALPHA, "recorder", "config-recording"), channel(ALPHA)),
                   beta=(service(BETA, "changes", "config-recording", findings_role=None),))

@@ -137,6 +137,11 @@ def _crm_delta(ctx, src_auth, dst_auth, owner):
             and set(values(r, "ciamControlRef")) & covered and _met(ctx.d, r) is None]
 
 
+def unmet_configurations(m, needed):
+    """The configurations in needed environment m doesn't record having in place (ciamConfigurationMet), sorted."""
+    return sorted(set(needed) - set(values(m.env, "ciamConfigurationMet")))
+
+
 def check_authorization(ctx):
     """The target's cloud authorization against what it must meet (see the module). Nothing when neither environment
     names one and the target needs none."""
@@ -158,8 +163,7 @@ def check_authorization(ctx):
                     + ": import the provider's current package overview.", owner, ctx.cutover)] \
         if dst_auth is not None and values(dst_auth, "ciamInScopeService") and (
             as_of is None or (ctx.as_of - as_of).days > SCOPE_STALE_DAYS) else []
-    unmet = sorted(set(values(dst_auth, "ciamRequiresConfiguration"))
-                   - set(values(ctx.dst.env, "ciamConfigurationMet"))) \
+    unmet = unmet_configurations(ctx.dst, values(dst_auth, "ciamRequiresConfiguration")) \
         if dst_auth is not None else []
     config = [(AREA, f"Authorization `{rdn_value(dst_auth)}` requires {c} for a customer's use to be inside its "
                      f"boundary and {ctx.dst.label} doesn't record it (ciamConfigurationMet).", owner, ctx.cutover)

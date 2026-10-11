@@ -7,6 +7,7 @@ from .boundary import check_boundary
 from .arm import ARM
 from .cli import CLI_INVENTORY
 from .collect import COLLECTORS
+from .identity_protection import check_identity_protection
 from .inventory import TERRAFORM_STATE
 from .ingress import gateway_plug
 from .kubernetes import SECRET_DELIVERY, workload_identity
@@ -25,7 +26,7 @@ def applies(m):
 
 ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles=(),
                   render_neutral=None, render_env=render,
-                  checks=(priority_check(*PRIORITIES), check_boundary, check_server_inputs),
+                  checks=(priority_check(*PRIORITIES), check_boundary, check_server_inputs, check_identity_protection),
                   ref_schemes=("azkv", "azkv-key", "azkv-cert", "azblob"),
                   secret_schemes={"azkv": keyvault_command}, renders="Terraform for the target cloud",
                   neutral_label=None,

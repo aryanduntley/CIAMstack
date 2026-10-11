@@ -255,6 +255,11 @@
       "format": "xml",
       "sha256": "6bb13c0304722ca9b2942a2ef00ea6fd2648469d599edcdd4c48e099f6b80d37"
     },
+    "terraform/discovery/sdp-rescan.yaml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "7ed75ee3997dd89d2cf3abced6293288706d508bebdc8f3ab8b0f7da76ada40d"
+    },
     "terraform/landing-zone/main.tf": {
       "scope": "landing-zone",
       "format": "hcl",
@@ -283,7 +288,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "fe96082255ecf1c94b5ff8cda71a227edb23fd12e30a39e60ecde9744c7cab25"
+      "sha256": "e0fc8b0950902883aa220b52ee1ff56435863871d8857948a3f4de57faa4761d"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

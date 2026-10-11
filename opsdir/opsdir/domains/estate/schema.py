@@ -1,6 +1,7 @@
 """Estate domain schema: the cloud accounts the environments run in and how the estate's resources are marked. A cloud
-(infrastructure's ciamCloud) may name its account (an AWS account, an Azure subscription, a Google Cloud project) and
-the organization above it (the auxiliary class ciamCloudAccount); an environment its resource group and how sensitive
+(infrastructure's ciamCloud) may name its account (an AWS account, an Azure subscription, a Google Cloud project),
+the organization above it and the on-prem directory its users come from (the auxiliary class ciamCloudAccount;
+hybrid.py); an environment its resource group and how sensitive
 its data is and the residency it is held to (ciamEnvironmentPlacement); a party the cost center its spending is charged
 to (ciamChargedParty). The tag policy (under ou=tag-policy) says which tags every resource rendered for an environment
 carries and where each value comes from, so the renderers tag and the importers can say what the cloud has untagged.
@@ -29,7 +30,8 @@ approved by a risk authority until a date, for named environments) and the compl
 ou=assessments: score, status) are the estate's record of its compliance; a cloud's suppression of findings
 (ciamSuppression) is a binding of the environment it runs in, named after the exception it carries out."""
 from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
-from .naming import (AMOUNT, ASSESSMENT_KINDS, AUTHORIZATION_STATUSES, CONFIGURATIONS, LEVELS, RESPONSIBILITY,
+from .naming import (AMOUNT, ASSESSMENT_KINDS, AUTHORIZATION_STATUSES, CONFIGURATIONS, DIRECTORY_SYNC, LEVELS,
+                     MET_CONFIGURATIONS, RESPONSIBILITY,
                      ASSESSMENT_STATUSES, BUDGET_PERIODS, CAGE_CODE, CLASSIFICATIONS,
                      CONTROL_REF, CURRENCY, DISCOVERY_SOURCES, EXCEPTION_KINDS, EXCEPTION_STATUSES, FINDING_REF,
                      MEDIA_REQUESTS, POAM_STATUSES, QUOTA_DECISIONS, QUOTA_KINDS, REGION_STATUSES, RISK_RATINGS,
@@ -78,7 +80,8 @@ ATTRIBUTES = (
                  "the cloud's own baseline)"),
     AttributeDef(500, 'ciamSecurityCoverage', enum_type(SECURITY_AREAS), 'binding', False,
                  "What a threat-detection or vulnerability-scanning service watches: control-plane, identity, network, "
-                 "compute, containers, storage, databases, key-vaults, applications"),
+                 "compute, containers, storage, databases, key-vaults, applications, on-prem-directory (the "
+                 "organization's own directory its users reach the cloud from)"),
     AttributeDef(501, 'ciamComplianceStandard', 'string', 'binding', False,
                  "A compliance framework a posture service assesses the estate against, by a neutral id the clouds "
                  "share (nist-800-53-r5, nist-800-171-r2, fedramp-high, cmmc-l2, cis: its cloud's CIS benchmark)",
@@ -257,6 +260,15 @@ ATTRIBUTES = (
     AttributeDef(570, 'ciamProviderAddOn', 'string', 'intent', False,
                  "A Terraform provider beyond the cloud's own its roots may use, as its adapter names it (an add-on an "
                  "operator allows: Azure's azapi for what azurerm doesn't manage)"),
+    AttributeDef(641, 'ciamOnPremDirectory', 'fqdn', 'intent', False,
+                 "A directory of the organization's own (its domain: corp.example.internal) whose users sign in to the "
+                 "cloud: the cloud's identities are synced from it"),
+    AttributeDef(642, 'ciamDirectorySync', enum_type(DIRECTORY_SYNC), 'intent', False,
+                 "How the users of the cloud's on-prem directory sign in to it: password-hash (their password hashes "
+                 "synced), pass-through (checked by an agent on the directory's side), federation (the organization's "
+                 "sign-in service); password-hash may sit beside the others"),
+    AttributeDef(643, 'ciamPasswordWriteback', 'bool', 'intent', True,
+                 "Whether a password changed or reset in the cloud is written back to its on-prem directory"),
     AttributeDef(571, 'ciamPackageId', 'string', 'meta', True,
                  "A cloud offering's FedRAMP package id (the Marketplace's: F1603047866)",
                  (("X-PATTERN", r"[A-Za-z0-9][A-Za-z0-9_-]*"),)),
@@ -296,9 +308,11 @@ ATTRIBUTES = (
     AttributeDef(586, 'ciamRequiresConfiguration', enum_type(CONFIGURATIONS), 'meta', False,
                  "What a customer must configure for its use to be inside an authorization's boundary: "
                  "assured-workload, us-data-location, us-person-support, il5-isolation"),
-    AttributeDef(587, 'ciamConfigurationMet', enum_type(CONFIGURATIONS), 'intent', False,
-                 "A configuration an environment has in place for its authorization (an Assured Workloads workload, US "
-                 "data location, US-person support, IL5 isolation)"),
+    AttributeDef(587, 'ciamConfigurationMet', enum_type(MET_CONFIGURATIONS), 'intent', False,
+                 "A configuration an environment has in place: for its authorization (an Assured Workloads workload, "
+                 "US data location, US-person support, IL5 isolation), or for its threat detection watching identity "
+                 "(the identity and workload risk licenses, the deploying identity's rights to write sign-in policies "
+                 "and export the risk logs)"),
     AttributeDef(588, 'ciamSspRef', 'string', 'meta', True,
                  "The system security plan a system boundary is documented in: its id and version"),
     AttributeDef(589, 'ciamResponsibility', enum_type(RESPONSIBILITY), 'meta', True,
@@ -337,9 +351,11 @@ ATTRIBUTES = (
 )
 CLASSES = (
     ClassDef(103, 'ciamCloudAccount', 'top', 'AUXILIARY', (),
-             ('ciamAccountRef', 'ciamOrganizationRef', 'ciamBillingAccountRef', 'ciamProviderAddOn'),
+             ('ciamAccountRef', 'ciamOrganizationRef', 'ciamBillingAccountRef', 'ciamProviderAddOn',
+              'ciamOnPremDirectory', 'ciamDirectorySync', 'ciamPasswordWriteback'),
              "Added to a cloud: the account its environments run in, the organization above it, the account its "
-             "billing is managed from and the Terraform provider add-ons its roots may use"),
+             "billing is managed from, the Terraform provider add-ons its roots may use and the on-prem directory its "
+             "users come from (how they sign in, whether passwords are written back)"),
     ClassDef(104, 'ciamEnvironmentPlacement', 'top', 'AUXILIARY', (),
              ('ciamResourceGroup', 'ciamDataClassification', 'ciamResidencyRef', 'ciamReportingObligationRef',
               'ciamAuthorizationRef', 'ciamRequiredAuthorization', 'ciamConfigurationMet'),

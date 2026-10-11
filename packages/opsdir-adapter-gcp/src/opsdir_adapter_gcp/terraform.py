@@ -247,6 +247,7 @@ def _references(m):
 def render(m, services):
     endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     kms, identities = secret(m, "disk-encryption"), workload_identities(m, ACCESS)
+    discovery, workflows = render_discovery(m)
     out = (*network_data(m), *_firewall(m), *chain.from_iterable(identity(m, w) for w in identities),
            *chain.from_iterable(_instance(m, s, kms, identities) for s in m.servers),
            *render_snapshot_policies(m), *render_backups(m),
@@ -256,7 +257,7 @@ def render(m, services):
            *forwarding_zones(m), *render_trails(m), *render_buckets(m),
            *(render_log_sinks(m, services) + log_sink_notes(m, services) if services else ()), *render_policies(m),
            *render_checks(m, endpoints), *render_security(m),
-           *render_discovery(m), *render_suppressions(m),
+           *discovery, *render_suppressions(m),
            *render_quota_requests(m), *budget_notes(m),
            *_references(m))
     main = header(m, "Google Cloud infrastructure for the CIAM platform", HCL) + unbound_comments(m.unbound) + "\n" \
@@ -267,5 +268,5 @@ def render(m, services):
         project_variable(m),
         block("variable", ["region"], [("type", ref("string")), ("default", one(m.cloud, "ciamRegion"))]),
     ]) + "\n"
-    return {"terraform/providers.tf": providers, "terraform/main.tf": main, **render_landing(m),
+    return {"terraform/providers.tf": providers, "terraform/main.tf": main, **workflows, **render_landing(m),
             **evaluation_files(m, ACCESS, "Google Cloud")}

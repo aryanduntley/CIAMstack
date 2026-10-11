@@ -1,11 +1,15 @@
 """Data discovery (core estate): a target running none while the source does, leaving a store unexamined the source
 examines and the target binds, or not looking for one of the source's own data types gives actions, blockers where the
 target holds controlled data; examining less often and keeping findings or results the source sends on give actions; a
-target service sending findings or results to a role it doesn't bind blocks; the data-discovery report."""
+target service sending findings or results to a role it doesn't bind blocks; the data-discovery report. The rescan
+interval honoured exactly: natively where the cloud's schedule offers it, else by a scheduler's due rule."""
+import datetime as dt
+
 from opsdir.core.directory import make_entry
 from opsdir.core.findings import findings
-from opsdir.domains.estate.discovery import (check_discovery, custom_identifiers, discovery_role, discovery_rows,
-                                             discovery_services, rescan_days, scanned_roles)
+from opsdir.domains.estate.discovery import (ANY_DAYS, check_discovery, custom_identifiers, discovery_role,
+                                             discovery_rows, discovery_services, rescan_days, rescan_due, rescan_line,
+                                             rescan_plan, scanned_roles)
 from network_fixtures import ALPHA, BETA, context, entry, model
 
 CUI, EMPLOYEE = "cui-marking: CUI//[A-Z-]+", "employee-id: EA[0-9]{6}"
@@ -103,3 +107,25 @@ def test_helpers_and_report():
         ("alpha/prod", "daily", "ds-backups, x", "cui-marking, employee-id", "1", "", "", "platform"),
         ("alpha/prod", "discovery", "ds-backups", "cui-marking, employee-id", "7", "security-alerts", "", "platform"),
         ("beta/prod", "dspm", "ds-backups", "", "", "", "", "platform")]
+
+
+def test_the_rescan_interval_is_native_only_where_the_cloud_offers_it_exactly():
+    d, alpha, _ = model(alpha=(discovery(ALPHA, cn="every-3", days="3"), discovery(ALPHA, cn="weekly", days="7"),
+                               discovery(ALPHA, cn="unset", days=None)))
+    every3, weekly, unset = (next(s for s in discovery_services(alpha) if s.dn.startswith(f"cn={n},"))
+                             for n in ("every-3", "weekly", "unset"))
+    assert rescan_plan(weekly, (1, 7)) == (7, True)
+    assert rescan_plan(every3, (1, 7)) == (3, False)                    # never rounded to 1 or 7
+    assert rescan_plan(every3, ANY_DAYS) == (3, True)
+    assert rescan_plan(unset, (1, 7)) is None
+    assert rescan_line(alpha, every3, rescan_plan(every3, (1, 7)), "its daily job", "a scheduler starts a job") == \
+        "alpha/prod's data discovery `every-3` examines its stores every 3 days: a scheduler starts a job."
+
+
+def test_the_scheduler_counts_calendar_days_since_the_last_success():
+    last = dt.datetime(2026, 10, 1, 3, 5)                               # finished just after the 03:00 run
+    assert rescan_due(None, dt.date(2026, 10, 1), 3)
+    assert not rescan_due(last, dt.datetime(2026, 10, 3, 3, 0), 3)
+    assert rescan_due(last, dt.datetime(2026, 10, 4, 3, 0), 3)          # 3 calendar days, though under 72 hours
+    assert rescan_due(dt.date(2026, 9, 1), dt.date(2026, 10, 1), 30)
+

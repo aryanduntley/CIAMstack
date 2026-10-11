@@ -20,7 +20,9 @@ roots=$(find "$@" -name '*.tf' -printf '%h\n' | sort -u)
 for dir in $roots; do
   name=${dir#"$ROOT"/}
   work=$SCRATCH/$(printf '%s' "$name" | tr '/' '_')
-  mkdir -p "$work" && cp "$dir"/*.tf "$work"/
+  # the whole root: files it reads with file() (a workflow's source) sit beside its .tf files; nested roots in it
+  # are inert here (validate loads only this folder's .tf files)
+  mkdir -p "$work" && cp -r "$dir"/. "$work"/
   if ! "$TF" -chdir="$work" fmt -check -list=true >"$work.fmt" 2>&1; then
     failed+=("$name (fmt: $(tr '\n' ' ' <"$work.fmt"))")
   fi

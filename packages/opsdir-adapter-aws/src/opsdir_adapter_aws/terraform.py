@@ -186,6 +186,7 @@ def render(m, services):
     endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     kms, identities = secret(m, "disk-encryption"), workload_identities(m, ACCESS)
     canaries, scripts = render_canaries(m, endpoints)
+    discovery, handlers = render_discovery(m)
     shipping, shipping_files = render_fluent_bit(m, services) if services else ((), {})
     clusters = (*identity_clusters(identities), *(fluent_bit_clusters(m, services) if services else ()))
     out = (*network_data(m), *_security_groups(m), *eks_cluster_data(clusters),
@@ -199,13 +200,13 @@ def render(m, services):
            *(log_notes(m, services) if services else ()), *shipping,
            *(fluent_bit_notes(m, services) if services else ()), *render_alarms(m), *canaries,
            *render_security(m),
-           *render_discovery(m), *render_suppressions(m),
+           *discovery, *render_suppressions(m),
            *render_budgets(m), *render_quota_requests(m),
            *_references(m))
     unbound = unbound_comments(m.unbound)
     main = header(m, "AWS infrastructure for the CIAM platform", HCL) + unbound + "\n" + "\n\n".join(out) + "\n"
     providers = header(m, "Providers", HCL) + "\n" + "\n\n".join([
-        required_providers(bool(scripts)),
+        required_providers(bool(scripts) or bool(handlers)),
         provider_block(m),
         *((_us_east_1(m),) if _fronted(m, endpoints) and (standard_account(m) or not govcloud(m)) else ()),
         *(provider_block(m, r, copy_alias(r), f"Copies of databases' automated backups in {r}")
@@ -216,6 +217,6 @@ def render(m, services):
             ("description", "The landing zone's outbound Route 53 Resolver endpoint the forwarding rules use"),
             ("type", ref("string"))]),) if forwarders(m, hosted=False) else ()),
     ]) + "\n"
-    return {"terraform/providers.tf": providers, "terraform/main.tf": main, **scripts, **shipping_files,
+    return {"terraform/providers.tf": providers, "terraform/main.tf": main, **scripts, **handlers, **shipping_files,
             **render_landing(m),
             **evaluation_files(m, ACCESS, "AWS")}

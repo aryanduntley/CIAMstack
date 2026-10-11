@@ -375,6 +375,16 @@ EXPECTED = MappingProxyType({
          "protocolVersion", None),
         ("A121", "Upgrade", "`pf-admin`, `pf-engine` in target/prod: the Admin API validates JDBC data stores",
          "PingFederate 12.1 -> 13.1.3 validates JDBC drivers and URLs; the grant store is JDBC", None),
+        # the target's Defender watches identity (Entra ID Protection, milestone 5.5e): what it needs in place, until
+        # the record says it is (ciamConfigurationMet)
+        ("A122", "Identity protection", "target/prod's threat detection watching identity (defender): Microsoft Entra "
+         "ID P2", "the target records no Entra ID P2 license for ID Protection's risk signals", None),
+        ("A123", "Identity protection", "target/prod's threat detection watching identity (defender): the identity "
+         "deploying its Terraform needs the Security Administrator role", "the target records no right for its "
+         "deploying identity to export the risk logs", None),
+        ("A124", "Identity protection", "target/prod's threat detection watching identity (defender): Microsoft Entra "
+         "Workload ID Premium", "the target records no Workload ID Premium license for service principals' risk",
+         None),
     ],
 })
 

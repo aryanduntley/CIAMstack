@@ -34,6 +34,7 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamOnProvider": (PROVIDER,),
                               "ciamCloudEnvironment": ("public",)}, schema=None,
                   formats=(("terraform/*.tf", "hcl"), ("terraform/canaries/*/python/*.py", "python"),
+                           ("terraform/discovery/*/*.py", "python"),
                            ("access/*.sh", "shell"), ("kubernetes/fluent-bit/*", "yaml")),
                   products=(),
                   secret_patterns=SECRET_PATTERNS,

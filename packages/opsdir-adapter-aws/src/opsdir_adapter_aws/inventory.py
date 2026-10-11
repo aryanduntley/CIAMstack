@@ -80,7 +80,7 @@ from .iam import iam_resources
 from .databases import database_resources, database_security_groups
 from .audit import trail_resources
 from .budgets import budget_resources, budget_topics
-from .discovery import discovery_resources
+from .discovery import discovery_resources, is_rescan_function
 from .security import findings_topics, security_resources
 from .suppressions import suppression_resources
 from .backups import backup_resources
@@ -305,7 +305,7 @@ def _jobs(found):
     return (*(resource("job", a.get("arn"), {"ciamRuntime": a.get("runtime"), "ciamSchedule": schedules(a.get("arn"))},
                        name=a.get("function_name"), role=_role(a),
                        tags=_tags(a)) for a in of_types(found, "aws_lambda_function")
-              if a.get("arn")),
+              if a.get("arn") and not is_rescan_function(a)),
             *(resource("job", a.get("arn"), {"ciamSchedule": schedules(a.get("arn"))}, name=a.get("name"),
                        role=_role(a), tags=_tags(a)) for a in of_types(found, "aws_codepipeline") if a.get("arn")),
             *(resource("job", a.get("arn"), {"ciamRuntime": image(a), "ciamSchedule": schedules(a.get("arn"))},

@@ -22,9 +22,10 @@ RESIDENCIES = branch("residencies")     # the estate's residencies (ciamResidenc
 SECURITY_KINDS = ("threat-detection", "vulnerability-scanning", "config-recording", "posture")
 # what a threat-detection (or vulnerability-scanning) service watches: management API activity, sign-ins and
 # credentials, traffic and name lookups, machines, containers and clusters, object storage, databases, key vaults,
-# applications and APIs
+# applications and APIs, the organization's own directory its users reach the cloud from (its domain controllers,
+# federation and sync servers)
 SECURITY_AREAS = ("control-plane", "identity", "network", "compute", "containers", "storage", "databases",
-                  "key-vaults", "applications")
+                  "key-vaults", "applications", "on-prem-directory")
 STANDARD_ID = r"[a-z0-9]+(-[a-z0-9]+)*"     # a compliance framework's or baseline's id: nist-800-171-r2, cis
 # a data type of the organization's own a data discovery service looks for: `name: regular expression`
 CUSTOM_IDENTIFIER = r"[a-z][a-z0-9-]{0,62}: \S.*"
@@ -116,4 +117,14 @@ STANDING = frozenset(("certified", "validated", "equivalent"))
 RESPONSIBILITY = ("inherited", "shared", "customer")
 # what a customer must configure for its use to be inside an authorization's boundary
 CONFIGURATIONS = ("assured-workload", "us-data-location", "us-person-support", "il5-isolation")
+# what an environment's threat detection watching identity needs in place, beyond the authorization's: the license
+# for users' risk signals and for workload identities' (service principals'), and the deploying identity's right to
+# write sign-in policies and to export the risk logs
+IDENTITY_PREREQUISITES = ("identity-risk-license", "workload-risk-license", "risk-policy-permission",
+                          "risk-log-permission")
+MET_CONFIGURATIONS = CONFIGURATIONS + IDENTITY_PREREQUISITES
+# how the users of an organization's own directory sign in to a cloud: their password hashes synced to it, checked by
+# an agent on the directory's side, or federated to the organization's sign-in service (password-hash may sit beside
+# the others, for the cloud's leaked-credential detection)
+DIRECTORY_SYNC = ("password-hash", "pass-through", "federation")
 SCOPE_STALE_DAYS = 90         # an in-scope service list older than this asks for a fresh one
