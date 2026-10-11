@@ -7,6 +7,7 @@ import pathlib
 from opsdir_adapter_aws.landing import render_landing as aws
 from opsdir_adapter_azure.landing import render_landing as azure
 from opsdir_adapter_gcp.landing import render_landing as gcp
+from opsdir_format_terraform.hcl import written
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
 import mini_estate
@@ -91,7 +92,7 @@ def _model(refs):
 def write_samples(root):
     """Write each cloud's landing-zone roots for the sample under root/<cloud>/; the root."""
     for cloud, (render, refs) in CLOUDS.items():
-        for path, text in render(_model(refs)).items():
+        for path, text in written(render(_model(refs))).items():
             out = pathlib.Path(root) / cloud / path
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_text(text)

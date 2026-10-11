@@ -34,7 +34,7 @@ from opsdir.domains.data.protection import PLAN, schedule_of
 from opsdir.domains.data.volumes import VOLUME, volume_policy
 from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned
-from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
 from .cmk import CMK_ROLE, key_ref, key_sources
 from .identities import LOC, RG
 from .account import tagged
@@ -79,31 +79,31 @@ def _vault(m, v, disks):
     n, mode = tf_name(rdn_value(v)), one(v, "ciamStorageImmutability") or "none"
     geo, address = one(v, "ciamCrossRegionRestore") == "TRUE", f"azurerm_data_protection_backup_vault.{n}"
     sources, key, note = key_sources(m, v, n)
-    return (*((f"# Vault '{rdn_value(v)}': a locked vault keeps each recovery point as long as its policy says; "
-               f"{one(v, 'ciamStorageLockDays')} days isn't a setting of its own",)
+    return (*((comment(f"Vault '{rdn_value(v)}': a locked vault keeps each recovery point as long as its policy says; "
+                       f"{one(v, 'ciamStorageLockDays')} days isn't a setting of its own"),)
               if mode != "none" and one(v, "ciamStorageLockDays") else ()),
-            *((f"# Vault '{rdn_value(v)}': immutability Locked can't be turned off once set",)
+            *((comment(f"Vault '{rdn_value(v)}': immutability Locked can't be turned off once set"),)
               if mode == "compliance" else ()),
-            *((f"# Vault '{rdn_value(v)}': {note[1]}",) if note else ()),
-            block("resource", ["azurerm_data_protection_backup_vault", n], [
+            *((comment(f"Vault '{rdn_value(v)}': {note[1]}"),) if note else ()),
+            tf_block("resource", ["azurerm_data_protection_backup_vault", n], [
                 ("name", _name(m, v)), ("resource_group_name", RG), ("location", LOC),
                 ("datastore_type", "VaultStore"), ("redundancy", "GeoRedundant" if geo else "LocallyRedundant"),
                 *((("cross_region_restore_enabled", True),) if geo else ()),
                 ("immutability", IMMUTABILITY.get(mode, "Disabled")),
                 ("identity", Block((("type", "SystemAssigned"),))), ("tags", tagged(m, _tags(v)))]),
             *sources,
-            *((block("resource", ["azurerm_role_assignment", f"{n}_cmk"], [
+            *((tf_block("resource", ["azurerm_role_assignment", f"{n}_cmk"], [
                 ("scope", ref(f"{key}.resource_versionless_id")), ("role_definition_name", CMK_ROLE),
                 ("principal_id", ref(f"{address}.identity[0].principal_id"))]),
-               block("resource", ["azurerm_data_protection_backup_vault_customer_managed_key", n], [
+               tf_block("resource", ["azurerm_data_protection_backup_vault_customer_managed_key", n], [
                    ("data_protection_backup_vault_id", ref(f"{address}.id")),
                    ("key_vault_key_id", ref(f"{key}.versionless_id")),
                    ("depends_on", [ref(f"azurerm_role_assignment.{n}_cmk")])])) if key else ()),
-            *((block("resource", ["azurerm_role_assignment", f"{n}_snapshots"], [
+            *((tf_block("resource", ["azurerm_role_assignment", f"{n}_snapshots"], [
                 ("scope", ref("data.azurerm_resource_group.main.id")),
                 ("role_definition_name", "Disk Snapshot Contributor"),
                 ("principal_id", ref(f"{address}.identity[0].principal_id"))]),) if disks else ()),
-            *((import_block(f"azurerm_data_protection_backup_vault.{n}", one(v, "ciamProviderRef")),)
+            *((tf_import(f"azurerm_data_protection_backup_vault.{n}", one(v, "ciamProviderRef")),)
               if adopted(v) else ()))
 
 
@@ -123,38 +123,39 @@ def _plan(m, p):
     n, s, v = tf_name(rdn_value(p)), schedule_of(p), plan_vault(m, p)
     interval = disk_interval(s.every, s.at)
     if v is None or not owned(v):
-        return (f"# Backup plan '{rdn_value(p)}': its vault (role {one(p, 'ciamBackupVaultRole')}) isn't one this "
-                "environment's stack keeps: not rendered",)
+        return (comment(f"Backup plan '{rdn_value(p)}': its vault (role {one(p, 'ciamBackupVaultRole')}) isn't one "
+                        "this environment's stack keeps: not rendered"),)
     if interval is None:
-        return (f"# Backup plan '{rdn_value(p)}': disk backup runs every 1, 2, 4, 6, 8 or 12 hours or daily, not every "
-                f"{s.every} hours: not rendered",)
+        return (comment(f"Backup plan '{rdn_value(p)}': disk backup runs every 1, 2, 4, 6, 8 or 12 hours or daily, not "
+                        f"every {s.every} hours: not rendered"),)
     vault = f"azurerm_data_protection_backup_vault.{tf_name(rdn_value(v))}"
     volume_roles = {one(x, "ciamBindingRole") for x in _volumes(m, p)}
     others = [r for r in values(p, "ciamProtectsRole") if r not in volume_roles]
     keep = min(s.retention or MAX_DAYS, MAX_DAYS)
     policy = f"azurerm_data_protection_backup_policy_disk.{n}"
-    return (*((f"# Backup plan '{rdn_value(p)}': disk backup keeps snapshots in the disk's region; copies to "
-               f"{', '.join(s.copies)} aren't rendered",) if s.copies else ()),
-            *((f"# Backup plan '{rdn_value(p)}': disk backup keeps a snapshot at most {MAX_DAYS} days, not "
-               f"{s.retention}",) if s.retention and s.retention > MAX_DAYS else ()),
-            *(f"# Backup plan '{rdn_value(p)}' protects {r}, which isn't a volume: not rendered here" for r in others),
-            block("resource", ["azurerm_data_protection_backup_policy_disk", n], [
+    return (*((comment(f"Backup plan '{rdn_value(p)}': disk backup keeps snapshots in the disk's region; copies to "
+                       f"{', '.join(s.copies)} aren't rendered"),) if s.copies else ()),
+            *((comment(f"Backup plan '{rdn_value(p)}': disk backup keeps a snapshot at most {MAX_DAYS} days, not "
+                       f"{s.retention}"),) if s.retention and s.retention > MAX_DAYS else ()),
+            *(comment(f"Backup plan '{rdn_value(p)}' protects {r}, which isn't a volume: not rendered here")
+              for r in others),
+            tf_block("resource", ["azurerm_data_protection_backup_policy_disk", n], [
                 ("name", rdn_value(p)), ("vault_id", ref(f"{vault}.id")),
                 ("backup_repeating_time_intervals", [interval]), ("default_retention_duration", f"P{keep}D"),
                 ("time_zone", "UTC")]),
             *(x for srv, vol in _disks(m, p)
               for dn in (tf_name(f"{rdn_value(srv)}_{rdn_value(vol)}"),)
-              for x in (block("resource", ["azurerm_role_assignment", f"{n}_{dn}_reader"], [
+              for x in (tf_block("resource", ["azurerm_role_assignment", f"{n}_{dn}_reader"], [
                             ("scope", ref(f"azurerm_managed_disk.{dn}.id")),
                             ("role_definition_name", "Disk Backup Reader"),
                             ("principal_id", ref(f"{vault}.identity[0].principal_id"))]),
-                        block("resource", ["azurerm_data_protection_backup_instance_disk", f"{n}_{dn}"], [
+                        tf_block("resource", ["azurerm_data_protection_backup_instance_disk", f"{n}_{dn}"], [
                             ("name", f"{rdn_value(srv)}-{rdn_value(vol)}"), ("location", LOC),
                             ("vault_id", ref(f"{vault}.id")), ("disk_id", ref(f"azurerm_managed_disk.{dn}.id")),
                             ("snapshot_resource_group_name", RG), ("backup_policy_id", ref(f"{policy}.id")),
                             ("depends_on", [ref(f"azurerm_role_assignment.{n}_{dn}_reader"),
                                             ref(f"azurerm_role_assignment.{tf_name(rdn_value(v))}_snapshots")])]))),
-            *((import_block(policy, one(p, "ciamProviderRef")),) if adopted(p) else ()))
+            *((tf_import(policy, one(p, "ciamProviderRef")),) if adopted(p) else ()))
 
 
 def render_backups(m):
@@ -162,8 +163,9 @@ def render_backups(m):
     the stack keeps."""
     vaults, plans = of_class(m, VAULT), of_class(m, PLAN)
     with_disks = {plan_vault(m, p).dn for p in plans if owned(p) and plan_vault(m, p) is not None and _disks(m, p)}
-    return (*(f"# Backup {'vault' if b in vaults else 'plan'} '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is "
-              f"kept by {kept_by(m, b)}: not rendered here" for b in (*vaults, *plans) if not owned(b)),
+    return (*(comment(f"Backup {'vault' if b in vaults else 'plan'} '{rdn_value(b)}' (role "
+                      f"{one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: not rendered here")
+              for b in (*vaults, *plans) if not owned(b)),
             *(x for v in vaults if owned(v) for x in _vault(m, v, v.dn in with_disks)),
             *(x for p in plans if owned(p) for x in _plan(m, p)))
 

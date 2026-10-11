@@ -13,7 +13,7 @@ from typing import NamedTuple
 
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.environment import UNBOUND, bound
-from opsdir_format_terraform.hcl import block, ref
+from opsdir_format_terraform.hcl import ref, tf_block
 from .identities import LOC, RG
 from .account import tagged
 
@@ -48,8 +48,8 @@ def key_sources(m, b, n):
     if uri is None:
         return (), None, note
     vault, name = vault_object(uri)
-    return ((block("data", ["azurerm_key_vault", f"{n}_cmk"], [("name", vault), ("resource_group_name", RG)]),
-             block("data", ["azurerm_key_vault_key", f"{n}_cmk"], [
+    return ((tf_block("data", ["azurerm_key_vault", f"{n}_cmk"], [("name", vault), ("resource_group_name", RG)]),
+             tf_block("data", ["azurerm_key_vault_key", f"{n}_cmk"], [
                  ("name", name), ("key_vault_id", ref(f"data.azurerm_key_vault.{n}_cmk.id"))])),
             f"data.azurerm_key_vault_key.{n}_cmk", None)
 
@@ -62,11 +62,11 @@ def customer_key(m, b, n):
     ident = f"azurerm_user_assigned_identity.{n}_cmk"
     return CustomerKey(
         (*sources,
-         block("resource", ["azurerm_user_assigned_identity", f"{n}_cmk"], [
+         tf_block("resource", ["azurerm_user_assigned_identity", f"{n}_cmk"], [
              ("name", f"id-{rdn_value(b)}-cmk"), ("location", LOC), ("resource_group_name", RG),
              # the binding's helper, not the binding: no Role, so reading it back never binds the binding's role twice
              ("tags", tagged(m, {"ManagedBy": "opsdir"}))]),
-         block("resource", ["azurerm_role_assignment", f"{n}_cmk"], [
+         tf_block("resource", ["azurerm_role_assignment", f"{n}_cmk"], [
              ("scope", ref(f"{key}.resource_versionless_id")),
              ("role_definition_name", CMK_ROLE), ("principal_id", ref(f"{ident}.principal_id"))])),
         ident, key, f"azurerm_role_assignment.{n}_cmk", None)

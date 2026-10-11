@@ -4,6 +4,7 @@ one someone else keeps is named; one the record only references stays a data sou
 and the CLI (each setting saved by bucket under its folder), what it renders reading back as recorded."""
 import json
 
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.cli import cli_resources
 from opsdir_adapter_aws.inventory import state_resources
 from opsdir_adapter_aws.storage import kept_buckets, render_object_stores
@@ -18,7 +19,7 @@ KEY = entry(ALPHA, "key-db", "ciamKeyRef", ciamBindingRole="db-key", ciamRefUri=
 
 
 def _render(*records):
-    return "\n\n".join(render_object_stores(model(alpha=records)[1]))
+    return "\n\n".join(as_text(render_object_stores(model(alpha=records)[1])))
 
 
 def _state(*resources):

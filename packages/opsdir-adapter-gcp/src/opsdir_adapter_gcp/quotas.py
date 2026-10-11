@@ -28,7 +28,7 @@ from opsdir.core.directory import one, rdn_value
 from opsdir.core.sources import json_document
 from opsdir.domains.estate.quotas import (QuotaRow, limits_fetched, need_key, needed, quota_import, quota_needs,
                                           quota_regions)
-from opsdir_format_terraform.hcl import Block, block, tf_name
+from opsdir_format_terraform.hcl import Block, comment, tf_block, tf_name
 from .inventory import PROVIDER
 
 KIND_QUOTAS = {"vcpus": "CPUS", "public-ips": "IN_USE_ADDRESSES", "networks": "global.NETWORKS"}
@@ -98,10 +98,10 @@ def _request(m, n, key):
     value = int(one(n, "ciamQuotaRequested") or needed(m, key))
     qid, region = quota_id(key), one(m.cloud, "ciamRegion")
     if qid not in PREFERENCES:
-        return (f"# Quota request ({key}): raise {qid} to {value} for the project in {region} (Cloud Quotas: no quota "
-                "id documented for it here, so not rendered)",)
+        return (comment(f"Quota request ({key}): raise {qid} to {value} for the project in {region} (Cloud Quotas: no "
+                        "quota id documented for it here, so not rendered)"),)
     quota, regional = PREFERENCES[qid]
-    return (block("resource", [PREFERENCE, tf_name(f"{rdn_value(n)}_{key}")], [
+    return (tf_block("resource", [PREFERENCE, tf_name(f"{rdn_value(n)}_{key}")], [
         ("#", f"{key}: requested by decision (ciamQuotaDecision); the quota is the project's"),
         ("parent", "projects/${var.project_id}"), ("service", "compute.googleapis.com"), ("quota_id", quota),
         *((("dimensions", {"region": region}),) if regional else ()),

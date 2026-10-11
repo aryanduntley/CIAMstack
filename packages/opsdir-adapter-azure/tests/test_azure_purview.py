@@ -3,6 +3,7 @@ referenced (ciamCatalogRef), never created; per blob container its storage accou
 interval trigger and Storage Blob Data Reader grant; own data types as classification rules; Azure Government and a
 cloud without the azapi add-on as comments and planner actions; prerequisites until recorded; read back from state."""
 from opsdir.core.interchange.ldif import LdifRecord
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.discovery import discovery_resources, render_discovery
 from opsdir_adapter_azure.purview import (account_name, check_discovery_cadence, purview_inputs, purview_read,
                                           render_purview, renders)
@@ -45,7 +46,7 @@ def test_the_account_is_named_by_its_resource_id():
 
 def test_scans_every_n_days_with_the_accounts_identity():
     _, alpha, _ = _setup(dspm())
-    out = "\n\n".join(render_purview(alpha))
+    out = "\n\n".join(as_text(render_purview(alpha)))
     assert renders(alpha)
     assert 'data "azapi_resource" "purview_pview_ea"' in out and f'resource_id            = "{ACCOUNT}"' in out
     assert 'type      = "Microsoft.Purview/accounts/Scanning/datasources@2023-09-01"' in out
@@ -58,7 +59,7 @@ def test_scans_every_n_days_with_the_accounts_identity():
     assert "principal_id         = data.azapi_resource.purview_pview_ea.output.identity.principalId" in out
     assert 'classificationName = "CIAM.DSPM.CUI_MARKING"' in out and 'pattern = "CUI//[A-Z-]+"' in out
     assert "# dspm: Azure SQL database audit-db: register it in Purview" in out
-    assert 'variable "purview_scan_start"' in "\n".join(purview_inputs(alpha))
+    assert 'variable "purview_scan_start"' in "\n".join(as_text(purview_inputs(alpha)))
 
 
 def test_the_grant_on_the_stacks_account_one_referenced_by_id_else_a_comment():
@@ -68,10 +69,10 @@ def test_the_grant_on_the_stacks_account_one_referenced_by_id_else_a_comment():
            "default/containers/backups")
     variants = {"held": {"ciamManagedBy": "cn=nobody,dc=ciam-ops"}, "referenced": {"ciamProviderRef": arm},
                 "unknown": {}}
-    out = {k: "\n".join(render_purview(model(alpha=(entry(ALPHA, "backups", "ciamObjectStore",
+    out = {k: "\n".join(as_text(render_purview(model(alpha=(entry(ALPHA, "backups", "ciamObjectStore",
                                                           ciamBindingRole="ds-backups",
                                                           ciamStorageRef="azblob://eabackups/backups", **attrs),
-                                                    STORES[1], dspm()), changes=add_on)[1]))
+                                                    STORES[1], dspm()), changes=add_on)[1])))
            for k, attrs in variants.items()}
     assert "# dspm: storage account eabackups: ask its keeper (cn=nobody,dc=ciam-ops) to give Purview account " \
            "pview-ea's managed identity Storage Blob Data Reader on it" in out["held"]
@@ -90,22 +91,22 @@ def test_nothing_without_an_account_or_an_interval():
 
 def test_azure_government_and_no_add_on_are_comments():
     _, gov, _ = _setup(dspm(), gov=True)
-    assert render_purview(gov) == ("# dspm: Microsoft Purview scans every 10 days aren't rendered in Azure "
+    assert as_text(render_purview(gov)) == ("# dspm: Microsoft Purview scans every 10 days aren't rendered in Azure "
                                    "Government: azapi's Purview token audience there is unverified (see the plan)",)
     _, bare, _ = _setup(dspm(), add_on=False)
-    assert render_purview(bare) == ("# dspm: Microsoft Purview scans every 10 days need the azapi add-on "
+    assert as_text(render_purview(bare)) == ("# dspm: Microsoft Purview scans every 10 days need the azapi add-on "
                                     "(ciamProviderAddOn azapi): not rendered",)
     assert not renders(gov) and not renders(bare) and purview_inputs(gov) == ()
 
 
 def test_defenders_comments_point_at_the_scans():
     _, alpha, _ = _setup(dspm(ciamRescanDays="3"))
-    out = "\n".join(render_discovery(alpha))
+    out = "\n".join(as_text(render_discovery(alpha)))
     assert "complete cataloguing needs Microsoft Purview scanning: its scans below" in out
     assert "refreshes object storage within eight days" not in out          # the scans honour 3 days
     assert "(the Purview scans have classification rules of them below)" in out
     _, alone, _ = _setup(dspm(ciamCatalogRef=None, ciamRescanDays="3"))
-    assert "Purview scanning: not rendered" in "\n".join(render_discovery(alone))
+    assert "Purview scanning: not rendered" in "\n".join(as_text(render_discovery(alone)))
 
 
 def test_the_plan_names_the_trigger_and_asks_for_the_prerequisites():

@@ -20,7 +20,7 @@ from opsdir.core.directory import get, one, rdn_value
 from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.budgets import budget_channel, budgets, currency, thresholds
 from opsdir.domains.estate.tags import tag_rules
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, blocks_of, comment, ref, tf_block, tf_name
 from .account import label_key
 from .names import label, resource_id
 
@@ -49,8 +49,8 @@ def _updates(m, b):
         return (("all_updates_rule", Block((("monitoring_notification_channels", [target]),))),), ()
     if target and "/topics/" in target:
         return (("all_updates_rule", Block((("pubsub_topic", target), ("schema_version", "1.0")))),), ()
-    return (), (f"# budget {rdn_value(b)}: {one(b, 'ciamAlertRole') or 'no alert role'} names no notification "
-                "channel or Pub/Sub topic: the billing account's administrators get Google's default emails",)
+    return (), (comment(f"budget {rdn_value(b)}: {one(b, 'ciamAlertRole') or 'no alert role'} names no notification "
+                        "channel or Pub/Sub topic: the billing account's administrators get Google's default emails"),)
 
 
 def _filter(m):
@@ -70,13 +70,14 @@ def _budget(m, b):
     cn, keeper = rdn_value(b), one(b, "ciamManagedBy")
     if keeper:
         holder = get(m.d, keeper)
-        return (f"# Budget {cn}: kept by {rdn_value(holder) if holder is not None else keeper}, not rendered here",)
+        return (comment(f"Budget {cn}: kept by {rdn_value(holder) if holder is not None else keeper}, not rendered "
+                        "here"),)
     if not billing_account(m):
-        return (f"# NOTE: budget {cn}: not rendered: a Google Cloud budget lives on the billing account and the cloud "
-                "names none (ciamBillingAccountRef)",)
+        return (comment(f"NOTE: budget {cn}: not rendered: a Google Cloud budget lives on the billing account and the "
+                        "cloud names none (ciamBillingAccountRef)"),)
     updates, notes = _updates(m, b)
     period = PERIODS[one(b, "ciamBudgetPeriod") or "monthly"]
-    return (*notes, block("resource", [BUDGET, tf_name(cn)], [
+    return (*notes, tf_block("resource", [BUDGET, tf_name(cn)], [
         ("billing_account", billing_account(m)),
         ("display_name", f"{rdn_value(m.cloud)}-{rdn_value(m.env)}-{cn}"[:DISPLAY]),
         ("budget_filter", Block((*_filter(m).body, ("calendar_period", period)))), ("amount", _amount(b)),
@@ -89,8 +90,8 @@ def render_budgets(m):
     """HCL (and comments) for environment m's budgets, for the landing-zone root (budget_notes: the platform root's,
     without a billing account): the project lookup when any is rendered."""
     out = tuple(x for b in budgets(m) for x in _budget(m, b))
-    lookup = (block("data", ["google_project", "budgets"], [("project_id", ref("var.project_id"))]),) \
-        if any(x.startswith("resource ") for x in out) else ()
+    lookup = (tf_block("data", ["google_project", "budgets"], [("project_id", ref("var.project_id"))]),) \
+        if blocks_of(out, "resource") else ()
     return (*lookup, *out)
 
 

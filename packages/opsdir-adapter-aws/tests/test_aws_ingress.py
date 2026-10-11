@@ -7,6 +7,7 @@ from opsdir.core.environment import env_model, of_class
 from opsdir.core.interchange.ldif import parse
 from opsdir.domains.compute.naming import WORKLOADS, workload_dn
 from opsdir.domains.edge.naming import EDGE_POLICIES
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.ingress import gateway_front, gateway_plug
 import mini_estate
 from support import REGISTRY, build_directory
@@ -50,7 +51,7 @@ def _parts(m):
 def test_an_alb_with_ip_targets_on_the_gateways_port():
     m = _model(*RECORDS)
     svc, gw = _parts(m)
-    out = "\n".join(gateway_front(m, svc, gw, ()))
+    out = "\n".join(as_text(gateway_front(m, svc, gw, ())))
     assert re.search(r'name\s+= "ciam-prod-svc-login-443"\s+port\s+= 443\s+protocol\s+= "HTTPS"', out)
     assert 'target_type = "ip"' in out and "aws_lb_target_group_attachment" not in out
     assert re.search(r'matcher\s+= "200-499"', out)
@@ -63,7 +64,7 @@ def test_a_terminating_front_sends_http_on_80():
     records = tuple(r.replace("ciamTlsMode: reencrypt", "ciamTlsMode: terminate") for r in RECORDS)
     m = _model(*records)
     svc, gw = _parts(m)
-    out = "\n".join(gateway_front(m, svc, gw, ()))
+    out = "\n".join(as_text(gateway_front(m, svc, gw, ())))
     assert re.search(r'name\s+= "ciam-prod-svc-login-443"\s+port\s+= 80\s+protocol\s+= "HTTP"', out)
 
 

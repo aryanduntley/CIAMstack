@@ -31,7 +31,7 @@ from opsdir.core.network import is_private
 from opsdir.domains.network.plumbing import adopted, peer_cloud, peer_network, route_target
 from opsdir.domains.network.routing import parse_route
 from opsdir.domains.network.stack import subnets
-from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, blocks_of, comment, distinct, ref, tf_block, tf_import, tf_name
 from .arm_ids import arm_segment
 from .identities import LOC, RG
 from .network import application_rules, binding_tags, private_endpoint
@@ -52,10 +52,10 @@ def _subnet_data(s):
     """A subnet's data source by its provider ref (<virtual network>/<subnet>)."""
     pref = one(s, "ciamProviderRef")
     if not pref or "/" not in pref:
-        return block("data", ["azurerm_subnet", tf_name(rdn_value(s))], [
+        return tf_block("data", ["azurerm_subnet", tf_name(rdn_value(s))], [
             ("#", "UNBOUND: the binding has no provider ref (<virtual network>/<subnet>)")])
     vnet, sub = pref.split("/", 1)
-    return block("data", ["azurerm_subnet", tf_name(rdn_value(s))], [
+    return tf_block("data", ["azurerm_subnet", tf_name(rdn_value(s))], [
         ("name", sub), ("virtual_network_name", vnet), ("resource_group_name", RG)])
 
 
@@ -64,16 +64,16 @@ def network_data(m):
     net = one_role(m, "network")
     name = one(net, "ciamProviderRef") if net is not None else None
     group = (one(net, "ciamResourceGroup") if net is not None else None) or one(m.env, "ciamResourceGroup")
-    return (block("data", ["azurerm_resource_group", "main"], [("name", group)] if group else
-                  [("#", "UNBOUND: neither the network binding nor the environment names a resource group")]),
-            block("data", ["azurerm_virtual_network", "main"], [("name", name), ("resource_group_name", RG)] if name
-                  else [("#", "UNBOUND: the network binding has no provider ref")]),
+    return (tf_block("data", ["azurerm_resource_group", "main"], [("name", group)] if group else
+                     [("#", "UNBOUND: neither the network binding nor the environment names a resource group")]),
+            tf_block("data", ["azurerm_virtual_network", "main"], [("name", name), ("resource_group_name", RG)] if name
+                     else [("#", "UNBOUND: the network binding has no provider ref")]),
             *(_subnet_data(s) for s in of_class(m, "ciamSubnetBinding")))
 
 
 def _var(name, description, sensitive=False):
-    return block("variable", [name], [("type", ref("string")), ("description", description),
-                                      *((("sensitive", True),) if sensitive else ())])
+    return tf_block("variable", [name], [("type", ref("string")), ("description", description),
+                                         *((("sensitive", True),) if sensitive else ())])
 
 
 def arm_id(b, kind=None):
@@ -88,7 +88,7 @@ def arm_id(b, kind=None):
 def _adopt(address, b, kind=None):
     """An import block for a binding that exists (by its ARM ID), else ()."""
     found = arm_id(b, kind) if adopted(b) else None
-    return (import_block(address, found),) if found else ()
+    return (tf_import(address, found),) if found else ()
 
 
 def _pair(gateway, variable):
@@ -98,7 +98,7 @@ def _pair(gateway, variable):
 
 
 def _note(b, text):
-    return Rendered((f"# {rdn_value(b)}: {text}",), (), ())
+    return Rendered((comment(f"{rdn_value(b)}: {text}"),), (), ())
 
 
 def _subnet(s):
@@ -126,26 +126,26 @@ def egress(m, b, here=()):
     zone = one(b, "ciamZone")
     nat = arm_id(b, "natGateways") if adopted(b) else None          # the existing gateway's ID, its associations'
     return Rendered((
-        block("resource", ["azurerm_nat_gateway", n], [
+        tf_block("resource", ["azurerm_nat_gateway", n], [
             ("name", one(b, "ciamProviderRef") or _name(m, b, "ng")), ("location", LOC), ("resource_group_name", RG),
             ("sku_name", "Standard"), *((("zones", [zone]),) if zone else ()), ("tags", tagged(m, binding_tags(b)))]),
         *_adopt(f"azurerm_nat_gateway.{n}", b, "natGateways"),
         *(x for i, _ in enumerate(single) for x in (
-            block("resource", ["azurerm_nat_gateway_public_ip_association", f"{n}_{i}"], [
+            tf_block("resource", ["azurerm_nat_gateway_public_ip_association", f"{n}_{i}"], [
                 ("nat_gateway_id", ref(f"azurerm_nat_gateway.{n}.id")),
                 ("public_ip_address_id", ref(f"var.{n}_ip_{i}"))]),
-            *((import_block(f"azurerm_nat_gateway_public_ip_association.{n}_{i}", _pair(nat, f"{n}_ip_{i}")),)
+            *((tf_import(f"azurerm_nat_gateway_public_ip_association.{n}_{i}", _pair(nat, f"{n}_ip_{i}")),)
               if nat else ()))),
         *(x for i, _ in enumerate(ranges) for x in (
-            block("resource", ["azurerm_nat_gateway_public_ip_prefix_association", f"{n}_{i}"], [
+            tf_block("resource", ["azurerm_nat_gateway_public_ip_prefix_association", f"{n}_{i}"], [
                 ("nat_gateway_id", ref(f"azurerm_nat_gateway.{n}.id")),
                 ("public_ip_prefix_id", ref(f"var.{n}_prefix_{i}"))]),
-            *((import_block(f"azurerm_nat_gateway_public_ip_prefix_association.{n}_{i}",
-                            _pair(nat, f"{n}_prefix_{i}")),) if nat else ()))),
+            *((tf_import(f"azurerm_nat_gateway_public_ip_prefix_association.{n}_{i}",
+                         _pair(nat, f"{n}_prefix_{i}")),) if nat else ()))),
         # an existing gateway's subnets aren't recorded (ciamEgress names none): they stay as its keeper has them
-        *((f"# {rdn_value(b)}: the subnets an existing NAT gateway serves aren't recorded; its subnet "
-           "associations stay as they are",) if nat else
-          (block("resource", ["azurerm_subnet_nat_gateway_association", f"{n}_{tf_name(rdn_value(s))}"], [
+        *((comment(f"{rdn_value(b)}: the subnets an existing NAT gateway serves aren't recorded; its subnet "
+                   "associations stay as they are"),) if nat else
+          (tf_block("resource", ["azurerm_subnet_nat_gateway_association", f"{n}_{tf_name(rdn_value(s))}"], [
               ("subnet_id", _subnet(s)), ("nat_gateway_id", ref(f"azurerm_nat_gateway.{n}.id"))]) for s in found))),
         (*(_var(f"{n}_ip_{i}", f"The public IP resource (Standard, static) with address {c} NAT gateway "
                                f"{rdn_value(b)} sends from") for i, c in enumerate(single)),
@@ -187,20 +187,20 @@ def route_table(m, b, here=()):
     """A route table with its routes and subnet associations."""
     n = tf_name(rdn_value(b))
     parts = tuple(_route(m, r) for r in map(parse_route, values(b, "ciamRoute")) if r)
-    main = (f"# {rdn_value(b)}: Azure has no main route table (subnets without one use the system routes); "
-            "associate it with each subnet instead",) if one(b, "ciamMainTable") == "TRUE" else ()
+    main = (comment(f"{rdn_value(b)}: Azure has no main route table (subnets without one use the system routes); "
+                    "associate it with each subnet instead"),) if one(b, "ciamMainTable") == "TRUE" else ()
     pref = one(b, "ciamProviderRef")
     name = arm_segment(pref, "routeTables") if pref and pref.startswith("/") else pref
     return Rendered((
         *main,
-        block("resource", ["azurerm_route_table", n], [
+        tf_block("resource", ["azurerm_route_table", n], [
             ("name", name or _name(m, b, "rt")), ("location", LOC), ("resource_group_name", RG),
             *(x for p in parts for x in p.blocks), ("tags", tagged(m, binding_tags(b)))]),
         *_adopt(f"azurerm_route_table.{n}", b, "routeTables"),
         *(x for s in subnets(m, b) for x in (
-            block("resource", ["azurerm_subnet_route_table_association", f"{n}_{tf_name(rdn_value(s))}"], [
+            tf_block("resource", ["azurerm_subnet_route_table_association", f"{n}_{tf_name(rdn_value(s))}"], [
                 ("subnet_id", _subnet(s)), ("route_table_id", ref(f"azurerm_route_table.{n}.id"))]),
-            *((import_block(f"azurerm_subnet_route_table_association.{n}_{tf_name(rdn_value(s))}", _subnet(s)),)
+            *((tf_import(f"azurerm_subnet_route_table_association.{n}_{tf_name(rdn_value(s))}", _subnet(s)),)
               if adopted(b) and one(s, "ciamProviderRef") else ())))),
         tuple(v for p in parts for v in p.variables), ())
 
@@ -219,7 +219,7 @@ def _remote(n, b, pref, group):
         return pref, (), ()
     if group:
         return (ref(f"data.azurerm_virtual_network.{n}_peer.id"),
-                (block("data", ["azurerm_virtual_network", f"{n}_peer"], [
+                (tf_block("data", ["azurerm_virtual_network", f"{n}_peer"], [
                     ("name", pref), ("resource_group_name", group)]),), ())
     return (ref(f"var.{n}_remote_vnet_id"), (),
             (_var(f"{n}_remote_vnet_id", f"The virtual network {rdn_value(b)} peers with"),))
@@ -236,9 +236,9 @@ def _peering(m, b, n):
     remote, data, variables = _remote(n, b, pref, one(net, "ciamResourceGroup"))
     return Rendered((
         *data,
-        *((f"# {rdn_value(b)}: the other side adds its half of the peering (its virtual network to ours)",)
+        *((comment(f"{rdn_value(b)}: the other side adds its half of the peering (its virtual network to ours)"),)
           if one(b, "ciamPeerAccepted") != "TRUE" else ()),
-        block("resource", ["azurerm_virtual_network_peering", n], [
+        tf_block("resource", ["azurerm_virtual_network_peering", n], [
             ("name", _name(m, b, "peer")), ("resource_group_name", RG),
             ("virtual_network_name", ref(f"{VNET}.name")), ("remote_virtual_network_id", remote),
             ("allow_virtual_network_access", True)]),
@@ -252,14 +252,14 @@ def _vpn(m, b, n):
     bgp = (("bgp_settings", Block((("asn", int(peer_asn)), ("bgp_peering_address", ref(f"var.{n}_bgp_peer_ip"))))),) \
         if peer_asn else ()
     return Rendered((
-        *((f"# {rdn_value(b)}: our side's BGP ASN {local_asn} is set on the virtual network gateway",)
+        *((comment(f"{rdn_value(b)}: our side's BGP ASN {local_asn} is set on the virtual network gateway"),)
           if local_asn else ()),
-        block("resource", ["azurerm_local_network_gateway", n], [
+        tf_block("resource", ["azurerm_local_network_gateway", n], [
             ("name", _name(m, b, "lgw")), ("location", LOC), ("resource_group_name", RG),
             ("gateway_address", gateway),
             *((("address_space", values(b, "ciamAcceptedCidr")),) if values(b, "ciamAcceptedCidr") else ()),
             *bgp, ("tags", tagged(m, binding_tags(b)))]),
-        block("resource", ["azurerm_virtual_network_gateway_connection", n], [
+        tf_block("resource", ["azurerm_virtual_network_gateway_connection", n], [
             ("name", _name(m, b, "cn")), ("location", LOC), ("resource_group_name", RG), ("type", "IPsec"),
             ("virtual_network_gateway_id", ref(f"var.{GATEWAY}")),
             ("local_network_gateway_id", ref(f"azurerm_local_network_gateway.{n}.id")),
@@ -281,7 +281,7 @@ def interconnect(m, b, here=()):
     if kind == "vpn":
         return _vpn(m, b, n)
     if kind == "hub":
-        return Rendered((block("resource", ["azurerm_virtual_hub_connection", n], [
+        return Rendered((tf_block("resource", ["azurerm_virtual_hub_connection", n], [
             ("name", _name(m, b, "hub")), ("virtual_hub_id", ref("var.virtual_hub_id")),
             ("remote_virtual_network_id", ref(f"{VNET}.id"))]),
             *_adopt(f"azurerm_virtual_hub_connection.{n}", b)),
@@ -305,7 +305,7 @@ def _destination(m, b):
         return pref, (), (), ()
     if "/microsoft.operationalinsights/workspaces/" in pref.lower():
         n = tf_name(rdn_value(dest))
-        data = block("data", ["azurerm_log_analytics_workspace", n], [
+        data = tf_block("data", ["azurerm_log_analytics_workspace", n], [
             ("name", arm_segment(pref, "workspaces")), ("resource_group_name", arm_segment(pref, "resourceGroups"))])
         analytics = ("traffic_analytics", Block((
             ("enabled", True), ("workspace_id", ref(f"data.azurerm_log_analytics_workspace.{n}.workspace_id")),
@@ -335,7 +335,7 @@ def flow_log(m, b, here=()):
     days = one(b, "ciamRetentionDays")
     return Rendered(
         tuple(x for name, title, target in on for x in (
-            block("resource", ["azurerm_network_watcher_flow_log", name], [
+            tf_block("resource", ["azurerm_network_watcher_flow_log", name], [
                 ("name", title),
                 ("network_watcher_name", ref(f"var.{WATCHER[0]}")),
                 ("resource_group_name", ref(f"var.{WATCHER[1]}")),
@@ -355,7 +355,7 @@ def kept_elsewhere(m, b, here=()):
     if is_kind(m.d, b, "ciamProxy"):
         return Rendered(application_rules(m, b), (), ())
     blocks = private_endpoint(m, b)
-    single = sum(x.startswith('resource "azurerm_private_endpoint"') for x in blocks) == 1
+    single = len(blocks_of(blocks, "resource", "azurerm_private_endpoint")) == 1
     return Rendered((*blocks, *(_adopt(f"azurerm_private_endpoint.{tf_name(rdn_value(b))}", b, "privateEndpoints")
                                 if single else ())), (), ())
 
@@ -371,5 +371,5 @@ def render_plumbing(m, keeper):
     here = {b.dn for b in keeper.bindings}
     parts = tuple(next(fn for oc, fn in RENDERERS if is_kind(m.d, b, oc))(m, b, here) for b in keeper.bindings)
     return Rendered(tuple(x for p in parts for x in p.blocks),
-                    tuple(dict.fromkeys(v for p in parts for v in p.variables)),
-                    (*network_data(m), *dict.fromkeys(x for p in parts for x in p.shared)))
+                    distinct(tuple(v for p in parts for v in p.variables)),
+                    (*network_data(m), *distinct(tuple(x for p in parts for x in p.shared))))

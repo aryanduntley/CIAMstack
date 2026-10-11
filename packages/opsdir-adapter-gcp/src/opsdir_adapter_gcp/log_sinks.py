@@ -18,7 +18,7 @@ logging): to be confirmed.
 from opsdir.core.directory import rdn_value
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.sources import shipments
-from opsdir_format_terraform.hcl import block, tf_name
+from opsdir_format_terraform.hcl import comment, tf_block, tf_name
 from .account import project_id, regime
 from .container_logs import container_filter, container_log_notes, container_shipments
 from .logging_filter import LIMIT, any_of
@@ -49,11 +49,11 @@ def render_log_sinks(m, services):
         n, name = tf_name(f"logs_{rdn_value(r)}"), f"ciam-{rdn_value(m.env)}-{rdn_value(r)}"
         project, location, bucket = bucket_parts(dest)
         what = f"Log route {rdn_value(r)}: product logs to {rdn_value(dest)} (opsdir)"
-        return (block("resource", [SINK, n], [
+        return (tf_block("resource", [SINK, n], [
                     ("name", name), ("description", what),
                     ("destination", f"logging.googleapis.com/projects/{project}/locations/{location}/buckets/{bucket}"),
                     ("filter", query), ("unique_writer_identity", True)]),
-                block("resource", [EXCLUSION, n], [
+                tf_block("resource", [EXCLUSION, n], [
                     ("name", name), ("description", f"{what}: kept in {rdn_value(dest)}, not also in _Default"),
                     ("filter", query)]))
     return tuple(b for r, dest, query in route_filters(m, services) if _kept(dest, query)
@@ -62,8 +62,9 @@ def render_log_sinks(m, services):
 
 def _not_bucket(m, services):
     every = tuple(x for x in shipments(m, log_routes(m.d), services.logs(m)))
-    return tuple(f"# NOTE: log route {rdn_value(x.route)}: role {x.role}'s logs not shipped: its destination "
-                 f"{rdn_value(x.destination)} isn't a Cloud Logging bucket (projects/<p>/locations/<l>/buckets/<b>)"
+    return tuple(comment(f"NOTE: log route {rdn_value(x.route)}: role {x.role}'s logs not shipped: its destination "
+                         f"{rdn_value(x.destination)} isn't a Cloud Logging bucket "
+                         "(projects/<p>/locations/<l>/buckets/<b>)")
                  for x in every if x.destination is not None and bucket_parts(x.destination) is None)
 
 
@@ -75,13 +76,13 @@ def log_sink_notes(m, services):
     return tuple(dict.fromkeys((
         *_not_bucket(m, services),
         *ops_agent_notes(m, services), *container_log_notes(m, services),
-        *(f"# NOTE: log route {rdn_value(r)}: its lines already land in the _Default bucket (no sink rendered)"
+        *(comment(f"NOTE: log route {rdn_value(r)}: its lines already land in the _Default bucket (no sink rendered)")
           for r, dest, _ in found if bucket_parts(dest)[2] == "_Default"),
-        *(f"# NOTE: log route {rdn_value(r)}: not rendered: its filter is {len(q)} characters, past Cloud Logging's "
-          f"{LIMIT}" for r, _, q in found if len(q) > LIMIT),
-        *(f"# NOTE: log route {rdn_value(r)}: bucket {rdn_value(dest)} is in project {bucket_parts(dest)[0]}: grant "
-          "the sink's writer identity roles/logging.bucketWriter there" for r, dest, _ in found
+        *(comment(f"NOTE: log route {rdn_value(r)}: not rendered: its filter is {len(q)} characters, past Cloud "
+                  f"Logging's {LIMIT}") for r, _, q in found if len(q) > LIMIT),
+        *(comment(f"NOTE: log route {rdn_value(r)}: bucket {rdn_value(dest)} is in project {bucket_parts(dest)[0]}: "
+                  "grant the sink's writer identity roles/logging.bucketWriter there") for r, dest, _ in found
           if bucket_parts(dest)[0] != project_id(m)),
-        *((f"# NOTE: Assured Workloads ({level}): Cloud Logging, Compute Engine and GKE are supported products; the "
-           "Ops Agent isn't listed on its own, and restrictions on log sinks and GKE workload logging under it are to "
-           "be confirmed",) if found and level else ()))))
+        *((comment(f"NOTE: Assured Workloads ({level}): Cloud Logging, Compute Engine and GKE are supported products; "
+                   "the Ops Agent isn't listed on its own, and restrictions on log sinks and GKE workload logging "
+                   "under it are to be confirmed"),) if found and level else ()))))

@@ -34,7 +34,7 @@ from opsdir.domains.data.naming import DEFAULT_PORTS
 from opsdir.domains.data.databases import database_port, major_version
 from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned, subnets
-from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
 from .arm_ids import subnet_ref
 from .cmk import customer_key, key_ref, role_uri, vault_object
 from .identities import LOC, RG
@@ -82,10 +82,10 @@ def _password(m, b, n):
     if uri is None:
         return (), (note or ("#", "no ciamDbCredentialRole: no administrator password is set"),)
     vault, name = vault_object(uri)
-    return ((f"# {rdn_value(b)}: its administrator password is read when applied and written write-only: no "
-             "Terraform state holds it",
-             block("data", ["azurerm_key_vault", f"{n}_admin"], [("name", vault), ("resource_group_name", RG)]),
-             block("ephemeral", ["azurerm_key_vault_secret", f"{n}_admin"], [
+    return ((comment(f"{rdn_value(b)}: its administrator password is read when applied and written write-only: no "
+                     "Terraform state holds it"),
+             tf_block("data", ["azurerm_key_vault", f"{n}_admin"], [("name", vault), ("resource_group_name", RG)]),
+             tf_block("ephemeral", ["azurerm_key_vault_secret", f"{n}_admin"], [
                  ("name", name), ("key_vault_id", ref(f"data.azurerm_key_vault.{n}_admin.id"))])),
             (("administrator_password_wo", ref(f"ephemeral.azurerm_key_vault_secret.{n}_admin.value")),
              ("administrator_password_wo_version", 1)))
@@ -102,16 +102,16 @@ def _security_group(m, b, nets):
     the record does to its port."""
     role, cidrs, port = one(b, "ciamBindingRole"), values(b, "ciamSourceCidr"), database_port(b)
     nsg, name = tf_name(role), f"nsg-ciam-{rdn_value(m.env)}-{role}"
-    rule = (block("resource", ["azurerm_network_security_rule", f"{nsg}_clients"], [
+    rule = (tf_block("resource", ["azurerm_network_security_rule", f"{nsg}_clients"], [
         ("name", f"{role}-clients"), ("description", f"clients of database {rdn_value(b)}"), ("priority", 100),
         ("direction", "Inbound"), ("access", "Allow"), ("protocol", "Tcp"), ("source_port_range", "*"),
         ("destination_port_ranges", [str(port)]), ("source_address_prefixes", list(cidrs)),
         ("destination_address_prefix", "*"), ("resource_group_name", RG),
         ("network_security_group_name", ref(f"azurerm_network_security_group.{nsg}.name"))]),) if cidrs else ()
-    return (block("resource", ["azurerm_network_security_group", nsg], [
+    return (tf_block("resource", ["azurerm_network_security_group", nsg], [
                 ("name", name), ("location", LOC), ("resource_group_name", RG), ("tags", tagged(m, binding_tags(b)))]),
             *rule,
-            *((block("resource", ["azurerm_subnet_network_security_group_association", nsg], [
+            *((tf_block("resource", ["azurerm_subnet_network_security_group_association", nsg], [
                 ("subnet_id", ref(f"data.azurerm_subnet.{tf_name(rdn_value(nets[0]))}.id")),
                 ("network_security_group_id", ref(f"azurerm_network_security_group.{nsg}.id"))]),) if nets else ()))
 
@@ -123,12 +123,13 @@ def _geo(m, b):
         return (), ()
     region = one(m.cloud, "ciamRegion")
     pair = paired_region(region)
-    where = (f"# {cn}: Azure copies geo-redundant backups to {region}'s pair, {pair}, not "
-             f"{', '.join(regions)}: record {pair} as its ciamCopyRegion" if pair and tuple(regions) != (pair,) else
-             f"# {cn}: Azure copies geo-redundant backups to {region}'s paired region, which isn't known here: "
-             "check it is the recorded ciamCopyRegion" if not pair else None)
-    fixed = (f"# {cn}: geo-redundant backup is chosen when a server is created: an existing server without it is "
-             "restored into a new server that has it" if adopted(b) else None)
+    where = (comment(f"{cn}: Azure copies geo-redundant backups to {region}'s pair, {pair}, not "
+                     f"{', '.join(regions)}: record {pair} as its ciamCopyRegion")
+             if pair and tuple(regions) != (pair,) else
+             comment(f"{cn}: Azure copies geo-redundant backups to {region}'s paired region, which isn't known here: "
+                     "check it is the recorded ciamCopyRegion") if not pair else None)
+    fixed = (comment(f"{cn}: geo-redundant backup is chosen when a server is created: an existing server without it is "
+                     "restored into a new server that has it") if adopted(b) else None)
     return tuple(x for x in (where, fixed) if x), (("geo_redundant_backup_enabled", True),)
 
 
@@ -136,15 +137,15 @@ def _database(m, b):
     n, cn, engine = tf_name(rdn_value(b)), rdn_value(b), one(b, "ciamDbEngine")
     kind = SERVERS.get(engine)
     if kind is None:
-        return (f"# Database '{cn}' runs {engine}, which Azure Database Flexible Server doesn't (SQL Server is Azure "
-                "SQL, a different offering): not rendered",)
+        return (comment(f"Database '{cn}' runs {engine}, which Azure Database Flexible Server doesn't (SQL Server is "
+                        "Azure SQL, a different offering): not rendered"),)
     nets, storage = subnets(m, b), one(b, "ciamDbStorageGb")
     key_blocks, key_body = _key(m, b, n)
     pw_blocks, pw_body = _password(m, b, n)
     login = f"{n}_admin_login"
     dns = f"{n}_private_dns_zone_id"
     geo_notes, geo = _geo(m, b)
-    server = block("resource", [kind, n], [
+    server = tf_block("resource", [kind, n], [
         ("name", cn), ("resource_group_name", RG), ("location", LOC),
         *_given(("version", _version(engine, one(b, "ciamDbEngineVersion"))),
                 ("sku_name", one(b, "ciamInstanceSize")),
@@ -158,27 +159,27 @@ def _database(m, b):
         *((("delegated_subnet_id", ref(f"data.azurerm_subnet.{tf_name(rdn_value(nets[0]))}.id")),
            ("private_dns_zone_id", ref(f"var.{dns}")), ("public_network_access_enabled", False)) if nets else ()),
         ("administrator_login", ref(f"var.{login}")), *pw_body, *key_body, ("tags", tagged(m, binding_tags(b)))])
-    settings = tuple(block("resource", [f"{kind}_configuration", tf_name(f"{cn}_{k}")], [
+    settings = tuple(tf_block("resource", [f"{kind}_configuration", tf_name(f"{cn}_{k}")], [
         ("name", k), ("server_id", ref(f"{kind}.{n}.id")), ("value", v)])
         for k, v in sorted(_settings(b, engine).items()))
-    lock = (block("resource", ["azurerm_management_lock", n], [
+    lock = (tf_block("resource", ["azurerm_management_lock", n], [
         ("name", f"{cn}-no-delete"), ("scope", ref(f"{kind}.{n}.id")), ("lock_level", "CanNotDelete"),
         ("notes", f"Deletion protection of database {cn} (role {one(b, 'ciamBindingRole')})")]),) \
         if one(b, "ciamDbDeletionProtection") == "TRUE" else ()
-    return (block("variable", [login], [("type", ref("string")),
-                                        ("description", f"The administrator login of database {cn}")]),
-            *((block("variable", [dns], [("type", ref("string")), ("description", (
+    return (tf_block("variable", [login], [("type", ref("string")),
+                                           ("description", f"The administrator login of database {cn}")]),
+            *((tf_block("variable", [dns], [("type", ref("string")), ("description", (
                 f"The private DNS zone ID database {cn} registers in (privatelink.{engine}.database.azure.com)"))]),)
               if nets else ()),
             *key_blocks, *pw_blocks, *_security_group(m, b, nets), *geo_notes, server, *settings, *lock,
-            *((import_block(f"{kind}.{n}", one(b, "ciamProviderRef")),) if adopted(b) else ()))
+            *((tf_import(f"{kind}.{n}", one(b, "ciamProviderRef")),) if adopted(b) else ()))
 
 
 def render_databases(m):
     """HCL for environment m's managed databases: those the stack keeps, then comments naming who keeps the others."""
     dbs = of_class(m, "ciamDatabase")
-    return (*(f"# Database '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: not "
-              "rendered here" for b in dbs if not owned(b)),
+    return (*(comment(f"Database '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: not "
+                      "rendered here") for b in dbs if not owned(b)),
             *(x for b in dbs if owned(b) for x in _database(m, b)))
 
 

@@ -7,6 +7,7 @@ that region's provider and read back from state and the CLI."""
 import json
 import re
 
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.cli import cli_resources
 from opsdir_adapter_aws.databases import (aws_engine, copy_regions, database_resources, neutral_engine,
                                           parameter_family, render_databases)
@@ -25,7 +26,7 @@ KEY = entry(ALPHA, "key-db", "ciamKeyRef", ciamBindingRole="db-key", ciamRefUri=
 
 
 def _render(*records):
-    return "\n\n".join(render_databases(model(alpha=records)[1]))
+    return "\n\n".join(as_text(render_databases(model(alpha=records)[1])))
 
 
 def test_engine_names_and_parameter_families():

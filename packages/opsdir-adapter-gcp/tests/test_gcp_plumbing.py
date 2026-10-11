@@ -1,6 +1,7 @@
 """The network plumbing a Google Cloud environment's landing zone (or another party) keeps, rendered into their root:
 Cloud Router + Cloud NAT, network-wide routes, VPC peering, HA VPN with BGP, flow logs and network ACLs named, what
 others keep of the stack's depth; import blocks for what exists, a folder per keeper."""
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.landing import render_landing
 from opsdir_adapter_gcp.plumbing import render_plumbing
 from opsdir.domains.network.plumbing import keepers
@@ -20,7 +21,7 @@ TREE = ("dn: ou=owners,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationa
 
 def _render(*records):
     d, alpha, _ = model(alpha=records, tree=TREE)
-    return render_landing(alpha)
+    return as_text(render_landing(alpha))
 
 
 def _network(*records):
@@ -154,7 +155,7 @@ def test_keepers_folder_order_and_render_plumbing_data_first():
     d, alpha, _ = model(alpha=(entry(ALPHA, "egress", "ciamEgress", ciamBindingRole="egress",
                                      ciamCidr="203.0.113.10/32", ciamNatAllocation="automatic"),), tree=TREE)
     (k,) = keepers(alpha)
-    r = render_plumbing(alpha, k)
+    r = as_text(render_plumbing(alpha, k))
     assert r.shared[0].startswith('data "google_compute_network" "main"') and "UNBOUND" in r.shared[0]
     assert r.blocks[0].startswith('resource "google_compute_router" "egress"')
 

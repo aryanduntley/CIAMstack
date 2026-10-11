@@ -1,6 +1,7 @@
 """The network depth the stack keeps as AWS Terraform: VPC endpoints (Interface with a security group and private DNS,
 Gateway on the route tables), endpoint services on an L4 service's NLB, an egress firewall's domain allowlist as a
 Network Firewall rule group; comments for what AWS has no endpoint for and what others keep."""
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.network import render_network
 from network_fixtures import ALPHA, entry, model
 
@@ -12,7 +13,7 @@ BACKUP = entry(ALPHA, "backup", "ciamBackupTarget", ciamBindingRole="backup-targ
 
 
 def _render(*records, tree=()):
-    return "\n\n".join(render_network(model(alpha=records, tree=tree)[1]))
+    return "\n\n".join(as_text(render_network(model(alpha=records, tree=tree)[1])))
 
 
 def test_nothing_recorded_renders_nothing():

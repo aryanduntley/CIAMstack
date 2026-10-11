@@ -51,7 +51,7 @@ from opsdir_adapter_gcp.quotas import render_quota_requests
 from opsdir_adapter_gcp.budgets import budget_notes
 from opsdir_adapter_gcp.volumes import boot_disk, render_snapshot_policies, server_volumes
 from opsdir_format_terraform.format import FORMAT as HCL
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
+from opsdir_format_terraform.hcl import Block, TfFile, comment, ref, tf_block, tf_name, unbound_comments, written
 from .account import project_variable, provider_block, required_providers
 
 _tag, _label = network_tag, label
@@ -59,10 +59,10 @@ _tag, _label = network_tag, label
 
 def _firewall_rule(m, fw, prio, pinned):
     if only_on_kubernetes(m, one(fw, "ciamTargetRole")):
-        return (kubernetes_note(m, f"firewall rule `{rdn_value(fw)}`", one(fw, "ciamTargetRole")),)
+        return (comment(kubernetes_note(m, f"firewall rule `{rdn_value(fw)}`", one(fw, "ciamTargetRole"))),)
     note = () if pinned else (
-        f"# NOTE: {rdn_value(fw)} has no pinned ciamRulePriority; assigned {prio}. Pin it in the directory.",)
-    return (*note, block("resource", ["google_compute_firewall", tf_name(rdn_value(fw))], [
+        comment(f"NOTE: {rdn_value(fw)} has no pinned ciamRulePriority; assigned {prio}. Pin it in the directory."),)
+    return (*note, tf_block("resource", ["google_compute_firewall", tf_name(rdn_value(fw))], [
         ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(fw)}"),
         ("description", f"{rule_purpose(m, fw)} ({rdn_value(fw)})"),
         ("network", NETWORK), ("direction", "INGRESS"), ("priority", prio),
@@ -85,7 +85,7 @@ def _instance(m, s, kms, identities=()):
     role = one(s, "ciamServerRole")
     w = identity_of(identities, role)
     notes, disk = boot_disk(m, s, kms)
-    return (*notes, block("resource", ["google_compute_instance", tf_name(rdn_value(s))], [
+    return (*notes, tf_block("resource", ["google_compute_instance", tf_name(rdn_value(s))], [
         ("name", rdn_value(s)), ("machine_type", recorded(s, "ciamInstanceSize", "size")),
         ("zone", recorded(s, "ciamZone", "zone")),
         ("hostname", one(s, "ciamHostname")), ("tags", [_tag(m, role)]),
@@ -111,8 +111,8 @@ def _frontend(svc, n, ip, internal):
     is a reserved address read as data."""
     if internal or not one(svc, "ciamProviderRef"):
         return (), ip
-    return ((block("data", ["google_compute_address", n], [("name", one(svc, "ciamProviderRef")),
-                                                           ("region", REGION)]),),
+    return ((tf_block("data", ["google_compute_address", n], [("name", one(svc, "ciamProviderRef")),
+                                                              ("region", REGION)]),),
             ref(f"data.google_compute_address.{n}.address"))
 
 
@@ -122,7 +122,7 @@ def _health_check_rule(m, svc, n, name, scheme, port):
     policy model."""
     if firewall_model(m) == "policy":
         return health_check_rule(m, svc, n, probe_ranges(scheme), port)
-    return block("resource", ["google_compute_firewall", f"{n}_health_checks"], [
+    return tf_block("resource", ["google_compute_firewall", f"{n}_health_checks"], [
         ("name", f"{name}-health-checks"), ("description", f"Google Cloud health checks for {rdn_value(svc)}"),
         ("network", NETWORK), ("direction", "INGRESS"),
         ("allow", Block((("protocol", "tcp"), ("ports", [port])))),
@@ -162,9 +162,9 @@ def _service(m, svc, endpoints=()):
     target = one(svc, "ciamTargetRole")
     gw = role_gateway(m, target) if only_on_kubernetes(m, target) else None
     if only_on_kubernetes(m, target) and gw is None:
-        return (kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})", target),)
+        return (comment(kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})", target)),)
     if service_exposure(svc) is None:
-        return (exposure_unknown(svc),)
+        return (comment(exposure_unknown(svc)),)
     internal = is_internal(svc)
     if gw is not None:
         subnets = cluster_subnets(m, target)
@@ -178,7 +178,7 @@ def _service(m, svc, endpoints=()):
     cdn = spec is not None and spec.cdn
     layer7 = spec is not None and (spec.layer7 or cdn)         # Cloud CDN is an Application Load Balancer's
     named = () if internal and not layer7 else (("named_port", Block((("name", "ciam"), ("port", int(ports[0]))))),)
-    groups = tuple(block("resource", ["google_compute_instance_group", f"{n}_{tf_name(zone)}"], [
+    groups = tuple(tf_block("resource", ["google_compute_instance_group", f"{n}_{tf_name(zone)}"], [
         ("name", f"{name}-{zone}"), ("zone", zone),
         ("instances", [ref(f"google_compute_instance.{tf_name(rdn_value(t))}.self_link")
                        for t in targets if one(t, "ciamZone") == zone]), *named]) for zone in _zones(targets))
@@ -193,18 +193,18 @@ def _service(m, svc, endpoints=()):
                                          (data, address), placement[1:], admit), *record)
     (check, kind), tuning = _l4_tuning(spec) if spec is not None else ((None, ()), ())
     health = kind[0] if kind else ("tcp_health_check", ())
-    blind = ("# the protection policy's request inspection needs TLS terminated at the edge; not rendered",) \
+    blind = (comment("the protection policy's request inspection needs TLS terminated at the edge; not rendered"),) \
         if spec is not None and inspected(spec) else ()
     capacity = () if internal else (("capacity_scaler", 1.0),)
     forwarded = ((("ports", ports),) if len(ports) <= 5 else
                  (("#", "more than five ports: all are forwarded; the firewall rules admit only the service's"),
                   ("all_ports", True)))
     return (*data, *blind, *groups,
-            block("resource", ["google_compute_region_health_check", n], [
+            tf_block("resource", ["google_compute_region_health_check", n], [
                 ("name", name), ("region", REGION), *(check or ()),
                 (health[0], Block((("port", int(_checked(spec, ports[0]))), *health[1])))]),
             _health_check_rule(m, svc, n, name, scheme, _checked(spec, ports[0])),
-            block("resource", ["google_compute_region_backend_service", n], [
+            tf_block("resource", ["google_compute_region_backend_service", n], [
                 ("name", name), ("region", REGION), ("load_balancing_scheme", scheme), ("protocol", "TCP"),
                 *((("port_name", "ciam"),) if not internal else ()),
                 ("health_checks", [ref(f"google_compute_region_health_check.{n}.id")]), *tuning,
@@ -212,7 +212,7 @@ def _service(m, svc, endpoints=()):
                     ("group", ref(f"google_compute_instance_group.{n}_{tf_name(zone)}.self_link")),
                     ("balancing_mode", "CONNECTION"), *capacity)))
                   for zone in _zones(targets))]),
-            block("resource", ["google_compute_forwarding_rule", n], [
+            tf_block("resource", ["google_compute_forwarding_rule", n], [
                 ("name", name), ("region", REGION), ("load_balancing_scheme", scheme), ("ip_protocol", "TCP"),
                 *forwarded, *((("ip_address", address),) if address else ()),
                 ("backend_service", ref(f"google_compute_region_backend_service.{n}.id")), *placement,
@@ -223,11 +223,11 @@ def _service(m, svc, endpoints=()):
 def _secret(b):
     path = name_parts(one(b, "ciamRefUri").split("://", 1)[1])
     regional = "locations" in path
-    return block("data", ["google_secret_manager_regional_secret" if regional else "google_secret_manager_secret",
-                          tf_name(one(b, "ciamBindingRole"))], [
-        ("#", "metadata only: no secret version (value) enters Terraform state"),
-        ("secret_id", path.get("secrets")), *project_of(path),
-        *((("location", path["locations"]),) if regional else ())])
+    return tf_block("data", ["google_secret_manager_regional_secret" if regional else "google_secret_manager_secret",
+                             tf_name(one(b, "ciamBindingRole"))], [
+           ("#", "metadata only: no secret version (value) enters Terraform state"),
+           ("secret_id", path.get("secrets")), *project_of(path),
+           *((("location", path["locations"]),) if regional else ())])
 
 
 def _references(m):
@@ -237,14 +237,17 @@ def _references(m):
     bk = None if bk is not None and bk.dn in {b.dn for b in kept_buckets(m)} else bk
     return (*(_secret(b) for b in of_class(m, "ciamSecretRef")
               if (one(b, "ciamRefUri") or "").startswith("gcp-sm://")),
-            *((block("data", ["google_storage_bucket", "ds_backups"],
-                     [("name", one(bk, "ciamStorageRef").split("://", 1)[1].split("/", 1)[0])]),)
+            *((tf_block("data", ["google_storage_bucket", "ds_backups"],
+                        [("name", one(bk, "ciamStorageRef").split("://", 1)[1].split("/", 1)[0])]),)
               if bk and (one(bk, "ciamStorageRef") or "").startswith("gs://") else ()),
-            *((f"# Egress '{rdn_value(eg)}': Cloud NAT {one(eg, 'ciamProviderRef')} (landing zone; not managed here)",)
+            *((comment(f"Egress '{rdn_value(eg)}': Cloud NAT {one(eg, 'ciamProviderRef')} (landing zone; not managed "
+                       "here)"),)
               if eg and one(eg, "ciamProviderRef") else ()))
 
 
-def render(m, services):
+def render_files(m, services):
+    """{path: TfFile | text} of environment m's Google Cloud render: the Terraform roots as data (main, providers,
+    the landing zone's roots), the workflow and evaluation files they come with as text."""
     endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     kms, identities = secret(m, "disk-encryption"), workload_identities(m, ACCESS)
     discovery, workflows = render_discovery(m)
@@ -260,13 +263,18 @@ def render(m, services):
            *discovery, *render_suppressions(m),
            *render_quota_requests(m), *budget_notes(m),
            *_references(m))
-    main = header(m, "Google Cloud infrastructure for the CIAM platform", HCL) + unbound_comments(m.unbound) + "\n" \
-        + "\n\n".join(out) + "\n"
-    providers = header(m, "Providers and inputs", HCL) + "\n" + "\n\n".join([
+    main = TfFile(header(m, "Google Cloud infrastructure for the CIAM platform", HCL) + unbound_comments(m.unbound),
+                  out)
+    providers = TfFile(header(m, "Providers and inputs", HCL), (
         required_providers(),
         provider_block(m, ("project", ref("var.project_id")), ("region", REGION)),
         project_variable(m),
-        block("variable", ["region"], [("type", ref("string")), ("default", one(m.cloud, "ciamRegion"))]),
-    ]) + "\n"
+        tf_block("variable", ["region"], [("type", ref("string")), ("default", one(m.cloud, "ciamRegion"))])))
     return {"terraform/providers.tf": providers, "terraform/main.tf": main, **workflows, **render_landing(m),
             **evaluation_files(m, ACCESS, "Google Cloud")}
+
+
+def render(m, services):
+    """Adapter render: environment m's Google Cloud files as text, each Terraform file written once from its
+    TfFile."""
+    return written(render_files(m, services))

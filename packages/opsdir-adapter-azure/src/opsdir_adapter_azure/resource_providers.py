@@ -1,9 +1,11 @@
 """The Azure resource providers an environment's roots need registered in its subscription. azurerm 5.x registers none
 by default (resource_provider_registrations = "none"), so the landing zone, applied by the subscription's owner,
-registers the namespaces the rendered roots' resources belong to (decision 2383): read from the rendered texts, each
+registers the namespaces the rendered roots' resources belong to (decision 2383): read from the rendered blocks, each
 managed azurerm resource by its type's longest matching prefix below, each azapi resource by its type's namespace.
 Pure."""
 import re
+
+from opsdir_format_terraform.hcl import blocks_of, comment
 
 NAMESPACES = (
     ("azurerm_application_gateway", "Microsoft.Network"),
@@ -63,10 +65,8 @@ NAMESPACES = (
     ("azurerm_windows_function_app", "Microsoft.Web"),
     ("azurerm_windows_virtual_machine", "Microsoft.Compute"),
 )
-_RESOURCE = re.compile(r'^resource "(azurerm_[a-z0-9_]+)"', re.MULTILINE)
-# an azapi_resource's ARM type (its first line): data-plane resources and data sources register nothing
-_AZAPI = re.compile(r'^resource "azapi_resource" "[^"]+" \{\n\s*type\s*=\s*"(Microsoft\.[A-Za-z]+)/[^"]*@',
-                    re.MULTILINE)
+# an azapi_resource's ARM type: '<namespace>/<type>@<api version>'
+_ARM_TYPE = re.compile(r"(Microsoft\.[A-Za-z]+)/[^\"]*@")
 
 
 def namespace_of(type_):
@@ -75,20 +75,29 @@ def namespace_of(type_):
     return max(found)[1] if found else None
 
 
-def resource_providers(texts):
-    """(namespaces, unknown types): the sorted namespaces the managed azurerm and azapi resources of rendered
-    Terraform texts belong to, and the azurerm resource types no namespace is known for."""
-    types = {t for x in texts for t in _RESOURCE.findall(x)}
+def _azapi_namespace(b):
+    """The namespace of an azapi_resource's ARM type (its first attribute, '<namespace>/<type>@<version>'); None for
+    any other first attribute."""
+    key, value = b.body[0] if b.body else ("", "")
+    found = _ARM_TYPE.match(value) if key == "type" and isinstance(value, str) else None
+    return found.group(1) if found else None
+
+
+def resource_providers(items):
+    """(namespaces, unknown types): the sorted namespaces the managed azurerm and azapi resources among rendered
+    Terraform items belong to, and the azurerm resource types no namespace is known for. Data-plane resources and data
+    sources register nothing."""
+    types = {b.labels[0] for b in blocks_of(items, "resource") if b.labels[0].startswith("azurerm_")}
     known = {t: namespace_of(t) for t in types}
-    azapi = {ns for x in texts for ns in _AZAPI.findall(x)}
+    azapi = {ns for b in blocks_of(items, "resource", "azapi_resource") for ns in (_azapi_namespace(b),) if ns}
     return (tuple(sorted({ns for ns in known.values() if ns} | azapi)),
             tuple(sorted(t for t, ns in known.items() if ns is None)))
 
 
 def registration_note(namespaces, unknown):
-    """The comment naming what to register in the subscription before applying, when no landing-zone root does it;
-    '' when nothing needs registering."""
-    lines = ((f"# Register these resource providers in the subscription before applying (azurerm 5.x registers none, "
-              f"and the environment has no landing zone to do it): {', '.join(namespaces)}",) if namespaces else ()) \
-        + tuple(f"# {t}: its resource provider isn't known to opsdir: register it by hand" for t in unknown)
-    return "\n".join(lines)
+    """The comments naming what to register in the subscription before applying, when no landing-zone root does it;
+    () when nothing needs registering."""
+    return ((comment(f"Register these resource providers in the subscription before applying (azurerm 5.x registers "
+                     f"none, and the environment has no landing zone to do it): {', '.join(namespaces)}"),)
+            if namespaces else ()) \
+        + tuple(comment(f"{t}: its resource provider isn't known to opsdir: register it by hand") for t in unknown)

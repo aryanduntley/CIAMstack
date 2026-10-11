@@ -80,9 +80,93 @@ def ref(expr):
     return "${" + expr + "}"
 
 
-def import_block(address, id_):
-    """An import block adopting an existing object into the resource at address (type.name) by its provider id."""
-    return block("import", [], [("to", ref(address)), ("id", id_)])
+def tf_block(kind, labels, body):
+    """A top-level block as data (TfBlock): labels and body as tuples. What a renderer returns; hcl_item writes it."""
+    return TfBlock(kind, tuple(labels), tuple(body))
+
+
+def comment(text):
+    """A top-level `# text` line of a Terraform file as data: ('#', text), the item read_hcl gives back for it."""
+    return "#", text
+
+
+def tf_import(address, id_):
+    """An import block (TfBlock) adopting an existing object into the resource at address (type.name) by its provider
+    id."""
+    return tf_block("import", (), (("to", ref(address)), ("id", id_)))
+
+
+# ------------------------------------------------------------------ files as data
+# A Terraform file as data: head, its text above the items (the generated-file header and the comment lines under it,
+# each ending in a newline); items, its top-level TfBlocks and comments ('#', text), in order. hcl_file writes it.
+TfFile = NamedTuple("TfFile", [("head", str), ("items", tuple)])
+
+
+def hcl_item(item):
+    """A top-level item's text: a TfBlock as block() writes it, a comment ('#', text) as its `# text` line; TypeError
+    on anything else (text never passes as an item)."""
+    if isinstance(item, TfBlock):
+        return block(*item)
+    if isinstance(item, tuple) and len(item) == 2 and item[0] == "#" and isinstance(item[1], str):
+        return f"# {item[1]}"
+    raise TypeError(f"not a Terraform item: {item!r:.80}")
+
+
+def hcl_file(f):
+    """A TfFile's text, the one writer of a rendered .tf file: its head, a blank line, the items one blank line apart,
+    a final newline."""
+    return f.head + "\n" + "\n\n".join(hcl_item(x) for x in f.items) + "\n"
+
+
+def blocks_of(items, kind="resource", type_=None):
+    """The TfBlocks among items of a kind (resource, data, variable, ...), of one type (first label) when given."""
+    return tuple(x for x in items if isinstance(x, TfBlock) and x.kind == kind
+                 and (type_ is None or x.labels[:1] == (type_,)))
+
+
+def _texts(v):
+    """Every string in a value: literals and raw expressions, through nested blocks, lists and objects."""
+    if isinstance(v, str):
+        return (v,)
+    if isinstance(v, Block):
+        return _texts(v.body)
+    if isinstance(v, dict):
+        return tuple(t for k, x in v.items() for t in (k, *_texts(x)))
+    if isinstance(v, (list, tuple)):
+        return tuple(t for x in v for t in _texts(x))
+    return ()
+
+
+def mentions(items, text):
+    """Whether any item (a block's labels and values, a comment) mentions text, e.g. a reference it makes."""
+    return any(text in t for x in items for t in _texts(tuple(x)))
+
+
+def distinct(items):
+    """Items in order, each once, by equality (a TfBlock holding a dict or list isn't hashable: not dict.fromkeys)."""
+    return tuple(x for i, x in enumerate(items) if x not in items[:i])
+
+
+def as_text(v):
+    """A renderer's output with its Terraform data written as text, for a caller (a test, a report) that reads a
+    helper's result as text: a TfFile as hcl_file writes it, a TfBlock or comment item as hcl_item, through tuples,
+    lists, dicts and NamedTuples; anything else as it is."""
+    if isinstance(v, TfFile):
+        return hcl_file(v)
+    if isinstance(v, TfBlock) or (isinstance(v, tuple) and len(v) == 2 and v[0] == "#" and isinstance(v[1], str)):
+        return hcl_item(v)
+    if isinstance(v, tuple) and hasattr(v, "_fields"):
+        return type(v)(*(as_text(x) for x in v))
+    if isinstance(v, (tuple, list)):
+        return type(v)(as_text(x) for x in v)
+    if isinstance(v, dict):
+        return {k: as_text(x) for k, x in v.items()}
+    return v
+
+
+def written(files):
+    """An adapter's rendered files as text: each TfFile written by hcl_file; any other value (text) as it is."""
+    return {path: hcl_file(v) if isinstance(v, TfFile) else v for path, v in files.items()}
 
 
 def jsonencoded(v):

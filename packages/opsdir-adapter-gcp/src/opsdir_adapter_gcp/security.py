@@ -44,7 +44,7 @@ from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.incidents import incident_routes
 from opsdir.domains.estate.naming import SEVERITIES
 from opsdir.domains.estate.security import findings_destination, security_services
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 
 NOTIFICATION = "google_scc_v2_project_notification_config"
 NOTIFICATIONS = (("google_scc_v2_project_notification_config", "account"), ("google_scc_project_notification_config",
@@ -74,8 +74,8 @@ def _topic(m, s):
 
 def _no_topic(m, s, what):
     dest = findings_destination(m, s)
-    return (f"# NOTE: {rdn_value(s)}'s {what} to {one(s, 'ciamFindingsRole')}: not rendered: {rdn_value(dest)} names "
-            "no Pub/Sub topic (ciamProviderRef projects/<p>/topics/<t>)",) if dest is not None else ()
+    return (comment(f"NOTE: {rdn_value(s)}'s {what} to {one(s, 'ciamFindingsRole')}: not rendered: {rdn_value(dest)} "
+                    "names no Pub/Sub topic (ciamProviderRef projects/<p>/topics/<t>)"),) if dest is not None else ()
 
 
 def _notification(m, s, kind):
@@ -84,7 +84,7 @@ def _notification(m, s, kind):
         return ()
     if topic is None:
         return _no_topic(m, s, "findings")
-    return (block("resource", [NOTIFICATION, tf_name(f"{cn}_findings")], [
+    return (tf_block("resource", [NOTIFICATION, tf_name(f"{cn}_findings")], [
         ("#", "Security Command Center's service agent must be able to publish to the topic"),
         ("config_id", f"{cn}-findings"), ("project", PROJECT), ("location", "global"),
         ("description", f"{cn}'s findings to {one(s, 'ciamFindingsRole')}"), ("pubsub_topic", topic),
@@ -105,12 +105,13 @@ def _incident_notification(m, s, kind):
         return ()
     cn = rdn_value(s)
     if kind not in CLASSES:
-        return (f"# NOTE: {cn}'s incidents to {route.role}: not rendered: an asset feed's changes have no severity",)
+        return (comment(f"NOTE: {cn}'s incidents to {route.role}: not rendered: an asset feed's changes have no "
+                        "severity"),)
     topic = one(route.binding, "ciamProviderRef")
     if not topic or "/topics/" not in topic:
-        return (f"# NOTE: {cn}'s incidents to {route.role}: not rendered: {rdn_value(route.binding)} names no Pub/Sub "
-                "topic (ciamProviderRef projects/<p>/topics/<t>)",)
-    return (block("resource", [NOTIFICATION, tf_name(f"{cn}_incidents")], [
+        return (comment(f"NOTE: {cn}'s incidents to {route.role}: not rendered: {rdn_value(route.binding)} names no "
+                        "Pub/Sub topic (ciamProviderRef projects/<p>/topics/<t>)"),)
+    return (tf_block("resource", [NOTIFICATION, tf_name(f"{cn}_incidents")], [
         ("#", "Security Command Center's service agent must be able to publish to the topic"),
         ("config_id", f"{cn}-incidents"), ("project", PROJECT), ("location", "global"),
         ("description", f"{cn}'s {route.severity} and worse findings to {route.role} (incident process)"),
@@ -118,31 +119,31 @@ def _incident_notification(m, s, kind):
 
 
 def _request(cn, what):
-    return f"# {cn}: {what}: a request to the organization's administrators (not rendered)"
+    return comment(f"{cn}: {what}: a request to the organization's administrators (not rendered)")
 
 
 def _detection(m, s):
     cn, areas = rdn_value(s), values(s, "ciamSecurityCoverage")
     services = [name for name, watched in DETECTORS if set(watched) & set(areas)] or ["Event Threat Detection"]
     return (_request(cn, f"Security Command Center (Premium or Enterprise) activated with {', '.join(services)}"),
-            *((f"# {cn}: no Security Command Center service watches key vaults on their own (Event Threat Detection "
-               "sees Cloud KMS use in the audit logs)",) if "key-vaults" in areas else ()))
+            *((comment(f"{cn}: no Security Command Center service watches key vaults on their own (Event Threat "
+                       "Detection sees Cloud KMS use in the audit logs)"),) if "key-vaults" in areas else ()))
 
 
 def _scanning(m, s):
     cn, areas = rdn_value(s), values(s, "ciamSecurityCoverage") or ("compute",)
-    return (*((f"# {cn}: VM Manager reports vulnerabilities once the instances carry metadata enable-osconfig=TRUE "
-               "(not rendered here)",) if "compute" in areas else ()),
+    return (*((comment(f"{cn}: VM Manager reports vulnerabilities once the instances carry metadata "
+                       "enable-osconfig=TRUE (not rendered here)"),) if "compute" in areas else ()),
             *((_request(cn, "Web Security Scanner (Security Command Center) for applications"),)
               if "applications" in areas else ()))
 
 
 def _recording(m, s):
     cn, topic = rdn_value(s), _topic(m, s)
-    native = f"# {cn}: Cloud Asset Inventory keeps {NATIVE_DAYS} days of resource history itself"
+    native = comment(f"{cn}: Cloud Asset Inventory keeps {NATIVE_DAYS} days of resource history itself")
     if topic is None:
         return (native, *_no_topic(m, s, "configuration changes"))
-    return (native, block("resource", [FEED, tf_name(cn)], [
+    return (native, tf_block("resource", [FEED, tf_name(cn)], [
         ("project", PROJECT), ("feed_id", cn), ("content_type", "RESOURCE"), ("asset_types", [".*"]),
         ("feed_output_config", Block((("pubsub_destination", Block((("topic", topic),))),)))]))
 
@@ -154,7 +155,7 @@ def _posture(m, s):
     return (_request(cn, "Security Command Center (Premium or Enterprise) activated with Security Health Analytics"),
             *((_request(cn, f"{', '.join(frameworks)} assessed by Compliance Manager framework deployments (FedRAMP, "
                             "IL and ITAR regimes held by an Assured Workloads folder)"),) if frameworks else ()),
-            *((f"# {cn}: {', '.join(others)}: another cloud's baseline, not Google Cloud's (not rendered)",)
+            *((comment(f"{cn}: {', '.join(others)}: another cloud's baseline, not Google Cloud's (not rendered)"),)
               if others else ()))
 
 
@@ -166,8 +167,8 @@ def _service(m, s):
     cn, kind, keeper = rdn_value(s), one(s, "ciamSecurityKind"), one(s, "ciamManagedBy")
     if keeper:
         holder = get(m.d, keeper)
-        return (f"# Security service {cn} ({kind}): kept by {rdn_value(holder) if holder is not None else keeper}, "
-                "not rendered here",)
+        return (comment(f"Security service {cn} ({kind}): kept by "
+                        f"{rdn_value(holder) if holder is not None else keeper}, not rendered here"),)
     return (*_RENDER[kind](m, s), *_notification(m, s, kind), *_incident_notification(m, s, kind),
             *((_request(cn, "organization-wide (Security Command Center and its notification at the organization)"),)
               if one(s, "ciamAuditScope") == "organization" else ()))
@@ -182,7 +183,7 @@ def _apis(m):
 
 def render_security(m):
     """HCL (and comments) for environment m's security services: the scanning APIs once, then each service."""
-    return (*(block("resource", ["google_project_service", tf_name(api.split(".")[0])], [
+    return (*(tf_block("resource", ["google_project_service", tf_name(api.split(".")[0])], [
                 ("project", PROJECT), ("service", api), ("disable_on_destroy", False)]) for api in _apis(m)),
             *(x for s in security_services(m) for x in _service(m, s)))
 

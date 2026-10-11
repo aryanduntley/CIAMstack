@@ -5,6 +5,7 @@ do (copies to another region, lock days, roles that aren't volumes, other interv
 CLI and ARM; a disk's backup instance links its volume to the plan."""
 import json
 
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.arm import arm_resources
 from opsdir_adapter_azure.backups import disk_interval, interval_schedule, render_backups
 from opsdir_adapter_azure.cli import cli_resources
@@ -44,7 +45,7 @@ def test_schedules_as_repeating_intervals():
 
 
 def test_a_vault_and_a_disk_backup_plan():
-    out = _flat("\n\n".join(render_backups(_m(KEY, VAULT, DATA, PLAN))))
+    out = _flat("\n\n".join(as_text(render_backups(_m(KEY, VAULT, DATA, PLAN)))))
     for text in ("# Vault 'vault-main': a locked vault keeps each recovery point as long as its policy says; 35 days "
                  "isn't a setting of its own",
                  "# Vault 'vault-main': immutability Locked can't be turned off once set",
@@ -74,7 +75,7 @@ def test_what_it_can_t_render_is_said():
                 ciamBackupVaultRole="vault-main", ciamRetentionDays="7", ciamBackupEveryHours="3")
     lost = entry(BETA, "backup-lost", "ciamBackupPlan", ciamBindingRole="backup-lost", ciamProtectsRole="x",
                  ciamBackupVaultRole="vault-none", ciamRetentionDays="7")
-    out = "\n".join(render_backups(_m(VAULT, odd, lost)))
+    out = "\n".join(as_text(render_backups(_m(VAULT, odd, lost))))
     assert "disk backup runs every 1, 2, 4, 6, 8 or 12 hours or daily, not every 3 hours: not rendered" in out
     assert "its vault (role vault-none) isn't one this environment's stack keeps: not rendered" in out
     assert "vault_main_snapshots" not in out                      # no plan backs up disks into it

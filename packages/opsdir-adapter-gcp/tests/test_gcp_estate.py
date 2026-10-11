@@ -10,6 +10,7 @@ from opsdir.connectors.prerequisites import prerequisite_rows
 from opsdir.core.interchange.ldif import LdifRecord
 from opsdir.core.inventory import resource
 from opsdir.domains.estate.tags import tag_notices
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.account import default_labels, label_key, project_variable, provider_block
 from opsdir_adapter_gcp.adapter import ADAPTER
 from opsdir_adapter_gcp.inventory import state_resources
@@ -25,7 +26,7 @@ def test_the_policy_as_default_labels():
     _, d, alpha, beta = estate(account="example-ciam-prod")
     assert default_labels(alpha) == {"cloud": "alpha", "costcenter": "cc-1234", "dataclass": "confidential",
                                      "environment": "alpha-prod", "estate": "example", "owner": "platform"}
-    assert provider_block(alpha, ("project", "p")) == """provider "google" {
+    assert as_text(provider_block(alpha, ("project", "p"))) == """provider "google" {
   project = "p"
   default_labels = {
     cloud       = "alpha"
@@ -36,14 +37,14 @@ def test_the_policy_as_default_labels():
     owner       = "platform"
   }
 }"""
-    assert "default_labels" not in provider_block(estate(rules=())[2], ("project", "p"))
+    assert "default_labels" not in as_text(provider_block(estate(rules=())[2], ("project", "p")))
     assert label_key("9Data.Class") == "data-class" and label_key("---") == "tag"
 
 
 def test_the_recorded_project_is_the_default():
     _, d, alpha, beta = estate(account="example-ciam-prod")
-    assert 'default     = "example-ciam-prod"' in project_variable(alpha, described=True)
-    assert project_variable(beta) == 'variable "project_id" {\n  type = string\n}'
+    assert 'default     = "example-ciam-prod"' in as_text(project_variable(alpha, described=True))
+    assert as_text(project_variable(beta)) == 'variable "project_id" {\n  type = string\n}'
 
 
 def test_labels_match_the_policy_s_keys_in_label_form():
@@ -78,10 +79,10 @@ def test_the_provider_notes_that_google_cloud_has_no_fips_endpoints_to_switch_to
     fips = LdifRecord("cloud=alpha,ou=environments,dc=ciam-ops", "modify", {},
                       (("add", "objectClass", ("ciamCloudEndpoints",)), ("replace", "ciamFipsEndpoints", ("TRUE",))))
     _, d, alpha, beta = estate(rules=(), extra=(fips,))
-    assert provider_block(alpha, ("project", "p")) == (
+    assert as_text(provider_block(alpha, ("project", "p"))) == (
         'provider "google" {\n  # FIPS endpoints: the google provider has no FIPS endpoint switch; FIPS 140 is met by '
         'Google Cloud\'s own validated modules, or enforced for a folder with Assured Workloads\n  project = "p"\n}')
-    assert "FIPS" not in provider_block(beta, ("project", "p"))
+    assert "FIPS" not in as_text(provider_block(beta, ("project", "p")))
 
 
 def _state(*resources):

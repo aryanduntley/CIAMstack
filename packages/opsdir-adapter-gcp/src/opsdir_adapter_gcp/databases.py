@@ -30,7 +30,7 @@ from opsdir.domains.data.naming import DEFAULT_PORTS
 from opsdir.domains.data.databases import major_version
 from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned
-from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
 from opsdir_format_terraform.state import first_block
 from .names import NETWORK, REGION, label, name_parts, resource_id
 
@@ -96,16 +96,16 @@ def _password(m, b, n, engine):
     if "locations" in path:
         return (), (("#", f"{uri}: a regional secret has no ephemeral read; set the password by hand"),), ()
     secret = f"ephemeral.google_secret_manager_secret_version.{n}_admin.secret_data"
-    read = (f"# {rdn_value(b)}: its administrator password is read when applied and written write-only: no "
-            "Terraform state holds it",
-            block("ephemeral", ["google_secret_manager_secret_version", f"{n}_admin"], [
+    read = (comment(f"{rdn_value(b)}: its administrator password is read when applied and written write-only: no "
+                    "Terraform state holds it"),
+            tf_block("ephemeral", ["google_secret_manager_secret_version", f"{n}_admin"], [
                 ("secret", path.get("secrets")), *_given(("project", path.get("projects")))]))
     if engine == "sqlserver":
         return read, (("root_password_wo", ref(secret)), ("root_password_wo_version", 1)), ()
-    return read, (), (block("resource", ["google_sql_user", f"{n}_admin"], [
+    return read, (), (tf_block("resource", ["google_sql_user", f"{n}_admin"], [
         ("name", ref(f"var.{n}_admin_login")), ("instance", ref(f"google_sql_database_instance.{n}.name")),
         ("password_wo", ref(secret)), ("password_wo_version", 1)]),
-        block("variable", [f"{n}_admin_login"], [("type", ref("string")),
+        tf_block("variable", [f"{n}_admin_login"], [("type", ref("string")),
                                                   ("description", f"The administrator login of database "
                                                                   f"{rdn_value(b)}")]))
 
@@ -114,8 +114,8 @@ def _key(m, b):
     uri, note = _uri(m, one(b, "ciamEncryptedByRole"), "key")
     if uri is None:
         return (), (note,) if note else ()
-    return ((f"# {rdn_value(b)}: the Cloud SQL service agent (service-<project number>@gcp-sa-cloud-sql.iam."
-             "gserviceaccount.com) needs roles/cloudkms.cryptoKeyEncrypterDecrypter on its key",),
+    return ((comment(f"{rdn_value(b)}: the Cloud SQL service agent (service-<project number>@gcp-sa-cloud-sql.iam."
+                     "gserviceaccount.com) needs roles/cloudkms.cryptoKeyEncrypterDecrypter on its key"),),
             (("encryption_key_name", uri.split("://", 1)[1]),))
 
 
@@ -137,7 +137,7 @@ def _database(m, b):
     n, cn, engine = tf_name(rdn_value(b)), rdn_value(b), one(b, "ciamDbEngine")
     version = database_version(engine, one(b, "ciamDbEngineVersion"), one(b, "ciamDbEdition"))
     if engine not in PORTS:
-        return (f"# Database '{cn}' runs {engine}, which Cloud SQL doesn't: not rendered",)
+        return (comment(f"Database '{cn}' runs {engine}, which Cloud SQL doesn't: not rendered"),)
     before, secret_body, after = _password(m, b, n, engine)
     key_notes, key_body = _key(m, b)
     protected = one(b, "ciamDbDeletionProtection") == "TRUE"
@@ -154,24 +154,24 @@ def _database(m, b):
             *_given(("ssl_mode", {"TRUE": "ENCRYPTED_ONLY", "FALSE": "ALLOW_UNENCRYPTED_AND_ENCRYPTED"}.get(tls)))))),
         *(("database_flags", Block((("name", k), ("value", v))))
           for k, v in sorted(dict(p.split("=", 1) for p in values(b, "ciamDbParameter") if "=" in p).items()))))
-    instance = block("resource", ["google_sql_database_instance", n], [
+    instance = tf_block("resource", ["google_sql_database_instance", n], [
         ("name", cn), *_given(("database_version", version)), ("region", REGION), *key_body, *secret_body,
         ("deletion_protection", protected), ("settings", settings)])
     cidrs = values(b, "ciamSourceCidr")
-    return (*((f"# {cn}: no ciamDbEngineVersion Cloud SQL runs: set database_version",) if not version else ()),
-            *((f"# {cn} admits {', '.join(cidrs)}: Cloud SQL's private IP is in Google's service producer network, "
-               "which this network's firewall rules don't reach; the private services access peering carries the "
-               "traffic",) if cidrs else ()),
+    return (*((comment(f"{cn}: no ciamDbEngineVersion Cloud SQL runs: set database_version"),) if not version else ()),
+            *((comment(f"{cn} admits {', '.join(cidrs)}: Cloud SQL's private IP is in Google's service producer "
+                       "network, which this network's firewall rules don't reach; the private services access peering "
+                       "carries the traffic"),) if cidrs else ()),
             *key_notes, *before, instance, *after,
-            *((import_block(f"google_sql_database_instance.{n}", resource_id(one(b, "ciamProviderRef"))),)
+            *((tf_import(f"google_sql_database_instance.{n}", resource_id(one(b, "ciamProviderRef"))),)
               if adopted(b) else ()))
 
 
 def render_databases(m):
     """HCL for environment m's managed databases: those the stack keeps, then comments naming who keeps the others."""
     dbs = of_class(m, "ciamDatabase")
-    return (*(f"# Database '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: not "
-              "rendered here" for b in dbs if not owned(b)),
+    return (*(comment(f"Database '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: not "
+                      "rendered here") for b in dbs if not owned(b)),
             *(x for b in dbs if owned(b) for x in _database(m, b)))
 
 

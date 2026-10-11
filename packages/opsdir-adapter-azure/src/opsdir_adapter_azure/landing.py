@@ -17,7 +17,7 @@ from opsdir.core.manifest import header
 from opsdir.domains.access.workloads import landing_identities, landing_zone_owner
 from opsdir.domains.network.plumbing import LANDING_ZONE, NETWORK_FILE, keepers
 from opsdir_format_terraform.format import FORMAT as HCL
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, TfFile, distinct, mentions, ref, tf_block, tf_name
 from .access import ACCESS
 from .guardrails import render_guardrails
 from .identities import RG, assignments, federated_credential, managed_identity, notes, role_of, scope, scope_data
@@ -38,9 +38,9 @@ def _eligible(w):
     """An operator group's eligible (PIM) assignments: activated when needed, for at most a year before renewal."""
     n = tf_name(w.identity_role)
     return tuple(x for permit, b, row in w.grants for role in (role_of(row, b),) for x in (
-        block("data", ["azurerm_role_definition", f"{n}_{tf_name(permit)}"], [
+        tf_block("data", ["azurerm_role_definition", f"{n}_{tf_name(permit)}"], [
             ("name", role), ("scope", ref("data.azurerm_subscription.current.id"))]),
-        block("resource", ["azurerm_pim_eligible_role_assignment", f"{n}_{tf_name(permit)}"], [
+        tf_block("resource", ["azurerm_pim_eligible_role_assignment", f"{n}_{tf_name(permit)}"], [
             ("scope", scope(b)[0]), ("principal_id", w.group),
             ("role_definition_id", ref(f"data.azurerm_role_definition.{n}_{tf_name(permit)}.id")),
             ("justification", f"{w.principal}: {permit}"),
@@ -54,12 +54,12 @@ def _operator(m, w):
 def _providers(m, variables, register=(), unknown=()):
     """providers.tf of a landing-zone root: the azurerm provider in the environment's subscription (registering the
     resource providers in register), and the root's inputs."""
-    return header(m, "Providers and inputs (landing zone)", HCL) + "\n" + "\n\n".join([
-        *((registration_note((), unknown),) if unknown else ()),
+    return TfFile(header(m, "Providers and inputs (landing zone)", HCL), (
+        *registration_note((), unknown),
         required_providers(),
         provider_block(m, register),
         subscription_variable(m, described=True),
-        *variables]) + "\n"
+        *variables))
 
 
 def _identities(m, guardrails):
@@ -68,33 +68,33 @@ def _identities(m, guardrails):
     fences = tuple(guardrails(m))
     if not (deployers or operators or fences):
         return ()
-    subscription = any("jit" in w.conditions for w in operators) or any("policy_assignment" in f for f in fences)
-    return (block("data", ["azurerm_resource_group", "main"], [
+    subscription = any("jit" in w.conditions for w in operators) or mentions(fences, "policy_assignment")
+    return (tf_block("data", ["azurerm_resource_group", "main"], [
                 ("name", one(one_role(m, "network"), "ciamResourceGroup"))]),
-            *((block("data", ["azurerm_subscription", "current"], []),) if subscription else ()),
+            *((tf_block("data", ["azurerm_subscription", "current"], []),) if subscription else ()),
             *scope_data(m, (*deployers, *operators), standalone=True),
             *(x for w in deployers for x in _deployer(m, w)), *(x for w in operators for x in _operator(m, w)),
             *fences)
 
 
 def render_landing(m, guardrails=render_guardrails, plumbing=render_plumbing, platform=()):
-    """{path: text} of environment m's landing zone (identities, guardrails, the network plumbing its owner keeps)
+    """{path: TfFile} of environment m's landing zone (identities, guardrails, the network plumbing its owner keeps)
     and of each other party's root keeping some of its plumbing, or {} when it needs nothing from anyone. A data
     source main.tf declares isn't declared again in the same root's network.tf. The landing zone's provider registers
     the resource providers every root's resources need: its own, the keepers' and the platform's (platform: the
-    platform root's rendered .tf texts)."""
+    platform root's rendered items)."""
     out = _identities(m, guardrails)
     nets = tuple((k, plumbing(m, k)) for k in keepers(m))
     roots = dict.fromkeys((*((LANDING_ZONE,) if out else ()), *(k.folder for k, _ in nets)))
     what = (f"Azure landing zone for the CIAM platform, kept by {landing_zone_owner(m)}: applied by the landing zone, "
             "not by the platform's pipeline")
-    main = {f"{LANDING_ZONE}/main.tf": header(m, what, HCL) + "\n" + "\n\n".join(out) + "\n"} if out else {}
-    network = {f"{k.folder}/{NETWORK_FILE}": header(
+    main = {f"{LANDING_ZONE}/main.tf": TfFile(header(m, what, HCL), out)} if out else {}
+    network = {f"{k.folder}/{NETWORK_FILE}": TfFile(header(
         m, f"Azure network kept by {k.name} for the CIAM platform: applied by them, not by the platform's pipeline",
-        HCL) + "\n" + "\n\n".join(x for x in (*r.shared, *r.blocks) if k.folder != LANDING_ZONE or x not in out)
-        + "\n" for k, r in nets}
-    register, unknown = resource_providers((*platform, *main.values(), *network.values()))
-    providers = {f"{f}/providers.tf": _providers(m, tuple(dict.fromkeys(
+        HCL), tuple(x for x in (*r.shared, *r.blocks) if k.folder != LANDING_ZONE or x not in out)) for k, r in nets}
+    register, unknown = resource_providers((*platform, *(x for f in (*main.values(), *network.values())
+                                                         for x in f.items)))
+    providers = {f"{f}/providers.tf": _providers(m, distinct(tuple(
         v for k, r in nets if k.folder == f for v in r.variables)),
         *((register, unknown) if f == LANDING_ZONE else ())) for f in roots}
     return {**providers, **main, **network}

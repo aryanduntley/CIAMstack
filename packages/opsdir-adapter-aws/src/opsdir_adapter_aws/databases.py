@@ -32,7 +32,7 @@ from opsdir.core.inventory import of_types, resource, tagged_role
 from opsdir.domains.data.databases import database_port, major_version
 from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned, subnets
-from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
 from opsdir_format_terraform.state import blocks
 from .network import binding_tags
 from .tags import state_tags as _tags
@@ -125,11 +125,11 @@ def _int(b, attr):
 
 def _notes(b, engine, version):
     cn, retention = rdn_value(b), one(b, "ciamRetentionDays")
-    return (*((f"# {cn}: point-in-time restore can't be turned off while RDS keeps backups",)
+    return (*((comment(f"{cn}: point-in-time restore can't be turned off while RDS keeps backups"),)
               if one(b, "ciamDbPointInTime") == "FALSE" and retention not in (None, "0") else ()),
-            *((f"# {cn}: Oracle requires TLS through an option group (SSL), not rendered",)
+            *((comment(f"{cn}: Oracle requires TLS through an option group (SSL), not rendered"),)
               if engine == "oracle" and one(b, "ciamDbTlsRequired") == "TRUE" else ()),
-            *((f"# {cn}: no ciamDbEngineVersion: RDS picks its default version",) if not version else ()))
+            *((comment(f"{cn}: no ciamDbEngineVersion: RDS picks its default version"),) if not version else ()))
 
 
 def copy_alias(region):
@@ -163,15 +163,15 @@ def _copy(m, b, n):
     if not regions:
         return ()
     if _aurora(b):
-        return (f"# {cn}: Aurora copies backups to another region with a global database or an AWS Backup copy, not "
-                f"automated backups replication: ciamCopyRegion {', '.join(regions)} not rendered",)
+        return (comment(f"{cn}: Aurora copies backups to another region with a global database or an AWS Backup copy, "
+                        f"not automated backups replication: ciamCopyRegion {', '.join(regions)} not rendered"),)
     region, key, var = regions[0], _replica_key(m, b, regions[0]), f"{n}_copy_kms_key_arn"
-    return (*((f"# {cn}: RDS replicates automated backups to one region: {', '.join(regions[1:])} not rendered",)
+    return (*((comment(f"{cn}: RDS replicates automated backups to one region: {', '.join(regions[1:])} not rendered"),)
               if len(regions) > 1 else ()),
-            *((block("variable", [var], [("type", ref("string")), ("description", (
+            *((tf_block("variable", [var], [("type", ref("string")), ("description", (
                 f"The KMS key in {region} that encrypts the copies of database {cn}'s automated backups"))]),)
               if key is None else ()),
-            block("resource", ["aws_db_instance_automated_backups_replication", n], [
+            tf_block("resource", ["aws_db_instance_automated_backups_replication", n], [
                 ("provider", ref(f"aws.{copy_alias(region)}")),
                 ("source_db_instance_arn", ref(f"aws_db_instance.{n}.arn")),
                 *_given(("retention_period", _int(b, "ciamRetentionDays"))),
@@ -182,8 +182,8 @@ def _ingress(m, b):
     """The security group's ingress rules: the database's port from each range the record admits."""
     role, cidrs, port = one(b, "ciamBindingRole"), values(b, "ciamSourceCidr"), database_port(b)
     if cidrs and port is None:
-        return (f"# {rdn_value(b)}: no ciamPort and no default port for its engine: ingress not rendered",)
-    return tuple(block("resource", ["aws_vpc_security_group_ingress_rule", tf_name(f"{role}_{i}")], [
+        return (comment(f"{rdn_value(b)}: no ciamPort and no default port for its engine: ingress not rendered"),)
+    return tuple(tf_block("resource", ["aws_vpc_security_group_ingress_rule", tf_name(f"{role}_{i}")], [
         ("security_group_id", ref(f"aws_security_group.{tf_name(role)}.id")), ("cidr_ipv4", cidr),
         ("from_port", port), ("to_port", port), ("ip_protocol", "tcp"),
         ("description", f"clients of database {rdn_value(b)} ({role})")]) for i, cidr in enumerate(cidrs))
@@ -207,34 +207,34 @@ def _database(m, b):
             *_given(("backup_retention_period", _int(b, "ciamRetentionDays"))),
             ("deletion_protection", one(b, "ciamDbDeletionProtection") == "TRUE"), ("tags", binding_tags(b)))
     if aurora:
-        main = (block("resource", ["aws_rds_cluster", n], [
+        main = (tf_block("resource", ["aws_rds_cluster", n], [
                     ("cluster_identifier", cn), *placed, *network, ("master_username", ref(f"var.{user}")), *kept]),
-                *(block("resource", ["aws_rds_cluster_instance", f"{n}_{i}"], [
+                *(tf_block("resource", ["aws_rds_cluster_instance", f"{n}_{i}"], [
                     ("identifier", f"{cn}-{i}"), ("cluster_identifier", ref(f"aws_rds_cluster.{n}.id")),
                     *_given(("instance_class", one(b, "ciamInstanceSize"))),
                     ("engine", ref(f"aws_rds_cluster.{n}.engine")),
                     ("engine_version", ref(f"aws_rds_cluster.{n}.engine_version")), ("tags", binding_tags(b))])
                   for i in range(1, 3 if ha else 2)))
-        adopt = (import_block(f"aws_rds_cluster.{n}", _identifier(b)),) if adopted(b) else ()
+        adopt = (tf_import(f"aws_rds_cluster.{n}", _identifier(b)),) if adopted(b) else ()
     else:
-        main = (block("resource", ["aws_db_instance", n], [
+        main = (tf_block("resource", ["aws_db_instance", n], [
             ("identifier", cn), *placed,
             *_given(("instance_class", one(b, "ciamInstanceSize")), ("allocated_storage", _int(b, "ciamDbStorageGb"))),
             *network, ("username", ref(f"var.{user}")), ("multi_az", ha),
             *_given(("availability_zone", None if ha else one(b, "ciamZone"))), ("publicly_accessible", False),
             *kept]),)
-        adopt = (import_block(f"aws_db_instance.{n}", _identifier(b)),) if adopted(b) else ()
+        adopt = (tf_import(f"aws_db_instance.{n}", _identifier(b)),) if adopted(b) else ()
     return (*_notes(b, engine, version),
-            block("variable", [user], [("type", ref("string")),
-                                       ("description", f"The master user name of database {cn} (role {role})")]),
-            *((block("resource", ["aws_db_subnet_group", n], [
+            tf_block("variable", [user], [("type", ref("string")),
+                                          ("description", f"The master user name of database {cn} (role {role})")]),
+            *((tf_block("resource", ["aws_db_subnet_group", n], [
                 ("name", cn), ("subnet_ids", [ref(f"data.aws_subnet.{tf_name(rdn_value(s))}.id") for s in nets]),
                 ("tags", binding_tags(b))]),) if nets else ()),
-            block("resource", ["aws_security_group", tf_name(role)], [
+            tf_block("resource", ["aws_security_group", tf_name(role)], [
                 ("name", f"ciam-{rdn_value(m.env)}-{role}"), ("description", f"CIAM database {role} ({m.label})"),
                 ("vpc_id", ref("data.aws_vpc.main.id")), ("tags", binding_tags(b))]),
             *_ingress(m, b),
-            *((block("resource", [group_type, n], [
+            *((tf_block("resource", [group_type, n], [
                 ("name", cn), ("family", parameter_family(aws, version or "0")),
                 *(("parameter", Block((("name", k), ("value", v)))) for k, v in sorted(params.items())),
                 ("tags", binding_tags(b))]),) if params else ()),
@@ -244,8 +244,8 @@ def _database(m, b):
 def render_databases(m):
     """HCL for environment m's managed databases: those the stack keeps, then comments naming who keeps the others."""
     dbs = of_class(m, "ciamDatabase")
-    return (*(f"# Database '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: not "
-              "rendered here" for b in dbs if not owned(b)),
+    return (*(comment(f"Database '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: not "
+                      "rendered here") for b in dbs if not owned(b)),
             *(x for b in dbs if owned(b) for x in _database(m, b)))
 
 

@@ -9,6 +9,7 @@ from opsdir.core.environment import env_model, of_class
 from opsdir.core.interchange.ldif import parse
 from opsdir.domains.compute.naming import WORKLOADS, workload_dn
 from opsdir.domains.edge.naming import EDGE_POLICIES
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.ingress import gateway_front, gateway_negs, gateway_plug
 import mini_estate
 from support import REGISTRY, build_directory
@@ -50,17 +51,17 @@ def _parts(m):
 
 
 def test_the_gateways_negs_are_read_once_per_zone():
-    out = "\n".join(gateway_negs(_model(*RECORDS)))
+    out = "\n".join(as_text(gateway_negs(_model(*RECORDS))))
     assert out.count('data "google_compute_network_endpoint_group"') == 2
     assert re.search(r'name\s+= "ciam-prod-gw-443"\s+zone\s+= "us-central1-a"', out)
     unzoned = tuple(r.replace("ciamSpansZone: us-central1-a\nciamSpansZone: us-central1-b\n", "") for r in RECORDS)
-    assert gateway_negs(_model(*unzoned))[0].startswith("# UNBOUND: the zones cluster `gke` spans")
+    assert as_text(gateway_negs(_model(*unzoned)))[0].startswith("# UNBOUND: the zones cluster `gke` spans")
 
 
 def test_an_application_load_balancer_over_the_gateways_negs():
     m = _model(*RECORDS)
     svc, gw = _parts(m)
-    out = "\n".join(gateway_front(m, svc, gw, (), ((), "198.51.100.20"), ()))
+    out = "\n".join(as_text(gateway_front(m, svc, gw, (), ((), "198.51.100.20"), ())))
     assert 'group                 = data.google_compute_network_endpoint_group.neg_gw_443_us_central1_a.self_link' \
         in out
     assert re.search(r'balancing_mode\s+= "RATE"\s+max_rate_per_endpoint = 100', out)

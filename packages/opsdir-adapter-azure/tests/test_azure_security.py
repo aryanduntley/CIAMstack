@@ -5,6 +5,7 @@ where one of Microsoft's availability pages lists it as unavailable; configurati
 someone else and other clouds' baselines in comments; all read back from Terraform state."""
 from opsdir.core.directory import make_entry
 from opsdir.core.inventory import environment_groups, resource
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.security import render_security, security_resources
 from network_fixtures import ALPHA, entry, model
 
@@ -26,7 +27,7 @@ def _render(*services, gov=False):
     if gov:
         alpha = alpha._replace(cloud=make_entry(alpha.cloud.dn, alpha.cloud.classes,
                                                 {**alpha.cloud.attrs, "ciamCloudEnvironment": ("usgovernment",)}))
-    return "\n\n".join(render_security(alpha))
+    return "\n\n".join(as_text(render_security(alpha)))
 
 
 DETECTION = svc("defender", "threat-detection", ciamFindingsRole="security-logs",
@@ -136,7 +137,7 @@ def test_the_subscription_data_source_matches_the_audit_trail_s_so_the_root_keep
                   ciamAuditEvents=("control-plane",), ciamLogDestinationRole="security-logs")
     _, alpha, _ = model(alpha=(LOGS, trail, DETECTION), tree=OWNERS)
     data = 'data "azurerm_subscription" "current" {\n}'
-    out = (*render_trails(alpha), *render_security(alpha))
+    out = (*as_text(render_trails(alpha)), *as_text(render_security(alpha)))
     assert out.count(data) == 2      # terraform.render keeps the first of identical data sources
     kept = tuple(x for i, x in enumerate(out) if not (x.startswith('data "') and x in out[:i]))
     assert kept.count(data) == 1

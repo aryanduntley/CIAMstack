@@ -2,6 +2,7 @@
 in the root's project, named as the canary binding; an internal service is named."""
 from opsdir.core.contract import Endpoint
 from opsdir.domains.observability.naming import CANARIES
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.canaries import render_checks
 from network_fixtures import BETA, entry, model
 
@@ -24,7 +25,7 @@ BINDINGS = (entry(BETA, "svc-sso", "ciamServiceName", ciamBindingRole="sso", cia
 
 def test_a_health_check_is_an_https_uptime_check_of_its_host():
     _, _, beta = model(beta=BINDINGS, tree=TREE)
-    out = render_checks(beta, ENDPOINTS)
+    out = as_text(render_checks(beta, ENDPOINTS))
     text = "\n".join(out)
     assert 'resource "google_monitoring_uptime_check_config" "sso_alive" {' in text
     assert 'period       = "300s"' in text and 'path           = "/pf/heartbeat.ping"' in text

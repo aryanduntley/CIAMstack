@@ -7,7 +7,7 @@ planner drafts the request). Pure.
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.domains.edge.records import address, forwarders, hosted_notes, records_in, routing, run_by, ttl
 from opsdir.domains.edge.dns import zone_of, zone_unknown
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 
 ALIAS_TTL = "60"     # the TTL Route 53 answers an alias to a load balancer with (the record can't set its own)
 
@@ -23,8 +23,8 @@ def _policy(policy, weight, label):
 
 def _elsewhere(d, m, name):
     party = run_by(d, m, name)
-    return (f"# `{name}` is in a zone {rdn_value(party)} runs: not rendered here (the plan drafts the request to "
-            "them)",) if party is not None else ()
+    return (comment(f"`{name}` is in a zone {rdn_value(party)} runs: not rendered here (the plan drafts the request to "
+                    "them)"),) if party is not None else ()
 
 
 def service_record(d, m, svc, n, target=None, cname=None):
@@ -38,7 +38,7 @@ def service_record(d, m, svc, n, target=None, cname=None):
     bound = zone_of(m, name)
     zone = one(svc, "ciamDnsZoneRef") or (one(bound, "ciamProviderRef") if bound is not None else None)
     if not zone:
-        return (zone_unknown(svc, "ciamDnsZoneRef"),)
+        return (comment(zone_unknown(svc, "ciamDnsZoneRef")),)
     if cname is not None:
         return _cname(d, m, svc, n, zone, bound, cname)
     dns_name, zone_id = target or (ref(f"aws_lb.{n}.dns_name"), ref(f"aws_lb.{n}.zone_id"))
@@ -48,33 +48,32 @@ def service_record(d, m, svc, n, target=None, cname=None):
     head = (("zone_id", zone), ("name", name), ("type", "A"))
     routed = routing(d, m, svc)
     if routed is None:
-        return (block("resource", ["aws_route53_record", n], [*head, *note, alias]),)
+        return (tf_block("resource", ["aws_route53_record", n], [*head, *note, alias]),)
     policy, found = routed
     if not found:
-        return (f"# `{name}` routes between environments ({policy}): the environment holding its primary answers it",)
+        return (comment(f"`{name}` routes between environments ({policy}): the environment holding its primary answers "
+                        "it"),)
     port = int(values(svc, "ciamPort")[0])
-    return tuple(
-        block("resource", ["aws_route53_record", n], [*head, *note, *_policy(a.policy, a.weight, a.label), alias])
-        if a.binding.dn == svc.dn else
-        "\n\n".join((
-            block("resource", ["aws_route53_health_check", f"{n}_{tf_name(a.label)}"], [
+    return tuple(x for a in found for x in (
+        (tf_block("resource", ["aws_route53_record", n], [*head, *note, *_policy(a.policy, a.weight, a.label), alias]),)
+        if a.binding.dn == svc.dn else (
+            tf_block("resource", ["aws_route53_health_check", f"{n}_{tf_name(a.label)}"], [
                 ("ip_address", address(a)), ("port", port), ("type", "TCP"), ("failure_threshold", 3),
                 ("request_interval", 30), ("tags", {"Name": f"{name} ({a.label})", "ManagedBy": "opsdir"})]),
-            block("resource", ["aws_route53_record", f"{n}_{tf_name(a.label)}"], [
+            tf_block("resource", ["aws_route53_record", f"{n}_{tf_name(a.label)}"], [
                 *head, ("ttl", ttl(a.binding)), ("records", [address(a)]), *_policy(a.policy, a.weight, a.label),
-                ("health_check_id", ref(f"aws_route53_health_check.{n}_{tf_name(a.label)}.id"))])))
-        for a in found)
+                ("health_check_id", ref(f"aws_route53_health_check.{n}_{tf_name(a.label)}.id"))]))))
 
 
 def _cname(d, m, svc, n, zone, bound, target):
     name = one(svc, "ciamFqdn")
     if bound is not None and name.rstrip(".").lower() == (one(bound, "ciamDnsZone") or "").rstrip(".").lower():
-        return (f"# UNBOUND: `{name}` is its zone's apex: a CNAME can't be there, and a GovCloud Route 53 zone can't "
-                "alias CloudFront: host the public zone in the standard partition's Route 53",)
+        return (comment(f"UNBOUND: `{name}` is its zone's apex: a CNAME can't be there, and a GovCloud Route 53 zone "
+                        "can't alias CloudFront: host the public zone in the standard partition's Route 53"),)
     if routing(d, m, svc) is not None:
-        return (f"# `{name}` routes between environments, but a GovCloud zone answers it with a CNAME to CloudFront: "
-                "routing records not rendered",)
-    return (block("resource", ["aws_route53_record", n], [
+        return (comment(f"`{name}` routes between environments, but a GovCloud zone answers it with a CNAME to "
+                        "CloudFront: routing records not rendered"),)
+    return (tf_block("resource", ["aws_route53_record", n], [
         ("#", "a CNAME: a GovCloud Route 53 zone can't alias a CloudFront distribution"),
         ("zone_id", zone), ("name", name), ("type", "CNAME"), ("ttl", ttl(svc)), ("records", [target])]),)
 
@@ -88,8 +87,8 @@ def records(d, m):
         if outside:
             return outside[0]
         if zone is None or not one(zone, "ciamProviderRef"):
-            return f"# UNBOUND: no Route 53 zone bound for {rtype} `{name}`"
-        return block("resource", ["aws_route53_record", tf_name(f"record_{rdn_value(r)}")], [
+            return comment(f"UNBOUND: no Route 53 zone bound for {rtype} `{name}`")
+        return tf_block("resource", ["aws_route53_record", tf_name(f"record_{rdn_value(r)}")], [
             ("zone_id", one(zone, "ciamProviderRef")), ("name", name), ("type", rtype), ("ttl", ttl(r)),
             ("records", list(values(r, "ciamRecordValue")))])
     return tuple(one_record(r) for r in records_in(m))
@@ -103,15 +102,15 @@ def resolver_rules(m):
         part for f in forwarders(m, hosted=False) for i, domain in enumerate(values(f, "ciamForwardDomain"))
         for n in (tf_name(f"{rdn_value(f)}_{i}"),)
         for part in (
-            block("resource", ["aws_route53_resolver_rule", n], [
+            tf_block("resource", ["aws_route53_resolver_rule", n], [
                 ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(f)}-{i}"), ("domain_name", domain),
                 ("rule_type", "FORWARD"), ("resolver_endpoint_id", ref(f"var.{RESOLVER_ENDPOINT}")),
                 *(("target_ip", Block((("ip", ip), ("port", 53)))) for ip in values(f, "ciamForwardTarget")),
                 ("tags", {"ManagedBy": "opsdir"})]),
-            block("resource", ["aws_route53_resolver_rule_association", n], [
+            tf_block("resource", ["aws_route53_resolver_rule_association", n], [
                 ("resolver_rule_id", ref(f"aws_route53_resolver_rule.{n}.id")),
                 ("vpc_id", ref("data.aws_vpc.main.id"))])))
-    inbound = tuple(f"# Inbound forwarder `{rdn_value(f)}` ({', '.join(values(f, 'ciamForwardDomain'))}): the "
-                    "landing zone's inbound Resolver endpoint; not managed here"
+    inbound = tuple(comment(f"Inbound forwarder `{rdn_value(f)}` ({', '.join(values(f, 'ciamForwardDomain'))}): the "
+                            "landing zone's inbound Resolver endpoint; not managed here")
                     for f in forwarders(m, "inbound", hosted=False))
-    return (*out, *inbound, *hosted_notes(m, "EC2 instances"))
+    return (*out, *inbound, *map(comment, hosted_notes(m, "EC2 instances")))

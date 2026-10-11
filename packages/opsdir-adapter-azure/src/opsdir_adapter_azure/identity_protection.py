@@ -38,7 +38,7 @@ from opsdir.domains.estate.naming import RISK_LEVELS, USER_RISK_GRANTS
 from opsdir.domains.estate.risk_policies import (policy_advice, policy_mode, policy_problems, policy_scope, renders,
                                                  risk_policies)
 from opsdir.domains.estate.security import findings_destination, security_services
-from opsdir_format_terraform.hcl import Block, block, tf_name
+from opsdir_format_terraform.hcl import Block, comment, tf_block, tf_name
 from opsdir_format_terraform.state import first_block
 from .observability import workspace_id
 
@@ -67,10 +67,10 @@ def risk_export(m, s):
     cn, workspace = rdn_value(s), workspace_id(m, findings_destination(m, s))
     if not workspace:
         where = one(s, "ciamFindingsRole")
-        return (f"# NOTE: {cn}: Entra ID Protection's risk logs not exported: "
-                + (f"{where} is no Log Analytics workspace (ciamProviderRef)" if where else
-                   "the service sends its findings nowhere (ciamFindingsRole)"),)
-    return (block("resource", [RISK_EXPORT, tf_name(f"{cn}_identity_risk")], [
+        return (comment(f"NOTE: {cn}: Entra ID Protection's risk logs not exported: "
+                        + (f"{where} is no Log Analytics workspace (ciamProviderRef)" if where else
+                           "the service sends its findings nowhere (ciamFindingsRole)")),)
+    return (tf_block("resource", [RISK_EXPORT, tf_name(f"{cn}_identity_risk")], [
         ("name", f"{cn}-identity-risk"), ("log_analytics_workspace_id", workspace),
         *(("enabled_log", Block((("category", c),))) for c in RISK_CATEGORIES)]),)
 
@@ -91,7 +91,7 @@ def conditional_access(m, s, policy):
     cn, (operator, controls, strength, frequency) = rdn_value(s), GRANTS[policy.grant]
     levels = list(RISK_LEVELS[RISK_LEVELS.index(policy.level):])
     session = (("session_controls", Block((("sign_in_frequency_interval", frequency),))),) if frequency else ()
-    return block("resource", [CA_POLICY, tf_name(f"{cn}_{policy.subject}_{policy.level}_{policy.grant}")], [
+    return tf_block("resource", [CA_POLICY, tf_name(f"{cn}_{policy.subject}_{policy.level}_{policy.grant}")], [
         ("display_name", f"{cn} ({m.label}): {policy.subject} risk {policy.level}+: {policy.grant}"),
         ("state", STATES[policy_mode(s)]),
         ("conditions", Block((
@@ -109,9 +109,9 @@ def directory_note(s):
     resource), else ()."""
     if DIRECTORY_AREA not in values(s, "ciamSecurityCoverage"):
         return ()
-    return (f"# {rdn_value(s)}: on-prem directory: Microsoft Defender for Identity has no Terraform resource: set it "
-            "up in the Microsoft Defender portal (sensors on the domain controllers, AD FS, AD CS and Entra Connect "
-            "servers)",)
+    return (comment(f"{rdn_value(s)}: on-prem directory: Microsoft Defender for Identity has no Terraform resource: "
+                    "set it up in the Microsoft Defender portal (sensors on the domain controllers, AD FS, AD CS and "
+                    "Entra Connect servers)"),)
 
 
 def render_identity_protection(m, s):
@@ -124,13 +124,14 @@ def render_identity_protection(m, s):
     policies = tuple(conditional_access(m, s, p) for p in risk_policies(s) if p.grant in GRANTS) if complete else ()
     unexpressed = tuple(p for p in risk_policies(s) if p.grant not in GRANTS) if complete else ()
     return (*directory_note(s),
-            f"# {cn}: identity: Microsoft Entra ID Protection (Defender for Cloud has no plan for identity); its risk "
-            "signals and policies need Entra ID P2",
+            comment(f"{cn}: identity: Microsoft Entra ID Protection (Defender for Cloud has no plan for identity); its "
+                    "risk signals and policies need Entra ID P2"),
             *risk_export(m, s),
-            *(f"# {cn}: risk policies not rendered: {p}" for p in policy_problems(m, s)),
-            *(f"# {cn}: {a}" for a in (policy_advice(m, s) if policies else ())),
-            *(f"# NOTE: {cn}: '{p.subject} {p.level}+: {p.grant}': not rendered: azuread can't express Microsoft's "
-              "risk remediation yet; configure it in Microsoft Entra, or record password-change" for p in unexpressed),
+            *(comment(f"{cn}: risk policies not rendered: {p}") for p in policy_problems(m, s)),
+            *(comment(f"{cn}: {a}") for a in (policy_advice(m, s) if policies else ())),
+            *(comment(f"NOTE: {cn}: '{p.subject} {p.level}+: {p.grant}': not rendered: azuread can't express "
+                      "Microsoft's risk remediation yet; configure it in Microsoft Entra, or record password-change")
+              for p in unexpressed),
             *policies)
 
 

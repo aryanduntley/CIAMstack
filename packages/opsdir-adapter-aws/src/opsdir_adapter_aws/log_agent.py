@@ -22,6 +22,7 @@ from opsdir.core.directory import one, rdn_value
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.sources import ALL, shipments, unpermitted
+from opsdir_format_terraform.hcl import comment
 from .observability import group_name
 
 AGENT = "/opt/aws/amazon-cloudwatch-agent"
@@ -85,7 +86,7 @@ def _why(x):
 def log_notes(m, services):
     """HCL comments naming what environment m's servers' log routes can't ship to CloudWatch, or ship only in part."""
     found = host_shipments(m, services)
-    return (*(f"# NOTE: {why}" for why in dict.fromkeys(_why(x) for x in found) if why),
-            *(f"# NOTE: role {role} ships logs to {dest}, but no workload principal acting for it holds the permit "
-              f"`write-logs {dest}`: its servers' instance role isn't granted the writes"
+    return (*(comment(f"NOTE: {why}") for why in dict.fromkeys(_why(x) for x in found) if why),
+            *(comment(f"NOTE: role {role} ships logs to {dest}, but no workload principal acting for it holds the "
+                      f"permit `write-logs {dest}`: its servers' instance role isn't granted the writes")
               for role, dest in unpermitted(m, tuple(x for x in found if _shipped(x)))))

@@ -15,7 +15,7 @@ from opsdir.core.directory import is_kind, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource, tagged_role
 from opsdir.domains.observability.audit import audit_trails, trail_destination, trail_keeper
 from opsdir.domains.observability.naming import AUDIT_EVENTS
-from opsdir_format_terraform.hcl import block, tf_name
+from opsdir_format_terraform.hcl import comment, tf_block, tf_name
 from .storage import bucket_of
 from .tags import state_tags
 
@@ -30,16 +30,17 @@ def _name(trail):
 def _trail(m, t):
     cn, keeper, dest = rdn_value(t), trail_keeper(m, t), trail_destination(m, t)
     if keeper is not None:
-        return (f"# Audit trail {cn} ({one(t, 'ciamAuditScope')}): kept by {rdn_value(keeper)}, not rendered here",)
+        return (comment(f"Audit trail {cn} ({one(t, 'ciamAuditScope')}): kept by {rdn_value(keeper)}, not rendered "
+                        "here"),)
     bucket = bucket_of(one(dest, "ciamStorageRef")) if dest is not None and is_kind(m.d, dest, "ciamObjectStore") \
         else None
     if bucket is None:
         why = ("its records go to a CloudWatch log group, a delivery that also needs a role CloudTrail assumes"
                if dest is not None else "no object store here keeps its records (ciamLogDestinationRole)")
-        return (f"# NOTE: audit trail {cn}: not rendered: {why}",)
+        return (comment(f"NOTE: audit trail {cn}: not rendered: {why}"),)
     data = [e for e in values(t, "ciamAuditEvents") if e != "control-plane"]
     everywhere = one(t, "ciamAllRegions") == "TRUE"
-    return (block("resource", [TRAIL_TYPE, tf_name(cn)], [
+    return (tf_block("resource", [TRAIL_TYPE, tf_name(cn)], [
         *((("#", f"{', '.join(data)} events: log them with event selectors naming the resources (not rendered)"),)
           if data else ()),
         ("name", _name(t)), ("s3_bucket_name", bucket),

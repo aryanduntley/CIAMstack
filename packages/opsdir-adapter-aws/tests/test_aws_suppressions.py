@@ -1,6 +1,7 @@
 """Suppressions on AWS: a Security Hub automation rule suppressing the exception's controls and a GuardDuty filter
 archiving its finding types, named after the exception, with comments for the expiry, GovCloud and other providers'
 refs; read back from Terraform state, merged per name, linked to the exception."""
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.suppressions import render_suppressions, suppression_resources
 from network_fixtures import ALPHA, entry, model
 
@@ -15,7 +16,7 @@ def _render(*refs, managed=None):
     s = entry(ALPHA, "exc-EXC-7", "ciamSuppression", ciamBindingRole="suppression-EXC-7", ciamFindingRef=tuple(refs),
               ciamExceptionRef=EXC, **({"ciamManagedBy": managed} if managed else {}))
     _, alpha, _ = model(alpha=(s,), tree=TREE)
-    return "\n\n".join(render_suppressions(alpha))
+    return "\n\n".join(as_text(render_suppressions(alpha)))
 
 
 def test_a_suppression_renders_an_automation_rule_and_a_guardduty_filter_named_after_its_exception():

@@ -6,6 +6,7 @@ get-event-selectors and list-tags, and from a CloudFormation AWS::CloudTrail::Tr
 import json
 
 from opsdir.core.inventory import environment_groups, resource
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.audit import render_trails, trail_events, trail_resources
 from opsdir_adapter_aws.cli import cli_resources
 from opsdir_adapter_aws.cloudformation import cloudformation_resources
@@ -31,7 +32,7 @@ def test_an_account_trail_the_platform_keeps_is_rendered_into_its_bucket():
               _trail("org-trail", "audit-logs", ciamManagedBy=PARTY),
               _trail("to-logs", "app-logs"))
     _, alpha, _ = model(alpha=(BUCKET, GROUP, *trails), tree=OWNERS)
-    assert render_trails(alpha) == ('''resource "aws_cloudtrail" "cloudtrail" {
+    assert as_text(render_trails(alpha)) == ('''resource "aws_cloudtrail" "cloudtrail" {
   # data-write events: log them with event selectors naming the resources (not rendered)
   name                          = "ciam-prod"
   s3_bucket_name                = "example-ciam-audit"

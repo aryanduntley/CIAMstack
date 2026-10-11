@@ -4,6 +4,7 @@ web ACL CloudFront-scoped through the us-east-1 provider and named by the distri
 the ALB then admits only CloudFront and carries no web ACL of its own."""
 import re
 
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.cdn import alias, distribution, fronted
 from opsdir_adapter_aws.edge import alb_service, servers_backend
 from edge_fixtures import environment, firewall, server, service, spec, subnet
@@ -14,7 +15,7 @@ GOV = {"ciamRegion": ("us-gov-west-1",), "ciamBillingAccountRef": ("111122223333
 
 def _cdn(s):
     svc = service()
-    return "\n".join(distribution(environment(svc), svc, s, "sso"))
+    return "\n".join(as_text(distribution(environment(svc), svc, s, "sso")))
 
 
 def test_a_distribution_over_the_load_balancer_with_a_cloudfront_web_acl():
@@ -40,7 +41,7 @@ def test_the_viewer_certificate_must_be_in_us_east_1():
 def test_in_govcloud_cloudfront_runs_from_the_standard_account_and_the_name_is_a_cname():
     svc = service(ciamDnsZoneRef="Z0GOVZONE")
     m = environment(svc, cloud=GOV)
-    out = "\n".join(fronted(m, svc, spec(cdn=True, certificate=CERT, ddos="application-advanced"), "sso"))
+    out = "\n".join(as_text(fronted(m, svc, spec(cdn=True, certificate=CERT, ddos="application-advanced"), "sso")))
     assert "# CloudFront isn't offered in AWS GovCloud (US)" in out and "no ITAR-controlled data in it" in out
     dist = out[out.index('resource "aws_cloudfront_distribution" "sso"'):]
     assert dist.split("\n")[1].strip().startswith("provider") and "aws.us_east_1" in dist.split("\n")[1]
@@ -53,19 +54,20 @@ def test_in_govcloud_cloudfront_runs_from_the_standard_account_and_the_name_is_a
 def test_in_govcloud_the_certificate_must_be_the_standard_accounts_and_the_account_recorded():
     svc = service(ciamDnsZoneRef="Z0GOVZONE")
     gov_cert = "aws-acm://arn:aws-us-gov:acm:us-east-1:444455556666:certificate/abcd"
-    out = "\n".join(distribution(environment(svc, cloud=GOV), svc, spec(cdn=True, certificate=gov_cert), "sso"))
+    out = "\n".join(as_text(distribution(environment(svc, cloud=GOV), svc, spec(cdn=True, certificate=gov_cert),
+                                         "sso")))
     assert "CloudFront needs the certificate in the standard account's ACM (111122223333, us-east-1)" in out
-    bare = fronted(environment(svc, cloud={"ciamRegion": ("us-gov-west-1",)}), svc, spec(cdn=True), "sso")
+    bare = as_text(fronted(environment(svc, cloud={"ciamRegion": ("us-gov-west-1",)}), svc, spec(cdn=True), "sso"))
     assert len(bare) == 1 and bare[0].startswith("# UNBOUND: `sso.example.test`: CloudFront isn't offered in AWS "
                                                  "GovCloud (US)")
 
 
 def test_an_alb_behind_cloudfront_admits_only_cloudfront_and_has_no_web_acl():
     svc = service()
-    out = "\n".join(alb_service(environment(svc, firewall("fw-sso-public", ["0.0.0.0/0"], ["443"])), svc,
+    out = "\n".join(as_text(alb_service(environment(svc, firewall("fw-sso-public", ["0.0.0.0/0"], ["443"])), svc,
                                 spec(cdn=True, ddos="network-advanced"),
                                 servers_backend(svc, (server("pf-1", "10.20.2.10"),)),
-                                (subnet("subnet-pf-a", "subnet-pf", "10.20.2.0/24"),)))
+                                (subnet("subnet-pf-a", "subnet-pf", "10.20.2.0/24"),))))
     assert 'name = "com.amazonaws.global.cloudfront.origin-facing"' in out
     assert "prefix_list_id    = data.aws_ec2_managed_prefix_list.sso_cloudfront.id" in out
     assert "0.0.0.0/0" not in out and "aws_wafv2" not in out and "aws_shield" not in out

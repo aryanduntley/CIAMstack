@@ -8,6 +8,7 @@ from opsdir.connectors.importing import import_changes
 from opsdir.connectors.prerequisites import prerequisite_rows
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import LdifRecord
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.account import provider_block
 from opsdir_adapter_aws.adapter import ADAPTER
 from opsdir_adapter_aws.inventory import state_resources
@@ -23,7 +24,7 @@ REGIONS = {"Regions": [
 
 def test_the_aws_provider_tags_everything_and_runs_against_the_recorded_account():
     _, d, alpha, beta = _pair(account="123456789012")
-    assert provider_block(alpha) == """provider "aws" {
+    assert as_text(provider_block(alpha)) == """provider "aws" {
   region              = "region-1"
   allowed_account_ids = ["123456789012"]
   default_tags {
@@ -37,17 +38,17 @@ def test_the_aws_provider_tags_everything_and_runs_against_the_recorded_account(
     }
   }
 }"""
-    assert "allowed_account_ids" not in provider_block(alpha, own_account=False)
-    assert "allowed_account_ids" not in provider_block(beta)                   # beta's cloud records no account
-    assert "default_tags" not in provider_block(env_model(_pair(rules=())[1], "alpha/prod"))
-    assert "use_fips_endpoint" not in provider_block(alpha)
+    assert "allowed_account_ids" not in as_text(provider_block(alpha, own_account=False))
+    assert "allowed_account_ids" not in as_text(provider_block(beta))          # beta's cloud records no account
+    assert "default_tags" not in as_text(provider_block(env_model(_pair(rules=())[1], "alpha/prod")))
+    assert "use_fips_endpoint" not in as_text(provider_block(alpha))
 
 
 def test_the_provider_uses_fips_endpoints_when_the_cloud_says_so():
     fips = LdifRecord("cloud=alpha,ou=environments,dc=ciam-ops", "modify", {},
                       (("add", "objectClass", ("ciamCloudEndpoints",)), ("replace", "ciamFipsEndpoints", ("TRUE",))))
     _, d, alpha, _ = _pair(extra=(fips,))
-    assert "  use_fips_endpoint = true\n" in provider_block(alpha)
+    assert "  use_fips_endpoint = true\n" in as_text(provider_block(alpha))
 
 
 def test_the_region_list_reads_describe_regions():

@@ -10,7 +10,7 @@ from opsdir.core.environment import UNBOUND
 from opsdir.domains.edge.dns import zone_of, zone_unknown
 from opsdir.domains.edge.exposure import is_internal
 from opsdir.domains.edge.records import address, forwarders, hosted_notes, parts, records_in, routing, run_by, ttl
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from .identities import RG
 from .account import tagged
 
@@ -26,25 +26,25 @@ def record_name(fqdn, zone):
 
 def _elsewhere(d, m, name):
     party = run_by(d, m, name)
-    return (f"# `{name}` is in a zone {rdn_value(party)} runs: not rendered here (the plan drafts the request to "
-            "them)",) if party is not None else ()
+    return (comment(f"`{name}` is in a zone {rdn_value(party)} runs: not rendered here (the plan drafts the request to "
+                    "them)"),) if party is not None else ()
 
 
 def _traffic_manager(m, svc, n, zone, policy, found):
     name = one(svc, "ciamFqdn")
     weighted = policy == "weighted"
-    return (block("resource", ["azurerm_traffic_manager_profile", n], [
+    return (tf_block("resource", ["azurerm_traffic_manager_profile", n], [
                 ("name", f"tm-ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("resource_group_name", RG),
                 ("traffic_routing_method", "Weighted" if weighted else "Priority"),
                 ("dns_config", Block((("relative_name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"),
                                       ("ttl", ttl(svc))))),
                 ("monitor_config", Block((("protocol", "TCP"), ("port", int(values(svc, "ciamPort")[0]))))),
                 ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]),
-            *(block("resource", ["azurerm_traffic_manager_external_endpoint", f"{n}_{tf_name(a.label)}"], [
+            *(tf_block("resource", ["azurerm_traffic_manager_external_endpoint", f"{n}_{tf_name(a.label)}"], [
                 ("name", a.label.replace("/", "-")), ("profile_id", ref(f"azurerm_traffic_manager_profile.{n}.id")),
                 ("target", address(a)),
                 ("weight", a.weight) if weighted else ("priority", i + 1)]) for i, a in enumerate(found)),
-            block("resource", ["azurerm_dns_cname_record", n], [
+            tf_block("resource", ["azurerm_dns_cname_record", n], [
                 ("name", record_name(name, zone)), ("zone_name", zone), ("resource_group_name", RG),
                 ("ttl", ttl(svc)), ("record", ref(f"azurerm_traffic_manager_profile.{n}.fqdn")),
                 ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]))
@@ -81,20 +81,20 @@ def service_record(d, m, svc, n, target=None, answer=None):
         return outside
     zone = service_zone(m, svc)
     if not zone:
-        return (zone_unknown(svc, "ciamDnsZone"),)
+        return (comment(zone_unknown(svc, "ciamDnsZone")),)
     if target is not None:
-        return (block("resource", ["azurerm_dns_cname_record", n], [
+        return (tf_block("resource", ["azurerm_dns_cname_record", n], [
             ("name", record_name(name, zone)), ("zone_name", zone), ("resource_group_name", RG), ("ttl", ttl(svc)),
             ("record", target), ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]),)
     routed = routing(d, m, svc)
     if routed is not None:
         policy, found = routed
         if not found:
-            return (f"# `{name}` routes between environments ({policy}): the environment holding its primary "
-                    "answers it",)
+            return (comment(f"`{name}` routes between environments ({policy}): the environment holding its primary "
+                            "answers it"),)
         if is_internal(svc):
-            return (f"# `{name}` routes between environments ({policy}), but Traffic Manager answers public names "
-                    "only: a single private record is rendered",
+            return (comment(f"`{name}` routes between environments ({policy}), but Traffic Manager answers public "
+                            "names only: a single private record is rendered"),
                     *_a_record(m, svc, n, name, zone, ip, True))
         return _traffic_manager(m, svc, n, zone, policy, found)
     return _a_record(m, svc, n, name, zone, ip, is_internal(svc))
@@ -109,7 +109,7 @@ def private_zone(m, zone):
     if pref.startswith("/subscriptions/"):
         return (), pref
     n = tf_name(zone)
-    return ((block("data", ["azurerm_private_dns_zone", n], [("name", zone), ("resource_group_name", RG)]),),
+    return ((tf_block("data", ["azurerm_private_dns_zone", n], [("name", zone), ("resource_group_name", RG)]),),
             ref(f"data.azurerm_private_dns_zone.{n}.id"))
 
 
@@ -124,7 +124,7 @@ def _zoned(m, zone, private):
 
 def _a_record(m, svc, n, name, zone, ip, private):
     data, where = _zoned(m, zone, private)
-    return (*data, block("resource", ["azurerm_private_dns_a_record" if private else "azurerm_dns_a_record", n], [
+    return (*data, tf_block("resource", ["azurerm_private_dns_a_record" if private else "azurerm_dns_a_record", n], [
         ("name", record_name(name, zone)), *where, ("ttl", ttl(svc)),
         ("records", [ip]), ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]))
 
@@ -149,13 +149,13 @@ def records(d, m):
         if outside:
             return outside[:1]
         if zone is None:
-            return (f"# UNBOUND: no DNS zone bound for {rtype} `{name}`",)
+            return (comment(f"UNBOUND: no DNS zone bound for {rtype} `{name}`"),)
         private = one(zone, "ciamZoneVisibility") == "private"
         if private and rtype not in PRIVATE_TYPES:
-            return (f"# {rtype} `{name}`: private DNS zones have no {rtype} records",)
+            return (comment(f"{rtype} `{name}`: private DNS zones have no {rtype} records"),)
         kind = f"azurerm_{'private_' if private else ''}dns_{rtype.lower()}_record"
         data, where = _zoned(m, one(zone, "ciamDnsZone"), private)
-        return (*data, block("resource", [kind, tf_name(f"record_{rdn_value(r)}")], [
+        return (*data, tf_block("resource", [kind, tf_name(f"record_{rdn_value(r)}")], [
             ("name", record_name(name, one(zone, "ciamDnsZone"))), *where, ("ttl", ttl(r)),
             *_values(rtype, values(r, "ciamRecordValue"))]))
     return tuple(x for r in records_in(m) for x in one_record(r))
@@ -164,14 +164,14 @@ def records(d, m):
 def forwarding_rules(m):
     """Outbound forwarders as rules of the landing zone's DNS forwarding ruleset; inbound ones are its resolver's
     inbound endpoint (a comment); those on the environment's own DNS servers (virtual machines) a comment."""
-    return (*(block("resource", ["azurerm_private_dns_resolver_forwarding_rule", tf_name(f"{rdn_value(f)}_{i}")], [
+    return (*(tf_block("resource", ["azurerm_private_dns_resolver_forwarding_rule", tf_name(f"{rdn_value(f)}_{i}")], [
                 ("name", tf_name(f"{rdn_value(f)}_{i}").replace("_", "-")),
                 ("dns_forwarding_ruleset_id", ref(f"var.{FORWARDING_RULESET}")),
                 ("domain_name", domain.rstrip(".") + "."), ("enabled", True),
                 *(("target_dns_servers", Block((("ip_address", ip), ("port", 53))))
                   for ip in values(f, "ciamForwardTarget"))])
               for f in forwarders(m, hosted=False) for i, domain in enumerate(values(f, "ciamForwardDomain"))),
-            *(f"# Inbound forwarder `{rdn_value(f)}` ({', '.join(values(f, 'ciamForwardDomain'))}): the landing "
-              "zone's DNS Private Resolver inbound endpoint; not managed here"
+            *(comment(f"Inbound forwarder `{rdn_value(f)}` ({', '.join(values(f, 'ciamForwardDomain'))}): the landing "
+                      "zone's DNS Private Resolver inbound endpoint; not managed here")
               for f in forwarders(m, "inbound", hosted=False)),
-            *hosted_notes(m, "virtual machines"))
+            *map(comment, hosted_notes(m, "virtual machines")))

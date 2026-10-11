@@ -39,7 +39,7 @@ from opsdir.domains.data.volumes import (POLICY, boot_volume, data_volumes, is_e
                                          volume_key_role, volume_policy)
 from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned
-from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
 from opsdir_format_terraform.state import blocks, first_block
 from .backups import disk_plans
 from .names import REGION, label, name_parts, resource_id, state_labels
@@ -63,13 +63,13 @@ def _given(*pairs):
 def _key(m, v):
     """(the volume's key, or None, and comments)."""
     if not is_encrypted(v):
-        return None, (f"# {rdn_value(v)}: recorded as not encrypted; Google Cloud encrypts every disk at rest (with "
-                      "its own key when none is named)",)
+        return None, (comment(f"{rdn_value(v)}: recorded as not encrypted; Google Cloud encrypts every disk at rest "
+                              "(with its own key when none is named)"),)
     role = volume_key_role(v)
     uri = secret(m, role)
     if uri is None:
-        return None, (f"# {rdn_value(v)}: {UNBOUND}{role}: no key binding for role {role}; Google's own key encrypts "
-                      "it",)
+        return None, (comment(f"{rdn_value(v)}: {UNBOUND}{role}: no key binding for role {role}; Google's own key "
+                              "encrypts it"),)
     return uri.split("://", 1)[1], ()
 
 
@@ -89,8 +89,8 @@ def boot_disk(m, s, kms):
         return (), Block((("initialize_params", Block(image)), key))
     kind = TYPES.get(one(v, "ciamVolumeClass"), "pd-balanced")
     key, notes = _key(m, v)
-    note = (f"# {rdn_value(v)}: a boot disk here is pd-ssd, not {kind}",) if kind not in ("pd-standard", "pd-ssd") \
-        else ()
+    note = (comment(f"{rdn_value(v)}: a boot disk here is pd-ssd, not {kind}"),) \
+        if kind not in ("pd-standard", "pd-ssd") else ()
     return (*notes, *note), Block((
         ("initialize_params", Block((*image, *_given(("size", _int(v, "ciamVolumeSizeGb"))),
                                      ("type", kind if kind in ("pd-standard", "pd-ssd") else "pd-ssd"),
@@ -105,7 +105,7 @@ def _scheduled(m, p):
 
 
 def _attach_policy(p, n, disk, zone):
-    return block("resource", ["google_compute_disk_resource_policy_attachment", n], [
+    return tf_block("resource", ["google_compute_disk_resource_policy_attachment", n], [
         ("name", ref(f"google_compute_resource_policy.{tf_name(rdn_value(p))}.name")), ("disk", disk),
         ("zone", zone)])
 
@@ -120,25 +120,26 @@ def server_volumes(m, s):
         out.append(_attach_policy(boot_policy, f"{n}_boot", ref(f"google_compute_instance.{n}.name"), zone))
     for v in data_volumes(m, one(s, "ciamServerRole")):
         if not owned(v):
-            out.append(f"# Volume '{rdn_value(v)}' of {rdn_value(s)} is kept by {kept_by(m, v)}: not rendered here")
+            out.append(comment(f"Volume '{rdn_value(v)}' of {rdn_value(s)} is kept by {kept_by(m, v)}: not rendered "
+                               "here"))
             continue
         dn, kind, policy = tf_name(f"{rdn_value(s)}_{rdn_value(v)}"), TYPES.get(one(v, "ciamVolumeClass"),
                                                                               "pd-balanced"), volume_policy(m, v)
         policy_role = one(policy, "ciamBindingRole") if policy is not None else None
         key, notes = _key(m, v)
         out += [*notes,
-                *((f"# {rdn_value(v)}: {kind} needs a machine series that takes Hyperdisk",)
+                *((comment(f"{rdn_value(v)}: {kind} needs a machine series that takes Hyperdisk"),)
                   if kind.startswith("hyperdisk") else ()),
-                *((f"# {rdn_value(s)} mounts {rdn_value(v)} at {one(v, 'ciamMountPath')} (its own configuration, not "
-                   "Terraform)",) if one(v, "ciamMountPath") else ()),
-                block("resource", ["google_compute_disk", dn], [
+                *((comment(f"{rdn_value(s)} mounts {rdn_value(v)} at {one(v, 'ciamMountPath')} (its own configuration, "
+                           "not Terraform)"),) if one(v, "ciamMountPath") else ()),
+                tf_block("resource", ["google_compute_disk", dn], [
                     ("name", f"{rdn_value(s)}-{rdn_value(v)}"), ("zone", zone), ("type", kind),
                     *_given(("size", _int(v, "ciamVolumeSizeGb")),
                             ("provisioned_iops", _int(v, "ciamIops") if kind in IOPS else None),
                             ("provisioned_throughput", _int(v, "ciamThroughputMb") if kind in THROUGHPUT else None)),
                     *((("disk_encryption_key", Block((("kms_key_self_link", key),))),) if key else ()),
                     ("labels", _labels(v, server=rdn_value(s), snapshot_policy=policy_role))]),
-                block("resource", ["google_compute_attached_disk", dn], [
+                tf_block("resource", ["google_compute_attached_disk", dn], [
                     ("disk", ref(f"google_compute_disk.{dn}.id")), ("instance", ref(f"google_compute_instance.{n}.id")),
                     ("device_name", label(rdn_value(v)))]),
                 *((_attach_policy(policy, dn, ref(f"google_compute_disk.{dn}.name"), zone),)
@@ -150,8 +151,8 @@ def _schedule(p):
     """(the snapshot schedule's Block, comments) of a policy: daily every 24 hours, hourly every 1 to 23."""
     every, at = snapshot_every(p), one(p, "ciamSnapshotAt") or "00:00"
     start = f"{at[:2]}:00"
-    notes = (f"# Snapshot policy '{rdn_value(p)}': Google Cloud starts schedules on the hour: {start}, not {at}",) \
-        if at != start else ()
+    notes = (comment(f"Snapshot policy '{rdn_value(p)}': Google Cloud starts schedules on the hour: {start}, not "
+                     f"{at}"),) if at != start else ()
     if every == 24:
         return Block((("daily_schedule", Block((("days_in_cycle", 1), ("start_time", start)))),)), notes
     return Block((("hourly_schedule", Block((("hours_in_cycle", every), ("start_time", start)))),)), notes
@@ -160,14 +161,14 @@ def _schedule(p):
 def _policy(m, p):
     n, every, regions = tf_name(rdn_value(p)), snapshot_every(p), values(p, "ciamCopyRegion")
     if every > 24:
-        return (f"# Snapshot policy '{rdn_value(p)}': Google Cloud schedules snapshots every 1 to 23 hours or "
-                f"daily, not every {every} hours: not rendered",)
+        return (comment(f"Snapshot policy '{rdn_value(p)}': Google Cloud schedules snapshots every 1 to 23 hours or "
+                        f"daily, not every {every} hours: not rendered"),)
     schedule, notes = _schedule(p)
     return (*notes,
-            *((f"# Snapshot policy '{rdn_value(p)}': snapshots are stored in one location, {regions[0]}; "
-               f"{', '.join(regions[1:])} not rendered: a disk follows one schedule, so copies to more regions are a "
-               "backup plan's (Backup and DR, its vault there)",) if len(regions) > 1 else ()),
-            block("resource", ["google_compute_resource_policy", n], [
+            *((comment(f"Snapshot policy '{rdn_value(p)}': snapshots are stored in one location, {regions[0]}; "
+                       f"{', '.join(regions[1:])} not rendered: a disk follows one schedule, so copies to more regions "
+                       "are a backup plan's (Backup and DR, its vault there)"),) if len(regions) > 1 else ()),
+            tf_block("resource", ["google_compute_resource_policy", n], [
                 ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(p)}"), ("region", REGION),
                 ("description", f"CIAM snapshots {one(p, 'ciamBindingRole')} ({m.label})"),
                 ("snapshot_schedule_policy", Block((
@@ -179,15 +180,15 @@ def _policy(m, p):
                         ("guest_flush", one(p, "ciamSnapshotConsistency") == "application"),
                         ("labels", {"policy": label(rdn_value(p)), "role": label(one(p, "ciamBindingRole")),
                                     "managed_by": "opsdir"})))))))]),
-            *((import_block(f"google_compute_resource_policy.{n}", resource_id(one(p, "ciamProviderRef"))),)
+            *((tf_import(f"google_compute_resource_policy.{n}", resource_id(one(p, "ciamProviderRef"))),)
               if adopted(p) else ()))
 
 
 def render_snapshot_policies(m):
     """HCL for environment m's snapshot policies: comments naming who keeps the others, then those the stack keeps."""
     policies = of_class(m, POLICY)
-    return (*(f"# Snapshot policy '{rdn_value(p)}' (role {one(p, 'ciamBindingRole')}) is kept by {kept_by(m, p)}: "
-              "not rendered here" for p in policies if not owned(p)),
+    return (*(comment(f"Snapshot policy '{rdn_value(p)}' (role {one(p, 'ciamBindingRole')}) is kept by "
+                      f"{kept_by(m, p)}: not rendered here") for p in policies if not owned(p)),
             *(x for p in policies if owned(p) for x in _policy(m, p)))
 
 

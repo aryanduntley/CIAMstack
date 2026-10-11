@@ -34,7 +34,7 @@ from opsdir.core.manifest import header
 from opsdir.core.settings import setting_value
 from opsdir.domains.edge.exposure import service_exposure
 from opsdir.domains.observability.canaries import canary_specs
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from .account import partition
 
 CANARY = "aws_synthetics_canary"
@@ -141,15 +141,15 @@ def rendered(m, endpoints):
 def _canary(m, spec, why, runtime):
     cn = rdn_value(spec.canary)
     if why:
-        return (f"# NOTE: canary {cn}: not rendered: {why}",)
+        return (comment(f"NOTE: canary {cn}: not rendered: {why}"),)
     name = canary_name(spec.name)
     if spec.keeper is not None:
-        return (f"# Canary {name} ({cn}): kept by {spec.keeper}, not rendered here",)
+        return (comment(f"Canary {name} ({cn}): kept by {spec.keeper}, not rendered here"),)
     zipped = f"canary_{tf_name(name)}"
-    return (block("data", ["archive_file", zipped], [
+    return (tf_block("data", ["archive_file", zipped], [
                 ("type", "zip"), ("source_dir", f"${{path.module}}/canaries/{name}"),
                 ("output_path", f"${{path.module}}/.build/canary-{name}.zip")]),
-            block("resource", [CANARY, tf_name(name)], [
+            tf_block("resource", [CANARY, tf_name(name)], [
                 ("name", name), ("runtime_version", runtime), ("handler", "canary.handler"),
                 ("zip_file", ref(f"data.archive_file.{zipped}.output_path")),
                 ("artifact_s3_location", "s3://{}/{}".format(*artifact_location(spec))),
@@ -177,10 +177,10 @@ def _role(m, specs):
     trust = {"Version": "2012-10-17",
              "Statement": [{"Effect": "Allow", "Principal": {"Service": "lambda.amazonaws.com"},
                             "Action": "sts:AssumeRole"}]}
-    return (block("resource", ["aws_iam_role", "canaries"], [
+    return (tf_block("resource", ["aws_iam_role", "canaries"], [
                 ("name", f"ciam-{rdn_value(m.env)}-canaries"),
                 ("assume_role_policy", json.dumps(trust, separators=(",", ":")))]),
-            block("resource", ["aws_iam_role_policy", "canaries"], [
+            tf_block("resource", ["aws_iam_role_policy", "canaries"], [
                 ("name", "synthetics"), ("role", ref("aws_iam_role.canaries.id")),
                 ("policy", json.dumps({"Version": "2012-10-17", "Statement": statements}, separators=(",", ":")))]))
 

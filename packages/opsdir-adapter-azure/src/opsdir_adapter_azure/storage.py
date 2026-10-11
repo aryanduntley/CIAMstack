@@ -32,7 +32,7 @@ from opsdir.domains.data.storage import (LifecycleRule, depth_summary, has_depth
                                          lifecycle_value)
 from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned
-from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
 from .arm_ids import arm_segment
 from .cli_storage import BASE, VERSION
 from .cmk import customer_key, key_ref
@@ -76,10 +76,10 @@ def _account(m, account, stores):
     keys = {one(b, "ciamEncryptedByRole") for b in stores if one(b, "ciamEncryptedByRole")}
     managed = [(b, rules) for b in stores for rules in (lifecycle_rules(b),) if rules]
     first = next((b for b in stores if adopted(b)), None)
-    return (*((f"# storage account {account}: its containers name keys {', '.join(sorted(keys))}; an account has one "
-               f"key: {one(keyed, 'ciamEncryptedByRole')} is used",) if len(keys) > 1 else ()),
+    return (*((comment(f"storage account {account}: its containers name keys {', '.join(sorted(keys))}; an account has "
+                       f"one key: {one(keyed, 'ciamEncryptedByRole')} is used"),) if len(keys) > 1 else ()),
             *((k.blocks if k is not None else ())),
-            block("resource", ["azurerm_storage_account", n], [
+            tf_block("resource", ["azurerm_storage_account", n], [
                 ("name", account), ("resource_group_name", RG), ("location", LOC), ("account_tier", "Standard"),
                 ("account_replication_type", "ZRS"), ("min_tls_version", "TLS1_2"),
                 ("https_traffic_only_enabled", True),
@@ -89,15 +89,15 @@ def _account(m, account, stores):
                 *((("identity", Block((("type", "UserAssigned"), ("identity_ids", [ref(f"{k.identity}.id")])))),)
                   if k is not None and k.identity else ((k.note,) if k is not None and k.note else ())),
                 ("tags", tagged(m, {"ManagedBy": "opsdir"}))]),
-            *((block("resource", ["azurerm_storage_account_customer_managed_key", n], [
+            *((tf_block("resource", ["azurerm_storage_account_customer_managed_key", n], [
                 ("storage_account_id", ref(f"azurerm_storage_account.{n}.id")),
                 ("key_vault_key_id", ref(f"{k.key}.versionless_id")),
                 ("user_assigned_identity_id", ref(f"{k.identity}.id")), ("depends_on", [ref(k.grant)])]),)
               if k is not None and k.identity else ()),
-            *((block("resource", ["azurerm_storage_management_policy", n], [
+            *((tf_block("resource", ["azurerm_storage_management_policy", n], [
                 ("storage_account_id", ref(f"azurerm_storage_account.{n}.id")),
                 *(("rule", Block(_rule(b, rules))) for b, rules in managed)]),) if managed else ()),
-            *((import_block(f"azurerm_storage_account.{n}", one(first, "ciamProviderRef").split("/blobServices/")[0]),)
+            *((tf_import(f"azurerm_storage_account.{n}", one(first, "ciamProviderRef").split("/blobServices/")[0]),)
               if first is not None else ()))
 
 
@@ -121,24 +121,24 @@ def _container(b):
     mode, days = one(b, "ciamStorageImmutability"), one(b, "ciamStorageLockDays")
     replica = container_of(one(b, "ciamStorageReplicaRef"))
     destination = f"{n}_replica_account_id"
-    return (block("resource", ["azurerm_storage_container", n], [
+    return (tf_block("resource", ["azurerm_storage_container", n], [
                 ("name", container), ("storage_account_id", ref(f"azurerm_storage_account.{a}.id")),
                 ("container_access_type", "private"),
                 ("metadata", {"role": one(b, "ciamBindingRole"), "managedby": "opsdir"})]),
-            *((block("resource", ["azurerm_storage_container_immutability_policy", n], [
+            *((tf_block("resource", ["azurerm_storage_container_immutability_policy", n], [
                 ("storage_container_resource_manager_id", ref(f"azurerm_storage_container.{n}.id")),
                 ("immutability_period_in_days", int(days or 1)), ("protected_append_writes_enabled", False),
                 ("locked", mode == "compliance")]),) if mode in ("governance", "compliance") else ()),
-            *((f"# {rdn_value(b)}: its replica {one(b, 'ciamStorageReplicaRef')} isn't a blob container: replication "
-               "not rendered",) if one(b, "ciamStorageReplicaRef") and not replica else ()),
-            *((block("variable", [destination], [("type", ref("string")), ("description", (
+            *((comment(f"{rdn_value(b)}: its replica {one(b, 'ciamStorageReplicaRef')} isn't a blob container: "
+                       "replication not rendered"),) if one(b, "ciamStorageReplicaRef") and not replica else ()),
+            *((tf_block("variable", [destination], [("type", ref("string")), ("description", (
                 f"The ID of storage account {replica[0]}, which container {container} is copied to"))]),
-               block("resource", ["azurerm_storage_object_replication", n], [
+               tf_block("resource", ["azurerm_storage_object_replication", n], [
                    ("source_storage_account_id", ref(f"azurerm_storage_account.{a}.id")),
                    ("destination_storage_account_id", ref(f"var.{destination}")),
                    ("rules", Block((("source_container_name", ref(f"azurerm_storage_container.{n}.name")),
                                     ("destination_container_name", replica[1]))))])) if replica else ()),
-            *((import_block(f"azurerm_storage_container.{n}", one(b, "ciamProviderRef")),) if adopted(b) else ()))
+            *((tf_import(f"azurerm_storage_container.{n}", one(b, "ciamProviderRef")),) if adopted(b) else ()))
 
 
 def render_object_stores(m):
@@ -146,9 +146,9 @@ def render_object_stores(m):
     others and what to ask them for, then each account the stack keeps with its containers."""
     described = [b for b in of_class(m, "ciamObjectStore") if container_of(one(b, "ciamStorageRef")) and has_depth(b)]
     kept = sorted(kept_containers(m), key=lambda b: (container_of(one(b, "ciamStorageRef")), b.dn))
-    return (*(f"# Object store '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) "
-              f"is kept by {kept_by(m, b)}, with its "
-              f"storage account: not rendered here. Ask them for: {depth_summary(b)}" for b in described
+    return (*(comment(f"Object store '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) "
+                      f"is kept by {kept_by(m, b)}, with its "
+                      f"storage account: not rendered here. Ask them for: {depth_summary(b)}") for b in described
               if not owned(b)),
             *(x for account, stores in groupby(kept, key=lambda b: container_of(one(b, "ciamStorageRef"))[0])
               for group in (tuple(stores),)

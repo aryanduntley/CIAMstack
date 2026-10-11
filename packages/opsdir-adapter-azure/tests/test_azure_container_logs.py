@@ -8,6 +8,7 @@ from opsdir.connectors.registry import services
 from opsdir.core.contract import LogSource
 from opsdir.domains.compute.naming import WORKLOADS, workload_dn
 from opsdir.domains.observability.naming import LOG_ROUTES
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.container_logs import container_log_notes, render_container_logs
 from network_fixtures import ALPHA, entry, model
 
@@ -41,7 +42,7 @@ BINDINGS = (entry(ALPHA, "am", "ciamWorkloadBinding", ciamBindingRole="am-worklo
 
 def _render():
     _, alpha, _ = model(alpha=BINDINGS, tree=TREE)
-    return alpha, render_container_logs(alpha, services()._replace(logs=lambda m: (AM, TAIL)))
+    return alpha, as_text(render_container_logs(alpha, services()._replace(logs=lambda m: (AM, TAIL))))
 
 
 def test_a_rule_per_route_keeps_its_roles_pods_containers_and_kinds():
@@ -68,6 +69,6 @@ def test_a_rule_per_route_keeps_its_roles_pods_containers_and_kinds():
 
 def test_what_isnt_shipped_is_named():
     alpha, _ = _render()
-    assert container_log_notes(alpha, services()._replace(logs=lambda m: (AM, TAIL))) == (
+    assert as_text(container_log_notes(alpha, services()._replace(logs=lambda m: (AM, TAIL)))) == (
         "# NOTE: log route to-siem: role am's container output not shipped: its destination siem isn't a Log "
         "Analytics workspace (kind workspace, a workspace ID)",)

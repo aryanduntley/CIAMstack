@@ -34,7 +34,7 @@ from opsdir.core.directory import is_kind, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource
 from opsdir.domains.observability.audit import (PROTECTED, audit_trails, store_protection, trail_destination,
                                                trail_keeper)
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, mentions, ref, tf_block, tf_name
 from .names import resource_id
 from .storage import bucket_of, kept_buckets
 
@@ -60,14 +60,14 @@ def _destination(m, n, sink, dest):
         bucket = bucket_of(one(dest, "ciamStorageRef"))
         name = ref(f"google_storage_bucket.{tf_name(rdn_value(dest))}.name") \
             if dest.dn in {b.dn for b in kept_buckets(m)} else bucket
-        return (f"storage.googleapis.com/{bucket}", (block("resource", ["google_storage_bucket_iam_member", n], [
+        return (f"storage.googleapis.com/{bucket}", (tf_block("resource", ["google_storage_bucket_iam_member", n], [
             ("bucket", name), ("role", "roles/storage.objectCreator"),
             ("member", ref(f"{sink}.writer_identity"))]),), ())
     pref = one(dest, "ciamProviderRef") or ""
     if is_kind(m.d, dest, "ciamLogDestination") and "/buckets/" in pref:
         return (f"logging.googleapis.com/{pref}", (), (
-            f"# {rdn_value(dest)}: a log bucket in another project needs roles/logging.bucketWriter for the sink's "
-            "writer identity",))
+            comment(f"{rdn_value(dest)}: a log bucket in another project needs roles/logging.bucketWriter for the "
+                    "sink's writer identity"),))
     return None
 
 
@@ -77,14 +77,15 @@ def _data(n, org, events):
         return ()
     kind, parent = (("google_organization_iam_audit_config", ("org_id", ref(f"var.{ORGANIZATION}"))) if org
                     else ("google_project_iam_audit_config", ("project", ref("var.project_id"))))
-    return (block("resource", [kind, n], [parent, ("service", "allServices"),
-                                          *(("audit_log_config", Block((("log_type", log),))) for log in logs)]),)
+    return (tf_block("resource", [kind, n], [parent, ("service", "allServices"),
+                                             *(("audit_log_config", Block((("log_type", log),))) for log in logs)]),)
 
 
 def _trail(m, t):
     cn, keeper, dest = rdn_value(t), trail_keeper(m, t), trail_destination(m, t)
     if keeper is not None:
-        return (f"# Audit trail {cn} ({one(t, 'ciamAuditScope')}): kept by {rdn_value(keeper)}, not rendered here",)
+        return (comment(f"Audit trail {cn} ({one(t, 'ciamAuditScope')}): kept by {rdn_value(keeper)}, not rendered "
+                        "here"),)
     n = tf_name(cn)
     org = one(t, "ciamAuditScope") == "organization"
     sink = f"google_logging_{'organization' if org else 'project'}_sink"
@@ -92,10 +93,10 @@ def _trail(m, t):
     if found is None:
         why = ("no bucket or log bucket here keeps its records (ciamLogDestinationRole)" if dest is None else
                f"a sink exports to a bucket, a log bucket, BigQuery or Pub/Sub, and {rdn_value(dest)} is none of those")
-        return (f"# NOTE: audit trail {cn}: not rendered: {why}",)
+        return (comment(f"NOTE: audit trail {cn}: not rendered: {why}"),)
     destination, grants, notes = found
     unlocked = one(t, "ciamIntegrityValidation") == "TRUE" and store_protection(m, t) < PROTECTED
-    return (*notes, block("resource", [sink, n], [
+    return (*notes, tf_block("resource", [sink, n], [
         *((("#", "integrity: Google keeps no digest of audit logs; keep them in a bucket whose retention policy is "
                  "locked (ciamStorageImmutability compliance)"),) if unlocked else ()),
         ("name", _name(t)),
@@ -109,8 +110,8 @@ def render_trails(m):
     """HCL (and comments) for environment m's control-plane audit trails; the organization input once, when an
     organization sink is rendered."""
     out = tuple(x for t in audit_trails(m) for x in _trail(m, t))
-    org = any(f"var.{ORGANIZATION}" in x for x in out)
-    return ((block("variable", [ORGANIZATION], [
+    org = mentions(out, f"var.{ORGANIZATION}")
+    return ((tf_block("variable", [ORGANIZATION], [
         ("type", ref("string")), ("description", "The organization whose audit logs the organization sink exports")]),)
         if org else ()) + out
 

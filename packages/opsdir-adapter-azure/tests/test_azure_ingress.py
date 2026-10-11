@@ -5,6 +5,7 @@ gateway's Service that internal load balancer."""
 import re
 
 from opsdir.core.directory import make_entry
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.edge import gateway_service
 from opsdir_adapter_azure.ingress import gateway_backend, gateway_plug
 from edge_fixtures import ENV, environment, service, spec, subnet
@@ -29,7 +30,7 @@ CERT = "azkv-cert://kv-ciam-prod/sso-tls-2026"
 def _front(s, *bindings):
     svc = service("198.51.100.77", ciamProviderRef="pip-ciam-sso-prod")
     m = environment(svc, EDGE, *bindings)
-    return "\n".join(gateway_service(m, svc, s, gateway_backend(m, bindings[0], s)))
+    return "\n".join(as_text(gateway_service(m, svc, s, gateway_backend(m, bindings[0], s))))
 
 
 def test_a_reencrypting_front_sends_https_to_the_gateway_and_trusts_its_ca():

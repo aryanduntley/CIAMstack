@@ -10,7 +10,7 @@ from opsdir.core.environment import of_class, one_role
 from opsdir.domains.edge.resolve import service_edge
 from opsdir.domains.network.stack import (allowlist, egress_firewalls, elsewhere, endpoint_services, private_endpoints,
                                           reached, subnets)
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 
 # the AWS service a private endpoint to each kind of service reaches (com.amazonaws.<region>.<service>)
 SERVICES = {"secrets": "secretsmanager", "keys": "kms", "object-storage": "s3", "logs": "logs", "messaging": "sns",
@@ -39,16 +39,16 @@ def _route_tables(m, p):
 def _interface(m, p, n, service):
     net = one_role(m, "network")
     found = subnets(m, p)
-    return (block("resource", ["aws_security_group", f"{n}_endpoint"], [
+    return (tf_block("resource", ["aws_security_group", f"{n}_endpoint"], [
                 ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(p)}"),
                 ("description", f"CIAM private endpoint {rdn_value(p)} ({m.label})"),
                 ("vpc_id", ref("data.aws_vpc.main.id")), ("tags", {"ManagedBy": "opsdir"})]),
-            *(block("resource", ["aws_vpc_security_group_ingress_rule", f"{n}_endpoint_{i}"], [
+            *(tf_block("resource", ["aws_vpc_security_group_ingress_rule", f"{n}_endpoint_{i}"], [
                 ("security_group_id", ref(f"aws_security_group.{n}_endpoint.id")), ("cidr_ipv4", cidr),
                 ("from_port", 443), ("to_port", 443), ("ip_protocol", "tcp"),
                 ("description", f"the network to {rdn_value(p)}")])
               for i, cidr in enumerate(values(net, "ciamCidr") if net is not None else ())),
-            block("resource", ["aws_vpc_endpoint", n], [
+            tf_block("resource", ["aws_vpc_endpoint", n], [
                 ("vpc_id", ref("data.aws_vpc.main.id")),
                 ("service_name", f"com.amazonaws.{one(m.cloud, 'ciamRegion')}.{service}"),
                 ("vpc_endpoint_type", "Interface"),
@@ -60,10 +60,10 @@ def _interface(m, p, n, service):
 
 def _gateway(m, p, n, service):
     if service not in GATEWAY_SERVICES:
-        return (f"# Private endpoint '{rdn_value(p)}': {service} has no gateway endpoint (only S3 and DynamoDB); "
-                "record it as an interface endpoint. Not rendered.",)
+        return (comment(f"Private endpoint '{rdn_value(p)}': {service} has no gateway endpoint (only S3 and DynamoDB); "
+                        "record it as an interface endpoint. Not rendered."),)
     tables = _route_tables(m, p)
-    return (block("resource", ["aws_vpc_endpoint", n], [
+    return (tf_block("resource", ["aws_vpc_endpoint", n], [
         ("vpc_id", ref("data.aws_vpc.main.id")),
         ("service_name", f"com.amazonaws.{one(m.cloud, 'ciamRegion')}.{service}"),
         ("vpc_endpoint_type", "Gateway"),
@@ -78,16 +78,16 @@ def private_endpoint(m, p):
     n, kind, what = tf_name(rdn_value(p)), one(p, "ciamPrivateEndpointKind", "interface"), one(p, "ciamPrivateService")
     service = SERVICES.get(what)
     roles = ", ".join(one(b, "ciamBindingRole") for b in reached(m, p))
-    head = (f"# Private endpoint '{rdn_value(p)}' to {what}" + (f" (reaches {roles})" if roles else ""),)
+    head = (comment(f"Private endpoint '{rdn_value(p)}' to {what}" + (f" (reaches {roles})" if roles else "")),)
     if service is None:
-        return (f"# Private endpoint '{rdn_value(p)}': no VPC endpoint for {what} (a database is reached at its own "
-                "private address); not rendered.",)
+        return (comment(f"Private endpoint '{rdn_value(p)}': no VPC endpoint for {what} (a database is reached at its "
+                        "own private address); not rendered."),)
     if kind == "interface":
         return (*head, *_interface(m, p, n, service))
     if kind == "gateway":
         return (*head, *_gateway(m, p, n, service))
-    return (f"# Private endpoint '{rdn_value(p)}': AWS has no {kind} endpoint; record it as an interface or gateway "
-            "endpoint. Not rendered.",)
+    return (comment(f"Private endpoint '{rdn_value(p)}': AWS has no {kind} endpoint; record it as an interface or "
+                    "gateway endpoint. Not rendered."),)
 
 
 def endpoint_service(m, e, svc, endpoints=()):
@@ -95,12 +95,13 @@ def endpoint_service(m, e, svc, endpoints=()):
     traffic policy puts it on an ALB (an endpoint service needs an NLB)."""
     role = one(e, "ciamServiceRole")
     if svc is None:
-        return (f"# UNBOUND: endpoint service '{rdn_value(e)}' exposes {role}, which this environment doesn't bind",)
+        return (comment(f"UNBOUND: endpoint service '{rdn_value(e)}' exposes {role}, which this environment doesn't "
+                        "bind"),)
     spec = service_edge(m, svc, endpoints)
     if spec is not None and (spec.layer7 or spec.cdn):
-        return (f"# Endpoint service '{rdn_value(e)}': {rdn_value(svc)} terminates TLS at an application load "
-                "balancer; an endpoint service needs a network load balancer (L4 passthrough). Not rendered.",)
-    return (block("resource", ["aws_vpc_endpoint_service", tf_name(rdn_value(e))], [
+        return (comment(f"Endpoint service '{rdn_value(e)}': {rdn_value(svc)} terminates TLS at an application load "
+                        "balancer; an endpoint service needs a network load balancer (L4 passthrough). Not rendered."),)
+    return (tf_block("resource", ["aws_vpc_endpoint_service", tf_name(rdn_value(e))], [
         ("acceptance_required", one(e, "ciamAcceptanceRequired") == "TRUE"),
         ("network_load_balancer_arns", [ref(f"aws_lb.{tf_name(rdn_value(svc))}.arn")]),
         ("allowed_principals", values(e, "ciamAllowedPrincipal")), ("tags", binding_tags(e))]),)
@@ -125,11 +126,11 @@ def domain_rules(m, proxy):
                   ("ip_set", Block((("definition", values(net, "ciamCidr") if net is not None else []),)))))
     domains = Block((("generated_rules_type", "ALLOWLIST"), ("target_types", ["TLS_SNI", "HTTP_HOST"]),
                      ("targets", list(hosts))))
-    return (f"# Egress firewall '{rdn_value(proxy)}': reference this rule group from its firewall policy"
-            + (f" ({policy})" if policy else "") + " (stateful_rule_group_reference)",
-            *((f"# A domain list matches TLS SNI and HTTP Host only: {', '.join(other)} isn't web traffic, so the "
-               "policy's other stateful rules decide it",) if other else ()),
-            block("resource", ["aws_networkfirewall_rule_group", f"{n}_domains"], [
+    return (comment(f"Egress firewall '{rdn_value(proxy)}': reference this rule group from its firewall policy"
+                    + (f" ({policy})" if policy else "") + " (stateful_rule_group_reference)"),
+            *((comment(f"A domain list matches TLS SNI and HTTP Host only: {', '.join(other)} isn't web traffic, so "
+                       "the policy's other stateful rules decide it"),) if other else ()),
+            tf_block("resource", ["aws_networkfirewall_rule_group", f"{n}_domains"], [
                 ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(proxy)}-domains"), ("type", "STATEFUL"),
                 ("capacity", max(100, 2 * len(hosts))),
                 ("description", f"Sites the CIAM platform reaches ({m.label})"),
@@ -141,7 +142,7 @@ def domain_rules(m, proxy):
 def render_network(m, endpoints=()):
     """HCL blocks for environment m's network depth the stack keeps, after comments naming what others keep; () when
     the record has none."""
-    notes = tuple(f"# {s}" for s in elsewhere(m))
+    notes = tuple(comment(s) for s in elsewhere(m))
     return (*notes,
             *(x for p in private_endpoints(m) for x in private_endpoint(m, p)),
             *(x for e, svc in endpoint_services(m) for x in endpoint_service(m, e, svc, endpoints)),

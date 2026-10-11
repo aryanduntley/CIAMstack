@@ -26,6 +26,7 @@ from opsdir.core.directory import one
 from opsdir.core.sources import json_document
 from opsdir.domains.estate.quotas import (QuotaRow, limits_fetched, need_key, needed, quota_import, quota_needs,
                                           quota_regions)
+from opsdir_format_terraform.hcl import comment
 from .account import subscription_id
 from .inventory import PROVIDER
 
@@ -100,8 +101,8 @@ def quota_request_notes(m):
     """Comments naming each increase the operator decided to request for environment m (azurerm can't request
     one)."""
     region, sub = one(m.cloud, "ciamRegion"), subscription_id(m) or "(the subscription)"
-    return tuple(f"# Quota request ({key}): raise it to {one(n, 'ciamQuotaRequested') or needed(m, key)} for "
-                 f"subscription {sub} in {region} through the Quota API (`az quota update`, Microsoft.Quota) or a "
-                 "support request: azurerm has no resource for it; Microsoft's pages don't say whether the Quota API "
-                 "serves Azure Government"
+    return tuple(comment(f"Quota request ({key}): raise it to {one(n, 'ciamQuotaRequested') or needed(m, key)} for "
+                         f"subscription {sub} in {region} through the Quota API (`az quota update`, Microsoft.Quota) "
+                         "or a support request: azurerm has no resource for it; Microsoft's pages don't say whether "
+                         "the Quota API serves Azure Government")
                  for n in quota_needs(m) if one(n, "ciamQuotaDecision") == "request" for key in (need_key(n),))

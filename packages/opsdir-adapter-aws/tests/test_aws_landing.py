@@ -5,6 +5,7 @@ environment needs nothing from one."""
 from opsdir.connectors.render import render_env
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import LdifRecord, parse
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.landing import render_landing
 from support import REGISTRY, build_directory
 
@@ -53,7 +54,7 @@ PRINCIPALS = (
 
 def test_ci_trust_and_workforce_access_for_the_landing_zone():
     m = env_model(build_directory(REGISTRY, tuple(parse(_records(*PRINCIPALS)))), "aws/prod")
-    out = render_landing(m)["terraform/landing-zone/main.tf"]
+    out = as_text(render_landing(m))["terraform/landing-zone/main.tf"]
     assert "kept by landing-zone" in out and "not by the platform's pipeline" in out
     assert 'resource "aws_iam_openid_connect_provider" "token_actions_githubusercontent_com"' in out
     assert '"Action" : "sts:AssumeRoleWithWebIdentity"' in out and 'name = "ciam-prod-deploy"' in out
@@ -63,7 +64,7 @@ def test_ci_trust_and_workforce_access_for_the_landing_zone():
     assert 'resource "aws_ssoadmin_permission_set" "admin_sso"' in out
     assert 'name             = "ciam-prod-ops-admins"' in out and 'principal_type     = "GROUP"' in out
     assert 'principal_id       = "9a4f7c2e-0000-4000-8000-000000000001"' in out
-    assert "variable \"account_id\"" in render_landing(m)["terraform/landing-zone/providers.tf"]
+    assert "variable \"account_id\"" in as_text(render_landing(m))["terraform/landing-zone/providers.tf"]
 
 
 def test_the_manifest_scopes_it_and_nothing_is_rendered_without_need():
@@ -77,7 +78,7 @@ def test_guardrails_as_service_control_policies():
     guardrail = _entry(f"cn=baseline,ou=bindings,{ENV}", "ciamGuardrail", cn="baseline", ciamBindingRole="guardrails",
                        ciamGuardrailKind="service-control",
                        ciamDenies=("region-escape", "root-use", "public-storage"))
-    files = render_landing(env_model(build_directory(REGISTRY, tuple(parse(_records(guardrail)))), "aws/prod"))
+    files = as_text(render_landing(env_model(build_directory(REGISTRY, tuple(parse(_records(guardrail)))), "aws/prod")))
     out = files["terraform/landing-zone/main.tf"]
     assert 'resource "aws_organizations_policy" "baseline"' in out and 'type        = "SERVICE_CONTROL_POLICY"' in out
     assert '"aws:RequestedRegion" : [' in out and '"us-east-1"' in out and '"Sid" : "DenyRoot"' in out
@@ -99,6 +100,6 @@ def test_the_region_guardrail_allows_the_regions_the_environment_s_residency_all
     held = LdifRecord(ENV, "modify", {}, (("add", "objectClass", ("ciamEnvironmentPlacement",)),
                                           ("replace", "ciamResidencyRef", ("cn=us,ou=residencies,dc=ciam-ops",))))
     d = build_directory(REGISTRY, tuple(parse(_records(*tree))), (held,))
-    out = render_landing(env_model(d, "aws/prod"))["terraform/landing-zone/main.tf"]
+    out = as_text(render_landing(env_model(d, "aws/prod")))["terraform/landing-zone/main.tf"]
     assert '"aws:RequestedRegion" : [\n' in out
     assert out.index('"us-east-1"') < out.index('"us-west-2"')         # its own region first, then the residency's

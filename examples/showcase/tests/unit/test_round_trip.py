@@ -6,8 +6,15 @@ record still holds what was observed, and rendering again gives the same files (
 importer withholds (secrets) is in its notices, never a change."""
 import pytest
 
-from opsdir.connectors.registry import ADAPTERS, environment, environment_specs
-from opsdir.connectors.roundtrip import fixed_point, round_trip
+from opsdir.connectors.registry import ADAPTERS, environment, environment_specs, services
+from opsdir.connectors.render import render_parts
+from opsdir.connectors.roundtrip import fixed_point, read_back, round_trip
+from opsdir_adapter_aws.terraform import render_files as aws
+from opsdir_adapter_azure.terraform import render_files as azure
+from opsdir_adapter_gcp.terraform import render_files as gcp
+
+# The cloud renderers' Terraform as data (milestone 5.5d): what each adapter's render() writes as text
+AS_DATA = {"aws": aws, "azure": azure, "gcp": gcp}
 
 INTENT = {f"{a.name}/{rb.importer}" for a in ADAPTERS for rb in a.reads_back if rb.intent}
 # What a render can't express yet, so reading it back drops it: (DN, attribute) -> why
@@ -42,3 +49,20 @@ def test_every_declared_read_back_runs_somewhere(estate):
     exercised = {rt.importer for spec in environment_specs(d) for rt in round_trip(d, spec)}
     declared = {f"{a.name}/{rb.importer}" for a in ADAPTERS for rb in a.reads_back}
     assert applying and exercised == applying <= declared
+
+
+@pytest.mark.parametrize("state", ["before", "after"])
+def test_a_cloud_render_reads_back_the_same_from_its_blocks_as_from_its_text(estate, state):
+    """The round trip run on the renderers' blocks directly (each .tf file's TfFile, before any text is written)
+    agrees with the one run on the text they write (5.5d): same files, changes, notices and drift."""
+    d, found = estate[state], services(ADAPTERS)
+    compared = []
+    for spec in environment_specs(d):
+        m, adapters, _, specific, _ = render_parts(d, spec)
+        for a in (a for a in adapters if a.name in AS_DATA):
+            data = {p: f for p, f in AS_DATA[a.name](m, found).items() if p.endswith(".tf") and p in specific}
+            assert data, f"{spec}: {a.name} rendered no Terraform"
+            compared.append((spec, a.name))
+            assert read_back(m.d, a, {**specific, **data}, ADAPTERS, None, spec) == \
+                read_back(m.d, a, specific, ADAPTERS, None, spec)
+    assert {cloud for _, cloud in compared} == set(AS_DATA)

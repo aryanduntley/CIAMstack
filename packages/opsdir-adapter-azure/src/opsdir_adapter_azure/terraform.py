@@ -17,7 +17,8 @@ from opsdir.domains.edge.gateways import role_gateway
 from opsdir.domains.edge.records import forwarders
 from opsdir.domains.network.plumbing import LANDING_ZONE
 from opsdir.domains.edge.resolve import inspected, service_edge
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
+from opsdir_format_terraform.hcl import (Block, TfFile, blocks_of, comment, ref, tf_block,
+                                        tf_name, unbound_comments, written)
 from .access import ACCESS
 from .databases import render_databases
 from .storage import render_object_stores
@@ -51,11 +52,11 @@ PRIORITIES = (100, 10, 4096)        # NSG rule priorities: first slot, step, las
 
 def _security_rule(m, fw, prio, pinned):
     if only_on_kubernetes(m, one(fw, "ciamTargetRole")):
-        return (kubernetes_note(m, f"firewall rule `{rdn_value(fw)}`", one(fw, "ciamTargetRole")),)
+        return (comment(kubernetes_note(m, f"firewall rule `{rdn_value(fw)}`", one(fw, "ciamTargetRole"))),)
     why = rule_purpose(m, fw)
     note = () if pinned else (
-        f"# NOTE: {rdn_value(fw)} has no pinned ciamRulePriority; assigned {prio}. Pin it in the directory.",)
-    return (*note, block("resource", ["azurerm_network_security_rule", tf_name(rdn_value(fw))], [
+        comment(f"NOTE: {rdn_value(fw)} has no pinned ciamRulePriority; assigned {prio}. Pin it in the directory."),)
+    return (*note, tf_block("resource", ["azurerm_network_security_rule", tf_name(rdn_value(fw))], [
         ("name", rdn_value(fw)), ("description", why), ("priority", prio), ("direction", "Inbound"),
         ("access", "Allow"), ("protocol", one(fw, "ciamProtocol", "tcp").capitalize()),
         ("source_port_range", "*"),
@@ -71,7 +72,7 @@ def _security_groups(m):
     roles = sorted({one(s, "ciamServerRole") for s in m.servers})
     rules = of_class(m, "ciamFirewallRule")
     prios = rule_priorities(rules, *PRIORITIES)
-    return (*(block("resource", ["azurerm_network_security_group", tf_name(role)], [
+    return (*(tf_block("resource", ["azurerm_network_security_group", tf_name(role)], [
                 ("name", f"nsg-ciam-{rdn_value(m.env)}-{role}"), ("location", LOC), ("resource_group_name", RG),
                 ("tags", tagged(m, {"ManagedBy": "opsdir"}))]) for role in roles),
             *chain.from_iterable(_security_rule(m, fw, *prios[fw.dn]) for fw in rules))
@@ -89,7 +90,7 @@ def _server(m, s, des, identities=(), agents=frozenset()):
     n, role = tf_name(rdn_value(s)), one(s, "ciamServerRole")
     w = identity_of(identities, role)
     disk_notes, disk = os_disk(m, s, des)
-    return (*disk_notes, block("resource", ["azurerm_network_interface", n], [
+    return (*disk_notes, tf_block("resource", ["azurerm_network_interface", n], [
                 ("name", f"nic-{rdn_value(s)}"), ("location", LOC), ("resource_group_name", RG),
                 ("ip_configuration", Block((
                     ("name", "primary"),
@@ -97,10 +98,10 @@ def _server(m, s, des, identities=(), agents=frozenset()):
                     *((("private_ip_address_allocation", "Static"), ("private_ip_address", one(s, "ciamPrivateIp")))
                       if one(s, "ciamPrivateIp") else (("private_ip_address_allocation", "Dynamic"),))))),
                 ("tags", tagged(m, {"Role": role, "ManagedBy": "opsdir"}))]),
-            block("resource", ["azurerm_network_interface_security_group_association", n], [
+            tf_block("resource", ["azurerm_network_interface_security_group_association", n], [
                 ("network_interface_id", ref(f"azurerm_network_interface.{n}.id")),
                 ("network_security_group_id", ref(f"azurerm_network_security_group.{tf_name(role)}.id"))]),
-            block("resource", ["azurerm_linux_virtual_machine", n], [
+            tf_block("resource", ["azurerm_linux_virtual_machine", n], [
                 ("name", rdn_value(s)), ("computer_name", one(s, "ciamHostname").split(".")[0]),
                 ("resource_group_name", RG), ("location", LOC), ("size", recorded(s, "ciamInstanceSize", "size")),
                 *((("zone", one(s, "ciamZone")),) if one(s, "ciamZone") else ()), ("admin_username", "ciamadmin"),
@@ -122,7 +123,7 @@ def _frontend(m, svc, n, ip, internal, targets):
         return (), (("name", "frontend"), ("zones", ["1", "2", "3"]), ("subnet_id", subnet),
                     *((("private_ip_address_allocation", "Static"), ("private_ip_address", ip)) if ip else
                       (("private_ip_address_allocation", "Dynamic"),)))
-    return ((block("data", ["azurerm_public_ip", n], [("name", public_ip_name(svc)),
+    return ((tf_block("data", ["azurerm_public_ip", n], [("name", public_ip_name(svc)),
                                                        ("resource_group_name", RG)]),),
             (("name", "frontend"), ("public_ip_address_id", ref(f"data.azurerm_public_ip.{n}.id"))))
 
@@ -146,10 +147,10 @@ def _lb_port(n, port, spec=None):
     rule = (*((("idle_timeout_in_minutes", min(30, max(4, -(-spec.idle_timeout // 60)))),)
               if spec is not None and spec.idle_timeout else ()),
             *((("load_distribution", "SourceIP"),) if spec is not None and spec.stickiness == "source-ip" else ()))
-    return (block("resource", ["azurerm_lb_probe", f"{n}_{port}"], [
+    return (tf_block("resource", ["azurerm_lb_probe", f"{n}_{port}"], [
                 ("name", f"tcp-{port}"), ("loadbalancer_id", ref(f"azurerm_lb.{n}.id")),
                 *_probe_body(spec)[:1], ("port", int(_probed(spec, port))), *_probe_body(spec)[1:]]),
-            block("resource", ["azurerm_lb_rule", f"{n}_{port}"], [
+            tf_block("resource", ["azurerm_lb_rule", f"{n}_{port}"], [
                 ("name", f"tcp-{port}"), ("loadbalancer_id", ref(f"azurerm_lb.{n}.id")), ("protocol", "Tcp"),
                 ("frontend_port", int(port)), ("backend_port", int(port)),
                 ("frontend_ip_configuration_name", "frontend"),
@@ -165,9 +166,9 @@ def _service(m, svc, endpoints=()):
     role = one(svc, "ciamTargetRole")
     gw = role_gateway(m, role) if only_on_kubernetes(m, role) else None
     if only_on_kubernetes(m, role) and gw is None:
-        return (kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})", role),)
+        return (comment(kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})", role)),)
     if service_exposure(svc) is None:
-        return (exposure_unknown(svc),)
+        return (comment(exposure_unknown(svc)),)
     if gw is not None:
         return gateway_front(m, svc, gw, endpoints)
     n = tf_name(rdn_value(svc))
@@ -182,20 +183,20 @@ def _service(m, svc, endpoints=()):
     if layer7:
         return (*gateway_service(m, svc, spec, servers_backend(targets)), *fronted, *record)
     data, fe = _frontend(m, svc, n, ip, internal, targets)
-    blind = ("# the protection policy's request inspection needs TLS terminated at the edge; not rendered",) \
+    blind = (comment("the protection policy's request inspection needs TLS terminated at the edge; not rendered"),) \
         if spec is not None and inspected(spec) and not cdn else ()
     return (*data, *blind, *(ddos_note(spec) if spec is not None else ()),
-            block("resource", ["azurerm_lb", n], [
+            tf_block("resource", ["azurerm_lb", n], [
                 ("name", f"lb-ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("location", LOC),
                 ("resource_group_name", RG), ("sku", "Standard"), ("frontend_ip_configuration", Block(fe)),
                 ("tags", tagged(m, {"Service": one(svc, "ciamFqdn"), "ManagedBy": "opsdir"}))]),
-            block("resource", ["azurerm_lb_backend_address_pool", n], [
+            tf_block("resource", ["azurerm_lb_backend_address_pool", n], [
                 ("name", "servers"), ("loadbalancer_id", ref(f"azurerm_lb.{n}.id"))]),
-            *(block("resource", ["azurerm_network_interface_backend_address_pool_association",
-                                 f"{n}_{tf_name(rdn_value(t))}"], [
-                ("network_interface_id", ref(f"azurerm_network_interface.{tf_name(rdn_value(t))}.id")),
-                ("ip_configuration_name", "primary"),
-                ("backend_address_pool_id", ref(f"azurerm_lb_backend_address_pool.{n}.id"))]) for t in targets),
+            *(tf_block("resource", ["azurerm_network_interface_backend_address_pool_association",
+                                    f"{n}_{tf_name(rdn_value(t))}"], [
+                   ("network_interface_id", ref(f"azurerm_network_interface.{tf_name(rdn_value(t))}.id")),
+                   ("ip_configuration_name", "primary"),
+                   ("backend_address_pool_id", ref(f"azurerm_lb_backend_address_pool.{n}.id"))]) for t in targets),
             *chain.from_iterable(_lb_port(n, port, spec) for port in values(svc, "ciamPort")), *fronted, *record)
 
 
@@ -207,8 +208,8 @@ def _key_vault_secrets(m):
                  for b in of_class(m, "ciamSecretRef"))
     vaults = dict.fromkeys(vault for vault, _, _ in refs)
     return tuple(chain.from_iterable(
-        (block("data", ["azurerm_key_vault", tf_name(vault)], [("name", vault), ("resource_group_name", RG)]),
-         block("data", ["azurerm_key_vault_secrets", tf_name(vault)], [
+        (tf_block("data", ["azurerm_key_vault", tf_name(vault)], [("name", vault), ("resource_group_name", RG)]),
+         tf_block("data", ["azurerm_key_vault_secrets", tf_name(vault)], [
              ("#", "names only: no secret value enters Terraform state"),
              ("key_vault_id", ref(f"data.azurerm_key_vault.{tf_name(vault)}.id")),
              ("lifecycle", Block(tuple(("postcondition", Block((
@@ -224,7 +225,9 @@ def _interconnect_note(m, ic):
             "Provided by the landing zone; not managed here.")
 
 
-def render(m, services):
+def render_files(m, services):
+    """{path: TfFile | text} of environment m's Azure render: the Terraform roots as data (main, providers, the
+    landing zone's roots), the configuration files they come with as text."""
     endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     des, identities = one_role(m, "disk-encryption"), workload_identities(m, ACCESS)
     agents = frozenset(agent_hosts(m, services)) if services else frozenset()
@@ -243,26 +246,29 @@ def render(m, services):
            *render_security(m, discovery_plans(m)), *render_discovery(m), *render_purview(m),
            *render_suppressions(m), *render_budgets(m), *quota_request_notes(m),
            *_key_vault_secrets(m), *scope_data(m, identities))
-    out = tuple(x for i, x in enumerate(out) if not (x.startswith('data "') and x in out[:i]))   # a data source once
+    out = tuple(x for i, x in enumerate(out) if not (x in blocks_of(out[:i], "data")))     # a data source once
     notes = "\n".join(_interconnect_note(m, ic) for ic in of_class(m, "ciamInterconnect"))
-    unbound = unbound_comments(m.unbound)
-    main = header(m, "Azure infrastructure for the CIAM platform", HCL) + unbound + notes + "\n\n" \
-        + "\n\n".join(out) + "\n"
-    landing = render_landing(m, platform=(main, *(t for k, t in container_files.items() if k.endswith(".tf"))))
+    main = TfFile(header(m, "Azure infrastructure for the CIAM platform", HCL) + unbound_comments(m.unbound) + notes
+                  + "\n", out)
+    landing = render_landing(m, platform=main.items)
     alone = () if f"{LANDING_ZONE}/providers.tf" in landing else \
-        tuple(x for x in (registration_note(*resource_providers((main, *landing.values()))),) if x)
-    providers = header(m, "Providers and inputs", HCL) + "\n" + "\n\n".join([
+        registration_note(*resource_providers((*main.items, *(x for f in landing.values() for x in f.items))))
+    providers = TfFile(header(m, "Providers and inputs", HCL), (
         *alone,
         required_providers(uses_azapi(m) or purview_renders(m), uses_azuread(m)),
         provider_block(m),
         *((azapi_provider(m),) if uses_azapi(m) or purview_renders(m) else ()),
         *((azuread_provider(m),) if uses_azuread(m) else ()),
         subscription_variable(m),
-        block("variable", ["admin_ssh_public_key"], [("type", ref("string"))]),
+        tf_block("variable", ["admin_ssh_public_key"], [("type", ref("string"))]),
         *budget_inputs(m),
         *purview_inputs(m),
-        *((block("variable", [FORWARDING_RULESET], [
+        *((tf_block("variable", [FORWARDING_RULESET], [
             ("description", "The landing zone's DNS forwarding ruleset the forwarding rules join"),
-            ("type", ref("string"))]),) if forwarders(m, hosted=False) else ()),
-    ]) + "\n"
+            ("type", ref("string"))]),) if forwarders(m, hosted=False) else ())))
     return {"terraform/providers.tf": providers, "terraform/main.tf": main, **container_files, **landing}
+
+
+def render(m, services):
+    """Adapter render: environment m's Azure files as text, each Terraform file written once from its TfFile."""
+    return written(render_files(m, services))

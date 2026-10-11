@@ -143,8 +143,9 @@ def only_on_kubernetes(m, role):
 
 
 def kubernetes_note(m, what, role):
-    """The comment a cloud renderer writes instead of `what` for a role environment m runs only on Kubernetes."""
-    return (f"# NOTE: {what} reaches role `{role}`, which runs only on Kubernetes in {env_label(m.env.dn)}: the "
+    """The note (comment text, no '# ') a cloud renderer writes instead of `what` for a role environment m runs only on
+    Kubernetes."""
+    return (f"NOTE: {what} reaches role `{role}`, which runs only on Kubernetes in {env_label(m.env.dn)}: the "
             "cluster's ingress and network policies serve it there; not rendered")
 
 

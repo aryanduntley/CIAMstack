@@ -15,7 +15,7 @@ from opsdir.core.directory import date_of, get, one, rdn_value, values
 from opsdir.core.environment import of_class
 from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.poam import exception_of, suppression_name
-from opsdir_format_terraform.hcl import block, ref, tf_name
+from opsdir_format_terraform.hcl import comment, ref, tf_block, tf_name
 
 MUTE = "google_scc_v2_project_mute_config"
 MUTES = ("google_scc_v2_project_mute_config", "google_scc_project_mute_config",
@@ -40,9 +40,9 @@ def _mute(m, s):
     until = date_of(s, "ciamExpiresAt") or (date_of(exc, "ciamExpiresAt") if exc is not None else None)
     note = f"exception {rdn_value(exc) if exc is not None else '(none recorded)'}" + (f", until {until}" if until
                                                                                        else "")
-    return (*((f"# {name}: the google provider takes no expiry for a mute rule: remove it on {until}",) if until
+    return (*((comment(f"{name}: the google provider takes no expiry for a mute rule: remove it on {until}"),) if until
               else ()),
-            block("resource", [MUTE, tf_name(name)], [
+            tf_block("resource", [MUTE, tf_name(name)], [
                 ("mute_config_id", name.lower()), ("project", ref("var.project_id")), ("location", "global"),
                 ("description", note), ("type", "STATIC"),
                 ("filter", " OR ".join(f'category="{c}"' for c in categories))]))
@@ -53,10 +53,10 @@ def render_suppressions(m):
     kept = [s for s in of_class(m, SUPPRESSION) if not one(s, "ciamManagedBy")]
     held = [s for s in of_class(m, SUPPRESSION) if one(s, "ciamManagedBy")]
     return (*(x for s in kept for x in (*_mute(m, s),
-                                        *((f"# {suppression_name(s)}: not Google Cloud's (not rendered here): "
-                                           f"{', '.join(_others(s))}",) if _others(s) else ()))),
-            *(f"# Suppression {suppression_name(s)}: kept by {rdn_value(get(m.d, one(s, 'ciamManagedBy')))}, not "
-              "rendered here" for s in held if get(m.d, one(s, "ciamManagedBy")) is not None))
+                                        *((comment(f"{suppression_name(s)}: not Google Cloud's (not rendered here): "
+                                                   f"{', '.join(_others(s))}"),) if _others(s) else ()))),
+            *(comment(f"Suppression {suppression_name(s)}: kept by {rdn_value(get(m.d, one(s, 'ciamManagedBy')))}, not "
+                      "rendered here") for s in held if get(m.d, one(s, "ciamManagedBy")) is not None))
 
 
 def _exception(a):

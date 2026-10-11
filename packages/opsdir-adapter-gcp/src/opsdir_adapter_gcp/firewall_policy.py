@@ -14,7 +14,7 @@ from opsdir.domains.network.stack import allowlist, network_policy, owned, priva
 from opsdir_adapter_gcp.identities import project_of
 from opsdir_adapter_gcp.names import name_parts
 from opsdir_adapter_gcp.names import MANAGED, NETWORK, PRIORITIES
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 
 POLICY = "network_policy"
 TAG_KEY = "server_role"
@@ -65,7 +65,7 @@ def _tag_key(m):
         return (), key
     project = path.get("projects")
     network = f"{project}/{path['networks']}" if project and "networks" in path else None
-    return ((block("resource", ["google_tags_tag_key", TAG_KEY], [
+    return ((tf_block("resource", ["google_tags_tag_key", TAG_KEY], [
         ("parent", f"projects/{project}" if project else ref('"projects/${var.project_id}"')),
         ("short_name", f"ciam-{rdn_value(m.env)}-role"),
         ("description", f"CIAM server role ({m.label}): what the firewall policy's rules target. {MANAGED}"),
@@ -76,14 +76,14 @@ def _tag_key(m):
 
 def _binding(s):
     n, zone = tf_name(rdn_value(s)), one(s, "ciamZone")
-    return block("resource", ["google_tags_location_tag_binding", n], [
+    return tf_block("resource", ["google_tags_location_tag_binding", n], [
         ("parent", ref(f'"//compute.googleapis.com/projects/${{var.project_id}}/zones/{zone}/instances/'
                        f'${{google_compute_instance.{n}.instance_id}}"')),
         ("tag_value", tag_value(one(s, "ciamServerRole"))), ("location", zone)])
 
 
 def _rule(m, n, prio, direction, action, match, targets, description, name=None, policy=None):
-    return block("resource", ["google_compute_network_firewall_policy_rule", n], [
+    return tf_block("resource", ["google_compute_network_firewall_policy_rule", n], [
         ("firewall_policy", policy or policy_ref(m)), *network_project(m), ("priority", prio), ("direction", direction),
         ("action", action), *((("rule_name", name),) if name else ()), ("description", description),
         ("match", Block(match)), *(("target_secure_tags", Block((("name", t),))) for t in targets)])
@@ -110,9 +110,11 @@ def ingress_rules(m):
         prio, pinned = prios[fw.dn]
         held = _hierarchical(m, fw)
         if held is not None:
-            out.append(f"# {rdn_value(fw)} belongs to the hierarchical policy '{rdn_value(held)}' (read, not rendered)")
+            out.append(comment(f"{rdn_value(fw)} belongs to the hierarchical policy '{rdn_value(held)}' (read, not "
+                               "rendered)"))
             continue
-        out += [f"# NOTE: {rdn_value(fw)} has no pinned ciamRulePriority; assigned {prio}. Pin it in the directory."] \
+        out += [comment(f"NOTE: {rdn_value(fw)} has no pinned ciamRulePriority; assigned {prio}. Pin it in the "
+                        "directory.")] \
             if not pinned else []
         out.append(_rule(m, tf_name(rdn_value(fw)), prio, "INGRESS", "allow", (
             ("src_ip_ranges", values(fw, "ciamSourceCidr")),
@@ -142,7 +144,7 @@ def egress_rules(m, proxy, targets=None, policy=None):
     sites = tuple((port, tuple(h for h in hosts if not h.startswith("*.")),
                    tuple(h for h in hosts if h.startswith("*."))) for port, hosts in allowlist(proxy))
     private = private_ranges(m)
-    return (*(f"# {h}: a wildcard domain can't be an FQDN object; allow its hosts by name" for _, _, w in sites
+    return (*(comment(f"{h}: a wildcard domain can't be an FQDN object; allow its hosts by name") for _, _, w in sites
               for h in w),
             *(_rule(m, f"{n}_sites_{port}", EGRESS + i, "EGRESS", "allow", (
                 ("dest_fqdns", list(named)), _layer4("tcp", (port,))), targets,
@@ -163,24 +165,24 @@ def policy_firewall(m):
     p, path = network_policy(m), _net_path(m)
     blocks, key = _tag_key(m)
     order = one(p, "ciamPolicyOrder") if p is not None else None
-    notes = (*((f"# The network evaluates {'its policy' if order == 'policy-first' else 'its VPC rules'} first: "
-                f"network_firewall_policy_enforcement_order = {ORDER[order]} on its network (the landing zone "
-                "keeps it)",) if order else ()),
-             *((f"# The network's project is {path['projects']}: the policy, its rules and the tag key live there, so "
-                "the deployer needs rights in it",) if "projects" in path else ()),
-             "# Binding the tag values to the instances needs roles/resourcemanager.tagUser on them for the deployer "
-             "(an access request)")
+    notes = (*((comment(f"The network evaluates {'its policy' if order == 'policy-first' else 'its VPC rules'} first: "
+                        f"network_firewall_policy_enforcement_order = {ORDER[order]} on its network (the landing zone "
+                        "keeps it)"),) if order else ()),
+             *((comment(f"The network's project is {path['projects']}: the policy, its rules and the tag key live "
+                        "there, so the deployer needs rights in it"),) if "projects" in path else ()),
+             comment("Binding the tag values to the instances needs roles/resourcemanager.tagUser on them for the "
+                     "deployer (an access request)"))
     kept = p is not None and not owned(p)
     return (*notes,
             *(() if kept else (
-                block("resource", ["google_compute_network_firewall_policy", POLICY], [
+                tf_block("resource", ["google_compute_network_firewall_policy", POLICY], [
                     ("name", _policy_name(m)), *network_project(m),
                     ("description", f"CIAM firewall policy ({m.label}): rules target the servers' secure tags")]),
-                block("resource", ["google_compute_network_firewall_policy_association", POLICY], [
+                tf_block("resource", ["google_compute_network_firewall_policy_association", POLICY], [
                     ("name", _policy_name(m)), *network_project(m), ("attachment_target", NETWORK),
                     ("firewall_policy", ref(f"google_compute_network_firewall_policy.{POLICY}.id"))]))),
             *blocks,
-            *(block("resource", ["google_tags_tag_value", tf_name(r)], [
+            *(tf_block("resource", ["google_tags_tag_value", tf_name(r)], [
                 ("parent", key), ("short_name", r), ("description", f"CIAM {r} servers ({m.label})")])
               for r in roles(m)),
             *(_binding(s) for s in m.servers),

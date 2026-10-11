@@ -8,6 +8,7 @@ import json
 import re
 
 from opsdir.core.interchange.ldif import LdifRecord
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.adapter import ADAPTER
 from opsdir_adapter_aws.budgets import budget_resources, needs_billing_provider, render_budgets
 from opsdir_adapter_aws.inventory import pairs_resources
@@ -91,7 +92,7 @@ def test_an_approved_increase_is_rendered_as_a_service_quota():
     _, alpha = _alpha(need("cpus", "vcpus", 16, ciamQuotaDecision="request"),
                       need("ips", "public-ips", 4, ciamQuotaDecision="request", ciamQuotaRequested="10"),
                       need("lbs", "load-balancers", 4, ciamQuotaDecision="deny"))
-    out = flat(render_quota_requests(alpha))
+    out = flat(as_text(render_quota_requests(alpha)))
     assert 'resource "aws_servicequotas_service_quota" "cpus_vcpus" {' in out
     assert 'quota_code = "L-1216C47A"' in out and "value = 16" in out
     assert 'quota_code = "L-0263D0A3"' in out and "value = 10" in out
@@ -100,7 +101,7 @@ def test_an_approved_increase_is_rendered_as_a_service_quota():
 
 def test_a_budget_filters_by_the_environment_tag_and_alerts_the_topic():
     _, alpha = _alpha(budget(), TOPIC, tree=TAG_POLICY, ciamAccountRef="111122223333")
-    out = flat(render_budgets(alpha))
+    out = flat(as_text(render_budgets(alpha)))
     assert 'resource "aws_budgets_budget" "monthly" {' in out and 'name = "alpha-prod-monthly"' in out
     assert 'limit_amount = "5000"' in out and 'limit_unit = "USD"' in out and '"MONTHLY"' in out
     assert '"user:Environment$alpha/prod"' in out and "activate it as a cost allocation tag" in out
@@ -110,22 +111,23 @@ def test_a_budget_filters_by_the_environment_tag_and_alerts_the_topic():
 
 def test_without_an_environment_tag_the_account_and_a_topic_elsewhere_is_noted():
     _, alpha = _alpha(budget(), TOPIC, ciamAccountRef="999988887777")
-    out = flat(render_budgets(alpha))
+    out = flat(as_text(render_budgets(alpha)))
     assert 'name = "LinkedAccount"' in out and '["999988887777"]' in out
     assert "notification {" not in out and out.startswith(
         "# NOTE: budget monthly's alerts to cost-alerts: not rendered: AWS Budgets publishes only to a topic in the "
         f"budget's account (999988887777) and {TOPIC_ARN} is elsewhere")
     _, alpha = _alpha(budget(ciamManagedBy="cn=landing-zone,ou=owners,dc=ciam-ops"), TOPIC)
-    assert render_budgets(alpha) == ("# Budget monthly: kept by cn=landing-zone,ou=owners,dc=ciam-ops, not rendered "
-                                     "here",)
+    assert as_text(render_budgets(alpha)) == (
+        "# Budget monthly: kept by cn=landing-zone,ou=owners,dc=ciam-ops, not rendered here",)
 
 
 def test_govcloud_budgets_go_through_the_standard_account():
     _, alpha = _alpha(budget(), TOPIC, region="us-gov-west-1", ciamAccountRef="222233334444")
-    assert render_budgets(alpha)[0].startswith("# NOTE: budget monthly: not rendered: GovCloud's billing is managed")
+    assert as_text(render_budgets(alpha))[0].startswith(
+        "# NOTE: budget monthly: not rendered: GovCloud's billing is managed")
     _, alpha = _alpha(budget(), TOPIC, region="us-gov-west-1", ciamAccountRef="222233334444",
                       ciamBillingAccountRef="111122223333")
-    out = flat(render_budgets(alpha))
+    out = flat(as_text(render_budgets(alpha)))
     assert "provider = aws.billing" in out and f'["{TOPIC_ARN}"]' in out and needs_billing_provider(alpha)
 
 

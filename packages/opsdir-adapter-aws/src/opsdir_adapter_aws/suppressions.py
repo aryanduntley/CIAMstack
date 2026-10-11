@@ -19,7 +19,7 @@ from opsdir.core.directory import date_of, get, one, rdn_value, values
 from opsdir.core.environment import of_class
 from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.poam import exception_of, suppression_name
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from .account import govcloud
 
 RULE, FILTER = "aws_securityhub_automation_rule", "aws_guardduty_filter"
@@ -53,11 +53,11 @@ def _rule(m, s, order):
                            for c in controls))
     update = Block((("workflow", Block((("status", "SUPPRESSED"),))),
                     ("note", Block((("text", note), ("updated_by", "opsdir"))))))
-    return (*((f"# {name}: Security Hub automation rules have no expiry: remove this rule on {until}",) if until
+    return (*((comment(f"{name}: Security Hub automation rules have no expiry: remove this rule on {until}"),) if until
               else ()),
-            *((f"# {name}: AWS GovCloud (US): automation rules for integrations aren't available (AWS GovCloud (US) "
-               "user guide); this rule matches Security Hub's own controls",) if govcloud(m) else ()),
-            block("resource", [RULE, tf_name(name)], [
+            *((comment(f"{name}: AWS GovCloud (US): automation rules for integrations aren't available (AWS GovCloud "
+                       "(US) user guide); this rule matches Security Hub's own controls"),) if govcloud(m) else ()),
+            tf_block("resource", [RULE, tf_name(name)], [
                 ("rule_name", name), ("rule_order", order), ("description", f"Suppress {', '.join(controls)}: {note}"),
                 ("criteria", criteria),
                 ("actions", Block((("type", "FINDING_FIELDS_UPDATE"), ("finding_fields_update", update))))]))
@@ -68,8 +68,8 @@ def _filter(m, s, rank):
     types = _refs(s, "guardduty")
     if not types:
         return ()
-    return (*((f"# {name}: GuardDuty filters have no expiry: remove this filter on {until}",) if until else ()),
-            block("resource", [FILTER, tf_name(f"{name}_guardduty")], [
+    return (*((comment(f"{name}: GuardDuty filters have no expiry: remove this filter on {until}"),) if until else ()),
+            tf_block("resource", [FILTER, tf_name(f"{name}_guardduty")], [
                 ("name", name), ("description", note), ("detector_id", ref(f"{DETECTOR}.id")), ("action", "ARCHIVE"),
                 ("rank", rank),
                 ("finding_criteria", Block((("criterion", Block((("field", "type"), ("equals", types)))),)))]))
@@ -79,14 +79,15 @@ def render_suppressions(m):
     """HCL (and comments) for environment m's suppressions."""
     kept = [s for s in of_class(m, SUPPRESSION) if not one(s, "ciamManagedBy")]
     held = [s for s in of_class(m, SUPPRESSION) if one(s, "ciamManagedBy")]
-    data = (block("data", ["aws_guardduty_detector", "suppressions"], []),) if any(_refs(s, "guardduty")
+    data = (tf_block("data", ["aws_guardduty_detector", "suppressions"], []),) if any(_refs(s, "guardduty")
                                                                                     for s in kept) else ()
     return (*data,
             *(x for i, s in enumerate(kept, 1) for x in (*_rule(m, s, i), *_filter(m, s, i),
-                                                          *((f"# {suppression_name(s)}: not AWS's (not rendered here): "
-                                                             f"{', '.join(_others(s))}",) if _others(s) else ()))),
-            *(f"# Suppression {suppression_name(s)}: kept by {rdn_value(get(m.d, one(s, 'ciamManagedBy')))}, not "
-              "rendered here" for s in held if get(m.d, one(s, "ciamManagedBy")) is not None))
+                                                          *((comment(f"{suppression_name(s)}: not AWS's (not "
+                                                                     f"rendered here): {', '.join(_others(s))}"),)
+                                                            if _others(s) else ()))),
+            *(comment(f"Suppression {suppression_name(s)}: kept by {rdn_value(get(m.d, one(s, 'ciamManagedBy')))}, not "
+                      "rendered here") for s in held if get(m.d, one(s, "ciamManagedBy")) is not None))
 
 
 # ------------------------------------------------------------------ read back

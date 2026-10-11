@@ -30,7 +30,7 @@ from opsdir.core.manifest import header
 from opsdir.domains.compute.workloads import role_clusters, role_namespaces
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.sources import ALL, containers_of, kept_clauses, shipments
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from .account import government, tagged
 from .identities import LOC, RG
 from .kql import field_of, kept, literal
@@ -93,7 +93,7 @@ def transform(found, sources):
 
 
 def _endpoint(m, cluster):
-    return block("resource", [ENDPOINT, tf_name(f"logs_{rdn_value(cluster)}")], [
+    return tf_block("resource", [ENDPOINT, tf_name(f"logs_{rdn_value(cluster)}")], [
         ("name", f"dce-ciam-{rdn_value(m.env)}-{rdn_value(cluster)}"), ("location", LOC), ("resource_group_name", RG),
         ("kind", "Linux"), ("tags", tagged(m, {"ManagedBy": "opsdir"}))])
 
@@ -107,7 +107,7 @@ def _settings(m, cluster, roles):
 def _rule(m, cluster, route, found, sources):
     n = tf_name(f"logs_{rdn_value(route)}_{rdn_value(cluster)}")
     roles = tuple(dict.fromkeys(x.role for x in found))
-    return (block("resource", [RULE, n], [
+    return (tf_block("resource", [RULE, n], [
                 ("name", f"dcr-ciam-{rdn_value(m.env)}-{rdn_value(route)}-{rdn_value(cluster)}"), ("location", LOC),
                 ("resource_group_name", RG),
                 ("description", f"Log route {rdn_value(route)}: container logs of {', '.join(roles)} (opsdir)"),
@@ -120,7 +120,7 @@ def _rule(m, cluster, route, found, sources):
                 ("data_flow", Block((("streams", [STREAM]), ("destinations", ["workspace"]),
                                      ("transform_kql", transform(found, sources))))),
                 ("tags", tagged(m, {"Realizes": rdn_value(route), "ManagedBy": "opsdir"}))]),
-            block("resource", [ASSOCIATION, n], [
+            tf_block("resource", [ASSOCIATION, n], [
                 ("name", f"{rdn_value(route)}-{rdn_value(cluster)}"),
                 ("target_resource_id", one(cluster, "ciamProviderRef")),
                 ("data_collection_rule_id", ref(f"{RULE}.{n}.id"))]))
@@ -145,13 +145,14 @@ def container_log_notes(m, services):
     rules = cluster_routes(m, services)
     per_cluster = {c.dn: (c, sum(1 for k, _, _ in rules if k.dn == c.dn)) for c, _, _ in rules}
     return tuple(dict.fromkeys((
-        *(f"# NOTE: log route {rdn_value(x.route)}: role {x.role}'s container output not shipped: its destination "
-          f"{rdn_value(x.destination)} isn't a Log Analytics workspace (kind workspace, a workspace ID)"
+        *(comment(f"NOTE: log route {rdn_value(x.route)}: role {x.role}'s container output not shipped: its "
+                  f"destination {rdn_value(x.destination)} isn't a Log Analytics workspace (kind workspace, a "
+                  "workspace ID)")
           for x in every if x.destination is not None and workspace_id(m, x.destination) is None),
-        *(f"# NOTE: log route {rdn_value(x.route)}: role {x.role}'s container output not shipped: the role runs on "
-          "Kubernetes here in no cluster the environment binds"
+        *(comment(f"NOTE: log route {rdn_value(x.route)}: role {x.role}'s container output not shipped: the role runs "
+                  "on Kubernetes here in no cluster the environment binds")
           for x in every if workspace_id(m, x.destination) is not None and not role_clusters(m, x.role)),
-        *(f"# NOTE: cluster {rdn_value(c)}: {n} log routes need {n} multitenant logging rules; Container insights "
-          f"takes {LIMIT} per cluster" for c, n in per_cluster.values() if n > LIMIT),
-        *(("# NOTE: Azure Government: Container insights multitenant logging is to be confirmed there (no Government "
-           "availability row names it)",) if rules and government(m) else ()))))
+        *(comment(f"NOTE: cluster {rdn_value(c)}: {n} log routes need {n} multitenant logging rules; Container "
+                  f"insights takes {LIMIT} per cluster") for c, n in per_cluster.values() if n > LIMIT),
+        *((comment("NOTE: Azure Government: Container insights multitenant logging is to be confirmed there (no "
+                   "Government availability row names it)"),) if rules and government(m) else ()))))

@@ -7,6 +7,7 @@ from opsdir.connectors.registry import services
 from opsdir.core.contract import LogSource
 from opsdir.domains.compute.naming import WORKLOADS, workload_dn
 from opsdir.domains.observability.naming import LOG_ROUTES
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.fluent_bit import IMAGE, fluent_bit_notes, render_fluent_bit
 from opsdir_adapter_aws.terraform import render
 from network_fixtures import ALPHA, entry, model
@@ -55,7 +56,7 @@ def _alpha():
 
 
 def test_lines_are_picked_by_role_classified_in_order_and_sent_per_route():
-    blocks, files = render_fluent_bit(_alpha(), _services())
+    blocks, files = as_text(render_fluent_bit(_alpha(), _services()))
     conf = load_documents(files["kubernetes/fluent-bit/ciam-eks/configmap.yaml"])[0]["data"]["fluent-bit.conf"]
     rules = [line.split(None, 1)[1] for line in conf.splitlines() if line.strip().startswith("Rule")]
     assert rules == [
@@ -80,7 +81,7 @@ def test_lines_are_picked_by_role_classified_in_order_and_sent_per_route():
 
 
 def test_the_kustomization_and_the_daemonset():
-    _, files = render_fluent_bit(_alpha(), _services())
+    _, files = as_text(render_fluent_bit(_alpha(), _services()))
     base = "kubernetes/fluent-bit/ciam-eks"
     assert load_documents(files[f"{base}/kustomization.yaml"])[0]["resources"] == [
         "namespace.yaml", "rbac.yaml", "configmap.yaml", "daemonset.yaml"]
@@ -94,7 +95,7 @@ def test_the_kustomization_and_the_daemonset():
 
 def test_whats_not_shipped_is_named_and_the_render_carries_it_all():
     alpha = _alpha()
-    assert fluent_bit_notes(alpha, _services()) == (
+    assert as_text(fluent_bit_notes(alpha, _services())) == (
         "# NOTE: log route to-siem: role am's container output not shipped: its destination siem isn't a CloudWatch "
         "log group (kind log-group, a log group ARN)",)
     out = render(alpha, _services())
@@ -106,7 +107,7 @@ def test_whats_not_shipped_is_named_and_the_render_carries_it_all():
 def test_a_roles_lines_go_by_container_to_its_sidecars_sources_first():
     tail = LogSource("am", "kubernetes", None, "text", "audit", container="audit-tail")
     idle = LogSource("am", "kubernetes", None, "text", "replication", container="admin-tail")   # no route wants it
-    _, files = render_fluent_bit(_alpha(), services()._replace(logs=lambda m: (AM, tail, idle)))
+    _, files = as_text(render_fluent_bit(_alpha(), services()._replace(logs=lambda m: (AM, tail, idle))))
     conf = load_documents(files["kubernetes/fluent-bit/ciam-eks/configmap.yaml"])[0]["data"]["fluent-bit.conf"]
     rules = [line.split(None, 1)[1] for line in conf.splitlines() if line.strip().startswith("Rule")]
     assert rules[1:4] == ["$kubernetes['container_name'] ^audit\\-tail$ ciam.am.audit-tail false",

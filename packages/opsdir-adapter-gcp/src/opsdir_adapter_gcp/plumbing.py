@@ -35,7 +35,7 @@ from opsdir_adapter_gcp.firewall_policy import egress_rules, network_project, po
 from opsdir_adapter_gcp.identities import project_of
 from opsdir_adapter_gcp.names import NETWORK, label, name_parts, network_tag
 from opsdir_adapter_gcp.network import peering_connection_id, private_endpoint
-from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, blocks_of, comment, distinct, ref, tf_block, tf_import, tf_name
 
 # blocks: what the binding renders; variables: inputs only its keeper knows; shared: data sources and resources
 # rendered once in the root, however many bindings use them
@@ -60,7 +60,7 @@ LINKS = {"dedicated": "a Cloud Interconnect attachment (VLAN) on a dedicated or 
 def _subnet(m, s):
     ref_ = one(s, "ciamProviderRef")
     path = name_parts(ref_)
-    return block("data", ["google_compute_subnetwork", tf_name(rdn_value(s))], [
+    return tf_block("data", ["google_compute_subnetwork", tf_name(rdn_value(s))], [
         ("name", path.get("subnetworks", ref_)), ("region", path.get("regions", one(m.cloud, "ciamRegion"))),
         *project_of(path)] if ref_ else [("#", "UNBOUND: the subnet has no provider ref")])
 
@@ -71,23 +71,24 @@ def network_data(m):
     net = one_role(m, "network")
     path = name_parts(one(net, "ciamProviderRef")) if net is not None else {}
     name = path.get("networks", one(net, "ciamProviderRef") if net is not None else None)
-    return (block("data", ["google_compute_network", "main"],
-                  [("name", name), *project_of(path)] if name else [("#", "UNBOUND: the network has no provider ref")]),
+    return (tf_block("data", ["google_compute_network", "main"],
+                     [("name", name), *project_of(path)] if name else
+                     [("#", "UNBOUND: the network has no provider ref")]),
             *(_subnet(m, s) for s in of_class(m, "ciamSubnetBinding")))
 
 
 def _var(name, description, sensitive=False):
-    return block("variable", [name], [("type", ref("string")), ("description", description),
-                                      *((("sensitive", True),) if sensitive else ())])
+    return tf_block("variable", [name], [("type", ref("string")), ("description", description),
+                                         *((("sensitive", True),) if sensitive else ())])
 
 
 def _adopt(address, b, id_=None):
     """An import block for a binding that exists (its provider ref, or the id given), else ()."""
-    return (import_block(address, id_ or one(b, "ciamProviderRef")),) if adopted(b) else ()
+    return (tf_import(address, id_ or one(b, "ciamProviderRef")),) if adopted(b) else ()
 
 
 def _note(b, text):
-    return Rendered((f"# {rdn_value(b)}: {text}",), (), ())
+    return Rendered((comment(f"{rdn_value(b)}: {text}"),), (), ())
 
 
 def _name(m, *parts):
@@ -122,7 +123,7 @@ def _nat_ips(m, b, n, project, region):
                       for net in (ipaddress.ip_network(c, strict=False),) if net.num_addresses <= 16 for a in net)
     if not addresses:
         return (("#", "UNBOUND: static allocation, but no public address recorded (ciamCidr)"),), ()
-    data = tuple(block("data", ["google_compute_addresses", f"{n}_{i}"], [
+    data = tuple(tf_block("data", ["google_compute_addresses", f"{n}_{i}"], [
         *((("project", project),) if project else ()), ("region", region), ("filter", f"address:{a}")])
         for i, a in enumerate(addresses))
     return (("nat_ips", [ref(f"data.google_compute_addresses.{n}_{i}.addresses[0].self_link")
@@ -147,9 +148,9 @@ def egress(m, b, here=()):
                                      ("source_ip_ranges_to_nat", ["ALL_IP_RANGES"])))) for s in found)) if found \
         else (("source_subnetwork_ip_ranges_to_nat", "ALL_SUBNETWORKS_ALL_IP_RANGES"),)
     return Rendered((
-        block("resource", ["google_compute_router", n], [("name", router), *where, ("network", NETWORK)]),
+        tf_block("resource", ["google_compute_router", n], [("name", router), *where, ("network", NETWORK)]),
         *(_adopt(f"google_compute_router.{n}", b, f"{project}/{region}/{router}") if project else ()),
-        block("resource", ["google_compute_router_nat", n], [
+        tf_block("resource", ["google_compute_router_nat", n], [
             ("name", nat), ("router", ref(f"google_compute_router.{n}.name")), *where,
             ("nat_ip_allocate_option", "MANUAL_ONLY" if static else "AUTO_ONLY"), *ips, *scope,
             *((("#", "the subnetworks an existing NAT serves aren't recorded: they stay as they are"),
@@ -189,18 +190,18 @@ def route_table(m, b, here=()):
     """A route per route of the table (Google Cloud's routes are network-wide), tagged for the roles a route is
     for; what isn't a next hop on Google Cloud named."""
     n = tf_name(rdn_value(b))
-    head = (*((f"# {rdn_value(b)}: Google Cloud's routes apply to the whole network (or to tagged instances), not to "
-               f"subnets: {', '.join(values(b, 'ciamSubnetRole'))} aren't associated",)
+    head = (*((comment(f"{rdn_value(b)}: Google Cloud's routes apply to the whole network (or to tagged instances), "
+                       f"not to subnets: {', '.join(values(b, 'ciamSubnetRole'))} aren't associated"),)
               if values(b, "ciamSubnetRole") else ()),
-            *((f"# {rdn_value(b)}: existing routes keep their own names: import each "
-               "(projects/<project>/global/routes/<name>) or let these replace them",) if adopted(b) else ()))
+            *((comment(f"{rdn_value(b)}: existing routes keep their own names: import each "
+                       "(projects/<project>/global/routes/<name>) or let these replace them"),) if adopted(b) else ()))
     out = []
     for i, r in enumerate(x for x in map(parse_route, values(b, "ciamRoute")) if x and x.kind != "local"):
         hop, variables, why = _hop(m, r, here)
         if hop is None:
-            out.append(Rendered((f"# {rdn_value(b)} {r.destination} {r.kind}: {why}",), (), ()))
+            out.append(Rendered((comment(f"{rdn_value(b)} {r.destination} {r.kind}: {why}"),), (), ()))
             continue
-        out.append(Rendered((block("resource", ["google_compute_route", f"{n}_{i}"], [
+        out.append(Rendered((tf_block("resource", ["google_compute_route", f"{n}_{i}"], [
             ("name", _name(m, rdn_value(b), str(i))), *network_project(m), ("network", NETWORK),
             ("dest_range", r.destination), ("priority", 1000), hop,
             *((("tags", [network_tag(m, role) for role in r.roles]),) if r.roles else ()),
@@ -228,9 +229,9 @@ def _peering(m, b, n):
         one(b, "ciamProviderRef") or "") else _name(m, rdn_value(b))
     importable = "projects" in ours and "networks" in ours
     return Rendered((
-        *((f"# {rdn_value(b)}: the other network adds its half (a peering from {peer} back to this network) in its "
-           "project",) if one(b, "ciamPeerAccepted") != "TRUE" else ()),
-        block("resource", ["google_compute_network_peering", n], [
+        *((comment(f"{rdn_value(b)}: the other network adds its half (a peering from {peer} back to this network) in "
+                   "its project"),) if one(b, "ciamPeerAccepted") != "TRUE" else ()),
+        tf_block("resource", ["google_compute_network_peering", n], [
             ("name", name), ("network", NETWORK), ("peer_network", _self_link(peer))]),
         *(_adopt(f"google_compute_network_peering.{n}", b, f"{ours['projects']}/{ours['networks']}/{name}")
           if importable else ())), (), ())
@@ -252,7 +253,7 @@ def _vpn(m, b, n):
 
     def tunnel(i):
         t = f"{n}_{i}"
-        return (block("resource", ["google_compute_vpn_tunnel", t], [
+        return (tf_block("resource", ["google_compute_vpn_tunnel", t], [
                     ("name", f"{name}-{i}"[:63]), *where,
                     ("vpn_gateway", ref(f"google_compute_ha_vpn_gateway.{n}.id")), ("vpn_gateway_interface", i % 2),
                     ("peer_external_gateway", ref(f"google_compute_external_vpn_gateway.{n}.id")),
@@ -260,24 +261,25 @@ def _vpn(m, b, n):
                     ("router", ref(f"google_compute_router.{n}.id")), ("ike_version", 2),
                     ("labels", {"role": label(one(b, "ciamBindingRole")), "managed_by": "opsdir"})]),
                 *(_adopt(f"google_compute_vpn_tunnel.{t}", b) if i == 0 and path else ()),
-                block("resource", ["google_compute_router_interface", t], [
+                tf_block("resource", ["google_compute_router_interface", t], [
                     ("name", f"{name}-{i}"[:63]), ("router", ref(f"google_compute_router.{n}.name")), *where,
                     ("ip_range", ref(f"var.{t}_bgp_range")),
                     ("vpn_tunnel", ref(f"google_compute_vpn_tunnel.{t}.name"))]),
-                block("resource", ["google_compute_router_peer", t], [
+                tf_block("resource", ["google_compute_router_peer", t], [
                     ("name", f"{name}-{i}"[:63]), ("router", ref(f"google_compute_router.{n}.name")), *where,
                     ("interface", ref(f"google_compute_router_interface.{t}.name")),
                     ("peer_ip_address", ref(f"var.{t}_bgp_peer_ip")), ("peer_asn", int(peer_asn))]))
     accepted = values(b, "ciamAcceptedCidr")
     return Rendered((
-        *((f"# {rdn_value(b)}: accepts {', '.join(accepted)} from the peer, learned by BGP",) if accepted else ()),
-        *((f"# {rdn_value(b)}: one peer address: a tunnel from the gateway's second interface to it too gives the "
-           "99.99% availability HA VPN offers",) if len(gateways) == 1 else ()),
-        block("resource", ["google_compute_ha_vpn_gateway", n], [("name", name), *where, ("network", NETWORK)]),
-        block("resource", ["google_compute_external_vpn_gateway", n], [
+        *((comment(f"{rdn_value(b)}: accepts {', '.join(accepted)} from the peer, learned by BGP"),)
+          if accepted else ()),
+        *((comment(f"{rdn_value(b)}: one peer address: a tunnel from the gateway's second interface to it too gives "
+                   "the 99.99% availability HA VPN offers"),) if len(gateways) == 1 else ()),
+        tf_block("resource", ["google_compute_ha_vpn_gateway", n], [("name", name), *where, ("network", NETWORK)]),
+        tf_block("resource", ["google_compute_external_vpn_gateway", n], [
             ("name", f"{name}-peer"[:63]), *network_project(m), ("redundancy_type", redundancy),
             *(("interface", Block((("id", i), ("ip_address", g)))) for i, g in enumerate(gateways))]),
-        block("resource", ["google_compute_router", n], [
+        tf_block("resource", ["google_compute_router", n], [
             ("name", f"{name}-router"[:63]), *where, ("network", NETWORK),
             ("bgp", Block((("asn", int(local)), *((("advertise_mode", "CUSTOM"), ("advertised_groups", ["ALL_SUBNETS"]),
                                                   *advertised) if advertised else ()))))]),
@@ -316,9 +318,9 @@ def flow_log(m, b, here=()):
                                                               if one(dest, "ciamProviderRef") else "")
             if dest is not None else "to Cloud Logging") + (f", kept {days} days there" if days else "")
     return Rendered(tuple(
-        f"# {rdn_value(b)}: subnetwork {rdn_value(s)} logs its flows {goes}: set its log_config "
-        "(aggregation_interval INTERVAL_5_SEC, flow_sampling 0.5, metadata INCLUDE_ALL_METADATA) where the "
-        "subnetwork is defined" for s in found), (), ())
+        comment(f"{rdn_value(b)}: subnetwork {rdn_value(s)} logs its flows {goes}: set its log_config "
+                "(aggregation_interval INTERVAL_5_SEC, flow_sampling 0.5, metadata INCLUDE_ALL_METADATA) where the "
+                "subnetwork is defined") for s in found), (), ())
 
 
 # ------------------------------------------------------------------ kept elsewhere
@@ -328,11 +330,12 @@ def kept_elsewhere(m, b, here=()):
     values aren't theirs)."""
     if is_kind(m.d, b, "ciamProxy"):
         policy = (one(b, "ciamProviderRef") or "").rsplit("/", 1)[-1] or policy_ref(m)
-        return Rendered((f"# {rdn_value(b)}: its rules apply to every instance of the network, in policy {policy}",
+        return Rendered((comment(f"{rdn_value(b)}: its rules apply to every instance of the network, in policy "
+                                 f"{policy}"),
                          *egress_rules(m, b, targets=(), policy=policy)), (), ())
     blocks, n, connection = private_endpoint(m, b), tf_name(rdn_value(b)), peering_connection_id(m)
-    made = any(x.startswith('resource "google_compute_global_forwarding_rule"') for x in blocks)
-    peered = any(x.startswith('resource "google_service_networking_connection"') for x in blocks)
+    made = bool(blocks_of(blocks, "resource", "google_compute_global_forwarding_rule"))
+    peered = bool(blocks_of(blocks, "resource", "google_service_networking_connection"))
     return Rendered((*blocks, *(_adopt(f"google_compute_global_forwarding_rule.{n}", b) if made else ()),
                      *(_adopt(f"google_compute_global_address.{n}", b) if peered else ()),
                      *(_adopt(f"google_service_networking_connection.{n}", b, connection)
@@ -350,5 +353,5 @@ def render_plumbing(m, keeper):
     here = {b.dn for b in keeper.bindings}
     parts = tuple(next(fn for oc, fn in RENDERERS if is_kind(m.d, b, oc))(m, b, here) for b in keeper.bindings)
     return Rendered(tuple(x for p in parts for x in p.blocks),
-                    tuple(dict.fromkeys(v for p in parts for v in p.variables)),
-                    (*network_data(m), *dict.fromkeys(x for p in parts for x in p.shared)))
+                    distinct(tuple(v for p in parts for v in p.variables)),
+                    (*network_data(m), *distinct(tuple(x for p in parts for x in p.shared))))

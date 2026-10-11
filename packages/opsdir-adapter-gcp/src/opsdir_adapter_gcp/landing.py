@@ -17,7 +17,7 @@ from opsdir.core.manifest import header
 from opsdir.domains.access.workloads import landing_identities, landing_zone_owner
 from opsdir.domains.network.plumbing import LANDING_ZONE, NETWORK_FILE, keepers
 from opsdir_format_terraform.format import FORMAT as HCL
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, TfFile, distinct, ref, tf_block, tf_name
 from .boundary import render_workload
 from .access import ACCESS
 from .guardrails import render_guardrails
@@ -41,10 +41,10 @@ def _host(issuer):
 def _pool(m, deployers):
     """The environment's pool and one provider per issuer, accepting only its deployers' subjects."""
     issuers = dict.fromkeys(w.trust[0] for w in deployers)
-    return (block("resource", ["google_iam_workload_identity_pool", POOL], [
+    return (tf_block("resource", ["google_iam_workload_identity_pool", POOL], [
                 ("workload_identity_pool_id", _id(f"ciam-{rdn_value(m.env)}-ci")),
                 ("display_name", f"CIAM {rdn_value(m.env)} CI")]),
-            *(block("resource", ["google_iam_workload_identity_pool_provider", tf_name(_host(i))], [
+            *(tf_block("resource", ["google_iam_workload_identity_pool_provider", tf_name(_host(i))], [
                 ("workload_identity_pool_id",
                  ref(f"google_iam_workload_identity_pool.{POOL}.workload_identity_pool_id")),
                 ("workload_identity_pool_provider_id", _id(_host(i))),
@@ -58,7 +58,7 @@ def _deployer(w):
     """A deployer's service account, which its pipeline's subject may act as, and its IAM members."""
     n = tf_name(w.identity_role)
     return (*notes(w), service_account(w),
-            block("resource", ["google_service_account_iam_member", f"{n}_ci"], [
+            tf_block("resource", ["google_service_account_iam_member", f"{n}_ci"], [
                 ("service_account_id", ref(f"google_service_account.{n}.name")),
                 ("role", "roles/iam.workloadIdentityUser"),
                 ("member", f"principal://iam.googleapis.com/${{google_iam_workload_identity_pool.{POOL}.name}}"
@@ -73,16 +73,16 @@ def _operator(w):
 def _providers(m, variables, settings=()):
     """providers.tf of a landing-zone root: the Google provider in the environment's project (with settings: the
     Budget API's quota project in the root keeping the budgets), and the root's inputs."""
-    return header(m, "Providers and inputs (landing zone)", HCL) + "\n" + "\n\n".join([
+    return TfFile(header(m, "Providers and inputs (landing zone)", HCL), (
         required_providers(),
         provider_block(m, ("project", ref("var.project_id")), *settings),
         project_variable(m, described=True),
-        *variables]) + "\n"
+        *variables))
 
 
 def _identities(m, guardrails):
-    """main.tf text of the identities and guardrails environment m's landing zone grants, the budgets it keeps on the
-    billing account and its Assured Workloads workload, or None."""
+    """main.tf (a TfFile) of the identities and guardrails environment m's landing zone grants, the budgets it keeps
+    on the billing account and its Assured Workloads workload, or None."""
     deployers, operators = landing_identities(m, ACCESS)
     fences, costs = tuple(guardrails(m)), render_budgets(m) if budget_provider_settings(m) else ()
     workload = render_workload(m)
@@ -92,19 +92,19 @@ def _identities(m, guardrails):
            *(x for w in operators for x in _operator(w)), *fences, *costs, *workload)
     what = (f"Google Cloud landing zone for the CIAM platform, kept by {landing_zone_owner(m)}: applied by the landing "
             "zone, not by the platform's pipeline")
-    return header(m, what, HCL) + "\n" + "\n\n".join(out) + "\n"
+    return TfFile(header(m, what, HCL), out)
 
 
 def render_landing(m, guardrails=render_guardrails, plumbing=render_plumbing):
-    """{path: text} of environment m's landing zone (identities, guardrails, the network plumbing its owner keeps)
+    """{path: TfFile} of environment m's landing zone (identities, guardrails, the network plumbing its owner keeps)
     and of each other party's root keeping some of its plumbing, or {} when it needs nothing from anyone."""
     main = _identities(m, guardrails)
     nets = tuple((k, plumbing(m, k)) for k in keepers(m))
     roots = dict.fromkeys((*((LANDING_ZONE,) if main else ()), *(k.folder for k, _ in nets)))
-    network = {f"{k.folder}/{NETWORK_FILE}": header(
+    network = {f"{k.folder}/{NETWORK_FILE}": TfFile(header(
         m, f"Google Cloud network kept by {k.name} for the CIAM platform: applied by them, not by the platform's "
-           "pipeline", HCL) + "\n" + "\n\n".join((*r.shared, *r.blocks)) + "\n" for k, r in nets}
-    providers = {f"{f}/providers.tf": _providers(m, tuple(dict.fromkeys(
+           "pipeline", HCL), (*r.shared, *r.blocks)) for k, r in nets}
+    providers = {f"{f}/providers.tf": _providers(m, distinct(tuple(
         v for k, r in nets if k.folder == f for v in r.variables)),
         budget_provider_settings(m) if f == LANDING_ZONE else ()) for f in roots}
     return {**providers, **({f"{LANDING_ZONE}/main.tf": main} if main else {}), **network}

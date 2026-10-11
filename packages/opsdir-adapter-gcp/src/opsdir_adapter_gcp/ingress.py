@@ -20,7 +20,7 @@ from opsdir.core.environment import UNBOUND, of_class, one_role
 from opsdir.domains.compute.workloads import cluster_subnets
 from opsdir.domains.edge.gateways import fronted_services, gateway_port
 from opsdir.domains.edge.resolve import front_edge
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from .dns import service_record
 from .edge import Backend, application_lb
 
@@ -49,11 +49,11 @@ def gateway_negs(m):
     """The NEG data sources of environment m's cluster gateways, once each: per gateway, port its fronts use and zone
     its cluster spans; a comment for a cluster that records no zones."""
     return tuple(x for gw in of_class(m, "ciamClusterGateway") for x in (
-        (block("data", ["google_compute_network_endpoint_group", _neg(gw, port, zone).rsplit(".", 1)[1]], [
+        (tf_block("data", ["google_compute_network_endpoint_group", _neg(gw, port, zone).rsplit(".", 1)[1]], [
             ("name", neg_name(m, gw, port)), ("zone", zone)]) for port in _ports(m, gw) for zone in _zones(m, gw))
         if _zones(m, gw) else
-        ((f"# UNBOUND: the zones cluster `{one(gw, 'ciamClusterRole')}` spans (ciamSpansZone): its gateway's NEGs "
-          "are read per zone",) if _ports(m, gw) else ())))
+        ((comment(f"UNBOUND: the zones cluster `{one(gw, 'ciamClusterRole')}` spans (ciamSpansZone): its gateway's "
+                  "NEGs are read per zone"),) if _ports(m, gw) else ())))
 
 
 def gateway_backend(m, svc, gw, spec):

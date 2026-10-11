@@ -3,6 +3,7 @@ them), the planner's boundary check, and the Assured Workloads workload an envir
 configuration has in its landing zone (the regime of its most demanding required level), read back as a notice."""
 from opsdir.core.directory import make_entry
 from opsdir.core.interchange.ldif import LdifRecord
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.boundary import check_boundary, gcp_services, render_workload, workload_notices
 from network_fixtures import BETA, context, entry, model
 
@@ -40,15 +41,15 @@ def test_services_and_the_boundary_check():
 
 def test_the_workload_takes_the_most_demanding_regime_or_is_a_note():
     d, a, b = _model()
-    (out,) = render_workload(b)
+    (out,) = as_text(render_workload(b))
     assert 'compliance_regime = "IL4"' in out and 'organization      = "123456789"' in out
     assert 'billing_account   = "billingAccounts/01A2B3-C4D5E6-F7A8B9"' in out
     assert render_workload(_model(met=())[2]) == ()
-    assert render_workload(_model(levels=("fedramp-moderate",))[2])[0].count('"FEDRAMP_MODERATE"') == 1
+    assert as_text(render_workload(_model(levels=("fedramp-moderate",))[2]))[0].count('"FEDRAMP_MODERATE"') == 1
     _, _, bare = model(beta=BINDINGS, tree=TREE, changes=(LdifRecord(BETA, "modify", {}, (
         ("add", "objectClass", ("ciamEnvironmentPlacement",)),
         ("replace", "ciamConfigurationMet", ("assured-workload",)))),))
-    assert render_workload(bare)[0].startswith("# NOTE: beta/prod's Assured Workloads workload: not rendered")
+    assert as_text(render_workload(bare))[0].startswith("# NOTE: beta/prod's Assured Workloads workload: not rendered")
 
 
 def test_workloads_are_named_in_an_import_notice():

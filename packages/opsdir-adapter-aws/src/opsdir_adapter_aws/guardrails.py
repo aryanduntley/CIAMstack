@@ -13,7 +13,7 @@ from opsdir.core.directory import rdn_value, values
 from opsdir.core.environment import of_class
 from opsdir.domains.access.naming import DENIALS
 from opsdir.domains.estate.residency import permitted_regions
-from opsdir_format_terraform.hcl import block, jsonencoded, ref, tf_name
+from opsdir_format_terraform.hcl import comment, jsonencoded, ref, tf_block, tf_name
 
 
 GLOBAL_SERVICES = ("a4b:*", "acm:*", "aws-marketplace-management:*", "aws-marketplace:*", "aws-portal:*", "budgets:*",
@@ -63,14 +63,14 @@ def render_guardrails(m):
         n, regions = tf_name(rdn_value(g)), permitted_regions(m)
         denials = values(g, "ciamDenies")
         found = [s for d in denials for s in _statements(d, regions)]
-        skipped = [f"# NOTE: guardrail {rdn_value(g)}: {d}: {NOT_RENDERED.get(d, 'AWS has no statement for it')}"
+        skipped = [comment(f"NOTE: guardrail {rdn_value(g)}: {d}: {NOT_RENDERED.get(d, 'AWS has no statement for it')}")
                    for d in denials if not _statements(d, regions)]
         return (*skipped, *((
-            block("resource", ["aws_organizations_policy", n], [
+            tf_block("resource", ["aws_organizations_policy", n], [
                 ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(g)}"), ("type", "SERVICE_CONTROL_POLICY"),
                 ("description", f"Prevents {', '.join(denials)} ({m.label})"),
                 ("content", jsonencoded({"Version": "2012-10-17", "Statement": found}))]),
-            block("resource", ["aws_organizations_policy_attachment", n], [
+            tf_block("resource", ["aws_organizations_policy_attachment", n], [
                 ("policy_id", ref(f"aws_organizations_policy.{n}.id")),
                 ("target_id", ref("var.guardrail_target_id"))])) if found else ()))
     return tuple(x for g in of_class(m, "ciamGuardrail") if values(g, "ciamDenies") for x in one_guardrail(g))

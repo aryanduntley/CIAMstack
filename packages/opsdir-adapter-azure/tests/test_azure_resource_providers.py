@@ -5,6 +5,8 @@ import pathlib
 import re
 
 from opsdir_adapter_azure.resource_providers import namespace_of, registration_note, resource_providers
+from opsdir_format_terraform.hcl import as_text
+from opsdir_format_terraform.hcl_reader import read_hcl
 
 SOURCE = pathlib.Path(__file__).parents[1] / "src" / "opsdir_adapter_azure"
 MAIN = '''resource "azurerm_linux_virtual_machine" "ds_1" {
@@ -22,8 +24,13 @@ resource "azapi_resource" "rule" {
 '''
 
 
+def _items(*texts):
+    """The Terraform items of rendered texts, as the renderers build them."""
+    return tuple(x for t in texts for x in read_hcl(t))
+
+
 def test_namespaces_of_managed_resources_and_azapi_types():
-    assert resource_providers((MAIN, 'resource "azurerm_user_assigned_identity" "x" {\n}\n')) == (
+    assert resource_providers(_items(MAIN, 'resource "azurerm_user_assigned_identity" "x" {\n}\n')) == (
         ("Microsoft.Compute", "Microsoft.ManagedIdentity", "Microsoft.Network", "Microsoft.Security"), ())
     assert namespace_of("azurerm_subscription_policy_exemption") == "Microsoft.Authorization"
     assert namespace_of("azurerm_subscription") == "Microsoft.Resources"
@@ -37,9 +44,9 @@ def test_every_azurerm_type_the_adapter_names_has_a_namespace():
 
 
 def test_an_unknown_type_and_the_note_without_a_landing_zone():
-    namespaces, unknown = resource_providers(('resource "azurerm_spring_cloud_app" "x" {\n}\n', MAIN))
+    namespaces, unknown = resource_providers(_items('resource "azurerm_spring_cloud_app" "x" {\n}\n', MAIN))
     assert unknown == ("azurerm_spring_cloud_app",) and "Microsoft.Compute" in namespaces
-    note = registration_note(namespaces, unknown)
+    note = "\n".join(as_text(registration_note(namespaces, unknown)))
     assert note.startswith("# Register these resource providers in the subscription before applying")
     assert "# azurerm_spring_cloud_app: its resource provider isn't known to opsdir" in note
-    assert registration_note((), ()) == ""
+    assert registration_note((), ()) == ()

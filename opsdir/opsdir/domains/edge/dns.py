@@ -30,9 +30,10 @@ def answer(b):
 
 
 def zone_unknown(svc, attribute):
-    """The comment a cloud renderer writes in place of service name svc's DNS record when neither the name (its
-    attribute, the zone as that cloud names it) nor a zone binding it falls in says which zone it goes in."""
-    return (f"# {UNBOUND}{one(svc, 'ciamBindingRole')}-dns-zone: no DNS zone recorded for `{one(svc, 'ciamFqdn')}` "
+    """The note (comment text, no '# ') a cloud renderer writes in place of service name svc's DNS record when neither
+    the name (its attribute, the zone as that cloud names it) nor a zone binding it falls in says which zone it goes
+    in."""
+    return (f"{UNBOUND}{one(svc, 'ciamBindingRole')}-dns-zone: no DNS zone recorded for `{one(svc, 'ciamFqdn')}` "
             f"({attribute}, or a zone binding it falls in): its record isn't rendered")
 
 

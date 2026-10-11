@@ -376,7 +376,7 @@ def test_routed_names_zones_run_by_others_ttls_and_record_parts():
     assert [f.dn.split(",")[0] for f in forwarders(alpha, "inbound")] == ["cn=fwd-in"]
     assert forwarders(beta, hosted=False) == () and is_hosted(forwarders(beta, hosted=True)[0])
     assert hosted_notes(beta, "virtual machines") == (
-        "# Forwarder `fwd-legacy` runs on DNS servers 10.2.0.4, 10.2.0.5 (virtual machines), not the managed resolver: "
+        "Forwarder `fwd-legacy` runs on DNS servers 10.2.0.4, 10.2.0.5 (virtual machines), not the managed resolver: "
         "they forward legacy.example to 10.9.1.2 and everything else to the platform's resolver, and the network's DNS "
         "servers point at them; not managed here",)
 

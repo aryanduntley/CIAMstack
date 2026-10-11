@@ -7,7 +7,7 @@ merged into each resource's own tags (azurerm has no provider-wide default tags)
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.estate.tags import required_tags
-from opsdir_format_terraform.hcl import Block, block, ref
+from opsdir_format_terraform.hcl import Block, ref, tf_block
 
 FIPS_NOTE = ("FIPS endpoints: Azure has no separate FIPS endpoints for the provider to use; FIPS 140 is met by the "
              "services' own validated modules, or by Azure Government (ciamCloudEnvironment usgovernment)")
@@ -31,7 +31,7 @@ def government(m):
 def required_providers(azapi=False, azuread=False):
     """The terraform block of an Azure root: azurerm, azapi when the root renders azapi resources, azuread when it
     renders Microsoft Entra ID policy (risk-based Conditional Access)."""
-    return block("terraform", [], [("required_providers", Block((
+    return tf_block("terraform", [], [("required_providers", Block((
         ("azurerm", {"source": "hashicorp/azurerm", "version": AZURERM_VERSION}),
         *((("azapi", {"source": "Azure/azapi", "version": AZAPI_VERSION}),) if azapi else ()),
         *((("azuread", {"source": "hashicorp/azuread", "version": AZUREAD_VERSION}),) if azuread else ()))))])
@@ -43,7 +43,7 @@ def azuread_provider(m):
     region = (one(m.cloud, "ciamRegion") or "").lower()
     env = "usgovernmentl5" if region.startswith("usdod") else \
         "usgovernment" if one(m.cloud, "ciamCloudEnvironment") == "usgovernment" else None
-    return block("provider", ["azuread"], [("environment", env)] if env else [])
+    return tf_block("provider", ["azuread"], [("environment", env)] if env else [])
 
 
 def provider_block(m, register=()):
@@ -51,9 +51,9 @@ def provider_block(m, register=()):
     (resource_provider_registrations "none"), but those in register (the landing zone's, for every root)."""
     gov = (("environment", "usgovernment"),) if one(m.cloud, "ciamCloudEnvironment") == "usgovernment" else ()
     listed = (("resource_providers_to_register", list(register)),) if register else ()
-    return block("provider", ["azurerm"], [*((("#", FIPS_NOTE),) if fips_endpoints(m) else ()), ("features", Block(())),
-                                            ("subscription_id", ref("var.subscription_id")), *gov,
-                                            ("resource_provider_registrations", "none"), *listed])
+    return tf_block("provider", ["azurerm"], [*((("#", FIPS_NOTE),) if fips_endpoints(m) else ()),
+                                            ("features", Block(())), ("subscription_id", ref("var.subscription_id")),
+                                            *gov, ("resource_provider_registrations", "none"), *listed])
 
 
 def subscription_id(m):
@@ -63,7 +63,7 @@ def subscription_id(m):
 
 def subscription_variable(m, described=False):
     """The subscription_id input of a root of environment m, defaulting to the recorded subscription."""
-    return block("variable", ["subscription_id"], [
+    return tf_block("variable", ["subscription_id"], [
         ("type", ref("string")),
         *((("description", f"The subscription {rdn_value(m.env)} runs in"),) if described else ()),
         *((("default", subscription_id(m)),) if subscription_id(m) else ())])

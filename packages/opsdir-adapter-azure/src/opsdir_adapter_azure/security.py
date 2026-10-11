@@ -57,7 +57,7 @@ from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.incidents import incident_routes
 from opsdir.domains.estate.naming import ALL_USERS, SEVERITIES
 from opsdir.domains.estate.security import findings_destination, security_services
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, mentions, ref, tf_block, tf_name
 from .identities import LOC, RG
 from .identity_protection import identity_read, render_identity_protection
 
@@ -164,7 +164,7 @@ def _service_plans(s):
 
 
 def _pricing(m, plan, subplan, extensions):
-    return block("resource", [PRICING, tf_name(plan)], [
+    return tf_block("resource", [PRICING, tf_name(plan)], [
         *(("#", note) for note in _confirm(m, plan)),
         ("tier", "Standard"), ("resource_type", plan), *((("subplan", subplan),) if subplan else ()),
         *(("extension", Block((("name", x),))) for x in extensions)])
@@ -172,11 +172,11 @@ def _pricing(m, plan, subplan, extensions):
 
 def _scanner(m, s):
     areas = values(s, "ciamSecurityCoverage") or ("compute",)
-    return (*((block("resource", [VA_SETTING, tf_name(rdn_value(s))], [
+    return (*((tf_block("resource", [VA_SETTING, tf_name(rdn_value(s))], [
                 *(("#", note) for note in _confirm(m, VA_SETTING)),
                 ("vulnerability_assessment_provider", "MdeTvm")]),) if "compute" in areas else ()),
-            *((f"# {rdn_value(s)}: Defender for Cloud has no vulnerability scanner for application code (not "
-               "rendered)",) if "applications" in areas else ()))
+            *((comment(f"{rdn_value(s)}: Defender for Cloud has no vulnerability scanner for application code (not "
+                       "rendered)"),) if "applications" in areas else ()))
 
 
 def _posture(m, s):
@@ -186,17 +186,17 @@ def _posture(m, s):
     unknown = [k for k in frameworks if k not in known]
     others = [b for b in values(s, "ciamSecurityBaseline") if b != BASELINE]
     return (*(x for k in known for x in (
-                block("data", ["azurerm_policy_set_definition", tf_name(k)], [("display_name", INITIATIVES[k])]),
-                block("resource", [ASSIGNMENT, tf_name(f"{cn}_{k}")], [
+                tf_block("data", ["azurerm_policy_set_definition", tf_name(k)], [("display_name", INITIATIVES[k])]),
+                tf_block("resource", [ASSIGNMENT, tf_name(f"{cn}_{k}")], [
                     *(("#", note) for note in _confirm(m, k)),
                     ("name", f"ciam-{k}"), ("display_name", INITIATIVES[k]),
                     ("policy_definition_id", ref(f"data.azurerm_policy_set_definition.{tf_name(k)}.id")),
                     ("subscription_id", ref(f"{SUBSCRIPTION}.id"))]))),
-            *((f"# {cn}: Defender for Cloud assigns the {BASELINE_NAME} itself (its default assignment)",)
+            *((comment(f"{cn}: Defender for Cloud assigns the {BASELINE_NAME} itself (its default assignment)"),)
               if BASELINE in values(s, "ciamSecurityBaseline") else ()),
-            *((f"# {cn}: Azure has no built-in initiative here for {', '.join(unknown)} (not rendered)",)
+            *((comment(f"{cn}: Azure has no built-in initiative here for {', '.join(unknown)} (not rendered)"),)
               if unknown else ()),
-            *((f"# {cn}: {', '.join(others)}: another cloud's baseline, not Azure's (not rendered)",)
+            *((comment(f"{cn}: {', '.join(others)}: another cloud's baseline, not Azure's (not rendered)"),)
               if others else ()))
 
 
@@ -208,9 +208,10 @@ def _export(m, s, kind):
     workspace = one(dest, "ciamProviderRef") if is_kind(m.d, dest, "ciamLogDestination") and \
         one(dest, "ciamDestinationKind") == "workspace" else None
     if not workspace:
-        return (f"# NOTE: {cn}'s findings to {one(s, 'ciamFindingsRole')}: not rendered: continuous export is rendered "
-                "to a Log Analytics workspace (ciamProviderRef); an Event Hub needs a connection string (a secret)",)
-    return (block("resource", [AUTOMATION, tf_name(f"{cn}_export")], [
+        return (comment(f"NOTE: {cn}'s findings to {one(s, 'ciamFindingsRole')}: not rendered: continuous export is "
+                        "rendered to a Log Analytics workspace (ciamProviderRef); an Event Hub needs a connection "
+                        "string (a secret)"),)
+    return (tf_block("resource", [AUTOMATION, tf_name(f"{cn}_export")], [
         ("name", f"{cn}-export"), ("location", LOC), ("resource_group_name", RG),
         ("scopes", [ref(f"{SUBSCRIPTION}.id")]),
         ("action", Block((("type", "Workspace"), ("resource_id", workspace)))),
@@ -259,11 +260,11 @@ def _incident_routing(m, s, kind):
     if route is None or route.binding is None or kind not in EXPORTS:
         return ()
     cn, n = rdn_value(s), tf_name(f"{rdn_value(s)}_incidents")
-    critical = ((f"# {cn}: Defender has no critical severity: its high findings go to {route.role}",)
+    critical = ((comment(f"{cn}: Defender has no critical severity: its high findings go to {route.role}"),)
                 if route.severity == "critical" else ())
     workspace, group = _workspace_of(m, route.binding), _action_group_of(route.binding)
     if workspace:
-        return (*critical, block("resource", [AUTOMATION, n], [
+        return (*critical, tf_block("resource", [AUTOMATION, n], [
             ("name", f"{cn}-incidents"), ("location", LOC), ("resource_group_name", RG),
             ("description", f"{cn}'s {route.severity} and worse findings to {route.role} (incident process)"),
             ("scopes", [ref(f"{SUBSCRIPTION}.id")]),
@@ -272,7 +273,7 @@ def _incident_routing(m, s, kind):
               for src in EXPORTS[kind] if src in SEVERITY_PATHS)]))
     findings_ws = _workspace_of(m, findings_destination(m, s))
     if group and kind in INCIDENT_TABLES and findings_ws:
-        return (*critical, block("resource", [QUERY_ALERT, n], [
+        return (*critical, tf_block("resource", [QUERY_ALERT, n], [
             ("name", f"{cn}-incidents"), ("location", LOC), ("resource_group_name", RG),
             ("description", f"{cn}'s {route.severity} and worse findings to {route.role} (incident process)"),
             ("scopes", [findings_ws]), ("severity", MONITOR_SEVERITY[route.severity]),
@@ -283,21 +284,23 @@ def _incident_routing(m, s, kind):
     why = (f"a log alert on {INCIDENT_TABLES[kind][0]} needs the service's findings exported to a Log Analytics "
            "workspace (its ciamFindingsRole)" if group and kind in INCIDENT_TABLES else
            f"{rdn_value(route.binding)} is no Log Analytics workspace or action group (ciamProviderRef)")
-    return (f"# NOTE: {cn}'s incidents to {route.role}: not rendered: {why}",)
+    return (comment(f"NOTE: {cn}'s incidents to {route.role}: not rendered: {why}"),)
 
 
 def _service(m, s):
     cn, kind, keeper = rdn_value(s), one(s, "ciamSecurityKind"), one(s, "ciamManagedBy")
     if keeper:
         holder = get(m.d, keeper)
-        return (f"# Security service {cn} ({kind}): kept by {rdn_value(holder) if holder is not None else keeper}, "
-                "not rendered here",)
+        return (comment(f"Security service {cn} ({kind}): kept by "
+                        f"{rdn_value(holder) if holder is not None else keeper}, not rendered here"),)
     body = (_scanner(m, s) if kind == "vulnerability-scanning" else _posture(m, s) if kind == "posture" else
-            (f"# {cn}: Azure records resource changes itself (Resource Graph change history, about 14 days): nothing "
-             "to enable; keeping them longer needs an export (not rendered)",) if kind == "config-recording" else
+            (comment(f"{cn}: Azure records resource changes itself (Resource Graph change history, about 14 days): "
+                     "nothing to enable; keeping them longer needs an export (not rendered)"),)
+            if kind == "config-recording" else
             render_identity_protection(m, s))
     return (*body, *_export(m, s, kind), *_incident_routing(m, s, kind),
-            *((f"# {cn}: organization-wide: enable it on the management group with Azure Policy (not rendered here)",)
+            *((comment(f"{cn}: organization-wide: enable it on the management group with Azure Policy (not rendered "
+                       "here)"),)
               if one(s, "ciamAuditScope") == "organization" else ()))
 
 
@@ -308,8 +311,8 @@ def render_security(m, extra=()):
     kept = _kept(m)
     out = (*(_pricing(m, *p) for p in _plans(kept, extra)),
            *(x for s in security_services(m) for x in _service(m, s)))
-    return ((block("data", ["azurerm_subscription", "current"], []),)
-            if any(SUBSCRIPTION in x for x in out) else ()) + out
+    return ((tf_block("data", ["azurerm_subscription", "current"], []),)
+            if mentions(out, SUBSCRIPTION) else ()) + out
 
 
 # ------------------------------------------------------------------ read back

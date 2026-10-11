@@ -24,7 +24,7 @@ from opsdir.core.environment import of_class
 from opsdir.domains.observability.alarms import alarm_specs, condition, in_unit
 from opsdir.domains.observability.realized import keeper_of
 from opsdir.domains.observability.signals import number_text, parse_threshold
-from opsdir_format_terraform.hcl import block, tf_name
+from opsdir_format_terraform.hcl import comment, tf_block, tf_name
 
 ALARM = "aws_cloudwatch_metric_alarm"
 LOG_GROUP = "aws_cloudwatch_log_group"
@@ -61,10 +61,10 @@ def _topic(channel):
 def _alarm(m, s):
     rule = rdn_value(s.rule)
     if s.why:
-        return (f"# NOTE: alert rule {rule}: not rendered: {s.why}",)
+        return (comment(f"NOTE: alert rule {rule}: not rendered: {s.why}"),)
     name = rdn_value(s.alarm)
     if s.keeper is not None:
-        return (f"# Alarm {name} (alert rule {rule}): kept by {s.keeper}, not rendered here",)
+        return (comment(f"Alarm {name} (alert rule {rule}): kept by {s.keeper}, not rendered here"),)
     operator, c = OPERATORS.get(one(s.rule, "ciamComparison") or ""), condition(s.rule)
     namespace, _, metric = (one(s.alarm, "ciamMetric") or "").partition(" ")
     why = (f"CloudWatch has no comparison {one(s.rule, 'ciamComparison')!r}" if operator is None
@@ -72,10 +72,10 @@ def _alarm(m, s):
            else f"its alarm's metric {one(s.alarm, 'ciamMetric')!r} isn't '<namespace> <metric name>'"
            if not metric or " " in metric else None)
     if why:
-        return (f"# NOTE: alert rule {rule}: not rendered: {why}",)
+        return (comment(f"NOTE: alert rule {rule}: not rendered: {why}"),)
     threshold, unit = _threshold(s.rule, c)
     topic = _topic(s.channel)
-    return (block("resource", [ALARM, tf_name(name)], [
+    return (tf_block("resource", [ALARM, tf_name(name)], [
         ("alarm_name", name),
         ("alarm_description", f"Alert rule {rule}: {one(s.rule, 'ciamSignal')} {one(s.rule, 'ciamComparison')} "
                               f"{one(s.rule, 'ciamThreshold')} (opsdir)"),
@@ -114,12 +114,12 @@ def _log_group(m, b):
     if one(b, "ciamDestinationKind") != "log-group":
         return ()
     if keeper:
-        return (f"# Log group {cn}: kept by {keeper}, not rendered here",)
+        return (comment(f"Log group {cn}: kept by {keeper}, not rendered here"),)
     if name is None:
-        return (f"# NOTE: log destination {cn}: not rendered: its ciamProviderRef isn't a log group ARN",)
+        return (comment(f"NOTE: log destination {cn}: not rendered: its ciamProviderRef isn't a log group ARN"),)
     days, why = retention(int(one(b, "ciamRetentionDays") or 0)) if one(b, "ciamRetentionDays") is not None \
         else (None, "no retention recorded (ciamRetentionDays): CloudWatch keeps its logs indefinitely")
-    return (block("resource", [LOG_GROUP, tf_name(cn)], [
+    return (tf_block("resource", [LOG_GROUP, tf_name(cn)], [
         *((("#", why),) if why else ()), ("name", name),
         *((("retention_in_days", days),) if days is not None else ()),
         ("tags", {"BindingRole": one(b, "ciamBindingRole")})]),)

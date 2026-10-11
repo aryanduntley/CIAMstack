@@ -28,7 +28,7 @@ from opsdir.domains.data.storage import (LifecycleRule, depth_summary, has_depth
                                          lifecycle_value)
 from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned
-from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
 from opsdir_format_terraform.state import first_block
 from .names import REGION, label, state_labels
 
@@ -57,8 +57,9 @@ def _key(m, b):
         return (), ()
     if uri.startswith(UNBOUND):
         return (), (("#", f"{uri}: no key binding for role {role} in this environment"),)
-    return ((f"# {rdn_value(b)}: the Cloud Storage service agent (service-<project number>@gs-project-accounts.iam."
-             "gserviceaccount.com) needs roles/cloudkms.cryptoKeyEncrypterDecrypter on its key",),
+    return ((comment(f"{rdn_value(b)}: the Cloud Storage service agent (service-<project "
+                     "number>@gs-project-accounts.iam.gserviceaccount.com) needs "
+                     "roles/cloudkms.cryptoKeyEncrypterDecrypter on its key"),),
             (("encryption", Block((("default_kms_key_name", uri.split("://", 1)[1]),))),))
 
 
@@ -77,14 +78,16 @@ def _copy(b, n):
         return ()
     sink = bucket_of(replica)
     if sink is None:
-        return (f"# {rdn_value(b)}: its replica {replica} isn't a Cloud Storage bucket: the copy is not rendered",)
+        return (comment(f"{rdn_value(b)}: its replica {replica} isn't a Cloud Storage bucket: the copy is not "
+                        "rendered"),)
     path = replica[len("gs://") + len(sink):].strip("/")
-    return ((f"# {rdn_value(b)}: copied to {replica} by Storage Transfer Service. Its service agent "
-             "(project-<project number>@storage-transfer-service.iam.gserviceaccount.com) needs to read this bucket "
-             "and write the replica (roles/storage.admin on both, or the legacy bucket reader/writer and object "
-             "roles) and roles/pubsub.editor in the project for the event notifications; replication copies what "
-             "arrives from now on: copy what is already there once (a one-off transfer job)"),
-            block("resource", ["google_storage_transfer_job", f"{n}_copy"], [
+    return ((comment(f"{rdn_value(b)}: copied to {replica} by Storage Transfer Service. Its service agent "
+                     "(project-<project number>@storage-transfer-service.iam.gserviceaccount.com) needs to read this "
+                     "bucket and write the replica (roles/storage.admin on both, or the legacy bucket reader/writer "
+                     "and object roles) and roles/pubsub.editor in the project for the event notifications; "
+                     "replication copies what arrives from now on: copy what is already there once (a one-off transfer "
+                     "job)")),
+            tf_block("resource", ["google_storage_transfer_job", f"{n}_copy"], [
                 ("description", f"Copy of {bucket_of(one(b, 'ciamStorageRef'))} to {replica} (role "
                                 f"{one(b, 'ciamBindingRole')})"),
                 ("replication_spec", Block((
@@ -99,7 +102,7 @@ def _bucket(m, b):
     versioning, public = one(b, "ciamStorageVersioning"), one(b, "ciamStoragePublicBlocked")
     notes, body = _key(m, b)
     return (*notes,
-            block("resource", ["google_storage_bucket", n], [
+            tf_block("resource", ["google_storage_bucket", n], [
                 ("name", bucket), ("location", REGION), ("uniform_bucket_level_access", True),
                 *((("public_access_prevention", "enforced" if public == "TRUE" else "inherited"),) if public else ()),
                 *((("versioning", Block((("enabled", versioning == "TRUE"),))),) if versioning else ()),
@@ -108,15 +111,15 @@ def _bucket(m, b):
                   if mode in ("governance", "compliance") else ()),
                 *body, *(_rule(r) for r in lifecycle_rules(b)),
                 ("labels", {"role": label(one(b, "ciamBindingRole")), "managed_by": "opsdir"})]),
-            *((import_block(f"google_storage_bucket.{n}", bucket),) if adopted(b) else ()), *_copy(b, n))
+            *((tf_import(f"google_storage_bucket.{n}", bucket),) if adopted(b) else ()), *_copy(b, n))
 
 
 def render_object_stores(m):
     """HCL for environment m's object stores in Cloud Storage the record describes: comments naming who keeps the
     others and what to ask them for, then those the stack keeps."""
     described = [b for b in of_class(m, "ciamObjectStore") if bucket_of(one(b, "ciamStorageRef")) and has_depth(b)]
-    return (*(f"# Object store '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: not "
-              f"rendered here. Ask them for: {depth_summary(b)}" for b in described if not owned(b)),
+    return (*(comment(f"Object store '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: "
+                      f"not rendered here. Ask them for: {depth_summary(b)}") for b in described if not owned(b)),
             *(x for b in kept_buckets(m) for x in _bucket(m, b)))
 
 

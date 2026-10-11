@@ -34,7 +34,7 @@ from opsdir.domains.data.protection import PLAN, schedule_of
 from opsdir.domains.data.volumes import VOLUME, volume_policy
 from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned
-from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
 from opsdir_format_terraform.state import blocks, first_block
 from .names import REGION, label, name_parts, resource_id, state_labels
 
@@ -96,17 +96,18 @@ def _location(m, v):
 def _vault(m, v):
     n, mode = tf_name(rdn_value(v)), one(v, "ciamStorageImmutability") or "none"
     days = int(one(v, "ciamStorageLockDays") or 1) if mode != "none" else 1
-    return (*((f"# Vault '{rdn_value(v)}': nothing locked; Backup and DR enforces at least a day",)
+    return (*((comment(f"Vault '{rdn_value(v)}': nothing locked; Backup and DR enforces at least a day"),)
               if mode == "none" else ()),
-            *((f"# Vault '{rdn_value(v)}': a compliance lock is the vault's effective_time (after it, the minimum "
-               "can't be lowered): set the date when it takes effect",) if mode == "compliance" else ()),
-            *((f"# Vault '{rdn_value(v)}' restores in another region through its location: name the region in its "
-               "plans' ciamCopyRegion",) if one(v, "ciamCrossRegionRestore") == "TRUE" and _location(m, v) == REGION
-              else ()),
-            block("resource", ["google_backup_dr_backup_vault", n], [
+            *((comment(f"Vault '{rdn_value(v)}': a compliance lock is the vault's effective_time (after it, the "
+                       "minimum can't be lowered): set the date when it takes effect"),)
+              if mode == "compliance" else ()),
+            *((comment(f"Vault '{rdn_value(v)}' restores in another region through its location: name the region in "
+                       "its plans' ciamCopyRegion"),)
+              if one(v, "ciamCrossRegionRestore") == "TRUE" and _location(m, v) == REGION else ()),
+            tf_block("resource", ["google_backup_dr_backup_vault", n], [
                 ("location", _location(m, v)), ("backup_vault_id", label(f"ciam-{rdn_value(m.env)}-{rdn_value(v)}")),
                 ("backup_minimum_enforced_retention_duration", f"{days * DAY}s"), ("labels", _labels(v))]),
-            *((import_block(f"google_backup_dr_backup_vault.{n}", resource_id(one(v, "ciamProviderRef"))),)
+            *((tf_import(f"google_backup_dr_backup_vault.{n}", resource_id(one(v, "ciamProviderRef"))),)
               if adopted(v) else ()))
 
 
@@ -119,40 +120,42 @@ def _volumes(m, p):
 def _plan(m, p):
     n, s, v, rule = tf_name(rdn_value(p)), schedule_of(p), plan_vault(m, p), backup_rule(p)
     if v is None or not owned(v):
-        return (f"# Backup plan '{rdn_value(p)}': its vault (role {one(p, 'ciamBackupVaultRole')}) isn't one this "
-                "environment's stack keeps: not rendered",)
+        return (comment(f"Backup plan '{rdn_value(p)}': its vault (role {one(p, 'ciamBackupVaultRole')}) isn't one "
+                        "this environment's stack keeps: not rendered"),)
     if rule is None:
-        return (f"# Backup plan '{rdn_value(p)}': Backup and DR backs up every 6 to 23 hours or daily, not every "
-                f"{s.every} hours: not rendered",)
+        return (comment(f"Backup plan '{rdn_value(p)}': Backup and DR backs up every 6 to 23 hours or daily, not every "
+                        f"{s.every} hours: not rendered"),)
     minimum = int(one(v, "ciamStorageLockDays") or 1) if (one(v, "ciamStorageImmutability") or "none") != "none" else 1
     if (s.retention or 1) < minimum:
-        return (f"# Backup plan '{rdn_value(p)}': keeps backups {s.retention} days, less than its vault enforces "
-                f"({minimum}), which Backup and DR refuses: not rendered",)
+        return (comment(f"Backup plan '{rdn_value(p)}': keeps backups {s.retention} days, less than its vault enforces "
+                        f"({minimum}), which Backup and DR refuses: not rendered"),)
     volumes = _volumes(m, p)
     others = [r for r in values(p, "ciamProtectsRole") if r not in {one(x, "ciamBindingRole") for x in volumes}]
     plan = f"google_backup_dr_backup_plan.{n}"
-    return (*((f"# Backup plan '{rdn_value(p)}': copies go to its vault's location, {s.copies[0]}; "
-               f"{', '.join(s.copies[1:])} not rendered",) if len(s.copies) > 1 else ()),
-            *(f"# Backup plan '{rdn_value(p)}' protects {r}, which isn't a volume: not rendered here" for r in others),
-            block("resource", ["google_backup_dr_backup_plan", n], [
+    return (*((comment(f"Backup plan '{rdn_value(p)}': copies go to its vault's location, {s.copies[0]}; "
+                       f"{', '.join(s.copies[1:])} not rendered"),) if len(s.copies) > 1 else ()),
+            *(comment(f"Backup plan '{rdn_value(p)}' protects {r}, which isn't a volume: not rendered here")
+              for r in others),
+            tf_block("resource", ["google_backup_dr_backup_plan", n], [
                 ("location", REGION), ("backup_plan_id", label(rdn_value(p))), ("resource_type", DISKS),
                 ("backup_vault", ref(f"google_backup_dr_backup_vault.{tf_name(rdn_value(v))}.id")),
                 ("backup_rules", rule)]),
-            *(block("resource", ["google_backup_dr_backup_plan_association", f"{n}_{dn}"], [
+            *(tf_block("resource", ["google_backup_dr_backup_plan_association", f"{n}_{dn}"], [
                 ("location", REGION), ("backup_plan_association_id", label(f"{rdn_value(srv)}-{rdn_value(vol)}")),
                 ("resource", ref(f"google_compute_disk.{dn}.id")), ("resource_type", DISKS),
                 ("backup_plan", ref(f"{plan}.name"))])
               for vol in volumes if owned(vol) for srv in servers_with_role(m, one(vol, "ciamTargetRole"))
               for dn in (tf_name(f"{rdn_value(srv)}_{rdn_value(vol)}"),)),
-            *((import_block(plan, resource_id(one(p, "ciamProviderRef"))),) if adopted(p) else ()))
+            *((tf_import(plan, resource_id(one(p, "ciamProviderRef"))),) if adopted(p) else ()))
 
 
 def render_backups(m):
     """HCL for environment m's backup vaults and plans: comments naming who keeps the others, then those the stack
     keeps."""
     vaults, plans = of_class(m, VAULT), of_class(m, PLAN)
-    return (*(f"# Backup {'vault' if b in vaults else 'plan'} '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is "
-              f"kept by {kept_by(m, b)}: not rendered here" for b in (*vaults, *plans) if not owned(b)),
+    return (*(comment(f"Backup {'vault' if b in vaults else 'plan'} '{rdn_value(b)}' (role "
+                      f"{one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: not rendered here")
+              for b in (*vaults, *plans) if not owned(b)),
             *(x for v in vaults if owned(v) for x in _vault(m, v)),
             *(x for p in plans if owned(p) for x in _plan(m, p)))
 

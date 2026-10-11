@@ -6,6 +6,7 @@ import ast
 
 from opsdir.core.contract import Endpoint
 from opsdir.domains.observability.naming import CANARIES
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.canaries import render_canaries
 from network_fixtures import ALPHA, entry, model
 
@@ -40,7 +41,7 @@ TOKEN = entry(ALPHA, "sso-token", "ciamCanaryBinding", ciamBindingRole="canary-s
 
 def _render(*extra):
     _, alpha, _ = model(alpha=(*BINDINGS, *extra), tree=TREE)
-    return render_canaries(alpha, ENDPOINTS)
+    return as_text(render_canaries(alpha, ENDPOINTS))
 
 
 def test_each_canary_runs_a_rendered_script_named_as_its_binding():

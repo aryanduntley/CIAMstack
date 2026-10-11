@@ -11,7 +11,7 @@ from opsdir.core.directory import rdn_value, values
 from opsdir.core.environment import of_class
 from opsdir.domains.access.naming import DENIALS
 from opsdir.domains.estate.residency import permitted_regions
-from opsdir_format_terraform.hcl import Block, block, tf_name
+from opsdir_format_terraform.hcl import Block, comment, tf_block, tf_name
 
 PROJECT = "projects/${var.project_id}"
 NOT_APPLICABLE = {"metadata-v1": "the metadata server already requires its Metadata-Flavor header",
@@ -39,7 +39,7 @@ def denial_of(constraint):
 
 def _policy(constraint, rule):
     spec = (("enforce", "TRUE"),) if rule is True else (("values", Block((("allowed_values", list(rule)),))),)
-    return block("resource", ["google_org_policy_policy", tf_name(constraint)], [
+    return tf_block("resource", ["google_org_policy_policy", tf_name(constraint)], [
         *((("#", COMMENTS[constraint]),) if constraint in COMMENTS else ()),
         ("name", f"{PROJECT}/policies/{constraint}"), ("parent", PROJECT),
         ("spec", Block((("rules", Block(spec)),)))])
@@ -50,6 +50,7 @@ def render_guardrails(m):
     regions = permitted_regions(m)
     denials = [(g, d) for g in of_class(m, "ciamGuardrail") for d in values(g, "ciamDenies")]
     policies = dict.fromkeys(c for _, d in denials for c in _constraints(d, regions))
-    return (*(f"# NOTE: guardrail {rdn_value(g)}: {d}: {NOT_APPLICABLE.get(d, 'Google Cloud has no constraint for it')}"
+    return (*(comment(f"NOTE: guardrail {rdn_value(g)}: {d}: "
+                      f"{NOT_APPLICABLE.get(d, 'Google Cloud has no constraint for it')}")
               for g, d in denials if not _constraints(d, regions)),
             *(_policy(c, rule) for c, rule in policies))

@@ -18,6 +18,7 @@ from opsdir.core.directory import rdn_value, values
 from opsdir.domains.compute.workloads import role_clusters, role_namespaces
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.sources import ALL, containers_of, kept_clauses, shipments
+from opsdir_format_terraform.hcl import comment
 from .account import project_id
 from .kubernetes import cluster_parts
 from .logging_filter import all_of, any_of, field_of, kept, literal
@@ -73,11 +74,13 @@ def container_log_notes(m, services):
     found = container_shipments(m, services)
     shipped = {c.dn: c for x in found for c in visible_clusters(m, x.role)}.values()
     return tuple(dict.fromkeys((
-        *(f"# NOTE: log route {rdn_value(x.route)}: role {x.role}'s container output not shipped: the role runs on "
-          "Kubernetes here in no cluster the environment binds" for x in found if not role_clusters(m, x.role)),
-        *(f"# NOTE: log route {rdn_value(x.route)}: role {x.role}'s container output in cluster {rdn_value(c)} not "
-          f"shipped: the cluster is in project {cluster_parts(c)[0]}, whose logs a sink in {project_id(m)} doesn't "
-          "see (route them with a sink there)" for x in found for c in role_clusters(m, x.role)
+        *(comment(f"NOTE: log route {rdn_value(x.route)}: role {x.role}'s container output not shipped: the role runs "
+                  "on Kubernetes here in no cluster the environment binds")
+          for x in found if not role_clusters(m, x.role)),
+        *(comment(f"NOTE: log route {rdn_value(x.route)}: role {x.role}'s container output in cluster {rdn_value(c)} "
+                  f"not shipped: the cluster is in project {cluster_parts(c)[0]}, whose logs a sink in {project_id(m)} "
+                  "doesn't see (route them with a sink there)") for x in found for c in role_clusters(m, x.role)
           if cluster_parts(c)[0] not in (None, project_id(m))),
-        *((f"# NOTE: GKE clusters {', '.join(rdn_value(c) for c in shipped)}: their workload logging (logging_config "
-           "WORKLOADS, GKE's default) must stay on for the log sinks to see container output",) if shipped else ()))))
+        *((comment(f"NOTE: GKE clusters {', '.join(rdn_value(c) for c in shipped)}: their workload logging "
+                   "(logging_config WORKLOADS, GKE's default) must stay on for the log sinks to see container output"),)
+          if shipped else ()))))

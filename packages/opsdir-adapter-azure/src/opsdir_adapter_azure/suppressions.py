@@ -30,7 +30,7 @@ from opsdir.core.directory import date_of, get, one, rdn_value, values
 from opsdir.core.environment import of_class
 from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.poam import exception_of, suppression_name
-from opsdir_format_terraform.hcl import block, jsonencoded, ref, tf_name
+from opsdir_format_terraform.hcl import comment, jsonencoded, mentions, ref, tf_block, tf_name
 from .account import azapi_allowed
 
 EXEMPTION = "azurerm_subscription_policy_exemption"
@@ -80,8 +80,8 @@ def _frameworks(s):
 def _exemptions(m, s):
     name, exc = suppression_name(s), _exception(m, s)
     category = "Mitigated" if _kind(m, s) == "compensating-control" else "Waiver"
-    gov = (f"# {GOV_EXEMPTION_NOTE}",) if _frameworks(s) and _government(m) else ()
-    return gov + tuple(block("resource", [EXEMPTION, tf_name(f"{name}_{fw}")], [
+    gov = (comment(GOV_EXEMPTION_NOTE),) if _frameworks(s) and _government(m) else ()
+    return gov + tuple(tf_block("resource", [EXEMPTION, tf_name(f"{name}_{fw}")], [
         ("name", f"{name}-{fw}"), ("subscription_id", ref(f"{SUBSCRIPTION}.id")),
         ("policy_assignment_id",
          f"${{{SUBSCRIPTION}.id}}/providers/Microsoft.Authorization/policyAssignments/{ASSIGNMENT_PREFIX}{fw}"),
@@ -106,11 +106,11 @@ def _alert_rules(m, s):
     if not types:
         return ()
     if not _add_on(m):
-        return (f"# {name}: Defender for Cloud alert suppression rules for {', '.join(types)} until "
-                f"{_expiry(m, s) or 'no date'}: azurerm has no resource for them; create them in Defender for Cloud "
-                "(or allow the azapi add-on: ciamProviderAddOn azapi)",)
+        return (comment(f"{name}: Defender for Cloud alert suppression rules for {', '.join(types)} until "
+                        f"{_expiry(m, s) or 'no date'}: azurerm has no resource for them; create them in Defender for "
+                        "Cloud (or allow the azapi add-on: ciamProviderAddOn azapi)"),)
     exc = _exception(m, s)
-    return tuple(block("resource", [AZAPI, tf_name(f"{name}_{t}")], [
+    return tuple(tf_block("resource", [AZAPI, tf_name(f"{name}_{t}")], [
         ("type", ALERT_RULES_API), ("name", f"{name}-{t}" if len(types) > 1 else name),
         ("parent_id", ref(f"{SUBSCRIPTION}.id")),
         ("body", {"properties": {"alertType": t, "state": "Enabled",
@@ -133,19 +133,20 @@ def azapi_provider(m):
     """The azapi provider block of a root of environment m: it registers no resource providers (the landing zone
     registers those its resources need, resource_providers)."""
     gov = (("environment", "usgovernment"),) if _government(m) else ()
-    return block("provider", ["azapi"], [("subscription_id", ref("var.subscription_id")), *gov,
-                                         ("skip_provider_registration", True)])
+    return tf_block("provider", ["azapi"], [("subscription_id", ref("var.subscription_id")), *gov,
+                                            ("skip_provider_registration", True)])
 
 
 def render_suppressions(m):
     """HCL (and comments) for environment m's suppressions."""
     kept, held = _kept(m), [s for s in of_class(m, SUPPRESSION) if one(s, "ciamManagedBy")]
     out = tuple(x for s in kept for x in (*_exemptions(m, s), *_alert_rules(m, s),
-                                          *((f"# {suppression_name(s)}: not Azure's (not rendered here): "
-                                             f"{', '.join(_others(s))}",) if _others(s) else ())))
-    return ((block("data", ["azurerm_subscription", "current"], []),) if any(SUBSCRIPTION in x for x in out) else ()) \
-        + out + tuple(f"# Suppression {suppression_name(s)}: kept by {rdn_value(get(m.d, one(s, 'ciamManagedBy')))}, "
-                      "not rendered here" for s in held if get(m.d, one(s, "ciamManagedBy")) is not None)
+                                          *((comment(f"{suppression_name(s)}: not Azure's (not rendered here): "
+                                                     f"{', '.join(_others(s))}"),) if _others(s) else ())))
+    return ((tf_block("data", ["azurerm_subscription", "current"], []),) if mentions(out, SUBSCRIPTION) else ()) \
+        + out + tuple(comment(f"Suppression {suppression_name(s)}: kept by "
+                              f"{rdn_value(get(m.d, one(s, 'ciamManagedBy')))}, not rendered here")
+                      for s in held if get(m.d, one(s, "ciamManagedBy")) is not None)
 
 
 # ------------------------------------------------------------------ read back

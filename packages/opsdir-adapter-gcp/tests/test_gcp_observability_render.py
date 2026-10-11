@@ -3,6 +3,7 @@ through the alarm binding realizing it (its metric type, name and role), the con
 the channel's notification channel; log buckets keeping logs as recorded, named for locking under legal hold, never
 locked here."""
 from opsdir.domains.observability.naming import ALERT_RULES, LOG_ROUTES
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.observability import bucket_retention, render_buckets, render_policies
 from network_fixtures import BETA, entry, model
 
@@ -45,7 +46,7 @@ def _beta():
 
 
 def test_a_rule_renders_through_the_alarm_realizing_it():
-    text = "\n".join(render_policies(_beta()))
+    text = "\n".join(as_text(render_policies(_beta())))
     assert ('resource "google_monitoring_alert_policy" "ds_replication_lag" {\n'
             '  display_name = "ds-replication-lag"\n  combiner     = "OR"\n') in text
     assert ('    condition_threshold {\n'
@@ -62,13 +63,13 @@ def test_a_rule_renders_through_the_alarm_realizing_it():
 
 
 def test_a_log_based_alarm_is_named():
-    assert [x for x in render_policies(_beta()) if x.startswith("#")] == [
+    assert [x for x in as_text(render_policies(_beta())) if x.startswith("#")] == [
         "# NOTE: alert rule login-failures: not rendered: its alarm is a log-based alert and the record holds no "
         "query"]
 
 
 def test_log_buckets_keep_logs_as_recorded_and_are_named_for_locking_under_legal_hold():
-    text = "\n".join(render_buckets(_beta()))
+    text = "\n".join(as_text(render_buckets(_beta())))
     audit = text.split('"audit" {', 1)[1].split("\n}", 1)[0]
     assert "# under legal hold: lock it (locked = true) once its retention is confirmed" in audit
     assert 'project        = "example-standby"' in audit and 'bucket_id      = "ciam-audit"' in audit

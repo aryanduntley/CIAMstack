@@ -1,6 +1,7 @@
 """The network depth the stack keeps as Azure Terraform: private endpoints (one per resource reached, the subresource
 of its service, a static address and the private DNS zone group as recorded), Private Link Services on a Standard load
 balancer's frontend, an egress firewall's allowlist as Firewall policy application rules; comments otherwise."""
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.network import render_network
 from network_fixtures import ALPHA, entry, model
 
@@ -15,7 +16,7 @@ SECRETS = (entry(ALPHA, "secret-a", "ciamSecretRef", ciamBindingRole="admin-pass
 
 
 def _render(*records, tree=()):
-    return "\n\n".join(render_network(model(alpha=records, tree=tree)[1]))
+    return "\n\n".join(as_text(render_network(model(alpha=records, tree=tree)[1])))
 
 
 def test_nothing_recorded_renders_nothing():

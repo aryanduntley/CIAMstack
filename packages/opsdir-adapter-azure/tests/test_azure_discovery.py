@@ -2,6 +2,7 @@
 the Defender CSPM plan, merged with a posture service's CloudPosture pricing; what Microsoft decides (stores examined,
 cadence, own data types in Purview, results, findings) in comments; Azure Government a comment; read back from state."""
 from opsdir.core.directory import make_entry
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.discovery import discovery_plans, discovery_resources, render_discovery
 from opsdir_adapter_azure.security import render_security
 from network_fixtures import ALPHA, entry, model
@@ -28,16 +29,16 @@ def _alpha(*bindings, gov=False):
 def test_the_extension_is_merged_into_the_cspm_plan():
     alpha = _alpha(dspm(), entry(ALPHA, "cspm", "ciamSecurityService", ciamBindingRole="cspm",
                                  ciamSecurityKind="posture"))
-    out = "\n\n".join(render_security(alpha, discovery_plans(alpha)))
+    out = "\n\n".join(as_text(render_security(alpha, discovery_plans(alpha))))
     assert out.count('resource_type = "CloudPosture"') == 1 and 'name = "SensitiveDataDiscovery"' in out
     alone = _alpha(dspm())
-    assert 'name = "SensitiveDataDiscovery"' in "\n".join(render_security(alone, discovery_plans(alone)))
+    assert 'name = "SensitiveDataDiscovery"' in "\n".join(as_text(render_security(alone, discovery_plans(alone))))
     assert discovery_plans(_alpha()) == ()
 
 
 def test_what_microsoft_decides_is_said_in_comments():
-    out = "\n".join(render_discovery(_alpha(dspm(days="1", ciamFindingsRole="security-logs",
-                                                 ciamResultsRole="ds-backups"))))
+    out = "\n".join(as_text(render_discovery(_alpha(dspm(days="1", ciamFindingsRole="security-logs",
+                                                 ciamResultsRole="ds-backups")))))
     assert ("# dspm: Defender for Cloud's sensitive data discovery (Defender CSPM, SensitiveDataDiscovery) examines "
             "every block blob") in out
     assert "# dspm: pf-grants-db: not a store it examines" in out                # PostgreSQL; SQL Database is
@@ -47,15 +48,16 @@ def test_what_microsoft_decides_is_said_in_comments():
            "information types" in out
     assert "they reach security-logs through the security services' continuous export" in out
     assert "# dspm: Defender keeps its results itself: ds-backups isn't written to" in out
-    assert "Azure Government" not in out and "refreshes" not in "\n".join(render_discovery(_alpha(dspm())))
+    assert "Azure Government" not in out and "refreshes" not in "\n".join(as_text(render_discovery(_alpha(dspm()))))
 
 
 def test_azure_government_and_someone_elses_discovery_are_comments():
     assert "# Azure Government: Defender for Cloud's support matrix lists Defender CSPM's sensitive data scanning" \
-        in "\n".join(render_discovery(_alpha(dspm(), gov=True)))
+        in "\n".join(as_text(render_discovery(_alpha(dspm(), gov=True))))
     held = entry(ALPHA, "org", "ciamDataDiscovery", ciamBindingRole="data-discovery",
                  ciamManagedBy="cn=nobody,dc=ciam-ops")
-    assert render_discovery(_alpha(held)) == ("# Data discovery org: kept by cn=nobody,dc=ciam-ops, not rendered here",)
+    assert as_text(render_discovery(_alpha(held))) == (
+        "# Data discovery org: kept by cn=nobody,dc=ciam-ops, not rendered here",)
 
 
 def test_read_back_from_state():

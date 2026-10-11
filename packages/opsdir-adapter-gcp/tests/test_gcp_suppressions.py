@@ -1,5 +1,6 @@
 """Suppressions on Google Cloud: a Security Command Center mute rule (STATIC) of the exception's categories, named
 after it, its expiry in a comment (the provider takes none); read back from state with the exception."""
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.suppressions import render_suppressions, suppression_resources
 from network_fixtures import ALPHA, entry, model
 
@@ -14,7 +15,7 @@ def test_a_suppression_renders_a_static_mute_rule_of_its_categories():
     s = entry(ALPHA, "exc-EXC-7", "ciamSuppression", ciamBindingRole="suppression-EXC-7", ciamExceptionRef=EXC,
               ciamFindingRef=("gcp:scc:OPEN_FIREWALL", "gcp:scc:PUBLIC_IP_ADDRESS", "aws:securityhub:IAM.6"))
     _, alpha, _ = model(alpha=(s,), tree=TREE)
-    out = "\n\n".join(render_suppressions(alpha))
+    out = "\n\n".join(as_text(render_suppressions(alpha)))
     assert 'resource "google_scc_v2_project_mute_config" "exc_exc_7"' in out
     assert 'mute_config_id = "exc-exc-7"' in out and 'type           = "STATIC"' in out
     assert 'filter         = "category=\\"OPEN_FIREWALL\\" OR category=\\"PUBLIC_IP_ADDRESS\\""' in out

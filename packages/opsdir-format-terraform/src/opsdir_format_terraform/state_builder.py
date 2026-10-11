@@ -18,7 +18,7 @@ import json
 import re
 from typing import NamedTuple
 
-from .hcl import Block, TfBlock
+from .hcl import Block, TfBlock, TfFile, hcl
 from .hcl_reader import read_hcl
 
 META = frozenset({"count", "for_each", "depends_on", "lifecycle", "provider", "provisioner", "connection"})
@@ -138,6 +138,8 @@ def _value(v, scope):
     raw = _raw(v)
     if raw is not None:
         return _expression(raw, scope)
+    if isinstance(v, str) and "${" in v:                    # a template, as read_hcl keeps the quoted string written
+        return _expression(hcl(v), scope)
     if isinstance(v, (tuple, list)):
         items = [_value(x, scope) for x in v]
         return next((x for x in items if isinstance(x, Unresolved)), items)
@@ -229,15 +231,21 @@ def tf_state(blocks, assigned=None, variables=None):
     return json.dumps(document, indent=2), notices
 
 
+def _blocks(f):
+    """The TfBlocks of a rendered .tf file: a TfFile's own, or those read_hcl reads in its text."""
+    return tuple(x for x in (f.items if isinstance(f, TfFile) else read_hcl(f)) if isinstance(x, TfBlock))
+
+
 def root_states(files, environment, assigned_for=None, variables=None):
-    """{state path: state text} of the Terraform roots among files ({path: .tf text}, under the environment's folder):
+    """{state path: state text} of the Terraform roots among files ({path: .tf text or the TfFile it is written from},
+    under the environment's folder; both give the same state):
     each folder's files are one root, its state named after the folder below the environment's (the environment's own
     folder: terraform.tfstate; <env>/landing-zone/: landing-zone.tfstate), placed in the environment's folder.
     assigned_for(blocks) -> the root's assigned() (see tf_state), from what the cloud adapter knows; default
     synthetic. variables: {name: value} for inputs an operator gives at apply (no default), the same for every root."""
     folders = sorted({p.rsplit("/", 1)[0] for p in files if p.endswith(".tf")})
     roots = {f: tuple(b for p in sorted(files) if p.endswith(".tf") and p.rsplit("/", 1)[0] == f
-                      for b in read_hcl(files[p]) if isinstance(b, TfBlock)) for f in folders}
+                      for b in _blocks(files[p])) for f in folders}
     named = {f: (f[len(environment) + 1:] if f.startswith(environment + "/") else
                  "" if f == environment else f).replace("/", "-") or "terraform" for f in folders}
     return {f"{environment}/{named[f]}.tfstate": tf_state(blocks, assigned_for(blocks) if assigned_for else None,

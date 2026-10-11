@@ -3,6 +3,7 @@ only the deployers' subjects, a deployer's service account its pipeline may act 
 group's IAM members; nothing when the environment needs nothing from one."""
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import LdifRecord, parse
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.landing import render_landing
 from support import REGISTRY, build_directory
 
@@ -41,7 +42,7 @@ RECORDS = "\n".join((
 
 
 def test_a_deployers_workload_identity_and_an_operator_groups_members():
-    out = render_landing(env_model(build_directory(REGISTRY, tuple(parse(RECORDS))), "gcp/prod"))[
+    out = as_text(render_landing(env_model(build_directory(REGISTRY, tuple(parse(RECORDS))), "gcp/prod")))[
         "terraform/landing-zone/main.tf"]
     assert 'workload_identity_pool_id = "ciam-prod-ci"' in out
     assert f'attribute_condition = "assertion.sub in [\'{SUBJECT}\']"' in out
@@ -57,8 +58,8 @@ def test_guardrails_as_organization_policies_each_constraint_once():
                                   ciamGuardrailKind="org-constraint", ciamDenies=denies)
                            for cn, denies in (("baseline", ("region-escape", "service-account-keys", "metadata-v1")),
                                               ("keys", ("service-account-keys", "key-deletion"))))
-    out = render_landing(env_model(build_directory(REGISTRY, tuple(parse(RECORDS + "\n" + guardrails))), "gcp/prod"))[
-        "terraform/landing-zone/main.tf"]
+    m = env_model(build_directory(REGISTRY, tuple(parse(RECORDS + "\n" + guardrails))), "gcp/prod")
+    out = as_text(render_landing(m))["terraform/landing-zone/main.tf"]
     assert 'name   = "projects/${var.project_id}/policies/gcp.resourceLocations"' in out
     assert 'allowed_values = ["in:us-central1-locations"]' in out and 'enforce = "TRUE"' in out
     assert out.count('resource "google_org_policy_policy" "iam_disableserviceaccountkeycreation"') == 1
@@ -79,5 +80,5 @@ def test_the_resource_locations_are_the_regions_the_environment_s_residency_allo
     held = LdifRecord(ENV, "modify", {}, (("add", "objectClass", ("ciamEnvironmentPlacement",)),
                                           ("replace", "ciamResidencyRef", ("cn=us,ou=residencies,dc=ciam-ops",))))
     d = build_directory(REGISTRY, tuple(parse(RECORDS + "\n" + "\n".join(tree))), (held,))
-    out = render_landing(env_model(d, "gcp/prod"))["terraform/landing-zone/main.tf"]
+    out = as_text(render_landing(env_model(d, "gcp/prod")))["terraform/landing-zone/main.tf"]
     assert 'allowed_values = ["in:us-central1-locations", "in:us-east4-locations"]' in out

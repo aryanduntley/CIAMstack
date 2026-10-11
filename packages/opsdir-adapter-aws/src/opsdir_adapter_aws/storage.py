@@ -24,7 +24,7 @@ from opsdir.domains.data.storage import (LifecycleRule, depth_summary, has_depth
                                          lifecycle_value)
 from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned
-from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
 from opsdir_format_terraform.state import blocks
 from .network import binding_tags
 from .tags import state_tags
@@ -56,7 +56,7 @@ def key_arn(m, b):
     if uri is None:
         return None, ()
     if uri.startswith(UNBOUND):
-        return None, (f"# {uri}: no key binding for role {role} in this environment",)
+        return None, (comment(f"{uri}: no key binding for role {role} in this environment"),)
     return uri.split("://", 1)[1], ()
 
 
@@ -84,34 +84,35 @@ def _bucket(m, b):
     rules, replica = lifecycle_rules(b), bucket_of(one(b, "ciamStorageReplicaRef"))
     public = one(b, "ciamStoragePublicBlocked")
     notes = (*key_note,
-             *((f"# {cn}: Object Lock needs versioning: it is turned on with the lock",)
+             *((comment(f"{cn}: Object Lock needs versioning: it is turned on with the lock"),)
                if locked and versioning != "TRUE" else ()),
-             *((f"# {cn}: its replica {one(b, 'ciamStorageReplicaRef')} isn't an S3 bucket: replication not rendered",)
+             *((comment(f"{cn}: its replica {one(b, 'ciamStorageReplicaRef')} isn't an S3 bucket: replication not "
+                        "rendered"),)
                if one(b, "ciamStorageReplicaRef") and not replica else ()))
     enabled = versioning == "TRUE" or locked or bool(replica)
     status = "Enabled" if enabled else "Suspended" if versioning == "FALSE" else None
     return (*notes,
-            block("resource", ["aws_s3_bucket", n], [("bucket", bucket),
-                                                     *((("object_lock_enabled", True),) if locked else ()),
-                                                     ("tags", binding_tags(b))]),
-            *((block("resource", ["aws_s3_bucket_versioning", n], [
+            tf_block("resource", ["aws_s3_bucket", n], [("bucket", bucket),
+                                                        *((("object_lock_enabled", True),) if locked else ()),
+                                                        ("tags", binding_tags(b))]),
+            *((tf_block("resource", ["aws_s3_bucket_versioning", n], [
                 ("bucket", target), ("versioning_configuration", Block((("status", status),)))]),) if status else ()),
-            *((block("resource", ["aws_s3_bucket_object_lock_configuration", n], [
+            *((tf_block("resource", ["aws_s3_bucket_object_lock_configuration", n], [
                 ("bucket", target), ("rule", Block((("default_retention", Block((
                     ("mode", MODES[mode]), ("days", int(days or 1))))),))),
                 ("depends_on", [ref(f"aws_s3_bucket_versioning.{n}")])]),) if locked else ()),
-            *((block("resource", ["aws_s3_bucket_server_side_encryption_configuration", n], [
+            *((tf_block("resource", ["aws_s3_bucket_server_side_encryption_configuration", n], [
                 ("bucket", target), ("rule", Block((
                     ("apply_server_side_encryption_by_default", Block((("sse_algorithm", "aws:kms"),
                                                                        ("kms_master_key_id", key)))),
                     ("bucket_key_enabled", True))))]),) if key else ()),
-            *((block("resource", ["aws_s3_bucket_public_access_block", n], [
+            *((tf_block("resource", ["aws_s3_bucket_public_access_block", n], [
                 ("bucket", target), *((k, public == "TRUE") for k in PUBLIC_BLOCK)]),) if public else ()),
-            *((block("resource", ["aws_s3_bucket_lifecycle_configuration", n], [
+            *((tf_block("resource", ["aws_s3_bucket_lifecycle_configuration", n], [
                 ("bucket", target), ("rule", Block(_lifecycle(rules))),
                 *((("depends_on", [ref(f"aws_s3_bucket_versioning.{n}")]),) if status else ())]),) if rules else ()),
             *(_replication(b, n, target, replica, key) if replica else ()),
-            *((import_block(f"aws_s3_bucket.{n}", bucket),) if adopted(b) else ()))
+            *((tf_import(f"aws_s3_bucket.{n}", bucket),) if adopted(b) else ()))
 
 
 def _replication(b, n, target, replica, key):
@@ -123,11 +124,11 @@ def _replication(b, n, target, replica, key):
             ("destination", Block((("bucket", f"arn:aws:s3:::{replica}"),
                                    *((("encryption_configuration", Block((
                                        ("replica_kms_key_id", ref(f"var.{replica_key}")),))),) if key else ())))))
-    return (block("variable", [role], [("type", ref("string")), ("description", (
+    return (tf_block("variable", [role], [("type", ref("string")), ("description", (
                 f"The IAM role S3 replicates bucket {rdn_value(b)} to {replica} with"))]),
-            *((block("variable", [replica_key], [("type", ref("string")), ("description", (
+            *((tf_block("variable", [replica_key], [("type", ref("string")), ("description", (
                 f"The KMS key ARN objects are re-encrypted with in {replica}"))]),) if key else ()),
-            block("resource", ["aws_s3_bucket_replication_configuration", n], [
+            tf_block("resource", ["aws_s3_bucket_replication_configuration", n], [
                 ("bucket", target), ("role", ref(f"var.{role}")), ("rule", Block(rule)),
                 ("depends_on", [ref(f"aws_s3_bucket_versioning.{n}")])]))
 
@@ -136,8 +137,8 @@ def render_object_stores(m):
     """HCL for environment m's object stores the record describes: comments naming who keeps the others and what to
     ask them for, then those the stack keeps."""
     described = [b for b in of_class(m, "ciamObjectStore") if bucket_of(one(b, "ciamStorageRef")) and has_depth(b)]
-    return (*(f"# Object store '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: not "
-              f"rendered here. Ask them for: {depth_summary(b)}" for b in described if not owned(b)),
+    return (*(comment(f"Object store '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: "
+                      f"not rendered here. Ask them for: {depth_summary(b)}") for b in described if not owned(b)),
             *(x for b in kept_buckets(m) for x in _bucket(m, b)))
 
 

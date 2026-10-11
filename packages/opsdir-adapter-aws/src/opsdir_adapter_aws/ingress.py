@@ -20,7 +20,7 @@ from opsdir.core.directory import one, rdn_value, values
 from opsdir.domains.compute.workloads import cluster_subnets
 from opsdir.domains.edge.gateways import fronted_services, gateway_port
 from opsdir.domains.edge.resolve import front_edge
-from opsdir_format_terraform.hcl import block, ref, tf_name
+from opsdir_format_terraform.hcl import comment, ref, tf_block, tf_name
 from .cdn import fronted
 from .dns import service_record
 from .edge import Backend, alb_service, target_group_name
@@ -34,7 +34,7 @@ def _no_attachments(n, port):
 
 def _cluster_peering(fqdn, cidrs, port, n, ports):
     """The ALB's egress to the cluster's node subnets on the gateway's port (pods take addresses there)."""
-    return tuple(block("resource", ["aws_vpc_security_group_egress_rule", f"{n}_alb_to_gateway_{i}"], [
+    return tuple(tf_block("resource", ["aws_vpc_security_group_egress_rule", f"{n}_alb_to_gateway_{i}"], [
         ("security_group_id", ref(f"aws_security_group.{n}_alb.id")), ("cidr_ipv4", cidr),
         ("from_port", port), ("to_port", port), ("ip_protocol", "tcp"),
         ("description", f"to the cluster gateway serving {fqdn}")]) for i, cidr in enumerate(cidrs))
@@ -62,8 +62,8 @@ def gateway_front(m, svc, gw, endpoints):
     n, spec = tf_name(rdn_value(svc)), front_edge(m, svc, endpoints)
     subnets = cluster_subnets(m, one(svc, "ciamTargetRole"))
     return (*alb_service(m, svc, spec, gateway_backend(m, svc, spec), subnets),
-            "# the ALB doesn't check the cluster gateway's certificate; the AWS Load Balancer Controller registers "
-            "the gateway's pods (TargetGroupBinding) and admits this ALB's subnets to them",
+            comment("the ALB doesn't check the cluster gateway's certificate; the AWS Load Balancer Controller "
+                    "registers the gateway's pods (TargetGroupBinding) and admits this ALB's subnets to them"),
             *(fronted(m, svc, spec, n) if spec.cdn else service_record(m.d, m, svc, n)))
 
 

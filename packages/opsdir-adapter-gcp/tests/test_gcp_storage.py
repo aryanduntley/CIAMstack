@@ -6,6 +6,7 @@ ask for. Read back from Terraform state, Cloud Asset Inventory and gcloud (the r
 it to), what it renders reading back as recorded."""
 import json
 
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.cli import cli_resources
 from opsdir_adapter_gcp.inventory import state_resources
 from opsdir_adapter_gcp.storage import kept_buckets, render_object_stores
@@ -21,7 +22,7 @@ KEY_ENTRY = entry(ALPHA, "key-disk", "ciamKeyRef", ciamBindingRole="disk-encrypt
 
 
 def _render(*records):
-    return "\n\n".join(render_object_stores(model(alpha=records)[1]))
+    return "\n\n".join(as_text(render_object_stores(model(alpha=records)[1])))
 
 
 def _flat(text):

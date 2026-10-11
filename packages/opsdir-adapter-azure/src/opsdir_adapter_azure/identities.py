@@ -9,7 +9,7 @@ import re
 from opsdir.core.directory import is_a, one, rdn_of, rdn_value
 from opsdir.core.environment import environment_of, of_class
 from opsdir.domains.data.storage import kept_store
-from opsdir_format_terraform.hcl import block, ref, tf_name
+from opsdir_format_terraform.hcl import comment, ref, tf_block, tf_name
 from .account import tagged
 from .arm_ids import arm_segment
 
@@ -48,19 +48,19 @@ def scope(b):
 
 
 def notes(w):
-    return tuple(f"# NOTE: principal {w.principal}: {note}" for note in w.notes)
+    return tuple(comment(f"NOTE: principal {w.principal}: {note}") for note in w.notes)
 
 
 def assignments(w, principal_id):
     """One role assignment per permit, at the narrowest scope, to a principal (an identity's, a group's object id)."""
     n = tf_name(w.identity_role)
-    return tuple(block("resource", ["azurerm_role_assignment", f"{n}_{tf_name(permit)}"], [
+    return tuple(tf_block("resource", ["azurerm_role_assignment", f"{n}_{tf_name(permit)}"], [
         ("scope", scope(b)[0]), ("role_definition_name", role_of(row, b)), ("principal_id", principal_id)])
         for permit, b, row in w.grants)
 
 
 def managed_identity(m, w):
-    return block("resource", ["azurerm_user_assigned_identity", tf_name(w.identity_role)], [
+    return tf_block("resource", ["azurerm_user_assigned_identity", tf_name(w.identity_role)], [
         ("name", w.name), ("resource_group_name", RG), ("location", LOC),
         ("tags", tagged(m, {"Principal": w.principal, "Role": w.identity_role, "ManagedBy": "opsdir"}))])
 
@@ -82,7 +82,7 @@ def aks_data(identities):
     and resource group from the cluster binding's provider ref (an ARM ID), else its name in the environment's
     resource group."""
     clusters = {c.dn: c for w in identities for c in (p.cluster for p in w.pods) if c is not None}.values()
-    return tuple(block("data", ["azurerm_kubernetes_cluster", _aks(c)], [
+    return tuple(tf_block("data", ["azurerm_kubernetes_cluster", _aks(c)], [
         ("name", _aks_name(c)),
         ("resource_group_name", arm_segment(one(c, "ciamProviderRef"), "resourceGroups") or RG)]) for c in clusters)
 
@@ -90,7 +90,7 @@ def aks_data(identities):
 def federated_credential(address, name, n, issuer, subject):
     """A federated identity credential on the user-assigned identity azurerm_user_assigned_identity.<n>, trusting the
     tokens of issuer for subject (azurerm 5.x names the identity by user_assigned_identity_id)."""
-    return block("resource", ["azurerm_federated_identity_credential", address], [
+    return tf_block("resource", ["azurerm_federated_identity_credential", address], [
         ("name", name), ("user_assigned_identity_id", ref(f"azurerm_user_assigned_identity.{n}.id")),
         ("audience", [AUDIENCE]), ("issuer", issuer), ("subject", subject)])
 
@@ -100,8 +100,9 @@ def federated_credentials(w):
     workload identity: its cluster's OIDC issuer, subject system:serviceaccount:<namespace>:<name>); notes for
     service accounts whose cluster the environment doesn't bind."""
     n = tf_name(w.identity_role)
-    return (*(f"# NOTE: principal {w.principal}: service account {p.namespace}/{p.service_account} runs in a cluster "
-              "this environment doesn't bind, so nothing trusts it" for p in w.pods if p.cluster is None),
+    return (*(comment(f"NOTE: principal {w.principal}: service account {p.namespace}/{p.service_account} runs in a "
+                      "cluster this environment doesn't bind, so nothing trusts it")
+              for p in w.pods if p.cluster is None),
             *(federated_credential(f"{n}_{tf_name(p.namespace)}_{tf_name(p.service_account)}",
                                    f"{w.name}-{p.namespace}-{p.service_account}", n,
                                    ref(f"data.azurerm_kubernetes_cluster.{_aks(p.cluster)}.oidc_issuer_url"),
@@ -130,5 +131,5 @@ def scope_data(m, identities, standalone=False):
     declared = set() if standalone else {("azurerm_key_vault", one(b, "ciamRefUri").split("://", 1)[1].split("/", 1)[0])
                                          for b in of_class(m, "ciamSecretRef")}
     needed = dict.fromkeys(need for w in identities for _, b, _ in w.grants for _, need in (scope(b),) if need)
-    return tuple(block("data", [kind, tf_name(name)], [("name", name), ("resource_group_name", RG)])
+    return tuple(tf_block("data", [kind, tf_name(name)], [("name", name), ("resource_group_name", RG)])
                  for kind, name in needed if (kind, name) not in declared)

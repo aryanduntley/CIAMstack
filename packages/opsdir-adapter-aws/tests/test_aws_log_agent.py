@@ -8,6 +8,7 @@ from opsdir.core.contract import LogSource
 from opsdir.core.interchange.ldif import LdifRecord
 from opsdir.domains.access.naming import PERMISSION_SETS, PRINCIPALS
 from opsdir.domains.observability.naming import LOG_ROUTES
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.log_agent import CONFIG, RELOAD, host_files, log_notes
 from network_fixtures import ALPHA, entry, model
 
@@ -79,7 +80,7 @@ def test_the_fips_endpoint_when_the_cloud_uses_them():
 
 
 def test_what_isnt_shipped_or_only_in_part_is_named():
-    assert log_notes(_alpha(), _services()) == (
+    assert as_text(log_notes(_alpha(), _services())) == (
         "# NOTE: log route access-logs: /opt/ds/audit/*.json on ds-1 not shipped: the route takes only some of its "
         "lines, and the CloudWatch agent can't tell them apart by their JSON fields",
         "# NOTE: log route access-logs: /srv/ds/audit/*.json on ds-2 not shipped: the route takes only some of its "
@@ -98,6 +99,6 @@ def test_a_glob_ships_only_the_newest_file_it_matches():
     (agent,) = host_files(alpha, services()._replace(logs=lambda m: globbed))
     assert json.loads(agent.text)["logs"]["logs_collected"]["files"]["collect_list"][0]["log_stream_name"] == (
         "{instance_id}/log/_.log")
-    assert log_notes(alpha, services()._replace(logs=lambda m: globbed))[0] == (
+    assert as_text(log_notes(alpha, services()._replace(logs=lambda m: globbed)))[0] == (
         "# NOTE: log route access-logs: /opt/web/log/*.log on web-1: the CloudWatch agent ships only the most "
         "recently modified file the glob matches")

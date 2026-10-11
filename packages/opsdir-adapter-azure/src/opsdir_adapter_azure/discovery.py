@@ -20,6 +20,7 @@ data discovery (kind discovery)."""
 from opsdir.core.directory import get, is_kind, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.discovery import custom_identifiers, discovery_services, rescan_days
+from opsdir_format_terraform.hcl import comment
 from .purview import purview_read, renders as purview_renders, scanned
 from .security import CSPM, PRICING
 
@@ -58,31 +59,31 @@ def _notes(m, s):
     cn, days = rdn_value(s), rescan_days([s])
     others, own = _unsupported(m, s), custom_identifiers(s)
     purview = purview_renders(m) and any(x.dn == s.dn for x, _, _ in scanned(m))
-    return (f"# {cn}: Defender for Cloud's sensitive data discovery (Defender CSPM, SensitiveDataDiscovery) "
-            "examines every block blob, Azure Files and ADLS Gen2 storage account and Azure SQL database in the "
-            f"subscription, by sampling (complete cataloguing needs Microsoft Purview scanning: "
-            f"{'its scans below' if purview else 'not rendered'})",
-            *((f"# {cn}: {', '.join(others)}: not a store it examines",) if others else ()),
-            *((f"# {cn}: it refreshes object storage within eight days of a change and databases weekly; the record "
-               f"asks every {days} days",) if days is not None and days < 7 and not purview else ()),
-            *((f"# {cn}: its own data types ({', '.join(f'{n}: {rx}' for n, rx in own)}) are Microsoft Purview custom "
-               "sensitive information types imported into Defender's data sensitivity settings: not rendered"
-               f"{' (the Purview scans have classification rules of them below)' if purview else ''}",)
+    return (comment(f"{cn}: Defender for Cloud's sensitive data discovery (Defender CSPM, SensitiveDataDiscovery) "
+                    "examines every block blob, Azure Files and ADLS Gen2 storage account and Azure SQL database in "
+                    "the subscription, by sampling (complete cataloguing needs Microsoft Purview scanning: "
+                    f"{'its scans below' if purview else 'not rendered'})"),
+            *((comment(f"{cn}: {', '.join(others)}: not a store it examines"),) if others else ()),
+            *((comment(f"{cn}: it refreshes object storage within eight days of a change and databases weekly; the "
+                       f"record asks every {days} days"),) if days is not None and days < 7 and not purview else ()),
+            *((comment(f"{cn}: its own data types ({', '.join(f'{n}: {rx}' for n, rx in own)}) are Microsoft Purview "
+                       "custom sensitive information types imported into Defender's data sensitivity settings: not "
+                       f"rendered{' (the Purview scans have classification rules of them below)' if purview else ''}"),)
               if own else ()),
-            *((f"# {cn}: its findings are Defender recommendations and alerts: they reach "
-               f"{one(s, 'ciamFindingsRole')} through the security services' continuous export",)
+            *((comment(f"{cn}: its findings are Defender recommendations and alerts: they reach "
+                       f"{one(s, 'ciamFindingsRole')} through the security services' continuous export"),)
               if one(s, "ciamFindingsRole") else ()),
-            *((f"# {cn}: Defender keeps its results itself: {one(s, 'ciamResultsRole')} isn't written to",)
+            *((comment(f"{cn}: Defender keeps its results itself: {one(s, 'ciamResultsRole')} isn't written to"),)
               if one(s, "ciamResultsRole") else ()))
 
 
 def render_discovery(m):
     """Comments for environment m's data discovery (its Defender plan extension is rendered with the security
     services' plans)."""
-    held = tuple(f"# Data discovery {rdn_value(s)}: kept by {_keeper(m, s)}, not rendered here"
+    held = tuple(comment(f"Data discovery {rdn_value(s)}: kept by {_keeper(m, s)}, not rendered here")
                  for s in discovery_services(m) if one(s, "ciamManagedBy"))
     kept = _kept(m)
-    gov = (f"# {GOV_NOTE}",) if kept and one(m.cloud, "ciamCloudEnvironment") == "usgovernment" else ()
+    gov = (comment(GOV_NOTE),) if kept and one(m.cloud, "ciamCloudEnvironment") == "usgovernment" else ()
     return (*held, *gov, *(x for s in kept for x in _notes(m, s)))
 
 

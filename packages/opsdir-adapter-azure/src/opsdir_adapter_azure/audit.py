@@ -27,7 +27,7 @@ from opsdir.core.directory import is_kind, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource
 from opsdir.domains.observability.audit import (PROTECTED, audit_trails, store_protection, trail_destination,
                                                trail_keeper)
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, blocks_of, comment, ref, tf_block, tf_name
 from .arm_ids import arm_segment
 from .storage import container_of, kept_containers
 
@@ -47,15 +47,16 @@ def _name(trail):
 
 
 def _variable(name, what):
-    return block("variable", [name], [("type", ref("string")), ("description", what)])
+    return tf_block("variable", [name], [("type", ref("string")), ("description", what)])
 
 
 def _store(m, n, dest):
     """(destination argument, notes, variables) of an object store destination."""
     account, container = container_of(one(dest, "ciamStorageRef"))
     pref = one(dest, "ciamProviderRef") or ""
-    elsewhere = (f"# NOTE: Azure writes the Activity Log to container {CONTAINER} of storage account {account}, not "
-                 f"{container}: record that container as the object store",) if container != CONTAINER else ()
+    elsewhere = (comment(f"NOTE: Azure writes the Activity Log to container {CONTAINER} of storage account {account}, "
+                         f"not {container}: record that container as the object store"),) \
+        if container != CONTAINER else ()
     if any(container_of(one(b, "ciamStorageRef"))[0] == account for b in kept_containers(m)):
         return ("storage_account_id", ref(f"azurerm_storage_account.{tf_name(account)}.id")), elsewhere, ()
     if "/blobservices/" in pref.lower():
@@ -84,13 +85,14 @@ def _destination(m, n, dest):
 
 
 def _not_rendered(cn, why):
-    return (f"# NOTE: audit trail {cn}: not rendered: {why}",)
+    return (comment(f"NOTE: audit trail {cn}: not rendered: {why}"),)
 
 
 def _trail(m, t):
     cn, keeper, dest = rdn_value(t), trail_keeper(m, t), trail_destination(m, t)
     if keeper is not None:
-        return (f"# Audit trail {cn} ({one(t, 'ciamAuditScope')}): kept by {rdn_value(keeper)}, not rendered here",)
+        return (comment(f"Audit trail {cn} ({one(t, 'ciamAuditScope')}): kept by {rdn_value(keeper)}, not rendered "
+                        "here"),)
     if one(t, "ciamAuditScope") == "organization":
         return _not_rendered(cn, "Azure has no organization trail: each subscription's Activity Log is exported by its "
                                  "own diagnostic setting (the landing zone's policy deploys them); record it kept by "
@@ -105,7 +107,7 @@ def _trail(m, t):
     target, notes, variables = found
     data = [e for e in values(t, "ciamAuditEvents") if e != "control-plane"]
     unlocked = one(t, "ciamIntegrityValidation") == "TRUE" and store_protection(m, t) < PROTECTED
-    return (*notes, *variables, block("resource", [SETTING, n], [
+    return (*notes, *variables, tf_block("resource", [SETTING, n], [
         *((("#", f"{', '.join(data)} events: each resource's own diagnostic settings log them (not rendered)"),)
           if data else ()),
         *((("#", "integrity: Azure keeps no digest of the Activity Log; keep it in a container with a locked "
@@ -118,8 +120,8 @@ def render_trails(m):
     """HCL (and comments) for environment m's control-plane audit trails: the subscription data source once, when a
     diagnostic setting is rendered."""
     out = tuple(x for t in audit_trails(m) for x in _trail(m, t))
-    return ((block("data", ["azurerm_subscription", "current"], []),) if any(
-        x.startswith(f'resource "{SETTING}"') for x in out) else ()) + out
+    return ((tf_block("data", ["azurerm_subscription", "current"], []),) if blocks_of(out, "resource", SETTING)
+            else ()) + out
 
 
 # ------------------------------------------------------------------ read back

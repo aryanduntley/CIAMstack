@@ -4,6 +4,7 @@ peering, a site-to-site VPN, a virtual WAN hub connection, VNet flow logs, and w
 private endpoints and egress allowlists; import blocks for what exists; notes for what Azure has no resource for."""
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
+from opsdir_format_terraform.hcl import as_text, comment
 from opsdir_adapter_azure.landing import render_landing
 from network_fixtures import ALPHA, BETA, entry, model
 from support import REGISTRY, build_directory
@@ -21,7 +22,7 @@ AZURE_PEER = ("dn: cloud=gamma,ou=environments,dc=ciam-ops\nobjectClass: top\nob
 
 
 def _files(*records, tree=()):
-    return render_landing(model(alpha=records, tree=tree)[1])
+    return as_text(render_landing(model(alpha=records, tree=tree)[1]))
 
 
 def _net(*records, tree=()):
@@ -198,7 +199,7 @@ def test_a_landing_zone_with_guardrails_and_plumbing_declares_its_data_sources_o
               ciamProviderRef="vnet-ciam-prod", ciamResourceGroup="rg-ciam-prod"),
         entry(env, "egress", "ciamEgress", ciamBindingRole="egress", ciamCidr="203.0.113.10/32")))
     m = env_model(build_directory(REGISTRY, tuple(parse(ldif))), "az/prod")
-    files = render_landing(m, guardrails=lambda _: ("# a guardrail",))
+    files = as_text(render_landing(m, guardrails=lambda _: (comment("a guardrail"),)))
     main = files[f"{LZ}/main.tf"]
     assert 'data "azurerm_resource_group" "main"' in main and "# a guardrail" in main
     assert 'data "azurerm_resource_group" "main"' not in files[NET]

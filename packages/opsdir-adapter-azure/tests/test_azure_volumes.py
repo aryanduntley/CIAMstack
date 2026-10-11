@@ -5,6 +5,7 @@ encrypts), snapshot policies a comment until the Backup vault. Read back from st
 import json
 
 from opsdir.core.environment import servers_with_role
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.arm import arm_resources
 from opsdir_adapter_azure.cli import cli_resources
 from opsdir_adapter_azure.inventory import state_resources
@@ -45,7 +46,7 @@ def test_the_boot_volume_is_the_os_disk_and_the_vm_names_it():
     provisioned = entry(BETA, "vol-ds-boot", "ciamVolume", ciamBindingRole="volume-ds-boot", ciamTargetRole="ds",
                         ciamVolumeKind="boot", ciamVolumeClass="provisioned")
     p = _m(KEY, provisioned)
-    notes, disk = os_disk(p, _ds1(p), None)
+    notes, disk = as_text(os_disk(p, _ds1(p), None))
     assert notes == ("# vol-ds-boot: an OS disk can't be PremiumV2_LRS: Premium_LRS",)
     assert dict(disk.body)["storage_account_type"] == "Premium_LRS"
 
@@ -60,7 +61,7 @@ def test_without_a_boot_volume_the_os_disk_is_as_before():
 
 def test_a_data_volume_is_a_managed_disk_attached_at_its_lun():
     m = _m(KEY, BOOT, DATA, POLICY)
-    out = _flat("\n\n".join(server_volumes(m, _ds1(m))))
+    out = _flat("\n\n".join(as_text(server_volumes(m, _ds1(m)))))
     for text in ('resource "azurerm_managed_disk" "ds_1_vol_ds_data"', 'name = "disk-ds-1-vol-ds-data"',
                  'zone = "zone-a"', 'storage_account_type = "PremiumV2_LRS"', 'create_option = "Empty"',
                  "disk_size_gb = 256", "disk_iops_read_write = 6000", "disk_mbps_read_write = 250",
@@ -70,7 +71,7 @@ def test_a_data_volume_is_a_managed_disk_attached_at_its_lun():
                  "virtual_machine_id = azurerm_linux_virtual_machine.ds_1.id", "lun = 0", 'caching = "None"',
                  "# ds-1 mounts vol-ds-data at /opt/ds/db (its own configuration, not Terraform)"):
         assert _flat(text) in out, text
-    (note,) = snapshot_policy_notes(m)
+    (note,) = as_text(snapshot_policy_notes(m))
     assert "record a backup plan (ciamBackupPlan) with this role and a vault, which renders as one" in note
 
 
@@ -78,13 +79,13 @@ def test_azure_always_encrypts_and_a_key_without_a_disk_encryption_set_is_said()
     off = entry(BETA, "vol-ds-data", "ciamVolume", ciamBindingRole="volume-ds-data", ciamTargetRole="ds",
                 ciamVolumeKind="data", ciamVolumeEncrypted="FALSE")
     m = _m(KEY, off)
-    out = "\n".join(server_volumes(m, _ds1(m)))
+    out = "\n".join(as_text(server_volumes(m, _ds1(m))))
     assert "# vol-ds-data: recorded as not encrypted; Azure encrypts every managed disk at rest" in out
     assert "disk_encryption_set_id" not in out
     bare = entry(BETA, "key-disk", "ciamKeyRef", ciamBindingRole="disk-encryption", ciamRefUri="azkv-key://kv/keys/k")
     m = _m(bare, DATA)
     assert "key role disk-encryption names no disk encryption set (ciamProviderRef); Azure's own key encrypts it" \
-        in "\n".join(server_volumes(m, _ds1(m)))
+        in "\n".join(as_text(server_volumes(m, _ds1(m))))
 
 
 def _state(*resources):

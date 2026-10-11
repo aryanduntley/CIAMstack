@@ -3,6 +3,7 @@ request to the organization's administrators; findings streamed to a Pub/Sub top
 finding class; the scanning APIs enabled once; a project asset feed exporting configuration changes; other bindings,
 other clouds' baselines and services kept by someone else in comments; all read back from Terraform state."""
 from opsdir.core.inventory import environment_groups, resource
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.security import render_security, security_resources
 from network_fixtures import ALPHA, entry, model
 
@@ -21,7 +22,7 @@ def svc(cn, kind, **more):
 
 def _render(*services):
     _, alpha, _ = model(alpha=(STREAM, LOGS, *services), tree=OWNERS)
-    return "\n\n".join(render_security(alpha))
+    return "\n\n".join(as_text(render_security(alpha)))
 
 
 def test_threat_detection_is_a_request_and_its_findings_stream_to_the_topic():

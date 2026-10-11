@@ -17,7 +17,7 @@ from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import by_role
 from opsdir.domains.edge.exposure import is_internal
 from opsdir.domains.edge.resolve import inspected, path_regex, tls_policy
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from .identities import LOC, RG
 from .account import tagged
 from .dns import public_ip_name, unrecorded_answer
@@ -109,7 +109,7 @@ def _managed_rules(spec):
 
 def waf_policy(m, n, spec):
     """The Application Gateway WAF policy a protection policy asks for."""
-    return block("resource", ["azurerm_web_application_firewall_policy", n], [
+    return tf_block("resource", ["azurerm_web_application_firewall_policy", n], [
         ("name", f"waf-ciam-{rdn_value(m.env)}-{n}"), ("resource_group_name", RG),
         ("location", LOC),
         ("policy_settings", Block((("enabled", True),
@@ -131,11 +131,11 @@ def _certificate(m, n, spec):
         return (), (("#", "UNBOUND: no Key Vault certificate holds this service's certificate in this "
                           "environment"),), ()
     vault, name = kv
-    return ((block("resource", ["azurerm_user_assigned_identity", f"{n}_gateway"], [
+    return ((tf_block("resource", ["azurerm_user_assigned_identity", f"{n}_gateway"], [
                 ("name", f"id-agw-ciam-{rdn_value(m.env)}-{n}"), ("resource_group_name", RG), ("location", LOC),
                 ("tags", tagged(m, {"ManagedBy": "opsdir"}))]),
-             block("data", ["azurerm_key_vault", f"{n}_tls"], [("name", vault), ("resource_group_name", RG)]),
-             block("resource", ["azurerm_role_assignment", f"{n}_gateway_certificate"], [
+             tf_block("data", ["azurerm_key_vault", f"{n}_tls"], [("name", vault), ("resource_group_name", RG)]),
+             tf_block("resource", ["azurerm_role_assignment", f"{n}_gateway_certificate"], [
                  ("scope", ref(f"data.azurerm_key_vault.{n}_tls.id")),
                  ("role_definition_name", "Key Vault Secrets User"),
                  ("principal_id", ref(f"azurerm_user_assigned_identity.{n}_gateway.principal_id"))])),
@@ -178,8 +178,8 @@ def _trusted_root(n, backend, protocol, identity):
         return (), (("#", "the backend's CA is read from Key Vault by the gateway's identity, which exists once the "
                           "service's own certificate is there"),), ()
     vault, name = root.split("://", 1)[1].split("/", 1)
-    return ((block("data", ["azurerm_key_vault", f"{n}_ca"], [("name", vault), ("resource_group_name", RG)]),
-             block("resource", ["azurerm_role_assignment", f"{n}_gateway_ca"], [
+    return ((tf_block("data", ["azurerm_key_vault", f"{n}_ca"], [("name", vault), ("resource_group_name", RG)]),
+             tf_block("resource", ["azurerm_role_assignment", f"{n}_gateway_ca"], [
                  ("scope", ref(f"data.azurerm_key_vault.{n}_ca.id")),
                  ("role_definition_name", "Key Vault Secrets User"),
                  ("principal_id", ref(f"azurerm_user_assigned_identity.{n}_gateway.principal_id"))])),
@@ -196,8 +196,8 @@ def gateway_service(m, svc, spec, backend):
     ports = tuple(values(svc, "ciamPort"))
     subnets = by_role(m, EDGE_SUBNET)
     if not subnets:
-        return (f"# UNBOUND: `{one(svc, 'ciamFqdn')}` terminates TLS at an Application Gateway, which needs its own "
-                f"subnet: bind role {EDGE_SUBNET} in this environment",)
+        return (comment(f"UNBOUND: `{one(svc, 'ciamFqdn')}` terminates TLS at an Application Gateway, which needs its "
+                        f"own subnet: bind role {EDGE_SUBNET} in this environment"),)
     subnet = ref(f"data.azurerm_subnet.{tf_name(rdn_value(subnets[0]))}.id")
     policy, exact = tls_policy(TLS_POLICIES, spec.tls_min, spec.tls_profile)
     access, certificate, identity = _certificate(m, n, spec)
@@ -246,15 +246,15 @@ def gateway_service(m, svc, spec, backend):
         *((("firewall_policy_id", ref(f"azurerm_web_application_firewall_policy.{n}.id")),) if waf else ()),
         ("tags", tagged(m, {"Service": one(svc, "ciamFqdn"), "ManagedBy": "opsdir"})),
         *((("depends_on", [ref(f"azurerm_role_assignment.{n}_gateway_certificate")]),) if access else ()))
-    public = (block("data", ["azurerm_public_ip", n], [("name", public_ip_name(svc)),
-                                                       ("resource_group_name", RG)]),) \
+    public = (tf_block("data", ["azurerm_public_ip", n], [("name", public_ip_name(svc)),
+                                                          ("resource_group_name", RG)]),) \
         if not is_internal(svc) else ()
     return (*public, *access, *trust_blocks, *((waf_policy(m, n, spec),) if waf else ()),
-            *ddos_note(spec), block("resource", ["azurerm_application_gateway", n], list(body)))
+            *ddos_note(spec), tf_block("resource", ["azurerm_application_gateway", n], list(body)))
 
 
 def ddos_note(spec):
     """DDoS protection beyond standard: a plan on the virtual network, which the landing zone keeps."""
     return () if spec.ddos == "standard" else (
-        f"# DDoS {spec.ddos}: DDoS Network Protection is a plan linked to the virtual network the landing zone keeps "
-        "(or IP Protection on the public address): ask its owners",)
+        comment(f"DDoS {spec.ddos}: DDoS Network Protection is a plan linked to the virtual network the landing zone "
+                "keeps (or IP Protection on the public address): ask its owners"),)

@@ -15,7 +15,7 @@ from opsdir.core.directory import one, rdn_value, values
 from opsdir.domains.edge.dns import zone_unknown
 from opsdir.domains.edge.exposure import is_internal
 from opsdir.domains.edge.resolve import inspected, path_regex
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from .dns import record_name, service_zone
 from .edge import WAF_RULE_SETS, rate
 from .identities import RG
@@ -62,8 +62,8 @@ def _domain_tls(m, n, spec):
     if not ref_uri.startswith("azkv-cert://"):
         return (), (("certificate_type", "ManagedCertificate"), ("minimum_version", "TLS12"))
     vault, name = ref_uri.split("://", 1)[1].split("/", 1)
-    return ((block("data", ["azurerm_key_vault", f"{n}_cdn_tls"], [("name", vault), ("resource_group_name", RG)]),
-             block("resource", ["azurerm_cdn_frontdoor_secret", n], [
+    return ((tf_block("data", ["azurerm_key_vault", f"{n}_cdn_tls"], [("name", vault), ("resource_group_name", RG)]),
+             tf_block("resource", ["azurerm_cdn_frontdoor_secret", n], [
                  ("#", "Front Door's service principal needs Key Vault Secrets User on the vault (the landing zone)"),
                  ("name", f"{n}-tls"), ("cdn_frontdoor_profile_id", ref(f"azurerm_cdn_frontdoor_profile.{n}.id")),
                  ("secret", Block((("customer_certificate", Block((("key_vault_certificate_id", ref(
@@ -86,21 +86,21 @@ def front_door(m, svc, spec, n):
     policies, and the DNS CNAME to the endpoint."""
     name, zone = one(svc, "ciamFqdn"), service_zone(m, svc)
     if is_internal(svc):
-        return (f"# `{name}`: a CDN in front of a private address needs Front Door Premium's Private Link origin; "
-                "not rendered",)
+        return (comment(f"`{name}`: a CDN in front of a private address needs Front Door Premium's Private Link "
+                        "origin; not rendered"),)
     waf = inspected(spec)
     sku = "Premium_AzureFrontDoor" if waf else "Standard_AzureFrontDoor"
     h, port = spec.health, int(values(svc, "ciamPort")[0])
     certificate, tls = _domain_tls(m, n, spec)
     profile = ref(f"azurerm_cdn_frontdoor_profile.{n}.id")
     return (
-        block("resource", ["azurerm_cdn_frontdoor_profile", n], [
+        tf_block("resource", ["azurerm_cdn_frontdoor_profile", n], [
             ("name", f"afd-ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("resource_group_name", RG), ("sku_name", sku),
             ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]),
-        block("resource", ["azurerm_cdn_frontdoor_endpoint", n], [
+        tf_block("resource", ["azurerm_cdn_frontdoor_endpoint", n], [
             ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("cdn_frontdoor_profile_id", profile),
             ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]),
-        block("resource", ["azurerm_cdn_frontdoor_origin_group", n], [
+        tf_block("resource", ["azurerm_cdn_frontdoor_origin_group", n], [
             ("name", "servers"), ("cdn_frontdoor_profile_id", profile),
             ("session_affinity_enabled", spec.stickiness == "cookie"),
             ("load_balancing", Block((("sample_size", 4), ("successful_samples_required", 3)))),
@@ -108,17 +108,17 @@ def front_door(m, svc, spec, n):
                                     ("protocol", "Http" if h.protocol == "http" else "Https"),
                                     ("path", h.path or "/"), ("interval_in_seconds", h.interval or 100),
                                     ("request_type", "GET"))))]),
-        block("resource", ["azurerm_cdn_frontdoor_origin", n], [
+        tf_block("resource", ["azurerm_cdn_frontdoor_origin", n], [
             ("name", "load-balancer" if not spec.layer7 else "application-gateway"),
             ("cdn_frontdoor_origin_group_id", ref(f"azurerm_cdn_frontdoor_origin_group.{n}.id")), ("enabled", True),
             ("host_name", ref(f"data.azurerm_public_ip.{n}.ip_address")), ("origin_host_header", name),
             ("http_port", 80), ("https_port", port), ("certificate_name_check_enabled", True),
             ("priority", 1), ("weight", 1000)]),
         *certificate,
-        block("resource", ["azurerm_cdn_frontdoor_custom_domain", n], [
+        tf_block("resource", ["azurerm_cdn_frontdoor_custom_domain", n], [
             ("name", tf_name(name).replace("_", "-")), ("cdn_frontdoor_profile_id", profile), ("host_name", name),
             ("tls", Block(tls))]),
-        block("resource", ["azurerm_cdn_frontdoor_route", n], [
+        tf_block("resource", ["azurerm_cdn_frontdoor_route", n], [
             ("name", "all"), ("cdn_frontdoor_endpoint_id", ref(f"azurerm_cdn_frontdoor_endpoint.{n}.id")),
             ("cdn_frontdoor_origin_group_id", ref(f"azurerm_cdn_frontdoor_origin_group.{n}.id")),
             ("cdn_frontdoor_origin_ids", [ref(f"azurerm_cdn_frontdoor_origin.{n}.id")]),
@@ -126,16 +126,16 @@ def front_door(m, svc, spec, n):
             ("#", "no cache block: nothing is cached (sign-in pages and tokens)"),
             ("patterns_to_match", ["/*"]), ("supported_protocols", ["Http", "Https"]),
             ("https_redirect_enabled", True), ("forwarding_protocol", "HttpsOnly"), ("link_to_default_domain", False)]),
-        block("resource", ["azurerm_cdn_frontdoor_custom_domain_association", n], [
+        tf_block("resource", ["azurerm_cdn_frontdoor_custom_domain_association", n], [
             ("cdn_frontdoor_custom_domain_id", ref(f"azurerm_cdn_frontdoor_custom_domain.{n}.id")),
             ("cdn_frontdoor_route_ids", [ref(f"azurerm_cdn_frontdoor_route.{n}.id")])]),
-        *((block("resource", ["azurerm_cdn_frontdoor_firewall_policy", n], [
+        *((tf_block("resource", ["azurerm_cdn_frontdoor_firewall_policy", n], [
               ("name", f"waf{tf_name(rdn_value(m.env)).replace('_', '')}{n.replace('_', '')}"),
               ("resource_group_name", RG), ("sku_name", sku), ("enabled", True),
               ("mode", "Detection" if spec.waf_mode == "detect" else "Prevention"),
               *_custom_rules(spec), *_managed_rules(spec),
               ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]),
-           block("resource", ["azurerm_cdn_frontdoor_security_policy", n], [
+           tf_block("resource", ["azurerm_cdn_frontdoor_security_policy", n], [
               ("name", f"{n.replace('_', '-')}-waf"), ("cdn_frontdoor_profile_id", profile),
               ("security_policies", Block((("firewall", Block((
                   ("cdn_frontdoor_firewall_policy_id", ref(f"azurerm_cdn_frontdoor_firewall_policy.{n}.id")),
@@ -143,12 +143,12 @@ def front_door(m, svc, spec, n):
                       ("domain", Block((("cdn_frontdoor_domain_id",
                                          ref(f"azurerm_cdn_frontdoor_custom_domain.{n}.id")),))),
                       ("patterns_to_match", ["/*"]))))))),)))])) if waf else ()),
-        block("resource", ["azurerm_dns_txt_record", f"{n}_dnsauth"], [
+        tf_block("resource", ["azurerm_dns_txt_record", f"{n}_dnsauth"], [
             ("name", f"_dnsauth.{record_name(name, zone)}" if record_name(name, zone) != "@" else "_dnsauth"),
             ("zone_name", zone), ("resource_group_name", RG), ("ttl", 3600),
             ("record", Block((("value", ref(f"azurerm_cdn_frontdoor_custom_domain.{n}.validation_token")),))),
             ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))])
-        if zone else zone_unknown(svc, "ciamDnsZone"))
+        if zone else comment(zone_unknown(svc, "ciamDnsZone")))
 
 
 def endpoint(n):

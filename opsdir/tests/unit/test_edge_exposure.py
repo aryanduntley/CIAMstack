@@ -39,7 +39,7 @@ def test_the_address_decides_then_the_recorded_exposure():
 def test_a_name_with_neither_is_unknown_and_named_in_the_render_comment():
     _, svc = _sso(ALPHA, _modify(ALPHA, "delete: ciamExposure\n-\n"))
     assert service_exposure(svc) is None
-    assert exposure_unknown(svc).startswith("# UNBOUND:sso-service-exposure: service name `svc-sso`")
+    assert exposure_unknown(svc).startswith("UNBOUND:sso-service-exposure: service name `svc-sso`")
 
 
 def test_unknown_exposure_blocks_the_target_and_is_an_action_in_the_source():

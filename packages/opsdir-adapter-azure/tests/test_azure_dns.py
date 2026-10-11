@@ -2,26 +2,28 @@
 Manager rendered by the environment holding the primary (every address an external endpoint) with a CNAME to it,
 records by type in public and private zones, nothing in a zone someone else runs, outbound forwarders as forwarding
 ruleset rules."""
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.dns import forwarding_rules, private_zone, record_name, records, service_record
 from edge_fixtures import binding, dns_estate
 
 
 def test_routing_between_environments_is_traffic_manager_from_the_primary():
     d, alpha, beta = dns_estate()
-    out = "\n".join(service_record(d, alpha, binding(alpha, "svc-login"), "svc_login"))
+    out = "\n".join(as_text(service_record(d, alpha, binding(alpha, "svc-login"), "svc_login")))
     assert 'traffic_routing_method = "Priority"' in out and "ttl           = 60" in out
     assert 'target     = "198.51.100.10"' in out and 'target     = "198.51.100.20"' in out
     assert "priority   = 1" in out and "priority   = 2" in out
     assert 'resource "azurerm_dns_cname_record" "svc_login"' in out
     assert "record              = azurerm_traffic_manager_profile.svc_login.fqdn" in out
-    weighted = "\n".join(service_record(d, alpha, binding(alpha, "svc-api"), "svc_api"))
+    weighted = "\n".join(as_text(service_record(d, alpha, binding(alpha, "svc-api"), "svc_api")))
     assert 'traffic_routing_method = "Weighted"' in weighted and "weight     = 3" in weighted
-    assert service_record(d, beta, binding(beta, "svc-login"), "svc_login")[0].startswith("# `login.example.test`")
+    assert as_text(service_record(d, beta, binding(beta, "svc-login"), "svc_login"))[0].startswith(
+        "# `login.example.test`")
 
 
 def test_records_by_type_and_zone_visibility():
     d, alpha, _ = dns_estate()
-    out = "\n".join(records(d, alpha))
+    out = "\n".join(as_text(records(d, alpha)))
     assert 'resource "azurerm_dns_txt_record" "record_txt_verify"' in out and 'value = "token=abc"' in out
     assert 'resource "azurerm_dns_mx_record" "record_mx_mail"' in out and 'name                = "@"' in out
     assert "preference = 10" in out and 'exchange   = "mail2.example.test"' in out
@@ -34,7 +36,7 @@ def test_records_by_type_and_zone_visibility():
 
 def test_private_records_name_their_zone_by_id():
     d, alpha, _ = dns_estate()
-    out = "\n".join(records(d, alpha))
+    out = "\n".join(as_text(records(d, alpha)))
     assert out.count('data "azurerm_private_dns_zone" "corp_example_test"') == 1
     srv = out[out.index('resource "azurerm_private_dns_srv_record"'):]
     srv = srv[:srv.index("\n}")]
@@ -48,11 +50,11 @@ def test_private_records_name_their_zone_by_id():
 
 def test_outbound_forwarders_are_ruleset_rules():
     _, alpha, _ = dns_estate()
-    out = "\n".join(forwarding_rules(alpha))
+    out = "\n".join(as_text(forwarding_rules(alpha)))
     assert out.count('resource "azurerm_private_dns_resolver_forwarding_rule"') == 2
     assert 'domain_name               = "ad.corp.example."' in out
     assert "dns_forwarding_ruleset_id = var.dns_forwarding_ruleset_id" in out
     assert out.count("target_dns_servers {") == 4 and "# Inbound forwarder `fwd-in`" in out
     _, _, beta = dns_estate()
-    hosted = forwarding_rules(beta)                               # on its own DNS servers: no rule, a comment
+    hosted = as_text(forwarding_rules(beta))                               # on its own DNS servers: no rule, a comment
     assert len(hosted) == 1 and "runs on DNS servers 10.2.0.4, 10.2.0.5 (virtual machines)" in hosted[0]

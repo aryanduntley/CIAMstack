@@ -6,6 +6,7 @@ from types import SimpleNamespace
 
 from opsdir.core.directory import make_entry
 from opsdir.domains.access.workloads import Pod, WorkloadIdentity
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.access import PERMISSIONS
 from opsdir_adapter_azure.identities import aks_data, identity as _identity, scope_data as _scope_data
 from support import BARE
@@ -30,7 +31,7 @@ W = WorkloadIdentity("pf-engine", "identity-pf-engine", "pf-engine", "ciam-prod-
 
 
 def test_an_identity_with_role_assignments_at_the_narrowest_scope():
-    out = "\n".join(_identity(SimpleNamespace(d=BARE), W))
+    out = "\n".join(as_text(_identity(SimpleNamespace(d=BARE), W)))
     assert 'resource "azurerm_user_assigned_identity" "identity_pf_engine"' in out
     assert 'scope                = "${data.azurerm_key_vault.kv_ciam_prod.id}/secrets/pf-admin-password"' in out
     assert 'role_definition_name = "Key Vault Secrets User"' in out
@@ -41,7 +42,7 @@ def test_an_identity_with_role_assignments_at_the_narrowest_scope():
 
 def test_the_scopes_data_sources_not_declared_already():
     m = SimpleNamespace(d=BARE, bindings=(SECRET,))              # the secrets' vault is declared by the vault check
-    assert [b.splitlines()[0] for b in _scope_data(m, (W,))] == ['data "azurerm_key_vault" "kv_ciam_keys" {']
+    assert [b.splitlines()[0] for b in as_text(_scope_data(m, (W,)))] == ['data "azurerm_key_vault" "kv_ciam_keys" {']
 
 
 def test_kubernetes_service_accounts_get_federated_credentials_from_their_aks_cluster():
@@ -50,9 +51,9 @@ def test_kubernetes_service_accounts_get_federated_credentials_from_their_aks_cl
         "ciamProviderRef": ["/subscriptions/0/resourceGroups/rg-aks/providers/Microsoft.ContainerService/"
                             "managedClusters/aks-ciam"]})
     w = W._replace(pods=(Pod("identity", "am", cluster), Pod("tools", "x", None)), servers=False)
-    data = "\n".join(aks_data((w,)))
+    data = "\n".join(as_text(aks_data((w,))))
     assert 'data "azurerm_kubernetes_cluster" "aks_ciam"' in data and 'resource_group_name = "rg-aks"' in data
-    out = "\n".join(_identity(SimpleNamespace(d=BARE), w))
+    out = "\n".join(as_text(_identity(SimpleNamespace(d=BARE), w)))
     assert 'resource "azurerm_federated_identity_credential"' in out
     assert "issuer                    = data.azurerm_kubernetes_cluster.aks_ciam.oidc_issuer_url" in out
     assert 'subject                   = "system:serviceaccount:identity:am"' in out

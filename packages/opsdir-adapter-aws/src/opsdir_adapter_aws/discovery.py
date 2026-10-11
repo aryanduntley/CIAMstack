@@ -42,7 +42,7 @@ from opsdir.core.manifest import header
 from opsdir.domains.estate.discovery import (custom_identifiers, destination, discovery_services, rescan_line,
                                              rescan_plan)
 from opsdir.domains.estate.naming import RESTRICTED
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from opsdir_format_terraform.state import blocks
 from .account import account_id
 from .account import govcloud, partition
@@ -161,16 +161,16 @@ def _scheduled(m, s, ids, days, buckets, account):
         "Resource": f"arn:{part}:lambda:{region}:{account}:function:{fn}"}]}
     # a quoted template (the ids joined by commas), written as is
     ident = ",".join(f"${{{IDENTIFIER}.{ids[x][0]}.id}}" for x, _ in custom_identifiers(s))
-    return (f"# {cn}: every {days} days: Macie's schedule runs daily or weekly, so EventBridge Scheduler invokes {fn} "
-            f"daily and it starts a one-time classification job once {days} days have passed since the last "
-            "successful one",
-            block("data", ["archive_file", n], [
+    return (comment(f"{cn}: every {days} days: Macie's schedule runs daily or weekly, so EventBridge Scheduler invokes "
+                    f"{fn} daily and it starts a one-time classification job once {days} days have passed since the "
+                    "last successful one"),
+            tf_block("data", ["archive_file", n], [
                 ("type", "zip"), ("source_dir", f"${{path.module}}/discovery/{fn}"),
                 ("output_path", f"${{path.module}}/.build/{fn}.zip")]),
-            block("resource", ["aws_iam_role", n], [("name", fn), ("assume_role_policy", _json(lambda_trust))]),
-            block("resource", ["aws_iam_role_policy", n], [
+            tf_block("resource", ["aws_iam_role", n], [("name", fn), ("assume_role_policy", _json(lambda_trust))]),
+            tf_block("resource", ["aws_iam_role_policy", n], [
                 ("name", "macie-jobs"), ("role", ref(f"aws_iam_role.{n}.id")), ("policy", _json(runs))]),
-            block("resource", [FUNCTION, n], [
+            tf_block("resource", [FUNCTION, n], [
                 ("function_name", fn), ("role", ref(f"aws_iam_role.{n}.arn")), ("runtime", RUNTIME),
                 ("handler", "handler.handler"), ("timeout", 60),
                 ("filename", ref(f"data.archive_file.{n}.output_path")),
@@ -180,11 +180,11 @@ def _scheduled(m, s, ids, days, buckets, account):
                     **({"CUSTOM_DATA_IDENTIFIER_IDS": ref(f'"{ident}"')} if ident else {})}),))),
                 ("tags", {"Realizes": cn, RESCAN_TAG: str(days)}),
                 ("depends_on", [ref(f"{ACCOUNT}.{MACIE}")])]),
-            block("resource", ["aws_iam_role", f"{n}_scheduler"], [
+            tf_block("resource", ["aws_iam_role", f"{n}_scheduler"], [
                 ("name", f"{fn}-scheduler"[:64]), ("assume_role_policy", _json(scheduler_trust))]),
-            block("resource", ["aws_iam_role_policy", f"{n}_scheduler"], [
+            tf_block("resource", ["aws_iam_role_policy", f"{n}_scheduler"], [
                 ("name", "invoke"), ("role", ref(f"aws_iam_role.{n}_scheduler.id")), ("policy", _json(invokes))]),
-            block("resource", [SCHEDULE, n], [
+            tf_block("resource", [SCHEDULE, n], [
                 ("name", fn), ("schedule_expression", "rate(1 day)"),
                 ("flexible_time_window", Block((("mode", "OFF"),))),
                 ("target", Block((("arn", ref(f"{FUNCTION}.{n}.arn")),
@@ -215,16 +215,16 @@ def _job(m, s, ids):
     cn, n = rdn_value(s), tf_name(rdn_value(s))
     buckets, others = _stores(m, s)
     account = account_id(m)
-    notes = (*((f"# {cn}: Macie examines S3 only: {', '.join(others)} not examined here",) if others else ()),)
+    notes = (*((comment(f"{cn}: Macie examines S3 only: {', '.join(others)} not examined here"),) if others else ()),)
     if not buckets:
-        return (*notes, f"# NOTE: data discovery {cn}: no classification job: it examines no S3 bucket here")
+        return (*notes, comment(f"NOTE: data discovery {cn}: no classification job: it examines no S3 bucket here"))
     if account is None:
-        return (*notes, f"# NOTE: data discovery {cn}: no classification job: the cloud records no account "
-                        "(ciamAccountRef)")
+        return (*notes, comment(f"NOTE: data discovery {cn}: no classification job: the cloud records no account "
+                                "(ciamAccountRef)"))
     plan = rescan_plan(s, OFFERED)
     if plan is not None and not plan.native:
         return (*notes, *_scheduled(m, s, ids, plan.days, buckets, account))
-    return (*notes, block("resource", [JOB, n], [
+    return (*notes, tf_block("resource", [JOB, n], [
         ("job_type", "SCHEDULED"), ("name", cn), ("schedule_frequency", Block(_schedule(plan and plan.days))),
         *((("custom_data_identifier_ids", [ref(f"{IDENTIFIER}.{ids[x][0]}.id") for x, _ in custom_identifiers(s)]),)
           if custom_identifiers(s) else ()),
@@ -244,8 +244,9 @@ def _export(m, services):
     key = key_arn(m, dest)[0] if bucket else None
     if bucket is None or key is None:
         why = "it isn't an S3 bucket here" if bucket is None else "its store has no KMS key (Macie requires one)"
-        return (f"# NOTE: data discovery {rdn_value(s)}'s results to {one(s, 'ciamResultsRole')}: not rendered: {why}",)
-    return (block("resource", [EXPORT, MACIE], [
+        return (comment(f"NOTE: data discovery {rdn_value(s)}'s results to {one(s, 'ciamResultsRole')}: not rendered: "
+                        f"{why}"),)
+    return (tf_block("resource", [EXPORT, MACIE], [
         ("s3_destination", Block((("bucket_name", bucket), ("key_prefix", f"macie/{rdn_value(m.env)}/"),
                                   ("kms_key_arn", key)))),
         ("depends_on", [ref(f"{ACCOUNT}.{MACIE}")])]),)
@@ -259,20 +260,20 @@ def _uses_scheduler(m, s):
 def render_discovery(m):
     """(HCL and comments, {path: script}) for environment m's data discovery: the scheduler functions' sources."""
     kept, ids = _kept(m), _identifiers(m)
-    notes = tuple(f"# Data discovery {rdn_value(s)}: kept by {_keeper(m, s)}, not rendered here"
+    notes = tuple(comment(f"Data discovery {rdn_value(s)}: kept by {_keeper(m, s)}, not rendered here")
                   for s in discovery_services(m) if one(s, "ciamManagedBy"))
     if not kept:
         return notes, {}
     if govcloud(m):
-        return (*notes, f"# {GOVCLOUD_NOTE}: data discovery {', '.join(rdn_value(s) for s in kept)} (the planner "
-                        "names the gap)"), {}
+        return (*notes, comment(f"{GOVCLOUD_NOTE}: data discovery {', '.join(rdn_value(s) for s in kept)} (the planner "
+                                "names the gap)")), {}
     scripts = {f"terraform/discovery/{function_name(m, s)}/handler.py": handler_script(m, s)
                for s in kept if _uses_scheduler(m, s)}
     return (*notes,
-            block("resource", [ACCOUNT, MACIE], [("finding_publishing_frequency", "FIFTEEN_MINUTES"),
-                                                 ("status", "ENABLED")]),
-            *(block("resource", [IDENTIFIER, tf], [("name", n), ("regex", rx),
-                                                   ("depends_on", [ref(f"{ACCOUNT}.{MACIE}")])])
+            tf_block("resource", [ACCOUNT, MACIE], [("finding_publishing_frequency", "FIFTEEN_MINUTES"),
+                                                    ("status", "ENABLED")]),
+            *(tf_block("resource", [IDENTIFIER, tf], [("name", n), ("regex", rx),
+                                                      ("depends_on", [ref(f"{ACCOUNT}.{MACIE}")])])
               for n, (tf, rx) in ids.items()),
             *(x for s in kept for x in (*_job(m, s, ids), *findings_routing(m, s, "data-discovery"))),
             *_export(m, kept)), scripts

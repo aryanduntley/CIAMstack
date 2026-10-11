@@ -100,14 +100,15 @@ def forwarders(m, direction="outbound", hosted=None):
 
 
 def hosted_notes(m, machines):
-    """A comment per forwarder of environment m on its own DNS servers (machines: what the platform calls them): what
-    those servers must do, the network's DNS settings pointing at them; neither is rendered here."""
+    """A note (comment text, no '# ') per forwarder of environment m on its own DNS servers (machines: what the
+    platform calls them): what those servers must do, the network's DNS settings pointing at them; neither is rendered
+    here."""
     def note(f):
         doms, hosts = ", ".join(values(f, "ciamForwardDomain")), ", ".join(values(f, "ciamResolverHost"))
         does = (f"forward {doms} to {', '.join(values(f, 'ciamForwardTarget'))} and everything else to the "
                 "platform's resolver" if (one(f, "ciamForwardDirection") or "outbound") == "outbound"
                 else f"answer other networks' queries for {doms}")
-        return (f"# Forwarder `{rdn_value(f)}` runs on DNS servers {hosts} ({machines}), not the managed resolver: "
+        return (f"Forwarder `{rdn_value(f)}` runs on DNS servers {hosts} ({machines}), not the managed resolver: "
                 f"they {does}, and the network's DNS servers point at them; not managed here")
     return tuple(note(f) for direction in ("outbound", "inbound") for f in forwarders(m, direction, hosted=True))
 

@@ -4,6 +4,7 @@ each copy region's vault, an input) with a selection by tag Role of what it prot
 imported. Read back from Terraform state and the CLI, named by tag Name."""
 import json
 
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.backups import backup_cron, cron_schedule, render_backups
 from opsdir_adapter_aws.cli import cli_resources
 from opsdir_adapter_aws.inventory import state_resources
@@ -48,7 +49,7 @@ def test_schedules_as_aws_backup_cron():
 
 
 def test_a_vault_and_a_plan_render_as_aws_backup():
-    out = _flat("\n\n".join(render_backups(_m(KEY, VAULT, PLAN))))
+    out = _flat("\n\n".join(as_text(render_backups(_m(KEY, VAULT, PLAN)))))
     for text in ('variable "backup_iam_role_arn"',
                  'resource "aws_backup_vault" "vault_main" { name = "ciam-prod-vault-main" kms_key_arn = '
                  f'"{ARN}" tags = {{ Name = "vault-main" Role = "vault-main" ManagedBy = "opsdir" }} }}',
@@ -70,14 +71,14 @@ def test_a_vault_and_a_plan_render_as_aws_backup():
 def test_what_it_can_t_render_is_said():
     governance = entry(BETA, "vault-main", "ciamBackupVault", ciamBindingRole="vault-main",
                        ciamStorageImmutability="governance", ciamStorageLockDays="7", ciamCrossRegionRestore="TRUE")
-    out = "\n".join(render_backups(_m(governance)))
+    out = "\n".join(as_text(render_backups(_m(governance))))
     assert "AWS Backup's own key encrypts it" in out and "through the plans' copies" in out
     assert "changeable_for_days" not in out
     odd = entry(BETA, "backup-odd", "ciamBackupPlan", ciamBindingRole="backup-odd", ciamProtectsRole="x",
                 ciamBackupVaultRole="vault-none", ciamRetentionDays="7", ciamBackupEveryHours="36")
     lost = entry(BETA, "backup-lost", "ciamBackupPlan", ciamBindingRole="backup-lost", ciamProtectsRole="x",
                  ciamBackupVaultRole="vault-none", ciamRetentionDays="7")
-    out = "\n".join(render_backups(_m(odd, lost)))
+    out = "\n".join(as_text(render_backups(_m(odd, lost))))
     assert "every 36 hours isn't a whole number of days: not rendered" in out
     assert "no backup vault binding for role vault-none in this environment: not rendered" in out
     kept = entry(BETA, "backup-dba", "ciamBackupPlan", ciamBindingRole="backup-dba", ciamProtectsRole="x",
@@ -85,7 +86,7 @@ def test_what_it_can_t_render_is_said():
                  ciamManagedBy="cn=network-security,ou=owners,dc=ciam-ops")
     assert "Backup plan 'backup-dba' (role backup-dba) is kept by cn=network-security,ou=owners,dc=ciam-ops: not " \
         "rendered here" in \
-        "\n".join(render_backups(_m(kept)))
+        "\n".join(as_text(render_backups(_m(kept))))
 
 
 VAULT_STATE = ("aws_backup_vault", {"name": "ciam-prod-vault-main", "arn": VAULT_ARN, "kms_key_arn": ARN,
@@ -162,7 +163,7 @@ def test_the_cli_reads_the_same():
 
 def test_what_it_renders_reads_back_as_recorded():
     """The rendered vault, lock and plan, as Terraform would hold them, read back to the record's values."""
-    out = _flat("\n\n".join(render_backups(_m(KEY, VAULT, PLAN))))
+    out = _flat("\n\n".join(as_text(render_backups(_m(KEY, VAULT, PLAN)))))
     assert "min_retention_days = 35 changeable_for_days = 3" in out and 'schedule = "cron(0 5 ? * * *)"' in out
     plan = _by(state_resources(_state(VAULT_STATE, LOCK_STATE, PLAN_STATE, SELECTION_STATE))[0])[("backup-plan",
                                                                                                   PLAN_ARN)]

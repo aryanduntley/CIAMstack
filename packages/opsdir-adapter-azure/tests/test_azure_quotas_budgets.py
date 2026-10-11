@@ -8,6 +8,7 @@ import json
 import re
 
 from opsdir.core.interchange.ldif import LdifRecord
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.adapter import ADAPTER
 from opsdir_adapter_azure.budgets import budget_inputs, budget_resources, render_budgets
 from opsdir_adapter_azure.quotas import quota_commands, quota_request_notes, read_quotas
@@ -88,7 +89,7 @@ def test_usages_are_read_into_the_subscription_s_catalog():
 def test_approved_increases_are_named_in_comments():
     _, alpha = _alpha(need("cpus", "vcpus", 16, ciamQuotaDecision="request"),
                       need("ips", "public-ips", 4, ciamQuotaDecision="deny"))
-    note, = quota_request_notes(alpha)
+    note, = as_text(quota_request_notes(alpha))
     assert note.startswith(f"# Quota request (vcpus): raise it to 16 for subscription {SUB} in eastus2 through the "
                            "Quota API (`az quota update`, Microsoft.Quota)")
 
@@ -96,27 +97,28 @@ def test_approved_increases_are_named_in_comments():
 def test_a_budget_on_the_resource_group_alerts_the_action_group():
     _, alpha = _alpha(budget(ciamActualThreshold=("80", "100"), ciamForecastThreshold="100",
                              ciamBudgetPeriod="quarterly"), CHANNEL)
-    out = flat(render_budgets(alpha))
+    out = flat(as_text(render_budgets(alpha)))
     assert 'resource "azurerm_consumption_budget_resource_group" "monthly" {' in out
     assert "resource_group_id = data.azurerm_resource_group.main.id" in out and "amount = 5000" in out
     assert 'time_grain = "Quarterly"' in out and "start_date = var.budget_start_date" in out
     assert out.count("notification {") == 3 and out.count('"Forecasted"') == 1 and f'["{GROUP}"]' in out
-    assert "Azure Government" not in out and 'variable "budget_start_date"' in budget_inputs(alpha)[0]
+    assert "Azure Government" not in out and 'variable "budget_start_date"' in as_text(budget_inputs(alpha))[0]
 
 
 def test_defaults_azure_needs_and_the_government_note():
     _, alpha = _alpha(budget(ciamAlertRole="nowhere", ciamCurrency="EUR"), gov=True)
-    out = flat(render_budgets(alpha))
+    out = flat(as_text(render_budgets(alpha)))
     assert "# budget monthly: no thresholds recorded: Azure needs a notification, so it alerts at 100% spent" in out
     assert "# budget monthly: nowhere names no action group: its alerts go to the subscription's Owners" in out
     assert "# budget monthly: Azure counts it in the billing account's currency, not EUR" in out
     assert "# Azure Government: Cost Management budgets serve Enterprise Agreement and pay-as-you-go" in out
     assert 'threshold = 100' in out and 'contact_roles = ["Owner"]' in out
     _, alpha = _alpha(budget(ciamActualThreshold=("50", "60", "70", "80", "90", "100")), CHANNEL)
-    out = flat(render_budgets(alpha))
+    out = flat(as_text(render_budgets(alpha)))
     assert out.count("notification {") == 5 and "Azure takes five notifications: 100% Actual left out" in out
     _, alpha = _alpha(budget(ciamManagedBy="cn=finance,ou=owners,dc=ciam-ops"))
-    assert render_budgets(alpha) == ("# Budget monthly: kept by cn=finance,ou=owners,dc=ciam-ops, not rendered here",)
+    assert as_text(render_budgets(alpha)) == (
+        "# Budget monthly: kept by cn=finance,ou=owners,dc=ciam-ops, not rendered here",)
     assert budget_inputs(alpha) == ()
 
 

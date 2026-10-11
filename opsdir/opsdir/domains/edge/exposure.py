@@ -33,9 +33,9 @@ def is_internal(svc):
 
 
 def exposure_unknown(svc):
-    """The comment a cloud renderer writes in place of service name svc's load balancer and DNS record when its
-    exposure is unknown."""
-    return (f"# {UNBOUND}{one(svc, 'ciamBindingRole')}-exposure: service name `{rdn_value(svc)}` "
+    """The note (comment text, no '# ') a cloud renderer writes in place of service name svc's load balancer and DNS
+    record when its exposure is unknown."""
+    return (f"{UNBOUND}{one(svc, 'ciamBindingRole')}-exposure: service name `{rdn_value(svc)}` "
             f"({one(svc, 'ciamFqdn')}) records no frontend address (ciamFrontendIp) or exposure (ciamExposure), so "
             "whether its load balancer is internal or internet-facing is unknown: not rendered")
 

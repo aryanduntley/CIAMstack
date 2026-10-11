@@ -18,7 +18,7 @@ from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import by_role
 from opsdir.domains.edge.exposure import is_internal
 from opsdir.domains.edge.resolve import inspected, path_regex, tls_policy
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from .health_checks import probe_ranges
 from .names import NETWORK, REGION, label, network_tag
 
@@ -58,7 +58,7 @@ def _where(world):
 
 
 def _rule(n, policy, priority, action, match, spec, extra=(), world=False):
-    return block("resource", [_kind(world, "security_policy_rule"), f"{n}_{priority}"], [
+    return tf_block("resource", [_kind(world, "security_policy_rule"), f"{n}_{priority}"], [
         *_where(world), ("security_policy", ref(f"{_kind(world, 'security_policy')}.{policy}.name")),
         ("priority", priority), ("action", action), ("match", match),
         *((("preview", True),) if spec.waf_mode == "detect" else ()), *extra])
@@ -103,8 +103,8 @@ def armor(m, n, spec, world=False):
             rules.append(("deny(403)", _expr(f"evaluatePreconfiguredWaf('{rule_set}')"),
                           _exclusions(spec, c, rule_set)))
     missing = [f"{c} {_NOT_RENDERED[c]}" for c in spec.categories if not WAF_RULES.get(c)]
-    return (*(f"# not rendered: {x}" for x in missing),
-            block("resource", [_kind(world, "security_policy"), n], [
+    return (*(comment(f"not rendered: {x}") for x in missing),
+            tf_block("resource", [_kind(world, "security_policy"), n], [
                 ("name", f"ciam-{rdn_value(m.env)}-{n}"), *_where(world), ("type", "CLOUD_ARMOR"),
                 *((("adaptive_protection_config", Block((("layer_7_ddos_defense_config",
                                                           Block((("enable", True),))),))),)
@@ -117,11 +117,11 @@ def network_ddos(m, n, spec):
     """Advanced network DDoS protection for a passthrough service's external address, when the policy asks for it."""
     if spec.ddos == "standard":
         return ()
-    return (block("resource", ["google_compute_region_security_policy", f"{n}_network"], [
+    return (tf_block("resource", ["google_compute_region_security_policy", f"{n}_network"], [
                 ("#", "Cloud Armor Enterprise: advanced network DDoS protection"),
                 ("name", f"ciam-{rdn_value(m.env)}-{n}-network"), ("region", REGION), ("type", "CLOUD_ARMOR_NETWORK"),
                 ("ddos_protection_config", Block((("ddos_protection", "ADVANCED"),)))]),
-            block("resource", ["google_compute_network_edge_security_service", n], [
+            tf_block("resource", ["google_compute_network_edge_security_service", n], [
                 ("name", f"ciam-{rdn_value(m.env)}-{n}"), ("region", REGION),
                 ("security_policy", ref(f"google_compute_region_security_policy.{n}_network.self_link"))]))
 
@@ -129,7 +129,7 @@ def network_ddos(m, n, spec):
 def _health_check(n, name, spec, port, world=False, host=None):
     h = spec.health
     protocol = h.protocol if h.protocol != "tcp" else ("http" if spec.mode == "terminate" else "https")
-    return block("resource", [_kind(world, "health_check"), n], [
+    return tf_block("resource", [_kind(world, "health_check"), n], [
         ("name", name), *_where(world),
         *((("check_interval_sec", h.interval),) if h.interval else ()),
         *((("healthy_threshold", h.healthy),) if h.healthy else ()),
@@ -171,12 +171,12 @@ def _firewall(m, svc, n, name, port, proxies, backend, admit=None, probe=None):
     if admit is not None:
         return (*((admit(m, svc, n, (proxies,), port, "proxies"),) if proxies else ()),
                 admit(m, svc, n, probe_ranges("MANAGED"), checked))
-    return (*((block("resource", ["google_compute_firewall", f"{n}_proxies"], [
+    return (*((tf_block("resource", ["google_compute_firewall", f"{n}_proxies"], [
                 ("name", f"{name}-proxies"), ("description", f"Load balancer proxies for {rdn_value(svc)}"),
                 ("network", NETWORK), ("direction", "INGRESS"),
                 ("allow", Block((("protocol", "tcp"), ("ports", [port])))),
                 ("source_ranges", [proxies]), *backend.target]),) if proxies else ()),
-            block("resource", ["google_compute_firewall", f"{n}_health_checks"], [
+            tf_block("resource", ["google_compute_firewall", f"{n}_health_checks"], [
                 ("name", f"{name}-health-checks"), ("description", f"Google Cloud health checks for {rdn_value(svc)}"),
                 ("network", NETWORK), ("direction", "INGRESS"),
                 ("allow", Block((("protocol", "tcp"), ("ports", [checked])))),
@@ -188,7 +188,7 @@ def _global_address(svc, n, ip):
     names, else its frontend address."""
     if not one(svc, "ciamProviderRef"):
         return (), ip
-    return ((block("data", ["google_compute_global_address", n], [("name", one(svc, "ciamProviderRef"))]),),
+    return ((tf_block("data", ["google_compute_global_address", n], [("name", one(svc, "ciamProviderRef"))]),),
             ref(f"data.google_compute_global_address.{n}.address"))
 
 
@@ -204,25 +204,25 @@ def application_lb(m, svc, spec, backend, frontend, placement, admit=None):
     internal = is_internal(svc)
     world = spec.cdn
     if world and internal:
-        return (f"# `{one(svc, 'ciamFqdn')}`: Cloud CDN serves external load balancers only; its frontend address "
-                "is private",)
+        return (comment(f"`{one(svc, 'ciamFqdn')}`: Cloud CDN serves external load balancers only; its frontend "
+                        "address is private"),)
     scheme = "INTERNAL_MANAGED" if internal else "EXTERNAL_MANAGED"
     edge = by_role(m, EDGE_SUBNET)
     if not edge and not world:
-        return (f"# UNBOUND: `{one(svc, 'ciamFqdn')}` terminates TLS at an Application Load Balancer, which needs a "
-                f"proxy-only subnet: bind role {EDGE_SUBNET} in this environment",)
+        return (comment(f"UNBOUND: `{one(svc, 'ciamFqdn')}` terminates TLS at an Application Load Balancer, which "
+                        f"needs a proxy-only subnet: bind role {EDGE_SUBNET} in this environment"),)
     profile, version = tls_policy(TLS_POLICIES, spec.tls_min, spec.tls_profile)[0].split("/")
     cert = spec.certificate.split("://", 1)[1] if (spec.certificate or "").startswith("gcp-cert://") else None
     data, address = _global_address(svc, n, ip) if world else frontend
     waf = inspected(spec)
     kind = (lambda what: _kind(world, what))
-    forwarding = (block("resource", ["google_compute_global_forwarding_rule", n], [
+    forwarding = (tf_block("resource", ["google_compute_global_forwarding_rule", n], [
                       ("name", name), ("load_balancing_scheme", scheme), ("ip_protocol", "TCP"),
                       ("port_range", str(port)), *((("ip_address", address),) if address else ()),
                       ("target", ref(f"google_compute_target_https_proxy.{n}.id")),
                       ("labels", {"service": label(one(svc, "ciamFqdn")), "managed_by": "opsdir"})])
                   if world else
-                  block("resource", ["google_compute_forwarding_rule", n], [
+                  tf_block("resource", ["google_compute_forwarding_rule", n], [
                       ("name", name), ("region", REGION), ("load_balancing_scheme", scheme), ("ip_protocol", "TCP"),
                       ("port_range", str(port)), *((("ip_address", address),) if address else ()),
                       ("network", NETWORK),
@@ -230,13 +230,13 @@ def application_lb(m, svc, spec, backend, frontend, placement, admit=None):
                       ("target", ref(f"google_compute_region_target_https_proxy.{n}.id")),
                       ("labels", {"service": label(one(svc, "ciamFqdn")), "managed_by": "opsdir"})]))
     return (*data,
-            block("resource", [kind("ssl_policy"), n], [
+            tf_block("resource", [kind("ssl_policy"), n], [
                 ("name", name), *_where(world), ("profile", profile), ("min_tls_version", version)]),
             _health_check(n, name, spec, backend.port or port, world, backend.host),
             *_firewall(m, svc, n, name, backend.port or port, None if world else one(edge[0], "ciamCidr"), backend,
                        admit, spec.health.port),
             *(armor(m, n, spec, world) if waf else ()),
-            block("resource", [kind("backend_service"), n], [
+            tf_block("resource", [kind("backend_service"), n], [
                 ("name", name), *_where(world), ("load_balancing_scheme", scheme),
                 ("protocol", "HTTP" if spec.mode == "terminate" else "HTTPS"),
                 *((("port_name", backend.port_name),) if backend.port_name else ()),
@@ -249,9 +249,9 @@ def application_lb(m, svc, spec, backend, frontend, placement, admit=None):
                    ("cdn_policy", Block((("cache_mode", "USE_ORIGIN_HEADERS"),)))) if world else ()),
                 *((("security_policy", ref(f"{kind('security_policy')}.{n}.self_link")),) if waf else ()),
                 *backend.backends]),
-            block("resource", [kind("url_map"), n], [
+            tf_block("resource", [kind("url_map"), n], [
                 ("name", name), *_where(world), ("default_service", ref(f"{kind('backend_service')}.{n}.id"))]),
-            block("resource", [kind("target_https_proxy"), n], [
+            tf_block("resource", [kind("target_https_proxy"), n], [
                 ("name", name), *_where(world), ("url_map", ref(f"{kind('url_map')}.{n}.id")),
                 *((("certificate_manager_certificates", [cert]),) if cert else
                   (("#", "UNBOUND: no Certificate Manager certificate holds this service's certificate here"),)),

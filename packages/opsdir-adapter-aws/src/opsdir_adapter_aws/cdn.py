@@ -14,7 +14,7 @@ missing and neither the distribution nor the name's record is rendered. Pure.
 """
 from opsdir.core.directory import one, values
 from opsdir.domains.edge.resolve import inspected
-from opsdir_format_terraform.hcl import Block, block, ref
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block
 from .account import govcloud, standard_account
 from .dns import service_record
 from .edge import US_EAST_1, shield, web_acl
@@ -58,13 +58,13 @@ def distribution(m, svc, spec, n):
     origin is aws_lb.<n>."""
     port = int(values(svc, "ciamPort")[0])
     waf, provider = inspected(spec), _provider(m)
-    return (*((f"# {GOVCLOUD_NOTE}",) if govcloud(m) else ()),
-            block("data", ["aws_cloudfront_cache_policy", f"{n}_caching_disabled"],
-                  [*provider, ("name", "Managed-CachingDisabled")]),
-            block("data", ["aws_cloudfront_origin_request_policy", f"{n}_all_viewer"],
-                  [*provider, ("name", "Managed-AllViewer")]),
+    return (*((comment(GOVCLOUD_NOTE),) if govcloud(m) else ()),
+            tf_block("data", ["aws_cloudfront_cache_policy", f"{n}_caching_disabled"],
+                     [*provider, ("name", "Managed-CachingDisabled")]),
+            tf_block("data", ["aws_cloudfront_origin_request_policy", f"{n}_all_viewer"],
+                     [*provider, ("name", "Managed-AllViewer")]),
             *(web_acl(m, n, spec, None, cdn=True) if waf else ()),
-            block("resource", ["aws_cloudfront_distribution", n], [
+            tf_block("resource", ["aws_cloudfront_distribution", n], [
                 *provider, ("enabled", True), ("comment", f"CIAM {one(svc, 'ciamFqdn')} ({m.label})"),
                 ("aliases", [one(svc, "ciamFqdn")]), ("http_version", "http2and3"),
                 *((("web_acl_id", ref(f"aws_wafv2_web_acl.{n}.arn")),) if waf else ()),
@@ -96,9 +96,9 @@ def fronted(m, svc, spec, n):
     an alias, or in GovCloud a CNAME from the standard account's distribution; in GovCloud without a recorded standard
     account, a comment instead of both."""
     if govcloud(m) and not standard_account(m):
-        return (f"# UNBOUND: `{one(svc, 'ciamFqdn')}`: CloudFront isn't offered in AWS GovCloud (US) and runs from the "
-                "associated standard account, which the cloud doesn't record (ciamBillingAccountRef): neither the "
-                "distribution nor the name's record is rendered",)
+        return (comment(f"UNBOUND: `{one(svc, 'ciamFqdn')}`: CloudFront isn't offered in AWS GovCloud (US) and runs "
+                        "from the associated standard account, which the cloud doesn't record (ciamBillingAccountRef): "
+                        "neither the distribution nor the name's record is rendered"),)
     record = service_record(m.d, m, svc, n, cname=ref(f"aws_cloudfront_distribution.{n}.domain_name")) \
         if govcloud(m) else service_record(m.d, m, svc, n, alias(n))
     return (*distribution(m, svc, spec, n), *record)

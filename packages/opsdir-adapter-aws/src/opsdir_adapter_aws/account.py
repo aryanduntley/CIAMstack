@@ -5,7 +5,7 @@ tags, and AWS's FIPS endpoints when the cloud says its clients use them. Pure.""
 from opsdir.core.directory import one
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.estate.tags import required_tags
-from opsdir_format_terraform.hcl import Block, block
+from opsdir_format_terraform.hcl import Block, tf_block
 
 AWS_VERSION = "~> 6.68"             # validated against hashicorp/aws 6.68.0
 ARCHIVE_VERSION = "~> 2.8"          # validated against hashicorp/archive 2.8.1
@@ -23,7 +23,7 @@ def partition(m):
 
 def required_providers(archive=False):
     """The terraform block of an AWS root: aws, and archive when the root packages scripts."""
-    return block("terraform", [], [("required_providers", Block((
+    return tf_block("terraform", [], [("required_providers", Block((
         ("aws", {"source": "hashicorp/aws", "version": AWS_VERSION}),
         *((("archive", {"source": "hashicorp/archive", "version": ARCHIVE_VERSION}),) if archive else ()))))])
 
@@ -45,7 +45,7 @@ def provider_block(m, region=None, alias=None, comment=None, own_account=True, a
     keeper may apply from another account), the FIPS endpoints when the cloud uses them, and the tag policy's tags on
     every resource."""
     tags, account = required_tags(m), account or (account_id(m) if own_account else None)
-    return block("provider", ["aws"], [
+    return tf_block("provider", ["aws"], [
         *((("#", comment),) if comment else ()), *((("alias", alias),) if alias else ()),
         ("region", region or one(m.cloud, "ciamRegion")),
         *((("allowed_account_ids", [account]),) if account else ()),

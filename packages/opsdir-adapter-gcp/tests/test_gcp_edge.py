@@ -6,6 +6,7 @@ rules with their exclusions; advanced network DDoS protection for a passthrough 
 import re
 
 from opsdir.domains.edge.resolve import Health, tls_level, tls_policy
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.edge import TLS_POLICIES, application_lb, armor, network_ddos, rate, servers_backend
 from edge_fixtures import environment, service, spec, subnet
 
@@ -14,8 +15,8 @@ EDGE = subnet("subnet-edge", "subnet-edge", "10.70.250.0/23")
 
 def _alb(s, ip="198.51.100.90", *bindings):
     svc = service(ip)
-    return "\n".join(application_lb(m := environment(svc, *bindings), svc, s,
-                                    servers_backend(m, svc, ("sso_us_central1_a",)), ((), ip), ()))
+    return "\n".join(as_text(application_lb(m := environment(svc, *bindings), svc, s,
+                                    servers_backend(m, svc, ("sso_us_central1_a",)), ((), ip), ())))
 
 
 def test_tls_terms_are_ssl_policy_profiles_and_minimums():
@@ -46,7 +47,8 @@ def test_without_a_proxy_only_subnet_or_certificate_it_says_what_is_unbound():
 
 
 def test_cloud_armor_rules():
-    out = "\n".join(armor(environment(), "sso", spec(categories=("core-rules", "bot-control"), waf_mode="detect")))
+    out = "\n".join(as_text(armor(environment(), "sso",
+                                  spec(categories=("core-rules", "bot-control"), waf_mode="detect"))))
     assert out.startswith("# not rendered: bot-control needs reCAPTCHA keys")
     assert 'src_ip_ranges = ["203.0.113.0/24"]' in out and "origin.region_code == 'KP'" in out
     assert "request.path.matches('^/as/token\\\\.oauth2$')" in out and "interval_sec = 300" in out
@@ -58,7 +60,7 @@ def test_cloud_armor_rules():
 
 def test_advanced_network_ddos_only_when_asked():
     assert network_ddos(environment(), "sso", spec()) == ()
-    out = "\n".join(network_ddos(environment(), "sso", spec(ddos="network-advanced")))
+    out = "\n".join(as_text(network_ddos(environment(), "sso", spec(ddos="network-advanced"))))
     assert 'type   = "CLOUD_ARMOR_NETWORK"' in out and 'ddos_protection = "ADVANCED"' in out
     assert 'resource "google_compute_network_edge_security_service" "sso"' in out
 

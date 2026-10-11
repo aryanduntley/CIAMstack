@@ -27,6 +27,8 @@ Per environment, `terraform/providers.tf` (`hashicorp/aws ~> 6.68`, the current 
 | Suppressions of findings (core `estate`: `ciamSuppression`, carrying out an exception) the platform team keeps | Named `exc-<exception>`: an `aws_securityhub_automation_rule` matching the suppression's `aws:securityhub:<control>` refs (`compliance_security_control_id` `EQUALS`) that sets workflow status `SUPPRESSED` and notes the exception and its expiry; an `aws_guardduty_filter` (`ARCHIVE`, `data aws_guardduty_detector`) for its `aws:guardduty:<type>` refs. Neither takes an expiry (a comment says when to remove it); GovCloud's unavailable automation rules for integrations, other providers' refs and suppressions someone else keeps are comments |
 | Required roles without a binding | `# UNBOUND: required role …` |
 
+The renderers build Terraform as data (`opsdir_format_terraform`: `TfBlock`s and top-level comments, a `TfFile` per file; milestone 5.5d) and the text is written once per file at the edge: `terraform.render_files(m, services)` gives `{path: TfFile | text}` (the Terraform roots as data, the scripts and configuration files they package as text) and `render()` is `written(render_files(...))`. The round trip can build its state from either.
+
 Not rendered: the VPC, subnets, NAT gateways, buckets, Elastic IPs and Route 53 zones themselves (referenced, the landing zone creates them); KMS keys (referenced by ARN); egress security group rules; key pairs, IAM instance profiles and user data; application load balancers and TLS listeners (services are TCP pass-through).
 
 ## Kubernetes workloads

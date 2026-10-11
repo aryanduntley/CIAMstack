@@ -6,6 +6,7 @@ and databases others keep named. Read back from Terraform state and the CLI; the
 import json
 import re
 
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.arm import arm_resources
 from opsdir_adapter_azure.cli import cli_resources
 from opsdir.core.directory import make_entry
@@ -29,7 +30,7 @@ SECRET = entry(ALPHA, "sec-db", "ciamSecretRef", ciamBindingRole="db-admin", cia
 
 
 def _render(*records):
-    return "\n\n".join(render_databases(model(alpha=records)[1]))
+    return "\n\n".join(as_text(render_databases(model(alpha=records)[1])))
 
 
 def test_a_postgresql_flexible_server_with_its_key_password_parameters_and_lock():
@@ -196,11 +197,11 @@ def test_a_copy_region_is_geo_redundant_backup_to_the_region_s_pair():
             paired_region("usdodeast")) == ("centralus", "usgovtexas", "usgovarizona", None)
     db = entry(ALPHA, "db-grants", "ciamDatabase", **DB, ciamCopyRegion="centralus", ciamProviderRef=PG)
     _, alpha, _ = model(alpha=(KEY, SECRET, db))
-    out = "\n\n".join(render_databases(_in_region(alpha, "eastus2")))
+    out = "\n\n".join(as_text(render_databases(_in_region(alpha, "eastus2"))))
     assert "geo_redundant_backup_enabled = true" in out and "not centralus" not in out
     assert "# db-grants: geo-redundant backup is chosen when a server is created" in out
-    other = "\n\n".join(render_databases(_in_region(model(alpha=(KEY, SECRET, entry(
-        ALPHA, "db-grants", "ciamDatabase", **DB, ciamCopyRegion="westus3")))[1], "eastus2")))
+    other = "\n\n".join(as_text(render_databases(_in_region(model(alpha=(KEY, SECRET, entry(
+        ALPHA, "db-grants", "ciamDatabase", **DB, ciamCopyRegion="westus3")))[1], "eastus2"))))
     assert "# db-grants: Azure copies geo-redundant backups to eastus2's pair, centralus, not westus3: record " \
            "centralus as its ciamCopyRegion" in other
     unknown = _render(KEY, SECRET, entry(ALPHA, "db-grants", "ciamDatabase", **DB, ciamCopyRegion="region-2"))

@@ -3,6 +3,7 @@
 the azapi add-on when the cloud allows it (pinned in the root, Azure Government's environment), a comment otherwise;
 read back from state, merged per exception."""
 from opsdir.core.directory import make_entry
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.suppressions import azapi_provider, render_suppressions, suppression_resources, uses_azapi
 from network_fixtures import ALPHA, entry, model
 
@@ -28,9 +29,9 @@ def _model(*refs, kind="risk-acceptance", add_on=False, gov=False):
 
 
 def test_policy_refs_render_an_exemption_per_framework():
-    out = "\n\n".join(render_suppressions(_model("azure:policy:nist-800-171-r2/ref-a",
+    out = "\n\n".join(as_text(render_suppressions(_model("azure:policy:nist-800-171-r2/ref-a",
                                                  "azure:policy:nist-800-171-r2/ref-b",
-                                                 "azure:policy:cis", kind="compensating-control")))
+                                                 "azure:policy:cis", kind="compensating-control"))))
     assert 'resource "azurerm_subscription_policy_exemption" "exc_exc_7_nist_800_171_r2"' in out
     assert ('policy_assignment_id            = "${data.azurerm_subscription.current.id}/providers/'
             'Microsoft.Authorization/policyAssignments/ciam-nist-800-171-r2"') in out
@@ -41,7 +42,7 @@ def test_policy_refs_render_an_exemption_per_framework():
 
 
 def test_in_azure_government_an_exemption_names_what_defender_doesnt_offer_there():
-    out = "\n\n".join(render_suppressions(_model("azure:policy:cis", gov=True)))
+    out = "\n\n".join(as_text(render_suppressions(_model("azure:policy:cis", gov=True))))
     assert out.count("# Azure Government: Microsoft's \"Cloud feature availability for US Government customers\"") == 1
     assert "Defender's recommendation exemptions as not available there" in out
     assert 'resource "azurerm_subscription_policy_exemption" "exc_exc_7_cis"' in out
@@ -49,16 +50,16 @@ def test_in_azure_government_an_exemption_names_what_defender_doesnt_offer_there
 
 def test_alert_suppression_rules_need_the_azapi_add_on():
     m = _model("azure:alerts:VM_SuspiciousActivity", kind="false-positive")
-    assert render_suppressions(m)[-1].startswith("# exc-EXC-7: Defender for Cloud alert suppression rules for "
+    assert as_text(render_suppressions(m))[-1].startswith("# exc-EXC-7: Defender for Cloud alert suppression rules for "
                                                  "VM_SuspiciousActivity until 2027-03-31T00:00:00Z: azurerm has no "
                                                  "resource for them")
     assert not uses_azapi(m)
     m = _model("azure:alerts:VM_SuspiciousActivity", kind="false-positive", add_on=True, gov=True)
-    out = "\n\n".join(render_suppressions(m))
+    out = "\n\n".join(as_text(render_suppressions(m)))
     assert 'type      = "Microsoft.Security/alertsSuppressionRules@2019-01-01-preview"' in out
     assert 'alertType         = "VM_SuspiciousActivity"' in out and 'reason            = "FalsePositive"' in out
-    assert uses_azapi(m) and 'environment                = "usgovernment"' in azapi_provider(m)
-    assert "skip_provider_registration = true" in azapi_provider(m)
+    assert as_text(uses_azapi(m)) and 'environment                = "usgovernment"' in as_text(azapi_provider(m))
+    assert "skip_provider_registration = true" in as_text(azapi_provider(m))
 
 
 def test_suppressions_are_read_back_merged_per_exception():

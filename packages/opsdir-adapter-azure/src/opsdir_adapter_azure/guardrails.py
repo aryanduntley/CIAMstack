@@ -11,7 +11,7 @@ from opsdir.core.directory import rdn_value, values
 from opsdir.core.environment import of_class
 from opsdir.domains.access.naming import DENIALS
 from opsdir.domains.estate.residency import permitted_regions
-from opsdir_format_terraform.hcl import block, jsonencoded, ref, tf_name
+from opsdir_format_terraform.hcl import comment, jsonencoded, ref, tf_block, tf_name
 
 DEFINITIONS = "/providers/Microsoft.Authorization/policyDefinitions/"
 DENY = {"effect": {"value": "Deny"}}
@@ -44,10 +44,11 @@ def render_guardrails(m):
     def one_denial(g, d):
         found = _assignment(d, permitted_regions(m))
         if found is None:
-            return (f"# NOTE: guardrail {rdn_value(g)}: {d}: {NOT_APPLICABLE.get(d, 'Azure has no built-in for it')}",)
-        definition, parameters, comment = found
-        return (block("resource", ["azurerm_subscription_policy_assignment", tf_name(f"{rdn_value(g)}_{d}")], [
-            *((("#", comment),) if comment else ()),
+            return (comment(f"NOTE: guardrail {rdn_value(g)}: {d}: "
+                            f"{NOT_APPLICABLE.get(d, 'Azure has no built-in for it')}"),)
+        definition, parameters, note = found
+        return (tf_block("resource", ["azurerm_subscription_policy_assignment", tf_name(f"{rdn_value(g)}_{d}")], [
+            *((("#", note),) if note else ()),
             ("name", f"ciam-{rdn_value(m.env)}-{d}"[:64]), ("policy_definition_id", f"{DEFINITIONS}{definition}"),
             ("subscription_id", ref("data.azurerm_subscription.current.id")),
             ("parameters", jsonencoded(parameters))]),)

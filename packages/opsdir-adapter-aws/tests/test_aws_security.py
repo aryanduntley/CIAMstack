@@ -4,6 +4,7 @@ standard it has (standards it lacks said in a comment), findings sent to an SNS 
 EventBridge rule, organization scope, other regions and services kept by someone else in comments; all of them read back
 from Terraform state, with the topic, bucket or log group their findings go to as the role of that binding."""
 from opsdir.core.inventory import environment_groups, resource
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.inventory import pairs_resources
 from opsdir_adapter_aws.security import render_security, security_resources
 from network_fixtures import ALPHA, entry, model
@@ -24,7 +25,7 @@ def svc(cn, kind, **more):
 
 def _render(*services):
     _, alpha, _ = model(alpha=(BUCKET, TOPIC, *services), tree=OWNERS)
-    return "\n\n".join(render_security(alpha))
+    return "\n\n".join(as_text(render_security(alpha)))
 
 
 def test_guardduty_turns_on_a_feature_per_area_and_sends_findings_to_the_topic():
@@ -149,7 +150,7 @@ def test_findings_at_or_above_the_incident_severity_go_to_the_incident_topic():
                                    ciamIncidentSeverity="critical"),
                                svc("config", "config-recording", ciamFindingsRole="config-history",
                                    ciamIncidentRole="security-incidents")), tree=OWNERS)
-    out = "\n\n".join(render_security(alpha))
+    out = "\n\n".join(as_text(render_security(alpha)))
     assert 'resource "aws_cloudwatch_event_rule" "guardduty_incidents"' in out
     assert '"guardduty\'s high and worse findings to security-incidents (incident process)"' in out
     compact = "".join(out.split())

@@ -6,6 +6,7 @@ where their records go as that object store's or workspace's role."""
 import json
 
 from opsdir.core.inventory import environment_groups, resource
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.arm import arm_resources
 from opsdir_adapter_azure.audit import render_trails, trail_events, trail_resources
 from opsdir_adapter_azure.cli import cli_resources
@@ -39,7 +40,7 @@ def test_an_account_trail_the_platform_keeps_is_the_subscription_s_diagnostic_se
               _trail("org-own", "audit-logs", ciamAuditScope="organization"),
               _trail("to-siem", "siem"))
     _, alpha, _ = model(alpha=(STORE, LAW, SIEM, *trails), tree=OWNERS)
-    out = render_trails(alpha)
+    out = as_text(render_trails(alpha))
     assert out[0] == 'data "azurerm_subscription" "current" {\n}'
     assert out[1] == ('''resource "azurerm_monitor_diagnostic_setting" "activity_log" {
   # data-write events: each resource's own diagnostic settings log them (not rendered)
@@ -76,7 +77,7 @@ def _locked(mode):
 def test_a_locked_container_proves_integrity_and_another_container_is_named():
     _, alpha, _ = model(alpha=(_locked("compliance"),
                                _trail("activity-log", "activity-logs", ciamIntegrityValidation="TRUE")))
-    out = render_trails(alpha)
+    out = as_text(render_trails(alpha))
     assert out[1] == ("# NOTE: Azure writes the Activity Log to container insights-activity-logs of storage account "
                       "stciamaudit, not audit: record that container as the object store")
     assert "storage_account_id = azurerm_storage_account.stciamaudit.id" in out[2] and "integrity" not in out[2]
@@ -85,7 +86,7 @@ def test_a_locked_container_proves_integrity_and_another_container_is_named():
 def test_an_unlocked_container_doesn_t_prove_integrity():
     _, alpha, _ = model(alpha=(_locked("governance"),
                                _trail("activity-log", "activity-logs", ciamIntegrityValidation="TRUE")))
-    assert "# integrity: Azure keeps no digest" in render_trails(alpha)[2]
+    assert "# integrity: Azure keeps no digest" in as_text(render_trails(alpha))[2]
 
 
 def test_the_activity_a_setting_exports_comes_from_its_categories():

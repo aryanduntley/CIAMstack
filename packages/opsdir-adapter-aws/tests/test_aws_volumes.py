@@ -5,6 +5,7 @@ replica or an input); others' named. Read back from Terraform state and the CLI.
 import json
 
 from opsdir.core.environment import servers_with_role
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.cli import cli_resources
 from opsdir_adapter_aws.inventory import state_resources
 from opsdir_adapter_aws.volumes import render_snapshot_policies, root_block_device, server_volumes
@@ -34,7 +35,8 @@ def _flat(text):
 def _blocks(m):
     (ds1, _) = servers_with_role(m, "ds")
     root = root_block_device(m, ds1, "aws-kms://" + ARN)
-    return root, _flat("\n\n".join(server_volumes(m, ds1))), _flat("\n\n".join(render_snapshot_policies(m)))
+    return (root, _flat("\n\n".join(as_text(server_volumes(m, ds1)))),
+            _flat("\n\n".join(as_text(render_snapshot_policies(m)))))
 
 
 def test_the_boot_volume_is_the_root_block_device_and_a_data_volume_an_attached_ebs_volume():
@@ -87,7 +89,7 @@ def test_an_interval_lifecycle_manager_cannot_take_and_others_policies_are_named
                 ciamRetentionDays="7", ciamSnapshotEveryHours="48")
     theirs = entry(BETA, "snapshots-team", "ciamSnapshotPolicy", ciamBindingRole="snapshots-team",
                    ciamRetentionDays="30", ciamManagedBy="cn=storage-team,ou=owners,dc=ciam-ops")
-    out = "\n".join(render_snapshot_policies(_m(odd, theirs)))
+    out = "\n".join(as_text(render_snapshot_policies(_m(odd, theirs))))
     assert "# Snapshot policy 'snapshots-odd': Lifecycle Manager snapshots every 1, 2, 3, 4, 6, 8, 12 or 24 hours, " \
            "not 48: not rendered" in out
     assert "# Snapshot policy 'snapshots-team' (role snapshots-team) is kept by cn=storage-team,ou=owners,dc=ciam-ops" \

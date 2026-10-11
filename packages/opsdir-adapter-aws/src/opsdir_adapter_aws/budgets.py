@@ -24,7 +24,7 @@ from opsdir.core.directory import get, one, rdn_value
 from opsdir.core.inventory import of_types, resource, tagged_role
 from opsdir.domains.estate.budgets import budget_channel, budgets, currency, thresholds
 from opsdir.domains.estate.tags import tag_rules
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from .account import account_id, govcloud, standard_account
 from .tags import state_tags
 
@@ -56,7 +56,7 @@ def _subscriber(m, b):
                f"{arn} is elsewhere")
     else:
         return arn, ()
-    return None, (f"# NOTE: budget {rdn_value(b)}'s alerts to {one(b, 'ciamAlertRole')}: not rendered: {why}",)
+    return None, (comment(f"NOTE: budget {rdn_value(b)}'s alerts to {one(b, 'ciamAlertRole')}: not rendered: {why}"),)
 
 
 def _filter(m):
@@ -73,12 +73,13 @@ def _budget(m, b):
     cn, keeper = rdn_value(b), one(b, "ciamManagedBy")
     if keeper:
         holder = get(m.d, keeper)
-        return (f"# Budget {cn}: kept by {rdn_value(holder) if holder is not None else keeper}, not rendered here",)
+        return (comment(f"Budget {cn}: kept by {rdn_value(holder) if holder is not None else keeper}, not rendered "
+                        "here"),)
     if govcloud(m) and not standard_account(m):
-        return (f"# NOTE: budget {cn}: not rendered: GovCloud's billing is managed in its associated standard account "
-                "and the cloud names none (ciamBillingAccountRef)",)
+        return (comment(f"NOTE: budget {cn}: not rendered: GovCloud's billing is managed in its associated standard "
+                        "account and the cloud names none (ciamBillingAccountRef)"),)
     topic, notes = _subscriber(m, b)
-    return (*notes, block("resource", [BUDGET, tf_name(cn)], [
+    return (*notes, tf_block("resource", [BUDGET, tf_name(cn)], [
         *((("provider", ref(f"aws.{BILLING}")),
            ("#", "GovCloud spend is billed to this standard account: check the budget's spend once it runs (how a "
                  "filter isolates one GovCloud account isn't documented)")) if govcloud(m) else ()),

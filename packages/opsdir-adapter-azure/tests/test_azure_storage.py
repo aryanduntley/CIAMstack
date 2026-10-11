@@ -4,6 +4,7 @@ their immutability policies, adopted when they exist; a container someone else k
 for. Read back from Terraform state, the CLI and ARM templates: each container with its account's settings."""
 import json
 
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.cli import cli_resources
 from opsdir_adapter_azure.inventory import state_resources
 from opsdir_adapter_azure.storage import kept_containers, render_object_stores
@@ -23,7 +24,7 @@ KEY = entry(ALPHA, "key-disk", "ciamKeyRef", ciamBindingRole="disk-encryption",
 
 
 def _render(*records):
-    return "\n\n".join(render_object_stores(model(alpha=records)[1]))
+    return "\n\n".join(as_text(render_object_stores(model(alpha=records)[1])))
 
 
 def _state(*resources):

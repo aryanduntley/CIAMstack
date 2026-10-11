@@ -8,6 +8,7 @@ import json
 import re
 
 from opsdir.core.interchange.ldif import LdifRecord
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.adapter import ADAPTER
 from opsdir_adapter_gcp.budgets import budget_notes, budget_provider_settings, budget_resources, render_budgets
 from opsdir_adapter_gcp.landing import render_landing
@@ -83,7 +84,7 @@ def test_approved_increases_are_quota_preferences_where_google_documents_the_id(
     _, alpha = _alpha(need("cpus", "vcpus", 16, ciamQuotaDecision="request", ciamQuotaRequested="32"),
                       need("nets", "networks", 3, ciamQuotaDecision="request"),
                       need("ips", "public-ips", 4, ciamQuotaDecision="request"))
-    out = flat(render_quota_requests(alpha))
+    out = flat(as_text(render_quota_requests(alpha)))
     assert 'resource "google_cloud_quotas_quota_preference" "cpus_vcpus" {' in out
     assert 'quota_id = "CPUS-per-project-region"' in out and 'region = "us-east1"' in out
     assert "preferred_value = 32" in out and 'deletion_policy = "ABANDON"' in out
@@ -94,7 +95,7 @@ def test_approved_increases_are_quota_preferences_where_google_documents_the_id(
 def test_a_budget_on_the_billing_account_in_the_landing_zone():
     _, alpha = _alpha(budget(ciamActualThreshold=("50", "90"), ciamForecastThreshold="100"), CHANNEL,
                       tree=TAG_POLICY, billing="0X0X0X-0X0X0X-0X0X0X")
-    out = flat(render_budgets(alpha))
+    out = flat(as_text(render_budgets(alpha)))
     assert out.startswith('data "google_project" "budgets" {\n project_id = var.project_id\n}')
     assert 'billing_account = "0X0X0X-0X0X0X-0X0X0X"' in out and 'display_name = "alpha-prod-monthly"' in out
     assert '"projects/${data.google_project.budgets.number}"' in out and 'environment = "alpha-prod"' in out
@@ -102,18 +103,19 @@ def test_a_budget_on_the_billing_account_in_the_landing_zone():
     assert "threshold_percent = 0.5" in out and out.count("threshold_rules {") == 3 and "FORECASTED_SPEND" in out
     assert f'monitoring_notification_channels = ["{CHANNEL_ID}"]' in out
     assert budget_provider_settings(alpha)[1] == ("user_project_override", True)
-    landing = render_landing(alpha)
+    landing = as_text(render_landing(alpha))
     assert 'resource "google_billing_budget" "monthly"' in landing["terraform/landing-zone/main.tf"]
     assert "user_project_override = true" in landing["terraform/landing-zone/providers.tf"]
 
 
 def test_without_a_billing_account_or_a_channel():
     _, alpha = _alpha(budget(), CHANNEL)
-    assert budget_notes(alpha) == ("# NOTE: budget monthly: not rendered: a Google Cloud budget lives on the billing "
-                                     "account and the cloud names none (ciamBillingAccountRef)",)
+    assert as_text(budget_notes(alpha)) == (
+        "# NOTE: budget monthly: not rendered: a Google Cloud budget lives on the billing account and the cloud names "
+        "none (ciamBillingAccountRef)",)
     assert budget_provider_settings(alpha) == () and render_landing(alpha) == {}
     _, alpha = _alpha(budget(ciamAlertRole="nowhere"), billing="0X0X0X-0X0X0X-0X0X0X")
-    out = flat(render_budgets(alpha))
+    out = flat(as_text(render_budgets(alpha)))
     assert "# budget monthly: nowhere names no notification channel or Pub/Sub topic" in out
     assert "all_updates_rule" not in out
 

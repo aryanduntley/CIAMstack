@@ -25,7 +25,7 @@ from opsdir.core.environment import of_class, servers_with_role
 from opsdir.domains.observability.alarms import alarm_specs, condition, in_unit
 from opsdir.domains.observability.realized import keeper_of
 from opsdir.domains.observability.signals import number_text, parse_threshold
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from .account import tagged
 from .identities import LOC, RG
 
@@ -99,21 +99,21 @@ def _why(m, s, operator, c, metric):
 def _alert(m, s):
     rule = rdn_value(s.rule)
     if s.why:
-        return (f"# NOTE: alert rule {rule}: not rendered: {s.why}",)
+        return (comment(f"NOTE: alert rule {rule}: not rendered: {s.why}"),)
     name = rdn_value(s.alarm)
     if s.keeper is not None:
-        return (f"# Alarm {name} (alert rule {rule}): kept by {s.keeper}, not rendered here",)
+        return (comment(f"Alarm {name} (alert rule {rule}): kept by {s.keeper}, not rendered here"),)
     operator, c = OPERATORS.get(one(s.rule, "ciamComparison") or ""), condition(s.rule)
     namespace, _, metric = (one(s.alarm, "ciamMetric") or "").partition(" ")
     why = _why(m, s, operator, c, metric)
     if why:
-        return (f"# NOTE: alert rule {rule}: not rendered: {why}",)
+        return (comment(f"NOTE: alert rule {rule}: not rendered: {why}"),)
     window = next((w for w in WINDOWS if w >= c.window * c.windows), WINDOWS[-1])
     threshold, compared = _threshold(s.rule, c, window)
     vms = [ref(f"azurerm_linux_virtual_machine.{tf_name(rdn_value(v))}.id")
            for v in servers_with_role(m, one(s.rule, "ciamTargetRole"))]
     group, severity = _action_group(s.channel), _severity(s.rule)
-    return (block("resource", [ALERT, tf_name(name)], [
+    return (tf_block("resource", [ALERT, tf_name(name)], [
         ("name", name), ("resource_group_name", RG), ("scopes", vms),
         *((("target_resource_type", VM_TYPE), ("target_resource_location", LOC)) if len(vms) > 1 else ()),
         ("description", f"Alert rule {rule}: {one(s.rule, 'ciamSignal')} {one(s.rule, 'ciamComparison')} "
@@ -160,12 +160,13 @@ def _workspace(m, b):
     if one(b, "ciamDestinationKind") != "workspace":
         return ()
     if keeper_of(m, b):
-        return (f"# Log Analytics workspace {cn}: kept by {keeper_of(m, b)}, not rendered here",)
+        return (comment(f"Log Analytics workspace {cn}: kept by {keeper_of(m, b)}, not rendered here"),)
     if name is None:
-        return (f"# NOTE: log destination {cn}: not rendered: its ciamProviderRef isn't a Log Analytics workspace ID",)
+        return (comment(f"NOTE: log destination {cn}: not rendered: its ciamProviderRef isn't a Log Analytics "
+                        "workspace ID"),)
     days, why = workspace_retention(int(one(b, "ciamRetentionDays"))) if one(b, "ciamRetentionDays") is not None \
         else (None, "no retention recorded (ciamRetentionDays): the workspace keeps Azure's default")
-    return (block("resource", [WORKSPACE, tf_name(cn)], [
+    return (tf_block("resource", [WORKSPACE, tf_name(cn)], [
         *((("#", why),) if why else ()), ("name", name), ("location", LOC), ("resource_group_name", RG),
         ("sku", "PerGB2018"), *((("retention_in_days", days),) if days is not None else ()),
         ("tags", tagged(m, {"BindingRole": one(b, "ciamBindingRole")}))]),)

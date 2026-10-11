@@ -5,6 +5,7 @@ egress firewall's allowlist as policy egress rules ending in a deny; comments ot
 import pytest
 
 import mini_estate
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp import edge, terraform
 from opsdir_adapter_gcp.firewall_policy import health_check_rule, policy_firewall
 from opsdir_adapter_gcp.health_checks import probe_ranges
@@ -37,7 +38,7 @@ def _m(*records, tree=()):
 
 
 def _render(*records, tree=()):
-    return "\n\n".join(render_network(_m(*records, tree=tree)))
+    return "\n\n".join(as_text(render_network(_m(*records, tree=tree))))
 
 
 def test_nothing_recorded_renders_nothing():
@@ -47,8 +48,8 @@ def test_nothing_recorded_renders_nothing():
 def test_the_policy_model_targets_secure_tags_in_the_networks_project(network):
     network(ciamProviderRef="projects/host-net/global/networks/ciam", ciamFirewallModel="policy")
     m = _m(RULE, POLICY)
-    out = "\n\n".join(terraform._firewall(m))
-    assert out == "\n\n".join(policy_firewall(m))
+    out = "\n\n".join(as_text(terraform._firewall(m)))
+    assert out == "\n\n".join(as_text(policy_firewall(m)))
     assert "network_firewall_policy_enforcement_order = BEFORE_CLASSIC_FIREWALL" in out
     assert "# The network's project is host-net: the policy, its rules and the tag key live there" in out
     assert "roles/resourcemanager.tagUser" in out
@@ -69,7 +70,7 @@ def test_the_policy_model_targets_secure_tags_in_the_networks_project(network):
 
 
 def test_the_rules_model_keeps_vpc_firewall_rules():
-    out = "\n\n".join(terraform._firewall(_m(RULE, POLICY)))
+    out = "\n\n".join(as_text(terraform._firewall(_m(RULE, POLICY))))
     assert 'resource "google_compute_firewall" "fw_ds"' in out and "network_firewall_policy" not in out
 
 
@@ -84,7 +85,7 @@ def test_a_recorded_tag_key_and_a_policy_someone_else_keeps(network):
            entry(ALPHA, "org", "ciamFirewallPolicy", ciamBindingRole="org-policy", ciamPolicyScope="hierarchical"),
            entry(ALPHA, "fw-org", "ciamFirewallRule", ciamBindingRole="fw-org", ciamSourceCidr="0.0.0.0/0",
                  ciamPort="22", ciamTargetRole="ds", ciamPolicyRole="org-policy"), tree=party)
-    out = "\n\n".join(policy_firewall(m))
+    out = "\n\n".join(as_text(policy_firewall(m)))
     assert "google_compute_network_firewall_policy\"" not in out and "google_tags_tag_key" not in out
     assert 'parent      = "tagKeys/281"' in out and 'firewall_policy = "ciam-shared"' in out
     assert "# fw-org belongs to the hierarchical policy 'org' (read, not rendered)" in out
@@ -95,8 +96,8 @@ def test_the_probe_rule_follows_the_model(network):
     network(ciamFirewallModel="policy")
     m = _m()
     svc = next(b for b in m.bindings if b.dn.startswith("cn=svc-sso,"))
-    out = terraform._health_check_rule(m, svc, "svc_sso", "ciam-prod-svc-sso", "INTERNAL", "443")
-    assert out == health_check_rule(m, svc, "svc_sso", probe_ranges("INTERNAL"), "443")
+    out = as_text(terraform._health_check_rule(m, svc, "svc_sso", "ciam-prod-svc-sso", "INTERNAL", "443"))
+    assert out == as_text(health_check_rule(m, svc, "svc_sso", probe_ranges("INTERNAL"), "443"))
     assert 'resource "google_compute_network_firewall_policy_rule" "svc_sso_health_checks"' in out
     assert "priority        = 70000" in out and "name = google_tags_tag_value.web.id" in out
     assert f'src_ip_ranges = {list(probe_ranges("INTERNAL"))}'.replace("'", '"') in out
@@ -177,12 +178,12 @@ def test_a_service_attachment_on_an_internal_passthrough_forwarding_rule():
 def test_an_application_load_balancers_proxies_and_probes_are_policy_rules_when_admit_builds_them():
     m = _m()
     svc = next(b for b in m.bindings if b.dn.startswith("cn=svc-sso,"))
-    out = "\n\n".join(edge._firewall(m, svc, "svc_sso", "ciam-prod-svc-sso", "443", "10.1.250.0/24", None,
-                                      admit=health_check_rule))
+    out = "\n\n".join(as_text(edge._firewall(m, svc, "svc_sso", "ciam-prod-svc-sso", "443", "10.1.250.0/24", None,
+                                              admit=health_check_rule)))
     assert 'resource "google_compute_network_firewall_policy_rule" "svc_sso_proxies"' in out
     assert "priority        = 75000" in out and 'src_ip_ranges = ["10.1.250.0/24"]' in out
     assert "Load balancer proxies for svc-sso" in out and "Google Cloud health checks for svc-sso" in out
     assert "google_compute_firewall" not in out
-    assert 'resource "google_compute_firewall" "svc_sso_proxies"' in "\n\n".join(
+    assert 'resource "google_compute_firewall" "svc_sso_proxies"' in "\n\n".join(as_text(
         edge._firewall(m, svc, "svc_sso", "ciam-prod-svc-sso", "443", "10.1.250.0/24",
-                       edge.servers_backend(m, svc, ())))
+                       edge.servers_backend(m, svc, ()))))

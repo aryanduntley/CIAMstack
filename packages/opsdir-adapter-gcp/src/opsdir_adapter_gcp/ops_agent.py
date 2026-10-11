@@ -25,6 +25,7 @@ from opsdir.core.interchange.yaml_text import dump
 from opsdir.core.manifest import header
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.sources import ALL, kept_clauses, shipments, unpermitted
+from opsdir_format_terraform.hcl import comment
 from .logging_filter import all_of, field_of, kept, literal
 from .observability import bucket_parts
 
@@ -80,11 +81,12 @@ def ops_agent_notes(m, services):
     """HCL comments naming what environment m's servers' log routes ship differently, and what shipping them needs."""
     found = host_shipments(m, services)
     return tuple(dict.fromkeys((
-        *(("# NOTE: the Ops Agent configuration opsdir renders for configuration management to place (" + CONFIG +
-           ") replaces one the servers already have (the agent reads only that file): merge their own receivers and "
-           "pipelines into it; the agent itself comes with the host baseline",) if found else ()),
-        *(f"# NOTE: log route {rdn_value(x.route)}: {x.path}: records spanning lines arrive line by line (the Ops "
-          "Agent groups only Java, Python and Go exceptions)" for x in found if x.source.line_start),
-        *(f"# NOTE: role {role} ships logs to {dest}, but no workload principal acting for it holds the permit "
-          f"`write-logs {dest}`: its servers' service account isn't granted roles/logging.logWriter"
+        *((comment("NOTE: the Ops Agent configuration opsdir renders for configuration management to place (" + CONFIG
+                   + ") replaces one the servers already have (the agent reads only that file): merge their own "
+                   "receivers and pipelines into it; the agent itself comes with the host baseline"),)
+          if found else ()),
+        *(comment(f"NOTE: log route {rdn_value(x.route)}: {x.path}: records spanning lines arrive line by line (the "
+                  "Ops Agent groups only Java, Python and Go exceptions)") for x in found if x.source.line_start),
+        *(comment(f"NOTE: role {role} ships logs to {dest}, but no workload principal acting for it holds the permit "
+                  f"`write-logs {dest}`: its servers' service account isn't granted roles/logging.logWriter")
           for role, dest in unpermitted(m, found)))))

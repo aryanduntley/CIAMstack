@@ -7,7 +7,7 @@ import re
 
 from opsdir.core.directory import one
 from opsdir.core.environment import one_role
-from opsdir_format_terraform.hcl import Block, block, jsonencoded, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, jsonencoded, ref, tf_block, tf_name
 from .access import resources
 
 
@@ -40,7 +40,7 @@ def statements(m, w):
 
 
 def notes(w):
-    return tuple(f"# NOTE: principal {w.principal}: {note}" for note in w.notes)
+    return tuple(comment(f"NOTE: principal {w.principal}: {note}") for note in w.notes)
 
 
 def eks_cluster_name(cluster):
@@ -61,8 +61,8 @@ def eks_cluster_data(clusters):
     """EKS clusters and their IAM OIDC providers as data sources (once each): the provider is whoever made the
     cluster's (the issuer is the cluster's)."""
     return tuple(x for c in {c.dn: c for c in clusters}.values() for x in (
-        block("data", ["aws_eks_cluster", _eks(c)], [("name", eks_cluster_name(c))]),
-        block("data", ["aws_iam_openid_connect_provider", _eks(c)], [
+        tf_block("data", ["aws_eks_cluster", _eks(c)], [("name", eks_cluster_name(c))]),
+        tf_block("data", ["aws_iam_openid_connect_provider", _eks(c)], [
             ("url", ref(f"data.aws_eks_cluster.{_eks(c)}.identity[0].oidc[0].issuer"))])))
 
 
@@ -97,8 +97,9 @@ def pod_trust(w):
     bind)."""
     n = tf_name(w.identity_role)
     clusters = {p.cluster.dn: p.cluster for p in w.pods if p.cluster is not None}.values()
-    unbound = tuple(f"# NOTE: principal {w.principal}: service account {p.namespace}/{p.service_account} runs in a "
-                    "cluster this environment doesn't bind, so nothing trusts it" for p in w.pods if p.cluster is None)
+    unbound = tuple(comment(f"NOTE: principal {w.principal}: service account {p.namespace}/{p.service_account} runs in "
+                            "a cluster this environment doesn't bind, so nothing trusts it")
+                    for p in w.pods if p.cluster is None)
     if not clusters:
         return None, unbound
     ec2 = (("statement", Block((("actions", ["sts:AssumeRole"]), ("principals", Block((
@@ -106,17 +107,17 @@ def pod_trust(w):
     pods = tuple(irsa_statement(c, [f"system:serviceaccount:{p.namespace}:{p.service_account}"
                                     for p in w.pods if p.cluster is not None and p.cluster.dn == c.dn])
                  for c in clusters)
-    return block("data", ["aws_iam_policy_document", f"{n}_trust"], [*ec2, *pods]), unbound
+    return tf_block("data", ["aws_iam_policy_document", f"{n}_trust"], [*ec2, *pods]), unbound
 
 
 def role(m, w, trust):
     """An identity's IAM role assumed under a trust policy (a document, or an expression giving one), and its
     least-privilege inline policy."""
     n, found = tf_name(w.identity_role), statements(m, w)
-    policy = (block("resource", ["aws_iam_role_policy", n], [
+    policy = (tf_block("resource", ["aws_iam_role_policy", n], [
         ("name", f"{w.name}-permissions"), ("role", ref(f"aws_iam_role.{n}.id")),
         ("policy", jsonencoded({"Version": "2012-10-17", "Statement": found}))]),) if found else ()
-    return (block("resource", ["aws_iam_role", n], [
+    return (tf_block("resource", ["aws_iam_role", n], [
                 ("name", w.name), ("assume_role_policy", jsonencoded(trust) if isinstance(trust, dict) else trust),
                 ("tags", {"Principal": w.principal, "Role": w.identity_role, "ManagedBy": "opsdir"})]),
             *policy)

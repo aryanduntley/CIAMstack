@@ -13,6 +13,7 @@ import sys
 from types import SimpleNamespace
 
 from opsdir.domains.estate.discovery import rescan_due
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.discovery import (check_discovery_availability, discovery_resources, handler_script,
                                           render_discovery)
 from opsdir_adapter_aws.inventory import pairs_resources
@@ -68,7 +69,7 @@ def test_macie_examines_the_s3_buckets_with_the_own_data_types_and_sends_finding
 
 
 def _out(m):
-    hcl, files = render_discovery(m)
+    hcl, files = as_text(render_discovery(m))
     return "\n\n".join(hcl), files
 
 
@@ -81,13 +82,13 @@ def test_schedules_and_what_isnt_rendered():
     assert "# NOTE: data discovery macie-weekly: no classification job: the cloud records no account" in _out(alpha)[0]
     _, alpha, _ = _alpha(entry(ALPHA, "org-macie", "ciamDataDiscovery", ciamBindingRole="data-discovery",
                                ciamManagedBy="cn=landing-zone,ou=owners,dc=ciam-ops"))
-    assert render_discovery(alpha) == (("# Data discovery org-macie: kept by cn=landing-zone,ou=owners,dc=ciam-ops, "
-                                        "not rendered here",), {})
+    assert as_text(render_discovery(alpha)) == (
+        ("# Data discovery org-macie: kept by cn=landing-zone,ou=owners,dc=ciam-ops, not rendered here",), {})
 
 
 def test_govcloud_renders_nothing_and_gives_an_action():
     d, alpha, beta = _alpha(macie(), region="us-gov-west-1")
-    assert render_discovery(alpha) == ((
+    assert as_text(render_discovery(alpha)) == ((
         "# Amazon Macie isn't offered in GovCloud: AWS's General Reference lists no GovCloud endpoint for it and its "
         "FedRAMP services-in-scope page marks it for US East/West only: not rendered: data discovery macie-weekly (the "
         "planner names the gap)",), {})

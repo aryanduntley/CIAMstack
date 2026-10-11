@@ -7,6 +7,7 @@ records go."""
 import json
 
 from opsdir.core.inventory import environment_groups, resource
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.audit import audit_configs, render_trails, sink_parent, trail_events, trail_resources
 from opsdir_adapter_gcp.cli import cli_resources
 from network_fixtures import ALPHA, entry, model
@@ -33,7 +34,7 @@ def test_a_project_trail_the_platform_keeps_is_a_sink_with_its_grant_and_audit_c
                      ciamIntegrityValidation="TRUE", ciamProviderRef="projects/ciam-prod/sinks/ciam-audit"),
               _trail("org-trail", "audit-logs", ciamManagedBy=PARTY))
     _, alpha, _ = model(alpha=(_bucket(), *trails), tree=OWNERS)
-    assert render_trails(alpha) == ('''resource "google_logging_project_sink" "audit_sink" {
+    assert as_text(render_trails(alpha)) == ('''resource "google_logging_project_sink" "audit_sink" {
   # integrity: Google keeps no digest of audit logs; keep them in a bucket whose retention policy is locked '''
                                     '''(ciamStorageImmutability compliance)
   name                   = "ciam-audit"
@@ -64,7 +65,7 @@ def test_an_organization_trail_into_a_locked_bucket_or_a_log_bucket():
                                _trail("org", "audit-logs", ciamAuditScope="organization",
                                       ciamIntegrityValidation="TRUE"),
                                _trail("to-log-bucket", "audit-bucket"), _trail("to-siem", "siem")))
-    out = render_trails(alpha)
+    out = as_text(render_trails(alpha))
     assert out[0].startswith('variable "organization_id"')
     org = next(x for x in out if x.startswith('resource "google_logging_organization_sink"'))
     assert "org_id                 = var.organization_id" in org and "include_children       = true" in org

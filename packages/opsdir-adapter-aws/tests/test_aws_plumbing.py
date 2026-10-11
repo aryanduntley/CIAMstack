@@ -3,6 +3,7 @@ gateways on their elastic IPs, route tables (targets rendered here, by provider 
 peering / transit / VPN, flow logs, and the private endpoints and egress allowlists someone else keeps; import blocks
 for what exists, inputs for what only the keeper knows, notes for what isn't rendered."""
 from opsdir.domains.network.plumbing import keepers
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.landing import render_landing
 from opsdir_adapter_aws.plumbing import render_plumbing
 from network_fixtures import ALPHA, BETA, entry, model
@@ -18,7 +19,7 @@ LOGS = entry(ALPHA, "flow-logs", "ciamLogDestination", ciamBindingRole="flow-log
 
 def _render(*records, beta=()):
     m = model(alpha=records, beta=beta, tree=OWNERS)[1]
-    return {k.folder: render_plumbing(m, k) for k in keepers(m)}
+    return {k.folder: as_text(render_plumbing(m, k)) for k in keepers(m)}
 
 
 def _main(*records, beta=()):
@@ -153,7 +154,7 @@ def test_what_another_party_keeps_renders_in_their_root_with_its_own_providers()
                ciamProviderRef="vpce-1")
     fw = entry(ALPHA, "fw", "ciamProxy", ciamBindingRole="fw", ciamProxyKind="firewall", ciamManagedBy=NET_TEAM,
                ciamAllowedDestination="metadata.example.test")
-    files = render_landing(model(alpha=(EGRESS, pe, fw), tree=OWNERS)[1])
+    files = as_text(render_landing(model(alpha=(EGRESS, pe, fw), tree=OWNERS)[1]))
     assert sorted(files) == ["terraform/landing-zone/net-team/network.tf",
                              "terraform/landing-zone/net-team/providers.tf",
                              "terraform/landing-zone/network.tf", "terraform/landing-zone/providers.tf"]

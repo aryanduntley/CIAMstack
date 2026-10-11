@@ -16,7 +16,7 @@ from opsdir.domains.edge.exposure import exposure_unknown, is_internal, service_
 from opsdir.domains.edge.gateways import role_gateway
 from opsdir.domains.edge.records import forwarders
 from opsdir.domains.edge.resolve import inspected, service_edge
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
+from opsdir_format_terraform.hcl import Block, TfFile, comment, ref, tf_block, tf_name, unbound_comments, written
 from .access import ACCESS
 from .audit import render_trails
 from .log_agent import log_notes
@@ -46,7 +46,7 @@ from .plumbing import network_data
 def _security_groups(m):
     """One security group per server role; ingress rules from the firewall bindings."""
     roles = sorted({one(s, "ciamServerRole") for s in m.servers})
-    groups = (block("resource", ["aws_security_group", tf_name(role)], [
+    groups = (tf_block("resource", ["aws_security_group", tf_name(role)], [
         ("name", f"ciam-{rdn_value(m.env)}-{role}"), ("description", f"CIAM {role} ({m.label})"),
         ("vpc_id", ref("data.aws_vpc.main.id")), ("tags", {"ManagedBy": "opsdir"})]) for role in roles)
     return (*groups, *chain.from_iterable(_ingress_rules(m, fw) for fw in of_class(m, "ciamFirewallRule")))
@@ -54,9 +54,9 @@ def _security_groups(m):
 
 def _ingress_rules(m, fw):
     if only_on_kubernetes(m, one(fw, "ciamTargetRole")):
-        return (kubernetes_note(m, f"firewall rule `{rdn_value(fw)}`", one(fw, "ciamTargetRole")),)
+        return (comment(kubernetes_note(m, f"firewall rule `{rdn_value(fw)}`", one(fw, "ciamTargetRole"))),)
     why = rule_purpose(m, fw)
-    return tuple(block("resource", ["aws_vpc_security_group_ingress_rule", tf_name(f"{rdn_value(fw)}_{i}_{port}")], [
+    return tuple(tf_block("resource", ["aws_vpc_security_group_ingress_rule", tf_name(f"{rdn_value(fw)}_{i}_{port}")], [
         ("security_group_id", ref(f"aws_security_group.{tf_name(one(fw, 'ciamTargetRole'))}.id")),
         ("cidr_ipv4", cidr), ("from_port", int(port)), ("to_port", int(port)),
         ("ip_protocol", one(fw, "ciamProtocol", "tcp")), ("description", f"{why} ({rdn_value(fw)})")])
@@ -69,8 +69,8 @@ def _identity(m, w):
     its instance profile."""
     n = tf_name(w.identity_role)
     trust, unbound = pod_trust(w) if w.pods else (None, ())
-    profile = (block("resource", ["aws_iam_instance_profile", n], [("name", w.name),
-                                                                   ("role", ref(f"aws_iam_role.{n}.name"))]),)
+    profile = (tf_block("resource", ["aws_iam_instance_profile", n], [("name", w.name),
+                                                                      ("role", ref(f"aws_iam_role.{n}.name"))]),)
     return (*notes(w), *unbound, *((trust,) if trust else ()),
             *role(m, w, ref(f"data.aws_iam_policy_document.{n}_trust.json") if trust else EC2_TRUST),
             *(profile if w.servers else ()))
@@ -79,7 +79,7 @@ def _identity(m, w):
 def _instance(m, s, kms, identities=()):
     role = one(s, "ciamServerRole")
     w = identity_of(identities, role)
-    return block("resource", ["aws_instance", tf_name(rdn_value(s))], [
+    return tf_block("resource", ["aws_instance", tf_name(rdn_value(s))], [
         ("ami", recorded(s, "ciamImageRef", "image")), ("instance_type", recorded(s, "ciamInstanceSize", "size")),
         ("subnet_id", ref(f"data.aws_subnet.{tf_name(rdn_value(subnet_of(m, s)))}.id")),
         *((("private_ip", one(s, "ciamPrivateIp")),) if one(s, "ciamPrivateIp") else ()),
@@ -102,15 +102,15 @@ def _listener(m, n, svc, port, targets, spec=None):
     tuning = ((*((("deregistration_delay", spec.drain),) if spec.drain is not None else ()),
                health_check(spec, False), *stickiness(spec, False)) if spec
               else (("health_check", Block((("protocol", "TCP"),))),))
-    return (block("resource", ["aws_lb_target_group", f"{n}_{port}"], [
+    return (tf_block("resource", ["aws_lb_target_group", f"{n}_{port}"], [
                 ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}-{port}"), ("port", int(port)),
                 ("protocol", "TCP"), ("vpc_id", ref("data.aws_vpc.main.id")), ("target_type", "instance"),
                 *tuning]),
-            *(block("resource", ["aws_lb_target_group_attachment", f"{n}_{port}_{tf_name(rdn_value(t))}"], [
+            *(tf_block("resource", ["aws_lb_target_group_attachment", f"{n}_{port}_{tf_name(rdn_value(t))}"], [
                 ("target_group_arn", ref(f"aws_lb_target_group.{n}_{port}.arn")),
                 ("target_id", ref(f"aws_instance.{tf_name(rdn_value(t))}.id")), ("port", int(port))])
               for t in targets),
-            block("resource", ["aws_lb_listener", f"{n}_{port}"], [
+            tf_block("resource", ["aws_lb_listener", f"{n}_{port}"], [
                 ("load_balancer_arn", ref(f"aws_lb.{n}.arn")), ("port", int(port)), ("protocol", "TCP"),
                 ("default_action", Block((("type", "forward"),
                                           ("target_group_arn", ref(f"aws_lb_target_group.{n}_{port}.arn")))))]))
@@ -124,9 +124,9 @@ def _service(m, svc, endpoints=()):
     target = one(svc, "ciamTargetRole")
     gw = role_gateway(m, target) if only_on_kubernetes(m, target) else None
     if only_on_kubernetes(m, target) and gw is None:
-        return (kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})", target),)
+        return (comment(kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})", target)),)
     if service_exposure(svc) is None:
-        return (exposure_unknown(svc),)
+        return (comment(exposure_unknown(svc)),)
     if gw is not None:
         return gateway_front(m, svc, gw, endpoints)
     n = tf_name(rdn_value(svc))
@@ -141,7 +141,7 @@ def _service(m, svc, endpoints=()):
         mappings = tuple(_subnet_mapping(svc, ip, internal, i, sub) for i, (_, sub) in enumerate(subnets))
         blind = (("#", "the protection policy's request inspection needs TLS terminated at the edge; not rendered"),) \
             if spec is not None and inspected(spec) and not spec.cdn else ()
-        balancer = (block("resource", ["aws_lb", n], [
+        balancer = (tf_block("resource", ["aws_lb", n], [
                         *blind, ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("internal", internal),
                         ("load_balancer_type", "network"), *mappings,
                         ("tags", {"Service": one(svc, "ciamFqdn"), "ManagedBy": "opsdir"})]),
@@ -158,11 +158,11 @@ def _references(m):
     bk = one_role(m, "backup-target")
     bk = None if bk is not None and bk.dn in {b.dn for b in kept_buckets(m)} else bk
     eg = one_role(m, "pf-egress")
-    return (*(block("data", ["aws_secretsmanager_secret", tf_name(one(b, "ciamBindingRole"))],
-                    [("arn", one(b, "ciamRefUri").split("://", 1)[1])]) for b in of_class(m, "ciamSecretRef")),
-            *((block("data", ["aws_s3_bucket", "ds_backups"],
-                     [("bucket", one(bk, "ciamStorageRef").split("://", 1)[1])]),) if bk else ()),
-            *((block("data", ["aws_nat_gateway", "pf_egress"], [("id", one(eg, "ciamProviderRef"))]),)
+    return (*(tf_block("data", ["aws_secretsmanager_secret", tf_name(one(b, "ciamBindingRole"))],
+                       [("arn", one(b, "ciamRefUri").split("://", 1)[1])]) for b in of_class(m, "ciamSecretRef")),
+            *((tf_block("data", ["aws_s3_bucket", "ds_backups"],
+                        [("bucket", one(bk, "ciamStorageRef").split("://", 1)[1])]),) if bk else ()),
+            *((tf_block("data", ["aws_nat_gateway", "pf_egress"], [("id", one(eg, "ciamProviderRef"))]),)
               if eg and one(eg, "ciamProviderRef") else ()))
 
 
@@ -182,7 +182,9 @@ def _fronted(m, endpoints):
                for spec in (service_edge(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")))
 
 
-def render(m, services):
+def render_files(m, services):
+    """{path: TfFile | text} of environment m's AWS render: the Terraform roots as data (main, providers, the landing
+    zone's roots), the scripts and configuration files they package as text."""
     endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     kms, identities = secret(m, "disk-encryption"), workload_identities(m, ACCESS)
     canaries, scripts = render_canaries(m, endpoints)
@@ -203,9 +205,8 @@ def render(m, services):
            *discovery, *render_suppressions(m),
            *render_budgets(m), *render_quota_requests(m),
            *_references(m))
-    unbound = unbound_comments(m.unbound)
-    main = header(m, "AWS infrastructure for the CIAM platform", HCL) + unbound + "\n" + "\n\n".join(out) + "\n"
-    providers = header(m, "Providers", HCL) + "\n" + "\n\n".join([
+    main = TfFile(header(m, "AWS infrastructure for the CIAM platform", HCL) + unbound_comments(m.unbound), out)
+    providers = TfFile(header(m, "Providers", HCL), (
         required_providers(bool(scripts) or bool(handlers)),
         provider_block(m),
         *((_us_east_1(m),) if _fronted(m, endpoints) and (standard_account(m) or not govcloud(m)) else ()),
@@ -213,10 +214,14 @@ def render(m, services):
           for r in copy_regions(m)),
         *((provider_block(m, BILLING_REGION, BILLING, "GovCloud's billing (AWS Budgets) is managed in its associated "
                           "standard account", account=standard_account(m)),) if needs_billing_provider(m) else ()),
-        *((block("variable", [RESOLVER_ENDPOINT], [
+        *((tf_block("variable", [RESOLVER_ENDPOINT], [
             ("description", "The landing zone's outbound Route 53 Resolver endpoint the forwarding rules use"),
-            ("type", ref("string"))]),) if forwarders(m, hosted=False) else ()),
-    ]) + "\n"
+            ("type", ref("string"))]),) if forwarders(m, hosted=False) else ())))
     return {"terraform/providers.tf": providers, "terraform/main.tf": main, **scripts, **handlers, **shipping_files,
             **render_landing(m),
             **evaluation_files(m, ACCESS, "AWS")}
+
+
+def render(m, services):
+    """Adapter render: environment m's AWS files as text, each Terraform file written once from its TfFile."""
+    return written(render_files(m, services))

@@ -9,7 +9,7 @@ from opsdir.core.directory import one, rdn_value
 from opsdir.core.inventory import of_types
 from opsdir.domains.edge.records import is_hosted
 from opsdir.domains.estate.authorizations import boundary_findings, services_used
-from opsdir_format_terraform.hcl import block, tf_name
+from opsdir_format_terraform.hcl import comment, tf_block, tf_name
 from .account import regime
 
 VPC, MONITORING, STORAGE = "Virtual Private Cloud (VPC)", "Cloud Monitoring", "Cloud Storage"
@@ -63,9 +63,9 @@ def render_workload(m):
                                  ("its organization (ciamOrganizationRef)", org),
                                  ("its billing account (ciamBillingAccountRef)", billing)) if not have]
     if missing:
-        return (f"# NOTE: {m.label}'s Assured Workloads workload: not rendered: "
-                f"the record names no {', '.join(missing)}",)
-    return (block("resource", [WORKLOAD, tf_name(f"ciam_{rdn_value(m.env)}")], [
+        return (comment(f"NOTE: {m.label}'s Assured Workloads workload: not rendered: "
+                        f"the record names no {', '.join(missing)}"),)
+    return (tf_block("resource", [WORKLOAD, tf_name(f"ciam_{rdn_value(m.env)}")], [
         ("compliance_regime", regime_), ("display_name", f"ciam-{rdn_value(m.env)}"[:30]),
         ("location", one(m.cloud, "ciamRegion")), ("organization", org),
         ("billing_account", f"billingAccounts/{billing}")]),)

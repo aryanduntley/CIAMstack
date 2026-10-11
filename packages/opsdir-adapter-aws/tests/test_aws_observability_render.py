@@ -2,6 +2,7 @@
 realizing it (its metric, name and role), the condition in CloudWatch's terms, the channel's SNS topic; log groups
 keeping logs as long as recorded, raised to a retention CloudWatch allows."""
 from opsdir.domains.observability.naming import ALERT_RULES
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.observability import render_alarms, render_log_groups, retention
 from network_fixtures import ALPHA, entry, model
 
@@ -52,7 +53,7 @@ def _alpha():
 
 
 def test_a_rule_renders_through_the_alarm_realizing_it():
-    text = "\n".join(render_alarms(_alpha()))
+    text = "\n".join(as_text(render_alarms(_alpha())))
     assert ('resource "aws_cloudwatch_metric_alarm" "ds_replication_lag" {\n'
             '  alarm_name          = "ds-replication-lag"\n'
             '  alarm_description   = "Alert rule replication-lag: replication-delay gt 5000 ms (opsdir)"\n'
@@ -71,7 +72,7 @@ def test_a_rule_renders_through_the_alarm_realizing_it():
 
 
 def test_rates_are_counted_per_window_and_shares_in_percent():
-    text = "\n".join(render_alarms(_alpha()))
+    text = "\n".join(as_text(render_alarms(_alpha())))
     login = text.split('"pf_login_failures" {', 1)[1].split("}", 1)[0]
     assert 'statistic           = "Sum"' in login and "threshold           = 50" in login
     assert 'unit                = "Count"' in login and "evaluation_periods  = 10" in login
@@ -80,7 +81,7 @@ def test_rates_are_counted_per_window_and_shares_in_percent():
 
 
 def test_what_cloudwatch_cant_say_or_nothing_realizes_is_named():
-    notes = [x for x in render_alarms(_alpha()) if x.startswith("#")]
+    notes = [x for x in as_text(render_alarms(_alpha())) if x.startswith("#")]
     assert notes == [
         "# NOTE: alert rule disk: not rendered: CloudWatch has no comparison 'eq'",
         "# NOTE: alert rule unalarmed: not rendered: no alarm in alpha/prod realizes it (a ciamAlarmBinding with "
@@ -89,7 +90,7 @@ def test_what_cloudwatch_cant_say_or_nothing_realizes_is_named():
 
 
 def test_log_groups_keep_logs_as_long_as_cloudwatch_allows():
-    text = "\n".join(render_log_groups(_alpha()))
+    text = "\n".join(as_text(render_log_groups(_alpha())))
     assert ('resource "aws_cloudwatch_log_group" "audit" {\n  name              = "/ciam/audit"\n'
             "  retention_in_days = 400\n") in text
     assert "# 45 days isn't a CloudWatch retention: raised to 60" in text and 'name              = "/ciam/ops"' in text

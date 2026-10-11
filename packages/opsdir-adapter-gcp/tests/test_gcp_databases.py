@@ -7,6 +7,7 @@ import copy
 import json
 import re
 
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.cli import cli_resources
 from opsdir_adapter_gcp.databases import database_version, neutral_version, render_databases
 from opsdir_adapter_gcp.inventory import state_resources
@@ -24,7 +25,7 @@ SECRET = entry(ALPHA, "sec-db", "ciamSecretRef", ciamBindingRole="db-admin",
 
 
 def _render(*records):
-    return "\n\n".join(render_databases(model(alpha=records)[1]))
+    return "\n\n".join(as_text(render_databases(model(alpha=records)[1])))
 
 
 def test_database_versions_both_ways():

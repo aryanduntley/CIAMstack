@@ -11,7 +11,7 @@ from opsdir.core.directory import one, rdn_value
 from opsdir.domains.estate.authorizations import required_levels
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.estate.tags import required_tags
-from opsdir_format_terraform.hcl import Block, block, ref
+from opsdir_format_terraform.hcl import Block, ref, tf_block
 from .names import label
 
 GOOGLE_VERSION = "~> 8.6"           # validated against hashicorp/google 8.6.0
@@ -19,7 +19,7 @@ GOOGLE_VERSION = "~> 8.6"           # validated against hashicorp/google 8.6.0
 
 def required_providers():
     """The terraform block of a Google Cloud root: the google provider."""
-    return block("terraform", [], [("required_providers", Block((
+    return tf_block("terraform", [], [("required_providers", Block((
         ("google", {"source": "hashicorp/google", "version": GOOGLE_VERSION}),)))])
 
 
@@ -30,7 +30,7 @@ def project_id(m):
 
 def project_variable(m, described=False):
     """The project_id input of a root of environment m, defaulting to the recorded project."""
-    return block("variable", ["project_id"], [
+    return tf_block("variable", ["project_id"], [
         ("type", ref("string")),
         *((("description", f"The project {rdn_value(m.env)} runs in"),) if described else ()),
         *((("default", project_id(m)),) if project_id(m) else ())])
@@ -65,5 +65,5 @@ def provider_block(m, *body):
     """The google provider block of environment m: a FIPS note when its cloud uses FIPS endpoints, the given settings,
     then the policy's default labels."""
     labels = default_labels(m)
-    return block("provider", ["google"], [*((("#", FIPS_NOTE),) if fips_endpoints(m) else ()), *body,
-                                          *((("default_labels", labels),) if labels else ())])
+    return tf_block("provider", ["google"], [*((("#", FIPS_NOTE),) if fips_endpoints(m) else ()), *body,
+                                             *((("default_labels", labels),) if labels else ())])

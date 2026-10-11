@@ -10,6 +10,7 @@ from opsdir.core.interchange.ldif import LdifRecord
 from opsdir.domains.compute.naming import WORKLOADS, workload_dn
 from opsdir.domains.observability.naming import LOG_ROUTES
 from opsdir.domains.observability.sources import kept_clauses
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.account import regime
 from opsdir_adapter_gcp.log_sinks import log_sink_notes, render_log_sinks, route_filters
 from opsdir_adapter_gcp.logging_filter import NOTHING, field_of, kept, literal, prefix_pattern
@@ -109,7 +110,7 @@ def test_a_sink_and_an_exclusion_per_route_from_servers_and_containers():
     assert 'resource.labels.container_name != "audit-tail"' in access      # the main source: not the sidecar's
     audit = found["cn=audit-logs"][1]
     assert 'resource.labels.container_name = "audit-tail"' in audit         # the sidecar: all its lines
-    hcl = "\n".join(render_log_sinks(_alpha(), _services()))
+    hcl = "\n".join(as_text(render_log_sinks(_alpha(), _services())))
     assert hcl.count('resource "google_logging_project_sink"') == 2
     assert hcl.count('resource "google_logging_project_exclusion"') == 2
     assert 'name                   = "ciam-prod-access-logs"' in hcl
@@ -118,7 +119,7 @@ def test_a_sink_and_an_exclusion_per_route_from_servers_and_containers():
 
 
 def test_what_isnt_shipped_or_ships_differently_is_named():
-    notes = log_sink_notes(_alpha(), _services())
+    notes = as_text(log_sink_notes(_alpha(), _services()))
     assert "# NOTE: log route errors: role ds's logs not shipped: its destination siem isn't a Cloud Logging " \
            "bucket (projects/<p>/locations/<l>/buckets/<b>)" in notes
     assert any(n.startswith("# NOTE: the Ops Agent configuration opsdir renders for configuration management to "
@@ -128,7 +129,7 @@ def test_what_isnt_shipped_or_ships_differently_is_named():
     assert ("# NOTE: log route audit-logs: bucket audit is in project proj-logs: grant the sink's writer identity "
             "roles/logging.bucketWriter there") in notes
     assert not any("Assured Workloads" in n for n in notes)
-    elsewhere = log_sink_notes(_alpha(cluster_project="proj-b"), _services())
+    elsewhere = as_text(log_sink_notes(_alpha(cluster_project="proj-b"), _services()))
     assert any("in cluster gke not shipped: the cluster is in project proj-b" in n for n in elsewhere)
     assert all(r.dn.split(",")[0] != "cn=audit-logs" for r, _, _ in route_filters(_alpha("proj-b"), _services()))
 
@@ -136,5 +137,6 @@ def test_what_isnt_shipped_or_ships_differently_is_named():
 def test_an_assured_workloads_regime_is_named_with_what_to_confirm():
     alpha = _alpha(levels=("fedramp-high", "dod-il4"))
     assert regime(alpha) == "IL4"
+    notes = as_text(log_sink_notes(alpha, _services()))
     assert any(n.startswith("# NOTE: Assured Workloads (IL4): Cloud Logging, Compute Engine and GKE are supported "
-                            "products; the Ops Agent isn't listed") for n in log_sink_notes(alpha, _services()))
+                            "products; the Ops Agent isn't listed") for n in notes)

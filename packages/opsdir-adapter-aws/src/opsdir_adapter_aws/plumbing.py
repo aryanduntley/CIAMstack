@@ -26,7 +26,7 @@ from opsdir.domains.network.plumbing import adopted, peer_cloud, peer_network, r
 from opsdir.domains.network.ports import acl_rules
 from opsdir.domains.network.routing import parse_route
 from opsdir.domains.network.stack import subnets
-from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, blocks_of, comment, distinct, ref, tf_block, tf_import, tf_name
 from .network import binding_tags, domain_rules, private_endpoint
 
 VPC = "data.aws_vpc.main.id"
@@ -42,7 +42,7 @@ PROTOCOLS = {"all": "-1", "tcp": "tcp", "udp": "udp", "icmp": "icmp"}
 # a flow log destination's kind by its ARN
 DESTINATIONS = (("arn:aws:s3", "s3"), ("arn:aws:firehose", "kinesis-data-firehose"),
                 ("arn:aws:logs", "cloud-watch-logs"))
-IGW = block("data", ["aws_internet_gateway", "main"], [
+IGW = tf_block("data", ["aws_internet_gateway", "main"], [
     ("filter", Block((("name", "attachment.vpc-id"), ("values", [ref(VPC)]))))])
 TRANSIT = "transit_gateway_id"
 
@@ -52,22 +52,22 @@ def network_data(m):
     def by_ref(b):
         ref_ = one(b, "ciamProviderRef") if b is not None else None
         return [("id", ref_)] if ref_ else [("#", "UNBOUND: the binding has no provider ref")]
-    return (block("data", ["aws_vpc", "main"], by_ref(one_role(m, "network"))),
-            *(block("data", ["aws_subnet", tf_name(rdn_value(s))], by_ref(s))
+    return (tf_block("data", ["aws_vpc", "main"], by_ref(one_role(m, "network"))),
+            *(tf_block("data", ["aws_subnet", tf_name(rdn_value(s))], by_ref(s))
               for s in of_class(m, "ciamSubnetBinding")))
 
 
 def _var(name, description):
-    return block("variable", [name], [("type", ref("string")), ("description", description)])
+    return tf_block("variable", [name], [("type", ref("string")), ("description", description)])
 
 
 def _adopt(address, b, id_=None):
     """An import block for a binding that exists (its provider ref, or the id given), else ()."""
-    return (import_block(address, id_ or one(b, "ciamProviderRef")),) if adopted(b) else ()
+    return (tf_import(address, id_ or one(b, "ciamProviderRef")),) if adopted(b) else ()
 
 
 def _note(b, text):
-    return Rendered((f"# {rdn_value(b)}: {text}",), (), ())
+    return Rendered((comment(f"{rdn_value(b)}: {text}"),), (), ())
 
 
 def _subnet(s):
@@ -87,7 +87,7 @@ def egress(m, b, here=()):
     public = tuple(a for c in values(b, "ciamCidr") if not is_private(c) for a in _addresses(c))
     zone = one(b, "ciamZone")
     return Rendered(
-        (block("resource", ["aws_nat_gateway", n], [
+        (tf_block("resource", ["aws_nat_gateway", n], [
             ("connectivity_type", "public" if public else "private"),
             *((("allocation_id", ref(f"data.aws_eip.{n}_0.id")),) if public else ()),
             *((("secondary_allocation_ids", [ref(f"data.aws_eip.{n}_{i}.id") for i in range(1, len(public))]),)
@@ -96,7 +96,7 @@ def egress(m, b, here=()):
          *_adopt(f"aws_nat_gateway.{n}", b)),
         (_var(f"{n}_subnet_id", f"The {'public ' if public else ''}subnet NAT gateway {rdn_value(b)} sits in"
               + (f" ({zone})" if zone else "")),),
-        tuple(block("data", ["aws_eip", f"{n}_{i}"], [("public_ip", a)]) for i, a in enumerate(public)))
+        tuple(tf_block("data", ["aws_eip", f"{n}_{i}"], [("public_ip", a)]) for i, a in enumerate(public)))
 
 
 # ------------------------------------------------------------------ route tables
@@ -163,12 +163,12 @@ def route_table(m, b, here=()):
     n, main = tf_name(rdn_value(b)), one(b, "ciamMainTable") == "TRUE"
     parts = tuple(_route(m, r, here) for r in map(parse_route, values(b, "ciamRoute")) if r and r.kind != "local")
     kind = "aws_default_route_table" if main else "aws_route_table"
-    table = block("resource", [kind, n], [
+    table = tf_block("resource", [kind, n], [
         ("default_route_table_id", ref("data.aws_vpc.main.main_route_table_id")) if main else ("vpc_id", ref(VPC)),
         *(x for p in parts for x in p.blocks), ("tags", binding_tags(b))])
     found = subnets(m, b)
     associations = tuple(x for s in found for x in (
-        block("resource", ["aws_route_table_association", f"{n}_{tf_name(rdn_value(s))}"], [
+        tf_block("resource", ["aws_route_table_association", f"{n}_{tf_name(rdn_value(s))}"], [
             ("subnet_id", _subnet(s)), ("route_table_id", ref(f"{kind}.{n}.id"))]),
         *(_adopt(f"aws_route_table_association.{n}_{tf_name(rdn_value(s))}", b,
                  f"{one(s, 'ciamProviderRef')}/{one(b, 'ciamProviderRef')}") if one(s, "ciamProviderRef") else ())))
@@ -188,7 +188,7 @@ def _acl_entry(r):
 def network_acl(m, b, here=()):
     """A network ACL with its rules both ways, on its subnets."""
     n, found = tf_name(rdn_value(b)), subnets(m, b)
-    return Rendered((block("resource", ["aws_network_acl", n], [
+    return Rendered((tf_block("resource", ["aws_network_acl", n], [
         ("vpc_id", ref(VPC)), *((("subnet_ids", [_subnet(s) for s in found]),) if found else ()),
         *(_acl_entry(r) for r in acl_rules(b)), ("tags", binding_tags(b))]), *_adopt(f"aws_network_acl.{n}", b)),
         (), ())
@@ -199,7 +199,7 @@ def _vpn_gateway(m):
     """The VPC's VPN gateway, its Amazon-side ASN the first VPN link's local one."""
     asn = next((one(i, "ciamLocalAsn") for i in of_class(m, "ciamInterconnect")
                 if one(i, "ciamLinkKind") == "vpn" and one(i, "ciamLocalAsn")), None)
-    return block("resource", ["aws_vpn_gateway", "main"], [
+    return tf_block("resource", ["aws_vpn_gateway", "main"], [
         ("vpc_id", ref(VPC)), *((("amazon_side_asn", int(asn)),) if asn else ()),
         ("tags", {"Name": f"ciam-{rdn_value(m.env)}", "ManagedBy": "opsdir"})])
 
@@ -213,9 +213,9 @@ def _peering(m, b, n):
         return _note(b, "UNBOUND: the other environment's network has no provider ref to peer with. Not rendered.")
     region = one(cloud, "ciamRegion") if cloud is not None else None
     return Rendered((
-        *((f"# {rdn_value(b)}: the other side accepts the peering in its account "
-           "(aws_vpc_peering_connection_accepter)",) if one(b, "ciamPeerAccepted") != "TRUE" else ()),
-        block("resource", ["aws_vpc_peering_connection", n], [
+        *((comment(f"{rdn_value(b)}: the other side accepts the peering in its account "
+                   "(aws_vpc_peering_connection_accepter)"),) if one(b, "ciamPeerAccepted") != "TRUE" else ()),
+        tf_block("resource", ["aws_vpc_peering_connection", n], [
             ("vpc_id", ref(VPC)), ("peer_vpc_id", peer),
             *((("peer_region", region),) if region and region != one(m.cloud, "ciamRegion") else ()),
             ("tags", binding_tags(b))]),
@@ -226,14 +226,14 @@ def _vpn(m, b, n):
     gateway, peer_asn = one(b, "ciamPeerGateway"), one(b, "ciamPeerAsn")
     if gateway is None:
         return _note(b, "UNBOUND: a VPN needs the other end's gateway address (ciamPeerGateway). Not rendered.")
-    static = tuple(block("resource", ["aws_vpn_connection_route", f"{n}_{i}"], [
+    static = tuple(tf_block("resource", ["aws_vpn_connection_route", f"{n}_{i}"], [
         ("destination_cidr_block", c), ("vpn_connection_id", ref(f"aws_vpn_connection.{n}.id"))])
         for i, c in enumerate(values(b, "ciamAcceptedCidr"))) if peer_asn is None else ()
     return Rendered((
-        block("resource", ["aws_customer_gateway", n], [
+        tf_block("resource", ["aws_customer_gateway", n], [
             ("bgp_asn", int(peer_asn or 65000)), ("ip_address", gateway), ("type", "ipsec.1"),
             ("tags", binding_tags(b))]),
-        block("resource", ["aws_vpn_connection", n], [
+        tf_block("resource", ["aws_vpn_connection", n], [
             ("customer_gateway_id", ref(f"aws_customer_gateway.{n}.id")),
             ("vpn_gateway_id", ref("aws_vpn_gateway.main.id")), ("type", "ipsec.1"),
             ("static_routes_only", peer_asn is None), ("tags", binding_tags(b))]),
@@ -247,7 +247,7 @@ def interconnect(m, b, here=()):
         return _peering(m, b, n)
     if kind == "transit":
         found = of_class(m, "ciamSubnetBinding")
-        return Rendered((block("resource", ["aws_ec2_transit_gateway_vpc_attachment", n], [
+        return Rendered((tf_block("resource", ["aws_ec2_transit_gateway_vpc_attachment", n], [
             ("transit_gateway_id", ref(f"var.{TRANSIT}")), ("vpc_id", ref(VPC)),
             ("subnet_ids", [_subnet(s) for s in found]), ("tags", binding_tags(b))]),
             *_adopt(f"aws_ec2_transit_gateway_vpc_attachment.{n}", b)),
@@ -282,9 +282,10 @@ def flow_log(m, b, here=()):
     role = (("iam_role_arn", ref("var.flow_logs_role_arn")),) if kind == "cloud-watch-logs" else ()
     days = one(b, "ciamRetentionDays")
     return Rendered((
-        *((f"# {rdn_value(b)}: kept {days} days, the retention of {rdn_value(dest)} (not set here)",) if days else ()),
+        *((comment(f"{rdn_value(b)}: kept {days} days, the retention of {rdn_value(dest)} (not set here)"),)
+          if days else ()),
         *(x for name, target in on for x in (
-            block("resource", ["aws_flow_log", name], [
+            tf_block("resource", ["aws_flow_log", name], [
                 target, ("traffic_type", "ALL"), ("log_destination_type", kind), ("log_destination", arn), *role,
                 ("tags", binding_tags(b))]),
             *(_adopt(f"aws_flow_log.{name}", b) if len(on) == 1 else ())))),
@@ -299,7 +300,7 @@ def kept_elsewhere(m, b, here=()):
     if is_kind(m.d, b, "ciamProxy"):
         return Rendered(domain_rules(m, b), (), ())
     blocks = private_endpoint(m, b)
-    made = any(x.startswith('resource "aws_vpc_endpoint"') for x in blocks)
+    made = bool(blocks_of(blocks, "resource", "aws_vpc_endpoint"))
     return Rendered((*blocks, *(_adopt(f"aws_vpc_endpoint.{tf_name(rdn_value(b))}", b) if made else ())), (), ())
 
 
@@ -314,5 +315,5 @@ def render_plumbing(m, keeper):
     here = {b.dn for b in keeper.bindings}
     parts = tuple(next(fn for oc, fn in RENDERERS if is_kind(m.d, b, oc))(m, b, here) for b in keeper.bindings)
     return Rendered(tuple(x for p in parts for x in p.blocks),
-                    tuple(dict.fromkeys(v for p in parts for v in p.variables)),
-                    (*network_data(m), *dict.fromkeys(x for p in parts for x in p.shared)))
+                    distinct(tuple(v for p in parts for v in p.variables)),
+                    (*network_data(m), *distinct(tuple(x for p in parts for x in p.shared))))

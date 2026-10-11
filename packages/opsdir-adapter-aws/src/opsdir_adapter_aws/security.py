@@ -52,7 +52,7 @@ from opsdir.domains.estate.incidents import incident_routes
 from opsdir.domains.estate.naming import SEVERITIES
 from opsdir.domains.estate.security import findings_destination, security_services
 from opsdir.domains.observability.audit import INDEFINITE
-from opsdir_format_terraform.hcl import Block, block, jsonencoded, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, jsonencoded, ref, tf_block, tf_name
 from .storage import bucket_of
 from .tags import state_tags
 
@@ -105,10 +105,11 @@ GUARDDUTY_FLOOR = {"low": 1, "medium": 4, "high": 7, "critical": 9}
 def _notes(m, s):
     """Comments every kept service carries: organization scope, every region."""
     cn = rdn_value(s)
-    return (*((f"# {cn}: organization-wide: enable it for the organization from its management account or delegated "
-               "administrator (not rendered here)",) if one(s, "ciamAuditScope") == "organization" else ()),
-            *((f"# {cn}: runs in every region: each region needs its own (this root renders "
-               f"{one(m.cloud, 'ciamRegion')})",) if one(s, "ciamAllRegions") == "TRUE" else ()))
+    return (*((comment(f"{cn}: organization-wide: enable it for the organization from its management account or "
+                       "delegated administrator (not rendered here)"),)
+              if one(s, "ciamAuditScope") == "organization" else ()),
+            *((comment(f"{cn}: runs in every region: each region needs its own (this root renders "
+                       f"{one(m.cloud, 'ciamRegion')})"),) if one(s, "ciamAllRegions") == "TRUE" else ()))
 
 
 def _features(areas):
@@ -120,19 +121,20 @@ def _features(areas):
 
 def _detector(m, s):
     n, areas = tf_name(rdn_value(s)), values(s, "ciamSecurityCoverage")
-    return (block("resource", [DETECTOR, n], [("enable", True), ("finding_publishing_frequency", "FIFTEEN_MINUTES")]),
-            *(block("resource", [FEATURE, f"{n}_{tf_name(f.lower())}"], [
+    return (tf_block("resource", [DETECTOR, n],
+                     [("enable", True), ("finding_publishing_frequency", "FIFTEEN_MINUTES")]),
+            *(tf_block("resource", [FEATURE, f"{n}_{tf_name(f.lower())}"], [
                 ("detector_id", ref(f"{DETECTOR}.{n}.id")), ("name", f), ("status", "ENABLED"),
                 *(("additional_configuration", Block((("name", x), ("status", "ENABLED")))) for x in extra)])
               for f, extra in _features(areas)),
-            *((f"# {rdn_value(s)}: GuardDuty has no plan for key vaults: its CloudTrail analysis sees KMS API use "
-               "(control-plane)",) if "key-vaults" in areas else ()))
+            *((comment(f"{rdn_value(s)}: GuardDuty has no plan for key vaults: its CloudTrail analysis sees KMS API "
+                       "use (control-plane)"),) if "key-vaults" in areas else ()))
 
 
 def _scanner(m, s):
     areas = values(s, "ciamSecurityCoverage")
     kinds = tuple(dict.fromkeys(t for a in areas for t in INSPECTED.get(a, ()))) or ("EC2", "ECR")
-    return (block("resource", [ENABLER, tf_name(rdn_value(s))], [
+    return (tf_block("resource", [ENABLER, tf_name(rdn_value(s))], [
         ("account_ids", [ref("data.aws_caller_identity.current.account_id")]), ("resource_types", list(kinds))]),)
 
 
@@ -141,8 +143,9 @@ def _retention(s, n):
     if days is None or int(days) == INDEFINITE:
         return ()
     kept = min(max(int(days), 30), 2557)
-    return ((f"# {rdn_value(s)}: AWS Config keeps history 30 to 2557 days: {days} kept as {kept}",)
-            if kept != int(days) else ()) + (block("resource", [RETENTION, n], [("retention_period_in_days", kept)]),)
+    return ((comment(f"{rdn_value(s)}: AWS Config keeps history 30 to 2557 days: {days} kept as {kept}"),)
+            if kept != int(days) else ()) + \
+        (tf_block("resource", [RETENTION, n], [("retention_period_in_days", kept)]),)
 
 
 def _recorder(m, s):
@@ -150,17 +153,17 @@ def _recorder(m, s):
     bucket = bucket_of(one(dest, "ciamStorageRef")) if dest is not None and is_kind(m.d, dest, "ciamObjectStore") \
         else None
     if bucket is None:
-        return (f"# NOTE: security service {cn} (config-recording): not rendered: AWS Config delivers to an S3 "
-                "bucket and no object store here is its ciamFindingsRole",)
-    return (block("resource", ["aws_iam_service_linked_role", f"{n}_config"],
-                  [("aws_service_name", "config.amazonaws.com")]),
-            block("resource", [RECORDER, n], [
+        return (comment(f"NOTE: security service {cn} (config-recording): not rendered: AWS Config delivers to an S3 "
+                        "bucket and no object store here is its ciamFindingsRole"),)
+    return (tf_block("resource", ["aws_iam_service_linked_role", f"{n}_config"],
+                     [("aws_service_name", "config.amazonaws.com")]),
+            tf_block("resource", [RECORDER, n], [
                 ("name", cn), ("role_arn", ref(f"aws_iam_service_linked_role.{n}_config.arn")),
                 ("recording_group", Block((("all_supported", True), ("include_global_resource_types", True))))]),
-            block("resource", [CHANNEL, n], [("name", cn), ("s3_bucket_name", bucket),
-                                             ("depends_on", [ref(f"{RECORDER}.{n}")])]),
+            tf_block("resource", [CHANNEL, n], [("name", cn), ("s3_bucket_name", bucket),
+                                                ("depends_on", [ref(f"{RECORDER}.{n}")])]),
             *_retention(s, n),
-            block("resource", ["aws_config_configuration_recorder_status", n], [
+            tf_block("resource", ["aws_config_configuration_recorder_status", n], [
                 ("name", ref(f"{RECORDER}.{n}.name")), ("is_enabled", True),
                 ("depends_on", [ref(f"{CHANNEL}.{n}")])]))
 
@@ -170,13 +173,14 @@ def _hub(m, s):
     wanted = [*((k, STANDARDS.get(k)) for k in values(s, "ciamComplianceStandard")),
               *((k, BASELINES.get(k)) for k in values(s, "ciamSecurityBaseline"))]
     missing = [k for k, path in wanted if path is None]
-    return (block("resource", [HUB, n], [("enable_default_standards", False), ("auto_enable_controls", True),
-                                         ("control_finding_generator", "SECURITY_CONTROL")]),
-            *(block("resource", [SUBSCRIPTION, f"{n}_{tf_name(k)}"], [
+    return (tf_block("resource", [HUB, n], [("enable_default_standards", False), ("auto_enable_controls", True),
+                                            ("control_finding_generator", "SECURITY_CONTROL")]),
+            *(tf_block("resource", [SUBSCRIPTION, f"{n}_{tf_name(k)}"], [
                 ("standards_arn", _HUB + path), ("depends_on", [ref(f"{HUB}.{n}")])])
               for k, path in wanted if path is not None),
-            *((f"# {rdn_value(s)}: Security Hub has no standard for {', '.join(missing)}: assess it another way "
-               "(an AWS Audit Manager framework, a Config conformance pack), not rendered",) if missing else ()))
+            *((comment(f"{rdn_value(s)}: Security Hub has no standard for {', '.join(missing)}: assess it another way "
+                       "(an AWS Audit Manager framework, a Config conformance pack), not rendered"),)
+              if missing else ()))
 
 
 def findings_routing(m, s, kind):
@@ -188,12 +192,12 @@ def findings_routing(m, s, kind):
     if not target:
         why = ("an object store isn't an EventBridge target (deliver through a Firehose stream)"
                if is_kind(m.d, dest, "ciamObjectStore") else f"{rdn_value(dest)} names no ARN (ciamProviderRef)")
-        return (f"# NOTE: {cn}'s findings to {one(s, 'ciamFindingsRole')}: not rendered: {why}",)
+        return (comment(f"NOTE: {cn}'s findings to {one(s, 'ciamFindingsRole')}: not rendered: {why}"),)
     n, (source, detail) = tf_name(f"{cn}_findings"), SOURCES[kind]
-    return (block("resource", [RULE, n], [
+    return (tf_block("resource", [RULE, n], [
                 ("name", f"{cn}-findings"), ("description", f"{cn}'s findings to {one(s, 'ciamFindingsRole')}"),
                 ("event_pattern", jsonencoded({"source": [source], "detail-type": [detail]}))]),
-            block("resource", [TARGET, n], [
+            tf_block("resource", [TARGET, n], [
                 ("#", "its resource policy must let events.amazonaws.com deliver to it"),
                 ("rule", ref(f"{RULE}.{n}.name")), ("arn", target)]))
 
@@ -220,22 +224,22 @@ def _incident_routing(m, s, kind):
         return ()
     cn, dest = rdn_value(s), route.binding
     if kind not in SOURCES:
-        return (f"# NOTE: {cn}'s incidents to {route.role}: not rendered: AWS Config's findings have no severity "
-                "(route its compliance changes through a Config rule's EventBridge event)",)
+        return (comment(f"NOTE: {cn}'s incidents to {route.role}: not rendered: AWS Config's findings have no severity "
+                        "(route its compliance changes through a Config rule's EventBridge event)"),)
     if dest is None:
         return ()
     target = one(dest, "ciamProviderRef") if not is_kind(m.d, dest, "ciamObjectStore") else None
     if not target:
         why = ("an object store isn't an EventBridge target" if is_kind(m.d, dest, "ciamObjectStore") else
                f"{rdn_value(dest)} names no ARN (ciamProviderRef)")
-        return (f"# NOTE: {cn}'s incidents to {route.role}: not rendered: {why}",)
+        return (comment(f"NOTE: {cn}'s incidents to {route.role}: not rendered: {why}"),)
     n, (source, detail) = tf_name(f"{cn}_incidents"), SOURCES[kind]
-    return (block("resource", [RULE, n], [
+    return (tf_block("resource", [RULE, n], [
                 ("name", f"{cn}-incidents"),
                 ("description", f"{cn}'s {route.severity} and worse findings to {route.role} (incident process)"),
                 ("event_pattern", jsonencoded({"source": [source], "detail-type": [detail],
                                                "detail": severity_filter(source, route.severity)}))]),
-            block("resource", [TARGET, n], [
+            tf_block("resource", [TARGET, n], [
                 ("#", "its resource policy must let events.amazonaws.com deliver to it"),
                 ("rule", ref(f"{RULE}.{n}.name")), ("arn", target)]))
 
@@ -248,17 +252,17 @@ def _service(m, s):
     kind, keeper = one(s, "ciamSecurityKind"), one(s, "ciamManagedBy")
     if keeper:
         holder = get(m.d, keeper)
-        return (f"# Security service {rdn_value(s)} ({kind}): kept by "
-                f"{rdn_value(holder) if holder is not None else keeper}, not rendered here",)
+        return (comment(f"Security service {rdn_value(s)} ({kind}): kept by "
+                        f"{rdn_value(holder) if holder is not None else keeper}, not rendered here"),)
     return (*_RENDER[kind](m, s), *findings_routing(m, s, kind), *_incident_routing(m, s, kind), *_notes(m, s))
 
 
 def render_security(m):
     """HCL (and comments) for environment m's security services."""
     services = security_services(m)
-    data = (block("data", ["aws_partition", "current"], []), block("data", ["aws_region", "current"], [])) \
+    data = (tf_block("data", ["aws_partition", "current"], []), tf_block("data", ["aws_region", "current"], [])) \
         if any(one(s, "ciamSecurityKind") == "posture" and not one(s, "ciamManagedBy") for s in services) else ()
-    caller = (block("data", ["aws_caller_identity", "current"], []),) \
+    caller = (tf_block("data", ["aws_caller_identity", "current"], []),) \
         if any(one(s, "ciamSecurityKind") == "vulnerability-scanning" and not one(s, "ciamManagedBy")
                for s in services) else ()
     return (*data, *caller, *(x for s in services for x in _service(m, s)))

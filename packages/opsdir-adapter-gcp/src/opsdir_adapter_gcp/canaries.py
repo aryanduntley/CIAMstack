@@ -17,7 +17,7 @@ from opsdir.core.directory import one, rdn_value
 from opsdir.core.environment import one_role
 from opsdir.domains.edge.exposure import service_exposure
 from opsdir.domains.observability.canaries import canary_specs
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from .names import label
 
 CHECK = "google_monitoring_uptime_check_config"
@@ -39,11 +39,11 @@ def _why(m, spec):
 def _check(m, spec):
     cn, why = rdn_value(spec.canary), _why(m, spec)
     if why:
-        return (f"# NOTE: canary {cn}: not rendered: {why}",)
+        return (comment(f"NOTE: canary {cn}: not rendered: {why}"),)
     if spec.keeper is not None:
-        return (f"# Uptime check {spec.name} ({cn}): kept by {spec.keeper}, not rendered here",)
+        return (comment(f"Uptime check {spec.name} ({cn}): kept by {spec.keeper}, not rendered here"),)
     url, period = urlsplit(spec.url), next((p for p in PERIODS if p >= spec.every), PERIODS[-1])
-    return (block("resource", [CHECK, tf_name(spec.name)], [
+    return (tf_block("resource", [CHECK, tf_name(spec.name)], [
         ("display_name", spec.name), ("timeout", "10s"), ("period", f"{period}s"),
         ("http_check", Block((("path", url.path), ("port", url.port or 443), ("use_ssl", True),
                               ("validate_ssl", True), ("request_method", "GET")))),

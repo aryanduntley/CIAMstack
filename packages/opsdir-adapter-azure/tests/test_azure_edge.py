@@ -3,6 +3,7 @@ to subnet-edge, its listener's TLS policy and Key Vault certificate read by its 
 policy's probe, affinity, timeout and draining; a WAF policy with custom rules for addresses, countries and rate limits
 aimed at the products' endpoints, the Default Rule Set and exclusions. Without the subnet, nothing but a comment."""
 from opsdir.domains.edge.resolve import Health, RateLimit, tls_level, tls_policy
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.edge import TLS_POLICIES, ddos_note, gateway_service, rate, servers_backend, waf_policy
 from opsdir_adapter_azure.terraform import _lb_port
 from edge_fixtures import environment, server, service, spec, subnet
@@ -12,8 +13,8 @@ EDGE = subnet("subnet-edge", "subnet-edge", "10.60.250.0/24")
 
 def _gateway(s, ip="198.51.100.77", *bindings):
     svc = service(ip, ciamProviderRef="pip-ciam-sso-prod")
-    return "\n".join(gateway_service(environment(svc, *bindings), svc, s,
-                                     servers_backend((server("pf-1", "10.60.2.10"),))))
+    return "\n".join(as_text(gateway_service(environment(svc, *bindings), svc, s,
+                                     servers_backend((server("pf-1", "10.60.2.10"),)))))
 
 
 def test_tls_terms_map_to_predefined_policies_and_back():
@@ -44,8 +45,8 @@ def test_without_an_edge_subnet_or_certificate_it_says_what_is_unbound():
 
 
 def test_the_waf_policy_custom_rules_and_managed_rules():
-    out = waf_policy(environment(), "sso", spec(rate_limits=(RateLimit("token", 100, 300, "ip", ("/as/token.oauth2",)),
-                                                              RateLimit("login", 20, 30, "header:X-Key", ()))))
+    limits = (RateLimit("token", 100, 300, "ip", ("/as/token.oauth2",)), RateLimit("login", 20, 30, "header:X-Key", ()))
+    out = as_text(waf_policy(environment(), "sso", spec(rate_limits=limits)))
     assert 'operator     = "IPMatch"' in out and 'match_values = ["203.0.113.0/24"]' in out
     assert 'operator           = "GeoMatch"' in out
     assert 'rate_limit_duration  = "FiveMins"' in out and 'match_values = ["^/as/token\\\\.oauth2$"]' in out
@@ -56,10 +57,11 @@ def test_the_waf_policy_custom_rules_and_managed_rules():
 
 
 def test_categories_azure_lacks_are_named_and_ddos_is_asked_of_the_landing_zone():
-    out = waf_policy(environment(), "sso", spec(categories=("bot-control", "account-takeover"), waf_mode="detect"))
+    out = as_text(waf_policy(environment(), "sso",
+                             spec(categories=("bot-control", "account-takeover"), waf_mode="detect")))
     assert "# not offered by Application Gateway WAF: account-takeover" in out
     assert 'type    = "Microsoft_BotManagerRuleSet"' in out and 'mode               = "Detection"' in out
-    assert ddos_note(spec()) == () and "landing zone" in ddos_note(spec(ddos="network-advanced"))[0]
+    assert as_text(ddos_note(spec())) == () and "landing zone" in as_text(ddos_note(spec(ddos="network-advanced")))[0]
 
 
 def test_a_product_health_port_is_where_the_probes_check():
@@ -67,5 +69,5 @@ def test_a_product_health_port_is_where_the_probes_check():
     out = _gateway(probed, "198.51.100.77", EDGE)
     probe = out[out.index("probe {"):].split("}")[0]
     assert "port                = 8085" in probe and 'path                = "/health/startup"' in probe
-    lb = "\n".join(_lb_port("sso", "443", probed))
+    lb = "\n".join(as_text(_lb_port("sso", "443", probed)))
     assert "port                = 8085" in lb.split('resource "azurerm_lb_rule"')[0]

@@ -3,6 +3,7 @@ its pipeline's tokens and its role assignments, an operator group's role assignm
 principal's condition says jit), the owner in the header; nothing when the environment needs nothing from one."""
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import LdifRecord, parse
+from opsdir_format_terraform.hcl import as_text, tf_block
 from opsdir_adapter_azure.landing import render_landing
 from support import REGISTRY, build_directory
 
@@ -50,7 +51,7 @@ def _records_text(operator_conditions=()):
 
 
 def test_a_deployers_federated_identity_and_an_operator_groups_assignments():
-    out = render_landing(env_model(_record(), "az/prod"))["terraform/landing-zone/main.tf"]
+    out = as_text(render_landing(env_model(_record(), "az/prod")))["terraform/landing-zone/main.tf"]
     assert 'resource "azurerm_federated_identity_credential" "identity_ci"' in out
     assert f'issuer                    = "{GITHUB}"' in out
     assert 'audience                  = ["api://AzureADTokenExchange"]' in out
@@ -64,15 +65,15 @@ def test_a_deployers_federated_identity_and_an_operator_groups_assignments():
 
 def test_the_landing_zone_registers_the_resource_providers_every_root_needs():
     m = env_model(_record(), "az/prod")
-    platform = 'resource "azurerm_linux_virtual_machine" "ds_1" {\n}\n'
-    out = render_landing(m, platform=(platform,))["terraform/landing-zone/providers.tf"]
+    platform = tf_block("resource", ["azurerm_linux_virtual_machine", "ds_1"], [])
+    out = as_text(render_landing(m, platform=(platform,)))["terraform/landing-zone/providers.tf"]
     assert 'resource_provider_registrations = "none"' in out
     listed = out[out.index("resource_providers_to_register"):].split("]")[0]
     assert '"Microsoft.Compute"' in listed and '"Microsoft.ManagedIdentity"' in listed
 
 
 def test_a_jit_operator_is_eligible_through_pim():
-    out = render_landing(env_model(_record(("jit",)), "az/prod"))["terraform/landing-zone/main.tf"]
+    out = as_text(render_landing(env_model(_record(("jit",)), "az/prod")))["terraform/landing-zone/main.tf"]
     assert 'resource "azurerm_pim_eligible_role_assignment" "admin_group_read_secret_pf_admin_password"' in out
     assert 'name  = "Key Vault Secrets User"' in out and "duration_days = 365" in out
     assert 'data "azurerm_subscription" "current"' in out
@@ -83,7 +84,7 @@ def test_guardrails_as_built_in_policy_assignments():
                  "ciamBindingRole: guardrails\nciamGuardrailKind: policy-assignment\nciamDenies: region-escape\n"
                  "ciamDenies: audit-log-disable\nciamDenies: root-use\n")
     d = build_directory(REGISTRY, tuple(parse(_records_text() + "\n" + guardrail)))
-    out = render_landing(env_model(d, "az/prod"))["terraform/landing-zone/main.tf"]
+    out = as_text(render_landing(env_model(d, "az/prod")))["terraform/landing-zone/main.tf"]
     assert ('policy_definition_id = "/providers/Microsoft.Authorization/policyDefinitions/'
             'e56962a6-4747-49cd-b67b-bf8b01975c4c"') in out and '"eastus2"' in out
     assert "blocks deleting diagnostic settings, not changing them" in out
@@ -104,5 +105,5 @@ def test_the_allowed_locations_are_the_regions_the_environment_s_residency_allow
     held = LdifRecord(ENV, "modify", {}, (("add", "objectClass", ("ciamEnvironmentPlacement",)),
                                           ("replace", "ciamResidencyRef", ("cn=us,ou=residencies,dc=ciam-ops",))))
     d = build_directory(REGISTRY, tuple(parse(_records_text() + "\n" + "\n".join(tree))), (held,))
-    out = render_landing(env_model(d, "az/prod"))["terraform/landing-zone/main.tf"]
+    out = as_text(render_landing(env_model(d, "az/prod")))["terraform/landing-zone/main.tf"]
     assert out.index('"eastus2"') < out.index('"centralus"')            # its own region first, then the residency's

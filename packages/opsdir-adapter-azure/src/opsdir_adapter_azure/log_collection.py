@@ -28,7 +28,7 @@ from opsdir.core.directory import one, rdn_value, values
 from opsdir.domains.compute.hosts import baseline_for
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.sources import ALL, kept_clauses, shipments
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from .account import government, tagged
 from .identities import LOC, RG
 from .kql import field_of, kept
@@ -71,7 +71,7 @@ def agent_hosts(m, services):
 
 
 def _extension(m, h):
-    return block("resource", [EXTENSION, f"ama_{tf_name(h)}"], [
+    return tf_block("resource", [EXTENSION, f"ama_{tf_name(h)}"], [
         ("#", "Azure Monitor Agent; authenticates with the VM's system-assigned identity (no settings)"),
         ("name", "AzureMonitorLinuxAgent"), ("virtual_machine_id", ref(f"{VM}.{tf_name(h)}.id")),
         ("publisher", "Microsoft.Azure.Monitor"), ("type", "AzureMonitorLinuxAgent"), ("type_handler_version", "1.0"),
@@ -101,7 +101,7 @@ def _flow(table, stream, x):
 
 
 def _rule(m, n, route, table, dest, streams):
-    return block("resource", [RULE, n], [
+    return tf_block("resource", [RULE, n], [
         ("name", f"dcr-ciam-{rdn_value(m.env)}-{rdn_value(route)}"), ("location", LOC), ("resource_group_name", RG),
         ("description", f"Log route {rdn_value(route)}: product log files to {rdn_value(dest)} (opsdir)"),
         ("destinations", Block((("log_analytics", Block((("name", "workspace"),
@@ -117,11 +117,11 @@ def _route_blocks(m, route, found):
     n, table, dest = tf_name(f"logs_{rdn_value(route)}"), table_name(route), found[0].destination
     streams = tuple((f"Custom-{table[:-3]}File{i}", x) for i, x in enumerate(found, 1))
     hosts = tuple(dict.fromkeys(h for x in found for h in x.hosts))
-    return (block("resource", [TABLE, n], [
+    return (tf_block("resource", [TABLE, n], [
                 ("name", table), ("workspace_id", workspace_id(m, dest)), ("plan", "Analytics"),
                 *_columns(TABLE_TYPES)]),
             _rule(m, n, route, table, dest, streams),
-            *(block("resource", [ASSOCIATION, f"{n}_{tf_name(h)}"], [
+            *(tf_block("resource", [ASSOCIATION, f"{n}_{tf_name(h)}"], [
                 ("name", f"{rdn_value(route)}-{h}"), ("target_resource_id", ref(f"{VM}.{tf_name(h)}.id")),
                 ("data_collection_rule_id", ref(f"{RULE}.{n}.id"))]) for h in hosts))
 
@@ -141,14 +141,15 @@ def log_collection_notes(m, services):
     every = tuple(x for x in shipments(m, log_routes(m.d), services.logs(m)) if x.on == "servers")
     found = host_shipments(m, services)
     return tuple(dict.fromkeys((
-        *(f"# NOTE: log route {rdn_value(x.route)}: {x.path} not shipped: its destination "
-          f"{rdn_value(x.destination)} isn't a Log Analytics workspace (kind workspace, a workspace ID)"
+        *(comment(f"NOTE: log route {rdn_value(x.route)}: {x.path} not shipped: its destination "
+                  f"{rdn_value(x.destination)} isn't a Log Analytics workspace (kind workspace, a workspace ID)")
           for x in every if x.destination is not None and workspace_id(m, x.destination) is None),
-        *(f"# NOTE: log route {rdn_value(x.route)}: {x.path}: records spanning lines arrive line by line (the Azure "
-          "Monitor Agent starts a record only at a timestamp of a fixed set of formats)"
+        *(comment(f"NOTE: log route {rdn_value(x.route)}: {x.path}: records spanning lines arrive line by line (the "
+                  "Azure Monitor Agent starts a record only at a timestamp of a fixed set of formats)")
           for x in found if x.source.line_start),
-        *(f"# NOTE: role {role}: the Azure Monitor Agent comes with its host baseline ({agent}), not installed here"
+        *(comment(f"NOTE: role {role}: the Azure Monitor Agent comes with its host baseline ({agent}), not installed "
+                  "here")
           for role, agent in ((r, baseline_agent(m, r)) for r in dict.fromkeys(x.source.server_role for x in found))
           if agent),
-        *(("# NOTE: Azure Government: collecting custom text logs with the Azure Monitor Agent is to be confirmed "
-           "there (no Government availability row names it)",) if found and government(m) else ()))))
+        *((comment("NOTE: Azure Government: collecting custom text logs with the Azure Monitor Agent is to be "
+                   "confirmed there (no Government availability row names it)"),) if found and government(m) else ()))))

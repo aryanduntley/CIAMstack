@@ -9,6 +9,7 @@ from opsdir.connectors.importing import import_changes
 from opsdir.connectors.prerequisites import prerequisite_rows
 from opsdir.core.environment import env_model, of_class
 from opsdir.core.interchange.ldif import LdifRecord
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.account import provider_block, subscription_variable, tagged
 from opsdir_adapter_azure.adapter import ADAPTER
 from opsdir_adapter_azure.inventory import state_resources
@@ -29,19 +30,20 @@ def test_the_policy_s_tags_under_the_resource_s_own():
 
 def test_the_recorded_subscription_is_the_default():
     _, d, alpha, beta = estate(account="00000000-1111-2222-3333-444444444444")
-    assert subscription_variable(alpha, described=True) == """variable "subscription_id" {
+    assert as_text(subscription_variable(alpha, described=True)) == """variable "subscription_id" {
   type        = string
   description = "The subscription prod runs in"
   default     = "00000000-1111-2222-3333-444444444444"
 }"""
-    assert subscription_variable(beta) == 'variable "subscription_id" {\n  type = string\n}'
+    assert as_text(subscription_variable(beta)) == 'variable "subscription_id" {\n  type = string\n}'
 
 
 def test_the_environment_s_resource_group_when_the_network_names_none():
     _, d, alpha, _ = estate()
-    assert "UNBOUND: neither the network binding nor the environment names a resource group" in network_data(alpha)[0]
+    assert "UNBOUND: neither the network binding nor the environment names a resource group" in \
+        as_text(network_data(alpha))[0]
     grouped = estate(extra=(LdifRecord(ALPHA, "modify", {}, (("replace", "ciamResourceGroup", ("rg-ciam-prod",)),)),))
-    assert 'name = "rg-ciam-prod"' in network_data(env_model(grouped[1], "alpha/prod"))[0]
+    assert 'name = "rg-ciam-prod"' in as_text(network_data(env_model(grouped[1], "alpha/prod")))[0]
 
 
 LOCATIONS = [
@@ -80,17 +82,17 @@ def test_the_provider_notes_that_azure_has_no_fips_endpoints_to_switch_to():
                       (("add", "objectClass", ("ciamCloudEndpoints",)), ("replace", "ciamFipsEndpoints", ("TRUE",)),
                        ("replace", "ciamCloudEnvironment", ("usgovernment",))))
     _, d, alpha, beta = estate(extra=(fips,))
-    assert provider_block(alpha).startswith('provider "azurerm" {\n  # FIPS endpoints: Azure has no separate FIPS '
-                                            'endpoints')
-    assert '  environment                     = "usgovernment"\n' in provider_block(alpha)
-    assert "FIPS" not in provider_block(beta) and "environment" not in provider_block(beta)
+    assert as_text(provider_block(alpha)).startswith(
+        'provider "azurerm" {\n  # FIPS endpoints: Azure has no separate FIPS endpoints')
+    assert '  environment                     = "usgovernment"\n' in as_text(provider_block(alpha))
+    assert "FIPS" not in as_text(provider_block(beta)) and "environment" not in as_text(provider_block(beta))
 
 
 def test_a_root_registers_no_resource_providers_but_those_the_landing_zone_lists():
     _, _, alpha, _ = estate()
-    assert 'resource_provider_registrations = "none"' in provider_block(alpha)
-    assert "resource_providers_to_register" not in provider_block(alpha)
-    listed = provider_block(alpha, ("Microsoft.Compute", "Microsoft.Network"))
+    assert 'resource_provider_registrations = "none"' in as_text(provider_block(alpha))
+    assert "resource_providers_to_register" not in as_text(provider_block(alpha))
+    listed = as_text(provider_block(alpha, ("Microsoft.Compute", "Microsoft.Network")))
     assert 'resource_providers_to_register  = ["Microsoft.Compute", "Microsoft.Network"]' in listed
 
 
@@ -119,5 +121,5 @@ def test_a_dns_record_carries_its_tags():
     d, alpha, _ = model(alpha=(entry(ALPHA, "svc-ldaps", "ciamServiceName", ciamBindingRole="ds-ldaps-service",
                                      ciamFqdn="ldap.example.test", ciamDnsZone="example.test",
                                      ciamFrontendIp="10.0.1.10", ciamPort="636", ciamTargetRole="ds"),))
-    out = "\n".join(service_record(d, alpha, of_class(alpha, "ciamServiceName")[0], "svc_ldaps"))
+    out = "\n".join(as_text(service_record(d, alpha, of_class(alpha, "ciamServiceName")[0], "svc_ldaps")))
     assert 'resource "azurerm_private_dns_a_record"' in out and '"ldap.example.test"' in out and "tags" in out

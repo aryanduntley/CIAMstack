@@ -5,6 +5,7 @@ follow them (boot disks by the instance's name). Read back from Terraform state 
 import json
 
 from opsdir.core.environment import servers_with_role
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.cli import cli_resources
 from opsdir_adapter_gcp.inventory import state_resources
 from opsdir_adapter_gcp.volumes import boot_disk, render_snapshot_policies, server_volumes
@@ -50,7 +51,7 @@ def test_the_boot_volume_sets_the_boot_disk():
 
 def test_a_data_volume_is_an_attached_disk_and_both_follow_their_schedule():
     m = _m(KEY_ENTRY, BOOT, DATA, POLICY)
-    out = _flat("\n\n".join(server_volumes(m, _ds1(m))))
+    out = _flat("\n\n".join(as_text(server_volumes(m, _ds1(m)))))
     for text in ('resource "google_compute_disk" "ds_1_vol_ds_data"', 'name = "ds-1-vol-ds-data"', 'zone = "zone-a"',
                  'type = "hyperdisk-balanced"', "size = 200", "provisioned_iops = 6000", "provisioned_throughput = 250",
                  f'disk_encryption_key {{ kms_key_self_link = "{KEY}" }}', 'snapshot_policy = "snapshots-daily"',
@@ -65,7 +66,7 @@ def test_a_data_volume_is_an_attached_disk_and_both_follow_their_schedule():
 
 
 def test_a_snapshot_policy_is_a_resource_policy_with_its_schedule():
-    out = _flat("\n\n".join(render_snapshot_policies(_m(KEY_ENTRY, POLICY))))
+    out = _flat("\n\n".join(as_text(render_snapshot_policies(_m(KEY_ENTRY, POLICY)))))
     for text in ('resource "google_compute_resource_policy" "snapshots_daily"', 'name = "ciam-prod-snapshots-daily"',
                  'daily_schedule { days_in_cycle = 1 start_time = "03:00" }', "max_retention_days = 7",
                  'on_source_disk_delete = "KEEP_AUTO_SNAPSHOTS"', 'storage_locations = ["us-east1"]',
@@ -76,12 +77,12 @@ def test_a_snapshot_policy_is_a_resource_policy_with_its_schedule():
     hourly = entry(BETA, "snapshots-often", "ciamSnapshotPolicy", ciamBindingRole="snapshots-often",
                    ciamRetentionDays="2", ciamSnapshotEveryHours="6", ciamSnapshotAt="03:30",
                    ciamSnapshotConsistency="application", ciamCopyRegion=("us-east1", "us-west1"))
-    out = _flat("\n\n".join(render_snapshot_policies(_m(hourly))))
+    out = _flat("\n\n".join(as_text(render_snapshot_policies(_m(hourly)))))
     assert 'hourly_schedule { hours_in_cycle = 6 start_time = "03:00" }' in out and "guest_flush = true" in out
     assert "starts schedules on the hour: 03:00, not 03:30" in out and "us-west1 not rendered" in out
     rare = entry(BETA, "snapshots-rare", "ciamSnapshotPolicy", ciamBindingRole="snapshots-rare",
                  ciamRetentionDays="30", ciamSnapshotEveryHours="48")
-    assert "not every 48 hours: not rendered" in "\n".join(render_snapshot_policies(_m(rare)))
+    assert "not every 48 hours: not rendered" in "\n".join(as_text(render_snapshot_policies(_m(rare))))
 
 
 def _state(*resources):

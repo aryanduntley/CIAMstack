@@ -29,7 +29,7 @@ from opsdir.domains.data.backups import VAULT, plan_vault
 from opsdir.domains.data.protection import PLAN, schedule_of
 from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned
-from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
 from opsdir_format_terraform.state import blocks, first_block
 from .tags import state_tags as _cloud_tags
 
@@ -75,26 +75,28 @@ def _vault(m, v):
     n, key_role = tf_name(rdn_value(v)), one(v, "ciamEncryptedByRole")
     uri = secret(m, key_role) if key_role else None
     mode, days = one(v, "ciamStorageImmutability") or "none", one(v, "ciamStorageLockDays")
-    return (*((f"# Vault '{rdn_value(v)}': AWS Backup's own key encrypts it (it names no key role)",) if not key_role
-              else (f"# Vault '{rdn_value(v)}': {UNBOUND}{key_role}: no key binding for role {key_role} in this "
-                    "environment",) if uri is None else ()),
-            *((f"# Vault '{rdn_value(v)}' restores in another region through the plans' copies to a vault there",)
+    return (*((comment(f"Vault '{rdn_value(v)}': AWS Backup's own key encrypts it (it names no key role)"),)
+              if not key_role else
+              (comment(f"Vault '{rdn_value(v)}': {UNBOUND}{key_role}: no key binding for role {key_role} in this "
+                       "environment"),) if uri is None else ()),
+            *((comment(f"Vault '{rdn_value(v)}' restores in another region through the plans' copies to a vault "
+                       "there"),)
               if one(v, "ciamCrossRegionRestore") == "TRUE" else ()),
-            block("resource", ["aws_backup_vault", n], [
+            tf_block("resource", ["aws_backup_vault", n], [
                 ("name", _name(m, v)), *((("kms_key_arn", uri.split("://", 1)[1]),) if uri else ()),
                 ("tags", _tags(v))]),
-            *((block("resource", ["aws_backup_vault_lock_configuration", n], [
+            *((tf_block("resource", ["aws_backup_vault_lock_configuration", n], [
                 ("backup_vault_name", ref(f"aws_backup_vault.{n}.name")),
                 *((("min_retention_days", int(days)),) if days else ()),
                 *((("changeable_for_days", COMPLIANCE_GRACE),) if mode == "compliance" else ())]),)
               if mode in ("governance", "compliance") else ()),
-            *((import_block(f"aws_backup_vault.{n}", one(v, "ciamProviderRef").rsplit(":", 1)[1]),)
+            *((tf_import(f"aws_backup_vault.{n}", one(v, "ciamProviderRef").rsplit(":", 1)[1]),)
               if adopted(v) else ()))
 
 
 def _copy(p, region):
     var = f"{tf_name(rdn_value(p))}_{tf_name(region)}_vault_arn"
-    return ref(f"var.{var}"), block("variable", [var], [
+    return ref(f"var.{var}"), tf_block("variable", [var], [
         ("type", ref("string")), ("description", f"The backup vault in {region} the copies of {rdn_value(p)} go to")])
 
 
@@ -102,18 +104,18 @@ def _plan(m, p):
     n, s = tf_name(rdn_value(p)), schedule_of(p)
     cron, v = backup_cron(s.every, s.at), plan_vault(m, p)
     if cron is None:
-        return (f"# Backup plan '{rdn_value(p)}': AWS Backup schedules by cron; every {s.every} hours isn't a whole "
-                "number of days: not rendered",)
+        return (comment(f"Backup plan '{rdn_value(p)}': AWS Backup schedules by cron; every {s.every} hours isn't a "
+                        "whole number of days: not rendered"),)
     target = (ref(f"aws_backup_vault.{tf_name(rdn_value(v))}.name") if v is not None and owned(v) else
               one(v, "ciamProviderRef").rsplit(":", 1)[1] if v is not None and one(v, "ciamProviderRef") else None)
     if target is None:
-        return (f"# Backup plan '{rdn_value(p)}': {UNBOUND}{one(p, 'ciamBackupVaultRole')}: no backup vault "
-                f"binding for role {one(p, 'ciamBackupVaultRole')} in this environment: not rendered",)
+        return (comment(f"Backup plan '{rdn_value(p)}': {UNBOUND}{one(p, 'ciamBackupVaultRole')}: no backup vault "
+                        f"binding for role {one(p, 'ciamBackupVaultRole')} in this environment: not rendered"),)
     copies = [(region, *_copy(p, region)) for region in s.copies]
     keep = Block((("delete_after", s.retention),)) if s.retention else None
     window = one(p, "ciamBackupWindowHours")
     return (*(var for _, _, var in copies),
-            block("resource", ["aws_backup_plan", n], [
+            tf_block("resource", ["aws_backup_plan", n], [
                 ("name", _name(m, p)),
                 ("rule", Block((
                     ("rule_name", tf_name(rdn_value(p))), ("target_vault_name", target), ("schedule", cron),
@@ -123,12 +125,12 @@ def _plan(m, p):
                                              *((("lifecycle", keep),) if keep else ()))))
                       for _, arn, _ in copies)))),
                 ("tags", _tags(p))]),
-            block("resource", ["aws_backup_selection", n], [
+            tf_block("resource", ["aws_backup_selection", n], [
                 ("name", _name(m, p)), ("iam_role_arn", ref(f"var.{BACKUP_ROLE}")),
                 ("plan_id", ref(f"aws_backup_plan.{n}.id")),
                 *(("selection_tag", Block((("type", "STRINGEQUALS"), ("key", "Role"), ("value", role))))
                   for role in values(p, "ciamProtectsRole"))]),
-            *((import_block(f"aws_backup_plan.{n}", one(p, "ciamProviderRef").rsplit(":", 1)[1]),)
+            *((tf_import(f"aws_backup_plan.{n}", one(p, "ciamProviderRef").rsplit(":", 1)[1]),)
               if adopted(p) else ()))
 
 
@@ -137,9 +139,9 @@ def render_backups(m):
     keeps (AWS Backup's IAM role an input)."""
     vaults, plans = of_class(m, VAULT), of_class(m, PLAN)
     kept = [b for b in (*vaults, *plans) if not owned(b)]
-    return (*(f"# Backup {'vault' if b in vaults else 'plan'} '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is "
-              f"kept by {kept_by(m, b)}: not rendered here" for b in kept),
-            *((block("variable", [BACKUP_ROLE], [
+    return (*(comment(f"Backup {'vault' if b in vaults else 'plan'} '{rdn_value(b)}' (role "
+                      f"{one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: not rendered here") for b in kept),
+            *((tf_block("variable", [BACKUP_ROLE], [
                 ("type", ref("string")),
                 ("description", "The IAM role AWS Backup backs up and restores with (AWSBackupDefaultServiceRole)")]),)
               if any(owned(p) for p in plans) else ()),

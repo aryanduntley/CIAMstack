@@ -17,7 +17,7 @@ from itertools import chain
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.domains.edge.exposure import is_internal
 from opsdir.domains.edge.resolve import inspected, path_regex, tls_policy
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, ref, tf_block, tf_name
 
 # (min version, profile, ELB security policy, exact): the intent's TLS terms as ALB/NLB TLS listener policies
 TLS_POLICIES = (("1.3", "modern", "ELBSecurityPolicy-TLS13-1-3-2021-06", True),
@@ -124,7 +124,7 @@ def _ip_sets(m, n, spec, cdn=False):
     groups = {}
     for action, cidr in spec.ip_rules:
         groups.setdefault((action, "IPV6" if ":" in cidr else "IPV4"), []).append(cidr)
-    return {k: block("resource", ["aws_wafv2_ip_set", f"{n}_{k[0]}_{k[1].lower()}"], [
+    return {k: tf_block("resource", ["aws_wafv2_ip_set", f"{n}_{k[0]}_{k[1].lower()}"], [
         ("name", f"ciam-{rdn_value(m.env)}-{n}-{k[0]}-{k[1].lower()}"), *_scope(cdn),
         ("ip_address_version", k[1]), ("addresses", sorted(v))]) for k, v in sorted(groups.items())}
 
@@ -159,12 +159,12 @@ def web_acl(m, n, spec, target_arn, cdn=False):
     start = len(address) + len(geo) + len(rates)
     managed = tuple(_managed_rule(n, spec, c, start + i) for i, c in enumerate(spec.categories))
     return (*sets.values(),
-            block("resource", ["aws_wafv2_web_acl", n], [
+            tf_block("resource", ["aws_wafv2_web_acl", n], [
                 ("name", f"ciam-{rdn_value(m.env)}-{n}"), *_scope(cdn),
                 ("default_action", Block((("allow", Block(())),))),
                 *address, *geo, *rates, *managed, _visibility(f"{n}-web-acl"),
                 ("tags", {"ManagedBy": "opsdir"})]),
-            *(() if cdn else (block("resource", ["aws_wafv2_web_acl_association", n], [
+            *(() if cdn else (tf_block("resource", ["aws_wafv2_web_acl_association", n], [
                 ("resource_arn", ref(target_arn)), ("web_acl_arn", ref(f"aws_wafv2_web_acl.{n}.arn"))]),)))
 
 
@@ -174,10 +174,10 @@ def shield(n, spec, target_arn, attached=None, provider=(), whose="the account's
     the provider argument when not the root's default; whose: the account whose subscription it needs."""
     if spec.ddos == "standard":
         return ()
-    return (block("resource", ["aws_shield_protection", n], [
+    return (tf_block("resource", ["aws_shield_protection", n], [
                 *provider, ("#", f"needs {whose} Shield Advanced subscription"),
                 ("name", n), ("resource_arn", ref(target_arn))]),
-            *((block("resource", ["aws_shield_application_layer_automatic_response", n], [
+            *((tf_block("resource", ["aws_shield_application_layer_automatic_response", n], [
                 *provider, ("resource_arn", ref(target_arn)),
                 ("action", "COUNT" if spec.waf_mode == "detect" else "BLOCK"),
                 ("depends_on", [ref(f"aws_shield_protection.{n}"),
@@ -209,7 +209,7 @@ def probe_ports(spec, ports):
 def probe_ingress(m, n, role, spec, ports):
     """The rule admitting a network load balancer's health checks (from the VPC's addresses: its nodes') to the role's
     servers on the product's own health port, when it has one."""
-    return tuple(block("resource", ["aws_vpc_security_group_ingress_rule", f"{n}_health_{port}"], [
+    return tuple(tf_block("resource", ["aws_vpc_security_group_ingress_rule", f"{n}_health_{port}"], [
         ("security_group_id", ref(f"aws_security_group.{tf_name(role)}.id")),
         ("cidr_ipv4", ref("data.aws_vpc.main.cidr_block")), ("from_port", int(port)), ("to_port", int(port)),
         ("ip_protocol", "tcp"), ("description", "load balancer health checks")]) for port in probe_ports(spec, ports))
@@ -229,9 +229,9 @@ def stickiness(spec, layer7):
 
 def _cloudfront_ingress(n, ports):
     """The ALB admitting only CloudFront's origin-facing addresses (AWS's managed prefix list)."""
-    return (block("data", ["aws_ec2_managed_prefix_list", f"{n}_cloudfront"], [
+    return (tf_block("data", ["aws_ec2_managed_prefix_list", f"{n}_cloudfront"], [
                 ("name", "com.amazonaws.global.cloudfront.origin-facing")]),
-            *(block("resource", ["aws_vpc_security_group_ingress_rule", f"{n}_alb_cloudfront_{port}"], [
+            *(tf_block("resource", ["aws_vpc_security_group_ingress_rule", f"{n}_alb_cloudfront_{port}"], [
                 ("security_group_id", ref(f"aws_security_group.{n}_alb.id")),
                 ("prefix_list_id", ref(f"data.aws_ec2_managed_prefix_list.{n}_cloudfront.id")),
                 ("from_port", int(port)), ("to_port", int(port)), ("ip_protocol", "tcp"),
@@ -251,19 +251,19 @@ def target_group_name(m, svc, port):
 
 
 def _instance_attachments(targets, n, port):
-    return tuple(block("resource", ["aws_lb_target_group_attachment", f"{n}_{port}_{tf_name(rdn_value(t))}"], [
+    return tuple(tf_block("resource", ["aws_lb_target_group_attachment", f"{n}_{port}_{tf_name(rdn_value(t))}"], [
         ("target_group_arn", ref(f"aws_lb_target_group.{n}_{port}.arn")),
         ("target_id", ref(f"aws_instance.{tf_name(rdn_value(t))}.id")), ("port", int(port))]) for t in targets)
 
 
 def _servers_peering(role, fqdn, n, ports):
     return tuple(chain.from_iterable((
-        block("resource", ["aws_vpc_security_group_egress_rule", f"{n}_alb_to_servers_{port}"], [
+        tf_block("resource", ["aws_vpc_security_group_egress_rule", f"{n}_alb_to_servers_{port}"], [
             ("security_group_id", ref(f"aws_security_group.{n}_alb.id")),
             ("referenced_security_group_id", ref(f"aws_security_group.{tf_name(role)}.id")),
             ("from_port", int(port)), ("to_port", int(port)), ("ip_protocol", "tcp"),
             ("description", "to the servers")]),
-        block("resource", ["aws_vpc_security_group_ingress_rule", f"{n}_servers_from_alb_{port}"], [
+        tf_block("resource", ["aws_vpc_security_group_ingress_rule", f"{n}_servers_from_alb_{port}"], [
             ("security_group_id", ref(f"aws_security_group.{tf_name(role)}.id")),
             ("referenced_security_group_id", ref(f"aws_security_group.{n}_alb.id")),
             ("from_port", int(port)), ("to_port", int(port)), ("ip_protocol", "tcp"),
@@ -285,14 +285,15 @@ def _alb_security_group(m, n, svc, ports, backend, cdn=False, probe=()):
     rules = [] if cdn else [(fw, cidr, port) for fw in m.bindings if "ciamFirewallRule" in fw.classes
                             and one(fw, "ciamTargetRole") == role for cidr in values(fw, "ciamSourceCidr")
                             for port in values(fw, "ciamPort") if port in ports]
-    return (block("resource", ["aws_security_group", f"{n}_alb"], [
+    return (tf_block("resource", ["aws_security_group", f"{n}_alb"], [
                 ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}-alb"),
                 ("description", f"CIAM {one(svc, 'ciamFqdn')} load balancer ({m.label})"),
                 ("vpc_id", ref("data.aws_vpc.main.id")), ("tags", {"ManagedBy": "opsdir"})]),
-            *(block("resource", ["aws_vpc_security_group_ingress_rule", tf_name(f"{n}_alb_{rdn_value(fw)}_{i}_{port}")],
-                    [("security_group_id", ref(f"aws_security_group.{n}_alb.id")), ("cidr_ipv4", cidr),
-                     ("from_port", int(port)), ("to_port", int(port)), ("ip_protocol", "tcp"),
-                     ("description", f"clients ({rdn_value(fw)})")])
+            *(tf_block("resource",
+                       ["aws_vpc_security_group_ingress_rule", tf_name(f"{n}_alb_{rdn_value(fw)}_{i}_{port}")],
+                       [("security_group_id", ref(f"aws_security_group.{n}_alb.id")), ("cidr_ipv4", cidr),
+                        ("from_port", int(port)), ("to_port", int(port)), ("ip_protocol", "tcp"),
+                        ("description", f"clients ({rdn_value(fw)})")])
               for i, (fw, cidr, port) in enumerate(rules)),
             *(_cloudfront_ingress(n, ports) if cdn else ()),
             *backend.peering(n, (*ports, *probe)))
@@ -310,13 +311,13 @@ def alb_service(m, svc, spec, backend, subnets):
         else None
     protocol = "HTTPS" if spec.mode == "reencrypt" else "HTTP"
     groups = chain.from_iterable((
-        block("resource", ["aws_lb_target_group", f"{n}_{port}"], [
+        tf_block("resource", ["aws_lb_target_group", f"{n}_{port}"], [
             ("name", target_group_name(m, svc, port)), ("port", int(backend.port or port)),
             ("protocol", protocol), ("vpc_id", ref("data.aws_vpc.main.id")), ("target_type", backend.target_type),
             *((("deregistration_delay", spec.drain),) if spec.drain is not None else ()),
             health_check(spec, True, backend.matcher), *stickiness(spec, True)]),
         *backend.attachments(n, port),
-        block("resource", ["aws_lb_listener", f"{n}_{port}"], [
+        tf_block("resource", ["aws_lb_listener", f"{n}_{port}"], [
             ("load_balancer_arn", ref(f"aws_lb.{n}.arn")), ("port", int(port)), ("protocol", "HTTPS"),
             ("ssl_policy", policy),
             *((("#", f"nearest policy to TLS {spec.tls_min} {spec.tls_profile}"),) if not exact else ()),
@@ -326,7 +327,7 @@ def alb_service(m, svc, spec, backend, subnets):
                                       ("target_group_arn", ref(f"aws_lb_target_group.{n}_{port}.arn")))))]))
         for port in ports)
     return (*_alb_security_group(m, n, svc, ports, backend, spec.cdn, probe_ports(spec, ports)),
-            block("resource", ["aws_lb", n], [
+            tf_block("resource", ["aws_lb", n], [
                 *((("#", f"an ALB's addresses are AWS's: frontend address {ip} isn't kept"),) if ip else ()),
                 ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("internal", is_internal(svc)),
                 ("load_balancer_type", "application"),

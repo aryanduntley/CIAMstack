@@ -4,6 +4,7 @@ group admitting the clients the firewall rules admit; a WAFv2 web ACL with the r
 endpoints, address and country rules and managed groups; Shield Advanced when asked. A passthrough service keeps its
 NLB, tuned by its policy."""
 from opsdir.domains.edge.resolve import Health, RateLimit, tls_level, tls_policy
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.edge import (TLS_POLICIES, alb_service, health_check, probe_ingress, rate, servers_backend,
                                      shield, stickiness, web_acl)
 from opsdir_format_terraform.hcl import Block
@@ -16,8 +17,8 @@ def _alb(s, ip="198.51.100.20"):
     svc = service(ip)
     m = environment(svc, firewall("fw-sso-public", ["0.0.0.0/0"], ["443"]),
                     firewall("fw-other", ["10.0.0.0/8"], ["22"]))
-    return "\n".join(alb_service(m, svc, s, servers_backend(svc, (server("pf-1", "10.20.2.10"),)),
-                                 (subnet("subnet-pf-a", "subnet-pf", "10.20.2.0/24"),)))
+    return "\n".join(as_text(alb_service(m, svc, s, servers_backend(svc, (server("pf-1", "10.20.2.10"),)),
+                                 (subnet("subnet-pf-a", "subnet-pf", "10.20.2.0/24"),))))
 
 
 def test_tls_terms_map_to_elb_policies_and_back():
@@ -48,7 +49,7 @@ def test_an_alb_without_a_certificate_in_acm_says_so_and_terminate_speaks_http_t
 
 
 def test_the_web_acl_rules_aim_at_the_endpoints():
-    out = "\n".join(web_acl(environment(), "sso", spec(), "aws_lb.sso.arn"))
+    out = "\n".join(as_text(web_acl(environment(), "sso", spec(), "aws_lb.sso.arn")))
     assert 'resource "aws_wafv2_ip_set" "sso_deny_ipv4"' in out and 'addresses          = ["203.0.113.0/24"]' in out
     assert 'country_codes = ["KP"]' in out
     assert "limit                 = 100" in out and "evaluation_window_sec = 300" in out
@@ -59,36 +60,38 @@ def test_the_web_acl_rules_aim_at_the_endpoints():
 
 
 def test_detect_mode_counts_and_account_takeover_needs_a_literal_sign_in_path():
-    out = "\n".join(web_acl(environment(), "sso", spec(waf_mode="detect", categories=("account-takeover",),
+    out = "\n".join(as_text(web_acl(environment(), "sso", spec(waf_mode="detect", categories=("account-takeover",),
                                                          endpoints={"login": ("/am/json/realms/*/authenticate",)}),
-                            "aws_lb.sso.arn"))
+                            "aws_lb.sso.arn")))
     assert "count {" in out and "block {" not in out
     assert "# UNBOUND: account takeover protection needs a literal sign-in path" in out
-    out = "\n".join(web_acl(environment(), "sso", spec(categories=("account-takeover",)), "aws_lb.sso.arn"))
+    out = "\n".join(as_text(web_acl(environment(), "sso", spec(categories=("account-takeover",)), "aws_lb.sso.arn")))
     assert 'login_path = "/as/authorization.oauth2"' in out
 
 
 def test_rate_limits_take_an_aws_window_and_header_keys():
     assert rate(100, 300) == (100, 300) and rate(50, 30) == (500, 300) and rate(5, 60) == (10, 60)
-    out = "\n".join(web_acl(environment(), "sso", spec(rate_limits=(RateLimit("login", 20, 60, "header:X-Key", ()),)),
-                            "aws_lb.sso.arn"))
+    out = "\n".join(as_text(web_acl(environment(), "sso",
+                                    spec(rate_limits=(RateLimit("login", 20, 60, "header:X-Key", ()),)),
+                                    "aws_lb.sso.arn")))
     assert 'aggregate_key_type    = "CUSTOM_KEYS"' in out and 'name = "X-Key"' in out
     assert "# no login endpoint is declared for these servers: the limit applies to every request" in out
 
 
 def test_shield_only_beyond_standard():
     assert shield("sso", spec(), "aws_lb.sso.arn") == ()
-    out = "\n".join(shield("sso", spec(ddos="application-advanced"), "aws_lb.sso.arn"))
+    out = "\n".join(as_text(shield("sso", spec(ddos="application-advanced"), "aws_lb.sso.arn")))
     assert 'resource "aws_shield_protection" "sso"' in out
     assert 'resource "aws_shield_application_layer_automatic_response" "sso"' in out
-    assert "automatic_response" not in "\n".join(shield("sso", spec(ddos="network-advanced"), "aws_lb.sso.arn"))
+    assert "automatic_response" not in "\n".join(as_text(shield("sso", spec(ddos="network-advanced"),
+                                                                "aws_lb.sso.arn")))
 
 
 def test_a_passthrough_target_group_takes_the_policys_health_check_and_source_stickiness():
     s = spec(mode="passthrough", layer7=False, health=Health("tcp", None, 15, None, None), stickiness="source-ip")
     assert health_check(s, False) == ("health_check", Block((("protocol", "TCP"), ("interval", 15))))
     assert stickiness(s, False) == (("stickiness", Block((("type", "source_ip"), ("enabled", True)))),)
-    assert stickiness(spec(), False)[0][0] == "#"                           # cookies need an ALB
+    assert as_text(stickiness(spec(), False))[0][0] == "#"                           # cookies need an ALB
 
 
 def test_a_product_health_port_is_probed_and_admitted():
@@ -97,6 +100,6 @@ def test_a_product_health_port_is_probed_and_admitted():
     out = _alb(probed)
     assert 'resource "aws_vpc_security_group_ingress_rule" "sso_servers_from_alb_8085"' in out
     assert 'resource "aws_vpc_security_group_egress_rule" "sso_alb_to_servers_8085"' in out
-    nlb = "\n".join(probe_ingress(None, "sso", "pf-engine", probed, ("443",)))
+    nlb = "\n".join(as_text(probe_ingress(None, "sso", "pf-engine", probed, ("443",))))
     assert "cidr_ipv4         = data.aws_vpc.main.cidr_block" in nlb and "from_port         = 8085" in nlb
     assert probe_ingress(None, "sso", "pf-engine", spec(), ("443",)) == ()

@@ -5,6 +5,7 @@ and DR can't do said. Read back from state and Cloud Asset Inventory / gcloud; a
 to the plan."""
 import json
 
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.backups import backup_rule, render_backups, rule_schedule
 from opsdir_adapter_gcp.cli import cli_resources
 from opsdir_adapter_gcp.inventory import state_resources
@@ -52,7 +53,7 @@ def _plan(**change):
 
 
 def test_a_vault_a_plan_and_an_association_per_disk():
-    out = _flat("\n\n".join(render_backups(_m(VAULT, DATA, PLAN))))
+    out = _flat("\n\n".join(as_text(render_backups(_m(VAULT, DATA, PLAN)))))
     for text in ('resource "google_backup_dr_backup_vault" "vault_main" { location = "us-east1" backup_vault_id = '
                  '"ciam-prod-vault-main" backup_minimum_enforced_retention_duration = "604800s" labels = { name = '
                  '"vault-main" role = "vault-main" managed_by = "opsdir" } }',
@@ -78,7 +79,7 @@ def test_what_it_can_t_render_is_said():
                   ciamBackupVaultRole="vault-locked", ciamRetentionDays="3")
     locked = entry(BETA, "vault-locked", "ciamBackupVault", ciamBindingRole="vault-locked",
                    ciamStorageImmutability="compliance", ciamStorageLockDays="7")
-    out = "\n".join(render_backups(_m(loose, odd, short, locked)))
+    out = "\n".join(as_text(render_backups(_m(loose, odd, short, locked))))
     assert "nothing locked; Backup and DR enforces at least a day" in out and '"86400s"' in out
     assert "name the region in its plans' ciamCopyRegion" in out
     assert "Backup and DR backs up every 6 to 23 hours or daily, not every 48 hours: not rendered" in out

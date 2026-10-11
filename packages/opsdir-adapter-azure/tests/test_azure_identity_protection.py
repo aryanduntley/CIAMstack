@@ -8,6 +8,7 @@ import re
 
 from opsdir.core.directory import get, make_entry
 from opsdir.core.interchange.ldif import LdifRecord
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.account import azuread_provider, required_providers
 from opsdir_adapter_azure.cli import kind_of
 from opsdir_adapter_azure.cli_identity import identity_items
@@ -32,7 +33,7 @@ def _render(**attrs):
     base = {"ciamBindingRole": "threat-detection", "ciamSecurityKind": "threat-detection",
             "ciamSecurityCoverage": ("control-plane", "identity"), "ciamFindingsRole": "security-logs"}
     d, alpha, _ = model(alpha=(*RECORD, entry(ALPHA, "defender", "ciamSecurityService", **{**base, **attrs})))
-    return alpha, "\n\n".join(render_identity_protection(alpha, get(d, SERVICE)))
+    return alpha, "\n\n".join(as_text(render_identity_protection(alpha, get(d, SERVICE))))
 
 
 def test_the_risk_logs_go_where_the_findings_go():
@@ -86,14 +87,15 @@ def test_what_keeps_policies_from_being_rendered_is_a_comment():
 
 def test_the_azuread_provider_and_its_government_environments():
     m, _ = _render()
-    assert '"hashicorp/azuread"' in required_providers(azuread=True) and "azuread" not in required_providers()
-    assert azuread_provider(m) == 'provider "azuread" {\n}'
+    assert '"hashicorp/azuread"' in as_text(required_providers(azuread=True))
+    assert "azuread" not in as_text(required_providers())
+    assert as_text(azuread_provider(m)) == 'provider "azuread" {\n}'
     in_gov = {**m.cloud.attrs, "ciamCloudEnvironment": ("usgovernment",), "ciamRegion": ("usgovvirginia",)}
     gov = m._replace(cloud=make_entry(m.cloud.dn, m.cloud.classes, in_gov))
     dod = gov._replace(cloud=make_entry(gov.cloud.dn, gov.cloud.classes, {**gov.cloud.attrs,
                                                                           "ciamRegion": ("usdodeast",)}))
-    assert 'environment = "usgovernment"' in azuread_provider(gov)
-    assert 'environment = "usgovernmentl5"' in azuread_provider(dod)
+    assert 'environment = "usgovernment"' in as_text(azuread_provider(gov))
+    assert 'environment = "usgovernmentl5"' in as_text(azuread_provider(dod))
 
 
 # ------------------------------------------------------------------ read back

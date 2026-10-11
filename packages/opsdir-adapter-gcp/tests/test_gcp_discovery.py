@@ -6,6 +6,7 @@ DoD IL4/IL5 (an action); read back from state."""
 import json
 
 from opsdir.core.interchange.ldif import LdifRecord
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.discovery import (RESCAN_WORKFLOW, check_discovery_cadence, discovery_resources, info_type,
                                           render_discovery)
 from opsdir_adapter_gcp.rendered_state import rendered_states
@@ -30,7 +31,7 @@ def sdp(days="7", **more):
 
 def _render(*bindings):
     _, alpha, _ = model(alpha=(*STORES, *bindings))
-    return "\n\n".join(render_discovery(alpha)[0])
+    return "\n\n".join(as_text(render_discovery(alpha))[0])
 
 
 def test_a_template_and_a_discovery_config_over_the_buckets():
@@ -83,7 +84,7 @@ def test_read_back_from_state():
 
 def test_another_interval_is_a_paused_config_a_daily_workflow_resumes():
     d, alpha, beta = model(alpha=(*STORES, sdp()))
-    hcl, files = render_discovery(alpha)
+    hcl, files = as_text(render_discovery(alpha))
     out = "\n\n".join(hcl)
     assert ("# sdp: every 7 days: Sensitive Data Protection refreshes daily or monthly, so the config stays paused "
             "and workflow sdp-rescan-sdp resumes it daily") in out
@@ -113,7 +114,7 @@ def test_under_dod_il4_or_il5_the_refresh_is_kept_and_the_plan_says_so():
     held = LdifRecord(ALPHA, "modify", {}, (("add", "objectClass", ("ciamEnvironmentPlacement",)),
                                             ("replace", "ciamRequiredAuthorization", ("dod-il5",))))
     d, alpha, beta = model(alpha=(*STORES, sdp()), changes=(held,))
-    hcl, files = render_discovery(alpha)
+    hcl, files = as_text(render_discovery(alpha))
     out = "\n\n".join(hcl)
     assert files == {} and "google_workflows_workflow" not in out and 'status            = "RUNNING"' in out
     assert "aren't on Assured Workloads' DoD IL4/IL5 supported products: profiled daily, more often than the record " \
@@ -127,7 +128,7 @@ def test_under_dod_il4_or_il5_the_refresh_is_kept_and_the_plan_says_so():
 def test_the_interval_reads_back_from_the_workflow():
     d, alpha, _ = model(alpha=(*STORES, sdp()))
     provider = block(*TfBlock("provider", ("google",), (("project", "ea-ciam"), ("region", "us-east4"))))
-    main = "\n\n".join(render_discovery(alpha)[0]) + "\n\n" + provider + "\n\n" + block(
+    main = "\n\n".join(as_text(render_discovery(alpha))[0]) + "\n\n" + provider + "\n\n" + block(
         "variable", ["project_id"], [("default", "ea-ciam")]) + "\n\n" + block("variable", ["region"],
                                                                               [("default", "us-east4")])
     (text,) = rendered_states({"alpha/prod/main.tf": main}, d, "alpha/prod").values()

@@ -8,6 +8,7 @@ from opsdir.core.interchange.ldif import LdifRecord
 from opsdir.domains.compute.naming import BASELINES
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.naming import LOG_ROUTES
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.log_collection import agent_hosts, log_collection_notes, render_log_collection, table_name
 from opsdir_adapter_azure.terraform import render
 from network_fixtures import ALPHA, entry, model
@@ -57,7 +58,7 @@ def _services():
 def test_a_route_is_a_custom_table_a_rule_with_a_stream_per_file_and_an_association_per_server():
     alpha = _alpha()
     assert [table_name(r) for r in log_routes(alpha.d)] == ["CiamAccessLogs_CL", "CiamErrors_CL"]
-    hcl = "\n".join(render_log_collection(alpha, _services()))
+    hcl = "\n".join(as_text(render_log_collection(alpha, _services())))
     assert 'resource "azurerm_log_analytics_workspace_table_custom_log" "logs_access_logs"' in hcl
     assert 'name         = "CiamAccessLogs_CL"' in hcl
     assert "workspace_id = azurerm_log_analytics_workspace.ops.id" in hcl
@@ -76,7 +77,7 @@ def test_a_route_is_a_custom_table_a_rule_with_a_stream_per_file_and_an_associat
 
 
 def test_what_isnt_shipped_or_ships_differently_is_named():
-    notes = log_collection_notes(_alpha(), _services())
+    notes = as_text(log_collection_notes(_alpha(), _services()))
     assert notes[0].startswith("# NOTE: log route errors: /opt/ds/logs/errors not shipped: its destination siem isn't")
     assert not any("Azure Monitor Agent" in n for n in notes)   # installed here: nothing to name
     assert not any("Azure Government" in n for n in notes)
@@ -85,7 +86,7 @@ def test_what_isnt_shipped_or_ships_differently_is_named():
 def test_the_agent_is_installed_on_each_server_shipping_logs_with_its_own_identity():
     alpha = _alpha()
     assert agent_hosts(alpha, _services()) == ("ds-1", "ds-2", "web-1")
-    hcl = "\n".join(render_log_collection(alpha, _services()))
+    hcl = "\n".join(as_text(render_log_collection(alpha, _services())))
     assert hcl.count('resource "azurerm_virtual_machine_extension"') == 3
     ext = hcl.split('resource "azurerm_virtual_machine_extension" "ama_ds_1"', 1)[1].split("\n}", 1)[0]
     for line in ('name                       = "AzureMonitorLinuxAgent"',
@@ -106,10 +107,10 @@ def test_the_agent_is_installed_on_each_server_shipping_logs_with_its_own_identi
 def test_a_baseline_bringing_the_agent_keeps_it_out_and_is_named():
     alpha = _alpha(TREE + (BASELINE,))
     assert agent_hosts(alpha, _services()) == ("web-1",)
-    hcl = "\n".join(render_log_collection(alpha, _services()))
+    hcl = "\n".join(as_text(render_log_collection(alpha, _services())))
     assert "ama_ds_1" not in hcl and "ama_web_1" in hcl
     assert ("# NOTE: role ds: the Azure Monitor Agent comes with its host baseline (azuremonitoragent 1.33.2), not "
-            "installed here") in log_collection_notes(alpha, _services())
+            "installed here") in as_text(log_collection_notes(alpha, _services()))
     main = render(alpha, _services())["terraform/main.tf"]
     vm = main.split('resource "azurerm_linux_virtual_machine" "ds_1"', 1)[1].split("\n}", 1)[0]
     assert "SystemAssigned" not in vm

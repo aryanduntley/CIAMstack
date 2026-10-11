@@ -18,7 +18,7 @@ from opsdir.core.directory import one, rdn_value
 from opsdir.core.environment import one_role
 from opsdir.domains.edge.exposure import service_exposure
 from opsdir.domains.observability.canaries import canary_specs
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, blocks_of, comment, ref, tf_block, tf_name
 from .account import government, tagged
 from .identities import LOC, RG
 
@@ -45,11 +45,11 @@ def _why(m, spec):
 def _test(m, spec):
     cn, why = rdn_value(spec.canary), _why(m, spec)
     if why:
-        return (f"# NOTE: canary {cn}: not rendered: {why}",)
+        return (comment(f"NOTE: canary {cn}: not rendered: {why}"),)
     if spec.keeper is not None:
-        return (f"# Availability test {spec.name} ({cn}): kept by {spec.keeper}, not rendered here",)
+        return (comment(f"Availability test {spec.name} ({cn}): kept by {spec.keeper}, not rendered here"),)
     frequency = next((f for f in FREQUENCIES if f >= spec.every), FREQUENCIES[-1])
-    return (block("resource", [TEST, tf_name(spec.name)], [
+    return (tf_block("resource", [TEST, tf_name(spec.name)], [
         ("name", spec.name), ("resource_group_name", RG), ("location", LOC),
         ("application_insights_id", ref(f"var.{INPUT}")),
         ("geo_locations", list(GOVERNMENT_LOCATIONS if government(m) else PUBLIC_LOCATIONS)),
@@ -63,7 +63,7 @@ def _test(m, spec):
 def render_tests(m, endpoints):
     """HCL (and comments) for environment m's availability tests, and the input they need when there is one."""
     out = tuple(x for s in canary_specs(m, endpoints) for x in _test(m, s))
-    needs = any(x.startswith("resource") for x in out)
-    return (*out, *((block("variable", [INPUT], [
+    needs = bool(blocks_of(out, "resource"))
+    return (*out, *((tf_block("variable", [INPUT], [
         ("description", "The workspace-based Application Insights resource the availability tests belong to"),
         ("type", ref("string"))]),) if needs else ()))

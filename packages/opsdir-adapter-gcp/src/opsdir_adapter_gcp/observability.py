@@ -26,7 +26,7 @@ from opsdir.domains.observability.alarms import alarm_specs, condition, in_unit
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.realized import keeper_of
 from opsdir.domains.observability.signals import number_text, parse_threshold
-from opsdir_format_terraform.hcl import Block, block, tf_name
+from opsdir_format_terraform.hcl import Block, comment, tf_block, tf_name
 from .names import label, resource_id
 
 POLICY = "google_monitoring_alert_policy"
@@ -68,10 +68,10 @@ def _channel(channel):
 def _policy(m, s):
     rule = rdn_value(s.rule)
     if s.why:
-        return (f"# NOTE: alert rule {rule}: not rendered: {s.why}",)
+        return (comment(f"NOTE: alert rule {rule}: not rendered: {s.why}"),)
     name = rdn_value(s.alarm)
     if s.keeper is not None:
-        return (f"# Alert policy {name} (alert rule {rule}): kept by {s.keeper}, not rendered here",)
+        return (comment(f"Alert policy {name} (alert rule {rule}): kept by {s.keeper}, not rendered here"),)
     comparison, c, metric = COMPARISONS.get(one(s.rule, "ciamComparison") or ""), condition(s.rule), \
         one(s.alarm, "ciamMetric") or ""
     why = ("its alarm is a log-based alert and the record holds no query" if metric == "log query"
@@ -81,10 +81,10 @@ def _policy(m, s):
            else f"its threshold {one(s.rule, 'ciamThreshold')!r} isn't a number with a known unit" if c is None
            else None)
     if why:
-        return (f"# NOTE: alert rule {rule}: not rendered: {why}",)
+        return (comment(f"NOTE: alert rule {rule}: not rendered: {why}"),)
     threshold, compared = _threshold(s.rule, c)
     target = _channel(s.channel)
-    return (block("resource", [POLICY, tf_name(name)], [
+    return (tf_block("resource", [POLICY, tf_name(name)], [
         ("display_name", name), ("combiner", "OR"),
         ("conditions", Block((
             ("display_name", f"{one(s.rule, 'ciamSignal')} {one(s.rule, 'ciamComparison')} "
@@ -135,12 +135,12 @@ def _bucket(m, b):
         return ()
     project, location, bucket = found
     if keeper_of(m, b):
-        return (f"# Log bucket {cn}: kept by {keeper_of(m, b)}, not rendered here",)
+        return (comment(f"Log bucket {cn}: kept by {keeper_of(m, b)}, not rendered here"),)
     days, why = bucket_retention(int(one(b, "ciamRetentionDays"))) if one(b, "ciamRetentionDays") is not None \
         else (None, "no retention recorded (ciamRetentionDays): the bucket keeps Cloud Logging's default")
     hold = ("under legal hold: lock it (locked = true) once its retention is confirmed; a locked bucket's retention "
             "can't be lowered nor the bucket deleted, ever") if _held(m, b) else None
-    return (block("resource", [BUCKET, tf_name(cn)], [
+    return (tf_block("resource", [BUCKET, tf_name(cn)], [
         *(("#", w) for w in (why, hold) if w),
         ("project", project), ("location", location), ("bucket_id", bucket),
         *((("retention_days", days),) if days is not None else ())]),)

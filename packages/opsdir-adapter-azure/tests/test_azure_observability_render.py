@@ -2,6 +2,7 @@
 through the alarm binding realizing it, on the target role's virtual machines, with the window Azure allows and the
 channel's action group; workspaces keeping logs within what a workspace allows."""
 from opsdir.domains.observability.naming import ALERT_RULES
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.observability import iso_duration, render_alerts, render_workspaces, workspace_retention
 from network_fixtures import BETA, entry, model
 
@@ -53,7 +54,7 @@ def _beta():
 
 
 def test_a_rule_renders_on_its_roles_virtual_machines():
-    text = "\n".join(render_alerts(_beta()))
+    text = "\n".join(as_text(render_alerts(_beta())))
     lag = text.split('resource "azurerm_monitor_metric_alert" "ds_replication_lag" {', 1)[1].split("\n}", 1)[0]
     assert 'name                     = "ds-replication-lag"' in lag
     assert "scopes                   = [azurerm_linux_virtual_machine.ds_1.id, azurerm_linux_virtual_machine.ds_2.id]" \
@@ -70,7 +71,7 @@ def test_a_rule_renders_on_its_roles_virtual_machines():
 
 
 def test_a_rate_is_the_total_over_the_window_azure_allows():
-    text = "\n".join(render_alerts(_beta()))
+    text = "\n".join(as_text(render_alerts(_beta())))
     login = text.split('"web_login_failures" {', 1)[1].split("\n}", 1)[0]
     assert 'window_size         = "PT15M"' in login and 'frequency           = "PT5M"' in login
     assert "# 50 /min as the total over the window" in login
@@ -79,14 +80,14 @@ def test_a_rate_is_the_total_over_the_window_azure_allows():
 
 
 def test_what_a_metric_alert_cant_say_is_named():
-    notes = [x for x in render_alerts(_beta()) if x.startswith("#")]
+    notes = [x for x in as_text(render_alerts(_beta())) if x.startswith("#")]
     assert notes == [
         "# NOTE: alert rule not-equal: not rendered: a metric alert has no comparison 'ne'",
         "# NOTE: alert rule queried: not rendered: its alarm is a log query alert and the record holds no query"]
 
 
 def test_workspaces_keep_logs_within_what_a_workspace_allows():
-    text = "\n".join(render_workspaces(_beta()))
+    text = "\n".join(as_text(render_workspaces(_beta())))
     assert 'name                = "law-ciam-audit"' in text and "retention_in_days   = 400" in text
     assert "# indefinitely is longer than a workspace keeps logs (730): kept 730" in text
     assert [workspace_retention(d) for d in (7, 90)] == [

@@ -29,7 +29,7 @@ from opsdir.core.inventory import of_types, resource, tagged_role
 from opsdir.domains.data.volumes import (POLICY, boot_volume, data_volumes, is_encrypted, volume_key_role,
                                          volume_policy)
 from opsdir.domains.network.stack import kept_by, owned
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from opsdir_format_terraform.state import first_block
 from .backups import disk_policies
 from .cmk import key_ref
@@ -53,15 +53,16 @@ def _given(*pairs):
 def _encryption_set(m, v):
     """(the volume's disk_encryption_set_id argument, or (), and comments)."""
     if not is_encrypted(v):
-        return (), (f"# {rdn_value(v)}: recorded as not encrypted; Azure encrypts every managed disk at rest (with "
-                    "its own key when no disk encryption set is named)",)
+        return (), (comment(f"{rdn_value(v)}: recorded as not encrypted; Azure encrypts every managed disk at rest "
+                            "(with its own key when no disk encryption set is named)"),)
     role = volume_key_role(v)
     b = one_role(m, role)
     if b is None:
-        return (), (f"# {rdn_value(v)}: {UNBOUND}{role}: no key binding for role {role}; Azure's own key encrypts it",)
+        return (), (comment(f"{rdn_value(v)}: {UNBOUND}{role}: no key binding for role {role}; Azure's own key "
+                            "encrypts it"),)
     if not one(b, "ciamProviderRef"):
-        return (), (f"# {rdn_value(v)}: key role {role} names no disk encryption set (ciamProviderRef); Azure's own "
-                    "key encrypts it",)
+        return (), (comment(f"{rdn_value(v)}: key role {role} names no disk encryption set (ciamProviderRef); Azure's "
+                            "own key encrypts it"),)
     return (("disk_encryption_set_id", one(b, "ciamProviderRef")),), ()
 
 
@@ -75,7 +76,7 @@ def os_disk(m, s, des):
         return (), Block((("caching", "ReadWrite"), ("storage_account_type", "Premium_LRS"), encryption))
     kind = TYPES.get(one(v, "ciamVolumeClass"), "Premium_LRS")
     encryption, notes = _encryption_set(m, v)
-    note = (f"# {rdn_value(v)}: an OS disk can't be {kind}: Premium_LRS",) if kind in PROVISIONED else ()
+    note = (comment(f"{rdn_value(v)}: an OS disk can't be {kind}: Premium_LRS"),) if kind in PROVISIONED else ()
     return (*notes, *note), Block((("caching", "ReadWrite"),
                                    ("storage_account_type", "Premium_LRS" if kind in PROVISIONED else kind),
                                    *_given(("disk_size_gb", _int(v, "ciamVolumeSizeGb"))), *encryption))
@@ -92,7 +93,8 @@ def server_volumes(m, s):
     n, out = tf_name(rdn_value(s)), []
     for lun, v in enumerate(data_volumes(m, one(s, "ciamServerRole"))):
         if not owned(v):
-            out.append(f"# Volume '{rdn_value(v)}' of {rdn_value(s)} is kept by {kept_by(m, v)}: not rendered here")
+            out.append(comment(f"Volume '{rdn_value(v)}' of {rdn_value(s)} is kept by {kept_by(m, v)}: not rendered "
+                               "here"))
             continue
         dn, kind, policy = tf_name(f"{rdn_value(s)}_{rdn_value(v)}"), TYPES.get(one(v, "ciamVolumeClass"),
                                                                               "Premium_LRS"), volume_policy(m, v)
@@ -101,16 +103,16 @@ def server_volumes(m, s):
                 **({"SnapshotPolicy": one(policy, "ciamBindingRole")} if policy is not None else {}),
                 "ManagedBy": "opsdir"}
         out += [*notes,
-                *((f"# {rdn_value(s)} mounts {rdn_value(v)} at {one(v, 'ciamMountPath')} (its own configuration, not "
-                   "Terraform)",) if one(v, "ciamMountPath") else ()),
-                block("resource", ["azurerm_managed_disk", dn], [
+                *((comment(f"{rdn_value(s)} mounts {rdn_value(v)} at {one(v, 'ciamMountPath')} (its own configuration, "
+                           "not Terraform)"),) if one(v, "ciamMountPath") else ()),
+                tf_block("resource", ["azurerm_managed_disk", dn], [
                     ("name", f"disk-{rdn_value(s)}-{rdn_value(v)}"), ("location", LOC), ("resource_group_name", RG),
                     ("zone", one(s, "ciamZone")), ("storage_account_type", kind), ("create_option", "Empty"),
                     *_given(("disk_size_gb", _int(v, "ciamVolumeSizeGb")),
                             ("disk_iops_read_write", _int(v, "ciamIops") if kind in PROVISIONED else None),
                             ("disk_mbps_read_write", _int(v, "ciamThroughputMb") if kind in PROVISIONED else None)),
                     *encryption, ("tags", tagged(m, tags))]),
-                block("resource", ["azurerm_virtual_machine_data_disk_attachment", dn], [
+                tf_block("resource", ["azurerm_virtual_machine_data_disk_attachment", dn], [
                     ("managed_disk_id", ref(f"azurerm_managed_disk.{dn}.id")),
                     ("virtual_machine_id", ref(f"azurerm_linux_virtual_machine.{n}.id")), ("lun", lun),
                     ("caching", "None")])]
@@ -120,10 +122,11 @@ def server_volumes(m, s):
 def snapshot_policy_notes(m):
     """Comments for environment m's snapshot policies: Azure snapshots managed disks on a schedule only with Azure
     Backup's disk backup, which a backup plan renders (opsdir_adapter_azure.backups); someone else's named."""
-    return tuple(f"# Snapshot policy '{rdn_value(p)}' (role {one(p, 'ciamBindingRole')}): "
-                 + (f"kept by {kept_by(m, p)}: not rendered here" if not owned(p) else
-                    "Azure snapshots managed disks on a schedule with Azure Backup's disk backup, in a Backup vault: "
-                    "record a backup plan (ciamBackupPlan) with this role and a vault, which renders as one")
+    return tuple(comment(f"Snapshot policy '{rdn_value(p)}' (role {one(p, 'ciamBindingRole')}): "
+                         + (f"kept by {kept_by(m, p)}: not rendered here" if not owned(p) else
+                            "Azure snapshots managed disks on a schedule with Azure Backup's disk backup, in a Backup "
+                            "vault: record a backup plan (ciamBackupPlan) with this role and a vault, which renders as "
+                            "one"))
                  for p in of_class(m, POLICY))
 
 

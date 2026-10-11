@@ -2,6 +2,7 @@
 cloud's own test locations, named as the canary binding; an oidc-token check or an internal service is named."""
 from opsdir.core.contract import Endpoint
 from opsdir.domains.observability.naming import CANARIES
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.canaries import render_tests
 from network_fixtures import BETA, entry, model
 
@@ -25,7 +26,7 @@ BINDINGS = (entry(BETA, "svc-sso", "ciamServiceName", ciamBindingRole="sso", cia
 
 def test_a_health_check_runs_from_the_clouds_test_locations():
     _, _, beta = model(beta=BINDINGS, tree=TREE)
-    out = render_tests(beta, ENDPOINTS)
+    out = as_text(render_tests(beta, ENDPOINTS))
     text = "\n".join(out)
     assert 'resource "azurerm_application_insights_standard_web_test" "sso_login" {' in text
     assert "application_insights_id = var.application_insights_id" in text
@@ -41,4 +42,4 @@ def test_a_health_check_runs_from_the_clouds_test_locations():
 def test_azure_government_tests_from_its_own_locations():
     _, _, beta = model(beta=BINDINGS, tree=TREE)
     gov = beta._replace(cloud=beta.cloud._replace(attrs={**beta.cloud.attrs, "ciamRegion": ("usgovvirginia",)}))
-    assert '"usgov-va-azr"' in "\n".join(render_tests(gov, ENDPOINTS))
+    assert '"usgov-va-azr"' in "\n".join(as_text(render_tests(gov, ENDPOINTS)))

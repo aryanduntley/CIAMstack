@@ -38,7 +38,7 @@ from opsdir.domains.estate.authorizations import unmet_configurations
 from opsdir.domains.estate.discovery import ANY_DAYS, custom_identifiers, discovery_services, rescan_line, rescan_plan
 from opsdir.domains.data.storage import kept_store
 from opsdir.domains.network.stack import kept_by
-from opsdir_format_terraform.hcl import block, ref, tf_name
+from opsdir_format_terraform.hcl import comment, ref, tf_block, tf_name
 from .account import azapi_allowed
 from .storage import container_of
 
@@ -117,12 +117,12 @@ def _collection(account):
 def _source(s, purview, account):
     n = tf_name(f"{rdn_value(s)}_{account}")
     src, scan = source_name(s, account), rdn_value(s)
-    return n, (block("resource", [DATA_PLANE, f"{n}_source"], [
+    return n, (tf_block("resource", [DATA_PLANE, f"{n}_source"], [
                    ("type", f"{SOURCES}@{API}"), ("parent_id", f"{purview}.{HOST}/scan"), ("name", src),
                    ("body", {"kind": "AzureStorage", "properties": {
                        "endpoint": f"https://{account}.blob.core.windows.net/",
                        "collection": _collection(purview)}})]),
-               block("resource", [DATA_PLANE, f"{n}_scan"], [
+               tf_block("resource", [DATA_PLANE, f"{n}_scan"], [
                    ("type", f"{SCANS}@{API}"), ("parent_id", f"{purview}.{HOST}/scan/datasources/{src}"),
                    ("name", scan),
                    ("body", {"kind": "AzureStorageMsi", "properties": {
@@ -132,7 +132,7 @@ def _source(s, purview, account):
 
 
 def _trigger(n, purview, src, scan, days):
-    return block("resource", [DATA_PLANE, f"{n}_trigger"], [
+    return tf_block("resource", [DATA_PLANE, f"{n}_trigger"], [
         ("type", f"{TRIGGERS}@{API}"), ("parent_id", f"{purview}.{HOST}/scan/datasources/{src}/scans/{scan}"),
         ("name", "default"),
         ("body", {"properties": {"state": "Enabled", "scanLevel": "Full", "recurrence": {
@@ -151,15 +151,15 @@ def _reader(m, s, store, account, purview):
     if scope is None:
         whose = f"ask its keeper ({kept_by(m, store)}) to give" if one(store, "ciamManagedBy") else \
             "the record names no ARM id for it: give"
-        return (f"# {rdn_value(s)}: storage account {account}: {whose} Purview account {purview}'s managed identity "
-                f"{BLOB_READER} on it",)
-    return (block("resource", ["azurerm_role_assignment", n], [
+        return (comment(f"{rdn_value(s)}: storage account {account}: {whose} Purview account {purview}'s managed "
+                        f"identity {BLOB_READER} on it"),)
+    return (tf_block("resource", ["azurerm_role_assignment", n], [
         ("scope", scope), ("role_definition_name", BLOB_READER),
         ("principal_id", ref(f"data.azapi_resource.{tf_name(f'purview_{purview}')}.output.identity.principalId"))]),)
 
 
 def _rules(s, purview):
-    return tuple(block("resource", [DATA_PLANE, tf_name(f"{rule_name(s, name)}_rule")], [
+    return tuple(tf_block("resource", [DATA_PLANE, tf_name(f"{rule_name(s, name)}_rule")], [
         ("type", f"{RULES}@{API}"), ("parent_id", f"{purview}.{HOST}/scan"), ("name", rule_name(s, name)),
         ("body", {"kind": "Custom", "properties": {
             "classificationName": classification(s, name), "dataPatterns": [{"kind": "Regex", "pattern": rx}],
@@ -170,7 +170,7 @@ def _rules(s, purview):
 
 def _account_data(s, purview):
     """The Purview account, read through azapi (azurerm has no data source for it): its managed identity."""
-    return block("data", ["azapi_resource", tf_name(f"purview_{purview}")], [
+    return tf_block("data", ["azapi_resource", tf_name(f"purview_{purview}")], [
         ("type", ACCOUNT_API), ("resource_id", one(s, "ciamCatalogRef")),
         ("response_export_values", ["identity.principalId"])])
 
@@ -179,10 +179,10 @@ def _service(m, s, purview, days):
     stores = _containers(m, s)
     parts = [(_source(s, purview, a), b, a) for b, a in stores]
     named = ", ".join(a for _, a in stores) or "nothing"
-    return (f"# {rdn_value(s)}: Microsoft Purview account {purview} scans {named} every {days} days (its trigger), "
-            "each storage account whole",
-            *(f"# {rdn_value(s)}: Azure SQL database {r}: register it in Purview (the record holds no server endpoint "
-              "and database name) and scan it with AzureSqlDatabaseMsi" for r in _databases(m, s)),
+    return (comment(f"{rdn_value(s)}: Microsoft Purview account {purview} scans {named} every {days} days (its "
+                    "trigger), each storage account whole"),
+            *(comment(f"{rdn_value(s)}: Azure SQL database {r}: register it in Purview (the record holds no server "
+                      "endpoint and database name) and scan it with AzureSqlDatabaseMsi") for r in _databases(m, s)),
             *(x for (n, (source, scan)), b, a in parts
               for x in (source, scan, _trigger(n, purview, source_name(s, a), rdn_value(s), days),
                         *_reader(m, s, b, a, purview))),
@@ -196,11 +196,12 @@ def render_purview(m):
     if not found:
         return ()
     if _government(m):
-        return tuple(f"# {rdn_value(s)}: Microsoft Purview scans every {d} days aren't rendered in Azure Government: "
-                     "azapi's Purview token audience there is unverified (see the plan)" for s, _, d in found)
+        return tuple(comment(f"{rdn_value(s)}: Microsoft Purview scans every {d} days aren't rendered in Azure "
+                             "Government: azapi's Purview token audience there is unverified (see the plan)")
+                     for s, _, d in found)
     if not azapi_allowed(m):
-        return tuple(f"# {rdn_value(s)}: Microsoft Purview scans every {d} days need the azapi add-on "
-                     "(ciamProviderAddOn azapi): not rendered" for s, _, d in found)
+        return tuple(comment(f"{rdn_value(s)}: Microsoft Purview scans every {d} days need the azapi add-on "
+                             "(ciamProviderAddOn azapi): not rendered") for s, _, d in found)
     accounts = {a: s for s, a, _ in reversed(found)}           # each account once, by its first service
     return (*(_account_data(s, a) for a, s in accounts.items()),
             *(x for s, a, d in found for x in _service(m, s, a, d)))
@@ -208,7 +209,7 @@ def render_purview(m):
 
 def purview_inputs(m):
     """The inputs of environment m's root its Purview scans need (providers.tf): when they first run."""
-    return (block("variable", [START], [
+    return (tf_block("variable", [START], [
         ("type", ref("string")),
         ("description", "When the Microsoft Purview scans first run (RFC 3339, UTC: 2026-11-01T02:00:00Z); each then "
                         "recurs every ciamRescanDays days")]),) if renders(m) else ()

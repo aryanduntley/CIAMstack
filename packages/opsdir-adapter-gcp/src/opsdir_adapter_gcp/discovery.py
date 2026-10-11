@@ -37,7 +37,7 @@ from opsdir.core.manifest import header
 from opsdir.domains.estate.authorizations import required_levels
 from opsdir.domains.estate.discovery import (custom_identifiers, destination, discovery_services, rescan_line,
                                              rescan_plan)
-from opsdir_format_terraform.hcl import Block, block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from .storage import bucket_of
 
 TEMPLATE, CONFIG = "google_data_loss_prevention_inspect_template", "google_data_loss_prevention_discovery_config"
@@ -168,7 +168,7 @@ def info_type(name):
 
 def _template(s, n):
     own = custom_identifiers(s)
-    return (block("resource", [TEMPLATE, n], [
+    return (tf_block("resource", [TEMPLATE, n], [
         ("parent", PARENT), ("template_id", f"ciam-{rdn_value(s)}"),
         ("display_name", f"{rdn_value(s)}: own data types"),
         ("inspect_config", Block(tuple(("custom_info_types", Block((
@@ -198,13 +198,13 @@ def _refresh(m, s):
         return frequency, "RUNNING", ()
     if scheduled(m, s):
         return "UPDATE_FREQUENCY_DAILY", "PAUSED", (
-            f"# {rdn_value(s)}: every {d} days: Sensitive Data Protection refreshes daily or monthly, so the config "
-            f"stays paused and workflow {workflow_name(s)} resumes it daily once {d} days have passed since the "
-            "buckets' last successful profiles, and pauses it once they are profiled again",)
+            comment(f"{rdn_value(s)}: every {d} days: Sensitive Data Protection refreshes daily or monthly, so the "
+                    f"config stays paused and workflow {workflow_name(s)} resumes it daily once {d} days have passed "
+                    "since the buckets' last successful profiles, and pauses it once they are profiled again"),)
     return frequency, "RUNNING", (
-        f"# {rdn_value(s)}: every {d} days: Sensitive Data Protection refreshes daily or monthly, and Cloud Scheduler "
-        "and Workflows aren't on Assured Workloads' DoD IL4/IL5 supported products: profiled "
-        f"{'daily' if frequency.endswith('DAILY') else 'monthly'}, more often than the record asks",)
+        comment(f"{rdn_value(s)}: every {d} days: Sensitive Data Protection refreshes daily or monthly, and Cloud "
+                "Scheduler and Workflows aren't on Assured Workloads' DoD IL4/IL5 supported products: profiled "
+                f"{'daily' if frequency.endswith('DAILY') else 'monthly'}, more often than the record asks"),)
 
 
 def workflow_name(s):
@@ -222,21 +222,21 @@ def _scheduler(s, n, buckets):
     the workflow and its daily Cloud Scheduler job."""
     cn, name = rdn_value(s), workflow_name(s)
     worker, starter = f"{n}_rescan", f"{n}_rescan_scheduler"
-    return (block("resource", ["google_service_account", worker], [
+    return (tf_block("resource", ["google_service_account", worker], [
                 ("account_id", _account_id(s, "wf")), ("display_name", f"{cn}: resumes and pauses its discovery")]),
-            block("resource", ["google_project_iam_custom_role", n], [
+            tf_block("resource", ["google_project_iam_custom_role", n], [
                 ("role_id", f"ciamSdpRescan_{n}"), ("title", f"{cn}: rescan discovery"),
                 ("permissions", list(RESCAN_PERMISSIONS))]),
-            block("resource", ["google_project_iam_member", worker], [
+            tf_block("resource", ["google_project_iam_member", worker], [
                 ("project", ref("var.project_id")), ("role", ref(f"google_project_iam_custom_role.{n}.name")),
                 ("member", f"serviceAccount:${{google_service_account.{worker}.email}}")]),
-            block("resource", ["google_service_account", starter], [
+            tf_block("resource", ["google_service_account", starter], [
                 ("account_id", _account_id(s, "run")), ("display_name", f"{cn}: starts its rescan workflow")]),
-            block("resource", ["google_project_iam_member", starter], [
+            tf_block("resource", ["google_project_iam_member", starter], [
                 ("#", "Workflows has no per-workflow IAM: invoking is granted on the project"),
                 ("project", ref("var.project_id")), ("role", "roles/workflows.invoker"),
                 ("member", f"serviceAccount:${{google_service_account.{starter}.email}}")]),
-            block("resource", [WORKFLOW, n], [
+            tf_block("resource", [WORKFLOW, n], [
                 ("name", name), ("region", ref("var.region")),
                 ("description", f"Resumes and pauses discovery {cn} every {rescan_plan(s, OFFERED).days} days"),
                 ("service_account", ref(f"google_service_account.{worker}.id")),
@@ -245,7 +245,7 @@ def _scheduler(s, n, buckets):
                                    "RESCAN_DAYS": str(rescan_plan(s, OFFERED).days), "BUCKETS": ",".join(buckets)}),
                 ("labels", {"realizes": re.sub(r"[^a-z0-9_-]", "-", cn.lower()),
                             "rescan-days": str(rescan_plan(s, OFFERED).days)})]),
-            block("resource", [SCHEDULER, n], [
+            tf_block("resource", [SCHEDULER, n], [
                 ("name", name), ("region", ref("var.region")), ("schedule", "0 6 * * *"), ("time_zone", "Etc/UTC"),
                 ("http_target", Block((
                     ("http_method", "POST"),
@@ -272,16 +272,18 @@ def _config(m, s):
     frequency, status, note = _refresh(m, s)
     dest, topic = _topic(m, s)
     notes = (*note,
-             *((f"# {cn}: only Cloud Storage targets are rendered: {', '.join(others)} not examined here",)
+             *((comment(f"{cn}: only Cloud Storage targets are rendered: {', '.join(others)} not examined here"),)
                if others else ()),
-             *((f"# NOTE: {cn}'s findings to {one(s, 'ciamFindingsRole')}: not rendered: {rdn_value(dest)} names no "
-                "Pub/Sub topic (ciamProviderRef projects/<p>/topics/<t>)",) if dest is not None and not topic else ()),
-             *((f"# {cn}: Sensitive Data Protection exports detailed profiles to BigQuery only: "
-                f"{one(s, 'ciamResultsRole')} isn't written to",) if one(s, "ciamResultsRole") else ()))
+             *((comment(f"NOTE: {cn}'s findings to {one(s, 'ciamFindingsRole')}: not rendered: {rdn_value(dest)} names "
+                        "no Pub/Sub topic (ciamProviderRef projects/<p>/topics/<t>)"),)
+               if dest is not None and not topic else ()),
+             *((comment(f"{cn}: Sensitive Data Protection exports detailed profiles to BigQuery only: "
+                        f"{one(s, 'ciamResultsRole')} isn't written to"),) if one(s, "ciamResultsRole") else ()))
     if not buckets:
-        return (*notes, f"# NOTE: data discovery {cn}: no discovery config: it examines no Cloud Storage bucket here")
+        return (*notes, comment(f"NOTE: data discovery {cn}: no discovery config: it examines no Cloud Storage bucket "
+                                "here"))
     regex = "^(" + "|".join(re.escape(b) for b in buckets) + ")$"
-    return (*notes, *_template(s, n), block("resource", [CONFIG, n], [
+    return (*notes, *_template(s, n), tf_block("resource", [CONFIG, n], [
         ("parent", PARENT), ("location", ref("var.region")), ("display_name", cn), ("status", status),
         *((("inspect_templates", [ref(f"{TEMPLATE}.{n}.id")]),) if custom_identifiers(s) else ()),
         ("targets", Block((("cloud_storage_target", Block((
@@ -298,7 +300,7 @@ def _config(m, s):
 def render_discovery(m):
     """(HCL and comments, {path: file}) for environment m's data discovery: the rescan workflow when one is used."""
     kept = [s for s in discovery_services(m) if not one(s, "ciamManagedBy")]
-    hcl = (*(f"# Data discovery {rdn_value(s)}: kept by {_keeper(m, s)}, not rendered here"
+    hcl = (*(comment(f"Data discovery {rdn_value(s)}: kept by {_keeper(m, s)}, not rendered here")
              for s in discovery_services(m) if one(s, "ciamManagedBy")),
            *(x for s in kept for x in _config(m, s)))
     used = any(scheduled(m, s) and _buckets(m, s)[0] for s in kept)

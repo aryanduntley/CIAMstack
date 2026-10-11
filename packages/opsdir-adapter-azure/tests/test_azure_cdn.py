@@ -4,6 +4,7 @@ validated by a _dnsauth record, a route without caching, the protection policy a
 domain; the gateway behind it keeps no WAF."""
 import re
 
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.edge import gateway_service, servers_backend
 from opsdir_adapter_azure.frontdoor import endpoint, front_door
 from edge_fixtures import environment, server, service, spec, subnet
@@ -11,7 +12,7 @@ from edge_fixtures import environment, server, service, spec, subnet
 
 def _fd(s, ip="198.51.100.77"):
     svc = service(ip, ciamDnsZone="example.test", ciamProviderRef="pip-ciam-sso-prod")
-    return "\n".join(front_door(environment(svc), svc, s, "sso"))
+    return "\n".join(as_text(front_door(environment(svc), svc, s, "sso")))
 
 
 def test_front_door_over_the_gateway_with_its_firewall_policy():
@@ -44,6 +45,7 @@ def test_without_inspection_standard_front_door_over_the_load_balancer_with_a_ma
 
 def test_the_gateway_behind_front_door_keeps_no_waf():
     svc = service(ciamProviderRef="pip-ciam-sso-prod")
-    out = "\n".join(gateway_service(environment(svc, subnet("subnet-edge", "subnet-edge", "10.60.250.0/24")), svc,
-                                    spec(cdn=True), servers_backend((server("pf-1", "10.60.2.10"),))))
+    edge = environment(svc, subnet("subnet-edge", "subnet-edge", "10.60.250.0/24"))
+    backend = servers_backend((server("pf-1", "10.60.2.10"),))
+    out = "\n".join(as_text(gateway_service(edge, svc, spec(cdn=True), backend)))
     assert 'name = "Standard_v2"' in out and "web_application_firewall_policy" not in out

@@ -38,7 +38,7 @@ from opsdir.domains.compute.workloads import role_clusters
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.sources import kinds_of, shipments
-from opsdir_format_terraform.hcl import block, jsonencoded, ref, tf_name
+from opsdir_format_terraform.hcl import comment, jsonencoded, ref, tf_block, tf_name
 from .access import resources
 from .account import account_id, partition
 from .identities import eks_cluster_name, irsa_statement
@@ -211,13 +211,13 @@ def role_blocks(m, cluster, found):
     """HCL: the IAM role a cluster's Fluent Bit assumes (IRSA) and its writes to the routes' log groups."""
     n = tf_name(f"fluent_bit_{eks_cluster_name(cluster)}")
     groups = tuple({x.destination.dn: x.destination for x in found}.values())
-    return (block("data", ["aws_iam_policy_document", f"{n}_trust"],
-                  [irsa_statement(cluster, [f"system:serviceaccount:{NAMESPACE}:{ACCOUNT}"])]),
-            block("resource", ["aws_iam_role", n], [
+    return (tf_block("data", ["aws_iam_policy_document", f"{n}_trust"],
+                     [irsa_statement(cluster, [f"system:serviceaccount:{NAMESPACE}:{ACCOUNT}"])]),
+            tf_block("resource", ["aws_iam_role", n], [
                 ("name", role_name(m, cluster)),
                 ("assume_role_policy", ref(f"data.aws_iam_policy_document.{n}_trust.json")),
                 ("tags", {"Role": "fluent-bit", "Cluster": eks_cluster_name(cluster), "ManagedBy": "opsdir"})]),
-            block("resource", ["aws_iam_role_policy", n], [
+            tf_block("resource", ["aws_iam_role_policy", n], [
                 ("name", "ship-container-logs"), ("role", ref(f"aws_iam_role.{n}.id")),
                 ("policy", jsonencoded({"Version": "2012-10-17", "Statement": [
                     {"Sid": "WriteRouteLogGroups", "Effect": "Allow", "Action": list(WRITES),
@@ -240,9 +240,9 @@ def fluent_bit_notes(m, services):
     """HCL comments naming the container logs environment m's routes can't ship to CloudWatch."""
     found = tuple(x for x in shipments(m, log_routes(m.d), services.logs(m)) if x.on == "kubernetes")
     return tuple(dict.fromkeys(
-        f"# NOTE: log route {rdn_value(x.route)}: role {x.role}'s container output " + (
+        comment(f"NOTE: log route {rdn_value(x.route)}: role {x.role}'s container output " + (
             f"not shipped: its destination {rdn_value(x.destination)} isn't a CloudWatch log group (kind log-group, a "
             "log group ARN)" if log_group(x.destination) is None else
-            "not shipped: the role runs on Kubernetes here in no cluster the environment binds")
+            "not shipped: the role runs on Kubernetes here in no cluster the environment binds"))
         for x in found if x.destination is not None and (log_group(x.destination) is None
                                                           or not role_clusters(m, x.role))))

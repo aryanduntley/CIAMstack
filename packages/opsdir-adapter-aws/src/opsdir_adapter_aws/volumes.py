@@ -32,7 +32,7 @@ from opsdir.domains.data.volumes import (POLICY, boot_volume, data_volumes, is_e
                                          volume_key_role, volume_policy)
 from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned
-from opsdir_format_terraform.hcl import Block, block, import_block, ref, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
 from opsdir_format_terraform.state import blocks, first_block
 from .tags import state_tags as _cloud_tags
 
@@ -61,8 +61,8 @@ def _key(m, v):
     role = volume_key_role(v)
     uri = secret(m, role)
     if uri is None:
-        return (("encrypted", True),), (f"# {rdn_value(v)}: {UNBOUND}{role}: no key binding for role {role} in this "
-                                        "environment",)
+        return (("encrypted", True),), (comment(f"{rdn_value(v)}: {UNBOUND}{role}: no key binding for role {role} in "
+                                                "this environment"),)
     return (("encrypted", True), ("kms_key_id", uri.split("://", 1)[1])), ()
 
 
@@ -100,20 +100,21 @@ def server_volumes(m, s):
         vn, policy = tf_name(f"{rdn_value(s)}_{rdn_value(v)}"), volume_policy(m, v)
         policy_role = one(policy, "ciamBindingRole") if policy is not None else None
         if not owned(v):
-            out.append(f"# Volume '{rdn_value(v)}' of {rdn_value(s)} is kept by {kept_by(m, v)}: not rendered here")
+            out.append(comment(f"Volume '{rdn_value(v)}' of {rdn_value(s)} is kept by {kept_by(m, v)}: not rendered "
+                               "here"))
             continue
         if i >= len(DEVICES):
-            out.append(f"# Volume '{rdn_value(v)}' of {rdn_value(s)}: no device name left to attach it at")
+            out.append(comment(f"Volume '{rdn_value(v)}' of {rdn_value(s)}: no device name left to attach it at"))
             continue
         encryption, notes = _key(m, v)
         out += [*notes,
-                *((f"# {rdn_value(s)} mounts {rdn_value(v)} at {one(v, 'ciamMountPath')} (its own configuration, not "
-                   "Terraform)",) if one(v, "ciamMountPath") else ()),
-                block("resource", ["aws_ebs_volume", vn], [
+                *((comment(f"{rdn_value(s)} mounts {rdn_value(v)} at {one(v, 'ciamMountPath')} (its own configuration, "
+                           "not Terraform)"),) if one(v, "ciamMountPath") else ()),
+                tf_block("resource", ["aws_ebs_volume", vn], [
                     ("availability_zone", one(s, "ciamZone")), *_disk(v), *encryption,
                     ("tags", {"Name": f"{rdn_value(s)}-{rdn_value(v)}",
                               **_tags(v, Server=rdn_value(s), SnapshotPolicy=policy_role)})]),
-                block("resource", ["aws_volume_attachment", vn], [
+                tf_block("resource", ["aws_volume_attachment", vn], [
                     ("device_name", f"/dev/sd{DEVICES[i]}"), ("volume_id", ref(f"aws_ebs_volume.{vn}.id")),
                     ("instance_id", ref(f"aws_instance.{n}.id"))])]
     return tuple(out)
@@ -129,7 +130,7 @@ def _copy_key(m, p, region):
         parts = arn.split(":")
         return ":".join((*parts[:3], region, *parts[4:])), None
     var = f"{tf_name(rdn_value(p))}_{tf_name(region)}_kms_key_arn"
-    return ref(f"var.{var}"), block("variable", [var], [
+    return ref(f"var.{var}"), tf_block("variable", [var], [
         ("type", ref("string")),
         ("description", f"The KMS key snapshots of {rdn_value(p)} are copied with in {region}")])
 
@@ -141,14 +142,14 @@ def _days(p):
 def _policy(m, p):
     n, role, every = tf_name(rdn_value(p)), one(p, "ciamBindingRole"), snapshot_every(p)
     if every not in DLM_HOURS:
-        return (f"# Snapshot policy '{rdn_value(p)}': Lifecycle Manager snapshots every 1, 2, 3, 4, 6, 8, 12 or 24 "
-                f"hours, not {every}: not rendered",)
+        return (comment(f"Snapshot policy '{rdn_value(p)}': Lifecycle Manager snapshots every 1, 2, 3, 4, 6, 8, 12 or "
+                        f"24 hours, not {every}: not rendered"),)
     regions = values(p, "ciamCopyRegion")
     copies = [(r, *_copy_key(m, p, r)) for r in regions[:3]]
-    return (*((f"# Snapshot policy '{rdn_value(p)}': Lifecycle Manager copies to at most three regions; "
-               f"{', '.join(regions[3:])} not rendered",) if len(regions) > 3 else ()),
+    return (*((comment(f"Snapshot policy '{rdn_value(p)}': Lifecycle Manager copies to at most three regions; "
+                       f"{', '.join(regions[3:])} not rendered"),) if len(regions) > 3 else ()),
             *(var for _, _, var in copies if var),
-            block("resource", ["aws_dlm_lifecycle_policy", n], [
+            tf_block("resource", ["aws_dlm_lifecycle_policy", n], [
                 ("description", _DLM_TEXT.sub(" ", f"CIAM snapshots {role} {m.label}")),
                 ("execution_role_arn", ref(f"var.{DLM_ROLE}")),
                 ("state", "ENABLED"),
@@ -164,7 +165,7 @@ def _policy(m, p):
                             ("target", region), ("encrypted", True), ("cmk_arn", key), ("copy_tags", True),
                             ("retain_rule", _days(p))))) for region, key, _ in copies))))))),
                 ("tags", {"Name": rdn_value(p), "Role": role, "ManagedBy": "opsdir"})]),
-            *((import_block(f"aws_dlm_lifecycle_policy.{n}", one(p, "ciamProviderRef")),) if adopted(p) else ()))
+            *((tf_import(f"aws_dlm_lifecycle_policy.{n}", one(p, "ciamProviderRef")),) if adopted(p) else ()))
 
 
 def render_snapshot_policies(m):
@@ -172,9 +173,9 @@ def render_snapshot_policies(m):
     (with Lifecycle Manager's role an input)."""
     policies = of_class(m, POLICY)
     kept = [p for p in policies if owned(p)]
-    return (*(f"# Snapshot policy '{rdn_value(p)}' (role {one(p, 'ciamBindingRole')}) is kept by {kept_by(m, p)}: "
-              "not rendered here" for p in policies if not owned(p)),
-            *((block("variable", [DLM_ROLE], [
+    return (*(comment(f"Snapshot policy '{rdn_value(p)}' (role {one(p, 'ciamBindingRole')}) is kept by "
+                      f"{kept_by(m, p)}: not rendered here") for p in policies if not owned(p)),
+            *((tf_block("variable", [DLM_ROLE], [
                 ("type", ref("string")),
                 ("description", "The IAM role Data Lifecycle Manager snapshots with "
                                 "(AWSDataLifecycleManagerDefaultRole)")]),)

@@ -4,6 +4,7 @@ service account id Google accepts, and the Kubernetes service accounts that act 
 Federation)."""
 from opsdir.core.directory import make_entry
 from opsdir.domains.access.workloads import Pod, WorkloadIdentity
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.access import PERMISSIONS
 from opsdir_adapter_gcp.identities import account as _account, identity as _identity
 
@@ -42,7 +43,7 @@ W = WorkloadIdentity("pf-engine", "identity-pf-engine", "pf-engine", "ciam-prod-
 
 
 def test_a_service_account_with_resource_level_members():
-    out = "\n".join(_identity(None, W))
+    out = "\n".join(as_text(_identity(None, W)))
     member = 'member    = "serviceAccount:${google_service_account.identity_pf_engine.email}"'
     assert 'resource "google_service_account" "identity_pf_engine"' in out and member in out
     assert 'resource "google_secret_manager_secret_iam_member"' in out and 'secret_id = "pf-admin-password"' in out
@@ -62,7 +63,7 @@ def test_kubernetes_service_accounts_act_as_the_service_account_through_workload
     cluster = _binding("ciamCluster", "k8s", ciamProviderRef=f"{P}/locations/us-central1/clusters/ciam")
     w = WorkloadIdentity("am", "identity-am", "am", "ciam-prod-am", (), (), servers=False,
                          pods=(Pod("identity", "am", cluster), Pod("tools", "x", None)))
-    out = "\n".join(_identity(None, w))
+    out = "\n".join(as_text(_identity(None, w)))
     assert 'resource "google_service_account_iam_member" "identity_am_identity_am"' in out
     assert 'role               = "roles/iam.workloadIdentityUser"' in out
     assert 'member             = "serviceAccount:ciam-prod.svc.id.goog[identity/am]"' in out

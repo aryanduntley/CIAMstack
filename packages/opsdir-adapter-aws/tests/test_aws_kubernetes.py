@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import yaml
 
 from opsdir.core.directory import make_entry
+from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.kubernetes import SECRET_DELIVERY, role_arn, workload_identity
 from opsdir.core.directory import get
 from opsdir.domains.compute.naming import WORKLOADS
@@ -53,7 +54,7 @@ def test_a_role_run_only_on_kubernetes_gets_notes_not_a_load_balancer_or_rules()
              rule(ALPHA, "fw-login", "0.0.0.0/0", "443", "am"))
     _, m, _ = model(alpha=alpha, tree=tree)
     svc, fw = (get(m.d, f"cn={cn},ou=bindings,{ALPHA}") for cn in ("svc-login", "fw-login"))
-    out = "\n".join((*_service(m, svc), *_ingress_rules(m, fw)))
+    out = "\n".join(as_text((*_service(m, svc), *_ingress_rules(m, fw))))
     assert "# NOTE: service name `svc-login` (login.example.test) reaches role `am`, which runs only on " \
            "Kubernetes" in out
     assert "# NOTE: firewall rule `fw-login` reaches role `am`, which runs only on Kubernetes" in out
