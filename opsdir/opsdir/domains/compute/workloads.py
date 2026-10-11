@@ -156,6 +156,16 @@ def role_clusters(m, role):
     return tuple({c.dn: c for c in found if c is not None}.values())
 
 
+def role_namespaces(m, roles, cluster=None):
+    """The namespaces environment m runs these server roles' workloads in on Kubernetes (given a cluster binding, only
+    those placed in it: their ciamClusterRole's binding), without repeats, in the record's order."""
+    def placed(w):
+        c = one_role(m, one(w, "ciamClusterRole")) if one(w, "ciamClusterRole") else None
+        return cluster is None or (c is not None and c.dn == cluster.dn)
+    return tuple(dict.fromkeys(namespace_of(w) for w in workloads(m.d)
+                               if one(w, "ciamTargetRole") in roles and runs_on_kubernetes(m, w) and placed(w)))
+
+
 def cluster_subnets(m, role):
     """The subnets (bindings) the nodes of the clusters environment m runs a server role's workloads in sit in (the
     clusters' ciamSubnetRole), without repeats: where its pods' traffic comes from outside the cluster."""

@@ -320,9 +320,11 @@ Adapter = namedtuple("Adapter", (
                             # resolver command}: how configuration management reads its schemes' secrets
     "signals",              # Signals: the neutral signals its products' servers expose as Prometheus metrics
     "logs",                 # LogSources: the logs its products' servers (or, for a kit, the role's containers) write
-    "host_files"),          # (EnvModel, Services) -> HostFiles: files configuration management places on the
+    "host_files",           # (EnvModel, Services) -> HostFiles: files configuration management places on the
                             # environment's servers (agents' configuration), or None
-    defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None))
+    "places_host_files"),   # whether it places the other adapters' HostFiles on an environment's servers (the
+                            # configuration-management adapter does): without one in the stack they go nowhere
+    defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False))
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

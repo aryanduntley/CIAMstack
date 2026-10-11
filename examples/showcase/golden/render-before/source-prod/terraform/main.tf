@@ -365,6 +365,18 @@ resource "aws_iam_role_policy" "identity_ds" {
         ]
       },
       {
+        "Sid" : "WriteLogsOpsLogs",
+        "Effect" : "Allow",
+        "Action" : [
+          "logs:PutLogEvents",
+          "logs:CreateLogStream"
+        ],
+        "Resource" : [
+          "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/access:*",
+          "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/access"
+        ]
+      },
+      {
         "Sid" : "WriteStorageBackupTarget",
         "Effect" : "Allow",
         "Action" : [
@@ -451,6 +463,18 @@ resource "aws_iam_role_policy" "identity_pf" {
         "Resource" : [
           "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/audit:*",
           "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/audit"
+        ]
+      },
+      {
+        "Sid" : "WriteLogsOpsLogs",
+        "Effect" : "Allow",
+        "Action" : [
+          "logs:PutLogEvents",
+          "logs:CreateLogStream"
+        ],
+        "Resource" : [
+          "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/access:*",
+          "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/access"
         ]
       }
     ]
@@ -1942,10 +1966,6 @@ resource "aws_cloudwatch_log_group" "ops_logs" {
     BindingRole = "ops-logs"
   }
 }
-
-# NOTE: role ds ships logs to ops-logs, but no workload principal acting for it holds the permit `write-logs ops-logs`: its servers' instance role isn't granted the writes
-
-# NOTE: role pf-engine ships logs to ops-logs, but no workload principal acting for it holds the permit `write-logs ops-logs`: its servers' instance role isn't granted the writes
 
 # NOTE: role pf-admin ships logs to audit-logs, but no workload principal acting for it holds the permit `write-logs audit-logs`: its servers' instance role isn't granted the writes
 

@@ -8,8 +8,9 @@ named in an import notice when read back. Google has no mail service: a sending 
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.inventory import of_types
 from opsdir.domains.edge.records import is_hosted
-from opsdir.domains.estate.authorizations import boundary_findings, required_levels, services_used
+from opsdir.domains.estate.authorizations import boundary_findings, services_used
 from opsdir_format_terraform.hcl import block, tf_name
+from .account import regime
 
 VPC, MONITORING, STORAGE = "Virtual Private Cloud (VPC)", "Cloud Monitoring", "Cloud Storage"
 EDGE = {"waf": "Google Cloud Armor", "ddos": "Google Cloud Armor", "cdn": "Cloud CDN", "api-gateway": "API Gateway"}
@@ -38,9 +39,6 @@ NAMES = {
                           "ciamFlowLog", "ciamPrivateEndpoint", "ciamEndpointService", "ciamEgress")},
 }
 WORKLOAD = "google_assured_workloads_workload"
-# the compliance regime of each required level, the most demanding first
-REGIMES = (("dod-il5", "IL5"), ("dod-il4", "IL4"), ("fedramp-high", "FEDRAMP_HIGH"),
-           ("fedramp-moderate", "FEDRAMP_MODERATE"), ("dod-il2", "IL2"))
 
 
 def gcp_services(m):
@@ -58,17 +56,17 @@ def render_workload(m):
     landing zone, or a note when its organization, billing account or required level isn't recorded."""
     if "assured-workload" not in (m.env.attrs.get("ciamConfigurationMet") or ()):
         return ()
-    regime = next((r for level, r in REGIMES if level in required_levels(m)), None)
+    regime_ = regime(m)
     org = (one(m.cloud, "ciamOrganizationRef") or "").rsplit("/", 1)[-1]
     billing = one(m.cloud, "ciamBillingAccountRef")
-    missing = [w for w, have in (("a required level (ciamRequiredAuthorization)", regime),
+    missing = [w for w, have in (("a required level (ciamRequiredAuthorization)", regime_),
                                  ("its organization (ciamOrganizationRef)", org),
                                  ("its billing account (ciamBillingAccountRef)", billing)) if not have]
     if missing:
         return (f"# NOTE: {m.label}'s Assured Workloads workload: not rendered: "
                 f"the record names no {', '.join(missing)}",)
     return (block("resource", [WORKLOAD, tf_name(f"ciam_{rdn_value(m.env)}")], [
-        ("compliance_regime", regime), ("display_name", f"ciam-{rdn_value(m.env)}"[:30]),
+        ("compliance_regime", regime_), ("display_name", f"ciam-{rdn_value(m.env)}"[:30]),
         ("location", one(m.cloud, "ciamRegion")), ("organization", org),
         ("billing_account", f"billingAccounts/{billing}")]),)
 

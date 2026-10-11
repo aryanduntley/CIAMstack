@@ -9,6 +9,7 @@ from typing import NamedTuple, Optional
 
 from ..core.environment import env_model
 from .plan import Plan, plan, request_drafts, to_markdown
+from .registry import host_files_of
 from .stack import stack_rows
 
 MigrationRun = NamedTuple("MigrationRun", [("src", str), ("dst", str),
@@ -19,7 +20,8 @@ MigrationRun = NamedTuple("MigrationRun", [("src", str), ("dst", str),
 
 def run(d, src, dst, as_of, adapters, versions):
     """Check both stacks, then plan the move and render the target."""
-    checked = [stack_rows(env_model(d, spec), adapters, versions) for spec in (src, dst)]
+    checked = [stack_rows(m, adapters, versions, host_files_of(m, adapters))
+               for m in (env_model(d, spec) for spec in (src, dst))]
     rows, problems = tuple(r for rs, _ in checked for r in rs), sum(n for _, n in checked)
     if problems:
         return MigrationRun(src, dst, rows, problems, None, False)

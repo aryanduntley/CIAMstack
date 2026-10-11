@@ -27,9 +27,9 @@ from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.formats import YAML
 from opsdir.core.interchange.yaml_text import dump
 from opsdir.core.manifest import header
-from opsdir.domains.compute.workloads import namespace_of, role_clusters, runs_on_kubernetes, workloads
+from opsdir.domains.compute.workloads import role_clusters, role_namespaces
 from opsdir.domains.observability.logs import log_routes
-from opsdir.domains.observability.sources import ALL, kept_clauses, shipments
+from opsdir.domains.observability.sources import ALL, containers_of, kept_clauses, shipments
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 from .account import government, tagged
 from .identities import LOC, RG
@@ -71,17 +71,10 @@ def cluster_routes(m, services):
                  for xs in (tuple(x for x in found if x.route.dn == r.dn and runs_in(x, c)),) if xs)
 
 
-def namespaces(m, cluster, roles):
-    """The namespaces environment m runs these roles' workloads in, in a cluster."""
-    return tuple(dict.fromkeys(namespace_of(w) for w in workloads(m.d)
-                               if one(w, "ciamTargetRole") in roles and runs_on_kubernetes(m, w)
-                               and cluster.dn in {c.dn for c in role_clusters(m, one(w, "ciamTargetRole"))}))
-
-
 def _container(x, sources):
-    if x.source.container:
-        return f"ContainerName == {literal(x.source.container)}"
-    others = [s.container for s in sources if s.server_role == x.role and s.on == "kubernetes" and s.container]
+    own, others = containers_of(x, sources)
+    if own:
+        return f"ContainerName == {literal(own)}"
     return f"ContainerName !in ({', '.join(map(literal, others))})" if others else None
 
 
@@ -107,7 +100,7 @@ def _endpoint(m, cluster):
 
 def _settings(m, cluster, roles):
     """The extension's settings (JSON text): the namespaces the roles run in, in the cluster."""
-    return json.dumps({"dataCollectionSettings": {"namespaces": list(namespaces(m, cluster, roles))}},
+    return json.dumps({"dataCollectionSettings": {"namespaces": list(role_namespaces(m, roles, cluster))}},
                       separators=(",", ":"))
 
 

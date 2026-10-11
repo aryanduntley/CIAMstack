@@ -76,6 +76,16 @@ def kept_clauses(source, kinds):
             *((Clause(None, unwanted(source.match)),) if source.kind in kinds else ()))
 
 
+def containers_of(x, sources):
+    """Which of its role's containers a container Shipment's lines come from: (its source's container, ()) for a
+    source naming one (a kit's log sidecar), else (None, the containers the role's other sources there name): any
+    container but those. Providers write it in their filter syntax."""
+    if x.source.container:
+        return x.source.container, ()
+    return None, tuple(dict.fromkeys(s.container for s in sources
+                                     if s.server_role == x.role and s.on == "kubernetes" and s.container))
+
+
 def route_sources(sources, roles, kinds, on=None):
     """((source, ALL | SOME), ...): the sources of the server roles (and, given on, of that place) a route wanting
     kinds picks lines from, in declaration order."""
@@ -152,7 +162,8 @@ def _status(c):
     if c.source is None:
         return uncollected(c)
     kinds = values(c.route, "ciamLogKind")
-    switched = c.source.requires and any(k in kinds for _, _, k in c.source.match)
+    # a whole file needs its setting whenever it ships; a file of several kinds, only for the kinds the setting turns on
+    switched = c.source.requires and (not c.source.match or any(k in kinds for _, _, k in c.source.match))
     return "; ".join((*((f"no install root: {', '.join(c.unrooted)}",) if c.unrooted else ()),
                       *((f"needs {c.source.requires}",) if switched else ())))
 

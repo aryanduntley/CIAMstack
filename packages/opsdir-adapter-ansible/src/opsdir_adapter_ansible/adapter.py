@@ -11,4 +11,4 @@ ADAPTER = Adapter(name="ansible", kind="platform", applies=None, required_roles=
                   renders="the Ansible inventory and host configuration of its servers", neutral_label=None,
                   vocabulary={"ciamHardeningProfile": HARDENING_PROFILES}, schema=None,
                   formats=(("ansible/templates/*", "text"), ("ansible/*.yml", "yaml")), products=(), secret_patterns=(),
-                  importers=(), profile_terms=None, access=None)
+                  importers=(), profile_terms=None, access=None, places_host_files=True)

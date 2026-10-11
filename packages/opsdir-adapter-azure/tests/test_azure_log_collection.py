@@ -1,12 +1,15 @@
 """Product logs from an environment's servers to Log Analytics: per route a custom table and a data collection rule
 (one workspace), a text source and stream per file and install root, all lines or those of the route's kinds (KQL
-on the JSON in RawData), an association per server; what can't ship, or ships differently, named."""
+on the JSON in RawData), an association per server; the Azure Monitor Agent extension on servers whose host baseline
+doesn't bring it, with the VM's system-assigned identity; what can't ship, or ships differently, named."""
 from opsdir.connectors.registry import services
 from opsdir.core.contract import LogSource
 from opsdir.core.interchange.ldif import LdifRecord
+from opsdir.domains.compute.naming import BASELINES
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.naming import LOG_ROUTES
-from opsdir_adapter_azure.log_collection import log_collection_notes, render_log_collection, table_name
+from opsdir_adapter_azure.log_collection import agent_hosts, log_collection_notes, render_log_collection, table_name
+from opsdir_adapter_azure.terraform import render
 from network_fixtures import ALPHA, entry, model
 
 WS = ("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg/providers/"
@@ -32,12 +35,17 @@ BINDINGS = (entry(ALPHA, "ops", "ciamLogDestination", ciamBindingRole="ops-logs"
                   ciamProviderRef="splunk://ciam"))
 
 
+BASELINE = (OU.format(BASELINES, "baselines")
+            + f"\ndn: cn=ds,{BASELINES}\nobjectClass: top\nobjectClass: ciamObject\nobjectClass: ciamHostBaseline\n"
+            "cn: ds\nciamTargetRole: ds\nciamHostAgent: azuremonitoragent 1.33.2\n")
+
+
 def _root(server, root):
     return LdifRecord(f"cn={server},{ALPHA}", "modify", {}, (("add", "ciamInstallRoot", (root,)),))
 
 
-def _alpha():
-    _, alpha, _ = model(alpha=BINDINGS, tree=TREE, changes=(_root("ds-1", "/opt/ds"), _root("ds-2", "/srv/ds"),
+def _alpha(tree=TREE):
+    _, alpha, _ = model(alpha=BINDINGS, tree=tree, changes=(_root("ds-1", "/opt/ds"), _root("ds-2", "/srv/ds"),
                                                             _root("web-1", "/opt/web")))
     return alpha
 
@@ -70,5 +78,34 @@ def test_a_route_is_a_custom_table_a_rule_with_a_stream_per_file_and_an_associat
 def test_what_isnt_shipped_or_ships_differently_is_named():
     notes = log_collection_notes(_alpha(), _services())
     assert notes[0].startswith("# NOTE: log route errors: /opt/ds/logs/errors not shipped: its destination siem isn't")
-    assert any("Azure Monitor Agent (VM extension Microsoft.Azure.Monitor AzureMonitorLinuxAgent)" in n for n in notes)
+    assert not any("Azure Monitor Agent" in n for n in notes)   # installed here: nothing to name
     assert not any("Azure Government" in n for n in notes)
+
+
+def test_the_agent_is_installed_on_each_server_shipping_logs_with_its_own_identity():
+    alpha = _alpha()
+    assert agent_hosts(alpha, _services()) == ("ds-1", "ds-2", "web-1")
+    hcl = "\n".join(render_log_collection(alpha, _services()))
+    assert hcl.count('resource "azurerm_virtual_machine_extension"') == 3
+    ext = hcl.split('resource "azurerm_virtual_machine_extension" "ama_ds_1"', 1)[1].split("\n}", 1)[0]
+    for line in ('name                       = "AzureMonitorLinuxAgent"',
+                 "virtual_machine_id         = azurerm_linux_virtual_machine.ds_1.id",
+                 'publisher                  = "Microsoft.Azure.Monitor"',
+                 'type                       = "AzureMonitorLinuxAgent"',
+                 "automatic_upgrade_enabled  = true"):
+        assert line in ext
+    main = render(alpha, _services())["terraform/main.tf"]
+    vm = main.split('resource "azurerm_linux_virtual_machine" "ds_1"', 1)[1].split("\n}", 1)[0]
+    assert 'type = "SystemAssigned"' in vm
+
+
+def test_a_baseline_bringing_the_agent_keeps_it_out_and_is_named():
+    alpha = _alpha(TREE + (BASELINE,))
+    assert agent_hosts(alpha, _services()) == ("web-1",)
+    hcl = "\n".join(render_log_collection(alpha, _services()))
+    assert "ama_ds_1" not in hcl and "ama_web_1" in hcl
+    assert ("# NOTE: role ds: the Azure Monitor Agent comes with its host baseline (azuremonitoragent 1.33.2), not "
+            "installed here") in log_collection_notes(alpha, _services())
+    main = render(alpha, _services())["terraform/main.tf"]
+    vm = main.split('resource "azurerm_linux_virtual_machine" "ds_1"', 1)[1].split("\n}", 1)[0]
+    assert "SystemAssigned" not in vm

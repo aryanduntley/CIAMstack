@@ -9,6 +9,7 @@ from .collect import COLLECTORS
 from .inventory import TERRAFORM_STATE
 from .ingress import gateway_plug
 from .kubernetes import SECRET_DELIVERY, workload_identity
+from .ops_agent import host_files
 from .secrets import SECRET_PATTERNS, secret_manager_command
 from .names import PRIORITIES
 from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
@@ -36,4 +37,4 @@ ADAPTER = Adapter(name="gcp", kind="provider", applies=applies, required_roles=(
                   profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE),
                   collectors=COLLECTORS,
                   workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY,
-                  gateway_plug=gateway_plug)
+                  gateway_plug=gateway_plug, host_files=host_files)

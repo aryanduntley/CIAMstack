@@ -18,10 +18,10 @@ TOOLS=$ROOT/tools
 TF_VERSION=1.16.5
 HASHICORP_KEY=C874011F0AB405110D02105534365D9472D7468F    # https://www.hashicorp.com/security (release signing key)
 HELM_VERSION=4.3.0                # 2026-09-09; ForgeOps 2026.3 works with Helm 3 or 4 and recommends the latest
-KUSTOMIZE_VERSION=5.8.2           # 2026-09-30
+KUSTOMIZE_VERSION=5.8.3           # 2026-10-08 (no functional change from 5.8.2)
 KUBECONFORM_VERSION=0.8.0         # 2026-06-04
 PROMETHEUS_VERSION=3.15.0         # 2026-09-24: its promtool checks opsdir-adapter-prometheus's rule files
-ANSIBLE_CORE_VERSION=2.21.4       # 2026-09-08 (controller Python 3.12-3.14)
+ANSIBLE_CORE_VERSION=2.21.5       # 2026-10-05 (controller Python 3.12-3.14)
 ANSIBLE_LINT_VERSION=26.9.0       # 2026-09-22
 AS3_SCHEMA=3.54.0-6               # F5 AS3 LTS JSON schema (opsdir-adapter-f5's declarations)
 AS3_SHA256=9bef9d9e8f2fc6e52eef7491683f09dbacd572d87018b68c49013f9857d38fd3
@@ -62,8 +62,8 @@ pinned_sha() {
   case "$1-$os-$arch" in
     helm-linux-amd64) echo 86584a54def73570558f66f5111cc53dfed56689637ae32c1201205d494f54fb ;;
     helm-linux-arm64) echo 31c5794dd55c66a51e6b7d2e2ac7a114ae8b1de41ff1d9ba51748ac973b06a08 ;;
-    kustomize-linux-amd64) echo 06af0a202c2b831207d0173f9c9cdb1b30abceca0747cb3fbb72792d26055c95 ;;
-    kustomize-linux-arm64) echo 0991957191951cb7dddd142403b5bb98a1fcd6378ba0079dddc1e2c309080a7f ;;
+    kustomize-linux-amd64) echo cb9e31198d3f63b44848bd0afc4c8efc56e6cfef9c93a4a39a211940e6decd61 ;;
+    kustomize-linux-arm64) echo 9867b76482cfc6d25b546abc1d2b5a32bd137505aba640649b4b378f64f6d68f ;;
     kubeconform-linux-amd64) echo 9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883 ;;
     kubeconform-linux-arm64) echo 1f53fc8e81258197a35e8603054162a5af1de8c5af13746c71ab680d9534ed87 ;;
     promtool-linux-amd64) echo 2a542df32eac02ee17b9d844fb2aa1de00dafa5476579ba8a3ba862e9d572ea0 ;;

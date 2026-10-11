@@ -1,10 +1,13 @@
 """The Google Cloud project an environment runs in and how every resource rendered for it is labelled: the project the
 record names (ciamAccountRef) as the default of each root's project_id input, the estate's tag policy as the
 provider's default labels, in label form (lowercase letters, digits, - and _), and a note when the cloud says its
-clients use FIPS endpoints (the google provider has no switch for them). Pure."""
+clients use FIPS endpoints (the google provider has no switch for them); and the Assured Workloads compliance regime an
+environment's required authorization level asks for (Google Cloud has no separate government cloud: a regulated
+placement is a workload under such a regime). Pure."""
 import re
 
 from opsdir.core.directory import one, rdn_value
+from opsdir.domains.estate.authorizations import required_levels
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.estate.tags import required_tags
 from opsdir_format_terraform.hcl import block, ref
@@ -22,6 +25,17 @@ def project_variable(m, described=False):
         ("type", ref("string")),
         *((("description", f"The project {rdn_value(m.env)} runs in"),) if described else ()),
         *((("default", project_id(m)),) if project_id(m) else ())])
+
+
+# the Assured Workloads compliance regime of each required level, the most demanding first
+REGIMES = (("dod-il5", "IL5"), ("dod-il4", "IL4"), ("fedramp-high", "FEDRAMP_HIGH"),
+           ("fedramp-moderate", "FEDRAMP_MODERATE"), ("dod-il2", "IL2"))
+
+
+def regime(m):
+    """The Assured Workloads compliance regime environment m's most demanding required authorization level asks for
+    (IL5, IL4, FEDRAMP_HIGH, FEDRAMP_MODERATE, IL2), or None when it requires none of them."""
+    return next((r for level, r in REGIMES if level in required_levels(m)), None)
 
 
 def label_key(key):

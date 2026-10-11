@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 from opsdir.connectors.registry import ADAPTERS
 from opsdir.core.directory import make_directory, make_entry
+from opsdir.core.versions import in_range
 from opsdir_adapter_opendj.adapter import ADAPTER
 from opsdir_adapter_opendj.render import OPENDJ
 from opsdir_base_ds.observe import config_entries
@@ -20,6 +21,13 @@ def test_registered_through_its_entry_point():
 
 def test_applies_when_a_server_runs_it():
     assert ADAPTER.applies(_servers("OpenDJ 4.6.4")) and not ADAPTER.applies(_servers("PingDS 7.5.1"))
+
+
+def test_supports_opendj_4_and_5():
+    assert ADAPTER.applies(_servers("OpenDJ 5.1.2"))
+    (product, versions), = ADAPTER.products
+    assert product == "OpenDJ" and all(in_range(v, versions) for v in ("4.6.4", "5.0.1", "5.1.2"))
+    assert not in_range("6.0.0", versions) and not in_range("3.5.3", versions)
 
 
 def test_requires_a_replication_administrator_and_no_deployment_id():

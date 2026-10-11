@@ -202,6 +202,11 @@
       "format": "yaml",
       "sha256": "fc9a20605811fb65056209dbcf16183192560031abed79d432e8765ef9c3ef44"
     },
+    "kubernetes/azure-monitor/aks/container-azm-ms-agentconfig.yaml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "f6f130225bf609766047161a6ba8fa2bb317361c0f8d3f3344c070767e74ab01"
+    },
     "kubernetes/ciam/gateway.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
@@ -400,7 +405,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "71e43eb312979bf183041dba4995f7c4440457fa2480fa67f0c9f015ab61bad1"
+      "sha256": "1272173edd4fe4f4452bad750ae822856a442d0d5b1710322a2ffe374fddd286"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

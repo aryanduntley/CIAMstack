@@ -11,7 +11,7 @@ from typing import NamedTuple
 
 from .connectors import capture as capturemod, importing, migration, plan as planmod, profiling, reports, workspace
 from .connectors import fixes as fixmod, prerequisites as prereqmod, settings as settingsmod
-from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, schema_sync, store_parts
+from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, host_files_of, schema_sync, store_parts
 from .connectors.render import render_env
 from .connectors.stack import STATUS_HEADERS, stack_rows
 from .core import search as ldap_search
@@ -65,7 +65,8 @@ def modify(conn, records, change_id):
 # ------------------------------------------------------------------ reading the record
 def stack_check(d, specs=()):
     """Every environment's declared stack against the installed adapters (all environments when none are named)."""
-    results = [stack_rows(env_model(d, spec), ADAPTERS, ADAPTER_VERSIONS) for spec in specs or environment_specs(d)]
+    results = [stack_rows(m, ADAPTERS, ADAPTER_VERSIONS, host_files_of(m))
+               for m in (env_model(d, spec) for spec in specs or environment_specs(d))]
     return StackCheck(STATUS_HEADERS, tuple(row for rows, _ in results for row in rows), sum(n for _, n in results))
 
 

@@ -1,10 +1,10 @@
 log route    server role  runs on     log                                         lines  status
------------  -----------  ----------  ------------------------------------------  -----  ------
+-----------  -----------  ----------  ------------------------------------------  -----  -----------------------------------------
 access-logs  ds           servers     logs/ldap-access.audit.json                 all
 access-logs  ds           servers     logs/http-access.audit.json                 all
 access-logs  pf-engine    kubernetes  container pf-log-runtime-request output     all
 access-logs  pf-engine    kubernetes  container pf-log-request output             all
-audit-logs   ds           servers     logs/audit                                  all
+audit-logs   ds           servers     logs/audit                                  all    needs the File-Based Audit Logger enabled
 audit-logs   pf-engine    kubernetes  container pf-log-audit output               all
 audit-logs   pf-engine    kubernetes  container pf-log-provisioner-audit output   all
 audit-logs   pf-admin     kubernetes  container pf-log-admin output               all

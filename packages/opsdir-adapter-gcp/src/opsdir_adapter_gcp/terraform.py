@@ -41,6 +41,7 @@ from opsdir_adapter_gcp.network import render_network
 from opsdir_adapter_gcp.plumbing import network_data
 from opsdir_adapter_gcp.backups import render_backups
 from opsdir_adapter_gcp.audit import render_trails
+from opsdir_adapter_gcp.log_sinks import log_sink_notes, render_log_sinks
 from opsdir_adapter_gcp.observability import render_buckets, render_policies
 from opsdir_adapter_gcp.canaries import render_checks
 from opsdir_adapter_gcp.discovery import render_discovery
@@ -246,7 +247,8 @@ def render(m, services):
            *gateway_negs(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
-           *forwarding_zones(m), *render_trails(m), *render_buckets(m), *render_policies(m),
+           *forwarding_zones(m), *render_trails(m), *render_buckets(m),
+           *(render_log_sinks(m, services) + log_sink_notes(m, services) if services else ()), *render_policies(m),
            *render_checks(m, endpoints), *render_security(m),
            *render_discovery(m), *render_suppressions(m),
            *render_quota_requests(m), *budget_notes(m),

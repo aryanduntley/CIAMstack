@@ -11,6 +11,7 @@ from opsdir.connectors.registry import (core_fragments, environment, environment
                                        secret_command, services, vocabulary)
 from opsdir.connectors.render import render_env
 from opsdir.connectors.stack import declared_adapters, stack_rows
+from opsdir.core.contract import HostFile
 from opsdir.core.environment import StackComponent
 from opsdir.connectors.workspace import cutover_changes
 from opsdir.core.environment import env_model
@@ -62,6 +63,18 @@ def test_stack_check_against_what_is_installed(d):
     assert stack_rows(m, (FAKE,), VERSIONS) == (((ALPHA, "provider", "fake-cloud", "ok (installed 0.5)"),), 0)
     rows, problems = stack_rows(m, (), {})
     assert problems == 1 and rows[0][3] == "NOT INSTALLED; get it from https://example.test/fake-cloud"
+
+
+def test_host_files_no_adapter_places_are_a_warning_row_not_a_problem(d):
+    m = env_model(d, ALPHA)
+    files = (HostFile("ds", "/etc/agent.yaml", "x", (), "0644", ("ds-1",)),
+             HostFile("web", "/etc/agent.yaml", "x", (), "0644", ("web-1",)))
+    rows, problems = stack_rows(m, (FAKE,), VERSIONS, files)
+    assert problems == 0 and rows[-1] == (ALPHA, "-", "-", "2 files rendered for the servers of ds, web "
+                                          "(/etc/agent.yaml) that no adapter in its stack places: declare one that "
+                                          "places host files (configuration management), or place them another way")
+    assert stack_rows(m, (FAKE._replace(places_host_files=True),), VERSIONS, files)[0] == stack_rows(
+        m, (FAKE,), VERSIONS)[0]                                       # placed: nothing to say
 
 
 def test_an_installed_adapters_schema_joins_the_store_but_not_the_published_file():

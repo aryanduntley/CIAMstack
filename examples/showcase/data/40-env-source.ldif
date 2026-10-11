@@ -860,6 +860,10 @@ ciamGrant: logs:PutLogEvents on arn:aws:logs:us-east-1:111122223333:log-group:
  /ciam/prod/audit:*
 ciamGrant: logs:CreateLogStream on arn:aws:logs:us-east-1:111122223333:log-gro
  up:/ciam/prod/audit:*
+ciamGrant: logs:PutLogEvents on arn:aws:logs:us-east-1:111122223333:log-group:
+ /ciam/prod/access:*
+ciamGrant: logs:CreateLogStream on arn:aws:logs:us-east-1:111122223333:log-gro
+ up:/ciam/prod/access:*
 ciamIdentityKind: role
 ciamProviderRef: arn:aws:iam::111122223333:role/ciam-prod-pf
 ciamTrustedBy: ec2.amazonaws.com
@@ -876,6 +880,10 @@ ciamGrant: logs:PutLogEvents on arn:aws:logs:us-east-1:111122223333:log-group:
  /ciam/prod/audit:*
 ciamGrant: logs:CreateLogStream on arn:aws:logs:us-east-1:111122223333:log-gro
  up:/ciam/prod/audit:*
+ciamGrant: logs:PutLogEvents on arn:aws:logs:us-east-1:111122223333:log-group:
+ /ciam/prod/access:*
+ciamGrant: logs:CreateLogStream on arn:aws:logs:us-east-1:111122223333:log-gro
+ up:/ciam/prod/access:*
 ciamGrant: kms:Decrypt on arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd1
  2ab34cd56ef1234567890ab
 ciamGrant: kms:Encrypt on arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd1

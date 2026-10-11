@@ -28,7 +28,7 @@ from opsdir.core.contract import GatewayPlug, Setting
 from opsdir.core.directory import one, rdn_of, rdn_value
 from opsdir.core.environment import UNBOUND, of_class
 from opsdir.core.settings import setting_value
-from opsdir.domains.compute.workloads import namespace_of, runs_on_kubernetes, workload_secrets, workloads
+from opsdir.domains.compute.workloads import role_namespaces, workload_secrets
 from opsdir.domains.edge.gateways import GATEWAY_HTTP as HTTP_PORT, GATEWAY_HTTPS as HTTPS_PORT, backend_ca, \
     fronted_services, gateway_port
 from opsdir.domains.edge.resolve import front_edge
@@ -123,13 +123,7 @@ def gateway_name(gw):
 def gateway_namespace(m, gw):
     """The namespace a cluster gateway runs in: its binding's, else the first fronted role's workloads'."""
     fronted = [one(svc, "ciamTargetRole") for svc, g in fronted_services(m) if g.dn == gw.dn]
-    return one(gw, "ciamNamespace") or next((ns for role in fronted for ns in role_namespaces(m, role)), "default")
-
-
-def role_namespaces(m, role):
-    """The namespaces environment m runs a server role's workloads in on Kubernetes, in the record's order."""
-    return tuple(dict.fromkeys(namespace_of(w) for w in workloads(m.d)
-                               if one(w, "ciamTargetRole") == role and runs_on_kubernetes(m, w)))
+    return one(gw, "ciamNamespace") or next((ns for role in fronted for ns in role_namespaces(m, (role,))), "default")
 
 
 def tls_secret(gw):
@@ -148,7 +142,7 @@ def _fronted(m, services, gw):
     return tuple((svc, front_edge(m, svc, services.endpoints), routes, ns)
                  for svc, g in fronted_services(m) if g.dn == gw.dn
                  for routes in (tuple(r for r in declared if r.server_role == one(svc, "ciamTargetRole")),) if routes
-                 for ns in role_namespaces(m, one(svc, "ciamTargetRole"))[:1])
+                 for ns in role_namespaces(m, (one(svc, "ciamTargetRole"),))[:1])
 
 
 def gateway_ports(m, services, gw):

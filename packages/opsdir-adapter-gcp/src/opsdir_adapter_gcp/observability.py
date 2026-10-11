@@ -115,6 +115,13 @@ def bucket_retention(days):
     return max(days, 1), None
 
 
+def bucket_parts(b):
+    """(project, location, bucket) of a log destination binding whose ciamProviderRef is a Cloud Logging bucket, or
+    None (no binding, another kind of destination)."""
+    found = _BUCKET.match(resource_id(one(b, "ciamProviderRef") or "") or "") if b is not None else None
+    return found.groups() if found else None
+
+
 def _held(m, b):
     """Whether a log route under legal hold sends logs to destination b's role."""
     role = one(b, "ciamBindingRole")
@@ -123,10 +130,10 @@ def _held(m, b):
 
 
 def _bucket(m, b):
-    cn, found = rdn_value(b), _BUCKET.match(resource_id(one(b, "ciamProviderRef") or "") or "")
+    cn, found = rdn_value(b), bucket_parts(b)
     if found is None:
         return ()
-    project, location, bucket = found.groups()
+    project, location, bucket = found
     if keeper_of(m, b):
         return (f"# Log bucket {cn}: kept by {keeper_of(m, b)}, not rendered here",)
     days, why = bucket_retention(int(one(b, "ciamRetentionDays"))) if one(b, "ciamRetentionDays") is not None \

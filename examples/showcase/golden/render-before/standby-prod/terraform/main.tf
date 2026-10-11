@@ -401,6 +401,13 @@ resource "google_project_iam_member" "identity_ds_write_logs_audit_logs" {
   member  = "serviceAccount:${google_service_account.identity_ds.email}"
 }
 
+resource "google_project_iam_member" "identity_ds_write_logs_ops_logs" {
+  # granted on the project: the narrowest scope Google Cloud allows for it
+  project = "example-aero-ciam-standby"
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.identity_ds.email}"
+}
+
 resource "google_storage_bucket_iam_member" "identity_ds_write_storage_backup_target" {
   bucket = "example-aero-ciam-standby-ds-backups"
   role   = "roles/storage.objectCreator"
@@ -434,6 +441,13 @@ resource "google_secret_manager_secret_iam_member" "identity_pf_read_secret_pf_s
 }
 
 resource "google_project_iam_member" "identity_pf_write_logs_audit_logs" {
+  # granted on the project: the narrowest scope Google Cloud allows for it
+  project = "example-aero-ciam-standby"
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.identity_pf.email}"
+}
+
+resource "google_project_iam_member" "identity_pf_write_logs_ops_logs" {
   # granted on the project: the narrowest scope Google Cloud allows for it
   project = "example-aero-ciam-standby"
   role    = "roles/logging.logWriter"
@@ -2229,6 +2243,40 @@ resource "google_logging_project_bucket_config" "ops_logs" {
   bucket_id      = "ciam-ops"
   retention_days = 30
 }
+
+resource "google_logging_project_sink" "logs_access_logs" {
+  name                   = "ciam-prod-access-logs"
+  description            = "Log route access-logs: product logs to ops-logs (opsdir)"
+  destination            = "logging.googleapis.com/projects/example-aero-ciam-standby/locations/global/buckets/ciam-ops"
+  filter                 = "(logName =~ \"/logs/ciam_ds_logs_ldap_access_audit_json$\") OR (logName =~ \"/logs/ciam_ds_logs_http_access_audit_json$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_runtime_request_log$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_request_log$\")"
+  unique_writer_identity = true
+}
+
+resource "google_logging_project_exclusion" "logs_access_logs" {
+  name        = "ciam-prod-access-logs"
+  description = "Log route access-logs: product logs to ops-logs (opsdir): kept in ops-logs, not also in _Default"
+  filter      = "(logName =~ \"/logs/ciam_ds_logs_ldap_access_audit_json$\") OR (logName =~ \"/logs/ciam_ds_logs_http_access_audit_json$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_runtime_request_log$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_request_log$\")"
+}
+
+resource "google_logging_project_sink" "logs_audit_logs" {
+  name                   = "ciam-prod-audit-logs"
+  description            = "Log route audit-logs: product logs to audit-logs (opsdir)"
+  destination            = "logging.googleapis.com/projects/example-aero-ciam-standby/locations/global/buckets/ciam-audit"
+  filter                 = "(logName =~ \"/logs/ciam_ds_logs_audit$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_audit_log$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_provisioner_audit_log$\") OR (logName =~ \"/logs/ciam_pf_admin_pingfederate_log_admin_log$\") OR (logName =~ \"/logs/ciam_pf_admin_pingfederate_log_admin_event_detail_log$\") OR (logName =~ \"/logs/ciam_pf_admin_pingfederate_log_admin_api_log$\") OR (logName =~ \"/logs/ciam_pf_admin_pingfederate_log_admin_request_log$\")"
+  unique_writer_identity = true
+}
+
+resource "google_logging_project_exclusion" "logs_audit_logs" {
+  name        = "ciam-prod-audit-logs"
+  description = "Log route audit-logs: product logs to audit-logs (opsdir): kept in audit-logs, not also in _Default"
+  filter      = "(logName =~ \"/logs/ciam_ds_logs_audit$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_audit_log$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_provisioner_audit_log$\") OR (logName =~ \"/logs/ciam_pf_admin_pingfederate_log_admin_log$\") OR (logName =~ \"/logs/ciam_pf_admin_pingfederate_log_admin_event_detail_log$\") OR (logName =~ \"/logs/ciam_pf_admin_pingfederate_log_admin_api_log$\") OR (logName =~ \"/logs/ciam_pf_admin_pingfederate_log_admin_request_log$\")"
+}
+
+# NOTE: the Ops Agent configuration opsdir renders for configuration management to place (/etc/google-cloud-ops-agent/config.yaml) replaces one the servers already have (the agent reads only that file): merge their own receivers and pipelines into it; the agent itself comes with the host baseline
+
+# NOTE: role pf-admin ships logs to audit-logs, but no workload principal acting for it holds the permit `write-logs audit-logs`: its servers' service account isn't granted roles/logging.logWriter
+
+# NOTE: Assured Workloads (FEDRAMP_MODERATE): Cloud Logging, Compute Engine and GKE are supported products; the Ops Agent isn't listed on its own, and restrictions on log sinks and GKE workload logging under it are to be confirmed
 
 # NOTE: alert rule login-failures: not rendered: its alarm is a log-based alert and the record holds no query
 

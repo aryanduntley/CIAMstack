@@ -1,7 +1,8 @@
 """Azure adapter: render an environment's infrastructure bindings as Terraform (hashicorp/azurerm ~> 4). Each workload
 principal its servers run as gets a user-assigned managed identity on those VMs and role assignments from its
 permissions (the Azure permission table, opsdir_adapter_azure.access), each at the narrowest scope: the secret or key
-in its vault (Key Vault's RBAC model), the storage container, the resource a provider ref names."""
+in its vault (Key Vault's RBAC model), the storage container, the resource a provider ref names. A VM that gets the
+Azure Monitor Agent from here (log_collection.agent_hosts) also gets a system-assigned identity, the agent's own."""
 from itertools import chain
 
 from opsdir.core.directory import follow, one, rdn_value, values
@@ -21,7 +22,7 @@ from .databases import render_databases
 from .storage import render_object_stores
 from .audit import render_trails
 from .container_logs import container_log_notes, render_container_logs
-from .log_collection import log_collection_notes, render_log_collection
+from .log_collection import agent_hosts, log_collection_notes, render_log_collection
 from .observability import render_alerts, render_workspaces
 from .canaries import render_tests
 from .budgets import budget_inputs, render_budgets
@@ -72,7 +73,15 @@ def _security_groups(m):
             *chain.from_iterable(_security_rule(m, fw, *prios[fw.dn]) for fw in rules))
 
 
-def _server(m, s, des, identities=()):
+def _identity(w, agent):
+    """A VM's identity block: its workload's user-assigned identity, a system-assigned one for the Azure Monitor
+    Agent opsdir installs on it (log_collection), both, or none."""
+    kinds = (*(("SystemAssigned",) if agent else ()), *(("UserAssigned",) if w else ()))
+    return (("identity", Block((("type", ", ".join(kinds)), *((("identity_ids", [
+        ref(f"azurerm_user_assigned_identity.{tf_name(w.identity_role)}.id")]),) if w else ())))),) if kinds else ()
+
+
+def _server(m, s, des, identities=(), agents=frozenset()):
     n, role = tf_name(rdn_value(s)), one(s, "ciamServerRole")
     w = identity_of(identities, role)
     disk_notes, disk = os_disk(m, s, des)
@@ -95,8 +104,7 @@ def _server(m, s, des, identities=()):
                 ("source_image_id", recorded(s, "ciamImageRef", "image")),
                 ("admin_ssh_key", Block((("username", "ciamadmin"), ("public_key", ref("var.admin_ssh_public_key"))))),
                 ("os_disk", disk),
-                *((("identity", Block((("type", "UserAssigned"), ("identity_ids", [
-                    ref(f"azurerm_user_assigned_identity.{tf_name(w.identity_role)}.id")])))),) if w else ()),
+                *_identity(w, rdn_value(s) in agents),
                 ("tags", tagged(m, {"Role": role, "Hostname": one(s, "ciamHostname"),
                           "Product": one(s, "ciamProductVersion", ""), **boot_tag(m, s), "ManagedBy": "opsdir"}))]),
             *server_volumes(m, s))
@@ -210,10 +218,11 @@ def _interconnect_note(m, ic):
 def render(m, services):
     endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     des, identities = one_role(m, "disk-encryption"), workload_identities(m, ACCESS)
+    agents = frozenset(agent_hosts(m, services)) if services else frozenset()
     containers, container_files = render_container_logs(m, services) if services else ((), {})
     out = (*network_data(m), *_security_groups(m), *aks_data(identities),
            *chain.from_iterable(identity(m, w) for w in identities),
-           *chain.from_iterable(_server(m, s, des, identities) for s in m.servers), *snapshot_policy_notes(m),
+           *chain.from_iterable(_server(m, s, des, identities, agents) for s in m.servers), *snapshot_policy_notes(m),
            *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),

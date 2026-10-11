@@ -24,7 +24,7 @@ Paths 1-4 are complete (FP foundation incl. the product-only docs and management
 - Two-way conversion for every covered artifact (files >> db >> files), with round-trip tests; output parseable into any major target system
 - Keys/certs/secrets described fully enough to rebuild the stack elsewhere (type, algorithm, HSM-backed, exportability, store location ref, rotation, continuity, usedBy); secret material never enters the DB
 - Product-internal choices (e.g. where PF keeps OAuth clients: XML, JDBC or LDAP) are database entries with parsers covering every case, never build-time decisions
-- Version-neutral moves: versions are data carried unchanged through a migration; upgrades are separate changes
+- Versions: CIAMstack is built on the current release of everything it chooses; users run any version at or above each adapter's minimum (never forced up); a migration carries product versions unless the target declares an upgrade within the supported range, and the planner names the changes between the two versions that affect the record (decision 2375)
 - Cover every STACK.md section 21 gap and every section 22 question as data + parsers
 - Management first: the record is what the platform is operated from; migration is one feature, not the product's framing
 - Operators can record facts nobody foresaw: custom fields and record types with rich metadata, governed like all data

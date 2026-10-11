@@ -24,6 +24,6 @@ ADAPTER = Adapter(name="opendj", kind="product", applies=applies, required_roles
                                             "topology",
                   neutral_label="DS", vocabulary={}, schema=None,
                   formats=(*LINEAGE_FORMATS, ("ds/setup-*.sh", "shell")),
-                  products=(("OpenDJ", ">=4,<5"),),
+                  products=(("OpenDJ", ">=4,<6"),),
                   secret_patterns=(), importers=importers(OPENDJ), profile_terms=TERMS, access=None,
                   listeners=ds_listeners, collectors=config_collectors("opendj", OPENDJ_FLAGS), logs=LOGS)

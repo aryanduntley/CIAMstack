@@ -21,10 +21,10 @@ SETS, PRINCIPALS = f"ou=permission-sets,{R}", f"ou=principals,{R}"
 PERMISSION_SETS = (
     ("pf-runtime", "What PingFederate's servers read and write",
      ("read-secret pf-admin-password", "read-secret pf-signing-key", "read-secret pf-ds-bind-password",
-      "write-logs audit-logs")),
+      "write-logs audit-logs", "write-logs ops-logs")),
     ("ds-runtime", "What the directory servers read and write",
      ("read-secret ds-root-password", "use-key disk-encryption", "write-storage backup-target",
-      "write-logs audit-logs")),
+      "write-logs audit-logs", "write-logs ops-logs")),
     ("release", "What the ciam-ops pipeline changes when it releases",
      ("write-secret pf-admin-password", "manage pf-sso-service")),
     ("platform-admin", "What the platform admins manage",
@@ -63,16 +63,19 @@ ACCT = "arn:aws:iam::111122223333"
 SM = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/"
 KMS = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
 AUDIT = "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/audit:*"
+OPS = "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/access:*"
 ELB = "arn:aws:elasticloadbalancing:*:*"
 ADMINS_AWS = "9a4f7c2e-0000-4000-8000-0000000000a1"          # the Identity Center group's id
 # AWS identities: (cn, kind, provider ref, trusted by, grants)
 AWS_IDENTITIES = (
     ("identity-pf", "role", f"{ACCT}:role/ciam-prod-pf", ("ec2.amazonaws.com",),
-     (f"secretsmanager:GetSecretValue on {SM}*", f"logs:PutLogEvents on {AUDIT}", f"logs:CreateLogStream on {AUDIT}")),
+     (f"secretsmanager:GetSecretValue on {SM}*", f"logs:PutLogEvents on {AUDIT}", f"logs:CreateLogStream on {AUDIT}",
+      f"logs:PutLogEvents on {OPS}", f"logs:CreateLogStream on {OPS}")),
     # planted: s3:* on everything, wider than writing backups
     ("identity-ds", "role", f"{ACCT}:role/ciam-prod-ds", ("ec2.amazonaws.com",),
      (f"secretsmanager:GetSecretValue on {SM}ds-root-password-??????", "s3:* on *", f"logs:PutLogEvents on {AUDIT}",
-      f"logs:CreateLogStream on {AUDIT}", f"kms:Decrypt on {KMS}", f"kms:Encrypt on {KMS}",
+      f"logs:CreateLogStream on {AUDIT}", f"logs:PutLogEvents on {OPS}", f"logs:CreateLogStream on {OPS}",
+      f"kms:Decrypt on {KMS}", f"kms:Encrypt on {KMS}",
       f"kms:GenerateDataKey on {KMS}")),
     # planted: nobody records what acts as it, and the target doesn't bind it
     ("identity-idm", "role", f"{ACCT}:role/ciam-prod-idm", ("ec2.amazonaws.com",),

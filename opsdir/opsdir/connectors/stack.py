@@ -68,12 +68,24 @@ def _overlay_rows(m):
              "overrides it doesn't set itself"),) if bases else ()
 
 
-def stack_rows(m, adapters, versions):
+def _host_file_rows(m, adapters, files):
+    """A row naming the files the adapters render for environment m's servers (HostFiles: agents' configuration) when
+    no adapter rendering it places them: they reach no server. A warning, not a problem: the files are rendered, and
+    an operator may place them another way."""
+    if not files or any(a.places_host_files for a in declared_adapters(m, adapters)):
+        return ()
+    paths, roles = sorted({f.path for f in files}), sorted({f.server_role for f in files})
+    return ((m.label, "-", "-", f"{len(files)} files rendered for the servers of {', '.join(roles)} "
+             f"({', '.join(paths)}) that no adapter in its stack places: declare one that places host files "
+             "(configuration management), or place them another way"),)
+
+
+def stack_rows(m, adapters, versions, host_files=()):
     """(rows, problem count) describing one environment's stack against the installed adapters (name -> version),
-    servers whose product versions the adapters rendering them don't support, and the environments it is an
-    overlay of."""
+    servers whose product versions the adapters rendering them don't support, the environments it is an overlay of,
+    and the files rendered for its servers (host_files: the HostFiles its adapters render) nothing places."""
     rows, problems = _stack_rows(m, adapters, versions)
-    return (*_overlay_rows(m), *rows), problems
+    return (*_overlay_rows(m), *rows, *_host_file_rows(m, adapters, host_files)), problems
 
 
 def _stack_rows(m, adapters, versions):

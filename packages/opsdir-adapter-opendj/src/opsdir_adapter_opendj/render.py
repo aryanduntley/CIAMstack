@@ -5,8 +5,8 @@ Environment-neutral (identical for every environment):  ldap/schema.ldif, ldap/d
 Environment-specific (hostnames, peers, secret refs):   ds/setup-<server>.sh (setup, then dsreplication)
 
 OpenDJ has no deployment ID: a new replica joins the replication topology through an existing replica
-(`dsreplication enable`) and is initialized from it. Command and option names follow the OpenDJ 4.x
-documentation; verify them against the exact target version before use.
+(`dsreplication enable`) and is initialized from it. Command and option names follow the OpenDJ 4.x documentation
+and are unchanged in 5.0 and 5.1 (doc.openidentityplatform.org, research note 2373).
 """
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.environment import joins

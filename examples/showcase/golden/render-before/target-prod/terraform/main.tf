@@ -212,6 +212,12 @@ resource "azurerm_role_assignment" "identity_ds_write_logs_audit_logs" {
   principal_id         = azurerm_user_assigned_identity.identity_ds.principal_id
 }
 
+resource "azurerm_role_assignment" "identity_ds_write_logs_ops_logs" {
+  scope                = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-ciam-prod-ops"
+  role_definition_name = "Monitoring Metrics Publisher"
+  principal_id         = azurerm_user_assigned_identity.identity_ds.principal_id
+}
+
 resource "azurerm_user_assigned_identity" "identity_pf" {
   name                = "id-ciam-prod-pf"
   resource_group_name = data.azurerm_resource_group.main.name
@@ -255,6 +261,12 @@ resource "azurerm_role_assignment" "identity_pf_read_secret_pf_signing_key" {
 
 resource "azurerm_role_assignment" "identity_pf_write_logs_audit_logs" {
   scope                = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-ciam-prod-audit"
+  role_definition_name = "Monitoring Metrics Publisher"
+  principal_id         = azurerm_user_assigned_identity.identity_pf.principal_id
+}
+
+resource "azurerm_role_assignment" "identity_pf_write_logs_ops_logs" {
+  scope                = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-ciam-prod-ops"
   role_definition_name = "Monitoring Metrics Publisher"
   principal_id         = azurerm_user_assigned_identity.identity_pf.principal_id
 }
@@ -303,7 +315,7 @@ resource "azurerm_linux_virtual_machine" "ds_1" {
     disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
   }
   identity {
-    type         = "UserAssigned"
+    type         = "SystemAssigned, UserAssigned"
     identity_ids = [azurerm_user_assigned_identity.identity_ds.id]
   }
   tags = {
@@ -392,7 +404,7 @@ resource "azurerm_linux_virtual_machine" "ds_2" {
     disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
   }
   identity {
-    type         = "UserAssigned"
+    type         = "SystemAssigned, UserAssigned"
     identity_ids = [azurerm_user_assigned_identity.identity_ds.id]
   }
   tags = {
@@ -481,7 +493,7 @@ resource "azurerm_linux_virtual_machine" "ds_3" {
     disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
   }
   identity {
-    type         = "UserAssigned"
+    type         = "SystemAssigned, UserAssigned"
     identity_ids = [azurerm_user_assigned_identity.identity_ds.id]
   }
   tags = {
@@ -1349,6 +1361,369 @@ resource "azurerm_log_analytics_workspace" "security_logs" {
     Owner       = "ciam-platform"
     BindingRole = "security-findings"
   }
+}
+
+resource "azurerm_log_analytics_workspace_table_custom_log" "logs_access_logs" {
+  name         = "CiamAccessLogs_CL"
+  workspace_id = azurerm_log_analytics_workspace.ops_logs.id
+  plan         = "Analytics"
+  column {
+    name = "TimeGenerated"
+    type = "dateTime"
+  }
+  column {
+    name = "RawData"
+    type = "string"
+  }
+  column {
+    name = "FilePath"
+    type = "string"
+  }
+  column {
+    name = "Computer"
+    type = "string"
+  }
+}
+
+resource "azurerm_monitor_data_collection_rule" "logs_access_logs" {
+  name                = "dcr-ciam-prod-access-logs"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  description         = "Log route access-logs: product log files to ops-logs (opsdir)"
+  destinations {
+    log_analytics {
+      name                  = "workspace"
+      workspace_resource_id = azurerm_log_analytics_workspace.ops_logs.id
+    }
+  }
+  data_sources {
+    log_file {
+      name          = "file1"
+      file_patterns = ["/opt/ping/opendj/logs/ldap-access.audit.json"]
+      format        = "text"
+      streams       = ["Custom-CiamAccessLogsFile1"]
+    }
+    log_file {
+      name          = "file2"
+      file_patterns = ["/opt/ping/opendj/logs/http-access.audit.json"]
+      format        = "text"
+      streams       = ["Custom-CiamAccessLogsFile2"]
+    }
+  }
+  stream_declaration {
+    stream_name = "Custom-CiamAccessLogsFile1"
+    column {
+      name = "TimeGenerated"
+      type = "datetime"
+    }
+    column {
+      name = "RawData"
+      type = "string"
+    }
+    column {
+      name = "FilePath"
+      type = "string"
+    }
+    column {
+      name = "Computer"
+      type = "string"
+    }
+  }
+  stream_declaration {
+    stream_name = "Custom-CiamAccessLogsFile2"
+    column {
+      name = "TimeGenerated"
+      type = "datetime"
+    }
+    column {
+      name = "RawData"
+      type = "string"
+    }
+    column {
+      name = "FilePath"
+      type = "string"
+    }
+    column {
+      name = "Computer"
+      type = "string"
+    }
+  }
+  data_flow {
+    streams       = ["Custom-CiamAccessLogsFile1"]
+    destinations  = ["workspace"]
+    transform_kql = "source"
+    output_stream = "Custom-CiamAccessLogs_CL"
+  }
+  data_flow {
+    streams       = ["Custom-CiamAccessLogsFile2"]
+    destinations  = ["workspace"]
+    transform_kql = "source"
+    output_stream = "Custom-CiamAccessLogs_CL"
+  }
+  depends_on = [azurerm_log_analytics_workspace_table_custom_log.logs_access_logs]
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Realizes    = "access-logs"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_monitor_data_collection_rule_association" "logs_access_logs_ds_1" {
+  name                    = "access-logs-ds-1"
+  target_resource_id      = azurerm_linux_virtual_machine.ds_1.id
+  data_collection_rule_id = azurerm_monitor_data_collection_rule.logs_access_logs.id
+}
+
+resource "azurerm_monitor_data_collection_rule_association" "logs_access_logs_ds_2" {
+  name                    = "access-logs-ds-2"
+  target_resource_id      = azurerm_linux_virtual_machine.ds_2.id
+  data_collection_rule_id = azurerm_monitor_data_collection_rule.logs_access_logs.id
+}
+
+resource "azurerm_monitor_data_collection_rule_association" "logs_access_logs_ds_3" {
+  name                    = "access-logs-ds-3"
+  target_resource_id      = azurerm_linux_virtual_machine.ds_3.id
+  data_collection_rule_id = azurerm_monitor_data_collection_rule.logs_access_logs.id
+}
+
+resource "azurerm_log_analytics_workspace_table_custom_log" "logs_audit_logs" {
+  name         = "CiamAuditLogs_CL"
+  workspace_id = azurerm_log_analytics_workspace.audit_logs.id
+  plan         = "Analytics"
+  column {
+    name = "TimeGenerated"
+    type = "dateTime"
+  }
+  column {
+    name = "RawData"
+    type = "string"
+  }
+  column {
+    name = "FilePath"
+    type = "string"
+  }
+  column {
+    name = "Computer"
+    type = "string"
+  }
+}
+
+resource "azurerm_monitor_data_collection_rule" "logs_audit_logs" {
+  name                = "dcr-ciam-prod-audit-logs"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  description         = "Log route audit-logs: product log files to audit-logs (opsdir)"
+  destinations {
+    log_analytics {
+      name                  = "workspace"
+      workspace_resource_id = azurerm_log_analytics_workspace.audit_logs.id
+    }
+  }
+  data_sources {
+    log_file {
+      name          = "file1"
+      file_patterns = ["/opt/ping/opendj/logs/audit"]
+      format        = "text"
+      streams       = ["Custom-CiamAuditLogsFile1"]
+    }
+  }
+  stream_declaration {
+    stream_name = "Custom-CiamAuditLogsFile1"
+    column {
+      name = "TimeGenerated"
+      type = "datetime"
+    }
+    column {
+      name = "RawData"
+      type = "string"
+    }
+    column {
+      name = "FilePath"
+      type = "string"
+    }
+    column {
+      name = "Computer"
+      type = "string"
+    }
+  }
+  data_flow {
+    streams       = ["Custom-CiamAuditLogsFile1"]
+    destinations  = ["workspace"]
+    transform_kql = "source"
+    output_stream = "Custom-CiamAuditLogs_CL"
+  }
+  depends_on = [azurerm_log_analytics_workspace_table_custom_log.logs_audit_logs]
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Realizes    = "audit-logs"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_monitor_data_collection_rule_association" "logs_audit_logs_ds_1" {
+  name                    = "audit-logs-ds-1"
+  target_resource_id      = azurerm_linux_virtual_machine.ds_1.id
+  data_collection_rule_id = azurerm_monitor_data_collection_rule.logs_audit_logs.id
+}
+
+resource "azurerm_monitor_data_collection_rule_association" "logs_audit_logs_ds_2" {
+  name                    = "audit-logs-ds-2"
+  target_resource_id      = azurerm_linux_virtual_machine.ds_2.id
+  data_collection_rule_id = azurerm_monitor_data_collection_rule.logs_audit_logs.id
+}
+
+resource "azurerm_monitor_data_collection_rule_association" "logs_audit_logs_ds_3" {
+  name                    = "audit-logs-ds-3"
+  target_resource_id      = azurerm_linux_virtual_machine.ds_3.id
+  data_collection_rule_id = azurerm_monitor_data_collection_rule.logs_audit_logs.id
+}
+
+resource "azurerm_virtual_machine_extension" "ama_ds_1" {
+  # Azure Monitor Agent; authenticates with the VM's system-assigned identity (no settings)
+  name                       = "AzureMonitorLinuxAgent"
+  virtual_machine_id         = azurerm_linux_virtual_machine.ds_1.id
+  publisher                  = "Microsoft.Azure.Monitor"
+  type                       = "AzureMonitorLinuxAgent"
+  type_handler_version       = "1.0"
+  auto_upgrade_minor_version = true
+  automatic_upgrade_enabled  = true
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_virtual_machine_extension" "ama_ds_2" {
+  # Azure Monitor Agent; authenticates with the VM's system-assigned identity (no settings)
+  name                       = "AzureMonitorLinuxAgent"
+  virtual_machine_id         = azurerm_linux_virtual_machine.ds_2.id
+  publisher                  = "Microsoft.Azure.Monitor"
+  type                       = "AzureMonitorLinuxAgent"
+  type_handler_version       = "1.0"
+  auto_upgrade_minor_version = true
+  automatic_upgrade_enabled  = true
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_virtual_machine_extension" "ama_ds_3" {
+  # Azure Monitor Agent; authenticates with the VM's system-assigned identity (no settings)
+  name                       = "AzureMonitorLinuxAgent"
+  virtual_machine_id         = azurerm_linux_virtual_machine.ds_3.id
+  publisher                  = "Microsoft.Azure.Monitor"
+  type                       = "AzureMonitorLinuxAgent"
+  type_handler_version       = "1.0"
+  auto_upgrade_minor_version = true
+  automatic_upgrade_enabled  = true
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_monitor_data_collection_endpoint" "logs_aks" {
+  name                = "dce-ciam-prod-aks"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  kind                = "Linux"
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_monitor_data_collection_rule" "logs_access_logs_aks" {
+  name                        = "dcr-ciam-prod-access-logs-aks"
+  location                    = data.azurerm_resource_group.main.location
+  resource_group_name         = data.azurerm_resource_group.main.name
+  description                 = "Log route access-logs: container logs of pf-engine (opsdir)"
+  data_collection_endpoint_id = azurerm_monitor_data_collection_endpoint.logs_aks.id
+  destinations {
+    log_analytics {
+      name                  = "workspace"
+      workspace_resource_id = azurerm_log_analytics_workspace.ops_logs.id
+    }
+  }
+  data_sources {
+    extension {
+      name           = "ciam-containers"
+      extension_name = "ContainerLogV2Extension"
+      streams        = ["Microsoft-ContainerLogV2-HighScale"]
+      extension_json = "{\"dataCollectionSettings\":{\"namespaces\":[\"ciam\"]}}"
+    }
+  }
+  data_flow {
+    streams       = ["Microsoft-ContainerLogV2-HighScale"]
+    destinations  = ["workspace"]
+    transform_kql = "source | where (tostring(KubernetesMetadata.podLabels[\"opsdir.io/role\"]) == \"pf-engine\" and ContainerName == \"pf-log-runtime-request\") or (tostring(KubernetesMetadata.podLabels[\"opsdir.io/role\"]) == \"pf-engine\" and ContainerName == \"pf-log-request\")"
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Realizes    = "access-logs"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_monitor_data_collection_rule_association" "logs_access_logs_aks" {
+  name                    = "access-logs-aks"
+  target_resource_id      = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.ContainerService/managedClusters/aks-ciam-prod"
+  data_collection_rule_id = azurerm_monitor_data_collection_rule.logs_access_logs_aks.id
+}
+
+resource "azurerm_monitor_data_collection_rule" "logs_audit_logs_aks" {
+  name                        = "dcr-ciam-prod-audit-logs-aks"
+  location                    = data.azurerm_resource_group.main.location
+  resource_group_name         = data.azurerm_resource_group.main.name
+  description                 = "Log route audit-logs: container logs of pf-engine, pf-admin (opsdir)"
+  data_collection_endpoint_id = azurerm_monitor_data_collection_endpoint.logs_aks.id
+  destinations {
+    log_analytics {
+      name                  = "workspace"
+      workspace_resource_id = azurerm_log_analytics_workspace.audit_logs.id
+    }
+  }
+  data_sources {
+    extension {
+      name           = "ciam-containers"
+      extension_name = "ContainerLogV2Extension"
+      streams        = ["Microsoft-ContainerLogV2-HighScale"]
+      extension_json = "{\"dataCollectionSettings\":{\"namespaces\":[\"ciam\"]}}"
+    }
+  }
+  data_flow {
+    streams       = ["Microsoft-ContainerLogV2-HighScale"]
+    destinations  = ["workspace"]
+    transform_kql = "source | where (tostring(KubernetesMetadata.podLabels[\"opsdir.io/role\"]) == \"pf-engine\" and ContainerName == \"pf-log-audit\") or (tostring(KubernetesMetadata.podLabels[\"opsdir.io/role\"]) == \"pf-engine\" and ContainerName == \"pf-log-provisioner-audit\") or (tostring(KubernetesMetadata.podLabels[\"opsdir.io/role\"]) == \"pf-admin\" and ContainerName == \"pf-log-admin\") or (tostring(KubernetesMetadata.podLabels[\"opsdir.io/role\"]) == \"pf-admin\" and ContainerName == \"pf-log-admin-event-detail\") or (tostring(KubernetesMetadata.podLabels[\"opsdir.io/role\"]) == \"pf-admin\" and ContainerName == \"pf-log-admin-api\") or (tostring(KubernetesMetadata.podLabels[\"opsdir.io/role\"]) == \"pf-admin\" and ContainerName == \"pf-log-admin-request\")"
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Realizes    = "audit-logs"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_monitor_data_collection_rule_association" "logs_audit_logs_aks" {
+  name                    = "audit-logs-aks"
+  target_resource_id      = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.ContainerService/managedClusters/aks-ciam-prod"
+  data_collection_rule_id = azurerm_monitor_data_collection_rule.logs_audit_logs_aks.id
 }
 
 # NOTE: alert rule login-failures: not rendered: its alarm is a log query alert and the record holds no query

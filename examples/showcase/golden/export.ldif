@@ -1704,6 +1704,7 @@ ciamPermits: read-secret ds-root-password
 ciamPermits: use-key disk-encryption
 ciamPermits: write-storage backup-target
 ciamPermits: write-logs audit-logs
+ciamPermits: write-logs ops-logs
 description: What the directory servers read and write
 
 dn: cn=ds-tls-keystore,ou=credentials,dc=ciam-ops
@@ -3022,6 +3023,7 @@ ciamPermits: read-secret pf-admin-password
 ciamPermits: read-secret pf-signing-key
 ciamPermits: read-secret pf-ds-bind-password
 ciamPermits: write-logs audit-logs
+ciamPermits: write-logs ops-logs
 description: What PingFederate's servers read and write
 
 dn: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
@@ -8451,6 +8453,10 @@ ciamGrant: logs:PutLogEvents on arn:aws:logs:us-east-1:111122223333:log-group:
  /ciam/prod/audit:*
 ciamGrant: logs:CreateLogStream on arn:aws:logs:us-east-1:111122223333:log-gro
  up:/ciam/prod/audit:*
+ciamGrant: logs:PutLogEvents on arn:aws:logs:us-east-1:111122223333:log-group:
+ /ciam/prod/access:*
+ciamGrant: logs:CreateLogStream on arn:aws:logs:us-east-1:111122223333:log-gro
+ up:/ciam/prod/access:*
 ciamGrant: kms:Decrypt on arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd1
  2ab34cd56ef1234567890ab
 ciamGrant: kms:Encrypt on arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd1
@@ -8551,6 +8557,10 @@ ciamGrant: logs:PutLogEvents on arn:aws:logs:us-east-1:111122223333:log-group:
  /ciam/prod/audit:*
 ciamGrant: logs:CreateLogStream on arn:aws:logs:us-east-1:111122223333:log-gro
  up:/ciam/prod/audit:*
+ciamGrant: logs:PutLogEvents on arn:aws:logs:us-east-1:111122223333:log-group:
+ /ciam/prod/access:*
+ciamGrant: logs:CreateLogStream on arn:aws:logs:us-east-1:111122223333:log-gro
+ up:/ciam/prod/access:*
 ciamIdentityKind: role
 ciamProviderRef: arn:aws:iam::111122223333:role/ciam-prod-pf
 ciamTrustedBy: ec2.amazonaws.com

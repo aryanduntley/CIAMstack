@@ -15,6 +15,7 @@ ciamPermits: read-secret pf-admin-password
 ciamPermits: read-secret pf-signing-key
 ciamPermits: read-secret pf-ds-bind-password
 ciamPermits: write-logs audit-logs
+ciamPermits: write-logs ops-logs
 description: What PingFederate's servers read and write
 
 dn: cn=ds-runtime,ou=permission-sets,dc=ciam-ops
@@ -27,6 +28,7 @@ ciamPermits: read-secret ds-root-password
 ciamPermits: use-key disk-encryption
 ciamPermits: write-storage backup-target
 ciamPermits: write-logs audit-logs
+ciamPermits: write-logs ops-logs
 description: What the directory servers read and write
 
 dn: cn=release,ou=permission-sets,dc=ciam-ops
