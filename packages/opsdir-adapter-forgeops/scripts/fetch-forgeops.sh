@@ -5,9 +5,9 @@
 # release's commit, checked against the pinned SHA-256 before it is unpacked. Idempotent.
 #   packages/opsdir-adapter-forgeops/scripts/fetch-forgeops.sh
 set -euo pipefail
-VERSION=2026.3.1
-COMMIT=8c79cbbac7ca72e579e7ab8391284785acad3690
-SHA256=4b8ea403f4770bd0d7cdcf77c6b832157ff698e49dda6f01090242911e674c79
+VERSION=2026.3.2
+COMMIT=3b61b9e0a18b65c4e370dc2512f133296990b363
+SHA256=8a9e54a1505098acfe939d16b0a8219d4c46ca94951cd9e379ce9def9ab31d77
 ROOT=$(cd "$(dirname "$0")/../../.." && pwd)
 DEST=$ROOT/tools/forgeops/$VERSION
 

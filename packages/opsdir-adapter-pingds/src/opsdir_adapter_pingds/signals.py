@@ -1,7 +1,8 @@
 """The neutral signals PingDS servers expose at their Prometheus endpoint (/metrics/prometheus/0.0.4 on the HTTP
 connection handler, served to a monitor-privileged account), as the PingDS 8 monitoring guide names the metrics
-(docs.pingidentity.com/pingds/8/monitoring-guide/monitoring-metrics-prometheus.html). One value per server (instance);
-counters as a per-second rate over 5 minutes."""
+(docs.pingidentity.com/pingds/8/monitoring-guide/monitoring-metrics-prometheus.html). PingDS 8 publishes the endpoint
+by default; on PingDS 7 it must be enabled on the HTTP connection handler first (PingDS release notes, 8.0). One value
+per server (instance); counters as a per-second rate over 5 minutes."""
 from opsdir.core.contract import Signal
 from opsdir.domains.directory.naming import DIRECTORY_SERVER_ROLE as DS
 

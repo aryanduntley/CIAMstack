@@ -87,6 +87,14 @@ def aks_data(identities):
         ("resource_group_name", arm_segment(one(c, "ciamProviderRef"), "resourceGroups") or RG)]) for c in clusters)
 
 
+def federated_credential(address, name, n, issuer, subject):
+    """A federated identity credential on the user-assigned identity azurerm_user_assigned_identity.<n>, trusting the
+    tokens of issuer for subject (azurerm 5.x names the identity by user_assigned_identity_id)."""
+    return block("resource", ["azurerm_federated_identity_credential", address], [
+        ("name", name), ("user_assigned_identity_id", ref(f"azurerm_user_assigned_identity.{n}.id")),
+        ("audience", [AUDIENCE]), ("issuer", issuer), ("subject", subject)])
+
+
 def federated_credentials(w):
     """A federated identity credential on a workload identity per Kubernetes service account that assumes it (AKS
     workload identity: its cluster's OIDC issuer, subject system:serviceaccount:<namespace>:<name>); notes for
@@ -94,12 +102,10 @@ def federated_credentials(w):
     n = tf_name(w.identity_role)
     return (*(f"# NOTE: principal {w.principal}: service account {p.namespace}/{p.service_account} runs in a cluster "
               "this environment doesn't bind, so nothing trusts it" for p in w.pods if p.cluster is None),
-            *(block("resource", ["azurerm_federated_identity_credential", f"{n}_{tf_name(p.namespace)}_"
-                                                                          f"{tf_name(p.service_account)}"], [
-                ("name", f"{w.name}-{p.namespace}-{p.service_account}"), ("resource_group_name", RG),
-                ("parent_id", ref(f"azurerm_user_assigned_identity.{n}.id")), ("audience", [AUDIENCE]),
-                ("issuer", ref(f"data.azurerm_kubernetes_cluster.{_aks(p.cluster)}.oidc_issuer_url")),
-                ("subject", f"system:serviceaccount:{p.namespace}:{p.service_account}")])
+            *(federated_credential(f"{n}_{tf_name(p.namespace)}_{tf_name(p.service_account)}",
+                                   f"{w.name}-{p.namespace}-{p.service_account}", n,
+                                   ref(f"data.azurerm_kubernetes_cluster.{_aks(p.cluster)}.oidc_issuer_url"),
+                                   f"system:serviceaccount:{p.namespace}:{p.service_account}")
               for p in w.pods if p.cluster is not None))
 
 

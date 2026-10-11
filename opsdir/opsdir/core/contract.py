@@ -174,9 +174,11 @@ AccessModel = namedtuple("AccessModel", ("permissions", "escalations", "covers",
 
 # An endpoint a product serves that the edge treats specially: kind is one of the edge domain's endpoint kinds (login,
 # token, password-reset, registration, saml-post, health), path a URL path where '*' stands for one or more path
-# segments (/am/json/realms/*/authenticate), server_role the role of the servers serving it. Products declare their
-# defaults; a policy's ciamEndpointPath says where an estate moved one.
-Endpoint = namedtuple("Endpoint", ("kind", "path", "server_role"))
+# segments (/am/json/realms/*/authenticate), server_role the role of the servers serving it, versions the product
+# versions serving it there (a PEP 440 range, versions.holds), None for every version, port the port it is served on
+# when not the service's (a product's separate admin port, which a health check then probes), else None. Products
+# declare their defaults; a policy's ciamEndpointPath says where an estate moved one.
+Endpoint = namedtuple("Endpoint", ("kind", "path", "server_role", "versions", "port"), defaults=(None, None))
 
 # A neutral signal a product's servers expose (domains/observability: what an alert rule's ciamSignal names): signal
 # the neutral name (replication-delay), server_role the role of the servers exposing it, expr the PromQL expression
@@ -195,10 +197,11 @@ Signal = namedtuple("Signal", ("signal", "server_role", "expr", "unit", "descrip
 # a JSON line's kind ("" for any value: the field is there); line_start the regular expression a record's first line
 # starts with, when records span lines (stack traces), else None; requires the product setting that must be on for the
 # log to exist, in words, or None; container (on kubernetes) the container of the role's pods whose output it is (a
-# kit's log sidecar), None for the role's containers no other of its sources names. Products and kits declare only
-# what their documentation states.
+# kit's log sidecar), None for the role's containers no other of its sources names; versions the product versions
+# writing it (a PEP 440 range, versions.holds), None for every version. Products and kits declare only what their
+# documentation states.
 LogSource = namedtuple("LogSource", ("server_role", "on", "path", "format", "kind", "match", "line_start",
-                                     "requires", "container"), defaults=((), None, None, None))
+                                     "requires", "container", "versions"), defaults=((), None, None, None, None))
 
 # A port a product's servers listen on: server_role the role of the servers, port and protocol (tcp or udp), purpose in
 # words (LDAPS, replication, cluster), peers who connects: any of clients (consumers, directly or through service

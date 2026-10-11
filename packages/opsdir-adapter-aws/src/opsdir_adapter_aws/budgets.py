@@ -25,7 +25,7 @@ from opsdir.core.inventory import of_types, resource, tagged_role
 from opsdir.domains.estate.budgets import budget_channel, budgets, currency, thresholds
 from opsdir.domains.estate.tags import tag_rules
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
-from .account import account_id, govcloud
+from .account import account_id, govcloud, standard_account
 from .tags import state_tags
 
 BUDGET = "aws_budgets_budget"
@@ -34,11 +34,6 @@ BILLING_REGION = "us-east-1"
 PERIODS = {"monthly": "MONTHLY", "quarterly": "QUARTERLY", "annually": "ANNUALLY"}
 PERIOD_OF = {v: k for k, v in PERIODS.items()}
 NOTIFIED = (("ciamActualThreshold", "ACTUAL"), ("ciamForecastThreshold", "FORECASTED"))
-
-
-def billing_account(m):
-    """The standard account a GovCloud cloud's budgets live in (ciamBillingAccountRef), or None."""
-    return one(m.cloud, "ciamBillingAccountRef")
 
 
 def _arn_account(arn):
@@ -53,7 +48,7 @@ def _subscriber(m, b):
         return None, ()
     arn = one(channel, "ciamProviderRef") or ""
     partition, account = _arn_account(arn)
-    owner, wanted = (billing_account(m), "aws") if govcloud(m) else (account_id(m), partition)
+    owner, wanted = (standard_account(m), "aws") if govcloud(m) else (account_id(m), partition)
     if ":sns:" not in arn:
         why = f"{rdn_value(channel)} names no SNS topic ARN (ciamProviderRef)"
     elif partition != wanted or (owner and account != owner):
@@ -79,7 +74,7 @@ def _budget(m, b):
     if keeper:
         holder = get(m.d, keeper)
         return (f"# Budget {cn}: kept by {rdn_value(holder) if holder is not None else keeper}, not rendered here",)
-    if govcloud(m) and not billing_account(m):
+    if govcloud(m) and not standard_account(m):
         return (f"# NOTE: budget {cn}: not rendered: GovCloud's billing is managed in its associated standard account "
                 "and the cloud names none (ciamBillingAccountRef)",)
     topic, notes = _subscriber(m, b)
@@ -99,7 +94,7 @@ def _budget(m, b):
 def needs_billing_provider(m):
     """Whether environment m's root needs the provider aliased to its standard (billing) account: a GovCloud cloud
     naming one, with a budget the platform keeps."""
-    return govcloud(m) and bool(billing_account(m)) and any(not one(b, "ciamManagedBy") for b in budgets(m))
+    return govcloud(m) and bool(standard_account(m)) and any(not one(b, "ciamManagedBy") for b in budgets(m))
 
 
 def render_budgets(m):

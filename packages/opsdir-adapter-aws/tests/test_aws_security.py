@@ -62,7 +62,7 @@ def test_security_hub_subscribes_to_the_standards_it_has_and_names_the_rest():
     out = _render(svc("hub", "posture", ciamAuditScope="organization", ciamSecurityBaseline=("aws-foundational",),
                       ciamComplianceStandard=("nist-800-53-r5", "nist-800-171-r2", "cmmc-l2")))
     assert 'data "aws_partition" "current"' in out and 'control_finding_generator = "SECURITY_CONTROL"' in out
-    assert ("arn:${data.aws_partition.current.partition}:securityhub:${data.aws_region.current.name}::standards/"
+    assert ("arn:${data.aws_partition.current.partition}:securityhub:${data.aws_region.current.region}::standards/"
             "nist-800-53/v/5.0.0") in out
     assert "aws-foundational-security-best-practices/v/1.0.0" in out
     assert "standards/nist-800-171/v/2.0.0" in out and "describe-standards" not in out

@@ -11,7 +11,7 @@ from opsdir.core.interchange.ldif import parse
 from opsdir.domains.compute.naming import WORKLOADS, workload_dn
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.naming import LOG_ROUTES
-from opsdir.domains.observability.sources import (ALL, Clause, NONE, SOME, Shipment, collection_rows,
+from opsdir.domains.observability.sources import (ALL, Clause, NONE, SOME, Shipment, collection_rows, in_force,
                                                   collections, containers_of, declaration_problems, kind_of,
                                                   kinds_of, kept_clauses, picks, route_sources, shipments, under,
                                                   unpermitted, unrooted)
@@ -240,3 +240,17 @@ def test_container_output_comes_from_its_own_container_or_those_no_other_source_
     x = Shipment(None, "app", "kubernetes", main, ALL, None, None, None, ())
     assert containers_of(x, (main, tail, other)) == (None, ("access-tail",))     # any of app's but its sidecar's
     assert containers_of(x._replace(source=tail), (main, tail, other)) == ("access-tail", ())
+
+
+def test_a_source_declared_for_some_versions_counts_only_where_the_role_runs_them():
+    old = LogSource("web", "servers", "logs/old.log", "text", "audit", versions="<2")
+    new = LogSource("web", "servers", "logs/new.log", "text", "audit", versions=">=2")
+    versioned = (f"{_server(ALPHA, 'web-1', 'web', '/opt/web')}ciamProductVersion: WebProduct 1.4\n",
+                 f"{_server(BETA, 'web-b1', 'web', '/opt/web')}ciamProductVersion: WebProduct 2.1\n",
+                 _server(ALPHA, "web-x", "other"))
+    d = build_directory(REGISTRY, tuple(parse(mini_estate.LDIF + "\n" + "\n".join(versioned))))
+    assert in_force(env_model(d, "alpha/prod"), "web", (old, new, WEB)) == (old, WEB)
+    assert in_force(env_model(d, "beta/prod"), "web", (old, new, WEB)) == (new, WEB)
+    assert in_force(env_model(d, "alpha/prod"), "nothing-recorded", (
+        old._replace(server_role="nothing-recorded"), new._replace(server_role="nothing-recorded"))) == (
+        new._replace(server_role="nothing-recorded"),)                   # no version recorded: the newest release

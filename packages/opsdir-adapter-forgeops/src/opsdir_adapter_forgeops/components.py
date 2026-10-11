@@ -15,10 +15,13 @@ from collections import namedtuple
 
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import UNBOUND, one_role
+from opsdir.core.versions import holds
+from opsdir.domains.compute.workloads import recorded_versions
 from opsdir.domains.infrastructure.external import role_hosts
 from opsdir_adapter_kubernetes.kits import image_named, only_image, pod_labels_of, replicas_of, resources_of, storage_of
 from opsdir_adapter_kubernetes.render import ROLE_LABEL, namespace_of, on_kubernetes, service_account_of
-from .release import COMPANION_ROLES, COMPONENTS, DS_LDAPS_PORT, ROLE_COMPONENTS, UIS, component
+from .release import (COMPANION_ROLES, COMPONENTS, DS_LDAPS_PORT, IDM_ADMIN_UI, IDM_ADMIN_UI_VERSIONS, ROLE_COMPONENTS,
+                      UIS, component)
 
 DS_SERVICE_ROLE = "ds-ldaps-service"
 DS_STORES = ("ds-idrepo", "ds-cts")
@@ -40,8 +43,16 @@ def unplaced(m):
     return tuple(w for w in on_kubernetes(m) if one(w, "ciamTargetRole") in ROLE_COMPONENTS and not components_of(w))
 
 
-def _with_companions(names):
+def idm_admin_ui(m, ws):
+    """Whether IDM's administration UI pod is on among workloads ws: IDM runs 8.1 or later there (which no longer
+    bundles it) and a workload binding names its image."""
+    return holds(IDM_ADMIN_UI_VERSIONS, recorded_versions(m, "idm")) and \
+        image_named(m, ws, component(IDM_ADMIN_UI).containers) is not None
+
+
+def _with_companions(names, admin_ui=False):
     on = set(names)
+    on |= {IDM_ADMIN_UI} if admin_ui and "idm" in on else set()
     on |= {"amster"} if "am" in on else set()
     on |= {"ds-set-passwords"} if on & set(DS_STORES) else set()
     on |= {"keystore-create"} if on & {"am", "idm"} else set()
@@ -55,7 +66,9 @@ def placements(m):
     placed = [(namespace_of(w), c, w) for w in on_kubernetes(m) for c in components_of(w)]
     spaces = dict.fromkeys(ns for ns, _, _ in placed)
     return tuple(Placement(ns, tuple((c, w) for n, c, w in placed if n == ns),
-                           _with_companions(c for n, c, _ in placed if n == ns)) for ns in spaces)
+                           _with_companions((c for n, c, _ in placed if n == ns),
+                                            idm_admin_ui(m, [w for n, _, w in placed if n == ns])))
+                 for ns in spaces)
 
 
 def workload_of(p, name):

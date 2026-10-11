@@ -1,7 +1,9 @@
 """PingAM's settings for an explicit egress proxy (opsdir.domains.network.proxies): its HTTP client's advanced server
 properties (the proxy as a URI, the hosts reached directly comma-separated; the URI takes precedence over the JVM's
 proxy), which the scripting engine, social providers and the other users of AM's HTTP client honour, and the standard
-Java proxy properties in the JVM options of its container (JAVA_OPTS, setenv.sh) for the rest. Pure."""
+Java proxy properties in the JVM options of its container (JAVA_OPTS, setenv.sh) for the rest. From PingAM 8.1 an
+Http Client service instance a script's httpClient binding opts into can set its own proxy, overriding these
+properties for that client (docs.pingidentity.com/pingam/8.1/setup/services-configuration.html). Pure."""
 from opsdir.core.contract import ProxySetting
 from opsdir.domains.compute.workloads import runs_here
 from opsdir.domains.network.proxies import DERIVATIONS

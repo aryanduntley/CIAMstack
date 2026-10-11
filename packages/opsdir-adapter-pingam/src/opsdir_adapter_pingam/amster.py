@@ -101,11 +101,19 @@ def _page_children(data):
     return tuple(c for c in data.get("nodes") or () if isinstance(c, dict) and c.get("_id"))
 
 
-def _node(journey, node_id, node_type, display, outcomes, data, patterns):
+def _node_version(listed, data):
+    """A node's version as PingAM 8.1+ exports it (the tree's node map, else the node's _type), as text; None before
+    8.1."""
+    v = (listed or {}).get("version") or ((data or {}).get("_type") or {}).get("version")
+    return str(v) if v is not None else None
+
+
+def _node(journey, node_id, node_type, display, outcomes, data, patterns, version=None):
     settings, held = _settings(data or {}, patterns)
     return _entry(node_dn(journey, node_id), ("ciamObject", "pingamNode"), cn=node_id, pingamNodeType=node_type,
                   pingamDisplayName=display, pingamNodeConfig=canonical(settings) if settings else None,
-                  pingamOutcome=sorted(f"{k}={v}" for k, v in outcomes.items()), pingamWithheld=list(held))
+                  pingamOutcome=sorted(f"{k}={v}" for k, v in outcomes.items()), pingamWithheld=list(held),
+                  pingamNodeVersion=version)
 
 
 def _journey(service, tree, by_id, patterns):
@@ -115,9 +123,9 @@ def _journey(service, tree, by_id, patterns):
     listed = {nid: n for nid, n in (tree.get("nodes") or {}).items()}
     pages = tuple(c for nid in listed for c in _page_children(by_id.get(nid) or {}))
     nodes = (*(_node(j, nid, n.get("nodeType"), n.get("displayName"), n.get("connections") or {}, by_id.get(nid),
-                     patterns) for nid, n in listed.items()),
-             *(_node(j, c["_id"], c.get("nodeType"), c.get("displayName"), {}, by_id.get(c["_id"]), patterns)
-               for c in pages))
+                     patterns, _node_version(n, by_id.get(nid))) for nid, n in listed.items()),
+             *(_node(j, c["_id"], c.get("nodeType"), c.get("displayName"), {}, by_id.get(c["_id"]), patterns,
+                     _node_version(c, by_id.get(c["_id"]))) for c in pages))
     missing = [nid for nid in (*listed, *(c["_id"] for c in pages)) if nid not in by_id]
     settings, _ = _settings(tree, patterns, drop=("entryNodeId", "nodes", "enabled"))
     journey = _entry(j, ("ciamObject", "pingamJourney"), cn=name, pingamRealm=service.dn,

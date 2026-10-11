@@ -4,8 +4,8 @@ group admitting the clients the firewall rules admit; a WAFv2 web ACL with the r
 endpoints, address and country rules and managed groups; Shield Advanced when asked. A passthrough service keeps its
 NLB, tuned by its policy."""
 from opsdir.domains.edge.resolve import Health, RateLimit, tls_level, tls_policy
-from opsdir_adapter_aws.edge import (TLS_POLICIES, alb_service, health_check, rate, servers_backend, shield, stickiness,
-                                     web_acl)
+from opsdir_adapter_aws.edge import (TLS_POLICIES, alb_service, health_check, probe_ingress, rate, servers_backend,
+                                     shield, stickiness, web_acl)
 from opsdir_format_terraform.hcl import Block
 from edge_fixtures import environment, firewall, server, service, spec, subnet
 
@@ -89,3 +89,14 @@ def test_a_passthrough_target_group_takes_the_policys_health_check_and_source_st
     assert health_check(s, False) == ("health_check", Block((("protocol", "TCP"), ("interval", 15))))
     assert stickiness(s, False) == (("stickiness", Block((("type", "source_ip"), ("enabled", True)))),)
     assert stickiness(spec(), False)[0][0] == "#"                           # cookies need an ALB
+
+
+def test_a_product_health_port_is_probed_and_admitted():
+    probed = spec(health=Health("http", "/health/startup", 10, 2, 3, 8085))
+    assert ("port", "8085") in health_check(probed, True)[1].body
+    out = _alb(probed)
+    assert 'resource "aws_vpc_security_group_ingress_rule" "sso_servers_from_alb_8085"' in out
+    assert 'resource "aws_vpc_security_group_egress_rule" "sso_alb_to_servers_8085"' in out
+    nlb = "\n".join(probe_ingress(None, "sso", "pf-engine", probed, ("443",)))
+    assert "cidr_ipv4         = data.aws_vpc.main.cidr_block" in nlb and "from_port         = 8085" in nlb
+    assert probe_ingress(None, "sso", "pf-engine", spec(), ("443",)) == ()

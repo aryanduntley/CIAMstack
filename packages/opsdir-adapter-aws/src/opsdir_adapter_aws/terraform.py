@@ -1,4 +1,4 @@
-"""AWS adapter: render an environment's infrastructure bindings as Terraform (hashicorp/aws ~> 5). Each workload
+"""AWS adapter: render an environment's infrastructure bindings as Terraform (hashicorp/aws 6.x). Each workload
 principal its servers run as gets an IAM role EC2 may assume, a least-privilege policy from its permissions (the AWS
 permission table, opsdir_adapter_aws.access) and an instance profile on those servers."""
 import ipaddress
@@ -25,18 +25,18 @@ from .canaries import render_canaries
 from .discovery import render_discovery
 from .security import render_security
 from .suppressions import render_suppressions
-from .budgets import BILLING, BILLING_REGION, billing_account, needs_billing_provider, render_budgets
+from .budgets import BILLING, BILLING_REGION, needs_billing_provider, render_budgets
 from .quotas import render_quota_requests
-from .cdn import alias, distribution
+from .cdn import fronted
 from .dns import RESOLVER_ENDPOINT, records, resolver_rules, service_record
-from .edge import US_EAST_1, alb_service, health_check, servers_backend, shield, stickiness
+from .edge import US_EAST_1, alb_service, health_check, probe_ingress, servers_backend, shield, stickiness
 from .fluent_bit import fluent_bit_clusters, fluent_bit_notes, render_fluent_bit
 from .identities import EC2_TRUST, eks_cluster_data, identity_clusters, notes, pod_trust, role
 from .ingress import gateway_front
 from .landing import render_landing
 from .network import render_network
 from .backups import render_backups
-from .account import provider_block
+from .account import govcloud, provider_block, required_providers, standard_account
 from .volumes import render_snapshot_policies, root_block_device, server_volumes
 from .databases import copy_alias, copy_regions, render_databases
 from .storage import kept_buckets, render_object_stores
@@ -146,10 +146,10 @@ def _service(m, svc, endpoints=()):
                         ("load_balancer_type", "network"), *mappings,
                         ("tags", {"Service": one(svc, "ciamFqdn"), "ManagedBy": "opsdir"})]),
                     *chain.from_iterable(_listener(m, n, svc, port, targets, spec) for port in values(svc, "ciamPort")),
+                    *probe_ingress(m, n, one(svc, "ciamTargetRole"), spec, tuple(values(svc, "ciamPort"))),
                     *(shield(n, spec, f"aws_lb.{n}.arn") if spec is not None and not spec.cdn else ()))
     cdn = spec is not None and spec.cdn
-    return (*balancer, *(distribution(m, svc, spec, n) if cdn else ()),
-            *service_record(m.d, m, svc, n, alias(n) if cdn else None))
+    return (*balancer, *(fronted(m, svc, spec, n) if cdn else service_record(m.d, m, svc, n)))
 
 
 def _references(m):
@@ -164,6 +164,16 @@ def _references(m):
                      [("bucket", one(bk, "ciamStorageRef").split("://", 1)[1])]),) if bk else ()),
             *((block("data", ["aws_nat_gateway", "pf_egress"], [("id", one(eg, "ciamProviderRef"))]),)
               if eg and one(eg, "ciamProviderRef") else ()))
+
+
+def _us_east_1(m):
+    """The provider CloudFront's certificates and web ACLs are created through: us-east-1 in the environment's account,
+    or in GovCloud (where CloudFront isn't offered) the associated standard account's."""
+    if govcloud(m):
+        return provider_block(m, "us-east-1", US_EAST_1, "CloudFront isn't offered in GovCloud: its distribution, web "
+                              "ACL, Shield protection and certificate are in the associated standard account, in "
+                              "us-east-1 (standard AWS credentials)", account=standard_account(m))
+    return provider_block(m, "us-east-1", US_EAST_1, "CloudFront's certificates and web ACLs live in us-east-1")
 
 
 def _fronted(m, endpoints):
@@ -195,16 +205,13 @@ def render(m, services):
     unbound = unbound_comments(m.unbound)
     main = header(m, "AWS infrastructure for the CIAM platform", HCL) + unbound + "\n" + "\n\n".join(out) + "\n"
     providers = header(m, "Providers", HCL) + "\n" + "\n\n".join([
-        block("terraform", [], [("required_providers", Block((
-            ("aws", {"source": "hashicorp/aws", "version": "~> 5.0"}),
-            *((("archive", {"source": "hashicorp/archive", "version": "~> 2.0"}),) if scripts else ()))))]),
+        required_providers(bool(scripts)),
         provider_block(m),
-        *((provider_block(m, "us-east-1", US_EAST_1, "CloudFront's certificates and web ACLs live in us-east-1"),)
-          if _fronted(m, endpoints) else ()),
+        *((_us_east_1(m),) if _fronted(m, endpoints) and (standard_account(m) or not govcloud(m)) else ()),
         *(provider_block(m, r, copy_alias(r), f"Copies of databases' automated backups in {r}")
           for r in copy_regions(m)),
         *((provider_block(m, BILLING_REGION, BILLING, "GovCloud's billing (AWS Budgets) is managed in its associated "
-                          "standard account", account=billing_account(m)),) if needs_billing_provider(m) else ()),
+                          "standard account", account=standard_account(m)),) if needs_billing_provider(m) else ()),
         *((block("variable", [RESOLVER_ENDPOINT], [
             ("description", "The landing zone's outbound Route 53 Resolver endpoint the forwarding rules use"),
             ("type", ref("string"))]),) if forwarders(m, hosted=False) else ()),

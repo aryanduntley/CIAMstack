@@ -12,13 +12,15 @@ from ..core.findings import findings, responsible
 from ..core.network import is_private
 from ..domains.edge.naming import SENSITIVE
 from ..domains.edge.policies import inspects, policy_for
+from ..domains.compute.workloads import recorded_versions
 from ..domains.edge.resolve import declared_endpoints
 
 
-def endpoints(adapters, server_role, *policies):
-    """{endpoint kind: (paths, ...)} the servers of a role serve: what the adapters declare, each kind replaced where
-    the policies place it elsewhere."""
-    return declared_endpoints(tuple(e for a in adapters for e in a.endpoints), server_role, *policies)
+def endpoints(adapters, server_role, *policies, recorded=()):
+    """{endpoint kind: (paths, ...)} the servers of a role serve: what the adapters declare for the product versions
+    they record (recorded), each kind replaced where the policies place it elsewhere."""
+    return declared_endpoints(tuple(e for a in adapters for e in a.endpoints), server_role, *policies,
+                              recorded=recorded)
 
 
 def public(m):
@@ -41,7 +43,8 @@ def edge_check(src_adapters, dst_adapters):
             for s in public(m):
                 role = one(s, "ciamBindingRole")
                 t, p = policy_for(d, "ciamTrafficPolicy", role), policy_for(d, "ciamProtectionPolicy", role)
-                served = endpoints(adapters, one(s, "ciamTargetRole"), t, p)
+                served = endpoints(adapters, one(s, "ciamTargetRole"), t, p,
+                                   recorded=recorded_versions(m, one(s, "ciamTargetRole")))
                 kinds = {k: served[k] for k in SENSITIVE if k in served}
                 if kinds:
                     seen = exposed.setdefault(role, [s, t, p, {}, []])

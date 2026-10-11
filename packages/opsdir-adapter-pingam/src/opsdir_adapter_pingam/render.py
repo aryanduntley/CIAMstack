@@ -3,7 +3,8 @@ standard documents at AM's endpoint paths (all environment-neutral).
 
   am/global/Realms/<name>.json                   each realm below the root
   am/realms/<realm>/OAuth2Clients/<id>.json      the OIDC clients registered with the realm (standard integrations)
-  am/realms/<realm>/AuthTree/<tree>.json         each journey, and one file per node: <NodeType>/<node id>.json
+  am/realms/<realm>/AuthTree/<tree>.json         each journey, and one file per node: <NodeType>/<node id>.json (a
+                                                 node's version, PingAM 8.1+, where the record holds one)
   am/realms/<realm>/Applications/<set>.json      each policy set, and its policies: Policies/<name>.json
   saml/, oidc/                                   standard metadata, client registrations, discovery per realm
 
@@ -55,15 +56,20 @@ def _page_children(nodes):
     return {c.get("_id") for n in nodes for c in held_json(n, "pingamNodeConfig").get("nodes", ())}
 
 
+def _version(n):
+    """{"version": v} of a node whose record holds a version (PingAM 8.1+), else {}."""
+    return {"version": one(n, "pingamNodeVersion")} if one(n, "pingamNodeVersion") else {}
+
+
 def _tree_node(n):
-    return {"nodeType": one(n, "pingamNodeType"), "displayName": one(n, "pingamDisplayName", ""),
+    return {"nodeType": one(n, "pingamNodeType"), **_version(n), "displayName": one(n, "pingamDisplayName", ""),
             "connections": dict(o.split("=", 1) for o in values(n, "pingamOutcome"))}
 
 
 def _node(path, n):
     withheld = list(values(n, "pingamWithheld"))
     return entity(path, one(n, "pingamNodeType"), rdn_value(n), {
-        **held_json(n, "pingamNodeConfig"), "_type": {"_id": one(n, "pingamNodeType")},
+        **held_json(n, "pingamNodeConfig"), "_type": {"_id": one(n, "pingamNodeType"), **_version(n)},
         **({"x-opsdir": {"withheld": withheld}} if withheld else {})})
 
 

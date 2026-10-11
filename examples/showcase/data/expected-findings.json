@@ -1126,6 +1126,13 @@
       "match": "PingFederate runs on Kubernetes in target/prod (namespace `ciam`): the chart's pods find each other by DNS_PING",
       "planted": "no cluster discovery is bound for PingFederate on AKS (a fix binds the chart's cluster service)",
       "cleared_by": null
+    },
+    {
+      "id": "A119",
+      "area": "Versions",
+      "match": "Versions differ",
+      "planted": "the target runs the current releases (PingAM 8.1.1, PingDS 8.1.2, PingFederate 13.1.3, PingGateway 2026.9.0, PingIDM 8.1.2) over the source's 7.5 / 12.1 / 2024.11",
+      "cleared_by": null
     }
   ]
 }

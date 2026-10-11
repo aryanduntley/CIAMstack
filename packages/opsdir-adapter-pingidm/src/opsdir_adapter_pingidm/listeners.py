@@ -1,13 +1,13 @@
-"""PingIDM's listeners for the ports matrix: its REST and administration interface (HTTPS on 8443 unless the estate
-moved it; the record holds no port for it), and the ports its connectors reach through service names (the connector's
-own port, else the service's). Pure."""
+"""PingIDM's listeners for the ports matrix: its REST interface (HTTPS on 8443 unless the estate moved it; the record
+holds no port for it; the administration UI it served before 8.1 is a separate deployment from 8.1), and the ports its
+connectors reach through service names (the connector's own port, else the service's). Pure."""
 from opsdir.core.contract import Listener
 from opsdir.core.directory import children, one, rdn_value
 from opsdir.core.jsondata import held_json
 from opsdir.domains.network.ports import via_service
 from .naming import CONNECTORS
 
-REST = Listener("idm", 8443, "tcp", "REST and administration", ("admin",))
+REST = Listener("idm", 8443, "tcp", "REST API", ("admin",))
 
 
 def connector_port(c):

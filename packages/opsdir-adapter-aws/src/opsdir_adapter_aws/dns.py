@@ -25,9 +25,10 @@ def _elsewhere(d, m, name):
             "them)",) if party is not None else ()
 
 
-def service_record(d, m, svc, n, target=None):
+def service_record(d, m, svc, n, target=None, cname=None):
     """A service name's Route 53 records: the alias of its load balancer (or target: (DNS name, zone id), a CloudFront
-    distribution), routed when the name routes between environments."""
+    distribution), routed when the name routes between environments; with cname, a CNAME to that name instead (a
+    GovCloud zone can't alias CloudFront, and a zone apex can't hold a CNAME: a comment then)."""
     name = one(svc, "ciamFqdn")
     outside = _elsewhere(d, m, name)
     if outside:
@@ -36,6 +37,8 @@ def service_record(d, m, svc, n, target=None):
     zone = one(svc, "ciamDnsZoneRef") or (one(bound, "ciamProviderRef") if bound is not None else None)
     if not zone:
         return (zone_unknown(svc, "ciamDnsZoneRef"),)
+    if cname is not None:
+        return _cname(d, m, svc, n, zone, bound, cname)
     dns_name, zone_id = target or (ref(f"aws_lb.{n}.dns_name"), ref(f"aws_lb.{n}.zone_id"))
     alias = ("alias", Block((("name", dns_name), ("zone_id", zone_id), ("evaluate_target_health", True))))
     note = (("#", f"an alias takes the load balancer's TTL; the recorded {one(svc, 'ciamTtlSeconds')} s doesn't "
@@ -59,6 +62,19 @@ def service_record(d, m, svc, n, target=None):
                 *head, ("ttl", ttl(a.binding)), ("records", [address(a)]), *_policy(a.policy, a.weight, a.label),
                 ("health_check_id", ref(f"aws_route53_health_check.{n}_{tf_name(a.label)}.id"))])))
         for a in found)
+
+
+def _cname(d, m, svc, n, zone, bound, target):
+    name = one(svc, "ciamFqdn")
+    if bound is not None and name.rstrip(".").lower() == (one(bound, "ciamDnsZone") or "").rstrip(".").lower():
+        return (f"# UNBOUND: `{name}` is its zone's apex: a CNAME can't be there, and a GovCloud Route 53 zone can't "
+                "alias CloudFront: host the public zone in the standard partition's Route 53",)
+    if routing(d, m, svc) is not None:
+        return (f"# `{name}` routes between environments, but a GovCloud zone answers it with a CNAME to CloudFront: "
+                "routing records not rendered",)
+    return (block("resource", ["aws_route53_record", n], [
+        ("#", "a CNAME: a GovCloud Route 53 zone can't alias a CloudFront distribution"),
+        ("zone_id", zone), ("name", name), ("type", "CNAME"), ("ttl", ttl(svc)), ("records", [target])]),)
 
 
 def records(d, m):

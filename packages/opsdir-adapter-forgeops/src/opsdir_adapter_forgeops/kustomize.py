@@ -96,10 +96,14 @@ def kustomize_files(m, services, p):
     """{path: text}: the overlay forgeops/kustomize/overlay/<namespace>/: its kustomization, base/ and a folder per
     component on."""
     root = f"forgeops/{KUSTOMIZE}/overlay/{p.namespace}"
-    on = [c for c in COMPONENTS if c.name in p.on]
+    on = [c for c in COMPONENTS if c.name in p.on and c.base]
+    chart_only = [c.name for c in COMPONENTS if c.name in p.on and not c.base]
     text = lambda what, value: header(m, f"ForgeOps {VERSION} overlay, {what}", YAML) + dump(value)
+    unbased = (f" ({', '.join(chart_only)}: the chart's only, not in the Kustomize bases: not rendered; Kustomize "
+               f"deployments are deprecated from ForgeOps 2026.3.2)") if chart_only else ""
     return {f"{root}/kustomization.yaml": text(
-                f"namespace {p.namespace}: copy this folder into a ForgeOps {VERSION} checkout's kustomize/overlay/",
+                f"namespace {p.namespace}: copy this folder into a ForgeOps {VERSION} checkout's kustomize/overlay/"
+                f"{unbased}",
                 {**KUSTOMIZATION, "namespace": p.namespace, "resources": ["./base", *(f"./{c.name}" for c in on)],
                  "images": [kustomize_image(name, ref) for name, ref in TOOLING_IMAGES]}),
             f"{root}/base/kustomization.yaml": text("the platform configuration",

@@ -1,6 +1,6 @@
 {
-  "pingFederate": "PingFederate 12.1.4",
-  "adminApi": "12.1.0.4",
+  "pingFederate": "PingFederate 13.1.3",
+  "adminApi": "13.1.0.5",
   "problems": [],
   "requests": [
     {

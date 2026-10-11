@@ -2,12 +2,12 @@
 
 opsdir adapter for PingFederate: PingFederate's configuration for each environment as validated Admin API requests, and, on `opsdir-base-saml` and `opsdir-base-oidc`, the standard documents at PingFederate's endpoint paths.
 
-Applies to environments with servers whose `ciamProductVersion` is PingFederate (11 to 13; the Admin API specs vendored cover 12.1 to 13.1).
+Applies to environments with servers whose `ciamProductVersion` is PingFederate (11 to 13; current release 13.1.3, maintained lines 13.1, 13.0, 12.3 and 12.2; the Admin API specs vendored cover 12.1 to 13.1, each from the latest pingfederate-go-client tag of its line: 13.1 is Admin API 13.1.0.5).
 
 **Per environment: `pingfederate/admin-api/requests.json`** (`opsdir_adapter_pingfederate.admin_api`). Every object the record holds for PingFederate as one Admin API request, in the order PingFederate needs them (an object before those that name it): data stores; plugin instances (password credential validators, notification publishers, CAPTCHA providers, IdP adapters, authentication selectors, access token managers; a parent instance before those inheriting from it); policy contracts, fragments and the default authentication policy; OIDC policies and the authorization server's settings; the OAuth clients, SP connections and IdP connections of the integrations PingFederate serves; the resources held as is, last.
 
 ```json
-{"pingFederate": "PingFederate 12.1.4", "adminApi": "12.1.0.4", "problems": [],
+{"pingFederate": "PingFederate 13.1.3", "adminApi": "13.1.0.5", "problems": [],
  "requests": [{"method": "PUT", "path": "/dataStores/user-directory", "createWith": "POST /dataStores", "body": {...}},
               {"method": "PUT", "path": "/oauth/authServerSettings", "body": {...}}, ...]}
 ```
@@ -39,7 +39,7 @@ The Admin API spec of each supported PingFederate version (12.1, 12.2, 12.3, 13.
 `opsdir_adapter_pingfederate.admin_api_spec` validates a payload against its request's schema without a PingFederate
 (`$ref`/`allOf` merged, unions by discriminator or subtype, required, unknown properties refused, types, enums,
 patterns, lengths, unique items; formats aren't checked) and picks the spec of an environment's version (`PingFederate
-12.1.4` -> 12.1; a version with no vendored spec gets none). Regenerate from a local clone with
+13.1.3` -> 13.1; a version with no vendored spec gets none). Regenerate from a local clone with
 `scripts/vendor-admin-api-specs.py` (its docstring has the clone command); add a version by adding its tag to `TAGS`.
 
 ## Reading PingFederate's configuration
@@ -148,7 +148,7 @@ One folder per node, named by the server's hostname (or its record name), holdin
 |---|---|
 | `bin/run.properties` | On the server, auxiliary class `pingfedNode`: `pingfedOperationalMode` (`CLUSTERED_CONSOLE`, `CLUSTERED_ENGINE`, `STANDALONE`), `pingfedNodeTags`, `pingfedListener` (`runtime=9031`, `admin=9999`, `cluster=7600`, ...), every other setting in `pingfedConfig` (`pf.cluster.auth.pwd` and other secrets withheld, from the node's credential role) |
 | `bin/jgroups.properties` (`server/default/conf/tcp.xml`) | The JGroups discovery protocol the node uses (`pingfedDiscovery`): `pf.cluster.discovery.protocol` in `jgroups.properties` (PingFederate 11.0 and later; `tcp.xml` holds `${DISCOVERY_TAG}`), else the protocol element of an upgraded install's `tcp.xml`; checked against the environment's discovery binding |
-| `server/default/conf/META-INF/hivemodule.xml` | `pingfedSettings` `cn=storage,ou=settings`: which kind of store (JDBC, LDAP, XML file, ...) backs OAuth clients, persistent grants and sessions (`ClientManager`, `AccessGrantManager`, `SessionStorageManager`; verify against the target version) |
+| `server/default/conf/META-INF/hivemodule.xml` | `pingfedSettings` `cn=storage,ou=settings`: which kind of store (JDBC, LDAP, Redis (13.1+), XML file, ...) backs OAuth clients, persistent grants and sessions (`ClientManager`, `AccessGrantManager`, `SessionStorageManager`; verify against the target version) |
 
 **Discovery is a binding, its protocol a choice.** How the nodes find each other differs per environment, the classic miss when moving. The environment binds role `pf-cluster-discovery`, and the protocol is data, chosen per environment: a `pingfedClusterDiscovery` binding states `pingfedDiscoveryProtocol`, with what that protocol needs (`ciamStorageRef` `s3://bucket` for `NATIVE_S3_PING`, `ciamFqdn` for `DNS_PING`, nothing for `TCPPING`). A binding that states none implies one from what it names: an `s3://` reference is `NATIVE_S3_PING` (a core `ciamObjectStore` binding, the bucket alone, works too), a DNS name `DNS_PING`. `pingfederate/cluster/jgroups.properties` renders the discovery lines of each node's `bin/jgroups.properties`: `pf.cluster.discovery.protocol` and its `pf.cluster.<PROTOCOL>.*` parameters (`NATIVE_S3_PING`: the cloud's region and the bucket; `DNS_PING`: `dns_query`; `TCPPING`: `initial_hosts` listing the environment's clustered nodes as `hostname[cluster port]`, so the list follows the record when servers are replaced or moved).
 

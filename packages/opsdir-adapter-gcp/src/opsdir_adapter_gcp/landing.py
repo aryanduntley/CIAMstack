@@ -23,7 +23,7 @@ from .access import ACCESS
 from .guardrails import render_guardrails
 from .identities import members, notes, sa_member, service_account
 from .plumbing import render_plumbing
-from .account import project_variable, provider_block
+from .account import project_variable, provider_block, required_providers
 from .budgets import budget_provider_settings, render_budgets
 
 POOL = "ci"
@@ -74,8 +74,7 @@ def _providers(m, variables, settings=()):
     """providers.tf of a landing-zone root: the Google provider in the environment's project (with settings: the
     Budget API's quota project in the root keeping the budgets), and the root's inputs."""
     return header(m, "Providers and inputs (landing zone)", HCL) + "\n" + "\n\n".join([
-        block("terraform", [], [("required_providers", Block((
-            ("google", {"source": "hashicorp/google", "version": "~> 8.0"}),)))]),
+        required_providers(),
         provider_block(m, ("project", ref("var.project_id")), *settings),
         project_variable(m, described=True),
         *variables]) + "\n"

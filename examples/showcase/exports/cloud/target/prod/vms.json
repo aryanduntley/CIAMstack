@@ -15,7 +15,7 @@
     },
     "storageProfile": {
       "imageReference": {
-        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingds-7.5.1-rhel9"
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingds-8.1.2-rhel9"
       },
       "dataDisks": [
         {
@@ -37,7 +37,7 @@
     "tags": {
       "Role": "ds",
       "Hostname": "ds-1.az.internal.example-aero.test",
-      "Product": "PingDS 7.5.1",
+      "Product": "PingDS 8.1.2",
       "ManagedBy": "opsdir"
     }
   },
@@ -57,7 +57,7 @@
     },
     "storageProfile": {
       "imageReference": {
-        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingds-7.5.1-rhel9"
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingds-8.1.2-rhel9"
       },
       "dataDisks": [
         {
@@ -79,7 +79,7 @@
     "tags": {
       "Role": "ds",
       "Hostname": "ds-2.az.internal.example-aero.test",
-      "Product": "PingDS 7.5.1",
+      "Product": "PingDS 8.1.2",
       "ManagedBy": "opsdir"
     }
   },
@@ -99,7 +99,7 @@
     },
     "storageProfile": {
       "imageReference": {
-        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingds-7.5.1-rhel9"
+        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingds-8.1.2-rhel9"
       },
       "dataDisks": [
         {
@@ -121,7 +121,7 @@
     "tags": {
       "Role": "ds",
       "Hostname": "ds-3.az.internal.example-aero.test",
-      "Product": "PingDS 7.5.1",
+      "Product": "PingDS 8.1.2",
       "ManagedBy": "opsdir"
     }
   }

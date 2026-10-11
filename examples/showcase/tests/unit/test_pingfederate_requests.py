@@ -6,7 +6,9 @@ import re
 import pytest
 
 from opsdir.core.environment import env_model
+from opsdir.domains.compute.workloads import recorded_versions
 from opsdir_adapter_pingfederate.admin_api import OUTPUT, admin_api_files
+from opsdir_adapter_pingfederate.admin_api_spec import load_spec, spec_version
 from showcase_support import APPROVED, fixture_directory
 
 ENVIRONMENTS = ("source/prod", "source/stage", "target/prod", "standby/prod", "hq/lab")
@@ -19,8 +21,11 @@ def estate():
 
 @pytest.mark.parametrize("env", ENVIRONMENTS)
 def test_every_request_is_valid_against_the_version_its_servers_run(estate, env):
-    doc = json.loads(admin_api_files(env_model(estate, env))[OUTPUT])
-    assert (doc["pingFederate"], doc["adminApi"], doc["problems"]) == ("PingFederate 12.1.4", "12.1.0.4", [])
+    m = env_model(estate, env)
+    doc = json.loads(admin_api_files(m)[OUTPUT])
+    (version,) = set(recorded_versions(m, "pf-engine"))        # the version the environment's engines record
+    assert (doc["pingFederate"], doc["adminApi"], doc["problems"]) == (
+        version, load_spec(spec_version(version))["version"], [])
     assert len(doc["requests"]) >= 20
 
 

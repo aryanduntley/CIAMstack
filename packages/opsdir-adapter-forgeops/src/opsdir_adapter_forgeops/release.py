@@ -11,10 +11,10 @@ record delivers (opsdir-adapter-kubernetes: External Secrets, CSI, or the operat
 """
 from collections import namedtuple
 
-VERSION = "2026.3.1"
-COMMIT = "8c79cbbac7ca72e579e7ab8391284785acad3690"
+VERSION = "2026.3.2"                    # 2026-10-05; Kustomize deployments deprecated from it (removal a year later)
+COMMIT = "3b61b9e0a18b65c4e370dc2512f133296990b363"
 SOURCE = f"https://codeload.github.com/ForgeRock/forgeops/tar.gz/{COMMIT}"
-SOURCE_SHA256 = "4b8ea403f4770bd0d7cdcf77c6b832157ff698e49dda6f01090242911e674c79"
+SOURCE_SHA256 = "8a9e54a1505098acfe939d16b0a8219d4c46ca94951cd9e379ce9def9ab31d77"
 PUBLIC_IMAGES = "us-docker.pkg.dev/forgeops-public/"
 IDENTITY_PLATFORM, PING_GATEWAY = "identity-platform", "ping-gateway"
 CHART_VERSION = "1.0.0"                 # both charts at this release
@@ -22,10 +22,10 @@ HELM, KUSTOMIZE = "helm", "kustomize"
 DS_LDAPS_PORT = 1636                    # the in-cluster DS LDAPS port ForgeOps addresses (ds-idrepo-0.ds-idrepo:1636)
 
 # One component. name: ForgeOps' own (its workload's, its overlay folder's); chart and values: its chart and key in the
-# chart's values; base: its Kustomize base under kustomize/base; kind and container: its workload object and main
-# container (None for a Job); image: its image's name in the Kustomize bases; helm_image: the values key of that image;
-# containers: the record's container names whose image it runs (ciamContainerImage, first found wins); ingress: it has
-# an Ingress of its name.
+# chart's values; base: its Kustomize base under kustomize/base (None: the chart's only); kind and container: its
+# workload object and main container (None for a Job); image: its image's name in the Kustomize bases; helm_image: the
+# values key of that image; containers: the record's container names whose image it runs (ciamContainerImage, first
+# found wins); ingress: it has an Ingress of its name.
 Component = namedtuple("Component", ("name", "chart", "values", "base", "kind", "container", "image", "helm_image",
                                      "containers", "ingress"))
 
@@ -51,6 +51,10 @@ COMPONENTS = (
               "end-user-ui", "image", ("end-user-ui",), True),
     Component("login-ui", IDENTITY_PLATFORM, "login_ui", "login-ui", "Deployment", "login-ui", "login-ui", "image",
               ("login-ui",), True),
+    # IDM's legacy administration UI as a pod of its own (PingIDM 8.1 no longer bundles it): the chart's only, off by
+    # default; on when an 8.1+ IDM workload's binding names its image (IDM_ADMIN_UI)
+    Component("idm-admin-ui", IDENTITY_PLATFORM, "idm_admin_ui", None, "Deployment", "idm-admin-ui", "idm-admin-ui",
+              "image", ("idm-admin-ui",), True),
     Component("ig", PING_GATEWAY, "ig", "ig", "Deployment", "ig", "ig", "image", ("ig",), True),
 )
 _BY_NAME = {c.name: c for c in COMPONENTS}
@@ -63,11 +67,13 @@ TOOLING_IMAGES = (("am-custom", "busybox:musl"), ("idm-custom", "busybox:musl"),
 # The components a server role runs as (ds: by the workload's name, ForgeOps' ds-idrepo or ds-cts).
 ROLE_COMPONENTS = {"am": ("am",), "idm": ("idm",), "ig": ("ig",), "ds": ("ds-idrepo", "ds-cts")}
 UIS = ("admin-ui", "end-user-ui", "login-ui")
+IDM_ADMIN_UI, IDM_ADMIN_UI_VERSIONS = "idm-admin-ui", ">=8.1"
 
 # The role a component without a workload of its own labels its pods with (opsdir.io/role), so the namespace's default
 # deny of ingress lets in what reaches it: the UIs serve through the ingress as AM does (port 8080), ds-set-passwords
 # reaches DS as its peers do. Jobs that only call out (amster, keystore-create) need none.
-COMPANION_ROLES = (("admin-ui", "am"), ("end-user-ui", "am"), ("login-ui", "am"), ("ds-set-passwords", "ds"))
+COMPANION_ROLES = (("admin-ui", "am"), ("end-user-ui", "am"), ("login-ui", "am"), ("idm-admin-ui", "idm"),
+                   ("ds-set-passwords", "ds"))
 
 # The HTTP routes of the release's own Ingresses (kustomize/base/*/*-ingress.yaml, the charts' *-ingress.yaml), for a
 # cluster gateway to serve instead: (component, roles whose service names' hosts carry it, path, match, Service, port,
@@ -80,8 +86,13 @@ ROUTES = (("am", ("am",), "/am", "prefix", "am", 80, None),
           ("end-user-ui", ("am",), "/enduser", "prefix", "end-user-ui", 8080, None),
           *(("idm", ("idm", "am"), path, "prefix", "idm", 80, None)
             for path in ("/openidm", "/upload", "/export", "/admin", "/openicf")),
+          ("idm-admin-ui", ("idm", "am"), "/admin", "prefix", "idm-admin-ui", 8080, None),
+          ("idm-admin-ui", ("idm", "am"), "/api", "prefix", "idm-admin-ui", 8080, None),
           ("ig", ("ig",), "/ig", "prefix", "ig", 80, "/"),
           ("ig", ("ig",), "/igadmin", "prefix", "ig", 8085, "/"))
+# Routes a component takes over when it is on: (component whose route it was, path, component taking it). With the
+# IDM admin UI pod on, the chart's IDM Ingress sends /admin (and the UI's /api) to it (2026.3.2 idm-ingress.yaml).
+TAKEN_ROUTES = (("idm", "/admin", "idm-admin-ui"),)
 # The roles whose service names a chart's Ingresses serve: with any of them behind a cluster gateway, the chart's
 # Ingresses are off (the gateway serves its routes).
 CHART_ROLES = ((IDENTITY_PLATFORM, ("am", "idm")), (PING_GATEWAY, ("ig",)))

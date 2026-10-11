@@ -8,7 +8,9 @@ comment), after its exception (exc-<exception>):
                                               as the security services' posture renders it), for the policy
                                               definitions its reference ids name (the whole initiative without):
                                               category Mitigated for a compensating control, Waiver otherwise, expiring
-                                              with the exception, its exception in the metadata
+                                              with the exception, its exception in the metadata; in Azure
+                                              Government a comment that Defender's own recommendation exemptions
+                                              aren't offered there and may not reflect Azure Policy's
   azure:alerts:<alert type>                   a Defender for Cloud alert suppression rule
                                               (Microsoft.Security/alertsSuppressionRules@2019-01-01-preview, reason
                                               FalsePositive for a false positive, Other otherwise, expiring with the
@@ -38,6 +40,10 @@ ADD_ON = "azapi"
 SUBSCRIPTION = "data.azurerm_subscription.current"
 ASSIGNMENT_PREFIX = "ciam-"           # the posture renderer's assignment names: ciam-<framework>
 SUPPRESSION = "ciamSuppression"
+GOV_EXEMPTION_NOTE = ("Azure Government: Microsoft's \"Cloud feature availability for US Government customers\" and "
+                      "Defender for Cloud's support matrix (2026-10) list Defender's recommendation exemptions as not "
+                      "available there; the Azure Policy exemption below is (Azure Policy is), but Defender may not "
+                      "fully reflect exemptions made in Azure Policy: confirm with the account team")
 
 
 def _refs(s, kind):
@@ -74,7 +80,8 @@ def _frameworks(s):
 def _exemptions(m, s):
     name, exc = suppression_name(s), _exception(m, s)
     category = "Mitigated" if _kind(m, s) == "compensating-control" else "Waiver"
-    return tuple(block("resource", [EXEMPTION, tf_name(f"{name}_{fw}")], [
+    gov = (f"# {GOV_EXEMPTION_NOTE}",) if _frameworks(s) and _government(m) else ()
+    return gov + tuple(block("resource", [EXEMPTION, tf_name(f"{name}_{fw}")], [
         ("name", f"{name}-{fw}"), ("subscription_id", ref(f"{SUBSCRIPTION}.id")),
         ("policy_assignment_id",
          f"${{{SUBSCRIPTION}.id}}/providers/Microsoft.Authorization/policyAssignments/{ASSIGNMENT_PREFIX}{fw}"),
@@ -84,6 +91,10 @@ def _exemptions(m, s):
         ("description", f"exception {rdn_value(exc) if exc is not None else '(none recorded)'}"),
         ("metadata", jsonencoded({"exception": rdn_value(exc) if exc is not None else None}))])
         for fw, ids in _frameworks(s).items())
+
+
+def _government(m):
+    return one(m.cloud, "ciamCloudEnvironment") == "usgovernment"
 
 
 def _add_on(m):
@@ -119,9 +130,11 @@ def uses_azapi(m):
 
 
 def azapi_provider(m):
-    """The azapi provider block of a root of environment m."""
-    gov = (("environment", "usgovernment"),) if one(m.cloud, "ciamCloudEnvironment") == "usgovernment" else ()
-    return block("provider", ["azapi"], [("subscription_id", ref("var.subscription_id")), *gov])
+    """The azapi provider block of a root of environment m: it registers no resource providers (the landing zone
+    registers those its resources need, resource_providers)."""
+    gov = (("environment", "usgovernment"),) if _government(m) else ()
+    return block("provider", ["azapi"], [("subscription_id", ref("var.subscription_id")), *gov,
+                                         ("skip_provider_registration", True)])
 
 
 def render_suppressions(m):

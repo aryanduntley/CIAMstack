@@ -1,8 +1,9 @@
-"""The Azure subscription an environment runs in and how every resource rendered for it is tagged: the azurerm provider
-block of each root (the subscription its input names, Azure Government when the cloud is in it, a note when the cloud
-says its clients use FIPS endpoints: azurerm has no switch for them), the subscription the record names
-(ciamAccountRef) as the default of each root's subscription_id input, and the estate's tag policy merged into each
-resource's own tags (azurerm has no provider-wide default tags). Pure."""
+"""The Azure subscription an environment runs in and how every resource rendered for it is tagged: the provider versions
+every root pins (the current releases, validated against), the azurerm provider block of each root (the subscription
+its input names, Azure Government when the cloud is in it, the resource providers it registers: none but the landing
+zone's, a note when the cloud says its clients use FIPS endpoints: azurerm has no switch for them), the subscription
+the record names (ciamAccountRef) as the default of each root's subscription_id input, and the estate's tag policy
+merged into each resource's own tags (azurerm has no provider-wide default tags). Pure."""
 from opsdir.core.directory import one, rdn_value
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.estate.tags import required_tags
@@ -10,6 +11,8 @@ from opsdir_format_terraform.hcl import Block, block, ref
 
 FIPS_NOTE = ("FIPS endpoints: Azure has no separate FIPS endpoints for the provider to use; FIPS 140 is met by the "
              "services' own validated modules, or by Azure Government (ciamCloudEnvironment usgovernment)")
+AZURERM_VERSION = "~> 5.9"          # validated against hashicorp/azurerm 5.9.0
+AZAPI_VERSION = "~> 2.13"           # validated against Azure/azapi 2.13.0
 
 
 
@@ -17,11 +20,21 @@ def government(m):
     """Whether environment m's cloud runs in Azure Government (a US Gov or US DoD region)."""
     return (one(m.cloud, "ciamRegion") or "").lower().startswith(("usgov", "usdod"))
 
-def provider_block(m):
-    """The azurerm provider block of a root of environment m."""
+def required_providers(azapi=False):
+    """The terraform block of an Azure root: azurerm, and azapi when the root renders azapi resources."""
+    return block("terraform", [], [("required_providers", Block((
+        ("azurerm", {"source": "hashicorp/azurerm", "version": AZURERM_VERSION}),
+        *((("azapi", {"source": "Azure/azapi", "version": AZAPI_VERSION}),) if azapi else ()))))])
+
+
+def provider_block(m, register=()):
+    """The azurerm provider block of a root of environment m. It registers no resource providers of its own
+    (resource_provider_registrations "none"), but those in register (the landing zone's, for every root)."""
     gov = (("environment", "usgovernment"),) if one(m.cloud, "ciamCloudEnvironment") == "usgovernment" else ()
+    listed = (("resource_providers_to_register", list(register)),) if register else ()
     return block("provider", ["azurerm"], [*((("#", FIPS_NOTE),) if fips_endpoints(m) else ()), ("features", Block(())),
-                                            ("subscription_id", ref("var.subscription_id")), *gov])
+                                            ("subscription_id", ref("var.subscription_id")), *gov,
+                                            ("resource_provider_registrations", "none"), *listed])
 
 
 def subscription_id(m):

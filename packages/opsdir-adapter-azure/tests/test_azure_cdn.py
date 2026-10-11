@@ -37,7 +37,8 @@ def test_without_inspection_standard_front_door_over_the_load_balancer_with_a_ma
                    ip_rules=(), geo_rules=()))
     assert ('sku_name            = "Standard_AzureFrontDoor"' in out
             and 'name                           = "load-balancer"' in out)
-    assert 'certificate_type    = "ManagedCertificate"' in out and "firewall_policy" not in out
+    assert 'certificate_type = "ManagedCertificate"' in out and "firewall_policy" not in out
+    assert 'minimum_version  = "TLS12"' in out and "minimum_tls_version" not in out
     assert _fd(spec(cdn=True), "10.60.250.10").startswith("# `sso.example.test`: a CDN in front of a private address")
 
 

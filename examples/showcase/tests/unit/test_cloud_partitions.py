@@ -27,8 +27,8 @@ def renders(estate):
 
 
 def test_only_the_government_provider_block_names_its_partition(renders):
-    assert 'environment     = "usgovernment"' in renders["usgovernment"]["terraform/providers.tf"]
-    assert "environment     =" not in renders["public"]["terraform/providers.tf"]
+    gov, public = (" ".join(renders[p]["terraform/providers.tf"].split()) for p in ("usgovernment", "public"))
+    assert 'environment = "usgovernment"' in gov and "environment =" not in public
 
 
 def _uncommented(text):

@@ -91,7 +91,7 @@ def _account(m, account, stores):
                 ("tags", tagged(m, {"ManagedBy": "opsdir"}))]),
             *((block("resource", ["azurerm_storage_account_customer_managed_key", n], [
                 ("storage_account_id", ref(f"azurerm_storage_account.{n}.id")),
-                ("key_vault_id", ref(f"{k.key}.key_vault_id")), ("key_name", ref(f"{k.key}.name")),
+                ("key_vault_key_id", ref(f"{k.key}.versionless_id")),
                 ("user_assigned_identity_id", ref(f"{k.identity}.id")), ("depends_on", [ref(k.grant)])]),)
               if k is not None and k.identity else ()),
             *((block("resource", ["azurerm_storage_management_policy", n], [
@@ -126,7 +126,7 @@ def _container(b):
                 ("container_access_type", "private"),
                 ("metadata", {"role": one(b, "ciamBindingRole"), "managedby": "opsdir"})]),
             *((block("resource", ["azurerm_storage_container_immutability_policy", n], [
-                ("storage_container_resource_manager_id", ref(f"azurerm_storage_container.{n}.resource_manager_id")),
+                ("storage_container_resource_manager_id", ref(f"azurerm_storage_container.{n}.id")),
                 ("immutability_period_in_days", int(days or 1)), ("protected_append_writes_enabled", False),
                 ("locked", mode == "compliance")]),) if mode in ("governance", "compliance") else ()),
             *((f"# {rdn_value(b)}: its replica {one(b, 'ciamStorageReplicaRef')} isn't a blob container: replication "
@@ -200,8 +200,11 @@ def _lifecycle(policy, container):
 def _key_url(account, cmks):
     cmk = cmks.get(_low(account.get("id"))) or {}
     url = _first(account.get("customer_managed_key")).get("key_vault_key_id") or cmk.get("key_vault_key_id")
-    if not url and cmk.get("key_name") and arm_segment(cmk.get("key_vault_id"), "vaults"):
-        url = f"https://{arm_segment(cmk['key_vault_id'], 'vaults')}.vault.azure.net/keys/{cmk['key_name']}"
+    vault = (cmk.get("key_vault_uri") or "").rstrip("/") or (
+        f"https://{arm_segment(cmk.get('key_vault_id'), 'vaults')}.vault.azure.net"
+        if arm_segment(cmk.get("key_vault_id"), "vaults") else None)
+    if not url and cmk.get("key_name") and vault:     # azurerm 4.x state: the vault and key name (and version)
+        url = "/".join((vault, "keys", cmk["key_name"], *((cmk["key_version"],) if cmk.get("key_version") else ())))
     return url
 
 

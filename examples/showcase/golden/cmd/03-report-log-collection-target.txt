@@ -4,6 +4,7 @@ access-logs  ds           servers     logs/ldap-access.audit.json               
 access-logs  ds           servers     logs/http-access.audit.json                 all
 access-logs  pf-engine    kubernetes  container pf-log-runtime-request output     all
 access-logs  pf-engine    kubernetes  container pf-log-request output             all
+access-logs  pf-engine    kubernetes  container pf-log-runtime-api output         all
 audit-logs   ds           servers     logs/audit                                  all    needs the File-Based Audit Logger enabled
 audit-logs   pf-engine    kubernetes  container pf-log-audit output               all
 audit-logs   pf-engine    kubernetes  container pf-log-provisioner-audit output   all
@@ -11,5 +12,5 @@ audit-logs   pf-admin     kubernetes  container pf-log-admin output             
 audit-logs   pf-admin     kubernetes  container pf-log-admin-event-detail output  all
 audit-logs   pf-admin     kubernetes  container pf-log-admin-api output           all
 audit-logs   pf-admin     kubernetes  container pf-log-admin-request output       all
-(11 rows)
+(12 rows)
 exit 0

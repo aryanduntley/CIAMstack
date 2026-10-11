@@ -158,6 +158,7 @@ def _probe(svc, spec, port):
     h = spec.health
     protocol = "Https" if (h.protocol == "https" or (h.protocol == "tcp" and spec.mode == "reencrypt")) else "Http"
     return ("probe", Block((("name", f"health-{port}"), ("protocol", protocol), ("host", one(svc, "ciamFqdn")),
+                            *((("port", h.port),) if h.port else ()),
                             ("path", h.path or "/"), ("interval", h.interval or 30),
                             ("timeout", min(30, h.interval or 30)),
                             ("unhealthy_threshold", h.unhealthy or 3),

@@ -1,6 +1,7 @@
 """What Azure says an environment runs, as the record's neutral resources (opsdir.core.inventory). Pure.
 
-From Terraform state (terraform.tfstate, format version 4; hashicorp/azurerm), managed resources and data sources:
+From Terraform state (terraform.tfstate, format version 4; hashicorp/azurerm 4.x or 5.x, read in the same names through
+state_names.reader_names), managed resources and data sources:
 
   azurerm_virtual_network                     -> network (role network): its name, first address space, resource group
   azurerm_subnet                              -> subnet <virtual network>/<subnet>
@@ -72,6 +73,7 @@ from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, l
 from opsdir.core.sources import json_document
 from opsdir.domains.messaging.dns import dmarc_policy, spf_authorizes
 from opsdir_format_terraform.state import read_state
+from .state_names import reader_names
 from .arm_ids import arm_segment, subnet_ref
 from .network_inventory import network_resources
 from .edge_inventory import (dns_resources, edge_services, fqdn, frontdoor_endpoints, frontdoor_origins,
@@ -579,7 +581,7 @@ def state_resources(text):
     found, problem = read_state(text)
     if problem:
         return (), (problem,)
-    pairs = [(r.type, r.attributes) for r in found]
+    pairs = [(r.type, reader_names(r.type, r.attributes)) for r in found]
     skipped = Counter(t for t, _ in pairs if t in SKIPPED)
     resources, notices = pairs_resources(pairs)
     return (resources,

@@ -14,7 +14,7 @@
 set -uo pipefail
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 BIN=$ROOT/tools/bin
-KUBERNETES_VERSION=${KUBERNETES_VERSION:-1.36.0}       # ForgeOps 2026.3.1 ships kubectl 1.36.1
+KUBERNETES_VERSION=${KUBERNETES_VERSION:-1.36.0}       # ForgeOps 2026.3.2 ships kubectl 1.36.1
 # datreeio/CRDs-catalog at the commit before its External Secrets 2.12 update (2026-10-08, #988), whose SecretStore
 # schema kubeconform 0.8.0 can't compile (the crd provider's field named `properties`); External Secrets 2.5.0 schemas
 CRDS=f1e7f6bc0537bf0622ffe6e47dbaa85914fabbec

@@ -100,10 +100,33 @@ def service_record(d, m, svc, n, target=None, answer=None):
     return _a_record(m, svc, n, name, zone, ip, is_internal(svc))
 
 
+def private_zone(m, zone):
+    """(data blocks, ID) of the private DNS zone named zone: its binding's provider ref when that is an ARM ID, else
+    the zone of that name in the platform's resource group, read as data (azurerm 5.x names a private zone's records'
+    zone by ID)."""
+    bound = zone_of(m, zone)
+    pref = (one(bound, "ciamProviderRef") if bound is not None else None) or ""
+    if pref.startswith("/subscriptions/"):
+        return (), pref
+    n = tf_name(zone)
+    return ((block("data", ["azurerm_private_dns_zone", n], [("name", zone), ("resource_group_name", RG)]),),
+            ref(f"data.azurerm_private_dns_zone.{n}.id"))
+
+
+def _zoned(m, zone, private):
+    """(data blocks, the zone arguments of a record in zone): the private zone's ID, or a public zone's name and
+    resource group."""
+    if not private:
+        return (), (("zone_name", zone), ("resource_group_name", RG))
+    data, zone_id = private_zone(m, zone)
+    return data, (("private_dns_zone_id", zone_id),)
+
+
 def _a_record(m, svc, n, name, zone, ip, private):
-    return (block("resource", ["azurerm_private_dns_a_record" if private else "azurerm_dns_a_record", n], [
-        ("name", record_name(name, zone)), ("zone_name", zone), ("resource_group_name", RG), ("ttl", ttl(svc)),
-        ("records", [ip]), ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]),)
+    data, where = _zoned(m, zone, private)
+    return (*data, block("resource", ["azurerm_private_dns_a_record" if private else "azurerm_dns_a_record", n], [
+        ("name", record_name(name, zone)), *where, ("ttl", ttl(svc)),
+        ("records", [ip]), ("tags", tagged(m, {"Service": name, "ManagedBy": "opsdir"}))]))
 
 
 def _values(rtype, vs):
@@ -124,17 +147,18 @@ def records(d, m):
         outside = _elsewhere(d, m, name)
         zone = zone_of(m, name)
         if outside:
-            return outside[0]
+            return outside[:1]
         if zone is None:
-            return f"# UNBOUND: no DNS zone bound for {rtype} `{name}`"
+            return (f"# UNBOUND: no DNS zone bound for {rtype} `{name}`",)
         private = one(zone, "ciamZoneVisibility") == "private"
         if private and rtype not in PRIVATE_TYPES:
-            return f"# {rtype} `{name}`: private DNS zones have no {rtype} records"
+            return (f"# {rtype} `{name}`: private DNS zones have no {rtype} records",)
         kind = f"azurerm_{'private_' if private else ''}dns_{rtype.lower()}_record"
-        return block("resource", [kind, tf_name(f"record_{rdn_value(r)}")], [
-            ("name", record_name(name, one(zone, "ciamDnsZone"))), ("zone_name", one(zone, "ciamDnsZone")),
-            ("resource_group_name", RG), ("ttl", ttl(r)), *_values(rtype, values(r, "ciamRecordValue"))])
-    return tuple(one_record(r) for r in records_in(m))
+        data, where = _zoned(m, one(zone, "ciamDnsZone"), private)
+        return (*data, block("resource", [kind, tf_name(f"record_{rdn_value(r)}")], [
+            ("name", record_name(name, one(zone, "ciamDnsZone"))), *where, ("ttl", ttl(r)),
+            *_values(rtype, values(r, "ciamRecordValue"))]))
+    return tuple(x for r in records_in(m) for x in one_record(r))
 
 
 def forwarding_rules(m):

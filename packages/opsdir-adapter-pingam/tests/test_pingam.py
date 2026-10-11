@@ -161,3 +161,22 @@ def test_a_journey_leading_to_a_node_it_doesnt_have_cant_run(after):
     broken = parse(f"dn: {LOGIN}\nchangetype: modify\nreplace: pingamEntryNode\npingamEntryNode: nowhere\n-\n")
     d2 = build_directory(REGISTRY, parse(BASE), (*imported()[1], *broken))
     assert journey_problems(d2, get(d2, LOGIN)) == ("it starts at node nowhere, which it doesn't have",)
+
+
+def test_an_am_8_1_node_version_is_held_and_rendered_back():
+    files = files_of(EXPORT)
+    tree_path = "realms/root-customers/AuthTree/Login.json"
+    node_path = "realms/root-customers/DataStoreDecisionNode/a1b2c3d4-0000-4000-8000-000000000004.json"
+    tree, node = json.loads(files[tree_path]), json.loads(files[node_path])
+    tree["data"]["nodes"]["a1b2c3d4-0000-4000-8000-000000000004"]["version"] = "2.0"
+    node["data"]["_type"]["version"] = "2.0"
+    d, _, _ = imported({**files, tree_path: json.dumps(tree), node_path: json.dumps(node)})
+    held = next(n for n in children(d, LOGIN, "pingamNode") if one(n, "cn") == "a1b2c3d4-0000-4000-8000-000000000004")
+    assert one(held, "pingamNodeVersion") == "2.0"
+    assert all(one(n, "pingamNodeVersion") is None for n in children(d, LOGIN, "pingamNode") if n is not held)
+    out = render_neutral(d)
+    rendered_tree = json.loads(out["am/" + tree_path])["data"]["nodes"]["a1b2c3d4-0000-4000-8000-000000000004"]
+    assert rendered_tree["version"] == "2.0"
+    assert json.loads(out["am/" + node_path])["data"]["_type"] == {"_id": "DataStoreDecisionNode", "version": "2.0"}
+    _, changes, _ = imported({p[len("am/"):]: t for p, t in out.items() if p.startswith("am/")}, d)
+    assert changes == ()

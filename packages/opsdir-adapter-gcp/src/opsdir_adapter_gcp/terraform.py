@@ -52,7 +52,7 @@ from opsdir_adapter_gcp.budgets import budget_notes
 from opsdir_adapter_gcp.volumes import boot_disk, render_snapshot_policies, server_volumes
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
-from .account import project_variable, provider_block
+from .account import project_variable, provider_block, required_providers
 
 _tag, _label = network_tag, label
 
@@ -129,6 +129,12 @@ def _health_check_rule(m, svc, n, name, scheme, port):
         ("source_ranges", list(probe_ranges(scheme))), ("target_tags", [_tag(m, one(svc, "ciamTargetRole"))])])
 
 
+def _checked(spec, port):
+    """The port a health check probes: the product's own health port (an admin port) when it declares one, else the
+    service's first."""
+    return str(spec.health.port) if spec is not None and spec.health.port else port
+
+
 def _l4_tuning(spec):
     """(health check body, backend service settings) from a passthrough service's traffic policy."""
     if spec is None:
@@ -196,8 +202,8 @@ def _service(m, svc, endpoints=()):
     return (*data, *blind, *groups,
             block("resource", ["google_compute_region_health_check", n], [
                 ("name", name), ("region", REGION), *(check or ()),
-                (health[0], Block((("port", int(ports[0])), *health[1])))]),
-            _health_check_rule(m, svc, n, name, scheme, ports[0]),
+                (health[0], Block((("port", int(_checked(spec, ports[0]))), *health[1])))]),
+            _health_check_rule(m, svc, n, name, scheme, _checked(spec, ports[0])),
             block("resource", ["google_compute_region_backend_service", n], [
                 ("name", name), ("region", REGION), ("load_balancing_scheme", scheme), ("protocol", "TCP"),
                 *((("port_name", "ciam"),) if not internal else ()),
@@ -256,8 +262,7 @@ def render(m, services):
     main = header(m, "Google Cloud infrastructure for the CIAM platform", HCL) + unbound_comments(m.unbound) + "\n" \
         + "\n\n".join(out) + "\n"
     providers = header(m, "Providers and inputs", HCL) + "\n" + "\n\n".join([
-        block("terraform", [], [("required_providers", Block((
-            ("google", {"source": "hashicorp/google", "version": "~> 8.0"}),)))]),
+        required_providers(),
         provider_block(m, ("project", ref("var.project_id")), ("region", REGION)),
         project_variable(m),
         block("variable", ["region"], [("type", ref("string")), ("default", one(m.cloud, "ciamRegion"))]),

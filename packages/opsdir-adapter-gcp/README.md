@@ -8,7 +8,7 @@ opsdir adapter for Google Cloud: Terraform for Google Cloud environments, read b
 
 ## What it renders
 
-Per environment, `terraform/providers.tf` (`hashicorp/google ~> 8.0`; the project as variable `project_id`, the region as variable `region`, defaulting to the cloud's `ciamRegion`; when the cloud's `ciamFipsEndpoints` is TRUE, a comment that the google provider has no FIPS endpoint switch: FIPS 140 is met by Google Cloud's own validated modules or enforced with Assured Workloads; credentials come from the usual Google Cloud environment, never from the record) and `terraform/main.tf`:
+Per environment, `terraform/providers.tf` (`hashicorp/google ~> 8.6`, the current release it is validated against, the same pin in the landing-zone roots; the project as variable `project_id`, the region as variable `region`, defaulting to the cloud's `ciamRegion`; when the cloud's `ciamFipsEndpoints` is TRUE, a comment that the google provider has no FIPS endpoint switch: FIPS 140 is met by Google Cloud's own validated modules or enforced with Assured Workloads; credentials come from the usual Google Cloud environment, never from the record) and `terraform/main.tf`:
 
 | From the record | Rendered as |
 |---|---|
@@ -492,7 +492,7 @@ It adds no required roles, planner checks or schema of its own; the environment'
 
 ## Known limits
 
-- **Not yet run against a live project.** The Terraform follows the `hashicorp/google` 8.x schema; `terraform validate`/`plan` against a real project is part of the testing plan (milestone 7.2).
+- **Not yet run against a live project.** The Terraform follows the `hashicorp/google` 8.x schema (the showcase's renders pass `terraform validate` against 8.6); `terraform plan` against a real project is part of the testing plan (milestone 7.2).
 - **Linux only**, as on AWS and Azure.
 - **DNS failover** is a plain record with a comment (Cloud DNS's primary-backup policy is configured by hand).
 - **Edge.** Preconfigured WAF exclusions apply on every path; Adaptive Protection (global backend services) isn't rendered for the regional load balancer.

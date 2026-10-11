@@ -82,8 +82,16 @@ def test_the_provider_notes_that_azure_has_no_fips_endpoints_to_switch_to():
     _, d, alpha, beta = estate(extra=(fips,))
     assert provider_block(alpha).startswith('provider "azurerm" {\n  # FIPS endpoints: Azure has no separate FIPS '
                                             'endpoints')
-    assert '  environment     = "usgovernment"\n' in provider_block(alpha)
+    assert '  environment                     = "usgovernment"\n' in provider_block(alpha)
     assert "FIPS" not in provider_block(beta) and "environment" not in provider_block(beta)
+
+
+def test_a_root_registers_no_resource_providers_but_those_the_landing_zone_lists():
+    _, _, alpha, _ = estate()
+    assert 'resource_provider_registrations = "none"' in provider_block(alpha)
+    assert "resource_providers_to_register" not in provider_block(alpha)
+    listed = provider_block(alpha, ("Microsoft.Compute", "Microsoft.Network"))
+    assert 'resource_providers_to_register  = ["Microsoft.Compute", "Microsoft.Network"]' in listed
 
 
 def _state(provider, *resources):

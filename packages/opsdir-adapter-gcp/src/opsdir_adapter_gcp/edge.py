@@ -134,7 +134,7 @@ def _health_check(n, name, spec, port, world=False, host=None):
         *((("check_interval_sec", h.interval),) if h.interval else ()),
         *((("healthy_threshold", h.healthy),) if h.healthy else ()),
         *((("unhealthy_threshold", h.unhealthy),) if h.unhealthy else ()),
-        (f"{protocol}_health_check", Block((("port", int(port)), *((("host", host),) if host else ()),
+        (f"{protocol}_health_check", Block((("port", int(h.port or port)), *((("host", host),) if host else ()),
                                             ("request_path", h.path or "/"))))])
 
 
@@ -162,13 +162,15 @@ def servers_backend(m, svc, groups):
                    "ciam", None, (("target_tags", [network_tag(m, one(svc, "ciamTargetRole"))]),))
 
 
-def _firewall(m, svc, n, name, port, proxies, backend, admit=None):
+def _firewall(m, svc, n, name, port, proxies, backend, admit=None, probe=None):
     """The rules admitting the proxies (the proxy-only subnet; none for a global load balancer, whose front ends
-    connect from the health-check ranges) and the health checks to the backend: VPC firewall rules on its target, or
-    the rules admit builds (a firewall policy's, by secure tag: firewall_policy.health_check_rule)."""
+    connect from the health-check ranges) and the health checks to the backend (on probe: the product's own health
+    port, else the backend's): VPC firewall rules on its target, or the rules admit builds (a firewall policy's, by
+    secure tag: firewall_policy.health_check_rule)."""
+    checked = str(probe) if probe else port
     if admit is not None:
         return (*((admit(m, svc, n, (proxies,), port, "proxies"),) if proxies else ()),
-                admit(m, svc, n, probe_ranges("MANAGED"), port))
+                admit(m, svc, n, probe_ranges("MANAGED"), checked))
     return (*((block("resource", ["google_compute_firewall", f"{n}_proxies"], [
                 ("name", f"{name}-proxies"), ("description", f"Load balancer proxies for {rdn_value(svc)}"),
                 ("network", NETWORK), ("direction", "INGRESS"),
@@ -177,7 +179,7 @@ def _firewall(m, svc, n, name, port, proxies, backend, admit=None):
             block("resource", ["google_compute_firewall", f"{n}_health_checks"], [
                 ("name", f"{name}-health-checks"), ("description", f"Google Cloud health checks for {rdn_value(svc)}"),
                 ("network", NETWORK), ("direction", "INGRESS"),
-                ("allow", Block((("protocol", "tcp"), ("ports", [port])))),
+                ("allow", Block((("protocol", "tcp"), ("ports", [checked])))),
                 ("source_ranges", list(probe_ranges("MANAGED"))), *backend.target]))
 
 
@@ -232,7 +234,7 @@ def application_lb(m, svc, spec, backend, frontend, placement, admit=None):
                 ("name", name), *_where(world), ("profile", profile), ("min_tls_version", version)]),
             _health_check(n, name, spec, backend.port or port, world, backend.host),
             *_firewall(m, svc, n, name, backend.port or port, None if world else one(edge[0], "ciamCidr"), backend,
-                       admit),
+                       admit, spec.health.port),
             *(armor(m, n, spec, world) if waf else ()),
             block("resource", [kind("backend_service"), n], [
                 ("name", name), *_where(world), ("load_balancing_scheme", scheme),

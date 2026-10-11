@@ -163,6 +163,7 @@ def test_findings_at_or_above_the_incident_severity_go_to_the_incident_workspace
     assert ['expected_value = "high"' in automation, 'expected_value = "medium"' in automation,
             'expected_value = "low"' in automation] == [True, True, False]
     assert f'resource_id = "{INCIDENT_WS}"' in automation
+    assert 'type        = "Workspace"' in automation
     cspm = out[out.index('resource "azurerm_security_center_automation" "cspm_incidents"'):]
     assert 'property_path  = "properties.metadata.severity"' in cspm and 'expected_value = "High"' in cspm
     assert "RegulatoryComplianceAssessment" not in cspm

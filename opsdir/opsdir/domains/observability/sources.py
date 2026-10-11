@@ -18,7 +18,8 @@ from collections import namedtuple
 from ...core.directory import one, rdn_value, values
 from ...core.environment import one_role, servers_with_role
 from ..access.principals import permits, principals
-from ..compute.workloads import kubernetes_roles
+from ...core.versions import holds
+from ..compute.workloads import kubernetes_roles, recorded_versions
 from .naming import LOG_KINDS
 
 LOG_PLACES = ("servers", "kubernetes")          # LogSource.on
@@ -104,15 +105,23 @@ def _places(m, role):
             *(("kubernetes",) if role in kubernetes_roles(m) else ()))
 
 
+def in_force(m, role, sources):
+    """The sources of a server role that what environment m runs of it writes: those declared for every version, and
+    those declared for some (versions) when its recorded product versions are among them (versions.holds)."""
+    recorded = recorded_versions(m, role)
+    return tuple(s for s in sources if s.server_role != role or holds(s.versions, recorded))
+
+
 def collections(m, routes, sources):
     """The Collections of environment m for log routes, given the LogSources its products declare: for each route,
     each server role it collects from that m runs, and each place m runs it, the sources the route picks lines from
     (one Collection with source None when there are none)."""
     def of(r, role, on):
         missing = unrooted(m, role) if on == "servers" else ()
+        written = in_force(m, role, sources)
         found = tuple(Collection(r, role, on, s, lines, missing)
-                      for s, lines in route_sources(sources, (role,), values(r, "ciamLogKind"), on))
-        held = tuple(dict.fromkeys(k for s in sources if s.server_role == role and s.on == on for k in kinds_of(s)))
+                      for s, lines in route_sources(written, (role,), values(r, "ciamLogKind"), on))
+        held = tuple(dict.fromkeys(k for s in written if s.server_role == role and s.on == on for k in kinds_of(s)))
         return found or (Collection(r, role, on, None, NONE, (), held),)
     return tuple(c for r in routes for role in values(r, "ciamPublishedBy") for on in _places(m, role)
                  for c in of(r, role, on))

@@ -60,7 +60,7 @@ def _domain_tls(m, n, spec):
     """(resources, tls body): the custom domain's certificate from Key Vault, else Front Door's managed one."""
     ref_uri = spec.certificate or ""
     if not ref_uri.startswith("azkv-cert://"):
-        return (), (("certificate_type", "ManagedCertificate"), ("minimum_tls_version", "TLS12"))
+        return (), (("certificate_type", "ManagedCertificate"), ("minimum_version", "TLS12"))
     vault, name = ref_uri.split("://", 1)[1].split("/", 1)
     return ((block("data", ["azurerm_key_vault", f"{n}_cdn_tls"], [("name", vault), ("resource_group_name", RG)]),
              block("resource", ["azurerm_cdn_frontdoor_secret", n], [
@@ -70,7 +70,14 @@ def _domain_tls(m, n, spec):
                      f'"${{data.azurerm_key_vault.{n}_cdn_tls.vault_uri}}certificates/{name}"')),))),)))])),
             (("certificate_type", "CustomerCertificate"),
              ("cdn_frontdoor_secret_id", ref(f"azurerm_cdn_frontdoor_secret.{n}.id")),
-             ("minimum_tls_version", "TLS12")))
+             ("minimum_version", "TLS12")))
+
+
+def _unreachable_probe(h):
+    """A comment when the servers serve their health endpoint on a port of their own, which Front Door's probe of the
+    origin can't reach."""
+    return (("#", f"the servers answer {h.path} on port {h.port}, which Front Door's probe of the origin can't reach: "
+                  "the origin's own probe checks it"),) if h.port else ()
 
 
 def front_door(m, svc, spec, n):
@@ -97,7 +104,8 @@ def front_door(m, svc, spec, n):
             ("name", "servers"), ("cdn_frontdoor_profile_id", profile),
             ("session_affinity_enabled", spec.stickiness == "cookie"),
             ("load_balancing", Block((("sample_size", 4), ("successful_samples_required", 3)))),
-            ("health_probe", Block((("protocol", "Http" if h.protocol == "http" else "Https"),
+            ("health_probe", Block((*_unreachable_probe(h),
+                                    ("protocol", "Http" if h.protocol == "http" else "Https"),
                                     ("path", h.path or "/"), ("interval_in_seconds", h.interval or 100),
                                     ("request_type", "GET"))))]),
         block("resource", ["azurerm_cdn_frontdoor_origin", n], [

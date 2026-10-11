@@ -13,6 +13,7 @@ import pytest
 from opsdir.connectors.fixes import chosen
 from opsdir.connectors.importing import preview_import
 from opsdir.connectors.registry import ADAPTERS, core_fragments
+from opsdir.domains.edge.resolve import declared_endpoints
 from opsdir.core.contract import PlanContext
 from opsdir.core.directory import get, make_directory, one, values
 from opsdir.core.environment import env_model
@@ -20,7 +21,7 @@ from opsdir.core.interchange.ldif import parse
 from opsdir.core.standard import registry_ldif
 from opsdir_adapter_pingidm.adapter import ADAPTER
 from opsdir_adapter_pingidm.checks import check_idm
-from opsdir_adapter_pingidm.naming import CONNECTORS, MAPPINGS, SCHEDULES, named
+from opsdir_adapter_pingidm.naming import CONNECTORS, ENDPOINTS, MAPPINGS, SCHEDULES, named
 from opsdir_adapter_pingidm.render import render_env, render_neutral
 from opsdir_adapter_pingidm.schema import FRAGMENT
 import mini_estate
@@ -224,3 +225,11 @@ def test_a_connector_whose_host_is_in_a_jdbc_url_is_named_by_the_fix_and_renders
     files = {**render_neutral(d), **render_env(env_model(d, "alpha/prod"), None)}
     again, _ = preview_import(d, "pingidm", {p[len("pingidm/"):]: t for p, t in files.items()}, (ADAPTER,))
     assert again == ()
+
+
+def test_endpoints_follow_the_recorded_version():
+    old = declared_endpoints(ENDPOINTS, "idm", recorded=("PingIDM 7.5.0",))
+    assert old["password-reset"] == ("/openidm/selfservice/reset",) and old["health"] == ("/openidm/info/ping",)
+    new = declared_endpoints(ENDPOINTS, "idm", recorded=("PingIDM 8.1.2",))
+    assert "password-reset" not in new and "registration" not in new and new["health"] == ("/openidm/health/ready",)
+    assert declared_endpoints(ENDPOINTS, "idm") == new                     # none recorded: the newest release

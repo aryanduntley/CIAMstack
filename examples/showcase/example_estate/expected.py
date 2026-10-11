@@ -365,6 +365,10 @@ EXPECTED = MappingProxyType({
         ("A118", "PingFederate on Kubernetes", "PingFederate runs on Kubernetes in target/prod (namespace `ciam`): the "
          "chart's pods find each other by DNS_PING", "no cluster discovery is bound for PingFederate on AKS (a fix "
          "binds the chart's cluster service)", None),
+        # the target is a new build on the current releases: the migration upgrades every product within the
+        # adapters' ranges (decision 2401; milestone 86 names the changes between the versions)
+        ("A119", "Versions", "Versions differ", "the target runs the current releases (PingAM 8.1.1, PingDS 8.1.2, "
+         "PingFederate 13.1.3, PingGateway 2026.9.0, PingIDM 8.1.2) over the source's 7.5 / 12.1 / 2024.11", None),
     ],
 })
 

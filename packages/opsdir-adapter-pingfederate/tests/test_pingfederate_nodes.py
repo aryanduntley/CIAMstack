@@ -19,6 +19,7 @@ from opsdir.core.standard import registry_ldif
 from opsdir_adapter_pingfederate.adapter import ADAPTER
 from opsdir_adapter_pingfederate.checks import check_cluster
 from opsdir_adapter_pingfederate.naming import STORAGE
+from opsdir_adapter_pingfederate.nodes import storage_kind
 from opsdir_adapter_pingfederate.render import render_env
 from opsdir_adapter_pingfederate.schema import FRAGMENT
 import mini_estate
@@ -271,3 +272,8 @@ def test_an_unsupported_or_incomplete_target_binding_is_fixed_in_place():
         "discovery:beta/prod"], "NATIVE_S3_PING", {"ciamStorageRef": ("s3://beta-pf",)})
     assert s3.records[0].mods == (("replace", "pingfedDiscoveryProtocol", ("NATIVE_S3_PING",)),   # the DNS name: gone
                                   ("replace", "ciamStorageRef", ("s3://beta-pf",)), ("delete", "ciamFqdn", ()))
+
+
+def test_redis_backed_storage_is_recognised():
+    assert storage_kind("com.pingidentity.sdk.oauth20.registration.RedisClientStorageManager") == "Redis"
+    assert storage_kind("org.sourceid.oauth20.domain.ClientManagerJdbcImpl") == "JDBC"

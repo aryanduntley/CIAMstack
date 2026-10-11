@@ -67,8 +67,9 @@ def _local(tag):
 def storage_kind(implementation):
     """The kind of store an implementation class keeps its data in, from its name."""
     name = implementation.rsplit(".", 1)[-1].lower()
-    return next((kind for marks, kind in ((("jdbc",), "JDBC"), (("ldap",), "LDAP"), (("xmlfile", "xml"), "XML file"),
-                                          (("memory",), "memory"), (("generic", "plugin"), "custom"))
+    return next((kind for marks, kind in ((("jdbc",), "JDBC"), (("ldap",), "LDAP"), (("redis",), "Redis"),
+                                          (("xmlfile", "xml"), "XML file"), (("memory",), "memory"),
+                                          (("generic", "plugin"), "custom"))
                  if any(m in name for m in marks)), "unknown")
 
 

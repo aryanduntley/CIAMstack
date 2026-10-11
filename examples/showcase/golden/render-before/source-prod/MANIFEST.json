@@ -187,7 +187,7 @@
     "ansible/templates/host-files/pf-engine/pf-engine-1/opt/aws/amazon-cloudwatch-agent/etc/opsdir-logs.json.j2": {
       "scope": "environment-specific",
       "format": "text",
-      "sha256": "7409126988dad94e2f9c3990ee16da29fe2f5af3f42d67d74a2db933e395843c"
+      "sha256": "40a42b2dd8cd6a44895820bb13fc711f47187ef1b2eba067b5fd10ca25b8b236"
     },
     "ansible/templates/pingfederate/bin/run.properties.j2": {
       "scope": "environment-specific",
@@ -398,17 +398,17 @@
     "terraform/landing-zone/providers.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "4182b3a02ae6d6eb997cafb55d103ce6bc472690cebf860e9d6ce7d8ee76327d"
+      "sha256": "e3eed8a5b3a11fae63f629b190097eec6bbc8d94ee2d095e9094a7d86d571d03"
     },
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "f65219cf94a634f3979263b3e05b65fdbe52631bfbf60bed44f86a04bdc06282"
+      "sha256": "c2d418a7467dbd13899d235c05f36e400658e0c23649974189f3b64a2a3f10b1"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "4fe0daf2f8cd5b2b725e842f2940e22ebcc7c7375ad6cfef3ac9b1fe8f86fccc"
+      "sha256": "1a8da5dd20bfe1ad21a49b6a0dacf0c42c13ecd1ba714d13207735455252fe37"
     }
   }
 }

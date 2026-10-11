@@ -11,10 +11,12 @@ from collections import namedtuple
 
 from ...core.directory import one, values
 from ...core.environment import of_class
+from ...core.versions import holds
+from ..compute.workloads import recorded_versions
 from .naming import ENDPOINT_KINDS, LAYER7
 from .policies import endpoint_paths, policy_for
 
-Health = namedtuple("Health", ("protocol", "path", "interval", "healthy", "unhealthy"))
+Health = namedtuple("Health", ("protocol", "path", "interval", "healthy", "unhealthy", "port"), defaults=(None,))
 RateLimit = namedtuple("RateLimit", ("kind", "requests", "seconds", "key", "paths"))   # key: ip | header:<Name>
 Exclusion = namedtuple("Exclusion", ("category", "kind", "part", "name", "paths"))     # part: body|query|header|cookie
 EdgeSpec = namedtuple("EdgeSpec", (
@@ -32,14 +34,22 @@ def path_regex(glob):
     return "^" + re.escape(glob).replace(r"\*", "[^?#]+") + "$"
 
 
-def declared_endpoints(endpoints, server_role, *policies):
-    """{endpoint kind: (paths, ...)} for the servers of a role: the declared Endpoints, each kind replaced where the
-    policies place it elsewhere."""
+def declared_endpoints(endpoints, server_role, *policies, recorded=()):
+    """{endpoint kind: (paths, ...)} for the servers of a role: the declared Endpoints the product versions they record
+    serve (recorded: their ciamProductVersion values; versions.holds), each kind replaced where the policies place it
+    elsewhere."""
     declared = {}
-    for e in (e for e in endpoints if e.server_role == server_role):
+    for e in (e for e in endpoints if e.server_role == server_role and holds(e.versions, recorded)):
         declared.setdefault(e.kind, ())
         declared[e.kind] += (e.path,)
     return {**declared, **endpoint_paths(*policies)}
+
+
+def health_port(endpoints, server_role, recorded=()):
+    """The port the servers of a role serve their declared health endpoint on when it isn't the service's (a product's
+    admin port: Endpoint.port), for the recorded product versions; None when it is the service's."""
+    return next((e.port for e in endpoints if e.server_role == server_role and e.kind == "health"
+                 and holds(e.versions, recorded)), None)
 
 
 def certificate_ref(m, svc):
@@ -64,15 +74,16 @@ def _int(e, attr):
     return int(v) if v is not None else None
 
 
-def _health(t, mode, paths):
+def _health(t, mode, paths, port=None):
     """The health check: the policy's, else the product's declared health endpoint over the protocol the edge speaks
-    to the servers, else a TCP connect."""
+    to the servers (on the port it declares when that isn't the service's), else a TCP connect."""
     declared = (paths.get("health") or (None,))[0]
     protocol = _one(t, "ciamHealthProtocol") or \
         ({"reencrypt": "https", "terminate": "http"}.get(mode) if declared else None) or "tcp"
     path = (_one(t, "ciamHealthPath") or declared or "/") if protocol != "tcp" else None
+    own = port if declared and protocol != "tcp" and not _one(t, "ciamHealthPath") else None
     return Health(protocol, path, _int(t, "ciamHealthIntervalSeconds"), _int(t, "ciamHealthyThreshold"),
-                  _int(t, "ciamUnhealthyThreshold"))
+                  _int(t, "ciamUnhealthyThreshold"), own)
 
 
 def service_edge(m, svc, endpoints):
@@ -95,7 +106,9 @@ def front_edge(m, svc, endpoints):
 
 def _edge(m, svc, endpoints, t, p, mode):
     role = one(svc, "ciamBindingRole")
-    paths = declared_endpoints(endpoints, one(svc, "ciamTargetRole"), t, p)
+    target = one(svc, "ciamTargetRole")
+    recorded = recorded_versions(m, target)
+    paths = declared_endpoints(endpoints, target, t, p, recorded=recorded)
     rates = tuple(RateLimit(k, int(n), int(s), key, paths.get(k, ()))
                   for k, n, s, key in (_RATE.match(v).groups() for v in _many(p, "ciamRateLimit")))
     exclusions = tuple(Exclusion(c, k, part, name, paths.get(k, ()))
@@ -103,7 +116,8 @@ def _edge(m, svc, endpoints, t, p, mode):
     return EdgeSpec(
         role=role, mode=mode, layer7=mode in LAYER7, tls_min=_one(t, "ciamTlsMinVersion", "1.2"),
         tls_profile=_one(t, "ciamTlsProfile", "intermediate"),
-        backend_validation=_one(t, "ciamBackendValidation", "none"), health=_health(t, mode, paths),
+        backend_validation=_one(t, "ciamBackendValidation", "none"),
+        health=_health(t, mode, paths, health_port(endpoints, target, recorded)),
         stickiness=_one(t, "ciamStickiness", "none"), stickiness_seconds=_int(t, "ciamStickinessSeconds"),
         idle_timeout=_int(t, "ciamIdleTimeoutSeconds"), drain=_int(t, "ciamDrainSeconds"),
         waf_mode=_one(p, "ciamWafMode"), categories=tuple(_many(p, "ciamWafCategory")), rate_limits=rates,

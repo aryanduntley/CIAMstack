@@ -104,6 +104,12 @@ def version_holders(m):
     return tuple((what, v) for what, v in found if v)
 
 
+def recorded_versions(m, role):
+    """The ciamProductVersion values what runs environment m's server role records (its servers', its workloads' on
+    Kubernetes), for versions.holds."""
+    return tuple(v for _, v in role_versions(m, (role,)))
+
+
 def role_versions(m, roles):
     """((name, product version), ...) of what runs environment m's server roles: each of its servers of these roles
     and each workload of them it runs on Kubernetes (its binding's version), by name; those recording none left

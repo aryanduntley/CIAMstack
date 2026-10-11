@@ -18,6 +18,7 @@ from ...core.directory import one, rdn_value, values
 from ...core.environment import of_class, one_role
 from ...core.inventory import duration_seconds
 from ..edge.policies import policy_for
+from ..compute.workloads import recorded_versions
 from ..edge.resolve import declared_endpoints
 from .alerts import canaries
 from .realized import keeper_of
@@ -47,7 +48,8 @@ def _url(m, endpoints, svc, flow):
         return None, f"service name {rdn_value(svc)} records no ciamFqdn"
     role = one(svc, "ciamBindingRole")
     served = declared_endpoints(endpoints, one(svc, "ciamTargetRole"), policy_for(m.d, "ciamTrafficPolicy", role),
-                                policy_for(m.d, "ciamProtectionPolicy", role))
+                                policy_for(m.d, "ciamProtectionPolicy", role),
+                                recorded=recorded_versions(m, one(svc, "ciamTargetRole")))
     kind = FLOW_ENDPOINTS[flow]
     path = next((p for p in served.get(kind, ()) if "*" not in p), None)
     if path is None:

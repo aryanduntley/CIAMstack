@@ -17,7 +17,7 @@ from opsdir.domains.network.plumbing import LANDING_ZONE, NETWORK_FILE, keepers
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import Block, block, jsonencoded, ref, tf_name
 from .access import ACCESS
-from .account import account_id, provider_block
+from .account import account_id, provider_block, required_providers
 from .guardrails import render_guardrails
 from .identities import notes, role, statements
 from .plumbing import render_plumbing
@@ -64,8 +64,7 @@ def _operator(m, w):
 def _providers(m, variables):
     """providers.tf of a landing-zone root: the AWS provider in the environment's region, and the root's inputs."""
     return header(m, "Providers and inputs (landing zone)", HCL) + "\n" + "\n\n".join([
-        block("terraform", [], [("required_providers", Block((
-            ("aws", {"source": "hashicorp/aws", "version": "~> 5.10"}),)))]),
+        required_providers(),
         provider_block(m, own_account=False), *variables]) + "\n"
 
 

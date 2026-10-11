@@ -94,9 +94,13 @@ def test_the_agent_is_installed_on_each_server_shipping_logs_with_its_own_identi
                  'type                       = "AzureMonitorLinuxAgent"',
                  "automatic_upgrade_enabled  = true"):
         assert line in ext
-    main = render(alpha, _services())["terraform/main.tf"]
-    vm = main.split('resource "azurerm_linux_virtual_machine" "ds_1"', 1)[1].split("\n}", 1)[0]
+    out = render(alpha, _services())
+    vm = out["terraform/main.tf"].split('resource "azurerm_linux_virtual_machine" "ds_1"', 1)[1].split("\n}", 1)[0]
     assert 'type = "SystemAssigned"' in vm
+    assert "terraform/landing-zone/providers.tf" not in out        # no landing zone: the platform root names them
+    assert ("# Register these resource providers in the subscription before applying (azurerm 5.x registers none, "
+            "and the environment has no landing zone to do it): Microsoft.Compute, Microsoft.Insights") \
+        in out["terraform/providers.tf"]
 
 
 def test_a_baseline_bringing_the_agent_keeps_it_out_and_is_named():

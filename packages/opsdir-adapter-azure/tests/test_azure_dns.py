@@ -2,7 +2,7 @@
 Manager rendered by the environment holding the primary (every address an external endpoint) with a CNAME to it,
 records by type in public and private zones, nothing in a zone someone else runs, outbound forwarders as forwarding
 ruleset rules."""
-from opsdir_adapter_azure.dns import forwarding_rules, record_name, records, service_record
+from opsdir_adapter_azure.dns import forwarding_rules, private_zone, record_name, records, service_record
 from edge_fixtures import binding, dns_estate
 
 
@@ -30,6 +30,20 @@ def test_records_by_type_and_zone_visibility():
     assert 'record              = "login.example.test"' in out                     # a CNAME's one record
     assert "# `_verify.partner.example` is in a zone dns-team runs" in out
     assert record_name("example.test", "example.test") == "@" and record_name("a.other.test", "example.test") is None
+
+
+def test_private_records_name_their_zone_by_id():
+    d, alpha, _ = dns_estate()
+    out = "\n".join(records(d, alpha))
+    assert out.count('data "azurerm_private_dns_zone" "corp_example_test"') == 1
+    srv = out[out.index('resource "azurerm_private_dns_srv_record"'):]
+    srv = srv[:srv.index("\n}")]
+    assert "private_dns_zone_id = data.azurerm_private_dns_zone.corp_example_test.id" in srv and "zone_name" not in srv
+    arm = "/subscriptions/0/resourceGroups/rg-dns/providers/Microsoft.Network/privateDnsZones/corp.example.test"
+    zone = binding(alpha, "zone-corp")
+    moved = alpha._replace(bindings=tuple(b._replace(attrs={**b.attrs, "ciamProviderRef": (arm,)}) if b is zone else b
+                                          for b in alpha.bindings))
+    assert private_zone(moved, "corp.example.test") == ((), arm)
 
 
 def test_outbound_forwarders_are_ruleset_rules():

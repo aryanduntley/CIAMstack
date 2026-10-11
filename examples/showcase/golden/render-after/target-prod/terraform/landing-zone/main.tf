@@ -29,12 +29,11 @@ resource "azurerm_user_assigned_identity" "identity_ci" {
 }
 
 resource "azurerm_federated_identity_credential" "identity_ci" {
-  name                = "id-ciam-prod-deploy-ci"
-  resource_group_name = data.azurerm_resource_group.main.name
-  parent_id           = azurerm_user_assigned_identity.identity_ci.id
-  audience            = ["api://AzureADTokenExchange"]
-  issuer              = "https://token.actions.githubusercontent.com"
-  subject             = "repo:example-aero/ciam-ops:environment:target-prod"
+  name                      = "id-ciam-prod-deploy-ci"
+  user_assigned_identity_id = azurerm_user_assigned_identity.identity_ci.id
+  audience                  = ["api://AzureADTokenExchange"]
+  issuer                    = "https://token.actions.githubusercontent.com"
+  subject                   = "repo:example-aero/ciam-ops:environment:target-prod"
 }
 
 resource "azurerm_role_assignment" "identity_ci_manage_pf_sso_service" {

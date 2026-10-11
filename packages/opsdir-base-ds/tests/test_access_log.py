@@ -7,7 +7,7 @@ import json
 from opsdir.connectors.importing import import_changes
 from opsdir.core.directory import get, make_directory, one, values
 from opsdir.domains.directory.naming import CONSUMERS, USER_SCHEMA
-from opsdir_base_ds.access_log import operations
+from opsdir_base_ds.access_log import LOG_FILE, operations
 from opsdir_base_ds.importers import access_log_reader
 
 USERS = "dc=example,dc=test"
@@ -145,3 +145,10 @@ def test_a_new_consumer_never_takes_a_name_the_record_uses():
                attrs=["mail"]))}
     imported = access_log_reader(clash, d, ())
     assert [e.dn for _, es in imported.groups for e in es] == [f"cn=pf-ds-svc-2,{CONSUMERS}"]
+
+
+def test_rotated_logs_are_read_including_utc_timestamped_names():
+    assert LOG_FILE.search("logs/ldap-access.audit.json")
+    assert LOG_FILE.search("logs/ldap-access.audit.json-20260920030000")       # rotated, local time (DS <= 8.0)
+    assert LOG_FILE.search("logs/ldap-access.audit.json-20260920030000Z")      # rotated, UTC (DS 8.1+)
+    assert not LOG_FILE.search("logs/errors")

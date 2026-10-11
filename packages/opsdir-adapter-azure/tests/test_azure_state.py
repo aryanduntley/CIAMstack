@@ -154,7 +154,8 @@ def _state(*changes):
         _rule("fw-sso-public", "pf-engine", ["0.0.0.0/0"], ["443"], 110),
         *_lb("svc-ldaps", {"private_ip_address": "10.60.1.100", "subnet_id": f"{VNET}/subnets/snet-ds"}, ["ds-1"],
              [1636], _res("managed", "azurerm_private_dns_a_record", "svc_ldaps", {
-                 "name": "ldap", "zone_name": "id.example.test", "records": ["10.60.1.100"], "ttl": 300,
+                 "name": "ldap", "records": ["10.60.1.100"], "ttl": 300,     # azurerm 5.x: the zone by ID
+                 "private_dns_zone_id": f"{RG}/providers/Microsoft.Network/privateDnsZones/id.example.test",
                  "fqdn": "ldap.id.example.test."})),
         _res("data", "azurerm_public_ip", "svc_sso", {"id": pip, "name": "pip-ciam-sso-prod",
                                                       "ip_address": "198.51.100.77"}),

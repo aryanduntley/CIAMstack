@@ -61,3 +61,11 @@ def test_advanced_network_ddos_only_when_asked():
     out = "\n".join(network_ddos(environment(), "sso", spec(ddos="network-advanced")))
     assert 'type   = "CLOUD_ARMOR_NETWORK"' in out and 'ddos_protection = "ADVANCED"' in out
     assert 'resource "google_compute_network_edge_security_service" "sso"' in out
+
+
+def test_a_product_health_port_is_checked_and_admitted():
+    out = _alb(spec(health=Health("http", "/health/startup", 10, 2, 3, 8085)), "10.70.1.10", EDGE)
+    check = out[out.index("_health_check {"):].split("}")[0]
+    assert "port         = 8085" in check
+    rule = out[out.index('"sso_health_checks"'):].split("\n}")[0]
+    assert '"8085"' in rule

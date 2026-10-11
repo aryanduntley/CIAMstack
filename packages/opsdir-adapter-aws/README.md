@@ -8,7 +8,7 @@ opsdir adapter for Amazon Web Services: Terraform for AWS environments; AWS Terr
 
 ## What it renders
 
-Per environment, `terraform/providers.tf` (`hashicorp/aws ~> 5.0`; `region` from the cloud's `ciamRegion`; `use_fips_endpoint = true` when the cloud's `ciamFipsEndpoints` is TRUE (core `estate` domain); credentials come from the usual AWS environment, never from the record) and `terraform/main.tf`:
+Per environment, `terraform/providers.tf` (`hashicorp/aws ~> 6.68`, the current release it is validated against, and `hashicorp/archive ~> 2.8` when it packages scripts; the same pins in the landing-zone roots; `region` from the cloud's `ciamRegion`; `use_fips_endpoint = true` when the cloud's `ciamFipsEndpoints` is TRUE (core `estate` domain); credentials come from the usual AWS environment, never from the record) and `terraform/main.tf`:
 
 | From the record | Rendered as |
 |---|---|
@@ -84,6 +84,8 @@ Nothing is rendered into a zone whose binding names `ciamManagedBy` (someone out
 ### CDN
 
 A protection policy with `ciamCdn` puts a CloudFront distribution in front of the service: its origin is the service's load balancer (the ALB when TLS terminates at the edge, else the NLB, TLS then ending at CloudFront), over HTTPS with the viewer's `Host` forwarded (AWS's `Managed-AllViewer` origin request policy) and nothing cached (`Managed-CachingDisabled`: sign-in pages and tokens); the viewer certificate from ACM in us-east-1 (another region or none: an `UNBOUND` comment), `TLSv1.2_2021` minimum; the service's alias record points at the distribution. The protection policy's web ACL (and its IP sets) is created CloudFront-scoped through the provider alias `aws.us_east_1` (declared only when a CDN is used) and named by the distribution (`web_acl_id`); Shield protects the distribution. The ALB behind it admits only CloudFront's origin-facing prefix list and carries no web ACL or Shield of its own.
+
+**In AWS GovCloud (US)**, where CloudFront isn't offered (AWS: CloudFront runs from a standard-partition account pointing at the GovCloud origin), the distribution, its managed cache and origin-request policies, the CloudFront-scoped web ACL and Shield are created in the cloud's associated standard account (`ciamBillingAccountRef`, the account its budgets use too) through the `us_east_1` provider configured for that account (`allowed_account_ids` the standard account; standard AWS credentials), under a comment that CloudFront is outside the GovCloud (ITAR) boundary and that AWS's services-in-scope pages (2026-10) list it for FedRAMP Moderate (US East/West) and DoD IL2 only. The viewer certificate must be in that account's ACM in us-east-1 (else `UNBOUND`). A GovCloud Route 53 zone can't alias CloudFront, so the service name gets a CNAME to the distribution's domain name (at a zone apex, or routed between environments, a comment instead). Without a recorded standard account, a comment names what is missing and neither the distribution nor the name's record is rendered.
 
 ### Network depth
 
@@ -171,7 +173,7 @@ opsdir import --dry-run aws/terraform-state export/                        # wha
 opsdir import --change CHG-… aws/terraform-state export/                   # record it
 ```
 
-The importer `aws/terraform-state` reads Terraform state (format version 4, `hashicorp/aws`; managed resources and data sources) into the environment's servers and bindings. Environments are chosen by the folder layout, `<cloud>/<env>/`; an environment whose cloud isn't AWS, and a state outside the layout, are named, not imported.
+The importer `aws/terraform-state` reads Terraform state (format version 4, `hashicorp/aws` 5.x or 6.x: the attributes it reads are named the same in both, and a flow log's group is read from `log_destination` or 5.x's `log_group_name`; managed resources and data sources) into the environment's servers and bindings. Environments are chosen by the folder layout, `<cloud>/<env>/`; an environment whose cloud isn't AWS, and a state outside the layout, are named, not imported.
 
 | AWS resource | Record entry | Matched by |
 |---|---|---|
@@ -683,7 +685,7 @@ It adds no required roles, planner checks or schema of its own; the environment'
 
 ## Known limits
 
-- **Not yet run against a live account.** The Terraform and the importers follow the `hashicorp/aws` 5.x schema and the AWS CLI's output shapes; `terraform validate`/`plan` and an import from a real account are part of the testing plan (milestone 7.2, which starts on AWS).
+- **Not yet run against a live account.** The Terraform and the importers follow the `hashicorp/aws` 6.x schema (the showcase's renders pass `terraform validate` against 6.68) and the AWS CLI's output shapes; `terraform plan` and an import from a real account are part of the testing plan (milestone 7.2, which starts on AWS).
 - **Commercial partition only.** GovCloud and China (`aws-us-gov`, `aws-cn`) aren't in the vocabulary yet.
 - **Port ranges** aren't recorded (`ciamPort` holds single ports): the importers name them; the renderer writes single ports only.
 - **Services without an edge policy are TCP network load balancers.** With one, the renderer writes an application load balancer, its web ACL and Shield protection (see Edge); reading their listeners, TLS policies, certificates, web ACLs and Shield back comes with milestone 4.8's importers. An ALB's addresses are AWS's: a recorded frontend address isn't kept.
@@ -701,7 +703,7 @@ It adds no required roles, planner checks or schema of its own; the environment'
 
 `tests/test_aws.py` (registration, vocabulary, secret resolution), `tests/test_aws_state.py` (the state importer: round trip, drift, new tagged and untagged resources, secrets and sensitive attributes never read, overlays, layout, a new binding keeps its provider reference, security group roles from their instances), `tests/test_aws_cli.py` (the CLI importer: round trip, facts state lacks, VPC scoping, counted account-wide listings, files placed by name, rules listed separately, `roles.json` never read as output, timestamps), `tests/test_aws_cloudformation.py` (round trip over two YAML/JSON stacks, drift, `GetAtt` and parameter links, resources not created, unknown files, secrets never read, a folder without a template, the resolver), `tests/test_aws_compute.py` (an autoscaling group with its launch template, an untagged group, an EKS cluster with node groups and add-ons), `tests/test_aws_messaging.py` (an SES domain identity with SPF, DKIM and DMARC from its DNS; queues and buses as stream carriers), `tests/test_aws_observability.py` (a topic an alarm notifies as an alert channel, others as stream carriers; log groups with their retention, never-expire included; alarms and canaries with what they realize), `tests/test_aws_firewall_notices.py` (port ranges, all-ports rules and non-IPv4 sources named from state, CLI output and CloudFormation), `tests/test_aws_jobs.py` (functions, pipelines and build projects with their schedules from state, CLI output and CloudFormation; a tagged function placed as a job binding), `tests/test_aws_state_store.py` (state and CLI against Postgres: imported under an approved change, re-import changes nothing). The rendered Terraform is covered end to end by the showcase's golden outputs (`examples/showcase`, the source environment), and the importers by its cloud drift exports (`examples/showcase/exports/cloud/source`).
 
-`tests/test_aws_cdn.py`: a distribution over the load balancer with a CloudFront web ACL and Shield, the us-east-1 certificate rule, an ALB behind CloudFront admitting only CloudFront.
+`tests/test_aws_cdn.py`: a distribution over the load balancer with a CloudFront web ACL and Shield, the us-east-1 certificate rule, an ALB behind CloudFront admitting only CloudFront; in GovCloud the distribution from the standard account with a CNAME, the standard account's certificate, and the comment without a recorded standard account.
 
 `tests/test_aws_dns.py`: a failover pair answered from the primary's zone (alias, health-checked secondary), a weighted set, a name in someone else's zone, records in their zones, outbound forwarders as Resolver rules.
 

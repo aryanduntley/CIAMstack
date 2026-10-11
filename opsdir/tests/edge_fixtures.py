@@ -51,9 +51,11 @@ def server(name, ip, role="pf-engine"):
     return make_entry(f"cn={name},{ENV}", ("top", "ciamServer"), {"ciamServerRole": [role], "ciamPrivateIp": [ip]})
 
 
-def environment(*bindings):
-    """The parts of an environment model the edge renderers read (an empty record: no tag policy)."""
+def environment(*bindings, cloud=None):
+    """The parts of an environment model the edge renderers read (an empty record: no tag policy); cloud: the cloud
+    entry's attributes ({attribute: (values…)})."""
     return SimpleNamespace(d=BARE, env=make_entry(ENV, ("top", "ciamEnvironment"), {"env": ["prod"]}), label="c/prod",
+                           cloud=make_entry(ENV.split(",", 1)[1], ("top", "ciamCloud"), dict(cloud or {})),
                            bindings=tuple(bindings))
 
 

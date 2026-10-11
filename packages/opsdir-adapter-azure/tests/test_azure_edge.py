@@ -2,8 +2,9 @@
 to subnet-edge, its listener's TLS policy and Key Vault certificate read by its own identity, backend settings with the
 policy's probe, affinity, timeout and draining; a WAF policy with custom rules for addresses, countries and rate limits
 aimed at the products' endpoints, the Default Rule Set and exclusions. Without the subnet, nothing but a comment."""
-from opsdir.domains.edge.resolve import RateLimit, tls_level, tls_policy
+from opsdir.domains.edge.resolve import Health, RateLimit, tls_level, tls_policy
 from opsdir_adapter_azure.edge import TLS_POLICIES, ddos_note, gateway_service, rate, servers_backend, waf_policy
+from opsdir_adapter_azure.terraform import _lb_port
 from edge_fixtures import environment, server, service, spec, subnet
 
 EDGE = subnet("subnet-edge", "subnet-edge", "10.60.250.0/24")
@@ -59,3 +60,12 @@ def test_categories_azure_lacks_are_named_and_ddos_is_asked_of_the_landing_zone(
     assert "# not offered by Application Gateway WAF: account-takeover" in out
     assert 'type    = "Microsoft_BotManagerRuleSet"' in out and 'mode               = "Detection"' in out
     assert ddos_note(spec()) == () and "landing zone" in ddos_note(spec(ddos="network-advanced"))[0]
+
+
+def test_a_product_health_port_is_where_the_probes_check():
+    probed = spec(health=Health("http", "/health/startup", 10, 2, 3, 8085))
+    out = _gateway(probed, "198.51.100.77", EDGE)
+    probe = out[out.index("probe {"):].split("}")[0]
+    assert "port                = 8085" in probe and 'path                = "/health/startup"' in probe
+    lb = "\n".join(_lb_port("sso", "443", probed))
+    assert "port                = 8085" in lb.split('resource "azurerm_lb_rule"')[0]

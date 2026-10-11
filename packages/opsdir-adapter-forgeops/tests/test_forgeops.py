@@ -284,3 +284,27 @@ def test_the_render_builds_and_is_valid_kubernetes(tmp_path, extra):
     assert ("kind: Ingress" in built.stdout) == (extra != GATEWAY)          # behind a gateway, its routes serve
     images = set(re.findall(r"^\s+image: (\S+)$", built.stdout, re.M))
     assert images and not [i for i in images if not re.search(r"[:@]", i)], images    # no base placeholder left
+
+
+def _with_idm_admin_ui(version):
+    """The base record with IDM's binding naming the admin UI image, IDM at a version."""
+    idm = "ciamContainerImage: main=registry.example.test/ciam/idm:7.5.1\n"
+    base = tuple(b.replace(idm, f"{idm}ciamContainerImage: idm-admin-ui=registry.example.test/ciam/idm-admin-ui:"
+                                f"{version}\nciamProductVersion: PingIDM {version}\n") for b in BASE)
+    d = build_directory(REGISTRY, tuple(parse("\n".join((mini_estate.LDIF, *base)))))
+    return env_model(d, "alpha/prod")
+
+
+def test_idms_admin_ui_pod_is_on_for_idm_8_1_when_the_record_names_its_image():
+    m = _with_idm_admin_ui("8.1.2")
+    (p,) = placements(m)
+    assert "idm-admin-ui" in p.on and "idm-admin-ui" not in placements(model())[0].on
+    assert "idm-admin-ui" not in placements(_with_idm_admin_ui("7.5.0"))[0].on    # 7.x bundles its own
+    v = _doc(render(m, services(INSTALLED), ("helm",)), "forgeops/helm/identity/identity-platform-values.yaml")
+    assert v["idm_admin_ui"]["enabled"] is True
+    assert v["idm_admin_ui"]["image"] == helm_image("registry.example.test/ciam/idm-admin-ui:8.1.2")
+    declared = {(r.server_role, r.path, r.service, r.port) for r in routes(m)}
+    assert ("idm", "/admin", "idm-admin-ui", 8080) in declared and ("idm", "/api", "idm-admin-ui", 8080) in declared
+    assert ("idm", "/admin", "idm", 80) not in declared
+    overlay = render(m, services(INSTALLED), ("kustomize",))["forgeops/kustomize/overlay/identity/kustomization.yaml"]
+    assert "idm-admin-ui: the chart's only, not in the Kustomize bases: not rendered" in overlay

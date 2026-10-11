@@ -2207,17 +2207,17 @@ resource "aws_securityhub_account" "security_hub" {
 }
 
 resource "aws_securityhub_standards_subscription" "security_hub_nist_800_53_r5" {
-  standards_arn = "arn:${data.aws_partition.current.partition}:securityhub:${data.aws_region.current.name}::standards/nist-800-53/v/5.0.0"
+  standards_arn = "arn:${data.aws_partition.current.partition}:securityhub:${data.aws_region.current.region}::standards/nist-800-53/v/5.0.0"
   depends_on    = [aws_securityhub_account.security_hub]
 }
 
 resource "aws_securityhub_standards_subscription" "security_hub_nist_800_171_r2" {
-  standards_arn = "arn:${data.aws_partition.current.partition}:securityhub:${data.aws_region.current.name}::standards/nist-800-171/v/2.0.0"
+  standards_arn = "arn:${data.aws_partition.current.partition}:securityhub:${data.aws_region.current.region}::standards/nist-800-171/v/2.0.0"
   depends_on    = [aws_securityhub_account.security_hub]
 }
 
 resource "aws_securityhub_standards_subscription" "security_hub_aws_foundational" {
-  standards_arn = "arn:${data.aws_partition.current.partition}:securityhub:${data.aws_region.current.name}::standards/aws-foundational-security-best-practices/v/1.0.0"
+  standards_arn = "arn:${data.aws_partition.current.partition}:securityhub:${data.aws_region.current.region}::standards/aws-foundational-security-best-practices/v/1.0.0"
   depends_on    = [aws_securityhub_account.security_hub]
 }
 

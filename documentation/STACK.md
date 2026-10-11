@@ -522,9 +522,9 @@ These don't change the model; they decide which parts of it an estate uses and w
 
 1. Which products are present beyond the directory and federation server: PingAM, PingIDM, PingGateway, PingAccess, SiteMinder?
 2. Virtual machines or Kubernetes (ForgeOps)? This decides §11.1 vs §11.2 and which renderer matters.
-3. Where does PingFederate keep clients, grants and sessions: XML, JDBC or LDAP (DS)?
+3. Where does PingFederate keep clients, grants and sessions: XML, JDBC, LDAP (DS) or, from 13.1, Redis?
 4. Are signing keys HSM-backed?
 5. Do consumers bind to service names or to replica hostnames?
 6. If a move is planned: to which cloud, account or region, and what is pre-built there (network, DNS, PKI, SIEM, PAM)?
-7. Is a product version upgrade in or out of the move?
+7. Is a product version upgrade in or out of the move? (A move may upgrade within the adapters' supported ranges; the planner names the version jump.)
 8. Which ITSM, SIEM, PAM, PKI and firewall-manager products are in place? Each one is an importer.

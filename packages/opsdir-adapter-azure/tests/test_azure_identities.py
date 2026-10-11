@@ -54,7 +54,9 @@ def test_kubernetes_service_accounts_get_federated_credentials_from_their_aks_cl
     assert 'data "azurerm_kubernetes_cluster" "aks_ciam"' in data and 'resource_group_name = "rg-aks"' in data
     out = "\n".join(_identity(SimpleNamespace(d=BARE), w))
     assert 'resource "azurerm_federated_identity_credential"' in out
-    assert "issuer              = data.azurerm_kubernetes_cluster.aks_ciam.oidc_issuer_url" in out
-    assert 'subject             = "system:serviceaccount:identity:am"' in out
-    assert 'audience            = ["api://AzureADTokenExchange"]' in out
+    assert "issuer                    = data.azurerm_kubernetes_cluster.aks_ciam.oidc_issuer_url" in out
+    assert 'subject                   = "system:serviceaccount:identity:am"' in out
+    assert 'audience                  = ["api://AzureADTokenExchange"]' in out
+    assert "user_assigned_identity_id = azurerm_user_assigned_identity.identity_pf_engine.id" in out
+    assert "parent_id" not in out and "resource_group_name = data" not in out.split("azurerm_federated")[1]
     assert "# NOTE: principal" in out and "service account tools/x runs in a cluster this environment doesn't" in out

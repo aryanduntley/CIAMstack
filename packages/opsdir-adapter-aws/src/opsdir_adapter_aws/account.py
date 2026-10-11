@@ -1,11 +1,14 @@
-"""The AWS account an environment runs in and how every resource rendered for it is tagged: the provider block each
-root declares, with the account it must run against (the record's ciamAccountRef: Terraform refuses another), the
-estate's tag policy as the provider's default tags, and AWS's FIPS endpoints when the cloud says its clients use them.
-Pure."""
+"""The AWS account an environment runs in and how every resource rendered for it is tagged: the provider versions every
+root pins (the current releases, validated against), the provider block each root declares, with the account it must
+run against (the record's ciamAccountRef: Terraform refuses another), the estate's tag policy as the provider's default
+tags, and AWS's FIPS endpoints when the cloud says its clients use them. Pure."""
 from opsdir.core.directory import one
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.estate.tags import required_tags
 from opsdir_format_terraform.hcl import Block, block
+
+AWS_VERSION = "~> 6.68"             # validated against hashicorp/aws 6.68.0
+ARCHIVE_VERSION = "~> 2.8"          # validated against hashicorp/archive 2.8.1
 
 
 def govcloud(m):
@@ -16,6 +19,19 @@ def govcloud(m):
 def partition(m):
     """The ARN partition environment m's cloud is in: aws-us-gov in GovCloud (US), else aws."""
     return "aws-us-gov" if govcloud(m) else "aws"
+
+
+def required_providers(archive=False):
+    """The terraform block of an AWS root: aws, and archive when the root packages scripts."""
+    return block("terraform", [], [("required_providers", Block((
+        ("aws", {"source": "hashicorp/aws", "version": AWS_VERSION}),
+        *((("archive", {"source": "hashicorp/archive", "version": ARCHIVE_VERSION}),) if archive else ()))))])
+
+
+def standard_account(m):
+    """The standard (commercial) account a GovCloud cloud is linked to (ciamBillingAccountRef): where its billing and
+    the services GovCloud doesn't offer (AWS Budgets, CloudFront) run; None when not recorded."""
+    return one(m.cloud, "ciamBillingAccountRef")
 
 
 def account_id(m):

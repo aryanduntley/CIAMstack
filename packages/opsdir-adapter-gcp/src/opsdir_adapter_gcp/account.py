@@ -1,17 +1,26 @@
-"""The Google Cloud project an environment runs in and how every resource rendered for it is labelled: the project the
-record names (ciamAccountRef) as the default of each root's project_id input, the estate's tag policy as the
-provider's default labels, in label form (lowercase letters, digits, - and _), and a note when the cloud says its
-clients use FIPS endpoints (the google provider has no switch for them); and the Assured Workloads compliance regime an
-environment's required authorization level asks for (Google Cloud has no separate government cloud: a regulated
-placement is a workload under such a regime). Pure."""
+"""The Google Cloud project an environment runs in and how every resource rendered for it is labelled: the provider
+version every root pins (the current release, validated against), the project the record names (ciamAccountRef) as
+the default of each root's project_id input, the estate's tag policy as the provider's default labels, in label form
+(lowercase letters, digits, - and _), and a note when the cloud says its clients use FIPS endpoints (the google
+provider has no switch for them); and the Assured Workloads compliance regime an environment's required authorization
+level asks for (Google Cloud has no separate government cloud: a regulated placement is a workload under such a
+regime). Pure."""
 import re
 
 from opsdir.core.directory import one, rdn_value
 from opsdir.domains.estate.authorizations import required_levels
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.estate.tags import required_tags
-from opsdir_format_terraform.hcl import block, ref
+from opsdir_format_terraform.hcl import Block, block, ref
 from .names import label
+
+GOOGLE_VERSION = "~> 8.6"           # validated against hashicorp/google 8.6.0
+
+
+def required_providers():
+    """The terraform block of a Google Cloud root: the google provider."""
+    return block("terraform", [], [("required_providers", Block((
+        ("google", {"source": "hashicorp/google", "version": GOOGLE_VERSION}),)))])
 
 
 def project_id(m):

@@ -5377,12 +5377,12 @@ objectClass: top
 objectClass: ciamServer
 cn: am-1
 ciamHostname: am-1.gcp.internal.example-aero.test
-ciamImageRef: projects/example-aero-images/global/images/pingam-7-5-1-rhel9
+ciamImageRef: projects/example-aero-images/global/images/pingam-8-1-1-rhel9
 ciamInstallRoot: /opt/ping/am
 ciamInstanceSize: n2-standard-2
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.70.3.21
-ciamProductVersion: PingAM 7.5.1
+ciamProductVersion: PingAM 8.1.1
 ciamServerRole: am
 ciamSubnet: cn=subnet-am,ou=bindings,env=prod,cloud=standby,ou=environments,dc
  =ciam-ops
@@ -5577,12 +5577,12 @@ objectClass: top
 objectClass: ciamServer
 cn: ds-1
 ciamHostname: ds-1.gcp.internal.example-aero.test
-ciamImageRef: projects/example-aero-images/global/images/pingds-7-5-1-rhel9
+ciamImageRef: projects/example-aero-images/global/images/pingds-8-1-2-rhel9
 ciamInstallRoot: /opt/ping/opendj
 ciamInstanceSize: n2-standard-4
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.70.1.11
-ciamProductVersion: PingDS 7.5.1
+ciamProductVersion: PingDS 8.1.2
 ciamServerRole: ds
 ciamSubnet: cn=subnet-ds,ou=bindings,env=prod,cloud=standby,ou=environments,dc
  =ciam-ops
@@ -5594,12 +5594,12 @@ objectClass: ciamServer
 cn: ds-1
 ciamHostname: ds-1.az.internal.example-aero.test
 ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
- ps/rg-ciam-images/providers/Microsoft.Compute/images/pingds-7.5.1-rhel9
+ ps/rg-ciam-images/providers/Microsoft.Compute/images/pingds-8.1.2-rhel9
 ciamInstallRoot: /opt/ping/opendj
 ciamInstanceSize: Standard_D4s_v5
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.60.1.11
-ciamProductVersion: PingDS 7.5.1
+ciamProductVersion: PingDS 8.1.2
 ciamServerRole: ds
 ciamSubnet: cn=snet-ds,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
  am-ops
@@ -5639,12 +5639,12 @@ objectClass: top
 objectClass: ciamServer
 cn: ds-2
 ciamHostname: ds-2.gcp.internal.example-aero.test
-ciamImageRef: projects/example-aero-images/global/images/pingds-7-5-1-rhel9
+ciamImageRef: projects/example-aero-images/global/images/pingds-8-1-2-rhel9
 ciamInstallRoot: /opt/ping/opendj
 ciamInstanceSize: n2-standard-4
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.70.1.12
-ciamProductVersion: PingDS 7.5.1
+ciamProductVersion: PingDS 8.1.2
 ciamServerRole: ds
 ciamSubnet: cn=subnet-ds,ou=bindings,env=prod,cloud=standby,ou=environments,dc
  =ciam-ops
@@ -5656,12 +5656,12 @@ objectClass: ciamServer
 cn: ds-2
 ciamHostname: ds-2.az.internal.example-aero.test
 ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
- ps/rg-ciam-images/providers/Microsoft.Compute/images/pingds-7.5.1-rhel9
+ ps/rg-ciam-images/providers/Microsoft.Compute/images/pingds-8.1.2-rhel9
 ciamInstallRoot: /opt/ping/opendj
 ciamInstanceSize: Standard_D4s_v5
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.60.1.12
-ciamProductVersion: PingDS 7.5.1
+ciamProductVersion: PingDS 8.1.2
 ciamServerRole: ds
 ciamSubnet: cn=snet-ds,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
  am-ops
@@ -5689,12 +5689,12 @@ objectClass: ciamServer
 cn: ds-3
 ciamHostname: ds-3.az.internal.example-aero.test
 ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
- ps/rg-ciam-images/providers/Microsoft.Compute/images/pingds-7.5.1-rhel9
+ ps/rg-ciam-images/providers/Microsoft.Compute/images/pingds-8.1.2-rhel9
 ciamInstallRoot: /opt/ping/opendj
 ciamInstanceSize: Standard_D4s_v5
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.60.1.13
-ciamProductVersion: PingDS 7.5.1
+ciamProductVersion: PingDS 8.1.2
 ciamServerRole: ds
 ciamSubnet: cn=snet-ds,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
  am-ops
@@ -5854,12 +5854,12 @@ objectClass: top
 objectClass: ciamServer
 cn: idm-1
 ciamHostname: idm-1.gcp.internal.example-aero.test
-ciamImageRef: projects/example-aero-images/global/images/pingidm-7-5-0-rhel9
+ciamImageRef: projects/example-aero-images/global/images/pingidm-8-1-2-rhel9
 ciamInstallRoot: /opt/ping/openidm
 ciamInstanceSize: n2-standard-2
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.70.6.21
-ciamProductVersion: PingIDM 7.5.0
+ciamProductVersion: PingIDM 8.1.2
 ciamServerRole: idm
 ciamSubnet: cn=subnet-idm,ou=bindings,env=prod,cloud=standby,ou=environments,d
  c=ciam-ops
@@ -5902,13 +5902,13 @@ objectClass: top
 objectClass: ciamServer
 cn: ig-1
 ciamHostname: ig-1.gcp.internal.example-aero.test
-ciamImageRef: projects/example-aero-images/global/images/pinggateway-2024-11-0
- -rhel9
+ciamImageRef: projects/example-aero-images/global/images/pinggateway-2026-9-0-
+ rhel9
 ciamInstallRoot: /opt/ping/ig
 ciamInstanceSize: n2-standard-2
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.70.10.21
-ciamProductVersion: PingGateway 2024.11.0
+ciamProductVersion: PingGateway 2026.9.0
 ciamServerRole: ig
 ciamSubnet: cn=subnet-ig,ou=bindings,env=prod,cloud=standby,ou=environments,dc
  =ciam-ops
@@ -6121,13 +6121,13 @@ objectClass: ciamServer
 objectClass: pingfedNode
 cn: pf-admin-1
 ciamHostname: pf-admin-1.gcp.internal.example-aero.test
-ciamImageRef: projects/example-aero-images/global/images/pingfederate-12-1-4-r
+ciamImageRef: projects/example-aero-images/global/images/pingfederate-13-1-3-r
  hel9
-ciamInstallRoot: /opt/ping/pingfederate-12.1.4
+ciamInstallRoot: /opt/ping/pingfederate-13.1.3
 ciamInstanceSize: n2-standard-2
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.70.2.10
-ciamProductVersion: PingFederate 12.1.4
+ciamProductVersion: PingFederate 13.1.3
 ciamServerRole: pf-admin
 ciamSubnet: cn=subnet-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc
  =ciam-ops
@@ -6195,13 +6195,13 @@ objectClass: ciamServer
 objectClass: pingfedNode
 cn: pf-engine-1
 ciamHostname: pf-engine-1.gcp.internal.example-aero.test
-ciamImageRef: projects/example-aero-images/global/images/pingfederate-12-1-4-r
+ciamImageRef: projects/example-aero-images/global/images/pingfederate-13-1-3-r
  hel9
-ciamInstallRoot: /opt/ping/pingfederate-12.1.4
+ciamInstallRoot: /opt/ping/pingfederate-13.1.3
 ciamInstanceSize: n2-standard-2
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.70.2.21
-ciamProductVersion: PingFederate 12.1.4
+ciamProductVersion: PingFederate 13.1.3
 ciamServerRole: pf-engine
 ciamSubnet: cn=subnet-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc
  =ciam-ops
@@ -6238,13 +6238,13 @@ objectClass: ciamServer
 objectClass: pingfedNode
 cn: pf-engine-2
 ciamHostname: pf-engine-2.gcp.internal.example-aero.test
-ciamImageRef: projects/example-aero-images/global/images/pingfederate-12-1-4-r
+ciamImageRef: projects/example-aero-images/global/images/pingfederate-13-1-3-r
  hel9
-ciamInstallRoot: /opt/ping/pingfederate-12.1.4
+ciamInstallRoot: /opt/ping/pingfederate-13.1.3
 ciamInstanceSize: n2-standard-2
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrivateIp: 10.70.2.22
-ciamProductVersion: PingFederate 12.1.4
+ciamProductVersion: PingFederate 13.1.3
 ciamServerRole: pf-engine
 ciamSubnet: cn=subnet-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc
  =ciam-ops
@@ -6761,15 +6761,15 @@ objectClass: top
 objectClass: ciamWorkloadBinding
 cn: am
 ciamBindingRole: am-workload
-ciamContainerImage: openam=crciamprod.azurecr.io/ciam/am:7.5.1
-ciamContainerImage: amster=crciamprod.azurecr.io/ciam/amster:7.5.1
-ciamContainerImage: admin-ui=crciamprod.azurecr.io/ciam/admin-ui:7.5.1
-ciamContainerImage: end-user-ui=crciamprod.azurecr.io/ciam/end-user-ui:7.5.1
-ciamContainerImage: login-ui=crciamprod.azurecr.io/ciam/login-ui:7.5.1
+ciamContainerImage: openam=crciamprod.azurecr.io/ciam/am:8.1.1
+ciamContainerImage: amster=crciamprod.azurecr.io/ciam/amster:8.1.1
+ciamContainerImage: admin-ui=crciamprod.azurecr.io/ciam/admin-ui:8.1.1
+ciamContainerImage: end-user-ui=crciamprod.azurecr.io/ciam/end-user-ui:8.1.1
+ciamContainerImage: login-ui=crciamprod.azurecr.io/ciam/login-ui:8.1.1
 ciamCpuRequest: 2
 ciamMemoryLimit: 4Gi
 ciamMemoryRequest: 4Gi
-ciamProductVersion: PingAM 7.5.1
+ciamProductVersion: PingAM 8.1.1
 ciamWorkloadReplicas: 2
 
 dn: cn=appEntitlement,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
@@ -8598,11 +8598,11 @@ objectClass: top
 objectClass: ciamWorkloadBinding
 cn: idm
 ciamBindingRole: idm-workload
-ciamContainerImage: openidm=crciamprod.azurecr.io/ciam/idm:7.5.0
+ciamContainerImage: openidm=crciamprod.azurecr.io/ciam/idm:8.1.2
 ciamCpuRequest: 1
 ciamMemoryLimit: 2Gi
 ciamMemoryRequest: 2Gi
-ciamProductVersion: PingIDM 7.5.0
+ciamProductVersion: PingIDM 8.1.2
 ciamWorkloadReplicas: 2
 
 dn: cn=ig,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
@@ -8610,11 +8610,11 @@ objectClass: top
 objectClass: ciamWorkloadBinding
 cn: ig
 ciamBindingRole: ig-workload
-ciamContainerImage: ig=crciamprod.azurecr.io/ciam/ig:2024.11.0
+ciamContainerImage: ig=crciamprod.azurecr.io/ciam/ig:2026.9.0
 ciamCpuRequest: 1
 ciamMemoryLimit: 2Gi
 ciamMemoryRequest: 2Gi
-ciamProductVersion: PingGateway 2024.11.0
+ciamProductVersion: PingGateway 2026.9.0
 ciamWorkloadReplicas: 2
 
 dn: cn=inspector,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
@@ -9203,12 +9203,12 @@ objectClass: top
 objectClass: ciamWorkloadBinding
 cn: pf-admin
 ciamBindingRole: pf-admin-workload
-ciamContainerImage: pingfederate=crciamprod.azurecr.io/ciam/pingfederate:12.1.
- 4
+ciamContainerImage: pingfederate=crciamprod.azurecr.io/ciam/pingfederate:13.1.
+ 3
 ciamCpuRequest: 1
 ciamMemoryLimit: 4Gi
 ciamMemoryRequest: 4Gi
-ciamProductVersion: PingFederate 12.1.4
+ciamProductVersion: PingFederate 13.1.3
 ciamStorageClass: managed-csi-premium
 ciamStorageSize: 8Gi
 ciamWorkloadReplicas: 1
@@ -9250,12 +9250,12 @@ objectClass: top
 objectClass: ciamWorkloadBinding
 cn: pf-engine
 ciamBindingRole: pf-engine-workload
-ciamContainerImage: pingfederate=crciamprod.azurecr.io/ciam/pingfederate:12.1.
- 4
+ciamContainerImage: pingfederate=crciamprod.azurecr.io/ciam/pingfederate:13.1.
+ 3
 ciamCpuRequest: 1
 ciamMemoryLimit: 4Gi
 ciamMemoryRequest: 4Gi
-ciamProductVersion: PingFederate 12.1.4
+ciamProductVersion: PingFederate 13.1.3
 ciamWorkloadReplicas: 2
 
 dn: cn=pf-grants,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops

@@ -52,12 +52,23 @@ def _records_text(operator_conditions=()):
 def test_a_deployers_federated_identity_and_an_operator_groups_assignments():
     out = render_landing(env_model(_record(), "az/prod"))["terraform/landing-zone/main.tf"]
     assert 'resource "azurerm_federated_identity_credential" "identity_ci"' in out
-    assert f'issuer              = "{GITHUB}"' in out and 'audience            = ["api://AzureADTokenExchange"]' in out
-    assert 'subject             = "repo:example-aero/ciam-ops:environment:prod"' in out
+    assert f'issuer                    = "{GITHUB}"' in out
+    assert 'audience                  = ["api://AzureADTokenExchange"]' in out
+    assert 'subject                   = "repo:example-aero/ciam-ops:environment:prod"' in out
+    assert "user_assigned_identity_id = azurerm_user_assigned_identity.identity_ci.id" in out
     assert 'principal_id         = azurerm_user_assigned_identity.identity_ci.principal_id' in out
     assert 'principal_id         = "5b2c0000-0000-4000-8000-0000000000aa"' in out
     assert 'scope                = "${data.azurerm_key_vault.kv_ciam_prod.id}/secrets/pf-admin-password"' in out
     assert 'data "azurerm_key_vault" "kv_ciam_prod"' in out and "azurerm_pim_eligible_role_assignment" not in out
+
+
+def test_the_landing_zone_registers_the_resource_providers_every_root_needs():
+    m = env_model(_record(), "az/prod")
+    platform = 'resource "azurerm_linux_virtual_machine" "ds_1" {\n}\n'
+    out = render_landing(m, platform=(platform,))["terraform/landing-zone/providers.tf"]
+    assert 'resource_provider_registrations = "none"' in out
+    listed = out[out.index("resource_providers_to_register"):].split("]")[0]
+    assert '"Microsoft.Compute"' in listed and '"Microsoft.ManagedIdentity"' in listed
 
 
 def test_a_jit_operator_is_eligible_through_pim():

@@ -233,12 +233,11 @@ resource "azurerm_user_assigned_identity" "identity_pf" {
 }
 
 resource "azurerm_federated_identity_credential" "identity_pf_ciam_pingfederate" {
-  name                = "id-ciam-prod-pf-ciam-pingfederate"
-  resource_group_name = data.azurerm_resource_group.main.name
-  parent_id           = azurerm_user_assigned_identity.identity_pf.id
-  audience            = ["api://AzureADTokenExchange"]
-  issuer              = data.azurerm_kubernetes_cluster.aks_ciam_prod.oidc_issuer_url
-  subject             = "system:serviceaccount:ciam:pingfederate"
+  name                      = "id-ciam-prod-pf-ciam-pingfederate"
+  user_assigned_identity_id = azurerm_user_assigned_identity.identity_pf.id
+  audience                  = ["api://AzureADTokenExchange"]
+  issuer                    = data.azurerm_kubernetes_cluster.aks_ciam_prod.oidc_issuer_url
+  subject                   = "system:serviceaccount:ciam:pingfederate"
 }
 
 resource "azurerm_role_assignment" "identity_pf_read_secret_pf_admin_password" {
@@ -304,7 +303,7 @@ resource "azurerm_linux_virtual_machine" "ds_1" {
   zone                  = "1"
   admin_username        = "ciamadmin"
   network_interface_ids = [azurerm_network_interface.ds_1.id]
-  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingds-7.5.1-rhel9"
+  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingds-8.1.2-rhel9"
   admin_ssh_key {
     username   = "ciamadmin"
     public_key = var.admin_ssh_public_key
@@ -324,7 +323,7 @@ resource "azurerm_linux_virtual_machine" "ds_1" {
     Owner       = "ciam-platform"
     Role        = "ds"
     Hostname    = "ds-1.az.internal.example-aero.test"
-    Product     = "PingDS 7.5.1"
+    Product     = "PingDS 8.1.2"
     ManagedBy   = "opsdir"
   }
 }
@@ -393,7 +392,7 @@ resource "azurerm_linux_virtual_machine" "ds_2" {
   zone                  = "2"
   admin_username        = "ciamadmin"
   network_interface_ids = [azurerm_network_interface.ds_2.id]
-  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingds-7.5.1-rhel9"
+  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingds-8.1.2-rhel9"
   admin_ssh_key {
     username   = "ciamadmin"
     public_key = var.admin_ssh_public_key
@@ -413,7 +412,7 @@ resource "azurerm_linux_virtual_machine" "ds_2" {
     Owner       = "ciam-platform"
     Role        = "ds"
     Hostname    = "ds-2.az.internal.example-aero.test"
-    Product     = "PingDS 7.5.1"
+    Product     = "PingDS 8.1.2"
     ManagedBy   = "opsdir"
   }
 }
@@ -482,7 +481,7 @@ resource "azurerm_linux_virtual_machine" "ds_3" {
   zone                  = "3"
   admin_username        = "ciamadmin"
   network_interface_ids = [azurerm_network_interface.ds_3.id]
-  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingds-7.5.1-rhel9"
+  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingds-8.1.2-rhel9"
   admin_ssh_key {
     username   = "ciamadmin"
     public_key = var.admin_ssh_public_key
@@ -502,7 +501,7 @@ resource "azurerm_linux_virtual_machine" "ds_3" {
     Owner       = "ciam-platform"
     Role        = "ds"
     Hostname    = "ds-3.az.internal.example-aero.test"
-    Product     = "PingDS 7.5.1"
+    Product     = "PingDS 8.1.2"
     ManagedBy   = "opsdir"
   }
 }
@@ -584,7 +583,8 @@ resource "azurerm_application_gateway" "svc_apps" {
     name                = "health-443"
     protocol            = "Http"
     host                = "apps.example-aero.test"
-    path                = "/openig/ping"
+    port                = 8085
+    path                = "/health/startup"
     interval            = 30
     timeout             = 30
     unhealthy_threshold = 3
@@ -684,10 +684,14 @@ resource "azurerm_lb_rule" "svc_ldaps_1636" {
   probe_id                       = azurerm_lb_probe.svc_ldaps_1636.id
 }
 
+data "azurerm_private_dns_zone" "id_cloud_example_aero_test" {
+  name                = "id.cloud.example-aero.test"
+  resource_group_name = data.azurerm_resource_group.main.name
+}
+
 resource "azurerm_private_dns_a_record" "svc_ldaps" {
   name                = "ldap"
-  zone_name           = "id.cloud.example-aero.test"
-  resource_group_name = data.azurerm_resource_group.main.name
+  private_dns_zone_id = data.azurerm_private_dns_zone.id_cloud_example_aero_test.id
   ttl                 = 300
   records             = ["10.60.1.100"]
   tags = {
@@ -1292,7 +1296,7 @@ resource "azurerm_storage_container" "activity_logs" {
 }
 
 resource "azurerm_storage_container_immutability_policy" "activity_logs" {
-  storage_container_resource_manager_id = azurerm_storage_container.activity_logs.resource_manager_id
+  storage_container_resource_manager_id = azurerm_storage_container.activity_logs.id
   immutability_period_in_days           = 400
   protected_append_writes_enabled       = false
   locked                                = false
@@ -1669,7 +1673,7 @@ resource "azurerm_monitor_data_collection_rule" "logs_access_logs_aks" {
   data_flow {
     streams       = ["Microsoft-ContainerLogV2-HighScale"]
     destinations  = ["workspace"]
-    transform_kql = "source | where (tostring(KubernetesMetadata.podLabels[\"opsdir.io/role\"]) == \"pf-engine\" and ContainerName == \"pf-log-runtime-request\") or (tostring(KubernetesMetadata.podLabels[\"opsdir.io/role\"]) == \"pf-engine\" and ContainerName == \"pf-log-request\")"
+    transform_kql = "source | where (tostring(KubernetesMetadata.podLabels[\"opsdir.io/role\"]) == \"pf-engine\" and ContainerName == \"pf-log-runtime-request\") or (tostring(KubernetesMetadata.podLabels[\"opsdir.io/role\"]) == \"pf-engine\" and ContainerName == \"pf-log-request\") or (tostring(KubernetesMetadata.podLabels[\"opsdir.io/role\"]) == \"pf-engine\" and ContainerName == \"pf-log-runtime-api\")"
   }
   tags = {
     CostCenter  = "CC-1001"
@@ -1817,7 +1821,7 @@ resource "azurerm_security_center_automation" "defender_export" {
   resource_group_name = data.azurerm_resource_group.main.name
   scopes              = [data.azurerm_subscription.current.id]
   action {
-    type        = "loganalytics"
+    type        = "Workspace"
     resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-ciam-prod-security"
   }
   source {
@@ -1844,7 +1848,7 @@ resource "azurerm_security_center_automation" "defender_cspm_export" {
   resource_group_name = data.azurerm_resource_group.main.name
   scopes              = [data.azurerm_subscription.current.id]
   action {
-    type        = "loganalytics"
+    type        = "Workspace"
     resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-ciam-prod-security"
   }
   source {
@@ -1865,7 +1869,7 @@ resource "azurerm_security_center_automation" "defender_vulnerability_export" {
   resource_group_name = data.azurerm_resource_group.main.name
   scopes              = [data.azurerm_subscription.current.id]
   action {
-    type        = "loganalytics"
+    type        = "Workspace"
     resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-ciam-prod-security"
   }
   source {

@@ -97,7 +97,7 @@ SOURCES = {"threat-detection": ("aws.guardduty", "GuardDuty Finding"),
            "vulnerability-scanning": ("aws.inspector2", "Inspector2 Finding"),
            "posture": ("aws.securityhub", "Security Hub Findings - Imported"),
            "data-discovery": ("aws.macie", "Macie Finding")}             # Macie (opsdir_adapter_aws.discovery)
-_HUB = "arn:${data.aws_partition.current.partition}:securityhub:${data.aws_region.current.name}::"
+_HUB = "arn:${data.aws_partition.current.partition}:securityhub:${data.aws_region.current.region}::"
 # the least GuardDuty severity value of each level (GuardDuty's severity levels: low 1.0-3.9 .. critical 9.0-10.0)
 GUARDDUTY_FLOOR = {"low": 1, "medium": 4, "high": 7, "critical": 9}
 

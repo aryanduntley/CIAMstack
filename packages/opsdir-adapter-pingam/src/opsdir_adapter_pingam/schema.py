@@ -37,6 +37,9 @@ ATTRIBUTES = (
                  "The policy set's other settings, as AM writes them"),
     AttributeDef(13, 'pingamPolicyConfig', 'json', 'intent', True,
                  "The policy: resources, actions, subject and conditions, as AM writes them"),
+    AttributeDef(14, 'pingamNodeVersion', 'string', 'intent', True,
+                 "The node's version, as PingAM 8.1 and later write it (the tree's node map and the node's _type); "
+                 "absent for earlier versions, whose nodes have none"),
 )
 CLASSES = (
     ClassDef(1, 'pingamRealm', 'top', 'AUXILIARY', ('pingamRealmPath',), (),
@@ -45,7 +48,7 @@ CLASSES = (
              ('pingamEnabled', 'pingamTreeConfig'),
              'An authentication journey (tree): its nodes are its children'),
     ClassDef(3, 'pingamNode', 'ciamObject', 'STRUCTURAL', ('cn', 'pingamNodeType'),
-             ('pingamDisplayName', 'pingamNodeConfig', 'pingamOutcome', 'pingamWithheld'),
+             ('pingamDisplayName', 'pingamNodeConfig', 'pingamOutcome', 'pingamWithheld', 'pingamNodeVersion'),
              'One node of a journey (cn: its node id)'),
     ClassDef(4, 'pingamPolicySet', 'ciamObject', 'STRUCTURAL', ('cn', 'pingamRealm'),
              ('pingamApplicationType', 'pingamSetConfig'),

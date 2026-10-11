@@ -462,7 +462,7 @@ resource "google_compute_instance" "am_1" {
   tags         = ["ciam-prod-am"]
   boot_disk {
     initialize_params {
-      image = "projects/example-aero-images/global/images/pingam-7-5-1-rhel9"
+      image = "projects/example-aero-images/global/images/pingam-8-1-1-rhel9"
     }
     kms_key_self_link = "projects/example-aero-ciam-standby/locations/us-central1/keyRings/ciam/cryptoKeys/disk"
   }
@@ -478,11 +478,11 @@ resource "google_compute_instance" "am_1" {
   metadata = {
     enable-oslogin = "TRUE"
     ciam-role      = "am"
-    ciam-product   = "PingAM 7.5.1"
+    ciam-product   = "PingAM 8.1.1"
   }
   labels = {
     role       = "am"
-    product    = "pingam-7-5-1"
+    product    = "pingam-8-1-1"
     managed_by = "opsdir"
   }
 }
@@ -495,7 +495,7 @@ resource "google_compute_instance" "ds_1" {
   tags         = ["ciam-prod-ds"]
   boot_disk {
     initialize_params {
-      image = "projects/example-aero-images/global/images/pingds-7-5-1-rhel9"
+      image = "projects/example-aero-images/global/images/pingds-8-1-2-rhel9"
     }
     kms_key_self_link = "projects/example-aero-ciam-standby/locations/us-central1/keyRings/ciam/cryptoKeys/disk"
   }
@@ -515,11 +515,11 @@ resource "google_compute_instance" "ds_1" {
   metadata = {
     enable-oslogin = "TRUE"
     ciam-role      = "ds"
-    ciam-product   = "PingDS 7.5.1"
+    ciam-product   = "PingDS 8.1.2"
   }
   labels = {
     role       = "ds"
-    product    = "pingds-7-5-1"
+    product    = "pingds-8-1-2"
     managed_by = "opsdir"
   }
 }
@@ -563,7 +563,7 @@ resource "google_compute_instance" "ds_2" {
   tags         = ["ciam-prod-ds"]
   boot_disk {
     initialize_params {
-      image = "projects/example-aero-images/global/images/pingds-7-5-1-rhel9"
+      image = "projects/example-aero-images/global/images/pingds-8-1-2-rhel9"
     }
     kms_key_self_link = "projects/example-aero-ciam-standby/locations/us-central1/keyRings/ciam/cryptoKeys/disk"
   }
@@ -583,11 +583,11 @@ resource "google_compute_instance" "ds_2" {
   metadata = {
     enable-oslogin = "TRUE"
     ciam-role      = "ds"
-    ciam-product   = "PingDS 7.5.1"
+    ciam-product   = "PingDS 8.1.2"
   }
   labels = {
     role       = "ds"
-    product    = "pingds-7-5-1"
+    product    = "pingds-8-1-2"
     managed_by = "opsdir"
   }
 }
@@ -631,7 +631,7 @@ resource "google_compute_instance" "idm_1" {
   tags         = ["ciam-prod-idm"]
   boot_disk {
     initialize_params {
-      image = "projects/example-aero-images/global/images/pingidm-7-5-0-rhel9"
+      image = "projects/example-aero-images/global/images/pingidm-8-1-2-rhel9"
     }
     kms_key_self_link = "projects/example-aero-ciam-standby/locations/us-central1/keyRings/ciam/cryptoKeys/disk"
   }
@@ -647,11 +647,11 @@ resource "google_compute_instance" "idm_1" {
   metadata = {
     enable-oslogin = "TRUE"
     ciam-role      = "idm"
-    ciam-product   = "PingIDM 7.5.0"
+    ciam-product   = "PingIDM 8.1.2"
   }
   labels = {
     role       = "idm"
-    product    = "pingidm-7-5-0"
+    product    = "pingidm-8-1-2"
     managed_by = "opsdir"
   }
 }
@@ -664,7 +664,7 @@ resource "google_compute_instance" "ig_1" {
   tags         = ["ciam-prod-ig"]
   boot_disk {
     initialize_params {
-      image = "projects/example-aero-images/global/images/pinggateway-2024-11-0-rhel9"
+      image = "projects/example-aero-images/global/images/pinggateway-2026-9-0-rhel9"
     }
     kms_key_self_link = "projects/example-aero-ciam-standby/locations/us-central1/keyRings/ciam/cryptoKeys/disk"
   }
@@ -680,11 +680,11 @@ resource "google_compute_instance" "ig_1" {
   metadata = {
     enable-oslogin = "TRUE"
     ciam-role      = "ig"
-    ciam-product   = "PingGateway 2024.11.0"
+    ciam-product   = "PingGateway 2026.9.0"
   }
   labels = {
     role       = "ig"
-    product    = "pinggateway-2024-11-0"
+    product    = "pinggateway-2026-9-0"
     managed_by = "opsdir"
   }
 }
@@ -697,7 +697,7 @@ resource "google_compute_instance" "pf_admin_1" {
   tags         = ["ciam-prod-pf-admin"]
   boot_disk {
     initialize_params {
-      image = "projects/example-aero-images/global/images/pingfederate-12-1-4-rhel9"
+      image = "projects/example-aero-images/global/images/pingfederate-13-1-3-rhel9"
     }
     kms_key_self_link = "projects/example-aero-ciam-standby/locations/us-central1/keyRings/ciam/cryptoKeys/disk"
   }
@@ -713,11 +713,11 @@ resource "google_compute_instance" "pf_admin_1" {
   metadata = {
     enable-oslogin = "TRUE"
     ciam-role      = "pf-admin"
-    ciam-product   = "PingFederate 12.1.4"
+    ciam-product   = "PingFederate 13.1.3"
   }
   labels = {
     role       = "pf-admin"
-    product    = "pingfederate-12-1-4"
+    product    = "pingfederate-13-1-3"
     managed_by = "opsdir"
   }
 }
@@ -730,7 +730,7 @@ resource "google_compute_instance" "pf_engine_1" {
   tags         = ["ciam-prod-pf-engine"]
   boot_disk {
     initialize_params {
-      image = "projects/example-aero-images/global/images/pingfederate-12-1-4-rhel9"
+      image = "projects/example-aero-images/global/images/pingfederate-13-1-3-rhel9"
     }
     kms_key_self_link = "projects/example-aero-ciam-standby/locations/us-central1/keyRings/ciam/cryptoKeys/disk"
   }
@@ -750,11 +750,11 @@ resource "google_compute_instance" "pf_engine_1" {
   metadata = {
     enable-oslogin = "TRUE"
     ciam-role      = "pf-engine"
-    ciam-product   = "PingFederate 12.1.4"
+    ciam-product   = "PingFederate 13.1.3"
   }
   labels = {
     role       = "pf-engine"
-    product    = "pingfederate-12-1-4"
+    product    = "pingfederate-13-1-3"
     managed_by = "opsdir"
   }
 }
@@ -767,7 +767,7 @@ resource "google_compute_instance" "pf_engine_2" {
   tags         = ["ciam-prod-pf-engine"]
   boot_disk {
     initialize_params {
-      image = "projects/example-aero-images/global/images/pingfederate-12-1-4-rhel9"
+      image = "projects/example-aero-images/global/images/pingfederate-13-1-3-rhel9"
     }
     kms_key_self_link = "projects/example-aero-ciam-standby/locations/us-central1/keyRings/ciam/cryptoKeys/disk"
   }
@@ -787,11 +787,11 @@ resource "google_compute_instance" "pf_engine_2" {
   metadata = {
     enable-oslogin = "TRUE"
     ciam-role      = "pf-engine"
-    ciam-product   = "PingFederate 12.1.4"
+    ciam-product   = "PingFederate 13.1.3"
   }
   labels = {
     role       = "pf-engine"
-    product    = "pingfederate-12-1-4"
+    product    = "pingfederate-13-1-3"
     managed_by = "opsdir"
   }
 }
@@ -2248,14 +2248,14 @@ resource "google_logging_project_sink" "logs_access_logs" {
   name                   = "ciam-prod-access-logs"
   description            = "Log route access-logs: product logs to ops-logs (opsdir)"
   destination            = "logging.googleapis.com/projects/example-aero-ciam-standby/locations/global/buckets/ciam-ops"
-  filter                 = "(logName =~ \"/logs/ciam_ds_logs_ldap_access_audit_json$\") OR (logName =~ \"/logs/ciam_ds_logs_http_access_audit_json$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_runtime_request_log$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_request_log$\")"
+  filter                 = "(logName =~ \"/logs/ciam_ds_logs_ldap_access_audit_json$\") OR (logName =~ \"/logs/ciam_ds_logs_http_access_audit_json$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_runtime_request_log$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_request_log$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_runtime_api_log$\")"
   unique_writer_identity = true
 }
 
 resource "google_logging_project_exclusion" "logs_access_logs" {
   name        = "ciam-prod-access-logs"
   description = "Log route access-logs: product logs to ops-logs (opsdir): kept in ops-logs, not also in _Default"
-  filter      = "(logName =~ \"/logs/ciam_ds_logs_ldap_access_audit_json$\") OR (logName =~ \"/logs/ciam_ds_logs_http_access_audit_json$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_runtime_request_log$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_request_log$\")"
+  filter      = "(logName =~ \"/logs/ciam_ds_logs_ldap_access_audit_json$\") OR (logName =~ \"/logs/ciam_ds_logs_http_access_audit_json$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_runtime_request_log$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_request_log$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_runtime_api_log$\")"
 }
 
 resource "google_logging_project_sink" "logs_audit_logs" {

@@ -6,7 +6,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 4.0"
+      version = "~> 5.9"
     }
   }
 }
@@ -14,7 +14,9 @@ terraform {
 provider "azurerm" {
   features {
   }
-  subscription_id = var.subscription_id
+  subscription_id                 = var.subscription_id
+  resource_provider_registrations = "none"
+  resource_providers_to_register  = ["Microsoft.Authorization", "Microsoft.Compute", "Microsoft.DBforPostgreSQL", "Microsoft.Insights", "Microsoft.ManagedIdentity", "Microsoft.Network", "Microsoft.OperationalInsights", "Microsoft.Security", "Microsoft.Storage"]
 }
 
 variable "subscription_id" {

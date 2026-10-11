@@ -76,9 +76,11 @@ STATE = _state(
     ("aws_customer_gateway", "dc", {"id": "cgw-1", "ip_address": "198.51.100.7", "bgp_asn": "65010"}),
     ("aws_vpn_gateway", "vgw", {"id": "vgw-9", "amazon_side_asn": "64512"}),
     ("aws_vpn_connection", "dc", {"id": "vpn-1", "customer_gateway_id": "cgw-1", "vpn_gateway_id": "vgw-9"}),
-    ("aws_cloudwatch_log_group", "flow", {"arn": LOGS, "name": "/vpc/flow", "retention_in_days": 90}),
+    ("aws_cloudwatch_log_group", "flow", {"arn": LOGS, "name": "/vpc/flow", "retention_in_days": 90,
+                                          "region": "us-east-1"}),           # hashicorp/aws 6.x: region on each
     ("aws_flow_log", "vpc", {"id": "fl-1", "vpc_id": "vpc-1", "log_destination_type": "cloud-watch-logs",
-                             "log_destination": LOGS, "tags": {"Role": "flow-vpc"}}))
+                             "log_destination": LOGS, "region": "us-east-1", "tags": {"Role": "flow-vpc"}}),
+    ("aws_flow_log", "subnet", {"id": "fl-2", "subnet_id": "subnet-ds", "log_group_name": "/vpc/flow"}))  # 5.x state
 
 
 def _by(kind):
@@ -146,6 +148,7 @@ def test_interconnect_depth_and_flow_logs():
     logs, _ = _by("flow-log")
     assert logs["fl-1"].attrs == {"ciamFlowScope": ("network",), "ciamRetentionDays": ("90",)}
     assert logs["fl-1"].links["ciamLogDestinationRole"] == LOGS and logs["fl-1"].role == "flow-vpc"
+    assert logs["fl-2"].links["ciamLogDestinationRole"] == LOGS                 # 5.x: by its group's name
 
 
 CLI = {

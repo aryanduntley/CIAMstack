@@ -168,16 +168,17 @@ def web_acl(m, n, spec, target_arn, cdn=False):
                 ("resource_arn", ref(target_arn)), ("web_acl_arn", ref(f"aws_wafv2_web_acl.{n}.arn"))]),)))
 
 
-def shield(n, spec, target_arn, attached=None):
+def shield(n, spec, target_arn, attached=None, provider=(), whose="the account's"):
     """Shield Advanced protection (and automatic layer 7 mitigation) when the policy asks for more than standard.
-    attached: what attaches the web ACL to the target (its association, else the CloudFront distribution)."""
+    attached: what attaches the web ACL to the target (its association, else the CloudFront distribution); provider:
+    the provider argument when not the root's default; whose: the account whose subscription it needs."""
     if spec.ddos == "standard":
         return ()
     return (block("resource", ["aws_shield_protection", n], [
-                ("#", "needs the account's Shield Advanced subscription"),
+                *provider, ("#", f"needs {whose} Shield Advanced subscription"),
                 ("name", n), ("resource_arn", ref(target_arn))]),
             *((block("resource", ["aws_shield_application_layer_automatic_response", n], [
-                ("resource_arn", ref(target_arn)),
+                *provider, ("resource_arn", ref(target_arn)),
                 ("action", "COUNT" if spec.waf_mode == "detect" else "BLOCK"),
                 ("depends_on", [ref(f"aws_shield_protection.{n}"),
                                 ref(attached or f"aws_wafv2_web_acl_association.{n}")])]),)
@@ -191,10 +192,27 @@ def health_check(spec, layer7, matcher="200"):
     protocol = h.protocol.upper() if not layer7 or h.protocol != "tcp" else \
         ("HTTPS" if spec.mode == "reencrypt" else "HTTP")
     return ("health_check", Block((("protocol", protocol),
+                                   *((("port", str(h.port)),) if h.port else ()),
                                    *((("path", h.path or "/"), ("matcher", matcher)) if protocol != "TCP" else ()),
                                    *((("interval", h.interval),) if h.interval else ()),
                                    *((("healthy_threshold", h.healthy),) if h.healthy else ()),
                                    *((("unhealthy_threshold", h.unhealthy),) if h.unhealthy else ()))))
+
+
+def probe_ports(spec, ports):
+    """The port a health check probes when the product serves its health endpoint on one of its own (an admin port)
+    rather than the service's ports, as a one-item tuple, else ()."""
+    port = spec.health.port if spec is not None else None
+    return (str(port),) if port and str(port) not in ports else ()
+
+
+def probe_ingress(m, n, role, spec, ports):
+    """The rule admitting a network load balancer's health checks (from the VPC's addresses: its nodes') to the role's
+    servers on the product's own health port, when it has one."""
+    return tuple(block("resource", ["aws_vpc_security_group_ingress_rule", f"{n}_health_{port}"], [
+        ("security_group_id", ref(f"aws_security_group.{tf_name(role)}.id")),
+        ("cidr_ipv4", ref("data.aws_vpc.main.cidr_block")), ("from_port", int(port)), ("to_port", int(port)),
+        ("ip_protocol", "tcp"), ("description", "load balancer health checks")]) for port in probe_ports(spec, ports))
 
 
 def stickiness(spec, layer7):
@@ -259,9 +277,10 @@ def servers_backend(svc, targets):
                    partial(_servers_peering, one(svc, "ciamTargetRole"), one(svc, "ciamFqdn")))
 
 
-def _alb_security_group(m, n, svc, ports, backend, cdn=False):
+def _alb_security_group(m, n, svc, ports, backend, cdn=False, probe=()):
     """The ALB's security group: clients in by the firewall rules that admit them to the service's servers and ports
-    (only CloudFront when a CDN fronts it), and the rules between it and the backend's targets."""
+    (only CloudFront when a CDN fronts it), and the rules between it and the backend's targets (on the service's ports
+    and probe: a product's own health port)."""
     role = one(svc, "ciamTargetRole")
     rules = [] if cdn else [(fw, cidr, port) for fw in m.bindings if "ciamFirewallRule" in fw.classes
                             and one(fw, "ciamTargetRole") == role for cidr in values(fw, "ciamSourceCidr")
@@ -276,7 +295,7 @@ def _alb_security_group(m, n, svc, ports, backend, cdn=False):
                      ("description", f"clients ({rdn_value(fw)})")])
               for i, (fw, cidr, port) in enumerate(rules)),
             *(_cloudfront_ingress(n, ports) if cdn else ()),
-            *backend.peering(n, ports))
+            *backend.peering(n, (*ports, *probe)))
 
 
 def alb_service(m, svc, spec, backend, subnets):
@@ -306,7 +325,7 @@ def alb_service(m, svc, spec, backend, subnets):
             ("default_action", Block((("type", "forward"),
                                       ("target_group_arn", ref(f"aws_lb_target_group.{n}_{port}.arn")))))]))
         for port in ports)
-    return (*_alb_security_group(m, n, svc, ports, backend, spec.cdn),
+    return (*_alb_security_group(m, n, svc, ports, backend, spec.cdn, probe_ports(spec, ports)),
             block("resource", ["aws_lb", n], [
                 *((("#", f"an ALB's addresses are AWS's: frontend address {ip} isn't kept"),) if ip else ()),
                 ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("internal", is_internal(svc)),

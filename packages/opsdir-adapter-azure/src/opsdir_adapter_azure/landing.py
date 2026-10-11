@@ -20,19 +20,17 @@ from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name
 from .access import ACCESS
 from .guardrails import render_guardrails
-from .identities import AUDIENCE, RG, assignments, managed_identity, notes, role_of, scope, scope_data
+from .identities import RG, assignments, federated_credential, managed_identity, notes, role_of, scope, scope_data
 from .plumbing import render_plumbing
-from .account import provider_block, subscription_variable
+from .account import provider_block, required_providers, subscription_variable
+from .resource_providers import registration_note, resource_providers
 
 
 def _deployer(m, w):
     """A deployer's managed identity, trusted only for its pipeline's tokens, and its role assignments."""
     n, (issuer, subject) = tf_name(w.identity_role), w.trust
     return (*notes(w), managed_identity(m, w),
-            block("resource", ["azurerm_federated_identity_credential", n], [
-                ("name", f"{w.name}-ci"), ("resource_group_name", RG),
-                ("parent_id", ref(f"azurerm_user_assigned_identity.{n}.id")), ("audience", [AUDIENCE]),
-                ("issuer", issuer), ("subject", subject)]),
+            federated_credential(n, f"{w.name}-ci", n, issuer, subject),
             *assignments(w, ref(f"azurerm_user_assigned_identity.{n}.principal_id")))
 
 
@@ -53,13 +51,13 @@ def _operator(m, w):
     return (*notes(w), *(_eligible(w) if "jit" in w.conditions else assignments(w, w.group)))
 
 
-def _providers(m, variables):
-    """providers.tf of a landing-zone root: the azurerm provider in the environment's subscription, and the root's
-    inputs."""
+def _providers(m, variables, register=(), unknown=()):
+    """providers.tf of a landing-zone root: the azurerm provider in the environment's subscription (registering the
+    resource providers in register), and the root's inputs."""
     return header(m, "Providers and inputs (landing zone)", HCL) + "\n" + "\n\n".join([
-        block("terraform", [], [("required_providers", Block((
-            ("azurerm", {"source": "hashicorp/azurerm", "version": "~> 4.0"}),)))]),
-        provider_block(m),
+        *((registration_note((), unknown),) if unknown else ()),
+        required_providers(),
+        provider_block(m, register),
         subscription_variable(m, described=True),
         *variables]) + "\n"
 
@@ -79,10 +77,12 @@ def _identities(m, guardrails):
             *fences)
 
 
-def render_landing(m, guardrails=render_guardrails, plumbing=render_plumbing):
+def render_landing(m, guardrails=render_guardrails, plumbing=render_plumbing, platform=()):
     """{path: text} of environment m's landing zone (identities, guardrails, the network plumbing its owner keeps)
     and of each other party's root keeping some of its plumbing, or {} when it needs nothing from anyone. A data
-    source main.tf declares isn't declared again in the same root's network.tf."""
+    source main.tf declares isn't declared again in the same root's network.tf. The landing zone's provider registers
+    the resource providers every root's resources need: its own, the keepers' and the platform's (platform: the
+    platform root's rendered .tf texts)."""
     out = _identities(m, guardrails)
     nets = tuple((k, plumbing(m, k)) for k in keepers(m))
     roots = dict.fromkeys((*((LANDING_ZONE,) if out else ()), *(k.folder for k, _ in nets)))
@@ -93,6 +93,8 @@ def render_landing(m, guardrails=render_guardrails, plumbing=render_plumbing):
         m, f"Azure network kept by {k.name} for the CIAM platform: applied by them, not by the platform's pipeline",
         HCL) + "\n" + "\n\n".join(x for x in (*r.shared, *r.blocks) if k.folder != LANDING_ZONE or x not in out)
         + "\n" for k, r in nets}
+    register, unknown = resource_providers((*platform, *main.values(), *network.values()))
     providers = {f"{f}/providers.tf": _providers(m, tuple(dict.fromkeys(
-        v for k, r in nets if k.folder == f for v in r.variables))) for f in roots}
+        v for k, r in nets if k.folder == f for v in r.variables)),
+        *((register, unknown) if f == LANDING_ZONE else ())) for f in roots}
     return {**providers, **main, **network}

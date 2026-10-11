@@ -8,10 +8,13 @@ CONNECTORS = branch("connectors", PINGIDM)
 MAPPINGS = branch("mappings", PINGIDM)
 SCHEDULES = branch("schedules", PINGIDM)
 SERVER_ROLES = ("idm",)            # ciamServerRole / ciamTargetRole values this adapter defines
-# What the edge treats specially (contract.Endpoint): self-service reset and registration, the ping endpoint
-ENDPOINTS = tuple(Endpoint(kind, path, "idm") for kind, path in (
-    ("password-reset", "/openidm/selfservice/reset"), ("registration", "/openidm/selfservice/registration"),
-    ("health", "/openidm/info/ping")))
+# What the edge treats specially (contract.Endpoint), by version: standalone self-service reset and registration
+# (removed in PingIDM 8.0: AM journeys do it), the ping endpoint (deprecated in 8.1 for /openidm/health/ready; PingIDM
+# 8.1 release notes, REST API reference: info endpoints)
+ENDPOINTS = tuple(Endpoint(kind, path, "idm", versions) for kind, path, versions in (
+    ("password-reset", "/openidm/selfservice/reset", "<8"),
+    ("registration", "/openidm/selfservice/registration", "<8"),
+    ("health", "/openidm/info/ping", "<8.1"), ("health", "/openidm/health/ready", ">=8.1")))
 
 
 def named(base, name):

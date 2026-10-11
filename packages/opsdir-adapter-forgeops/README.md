@@ -22,15 +22,15 @@ Components the environment doesn't run are disabled or left out.
 
 | Target | Files | Use |
 |---|---|---|
-| `helm` | `forgeops/helm/<namespace>/identity-platform-values.yaml`, `ping-gateway-values.yaml` | `helm upgrade --install <chart> <ForgeOps 2026.3.1 checkout>/charts/<chart> --namespace <namespace> -f <file>` |
-| `kustomize` | `forgeops/kustomize/overlay/<namespace>/`: its kustomization, `base/` (platform-config) and one folder per component over `../../../base/<component>` | copy the folder into the checkout's `kustomize/overlay/`, then `kustomize build` |
+| `helm` | `forgeops/helm/<namespace>/identity-platform-values.yaml`, `ping-gateway-values.yaml` | `helm upgrade --install <chart> <ForgeOps 2026.3.2 checkout>/charts/<chart> --namespace <namespace> -f <file>` |
+| `kustomize` | `forgeops/kustomize/overlay/<namespace>/`: its kustomization, `base/` (platform-config) and one folder per component over `../../../base/<component>` | copy the folder into the checkout's `kustomize/overlay/`, then `kustomize build`. Deprecated by ForgeOps from 2026.3.2 (removal expected a year later; the release's docs say from 2026.3.0): prefer `helm`. A chart-only component (idm-admin-ui) isn't in the bases: the kustomization's header says so |
 
 Both targets are on by default, as `forgeops env` writes both. Pick one with `opsdir render --target forgeops=helm` or `=kustomize`.
 
 ### From the record
 
 - **Images** come from the workload bindings' `ciamContainerImage` (`container=image`).
-  - The image is matched by the component's container names: `openam`/`am`, `amster`, `openidm`/`idm`, `ds`, `ig`, `admin-ui`, `end-user-ui`, `login-ui`. Failing that, a component's own workload's only image is used.
+  - The image is matched by the component's container names: `openam`/`am`, `amster`, `openidm`/`idm`, `ds`, `ig`, `admin-ui`, `end-user-ui`, `login-ui`, `idm-admin-ui`. IDM's legacy administration UI as a pod of its own (`idm-admin-ui`, new in ForgeOps 2026.3.2; PingIDM 8.1 no longer bundles it) is on only when IDM runs 8.1 or later and its binding names an `idm-admin-ui` image (chart default: off). Failing that, a component's own workload's only image is used.
   - keystore-create's Java image is AM's (IDM's without AM).
   - ForgeOps' public images are for development and testing only, so an image the record doesn't name is written `UNBOUND:forgeops-<component>-image`.
   - Helm takes a digest as repository `<name>@sha256`, tag `<hex>`, which the chart's `<repository>:<tag>` turns back into the reference. Kustomize takes it as `digest`.
@@ -76,6 +76,7 @@ ForgeOps' own Ingresses use the `nginx` class and nginx annotations, a controlle
 | am | `/am` | am:80 | AM's service names |
 | login-ui, admin-ui, end-user-ui | `/am/XUI`, `/platform`, `/enduser` | their own :8080 | AM's |
 | idm | `/openidm`, `/upload`, `/export`, `/admin`, `/openicf` | idm:80 | IDM's and AM's (the platform UIs call both on one host) |
+| idm-admin-ui (when on) | `/admin` (taken from idm), `/api` | idm-admin-ui:8080 | IDM's and AM's |
 | ig | `/ig`, `/igadmin` (prefix replaced by `/`, as the release's `rewrite-target /$2` does) | ig:80, ig:8085 | IG's |
 
 ## Listeners
@@ -93,7 +94,7 @@ The release's pods' container ports (`release.py`, `POD_PORTS`), declared as lis
 
 ## The ForgeOps source
 
-`scripts/fetch-forgeops.sh` downloads the pinned release into `tools/forgeops/2026.3.1/` (gitignored). It uses GitHub's archive of the commit, checked against the SHA-256 pinned in `release.py`. The tests marked `kubernetes` use it with the tools from `opsdir/scripts/fetch-tools.sh`. They render the values and the overlay, then run `helm template` on both charts and `kustomize build` against the release's bases, and check everything with kubeconform (`opsdir/scripts/validate-kubernetes.sh`).
+`scripts/fetch-forgeops.sh` downloads the pinned release into `tools/forgeops/2026.3.2/` (gitignored). It uses GitHub's archive of the commit, checked against the SHA-256 pinned in `release.py`. The tests marked `kubernetes` use it with the tools from `opsdir/scripts/fetch-tools.sh`. They render the values and the overlay, then run `helm template` on both charts and `kustomize build` against the release's bases, and check everything with kubeconform (`opsdir/scripts/validate-kubernetes.sh`).
 
 Tests: `tests/test_forgeops.py`.
 

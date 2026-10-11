@@ -21,7 +21,7 @@ from opsdir.domains.compute.workloads import cluster_subnets
 from opsdir.domains.edge.gateways import fronted_services, gateway_port
 from opsdir.domains.edge.resolve import front_edge
 from opsdir_format_terraform.hcl import block, ref, tf_name
-from .cdn import alias, distribution
+from .cdn import fronted
 from .dns import service_record
 from .edge import Backend, alb_service, target_group_name
 
@@ -64,8 +64,7 @@ def gateway_front(m, svc, gw, endpoints):
     return (*alb_service(m, svc, spec, gateway_backend(m, svc, spec), subnets),
             "# the ALB doesn't check the cluster gateway's certificate; the AWS Load Balancer Controller registers "
             "the gateway's pods (TargetGroupBinding) and admits this ALB's subnets to them",
-            *(distribution(m, svc, spec, n) if spec.cdn else ()),
-            *service_record(m.d, m, svc, n, alias(n) if spec.cdn else None))
+            *(fronted(m, svc, spec, n) if spec.cdn else service_record(m.d, m, svc, n)))
 
 
 def gateway_plug(m, gw, service):

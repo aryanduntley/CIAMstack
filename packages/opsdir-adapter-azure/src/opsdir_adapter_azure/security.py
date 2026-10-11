@@ -94,16 +94,21 @@ INITIATIVES = {"nist-800-53-r5": "NIST SP 800-53 Rev. 5", "nist-800-171-r2": "NI
 BASELINE = "microsoft-cloud-security-benchmark"
 BASELINE_NAME = "Microsoft cloud security benchmark"
 _REGIONAL = "Microsoft's \"Microsoft Defender for Cloud regional availability\" (2026-10)"
-_GOV_PAGE = "Microsoft's \"Cloud feature availability for US Government customers\" (2026-09)"
+_GOV_PAGE = "Microsoft's \"Cloud feature availability for US Government customers\" (2026-10)"
+_MATRIX = "Defender for Cloud's support matrix for cloud environments (2026-10)"
 # Azure Government: plans and features one of Microsoft's pages lists as unavailable there (rendered all the same)
 GOV_NOTES = {
-    "Containers": f"{_REGIONAL} doesn't list the US Gov regions for Defender for Containers; {_GOV_PAGE} lists it GA",
-    "CosmosDbs": f"{_REGIONAL} doesn't list the US Gov regions for Defender for Azure Cosmos DB; {_GOV_PAGE} lists "
-                 "it GA",
-    "Api": f"{_REGIONAL} doesn't list the US Gov regions for Defender for APIs; {_GOV_PAGE} doesn't list it",
-    "AppServices": f"{_REGIONAL} and {_GOV_PAGE} list Defender for App Service as unavailable in Azure Government",
+    "Containers": f"{_REGIONAL} lists the US Gov regions as unsupported for Defender for Containers; {_GOV_PAGE} and "
+                  f"{_MATRIX} list it GA",
+    "CosmosDbs": f"{_REGIONAL} lists the US Gov regions as unsupported for Defender for Azure Cosmos DB; {_GOV_PAGE} "
+                 f"and {_MATRIX} list it GA",
+    "Api": f"{_REGIONAL} lists the US Gov regions as unsupported for Defender for APIs, {_MATRIX} lists it not "
+           f"available in Azure Government, and {_GOV_PAGE} doesn't list it",
+    "AppServices": f"{_REGIONAL}, {_GOV_PAGE} and {_MATRIX} list Defender for App Service as unavailable in Azure "
+                   "Government",
     VA_SETTING: f"{_GOV_PAGE} lists integrated vulnerability assessment for machines as not available in Azure "
-                "Government",
+                "Government; Defender for Servers' support matrix (2026-10) lists VM vulnerability scanning (agentless "
+                "and with the Defender for Endpoint sensor) GA there",
     "cmmc-l2": "Azure Government's built-in initiatives list CMMC Level 3, not CMMC 2.0 Level 2 (NIST SP 800-171 Rev. "
                "2 covers its practices)"}
 GOV_ONLY = frozenset(("dod-il4", "dod-il5"))
@@ -206,7 +211,7 @@ def _export(m, s, kind):
     return (block("resource", [AUTOMATION, tf_name(f"{cn}_export")], [
         ("name", f"{cn}-export"), ("location", LOC), ("resource_group_name", RG),
         ("scopes", [ref(f"{SUBSCRIPTION}.id")]),
-        ("action", Block((("type", "loganalytics"), ("resource_id", workspace)))),
+        ("action", Block((("type", "Workspace"), ("resource_id", workspace)))),
         *(("source", Block((("event_source", src),))) for src in EXPORTS[kind])]),)
 
 
@@ -260,7 +265,7 @@ def _incident_routing(m, s, kind):
             ("name", f"{cn}-incidents"), ("location", LOC), ("resource_group_name", RG),
             ("description", f"{cn}'s {route.severity} and worse findings to {route.role} (incident process)"),
             ("scopes", [ref(f"{SUBSCRIPTION}.id")]),
-            ("action", Block((("type", "loganalytics"), ("resource_id", workspace)))),
+            ("action", Block((("type", "Workspace"), ("resource_id", workspace)))),
             *(("source", Block((("event_source", src), *severity_rule_sets(src, route.severity))))
               for src in EXPORTS[kind] if src in SEVERITY_PATHS)]))
     findings_ws = _workspace_of(m, findings_destination(m, s))

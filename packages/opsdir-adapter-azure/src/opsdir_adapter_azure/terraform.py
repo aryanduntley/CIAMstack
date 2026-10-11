@@ -1,4 +1,4 @@
-"""Azure adapter: render an environment's infrastructure bindings as Terraform (hashicorp/azurerm ~> 4). Each workload
+"""Azure adapter: render an environment's infrastructure bindings as Terraform (hashicorp/azurerm 5.x). Each workload
 principal its servers run as gets a user-assigned managed identity on those VMs and role assignments from its
 permissions (the Azure permission table, opsdir_adapter_azure.access), each at the narrowest scope: the secret or key
 in its vault (Key Vault's RBAC model), the storage container, the resource a provider ref names. A VM that gets the
@@ -15,6 +15,7 @@ from opsdir.domains.access.workloads import identity_of, workload_identities
 from opsdir.domains.edge.exposure import exposure_unknown, is_internal, service_exposure
 from opsdir.domains.edge.gateways import role_gateway
 from opsdir.domains.edge.records import forwarders
+from opsdir.domains.network.plumbing import LANDING_ZONE
 from opsdir.domains.edge.resolve import inspected, service_edge
 from opsdir_format_terraform.hcl import Block, block, ref, tf_name, unbound_comments
 from .access import ACCESS
@@ -38,9 +39,10 @@ from .frontdoor import endpoint, front_door
 from .identities import LOC, RG, aks_data, identity, scope_data
 from .ingress import gateway_front
 from .landing import render_landing
+from .resource_providers import registration_note, resource_providers
 from .network import render_network
 from .plumbing import network_data
-from .account import provider_block, subscription_variable, tagged
+from .account import provider_block, required_providers, subscription_variable, tagged
 
 PRIORITIES = (100, 10, 4096)        # NSG rule priorities: first slot, step, last (pinned ones kept)
 
@@ -133,13 +135,18 @@ def _probe_body(spec):
             *((("number_of_probes", h.unhealthy),) if h.unhealthy else ()))
 
 
+def _probed(spec, port):
+    """The port a probe checks: the product's own health port (an admin port) when it declares one, else the rule's."""
+    return spec.health.port if spec is not None and spec.health.port else port
+
+
 def _lb_port(n, port, spec=None):
     rule = (*((("idle_timeout_in_minutes", min(30, max(4, -(-spec.idle_timeout // 60)))),)
               if spec is not None and spec.idle_timeout else ()),
             *((("load_distribution", "SourceIP"),) if spec is not None and spec.stickiness == "source-ip" else ()))
     return (block("resource", ["azurerm_lb_probe", f"{n}_{port}"], [
                 ("name", f"tcp-{port}"), ("loadbalancer_id", ref(f"azurerm_lb.{n}.id")),
-                *_probe_body(spec)[:1], ("port", int(port)), *_probe_body(spec)[1:]]),
+                *_probe_body(spec)[:1], ("port", int(_probed(spec, port))), *_probe_body(spec)[1:]]),
             block("resource", ["azurerm_lb_rule", f"{n}_{port}"], [
                 ("name", f"tcp-{port}"), ("loadbalancer_id", ref(f"azurerm_lb.{n}.id")), ("protocol", "Tcp"),
                 ("frontend_port", int(port)), ("backend_port", int(port)),
@@ -239,10 +246,12 @@ def render(m, services):
     unbound = unbound_comments(m.unbound)
     main = header(m, "Azure infrastructure for the CIAM platform", HCL) + unbound + notes + "\n\n" \
         + "\n\n".join(out) + "\n"
+    landing = render_landing(m, platform=(main, *(t for k, t in container_files.items() if k.endswith(".tf"))))
+    alone = () if f"{LANDING_ZONE}/providers.tf" in landing else \
+        tuple(x for x in (registration_note(*resource_providers((main, *landing.values()))),) if x)
     providers = header(m, "Providers and inputs", HCL) + "\n" + "\n\n".join([
-        block("terraform", [], [("required_providers", Block((
-            ("azurerm", {"source": "hashicorp/azurerm", "version": "~> 4.0"}),
-            *((("azapi", {"source": "Azure/azapi", "version": "~> 2.0"}),) if uses_azapi(m) else ()))))]),
+        *alone,
+        required_providers(uses_azapi(m)),
         provider_block(m),
         *((azapi_provider(m),) if uses_azapi(m) else ()),
         subscription_variable(m),
@@ -252,4 +261,4 @@ def render(m, services):
             ("description", "The landing zone's DNS forwarding ruleset the forwarding rules join"),
             ("type", ref("string"))]),) if forwarders(m, hosted=False) else ()),
     ]) + "\n"
-    return {"terraform/providers.tf": providers, "terraform/main.tf": main, **container_files, **render_landing(m)}
+    return {"terraform/providers.tf": providers, "terraform/main.tf": main, **container_files, **landing}

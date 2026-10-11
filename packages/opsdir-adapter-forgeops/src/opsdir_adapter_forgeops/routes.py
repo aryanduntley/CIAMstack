@@ -8,16 +8,17 @@ them as HTTPRoutes.
 from opsdir.core.contract import Route
 from opsdir.domains.edge.gateways import role_gateway
 from .components import placements
-from .release import CHART_ROLES, ROUTES
+from .release import CHART_ROLES, ROUTES, TAKEN_ROUTES
 
 
 def routes(m):
     """Adapter routes: the Routes of the components on in each of environment m's placements, one per role whose
-    service names carry each path."""
+    service names carry each path; a path another component on takes over is its (TAKEN_ROUTES)."""
     on = {c for p in placements(m) for c in p.on}
+    taken = {(was, path) for was, path, by in TAKEN_ROUTES if by in on}
     return tuple(Route(role, path, match, service, port, rewrite)
-                 for component, roles, path, match, service, port, rewrite in ROUTES if component in on
-                 for role in roles)
+                 for component, roles, path, match, service, port, rewrite in ROUTES
+                 if component in on and (component, path) not in taken for role in roles)
 
 
 def gateway_fronted(m, chart):

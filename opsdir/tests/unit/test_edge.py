@@ -350,6 +350,10 @@ def test_health_defaults_to_the_products_endpoint_and_paths_become_regular_expre
     assert not re.fullmatch(path_regex("/as/token.oauth2"), "/as/tokenXoauth2")
     assert declared_endpoints((Endpoint("health", "/a", "web"), Endpoint("health", "/b", "web"),
                                Endpoint("login", "/x", "other")), "web") == {"health": ("/a", "/b")}
+    versioned = (Endpoint("health", "/old/ping", "web", "<2025.3"), Endpoint("health", "/health/startup", "web",
+                                                                              ">=2025.6"))
+    assert declared_endpoints(versioned, "web", recorded=("Gateway 2024.11.0",)) == {"health": ("/old/ping",)}
+    assert declared_endpoints(versioned, "web") == {"health": ("/health/startup",)}     # unrecorded: the newest
 
 
 def test_routed_names_zones_run_by_others_ttls_and_record_parts():
