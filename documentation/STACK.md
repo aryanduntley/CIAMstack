@@ -176,7 +176,7 @@ Importer: ✔ `ldapsearch … | opsdir data-profile` streams the data once and w
 |---|---|---|---|
 | **SP connections** (SAML/WS-Fed outbound): entity ID, ACS URLs, bindings, attribute contract, signing/encryption certs, SLO | I + **C** | ● | ✔ `ciamIntegration` (SAML) + claims; **imported** from the bulk export |
 | **IdP connections** (inbound partner federation): partner entity ID, SSO URLs, JIT provisioning, attribute mapping | I + C | ● | ~ `ciamJitBaseDn`, partner certificates, **imported**; inbound mapping — |
-| **OAuth/OIDC clients**: client ID, redirect URIs, grant types, PKCE, auth method, token policy, scopes | I + C (+S for secrets) | ● | ✔ **imported**, in the OIDC vocabulary (`ciamGrantType`, `ciamTokenAuthMethod`, `ciamScope`); rendered as standard client registrations; token lifetimes ~ (captured ATM file, custom field) |
+| **OAuth/OIDC clients**: client ID, redirect URIs, grant types, PKCE, auth method, token policy, scopes | I + C (+S for secrets) | ● | ✔ **imported**, in the OIDC vocabulary (`ciamGrantType`, `ciamTokenAuthMethod`: several methods per client from PingFederate 13.1, `ciamDpopBound`: RFC 9449, `ciamScope`); rendered as standard client registrations; token lifetimes ~ (captured ATM file, custom field) |
 | OAuth scopes, scope groups, exclusive scopes | I | ● | ✔ `pingfedSettings` `oauth-auth-server` (scopes listed in `pingfedScope`); **imported** |
 | Access token managers (JWT / reference), signing key choice, lifetimes | I | ● | ✔ `pingfedPlugin` kind `access-token-manager`, linked to its signing key pairs' certificates (`pingfedKeyPairId`); clients linked to their token manager; **imported** |
 | OIDC policies (ID token claims, lifetimes) | I | ● | ✔ `pingfedOidcPolicy`, linked to its token manager; clients linked to their policy; **imported** |
@@ -273,7 +273,7 @@ A DS-lineage directory (PingDS, not PingDirectory) often comes with the rest of 
 
 | Artifact | Where | Class | Datify | opsdir today |
 |---|---|---|---|---|
-| SMTP relay (SES / Exchange Online / on-prem relay), port, auth | PF notification publisher, DS SMTP config, portal apps | B + S | ● | ✔ `ciamExternalService` (kind `smtp-relay`: endpoint, port, the roles that use it, its credential role), the core `messaging` domain; **imported** from PingFederate's SMTP notification publisher |
+| SMTP relay (SES / Exchange Online / on-prem relay), port, auth | PF notification publisher, DS SMTP config, portal apps | B + S | ● | ✔ `ciamExternalService` (kind `smtp-relay`: endpoint, port, the roles that use it, its credential role, how the platform signs in: `ciamSmtpAuth` none/basic/OAuth bearer token with `ciamTokenEndpoint`, `ciamClientId`, `ciamScope`), the core `messaging` domain; **imported** from PingFederate's SMTP notification publisher, whose sign-in is rendered from the relay from 13.1 |
 | **Sender addresses** (e.g. a `portaladmin@…` address under an older brand) | PF / portal templates | **C** | ● **User-visible contract.** Changing it goes through the change process. | ✔ `ciamMailSender` (address and domain as contract, the service that sends it, bounce handling); imported from the publisher's From address |
 | SPF / DKIM / DMARC records for sender domains | DNS | B + C | ● New sending IPs or services must be added to SPF/DKIM **before** cutover, or reset emails get spam-foldered | ✔ `ciamSendingIdentity` per environment (DKIM verified, SPF authorized, DMARC policy), **read** from SES identities + Route 53 and Communication Services domains + Azure DNS; the planner blocks a target identity that isn't verified |
 | Email templates (welcome, reset, registration) | PF templates / app | I | ◐ hash + string scan | — |
@@ -526,5 +526,5 @@ These don't change the model; they decide which parts of it an estate uses and w
 4. Are signing keys HSM-backed?
 5. Do consumers bind to service names or to replica hostnames?
 6. If a move is planned: to which cloud, account or region, and what is pre-built there (network, DNS, PKI, SIEM, PAM)?
-7. Is a product version upgrade in or out of the move? (A move may upgrade within the adapters' supported ranges; the planner names the version jump.)
+7. Is a product version upgrade in or out of the move? (A move may upgrade within the adapters' supported ranges; the planner names each role's version jump and the vendor's changes between the two versions that apply to what the record holds, as blockers, actions or notes.)
 8. Which ITSM, SIEM, PAM, PKI and firewall-manager products are in place? Each one is an importer.

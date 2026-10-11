@@ -44,3 +44,11 @@ def test_an_unbound_credential_stops_it_with_the_reason():
         "collection source `pf-admin`: role `pf-ca` (its trust anchor) isn't bound in alpha/prod")
     c = collect("pingfederate/bulk", COLLECTORS[0], m.d, m, lambda r: ("", None))
     assert c.files is None and len(c.problems) == 2
+
+
+def test_a_bearer_token_for_an_admin_api_that_takes_oauth2_or_jwt():
+    m = _alpha(entry(ALPHA, "pf-admin", "ciamCollectionSource", **SOURCE, ciamCredentialScheme="bearer"), *BOUND)
+    ((_, call),) = bulk_steps(m.d, m, {}, {})
+    assert call.credential == ("bearer", "fake://kv/pf-reader", "opsdir-reader") and source_problems(m.d, m, {}) == ()
+    from opsdir.live import _authorization
+    assert _authorization(call.credential, "eyJ.token") == {"Authorization": "Bearer eyJ.token"}

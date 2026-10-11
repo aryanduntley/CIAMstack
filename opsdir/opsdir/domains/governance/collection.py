@@ -2,8 +2,9 @@
 own cloud login (ciamCollectionSource, a binding: the operator's opt-in). A source names its importer, and either the
 object or URL it reads (ciamSourceRef: a Terraform state object, an admin endpoint) or the servers of a role on a port
 (ciamTargetRole, ciamPort: https on each server's host name); the role of the binding holding its credential's
-reference (ciamCredentialRole, with the account it signs in as: ciamLoginName) and of the certificate its endpoint is
-trusted by (ciamCaRole). The references are resolved when collecting and never stored. Pure."""
+reference (ciamCredentialRole, with the account it signs in as: ciamLoginName, and how it is sent: ciamCredentialScheme)
+and of the certificate its endpoint is trusted by (ciamCaRole). The references are resolved when collecting and
+never stored. Pure."""
 from typing import NamedTuple
 
 from ...core.directory import one, rdn_value, values
@@ -12,9 +13,10 @@ from ...core.environment import of_class, one_role, servers_with_role
 SOURCE = "ciamCollectionSource"
 # A collection source resolved against its environment: the binding's name, the importer, the locations it reads (the
 # source ref, or https://<host>:<port> per server of its role), the credential reference and login name, the trust
-# anchor's reference (each None when the source names none or the environment binds no such role) and problems.
+# anchor's reference (each None when the source names none or the environment binds no such role), problems, and how
+# the credential is sent (ciamCredentialScheme: basic, the default, or bearer).
 Source = NamedTuple("Source", [("name", str), ("importer", str), ("locations", tuple), ("credential", object),
-                               ("login", object), ("ca", object), ("problems", tuple)])
+                               ("login", object), ("ca", object), ("problems", tuple), ("scheme", str)])
 
 
 def _ref(m, role):
@@ -41,7 +43,8 @@ def resolve_source(m, s):
                   else ()),
                 *((f"role `{ca_role}` (its trust anchor) isn't bound in {m.label}",) if ca_role and not ca else ()))
     return Source(rdn_value(s), one(s, "ciamImporter"), where, credential, one(s, "ciamLoginName"), ca,
-                  tuple(f"collection source `{rdn_value(s)}`: {p}" for p in problems))
+                  tuple(f"collection source `{rdn_value(s)}`: {p}" for p in problems),
+                  one(s, "ciamCredentialScheme") or "basic")
 
 
 def declared_adapters(m):

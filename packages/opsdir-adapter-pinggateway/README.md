@@ -15,3 +15,17 @@ The routes follow the gateway's JSON but are not yet validated against a live ga
 
 When an environment's egress passes a proxy clients must be told about (a `ciamProxy` with `ciamProxyAddress` that isn't a firewall), PingGateway needs `config.json`'s heap object named `ProxyOptions` (the default of every `ClientHandler` and `ReverseProxyHandler`) as `SystemProxyOptions`, and the standard Java proxy properties in the JVM options it starts with. The JVM's proxy is used, not a `CustomProxyOptions` URI, because only it honours the hosts reached directly: the routes' own backends stay off the proxy. The record can't confirm either, so the planner names what to set.
 
+## Upgrades during a move
+
+A migration may upgrade the product within the supported range (PingGateway `>=2023,<2027`, ForgeRock Identity Gateway `>=7,<8`). The planner names each server role's version jump, from the oldest version the source runs to the newest the target runs, and every change below that the jump crosses (the source version lacks it, the target's has it), at its effect, when it applies to the record. A target outside the range is a blocker, a downgrade an action. From the vendor's release notes (`versions.py`).
+
+| Since | Change | Effect | Named when |
+|---|---|---|---|
+| 7.2 | OAuth2ClientFilter is renamed AuthorizationCodeOAuth2ClientFilter | action | the record holds routes' OAuth 2.0 client filters |
+| 2023.6 | scripts load only from absolute paths or the base script directory | action | the record holds routes' scriptable filters and handlers |
+| 2024.3 | inline heap objects can no longer be referenced by name, and objects that use secrets need a secretsProvider | note | always |
+| 2025.3 | the admin endpoints move to the admin port 8085 without the /openig prefix (/ping; /health/startup from 2025.6) | note | always |
+| 2025.3 | issuer repositories default to the new behaviour (useDeprecatedIssuerRepository false) | note | the record holds routes trusting an OpenID provider |
+| 2026.3 | the Docker image's directories move (/opt/ig to /opt/gateway, /var/ig to /var/gateway), the admin session cookie is IG_ADMIN_SESSIONID, and invalid configuration or routes fail startup | note | always |
+| 2026.9 | ClientHandler and ReverseProxyHandler use HTTP/2 when protocolVersion is unset | action | the record holds routes' backend handlers |
+| 2026.9 | UmaService resource actions require scopes | action | the record holds routes with an UmaService |

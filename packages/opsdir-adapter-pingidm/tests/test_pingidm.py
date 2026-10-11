@@ -233,3 +233,35 @@ def test_endpoints_follow_the_recorded_version():
     new = declared_endpoints(ENDPOINTS, "idm", recorded=("PingIDM 8.1.2",))
     assert "password-reset" not in new and "registration" not in new and new["health"] == ("/openidm/health/ready",)
     assert declared_endpoints(ENDPOINTS, "idm") == new                     # none recorded: the newest release
+
+
+def test_what_an_upgrade_to_idm_8_touches_in_the_record():
+    o365 = json.dumps({"name": "o365", "connectorRef": {
+        "bundleName": "org.forgerock.openicf.connectors.office365-connector", "bundleVersion": "[1.5.0.0,1.6.0.0)",
+        "connectorName": "org.forgerock.openicf.connectors.office365.Office365Connector"},
+        "configurationProperties": {"tenant": "example.test"}})
+    files = {**files_of(PROJECT), "conf/provisioner.openicf-o365.json": o365,
+             "conf/selfservice-reset.json": json.dumps({"stageConfigs": [{"name": "emailValidation"}]}),
+             "conf/logging.properties": ".level=INFO\n",
+             "conf/datasource.jdbc-default.json": json.dumps({"driverClass": "oracle.jdbc.OracleDriver"})}
+    server_and_baseline = tuple(parse(
+        f"dn: cn=idm-1,{ALPHA}\nchangetype: add\nobjectClass: top\nobjectClass: ciamServer\ncn: idm-1\n"
+        "ciamServerRole: idm\nciamHostname: idm-1.example.test\nciamSubnet: cn=net,ou=bindings," + ALPHA + "\n\n"
+        "dn: ou=baselines,dc=ciam-ops\nchangetype: add\nobjectClass: top\nobjectClass: organizationalUnit\n"
+        "ou: baselines\n\n"
+        "dn: cn=idm,ou=baselines,dc=ciam-ops\nchangetype: add\nobjectClass: top\nobjectClass: ciamHostBaseline\n"
+        "cn: idm\nciamTargetRole: idm\nciamJdk: temurin 17.0.11\n"))
+    d, _, _ = imported(server_and_baseline, files)
+    m = env_model(d, "alpha/prod")
+    touched = {c.change.split(" (")[0].split(":")[0]: (c.touches(d, m, "idm") if c.touches else None)
+               for c in ADAPTER.version_changes}
+    assert touched == {
+        "standalone self-service": ("pingidm/conf/selfservice-reset.json",),
+        "the Office 365, .NET Active Directory and Scripted CREST connectors are removed": ("o365",),
+        "logging moves from java.util.logging to Logback": ("pingidm/conf/logging.properties",),
+        "Jetty 12": None, "the embedded DS repository is removed": None,
+        "the Oracle datasource template uses UCP": ("pingidm/conf/datasource.jdbc-default.json",),
+        "Java 21 is required": ("host baseline idm: temurin 17.0.11",),
+        "/openidm/info/ping and /openidm/health are deprecated": None,
+        "the legacy admin UI is no longer bundled": None}
+    assert all(c.touches(d, m, "am") == () for c in ADAPTER.version_changes if c.touches)

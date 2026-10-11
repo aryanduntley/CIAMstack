@@ -83,3 +83,60 @@ def test_what_the_record_adds_is_kept_and_the_credential_role_carried():
     assert values(relay, "ciamUsesRole") == ("smtp-credentials",)          # from the publisher's credential role
     _, unchanged, _ = imported((*first, *RECORD_ADDS, *changes))
     assert not unchanged
+
+
+RELAY = service_dn("email-smtp.region-1.example.cloud")
+ALPHA = "env=prod,cloud=alpha,ou=environments,dc=ciam-ops"
+OAUTH_SMTP = {**SMTP, "configuration": {"fields": [
+    *(f for f in SMTP["configuration"]["fields"] if f["name"] not in ("Username", "Password")),
+    {"name": "Authentication Method", "value": "OAuth 2.0 Bearer Token"},
+    {"name": "OAuth Authentication Method", "value": "Client Credentials"},
+    {"name": "OAuth Token Endpoint", "value": "https://login.example.cloud/oauth2/v2.0/token"},
+    {"name": "OAuth Scope", "value": "https://outlook.office365.com/.default"},
+    {"name": "Client ID", "value": "pf-mailer"}, {"name": "Client Secret", "encryptedValue": "eyJ..not-real-either"}]}}
+
+
+def _smtp_body(d, env="alpha/prod"):
+    (body,) = rendered_bodies(render_env(env_model(d, env), None)[REQUESTS])["/notificationPublishers"]
+    return {f["name"]: f.get("value") for f in body["configuration"]["fields"]}
+
+
+def test_a_13_1_publisher_signing_in_with_oauth_is_recorded_on_its_relay():
+    files = {"data.json": json.dumps({"operations": [
+        {"operationType": "SAVE", "resourceType": "/notificationPublishers", "items": [OAUTH_SMTP]}]})}
+    base = build_directory(REGISTRY, tuple(parse(mini_estate.LDIF)))
+    found, _ = preview_import(base, "pingfederate/bulk", files, (ADAPTER,))
+    relay = get(build_directory(REGISTRY, tuple(parse(mini_estate.LDIF)), found), RELAY)
+    assert (one(relay, "ciamSmtpAuth"), one(relay, "ciamTokenEndpoint"), one(relay, "ciamClientId"),
+            values(relay, "ciamScope")) == ("oauth-client-credentials", "https://login.example.cloud/oauth2/v2.0/token",
+                                            "pf-mailer", ("https://outlook.office365.com/.default",))
+    assert "not-real-either" not in repr(found)
+
+
+def test_a_relay_moved_to_oauth_renders_the_publishers_sign_in_from_13_1_and_the_planner_names_older_targets():
+    _, first, _ = imported()
+    assert one(get(imported(first)[0], RELAY), "ciamSmtpAuth") == "basic"          # a password before 13.1
+    to_oauth = tuple(parse(f"dn: {RELAY}\nchangetype: modify\nreplace: ciamSmtpAuth\n"
+                           "ciamSmtpAuth: oauth-private-key-jwt\n-\nreplace: ciamTokenEndpoint\n"
+                           "ciamTokenEndpoint: https://login.example.cloud/token\n-\nreplace: ciamClientId\n"
+                           "ciamClientId: pf-mailer\n-\n"))
+    record = lambda *changes: build_directory(REGISTRY, tuple(parse(mini_estate.LDIF)), changes)   # noqa: E731
+    d = record(*first, *to_oauth)                                                   # changed, not imported again
+    fields = _smtp_body(d)                                                           # no version: the newest
+    assert (fields["Authentication Method"], fields["OAuth Authentication Method"], fields["OAuth Token Endpoint"],
+            fields["Client ID"]) == ("OAuth 2.0 Bearer Token", "Private Key JWT", "https://login.example.cloud/token",
+                                     "pf-mailer")
+    pf12 = tuple(parse(f"dn: cn=pf-1,{ALPHA}\nchangetype: add\nobjectClass: top\nobjectClass: ciamServer\ncn: pf-1\n"
+                       f"ciamServerRole: pf-engine\nciamHostname: pf-1.example.test\n"
+                       f"ciamSubnet: cn=net,ou=bindings,{ALPHA}\nciamProductVersion: PingFederate 12.3.8\n"))
+    old = record(*first, *to_oauth, *pf12)
+    assert "Authentication Method" not in _smtp_body(old)                           # as held: a password
+    import datetime as dt
+    from opsdir.core.contract import PlanContext
+    from opsdir_adapter_pingfederate.checks import check_smtp_auth
+    ctx = PlanContext(old, env_model(old, "beta/prod"), env_model(old, "alpha/prod"), None, dt.date(2026, 10, 1),
+                      {}, {}, ())
+    (action,) = [t for _, t, _, _ in check_smtp_auth(ctx).actions]
+    assert action.startswith("Notification publisher `smtp` sends through `email-smtp.region-1.example.cloud`, which "
+                             "the record signs in to with OAuth (oauth-private-key-jwt), but alpha/prod runs "
+                             "PingFederate 12.3.8")

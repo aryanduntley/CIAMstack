@@ -1,22 +1,29 @@
 """PingFederate planner checks: every data store can reach its system from the target (a target role and a credential
 role the target binds); a data store with a fixed host, and a directory reached without TLS, are actions. Every plugin
 instance, authentication policy and OIDC policy names only objects the record has, and every plugin instance's
-withheld secrets come from a credential role the target binds."""
+withheld secrets come from a credential role the target binds. An OAuth client listing several authentication methods
+needs PingFederate 13.1 or later in the target (before it, a client takes one), and so does an SMTP relay its
+notification publishers sign in to with OAuth. From 13.1.3 a JDBC store outside the documented drivers and their URL
+schemes is an action (the Admin API restricts them)."""
 
 from opsdir.core.directory import children, one, rdn_value, values
 from opsdir.core.environment import bound_nowhere, one_role
 from opsdir.core.findings import findings, merge_findings, responsible
 from opsdir.core.jsondata import held_json
+from opsdir.domains.federation.services import identity_services, integrations_served
 from opsdir.domains.infrastructure.external import external_hosts_fix, unnamed
 from opsdir.domains.pki.credentials import credential_role_fix
-from .datastores import store_hosts
+from .connections import MULTI_AUTH
+from .messaging import SMTP_OAUTH, is_smtp, relay_of
+from .datastores import JDBC_VALIDATED, jdbc_driver_problem, store_hosts
 from .discovery import CHOICES, RENDERED, binding_protocol, clustered, discovery_fix, lacks, where
 from .generic import held_resources, resource_label
-from .naming import DATA_STORES, DEFAULT_POLICY, DISCOVERY_ROLE, FRAGMENTS, OIDC_POLICIES
+from .naming import DATA_STORES, DEFAULT_POLICY, DISCOVERY_ROLE, FRAGMENTS, OIDC_POLICIES, SERVER_ROLES
 from .oauth import oidc_policy_refs
 from .objects import NOT_RECORDED, claim_fix, missing, why_unresolved
 from .plugins import KINDS, plugin_refs
 from .policies import fragment_refs, node_refs
+from .versions import pingfederate_version, runs_in
 
 
 def _config(e, attr="pingfedConfig"):
@@ -37,6 +44,54 @@ def _credentials(ctx, e, what, owner):
             f"{ctx.dst.label} gives it. Set pingfedCredentialRole.", owner),) if unnamed else ()),
         *(("PingFederate", f"{what} needs role `{r}`, which {ctx.dst.label} doesn't bind.", owner) for r in unbound)),
         fixes=(fix,) if fix else ())
+
+
+def check_client_auth(ctx):
+    """Actions: OAuth clients the target's PingFederate serves that list several authentication methods when it runs a
+    version before 13.1, which takes one per client (the render keeps the first)."""
+    if runs_in(ctx.dst, MULTI_AUTH):
+        return findings()
+    version = pingfederate_version(ctx.dst)[0]
+    clients = integrations_served(ctx.d, identity_services(ctx.d, SERVER_ROLES), "oidc-client")
+    return findings(actions=[
+        ("PingFederate", f"OAuth client `{rdn_value(i)}` lists several authentication methods "
+         f"({', '.join(values(i, 'ciamTokenAuthMethod'))}), but {ctx.dst.label} runs {version}, which takes one per "
+         f"client: it gets `{values(i, 'ciamTokenAuthMethod')[0]}`. Keep one method, or run PingFederate 13.1 or later "
+         "there.", responsible(ctx.d, i, ctx.dst.env), ctx.cutover)
+        for i in clients if len(values(i, "ciamTokenAuthMethod")) > 1])
+
+
+def check_smtp_auth(ctx):
+    """Actions: SMTP notification publishers whose relay records OAuth sign-in (ciamSmtpAuth oauth-*) when the target
+    runs PingFederate before 13.1, which signs in to SMTP with a password at most (its publisher keeps what it
+    holds)."""
+    if runs_in(ctx.dst, SMTP_OAUTH):
+        return findings()
+    version = pingfederate_version(ctx.dst)[0]
+    publishers = (e for e in children(ctx.d, KINDS["notification-publisher"].base, "pingfedPlugin")
+                  if is_smtp({"pluginDescriptorRef": {"id": one(e, "pingfedPluginType")}}))
+    relays = ((e, relay_of(ctx.d, _config(e))) for e in publishers)
+    return findings(actions=[
+        ("PingFederate", f"Notification publisher `{rdn_value(e)}` sends through `{rdn_value(r)}`, which the record "
+         f"signs in to with OAuth ({one(r, 'ciamSmtpAuth')}), but {ctx.dst.label} runs {version}: SMTP OAuth needs "
+         "PingFederate 13.1 or later. Record basic sign-in for the relay, or run 13.1 or later there.",
+         responsible(ctx.d, r, ctx.dst.env), ctx.cutover)
+        for e, r in relays if r is not None and (one(r, "ciamSmtpAuth") or "").startswith("oauth")])
+
+
+def check_jdbc_drivers(ctx):
+    """Actions: on a target running PingFederate 13.1.3 or later, each JDBC data store whose driver or URL scheme is
+    outside the documented supported drivers (datastores.JDBC_DRIVERS)."""
+    if not runs_in(ctx.dst, JDBC_VALIDATED):
+        return findings()
+    stores = ((s, jdbc_driver_problem(_config(s))) for s in children(ctx.d, DATA_STORES, "pingfedDataStore")
+              if (one(s, "pingfedStoreType") or "").upper() == "JDBC")
+    return findings(actions=[
+        ("PingFederate", f"Data store `{rdn_value(s)}`: {problem}. From 13.1.3 the Admin API restricts JDBC drivers "
+         f"and URL schemes, and {ctx.dst.label} runs {pingfederate_version(ctx.dst)[0] or 'the newest release'}: "
+         "check the store is accepted there before the cutover, or move it to a supported driver.",
+         responsible(ctx.d, s, ctx.dst.env), ctx.cutover)
+        for s, problem in stores if problem])
 
 
 def _data_store(ctx, s):

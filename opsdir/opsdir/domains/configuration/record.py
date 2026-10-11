@@ -174,6 +174,21 @@ def deployed_files(d, m):
     return tuple(f for f in captured_files(d) if one(f, "ciamTargetRole") in (None, *roles))
 
 
+def files_matching(d, m, role, pattern):
+    """The repository paths of the captured files environment m receives for a server role (or for every role) whose
+    path matches a regular expression (re.search), in DN order: what a product's version change touches."""
+    return tuple(one(f, "ciamRepoPath") for f in deployed_files(d, m) if one(f, "ciamTargetRole") in (None, role)
+                 and re.search(pattern, one(f, "ciamRepoPath") or ""))
+
+
+def touching_files(pattern, roles):
+    """A VersionChange.touches for a product's captured files: (d, m, role) -> the paths files_matching finds for a
+    role among these server roles (the product's), () for any other role."""
+    def touches(d, m, role):
+        return files_matching(d, m, role, pattern) if role in roles else ()
+    return touches
+
+
 def _problem(setting, m):
     try:
         setting_value(setting, m)

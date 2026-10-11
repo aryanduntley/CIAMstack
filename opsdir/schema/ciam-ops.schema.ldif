@@ -562,10 +562,11 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.139 NAME 'ciamLdapMay' DESC 'User-di
  stinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'in
  tent' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.140 NAME 'ciamTokenAuthMethod' DESC 
- 'Token endpoint client authentication methods' EQUALITY caseIgnoreMatch SYN
- TAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'enum
- :none|client_secret_basic|client_secret_post|client_secret_jwt|private_key_
- jwt|tls_client_auth|self_signed_tls_client_auth' X-ORIGIN 'opsdir' )
+ 'Token endpoint client authentication methods (a product taking one per cli
+ ent renders the first)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.11
+ 5.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:none|client_secret_bas
+ ic|client_secret_post|client_secret_jwt|private_key_jwt|tls_client_auth|sel
+ f_signed_tls_client_auth' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.141 NAME 'ciamScope' DESC 'OAuth 2.0
   scopes (a client may request / a service supports)' EQUALITY caseIgnoreMat
  ch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'contract' X-VALUE-TY
@@ -2884,6 +2885,31 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.632 NAME 'ciamInstallRoot' DESC 'Whe
   under; none recorded, none guessed' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.
  1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE '
  string' X-PATTERN '^(/|[A-Za-z]:[\5C\5C/]).*$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.633 NAME 'ciamCredentialScheme' DESC
+  'How a collection source\27s credential is sent: basic (a password, with c
+ iamLoginName; the default) or bearer (an access token or signed JWT minted 
+ outside opsdir, sent as Authorization: Bearer); the importer\27s collector 
+ says which it accepts' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115
+ .121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:basic|bear
+ er' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.634 NAME 'ciamDpopBound' DESC 'Wheth
+ er the client\27s access tokens are DPoP-bound: it must present DPoP proofs
+  (RFC 9449 dpop_bound_access_tokens)' EQUALITY booleanMatch SYNTAX 1.3.6.1.
+ 4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'bool
+ ' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.635 NAME 'ciamSmtpAuth' DESC 'How th
+ e platform signs in to an SMTP relay: none, basic (a password), or an OAuth
+  2.0 bearer token from the client credentials grant, with a client secret (
+ oauth-client-credentials) or a private-key JWT (oauth-private-key-jwt); its
+  OAuth client is ciamClientId (with ciamScope), its secret the binding of c
+ iamUsesRole' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 
+ SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:none|basic|oauth-cli
+ ent-credentials|oauth-private-key-jwt' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.636 NAME 'ciamTokenEndpoint' DESC 'T
+ he OAuth 2.0 token endpoint the platform obtains an external service\27s ac
+ cess tokens from' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.
+ 1.26 SINGLE-VALUE X-PORTABILITY 'contract' X-VALUE-TYPE 'url' X-ORIGIN 'ops
+ dir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -2992,10 +3018,10 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.25 NAME 'ciamAci' DESC 'Access contro
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.26 NAME 'ciamIntegration' DESC 'Appli
  cation or partner integration' SUP ciamObject STRUCTURAL MUST ( cn $ ciamPr
  otocolType ) MAY ( ciamEntityId $ ciamAcsUrl $ ciamRedirectUri $ ciamClient
- Id $ ciamGrantType $ ciamPkceRequired $ ciamPopulation $ ciamMfaRequired $ 
- ciamUsesCertificate $ ciamJitBaseDn $ ciamCriticality $ ciamTokenAuthMethod
-  $ ciamScope $ ciamPostLogoutRedirectUri $ ciamSamlBinding $ ciamNameIdForm
- at $ ciamSsoUrl $ ciamServedBy ) X-ORIGIN 'opsdir' )
+ Id $ ciamGrantType $ ciamPkceRequired $ ciamDpopBound $ ciamPopulation $ ci
+ amMfaRequired $ ciamUsesCertificate $ ciamJitBaseDn $ ciamCriticality $ cia
+ mTokenAuthMethod $ ciamScope $ ciamPostLogoutRedirectUri $ ciamSamlBinding 
+ $ ciamNameIdFormat $ ciamSsoUrl $ ciamServedBy ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.27 NAME 'ciamClaimMap' DESC 'One clai
  m / SAML attribute mapping' SUP ciamObject STRUCTURAL MUST ( cn $ ciamClaim
  Name $ ciamSourceAttribute ) MAY ciamTransform X-ORIGIN 'opsdir' )
@@ -3131,9 +3157,10 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.54 NAME 'ciamExternalService' DESC 'A
   service outside the platform it depends on: a mail relay or API, an SMS or
   voice provider, an MFA vendor, CAPTCHA' SUP ciamObject STRUCTURAL MUST ( c
  n $ ciamServiceKind ) MAY ( ciamVendor $ ciamEndpointHost $ ciamPort $ ciam
- AllowedDomain $ ciamReachedFrom $ ciamUsesRole $ ciamSenderId $ ciamOrigina
- tingNumber $ ciamRegisteredCountry $ ciamSpendLimit $ ciamPartnerContact $ 
- ciamCriticality ) X-ORIGIN 'opsdir' )
+ AllowedDomain $ ciamReachedFrom $ ciamUsesRole $ ciamSmtpAuth $ ciamTokenEn
+ dpoint $ ciamClientId $ ciamScope $ ciamSenderId $ ciamOriginatingNumber $ 
+ ciamRegisteredCountry $ ciamSpendLimit $ ciamPartnerContact $ ciamCriticali
+ ty ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.55 NAME 'ciamMailSender' DESC 'An add
  ress the platform sends mail from, what it sends and how' SUP ciamObject ST
  RUCTURAL MUST ( cn $ ciamSenderAddress ) MAY ( ciamSenderDomain $ ciamSentB
@@ -3568,8 +3595,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.128 NAME 'ciamCollectionSource' DESC
  duct\27s admin endpoint (a URL, or the servers of a role on a port) with th
  e credential and trust anchor it is read with: the operator\27s opt-in' SUP
   ciamBinding STRUCTURAL MUST ciamImporter MAY ( ciamSourceRef $ ciamTargetR
- ole $ ciamPort $ ciamCredentialRole $ ciamCaRole $ ciamLoginName ) X-ORIGIN
-  'opsdir' )
+ ole $ ciamPort $ ciamCredentialRole $ ciamCaRole $ ciamLoginName $ ciamCred
+ entialScheme ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.129 NAME 'ciamCollectionAttempt' DESC
   'The last attempt by `opsdir collect` to collect one importer\27s export o
  f one environment (or estate-wide), recorded under the change it ran with (

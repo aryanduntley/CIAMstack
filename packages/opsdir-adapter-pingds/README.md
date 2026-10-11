@@ -33,3 +33,15 @@ disk only, as are the access logs. Least privilege: an account with the `config-
 ## Log files (log routes)
 
 `logs.py` declares, relative to `ciamInstallRoot`: `logs/ldap-access.audit.json` and `logs/http-access.audit.json` (access, JSON lines), `logs/errors` and `logs/server.out` (error), `logs/replication` (replication; declared for versions before 7.3 only, `versions="<7.3"`: from 7.3 the server writes these to `logs/errors`, so a role whose servers record a later version, or none, doesn't count it), and `logs/audit` (audit, LDIF; only once the File-Based Audit Logger is enabled, which it isn't by default).
+
+## Upgrades during a move
+
+A migration may upgrade the product within the supported range (PingDS `>=7.2,<9`). The planner names each server role's version jump, from the oldest version the source runs to the newest the target runs, and every change below that the jump crosses (the source version lacks it, the target's has it), at its effect, when it applies to the record. A target outside the range is a blocker, a downgrade an action. From the vendor's release notes (`versions.py`).
+
+| Since | Change | Effect | Named when |
+|---|---|---|---|
+| 7.3 | replication messages move from logs/replication to logs/errors | note | always |
+| 8.0 | the Prometheus endpoint (/metrics/prometheus/0.0.4) is published by default | note | always |
+| 8.1 | rotated access and audit log files are named with UTC timestamps ending in Z | note | always |
+| 8.1 | OPENDJ_JFR_ENABLED is renamed DS_JFR_ENABLED | note | always |
+| 8.1 | backendstat's output is simplified | note | always |

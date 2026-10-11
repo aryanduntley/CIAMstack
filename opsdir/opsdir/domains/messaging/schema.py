@@ -3,7 +3,7 @@ providers, MFA vendors, CAPTCHA), the addresses it sends mail from, and the even
 to. A service, a sender and a stream are intent, the same in every environment; where an environment sends a
 domain's mail from (a cloud sending identity) and the queue or bus that carries a stream are bindings."""
 from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
-from .naming import DMARC_STRENGTH, SERVICE_KINDS, STREAM_KINDS
+from .naming import DMARC_STRENGTH, SERVICE_KINDS, SMTP_AUTH, STREAM_KINDS
 
 ATTRIBUTES = (
     # ------------------------------------------------------------------ external services
@@ -17,6 +17,13 @@ ATTRIBUTES = (
                  "A domain an external service accepts the platform's requests from or for (CAPTCHA allowed "
                  "domains, a vendor's redirect allowlist): the public names of the roles that use it must be among "
                  "them, or the service stops working when they change"),
+    AttributeDef(635, 'ciamSmtpAuth', enum_type(SMTP_AUTH), 'intent', True,
+                 'How the platform signs in to an SMTP relay: none, basic (a password), or an OAuth 2.0 bearer token '
+                 'from the client credentials grant, with a client secret (oauth-client-credentials) or a private-key '
+                 'JWT (oauth-private-key-jwt); its OAuth client is ciamClientId (with ciamScope), its secret the '
+                 'binding of ciamUsesRole'),
+    AttributeDef(636, 'ciamTokenEndpoint', 'url', 'contract', True,
+                 'The OAuth 2.0 token endpoint the platform obtains an external service\'s access tokens from'),
     AttributeDef(270, 'ciamReachedFrom', 'string', 'intent', False,
                  'A server role whose servers use an external service (its egress, its public names)'),
     AttributeDef(271, 'ciamSenderId', 'string', 'intent', False,
@@ -58,6 +65,7 @@ ATTRIBUTES = (
 CLASSES = (
     ClassDef(54, 'ciamExternalService', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamServiceKind'),
              ('ciamVendor', 'ciamEndpointHost', 'ciamPort', 'ciamAllowedDomain', 'ciamReachedFrom', 'ciamUsesRole',
+              'ciamSmtpAuth', 'ciamTokenEndpoint', 'ciamClientId', 'ciamScope',
               'ciamSenderId', 'ciamOriginatingNumber', 'ciamRegisteredCountry', 'ciamSpendLimit',
               'ciamPartnerContact', 'ciamCriticality'),
              'A service outside the platform it depends on: a mail relay or API, an SMS or voice provider, an MFA '

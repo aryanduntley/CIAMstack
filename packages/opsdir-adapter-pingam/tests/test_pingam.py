@@ -10,7 +10,7 @@ import pytest
 
 from opsdir.connectors.importing import preview_import
 from opsdir.connectors.registry import ADAPTERS, core_fragments
-from opsdir.core.directory import children, get, make_directory, one, values
+from opsdir.core.directory import children, get, make_directory, make_entry, one, values
 from opsdir.core.interchange.ldif import parse
 from opsdir.core.standard import registry_ldif
 from opsdir_adapter_pingam.adapter import ADAPTER
@@ -180,3 +180,40 @@ def test_an_am_8_1_node_version_is_held_and_rendered_back():
     assert json.loads(out["am/" + node_path])["data"]["_type"] == {"_id": "DataStoreDecisionNode", "version": "2.0"}
     _, changes, _ = imported({p[len("am/"):]: t for p, t in out.items() if p.startswith("am/")}, d)
     assert changes == ()
+
+
+def _entity(realm, kind, name, data):
+    return json.dumps({"metadata": {"realm": realm, "entityType": kind, "entityId": name, "pathParams": {}},
+                       "data": {"_id": name, **data}})
+
+
+def test_what_an_upgrade_to_am_8_touches_in_the_record():
+    files = files_of(EXPORT)
+    policy = json.loads(files["realms/root-customers/Policies/portal-read.json"])
+    policy["data"]["condition"] = {"type": "AuthScheme", "authScheme": ["DataStore"], "applicationName": "portal"}
+    d, _, _ = imported({**files,
+                        "realms/root-customers/Policies/portal-read.json": json.dumps(policy),
+                        "realms/root-customers/AuthenticationChains/ldapService.json":
+                            _entity("/customers", "AuthenticationChains", "ldapService",
+                                    {"authChainConfiguration": []}),
+                        "realms/root-customers/DataStoreModule/DataStore.json":
+                            _entity("/customers", "DataStoreModule", "DataStore", {"authenticationLevel": 0}),
+                        "realms/root-customers/AuditLogging/AuditLogging.json":
+                            _entity("/customers", "AuditLogging", "AuditLogging", {"auditEnabled": True})})
+    server = make_entry("cn=am-1,env=prod,cloud=x,ou=environments,dc=ciam-ops", ("top", "ciamServer"),
+                        {"cn": ("am-1",), "ciamServerRole": ("am",)})
+    m = SimpleNamespace(d=d, servers=(server,))
+    by = {c.change.split(" (")[0]: c for c in ADAPTER.version_changes}
+    touched = {name: (c.touches(d, m, "am") if c.touches else None) for name, c in by.items()}
+    assert touched == {
+        "authentication chains and modules are removed": (
+            "am/realms/root-customers/AuthenticationChains/ldapService.json",
+            "am/realms/root-customers/DataStoreModule/DataStore.json"),
+        "the embedded configuration and identity store is removed": None,
+        "the legacy audit event handler is removed": ("am/realms/root-customers/AuditLogging/AuditLogging.json",),
+        "journey nodes carry versions": ("Login",),
+        "the \"Authentication by Module Instance\" policy condition is deprecated and evaluates to false": (
+            "portal-policies/portal-read",),
+        "the certificate collector and validation nodes validate the full chain by default": ()}
+    assert all(c.touches(d, m, "idm") == () for c in ADAPTER.version_changes if c.touches)
+    assert {c.effect for c in ADAPTER.version_changes} == {"blocker", "action", "info"}

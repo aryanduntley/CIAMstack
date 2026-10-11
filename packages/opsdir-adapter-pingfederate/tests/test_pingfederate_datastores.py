@@ -294,3 +294,28 @@ def test_hosts_sharing_a_port_keep_it_on_the_store_and_a_partly_named_setting_ge
     mixed = {**CORP_AD, "hostnames": ["ldap.example.test:1636", "dc9.corp.example.test:636"]}
     d, _, _ = imported((), export([mixed]))
     assert not any(f.key == "external-host:data-stores/corp-ad" for f in plan(d).fixes)
+
+
+def test_an_upgrade_to_13_1_3_names_the_jdbc_stores_the_admin_api_validates(after):
+    d, _ = after
+    (jdbc,) = [c for c in ADAPTER.version_changes if c.has == ">=13.1.3"]
+    assert jdbc.effect == "action" and jdbc.touches(d, None, "pf-admin") == ("grants",)
+    assert jdbc.touches(d, None, "am") == ()
+    assert [c.touches for c in ADAPTER.version_changes if c.has != ">=13.1.3"] == [None, None, None]
+
+
+def test_on_13_1_3_a_jdbc_store_outside_the_documented_drivers_is_an_action():
+    from opsdir_adapter_pingfederate.checks import check_jdbc_drivers
+    from opsdir_adapter_pingfederate.datastores import jdbc_driver_problem
+    jtds = {"type": "JDBC", "id": "reports", "name": "Reports", "driverClass": "net.sourceforge.jtds.jdbc.Driver",
+            "connectionUrl": "jdbc:jtds:sqlserver://reports.example.test:1433/pf", "userName": "pf"}
+    assert jdbc_driver_problem({"driverClass": "org.postgresql.Driver", "connectionUrl": "jdbc:postgresql://h/pf"}) \
+        is None
+    assert jdbc_driver_problem({"driverClass": "org.postgresql.Driver", "connectionUrl": "jdbc:mysql://h/pf"}) == \
+        "its URL doesn't start with `jdbc:postgresql:`, the scheme of `org.postgresql.Driver`"
+    d, _, _ = imported(files=export([*STORES, jtds]))
+    ctx = PlanContext(d, env_model(d, "alpha/prod"), env_model(d, "beta/prod"), None, dt.date(2026, 10, 1), {}, {}, ())
+    (action,) = [t for _, t, _, _ in check_jdbc_drivers(ctx).actions]          # grants (PostgreSQL) passes
+    assert action.startswith("Data store `reports`: driver `net.sourceforge.jtds.jdbc.Driver` isn't one PingFederate "
+                             "documents. From 13.1.3 the Admin API restricts JDBC drivers and URL schemes, and "
+                             "beta/prod runs the newest release")

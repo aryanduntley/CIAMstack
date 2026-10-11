@@ -4,7 +4,8 @@ from opsdir.domains.compute.workloads import runs_product
 from .collect import COLLECTORS
 from opsdir_base_oidc.render import FORMATS as OIDC_FORMATS
 from opsdir_base_saml.render import FORMATS as SAML_FORMATS
-from .checks import check_cluster, check_data_stores, check_references
+from .checks import (check_client_auth, check_cluster, check_data_stores, check_jdbc_drivers,
+                     check_references, check_smtp_auth)
 from .discovery import CHOICES
 from .importer import BULK
 from .listeners import listeners
@@ -14,6 +15,7 @@ from .naming import SERVER_ROLES
 from .nodes import NODE_FILES
 from .render import ENDPOINTS, TARGETS, render_env, render_neutral
 from .schema import FRAGMENT
+from .versions import VERSION_CHANGES
 
 PRODUCT = "PingFederate"
 # PingFederate's obfuscated or encrypted secrets (OBF:..., as its configuration files store them) are secret material
@@ -28,7 +30,8 @@ def applies(m):
 
 ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required_roles=REQUIRED_ROLES,
                   render_neutral=render_neutral, render_env=render_env,
-                  checks=(check_data_stores, check_references, check_cluster), ref_schemes=(),
+                  checks=(check_data_stores, check_references, check_cluster, check_client_auth,
+                          check_smtp_auth, check_jdbc_drivers), ref_schemes=(),
                   secret_schemes={},
                   renders="PingFederate's configuration for each environment as Admin API requests checked against its "
                           "version's spec and as Terraform for its provider, and cluster discovery",
@@ -42,4 +45,4 @@ ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required
                   secret_patterns=SECRET_PATTERNS, importers=(BULK, NODE_FILES), profile_terms=None, access=None,
                   endpoints=ENDPOINTS, listeners=listeners,
                   proxy_settings=proxy_settings, collectors=COLLECTORS, render_targets=TARGETS,
-                  logs=LOGS)
+                  logs=LOGS, version_changes=VERSION_CHANGES)

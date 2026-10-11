@@ -282,6 +282,18 @@ Request = namedtuple("Request", ("url", "headers", "credential", "ca", "absent",
 Collector = namedtuple("Collector", ("importer", "scope", "steps", "verify", "problems"),
                        defaults=("environment", None, None, None))
 
+# A change between two releases of a product an adapter renders and reads (decision 2375: a migration may upgrade
+# within the adapter's range, and the planner names what changes): has the versions that have it (a PEP 440 range, or
+# a tuple of ranges for parallel maintenance lines: (">=7.5.3,<8", ">=8.0.2")), so a move from a version without it to
+# one with it crosses it; change what changed, affects which parts of the record it concerns (in words), effect what a
+# crossing is when the record holds what it touches (blocker: the record uses something removed; action: something
+# to change or test; info: worth knowing), fix what to do. touches(d, m, role) -> names of what the record holds that
+# it changes, for a server role environment m runs (() when nothing: the change is counted, not listed), or None for a
+# change to whatever runs the role (always listed). An adapter's products are one lineage, compared by version number
+# (ForgeRock AM 7.5 -> PingAM 8.1). Adapters declare only what the vendor's release notes state.
+VersionChange = namedtuple("VersionChange", ("has", "change", "affects", "effect", "fix", "touches"),
+                           defaults=(None,))
+
 # An adapter's fields; an older adapter that names no endpoints declares none, one that names no listeners or proxy
 # settings None, one that names no prerequisites none.
 Adapter = namedtuple("Adapter", (
@@ -325,9 +337,11 @@ Adapter = namedtuple("Adapter", (
     "logs",                 # LogSources: the logs its products' servers (or, for a kit, the role's containers) write
     "host_files",           # (EnvModel, Services) -> HostFiles: files configuration management places on the
                             # environment's servers (agents' configuration), or None
-    "places_host_files"),   # whether it places the other adapters' HostFiles on an environment's servers (the
+    "places_host_files",    # whether it places the other adapters' HostFiles on an environment's servers (the
                             # configuration-management adapter does): without one in the stack they go nowhere
-    defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False))
+    "version_changes"),     # VersionChanges: what changes between the releases of its products (the planner's
+                            # upgrade check)
+    defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, ()))
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

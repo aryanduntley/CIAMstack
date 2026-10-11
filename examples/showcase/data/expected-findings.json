@@ -1129,9 +1129,23 @@
     },
     {
       "id": "A119",
-      "area": "Versions",
-      "match": "Versions differ",
-      "planted": "the target runs the current releases (PingAM 8.1.1, PingDS 8.1.2, PingFederate 13.1.3, PingGateway 2026.9.0, PingIDM 8.1.2) over the source's 7.5 / 12.1 / 2024.11",
+      "area": "Upgrade",
+      "match": "`idm` in target/prod: Java 21 is required",
+      "planted": "PingIDM 7.5 -> 8.1 needs Java 21, and the IDM host baseline records Temurin 17",
+      "cleared_by": null
+    },
+    {
+      "id": "A120",
+      "area": "Upgrade",
+      "match": "`ig` in target/prod: ClientHandler and ReverseProxyHandler use HTTP/2",
+      "planted": "PingGateway 2024.11 -> 2026.9 defaults backend handlers to HTTP/2; route partner-portal sets no protocolVersion",
+      "cleared_by": null
+    },
+    {
+      "id": "A121",
+      "area": "Upgrade",
+      "match": "`pf-admin`, `pf-engine` in target/prod: the Admin API validates JDBC data stores",
+      "planted": "PingFederate 12.1 -> 13.1.3 validates JDBC drivers and URLs; the grant store is JDBC",
       "cleared_by": null
     }
   ]

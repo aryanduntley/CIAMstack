@@ -1733,6 +1733,7 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPort: 587
 ciamReachedFrom: pf-engine
 ciamServiceKind: smtp-relay
+ciamSmtpAuth: basic
 ciamVendor: Amazon SES
 
 dn: cn=environment,ou=tag-policy,dc=ciam-ops

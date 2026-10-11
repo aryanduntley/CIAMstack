@@ -21,6 +21,24 @@ def in_range(version, versions):
         return False
 
 
+def parsed(version):
+    """The version as a comparable Version, or None when it doesn't parse."""
+    try:
+        return Version(version)
+    except InvalidVersion:
+        return None
+
+
+def in_any(version, ranges):
+    """Whether a version is inside a PEP 440 range, or inside any of a tuple of them (parallel maintenance lines)."""
+    return any(in_range(version, r) for r in ((ranges,) if isinstance(ranges, str) else ranges))
+
+
+def crossed(has, older, newer):
+    """Whether a change the versions `has` have lies between two versions: the older lacks it and the newer has it."""
+    return not in_any(older, has) and in_any(newer, has)
+
+
 def holds(versions, recorded):
     """Whether a declaration made for the product versions `versions` (a PEP 440 range; None: every version) holds for
     a role whose servers and workloads record these ciamProductVersion values: one of them is in the range, or, when

@@ -17,6 +17,8 @@ What the record adds to a data store (its credential role, owners) is kept on im
 (opsdir_adapter_pingfederate.admin_api) imports back unchanged.
 """
 
+from types import MappingProxyType
+
 from opsdir.core.directory import get, make_entry, merged_attrs, one, rdn_value
 from opsdir.core.environment import UNBOUND, published_role
 from opsdir.core.jsondata import canonical, held_json
@@ -29,6 +31,29 @@ from .withheld import filled, withheld_settings
 
 OWNED = ("cn", "pingfedStoreType", "pingfedTargetRole", "pingfedPort", "pingfedConsumer", "pingfedConfig",
          "pingfedWithheld")
+
+
+# The JDBC drivers PingFederate documents as supported (compatible database drivers, 13.0), each with the URL schemes
+# its connection URLs take; from 13.1.3 the Admin API restricts the drivers and URL schemes a data store may use, and
+# Ping publishes no exact list, so this is what the planner checks a 13.1.3 target's stores against
+JDBC_DRIVERS = MappingProxyType({
+    "software.amazon.jdbc.Driver": ("jdbc:mysql:", "jdbc:postgresql:"),           # Aurora MySQL / PostgreSQL wrapper
+    "com.microsoft.sqlserver.jdbc.SQLServerDriver": ("jdbc:sqlserver:",),         # SQL Server, Azure SQL MI
+    "oracle.jdbc.OracleDriver": ("jdbc:oracle:thin:",),
+    "com.mysql.cj.jdbc.Driver": ("jdbc:mysql:",),
+    "org.postgresql.Driver": ("jdbc:postgresql:",)})
+JDBC_VALIDATED = ">=13.1.3"
+
+
+def jdbc_driver_problem(config):
+    """Why a JDBC store's driver class or connection URL is outside JDBC_DRIVERS (the driver isn't documented, or its
+    URL doesn't use the driver's scheme), or None."""
+    driver, url = config.get("driverClass"), config.get("connectionUrl") or ""
+    if driver not in JDBC_DRIVERS:
+        return f"driver `{driver}` isn't one PingFederate documents"
+    schemes = JDBC_DRIVERS[driver]
+    return None if url.startswith(schemes) else \
+        f"its URL doesn't start with {' or '.join(f'`{s}`' for s in schemes)}, the scheme of `{driver}`"
 
 
 # ------------------------------------------------------------------ hosts

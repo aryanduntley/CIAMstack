@@ -39,7 +39,10 @@ ATTRIBUTES = (
     AttributeDef(99, 'ciamTransform', 'string', 'intent', True,
                  'Transformation applied to the value'),
     AttributeDef(140, 'ciamTokenAuthMethod', 'enum:' + '|'.join(TOKEN_AUTH_METHODS), 'intent', False,
-                 'Token endpoint client authentication methods'),
+                 'Token endpoint client authentication methods (a product taking one per client renders the first)'),
+    AttributeDef(634, 'ciamDpopBound', 'bool', 'intent', True,
+                 'Whether the client\'s access tokens are DPoP-bound: it must present DPoP proofs (RFC 9449 '
+                 'dpop_bound_access_tokens)'),
     AttributeDef(141, 'ciamScope', 'string', 'contract', False,
                  'OAuth 2.0 scopes (a client may request / a service supports)'),
     AttributeDef(142, 'ciamPostLogoutRedirectUri', 'url', 'contract', False,
@@ -62,6 +65,7 @@ ATTRIBUTES = (
 CLASSES = (
     ClassDef(26, 'ciamIntegration', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamProtocolType'),
              ('ciamEntityId', 'ciamAcsUrl', 'ciamRedirectUri', 'ciamClientId', 'ciamGrantType', 'ciamPkceRequired',
+              'ciamDpopBound',
               'ciamPopulation', 'ciamMfaRequired', 'ciamUsesCertificate', 'ciamJitBaseDn', 'ciamCriticality',
               'ciamTokenAuthMethod', 'ciamScope', 'ciamPostLogoutRedirectUri', 'ciamSamlBinding', 'ciamNameIdFormat',
               'ciamSsoUrl', 'ciamServedBy'),

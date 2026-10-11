@@ -56,6 +56,13 @@ def test_renders_the_standard_documents_for_the_services_it_serves_at_its_paths(
 
 def test_maps_standard_values_to_its_api_names():
     d = _federation()
-    client = oauth_client(SimpleNamespace(d=d), get(d, f"cn=app,{INTEGRATIONS}"))
+    app = get(d, f"cn=app,{INTEGRATIONS}")
+    client = oauth_client(SimpleNamespace(d=d, servers=()), app)            # no version recorded: the newest
     assert client["grantTypes"] == ["AUTHORIZATION_CODE", "TOKEN_EXCHANGE"]
-    assert (client["clientAuth"], client["restrictedScopes"]) == ({"type": "PRIVATE_KEY_JWT"}, ["openid"])
+    assert (client["clientAuthentication"], client["restrictedScopes"]) == ({"privateKeyJwt": {"enabled": True}},
+                                                                           ["openid"])
+    pf12 = make_entry("cn=pf-1,env=prod,cloud=x,ou=environments,dc=ciam-ops", ("top", "ciamServer"),
+                      {"cn": ("pf-1",), "ciamServerRole": ("pf-engine",),
+                       "ciamProductVersion": ("PingFederate 12.1.4",)})
+    legacy = oauth_client(SimpleNamespace(d=d, servers=(pf12,)), app)
+    assert legacy["clientAuth"] == {"type": "PRIVATE_KEY_JWT"} and "clientAuthentication" not in legacy

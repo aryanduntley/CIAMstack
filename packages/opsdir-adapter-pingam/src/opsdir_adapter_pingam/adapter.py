@@ -13,6 +13,7 @@ from .realms import ENDPOINTS, SERVER_ROLES
 from .render import FORMATS, render_neutral
 from .schema import FRAGMENT
 from .signals import SIGNALS
+from .versions import VERSION_CHANGES
 
 PRODUCTS = ("PingAM", "ForgeRock AM")
 # An AM session token (the iPlanetDirectoryPro cookie value) is a live credential
@@ -33,4 +34,4 @@ ADAPTER = Adapter(name="pingam", kind="product", applies=applies, required_roles
                   secret_patterns=SECRET_PATTERNS, importers=(AMSTER,), profile_terms=None, access=None,
                   endpoints=ENDPOINTS, listeners=listeners,
                   proxy_settings=proxy_settings, collectors=COLLECTORS, signals=SIGNALS,
-                  logs=LOGS)
+                  logs=LOGS, version_changes=VERSION_CHANGES)

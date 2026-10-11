@@ -161,3 +161,67 @@ def test_a_key_pair_the_record_lacks_is_blocked():
         {"operationType": "SAVE", "resourceType": "/oauth/accessTokenManagers", "items": [JWT]}]})})
     assert "Access token manager `jwt` names key pair `signing-2025`, which the record doesn't have: PingFederate " \
            "refuses the configuration until it is recorded." in [t for _, t, _ in plan(d).blockers]
+
+
+ALPHA = "env=prod,cloud=alpha,ou=environments,dc=ciam-ops"
+MULTI = {**{k: v for k, v in PORTAL.items() if k != "clientAuth"}, "requireDpop": True,
+         "clientAuthentication": {"clientSecret": {"enabled": True},
+                                  "privateKeyJwt": {"enabled": True, "tokenEndpointAuthSigningAlgorithm": "PS256"},
+                                  "certificate": {"enabled": False}}}
+
+
+def _pf_server(version):
+    """alpha/prod runs PingFederate at this version (an engine server)."""
+    return tuple(parse(f"dn: cn=pf-1,{ALPHA}\nchangetype: add\nobjectClass: top\nobjectClass: ciamServer\ncn: pf-1\n"
+                       f"ciamServerRole: pf-engine\nciamHostname: pf-1.example.test\n"
+                       f"ciamSubnet: cn=net,ou=bindings,{ALPHA}\nciamProductVersion: PingFederate {version}\n"))
+
+
+def _with(client, changes=()):
+    files = export()
+    doc = json.loads(files["data.json"])
+    for op in doc["operations"]:
+        if op["resourceType"] == "/oauth/clients":
+            op["items"] = [client]
+    return imported(changes, {"data.json": json.dumps(doc)})[0]
+
+
+def _client(d, env="alpha/prod"):
+    return next(c for c in rendered_bodies(render_env(env_model(d, env), None)[REQUESTS])["/oauth/clients"]
+                if c["clientId"] == "portal")
+
+
+def test_a_13_1_client_with_several_methods_and_dpop_is_recorded_and_renders_back():
+    d = _with(MULTI, _pf_server("13.1.3"))
+    portal = get(d, PORTAL_DN)
+    assert values(portal, "ciamTokenAuthMethod") == ("client_secret_basic", "private_key_jwt")
+    assert one(portal, "ciamDpopBound") == "TRUE"
+    client = _client(d)
+    assert client["clientAuthentication"] == MULTI["clientAuthentication"] and "clientAuth" not in client
+    assert client["requireDpop"] is True
+    again, _ = preview_import(d, "pingfederate/bulk", {p: t for p, t in render_env(env_model(d, "alpha/prod"), None)
+                                                       .items() if p.endswith(".json")}, (ADAPTER,))
+    assert again == ()
+
+
+def test_a_target_before_13_1_gets_the_first_method_and_the_planner_says_so():
+    d = _with(MULTI, _pf_server("12.3.8"))
+    client = _client(d)
+    assert client["clientAuth"] == {"type": "SECRET"} and "clientAuthentication" not in client
+    ctx = PlanContext(d, env_model(d, "beta/prod"), env_model(d, "alpha/prod"), None, dt.date(2026, 10, 1), {}, {}, ())
+    from opsdir_adapter_pingfederate.checks import check_client_auth
+    (action,) = [t for _, t, _, _ in check_client_auth(ctx).actions]
+    assert action.startswith("OAuth client `portal` lists several authentication methods (client_secret_basic, "
+                             "private_key_jwt), but alpha/prod runs PingFederate 12.3.8, which takes one per client")
+
+
+def test_a_legacy_client_keeps_its_shape_until_it_lists_several_methods():
+    cert = {**PORTAL, "clientAuth": {"type": "CERTIFICATE", "clientCertIssuerDn": "CN=Issuing CA"}}
+    d = _with(cert, _pf_server("13.1.3"))
+    assert values(get(d, PORTAL_DN), "ciamTokenAuthMethod") == ("tls_client_auth",)    # CERTIFICATE now read
+    assert _client(d)["clientAuth"] == cert["clientAuth"]
+    more = tuple(parse(f"dn: {PORTAL_DN}\nchangetype: modify\nadd: ciamTokenAuthMethod\n"
+                       "ciamTokenAuthMethod: private_key_jwt\n-\n"))
+    d2 = _with(cert, (*_pf_server("13.1.3"), *more))
+    assert _client(d2)["clientAuthentication"] == {
+        "certificate": {"enabled": True, "clientCertIssuerDn": "CN=Issuing CA"}, "privateKeyJwt": {"enabled": True}}

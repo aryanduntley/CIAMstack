@@ -9,6 +9,7 @@ from .proxy import proxy_settings
 from .naming import ENDPOINTS, SERVER_ROLES
 from .render import FORMATS, render_env
 from .schema import FRAGMENT
+from .versions import VERSION_CHANGES
 
 PRODUCTS = ("PingGateway", "ForgeRock Identity Gateway")
 REQUIRED_ROLES = ("subnet-ig", "ig-service", "ig-keystore")
@@ -26,4 +27,4 @@ ADAPTER = Adapter(name="pinggateway", kind="product", applies=applies, required_
                   products=(("PingGateway", ">=2023,<2027"), ("ForgeRock Identity Gateway", ">=7,<8")),
                   secret_patterns=(), importers=(GATEWAY_CONFIG,), profile_terms=None, access=None,
                   endpoints=ENDPOINTS, listeners=listeners,
-                  proxy_settings=proxy_settings, logs=LOGS)
+                  proxy_settings=proxy_settings, logs=LOGS, version_changes=VERSION_CHANGES)

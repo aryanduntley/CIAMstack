@@ -28,3 +28,15 @@ addresses collection runs from.
 
 When an environment's egress passes a proxy clients must be told about (a `ciamProxy` with `ciamProxyAddress` that isn't a firewall), PingAM needs its HTTP client's advanced server properties `org.forgerock.openam.httpclienthandler.system.proxy.uri` (`http://<host>:<port>`, which takes precedence over the JVM's proxy) and `org.forgerock.openam.httpclienthandler.system.nonProxyHosts` (comma-separated), and the standard Java proxy properties in its container's JVM options (`JAVA_OPTS`, setenv.sh) for what doesn't use that client. The record holds neither place, so the planner names what to set.
 
+## Upgrades during a move
+
+A migration may upgrade the product within the supported range (PingAM `>=7,<9`, ForgeRock AM `>=7,<8`). The planner names each server role's version jump, from the oldest version the source runs to the newest the target runs, and every change below that the jump crosses (the source version lacks it, the target's has it), at its effect, when it applies to the record. A target outside the range is a blocker, a downgrade an action. From the vendor's release notes (`versions.py`).
+
+| Since | Change | Effect | Named when |
+|---|---|---|---|
+| 8.0 | authentication chains and modules are removed (8.0 can re-enable them over REST only, 8.1 not at all) | blocker | the record holds captured Amster chain and module entities |
+| 8.0 | the embedded configuration and identity store is removed | note | always |
+| 8.0 | the legacy audit event handler is removed | action | the record holds captured audit logging configuration |
+| 8.1 | journey nodes carry versions (Amster exports versioned node folders) | note | the record holds journeys and their nodes |
+| 8.1 | the "Authentication by Module Instance" policy condition is deprecated and evaluates to false | action | the record holds policies with an AuthScheme condition |
+| 8.1 | the certificate collector and validation nodes validate the full chain by default | action | the record holds journeys with certificate nodes |

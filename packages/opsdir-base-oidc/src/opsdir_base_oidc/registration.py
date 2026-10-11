@@ -21,5 +21,6 @@ def client_metadata(i):
               ("post_logout_redirect_uris", list(values(i, "ciamPostLogoutRedirectUri"))),
               ("grant_types", list(grants)), ("response_types", response_types(grants)),
               ("token_endpoint_auth_method", one(i, "ciamTokenAuthMethod")),
+              ("dpop_bound_access_tokens", True if one(i, "ciamDpopBound") == "TRUE" else None),
               ("scope", " ".join(values(i, "ciamScope")) or None))
     return {k: v for k, v in fields if v not in (None, []) or k == "response_types"}

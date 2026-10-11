@@ -28,8 +28,9 @@ def _unrecorded(ctx):
 
 
 def check_versions(ctx):
-    """Same product versions in both environments (their servers' and workload bindings') is a re-host; a difference
-    is an upgrade to test separately; servers and workload bindings with no version recorded are named."""
+    """Same product versions in both environments (their servers' and workload bindings') is a re-host; servers and
+    workload bindings with no version recorded are named. A difference is an upgrade or a downgrade, which the
+    planner's upgrade check (connectors.upgrades) names role by role with the changes between the versions."""
     sv, dv = _versions(ctx.src), _versions(ctx.dst)
     if not (ctx.src.servers or ctx.dst.servers or sv or dv):
         compared = findings(ok=["No servers recorded in either environment: no product versions to compare."])
@@ -37,9 +38,7 @@ def check_versions(ctx):
         compared = findings(ok=[f"Same product versions in both environments "
                                 f"({', '.join(sorted(sv)) or 'none recorded'}): a re-host, not an upgrade."])
     else:
-        compared = findings(actions=[("Versions", f"Versions differ ({sorted(sv)} → {sorted(dv)}). Test "
-                                      "compatibility separately from the move.", responsible(ctx.d, ctx.dst.env),
-                                      None)])
+        compared = findings()
     return merge_findings([compared, _unrecorded(ctx)])
 
 

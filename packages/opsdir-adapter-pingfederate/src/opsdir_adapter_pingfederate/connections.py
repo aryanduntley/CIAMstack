@@ -25,6 +25,7 @@ from opsdir.core.jsondata import held_json
 from opsdir.domains.directory.user_schema import attribute_records
 from opsdir.domains.federation.services import claims
 from .oauth import client_view
+from .versions import runs_in
 from .withheld import filled
 
 USER_DIRECTORY = MappingProxyType({"type": "LDAP_DATA_STORE", "id": "ciam-user-directory"})
@@ -39,9 +40,23 @@ GRANT_TYPES = MappingProxyType({"authorization_code": "AUTHORIZATION_CODE", "cli
 AMBIGUOUS_GRANTS = MappingProxyType({pf: tuple(std for std, v in GRANT_TYPES.items() if v == pf)
                                      for pf in set(GRANT_TYPES.values())
                                      if sum(v == pf for v in GRANT_TYPES.values()) > 1})
+# the legacy clientAuth.type (one method per client; the Admin API's enum)
 CLIENT_AUTH = MappingProxyType({"none": "NONE", "client_secret_basic": "SECRET", "client_secret_post": "SECRET",
-                                "client_secret_jwt": "SECRET", "private_key_jwt": "PRIVATE_KEY_JWT",
-                                "tls_client_auth": "CLIENT_CERT", "self_signed_tls_client_auth": "CLIENT_CERT"})
+                                "client_secret_jwt": "CLIENT_SECRET_JWT", "private_key_jwt": "PRIVATE_KEY_JWT",
+                                "tls_client_auth": "CERTIFICATE", "self_signed_tls_client_auth": "CERTIFICATE"})
+# 13.1's clientAuthentication: several methods per client, each an object keyed by method ({"enabled": ...} plus the
+# method's own settings); the secret fields are shared by the methods that use it
+AUTH_METHODS = MappingProxyType({"none": "none", "client_secret_basic": "clientSecret",
+                                 "client_secret_post": "clientSecret", "client_secret_jwt": "clientSecretJwt",
+                                 "private_key_jwt": "privateKeyJwt", "tls_client_auth": "certificate",
+                                 "self_signed_tls_client_auth": "certificate"})
+MULTI_AUTH = ">=13.1"                       # the versions taking clientAuthentication
+SHARED_AUTH = ("secret", "encryptedSecret", "secondarySecrets")
+METHOD_SETTINGS = MappingProxyType({"clientSecretJwt": ("enforceReplayPrevention", "tokenEndpointAuthSigningAlgorithm"),
+                                    "privateKeyJwt": ("enforceReplayPrevention", "tokenEndpointAuthSigningAlgorithm"),
+                                    "certificate": ("clientCertIssuerDn", "clientCertSubjectDn")})
+LEGACY_METHOD = MappingProxyType({"NONE": "none", "SECRET": "clientSecret", "CLIENT_SECRET_JWT": "clientSecretJwt",
+                                  "PRIVATE_KEY_JWT": "privateKeyJwt", "CERTIFICATE": "certificate"})
 BINDINGS = MappingProxyType({"HTTP-POST": "POST", "HTTP-Redirect": "REDIRECT", "HTTP-Artifact": "ARTIFACT",
                              "SOAP": "SOAP"})
 # protocol type -> the Admin API collection of its PingFederate object
@@ -129,6 +144,47 @@ def _scope_restriction(i, held):
     return {"restrictScopes": False, "restrictedScopes": []} if held.get("restrictScopes") else {}
 
 
+def _authentication(held, methods):
+    """13.1's clientAuthentication: the held one (or one made from a held legacy clientAuth), each recorded method
+    enabled, every other method the held settings name disabled (as held when the record lists none)."""
+    legacy = held.get("clientAuth") or {}
+    old = LEGACY_METHOD.get(legacy.get("type"))
+    base = held.get("clientAuthentication") or {
+        **{k: legacy[k] for k in SHARED_AUTH if k in legacy},
+        **({old: {"enabled": True, **{k: legacy[k] for k in METHOD_SETTINGS.get(old, ()) if k in legacy}}}
+           if old else {})}
+    keys = tuple(dict.fromkeys(AUTH_METHODS[a] for a in methods))
+    named = tuple(k for k in base if k in LEGACY_METHOD.values()) if keys else ()
+    return {**base, **{k: {**(base.get(k) or {}), "enabled": k in keys} for k in (*keys, *named)}}
+
+
+def _legacy(held, methods):
+    """The legacy clientAuth: the held one (or one made from a held 13.1 clientAuthentication), of the first recorded
+    method (the only one PingFederate before 13.1 takes)."""
+    multi = held.get("clientAuthentication") or {}
+    enabled = [k for k in LEGACY_METHOD.values() if (multi.get(k) or {}).get("enabled")]
+    base = held.get("clientAuth") or {
+        **{k: multi[k] for k in SHARED_AUTH if k in multi},
+        **{k: v for m in enabled[:1] for k, v in (multi.get(m) or {}).items() if k != "enabled"},
+        **({"type": next(t for t, k in LEGACY_METHOD.items() if k == enabled[0])} if enabled else {})}
+    return {**base, **({"type": CLIENT_AUTH[methods[0]]} if methods else {})}
+
+
+def client_authentication(m, i, held):
+    """{key: value} of how environment m's PingFederate authenticates an OAuth client: before 13.1 the legacy
+    clientAuth of its first ciamTokenAuthMethod; from 13.1 (which takes both shapes) clientAuthentication with every
+    method the client lists when the record holds that shape, lists several methods or holds neither (a new client),
+    else the legacy shape it holds, so a render imports back unchanged; {} when neither the record nor the held
+    settings say."""
+    methods = values(i, "ciamTokenAuthMethod")
+    if not (methods or held.get("clientAuth") or held.get("clientAuthentication")):
+        return {}
+    multi = runs_in(m, MULTI_AUTH) and (bool(held.get("clientAuthentication")) or len(methods) > 1
+                                        or not held.get("clientAuth"))
+    return {"clientAuthentication": _authentication(held, methods)} if multi else \
+        {"clientAuth": _legacy(held, methods)}
+
+
 def oauth_client(m, i):
     """An OIDC client integration as an OAuth client (PUT /oauth/clients/<client id>), with the token manager and
     OIDC policy it is issued tokens by."""
@@ -138,16 +194,16 @@ def oauth_client(m, i):
                     and not any(std in recorded for std in AMBIGUOUS_GRANTS[g])]
     grants = list(dict.fromkeys((*(GRANT_TYPES[g] for g in recorded), *unrecordable)))
     kept = held.get("grantTypes")
-    auth = one(i, "ciamTokenAuthMethod")
-    client_auth = {**(held.get("clientAuth") or {}), **({"type": CLIENT_AUTH[auth]} if auth else {})}
-    pkce = one(i, "ciamPkceRequired") == "TRUE"
+    pkce, dpop = one(i, "ciamPkceRequired") == "TRUE", one(i, "ciamDpopBound") == "TRUE"
+    auth = client_authentication(m, i, held)          # replaces whichever shape the held settings have, in place
+    rest = {k: v for k, v in held.items() if k not in ("clientAuth", "clientAuthentication") or k in auth}
     return {
-        **held, "clientId": one(i, "ciamClientId"),
+        **rest, "clientId": one(i, "ciamClientId"),
         **({} if held else {"name": rdn_value(i), "enabled": True}),
         **_owned(held, "redirectUris", list(values(i, "ciamRedirectUri")), bool(values(i, "ciamRedirectUri"))),
         "grantTypes": kept if isinstance(kept, list) and set(kept) == set(grants) else grants,
-        **_owned(held, "requireProofKeyForCodeExchange", pkce, pkce),
-        **({"clientAuth": client_auth} if client_auth else {}), **_scope_restriction(i, held), **client_view(m.d, i)}
+        **_owned(held, "requireProofKeyForCodeExchange", pkce, pkce), **_owned(held, "requireDpop", dpop, dpop),
+        **auth, **_scope_restriction(i, held), **client_view(m.d, i)}
 
 
 def idp_connection(m, i):

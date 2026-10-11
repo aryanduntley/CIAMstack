@@ -366,9 +366,15 @@ EXPECTED = MappingProxyType({
          "chart's pods find each other by DNS_PING", "no cluster discovery is bound for PingFederate on AKS (a fix "
          "binds the chart's cluster service)", None),
         # the target is a new build on the current releases: the migration upgrades every product within the
-        # adapters' ranges (decision 2401; milestone 86 names the changes between the versions)
-        ("A119", "Versions", "Versions differ", "the target runs the current releases (PingAM 8.1.1, PingDS 8.1.2, "
-         "PingFederate 13.1.3, PingGateway 2026.9.0, PingIDM 8.1.2) over the source's 7.5 / 12.1 / 2024.11", None),
+        # adapters' ranges (decision 2401), and the upgrade check names the changes between the versions that touch
+        # what the record holds (milestone 86); the rest of each jump is in the plan's OK section
+        ("A119", "Upgrade", "`idm` in target/prod: Java 21 is required",
+         "PingIDM 7.5 -> 8.1 needs Java 21, and the IDM host baseline records Temurin 17", None),
+        ("A120", "Upgrade", "`ig` in target/prod: ClientHandler and ReverseProxyHandler use HTTP/2",
+         "PingGateway 2024.11 -> 2026.9 defaults backend handlers to HTTP/2; route partner-portal sets no "
+         "protocolVersion", None),
+        ("A121", "Upgrade", "`pf-admin`, `pf-engine` in target/prod: the Admin API validates JDBC data stores",
+         "PingFederate 12.1 -> 13.1.3 validates JDBC drivers and URLs; the grant store is JDBC", None),
     ],
 })
 

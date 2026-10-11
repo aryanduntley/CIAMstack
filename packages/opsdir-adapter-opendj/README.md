@@ -41,3 +41,10 @@ the password policies' settings are kept. Only the configuration in effect is re
 disk only, as are the access logs. Least privilege: an account with the `config-read` privilege and a global ACI on
 `cn=config` allowing `read,search,compare` (targetattr `*||+`).
 
+## Upgrades during a move
+
+A migration may upgrade the product within the supported range (OpenDJ `>=4,<6`). The planner names each server role's version jump, from the oldest version the source runs to the newest the target runs, and every change below that the jump crosses (the source version lacks it, the target's has it), at its effect, when it applies to the record. A target outside the range is a blocker, a downgrade an action. From the vendor's release notes (`versions.py`).
+
+| Since | Change | Effect | Named when |
+|---|---|---|---|
+| 5.1.2 | the JE backend and changelog formats change, and indexes must be rebuilt | action | always |

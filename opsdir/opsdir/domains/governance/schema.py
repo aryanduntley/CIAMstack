@@ -54,6 +54,10 @@ ATTRIBUTES = (
                  'The role of the certificate binding a collection source\'s TLS endpoint is trusted by'),
     AttributeDef(600, 'ciamLoginName', 'string', 'intent', True,
                  'The account a collection source\'s credential signs in as (a read-only service account)'),
+    AttributeDef(633, 'ciamCredentialScheme', 'enum:basic|bearer', 'intent', True,
+                 'How a collection source\'s credential is sent: basic (a password, with ciamLoginName; the default) '
+                 'or bearer (an access token or signed JWT minted outside opsdir, sent as Authorization: Bearer); the '
+                 'importer\'s collector says which it accepts'),
     AttributeDef(601, 'ciamCollectionIdentity', 'string', 'meta', True,
                  'Who the provider said the collector was when an import run\'s export was collected, or a collection '
                  'was attempted (its identity check: account, subscription, project)'),
@@ -99,7 +103,8 @@ CLASSES = (
              'the export itself, how (the identity the provider saw, each call and the hash of what it returned, '
              'the credential references used); what a fix that needs a fresh read checks'),
     ClassDef(128, 'ciamCollectionSource', 'ciamBinding', 'STRUCTURAL', ('ciamImporter',),
-             ('ciamSourceRef', 'ciamTargetRole', 'ciamPort', 'ciamCredentialRole', 'ciamCaRole', 'ciamLoginName'),
+             ('ciamSourceRef', 'ciamTargetRole', 'ciamPort', 'ciamCredentialRole', 'ciamCaRole', 'ciamLoginName',
+              'ciamCredentialScheme'),
              'Where `opsdir collect` reads an environment for an importer that needs more than the operator\'s own '
              'cloud login: a Terraform state object, or a product\'s admin endpoint (a URL, or the servers of a role '
              'on a port) with the credential and trust anchor it is read with: the operator\'s opt-in'),

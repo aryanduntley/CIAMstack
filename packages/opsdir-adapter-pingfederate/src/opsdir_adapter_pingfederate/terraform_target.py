@@ -28,7 +28,8 @@ from types import MappingProxyType
 from opsdir.core.directory import one
 from opsdir.domains.governance.collection import collection_sources
 from opsdir_format_terraform.hcl import Expr, NestedBlock, data_block, tf_name
-from .admin_api import pingfederate_version, requests
+from .admin_api import requests
+from .versions import pingfederate_version
 
 OUTPUT = "pingfederate/terraform/"
 SOURCE = "pingidentity/pingfederate"

@@ -49,3 +49,11 @@ def test_its_servers_configuration_is_read_back_under_the_records_handler_names(
     entries, _ = config_entries(OPENDJ, make_directory((), {}, ()), config, "ou=declared,ou=config,dc=ciam-ops", "x")
     assert [e.dn for e in entries] == ["ou=connection-handlers,ou=declared,ou=config,dc=ciam-ops",
                                        "cn=LDAPS,ou=connection-handlers,ou=declared,ou=config,dc=ciam-ops"]
+
+
+def test_5_1_2_changes_the_storage_formats():
+    from opsdir.connectors.upgrades import crossing
+    (change,), _ = crossing(None, None, ADAPTER, ("ds",), "4.4.11", "5.1.2")
+    assert change[0].effect == "action" and "indexes must be rebuilt" in change[0].change
+    assert crossing(None, None, ADAPTER, ("ds",), "5.1.2", "5.1.3") == ((), 0)
+    assert crossing(None, None, ADAPTER, ("ds",), "4.4.11", "5.0.1") == ((), 0)

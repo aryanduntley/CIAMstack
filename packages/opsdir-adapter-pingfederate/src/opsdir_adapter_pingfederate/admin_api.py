@@ -34,17 +34,18 @@ import json
 from typing import NamedTuple
 
 from opsdir.core.directory import children, one, rdn_value
-from opsdir.domains.compute.workloads import role_versions
 from opsdir.domains.federation.services import identity_services, integrations_served
 from .admin_api_spec import load_spec, request_problems, spec_version
 from .connections import integration_body
 from .datastores import data_store_view
 from .generic import held_resources, resource_body
 from .keypairs import key_pair_imports
+from .messaging import smtp_view
 from .naming import CONTRACTS, DATA_STORES, FRAGMENTS, OIDC_POLICIES, SERVER_ROLES
 from .oauth import auth_server_body, oidc_policy_body
 from .plugins import KINDS, plugin_view
 from .policies import contract_body, default_policy_body, fragment_body
+from .versions import pingfederate_version
 
 OUTPUT = "pingfederate/admin-api/requests.json"
 PLUGIN_ORDER = ("validator", "notification-publisher", "captcha-provider", "idp-adapter", "selector",
@@ -68,13 +69,6 @@ def settings_request(path, body):
     return Request("PUT", path, None, body)
 
 
-def pingfederate_version(m):
-    """(the PingFederate version environment m runs, the first by server or workload name, or None; the other
-    versions it runs). Its servers' and, on Kubernetes, its workload bindings' (compute.role_versions)."""
-    versions = tuple(dict.fromkeys(v for _, v in role_versions(m, SERVER_ROLES)))
-    return (versions[0], versions[1:]) if versions else (None, ())
-
-
 def _parents_first(entries, placed=()):
     """Plugin instances with each one after the instance it inherits from."""
     if not entries:
@@ -84,6 +78,12 @@ def _parents_first(entries, placed=()):
                   if (one(e, "pingfedParent") or "").split(",", 1)[0][3:] not in ids - set(placed))
     ready = ready or entries[:1]                                # a cycle: PingFederate refuses it; keep the order
     return (*ready, *_parents_first(tuple(e for e in entries if e not in ready), (*placed, *map(rdn_value, ready))))
+
+
+def _plugin(m, kind, e):
+    """A plugin instance's body; an SMTP notification publisher's with its relay's sign-in (messaging.smtp_view)."""
+    body = plugin_view(m, e)
+    return smtp_view(m, body) if kind == "notification-publisher" else body
 
 
 def requests(m):
@@ -97,7 +97,7 @@ def requests(m):
     return (*(Request("POST", path, None, body) for path, body in key_pair_imports(m)[0]),
             *(object_request("/dataStores", rdn_value(s), data_store_view(m, s))
               for s in children(d, DATA_STORES, "pingfedDataStore")),
-            *(object_request(KINDS[kind].resource, rdn_value(e), plugin_view(m, e))
+            *(object_request(KINDS[kind].resource, rdn_value(e), _plugin(m, kind, e))
               for kind in PLUGIN_ORDER for e in plugins[kind]),
             *(object_request("/authenticationPolicyContracts", rdn_value(c), contract_body(c))
               for c in children(d, CONTRACTS, "pingfedPolicyContract")),

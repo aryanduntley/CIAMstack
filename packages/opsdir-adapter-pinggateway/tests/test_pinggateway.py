@@ -133,3 +133,20 @@ def test_the_planner_names_what_the_target_or_the_record_lacks(after):
     d2, _, _ = imported(no_provider)
     assert "Route `portal` can't sign users in: it trusts https://login.example.test/am/oauth2, which is no identity " \
            "service's issuer in the record." in [t for _, t, _ in plan(d2, "alpha/prod").blockers]
+
+
+def test_what_an_upgrade_of_the_gateway_touches_in_its_routes():
+    legacy = json.dumps({"name": "legacy", "baseURI": "http://legacy.example.test", "handler": {"type": "Chain",
+        "config": {"filters": [{"type": "OAuth2ClientFilter", "config": {}},
+                               {"type": "ScriptableFilter", "config": {"file": "check.groovy", "type":
+                                                                       "application/x-groovy"}}],
+                   "handler": {"type": "ReverseProxyHandler", "config": {"protocolVersion": "HTTP/1.1"}}}},
+        "heap": [{"name": "uma", "type": "UmaService", "config": {}}]})
+    d, _, _ = imported(files={**files_of(CONFIG), "routes/legacy.json": legacy})
+    by = {c.change.split(" ")[0] + c.has: c for c in ADAPTER.version_changes}
+    touched = {k: (c.touches(d, None, "ig") if c.touches else None) for k, c in by.items()}
+    assert touched == {"OAuth2ClientFilter>=7.2": ("legacy",), "scripts>=2023.6": ("legacy",),
+                       "inline>=2024.3": None, "the>=2025.3": None, "issuer>=2025.3": ("portal",),
+                       "the>=2026.3": None, "ClientHandler>=2026.9": ("docs", "portal"),
+                       "UmaService>=2026.9": ("legacy",)}
+    assert all(c.touches(d, None, "am") == () for c in ADAPTER.version_changes if c.touches)

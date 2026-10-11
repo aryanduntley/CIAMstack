@@ -61,7 +61,7 @@ from .plugins import KINDS, plugin_groups
 from .policies import policy_groups
 from .naming import SERVER_ROLES
 from .admin_api import request_type
-from .connections import BINDINGS, CLIENT_AUTH, GRANT_TYPES
+from .connections import BINDINGS, CLIENT_AUTH, GRANT_TYPES, LEGACY_METHOD
 
 RESOURCES = MappingProxyType({
     "/idp/spConnections": "sp", "/sp/idpConnections": "idp", "/oauth/clients": "client",
@@ -76,7 +76,7 @@ OWNED = MappingProxyType({
     "saml2-sp": ("ciamProtocolType", "ciamEntityId", "ciamAcsUrl", "ciamSamlBinding"),
     "saml2-idp": ("ciamProtocolType", "ciamEntityId"),
     "oidc-client": ("ciamProtocolType", "ciamClientId", "ciamRedirectUri", "ciamGrantType", "ciamPkceRequired",
-                    "ciamTokenAuthMethod", "ciamScope")})
+                    "ciamTokenAuthMethod", "ciamScope", "ciamDpopBound")})
 _UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
 
 
@@ -87,7 +87,7 @@ def _inverse(mapping):
 PF_GRANTS, PF_AUTH, PF_BINDINGS = _inverse(GRANT_TYPES), _inverse(CLIENT_AUTH), _inverse(BINDINGS)
 # where one PingFederate name stands for several standard ones and the record says nothing yet: the standard's default
 # (RFC 7591 section 2: client_secret_basic when a client doesn't say; RFC 8705: tls_client_auth, PKI-bound)
-DEFAULTS = MappingProxyType({"SECRET": "client_secret_basic", "CLIENT_CERT": "tls_client_auth"})
+DEFAULTS = MappingProxyType({"SECRET": "client_secret_basic", "CERTIFICATE": "tls_client_auth"})
 
 
 # ------------------------------------------------------------------ reading the export
@@ -301,20 +301,30 @@ def _idp(d, idp, certs, held, dn, name, served, patterns):
             *_others(d, dn, held, ())), _held_notice(f"IdP connection {name}", imported, held)
 
 
+def _auth_types(client):
+    """The legacy clientAuth.type names of how a client authenticates: 13.1's clientAuthentication's enabled methods,
+    else its clientAuth's one type."""
+    multi = client.get("clientAuthentication") or {}
+    if multi:
+        return [t for t, k in LEGACY_METHOD.items() if (multi.get(k) or {}).get("enabled")]
+    legacy = (client.get("clientAuth") or {}).get("type")
+    return [legacy] if legacy else []
+
+
 def _client(d, client, held, dn, name, served, exported, patterns):
     grants, odd_grants = _standard(client.get("grantTypes") or (), PF_GRANTS,
                                    values(held, "ciamGrantType") if held else ())
-    auth_type = (client.get("clientAuth") or {}).get("type")
-    auth, _ = _standard([auth_type] if auth_type else [], PF_AUTH, values(held, "ciamTokenAuthMethod") if held else ())
+    auth, _ = _standard(_auth_types(client), PF_AUTH, values(held, "ciamTokenAuthMethod") if held else ())
     imported = {"ciamClientId": (client.get("clientId"),), "ciamRedirectUri": tuple(client.get("redirectUris") or ()),
-                "ciamGrantType": grants, "ciamTokenAuthMethod": auth[:1],
+                "ciamGrantType": grants, "ciamTokenAuthMethod": auth,
                 "ciamPkceRequired": ("TRUE",) if client.get("requireProofKeyForCodeExchange") else (),
+                "ciamDpopBound": ("TRUE",) if client.get("requireDpop") else (),
                 "ciamScope": tuple(client.get("restrictedScopes") or ()) if client.get("restrictScopes") else ()}
     uses, unlinked = client_links(d, client, exported)
     imported = {**imported, "pingfedUses": uses, **held_settings(client, patterns)}
     entry = _merged(held, dn, name, "oidc-client", imported, (*OWNED["oidc-client"], "pingfedUses", *HELD), served,
                     (*(("pingfedClient",) if uses else ()), "pingfedHeldSettings"))
-    secret = client.get("clientAuth") or {}
+    secret = client.get("clientAuthentication") or client.get("clientAuth") or {}
     notices = (*unlinked, *((f"client {client.get('clientId')}: grant types with no single standard name, "
                   f"not recorded: {', '.join(odd_grants)}",) if odd_grants else ()),
                *((f"client {client.get('clientId')}: its secret is not imported; set pingfedCredentialRole to the "

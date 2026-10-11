@@ -31,3 +31,11 @@ def test_renders_its_environment_neutral_files_from_any_directory():
 
 def test_it_reads_its_servers_configuration_as_snapshots_or_as_the_declared_configuration():
     assert [i.name for i in ADAPTER.importers] == ["config", "declared", "access-log"]
+
+
+def test_an_upgrade_names_the_changes_between_the_two_releases():
+    from opsdir.connectors.upgrades import crossing
+    listed, between = crossing(None, None, ADAPTER, ("ds",), "7.5.1", "8.1.2")
+    assert between == 4 and [c.has for c, names in listed] == [">=8.0", ">=8.1", ">=8.1", ">=8.1"]
+    assert all(names is None and c.effect == "info" for c, names in listed)
+    assert crossing(None, None, ADAPTER, ("ds",), "7.2.5", "7.5.4")[1] == 1        # 7.3's log move

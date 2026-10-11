@@ -10,6 +10,7 @@ from .logs import LOGS
 from .render import PINGDS, render_neutral, setup_scripts
 from .replication import check_replication
 from .signals import SIGNALS
+from .versions import VERSION_CHANGES
 
 REQUIRED_ROLES = ("subnet-ds", "ds-ldaps-service", "backup-target", "ds-deployment-id", "ds-deployment-password",
                   "ds-root-password", "ds-tls-keystore")
@@ -28,4 +29,5 @@ ADAPTER = Adapter(name="pingds", kind="product", applies=applies, required_roles
                   products=(("PingDS", ">=7.2,<9"),),
                   secret_patterns=(), importers=importers(PINGDS), profile_terms=TERMS, access=None,
                   listeners=ds_listeners, collectors=config_collectors("pingds", PINGDS_FLAGS),
-                  signals=SIGNALS, logs=LOGS)
+                  signals=SIGNALS, logs=LOGS,
+                  version_changes=VERSION_CHANGES)

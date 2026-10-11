@@ -29,3 +29,18 @@ them. Least privilege: an internal user whose role `access.json` allows `read` o
 
 When an environment's egress passes a proxy clients must be told about (a `ciamProxy` with `ciamProxyAddress` that isn't a firewall), PingIDM's HTTP client (external REST, the identity provider service) is told to use the JVM's proxy, `openidm.http.client.proxy.useSystem=true` in `resolver/boot.properties`, with the standard Java proxy properties in the JVM options it starts with (`OPENIDM_OPTS`). The JVM's proxy is used, not `openidm.http.client.proxy.uri`, because only it honours the hosts reached directly (`http.nonProxyHosts`), so connectors to the platform's own services stay off the proxy. The importer captures `resolver/*.properties` with the `conf/` files, so the planner compares `boot.properties` with the record and offers a fix (`opsdir fix`) that adds the setting when it is missing; it names the JVM options, which the record can't confirm.
 
+## Upgrades during a move
+
+A migration may upgrade the product within the supported range (PingIDM `>=7,<9`, ForgeRock IDM `>=7,<8`). The planner names each server role's version jump, from the oldest version the source runs to the newest the target runs, and every change below that the jump crosses (the source version lacks it, the target's has it), at its effect, when it applies to the record. A target outside the range is a blocker, a downgrade an action. From the vendor's release notes (`versions.py`).
+
+| Since | Change | Effect | Named when |
+|---|---|---|---|
+| 8.0 | standalone self-service (password reset, registration, KBA) is removed | blocker | the record holds captured self-service configuration |
+| 8.0 | the Office 365, .NET Active Directory and Scripted CREST connectors are removed | blocker | the record holds connectors |
+| 8.0 | logging moves from java.util.logging to Logback (conf/logback.xml); conf/logging.properties is no longer read | action | the record holds captured logging configuration |
+| 8.0 | Jetty 12: conf/jetty.xml is removed (webserver.json and webserver.listener-*.json configure the listeners) | note | always |
+| 8.0 | the embedded DS repository is removed | note | always |
+| 7.5.3, 8.0.2 | the Oracle datasource template uses UCP (a service-name URL, connectionWaitTimeout) | note | the record holds captured JDBC datasources |
+| 8.1 | Java 21 is required | action | the record holds the IDM servers' host baseline |
+| 8.1 | /openidm/info/ping and /openidm/health are deprecated (/openidm/health/live and /ready) | note | always |
+| 8.1 | the legacy admin UI is no longer bundled | note | always |

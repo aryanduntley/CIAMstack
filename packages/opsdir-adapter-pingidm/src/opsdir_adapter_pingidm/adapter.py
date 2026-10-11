@@ -11,6 +11,7 @@ from .project import IDM_PROJECT
 from .render import FORMATS, render_env, render_neutral
 from .schema import FRAGMENT
 from .signals import SIGNALS
+from .versions import VERSION_CHANGES
 
 PRODUCTS = ("PingIDM", "ForgeRock IDM")
 REQUIRED_ROLES = ("subnet-idm", "idm-admin-password", "idm-keystore")
@@ -30,4 +31,4 @@ ADAPTER = Adapter(name="pingidm", kind="product", applies=applies, required_role
                   secret_patterns=(), importers=(IDM_PROJECT,), profile_terms=None, access=None,
                   endpoints=ENDPOINTS, listeners=listeners,
                   proxy_settings=proxy_settings, collectors=COLLECTORS, signals=SIGNALS,
-                  logs=LOGS)
+                  logs=LOGS, version_changes=VERSION_CHANGES)
