@@ -7,7 +7,8 @@ of the matching hashicorp/azurerm resource, so the same mapping reads them as re
 
   az network vnet list                  Microsoft.Network/virtualNetworks (+ its subnets and their NSGs)
   az network vnet subnet list           Microsoft.Network/virtualNetworks/subnets
-  az vm list -d                         Microsoft.Compute/virtualMachines (-d adds the private addresses)
+  az vm list -d                         Microsoft.Compute/virtualMachines (-d adds the private addresses; Linux or
+                                        Windows by the OS disk's osType)
   az network nic list                   Microsoft.Network/networkInterfaces (+ backend pool and NSG associations)
   az network lb list                    Microsoft.Network/loadBalancers (+ backend pools and rules)
   az network public-ip list             Microsoft.Network/publicIPAddresses
@@ -138,6 +139,16 @@ def _vnets(items):
               for s, _ in subnets if _id(s.get("networkSecurityGroup")))]
 
 
+VM_TYPES = ("azurerm_linux_virtual_machine", "azurerm_windows_virtual_machine")
+
+
+def _vm_type(vm):
+    """A VM's Terraform type by its operating system: its OS disk's osType, else a Windows configuration."""
+    os_type = str(((vm.get("storageProfile") or {}).get("osDisk") or {}).get("osType") or "").lower()
+    windows = os_type == "windows" or (not os_type and (vm.get("osProfile") or {}).get("windowsConfiguration"))
+    return VM_TYPES[1] if windows else VM_TYPES[0]
+
+
 def _vms(items):
     def image(vm):
         ref = ((vm.get("storageProfile") or {}).get("imageReference")) or {}
@@ -146,7 +157,7 @@ def _vms(items):
                                             "sku": ref.get("sku"),
                                             "version": ref.get("exactVersion") or ref.get("version")}]
                 if ref.get("offer") else []}
-    return [("azurerm_linux_virtual_machine", {
+    return [(_vm_type(vm), {
                 "id": vm.get("id"), "name": vm.get("name"), "tags": vm.get("tags") or {},
                 "computer_name": (vm.get("osProfile") or {}).get("computerName"),
                 "size": (vm.get("hardwareProfile") or {}).get("vmSize"), "zone": (vm.get("zones") or [None])[0],
@@ -344,7 +355,7 @@ def _scoped(pairs):
     outside = [(t, a) for t, a in pairs
                if (t == "azurerm_subnet" and _low(a.get("virtual_network_name")) not in vnets)
                or (t == "azurerm_network_interface" and _low(a.get("id")) in out_nics)
-               or (t == "azurerm_linux_virtual_machine" and a["network_interface_ids"]
+               or (t in VM_TYPES and a["network_interface_ids"]
                    and all(_low(n) in out_nics for n in a["network_interface_ids"]))]
     counted = Counter(t for t, _ in outside)
     return ([p for p in pairs if p not in outside],

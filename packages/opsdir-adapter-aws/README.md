@@ -40,7 +40,9 @@ Terraform is the default render target. A render can be written as AWS CloudForm
 - **Merged into one resource.** What Terraform splits but CloudFormation holds in one resource: the S3 bucket settings (versioning, lifecycle, object lock, public access block, replication, encryption) in `AWS::S3::Bucket`, event targets in their rule, GuardDuty features in the detector, target group attachments in the target group, role policies in the role, egress rules in the security group, the Backup vault lock, the Config recorder status, RDS automated backup replication, the permission set's inline policy, policy attachments, and Shield's automatic response in its protection.
 - **What stays Terraform.** `cloudformation/<rest>/terraform/main.tf`, beside the template and applied after it, its variables taking the template's outputs, with a NOTE naming each resource it keeps and why: no CloudFormation type (the Inspector enabler, Config's retention, Macie's export configuration and classification job, service quota requests, the default route table); in GovCloud, the types GovCloud's resource specification lacks (Macie's account and identifiers, Shield protections, Budgets, CloudFront outside the standard account); an adopted resource CloudFormation can't import by its Terraform import id; and whatever waits for or reads one of these.
 - **Checked.** cfn-lint passes (errors fail, warnings are shown: `opsdir/scripts/validate-cloudformation.sh`; tests marked `cloudformation`), each template naming the region it is checked for in its own metadata, so a GovCloud template is checked against GovCloud's specification. That holds for the showcase and the CloudFormation sample (`examples/showcase/tests/terraform/cloudformation_sample.py`, which renders every type the renderers write), in us-east-1 and us-gov-west-1. Every Terraform resource goes exactly one place: a template's resource, part of one, or the Terraform root with its reason.
-- **Not yet.** `aws cloudformation validate-template` and a deployment in a sandbox account (milestone 7.2). Reading the templates back (milestone 5.6c): a render chosen only as CloudFormation reads nothing back today, and says so.
+- **Placements.** Beside each root's templates, `placements.json` says where every Terraform resource went, by address: the template and logical id (`in`, `id`), the resource it is part of (`part of`), or the Terraform root and why it stays there (`why`). Moving an environment from Terraform to CloudFormation, it says what to import where; reading the render back, what each template resource realizes.
+- **Read back** (the round trip, `rendered_stacks` in `rendered_state.py`; milestone 5.6c). Each template becomes a stack folder as the CLI saves one: the template, `describe-stacks` (its parameters' defaults, the stack in the cloud's region and account, or the region its provider alias names) and `list-stack-resources`, each resource's physical id what the Terraform read-back assigns the address `placements.json` names (the provider reference of a binding it realizes, else the address itself). The kept Terraform root becomes the state applying it would record, its variables the stacks' outputs. `aws/cloudformation` reads them together, as one import, and must read the same record as the Terraform read-back does (`examples/showcase/tests/unit/test_round_trip.py`, `test_cloudformation_coverage.py`). Where it can't, the reason is inherent: a lookup is a template parameter, not a resource, so only the read-back that reads a looked-up kind judges the record's bindings of that kind; and what AWS assigns at deployment that no template holds (an Elastic IP's address) isn't there. Security services and budgets are read back from Terraform only until milestone 5.6b; kinds the CloudFormation render never writes (autoscaling groups, EKS, queues and streams, SES) aren't read from a template until milestone 5.6d.
+- **Not yet.** `aws cloudformation validate-template` and a deployment in a sandbox account (milestone 7.2).
 
 ## Kubernetes workloads
 
@@ -308,7 +310,7 @@ A plan with several rules is named (the first is read); a selection choosing res
 - any other resource gets an id and an ARN in the root's partition (GovCloud for `us-gov-*`), region and account, plus what AWS assigns its type (`ASSIGNS`: a load balancer's DNS name and zone, an OIDC provider's `oidc-provider/<host>` ARN);
 - `tags_all` is the provider's `default_tags` under the resource's own tags, and `aws_partition`, `aws_caller_identity` and `aws_region` are answered.
 
-The render is the record's intent (its edge policies, the permission table, the guardrails), so the read-back is marked `intent`. It must read back as the bindings it came from, with no copies, and rendering again must give the same files. Where the record still holds what was observed, the changes are what applying would record. In the showcase's source/prod: NLB passthrough becomes the ALB the policies ask for, WAF and Shield come back as edge bindings, and broad grants become least-privilege ones. One gap is known: CloudTrail data events aren't rendered yet (milestone 5.7), so they don't survive.
+A render chosen as CloudFormation reads back through `aws/cloudformation` (see "CloudFormation" above); one chosen only as CloudFormation holds no `terraform/*.tf`, and the Terraform read-back says so. The render is the record's intent (its edge policies, the permission table, the guardrails), so the read-back is marked `intent`. It must read back as the bindings it came from, with no copies, and rendering again must give the same files. Where the record still holds what was observed, the changes are what applying would record. In the showcase's source/prod: NLB passthrough becomes the ALB the policies ask for, WAF and Shield come back as edge bindings, and broad grants become least-privilege ones. One gap is known: CloudTrail data events aren't rendered yet (milestone 5.7), so they don't survive.
 
 ## Collecting from AWS (`opsdir collect`)
 
@@ -321,8 +323,9 @@ AWS CLI login (`opsdir_adapter_aws.collect`), and imports it like an export you 
   json --region <region>`, with `AWS_USE_FIPS_ENDPOINT=true` when the cloud records FIPS endpoints. Per-bucket settings
   and bucket policies are read for the buckets the environment records only; secret resource policies for the secrets
   it references only. Lambda functions, CodeBuild projects, Scheduler schedules, EventBridge targets, CodePipeline
-  pipelines and CloudFront distributions are projected (`--query`) to the fields the importer reads, so environment
-  variables, inputs, action configuration and origin custom headers are never fetched. A resource without a setting
+  pipelines, CloudFront distributions, launch template versions and Synthetics canaries are projected (`--query`) to
+  the fields the importer reads, so environment variables, inputs, action configuration, origin custom headers and
+  user data are never fetched. A resource without a setting
   (no bucket policy, no Shield Advanced subscription, a key without rotation support) leaves its file out.
 - Organization control policies (service and resource control policies, read by `aws/cli-inventory` as guardrails)
   can be listed only from the organization's management account or a delegated administrator, so they need a second
@@ -393,7 +396,11 @@ Terraform state object only); `lambda:ListFunctions`, `lambda:ListTags`; `events
 `DescribeDBSubnetGroups`, `DescribeDBParameterGroups`, `DescribeDBParameters`, `DescribeDBClusterParameterGroups`,
 `DescribeDBClusterParameters`; `dlm:GetLifecyclePolicies`, `dlm:GetLifecyclePolicy`; `backup:ListBackupVaults`,
 `ListTags`, `ListBackupPlans`, `GetBackupPlan`, `ListBackupSelections`, `GetBackupSelection`;
-`cloudtrail:DescribeTrails`, `GetEventSelectors`, `ListTags`; `iam:GetAccountAuthorizationDetails`;
+`cloudtrail:DescribeTrails`, `GetEventSelectors`, `ListTags`; `autoscaling:DescribeAutoScalingGroups`;
+`ec2:DescribeLaunchTemplateVersions`; `eks:ListClusters`, `DescribeCluster`, `ListNodegroups`, `DescribeNodegroup`,
+`ListAddons`, `DescribeAddon`; `cloudwatch:DescribeAlarms`, `ListTagsForResource`; `logs:DescribeLogGroups`,
+`ListTagsForResource`; `synthetics:DescribeCanaries`; `sns:ListTopics`, `ListTagsForResource`;
+`iam:GetAccountAuthorizationDetails`;
 `sso:ListInstances`, `ListPermissionSets`, `DescribePermissionSet`, `GetInlinePolicyForPermissionSet`,
 `ListManagedPoliciesInPermissionSet`, `ListAccountAssignments`; `cloudformation:DescribeStacks`,
 `ListStackResources`, `GetTemplate` (CloudFormation stacks only). For the organization profile (the management
@@ -545,6 +552,45 @@ for arn in $(aws cloudtrail describe-trails --query 'trailList[].TrailARN' --out
   aws cloudtrail list-tags --resource-id-list "$arn"                             > "$out/cloudtrail/$name-tags.json"
 done
 
+# compute groups: the autoscaling groups and the launch template version each uses (projected: never user data),
+# kept for the groups in the environment's VPC (by their subnets); EKS clusters with their node groups and add-ons
+aws autoscaling describe-auto-scaling-groups                                     > $out/autoscaling-groups.json
+mkdir -p $out/launch-templates $out/eks
+for ref in $(aws autoscaling describe-auto-scaling-groups --query 'AutoScalingGroups[].[LaunchTemplate || MixedInstancesPolicy.LaunchTemplate.LaunchTemplateSpecification][] | [].join(`","`, [LaunchTemplateId, Version || `"$Default"`])' --output text); do
+  id=${ref%%,*}; v=${ref#*,}
+  aws ec2 describe-launch-template-versions --launch-template-id "$id" --versions "$v" \
+    --query '{LaunchTemplateVersions: LaunchTemplateVersions[].{LaunchTemplateId: LaunchTemplateId, LaunchTemplateName: LaunchTemplateName, VersionNumber: VersionNumber, DefaultVersion: DefaultVersion, LaunchTemplateData: {ImageId: LaunchTemplateData.ImageId, InstanceType: LaunchTemplateData.InstanceType, MetadataOptions: {HttpTokens: LaunchTemplateData.MetadataOptions.HttpTokens}}}}' \
+                                                                                 > "$out/launch-templates/$id-${v//\$/}.json"
+done
+for c in $(aws eks list-clusters --query 'clusters[]' --output text); do
+  aws eks describe-cluster --name "$c"                                           > "$out/eks/$c.json"
+  for g in $(aws eks list-nodegroups --cluster-name "$c" --query 'nodegroups[]' --output text); do
+    aws eks describe-nodegroup --cluster-name "$c" --nodegroup-name "$g"         > "$out/eks/$c-nodegroup-$g.json"
+  done
+  for a in $(aws eks list-addons --cluster-name "$c" --query 'addons[]' --output text); do
+    aws eks describe-addon --cluster-name "$c" --addon-name "$a"                 > "$out/eks/$c-addon-$a.json"
+  done
+done
+
+# monitoring: metric alarms, log groups, Synthetics canaries (projected) and SNS topics, each one's tags saved by its
+# name (list-tags-for-resource doesn't name its resource; a log group's name percent-encoded: / as %2F)
+mkdir -p $out/alarm-tags $out/log-group-tags $out/topic-tags
+aws cloudwatch describe-alarms                                                   > $out/alarms.json
+for row in $(aws cloudwatch describe-alarms --query 'MetricAlarms[].join(`","`, [AlarmArn, AlarmName])' --output text); do
+  aws cloudwatch list-tags-for-resource --resource-arn "${row%%,*}"              > "$out/alarm-tags/${row#*,}.json"
+done
+aws logs describe-log-groups                                                     > $out/log-groups.json
+for row in $(aws logs describe-log-groups --query 'logGroups[].join(`","`, [logGroupArn, logGroupName])' --output text); do
+  name=${row#*,}
+  aws logs list-tags-for-resource --resource-arn "${row%%,*}"                    > "$out/log-group-tags/${name//\//%2F}.json"
+done
+aws synthetics describe-canaries --query '{Canaries: Canaries[].{Name: Name, Schedule: Schedule, Tags: Tags, EngineArn: EngineArn, ArtifactS3Location: ArtifactS3Location, ExecutionRoleArn: ExecutionRoleArn, RuntimeVersion: RuntimeVersion}}' \
+                                                                                 > $out/canaries.json
+aws sns list-topics                                                              > $out/topics.json
+for t in $(aws sns list-topics --query 'Topics[].TopicArn' --output text); do
+  aws sns list-tags-for-resource --resource-arn "$t"                             > "$out/topic-tags/${t##*:}.json"
+done
+
 # IAM: roles and policies (AWS managed ones included), key and bucket policies, Identity Center, control policies
 mkdir -p $out/key-policy $out/bucket-policy $out/sso-inline $out/sso-managed $out/org
 ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
@@ -612,7 +658,7 @@ opsdir import --dry-run aws/cloudformation export/
 
 Or let `opsdir collect` run these calls for the stacks collection sources name (see "Collecting from AWS"); it follows nested stacks too.
 
-The template says what each resource is declared with; the stack's resources give the IDs the record matches on (`vpc-…`, `i-…`, ARNs), so a stack without its resource listing is read for nothing and named, and so is a folder without a template. Values are resolved from the stack's parameters (else the template's defaults), pseudo parameters (`AWS::Region`, `AWS::AccountId`, … from the stack ID) and physical IDs: `Ref`, `Fn::Sub`, `Fn::Join`, `Fn::Select`, and `Fn::GetAtt` where it links resources (a Route 53 alias to its load balancer, a NAT gateway or load balancer to its Elastic IP's address). JSON and YAML templates are read, short tags (`!Ref`, `!Sub`, `!GetAtt`, …) included.
+The template says what each resource is declared with; the stack's resources give the IDs the record matches on (`vpc-…`, `i-…`, ARNs), so a stack without its resource listing is read for nothing and named, and so is a folder without a template. The Terraform state of a root kept beside the stacks (`*.tfstate` anywhere in the environment's folder: what an opsdir CloudFormation render keeps in Terraform, applied) is read with them, so one import sees the whole environment. Values are resolved from the stack's parameters (else the template's defaults), pseudo parameters (`AWS::Region`, `AWS::AccountId`, … from the stack ID) and physical IDs: `Ref`, `Fn::Sub`, `Fn::Join`, `Fn::Select`, and `Fn::GetAtt` where it links resources (a Route 53 alias to its load balancer, a NAT gateway or load balancer to its Elastic IP's address). JSON and YAML templates are read, short tags (`!Ref`, `!Sub`, `!GetAtt`, …) included.
 
 What the stacks declare is read into the same resources as Terraform state (the mapping is shared: VPCs, subnets, instances, security groups and ingress rules, load balancers with listeners and target groups, Route 53 records with their routing, Secrets Manager secrets with rotation schedules, KMS keys, S3 buckets, NAT gateways, Lambda functions, EventBridge rules and their targets (`Fn::GetAtt X.Arn` resolves to X's ARN), Scheduler schedules, CodePipeline pipelines, CodeBuild projects, CloudTrail trails (with their event selectors); IAM roles and policies, OIDC providers, control policies and Identity Center; the edge (CloudFront, WAF, Shield, health checks, Resolver rules); RDS instances, Aurora clusters and their subnet and parameter groups, Macie custom data identifiers; Security Hub automation rules and GuardDuty filters; log groups, metric alarms and Synthetics canaries; EBS volumes with their attachments, Lifecycle Manager policies, AWS Backup vaults (with their lock), plans and selections; ARNs built from the stack's partition, region and account), so the table above, roles and `roles.json` apply unchanged. A KMS key's rotation is off unless the template sets `EnableKeyRotation`, as in CloudFormation. Named in the notices:
 

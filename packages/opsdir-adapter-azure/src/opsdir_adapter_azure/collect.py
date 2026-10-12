@@ -10,8 +10,11 @@ environment's), its virtual network (the network binding's provider ref), its re
 Vaults its azkv:// references name and the storage accounts its azblob:// object stores name; the listings first,
 then each listed item's details (record sets per DNS zone, keys per vault, functions per app, Front Door endpoints and
 origins, firewall policy rule collection groups, PostgreSQL and MySQL parameters, backup policies and instances,
-federated credentials). VPN connections are projected to what the importer reads (their shared keys are never
-fetched); Key Vault secrets are listed by name only, never shown.
+federated credentials); then monitoring: metric and log query alerts, action groups, Log Analytics workspaces,
+Application Insights standard web tests, the subscription's policy exemptions and Defender for Cloud alert suppression
+rules. VPN connections, action groups (their receivers: webhook and Logic App URLs can carry tokens) and web tests
+(their request headers) are projected to what the importer reads, so those are never fetched; Key Vault secrets are
+listed by name only, never shown.
 
 Terraform state: (a) by default the state blob a collection source names (ciamCollectionSource, importer
 azure/terraform-state, ciamSourceRef azblob://<account>/<container>/<blob>, a workspace's blob as named), read with
@@ -30,6 +33,10 @@ ARM = {"public": "https://management.azure.com", "usgovernment": "https://manage
 CLOUD_NAMES = {"public": "AzureCloud", "usgovernment": "AzureUSGovernment"}
 VPN_PROJECTION = ("[].{id: id, name: name, type: type, connectionType: connectionType, tags: tags, "
                   "localNetworkGateway2: localNetworkGateway2, virtualNetworkGateway1: virtualNetworkGateway1}")
+ACTION_GROUP_PROJECTION = "[].{id: id, name: name, type: type, tags: tags}"
+WEB_TEST_PROJECTION = ("[].{id: id, name: name, type: type, tags: tags, kind: kind, frequency: frequency, "
+                       "timeout: timeout, enabled: enabled, locations: locations, "
+                       "request: request && {requestUrl: request.requestUrl}}")
 
 
 def _az(*args, query=None):
@@ -111,6 +118,13 @@ def _listings(m, rg, vnet):
         *((("flow-logs.json", _az("network", "watcher", "flow-log", "list", "--location", one(m.cloud, "ciamRegion"))),)
           if one(m.cloud, "ciamRegion") else ()),
         ("activity-log.json", _az("monitor", "diagnostic-settings", "subscription", "list")),
+        ("metric-alerts.json", _az("monitor", "metrics", "alert", "list", *g)),
+        ("query-alerts.json", _az("monitor", "scheduled-query", "list", *g)),
+        ("action-groups.json", _az("monitor", "action-group", "list", *g, query=ACTION_GROUP_PROJECTION)),
+        ("workspaces.json", _az("monitor", "log-analytics", "workspace", "list", *g)),
+        ("web-tests.json", _az("monitor", "app-insights", "web-test", "list", *g, query=WEB_TEST_PROJECTION)),
+        ("policy-exemptions.json", _az("policy", "exemption", "list")),
+        ("suppression-rules.json", _az("security", "alerts-suppression-rule", "list")),
         ("postgres-servers.json", _az("postgres", "flexible-server", "list", *g)),
         ("mysql-servers.json", _az("mysql", "flexible-server", "list", *g)),
         ("disks.json", _az("disk", "list", *g)),

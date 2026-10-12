@@ -1,5 +1,6 @@
 """What every AWS CLI reader needs of the recognized outputs ((path, top-level key, document), ...): their items, the
 documents themselves, a tag list as a dict, and the file name that names what an output doesn't name itself. Pure."""
+from urllib.parse import quote, unquote
 
 
 def tags_of(tags):
@@ -20,3 +21,14 @@ def documents(outs, key):
 def stem(path):
     """A file name without its folder and extension."""
     return path.rsplit("/", 1)[-1].rsplit(".", 1)[0]
+
+
+def file_name(name):
+    """A resource name as a file name (without extension) that named maps back: percent-encoded, so a name with
+    slashes (a log group's) stays one file."""
+    return quote(name or "", safe="")
+
+
+def named(path):
+    """The resource name a file saved under file_name(name) holds."""
+    return unquote(stem(path))

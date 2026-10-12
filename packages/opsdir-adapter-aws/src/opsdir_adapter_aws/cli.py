@@ -52,9 +52,13 @@ matching Terraform resource, so the same mapping reads them as reads Terraform s
   dlm-policies/<policy id>.json                                   -> see cli_volume.py
   Backups: AWS Backup vaults, plans, selections, and their tags saved as backup-tags/<name>.json -> see cli_backup.py
   Control-plane audit trails: CloudTrail's describe-trails, get-event-selectors, list-tags -> see cli_audit.py
-Network resources outside the listed VPCs are counted, not read; secrets, keys, buckets, functions, pipelines and build
-projects are account-wide, so the importer counts rather than lists the ones the record doesn't have and nothing names
-a role for.
+  Compute groups and clusters: autoscaling groups with the launch template versions they use, EKS clusters, node
+  groups and add-ons                                              -> see cli_compute.py
+  Monitoring: CloudWatch metric alarms, log groups, Synthetics canaries, SNS topics, with tags saved by name under
+  alarm-tags/, log-group-tags/, topic-tags/                        -> see cli_monitor.py
+Network resources, autoscaling groups and EKS clusters outside the listed VPCs are counted, not read; secrets, keys,
+buckets, functions, pipelines, build projects, log groups, alarms, canaries and topics are account-wide, so the
+importer counts rather than lists the ones the record doesn't have and nothing names a role for.
 """
 import datetime as dt
 from collections import Counter
@@ -65,6 +69,8 @@ from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_document
 from .cli_audit import KEYS as AUDIT_KEYS, audit_pairs
 from .cli_backup import KEYS as BACKUP_KEYS, backup_pairs, is_backup_tags
+from .cli_compute import KEYS as COMPUTE_KEYS, compute_pairs
+from .cli_monitor import KEYS as MONITOR_KEYS, TAG_KEYS as MONITOR_TAG_KEYS, is_tags_of, monitor_pairs
 from .cli_database import KEYS as DATABASE_KEYS, database_pairs
 from .cli_volume import DLM, KEYS as VOLUME_KEYS, is_dlm_output, root_devices, volume_pairs
 from .cli_storage import storage_folder, storage_pairs
@@ -78,11 +84,12 @@ KEYS = ("Vpcs", "Subnets", "Reservations", "SecurityGroups", "SecurityGroupRules
         "TagDescriptions", "Listeners", "TargetGroups", "TargetHealthDescriptions", "ResourceRecordSets", "SecretList",
         "KeyMetadata", "KeyRotationEnabled", "Buckets", "Functions", "Rules", "Targets", "ScheduleExpression",
         "pipeline", "projects", *IAM_KEYS, *EDGE_KEYS, *NETWORK_KEYS, *DATABASE_KEYS, *VOLUME_KEYS, *BACKUP_KEYS,
-        *AUDIT_KEYS, "Tags")   # Tags last: others carry tags too
+        *AUDIT_KEYS, *COMPUTE_KEYS, *MONITOR_KEYS, "Tags", *MONITOR_TAG_KEYS)   # tags last: others carry tags too
 IN_VPC = ("aws_subnet", "aws_instance", "aws_security_group", "aws_lb", "aws_nat_gateway", "aws_route_table",
           "aws_network_acl", "aws_vpc_endpoint", "aws_ec2_transit_gateway_vpc_attachment", "aws_db_instance",
-          "aws_rds_cluster", "aws_rds_cluster_instance", "aws_db_subnet_group")
-ACCOUNT_WIDE = ("secret", "key", "storage", "job", "identity")
+          "aws_rds_cluster", "aws_rds_cluster_instance", "aws_db_subnet_group", "aws_autoscaling_group",
+          "aws_eks_cluster")
+ACCOUNT_WIDE = ("secret", "key", "storage", "job", "identity", "logs", "alarm", "canary", "channel", "stream")
 
 
 def _outputs(texts):
@@ -287,7 +294,7 @@ def _jobs(outs):
     """(pairs, notices): functions, build projects and pipelines, and the enabled rules and schedules that start
     them."""
     function_tags = {stem(p): doc["Tags"] for p, k, doc in outs if k == "Tags" and isinstance(doc.get("Tags"), dict)
-                     and not is_backup_tags(p)}
+                     and not is_backup_tags(p) and not is_tags_of(p)}
     rules = items(outs, "Rules")
     schedules = [doc for _, k, doc in outs if k == "ScheduleExpression"]
     off = [r for r in rules if not _enabled(r)] + [s for s in schedules if not _enabled(s)]
@@ -343,15 +350,17 @@ def cli_resources(texts, at=None):
     keys, key_notices = _keys(outs)
     jobs, job_notices = _jobs(outs)
     databases, database_notices = database_pairs(outs)
+    compute, compute_notices = compute_pairs(outs)
+    monitoring, monitor_notices = monitor_pairs(outs)
     pairs, scope_notices = _scoped([*_network(outs), *_instances(outs, root_devices(outs)), *_security_groups(outs),
                                     *_load_balancers(outs), *forwarding, *_records(outs), *_secrets(outs), *keys,
                                     *(("aws_s3_bucket", {"bucket": b.get("Name")}) for b in items(outs, "Buckets")),
                                     *jobs, *iam, *edge_pairs(outs, _dns), *network_pairs(outs), *databases,
                                     *storage_pairs(outs), *volume_pairs(outs), *backup_pairs(outs),
-                                    *audit_pairs(outs)])
+                                    *audit_pairs(outs), *compute, *monitoring])
     resources, rule_notices = pairs_resources(pairs)
     return resources, (*unknown, *target_notices, *key_notices, *job_notices, *iam_notices, *database_notices,
-                       *scope_notices, *rule_notices)
+                       *compute_notices, *monitor_notices, *scope_notices, *rule_notices)
 
 
 def read_cli_inventory(files, d, patterns, at=None):

@@ -1,9 +1,14 @@
 """AWS monitoring from Terraform state: CloudWatch log groups as log destinations (retention, 0 never expiring),
 SNS topics an alarm notifies as alert channels (other topics stay stream carriers), CloudWatch metric alarms and
-Synthetics canaries as what the cloud runs, each naming the alert rule or canary it realizes (tag Realizes)."""
+Synthetics canaries as what the cloud runs, each naming the alert rule or canary it realizes (tag Realizes). The AWS
+CLI's outputs of the same resources read as the same record (tags saved by name; a canary's ARN from its engine's)."""
 import json
 
+from opsdir_adapter_aws.cli import cli_resources
 from opsdir_adapter_aws.inventory import state_resources
+
+PAGE, EVENTS = "arn:aws:sns:us-east-1:111122223333:ciam-page", "arn:aws:sns:us-east-1:111122223333:ciam-events"
+LOGIN = "arn:aws:synthetics:us-east-1:111122223333:canary:ciam-login"
 
 
 def _state(*resources):
@@ -13,18 +18,18 @@ def _state(*resources):
 
 
 STATE = _state(
-    ("aws_sns_topic", "page", {"arn": "arn:sns:page", "name": "ciam-page", "tags": {"Role": "alerts-page"}}),
-    ("aws_sns_topic", "events", {"arn": "arn:sns:events", "name": "ciam-events", "tags": {"Role": "audit-events"}}),
+    ("aws_sns_topic", "page", {"arn": PAGE, "name": "ciam-page", "tags": {"Role": "alerts-page"}}),
+    ("aws_sns_topic", "events", {"arn": EVENTS, "name": "ciam-events", "tags": {"Role": "audit-events"}}),
     ("aws_cloudwatch_log_group", "audit", {"arn": "arn:logs:audit", "name": "/ciam/audit", "retention_in_days": 400,
                                            "tags": {"Role": "audit-logs"}}),
     ("aws_cloudwatch_log_group", "debug", {"arn": "arn:logs:debug", "name": "/ciam/debug", "retention_in_days": 0}),
     ("aws_cloudwatch_metric_alarm", "lag", {"arn": "arn:cw:alarm:ds-lag", "alarm_name": "ds-replication-lag",
                                             "namespace": "CIAM/DS", "metric_name": "ReplicationDelay",
-                                            "alarm_actions": ["arn:sns:page"], "ok_actions": ["arn:sns:page"],
+                                            "alarm_actions": [PAGE], "ok_actions": [PAGE],
                                             "tags": {"Realizes": "replication-lag"}}),
     ("aws_cloudwatch_metric_alarm", "math", {"arn": "arn:cw:alarm:errors", "alarm_name": "ldaps-errors",
                                              "metric_query": [{"id": "e1"}]}),
-    ("aws_synthetics_canary", "login", {"arn": "arn:synthetics:login", "name": "ciam-login",
+    ("aws_synthetics_canary", "login", {"arn": LOGIN, "name": "ciam-login",
                                         "schedule": [{"expression": "rate(5 minutes)"}],
                                         "tags": {"Realizes": "login"}}))
 
@@ -35,8 +40,8 @@ def _of(kind):
 
 def test_a_topic_an_alarm_notifies_is_an_alert_channel_and_others_carry_streams():
     assert {ref: (r.attrs, r.role) for ref, r in _of("channel").items()} == {
-        "arn:sns:page": ({"ciamChannelKind": ("topic",)}, "alerts-page")}
-    assert set(_of("stream")) == {"arn:sns:events"}
+        PAGE: ({"ciamChannelKind": ("topic",)}, "alerts-page")}
+    assert set(_of("stream")) == {EVENTS}
 
 
 def test_log_groups_keep_logs_for_their_retention():
@@ -49,8 +54,38 @@ def test_alarms_and_canaries_name_what_they_realize():
     lag = alarms["arn:cw:alarm:ds-lag"]
     assert (lag.name, lag.role, lag.attrs) == ("ds-replication-lag", "alarm-replication-lag", {
         "ciamMetric": ("CIAM/DS ReplicationDelay",), "ciamRealizes": ("replication-lag",),
-        "ciamNotifies": ("arn:sns:page",)})
+        "ciamNotifies": (PAGE,)})
     assert (alarms["arn:cw:alarm:errors"].attrs, alarms["arn:cw:alarm:errors"].role) == (
         {"ciamMetric": ("metric query",)}, None)                     # untagged: named, not recorded
-    login = canaries["arn:synthetics:login"]
+    login = canaries[LOGIN]
     assert (login.role, login.attrs) == ("canary-login", {"ciamInterval": ("5m",), "ciamRealizes": ("login",)})
+
+
+CLI = {
+    "alarms.json": {"MetricAlarms": [
+        {"AlarmArn": "arn:cw:alarm:ds-lag", "AlarmName": "ds-replication-lag", "Namespace": "CIAM/DS",
+         "MetricName": "ReplicationDelay", "AlarmActions": [PAGE], "OKActions": [PAGE], "InsufficientDataActions": []},
+        {"AlarmArn": "arn:cw:alarm:errors", "AlarmName": "ldaps-errors", "Metrics": [{"Id": "e1"}]}]},
+    "alarm-tags/ds-replication-lag.json": {"Tags": [{"Key": "Realizes", "Value": "replication-lag"}]},
+    "log-groups.json": {"logGroups": [
+        {"logGroupName": "/ciam/audit", "arn": "arn:logs:audit:*", "logGroupArn": "arn:logs:audit",
+         "retentionInDays": 400},
+        {"logGroupName": "/ciam/debug", "arn": "arn:logs:debug:*"}]},
+    "log-group-tags/%2Fciam%2Faudit.json": {"tags": {"Role": "audit-logs"}},
+    "canaries.json": {"Canaries": [
+        {"Name": "ciam-login", "Schedule": {"Expression": "rate(5 minutes)"}, "Tags": {"Realizes": "login"},
+         "EngineArn": "arn:aws:lambda:us-east-1:111122223333:function:cwsyn-ciam-login-1a2b:3"},
+        {"Name": "ciam-new", "Schedule": {"Expression": "rate(1 hour)"}}]},
+    "topics.json": {"Topics": [{"TopicArn": PAGE}, {"TopicArn": EVENTS}]},
+    "topic-tags/ciam-page.json": {"Tags": [{"Key": "Role", "Value": "alerts-page"}]},
+    "topic-tags/ciam-events.json": {"Tags": [{"Key": "Role", "Value": "audit-events"}]}}
+KINDS = ("channel", "stream", "logs", "alarm", "canary")
+
+
+def test_the_cli_reads_the_same_monitoring_as_state():
+    resources, notices = cli_resources({p: json.dumps(doc) for p, doc in CLI.items()})
+    assert {r.ref: r for r in resources if r.kind in KINDS} == \
+        {r.ref: r for r in state_resources(STATE)[0] if r.kind in KINDS}
+    assert ("synthetics: canary ciam-new has no engine ARN to tell its ARN by (not created yet?); not read"
+            in notices)
+    assert not [n for n in notices if "not an AWS CLI output" in n]       # every tags file is recognized

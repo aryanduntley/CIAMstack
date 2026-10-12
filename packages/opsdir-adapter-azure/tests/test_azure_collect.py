@@ -14,7 +14,8 @@ from opsdir.core.directory import make_entry
 from opsdir.core.environment import env_model
 from opsdir_adapter_azure.adapter import ADAPTER
 from opsdir_adapter_azure.cli import read_cli_inventory
-from opsdir_adapter_azure.collect import COLLECTORS, VPN_PROJECTION, identity_check, inventory_steps, state_steps
+from opsdir_adapter_azure.collect import (ACTION_GROUP_PROJECTION, COLLECTORS, VPN_PROJECTION, WEB_TEST_PROJECTION,
+                                          identity_check, inventory_steps, state_steps)
 
 # the CLI reader's own fixtures (its record and the outputs saved by hand), loaded by path: one source of truth
 _SPEC = importlib.util.spec_from_file_location("azure_cli_fixtures",
@@ -42,7 +43,9 @@ OPERATIONS = {
     "disk list", "dataprotection backup-vault list", "dataprotection backup-policy list",
     "dataprotection backup-instance list", "lock list", "identity list", "identity federated-credential list",
     "role assignment list", "role definition list", "rest", "keyvault list", "keyvault show", "policy assignment list",
-    "network bastion list"}
+    "network bastion list", "monitor metrics alert list", "monitor scheduled-query list", "monitor action-group list",
+    "monitor log-analytics workspace list", "monitor app-insights web-test list", "policy exemption list",
+    "security alerts-suppression-rule list"}
 NEVER = ("secret show", "secret download", "appsettings", "config", "show-connection-string", "keys list",
          "get-shared-key", "connection-string", "--debug")
 
@@ -132,6 +135,10 @@ def test_exactly_the_reviewed_operations_and_never_a_secret():
     assert {a[a.index("--storage-account") + 1] for a in ran if "--storage-account" in a} == {"stciamprod"}
     vpn = next(a for a in ran if _words(a) == "network vpn-connection list")
     assert vpn[vpn.index("--query") + 1] == VPN_PROJECTION                      # shared keys never fetched
+    groups, tests = (next(a for a in ran if _words(a) == w) for w in ("monitor action-group list",
+                                                                      "monitor app-insights web-test list"))
+    assert groups[groups.index("--query") + 1] == ACTION_GROUP_PROJECTION       # receivers' URLs never fetched
+    assert tests[tests.index("--query") + 1] == WEB_TEST_PROJECTION             # request headers never fetched
     rest = [a for a in ran if _words(a) == "rest"]
     assert all(a[2:4] == ["--method", "get"] and a[5].startswith(f"https://management.azure.com/subscriptions/{SUB_ID}/")
                for a in rest) and len(rest) == 2

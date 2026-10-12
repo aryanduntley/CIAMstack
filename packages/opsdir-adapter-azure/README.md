@@ -42,7 +42,9 @@ Terraform is the default render target. A render can be written as Bicep, as ARM
 - **API versions.** The newest stable in Microsoft's template reference, checked against the Bicep CLI's type index. Preview only where none is stable: PIM eligibility requests (`2024-09-01-preview`), Security automations (`2019-01-01-preview`), policy exemptions (`2026-01-01-preview`), diagnostic settings (`2021-05-01-preview`).
 - **Azure Government.** The same templates; the Terraform's Azure Government comments come with them. Data Protection backup vaults and the Entra log export carry a comment that Microsoft's Azure Government documentation doesn't state their availability there.
 - **Checked.** `bicep build` and `bicep lint` pass (errors fail, warnings are shown: `opsdir/scripts/validate-bicep.sh`; tests marked `bicep`), and the ARM JSON equals what `bicep build` compiles. That holds for the showcase and for the Azure sample (`examples/showcase/tests/terraform/azure_sample.py`, which renders every type the renderers write), in eastus2 and usgovvirginia. Every Terraform resource goes exactly one place: a template's resource, part of one, or the Terraform root with its reason.
-- **Not yet.** A deployment (`az deployment group/sub what-if`) against a subscription, and whether a PIM eligibility request deploys again unchanged (milestone 7.2). Reading the templates back (milestone 5.6c): a render chosen only as Bicep or ARM reads nothing back today, and says so.
+- **Placements.** Beside each root's templates, `placements.json` says where every Terraform resource went, by address: the template and resource (`in`, `id`), the resource it is part of (`part of`), or the Terraform root and why it stays there (`why`). Moving an environment from Terraform to Bicep or ARM, it says what to import where; reading the render back, what each template resource realizes.
+- **Read back** (the round trip, `rendered_deployments` in `rendered_state.py`; milestone 5.6c), from the ARM JSON (`arm/`): the `.bicep` is the same deployment (the `bicep` tests prove it), so a render chosen only as Bicep reads nothing back, and the Terraform read-back says so. Each template becomes a deployment folder as the CLI saves one: the template, `az deployment group show` (the record's subscription, the template's resource group, its parameters' defaults) and `az group show` (the group in the environment's region); ARM ids come from names, so nothing else is assigned. The kept Terraform root becomes the state applying it would record, its variables the templates' outputs. `azure/arm` reads them together, as one import, and must read the same record as the Terraform read-back does (`examples/showcase/tests/unit/test_round_trip.py`, `test_arm_coverage.py`). Where it can't, the reason is inherent: a lookup is an `existing` reference, not a resource, so only the read-back that reads a looked-up kind judges the record's bindings of that kind; and what Azure assigns at deployment that no template holds (a managed identity's client id) isn't there. Budgets, Defender's identity coverage and the resource-change alert are read back from Terraform only until milestone 5.6b; kinds the Bicep/ARM render never writes (scale sets, AKS, Service Bus, Event Hubs, Event Grid, Communication Services) aren't read from a template until milestone 5.6d.
+- **Not yet.** A deployment (`az deployment group/sub what-if`) against a subscription, and whether a PIM eligibility request deploys again unchanged (milestone 7.2).
 
 
 ## Kubernetes workloads
@@ -313,7 +315,7 @@ Named, not read: disabled policies, grants the record doesn't express, policies 
 - So a data source looking something up by name and resource group finds what the record holds.
 - A resource realizing a binding the record holds (`REALIZES`) gets its provider reference, plus what the record holds of what Azure assigned it (`RECORDED`: a managed identity's client id). A helper identity gets synthetic principal and client ids.
 
-The render is the record's intent, so the read-back is marked `intent`: no copies, and the render must be a fixed point. Provider references aren't fed back into the second render: in the round trip they're synthetic, and identity is checked as drift.
+A render chosen as ARM reads back through `azure/arm` (see "Bicep and ARM template JSON" above). The render is the record's intent, so the read-back is marked `intent`: no copies, and the render must be a fixed point. Provider references aren't fed back into the second render: in the round trip they're synthetic, and identity is checked as drift.
 
 In target/prod, applying would record the edge facts the policies ask for, WAF policies as edge bindings, scoped Key Vault grants, and references for the designed route table and flow log. One gap is known: Defender for Cloud has no plan for identity (Entra ID Protection isn't rendered), so the record's identity coverage doesn't survive.
 
@@ -331,8 +333,9 @@ Azure CLI login (`opsdir_adapter_azure.collect`), and imports it like an export 
   resource group (its network binding's `ciamResourceGroup`, else the environment's), its virtual network, its region,
   the Key Vaults its `azkv://` references name and the storage accounts its object stores name; then each listed
   item's details. `az rest` reads (PIM eligibility, deny assignments) are `--method get` against the cloud's own
-  management endpoint (`management.usgovcloudapi.net` in Azure Government). VPN connections are projected to what the
-  importer reads (shared keys are never fetched); Key Vault secrets are listed by name, never shown.
+  management endpoint (`management.usgovcloudapi.net` in Azure Government). VPN connections, action groups and
+  Application Insights web tests are projected to what the importer reads (shared keys, receivers' webhook and Logic
+  App URLs, and request headers are never fetched); Key Vault secrets are listed by name, never shown.
 - `azure/terraform-state`: (a) by default the state blob a collection source names, read with `az storage blob download
   --auth-mode login -o none` to standard output (no `terraform init`, no lock):
 
@@ -347,7 +350,8 @@ Azure CLI login (`opsdir_adapter_azure.collect`), and imports it like an export 
   (b) `--terraform-dir DIR`: `terraform state pull` in that initialized working directory.
 
 Least privilege: `Reader` on the subscription (management-plane reads: networks, compute, role assignments and
-definitions, policy assignments, PIM eligibility, deny assignments, diagnostic settings), `Key Vault Reader` on each
+definitions, policy assignments and exemptions, PIM eligibility, deny assignments, diagnostic settings, alerts,
+action groups, workspaces, web tests, alert suppression rules), `Key Vault Reader` on each
 vault the record names (key and secret metadata, never values), and `Storage Blob Data Reader` on the Terraform state
 container only. The tests pin every command the collector may run (`tests/test_azure_collect.py`, OPERATIONS) and
 refuse any that returns secret material (secret show, app settings, connection strings, shared keys, storage keys).
@@ -463,11 +467,24 @@ for kv in $(az keyvault list --query '[].name' -o tsv); do az keyvault show -n "
 az policy assignment list                                               > $out/policy-assignments.json
 az network bastion list                                                 > $out/bastions.json
 
+# monitoring: metric and log query alerts, action groups (projected: their receivers' URLs can carry tokens), Log
+# Analytics workspaces, standard web tests (projected: their request headers; `az monitor app-insights` is the
+# application-insights CLI extension), and the subscription's policy exemptions and alert suppression rules
+az monitor metrics alert list -g $RG -o json                            > $out/metric-alerts.json
+az monitor scheduled-query list -g $RG -o json                          > $out/query-alerts.json
+az monitor action-group list -g $RG --query '[].{id: id, name: name, type: type, tags: tags}' -o json \
+                                                                        > $out/action-groups.json
+az monitor log-analytics workspace list -g $RG -o json                  > $out/workspaces.json
+az monitor app-insights web-test list -g $RG --query '[].{id: id, name: name, type: type, tags: tags, kind: kind, frequency: frequency, timeout: timeout, enabled: enabled, locations: locations, request: request && {requestUrl: request.requestUrl}}' -o json \
+                                                                        > $out/web-tests.json
+az policy exemption list -o json                                        > $out/policy-exemptions.json
+az security alerts-suppression-rule list -o json                        > $out/suppression-rules.json
+
 opsdir import --dry-run azure/cli-inventory export/
 opsdir import --change CHG-… azure/cli-inventory export/
 ```
 
-The outputs are read into the same resources as Terraform state (the mapping is shared), so the tables above, what changes, roles and `roles.json` apply unchanged. A key's type comes from `key show` (`RSA-HSM` → `hsm`) and its automatic rotation from its rotation policy (a `Rotate` action); without those outputs the record's values are kept. NSG default rules (`AllowVnetInBound`, …) aren't read. Differences in scope:
+The outputs are read into the same resources as Terraform state (the mapping is shared), so the tables above, what changes, roles and `roles.json` apply unchanged. A VM is Linux or Windows by its OS disk's `osType` (an ARM template's by its `windowsConfiguration`). A key's type comes from `key show` (`RSA-HSM` → `hsm`) and its automatic rotation from its rotation policy (a `Rotate` action); without those outputs the record's values are kept. NSG default rules (`AllowVnetInBound`, …) aren't read. Differences in scope:
 
 - **Network resources:** subnets, interfaces and VMs are read only inside the virtual networks `vnet list` returns; others are counted. Scope the other lists by resource group, as above.
 - **Account-wide listings** (Key Vault secrets and keys, storage containers) cover a whole vault or account: the ones the record doesn't have and nothing names a role for are counted with a few examples. Certificate-backed secrets and keys (`managed`) are skipped. Function apps are listed per resource group and counted like the account-wide listings; their app settings are never read.
@@ -491,6 +508,8 @@ opsdir import --dry-run azure/arm export/
 ```
 
 Expressions are evaluated where they depend only on what the deployment knows: parameters (the deployment's values, else a parameters file's, else the template's defaults), variables, `concat`, `format`, `resourceId`, `subscriptionResourceId`, `tenantResourceId`, `extensionResourceId`, `subscription()`, `resourceGroup()` (its location from `az group show`), `equals`, `if`, `toLower`, `toUpper`, `string`, `replace`, `split`, `first`, `last`, and `guid` (a stable stand-in of its arguments, not Azure's own GUID: the names it makes, a role assignment's, are never what the record matches on). `reference()` of a user-assigned identity gives its principal as the symbol `principal:<its ID>`, which the identity's own principal is too: a role assignment joins its identity within the deployment (a system-assigned identity's principal stays unknown). Built-in roles are named from the adapter's table of them, as the Terraform render looks them up. Anything else (the rest of `reference`, `listKeys`, `uniqueString`, `copyIndex`, `union`, …) is counted per deployment, and the attributes it computes keep the record's values; so do values Azure assigns at deployment (a public IP's address, a managed identity's client id). **Secure parameters are never read**, not even from a parameters file, and a Key Vault secret's `value` is dropped before anything is evaluated.
+
+The Terraform state of a root kept beside the deployments (`*.tfstate` anywhere in the environment's folder: what an opsdir Bicep/ARM render keeps in Terraform, applied) is read with them, so one import sees the whole environment.
 
 Each resource the template declares (nested child resources included; `existing` references and resources whose condition is false excluded; when the deployment is given, only those it produced) is given its ARM ID where the deployment puts it (its resource group, or the subscription or tenant a deployment there runs at) and read like the CLI's output of the same resource (fields in any case: a public zone's `MXRecords`, a web test's `Frequency`), so the tables above, roles and `roles.json` apply unchanged. Without `az deployment group show` the subscription and resource group are unknown: links within the template still resolve, but disk encryption sets aren't read (their ID is what the record keeps for the key). Named in the notices: functions not evaluated, resources that couldn't be named (loops over `copyIndex()`), declared resources the deployment didn't produce, and resource types not read.
 

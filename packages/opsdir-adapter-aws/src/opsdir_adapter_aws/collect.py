@@ -47,6 +47,9 @@ from opsdir.core.environment import of_class, one_role
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.governance.collection import collection_sources
 from .account import account_id
+from .cli_compute import launch_template_ref
+from .cli_monitor import tags_path
+from .cli_outputs import file_name
 from .cloudformation import NOT_CREATED
 from .storage import bucket_of
 
@@ -64,6 +67,14 @@ PROJECTIONS = {
                      "ViewerCertificate.MinimumProtocolVersion}}}}",
     "stack": "{Stacks: Stacks[].{StackId: StackId, StackName: StackName, StackStatus: StackStatus, "
              "Parameters: Parameters}}",
+    "launch-template-versions": "{LaunchTemplateVersions: LaunchTemplateVersions[].{LaunchTemplateId: "
+                                "LaunchTemplateId, LaunchTemplateName: LaunchTemplateName, VersionNumber: "
+                                "VersionNumber, DefaultVersion: DefaultVersion, LaunchTemplateData: {ImageId: "
+                                "LaunchTemplateData.ImageId, InstanceType: LaunchTemplateData.InstanceType, "
+                                "MetadataOptions: {HttpTokens: LaunchTemplateData.MetadataOptions.HttpTokens}}}}",
+    "canaries": "{Canaries: Canaries[].{Name: Name, Schedule: Schedule, Tags: Tags, EngineArn: EngineArn, "
+                "ArtifactS3Location: ArtifactS3Location, ExecutionRoleArn: ExecutionRoleArn, "
+                "RuntimeVersion: RuntimeVersion}}",
 }
 STACK_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9-]{0,127}$")
 STACK_ARN = re.compile(r"^arn:aws[a-z-]*:cloudformation:([a-z0-9-]+):(\d{12}):stack/([A-Za-z][A-Za-z0-9-]{0,127})/"
@@ -175,6 +186,12 @@ def _listings(m, vpc):
         ("backup-vaults.json", _aws(m, "backup", "list-backup-vaults")),
         (f"{WORK}backup-plans.json", _aws(m, "backup", "list-backup-plans")),
         ("trails.json", _aws(m, "cloudtrail", "describe-trails")),
+        ("autoscaling-groups.json", _aws(m, "autoscaling", "describe-auto-scaling-groups")),
+        (f"{WORK}eks-clusters.json", _aws(m, "eks", "list-clusters")),
+        ("alarms.json", _aws(m, "cloudwatch", "describe-alarms")),
+        ("log-groups.json", _aws(m, "logs", "describe-log-groups")),
+        ("canaries.json", _aws(m, "synthetics", "describe-canaries", query=PROJECTIONS["canaries"])),
+        ("topics.json", _aws(m, "sns", "list-topics")),
         ("iam.json", _aws(m, "iam", "get-account-authorization-details")),
         (f"{WORK}sso-instances.json", _aws(m, "sso-admin", "list-instances")),
         *((f"bucket-policy/{b}.json" if folder == "bucket-policy" else f"{folder}/{b}.json",
@@ -268,10 +285,52 @@ def _details(m, done):
             (f"cloudtrail/{_last(arn)}-selectors.json", _aws(m, "cloudtrail", "get-event-selectors", "--trail-name",
                                                              arn)),
             (f"cloudtrail/{_last(arn)}-tags.json", _aws(m, "cloudtrail", "list-tags", "--resource-id-list", arn)))),
+        *_compute_details(m, done),
+        *_monitor_details(m, done),
         *(((f"{WORK}permission-sets.json", _aws(m, "sso-admin", "list-permission-sets", "--instance-arn", sso)),)
           if sso else ()),
         *((p, c) for ps in (_doc(done, f"{WORK}permission-sets.json").get("PermissionSets") or ()) if sso
           for p, c in _permission_set(m, done, sso, ps)))
+
+
+def _compute_details(m, done):
+    """(path, call) of the launch template versions the autoscaling groups use, and each EKS cluster with its node
+    groups and add-ons. User data is never fetched (projected out)."""
+    refs = dict.fromkeys((ref["id"], ref["name"], ref["version"] or "$Default")
+                         for g in _doc(done, "autoscaling-groups.json").get("AutoScalingGroups") or ()
+                         if isinstance(g, dict) for ref in (launch_template_ref(g),) if ref["id"] or ref["name"])
+    clusters = [c for c in _doc(done, f"{WORK}eks-clusters.json").get("clusters") or () if isinstance(c, str)]
+
+    def listed(path, key):
+        return [x for x in _doc(done, path).get(key) or () if isinstance(x, str)]
+    return (
+        *((f"launch-templates/{file_name(i or n)}-{file_name(v)}.json",
+           _aws(m, "ec2", "describe-launch-template-versions",
+                *(("--launch-template-id", i) if i else ("--launch-template-name", n)), "--versions", v,
+                query=PROJECTIONS["launch-template-versions"]))
+          for i, n, v in refs),
+        *((p, c) for name in clusters for p, c in (
+            (f"eks/{name}.json", _aws(m, "eks", "describe-cluster", "--name", name)),
+            (f"{WORK}eks-nodegroups-{name}.json", _aws(m, "eks", "list-nodegroups", "--cluster-name", name)),
+            (f"{WORK}eks-addons-{name}.json", _aws(m, "eks", "list-addons", "--cluster-name", name)))),
+        *((f"eks/{name}-nodegroup-{g}.json",
+           _aws(m, "eks", "describe-nodegroup", "--cluster-name", name, "--nodegroup-name", g))
+          for name in clusters for g in listed(f"{WORK}eks-nodegroups-{name}.json", "nodegroups")),
+        *((f"eks/{name}-addon-{a}.json", _aws(m, "eks", "describe-addon", "--cluster-name", name, "--addon-name", a))
+          for name in clusters for a in listed(f"{WORK}eks-addons-{name}.json", "addons")))
+
+
+def _monitor_details(m, done):
+    """(path, call) of the tags of each metric alarm, log group and SNS topic, saved by name."""
+    return (
+        *((tags_path("alarm-tags", name), _aws(m, "cloudwatch", "list-tags-for-resource", "--resource-arn", arn))
+          for arn, name in _items(done, "alarms.json", "MetricAlarms", "AlarmArn", "AlarmName") if arn and name),
+        *((tags_path("log-group-tags", name), _aws(m, "logs", "list-tags-for-resource", "--resource-arn",
+                                                   arn or (star or "").removesuffix(":*")))
+          for name, arn, star in _items(done, "log-groups.json", "logGroups", "logGroupName", "logGroupArn", "arn")
+          if name and (arn or star)),
+        *((tags_path("topic-tags", _last(arn)), _aws(m, "sns", "list-tags-for-resource", "--resource-arn", arn))
+          for (arn,) in _items(done, "topics.json", "Topics", "TopicArn") if arn))
 
 
 def _permission_set(m, done, sso, ps):

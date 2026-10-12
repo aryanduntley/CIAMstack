@@ -30,6 +30,17 @@ _SPEC_CFN = importlib.util.spec_from_file_location("aws_cfn_fixtures",
 _CFN = importlib.util.module_from_spec(_SPEC_CFN)
 _SPEC_CFN.loader.exec_module(_CFN)
 
+
+def _fixtures(name):
+    """Another test module's fixtures, loaded by path."""
+    spec = importlib.util.spec_from_file_location(f"aws_{name}_fixtures", pathlib.Path(__file__).with_name(name))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+_COMPUTE, _MONITOR = _fixtures("test_aws_compute.py"), _fixtures("test_aws_observability.py")
+
 ACCOUNT = "111122223333"
 # every (service, operation) the cli-inventory collector may run: reviewed, read-only, no secret values
 OPERATIONS = {
@@ -66,7 +77,12 @@ OPERATIONS = {
     ("cloudtrail", "list-tags"), ("iam", "get-account-authorization-details"), ("sso-admin", "list-instances"),
     ("sso-admin", "list-permission-sets"), ("sso-admin", "describe-permission-set"),
     ("sso-admin", "get-inline-policy-for-permission-set"), ("sso-admin", "list-managed-policies-in-permission-set"),
-    ("sso-admin", "list-account-assignments")}
+    ("sso-admin", "list-account-assignments"), ("autoscaling", "describe-auto-scaling-groups"),
+    ("ec2", "describe-launch-template-versions"), ("eks", "list-clusters"), ("eks", "describe-cluster"),
+    ("eks", "list-nodegroups"), ("eks", "describe-nodegroup"), ("eks", "list-addons"), ("eks", "describe-addon"),
+    ("cloudwatch", "describe-alarms"), ("cloudwatch", "list-tags-for-resource"), ("logs", "describe-log-groups"),
+    ("logs", "list-tags-for-resource"), ("synthetics", "describe-canaries"), ("sns", "list-topics"),
+    ("sns", "list-tags-for-resource")}
 NEVER = ("get-secret-value", "get-parameter", "get-parameters", "--with-decryption", "describe-instance-attribute",
          "get-function", "get-function-configuration", "get-object", "--debug")
 SSO = "arn:aws:sso:::instance/ssoins-1"
@@ -346,3 +362,53 @@ def test_an_organization_profile_source_that_cant_be_used_safely():
     assert inventory_problems(m.d, _with_profile(m, "a", "--debug"), {}) == (
         "more than one aws-profile:// collection source: name one profile for the organization's policies",
         "aws-profile://--debug: not a profile name opsdir passes to the AWS CLI")
+
+
+def _compute_monitor_answer(argv):
+    """What the AWS CLI prints for the compute and monitoring calls, from those readers' own fixtures."""
+    c, mo, op = _COMPUTE.CLI, _MONITOR.CLI, tuple(argv[1:3])
+    arg = dict(zip(argv[3::1], argv[4::1]))
+    eks = [p for p in c if p.startswith("eks/")]
+    if op == ("ec2", "describe-launch-template-versions"):
+        assert (arg["--launch-template-id"], arg["--versions"]) == ("lt-0123", "$Latest")
+        return json.dumps(c["launch-templates/lt-0123-$Latest.json"]), None
+    if op == ("eks", "describe-cluster"):
+        return json.dumps(c[f"eks/{arg['--name']}.json"]), None
+    if op in (("eks", "describe-nodegroup"), ("eks", "describe-addon")):
+        kind = op[1].split("-")[1]
+        return json.dumps(c[f"eks/{arg['--cluster-name']}-{kind}-{arg['--' + kind + '-name']}.json"]), None
+    if op[1] == "list-tags-for-resource":
+        folder = {"cloudwatch": "alarm-tags", "logs": "log-group-tags", "sns": "topic-tags"}[op[0]]
+        name = {"arn:cw:alarm:ds-lag": "ds-replication-lag", "arn:logs:audit": "%2Fciam%2Faudit",
+                _MONITOR.PAGE: "ciam-page", _MONITOR.EVENTS: "ciam-events"}.get(arg["--resource-arn"])
+        return json.dumps(mo.get(f"{folder}/{name}.json", {"Tags": []} if op[0] != "logs" else {"tags": {}})), None
+    listed = {("autoscaling", "describe-auto-scaling-groups"): c["autoscaling-groups.json"],
+              ("eks", "list-clusters"): {"clusters": ["ciam-prod"]},
+              ("eks", "list-nodegroups"): {"nodegroups": [p.split("-nodegroup-")[1][:-5] for p in eks
+                                                          if "-nodegroup-" in p]},
+              ("eks", "list-addons"): {"addons": [p.split("-addon-")[1][:-5] for p in eks if "-addon-" in p]},
+              ("cloudwatch", "describe-alarms"): mo["alarms.json"], ("logs", "describe-log-groups"):
+              mo["log-groups.json"], ("synthetics", "describe-canaries"): mo["canaries.json"],
+              ("sns", "list-topics"): mo["topics.json"]}
+    return (json.dumps(listed[op]), None) if op in listed else _answer(argv)
+
+
+def test_compute_groups_clusters_and_monitoring_collected_read_as_saved_by_hand():
+    m = _model(ciamAccountRef=ACCOUNT)
+    c = collect("aws/cli-inventory", COLLECTORS[0], m.d, m, lambda call: _compute_monitor_answer(call.argv))
+    assert c.problems == ()
+    ran = [shlex.split(x.provenance) for x in c.calls]
+    assert {tuple(a[1:3]) for a in ran} <= OPERATIONS
+    versions = next(a for a in ran if a[2] == "describe-launch-template-versions")
+    assert versions[versions.index("--query") + 1] == PROJECTIONS["launch-template-versions"]    # never user data
+    canaries = next(a for a in ran if a[2] == "describe-canaries")
+    assert canaries[canaries.index("--query") + 1] == PROJECTIONS["canaries"]
+    files = {p.split("/", 2)[2]: t for p, t in c.files.items()}
+    assert {"launch-templates/lt-0123-%24Latest.json", "eks/ciam-prod-nodegroup-system.json",
+            "eks/ciam-prod-addon-vpc-cni.json", "log-group-tags/%2Fciam%2Faudit.json",
+            "topic-tags/ciam-events.json"} <= set(files)
+    network = {p: json.dumps(_COMPUTE.CLI[p]) for p in ("vpcs.json", "subnets.json")}
+    kinds = ("compute", "cluster", *_MONITOR.KINDS)
+    collected = cli_resources({**files, **network})[0]                  # the compute fixtures' VPC
+    by_hand = cli_resources({p: json.dumps(d) for p, d in {**_COMPUTE.CLI, **_MONITOR.CLI}.items()})[0]
+    assert {r.ref: r for r in collected if r.kind in kinds} == {r.ref: r for r in by_hand if r.kind in kinds} != {}

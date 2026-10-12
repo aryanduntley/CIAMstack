@@ -1,14 +1,15 @@
 """Azure CLI outputs read into an environment's servers and bindings: outputs that match the record change nothing,
 whatever the files are called; what the CLI says replaces the record's values (an HSM key that rotates, found through
 `key show` and its rotation policy); subnets listed on their own or inside their network are read once; VMs outside the
-listed virtual networks are counted; NSG default rules aren't read; account-wide listings count what the record doesn't
+listed virtual networks are counted; Windows VMs read as Windows (the OS disk's osType, else a Windows configuration);
+NSG default rules aren't read; account-wide listings count what the record doesn't
 have; a secret's value never appears."""
 import json
 
 from opsdir.connectors.importing import import_changes
 from opsdir.core.directory import get, make_directory, one
 from opsdir_adapter_azure.adapter import ADAPTER
-from opsdir_adapter_azure.cli import cli_resources, read_cli_inventory, vault_object
+from opsdir_adapter_azure.cli import cli_resources, items_pairs, read_cli_inventory, vault_object
 from support import SUPERS, after_import, imported_directory
 
 ENV = "env=prod,cloud=main,ou=environments,dc=ciam-ops"
@@ -186,6 +187,24 @@ def test_vms_outside_the_listed_networks_are_counted_and_default_rules_not_read(
     assert set(imported.notices) == {
         "azurerm_linux_virtual_machine (1): outside the listed virtual networks (vnet-ciam-prod); not read",
         "azurerm_network_interface (1): outside the listed virtual networks (vnet-ciam-prod); not read"}
+
+
+def test_windows_vms_read_as_windows_by_their_os_disk_or_configuration():
+    linux, cli, template = _vm("ds-1", "ds", "Standard_D4s_v5", "ds1.example.test"), \
+        _vm("win-1", "ops", "Standard_D2s_v5", "win1.example.test"), _vm("win-2", "ops", "Standard_D2s_v5", None)
+    cli = {**cli, "storageProfile": {**cli["storageProfile"], "osDisk": {"osType": "Windows"}}}
+    template = {**template, "osProfile": {"computerName": "win-2", "windowsConfiguration": {"timeZone": "UTC"}}}
+    pairs, _ = items_pairs([("microsoft.compute/virtualmachines", vm) for vm in (linux, cli, template)])
+    assert [(t, a["name"]) for t, a in pairs if "virtual_machine" in t] == [
+        ("azurerm_linux_virtual_machine", "ds-1"), ("azurerm_windows_virtual_machine", "win-1"),
+        ("azurerm_windows_virtual_machine", "win-2")]
+    other = [{**cli, "networkProfile": {"networkInterfaces": [{"id": f"{NET}/networkInterfaces/nic-jump"}]}}]
+    nic = [{**_nic("jump", "snet-x", "10.99.0.4"),
+            "ipConfigurations": [{"name": "primary", "privateIPAddress": "10.99.0.4",
+                                  "subnet": {"id": f"{NET}/virtualNetworks/vnet-other/subnets/snet-x"}}]}]
+    imported = read_cli_inventory(_outputs(**{"vms-other.json": other, "nics-other.json": nic}), _record(), ())
+    assert "azurerm_windows_virtual_machine (1): outside the listed virtual networks (vnet-ciam-prod); not read" in \
+        imported.notices
 
 
 def test_account_wide_listings_count_what_the_record_does_not_have():
