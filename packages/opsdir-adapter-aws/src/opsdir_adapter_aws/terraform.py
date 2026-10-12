@@ -28,6 +28,7 @@ from .suppressions import render_suppressions
 from .budgets import BILLING, BILLING_REGION, needs_billing_provider, render_budgets
 from .quotas import render_quota_requests
 from .cdn import fronted
+from .cfn_types import cloudformation_files
 from .dns import RESOLVER_ENDPOINT, records, resolver_rules, service_record
 from .edge import US_EAST_1, alb_service, health_check, probe_ingress, servers_backend, shield, stickiness
 from .fluent_bit import fluent_bit_clusters, fluent_bit_notes, render_fluent_bit
@@ -41,6 +42,15 @@ from .volumes import render_snapshot_policies, root_block_device, server_volumes
 from .databases import copy_alias, copy_regions, render_databases
 from .storage import kept_buckets, render_object_stores
 from .plumbing import network_data
+
+WHAT = "AWS infrastructure for the CIAM platform"
+TERRAFORM, CLOUDFORMATION = "terraform", "cloudformation"
+# The infrastructure-as-code languages an environment's AWS render is written in (Adapter.render_targets; an
+# environment chooses with its stack component's ciamRenderTarget, a render with --target aws=...).
+TARGETS = ((TERRAFORM, "Terraform for the hashicorp/aws provider (terraform/)"),
+           (CLOUDFORMATION, "AWS CloudFormation templates translated from it (cloudformation/), what CloudFormation "
+                            "has no form for kept in a Terraform root beside each", False))
+DEFAULT_TARGETS = tuple(t[0] for t in TARGETS if len(t) < 3)
 
 
 def _security_groups(m):
@@ -205,7 +215,7 @@ def render_files(m, services):
            *discovery, *render_suppressions(m),
            *render_budgets(m), *render_quota_requests(m),
            *_references(m))
-    main = TfFile(header(m, "AWS infrastructure for the CIAM platform", HCL) + unbound_comments(m.unbound), out)
+    main = TfFile(header(m, WHAT, HCL) + unbound_comments(m.unbound), out)
     providers = TfFile(header(m, "Providers", HCL), (
         required_providers(bool(scripts) or bool(handlers)),
         provider_block(m),
@@ -222,6 +232,12 @@ def render_files(m, services):
             **evaluation_files(m, ACCESS, "AWS")}
 
 
-def render(m, services):
-    """Adapter render: environment m's AWS files as text, each Terraform file written once from its TfFile."""
-    return written(render_files(m, services))
+def render(m, services, targets=DEFAULT_TARGETS):
+    """Adapter render: environment m's AWS files as text in the render targets chosen: Terraform (terraform/), and/or
+    CloudFormation translated from it (cloudformation/, cfn_types); the files that are neither (access scripts,
+    Kubernetes configuration) either way. Each Terraform file written once from its TfFile."""
+    files = render_files(m, services)
+    terraform = {p: v for p, v in files.items() if p.startswith("terraform/")}
+    native = cloudformation_files(m, files, WHAT) if CLOUDFORMATION in targets else {}
+    return written({**{p: v for p, v in files.items() if p not in terraform},
+                    **(terraform if TERRAFORM in targets else {}), **native})

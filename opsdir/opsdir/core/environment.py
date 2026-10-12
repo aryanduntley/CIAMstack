@@ -5,7 +5,8 @@ and the environment's bindings answer (SPEC R7). Which roles an environment must
 the caller (the adapters that apply), never hardcoded here, plus the roles the environment itself declares.
 An overlay environment's bindings, stack, declared roles and overrides include what it inherits (core.overlays).
 """
-from typing import NamedTuple, Optional
+from collections import namedtuple
+from typing import NamedTuple
 
 from .directory import Directory, Entry, children, follow, get, is_kind, norm_dn, one, rdn_value, subtree, values
 from .naming import branch, env_label, rdn_safe
@@ -14,9 +15,9 @@ from .overlays import (apply_overrides, declared_roles, effective_bindings, effe
 
 UNBOUND = "UNBOUND:"              # a value from a role the environment doesn't bind: UNBOUND:<role>
 
-# One declared component of an environment's stack: the adapter (by registered name) that fills a role.
-StackComponent = NamedTuple("StackComponent", [("role", str), ("adapter", str), ("versions", Optional[str]),
-                                               ("source", Optional[str])])
+# One declared component of an environment's stack: the adapter (by registered name) that fills a role, the adapter
+# versions it accepts and where to get it (or None), and the adapter's render targets it renders (() = its defaults).
+StackComponent = namedtuple("StackComponent", ("role", "adapter", "versions", "source", "targets"), defaults=((),))
 EnvModel = NamedTuple("EnvModel", [("d", Directory), ("dn", str), ("env", Entry), ("cloud", Entry),
                                    ("provider", str), ("label", str), ("servers", tuple),
                                    ("bindings", tuple), ("unbound", tuple),
@@ -46,7 +47,7 @@ def environment_at(d, path):
 
 def stack_component(e):
     return StackComponent(one(e, "ciamStackRole"), one(e, "ciamAdapter"), one(e, "ciamAdapterVersion"),
-                          one(e, "ciamAdapterSource"))
+                          one(e, "ciamAdapterSource"), tuple(values(e, "ciamRenderTarget")))
 
 
 def _with_role(bindings, role):

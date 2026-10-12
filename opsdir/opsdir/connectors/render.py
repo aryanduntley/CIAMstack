@@ -8,23 +8,39 @@ from .capture import rendered_config
 from .registry import ADAPTERS, FORMATS, environment, services
 
 
-def chosen_targets(adapters, wanted=None):
+def stack_targets(stack):
+    """{adapter name: the render targets its components in an environment's stack declare (ciamRenderTarget)}, for
+    the adapters whose components declare any."""
+    return {c.adapter: tuple(dict.fromkeys(t for s in stack if s.adapter == c.adapter for t in s.targets))
+            for c in stack if c.targets}
+
+
+def _refuse_undeclared(chosen, declared, where):
+    """Refuses a choice ({adapter: (target, ...)}) naming an adapter that declares no targets or a target it doesn't
+    declare, naming those it does; where says whose choice it is."""
+    unknown = sorted(name for name in chosen if name not in declared)
+    if unknown:
+        raise SystemExit(f"no render targets to choose for {', '.join(unknown)} {where} (adapters with targets: "
+                         f"{', '.join(sorted(declared)) or 'none'})")
+    wrong = sorted(f"{name}={t} (it renders: {', '.join(declared[name])})" for name, ts in chosen.items()
+                   for t in ts if t not in declared[name])
+    if wrong:
+        raise SystemExit(f"unknown render targets{'' if where == 'here' else f' {where}'}: {', '.join(wrong)}")
+
+
+def chosen_targets(adapters, wanted=None, stack=()):
     """{adapter name: the render targets chosen} for the adapters that declare targets: those wanted ({adapter: (names,
-    ...)}), by default an adapter's targets not marked only-when-asked; refused for an adapter that declares none here
-    or a target it doesn't declare, naming those it does."""
-    wanted = wanted or {}
+    ...)}, the render's own choice), else those the environment's stack declares for the adapter (StackComponents'
+    targets), else the adapter's targets not marked only-when-asked; refused for an adapter that declares none here or
+    a target it doesn't declare, naming those it does."""
+    wanted, declared_by_stack = wanted or {}, stack_targets(stack)
     declared = {a.name: tuple(t[0] for t in a.render_targets) for a in adapters if a.render_targets}
     defaults = {a.name: tuple(t[0] for t in a.render_targets if len(t) < 3 or t[2]) for a in adapters
                 if a.render_targets}
-    unknown = sorted(name for name in wanted if name not in declared)
-    if unknown:
-        raise SystemExit(f"no render targets to choose for {', '.join(unknown)} here (adapters with targets: "
-                         f"{', '.join(sorted(declared)) or 'none'})")
-    wrong = sorted(f"{name}={t} (it renders: {', '.join(declared[name])})" for name, ts in wanted.items()
-                   for t in ts if t not in declared[name])
-    if wrong:
-        raise SystemExit(f"unknown render targets: {', '.join(wrong)}")
-    return {name: tuple(t for t in names if t in wanted.get(name, defaults[name])) for name, names in declared.items()}
+    _refuse_undeclared(declared_by_stack, declared, "in the environment's stack (run `opsdir check`)")
+    _refuse_undeclared(wanted, declared, "here")
+    chosen = {**defaults, **declared_by_stack, **wanted}
+    return {name: tuple(t for t in names if t in chosen[name]) for name, names in declared.items()}
 
 
 def _env_files(a, m, found, targets):
@@ -34,15 +50,16 @@ def _env_files(a, m, found, targets):
 def render_parts(d, spec, installed=ADAPTERS, wanted=None):
     """(EnvModel as the environment sees the record (its overrides applied), applicable adapters,
     environment-neutral files, environment-specific files, the render targets chosen); wanted: {adapter: (target,
-    ...)} (default: every target). No provider adapter is needed: an environment whose infrastructure no installed
-    adapter renders (a Kubernetes cluster on the operator's own hardware) still gets what its other adapters render;
-    one that no installed adapter renders anything for is refused."""
+    ...)} (default: those its stack declares, else each adapter's defaults). No provider adapter is needed: an
+    environment whose infrastructure no installed adapter renders (a Kubernetes cluster on the operator's own
+    hardware) still gets what its other adapters render; one that no installed adapter renders anything for is
+    refused."""
     shared, adapters = environment(d, spec, installed)
     m = as_seen(shared)
     if not any(a.render_neutral or a.render_env for a in adapters):
         raise SystemExit(f"nothing renders {m.label}: no installed adapter that renders applies to it (provider "
                          f"{m.provider})")
-    targets = chosen_targets(adapters, wanted)
+    targets = chosen_targets(adapters, wanted, m.stack)
     neutral = {p: text for a in adapters if a.render_neutral for p, text in a.render_neutral(m.d).items()}
     found = services(installed)
     specific = {p: text for a in adapters if a.render_env for p, text in _env_files(a, m, found, targets).items()}

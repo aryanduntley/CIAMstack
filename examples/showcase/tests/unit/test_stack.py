@@ -15,8 +15,11 @@ def adapter(name, kind="product", applies=True):
                    None, None)
 
 
-def component(adapter_name, role="r", versions=">=1,<2", source=None):
-    return StackComponent(role, adapter_name, versions, source)
+def component(adapter_name, role="r", versions=">=1,<2", source=None, targets=()):
+    return StackComponent(role, adapter_name, versions, source, targets)
+
+
+TARGETED = adapter("a")._replace(render_targets=(("x", "X"), ("y", "Y", False)))
 
 
 @pytest.fixture(scope="module")
@@ -63,6 +66,11 @@ def test_rendering_refuses_a_declared_adapter_that_is_not_installed(source):
     ((component("a"),), (adapter("a", applies=False),), {"a": "1.0"},
      "installed 1.0, but the environment's data doesn't match it (provider or products)", 1),
     ((component("v"),), (adapter("v", kind="secret-store", applies=False),), {"v": "1.0"}, "ok (installed 1.0)", 0),
+    ((component("a", targets=("y",)),), (TARGETED,), {"a": "1.2"}, "ok (installed 1.2; renders y)", 0),
+    ((component("a", targets=("x", "z")),), (TARGETED,), {"a": "1.2"},
+     "installed 1.2, but it has no render target z (it renders: x, y)", 1),
+    ((component("a", targets=("x",)),), (adapter("a"),), {"a": "1.2"},
+     "installed 1.2, but it has no render target x (it has none to choose)", 1),
 ])
 def test_each_component_is_checked(source, stack, adapters, versions, status, problems):
     rows, n = stack_rows(source._replace(stack=stack), adapters, versions)

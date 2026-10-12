@@ -45,7 +45,13 @@ def _component_status(m, c, by_name, versions):
         return f"installed {v}, but the stack accepts {c.versions}", True
     if a.kind != "secret-store" and a.applies is not None and not a.applies(m):
         return f"installed {v}, but the environment's data doesn't match it (provider or products)", True
-    return f"ok (installed {v})", False
+    names = tuple(t[0] for t in a.render_targets)
+    targets, wrong = ", ".join(names), ", ".join(t for t in c.targets if t not in names)
+    if wrong:
+        return (f"installed {v}, but it has no render target {wrong} "
+                f"({f'it renders: {targets}' if targets else 'it has none to choose'})"), True
+    chosen = f"; renders {', '.join(c.targets)}" if c.targets else ""
+    return f"ok (installed {v}{chosen})", False
 
 
 def unsupported_products(m, adapters):

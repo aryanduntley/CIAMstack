@@ -3,6 +3,9 @@
   "provider": "aws",
   "unbound_roles": [],
   "render_targets": {
+    "aws": [
+      "terraform"
+    ],
     "pingfederate": [
       "admin-api",
       "terraform"

@@ -14,7 +14,7 @@ from .log_agent import host_files
 from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
 from .regions import PREREQUISITE, REGIONS
 from .secrets import SECRET_PATTERNS, secretsmanager_command, secretsmanager_lookup
-from .terraform import render
+from .terraform import TARGETS, render
 from .canaries import RUNTIME
 from .rendered_state import rendered_states
 
@@ -29,18 +29,23 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                   render_neutral=None, render_env=render,
                   checks=(check_boundary, check_discovery_availability, check_server_inputs),
                   ref_schemes=("aws-sm", "aws-kms", "aws-acm", "s3"),
-                  secret_schemes={"aws-sm": secretsmanager_command}, renders="Terraform for the target cloud",
+                  secret_schemes={"aws-sm": secretsmanager_command},
+                  renders="Terraform (or AWS CloudFormation) for the target cloud",
                   neutral_label=None,
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamOnProvider": (PROVIDER,),
                               "ciamCloudEnvironment": ("public",)}, schema=None,
                   formats=(("terraform/*.tf", "hcl"), ("terraform/canaries/*/python/*.py", "python"),
                            ("terraform/discovery/*/*.py", "python"),
+                           ("cloudformation/*.yaml", "cloudformation-yaml"),
+                           ("cloudformation/*.resources-to-import.json", "json"), ("cloudformation/*.tf", "hcl"),
+                           ("cloudformation/canaries/*/python/*.py", "python"),
+                           ("cloudformation/discovery/*/*.py", "python"),
                            ("access/*.sh", "shell"), ("kubernetes/fluent-bit/*", "yaml")),
                   products=(),
                   secret_patterns=SECRET_PATTERNS,
                   importers=(TERRAFORM_STATE, CLI_INVENTORY, CLOUDFORMATION, REGIONS, QUOTAS),
                   profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE),
-                  collectors=COLLECTORS,
+                  collectors=COLLECTORS, render_targets=TARGETS,
                   workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY,
                   gateway_plug=gateway_plug, ansible_lookup={"aws-sm": secretsmanager_lookup},
                   settings=(RUNTIME,), host_files=host_files,

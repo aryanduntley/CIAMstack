@@ -126,6 +126,10 @@ ATTRIBUTES = (
                  'Adapter versions the environment accepts (a PEP 440 range, e.g. >=0.1,<1)'),
     AttributeDef(129, 'ciamAdapterSource', 'string', 'binding', True,
                  'Where to get the adapter package (URL or package name)'),
+    AttributeDef(645, 'ciamRenderTarget', 'string', 'binding', False,
+                 "A render target of the component's adapter this environment renders (one the adapter declares, "
+                 "such as the infrastructure-as-code language a cloud adapter writes); none: the adapter's defaults. "
+                 "`opsdir render --target` chooses others for one render"),
     AttributeDef(208, 'ciamOverlayOf', 'dn', 'binding', True,
                  "The environment this one is an overlay of: it inherits that environment's bindings, stack, required "
                  'roles and overrides, except the roles it binds, drops, declares or overrides itself (never servers)'),
@@ -194,7 +198,7 @@ CLASSES = (
               'ciamAcceptedCidr', 'ciamPeerAccepted', 'ciamManagedBy'),
              'Link to another environment'),
     ClassDef(33, 'ciamStackComponent', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamStackRole', 'ciamAdapter'),
-             ('ciamAdapterVersion', 'ciamAdapterSource'),
+             ('ciamAdapterVersion', 'ciamAdapterSource', 'ciamRenderTarget'),
              'One component of an environment stack: the adapter that fills a role'),
     ClassDef(44, 'ciamRequiredRole', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamBindingRole'),
              (),
