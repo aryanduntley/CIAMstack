@@ -45,9 +45,19 @@ def test_every_reference_resolves_within_its_root(rendered):
     assert sum(len(value_refs(b.body)) for *_, items in rendered for b in items if isinstance(b, TfBlock)) > 1000
 
 
+def _checking(b):
+    """A data source only checking something (lifecycle conditions): only Terraform makes the check."""
+    return isinstance(b, TfBlock) and b.kind == "data" and any(k == "lifecycle" for k, _ in b.body)
+
+
 def test_a_root_splits_whole_to_either_side(rendered):
     for spec, cloud, root, items in rendered:
-        assert split_root(items, lambda b: True).native == items, (spec, root)
+        everything_native = split_root(items, lambda b: True)
+        read = {ref_address(r) for b in items if isinstance(b, TfBlock) and not _checking(b)
+                for r in value_refs(b.body)}
+        assert [b for b in everything_native.native if isinstance(b, TfBlock)] == \
+            [b for b in items if isinstance(b, TfBlock) and (not _checking(b) or address(b) in read)], (spec, root)
+        assert all(b in everything_native.side for b in items if _checking(b)), (spec, root)
         everything_stays = split_root(items, lambda b: False)
         resources = [address(b) for b in items if isinstance(b, TfBlock) and b.kind == "resource"]
         assert [address(b) for b in everything_stays.side if isinstance(b, TfBlock) and b.kind == "resource"] == \

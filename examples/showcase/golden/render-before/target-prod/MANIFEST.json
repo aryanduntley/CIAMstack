@@ -5,6 +5,9 @@
     "backup-target"
   ],
   "render_targets": {
+    "azure": [
+      "terraform"
+    ],
     "forgeops": [
       "helm",
       "kustomize"

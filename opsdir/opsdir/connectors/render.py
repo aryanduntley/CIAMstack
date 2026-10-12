@@ -29,16 +29,26 @@ def _refuse_undeclared(chosen, declared, where):
 
 
 def chosen_targets(adapters, wanted=None, stack=()):
-    """{adapter name: the render targets chosen} for the adapters that declare targets: those wanted ({adapter: (names,
-    ...)}, the render's own choice), else those the environment's stack declares for the adapter (StackComponents'
-    targets), else the adapter's targets not marked only-when-asked; refused for an adapter that declares none here or
-    a target it doesn't declare, naming those it does."""
+    """{adapter name: the render targets chosen} for the adapters that declare targets. The form a render writes is
+    the user's choice (wanted: {adapter: (names, ...)}, the render's own), else the adapter's targets not marked
+    only-when-asked; unless the environment holds a form (its stack's ciamRenderTarget for the adapter): then that
+    binds, and a render may choose among the forms it holds, never another. Refused for an adapter that declares none
+    here, a target it doesn't declare (naming those it does), or a form the environment doesn't hold (naming those it
+    does)."""
     wanted, declared_by_stack = wanted or {}, stack_targets(stack)
     declared = {a.name: tuple(t[0] for t in a.render_targets) for a in adapters if a.render_targets}
     defaults = {a.name: tuple(t[0] for t in a.render_targets if len(t) < 3 or t[2]) for a in adapters
                 if a.render_targets}
     _refuse_undeclared(declared_by_stack, declared, "in the environment's stack (run `opsdir check`)")
     _refuse_undeclared(wanted, declared, "here")
+    unheld = sorted(f"{name}={t}" for name, ts in wanted.items() if name in declared_by_stack
+                    for t in ts if t not in declared_by_stack[name])
+    if unheld:
+        held = "; ".join(f"{name}: {', '.join(declared_by_stack[name])}" for name in sorted(declared_by_stack)
+                         if any(u.startswith(f"{name}=") for u in unheld))
+        raise SystemExit(f"the environment holds its render form ({held}; its stack's ciamRenderTarget): it can't be "
+                         f"rendered as {', '.join(unheld)} (change its ciamRenderTarget, under an approved change, "
+                         "to render it otherwise)")
     chosen = {**defaults, **declared_by_stack, **wanted}
     return {name: tuple(t for t in names if t in chosen[name]) for name, names in declared.items()}
 

@@ -3,6 +3,7 @@ jsonencode documents, indexed lookups), a root's resources as templates (merges,
 tags, comments), lookups as parameters, adopted resources imported (or kept in Terraform when CloudFormation can't
 import them as Terraform does), what has no native form in a Terraform root beside the template reading its outputs,
 an aliased provider's resources in a template of their own, and refusals of what the table doesn't know."""
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -10,7 +11,8 @@ import pytest
 from opsdir_format_cloudformation.template import get_att, ref, sub
 from opsdir_format_terraform.hcl import Block, TfFile, comment, ref as tf_ref, tf_block, tf_import
 from opsdir_format_terraform.translate import TfRef
-from opsdir_adapter_aws.cfn_render import translate
+from opsdir_adapter_aws.cfn_render import concat, document_of, json_document, object_key, referenced_ids, translate, \
+    trim_prefix
 from opsdir_adapter_aws.cfn_types import NO_EGRESS, cloudformation_files, cloudformation_translation
 
 M = SimpleNamespace(dn="env=prod,cloud=alpha,ou=environments,dc=ciam-ops", label="alpha/prod")
@@ -200,3 +202,155 @@ def test_govcloud_keeps_types_its_cloudformation_lacks_in_terraform():
     assert done.placements["terraform"]["aws_macie2_account.macie"].detail == \
         "no CloudFormation type in us-gov-west-1"
     assert TfRef  # the translate types are format-terraform's
+
+
+# ------------------------------------------------------------------ 5.6 (d2): values computed natively
+
+def test_values_concatenate_into_one_sub_inlining_others():
+    assert concat("a", "b") == "ab" and concat(ref("X")) == ref("X")
+    assert concat("arn:", ref("AWS::Partition"), ":x/", get_att("B", "Arn")) == \
+        sub("arn:${AWS::Partition}:x/${B.Arn}")
+    assert concat("https://", sub("${A}-${V0}", {"V0": {"Fn::Select": [0, ref("L")]}}), "/$x${y}") == \
+        sub("https://${A}-${V1V0}/$x${!y}", {"V1V0": {"Fn::Select": [0, ref("L")]}})
+
+
+@pytest.mark.parametrize("value, prefix, expected", [
+    ("https://x", "https://", "x"), ("x", "https://", "x"),
+    (sub("https://${I}"), "https://", ref("I")), (sub("https://${B.Arn}/p"), "https://", sub("${B.Arn}/p")),
+    (sub("ftp://${I}"), "https://", sub("ftp://${I}"))])
+def test_trimprefix_strips_a_known_leading_text(value, prefix, expected):
+    assert trim_prefix(value, prefix) == expected
+
+
+def test_trimprefix_of_a_value_known_only_at_deploy_time_is_refused():
+    with pytest.raises(SystemExit, match="known only at deploy time"):
+        trim_prefix(ref("I"), "https://")
+    with pytest.raises(SystemExit, match="known only at deploy time"):
+        trim_prefix(sub("http${I}"), "https://")
+
+
+def test_join_and_trimprefix_expressions_are_evaluated():
+    def resolve(r):
+        return sub("https://${Issuer}") if r.attr == "identity[0].oidc[0].issuer" else ref(r.name)
+    expr = tf_ref('join(":", [trimprefix(data.aws_eks_cluster.k.identity[0].oidc[0].issuer, "https://"), "sub"])')
+    assert translate(expr, resolve) == sub("${Issuer}:sub")
+    assert translate(tf_ref('join(",", ["a", var.b])'), resolve) == sub("a,${b}")
+    assert translate(tf_ref('join(",", var.list)'), resolve) == {"Fn::Join": [",", ref("list")]}
+
+
+def test_a_document_with_a_computed_key_is_its_json_text_in_one_sub():
+    plain = {"Statement": [{"Resource": ref("B")}]}
+    assert json_document(plain) == plain
+    document = {"Condition": {"StringEquals": {object_key(sub("${I}:sub")): ["a"]}}, "Note": "${aws:username}"}
+    assert json_document(document) == sub('{"Condition": {"StringEquals": {"${I}:sub": ["a"]}}, '
+                                          '"Note": "${!aws:username}"}')
+
+
+def test_dependencies_a_reference_already_orders_are_found():
+    assert referenced_ids({"A": [ref("X"), get_att("Y", "Arn")], "B": sub("${Z.Arn}/${AWS::Region}/${V}",
+                                                                          {"V": ref("W")})}) == \
+        {"X", "Y", "Z", "AWS::Region", "W"}
+
+
+ISSUER_KEY = ('join(":", [trimprefix(data.aws_eks_cluster.k.identity[0].oidc[0].issuer, "https://"), '
+              '"sub"])')
+STATEMENT = Block((
+    ("actions", ["sts:AssumeRoleWithWebIdentity"]),
+    ("principals", Block((("type", "Federated"),
+                          ("identifiers", [tf_ref("data.aws_iam_openid_connect_provider.k.arn")])))),
+    ("condition", Block((("test", "StringEquals"), ("variable", tf_ref(ISSUER_KEY)),
+                         ("values", ["system:serviceaccount:ns:sa"]))))))
+EKS = TfFile("", (
+    tf_block("provider", ["aws"], [("region", "us-east-1")]),
+    tf_block("data", ["aws_eks_cluster", "k"], [("name", "ciam-eks")]),
+    tf_block("data", ["aws_iam_openid_connect_provider", "k"], [
+        ("url", tf_ref("data.aws_eks_cluster.k.identity[0].oidc[0].issuer"))]),
+    tf_block("data", ["aws_iam_policy_document", "trust"], [("statement", STATEMENT)]),
+    tf_block("resource", ["aws_iam_role", "irsa"], [
+        ("name", "irsa"), ("assume_role_policy", tf_ref("data.aws_iam_policy_document.trust.json"))])))
+
+
+def test_an_irsa_role_s_trust_policy_reads_the_clusters_issuer_through_one_parameter():
+    t = cloudformation_translation(M, {"terraform/main.tf": EKS}, WHAT).templates["cloudformation/template.yaml"]
+    assert [p.logical_id for p in t.parameters] == ["EksClusterKOidcIssuer"]
+    text = _resources(t)["IamRoleIrsa"].properties["AssumeRolePolicyDocument"]["Fn::Sub"]
+    assert ('"Principal": {"Federated": ["arn:${AWS::Partition}:iam::${AWS::AccountId}:oidc-provider/'
+            '${EksClusterKOidcIssuer}"]}') in text
+    assert '"Condition": {"StringEquals": {"${EksClusterKOidcIssuer}:sub": ["system:serviceaccount:ns:sa"]}}' in text
+
+
+def test_a_merge_finds_its_target_by_type_and_an_attribute_reads_the_block():
+    files = _one(
+        tf_block("resource", ["aws_lb", "a"], [("name", "a"), ("load_balancer_type", "application")]),
+        tf_block("resource", ["aws_shield_protection", "a"], [("name", "a"), ("resource_arn", tf_ref("aws_lb.a.arn"))]),
+        tf_block("resource", ["aws_shield_application_layer_automatic_response", "a"], [
+            ("resource_arn", tf_ref("aws_lb.a.arn")), ("action", "COUNT"),
+            ("depends_on", [tf_ref("aws_lb.a"), tf_ref("aws_shield_protection.a")])]),
+        tf_block("resource", ["aws_rds_cluster", "c"], [("cluster_identifier", "c"), ("engine", "aurora-mysql")]),
+        tf_block("resource", ["aws_rds_cluster_instance", "c1"], [
+            ("identifier", "c1"), ("cluster_identifier", tf_ref("aws_rds_cluster.c.id")),
+            ("engine", tf_ref("aws_rds_cluster.c.engine")), ("instance_class", "db.r6g.large")]))
+    t = cloudformation_translation(M, files, WHAT)
+    assert t.placements["terraform"]["aws_shield_application_layer_automatic_response.a"].detail == \
+        "aws_shield_protection.a"
+    r = _resources(t.templates["cloudformation/template.yaml"])
+    assert r["ShieldProtectionA"].properties["ApplicationLayerAutomaticResponseConfiguration"] == {
+        "Action": {"Count": {}}, "Status": "ENABLED"}
+    assert r["RdsClusterInstanceC1"].properties["Engine"] == "aurora-mysql"
+
+
+def test_an_adopted_route_table_with_a_route_cloudformation_cant_identify_stays_terraform():
+    files = _one(tf_block("resource", ["aws_route_table", "t"], [
+        ("vpc_id", "vpc-1"), ("route", Block((("cidr_block", "0.0.0.0/0"), ("nat_gateway_id", "nat-1")))),
+        ("route", Block((("ipv6_cidr_block", "::/0"), ("egress_only_gateway_id", "eigw-1"))))]),
+        tf_import("aws_route_table.t", "rtb-1"))
+    t = cloudformation_translation(M, files, WHAT)
+    assert t.placements["terraform"]["aws_route_table.t"].detail == (
+        "adopted (an import block): CloudFormation imports a route by its table and IPv4 CIDR, which route ::/0 "
+        "hasn't")
+
+
+def test_what_references_a_vpn_gateway_waits_for_its_attachment():
+    files = _one(
+        tf_block("resource", ["aws_vpn_gateway", "main"], [("vpc_id", "vpc-1"), ("amazon_side_asn", 64512)]),
+        tf_block("resource", ["aws_customer_gateway", "b"], [("bgp_asn", 65000), ("ip_address", "198.51.100.2"),
+                                                              ("type", "ipsec.1")]),
+        tf_block("resource", ["aws_vpn_connection", "b"], [
+            ("customer_gateway_id", tf_ref("aws_customer_gateway.b.id")),
+            ("vpn_gateway_id", tf_ref("aws_vpn_gateway.main.id")), ("type", "ipsec.1"),
+            ("static_routes_only", True)]),
+        tf_block("resource", ["aws_route_table", "t"], [("vpc_id", "vpc-1"), ("route", Block((
+            ("cidr_block", "10.6.0.0/16"), ("gateway_id", tf_ref("aws_vpn_gateway.main.id")))))]))
+    r = _resources(cloudformation_translation(M, files, WHAT).templates["cloudformation/template.yaml"])
+    assert r["VpnGatewayMain"].properties == {"Type": "ipsec.1", "AmazonSideAsn": 64512}
+    assert r["VpnGatewayMainAttachment"].properties == {"VpcId": "vpc-1", "VpnGatewayId": ref("VpnGatewayMain")}
+    assert r["VpnGatewayMainAttachment"].depends_on == ()
+    assert r["RouteTableTRoute0"].depends_on == ("VpnGatewayMainAttachment",)
+    assert r["VpnConnectionB"].depends_on == ("VpnGatewayMainAttachment",)
+
+
+# ------------------------------------------------------------------ 5.6 (d3): the JSON-string form parses back
+
+@pytest.mark.parametrize("document", [
+    {"Version": "2012-10-17", "Statement": [{
+        "Effect": "Allow", "Action": ["sts:AssumeRoleWithWebIdentity"],
+        "Principal": {"Federated": [sub("arn:${AWS::Partition}:iam::${AWS::AccountId}:oidc-provider/${I}")]},
+        "Condition": {"StringEquals": {object_key(sub("${I}:sub")): ["system:serviceaccount:ns:sa"],
+                                       object_key(ref("Aud")): ["sts.amazonaws.com"]}}}]},
+    {object_key(get_att("B", "Arn")): {"Note": "${aws:username}", "N": 1, "Ok": True, "Nothing": None},
+     "Select": {"Fn::Select": [0, ref("L")]}}])
+def test_a_document_written_as_its_json_string_parses_back(document):
+    written = json_document(document)
+    assert "Fn::Sub" in written
+    assert document_of(written) == document
+
+
+def test_only_a_documents_json_string_parses_and_other_values_stay():
+    assert document_of({"Statement": []}) == {"Statement": []}
+    assert document_of(sub("arn:${AWS::Partition}:s3:::b")) == sub("arn:${AWS::Partition}:s3:::b")
+    assert document_of(sub('"${X}"')) == sub('"${X}"')
+    inlined = json_document({object_key(sub("${A}-${V0}", {"V0": ref("L")})): "x"})
+    (key, value), = document_of(inlined).items()                     # the inner variable renamed, still bound
+    text, variables = json.loads(key.text)["Fn::Sub"]
+    (name, bound), = variables.items()
+    assert (text, bound, value) == ("${A}-${" + name + "}", ref("L"), "x")

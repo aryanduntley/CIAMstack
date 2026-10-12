@@ -45,6 +45,7 @@ from .resource_providers import registration_note, resource_providers
 from .network import render_network
 from .plumbing import network_data
 from .account import azuread_provider, provider_block, required_providers, subscription_variable, tagged
+from .arm_types import arm_files
 from .identity_protection import uses_azuread
 
 PRIORITIES = (100, 10, 4096)        # NSG rule priorities: first slot, step, last (pinned ones kept)
@@ -269,6 +270,24 @@ def render_files(m, services):
     return {"terraform/providers.tf": providers, "terraform/main.tf": main, **container_files, **landing}
 
 
-def render(m, services):
-    """Adapter render: environment m's Azure files as text, each Terraform file written once from its TfFile."""
-    return written(render_files(m, services))
+WHAT = "Azure infrastructure for the CIAM platform"
+TERRAFORM, BICEP, ARM_JSON = "terraform", "bicep", "arm"
+# The infrastructure-as-code languages an environment's Azure render is written in (Adapter.render_targets; an
+# environment chooses with its stack component's ciamRenderTarget, a render with --target azure=...).
+TARGETS = ((TERRAFORM, "Terraform for the azurerm, azapi and azuread providers (terraform/)"),
+           (BICEP, "Bicep translated from it (bicep/: a template per deployment scope), what ARM has no form for kept "
+                   "in a Terraform root beside them", False),
+           (ARM_JSON, "ARM template JSON translated from it (arm/), as bicep build compiles the Bicep", False))
+DEFAULT_TARGETS = tuple(t[0] for t in TARGETS if len(t) < 3)
+
+
+def render(m, services, targets=DEFAULT_TARGETS):
+    """Adapter render: environment m's Azure files as text in the render targets chosen: Terraform (terraform/),
+    and/or Bicep (bicep/) and ARM JSON (arm/) translated from it (arm_types); the files that are neither (Kubernetes
+    configuration) either way. Each Terraform file written once from its TfFile."""
+    files = render_files(m, services)
+    terraform = {p: v for p, v in files.items() if p.startswith("terraform/")}
+    native = arm_files(m, files, WHAT, tuple(t for t in (BICEP, ARM_JSON) if t in targets)) \
+        if BICEP in targets or ARM_JSON in targets else {}
+    return written({**{p: v for p, v in files.items() if p not in terraform},
+                    **(terraform if TERRAFORM in targets else {}), **native})

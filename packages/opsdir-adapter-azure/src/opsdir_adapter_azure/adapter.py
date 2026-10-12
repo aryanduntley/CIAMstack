@@ -15,7 +15,7 @@ from .kubernetes import SECRET_DELIVERY, workload_identity
 from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
 from .regions import PREREQUISITE, REGIONS
 from .secrets import SECRET_PATTERNS, keyvault_command, keyvault_lookup
-from .terraform import PRIORITIES, render
+from .terraform import PRIORITIES, TARGETS, render
 from .rendered_state import rendered_states
 
 PROVIDER = "azure"
@@ -34,11 +34,12 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                   neutral_label=None,
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamOnProvider": (PROVIDER,),
                               "ciamCloudEnvironment": ("public", "usgovernment")}, schema=None,
-                  formats=(("terraform/*.tf", "hcl"), ("kubernetes/azure-monitor/*", "yaml")),
+                  formats=(("terraform/*.tf", "hcl"), ("bicep/*.bicep", "bicep"), ("bicep/*.tf", "hcl"),
+                           ("arm/*.json", "arm-json"), ("arm/*.tf", "hcl"), ("kubernetes/azure-monitor/*", "yaml")),
                   products=(),
                   secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY, ARM, REGIONS, QUOTAS),
                   profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE),
-                  collectors=COLLECTORS,
+                  collectors=COLLECTORS, render_targets=TARGETS,
                   workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY,
                   gateway_plug=gateway_plug, ansible_lookup={"azkv": keyvault_lookup},
                   reads_back=(ReadBack("terraform-state", "terraform/*.tf", "terraform/", "{environment}/", False,

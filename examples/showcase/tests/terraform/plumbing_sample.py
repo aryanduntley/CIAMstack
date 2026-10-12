@@ -73,8 +73,10 @@ RECORDS = (
 )
 
 
-def _model(refs):
-    """The alpha environment with the plumbing, its network, subnets and plumbing refs shaped as one cloud writes."""
+def _model(refs, peer=None, changes=()):
+    """The alpha environment with the plumbing, its network, subnets and plumbing refs shaped as one cloud writes;
+    peer: the provider ref of beta's network (the peering's other end), unbound when None; changes: change records
+    applied after."""
     def with_refs(text):
         subnet = refs["SUBNET"]
         return (text.replace("ciamCidr: 10.1.1.0/24", f"ciamCidr: 10.1.1.0/24\nciamProviderRef: {subnet.format('ds')}")
@@ -85,7 +87,11 @@ def _model(refs):
     alpha = tuple(with_refs(r) for r in network_fixtures._estate(ALPHA, RECORDS))
     net = mini_estate.LDIF.replace("ciamCidr: 10.1.0.0/16",                 # the first network is alpha's
                                    f"ciamCidr: 10.1.0.0/16\nciamProviderRef: {refs['NET']}", 1)
-    d = build_directory(REGISTRY, tuple(parse("\n".join((net, *OWNERS, *alpha)))))
+    if peer:                                                                # the second, beta's
+        first, rest = net.split(f"ciamProviderRef: {refs['NET']}", 1)
+        net = first + f"ciamProviderRef: {refs['NET']}" + rest.replace(
+            "ciamCidr: 10.1.0.0/16", f"ciamCidr: 10.1.0.0/16\nciamProviderRef: {peer}", 1)
+    d = build_directory(REGISTRY, tuple(parse("\n".join((net, *OWNERS, *alpha)))), tuple(changes))
     return env_model(d, "alpha/prod")
 
 

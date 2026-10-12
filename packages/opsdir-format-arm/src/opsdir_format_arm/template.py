@@ -28,7 +28,7 @@ ArmParameter = namedtuple("ArmParameter", ("name", "type", "default", "descripti
 # (a dict; None: none), depends_on (symbols of template resources the deployment must finish first, where no reference
 # already says so), existing (only read), resource_group (an existing resource's resource group, when not the
 # deployment's), scope (an extension resource's: the symbol of the template resource it applies to, such as a role
-# assignment on a key vault), comment (a line the Bicep writes above it).
+# assignment on a key vault), comment (the lines, newline-separated, the Bicep writes above it).
 ArmResource = namedtuple("ArmResource", ("symbol", "type", "api_version", "name", "parent", "fields", "properties",
                                          "depends_on", "existing", "resource_group", "scope", "comment"),
                          defaults=(None, {}, None, (), False, None, None, None))
@@ -42,14 +42,19 @@ ArmTemplate = namedtuple("ArmTemplate", ("scope", "description", "resources", "p
 # Expressions. Param: a parameter's value. ResourceId: a template resource's id. ResourceName: its name (a child's
 # whole name, parent/child). Prop: one of its runtime properties, path under properties ('principalId',
 # 'primaryEndpoints.blob'). Call: an ARM template function both syntaxes write the same way (args are values).
-# Interp: a string of literal parts and expressions.
+# Interp: a string of literal parts and expressions. Member: a member of a value (a function's result:
+# resourceGroup().location, subscription().id), path dotted. Field: a top-level runtime value of a template resource
+# (location, identity.principalId), path dotted. An object's key may be an expression too (a user-assigned identity's
+# id under userAssignedIdentities).
 Param = namedtuple("Param", ("name",))
 ResourceId = namedtuple("ResourceId", ("symbol",))
 ResourceName = namedtuple("ResourceName", ("symbol",))
 Prop = namedtuple("Prop", ("symbol", "path"))
 Call = namedtuple("Call", ("function", "args"))
 Interp = namedtuple("Interp", ("parts",))
-EXPRESSIONS = (Param, ResourceId, ResourceName, Prop, Call, Interp)
+Member = namedtuple("Member", ("value", "path"))
+Field = namedtuple("Field", ("symbol", "path"))
+EXPRESSIONS = (Param, ResourceId, ResourceName, Prop, Call, Interp, Member, Field)
 
 
 def symbol(*parts):

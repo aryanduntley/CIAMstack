@@ -10,9 +10,10 @@ from typing import NamedTuple
 
 from .hcl import Block, TfBlock, TfFile, tf_block, tf_name
 
-# A reference an expression makes: kind resource | data | var | local | module | path | self | each | count |
-# terraform; type: the resource or data source type ('' for the other kinds); name: the block's name (the variable's,
-# the module's, path's 'module', ...); attr: the rest of the traversal as written ('id', 'arns[0]', '' when none).
+# A reference an expression makes: kind resource | data | ephemeral | var | local | module | path | self | each |
+# count | terraform; type: the resource, data source or ephemeral resource type ('' for the other kinds); name: the
+# block's name (the variable's, the module's, path's 'module', ...); attr: the rest of the traversal as written ('id',
+# 'arns[0]', '' when none).
 TfRef = NamedTuple("TfRef", [("kind", str), ("type", str), ("name", str), ("attr", str)])
 # An interpolation that is more than one reference (a function call, an operator, a literal object): its expression
 # text as written, and the references it makes.
@@ -61,15 +62,15 @@ def is_quoted_string(text):
 
 def parse_ref(text):
     """The reference an expression is when it is exactly one traversal (aws_vpc.main.id, data.aws_region.current.name,
-    var.region, path.module, ...), else None."""
+    ephemeral.azurerm_key_vault_secret.admin.value, var.region, path.module, ...), else None."""
     text = text.strip()
     if not _TRAVERSAL.fullmatch(text):
         return None
     head, _, rest = text.partition(".")
-    if head == "data":
+    if head in ("data", "ephemeral"):
         type_, _, rest = rest.partition(".")
         name, attr = _split_name(rest)
-        return TfRef("data", type_, name, attr) if name else None
+        return TfRef(head, type_, name, attr) if name else None
     if head in _NAMED:
         name, attr = _split_name(rest)
         return TfRef(head, "", name, attr)
@@ -154,29 +155,30 @@ def value_refs(v):
 
 def ref_text(r):
     """A reference as Terraform writes it (aws_vpc.main.id, data.aws_region.current.name, var.region)."""
-    head = {"resource": r.type, "data": f"data.{r.type}"}.get(r.kind, r.kind)
+    head = {"resource": r.type, "data": f"data.{r.type}", "ephemeral": f"ephemeral.{r.type}"}.get(r.kind, r.kind)
     attr = "" if not r.attr else r.attr if r.attr.startswith("[") else f".{r.attr}"
     return f"{head}.{r.name}{attr}"
 
 
 def address(item):
-    """The address of a top-level block, as references name it: type.name (resource), data.type.name, var.name,
-    module.name; other blocks (provider, terraform, import) and comments have none (None)."""
+    """The address of a top-level block, as references name it: type.name (resource), data.type.name,
+    ephemeral.type.name, var.name, module.name; other blocks (provider, terraform, import) and comments have none
+    (None)."""
     if not isinstance(item, TfBlock):
         return None
     if item.kind == "resource":
         return ".".join(item.labels[:2])
-    prefix = {"data": "data", "variable": "var", "module": "module"}.get(item.kind)
+    prefix = {"data": "data", "ephemeral": "ephemeral", "variable": "var", "module": "module"}.get(item.kind)
     return ".".join((prefix, *item.labels[:2])) if prefix else None
 
 
 def ref_address(r):
-    """The address of the block a reference reads (resource, data source, variable, module), else None (path, self,
-    each, count, terraform, local)."""
+    """The address of the block a reference reads (resource, data source, ephemeral resource, variable, module), else
+    None (path, self, each, count, terraform, local)."""
     if r.kind == "resource":
         return f"{r.type}.{r.name}"
-    if r.kind == "data":
-        return f"data.{r.type}.{r.name}"
+    if r.kind in ("data", "ephemeral"):
+        return f"{r.kind}.{r.type}.{r.name}"
     return {"var": f"var.{r.name}", "module": f"module.{r.name}"}.get(r.kind)
 
 
@@ -281,10 +283,17 @@ def _output_variables(outputs):
         ("description", f"{ref_text(r)}: an output of the template this root is applied after")]) for r in outputs)
 
 
+def _checks(b):
+    """Whether a data block checks something (lifecycle pre/postconditions): the other language can't, so the side
+    root keeps it."""
+    return b.kind == "data" and any(k == "lifecycle" for k, _ in b.body)
+
+
 def split_root(items, has_native):
     """A root's items split for translation (Split); has_native(resource block): whether the other language has a
     form for the resource. Data sources, variables and modules go to whichever side reads them (both, when both do;
-    the template's, when neither does); both sides keep the provider and terraform blocks."""
+    the template's, when neither does); a data source that checks something (lifecycle conditions) is the side
+    root's too, as only Terraform makes the check; both sides keep the provider and terraform blocks."""
     groups = _groups(items)
     blocks = tuple(b for _, b in groups if b is not None)
     by_address = {address(b): b for b in blocks if address(b)}
@@ -296,8 +305,9 @@ def split_root(items, has_native):
     shared = tuple(b for b in blocks if b.kind in ("provider", "terraform"))
     side_blocks = tuple(b for b in blocks if on_side(b))
     native_blocks = tuple(b for b in blocks if b.kind in ("resource", "import") and not on_side(b))
-    native_reads, side_reads = _closure((*native_blocks, *shared), by_address), _closure((*side_blocks, *shared),
-                                                                                         by_address)
+    checking = tuple(b for b in blocks if _checks(b))
+    native_reads = _closure((*native_blocks, *shared), by_address)
+    side_reads = _closure((*side_blocks, *shared, *checking), by_address) | {address(b) for b in checking}
     written = {address(b) for b in native_blocks if b.kind == "resource"}
     outputs = tuple(dict.fromkeys(r for b in (*side_blocks, *(by_address[a] for a in side_reads)) for r in _reads(b)
                                   if ref_address(r) in written))
@@ -313,7 +323,7 @@ def split_root(items, has_native):
 
     native = tuple(x for comments, b in groups if kept(b, False) for x in (*comments, *((b,) if b else ())))
     side = tuple(x for comments, b in groups if kept(b, True) for x in (*comments, _side_block(b, written)))
-    return Split(native, (*side, *_output_variables(outputs)) if side_blocks else (), outputs, unresolved)
+    return Split(native, (*side, *_output_variables(outputs)) if side_blocks or checking else (), outputs, unresolved)
 
 
 def no_native_note(split, language, reasons=None):
@@ -321,7 +331,7 @@ def no_native_note(split, language, reasons=None):
     the language (its title) has no form for them (or, reasons: {address: why}, for the reason given); that it is
     applied after the template, and reads the template's outputs when it does."""
     reasons = reasons or {}
-    kept = [address(b) for b in split.side if isinstance(b, TfBlock) and b.kind == "resource"]
+    kept = [address(b) for b in split.side if isinstance(b, TfBlock) and (b.kind == "resource" or _checks(b))]
     reads = ", its variables taking the template's outputs" if split.outputs else ""
     head = (f"# NOTE: these resources stay Terraform beside the {language} template; this root manages them, applied "
             f"after the template{reads}:\n" if reasons else

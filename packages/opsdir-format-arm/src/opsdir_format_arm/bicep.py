@@ -9,7 +9,7 @@ expressions in ${...}. A key that isn't an identifier is quoted.
 import re
 from collections import namedtuple
 
-from .template import Call, Interp, Param, Prop, ResourceId, ResourceName, indexed, is_expression
+from .template import Call, Field, Interp, Member, Param, Prop, ResourceId, ResourceName, indexed, is_expression
 
 # A bare symbol the writer puts after parent:, scope: and in dependsOn (written as it is; never a value of the model)
 _Symbol = namedtuple("_Symbol", ("name",))
@@ -27,6 +27,9 @@ def bicep_string(s):
 
 
 def _key(k):
+    """An object key: an identifier as it is, other text quoted, an expression interpolated ('${expr}')."""
+    if is_expression(k):
+        return bicep_expr(k) if isinstance(k, Interp) else "'${" + bicep_expr(k) + "}'"
     return k if _IDENTIFIER.fullmatch(k) else bicep_string(k)
 
 
@@ -52,6 +55,10 @@ def bicep_expr(v):
         return f"{v.function}({', '.join(bicep_value(a) for a in v.args)})"
     if isinstance(v, Interp):
         return "'" + "".join(_chars(p) if isinstance(p, str) else "${" + bicep_expr(p) + "}" for p in v.parts) + "'"
+    if isinstance(v, Member):
+        return f"{bicep_expr(v.value)}.{v.path}"
+    if isinstance(v, Field):
+        return f"{v.symbol}.{v.path}"
     raise TypeError(f"not a Bicep expression: {v!r}")
 
 
@@ -88,7 +95,7 @@ def _resource(r):
             **({"dependsOn": [_Symbol(s) for s in r.depends_on]} if r.depends_on else {})}
     head = f"resource {r.symbol} {bicep_string(r.type + '@' + r.api_version)}{' existing' if r.existing else ''} = "
     lines = "".join(f"  {_key(k)}: {_symbolic(x, 1)}\n" for k, x in body.items())
-    return "\n".join((*((f"// {r.comment}",) if r.comment else ()), head + "{\n" + lines + "}"))
+    return "\n".join((*(f"// {c}" for c in (r.comment.split("\n") if r.comment else ())), head + "{\n" + lines + "}"))
 
 
 def _symbolic(v, indent):

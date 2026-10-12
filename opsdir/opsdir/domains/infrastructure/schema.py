@@ -127,9 +127,10 @@ ATTRIBUTES = (
     AttributeDef(129, 'ciamAdapterSource', 'string', 'binding', True,
                  'Where to get the adapter package (URL or package name)'),
     AttributeDef(645, 'ciamRenderTarget', 'string', 'binding', False,
-                 "A render target of the component's adapter this environment renders (one the adapter declares, "
-                 "such as the infrastructure-as-code language a cloud adapter writes); none: the adapter's defaults. "
-                 "`opsdir render --target` chooses others for one render"),
+                 "A render target the environment holds for the component's adapter (one the adapter declares, such "
+                 "as the infrastructure-as-code language a cloud adapter writes), set only when the environment "
+                 "requires that form: renders then write only the forms it holds. None: the user chooses for each "
+                 "render (`opsdir render --target`), else the adapter's defaults"),
     AttributeDef(208, 'ciamOverlayOf', 'dn', 'binding', True,
                  "The environment this one is an overlay of: it inherits that environment's bindings, stack, required "
                  'roles and overrides, except the roles it binds, drops, declares or overrides itself (never servers)'),

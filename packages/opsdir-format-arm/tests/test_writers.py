@@ -35,7 +35,7 @@ def test_arm_json_is_what_bicep_compiles_the_same_template_to():
         "[format('id-{0}-pf', parameters('env'))]",
         "[guid(resourceId('Microsoft.KeyVault/vaults', 'kv-ciam-prod'), resourceId("
         "'Microsoft.ManagedIdentity/userAssignedIdentities', format('id-{0}-pf', parameters('env'))), 'read-secret')]",
-        "to-law"]
+        "to-law", "stciampf"]
     rule, ra, diag = doc["resources"][1], doc["resources"][3], doc["resources"][4]
     assert rule["dependsOn"] == ["[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', "
                                  "format('id-{0}-pf', parameters('env')))]",         # sorted by symbol, as Bicep
@@ -90,7 +90,9 @@ def test_the_bicep_file():
     assert ("resource law 'Microsoft.OperationalInsights/workspaces@2025-02-01' existing = {\n"
             "  name: 'law-ciam-shared'\n  scope: resourceGroup('rg-ciam-shared')\n}") in text
     assert "  scope: kv_ciam\n  properties: {\n    principalId: identity_pf.properties.principalId\n" in text
-    assert "  dependsOn: [\n    identity_pf\n  ]\n}" in text and text.endswith("empty(adminSecret)\n")
+    assert "  dependsOn: [\n    identity_pf\n  ]\n}" in text
+    assert text.endswith("output subscriptionId string = subscription().subscriptionId\n\n"
+                         "output principal string = identity_pf.properties.principalId\n")
 
 
 def test_resource_types_leave_existing_ones_out():

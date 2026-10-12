@@ -31,13 +31,18 @@ def test_an_adapter_or_target_that_isnt_there_is_refused_with_what_is():
         chosen_targets((PF,), {"pingfederate": ("bulk",)})
 
 
-def test_the_environments_stack_chooses_its_defaults_and_the_render_its_own():
+def test_the_user_chooses_unless_the_environment_holds_a_form():
     stack = (StackComponent("platform", "pingfederate", None, None, ("terraform",)),
              StackComponent("other", "pingfederate", None, None, ("terraform-imports",)),
              StackComponent("provider", "aws", None, None))
     assert chosen_targets((PF, PLAIN), stack=stack) == {"pingfederate": ("terraform", "terraform-imports")}
-    assert chosen_targets((PF, PLAIN), {"pingfederate": ("admin-api",)}, stack) == {"pingfederate": ("admin-api",)}
+    assert chosen_targets((PF, PLAIN), {"pingfederate": ("terraform",)}, stack) == {"pingfederate": ("terraform",)}
     assert chosen_targets((PF, PLAIN), stack=stack[2:]) == {"pingfederate": ("admin-api", "terraform")}
+    assert chosen_targets((PF, PLAIN), {"pingfederate": ("admin-api",)}, stack[2:]) == {"pingfederate": ("admin-api",)}
+    with pytest.raises(SystemExit, match=r"the environment holds its render form \(pingfederate: terraform, "
+                                         r"terraform-imports; its stack's ciamRenderTarget\): it can't be rendered "
+                                         r"as pingfederate=admin-api"):
+        chosen_targets((PF, PLAIN), {"pingfederate": ("admin-api",)}, stack)
 
 
 def test_a_stack_choosing_what_its_adapter_doesnt_declare_is_refused():

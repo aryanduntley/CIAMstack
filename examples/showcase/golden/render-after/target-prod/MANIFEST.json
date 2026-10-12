@@ -3,6 +3,9 @@
   "provider": "azure",
   "unbound_roles": [],
   "render_targets": {
+    "azure": [
+      "terraform"
+    ],
     "forgeops": [
       "helm",
       "kustomize"

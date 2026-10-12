@@ -2967,12 +2967,13 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.644 NAME 'ciamCatalogRef' DESC 'The
  ys' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VA
  LUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.645 NAME 'ciamRenderTarget' DESC 'A 
- render target of the component\27s adapter this environment renders (one th
- e adapter declares, such as the infrastructure-as-code language a cloud ada
- pter writes); none: the adapter\27s defaults. `opsdir render --target` choo
- ses others for one render' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466
- .115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdi
- r' )
+ render target the environment holds for the component\27s adapter (one the 
+ adapter declares, such as the infrastructure-as-code language a cloud adapt
+ er writes), set only when the environment requires that form: renders then 
+ write only the forms it holds. None: the user chooses for each render (`ops
+ dir render --target`), else the adapter\27s defaults' EQUALITY caseIgnoreMa
+ tch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TY
+ PE 'string' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir

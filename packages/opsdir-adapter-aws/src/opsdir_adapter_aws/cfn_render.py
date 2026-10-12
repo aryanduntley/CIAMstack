@@ -3,10 +3,10 @@ a template (one per provider: a resource on an aliased provider runs in another 
 stack), what CloudFormation has no form for stays in a small Terraform root beside it (format-terraform translate),
 and the lookups Terraform makes become parameters (the record's ids as defaults) or pseudo parameters.
 
-The engine is generic over a table of Natives (cfn_types holds AWS's): how each Terraform resource type is written,
-which attributes a reference reads, which resources merge into another (an S3 bucket's settings into the bucket) or
-expand into several (a route table's routes). Anything the table doesn't know is refused, by name: a translation
-never drops or guesses. Pure.
+The engine is format-terraform's native one (decision 2592), over a table of Natives (cfn_types holds AWS's); this
+module is its CloudFormation part: the value forms (Ref, Fn::GetAtt, Fn::Sub, documents with computed keys as JSON
+text), the stacks and their templates, resource import entries. Anything the table doesn't know is refused, by name:
+a translation never drops or guesses. Pure.
 """
 import json
 import posixpath
@@ -16,115 +16,24 @@ from collections import namedtuple
 from opsdir.core.manifest import header
 from opsdir_format_cloudformation.format import YAML_FORMAT, as_yaml
 from opsdir_format_cloudformation.template import Output, Parameter, Resource, Template, get_att, lint_metadata, \
-    logical_id, ref, select, sub
+    logical_id, ref, sub
+from opsdir_format_terraform import native
 from opsdir_format_terraform.format import FORMAT as HCL
-from opsdir_format_terraform.hcl import Block, TfBlock, TfFile
-from opsdir_format_terraform.translate import Raw, TfRef, address, is_quoted_string, no_native_note, output_variable, \
-    parse_ref, ref_address, ref_text, root_items, roots, split_root, template_parts, value_refs
+from opsdir_format_terraform.hcl import TfBlock, TfFile
+from opsdir_format_terraform.native import (ENGINE_KEYS, Attribute, Computed, Custom, Cx, Derived, Forms, Layout,  # noqa: F401 (the table's API)
+                                            Merge, Native, Nest, Placement, Table, comments, depends, fields,
+                                            group_refs, leading, obj, one, own, pascal, placements, read_root,
+                                            resolver, translated_refs)
+from opsdir_format_terraform.translate import no_native_note, output_variable, ref_address, ref_text, roots
 
-# How one Terraform resource type is written in CloudFormation. type: its CloudFormation type (None: merged into
-# another resource, see merge). properties: a spec (see obj) of its attributes, or (Fields, Cx) -> the resource's
-# properties (its tags, depends_on and provider are the engine's). refs:
-# {Terraform attribute: "Ref" | a GetAtt attribute name | (logical id) -> value}: what a reference to it reads.
-# identifier: the property naming an existing one for a resource import (its Terraform import id the value), or
-# (Terraform import id) -> {property: value}; None when CloudFormation can't import it from what Terraform imports it
-# by (an adopted one then stays Terraform, beside the template). tags: how the resource's tags (with the provider's
-# default tags under them) are written: "list" ([{Key, Value}]) or "map", under tags_key; None when the type takes no
-# tags (a block with tags is then refused). merge: Merge, for a type that is part of another resource. expand:
-# (logical id, Fields, Cx) -> ((logical id suffix, type, properties[, (the parent's import id) -> its import
-# identifier]), ...): further resources it is written as (an adopted parent's expansions are imported with it, so each
-# must say how). parameters: (Fields, Cx) -> Parameters it needs the deployer to give (what Terraform looks up and
-# CloudFormation can't). finish: (properties) -> properties, once what merges into it is in.
-Native = namedtuple("Native", ("type", "properties", "refs", "identifier", "tags", "merge", "expand", "parameters",
-                               "tags_key", "finish"),
-                    defaults=(None, {}, None, None, None, None, None, "Tags", None))
-# A Terraform resource type that is part of another resource natively. via: its attribute referencing that resource;
-# into: (the target's properties, Fields, Cx) -> the target's properties with this one's merged in. refs: what a
-# reference to the merged resource reads, of the target ({attribute: as Native.refs}). ordering: whether its depends_on
-# orders the target (False where the native resource does what the ordering was for).
-Merge = namedtuple("Merge", ("via", "into", "refs", "ordering"), defaults=({}, True))
-# What the data table answers for an attribute of a data source (data[type](Fields, attribute)): a pseudo parameter
-# (Pseudo: its name), a Parameter the deployer gives (its logical_id a suffix to the one made from the block's
-# address, '' for none; the record's id as its default where the record holds one), a value derived from such a
-# parameter (Derived: make(the parameter's Ref) -> value), any other value as it is, or None when the attribute has
-# no native form.
+# A data table answer only CloudFormation has: a pseudo parameter (its name: AWS::AccountId, AWS::Region, ...).
 Pseudo = namedtuple("Pseudo", ("name",))
-Derived = namedtuple("Derived", ("parameter", "make"))
-# What a mapping function is given beside a block's Fields: value(Terraform value) -> the CloudFormation value;
-# block(address) -> the root's TfBlock at that address (a data source a resource reads, say), or None; region: the
-# region of the template the resource is in; logical(address) -> the logical id of a resource the root writes
-# natively; param(name) -> the Ref of a Parameter this resource's parameters() declare, by its logical id;
-# provider_region(alias) -> the region of the root's provider with that alias; where: the address of the block being
-# translated (for refusals).
-Cx = namedtuple("Cx", ("value", "block", "region", "logical", "param", "provider_region", "where"),
-                defaults=("",))
-# A spec of a block's attributes (obj): {Terraform key: a CloudFormation name (the value translated), a Nest (nested
-# blocks as an object, or a list of objects when many), a Custom (make(Terraform value, Cx) -> {CloudFormation name:
-# value}, any number of them), or None (a Terraform-only attribute, deliberately not written)}.
-Nest = namedtuple("Nest", ("name", "spec", "many"), defaults=(False,))
-Custom = namedtuple("Custom", ("make",))
-# The attributes the engine writes itself, never a spec's.
-ENGINE_KEYS = ("tags", "depends_on", "provider")
-
-
-def fields(body):
-    """A block body as {key: value}, a nested block's key giving a tuple of its blocks' Fields (in order, repeated
-    blocks each one); comments left out."""
-    keys = dict.fromkeys(k for k, _ in body if k != "#")
-    return {k: (tuple(fields(v.body) for kk, v in body if kk == k)
-                if any(isinstance(v, Block) for kk, v in body if kk == k)
-                else next(v for kk, v in body if kk == k)) for k in keys}
-
-
-def one(f, key):
-    """The single nested block under key, as Fields ({} when there is none)."""
-    blocks = f.get(key) or ()
-    return blocks[0] if blocks else {}
-
-
-def comments(body, path=""):
-    """Every comment inside a block body, nested blocks' ones prefixed with where they are."""
-    return tuple(c for k, v in body
-                 for c in ((f"{path}{v}",) if k == "#" else
-                           comments(v.body, f"{path}{k}: ") if isinstance(v, Block) else ()))
+LANGUAGE = "CloudFormation"
 
 
 def tag_list(tags):
     """{key: value} as CloudFormation's Tags list."""
     return [{"Key": k, "Value": v} for k, v in tags.items()]
-
-
-def pascal(key):
-    """A Terraform attribute name as CloudFormation's (snake_case to PascalCase), for the many that only differ so."""
-    return "".join(w[:1].upper() + w[1:] for w in key.split("_"))
-
-
-def obj(f, cx, spec, where=None):
-    """Fields as a CloudFormation object by a spec; refuses an attribute the spec doesn't name (a translation never
-    drops what it doesn't know) and more than one block where the spec takes one."""
-    where = where or cx.where
-    unknown = sorted(k for k in f if k not in spec)
-    if unknown:
-        raise SystemExit(f"{where}: no CloudFormation form for {', '.join(unknown)}")
-
-    def part(k, v):
-        form = spec[k]
-        if form is None:
-            return {}
-        if isinstance(form, str):
-            return {form: cx.value(v)}
-        if isinstance(form, Custom):
-            return form.make(v, cx)
-        objects = [obj(b, cx, form.spec, f"{where}.{k}") for b in v]
-        if not form.many and len(objects) != 1:
-            raise SystemExit(f"{where}.{k}: one block expected, found {len(objects)}")
-        return {form.name: objects if form.many else objects[0]}
-    return {n: x for k, v in f.items() for n, x in part(k, v).items()}
-
-
-def own(f):
-    """A block's Fields without the attributes the engine writes."""
-    return {k: v for k, v in f.items() if k not in ENGINE_KEYS}
 
 
 # ------------------------------------------------------------------ values
@@ -134,111 +43,177 @@ def _sub_text(text):
     return text.replace("${", "${!")
 
 
-def _sub_part(expr, n):
-    """(text, variables) of a resolved reference inside Fn::Sub: ${Name} / ${Name.Attribute}, a literal as itself, any
-    other function under a variable of its own (V<n>)."""
-    if isinstance(expr, str):
-        return _sub_text(expr), {}
-    if set(expr) == {"Ref"}:
-        return "${" + expr["Ref"] + "}", {}
-    if set(expr) == {"Fn::GetAtt"}:
-        return "${" + ".".join(expr["Fn::GetAtt"]) + "}", {}
-    return "${V" + str(n) + "}", {f"V{n}": expr}
+def _sub_body(v):
+    """(text, variables) of an Fn::Sub value, or None for any other value."""
+    body = v.get("Fn::Sub") if isinstance(v, dict) and set(v) == {"Fn::Sub"} else None
+    return None if body is None else (body, {}) if isinstance(body, str) else (body[0], body[1])
 
 
-_INDEXED = re.compile(r"^(?:tolist\((?P<a>[^()]+)\)|(?P<b>[^()\[\]]+))\[(?P<i>\d+)\]$")
-
-
-def _raw(raw, resolve):
-    """A CloudFormation value for an expression that is more than one reference: a quoted template string, a
-    jsonencode() document (its strings translated in turn), an element of a list a reference reads (tolist(x)[0],
-    x[0]: the reference with that index). Refused otherwise, naming it."""
-    text = raw.text.strip()
-    if is_quoted_string(text):
-        return translate(json.loads(text), resolve, quoted=True)
-    if text.startswith("jsonencode(") and text.endswith(")"):
-        return _document(json.loads(text[len("jsonencode("):-1]), resolve)
-    m = _INDEXED.match(text)
-    r = parse_ref((m.group("a") or m.group("b")).strip()) if m else None
-    if r is not None:
-        return resolve(r._replace(attr=f"{r.attr}[{m.group('i')}]"))
-    raise SystemExit(f"no CloudFormation form for the Terraform expression {text!r}")
-
-
-def _raw_refs(raw):
-    """The references an expression's translation (_raw) resolves: a jsonencode() document's, an indexed reference
-    with its index."""
-    text = raw.text.strip()
-    if is_quoted_string(text):
-        return translated_refs(json.loads(text), quoted=True)
-    if text.startswith("jsonencode(") and text.endswith(")"):
-        return translated_refs(json.loads(text[len("jsonencode("):-1]), quoted=True)
-    m = _INDEXED.match(text)
-    r = parse_ref((m.group("a") or m.group("b")).strip()) if m else None
-    return (r._replace(attr=f"{r.attr}[{m.group('i')}]"),) if r is not None else raw.refs
-
-
-def translated_refs(v, quoted=False):
-    """Every reference translate() resolves in a value (a body, through nested blocks), in order, each once; quoted:
-    strings are a quoted template's content (see template_parts)."""
+def _sub_piece(v, n):
+    """(text, variables) of one value inside Fn::Sub: a literal as itself, ${Name} / ${Name.Attribute} for a Ref /
+    GetAtt, another Fn::Sub's text inline (its variables renamed V<n><name>), any other function under a variable of
+    its own (V<n>)."""
     if isinstance(v, str):
-        return tuple(dict.fromkeys(r for p in template_parts(v, quoted)
-                                   for r in ((p,) if isinstance(p, TfRef) else _raw_refs(p) if isinstance(p, Raw)
-                                             else ())))
-    if isinstance(v, Block):
-        return translated_refs(v.body, quoted)
-    if isinstance(v, dict):
-        return translated_refs(tuple(v.values()), quoted)
-    if isinstance(v, (list, tuple)):
-        return tuple(dict.fromkeys(r for x in v for r in translated_refs(x, quoted)))
-    return ()
+        return _sub_text(v), {}
+    if isinstance(v, dict) and set(v) == {"Ref"}:
+        return "${" + v["Ref"] + "}", {}
+    if isinstance(v, dict) and set(v) == {"Fn::GetAtt"}:
+        return "${" + ".".join(v["Fn::GetAtt"]) + "}", {}
+    inner = _sub_body(v)
+    if inner is not None:
+        names = {k: f"V{n}{k}" for k in inner[1]}
+        return (re.sub(r"\$\{([^!}][^}]*)\}", lambda m: "${" + names.get(m.group(1), m.group(1)) + "}", inner[0]),
+                {names[k]: x for k, x in inner[1].items()})
+    return "${V" + str(n) + "}", {f"V{n}": v}
 
 
-def _document(v, resolve):
-    """A JSON document (from jsonencode) with its strings' interpolations translated."""
+def concat(*values):
+    """CloudFormation values (literals and functions) written one after another: the text when all are literal, the
+    one value when alone, else one Fn::Sub (a Ref / GetAtt as ${...}, another Fn::Sub inline)."""
+    values = tuple(v for v in values if v != "")
+    if all(isinstance(v, str) for v in values):
+        return "".join(values)
+    if len(values) == 1:
+        return values[0]
+    found = tuple(_sub_piece(v, i) for i, v in enumerate(values))
+    variables = {k: x for _, vs in found for k, x in vs.items()}
+    return sub("".join(t for t, _ in found), variables or None)
+
+
+def _plain(text, variables):
+    """Fn::Sub text as the simplest value it is: a literal, one Ref or GetAtt, else the Fn::Sub."""
+    if not variables:
+        m = re.fullmatch(r"\$\{([\w:]+)\}", text)
+        if m:
+            return ref(m.group(1))
+        m = re.fullmatch(r"\$\{(\w+)\.([\w.]+)\}", text)
+        if m:
+            return get_att(m.group(1), m.group(2))
+        if "${" not in text.replace("${!", ""):
+            return text.replace("${!", "${")
+    return sub(text, variables or None)
+
+
+def trim_prefix(v, prefix):
+    """Terraform's trimprefix of a CloudFormation value: a literal without the prefix (when it has it), an Fn::Sub
+    without it at the start of its text (unchanged when its text starts with other literal text); refused when what
+    v starts with isn't known (a Ref, a GetAtt, text starting with one)."""
     if isinstance(v, str):
-        return translate(v, resolve, quoted=True)
+        return v.removeprefix(prefix)
+    found = _sub_body(v)
+    lead = _sub_text(prefix)
+    if found is not None and found[0].startswith(lead):
+        return _plain(found[0][len(lead):], found[1])
+    literal = re.match(r"(?:[^$]|\$(?!\{)|\$\{!)*", found[0]).group(0) if found is not None else ""
+    if literal and not lead.startswith(literal):
+        return v
+    raise SystemExit(f"no CloudFormation form for trimprefix({json.dumps(v)}, {json.dumps(prefix)}): what the value "
+                     "starts with is known only at deploy time")
+
+
+def _join(separator, values):
+    """Terraform's join: a literal list's values with the separator between them (concat), a list a function gives
+    as Fn::Join."""
+    if not isinstance(values, list):
+        return {"Fn::Join": [separator, values]}
+    return concat(*(x for i, v in enumerate(values) for x in ((separator, v) if i else (v,))))
+
+
+# An object key a document computes (a CloudFormation function), held as the function's JSON text so the object stays
+# a dict (see object_key, json_document).
+ComputedKey = namedtuple("ComputedKey", ("text",))
+
+
+def object_key(v):
+    """v as a document's object key: a literal as it is, a CloudFormation function as a ComputedKey."""
+    return v if isinstance(v, str) else ComputedKey(json.dumps(v, sort_keys=True))
+
+
+def _function(v):
+    """Whether v is a CloudFormation function (Ref, Fn::*)."""
+    key = next(iter(v)) if isinstance(v, dict) and len(v) == 1 else None
+    return isinstance(key, str) and (key == "Ref" or key.startswith("Fn::"))
+
+
+def _keys_computed(v):
+    if isinstance(v, dict) and not _function(v):
+        return any(isinstance(k, ComputedKey) or _keys_computed(x) for k, x in v.items())
+    return isinstance(v, list) and any(_keys_computed(x) for x in v)
+
+
+def _json_pieces(v):
+    """A document's JSON text as literal text and CloudFormation functions (each inside its string's quotes)."""
+    if isinstance(v, ComputedKey):
+        return '"', json.loads(v.text), '"'
+    if _function(v):
+        return '"', v, '"'
     if isinstance(v, dict):
-        return {k: _document(x, resolve) for k, x in v.items()}
+        return ("{", *(p for i, (k, x) in enumerate(v.items())
+                       for p in ((", ",) if i else ()) + _json_pieces(k) + (": ",) + _json_pieces(x)), "}")
     if isinstance(v, list):
-        return [_document(x, resolve) for x in v]
+        return "[", *(p for i, x in enumerate(v) for p in ((", ",) if i else ()) + _json_pieces(x)), "]"
+    return (json.dumps(v),)
+
+
+def json_document(v):
+    """A JSON document (an IAM policy) as CloudFormation takes it: as it is when every object key is literal, else
+    its JSON text as one Fn::Sub (CloudFormation computes a string's parts, never an object's keys: an IRSA trust
+    policy's condition keys name the cluster's OIDC issuer)."""
+    return concat(*_json_pieces(v)) if _keys_computed(v) else v
+
+
+_PLACE = r"\$\{([^!}][^}]*)\}"
+
+
+def _part_of(text, variables):
+    """A string of a document parsed from Fn::Sub as the value it stands for: one whole variable as its value, else
+    the text with only the variables it uses (_plain: a literal, one Ref / GetAtt, or an Fn::Sub)."""
+    whole = re.fullmatch(_PLACE, text)
+    if whole and whole.group(1) in variables:
+        return variables[whole.group(1)]
+    used = dict.fromkeys(n for n in re.findall(_PLACE, text) if n in variables)
+    return _plain(text, {n: variables[n] for n in used})
+
+
+def _parsed(v, variables):
+    if isinstance(v, str):
+        return _part_of(v, variables)
+    if isinstance(v, dict):
+        return {object_key(_part_of(k, variables)): _parsed(x, variables) for k, x in v.items()}
+    if isinstance(v, list):
+        return [_parsed(x, variables) for x in v]
     return v
+
+
+def document_of(v):
+    """A JSON document as json_document wrote it, parsed back: an Fn::Sub of a document's JSON text as the document,
+    each string or key holding ${...} as the CloudFormation value it stands for (a computed key as a ComputedKey,
+    literal ${!...} text unescaped), so the string form can be read, checked or rewritten into another form; any
+    other value (a document already an object, a Sub of other text) as it is."""
+    found = _sub_body(v)
+    try:
+        data = json.loads(found[0]) if found is not None else None
+    except ValueError:
+        return v
+    return _parsed(data, found[1]) if isinstance(data, (dict, list)) else v
+
+
+# The CloudFormation value forms the engine writes values with.
+CLOUDFORMATION = native.Target(LANGUAGE, lambda *values: concat(*values),
+                               lambda separator, values: {"Fn::Join": [separator, values]},
+                               lambda v, prefix: trim_prefix(v, prefix))
 
 
 def translate(v, resolve, quoted=False):
-    """A Terraform value as CloudFormation's: a reference through resolve (TfRef -> value), an interpolated string as
-    Fn::Sub, a jsonencode() document as the document, lists and objects element by element; literals as they are.
-    quoted: strings are a quoted template's content (see template_parts)."""
-    if isinstance(v, str):
-        parts = template_parts(v, quoted)
-        if all(isinstance(p, str) for p in parts):
-            return v
-        values = tuple(p if isinstance(p, str) else resolve(p) if isinstance(p, TfRef) else _raw(p, resolve)
-                       for p in parts)
-        if len(values) == 1:
-            return values[0]
-        if all(isinstance(x, str) for x in values):
-            return "".join(values)
-        found = tuple(_sub_text(x) if isinstance(p, str) else _sub_part(x, i)
-                      for i, (p, x) in enumerate(zip(parts, values)))
-        text = "".join(x if isinstance(x, str) else x[0] for x in found)
-        variables = {k: e for x in found if not isinstance(x, str) for k, e in x[1].items()}
-        return sub(text, variables or None)
-    if isinstance(v, (list, tuple)):
-        return [translate(x, resolve) for x in v]
-    if isinstance(v, dict):
-        return {k: translate(x, resolve) for k, x in v.items()}
-    if isinstance(v, Block):
-        raise TypeError("a nested block is the mapping's to translate")
-    return v
+    """A Terraform value as CloudFormation's (format-terraform native.translate with CloudFormation's forms): a
+    reference through resolve, an interpolated string as one Fn::Sub, a jsonencode() document as the document, join /
+    trimprefix calls, lists and objects element by element; literals as they are."""
+    return native.translate(v, resolve, CLOUDFORMATION, quoted)
 
 
 # ------------------------------------------------------------------ a root as templates
 
 Stack = namedtuple("Stack", ("alias", "region", "provider"))
-# Where a resource the root writes natively is: its stack (provider alias, None for the default provider), logical
-# id, Native, and for a merged one the address it merges into.
-Placed = namedtuple("Placed", ("address", "stack", "logical_id", "native", "target"))
 
 
 def _alias(b):
@@ -259,33 +234,12 @@ def _short(type_):
     return type_.split("_", 1)[1] if "_" in type_ else type_
 
 
-def _placed(resources, types, by_address):
-    """{address: Placed} for the root's natively written resources: standalone ones in their provider's stack, merged
-    ones with the resource they merge into (its stack). Refuses a merge whose target the root doesn't write."""
-    standalone = {address(b): Placed(address(b), _alias(b), logical_id(_short(b.labels[0]), b.labels[1]),
-                                     types[b.labels[0]], None)
-                  for b in resources if types[b.labels[0]].type}
-
-    def target(b):
-        via = dict(b.body).get(types[b.labels[0]].merge.via)
-        refs = value_refs(via) if via is not None else ()
-        found = next((ref_address(r) for r in refs if ref_address(r) in standalone), None)
-        if found is None:
-            raise SystemExit(f"{address(b)} merges into the resource its {types[b.labels[0]].merge.via} names, which "
-                             "this root doesn't write in CloudFormation")
-        return found
-
-    merged = {address(b): standalone[t]._replace(address=address(b), native=types[b.labels[0]], target=t)
-              for b in resources if not types[b.labels[0]].type for t in (target(b),)}
-    return {**standalone, **merged}
-
-
-def _form(native, attr, lid, where):
-    refs = native.merge.refs if native.merge else native.refs
-    form = refs.get(attr)
-    if form is None:
-        raise SystemExit(f"{where}: no CloudFormation form for attribute {attr!r} (known: {', '.join(refs) or 'none'})")
-    return ref(lid) if form == "Ref" else form(lid) if callable(form) else get_att(lid, form)
+def _layout(items):
+    """CloudFormation's Layout of a root: a stack per provider alias (its region the provider's), logical ids from the
+    type and name."""
+    stacks = _stacks(items)
+    return Layout(_alias, lambda alias: getattr(stacks.get(alias), "region", None),
+                  lambda type_, name: logical_id(_short(type_), name))
 
 
 def _variable_parameter(lid, b):
@@ -302,99 +256,13 @@ def _cross_id(r):
     return logical_id(output_variable(r))
 
 
-Root = namedtuple("Root", ("directory", "items", "split", "by_address", "placed", "stacks", "reasons"))
-
-
-def _adopted(items):
-    """{address: Terraform import id} of the resources a root adopts (its import blocks)."""
-    imports = (dict(b.body) for b in items if isinstance(b, TfBlock) and b.kind == "import")
-    return {ref_address(parse_ref(body["to"][2:-1])): body["id"] for body in imports}
-
-
-def _root(directory, files, types, no_native, unavailable):
-    """The root read and split (a resource stays Terraform when its type has no native form, in general or in the
-    region its provider runs in); refuses resource types the table neither maps nor lists as having no native
-    form."""
-    items = root_items(files)
-    stacks = _stacks(items)
-    unknown = sorted({b.labels[0] for b in items if isinstance(b, TfBlock) and b.kind == "resource"
-                      and b.labels[0] not in types and b.labels[0] not in no_native})
-    if unknown:
-        raise SystemExit(f"Terraform root {directory}: no CloudFormation mapping for {', '.join(unknown)} (render it "
-                         "as Terraform, or add the type to the mapping)")
-    adopted = _adopted(items)
-    by_address = {address(b): b for b in items if isinstance(b, TfBlock) and address(b)}
-
-    def why(b):
-        """Why a resource stays Terraform, or None when it is written natively."""
-        t = b.labels[0]
-        region = getattr(stacks.get(_alias(b)), "region", None)
-        if t not in types:
-            return "no CloudFormation type"
-        if unavailable(t, region):
-            return f"no CloudFormation type in {region}"
-        if address(b) in adopted and types[t].identifier is None and types[t].merge is None:
-            return "adopted (an import block): CloudFormation can't import it by its Terraform import id"
-        if types[t].merge is None:
-            return None
-        via = dict(b.body).get(types[t].merge.via)
-        targets = tuple(by_address[ref_address(r)] for r in (value_refs(via) if via is not None else ())
-                        if ref_address(r) in by_address and by_address[ref_address(r)].kind == "resource")
-        if not targets:
-            return f"part of a resource natively, and its {types[t].merge.via} names none here"
-        return None if why(targets[0]) is None else f"part of {address(targets[0])} natively, which stays Terraform"
-    split = split_root(items, lambda b: why(b) is None)
-    reasons = {address(b): why(b) for b in items if isinstance(b, TfBlock) and b.kind == "resource"
-               and why(b) is not None}
-    if split.unresolved:
-        raise SystemExit(f"Terraform root {directory}: resources written in CloudFormation read ones that stay "
-                         "Terraform: " + "; ".join(f"{a} reads {ref_text(r)}" for a, r in split.unresolved))
-    blocks = tuple(x for x in split.native if isinstance(x, TfBlock))
-    resources = tuple(b for b in blocks if b.kind == "resource")
-    return Root(directory, items, split, by_address, _placed(resources, types, by_address), stacks, reasons)
-
-
-def _resolver(root, stack, data):
-    """resolve(TfRef) -> CloudFormation value, for resources in the stack: references to its own resources as
-    Ref/GetAtt, to another stack's as the parameter carrying that stack's output, to data sources as the data table
-    says, to variables as their parameters, path.module as the template's own folder."""
-    def resolve(r):
-        a = ref_address(r)
-        if r.kind == "resource":
-            p = root.placed.get(a)
-            if p is None:
-                raise SystemExit(f"{ref_text(r)}: not a resource this root writes in CloudFormation")
-            if not r.attr:
-                raise SystemExit(f"{ref_text(r)}: a whole resource has no CloudFormation value")
-            if p.stack != stack:
-                return ref(_cross_id(r))
-            return _form(p.native, r.attr, p.logical_id, ref_text(r))
-        if r.kind == "data":
-            return _data_value(r, root.by_address[a], data)
-        if r.kind == "var":
-            return ref(logical_id(r.name))
-        if r.kind == "path":
-            return "."
-        raise SystemExit(f"{ref_text(r)}: no CloudFormation form")
-    return resolve
-
-
-def _data_answer(r, b, data):
-    handler = data.get(b.labels[0])
-    if handler is None:
-        raise SystemExit(f"{ref_text(r)}: no CloudFormation form for data source {b.labels[0]}")
-    found = handler(fields(b.body), r.attr)
-    if found is None:
-        raise SystemExit(f"{ref_text(r)}: no CloudFormation form for attribute {r.attr!r} of {b.labels[0]}")
-    return found
-
-
 def _data_id(r, p):
     return logical_id(_short(r.type), r.name) + p.logical_id
 
 
-def _data_value(r, b, data):
-    found = _data_answer(r, b, data)
+def _answer(r, found):
+    """A data table answer as CloudFormation reads it: a pseudo parameter's Ref, a Parameter's Ref (its id made from
+    the block's address), a Derived value of one, any other value as it is."""
     if isinstance(found, Pseudo):
         return ref(found.name)
     if isinstance(found, Parameter):
@@ -402,6 +270,12 @@ def _data_value(r, b, data):
     if isinstance(found, Derived):
         return found.make(ref(_data_id(r, found.parameter)))
     return found
+
+
+# How CloudFormation reads what a reference names: "Ref" or a GetAtt attribute; another stack's value through the
+# parameter carrying its output; a variable's parameter; data answers (_answer).
+FORMS = Forms(lambda lid, form: ref(lid) if form == "Ref" else get_att(lid, form), lambda r: ref(_cross_id(r)),
+              lambda name: ref(logical_id(name)), _answer)
 
 
 def _data_parameters(root, refs, data):
@@ -414,58 +288,80 @@ def _data_parameters(root, refs, data):
                            (found.parameter,) if isinstance(found, Derived) else ()))
 
 
-def _stack_refs(root, members):
-    """Every reference the stack's resources (and what merges into them) make, depends_on aside."""
-    return tuple(dict.fromkeys(r for p in members for r in translated_refs(tuple(
-        kv for kv in root.by_address[p.address].body if kv[0] not in ("depends_on", "provider")))))
-
-
-def _depends(root, p, stack_ids):
-    """The logical ids a resource's (and its merged resources') depends_on name, in the same template."""
-    names = tuple(r for kv in root.by_address[p.address].body if kv[0] == "depends_on" for r in value_refs(kv[1]))
-    ids = (root.placed[ref_address(r)].logical_id for r in names
-           if ref_address(r) in root.placed and root.placed[ref_address(r)].stack == p.stack)
-    return tuple(i for i in dict.fromkeys(ids) if i != p.logical_id and i in stack_ids)
-
-
 def _default_tags(stack):
     default = fields(stack.provider.body).get("default_tags") if stack.provider else None
     return dict(default[0].get("tags", {})) if default else {}
 
 
-def _tagged(native, f, props, default, cx, where):
+def _tagged(native_type, f, props, default, cx, where):
     """props with the resource's tags (the provider's default tags under its own) as the type takes them."""
-    own = f.get("tags") or {}
-    if not own and not default:
+    tags = f.get("tags") or {}
+    if not tags and not default:
         return props
-    if native.tags is None:
-        if own:
+    if native_type.tags is None:
+        if tags:
             raise SystemExit(f"{where}: tagged in Terraform, but its CloudFormation type takes no tags")
         return props
-    tags = cx.value({**default, **own})
-    return {**props, native.tags_key: tag_list(tags) if native.tags == "list" else tags}
+    found = cx.value({**default, **tags})
+    return {**props, native_type.tags_key: tag_list(found) if native_type.tags == "list" else found}
 
 
 def _cx(root, stack, resolve):
+    stacks = _stacks(root.items)
+
     def logical(a):
-        return root.placed[a].logical_id
+        return root.placed[a].id
+
     def provider_region(alias):
-        if alias not in root.stacks:
+        if alias not in stacks:
             raise SystemExit(f"Terraform root {root.directory}: no provider with alias {alias}")
-        return root.stacks[alias].region
+        return stacks[alias].region
     return Cx(lambda v: translate(v, resolve), root.by_address.get, stack.region if stack else None, logical, ref,
-              provider_region)
+              provider_region, "", LANGUAGE)
+
+
+def referenced_ids(v):
+    """The logical ids (and parameter or pseudo parameter names) a CloudFormation value reads: through Ref,
+    Fn::GetAtt and Fn::Sub's ${...} (what CloudFormation already orders a resource after)."""
+    if isinstance(v, list):
+        return frozenset(i for x in v for i in referenced_ids(x))
+    if not isinstance(v, dict):
+        return frozenset()
+    if set(v) == {"Ref"}:
+        return frozenset((v["Ref"],))
+    if set(v) == {"Fn::GetAtt"}:
+        return frozenset((v["Fn::GetAtt"][0],))
+    found = _sub_body(v)
+    if found is not None:
+        names = frozenset(m.split(".")[0] for m in re.findall(r"\$\{([^!}][^}]*)\}", found[0]))
+        return (names - set(found[1])) | referenced_ids(list(found[1].values()))
+    return frozenset(i for x in v.values() for i in referenced_ids(x))
+
+
+def _ready(root, members, cx):
+    """{logical id: the logical id of the expansion making it usable} of the stack's resources with a ready
+    expansion (Native.ready) that they expand into here (a gateway attached to a VPC)."""
+    def expanded(p):
+        f = fields(root.by_address[p.address].body)
+        return {x[0] for x in p.native.expand(p.id, f, cx._replace(where=p.address))}
+    return {p.id: f"{p.id}{p.native.ready}" for p in members
+            if p.target is None and p.native.ready and p.native.ready in expanded(p)}
 
 
 def _import_entry(type_, lid, identifier):
     return {"ResourceType": type_, "LogicalResourceId": lid, "ResourceIdentifier": identifier}
 
 
-def _resources(root, stack, members, default, cx, imported, leading):
+def _resources(root, members, default, cx, imported, notes_above):
     """(the stack's Resources, its resource import entries): each standalone resource with what merges into it, the
     resources it expands into; an adopted one (and its expansions) kept on deletion and listed for import."""
-    ids = {p.logical_id for p in members}
+    ids = {p.id for p in members}
     out, entries = [], []
+    ready = _ready(root, members, cx)
+
+    def waits(lid, props):
+        """The expansions making what props reference usable (ready), but for a resource's own."""
+        return tuple(r for i, r in ready.items() if i in referenced_ids(props) and lid not in (i, r))
     for p in (p for p in members if p.target is None):
         b = root.by_address[p.address]
         f = fields(b.body)
@@ -477,46 +373,33 @@ def _resources(root, stack, members, default, cx, imported, leading):
             props = m.native.merge.into(props, fields(root.by_address[m.address].body), cx._replace(where=m.address))
         props = p.native.finish(props) if p.native.finish else props
         props = _tagged(p.native, f, props, default, cx, p.address)
-        notes = (*leading.get(p.address, ()), *comments(b.body),
+        notes = (*notes_above.get(p.address, ()), *comments(b.body),
                  *(c for m in merged
-                   for c in (*leading.get(m.address, ()), *comments(root.by_address[m.address].body))))
-        depends = tuple(dict.fromkeys(d for m in (p, *(m for m in merged if m.native.merge.ordering))
-                                      for d in _depends(root, m, ids)))
+                   for c in (*notes_above.get(m.address, ()), *comments(root.by_address[m.address].body))))
+        implied = referenced_ids(props)
+        depends_on = tuple(dict.fromkeys((*(d for m in (p, *(m for m in merged if m.native.merge.ordering))
+                                            for d in depends(root, m, ids) if d not in implied),
+                                          *waits(p.id, props))))
         adopted = imported.get(p.address)
         kept = "Retain" if adopted is not None else None
-        out.append(Resource(p.logical_id, p.native.type, props, depends, None, kept, kept,
+        out.append(Resource(p.id, p.native.type, props, depends_on, None, kept, kept,
                             {"Comments": list(notes)} if notes else None))
         identifier = p.native.identifier
-        entries.extend(() if adopted is None else (_import_entry(p.native.type, p.logical_id, identifier(adopted)
+        entries.extend(() if adopted is None else (_import_entry(p.native.type, p.id, identifier(adopted)
                                                                  if callable(identifier) else {identifier: adopted}),))
-        for x in (p.native.expand(p.logical_id, f, here) if p.native.expand else ()):
-            lid = f"{p.logical_id}{x[0]}"
+        for x in (p.native.expand(p.id, f, here) if p.native.expand else ()):
+            lid = f"{p.id}{x[0]}"
             if adopted is not None and len(x) < 4:
                 raise SystemExit(f"{p.address} is adopted, but CloudFormation can't import its {x[1]} {lid}")
-            out.append(Resource(lid, x[1], x[2], (), None, kept, kept))
+            out.append(Resource(lid, x[1], x[2], waits(lid, x[2]), None, kept, kept))
             entries.extend((_import_entry(x[1], lid, x[3](adopted)),) if adopted is not None else ())
     return tuple(out), tuple(entries)
-
-
-def _leading(items):
-    """{address: the comments directly above the block}, and the comments above blocks that aren't resources."""
-    out, loose, pending = {}, [], []
-    for x in items:
-        if isinstance(x, TfBlock):
-            if x.kind == "resource":
-                out[address(x)] = tuple(pending)
-            else:
-                loose.extend(pending)
-            pending = []
-        else:
-            pending.append(x[1])
-    return out, tuple((*loose, *pending))
 
 
 def _imports(root, members):
     """{address: Terraform import id} of the stack's resources the root adopts (import blocks); refused for one
     merged into another (it is imported with the resource it is part of, so it can't be adopted on its own)."""
-    found = {a: i for a, i in _adopted(root.split.native).items()
+    found = {a: i for a, i in native.adopted(root.split.native).items()
              if root.placed.get(a) is not None and root.placed[a] in members}
     merged = sorted(a for a in found if root.placed[a].target is not None)
     if merged:
@@ -524,26 +407,26 @@ def _imports(root, members):
     return found
 
 
-def _stack_template(m, root, stack, data, what):
+def _stack_template(m, root, stack, table, what):
     """(Template, its resource import entries) of one stack of the root."""
-    members = tuple(p for p in root.placed.values() if p.stack == stack.alias)
-    refs = _stack_refs(root, members)
-    resolve = _resolver(root, stack.alias, data)
+    members = tuple(p for p in root.placed.values() if p.group == stack.alias)
+    refs = group_refs(root, members, table.data)
+    resolve = resolver(root, stack.alias, table, CLOUDFORMATION, FORMS)
     cx = _cx(root, stack, resolve)
-    leading, loose = _leading(root.split.native)
+    notes_above, loose = leading(root.split.native)
     imported = _imports(root, members)
-    resources, entries = _resources(root, stack, members, _default_tags(stack), cx, imported, leading)
-    own = tuple(q for p in members if p.native.parameters for q in p.native.parameters(
+    resources, entries = _resources(root, members, _default_tags(stack), cx, imported, notes_above)
+    deployer = tuple(q for p in members if p.native.parameters for q in p.native.parameters(
         fields(root.by_address[p.address].body), cx))
     variables = tuple(_variable_parameter(logical_id(r.name), root.by_address[ref_address(r)]) for r in refs
                       if r.kind == "var")
-    crossing = tuple(r for r in refs if r.kind == "resource" and root.placed[ref_address(r)].stack != stack.alias)
+    crossing = tuple(r for r in refs if r.kind == "resource" and root.placed[ref_address(r)].group != stack.alias)
     cross = tuple(Parameter(_cross_id(r), "String", None,
-                            f"{ref_text(r)}: an output of template {_template_name(root.placed[ref_address(r)].stack)}"
+                            f"{ref_text(r)}: an output of template {_template_name(root.placed[ref_address(r)].group)}"
                             " (deployed first)") for r in crossing)
-    parameters = tuple({p.logical_id: p for p in (*_data_parameters(root, refs, data), *variables, *cross, *own)}
-                       .values())
-    outputs = _outputs(root, stack, members, resolve)
+    parameters = tuple({p.logical_id: p for p in (*_data_parameters(root, refs, table.data), *variables, *cross,
+                                                  *deployer)}.values())
+    outputs = _outputs(root, stack, members, resolve, table.data)
     notes = {"Notes": list(loose)} if loose and stack.alias is None else {}
     template = Template(f"{what} ({m.label}): the Terraform root {root.directory} as CloudFormation"
                         + (f", provider {stack.alias}" if stack.alias else ""),
@@ -560,10 +443,10 @@ def _clashes(t):
         raise SystemExit(f"logical ids used twice in a template: {', '.join(twice)}")
 
 
-def _outputs(root, stack, members, resolve):
+def _outputs(root, stack, members, resolve, data):
     """The stack's Outputs: values of its resources the side Terraform root or another template reads."""
-    others = tuple(r for p in root.placed.values() if p.stack != stack.alias
-                   for r in _stack_refs(root, (p,)) if r.kind == "resource"
+    others = tuple(r for p in root.placed.values() if p.group != stack.alias
+                   for r in group_refs(root, (p,), data) if r.kind == "resource"
                    and root.placed.get(ref_address(r)) in members)
     wanted = tuple(dict.fromkeys((*(r for r in root.split.outputs if root.placed[ref_address(r)] in members), *others)))
     return tuple(Output(_cross_id(r), resolve(r), f"{ref_text(r)}, for the Terraform root beside this template "
@@ -580,41 +463,37 @@ def native_directory(directory):
     return posixpath.join("cloudformation", rest) if rest else "cloudformation"
 
 
-# Where a Terraform resource of a root went: kind "template" (where: the template's path; detail: its logical id),
-# "merged" (where: the template's path; detail: the address of the resource it is part of) or "terraform" (where: the
-# path of the Terraform root kept beside the template; detail: why it stays Terraform).
-Placement = namedtuple("Placement", ("kind", "where", "detail"))
 # An environment's translation: templates {path: Template}, imports {path: resource import entries}, side {path:
 # TfFile} (the Terraform roots kept beside templates), placements {root directory: {address: Placement}}, packaged
 # {path: text} (the files a root packages, copied beside its templates).
 Translation = namedtuple("Translation", ("templates", "imports", "side", "placements", "packaged"))
 
 
-def _root_translation(m, root, data, what):
+def _root_translation(m, root, table, what):
     """(templates, imports, side roots, placements) of one root."""
     out_dir = native_directory(root.directory)
-    aliases = dict.fromkeys(p.stack for p in root.placed.values())
-    stacks = sorted((root.stacks.get(a) or Stack(a, None, None) for a in aliases),
+    stacks_found = _stacks(root.items)
+    aliases = dict.fromkeys(p.group for p in root.placed.values())
+    stacks = sorted((stacks_found.get(a) or Stack(a, None, None) for a in aliases),
                     key=lambda s: (s.alias is not None, s.alias or ""))
-    built = tuple((posixpath.join(out_dir, _template_name(s.alias)), *_stack_template(m, root, s, data, what))
+    built = tuple((posixpath.join(out_dir, _template_name(s.alias)), *_stack_template(m, root, s, table, what))
                   for s in stacks)
     side_path = posixpath.join(out_dir, "terraform", "main.tf")
     side = {side_path: TfFile(header(m, f"{what}: what CloudFormation has no form for", HCL) +
                               no_native_note(root.split, "AWS CloudFormation", root.reasons), root.split.side)} \
         if root.split.side else {}
     by_stack = {s.alias: path for s, (path, _, _) in zip(stacks, built)}
-    placements = {**{a: (Placement("template", by_stack[p.stack], p.logical_id) if p.target is None else
-                         Placement("merged", by_stack[p.stack], p.target)) for a, p in root.placed.items()},
-                  **{a: Placement("terraform", side_path, why) for a, why in root.reasons.items()}}
     return ({path: t for path, t, _ in built},
-            {path.replace(".yaml", ".resources-to-import.json"): e for path, _, e in built if e}, side, placements)
+            {path.replace(".yaml", ".resources-to-import.json"): e for path, _, e in built if e}, side,
+            placements(root, by_stack, side_path))
 
 
 def translation(m, files, types, no_native, data, what, unavailable=lambda type_, region: False):
     """The Translation of environment m's Terraform render ({path: TfFile | text}) into CloudFormation by a table of
     Natives: each Terraform root's templates, resource import entries and side Terraform root under cloudformation/,
     where each Terraform resource went, and the other files a root packages (scripts) copied beside them."""
-    parts = {d: _root_translation(m, _root(d, rf, types, no_native, unavailable), data, what)
+    table = Table(types, no_native, data, unavailable)
+    parts = {d: _root_translation(m, read_root(d, rf, table, LANGUAGE, _layout), table, what)
              for d, rf in roots(files).items()}
     packaged = {posixpath.join("cloudformation", p.split("/", 1)[1]): text for p, text in files.items()
                 if p.startswith("terraform/") and not isinstance(text, TfFile) and not p.endswith(".tf")}

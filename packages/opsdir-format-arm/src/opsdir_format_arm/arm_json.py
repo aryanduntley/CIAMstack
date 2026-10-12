@@ -13,7 +13,7 @@ string ARM would read as an expression (starting with '[' and ending with ']') i
 the Bicep file's only: JSON has none (the MANIFEST records the file as generated).
 """
 from opsdir.core.jsondata import indented
-from .template import (Call, Interp, Param, Prop, ResourceId, ResourceName, indexed, is_expression,
+from .template import (Call, Field, Interp, Member, Param, Prop, ResourceId, ResourceName, indexed, is_expression,
                        name_segments)
 
 SCHEMAS = {"resourceGroup": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -72,6 +72,13 @@ def arm_expr(index, scope, v):
     if isinstance(v, Interp):
         return _format(index, scope, v.parts) if any(not isinstance(p, str) for p in v.parts) else \
             _literal("".join(v.parts))
+    if isinstance(v, Member):
+        return f"{arm_expr(index, scope, v.value)}.{v.path}"
+    if isinstance(v, Field):
+        if v.path.startswith("properties."):                  # as Bicep compiles it: the properties' reference()
+            return arm_expr(index, scope, Prop(v.symbol, v.path[len("properties."):]))
+        r = index[v.symbol]
+        return f"reference({_id(index, scope, r)}, {_literal(r.api_version)}, 'full').{v.path}"
     if isinstance(v, (list, tuple)):
         return "createArray(" + ", ".join(arm_expr(index, scope, x) for x in v) + ")"
     if isinstance(v, dict):
@@ -89,7 +96,7 @@ def arm_value(index, scope, v):
     if isinstance(v, str):
         return "[" + v if v.startswith("[") and v.endswith("]") else v
     if isinstance(v, dict):
-        return {k: arm_value(index, scope, x) for k, x in v.items()}
+        return {_arm_key(index, scope, k): arm_value(index, scope, x) for k, x in v.items()}
     if isinstance(v, (list, tuple)):
         return [arm_value(index, scope, x) for x in v]
     if v is None or isinstance(v, (bool, int, float)):
@@ -97,16 +104,26 @@ def arm_value(index, scope, v):
     raise TypeError(f"not an ARM template value: {v!r}")
 
 
+def _arm_key(index, scope, k):
+    """An object key as Bicep compiles it: text as it is, an expression as a format() expression string."""
+    if not is_expression(k):
+        return k
+    parts = k.parts if isinstance(k, Interp) else (k,)
+    return "[" + _format(index, scope, parts) + "]"
+
+
 def referenced(v):
     """The symbols a value refers to (ids, names, properties), in order of first mention."""
-    if isinstance(v, (ResourceId, ResourceName, Prop)):
+    if isinstance(v, (ResourceId, ResourceName, Prop, Field)):
         return (v.symbol,)
     if isinstance(v, Call):
         return tuple(s for a in v.args for s in referenced(a))
     if isinstance(v, Interp):
         return tuple(s for p in v.parts for s in referenced(p))
+    if isinstance(v, Member):
+        return referenced(v.value)
     if isinstance(v, dict):
-        return tuple(s for x in v.values() for s in referenced(x))
+        return tuple(s for k, x in v.items() for s in (*referenced(k), *referenced(x)))
     if isinstance(v, (list, tuple)) and not is_expression(v):
         return tuple(s for x in v for s in referenced(x))
     return ()

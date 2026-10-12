@@ -4,16 +4,19 @@ Property names follow AWS's resource schemas (cfn-lint checks every rendered tem
 small pure converters.
 """
 from opsdir_format_cloudformation.template import ACCOUNT_ID, PARTITION, REGION, URL_SUFFIX, Parameter, ref, sub
-from .cfn_render import (Custom, Derived, Merge, Native, Nest, Pseudo, obj, one, own, pascal, tag_list, translated,
-                         translation)
+from .cfn_render import (Attribute, Computed, Custom, Derived, Merge, Native, Nest, Pseudo, concat, json_document,
+                         obj, object_key, one, own, pascal, tag_list, translated, translation, trim_prefix)
 
-# Types CloudFormation has no resource type for: they stay in the Terraform root beside the template (research 2564).
+# Types CloudFormation has no resource type for: they stay in the Terraform root beside the template (research 2564;
+# AWS's resource schemas as cfn-lint ships them: no Service Quotas or Macie classification job type, and a VPC's
+# default route table, which exists with the VPC, has none to adopt it).
 NO_NATIVE = frozenset({"aws_inspector2_enabler", "aws_config_retention_configuration",
-                       "aws_macie2_classification_export_configuration"})
+                       "aws_macie2_classification_export_configuration", "aws_macie2_classification_job",
+                       "aws_servicequotas_service_quota", "aws_default_route_table"})
 # Types whose CloudFormation type AWS's GovCloud resource specification doesn't have (cfn-lint's us-gov-west-1
 # schemas): in a GovCloud template they stay Terraform too.
 NOT_IN_GOVCLOUD = frozenset({"aws_macie2_account", "aws_macie2_custom_data_identifier", "aws_shield_protection",
-                             "aws_budgets_budget"})
+                             "aws_budgets_budget", "aws_cloudfront_distribution"})
 
 
 def unavailable(type_, region):
@@ -174,6 +177,15 @@ def _routes(lid, f, cx):
         imported = ((lambda table: {"RouteTableId": table, "CidrBlock": destination}),) if destination else ()
         return (f"Route{i}", "AWS::EC2::Route", {"RouteTableId": ref(lid), **props}, *imported)
     return tuple(route(i, r) for i, r in enumerate(f.get("route", ())))
+
+
+def _routes_adoptable(f):
+    """Why an adopted route table can't be imported with its routes: a route without an IPv4 destination (an IPv6
+    one, a prefix list's), which AWS's Route schema can't identify (it names a route by table and IPv4 CIDR)."""
+    other = [str(r.get("ipv6_cidr_block") or r.get("destination_prefix_list_id")) for r in f.get("route", ())
+             if "cidr_block" not in r]
+    return (f"CloudFormation imports a route by its table and IPv4 CIDR, which route {', '.join(other)} hasn't"
+            if other else None)
 
 
 # The one outbound rule a security group without egress rules gets: AWS's documented way to remove the allow-all egress
@@ -392,6 +404,133 @@ def _web_acl(f, cx):
     return _waf(rest, cx)
 
 
+# ------------------------------------------------------------------ CDN
+
+# The Route 53 hosted zone of every CloudFront distribution (an alias record's zone_id), AWS's fixed one.
+CLOUDFRONT_ZONE = "Z2FDTNDATAQYW2"
+CF_ORIGIN = {"domain_name": "DomainName", "origin_id": "Id", "origin_path": "OriginPath",
+             "custom_origin_config": Nest("CustomOriginConfig", {
+                 "http_port": "HTTPPort", "https_port": "HTTPSPort", "origin_protocol_policy": "OriginProtocolPolicy",
+                 "origin_ssl_protocols": "OriginSSLProtocols", "origin_read_timeout": "OriginReadTimeout",
+                 "origin_keepalive_timeout": "OriginKeepaliveTimeout"})}
+CF_BEHAVIOR = {"target_origin_id": "TargetOriginId", "viewer_protocol_policy": "ViewerProtocolPolicy",
+               "allowed_methods": "AllowedMethods", "cached_methods": "CachedMethods", "compress": "Compress",
+               "cache_policy_id": "CachePolicyId", "origin_request_policy_id": "OriginRequestPolicyId",
+               "response_headers_policy_id": "ResponseHeadersPolicyId"}
+
+
+def _distribution(f, cx):
+    """A CloudFront distribution: its settings under DistributionConfig (its tags the engine's)."""
+    return {"DistributionConfig": obj(own(f), cx, {
+        "enabled": "Enabled", "comment": "Comment", "aliases": "Aliases", "http_version": "HttpVersion",
+        "web_acl_id": "WebACLId", "price_class": "PriceClass", "is_ipv6_enabled": "IPV6Enabled",
+        "default_root_object": "DefaultRootObject", "origin": Nest("Origins", CF_ORIGIN, True),
+        "default_cache_behavior": Nest("DefaultCacheBehavior", CF_BEHAVIOR),
+        "restrictions": Nest("Restrictions", {"geo_restriction": Nest("GeoRestriction", {
+            "restriction_type": "RestrictionType", "locations": "Locations"})}),
+        "viewer_certificate": Nest("ViewerCertificate", {
+            "acm_certificate_arn": "AcmCertificateArn", "ssl_support_method": "SslSupportMethod",
+            "minimum_protocol_version": "MinimumProtocolVersion",
+            "cloudfront_default_certificate": "CloudFrontDefaultCertificate"})})}
+
+
+# CloudFront's managed policies by name -> their IDs (fixed by AWS, the same in every account).
+MANAGED_CACHE_POLICIES = {"Managed-CachingDisabled": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"}
+MANAGED_ORIGIN_REQUEST_POLICIES = {"Managed-AllViewer": "216adef6-5c7f-47e4-b989-5492eafa07d3"}
+
+
+def _managed_policy(known, kind):
+    """The data table's answer for a CloudFront managed policy's id: the ID AWS fixes for the name, else a
+    parameter."""
+    return lambda f, a: (known.get(f.get("name")) or Parameter("", "String", None, f"The ID of CloudFront {kind} "
+                                                                                    f"{f.get('name')}")
+                         if a == "id" else None)
+
+
+# ------------------------------------------------------------------ interconnects
+
+def _vpn_attachment(lid, f, cx):
+    """A VPN gateway's attachment to the VPC Terraform names in vpc_id (its own resource natively)."""
+    return (("Attachment", "AWS::EC2::VPCGatewayAttachment", {"VpcId": cx.value(f["vpc_id"]),
+                                                              "VpnGatewayId": ref(lid)}),) if "vpc_id" in f else ()
+
+
+# ------------------------------------------------------------------ DNS
+
+RECORD_SET = {"zone_id": "HostedZoneId", "name": "Name", "type": "Type", "ttl": _as_string("TTL"),
+              "records": "ResourceRecords", "set_identifier": "SetIdentifier", "health_check_id": "HealthCheckId",
+              "alias": Nest("AliasTarget", {"name": "DNSName", "zone_id": "HostedZoneId",
+                                            "evaluate_target_health": "EvaluateTargetHealth"}),
+              "weighted_routing_policy": Custom(lambda v, cx: {"Weight": cx.value(v[0]["weight"])}),
+              "failover_routing_policy": Custom(lambda v, cx: {"Failover": cx.value(v[0]["type"])}),
+              "allow_overwrite": None}
+
+
+def _record_set(f, cx):
+    """A Route 53 record; TXT and SPF values quoted as Route 53 takes them (Terraform's provider adds the quotes
+    around each value, its long values' inner "" splits included; CloudFormation passes values as given)."""
+    props = obj(own(f), cx, RECORD_SET)
+    if f.get("type") not in ("TXT", "SPF") or "ResourceRecords" not in props:
+        return props
+    if not isinstance(props["ResourceRecords"], list):
+        raise SystemExit(f"{cx.where}: no CloudFormation form for TXT values computed as a whole list")
+    return {**props, "ResourceRecords": [concat('"', v, '"') for v in props["ResourceRecords"]]}
+
+
+# ------------------------------------------------------------------ databases and DNS health
+
+DB_PARAMETERS = Custom(lambda v, cx: {"Parameters": {b["name"]: cx.value(b["value"]) for b in v}})
+RDS_CLUSTER = {
+    "cluster_identifier": "DBClusterIdentifier", "engine": "Engine", "engine_version": "EngineVersion",
+    "engine_mode": "EngineMode", "db_subnet_group_name": "DBSubnetGroupName",
+    "vpc_security_group_ids": "VpcSecurityGroupIds", "db_cluster_parameter_group_name": "DBClusterParameterGroupName",
+    "master_username": "MasterUsername", "manage_master_user_password": "ManageMasterUserPassword",
+    "master_user_secret_kms_key_id": Custom(lambda v, cx: {"MasterUserSecret": {"KmsKeyId": cx.value(v)}}),
+    "port": "Port", "storage_encrypted": "StorageEncrypted", "kms_key_id": "KmsKeyId",
+    "backup_retention_period": "BackupRetentionPeriod", "preferred_backup_window": "PreferredBackupWindow",
+    "preferred_maintenance_window": "PreferredMaintenanceWindow", "deletion_protection": "DeletionProtection",
+    "copy_tags_to_snapshot": "CopyTagsToSnapshot", "database_name": "DatabaseName",
+    "enabled_cloudwatch_logs_exports": "EnableCloudwatchLogsExports",
+    "iam_database_authentication_enabled": "EnableIAMDatabaseAuthentication"}
+# An Aurora member instance: its engine version is the cluster's (CloudFormation's DBInstance takes none for one)
+RDS_CLUSTER_INSTANCE = {
+    "identifier": "DBInstanceIdentifier", "cluster_identifier": "DBClusterIdentifier",
+    "instance_class": "DBInstanceClass", "engine": "Engine", "engine_version": None,
+    "availability_zone": "AvailabilityZone", "publicly_accessible": "PubliclyAccessible",
+    "db_parameter_group_name": "DBParameterGroupName", "auto_minor_version_upgrade": "AutoMinorVersionUpgrade",
+    "promotion_tier": "PromotionTier", "monitoring_interval": "MonitoringInterval",
+    "monitoring_role_arn": "MonitoringRoleArn", "performance_insights_enabled": "EnablePerformanceInsights"}
+HEALTH_CHECK = {"type": "Type", "ip_address": "IPAddress", "port": "Port", "fqdn": "FullyQualifiedDomainName",
+                "resource_path": "ResourcePath", "failure_threshold": "FailureThreshold",
+                "request_interval": "RequestInterval", "search_string": "SearchString",
+                "measure_latency": "MeasureLatency", "invert_healthcheck": "Inverted", "enable_sni": "EnableSNI",
+                "regions": "Regions"}
+
+
+# ------------------------------------------------------------------ security services
+
+# A GuardDuty filter criterion's conditions, Terraform's names to CloudFormation's
+GUARDDUTY_CONDITIONS = {"equals": "Equals", "not_equals": "NotEquals", "greater_than": "GreaterThan",
+                        "greater_than_or_equal": "GreaterThanOrEqual", "less_than": "LessThan",
+                        "less_than_or_equal": "LessThanOrEqual"}
+
+
+def _finding_criteria(v, cx):
+    """A GuardDuty filter's finding_criteria: {Criterion: {field: {condition: value}}}."""
+    def criterion(blocks, c):
+        return {"Criterion": {c.value(b["field"]): obj({k: x for k, x in b.items() if k != "field"}, c,
+                                                        GUARDDUTY_CONDITIONS, f"{c.where}.finding_criteria.criterion")
+                              for b in blocks}}
+    return {"FindingCriteria": obj(v[0], cx, {"criterion": Custom(criterion)}, f"{cx.where}.finding_criteria")}
+
+
+def _automatic_response(props, f, cx):
+    """Shield Advanced's automatic application layer response, on the resource's protection."""
+    action = obj(own(f), cx, {"resource_arn": None, "action": Custom(lambda v, c: {"Action": {
+        {"BLOCK": "Block", "COUNT": "Count"}[c.value(v)]: {}}})})
+    return {**props, "ApplicationLayerAutomaticResponseConfiguration": {**action, "Status": "ENABLED"}}
+
+
 # ------------------------------------------------------------------ the table
 
 TYPES = {
@@ -487,11 +626,22 @@ TYPES = {
             "retention_period": "AutomaticBackupReplicationRetentionPeriod"}),
             "AutomaticBackupReplicationRegion": _copy_region(f, cx)})),
     "aws_db_parameter_group": Native("AWS::RDS::DBParameterGroup", _defaults({
-        "name": "DBParameterGroupName", "family": "Family",
-        "description": "Description",
-        "parameter": Custom(lambda v, cx: {"Parameters": {b["name"]: cx.value(b["value"]) for b in v}})},
+        "name": "DBParameterGroupName", "family": "Family", "description": "Description", "parameter": DB_PARAMETERS},
         Description=TERRAFORM_DESCRIPTION),
         {"id": "Ref", "name": "Ref", "arn": "DBParameterGroupArn"}, "DBParameterGroupName", "list"),
+    "aws_rds_cluster": Native("AWS::RDS::DBCluster", RDS_CLUSTER, {
+        "id": "Ref", "cluster_identifier": "Ref", "arn": "DBClusterArn", "endpoint": "Endpoint.Address",
+        "reader_endpoint": "ReadEndpoint.Address", "port": "Endpoint.Port",
+        "cluster_resource_id": "DBClusterResourceId",
+        "engine": Attribute("engine"), "engine_version": Attribute("engine_version")},
+        "DBClusterIdentifier", "list"),
+    "aws_rds_cluster_instance": Native("AWS::RDS::DBInstance", RDS_CLUSTER_INSTANCE, {
+        "id": "Ref", "identifier": "Ref", "arn": "DBInstanceArn", "endpoint": "Endpoint.Address"},
+        "DBInstanceIdentifier", "list"),
+    "aws_rds_cluster_parameter_group": Native("AWS::RDS::DBClusterParameterGroup", _defaults({
+        "name": "DBClusterParameterGroupName", "family": "Family", "description": "Description",
+        "parameter": DB_PARAMETERS}, Description=TERRAFORM_DESCRIPTION),
+        {"id": "Ref", "name": "Ref"}, "DBClusterParameterGroupName", "list"),
     "aws_db_subnet_group": Native("AWS::RDS::DBSubnetGroup", _defaults({
         "name": "DBSubnetGroupName", "description": "DBSubnetGroupDescription", "subnet_ids": "SubnetIds"},
         DBSubnetGroupDescription=TERRAFORM_DESCRIPTION),
@@ -538,7 +688,7 @@ TYPES = {
                                                        "egress": None},
                               {"id": "Ref"}, None, "list", expand=_acl_entries),
     "aws_route_table": Native("AWS::EC2::RouteTable", {"vpc_id": "VpcId", "route": None}, {"id": "Ref"},
-                              "RouteTableId", "list", expand=_routes),
+                              "RouteTableId", "list", expand=_routes, adoptable=_routes_adoptable),
     # an adopted association stays Terraform: Terraform imports it as subnet/route table, CloudFormation by its id
     "aws_route_table_association": Native("AWS::EC2::SubnetRouteTableAssociation", {
         "subnet_id": "SubnetId", "route_table_id": "RouteTableId"}, {"id": "Ref"}),
@@ -579,14 +729,7 @@ TYPES = {
                                                               "targets": "Targets"})}),
             "stateful_rule_options": Nest("StatefulRuleOptions", {"rule_order": "RuleOrder"})})},
         {"arn": "Ref", "id": "Ref"}, "RuleGroupArn", "list"),
-    "aws_route53_record": Native("AWS::Route53::RecordSet", {
-        "zone_id": "HostedZoneId", "name": "Name", "type": "Type", "ttl": _as_string("TTL"),
-        "records": "ResourceRecords", "set_identifier": "SetIdentifier", "health_check_id": "HealthCheckId",
-        "alias": Nest("AliasTarget", {"name": "DNSName", "zone_id": "HostedZoneId",
-                                      "evaluate_target_health": "EvaluateTargetHealth"}),
-        "weighted_routing_policy": Custom(lambda v, cx: {"Weight": cx.value(v[0]["weight"])}),
-        "failover_routing_policy": Custom(lambda v, cx: {"Failover": cx.value(v[0]["type"])}),
-        "allow_overwrite": None}, {"fqdn": "Ref", "name": "Ref"}),
+    "aws_route53_record": Native("AWS::Route53::RecordSet", _record_set, {"fqdn": "Ref", "name": "Ref"}),
     "aws_route53_resolver_rule": Native("AWS::Route53Resolver::ResolverRule", {
         "name": "Name", "domain_name": "DomainName", "rule_type": "RuleType",
         "resolver_endpoint_id": "ResolverEndpointId",
@@ -595,6 +738,35 @@ TYPES = {
     "aws_route53_resolver_rule_association": Native("AWS::Route53Resolver::ResolverRuleAssociation", {
         "resolver_rule_id": "ResolverRuleId", "vpc_id": "VPCId", "name": "Name"}, {"id": "Ref"},
         "ResolverRuleAssociationId"),
+    "aws_route53_health_check": Native("AWS::Route53::HealthCheck",
+                                       lambda f, cx: {"HealthCheckConfig": obj(own(f), cx, HEALTH_CHECK)},
+                                       {"id": "Ref"}, "HealthCheckId", "list", tags_key="HealthCheckTags"),
+    # interconnects
+    "aws_customer_gateway": Native("AWS::EC2::CustomerGateway", {
+        "bgp_asn": "BgpAsn", "ip_address": "IpAddress", "type": "Type", "device_name": "DeviceName",
+        "certificate_arn": "CertificateArn"}, {"id": "Ref"}, "CustomerGatewayId", "list"),
+    # attached to its VPC by a resource of its own natively, which what references the gateway waits for (AWS's
+    # DependsOn: whatever requires a gateway depends on its attachment); an adopted gateway's attachment can't be
+    # imported by what Terraform holds: the translation refuses it
+    "aws_vpn_gateway": Native("AWS::EC2::VPNGateway", _defaults({
+        "amazon_side_asn": "AmazonSideAsn", "type": "Type", "vpc_id": None}, Type="ipsec.1"),
+        {"id": "Ref"}, "VPNGatewayId", "list", expand=_vpn_attachment, ready="Attachment"),
+    "aws_vpn_connection": Native("AWS::EC2::VPNConnection", {
+        "customer_gateway_id": "CustomerGatewayId", "vpn_gateway_id": "VpnGatewayId",
+        "transit_gateway_id": "TransitGatewayId", "type": "Type", "static_routes_only": "StaticRoutesOnly"},
+        {"id": "Ref"}, "VpnConnectionId", "list"),
+    "aws_vpn_connection_route": Native("AWS::EC2::VPNConnectionRoute", {
+        "destination_cidr_block": "DestinationCidrBlock", "vpn_connection_id": "VpnConnectionId"}, {}),
+    "aws_ec2_transit_gateway_vpc_attachment": Native("AWS::EC2::TransitGatewayVpcAttachment", {
+        "transit_gateway_id": "TransitGatewayId", "vpc_id": "VpcId", "subnet_ids": "SubnetIds"},
+        {"id": "Ref"}, "Id", "list"),
+    "aws_vpc_peering_connection": Native("AWS::EC2::VPCPeeringConnection", {
+        "vpc_id": "VpcId", "peer_vpc_id": "PeerVpcId", "peer_region": "PeerRegion", "peer_owner_id": "PeerOwnerId"},
+        {"id": "Ref"}, "Id", "list"),
+    # CDN
+    "aws_cloudfront_distribution": Native("AWS::CloudFront::Distribution", _distribution, {
+        "id": "Ref", "domain_name": "DomainName", "hosted_zone_id": lambda lid: CLOUDFRONT_ZONE,
+        "arn": _arn_sub("arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/{id}")}, "Id", "list"),
     # compute
     "aws_instance": Native("AWS::EC2::Instance", _instance, {"id": "Ref", "private_ip": "PrivateIp"}, "InstanceId",
                            "list", parameters=_root_device),
@@ -682,9 +854,19 @@ TYPES = {
             "verification_state": "VerificationState", "confidence": "Confidence", "criticality": "Criticality",
             "types": "Types", "user_defined_fields": "UserDefinedFields"})}, True)},
         {"arn": "Ref", "id": "Ref"}, None, "map"),
+    "aws_guardduty_filter": Native("AWS::GuardDuty::Filter", {
+        "name": "Name", "description": "Description", "action": "Action", "rank": "Rank",
+        "detector_id": "DetectorId", "finding_criteria": Custom(_finding_criteria)}, {}, None, "list"),
     "aws_shield_protection": Native("AWS::Shield::Protection", {"name": "Name", "resource_arn": "ResourceArn"},
                                     {"id": "ProtectionId", "arn": "Ref"}, None, "list"),
+    # part of the protection its depends_on names (it names the web ACL's association too: the protection then
+    # waits for it, as Shield needs the resource associated first)
+    "aws_shield_application_layer_automatic_response": Native(None, merge=Merge(
+        "depends_on", _automatic_response, target="aws_shield_protection")),
     "aws_wafv2_web_acl": Native("AWS::WAFv2::WebACL", _web_acl, {"arn": "Arn", "id": "Id"}, None, "list"),
+    "aws_wafv2_ip_set": Native("AWS::WAFv2::IPSet", {
+        "name": "Name", "scope": "Scope", "ip_address_version": "IPAddressVersion", "addresses": "Addresses",
+        "description": "Description"}, {"arn": "Arn", "id": "Id"}, None, "list"),
     "aws_wafv2_web_acl_association": Native("AWS::WAFv2::WebACLAssociation", {
         "resource_arn": "ResourceArn", "web_acl_arn": "WebACLArn"}, {}),
     "aws_s3_bucket": Native("AWS::S3::Bucket", {
@@ -782,8 +964,75 @@ def _packaged(f, a):
     return "./" + source.split("${path.module}/", 1)[1] if a == "output_path" and "${path.module}/" in source else None
 
 
+STATEMENT = {"sid": "Sid", "effect": "Effect", "actions": "Action", "not_actions": "NotAction",
+             "resources": "Resource", "not_resources": "NotResource", "principals": "Principal",
+             "not_principals": "NotPrincipal", "condition": "Condition"}
+
+
+def _statement(s, value):
+    """A policy document statement block as IAM's statement (Effect Allow unless it says)."""
+    unknown = sorted(set(s) - set(STATEMENT))
+    if unknown:
+        raise SystemExit(f"data.aws_iam_policy_document: no CloudFormation form for {', '.join(unknown)} of a "
+                         "statement")
+
+    def part(k, v):
+        if k in ("principals", "not_principals"):
+            return {p["type"]: value(p["identifiers"]) for p in v}
+        if k == "condition":
+            tests = dict.fromkeys(c["test"] for c in v)
+            return {t: {object_key(value(c["variable"])): value(c["values"]) for c in v if c["test"] == t}
+                    for t in tests}
+        return value(v)
+    return {"Effect": "Allow", **{STATEMENT[k]: part(k, v) for k, v in s.items()}}
+
+
+def _policy_document(f, value):
+    """data.aws_iam_policy_document's json natively: the document itself (json_document: its JSON text in one
+    Fn::Sub where a condition key is computed, as an IRSA trust policy's is)."""
+    unknown = sorted(set(own(f)) - {"statement", "version"})
+    if unknown:
+        raise SystemExit(f"data.aws_iam_policy_document: no CloudFormation form for {', '.join(unknown)}")
+    return json_document({"Version": f.get("version", "2012-10-17"),
+                          "Statement": [_statement(s, value) for s in f.get("statement", ())]})
+
+
+def _issuer(f):
+    name = f.get("name")
+    return Parameter("OidcIssuer", "String", None,
+                     f"The OIDC issuer of EKS cluster {name} without https:// (aws eks describe-cluster --name {name} "
+                     "--query cluster.identity.oidc.issuer); Terraform looks it up")
+
+
+def _oidc_provider(f, a):
+    """data.aws_iam_openid_connect_provider found by url: its url as given, its ARN built from it (IAM names an OIDC
+    provider by its URL without https://)."""
+    if a == "url":
+        return Computed(lambda f, value: value(f["url"]))
+    if a == "arn":
+        return Computed(lambda f, value: concat("arn:", ref(PARTITION), ":iam::", ref(ACCOUNT_ID), ":oidc-provider/",
+                                                trim_prefix(value(f["url"]), "https://")))
+    return None
+
+
+def _looked_up(what, attributes=("id",)):
+    """A data table answer for what Terraform looks up and CloudFormation can't: a parameter the deployer gives."""
+    return lambda f, a: (Parameter("", "String", None, f"{what(f)} (Terraform looks it up; CloudFormation can't)")
+                         if a in attributes else None)
+
+
 DATA = {
     "archive_file": _packaged,
+    "aws_cloudfront_cache_policy": _managed_policy(MANAGED_CACHE_POLICIES, "cache policy"),
+    "aws_cloudfront_origin_request_policy": _managed_policy(MANAGED_ORIGIN_REQUEST_POLICIES, "origin request policy"),
+    "aws_ec2_managed_prefix_list": _looked_up(lambda f: f"The ID of AWS-managed prefix list {f.get('name')} in "
+                                                        "this region"),
+    "aws_eks_cluster": lambda f, a: (Derived(_issuer(f), lambda r: concat("https://", r))
+                                     if a == "identity[0].oidc[0].issuer" else None),
+    "aws_guardduty_detector": _looked_up(lambda f: "The account's GuardDuty detector ID in this region"),
+    "aws_iam_openid_connect_provider": _oidc_provider,
+    "aws_iam_policy_document": lambda f, a: Computed(_policy_document) if a == "json" else None,
+    "aws_internet_gateway": _looked_up(lambda f: "The ID of the internet gateway attached to the VPC"),
     "aws_caller_identity": lambda f, a: Pseudo(ACCOUNT_ID) if a == "account_id" else None,
     "aws_partition": lambda f, a: (Pseudo(PARTITION) if a == "partition" else
                                    Pseudo(URL_SUFFIX) if a == "dns_suffix" else None),
