@@ -40,6 +40,7 @@ from opsdir.domains.estate.risk_policies import (policy_advice, policy_mode, pol
 from opsdir.domains.estate.security import findings_destination, security_services
 from opsdir_format_terraform.hcl import Block, comment, tf_block, tf_name
 from opsdir_format_terraform.state import first_block
+from .account import government_unstated
 from .observability import workspace_id
 
 CA_POLICY, RISK_EXPORT = "azuread_conditional_access_policy", "azurerm_monitor_aad_diagnostic_setting"
@@ -70,7 +71,8 @@ def risk_export(m, s):
         return (comment(f"NOTE: {cn}: Entra ID Protection's risk logs not exported: "
                         + (f"{where} is no Log Analytics workspace (ciamProviderRef)" if where else
                            "the service sends its findings nowhere (ciamFindingsRole)")),)
-    return (tf_block("resource", [RISK_EXPORT, tf_name(f"{cn}_identity_risk")], [
+    return (*government_unstated(m, "exporting Microsoft Entra logs by a diagnostic setting (microsoft.aadiam)"),
+            tf_block("resource", [RISK_EXPORT, tf_name(f"{cn}_identity_risk")], [
         ("name", f"{cn}-identity-risk"), ("log_analytics_workspace_id", workspace),
         *(("enabled_log", Block((("category", c),))) for c in RISK_CATEGORIES)]),)
 

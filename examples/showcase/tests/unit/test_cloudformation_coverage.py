@@ -10,10 +10,14 @@ import pytest
 from opsdir.connectors.registry import ADAPTERS, environment_specs, services
 from opsdir.connectors.render import render_parts
 from opsdir_adapter_aws.cfn_render import document_of, object_key
-from opsdir_adapter_aws.cfn_types import DATA, NO_NATIVE, NOT_IN_GOVCLOUD, TYPES, cloudformation_translation
+from opsdir_adapter_aws.cfn_types import (DATA, NO_NATIVE, NOT_IN_GOVCLOUD, TYPES, cloudformation_files,
+                                          cloudformation_translation)
+from opsdir_adapter_aws.cloudformation import cloudformation_resources
+from opsdir_adapter_aws.inventory import state_resources
+from opsdir_adapter_aws.rendered_state import rendered_stacks, rendered_states
 from opsdir_adapter_aws.terraform import WHAT, render_files
 from opsdir_format_cloudformation.template import sub, template_data
-from opsdir_format_terraform.hcl import TfBlock
+from opsdir_format_terraform.hcl import TfBlock, TfFile, written
 from opsdir_format_terraform.translate import address, root_items, roots
 import cloudformation_sample
 
@@ -122,3 +126,39 @@ def test_in_govcloud_cloudfront_runs_from_the_standard_accounts_us_east_1_templa
     where = {r["Type"]: path for path, tpl in t.templates.items() for r in template_data(tpl)["Resources"].values()}
     assert where["AWS::CloudFront::Distribution"].endswith("template.us_east_1.yaml")
     assert "aws_cloudfront_distribution" in NOT_IN_GOVCLOUD
+
+
+# What only the Terraform read-back reads, by kind: lookups (data sources are in a Terraform state; in CloudFormation
+# they are parameters, not resources) and the security services (their CloudFormation reader is milestone 5.6b)
+TERRAFORM_ONLY_KINDS = {"network", "subnet", "cluster", "security"}
+
+
+def _text(files):
+    return {**{p: t for p, t in files.items() if not isinstance(t, TfFile)},
+            **written({p: f for p, f in files.items() if isinstance(f, TfFile)})}
+
+
+def test_the_native_read_back_reads_what_the_terraform_one_does(sample):
+    """Every environment of the sample (but Fluent Bit's, whose render takes its own log sources) read back both ways:
+    its Terraform roots as the states applying them record, and its CloudFormation as the stacks it deploys (the
+    prepare of the cloudformation ReadBack: physical ids from placements.json, other stacks' outputs passed as
+    parameters, the Terraform root beside them as its state) read the same resources, but what only Terraform reads
+    (TERRAFORM_ONLY_KINDS)."""
+    env = "alpha/prod"
+    for name, m, files, _ in sample["us-east-1"]:
+        if name == "logs":
+            continue
+        written_files = _text(files)
+        tf = {f"{env}/{p[len('terraform/'):]}": t for p, t in written_files.items()
+              if p.startswith("terraform/") and p.endswith(".tf")}
+        by_terraform = {(r.kind, r.name or r.ref): r for state in rendered_states(tf, m.d, env).values()
+                        for r in state_resources(state)[0]}
+        native = {f"{env}/{p[len('cloudformation/'):]}": t
+                  for p, t in _text(cloudformation_files(m, files, WHAT)).items() if p.startswith("cloudformation/")}
+        prepared = rendered_stacks(native, m.d, env)
+        by_native = {(r.kind, r.name or r.ref): r for r in cloudformation_resources(
+            {p[len(env) + 1:]: t for p, t in prepared.items()})[0]}
+        assert {k for k in by_terraform if k not in by_native and k[0] not in TERRAFORM_ONLY_KINDS} == set(), name
+        assert set(by_native) - set(by_terraform) == set(), name
+        assert {k: (by_terraform[k].attrs, by_native[k].attrs) for k in set(by_terraform) & set(by_native)
+                if by_terraform[k].attrs != by_native[k].attrs} == {}, name

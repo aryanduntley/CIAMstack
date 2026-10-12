@@ -5,21 +5,35 @@ kept in Terraform for a stated reason. API versions are the latest stable ones i
 (research 2595); bicep build and lint check every rendered template against them. Pure data and small pure
 converters.
 """
+import re
+
 from opsdir_format_arm.template import Call, Interp, Member, ResourceId
 from opsdir_format_terraform.native import Computed, Custom, FromBlock, Merge, Native, Nest, obj, one, own
 from .arm_render import Arm, Existing, Fixed, Lookup, Parent, Secure, translated, translation
 
 NETWORK, IDENTITY, INSIGHTS, OPINSIGHTS = "2025-09-01", "2023-01-31", "2024-03-11", "2025-07-01"
 KEYVAULT, AKS, PIM = "2024-11-01", "2025-05-01", "2024-09-01-preview"
+COMPUTE, DISKS, STORAGE, POSTGRES, BACKUP = "2026-04-01", "2025-01-02", "2025-06-01", "2025-08-01", "2025-02-01"
+# Front Door, its firewall policies, DNS zones (public, private), MySQL, Traffic Manager, web tests, exemptions
+# (research 2595; 2622: the Bicep type index, the newest)
+CDN, FD_WAF, DNS, PRIVATE_DNS = "2026-07-01", "2026-04-01", "2018-05-01", "2024-06-01"
+MYSQL, TM, WEBTESTS, EXEMPTIONS = "2024-12-30", "2026-09-01", "2022-06-15", "2026-01-01-preview"
 # Types ARM has no form for: they stay in the Terraform root beside the templates (research 2595).
 NO_NATIVE = frozenset({"azapi_data_plane_resource", "azuread_conditional_access_policy"})
 _SUBNET = ("a property of the landing zone's subnet: ARM sets it only by re-declaring the whole subnet, which the "
            "landing zone keeps")
+_PARENT_INPUT = ("a child of the {}, which the root takes as an input: ARM deploys a child in its parent's resource "
+                 "group, which the record doesn't hold")
 # Types kept in Terraform for a stated reason.
 KEPT = {
     "azurerm_subnet_network_security_group_association": _SUBNET,
     "azurerm_subnet_route_table_association": _SUBNET,
     "azurerm_subnet_nat_gateway_association": _SUBNET,
+    "azurerm_virtual_hub_connection": _PARENT_INPUT.format("virtual WAN hub"),
+    "azurerm_private_dns_resolver_forwarding_rule": _PARENT_INPUT.format("landing zone's DNS forwarding ruleset"),
+    "azurerm_storage_object_replication": (
+        "ARM sets object replication on the destination account first, in that account's resource group, and the "
+        "source's policy takes the id it returns; the destination is an input the record holds no group for"),
 }
 # Built-in role definitions by name -> their GUIDs: Microsoft's built-in roles page; "built-in roles have the same role
 # ID across clouds" (Azure role definitions page). Research 2612.
@@ -160,7 +174,8 @@ DATA = {
     "azurerm_key_vault_key": _vault_key,
     "azurerm_public_ip": _lookup("Microsoft.Network/publicIPAddresses", NETWORK,
                                  {"id": "id", "ip_address": "ipAddress"}),
-    "azurerm_private_dns_zone": _lookup("Microsoft.Network/privateDnsZones", "2024-06-01", {"id": "id"}),
+    "azurerm_private_dns_zone": _lookup("Microsoft.Network/privateDnsZones", PRIVATE_DNS, {"id": "id"}),
+    "azurerm_storage_account": _lookup("Microsoft.Storage/storageAccounts", STORAGE, {"id": "id", "name": "name"}),
     "azurerm_log_analytics_workspace": _lookup("Microsoft.OperationalInsights/workspaces", OPINSIGHTS,
                                                {"id": "id", "workspace_id": "customerId", "location": "location"}),
     "azurerm_kubernetes_cluster": _lookup("Microsoft.ContainerService/managedClusters", AKS,
@@ -254,9 +269,6 @@ def _nic_pool(props, f, cx):
 
 # ------------------------------------------------------------------ compute
 
-COMPUTE, DISKS, STORAGE, POSTGRES, BACKUP = "2026-04-01", "2025-01-02", "2025-06-01", "2025-08-01", "2025-02-01"
-
-
 def _identity(v, cx):
     """An identity block as ARM's identity: its type, user-assigned identities keyed by id."""
     b = v[0]
@@ -330,8 +342,10 @@ def _account(f, cx):
 
 def _blob_service(lid, f, cx):
     """A storage account's blob service (always: its containers are its children), with the blob settings."""
-    settings = obj(one(f, "blob_properties"), cx, {"versioning_enabled": "isVersioningEnabled"},
-                   f"{cx.where}.blob_properties")
+    settings = obj(one(f, "blob_properties"), cx, {
+        "versioning_enabled": "isVersioningEnabled",
+        "change_feed_enabled": Custom(lambda v, c: {"changeFeed": {"enabled": c.value(v)}})},
+        f"{cx.where}.blob_properties")
     return (("blob", Arm("Microsoft.Storage/storageAccounts/blobServices", STORAGE, Parent("", ""),
                          Fixed("default"), fields=()), {**settings}),)
 
@@ -391,29 +405,53 @@ def _management_rules(v, cx):
 SKU_TIERS = {"B": "Burstable", "GP": "GeneralPurpose", "MO": "MemoryOptimized"}
 
 
-def _postgres(f, cx):
-    """A PostgreSQL flexible server: sku from Terraform's tier-prefixed name, storage in GB, its network, the
-    write-only administrator password (an ephemeral secret: a secure parameter), its customer-managed key."""
-    tier, _, sku = cx.value(f["sku_name"]).partition("_")
-    key = one(f, "customer_managed_key")
-    return {"sku": {"name": sku, "tier": SKU_TIERS[tier]},
-            **obj({k: v for k, v in own(f).items() if k not in ("sku_name", "customer_managed_key")}, cx, {
-                **BASE, "version": "version", "zone": "availabilityZone",
-                "administrator_login": "administratorLogin", "administrator_password_wo": "administratorLoginPassword",
-                "administrator_password_wo_version": None,
-                "storage_mb": Custom(lambda v, c: {"storage": {"storageSizeGB": c.value(v) // 1024}}),
-                "backup_retention_days": Custom(lambda v, c: {"backup": {"backupRetentionDays": c.value(v)}}),
-                "delegated_subnet_id": None, "private_dns_zone_id": None, "public_network_access_enabled": None,
-                "identity": Custom(_identity)}),
-            "network": {**({"delegatedSubnetResourceId": cx.value(f["delegated_subnet_id"])}
-                           if "delegated_subnet_id" in f else {}),
-                        **({"privateDnsZoneArmResourceId": cx.value(f["private_dns_zone_id"])}
-                           if "private_dns_zone_id" in f else {}),
-                        **({"publicNetworkAccess": "Enabled" if f["public_network_access_enabled"] else "Disabled"}
-                           if "public_network_access_enabled" in f else {})},
-            **({"dataEncryption": {"type": "AzureKeyVault", "primaryKeyURI": cx.value(key["key_vault_key_id"]),
-                                   "primaryUserAssignedIdentityId": cx.value(
-                                       key["primary_user_assigned_identity_id"])}} if key else {})}
+def _flexible(dns_key):
+    """A flexible server (PostgreSQL's, MySQL's): sku from Terraform's tier-prefixed name, storage in GB (PostgreSQL's
+    storage_mb, MySQL's storage block), backups (retention, geo-redundancy), a zone-redundant standby, its network
+    (the private DNS zone under dns_key, as each engine names it), the write-only administrator password (an
+    ephemeral secret: a secure parameter), its customer-managed key."""
+    def props(f, cx):
+        tier, _, sku = cx.value(f["sku_name"]).partition("_") if "sku_name" in f else (None, None, None)
+        key, ha = one(f, "customer_managed_key"), one(f, "high_availability")
+        backup = {**({"backupRetentionDays": cx.value(f["backup_retention_days"])} if "backup_retention_days" in f
+                     else {}),
+                  **({"geoRedundantBackup": "Enabled" if cx.value(f["geo_redundant_backup_enabled"]) else "Disabled"}
+                     if "geo_redundant_backup_enabled" in f else {})}
+        network = {**({"delegatedSubnetResourceId": cx.value(f["delegated_subnet_id"])}
+                      if "delegated_subnet_id" in f else {}),
+                   **({dns_key: cx.value(f["private_dns_zone_id"])} if "private_dns_zone_id" in f else {}),
+                   **({"publicNetworkAccess": "Enabled" if f["public_network_access_enabled"] else "Disabled"}
+                      if "public_network_access_enabled" in f else {})}
+        return {**({"sku": {"name": sku, "tier": SKU_TIERS[tier]}} if sku else {}),
+                **obj({k: v for k, v in own(f).items() if k not in (
+                    "sku_name", "customer_managed_key", "backup_retention_days", "geo_redundant_backup_enabled",
+                    "high_availability", "delegated_subnet_id", "private_dns_zone_id",
+                    "public_network_access_enabled")}, cx, {
+                    **BASE, "version": "version", "zone": "availabilityZone",
+                    "administrator_login": "administratorLogin",
+                    "administrator_password_wo": "administratorLoginPassword",
+                    "administrator_password_wo_version": None,
+                    "storage_mb": Custom(lambda v, c: {"storage": {"storageSizeGB": c.value(v) // 1024}}),
+                    "storage": Custom(lambda v, c: {"storage": obj(v[0], c, {"size_gb": "storageSizeGB"},
+                                                                   f"{c.where}.storage")}),
+                    "identity": Custom(_identity)}),
+                **({"backup": backup} if backup else {}),
+                **({"highAvailability": obj(ha, cx, {"mode": "mode", "standby_availability_zone":
+                                                     "standbyAvailabilityZone"}, f"{cx.where}.high_availability")}
+                   if ha else {}),
+                "network": network,
+                **({"dataEncryption": {"type": "AzureKeyVault", "primaryKeyURI": cx.value(key["key_vault_key_id"]),
+                                       "primaryUserAssignedIdentityId": cx.value(
+                                           key["primary_user_assigned_identity_id"])}} if key else {})}
+    return props
+
+
+def _configuration(type_, api, server):
+    """A server parameter, user-set (the configurations child of either engine's flexible server)."""
+    return Native(Arm(type_, api, Parent("server_id", server)), {
+        "name": None, "server_id": None, "value": Custom(lambda v, cx: {"value": cx.value(v),
+                                                                        "source": "user-override"})},
+        {"id": "id"}, "name")
 
 
 # ------------------------------------------------------------------ monitoring
@@ -631,22 +669,31 @@ def _link_service(f, cx):
         "enable_proxy_protocol": "enableProxyProtocol"})
 
 
+_RULES = {   # a collection's rules by their Terraform block: (ARM rule type, spec)
+    "application_rule_collection": ("ApplicationRule", {
+        "name": "name", "source_addresses": "sourceAddresses", "destination_fqdns": "targetFqdns",
+        "destination_fqdn_tags": "fqdnTags", "description": "description",
+        "protocols": Custom(lambda v, c: {"protocols": [{"protocolType": c.value(x["type"]),
+                                                         "port": c.value(x["port"])} for x in v]})}),
+    "network_rule_collection": ("NetworkRule", {
+        "name": "name", "protocols": "ipProtocols", "source_addresses": "sourceAddresses",
+        "destination_addresses": "destinationAddresses", "destination_fqdns": "destinationFqdns",
+        "destination_ports": "destinationPorts", "description": "description"})}
+
+
 def _rule_collection_group(f, cx):
-    """A firewall policy rule collection group: its application rule collections (filter collections)."""
-    def collection(c):
+    """A firewall policy rule collection group: its application and network rule collections (filter collections:
+    application rules by host name for web ports, network rules by FQDN for the others)."""
+    def collection(c, kind):
+        rule_type, spec = _RULES[kind]
         return {"ruleCollectionType": "FirewallPolicyFilterRuleCollection", "name": cx.value(c["name"]),
                 "priority": cx.value(c["priority"]), "action": {"type": cx.value(c["action"])},
-                "rules": [{"ruleType": "ApplicationRule", **obj(r, cx, {
-                    "name": "name", "source_addresses": "sourceAddresses", "destination_fqdns": "targetFqdns",
-                    "destination_fqdn_tags": "fqdnTags", "description": "description",
-                    "protocols": Custom(lambda v, c2: {"protocols": [
-                        {"protocolType": c2.value(x["type"]), "port": c2.value(x["port"])} for x in v]})},
-                    f"{cx.where}.rule")} for r in c.get("rule", ())]}
-    unknown = sorted(set(own(f)) - {"name", "firewall_policy_id", "priority", "application_rule_collection"})
+                "rules": [{"ruleType": rule_type, **obj(r, cx, spec, f"{cx.where}.rule")} for r in c.get("rule", ())]}
+    unknown = sorted(set(own(f)) - {"name", "firewall_policy_id", "priority", *_RULES})
     if unknown:
         raise SystemExit(f"{cx.where}: no ARM form for {', '.join(unknown)}")
     return {"priority": cx.value(f["priority"]),
-            "ruleCollections": [collection(c) for c in f.get("application_rule_collection", ())]}
+            "ruleCollections": [collection(c, kind) for kind in _RULES for c in f.get(kind, ())]}
 
 
 def _flow_log(f, cx):
@@ -801,6 +848,176 @@ def _azapi(f, cx):
         raise SystemExit(f"{cx.where}: no ARM form for {', '.join(rest)}")
     return {**{k: v for k, v in body.items() if k != "properties"}, **body.get("properties", {})}
 
+# ------------------------------------------------------------------ DNS records, Traffic Manager
+
+def _txt(x):
+    """A TXT value as ARM's strings of at most 255 characters (as azurerm splits a longer one); an expression whole."""
+    return ([x[i:i + 255] for i in range(0, len(x), 255)] or [""]) if isinstance(x, str) else [x]
+
+
+def _record_sets(private):
+    """{record type: (Terraform attribute, ARM property, (Terraform value, Cx) -> its records)} of a zone's record
+    sets, public (dnsZones' casing) or private (privateDnsZones')."""
+    def each(spec):
+        return lambda v, cx: [obj(r, cx, spec, f"{cx.where}.record") for r in v]
+    return {
+        "a": ("records", "aRecords" if private else "ARecords", lambda v, cx: [{"ipv4Address": x}
+                                                                              for x in cx.value(v)]),
+        "aaaa": ("records", "aaaaRecords" if private else "AAAARecords",
+                 lambda v, cx: [{"ipv6Address": x} for x in cx.value(v)]),
+        "ns": ("records", "NSRecords", lambda v, cx: [{"nsdname": x} for x in cx.value(v)]),
+        "cname": ("record", "cnameRecord" if private else "CNAMERecord", lambda v, cx: {"cname": cx.value(v)}),
+        "mx": ("record", "mxRecords" if private else "MXRecords", each({"preference": "preference",
+                                                                            "exchange": "exchange"})),
+        "srv": ("record", "srvRecords" if private else "SRVRecords", each({
+            "priority": "priority", "weight": "weight", "port": "port", "target": "target"})),
+        "caa": ("record", "caaRecords", each({"flags": "flags", "tag": "tag", "value": "value"})),
+        "txt": ("record", "txtRecords" if private else "TXTRecords",
+                lambda v, cx: [{"value": _txt(cx.value(r["value"]))} for r in v])}
+
+
+def _record(kind, private):
+    """A DNS record set of a kind: a child of its zone (a public one by name in the record's resource group, a private
+    one by id), its TTL, records and tags (as the set's metadata)."""
+    attribute, key, records = _record_sets(private)[kind]
+    zone = (Parent("private_dns_zone_id", "Microsoft.Network/privateDnsZones") if private else
+            Parent("zone_name", "Microsoft.Network/dnsZones", "name"))
+    return Native(Arm(f"Microsoft.Network/{'privateDnsZones' if private else 'dnsZones'}/{kind.upper()}",
+                      PRIVATE_DNS if private else DNS, zone), {
+        "name": None, "zone_name": None, "resource_group_name": None, "private_dns_zone_id": None,
+        "ttl": "ttl" if private else "TTL", attribute: Custom(lambda v, cx: {key: records(v, cx)})},
+        {"id": "id", "fqdn": "fqdn"}, "name", "map", tags_key="metadata")
+
+
+RECORDS = {**{f"azurerm_dns_{k}_record": _record(k, False) for k in ("a", "aaaa", "caa", "cname", "mx", "ns", "srv",
+                                                                     "txt")},
+           **{f"azurerm_private_dns_{k}_record": _record(k, True) for k in ("a", "aaaa", "cname", "mx", "srv", "txt")}}
+
+
+def _status(key, on="Enabled", off="Disabled"):
+    """A Terraform boolean as an ARM state property."""
+    return Custom(lambda v, cx: {key: on if cx.value(v) else off})
+
+
+def _traffic_manager(f, cx):
+    """A Traffic Manager profile (location global): its routing, DNS name and endpoint monitoring."""
+    return {"location": "global", **obj(own(f), cx, {
+        "name": None, "resource_group_name": None, "traffic_routing_method": "trafficRoutingMethod",
+        "profile_status": "profileStatus", "max_return": "maxReturn",
+        "traffic_view_enabled": _status("trafficViewEnrollmentStatus"),
+        "dns_config": Custom(lambda v, c: {"dnsConfig": obj(v[0], c, {"relative_name": "relativeName", "ttl": "ttl"},
+                                                            f"{c.where}.dns_config")}),
+        "monitor_config": Custom(lambda v, c: {"monitorConfig": obj(v[0], c, {
+            "protocol": "protocol", "port": "port", "path": "path", "interval_in_seconds": "intervalInSeconds",
+            "timeout_in_seconds": "timeoutInSeconds", "tolerated_number_of_failures": "toleratedNumberOfFailures",
+            "expected_status_code_ranges": Custom(lambda x, c2: {"expectedStatusCodeRanges": [
+                dict(zip(("min", "max"), map(int, r.split("-")))) for r in c2.value(x)]})},
+            f"{c.where}.monitor_config")})})}
+
+
+# ------------------------------------------------------------------ Front Door
+
+def _profile_child(type_, parent="cdn_frontdoor_profile_id", parent_type="Microsoft.Cdn/profiles"):
+    return Arm(f"Microsoft.Cdn/profiles/{type_}", CDN, Parent(parent, parent_type))
+
+
+def _fd_secret(f, cx):
+    """A Front Door secret: a customer certificate from Key Vault (the latest version), named by the Key Vault
+    secret's ARM id (Terraform names the certificate by its URI: the vault lookup's vault_uri and the name)."""
+    cert = one(one(f, "secret"), "customer_certificate")
+    unknown = sorted((set(own(f)) - {"name", "cdn_frontdoor_profile_id", "secret"}) | (set(cert) -
+                                                                                       {"key_vault_certificate_id"}))
+    uri = cert.get("key_vault_certificate_id")
+    uri = uri[3:-2] if isinstance(uri, str) and uri.startswith('${"') and uri.endswith('"}') else uri  # a template
+    found = re.match(r"^\$\{(data\.azurerm_key_vault\.[\w-]+)\.vault_uri\}certificates/([^/${}]+)$", uri) \
+        if isinstance(uri, str) else None
+    if unknown or not found:
+        raise SystemExit(f"{cx.where}: no ARM form for {', '.join(unknown) or f'the certificate {uri!r}'}")
+    return {"parameters": {"type": "CustomerCertificate", "useLatestVersion": True, "secretSource": {
+        "id": cx.value(f"${{{found.group(1)}.id}}/secrets/{found.group(2)}")}}}
+
+
+def _fd_route_domains(props, f, cx):
+    """A custom domain association: the domain among its route's custom domains (once)."""
+    domain = {"id": cx.value(f["cdn_frontdoor_custom_domain_id"])}
+    found = props.get("customDomains", [])
+    return {**props, "customDomains": found if domain in found else [*found, domain]}
+
+
+def _fd_security(f, cx):
+    """A Front Door security policy: its firewall policy and the domains (and paths) it inspects."""
+    fw = one(one(f, "security_policies"), "firewall")
+    unknown = sorted((set(own(f)) - {"name", "cdn_frontdoor_profile_id", "security_policies"}) |
+                     (set(fw) - {"cdn_frontdoor_firewall_policy_id", "association"}))
+    if unknown:
+        raise SystemExit(f"{cx.where}: no ARM form for {', '.join(unknown)}")
+    return {"parameters": {"type": "WebApplicationFirewall",
+                           "wafPolicy": {"id": cx.value(fw["cdn_frontdoor_firewall_policy_id"])},
+                           "associations": [{"domains": [{"id": cx.value(d["cdn_frontdoor_domain_id"])}
+                                                         for d in a.get("domain", ())],
+                                             "patternsToMatch": cx.value(a["patterns_to_match"])}
+                                            for a in fw.get("association", ())]}}
+
+
+def _fd_waf(f, cx):
+    """A Front Door firewall policy (location Global): its state and mode, custom rules (match conditions, rate
+    limits) and managed rule sets (their action, exclusions)."""
+    def rule(r):
+        return obj(r, cx, {
+            "name": "name", "enabled": _status("enabledState"), "priority": "priority", "type": "ruleType",
+            "action": "action", "rate_limit_duration_in_minutes": "rateLimitDurationInMinutes",
+            "rate_limit_threshold": "rateLimitThreshold",
+            "match_condition": Nest("matchConditions", {
+                "match_variable": "matchVariable", "operator": "operator", "negation_condition": "negateCondition",
+                "match_values": "matchValue", "selector": "selector", "transforms": "transforms"}, True)},
+            f"{cx.where}.custom_rule")
+
+    def rule_set(r):
+        return obj(r, cx, {"type": "ruleSetType", "version": "ruleSetVersion", "action": "ruleSetAction",
+                           "exclusion": Nest("exclusions", {"match_variable": "matchVariable",
+                                                            "operator": "selectorMatchOperator",
+                                                            "selector": "selector"}, True)},
+                   f"{cx.where}.managed_rule")
+    rest = {k: v for k, v in own(f).items() if k not in ("custom_rule", "managed_rule", "enabled", "mode",
+                                                         "request_body_check_enabled", "redirect_url",
+                                                         "custom_block_response_status_code")}
+    return {"location": "Global", **obj(rest, cx, {
+        "name": None, "resource_group_name": None, "sku_name": Custom(lambda v, c: {"sku": {"name": c.value(v)}})}),
+        "policySettings": obj({k: v for k, v in own(f).items() if k in (
+            "enabled", "mode", "request_body_check_enabled", "redirect_url", "custom_block_response_status_code")},
+            cx, {"enabled": _status("enabledState"), "mode": "mode",
+                 "request_body_check_enabled": _status("requestBodyCheck"), "redirect_url": "redirectUrl",
+                 "custom_block_response_status_code": "customBlockResponseStatusCode"}),
+        "customRules": {"rules": [rule(r) for r in f.get("custom_rule", ())]},
+        "managedRules": {"managedRuleSets": [rule_set(r) for r in f.get("managed_rule", ())]}}
+
+
+# ------------------------------------------------------------------ availability tests
+
+def _web_test(f, cx):
+    """A standard web test (kind standard): its request, validation rules and locations, with the hidden-link tag ARM
+    requires to tie it to its Application Insights component."""
+    app = cx.value(f["application_insights_id"])
+    link = f"hidden-link:{app}" if isinstance(app, str) else \
+        Interp(("hidden-link:", *(app.parts if isinstance(app, Interp) else (app,))))
+    name = cx.value(f["name"])
+    return {"kind": "standard", "tags": {link: "Resource"}, "SyntheticMonitorId": name, "Name": name,
+            "Kind": "standard", **obj({k: v for k, v in own(f).items() if k != "application_insights_id"}, cx, {
+                "name": None, "resource_group_name": None, "location": "location", "description": "Description",
+                "enabled": "Enabled", "frequency": "Frequency", "timeout": "Timeout", "retry_enabled": "RetryEnabled",
+                "geo_locations": Custom(lambda v, c: {"Locations": [{"Id": x} for x in c.value(v)]}),
+                "request": Custom(lambda v, c: {"Request": obj(v[0], c, {
+                    "url": "RequestUrl", "http_verb": "HttpVerb", "follow_redirects_enabled": "FollowRedirects",
+                    "parse_dependent_requests_enabled": "ParseDependentRequests", "body": "RequestBody",
+                    "header": Custom(lambda x, c2: {"Headers": [{"key": c2.value(h["name"]),
+                                                                 "value": c2.value(h["value"])} for h in x]})},
+                    f"{c.where}.request")}),
+                "validation_rules": Custom(lambda v, c: {"ValidationRules": obj(v[0], c, {
+                    "expected_status_code": "ExpectedHttpStatusCode", "ssl_check_enabled": "SSLCheck",
+                    "ssl_cert_remaining_lifetime": "SSLCertRemainingLifetimeCheck"},
+                    f"{c.where}.validation_rules")})})}
+
+
 TYPES = {
     "azurerm_network_security_group": Native(Arm("Microsoft.Network/networkSecurityGroups", NETWORK), BASE,
                                              {"id": "id", "name": "name"}, "name", "map"),
@@ -841,7 +1058,11 @@ TYPES = {
         "nat_gateway_id", lambda props, f, cx: {**props, "publicIpAddresses": [
             *props.get("publicIpAddresses", []), {"id": cx.value(f["public_ip_address_id"])}]})),
     "azurerm_route_table": Native(Arm("Microsoft.Network/routeTables", NETWORK), {
-        **BASE, "bgp_route_propagation_enabled": Custom(lambda v, cx: {"disableBgpRoutePropagation": not v})},
+        **BASE, "bgp_route_propagation_enabled": Custom(lambda v, cx: {"disableBgpRoutePropagation": not v}),
+        # routes inline: the table's PUT replaces them
+        "route": Custom(lambda v, cx: {"routes": _named(v, cx, {
+            "address_prefix": "addressPrefix", "next_hop_type": "nextHopType",
+            "next_hop_in_ip_address": "nextHopIpAddress"}, "route")})},
         {"id": "id"}, "name", "map"),
     # identities
     "azurerm_user_assigned_identity": Native(Arm("Microsoft.ManagedIdentity/userAssignedIdentities", IDENTITY), BASE,
@@ -906,11 +1127,6 @@ TYPES = {
                                        {"id": "id"}, "name", "map", expand=_dns_zone_group),
     "azurerm_private_link_service": Native(Arm("Microsoft.Network/privateLinkServices", NETWORK), _link_service,
                                            {"id": "id", "alias": "alias"}, "name", "map"),
-    "azurerm_private_dns_a_record": Native(Arm("Microsoft.Network/privateDnsZones/A", "2024-06-01",
-                                               Parent("private_dns_zone_id", "Microsoft.Network/privateDnsZones")), {
-        "name": None, "private_dns_zone_id": None, "ttl": "ttl",
-        "records": Custom(lambda v, cx: {"aRecords": [{"ipv4Address": x} for x in cx.value(v)]})},
-        {"id": "id", "fqdn": "fqdn"}, "name", "map", tags_key="metadata"),
     "azurerm_firewall_policy_rule_collection_group": Native(Arm(
         "Microsoft.Network/firewallPolicies/ruleCollectionGroups", NETWORK,
         Parent("firewall_policy_id", "Microsoft.Network/firewallPolicies")), _rule_collection_group, {"id": "id"},
@@ -975,14 +1191,18 @@ TYPES = {
                                                 {"id": "id"}, "name"),
     # databases
     "azurerm_postgresql_flexible_server": Native(Arm("Microsoft.DBforPostgreSQL/flexibleServers", POSTGRES),
-                                                 _postgres, {"id": "id", "name": "name",
-                                                             "fqdn": "fullyQualifiedDomainName"}, "name", "map"),
-    "azurerm_postgresql_flexible_server_configuration": Native(Arm(
+                                                 _flexible("privateDnsZoneArmResourceId"),
+                                                 {"id": "id", "name": "name", "fqdn": "fullyQualifiedDomainName"},
+                                                 "name", "map"),
+    "azurerm_postgresql_flexible_server_configuration": _configuration(
         "Microsoft.DBforPostgreSQL/flexibleServers/configurations", POSTGRES,
-        Parent("server_id", "Microsoft.DBforPostgreSQL/flexibleServers")), {
-        "name": None, "server_id": None, "value": Custom(lambda v, cx: {"value": cx.value(v),
-                                                                         "source": "user-override"})},
-        {"id": "id"}, "name"),
+        "Microsoft.DBforPostgreSQL/flexibleServers"),
+    "azurerm_mysql_flexible_server": Native(Arm("Microsoft.DBforMySQL/flexibleServers", MYSQL),
+                                            _flexible("privateDnsZoneResourceId"),
+                                            {"id": "id", "name": "name", "fqdn": "fullyQualifiedDomainName"},
+                                            "name", "map"),
+    "azurerm_mysql_flexible_server_configuration": _configuration(
+        "Microsoft.DBforMySQL/flexibleServers/configurations", MYSQL, "Microsoft.DBforMySQL/flexibleServers"),
     # monitoring
     "azurerm_log_analytics_workspace_table_custom_log": Native(Arm(
         "Microsoft.OperationalInsights/workspaces/tables", OPINSIGHTS,
@@ -1006,6 +1226,102 @@ TYPES = {
         "name": None, "scope": None, "lock_level": "level", "notes": "notes"}, {"id": "id"}, "name"),
     "azurerm_monitor_data_collection_endpoint": Native(Arm("Microsoft.Insights/dataCollectionEndpoints", INSIGHTS), {
         **BASE, "kind": "kind", "description": "description"}, {"id": "id"}, "name", "map"),
+    # DNS records (public and private zones), Traffic Manager
+    **RECORDS,
+    "azurerm_traffic_manager_profile": Native(Arm("Microsoft.Network/trafficmanagerprofiles", TM), _traffic_manager,
+                                              {"id": "id", "fqdn": "dnsConfig.fqdn"}, "name", "map"),
+    "azurerm_traffic_manager_external_endpoint": Native(Arm(
+        "Microsoft.Network/trafficmanagerprofiles/ExternalEndpoints", TM,
+        Parent("profile_id", "Microsoft.Network/trafficmanagerprofiles")), {
+        "name": None, "profile_id": None, "target": "target", "weight": "weight", "priority": "priority",
+        "endpoint_location": "endpointLocation", "enabled": _status("endpointStatus")}, {"id": "id"}, "name"),
+    # Front Door
+    "azurerm_cdn_frontdoor_profile": Native(Arm("Microsoft.Cdn/profiles", CDN), lambda f, cx: {
+        "location": "global", **obj(own(f), cx, {
+            "name": None, "resource_group_name": None,
+            "sku_name": Custom(lambda v, c: {"sku": {"name": c.value(v)}}),
+            "response_timeout_seconds": "originResponseTimeoutSeconds"})},
+        {"id": "id", "name": "name", "resource_guid": "frontDoorId"}, "name", "map"),
+    "azurerm_cdn_frontdoor_endpoint": Native(_profile_child("afdEndpoints"), lambda f, cx: {
+        "location": "global", **obj(own(f), cx, {"name": None, "cdn_frontdoor_profile_id": None,
+                                                 "enabled": _status("enabledState")})},
+        {"id": "id", "host_name": "hostName"}, "name", "map"),
+    "azurerm_cdn_frontdoor_origin_group": Native(_profile_child("originGroups"), {
+        "name": None, "cdn_frontdoor_profile_id": None, "session_affinity_enabled": _status("sessionAffinityState"),
+        "restore_traffic_time_to_healed_or_new_endpoint_in_minutes":
+            "trafficRestorationTimeToHealedOrNewEndpointsInMinutes",
+        "load_balancing": Nest("loadBalancingSettings", {
+            "sample_size": "sampleSize", "successful_samples_required": "successfulSamplesRequired",
+            "additional_latency_in_milliseconds": "additionalLatencyInMilliseconds"}),
+        "health_probe": Nest("healthProbeSettings", {
+            "protocol": "probeProtocol", "path": "probePath", "interval_in_seconds": "probeIntervalInSeconds",
+            "request_type": "probeRequestType"})}, {"id": "id"}, "name"),
+    "azurerm_cdn_frontdoor_origin": Native(_profile_child("originGroups/origins", "cdn_frontdoor_origin_group_id",
+                                                          "Microsoft.Cdn/profiles/originGroups"), {
+        "name": None, "cdn_frontdoor_origin_group_id": None, "enabled": _status("enabledState"),
+        "host_name": "hostName", "http_port": "httpPort", "https_port": "httpsPort",
+        "origin_host_header": "originHostHeader", "priority": "priority", "weight": "weight",
+        "certificate_name_check_enabled": "enforceCertificateNameCheck"}, {"id": "id"}, "name"),
+    "azurerm_cdn_frontdoor_secret": Native(_profile_child("secrets"), _fd_secret, {"id": "id"}, "name"),
+    "azurerm_cdn_frontdoor_custom_domain": Native(_profile_child("customDomains"), {
+        "name": None, "cdn_frontdoor_profile_id": None, "host_name": "hostName",
+        "dns_zone_id": Custom(lambda v, cx: {"azureDnsZone": {"id": cx.value(v)}}),
+        "tls": Custom(lambda v, cx: {"tlsSettings": obj(v[0], cx, {
+            "certificate_type": "certificateType", "minimum_version": "minimumTlsVersion",
+            "cdn_frontdoor_secret_id": Custom(lambda x, c: {"secret": {"id": c.value(x)}})}, f"{cx.where}.tls")})},
+        {"id": "id", "validation_token": "validationProperties.validationToken"}, "name"),
+    # a route waits for its origins: Front Door refuses a route to an origin group without one
+    "azurerm_cdn_frontdoor_route": Native(_profile_child("afdEndpoints/routes", "cdn_frontdoor_endpoint_id",
+                                                         "Microsoft.Cdn/profiles/afdEndpoints"), {
+        "name": None, "cdn_frontdoor_endpoint_id": None, "cdn_frontdoor_origin_ids": None,
+        "cdn_frontdoor_origin_group_id": Custom(lambda v, cx: {"originGroup": {"id": cx.value(v)}}),
+        "cdn_frontdoor_custom_domain_ids": Custom(lambda v, cx: {"customDomains": [{"id": x}
+                                                                                   for x in cx.value(v)]}),
+        "cdn_frontdoor_origin_path": "originPath", "patterns_to_match": "patternsToMatch",
+        "supported_protocols": "supportedProtocols", "forwarding_protocol": "forwardingProtocol",
+        "https_redirect_enabled": _status("httpsRedirect"), "link_to_default_domain": _status("linkToDefaultDomain"),
+        "enabled": _status("enabledState")}, {"id": "id"}, "name",
+        waits=lambda f: (f.get("cdn_frontdoor_origin_ids", ()),)),
+    "azurerm_cdn_frontdoor_custom_domain_association": Native(None, merge=Merge("cdn_frontdoor_route_ids",
+                                                                                _fd_route_domains)),
+    "azurerm_cdn_frontdoor_security_policy": Native(_profile_child("securityPolicies"), _fd_security, {"id": "id"},
+                                                    "name"),
+    "azurerm_cdn_frontdoor_firewall_policy": Native(Arm("Microsoft.Network/FrontDoorWebApplicationFirewallPolicies",
+                                                        FD_WAF), _fd_waf, {"id": "id"}, "name", "map"),
+    # network: peering, VPN, NAT
+    "azurerm_virtual_network_peering": Native(Arm("Microsoft.Network/virtualNetworks/virtualNetworkPeerings", NETWORK,
+                                                  Parent("virtual_network_name", "Microsoft.Network/virtualNetworks",
+                                                         "name")), {
+        "name": None, "resource_group_name": None, "virtual_network_name": None,
+        "remote_virtual_network_id": Custom(lambda v, cx: {"remoteVirtualNetwork": {"id": cx.value(v)}}),
+        "allow_virtual_network_access": "allowVirtualNetworkAccess", "allow_forwarded_traffic": "allowForwardedTraffic",
+        "allow_gateway_transit": "allowGatewayTransit", "use_remote_gateways": "useRemoteGateways"},
+        {"id": "id"}, "name"),
+    "azurerm_local_network_gateway": Native(Arm("Microsoft.Network/localNetworkGateways", NETWORK), {
+        **BASE, "gateway_address": "gatewayIpAddress", "gateway_fqdn": "fqdn",
+        "address_space": Custom(lambda v, cx: {"localNetworkAddressSpace": {"addressPrefixes": cx.value(v)}}),
+        "bgp_settings": Nest("bgpSettings", {"asn": "asn", "bgp_peering_address": "bgpPeeringAddress",
+                                             "peer_weight": "peerWeight"})}, {"id": "id"}, "name", "map"),
+    "azurerm_virtual_network_gateway_connection": Native(Arm("Microsoft.Network/connections", NETWORK), {
+        **BASE, "type": "connectionType", "shared_key": "sharedKey", "bgp_enabled": "enableBgp",
+        "connection_protocol": "connectionProtocol", "routing_weight": "routingWeight",
+        "virtual_network_gateway_id": Custom(lambda v, cx: {"virtualNetworkGateway1": {"id": cx.value(v),
+                                                                                         "properties": {}}}),
+        "local_network_gateway_id": Custom(lambda v, cx: {"localNetworkGateway2": {"id": cx.value(v),
+                                                                                     "properties": {}}})},
+        {"id": "id"}, "name", "map"),
+    "azurerm_nat_gateway_public_ip_prefix_association": Native(None, merge=Merge(
+        "nat_gateway_id", lambda props, f, cx: {**props, "publicIpPrefixes": [
+            *props.get("publicIpPrefixes", []), {"id": cx.value(f["public_ip_prefix_id"])}]})),
+    # availability tests, policy exemptions
+    "azurerm_application_insights_standard_web_test": Native(Arm("Microsoft.Insights/webtests", WEBTESTS), _web_test,
+                                                             {"id": "id"}, "name", "map"),
+    "azurerm_subscription_policy_exemption": Native(Arm("Microsoft.Authorization/policyExemptions", EXEMPTIONS,
+                                                        extends="subscription_id"), {
+        "name": None, "subscription_id": None, "policy_assignment_id": "policyAssignmentId",
+        "exemption_category": "exemptionCategory", "policy_definition_reference_ids": "policyDefinitionReferenceIds",
+        "expires_on": "expiresOn", "description": "description", "display_name": "displayName",
+        "metadata": "metadata"}, {"id": "id"}, "name"),
 }
 
 
@@ -1022,7 +1338,8 @@ APIS = {**{n.type.type: n.type.api_version for n in TYPES.values()
         "Microsoft.Network/networkWatchers": NETWORK, "Microsoft.Network/networkSecurityGroups": NETWORK,
         "Microsoft.Network/virtualNetworks": NETWORK, "Microsoft.Compute/virtualMachines": COMPUTE,
         "Microsoft.Storage/storageAccounts": STORAGE, "Microsoft.KeyVault/vaults": KEYVAULT,
-        "Microsoft.OperationalInsights/workspaces": OPINSIGHTS, "Microsoft.Network/privateDnsZones": "2024-06-01",
+        "Microsoft.OperationalInsights/workspaces": OPINSIGHTS, "Microsoft.Network/privateDnsZones": PRIVATE_DNS,
+        "Microsoft.Network/dnsZones": DNS,
         "Microsoft.DBforPostgreSQL/flexibleServers": POSTGRES,
         "Microsoft.ManagedIdentity/userAssignedIdentities": IDENTITY}
 

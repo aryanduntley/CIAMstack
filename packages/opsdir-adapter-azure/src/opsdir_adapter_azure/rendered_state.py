@@ -12,7 +12,14 @@ render was made from:
     identity's principal and client ids);
   - data sources the same ids, so a lookup by name and resource group finds what the record holds; a resource group
     in the environment's region; the subscription the provider runs in (its subscription_id, a variable's default).
+
+A Bicep/ARM render (5.6c, decision 2629) reads back through azure/arm from its ARM JSON (arm/; the .bicep is the same
+deployment): each template becomes a deployment folder as the CLI saves one (rendered_deployments): the template and
+`az deployment group show` (the record's subscription, the template's resource group, its parameters' defaults);
+ARM ids come from names, so nothing else is assigned. The Terraform root kept beside the templates becomes its state.
 """
+import json
+import posixpath
 import uuid
 from types import MappingProxyType
 
@@ -140,6 +147,41 @@ def azure_assigned(m, blocks):
 # Inputs an operator gives at apply that what is read back depends on: a synthetic value each (the Purview triggers'
 # first run, without which their recurrence isn't in the state)
 INPUTS = MappingProxyType({START: "2026-01-01T02:00:00Z"})
+
+
+# The templates a Bicep/ARM render writes at the subscription and tenant scopes (template_name); the others are
+# resource groups'
+SCOPES = ("subscription", "tenant")
+
+
+def _deployment_folder(path, text, subscription):
+    """{path: text} of one rendered ARM template as the deployment folder the CLI saves: the template and the
+    deployment (its scope's id, the parameters' defaults; secure ones never)."""
+    doc = json.loads(text)
+    stem = posixpath.basename(path)[:-len(".json")]
+    scope = f"/subscriptions/{subscription}" + ("" if stem in SCOPES else f"/resourceGroups/{stem}")
+    parameters = {k: {"value": p["defaultValue"]} for k, p in (doc.get("parameters") or {}).items()
+                  if isinstance(p, dict) and "defaultValue" in p and not str(p.get("type", "")).lower().startswith(
+                      "secure")}
+    deployment = {"id": f"{scope}/providers/Microsoft.Resources/deployments/{stem}", "name": stem,
+                  "properties": {"provisioningState": "Succeeded", "parameters": parameters}}
+    folder = f"{posixpath.dirname(path)}/{stem}"
+    return {f"{folder}/template.json": text, f"{folder}/deployment.json": json.dumps(deployment)}
+
+
+def rendered_deployments(files, d, environment):
+    """The ARM ReadBack's prepare: an environment's rendered ARM JSON ({<cloud>/<env>/...: text}) as applying it would
+    record: each template a deployment folder (in the record's subscription), each Terraform root kept beside them its
+    state, what Azure assigns from record d."""
+    m = env_model(d, env_dn(environment))
+    subscription = one(m.cloud, "ciamAccountRef") or "00000000-0000-0000-0000-000000000000"
+    roots = {p.rsplit("/", 1)[0] for p in files if p.endswith("/placements.json")}
+    deployments = {k: v for p in sorted(files) if p.endswith(".json") and not p.endswith("/placements.json")
+                   and posixpath.dirname(p) in roots
+                   for k, v in _deployment_folder(p, files[p], subscription).items()}
+    side = {p: t for p, t in files.items() if p.endswith(".tf") and posixpath.basename(posixpath.dirname(p))
+            == "terraform" and posixpath.dirname(posixpath.dirname(p)) in roots}
+    return {**deployments, **root_states(side, environment, lambda blocks: azure_assigned(m, blocks), dict(INPUTS))}
 
 
 def rendered_states(files, d, environment):

@@ -48,6 +48,16 @@ def test_the_risk_logs_go_where_the_findings_go():
         in nowhere
 
 
+def test_in_azure_government_the_risk_log_export_says_its_availability_there_is_unstated():
+    alpha, out = _render()
+    gov = alpha._replace(cloud=make_entry(alpha.cloud.dn, alpha.cloud.classes,
+                                          {**alpha.cloud.attrs, "ciamRegion": ("usgovvirginia",)}))
+    noted = " ".join("\n\n".join(as_text(render_identity_protection(gov, get(alpha.d, SERVICE)))).split())
+    assert ("# Azure Government: Microsoft's Azure Government documentation (2026-10) doesn't state that exporting "
+            "Microsoft Entra logs by a diagnostic setting (microsoft.aadiam) is available there") in noted
+    assert "Azure Government" not in out
+
+
 def test_complete_policies_render_as_report_only_conditional_access():
     m, out = _render(ciamRiskPolicy=("sign-in medium+: mfa", "user high+: password-change"),
                      ciamPolicyCovers="identity-admins", ciamPolicyExcludes="identity-break-glass")

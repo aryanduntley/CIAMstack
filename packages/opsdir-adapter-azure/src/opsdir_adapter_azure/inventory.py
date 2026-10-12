@@ -576,17 +576,24 @@ def pairs_resources(pairs):
              *geo_backup_notices(pairs), *security_notices(pairs)))
 
 
-def state_resources(text):
-    """(resources, notices) of an Azure Terraform state."""
+def state_pairs(text):
+    """((Terraform resource type, attributes) pairs, notices) of an Azure Terraform state: its resource instances
+    under the names the readers take, the secret-bearing and unmodeled types named (pairs_resources doesn't read
+    them)."""
     found, problem = read_state(text)
     if problem:
         return (), (problem,)
-    pairs = [(r.type, reader_names(r.type, r.attributes)) for r in found]
+    pairs = tuple((r.type, reader_names(r.type, r.attributes)) for r in found)
     skipped = Counter(t for t, _ in pairs if t in SKIPPED)
-    resources, notices = pairs_resources(pairs)
-    return (resources,
-            (*(f"{t} ({n}): not read (holds secret values, or isn't modeled yet)" for t, n in sorted(skipped.items())),
-             *notices))
+    return pairs, tuple(f"{t} ({n}): not read (holds secret values, or isn't modeled yet)"
+                        for t, n in sorted(skipped.items()))
+
+
+def state_resources(text):
+    """(resources, notices) of an Azure Terraform state."""
+    pairs, skipped = state_pairs(text)
+    resources, notices = pairs_resources(list(pairs))
+    return resources, (*skipped, *notices)
 
 
 def read_terraform_state(files, d, patterns, at=None):

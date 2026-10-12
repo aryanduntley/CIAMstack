@@ -255,3 +255,238 @@ def test_values_resolve_against_parameters_pseudo_parameters_and_physical_ids():
     assert resolve({"Refresh": 5}, names) == {"Refresh": 5}
     assert read_document("A: !GetAtt Lb.DNSName\nB: !Ref X\n") == {"A": {"Fn::GetAtt": ["Lb", "DNSName"]},
                                                                   "B": {"Ref": "X"}}
+
+
+def test_the_terraform_root_kept_beside_the_stacks_is_read_with_them():
+    """What a CloudFormation render keeps in Terraform (its side root, applied as a state) is read in the same import
+    as the stacks: the environment's resources are both parts' together."""
+    stacks = {p.split("/", 2)[2]: t for p, t in _files().items()}
+    state = _state_of((("aws_s3_bucket", {"id": "ciam-audit", "bucket": "ciam-audit", "tags": {"Role": "audit"}}),))
+    alone, _ = cloudformation_resources(stacks)
+    side, _ = cloudformation_resources({"terraform/main.tfstate": state})
+    both, _ = cloudformation_resources({**stacks, "terraform/main.tfstate": state})
+    assert sorted(map(repr, both)) == sorted(map(repr, (*alone, *side))) and side
+
+
+ACCOUNT = "111122223333"
+OIDC = f"arn:aws:iam::{ACCOUNT}:oidc-provider/token.actions.githubusercontent.com"
+GRANT = {"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Action": ["secretsmanager:GetSecretValue"],
+                                                  "Resource": [SECRET]}]}
+TRUST = {"Version": "2012-10-17", "Statement": [{
+    "Effect": "Allow", "Action": "sts:AssumeRoleWithWebIdentity", "Principal": {"Federated": {"Ref": "Oidc"}},
+    "Condition": {"StringEquals": {"token.actions.githubusercontent.com:sub": "repo:example/ops:environment:prod"}}}]}
+SCP = {"Version": "2012-10-17", "Statement": [{"Effect": "Deny", "Action": "kms:ScheduleKeyDeletion",
+                                               "Resource": "*"}]}
+IAM_TEMPLATE = {"Resources": {
+    "Oidc": {"Type": "AWS::IAM::OIDCProvider", "Properties": {"Url": "https://token.actions.githubusercontent.com",
+                                                              "ClientIdList": ["sts.amazonaws.com"]}},
+    "Deploy": {"Type": "AWS::IAM::Role", "Properties": {
+        "RoleName": "ciam-prod-deploy", "AssumeRolePolicyDocument": TRUST,
+        "Policies": [{"PolicyName": "deploy", "PolicyDocument": GRANT}],
+        "Tags": [{"Key": "Role", "Value": "identity-ci"}]}},
+    "Extra": {"Type": "AWS::IAM::ManagedPolicy", "Properties": {"ManagedPolicyName": "extra", "PolicyDocument": {
+        "Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Action": "kms:Decrypt", "Resource": KEY}]},
+        "Roles": [{"Ref": "Deploy"}]}},
+    "Guardrails": {"Type": "AWS::Organizations::Policy", "Properties": {
+        "Name": "guardrails", "Type": "SERVICE_CONTROL_POLICY", "Content": SCP,
+        "Tags": [{"Key": "Role", "Value": "org-guardrails"}]}},
+    "Admins": {"Type": "AWS::SSO::PermissionSet", "Properties": {
+        "Name": "ciam-admins", "InstanceArn": "arn:aws:sso:::instance/ssoins-1", "InlinePolicy": GRANT,
+        "Tags": [{"Key": "Role", "Value": "identity-admins"}]}},
+    "AdminsAssignment": {"Type": "AWS::SSO::Assignment", "Properties": {
+        "InstanceArn": "arn:aws:sso:::instance/ssoins-1", "PrincipalId": "group-1", "PrincipalType": "GROUP",
+        "PermissionSetArn": {"Fn::GetAtt": ["Admins", "PermissionSetArn"]}, "TargetId": ACCOUNT,
+        "TargetType": "AWS_ACCOUNT"}}}}
+IAM_PHYSICAL = {"Oidc": OIDC, "Deploy": "ciam-prod-deploy", "Extra": f"arn:aws:iam::{ACCOUNT}:policy/extra",
+                "Guardrails": f"arn:aws:organizations::{ACCOUNT}:policy/o-1/service_control_policy/p-1",
+                "Admins": "arn:aws:sso:::permissionSet/ssoins-1/ps-1", "AdminsAssignment": "a-1"}
+
+
+def _state_of(pairs):
+    """A Terraform state (format 4) holding the (type, attributes) pairs, one instance each."""
+    return json.dumps({"version": 4, "terraform_version": "1.9.0", "serial": 1, "lineage": "l", "outputs": {},
+                       "resources": [{"mode": "managed", "type": t, "name": f"r{i}",
+                                      "provider": 'provider["registry.terraform.io/hashicorp/aws"]',
+                                      "instances": [{"schema_version": 0, "attributes": a,
+                                                     "sensitive_attributes": []}]}
+                                     for i, (t, a) in enumerate(pairs)]})
+
+
+def test_iam_organizations_and_identity_center_read_as_their_state_does():
+    """A stack's roles (trust, inline and attached policies), OIDC providers, control policies, permission sets and
+    their assignments read to the same identities and guardrails as the Terraform state of the same resources."""
+    stack = {"stack.json": _stack("ciam-prod-iam", {}), "resources.json": _resources(IAM_PHYSICAL),
+             "template.json": IAM_TEMPLATE}
+    texts = {f"iam/{p}": json.dumps(t) for p, t in stack.items()}
+    state = _state_of((
+        ("aws_iam_openid_connect_provider", {"arn": OIDC, "url": "https://token.actions.githubusercontent.com"}),
+        ("aws_iam_role", {"name": "ciam-prod-deploy", "arn": f"arn:aws:iam::{ACCOUNT}:role/ciam-prod-deploy",
+                          "assume_role_policy": json.dumps({**TRUST, "Statement": [{
+                              **TRUST["Statement"][0], "Principal": {"Federated": OIDC}}]}),
+                          "inline_policy": [{"name": "deploy", "policy": json.dumps(GRANT)}],
+                          "tags": {"Role": "identity-ci"}}),
+        ("aws_iam_policy", {"arn": IAM_PHYSICAL["Extra"], "name": "extra",
+                            "policy": json.dumps(IAM_TEMPLATE["Resources"]["Extra"]["Properties"]["PolicyDocument"])}),
+        ("aws_iam_role_policy_attachment", {"role": "ciam-prod-deploy", "policy_arn": IAM_PHYSICAL["Extra"]}),
+        ("aws_organizations_policy", {"arn": IAM_PHYSICAL["Guardrails"], "id": "p-1", "name": "guardrails",
+                                      "type": "SERVICE_CONTROL_POLICY", "content": json.dumps(SCP),
+                                      "tags": {"Role": "org-guardrails"}}),
+        ("aws_ssoadmin_permission_set", {"arn": IAM_PHYSICAL["Admins"], "name": "ciam-admins",
+                                         "tags": {"Role": "identity-admins"}}),
+        ("aws_ssoadmin_permission_set_inline_policy", {"permission_set_arn": IAM_PHYSICAL["Admins"],
+                                                       "inline_policy": json.dumps(GRANT)}),
+        ("aws_ssoadmin_account_assignment", {"permission_set_arn": IAM_PHYSICAL["Admins"], "principal_id": "group-1",
+                                             "principal_type": "GROUP", "target_id": ACCOUNT})))
+    stacked, _ = cloudformation_resources(texts)
+    from_state, _ = cloudformation_resources({"terraform.tfstate": state})
+    kinds = ("identity", "guardrail")
+    assert sorted(map(repr, (r for r in stacked if r.kind in kinds))) == \
+        sorted(map(repr, (r for r in from_state if r.kind in kinds)))
+    deploy = next(r for r in stacked if r.kind == "identity" and r.name == "ciam-prod-deploy")
+    assert deploy.attrs["ciamTrustedBy"] == ("https://token.actions.githubusercontent.com "
+                                             "repo:example/ops:environment:prod",)
+    assert {g.split(" on ")[0] for g in deploy.attrs["ciamGrant"]} == {"secretsmanager:GetSecretValue",
+                                                                         "kms:Decrypt"}
+
+
+ALB = f"arn:aws:elasticloadbalancing:us-east-1:{ACCOUNT}:loadbalancer/app/ciam-prod-svc-sso/0abc"
+ACL = f"arn:aws:wafv2:us-east-1:{ACCOUNT}:regional/webacl/sso/1"
+RATE_RULE = {"Name": "login", "Priority": 1, "Action": {"Block": {}},
+             "VisibilityConfig": {"SampledRequestsEnabled": True, "CloudWatchMetricsEnabled": True,
+                                  "MetricName": "login"},
+             "Statement": {"RateBasedStatement": {"Limit": 300, "EvaluationWindowSec": 300,
+                                                  "AggregateKeyType": "IP"}}}
+EDGE_TEMPLATE = {"Resources": {
+    "Sso": {"Type": "AWS::ElasticLoadBalancingV2::LoadBalancer", "Properties": {
+        "Name": "ciam-prod-svc-sso", "Type": "application", "Scheme": "internet-facing", "Subnets": [SUBNET],
+        "LoadBalancerAttributes": [{"Key": "idle_timeout.timeout_seconds", "Value": "120"}],
+        "Tags": [{"Key": "Role", "Value": "pf-sso-service"}]}},
+    "SsoAcl": {"Type": "AWS::WAFv2::WebACL", "Properties": {
+        "Name": "sso", "Scope": "REGIONAL", "DefaultAction": {"Allow": {}}, "Rules": [RATE_RULE]}},
+    "SsoAclAssociation": {"Type": "AWS::WAFv2::WebACLAssociation", "Properties": {
+        "WebACLArn": {"Fn::GetAtt": ["SsoAcl", "Arn"]}, "ResourceArn": {"Ref": "Sso"}}},
+    "SsoShield": {"Type": "AWS::Shield::Protection", "Properties": {"Name": "sso", "ResourceArn": {"Ref": "Sso"}}},
+    "Forward": {"Type": "AWS::Route53Resolver::ResolverRule", "Properties": {
+        "Name": "corp", "RuleType": "FORWARD", "DomainName": "corp.example.",
+        "TargetIps": [{"Ip": "10.9.0.2", "Port": 53}]}}}}
+EDGE_PHYSICAL = {"Sso": ALB, "SsoAcl": "sso|1|REGIONAL", "SsoAclAssociation": "assoc-1",
+                 "SsoShield": f"arn:aws:shield::{ACCOUNT}:protection/p-1", "Forward": "rslvr-rr-1"}
+
+
+def test_the_edge_reads_as_its_state_does():
+    """A stack's web ACL (its rules, the load balancer it protects), Shield protection and forwarding rule read to the
+    same edge and DNS resources as the Terraform state of the same resources; a web ACL's ARN follows from Ref's
+    'name|id|scope'."""
+    texts = {f"edge/{p}": json.dumps(t) for p, t in {
+        "stack.json": _stack("ciam-prod-edge", {}), "resources.json": _resources(EDGE_PHYSICAL),
+        "template.json": EDGE_TEMPLATE}.items()}
+    state = _state_of((
+        ("aws_lb", {"arn": ALB, "name": "ciam-prod-svc-sso", "load_balancer_type": "application", "internal": False,
+                    "idle_timeout": "120", "subnet_mapping": [{"subnet_id": SUBNET}], "security_groups": [],
+                    "dns_name": "cfn:Sso", "tags": {"Role": "pf-sso-service"}}),
+        ("aws_wafv2_web_acl", {"arn": ACL, "name": "sso", "rule": [{
+            "name": "login", "priority": 1, "action": [{"block": [{}]}],
+            "visibility_config": [{"sampled_requests_enabled": True, "cloud_watch_metrics_enabled": True,
+                                   "metric_name": "login"}],
+            "statement": [{"rate_based_statement": [{"limit": 300, "evaluation_window_sec": 300,
+                                                     "aggregate_key_type": "IP"}]}]}]}),
+        ("aws_wafv2_web_acl_association", {"web_acl_arn": ACL, "resource_arn": ALB}),
+        ("aws_shield_protection", {"id": EDGE_PHYSICAL["SsoShield"], "arn": EDGE_PHYSICAL["SsoShield"], "name": "sso",
+                                   "resource_arn": ALB}),
+        ("aws_route53_resolver_rule", {"id": "rslvr-rr-1", "name": "corp", "rule_type": "FORWARD",
+                                       "domain_name": "corp.example.", "target_ip": [{"ip": "10.9.0.2", "port": 53}]})))
+    stacked, _ = cloudformation_resources(texts)
+    from_state, _ = cloudformation_resources({"terraform.tfstate": state})
+    assert sorted(map(repr, stacked)) == sorted(map(repr, from_state))
+    edge = {r.attrs["ciamEdgeKind"][0]: r for r in stacked if r.kind == "edge"}
+    assert edge["waf"].attrs["ciamEdgeSetting"] == ("rate-based rule login: 300/300s per ip",)
+    assert edge["ddos"].attrs["ciamEdgeFact"] == ("ddos network-advanced",)
+
+
+def _same(template, physical, pairs, kinds):
+    """The resources of kinds a one-stack template (its resources' physical ids given) reads to, and those the state
+    of pairs reads to."""
+    texts = {f"s/{p}": json.dumps(t) for p, t in {"stack.json": _stack("ciam-prod-s", {}),
+                                                  "resources.json": _resources(physical),
+                                                  "template.json": template}.items()}
+    stacked, _ = cloudformation_resources(texts)
+    from_state, _ = cloudformation_resources({"terraform.tfstate": _state_of(pairs)})
+    return (sorted(map(repr, (r for r in stacked if r.kind in kinds))),
+            sorted(map(repr, (r for r in from_state if r.kind in kinds))))
+
+
+def test_dns_records_with_their_routing_read_as_their_state_does():
+    template = {"Resources": {
+        "Mx": {"Type": "AWS::Route53::RecordSet", "Properties": {
+            "HostedZoneId": "Z1", "Name": "example.test.", "Type": "MX", "TTL": "300",
+            "ResourceRecords": ["10 mail1.example.test", "20 mail2.example.test"]}},
+        "Txt": {"Type": "AWS::Route53::RecordSet", "Properties": {
+            "HostedZoneId": "Z1", "Name": "_verify.example.test", "Type": "TXT", "TTL": "120",
+            "ResourceRecords": ['"token=abc"']}},
+        "Api": {"Type": "AWS::Route53::RecordSet", "Properties": {
+            "HostedZoneId": "Z1", "Name": "api.example.test", "Type": "A", "TTL": "60", "SetIdentifier": "a",
+            "Weight": "3", "ResourceRecords": ["198.51.100.11"]}}}}
+    pairs = (("aws_route53_record", {"name": "example.test", "zone_id": "Z1", "type": "MX", "ttl": 300,
+                                     "records": ["10 mail1.example.test", "20 mail2.example.test"]}),
+             ("aws_route53_record", {"name": "_verify.example.test", "zone_id": "Z1", "type": "TXT", "ttl": 120,
+                                     "records": ["token=abc"]}),
+             ("aws_route53_record", {"name": "api.example.test", "zone_id": "Z1", "type": "A", "ttl": 60,
+                                     "set_identifier": "a", "records": ["198.51.100.11"],
+                                     "weighted_routing_policy": [{"weight": 3}]}))
+    stacked, state = _same(template, {"Mx": "mx", "Txt": "txt", "Api": "api"}, pairs, ("record",))
+    assert stacked == state and len(stacked) == 3
+
+
+def test_an_aurora_cluster_log_group_and_suppressions_read_as_their_state_does():
+    cluster_params = {"log_min_duration_statement": "500"}
+    template = {"Resources": {
+        "Grants": {"Type": "AWS::RDS::DBCluster", "Properties": {
+            "DBClusterIdentifier": "db-grants", "Engine": "aurora-postgresql", "EngineVersion": "16.4",
+            "StorageEncrypted": "true", "KmsKeyId": KEY, "BackupRetentionPeriod": "14", "DeletionProtection": "true",
+            "DBSubnetGroupName": {"Ref": "Subnets"}, "DBClusterParameterGroupName": {"Ref": "Params"},
+            "Tags": [{"Key": "Role", "Value": "pf-grants-db"}]}},
+        "Member": {"Type": "AWS::RDS::DBInstance", "Properties": {
+            "DBInstanceIdentifier": "db-grants-1", "DBClusterIdentifier": {"Ref": "Grants"},
+            "DBInstanceClass": "db.r6g.large", "Engine": "aurora-postgresql"}},
+        "Subnets": {"Type": "AWS::RDS::DBSubnetGroup", "Properties": {
+            "DBSubnetGroupName": "db-grants", "SubnetIds": [SUBNET], "DBSubnetGroupDescription": "db"}},
+        "Params": {"Type": "AWS::RDS::DBClusterParameterGroup", "Properties": {
+            "DBClusterParameterGroupName": "db-grants", "Family": "aurora-postgresql16",
+            "Parameters": cluster_params}},
+        "Audit": {"Type": "AWS::Logs::LogGroup", "Properties": {
+            "LogGroupName": "/ciam/audit", "RetentionInDays": 400, "Tags": [{"Key": "Role", "Value": "audit-logs"}]}},
+        "Rule": {"Type": "AWS::SecurityHub::AutomationRule", "Properties": {
+            "RuleName": "exc-EXC-7", "RuleStatus": "ENABLED", "RuleOrder": 1, "Description": "EXC-7",
+            "Criteria": {"ComplianceSecurityControlId": [{"Value": "IAM.6", "Comparison": "EQUALS"}]},
+            "Actions": [{"Type": "FINDING_FIELDS_UPDATE",
+                         "FindingFieldsUpdate": {"Workflow": {"Status": "SUPPRESSED"}}}]}},
+        "Filter": {"Type": "AWS::GuardDuty::Filter", "Properties": {
+            "Name": "exc-EXC-7", "Action": "ARCHIVE", "Rank": 1, "DetectorId": "d-1",
+            "FindingCriteria": {"Criterion": {"type": {"Equals": ["Recon:EC2/PortProbeUnprotectedPort"]}}}}}}}
+    physical = {"Grants": "db-grants", "Member": "db-grants-1", "Subnets": "db-grants", "Params": "db-grants",
+                "Audit": "/ciam/audit", "Rule": f"arn:aws:securityhub:us-east-1:{ACCOUNT}:automation-rule/r-1",
+                "Filter": "exc-EXC-7"}
+    pairs = (("aws_rds_cluster", {"arn": f"arn:aws:rds:us-east-1:{ACCOUNT}:cluster:db-grants",
+                                  "cluster_identifier": "db-grants", "engine": "aurora-postgresql",
+                                  "engine_version": "16.4", "storage_encrypted": True, "kms_key_id": KEY,
+                                  "backup_retention_period": 14, "deletion_protection": True,
+                                  "db_subnet_group_name": "db-grants", "db_cluster_parameter_group_name": "db-grants",
+                                  "tags": {"Role": "pf-grants-db"}, "vpc_security_group_ids": []}),
+             ("aws_rds_cluster_instance", {"identifier": "db-grants-1", "cluster_identifier": "db-grants",
+                                           "instance_class": "db.r6g.large"}),
+             ("aws_db_subnet_group", {"name": "db-grants", "subnet_ids": [SUBNET]}),
+             ("aws_rds_cluster_parameter_group", {"name": "db-grants", "parameter": [
+                 {"name": k, "value": v} for k, v in cluster_params.items()]}),
+             ("aws_cloudwatch_log_group", {"arn": f"arn:aws:logs:us-east-1:{ACCOUNT}:log-group:/ciam/audit",
+                                           "name": "/ciam/audit", "retention_in_days": 400,
+                                           "tags": {"Role": "audit-logs"}}),
+             ("aws_securityhub_automation_rule", {
+                 "arn": physical["Rule"], "rule_name": "exc-EXC-7",
+                 "criteria": [{"compliance_security_control_id": [{"value": "IAM.6", "comparison": "EQUALS"}]}],
+                 "actions": [{"type": "FINDING_FIELDS_UPDATE",
+                              "finding_fields_update": [{"workflow": [{"status": "SUPPRESSED"}]}]}]}),
+             ("aws_guardduty_filter", {"id": "exc-EXC-7", "name": "exc-EXC-7", "action": "ARCHIVE",
+                                       "finding_criteria": [{"criterion": [
+                                           {"field": "type", "equals": ["Recon:EC2/PortProbeUnprotectedPort"]}]}]}))
+    stacked, state = _same(template, physical, pairs, ("database", "logs", "suppression"))
+    assert stacked == state and len(stacked) == 3

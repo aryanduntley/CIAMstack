@@ -207,3 +207,40 @@ def test_the_evaluator_covers_what_deployments_use():
     assert evaluate("[resourceGroup().name]", ctx) == "rg" and evaluate("[subscription().subscriptionId]", ctx) == SUB
     assert evaluate("[[literal]", ctx) == "[literal]" and evaluate("plain", ctx) == "plain"
     assert evaluate("[uniqueString(resourceGroup().id)]", ctx) == ("<unknown>",)
+
+
+def _tfstate(type_, name, attributes):
+    """A Terraform state (format 4) holding one resource instance."""
+    return json.dumps({"version": 4, "terraform_version": "1.9.0", "serial": 1, "lineage": "l", "outputs": {},
+                       "resources": [{"mode": "managed", "type": type_, "name": name,
+                                      "provider": 'provider["registry.terraform.io/hashicorp/azurerm"]',
+                                      "instances": [{"schema_version": 0, "attributes": attributes,
+                                                     "sensitive_attributes": []}]}]})
+
+
+def test_the_terraform_root_kept_beside_the_deployments_is_read_with_them():
+    """What a Bicep/ARM render keeps in Terraform (its side root, applied as a state) is read in the same import as
+    the deployments: the environment's resources are both parts' together."""
+    deployments = {p.split("/", 2)[2]: t for p, t in _files().items()}
+    state = _tfstate("azurerm_key_vault_key", "audit", {
+        "id": "https://kv-ciam-prod.vault.azure.net/keys/audit/1", "name": "audit", "key_type": "RSA",
+        "key_vault_id": f"{RG}/providers/Microsoft.KeyVault/vaults/kv-ciam-prod",
+        "versionless_id": "https://kv-ciam-prod.vault.azure.net/keys/audit", "tags": {"Role": "audit-key"}})
+    alone, _ = arm_resources(deployments)
+    side, _ = arm_resources({"terraform/main.tfstate": state})
+    both, _ = arm_resources({**deployments, "terraform/main.tfstate": state})
+    assert sorted(map(repr, both)) == sorted(map(repr, (*alone, *side))) and side
+
+
+def test_subscription_tenant_and_extension_resource_ids_evaluate():
+    ctx = {"subscription": "s1", "group": "g1", "parameters": {}, "variables": {}}
+    assert evaluate("[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'abc')]", ctx) == \
+        "/subscriptions/s1/providers/Microsoft.Authorization/roleDefinitions/abc"
+    assert evaluate("[subscriptionResourceId('s2', 'Microsoft.Resources/resourceGroups', 'rg')]", ctx) == \
+        "/subscriptions/s2/resourceGroups/rg"
+    assert evaluate("[tenantResourceId('Microsoft.Authorization/policySetDefinitions', 'x')]", ctx) == \
+        "/providers/Microsoft.Authorization/policySetDefinitions/x"
+    assert evaluate("[extensionResourceId(resourceId('Microsoft.KeyVault/vaults', 'kv'), "
+                    "'Microsoft.Authorization/roleAssignments', 'r1')]", ctx) == (
+        "/subscriptions/s1/resourceGroups/g1/providers/Microsoft.KeyVault/vaults/kv/providers/"
+        "Microsoft.Authorization/roleAssignments/r1")

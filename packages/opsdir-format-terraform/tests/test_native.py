@@ -6,8 +6,8 @@ import pytest
 
 from opsdir_format_terraform.hcl import Block, TfFile, ref, tf_block, tf_import
 from opsdir_format_terraform.native import (Attribute, Computed, Custom, Cx, Forms, Layout, Merge, Native, Nest, Table,
-                                            Target, depends, fields, group_refs, obj, placements, read_root, resolver,
-                                            translate)
+                                            Target, depends, fields, group_refs, obj, placements, placements_document,
+                                            placements_of, read_root, resolver, translate)
 from opsdir_format_terraform.translate import TfRef
 
 
@@ -144,3 +144,32 @@ def test_a_keep_rule_and_a_merged_part_waiting_on_a_reader_of_its_target_stay_te
     assert read.reasons == {"t_guard.g": "no native guard here",
                             "t_seal.s": "part of t_box.a natively, but waits for t_grant.x, which reads it: a cycle "
                                         "there, so it stays Terraform, applied after the template"}
+
+
+def test_a_row_waits_for_what_it_reads_only_in_terraform_and_an_unknown_group_stays_terraform():
+    """Native.waits orders a resource after resources it doesn't reference natively; a resource whose group the
+    layout can't name (Layout.unplaced) stays Terraform, saying why."""
+    types = {**TYPES, "t_route": Native("Route", {"name": "Name", "origins": None}, {}, "Name",
+                                        waits=lambda f: (f.get("origins", ()),))}
+    table = Table(types, frozenset(), DATA)
+    items = TfFile("", (tf_block("resource", ["t_box", "a"], [("name", "a")]),
+                        tf_block("resource", ["t_route", "r"], [("name", "r"), ("origins", [ref("t_box.a.id")])]),
+                        tf_block("resource", ["t_box", "lost"], [("name", "lost")])))
+    layout = Layout(lambda b: "main", lambda group: None, lambda type_, name: f"{type_}:{name}",
+                    lambda b: "no Toy group named" if b.labels[1] == "lost" else None)
+    read = read_root("terraform", (("terraform/main.tf", items),), table, "Toy", lambda items: layout)
+    assert depends(read, read.placed["t_route.r"], {"t_box:a", "t_route:r"}) == ("t_box:a",)
+    assert read.reasons == {"t_box.lost": "no Toy group named"}
+
+
+def test_placements_are_a_document_beside_the_templates_and_read_back(root):
+    """Where each resource went, as the JSON document a native render writes (paths relative to its root), and read
+    back as the same placements."""
+    places = placements(root, {"main": "out/template"}, "out/terraform/main.tf")
+    doc = placements_document(places, lambda where: where.removeprefix("out/"))
+    assert doc["t_box.a"] == {"in": "template", "id": "t_box:a"}
+    assert doc["t_lid.a"] == {"in": "terraform/main.tf", "why": "waits for t_pipe.p (depends_on), which stays "
+                                                                   "Terraform, applied after the template"}
+    assert list(doc) == sorted(doc)
+    assert placements_of(doc, lambda where: f"out/{where}") == places
+    assert placements_of({"x.y": {"in": "t"}, "z": "not an entry"}) == {}

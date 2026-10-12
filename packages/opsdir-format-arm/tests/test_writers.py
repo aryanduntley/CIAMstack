@@ -6,7 +6,8 @@ from opsdir.connectors.registry import format_named
 from opsdir_format_arm.arm_json import as_arm_json, dependencies, template_doc
 from opsdir_format_arm.bicep import as_bicep, bicep_string, bicep_value
 from opsdir_format_arm.format import ARM_FORMAT, BICEP_FORMAT
-from opsdir_format_arm.template import ArmResource, ArmTemplate, Interp, Param, indexed, resource_types, symbol
+from opsdir_format_arm.template import (ArmOutput, ArmResource, ArmTemplate, Interp, Param, ResourceId, ResourceName,
+                                        indexed, resource_types, symbol)
 from arm_samples import PLATFORM, SUBSCRIPTION
 
 
@@ -105,3 +106,20 @@ def test_resource_types_leave_existing_ones_out():
 def test_the_formats_are_registered():
     assert format_named("arm-json") is ARM_FORMAT and format_named("bicep") is BICEP_FORMAT
     assert BICEP_FORMAT.comment == ("//",) and ARM_FORMAT.comment == ()
+
+
+def test_an_existing_child_reads_its_parents_group_and_a_literal_name_is_text():
+    """A subnet under another group's virtual network is named in that group (as Bicep compiles it); an output of a
+    resource's literal name is the name, not an expression."""
+    vnet = ArmResource("vnet", "Microsoft.Network/virtualNetworks", "2025-09-01", "vnet-ciam", existing=True,
+                       resource_group="rg-net")
+    subnet = ArmResource("snet", "Microsoft.Network/virtualNetworks/subnets", "2025-09-01", "snet-ds", "vnet",
+                         existing=True)
+    nsg = ArmResource("nsg", "Microsoft.Network/networkSecurityGroups", "2025-09-01", "nsg-ds",
+                      properties={"subnet": ResourceId("snet")})
+    doc = template_doc(ArmTemplate("resourceGroup", "t", (vnet, subnet, nsg), (),
+                                   (ArmOutput("name", "string", ResourceName("nsg")),)))
+    assert doc["resources"][0]["properties"]["subnet"] == (
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, "
+        "'rg-net'), 'Microsoft.Network/virtualNetworks/subnets', 'vnet-ciam', 'snet-ds')]")
+    assert doc["outputs"]["name"]["value"] == "nsg-ds"

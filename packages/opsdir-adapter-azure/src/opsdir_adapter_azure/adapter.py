@@ -16,7 +16,7 @@ from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
 from .regions import PREREQUISITE, REGIONS
 from .secrets import SECRET_PATTERNS, keyvault_command, keyvault_lookup
 from .terraform import PRIORITIES, TARGETS, render
-from .rendered_state import rendered_states
+from .rendered_state import rendered_deployments, rendered_states
 
 PROVIDER = "azure"
 
@@ -35,6 +35,7 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamOnProvider": (PROVIDER,),
                               "ciamCloudEnvironment": ("public", "usgovernment")}, schema=None,
                   formats=(("terraform/*.tf", "hcl"), ("bicep/*.bicep", "bicep"), ("bicep/*.tf", "hcl"),
+                           ("bicep/*placements.json", "json"), ("arm/*placements.json", "json"),
                            ("arm/*.json", "arm-json"), ("arm/*.tf", "hcl"), ("kubernetes/azure-monitor/*", "yaml")),
                   products=(),
                   secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY, ARM, REGIONS, QUOTAS),
@@ -43,4 +44,6 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                   workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY,
                   gateway_plug=gateway_plug, ansible_lookup={"azkv": keyvault_lookup},
                   reads_back=(ReadBack("terraform-state", "terraform/*.tf", "terraform/", "{environment}/", False,
-                                       rendered_states, intent=True),))
+                                       rendered_states, intent=True),
+                              ReadBack("arm", "arm/*", "arm/", "{environment}/", True, rendered_deployments,
+                                       intent=True)))

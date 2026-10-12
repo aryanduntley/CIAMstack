@@ -30,12 +30,20 @@ def _literal(s):
     return "'" + s.replace("'", "''") + "'"
 
 
+def _existing_group(index, r):
+    """The resource group an existing resource is in: its own, else its (existing) parent's; None: the template's."""
+    if not r.existing:
+        return None
+    return r.resource_group or (_existing_group(index, index[r.parent]) if r.parent in index else None)
+
+
 def _id(index, scope, r):
     args = ", ".join((_literal(r.type), *(arm_expr(index, scope, s) for s in name_segments(index, r))))
+    group = _existing_group(index, r)
     if r.scope:
         return f"extensionResourceId({_id(index, scope, index[r.scope])}, {args})"
-    if r.existing and r.resource_group:
-        return f"extensionResourceId({GROUP_ID % arm_expr(index, scope, r.resource_group)}, {args})"
+    if group:
+        return f"extensionResourceId({GROUP_ID % arm_expr(index, scope, group)}, {args})"
     return f"{ID_FUNCTIONS[scope]}({args})"
 
 
@@ -91,6 +99,8 @@ def arm_value(index, scope, v):
     string ARM would take for an expression ('[...]') escaped, objects and arrays element by element."""
     if isinstance(v, Interp) and all(isinstance(p, str) for p in v.parts):
         return arm_value(index, scope, "".join(v.parts))
+    if isinstance(v, ResourceName):                         # its name as it is written (a literal one as text)
+        return arm_value(index, scope, index[v.symbol].name)
     if is_expression(v):
         return "[" + arm_expr(index, scope, v) + "]"
     if isinstance(v, str):

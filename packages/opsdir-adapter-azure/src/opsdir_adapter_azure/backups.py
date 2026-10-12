@@ -37,7 +37,7 @@ from opsdir.domains.network.stack import kept_by, owned
 from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
 from .cmk import CMK_ROLE, key_ref, key_sources
 from .identities import LOC, RG
-from .account import tagged
+from .account import government_unstated, tagged
 
 ANCHOR = "2024-01-01"                    # the date a repeating interval starts counting from (any past day)
 DISK_HOURS = (1, 2, 4, 6, 8, 12, 24)     # the intervals disk backup takes
@@ -85,6 +85,7 @@ def _vault(m, v, disks):
             *((comment(f"Vault '{rdn_value(v)}': immutability Locked can't be turned off once set"),)
               if mode == "compliance" else ()),
             *((comment(f"Vault '{rdn_value(v)}': {note[1]}"),) if note else ()),
+            *government_unstated(m, "Data Protection backup vaults (Azure Backup's disk backup)", "are"),
             tf_block("resource", ["azurerm_data_protection_backup_vault", n], [
                 ("name", _name(m, v)), ("resource_group_name", RG), ("location", LOC),
                 ("datastore_type", "VaultStore"), ("redundancy", "GeoRedundant" if geo else "LocallyRedundant"),

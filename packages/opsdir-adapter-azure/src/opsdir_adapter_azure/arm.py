@@ -11,9 +11,14 @@ deployment), holding any of, recognized by shape:
                                                 parameter values it ran with, the resources it produced
   a parameters file                             $schema …deploymentParameters.json: parameter values
 
+and, anywhere in the environment's folder, the Terraform state of a root kept beside the deployments (*.tfstate: what
+an opsdir Bicep/ARM render keeps in Terraform, applied), read with them by the state reader's mapping, so one import
+sees the whole environment.
+
 A template's expressions are evaluated where they depend only on what the deployment knows: parameters (the
 deployment's, else a parameters file's, else the template's defaults; secure parameters never), variables, concat,
-format, resourceId, subscription(), resourceGroup(), equals, if, toLower, toUpper, string, replace, split, first,
+format, resourceId (and the subscription, tenant and extension resource ids), subscription(), resourceGroup(), equals,
+if, toLower, toUpper, string, replace, split, first,
 last. Anything else (reference, listKeys, uniqueString, copyIndex, …) is counted, and the record keeps its value for
 what it computes. Each resource (nested child resources included, `existing` references and conditions that evaluate
 false excluded, and, when the deployment is given, only those it produced) is given its ARM ID and flattened into the
@@ -27,7 +32,8 @@ from collections import Counter
 from opsdir.core.contract import Importer
 from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_document
-from .cli import items_resources, kind_of
+from .cli import items_pairs, kind_of
+from .inventory import PROVIDER, pairs_resources, state_pairs
 from .cli_backup import READ as BACKUP_TYPES
 from .cli_database import READ as DATABASE_TYPES
 from .cli_disk import READ as DISK_TYPES
@@ -35,10 +41,10 @@ from .cli_storage import READ as STORAGE_TYPES
 from .audit import READ as AUDIT_TYPES
 from .cli_network import TYPES as NETWORK_TYPES
 from .arm_ids import arm_segment
-from .inventory import PROVIDER
 
-EVALUATED = ("parameters", "variables", "concat", "format", "resourceId", "subscription", "resourceGroup", "equals",
-             "if", "toLower", "toUpper", "string", "replace", "split", "first", "last")
+EVALUATED = ("parameters", "variables", "concat", "format", "resourceId", "subscriptionResourceId", "tenantResourceId",
+             "extensionResourceId", "subscription", "resourceGroup", "equals", "if", "toLower", "toUpper", "string",
+             "replace", "split", "first", "last")
 ACCOUNT_WIDE = ("secret", "key", "storage", "job")
 READ_TYPES = ("microsoft.network/virtualnetworks", "microsoft.network/virtualnetworks/subnets",
               "microsoft.compute/virtualmachines", "microsoft.network/networkinterfaces",
@@ -82,6 +88,8 @@ def _call(name, args, ctx):
         return re.sub(r"\{(\d+)(?::[^}]*)?\}", lambda m: str(args[1 + int(m.group(1))]), args[0])
     if name == "resourceId":
         return _resource_id(args, ctx)
+    if name in ("subscriptionResourceId", "tenantResourceId", "extensionResourceId"):
+        return _scoped_id(name, args, ctx)
     if name == "subscription":
         return {"subscriptionId": ctx["subscription"], "id": f"/subscriptions/{ctx['subscription']}"} \
             if ctx["subscription"] else _UNKNOWN
@@ -106,6 +114,30 @@ def _resource_id(args, ctx):
     here = (ctx["subscription"] or PLACEHOLDER[0], ctx["group"] or PLACEHOLDER[1])
     sub, group = (here, (here[0], args[0]), (args[0], args[1]))[min(at, 2)]
     return arm_id(sub, group, args[at], [str(n) for n in args[at + 1:]])
+
+
+def _provider_path(type_, names):
+    """providers/<namespace>/<type>/<name>[/<child type>/<child name>…] of a full type and its name segments."""
+    namespace, *types = type_.split("/")
+    return f"providers/{namespace}/" + "/".join(f"{t}/{n}" for t, n in zip(types, names))
+
+
+def _scoped_id(name, args, ctx):
+    """subscriptionResourceId([subscription], type, name…), tenantResourceId(type, name…) and
+    extensionResourceId(resource id, type, name…) as ARM IDs."""
+    if name == "extensionResourceId":
+        return f"{str(args[0]).rstrip('/')}/{_provider_path(args[1], [str(n) for n in args[2:]])}" \
+            if len(args) > 2 else _UNKNOWN
+    at = next((i for i, a in enumerate(args) if isinstance(a, str) and "/" in a and "." in a.split("/")[0]), None)
+    if at is None:
+        return _UNKNOWN
+    path = _provider_path(args[at], [str(n) for n in args[at + 1:]])
+    if name == "tenantResourceId":
+        return f"/{path}"
+    sub = args[0] if at == 1 else ctx["subscription"] or PLACEHOLDER[0]
+    if str(args[at]).lower() == "microsoft.resources/resourcegroups" and len(args) > at + 1:
+        return f"/subscriptions/{sub}/resourceGroups/{args[at + 1]}"           # a group's id has no providers/ part
+    return f"/subscriptions/{sub}/{path}"
 
 
 def _parse(tokens, i, ctx):
@@ -311,19 +343,24 @@ def deployment_items(folder, label):
 
 
 def arm_resources(texts):
-    """(resources, notices) of an environment's deployment folders ({path within the folder: text})."""
-    folders, unknown = _documents(texts)
+    """(resources, notices) of an environment's deployment folders ({path within the folder: text}), with the
+    Terraform state of a root kept beside them (*.tfstate: what a Bicep/ARM render keeps in Terraform), read together
+    as one environment."""
+    folders, unknown = _documents({p: t for p, t in texts.items() if not p.endswith(".tfstate")})
+    states = tuple(state_pairs(t) for p, t in sorted(texts.items()) if p.endswith(".tfstate"))
     read = [deployment_items(docs, f or ".") for f, docs in folders.items() if docs.get("template")]
-    resources, notices = items_resources([i for items, _ in read for i in items])
+    item_pairs, scope_notices = items_pairs([i for items, _ in read for i in items])
+    resources, notices = pairs_resources([*item_pairs, *(p for pairs, _ in states for p in pairs)])
     return resources, (*unknown, *(f"{f or '.'}: no template (the template file, `az bicep build` output, or "
                                    f"`az deployment group export`); not read"
                                    for f, docs in folders.items() if not docs.get("template")),
-                       *(n for _, ns in read for n in ns), *notices)
+                       *(n for _, ns in read for n in ns), *(n for _, ns in states for n in ns), *scope_notices,
+                       *notices)
 
 
 def read_arm(files, d, patterns, at=None):
     """Imported: each environment's servers and bindings from its ARM/Bicep deployments under <cloud>/<env>/<name>/."""
-    return layout_import(files, d, PROVIDER, "Azure", arm_resources, ".json", "ARM deployment",
+    return layout_import(files, d, PROVIDER, "Azure", arm_resources, (".json", ".tfstate"), "ARM deployment",
                          "network/azuredeploy.json", summarize=ACCOUNT_WIDE)
 
 

@@ -511,16 +511,23 @@ def pairs_resources(pairs):
             (*rule_notices, *iam_notices, *dns_notices, *network_notices, *volume_notices, *backup_notices))
 
 
-def state_resources(text):
-    """(resources, notices) of an AWS Terraform state."""
+def state_pairs(text):
+    """((Terraform resource type, attributes) pairs, notices) of an AWS Terraform state: its resource instances, the
+    secret-bearing and unmodeled types named (pairs_resources doesn't read them)."""
     found, problem = read_state(text)
     if problem:
         return (), (problem,)
-    pairs = [(r.type, r.attributes) for r in found]
+    pairs = tuple((r.type, r.attributes) for r in found)
     skipped = Counter(t for t, _ in pairs if t in SKIPPED)
-    resources, notices = pairs_resources(pairs)
-    return (resources, (*notices, *(f"{t} ({n}): not read (holds secret values, or isn't modeled yet)"
-                                    for t, n in sorted(skipped.items()))))
+    return pairs, tuple(f"{t} ({n}): not read (holds secret values, or isn't modeled yet)"
+                        for t, n in sorted(skipped.items()))
+
+
+def state_resources(text):
+    """(resources, notices) of an AWS Terraform state."""
+    pairs, skipped = state_pairs(text)
+    resources, notices = pairs_resources(list(pairs))
+    return resources, (*notices, *skipped)
 
 
 # ------------------------------------------------------------------ the importer

@@ -6,7 +6,7 @@ A format library shared by adapters that render ARM templates (milestone 5.6: th
 
 A renderer builds an `ArmTemplate(scope, description, resources, parameters, outputs, comments)` deployed at one scope (`resourceGroup`, `subscription`, `managementGroup`, `tenant`: a Bicep file has one `targetScope`; another scope needs a template of its own, or a module). Its parts:
 
-- `ArmResource(symbol, type, api_version, name, parent, fields, properties, depends_on, existing, resource_group, scope, comment)`. The symbol is the Bicep identifier (`symbol(*parts)` makes one). The name is the resource's own segment; a child names its parent's symbol. `fields` are the top-level ones in order (`location`, `kind`, `sku`, `identity`, `tags`, `zones`, ...). An `existing` resource is only read, optionally in another resource group. An extension resource (a role assignment, diagnostic setting, lock) names the symbol it applies to in `scope`.
+- `ArmResource(symbol, type, api_version, name, parent, fields, properties, depends_on, existing, resource_group, scope, comment)`. The symbol is the Bicep identifier (`symbol(*parts)` makes one). The name is the resource's own segment; a child names its parent's symbol. `fields` are the top-level ones in order (`location`, `kind`, `sku`, `identity`, `tags`, `zones`, ...). An `existing` resource is only read, optionally in another resource group (a child of an existing resource is in its parent's). An extension resource (a role assignment, diagnostic setting, lock) names the symbol it applies to in `scope`.
 - `ArmParameter(name, type, default, description, allowed, secure)` and `ArmOutput(name, type, value)`.
 
 Values are JSON-shaped, or expressions as data:

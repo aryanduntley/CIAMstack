@@ -7,7 +7,7 @@ merged into each resource's own tags (azurerm has no provider-wide default tags)
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.estate.tags import required_tags
-from opsdir_format_terraform.hcl import Block, ref, tf_block
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block
 
 FIPS_NOTE = ("FIPS endpoints: Azure has no separate FIPS endpoints for the provider to use; FIPS 140 is met by the "
              "services' own validated modules, or by Azure Government (ciamCloudEnvironment usgovernment)")
@@ -22,6 +22,17 @@ def azapi_allowed(m):
     """Whether environment m's cloud allows Microsoft's azapi provider for what azurerm doesn't manage
     (ciamProviderAddOn azapi)."""
     return AZAPI_ADD_ON in values(m.cloud, "ciamProviderAddOn")
+
+
+# What Microsoft's Azure Government documentation (2026-10) doesn't say is available there, for a renderer's note
+GOV_UNSTATED = ("Azure Government: Microsoft's Azure Government documentation (2026-10) doesn't state that {} {} "
+                "available there: confirm with the account team before relying on it")
+
+
+def government_unstated(m, what, verb="is"):
+    """The Azure Government note for something whose availability there Microsoft doesn't state, in environment m's
+    cloud when it is Azure Government, else ()."""
+    return (comment(GOV_UNSTATED.format(what, verb)),) if government(m) else ()
 
 
 def government(m):

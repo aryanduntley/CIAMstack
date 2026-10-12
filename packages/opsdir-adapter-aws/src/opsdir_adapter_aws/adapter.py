@@ -16,7 +16,7 @@ from .regions import PREREQUISITE, REGIONS
 from .secrets import SECRET_PATTERNS, secretsmanager_command, secretsmanager_lookup
 from .terraform import TARGETS, render
 from .canaries import RUNTIME
-from .rendered_state import rendered_states
+from .rendered_state import rendered_stacks, rendered_states
 
 PROVIDER = "aws"
 
@@ -37,7 +37,8 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                   formats=(("terraform/*.tf", "hcl"), ("terraform/canaries/*/python/*.py", "python"),
                            ("terraform/discovery/*/*.py", "python"),
                            ("cloudformation/*.yaml", "cloudformation-yaml"),
-                           ("cloudformation/*.resources-to-import.json", "json"), ("cloudformation/*.tf", "hcl"),
+                           ("cloudformation/*.resources-to-import.json", "json"),
+                           ("cloudformation/*placements.json", "json"), ("cloudformation/*.tf", "hcl"),
                            ("cloudformation/canaries/*/python/*.py", "python"),
                            ("cloudformation/discovery/*/*.py", "python"),
                            ("access/*.sh", "shell"), ("kubernetes/fluent-bit/*", "yaml")),
@@ -50,4 +51,6 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                   gateway_plug=gateway_plug, ansible_lookup={"aws-sm": secretsmanager_lookup},
                   settings=(RUNTIME,), host_files=host_files,
                   reads_back=(ReadBack("terraform-state", "terraform/*.tf", "terraform/", "{environment}/", False,
-                                       rendered_states, intent=True),))
+                                       rendered_states, intent=True),
+                              ReadBack("cloudformation", "cloudformation/*", "cloudformation/", "{environment}/", True,
+                                       rendered_stacks, intent=True)))

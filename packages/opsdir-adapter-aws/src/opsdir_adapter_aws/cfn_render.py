@@ -22,7 +22,8 @@ from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import TfBlock, TfFile
 from opsdir_format_terraform.native import (ENGINE_KEYS, Attribute, Computed, Custom, Cx, Derived, Forms, Layout,  # noqa: F401 (the table's API)
                                             Merge, Native, Nest, Placement, Table, comments, depends, fields,
-                                            group_refs, leading, obj, one, own, pascal, placements, read_root,
+                                            group_refs, leading, obj, one, own, pascal, placements,
+                                            placements_document, read_root,
                                             resolver, translated_refs)
 from opsdir_format_terraform.translate import no_native_note, output_variable, ref_address, ref_text, roots
 
@@ -505,9 +506,13 @@ def translation(m, files, types, no_native, data, what, unavailable=lambda type_
 
 def translated(m, files, types, no_native, data, what, unavailable=lambda type_, region: False):
     """{path: TfFile | text} of environment m's CloudFormation (translation, written): each template as YAML under
-    its generated-file header, each import file as JSON, the side Terraform roots as TfFiles, the packaged files."""
+    its generated-file header, each import file as JSON, each root's placements.json (where each Terraform resource
+    went), the side Terraform roots as TfFiles, the packaged files."""
     t = translation(m, files, types, no_native, data, what, unavailable)
     return {**{path: header(m, f"{what}: CloudFormation ({posixpath.basename(path)})", YAML_FORMAT) + as_yaml(template)
                for path, template in t.templates.items()},
             **{path: json.dumps(list(entries), indent=2) + "\n" for path, entries in t.imports.items()},
+            **{posixpath.join(out, "placements.json"): json.dumps(placements_document(
+                places, lambda where, out=out: posixpath.relpath(where, out)), indent=2) + "\n"
+               for directory, places in t.placements.items() for out in (native_directory(directory),)},
             **t.side, **t.packaged}

@@ -9,6 +9,10 @@ any of, recognized by shape:
   aws cloudformation get-template --stack-name S           TemplateBody (JSON, or YAML as text)
   the template itself                                      Resources (JSON, or YAML with the short tags !Ref, !Sub, …)
 
+and, anywhere in the environment's folder, the Terraform state of a root kept beside the stacks (*.tfstate: what an
+opsdir CloudFormation render keeps in Terraform, applied), read with them by the state reader's mapping, so one import
+sees the whole environment.
+
 The template says what each resource is declared with; the stack's resources give the IDs the record matches on. Values
 are resolved from the stack's parameters (else the template's defaults), pseudo parameters and physical IDs: Ref,
 Fn::Sub, Fn::Join, Fn::Select, and Fn::GetAtt where it links resources (a DNS alias to its load balancer, an Elastic
@@ -34,8 +38,15 @@ from opsdir.core.contract import Importer
 from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_document, parsed
 from .cli_audit import trail_attributes
+from .cli_edge import record_attributes
+from .cloudformation_data import DATA_TYPES, data_stack_pairs
+from .cloudformation_edge import EDGE_TYPES, edge_stack_pairs
+from .cloudformation_iam import IAM_TYPES, iam_stack_pairs
 from .cloudformation_network import NETWORK_TYPES, network_stack_pairs
-from .inventory import PROVIDER, pairs_resources
+from .cloudformation_observability import OBSERVABILITY_TYPES, observability_stack_pairs
+from .cloudformation_security import SECURITY_TYPES, security_stack_pairs
+from .cloudformation_values import dns_target, getatt
+from .inventory import PROVIDER, pairs_resources, state_pairs
 
 READ = ("AWS::EC2::VPC", "AWS::EC2::Subnet", "AWS::EC2::Instance", "AWS::EC2::SecurityGroup",
         "AWS::EC2::SecurityGroupIngress", "AWS::EC2::NatGateway", "AWS::EC2::EIP",
@@ -44,7 +55,7 @@ READ = ("AWS::EC2::VPC", "AWS::EC2::Subnet", "AWS::EC2::Instance", "AWS::EC2::Se
         "AWS::SecretsManager::Secret", "AWS::SecretsManager::RotationSchedule", "AWS::KMS::Key",
         "AWS::KMS::ReplicaKey", "AWS::S3::Bucket", "AWS::Lambda::Function", "AWS::Events::Rule",
         "AWS::Scheduler::Schedule", "AWS::CodePipeline::Pipeline", "AWS::CodeBuild::Project", "AWS::CloudTrail::Trail",
-        *NETWORK_TYPES)
+        *NETWORK_TYPES, *IAM_TYPES, *EDGE_TYPES, *DATA_TYPES, *SECURITY_TYPES, *OBSERVABILITY_TYPES)
 EVALUATED = ("Ref", "Fn::Sub", "Fn::Join", "Fn::Select", "Fn::GetAtt")
 NOT_CREATED = ("CREATE_FAILED", "DELETE_COMPLETE", "DELETE_IN_PROGRESS", "DELETE_FAILED")
 ACCOUNT_WIDE = ("secret", "key", "storage")
@@ -111,29 +122,68 @@ def _pseudo(stack, resources):
             "AWS::URLSuffix": "amazonaws.com", "AWS::NoValue": None}
 
 
+def _arn(service, path, region=True):
+    """An ARN maker for a type's GetAtt: arn:<partition>:<service>:<region>:<account>:<path with {id}>."""
+    return lambda pid, ps: (f"arn:{ps['AWS::Partition']}:{service}:{ps['AWS::Region'] or '' if region else ''}:"
+                            f"{ps['AWS::AccountId'] or ''}:{path.format(id=pid)}")
+
+
+def _waf_arn(pid, ps, kind):
+    """A WAF web ACL's or IP set's ARN: its physical id when that is one, else from 'name|id|scope' (Ref's form)."""
+    if str(pid).startswith("arn:"):
+        return pid
+    parts = str(pid).split("|")
+    if len(parts) != 3:
+        return None
+    where = "global" if parts[2] == "CLOUDFRONT" else "regional"
+    region = "us-east-1" if where == "global" else ps["AWS::Region"] or ""
+    account = ps["AWS::AccountId"] or ""
+    return f"arn:{ps['AWS::Partition']}:wafv2:{region}:{account}:{where}/{kind}/{parts[0]}/{parts[1]}"
+
+
+# The Fn::GetAtt attributes that follow from a resource's physical id (its Ref) and the stack's pseudo parameters,
+# by type: (physical id, pseudo parameters) -> the attribute
+GETATT = MappingProxyType({
+    "AWS::IAM::Role": {"Arn": _arn("iam", "role/{id}", False)},
+    "AWS::IAM::InstanceProfile": {"Arn": _arn("iam", "instance-profile/{id}", False)},
+    "AWS::IAM::OIDCProvider": {"Arn": lambda pid, ps: pid},
+    "AWS::IAM::ManagedPolicy": {"PolicyArn": lambda pid, ps: pid},
+    "AWS::SSO::PermissionSet": {"PermissionSetArn": lambda pid, ps: pid},
+    "AWS::Organizations::Policy": {"Arn": lambda pid, ps: pid if str(pid).startswith("arn:") else None,
+                                   "Id": lambda pid, ps: str(pid).rsplit("/", 1)[-1]},
+    "AWS::KMS::Key": {"Arn": _arn("kms", "key/{id}"), "KeyId": lambda pid, ps: pid},
+    "AWS::S3::Bucket": {"Arn": lambda pid, ps: f"arn:{ps['AWS::Partition']}:s3:::{pid}"},
+    "AWS::Logs::LogGroup": {"Arn": _arn("logs", "log-group:{id}:*")},
+    "AWS::SNS::Topic": {"TopicArn": lambda pid, ps: pid},
+    "AWS::SecretsManager::Secret": {"Id": lambda pid, ps: pid},
+    "AWS::WAFv2::WebACL": {"Arn": lambda pid, ps: _waf_arn(pid, ps, "webacl")},
+    "AWS::WAFv2::IPSet": {"Arn": lambda pid, ps: _waf_arn(pid, ps, "ipset")},
+    "AWS::Shield::Protection": {"ProtectionArn": lambda pid, ps: pid if str(pid).startswith("arn:") else None},
+    "AWS::RDS::DBInstance": {"DBInstanceArn": _arn("rds", "db:{id}")},
+    "AWS::RDS::DBCluster": {"DBClusterArn": _arn("rds", "cluster:{id}")},
+    "AWS::SecurityHub::AutomationRule": {"RuleArn": lambda pid, ps: pid if str(pid).startswith("arn:") else None},
+    "AWS::CloudFront::Distribution": {"Id": lambda pid, ps: pid,
+                                      "Arn": _arn("cloudfront", "distribution/{id}", False)}})
+
+
 def _context(stack, resources, template):
     """What names resolve to: parameters (the stack's, else the template's defaults), pseudo parameters, physical
-    IDs."""
+    IDs, and '<logical ID>.<attribute>' for the Fn::GetAtt attributes that follow from a physical id (GETATT)."""
     defaults = {k: (v or {}).get("Default") for k, v in (template.get("Parameters") or {}).items()}
     given = {p.get("ParameterKey"): p.get("ResolvedValue", p.get("ParameterValue"))
              for p in stack.get("Parameters") or ()}
     physical = {r.get("LogicalResourceId"): r.get("PhysicalResourceId") for r in resources
                 if r.get("PhysicalResourceId") and r.get("ResourceStatus") not in NOT_CREATED}
-    return {**physical, **_pseudo(stack, resources), **defaults, **given}
-
-
-def _getatt(v):
-    """(logical ID, attribute) of a Fn::GetAtt, else None."""
-    if isinstance(v, dict) and len(v) == 1 and "Fn::GetAtt" in v:
-        arg = v["Fn::GetAtt"]
-        parts = arg.split(".", 1) if isinstance(arg, str) else list(arg)
-        return tuple(parts) if len(parts) == 2 else None
-    return None
+    pseudo = _pseudo(stack, resources)
+    types = {lid: r.get("Type") for lid, r in (template.get("Resources") or {}).items() if isinstance(r, dict)}
+    attributes = {f"{lid}.{attr}": make(pid, pseudo) for lid, pid in physical.items()
+                  for attr, make in GETATT.get(types.get(lid), {}).items() if make is not None}
+    return {**physical, **{k: v for k, v in attributes.items() if v is not None}, **pseudo, **defaults, **given}
 
 
 def resolve(v, names):
-    """A template value with Ref, Fn::Sub, Fn::Join and Fn::Select evaluated against names; None where it depends on
-    anything else (then the record keeps its value)."""
+    """A template value with Ref, Fn::GetAtt (what names holds as '<logical ID>.<attribute>'), Fn::Sub, Fn::Join and
+    Fn::Select evaluated against names; None where it depends on anything else (then the record keeps its value)."""
     if isinstance(v, list):
         return [resolve(x, names) for x in v]
     if not isinstance(v, dict):
@@ -143,10 +193,13 @@ def resolve(v, names):
     fn, arg = next(iter(v.items()))
     if fn == "Ref":
         return names.get(arg)
+    if fn == "Fn::GetAtt":
+        at = getatt(v)
+        return names.get(f"{at[0]}.{at[1]}") if at else None
     if fn == "Fn::Sub":
         text, extra = (arg, {}) if isinstance(arg, str) else (arg[0], {k: resolve(x, names) for k, x in arg[1].items()})
         found = {m: {**names, **extra}.get(m) for m in _SUB.findall(text)}
-        return None if any(x is None or "." in m and m not in extra for m, x in found.items()) else \
+        return None if any(x is None for x in found.values()) else \
             _SUB.sub(lambda m: str(found[m.group(1)]), text).replace("${!", "${")
     if fn == "Fn::Join":
         parts = resolve(arg[1], names)
@@ -156,6 +209,17 @@ def resolve(v, names):
         return items[int(index)] if isinstance(items, list) and str(index).isdigit() and int(index) < len(items) \
             else None
     return None
+
+
+def stack_outputs(stack, resources, template):
+    """{output key: value} of a stack's Outputs, resolved as its resources are; a load balancer's or distribution's DNS
+    name (Fn::GetAtt DNSName / DomainName) as cfn:<logical ID>, as an alias of it reads; None where unresolved."""
+    names = _context(stack, resources, template)
+
+    def value(v):
+        at = getatt(v)
+        return f"cfn:{at[0]}" if at and at[1] in ("DNSName", "DomainName") else resolve(v, names)
+    return {k: value(o.get("Value")) for k, o in (template.get("Outputs") or {}).items() if isinstance(o, dict)}
 
 
 def _unevaluated(template):
@@ -194,14 +258,8 @@ def _declared(template, names):
 
 def _public_ip(raw_allocation, names):
     """The address of an Elastic IP an AllocationId points at with Fn::GetAtt (an EIP's physical ID is its address)."""
-    ref = _getatt(raw_allocation)
+    ref = getatt(raw_allocation)
     return names.get(ref[0]) if ref and ref[1] == "AllocationId" else None
-
-
-def _alias(raw_dns, resolved_dns):
-    """A DNS alias's target as the load balancer normalizes it: cfn:<logical ID> when it points at one in the stack."""
-    ref = _getatt(raw_dns)
-    return f"cfn:{ref[0]}" if ref and ref[1] == "DNSName" else (resolved_dns or "").lower().rstrip(".") or None
 
 
 def _network(declared):
@@ -264,8 +322,12 @@ def _load_balancers(declared, names):
                  for m, r in given] or [{"subnet_id": s} for s in p.get("Subnets") or ()])
     def name(p, arn):           # arn:…:loadbalancer/<net|app>/<name>/<id> when the template leaves the name to AWS
         return p.get("Name") or (arn.split("/")[-2] if arn.count("/") >= 3 else None)
-    return [("aws_lb", {"arn": pid, "name": name(p, pid),
+    def setting(p, key):
+        return next((a.get("Value") for a in p.get("LoadBalancerAttributes") or () if a.get("Key") == key), None)
+    return [("aws_lb", {"arn": pid, "name": name(p, pid), "load_balancer_type": p.get("Type") or "application",
                         "internal": p.get("Scheme") == "internal", "dns_name": f"cfn:{logical}",
+                        "security_groups": list(p.get("SecurityGroups") or ()),
+                        "idle_timeout": setting(p, "idle_timeout.timeout_seconds"),
                         "subnet_mapping": mappings(p, raw), "tags": _tags(p.get("Tags"))})
             for logical, t, p, raw, pid in declared if t == "AWS::ElasticLoadBalancingV2::LoadBalancer"]
 
@@ -275,26 +337,52 @@ def _forwarding(declared):
         return action.get("TargetGroupArn") or next(
             (g.get("TargetGroupArn") for g in (action.get("ForwardConfig") or {}).get("TargetGroups") or ()), None)
     groups = [(p, pid) for _, t, p, _, pid in declared if t == "AWS::ElasticLoadBalancingV2::TargetGroup"]
+
+    def settings(p):
+        return {a.get("Key"): a.get("Value") for a in p.get("TargetGroupAttributes") or () if isinstance(a, dict)}
+
+    def stickiness(p):
+        a = settings(p)
+        return [{"enabled": str(a.get("stickiness.enabled")).lower() == "true", "type": a.get("stickiness.type"),
+                 "cookie_duration": a.get("stickiness.lb_cookie.duration_seconds")}] \
+            if "stickiness.enabled" in a else []
     return [*(("aws_lb_listener", {"load_balancer_arn": p.get("LoadBalancerArn"), "port": p.get("Port"),
+                                   "protocol": p.get("Protocol"), "ssl_policy": p.get("SslPolicy"),
                                    "default_action": [{"type": a.get("Type"), "target_group_arn": target_group(a)}
                                                       for a in p.get("DefaultActions") or ()]})
               for _, t, p, _, _ in declared if t == "AWS::ElasticLoadBalancingV2::Listener"),
-            *(("aws_lb_target_group", {"arn": pid, "name": p.get("Name"), "port": p.get("Port")}) for p, pid in groups),
+            *(("aws_lb_target_group", {
+                "arn": pid, "name": p.get("Name"), "port": p.get("Port"), "protocol": p.get("Protocol"),
+                "health_check": [{"protocol": p.get("HealthCheckProtocol"), "path": p.get("HealthCheckPath")}],
+                "stickiness": stickiness(p),
+                "deregistration_delay": settings(p).get("deregistration_delay.timeout_seconds")})
+              for p, pid in groups),
             *(("aws_lb_target_group_attachment", {"target_group_arn": pid, "target_id": g.get("Id")})
               for p, pid in groups for g in p.get("Targets") or ())]
 
 
+def _number(v):
+    return int(v) if isinstance(v, str) and v.isdigit() else v
+
+
 def _records(declared):
+    """Record sets (in a RecordSetGroup too): an alias by its target (cfn:<logical ID> for a load balancer or
+    distribution of the stack), the others with their TTL, values and routing, as the CLI reader takes them."""
     def record(p, raw, zone):
+        alias = p.get("AliasTarget")
         return ("aws_route53_record", {
             "name": (p.get("Name") or "").lower().rstrip("."), "zone_id": zone, "type": p.get("Type"),
-            "alias": [{"name": _alias((raw.get("AliasTarget") or {}).get("DNSName"),
-                                      (p.get("AliasTarget") or {}).get("DNSName"))}]})
+            **record_attributes({"Type": p.get("Type"), "TTL": _number(p.get("TTL")),
+                                 "ResourceRecords": [{"Value": v} for v in p.get("ResourceRecords") or ()],
+                                 "SetIdentifier": p.get("SetIdentifier"), "Failover": p.get("Failover"),
+                                 "Weight": _number(p.get("Weight"))}),
+            "alias": [{"name": dns_target((raw.get("AliasTarget") or {}).get("DNSName"), alias.get("DNSName")),
+                       "zone_id": alias.get("HostedZoneId")}] if isinstance(alias, dict) else []})
     return [*(record(p, raw, p.get("HostedZoneId")) for _, t, p, raw, _ in declared
-              if t == "AWS::Route53::RecordSet" and p.get("AliasTarget")),
+              if t == "AWS::Route53::RecordSet"),
             *(record(rs, rraw, p.get("HostedZoneId")) for _, t, p, raw, _ in declared
               if t == "AWS::Route53::RecordSetGroup"
-              for rs, rraw in zip(p.get("RecordSets") or (), raw.get("RecordSets") or ()) if rs.get("AliasTarget"))]
+              for rs, rraw in zip(p.get("RecordSets") or (), raw.get("RecordSets") or ()))]
 
 
 def _secrets(declared):
@@ -332,13 +420,15 @@ def _jobs(declared, names):
             for lg, t, _, _, pid in declared if t in JOB_TYPES and all(where)}
 
     def target(raw, resolved):
-        found = _getatt(raw)
+        found = getatt(raw)
         return arns.get(found[0]) if found and found[1] == "Arn" else resolved
 
     def attrs(lg, t, p, pid):
         given = {"function_name": pid} if t == "AWS::Lambda::Function" else {"name": pid}
+        env = p.get("Environment") or {}           # a function's variables; a build project's image
         return {**given, "arn": arns.get(lg), "runtime": p.get("Runtime"), "tags": _tags(p.get("Tags")),
-                "environment": {"image": (p.get("Environment") or {}).get("Image")}}
+                "environment": [{"variables": env.get("Variables") or {}}] if t == "AWS::Lambda::Function"
+                else {"image": env.get("Image")}}
     enabled = [(lg, t, p, raw, pid) for lg, t, p, raw, pid in declared if p.get("State", "ENABLED") == "ENABLED"]
     return [*((JOB_TYPES[t][0], attrs(lg, t, p, pid)) for lg, t, p, _, pid in declared if t in JOB_TYPES),
             *(("aws_cloudwatch_event_rule", {"name": pid, "schedule_expression": p.get("ScheduleExpression")})
@@ -376,7 +466,10 @@ def stack_pairs(stack, resources, template):
              *_load_balancers(declared, names), *_forwarding(declared), *_records(declared), *_secrets(declared),
              *_keys(declared, names), *_jobs(declared, names),
              *(("aws_s3_bucket", {"bucket": pid}) for _, t, _, _, pid in declared if t == "AWS::S3::Bucket"),
-             *_trails(declared, names), *network_stack_pairs(declared)],
+             *_trails(declared, names), *network_stack_pairs(declared), *iam_stack_pairs(declared, names),
+             *edge_stack_pairs(declared, names, lambda name: (name or "").lower().rstrip(".") or None),
+             *data_stack_pairs(declared, names), *security_stack_pairs(declared, names),
+             *observability_stack_pairs(declared, names)],
             (*((f"{label}: {', '.join(f'{fn} ({n})' for fn, n in sorted(_unevaluated(template).items()))} not "
                 f"evaluated; the attributes computed with them keep the record's values",)
                if _unevaluated(template) else ()),
@@ -387,19 +480,23 @@ def stack_pairs(stack, resources, template):
 
 
 def cloudformation_resources(texts):
-    """(resources, notices) of an environment's CloudFormation stacks ({path within the folder: text})."""
-    stacks, unknown = _stacks(texts)
+    """(resources, notices) of an environment's CloudFormation stacks ({path within the folder: text}), with the
+    Terraform state of a root kept beside them (*.tfstate: what a CloudFormation render keeps in Terraform), read
+    together as one environment."""
+    stacks, unknown = _stacks({p: t for p, t in texts.items() if not p.endswith(".tfstate")})
+    states = tuple(state_pairs(t) for p, t in sorted(texts.items()) if p.endswith(".tfstate"))
     missing = [f or "." for f, s in stacks.items() if not s.get("template")]
     read = [stack_pairs(s.get("stack") or {}, s.get("resources") or [], s["template"])
             for s in stacks.values() if isinstance(s.get("template"), dict)]
-    resources, rule_notices = pairs_resources([p for pairs, _ in read for p in pairs])
+    resources, rule_notices = pairs_resources([p for pairs, _ in (*read, *states) for p in pairs])
     return resources, (*unknown, *(f"{f}: no template (get-template output or the template file); stack not read"
-                                   for f in missing), *(n for _, ns in read for n in ns), *rule_notices)
+                                   for f in missing), *(n for _, ns in (*read, *states) for n in ns), *rule_notices)
 
 
 def read_cloudformation(files, d, patterns, at=None):
     """Imported: each environment's servers and bindings from its CloudFormation stacks under <cloud>/<env>/<stack>/."""
-    return layout_import(files, d, PROVIDER, "AWS", cloudformation_resources, (".json", ".yaml", ".yml", ".template"),
+    return layout_import(files, d, PROVIDER, "AWS", cloudformation_resources,
+                         (".json", ".yaml", ".yml", ".template", ".tfstate"),
                          "CloudFormation stack", "network/template.yaml", summarize=ACCOUNT_WIDE)
 
 

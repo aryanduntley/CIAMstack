@@ -351,15 +351,20 @@ def _scoped(pairs):
                   for t, n in sorted(counted.items())))
 
 
+def items_pairs(items):
+    """((Terraform resource type, attributes) pairs, notices) of (kind, item) pairs in the shape the Azure CLI prints
+    ARM resources (properties flattened), normalized to the state's names and scoped."""
+    return _scoped(_unique([*_vnets(items), *_vms(items), *_nics(items), *_lbs(items), *_addresses(items),
+                            *_records(items), *_nsgs(items), *_nats(items), *_vault_items(items), *_stores(items),
+                            *_functions(items), *iam_items(items), *edge_items(items), *network_items(items),
+                            *database_items(items), *storage_items(items), *disk_items(items), *backup_items(items),
+                            *audit_items(items), *identity_items(items)]))
+
+
 def items_resources(items):
     """(resources, notices) of (kind, item) pairs in the shape the Azure CLI prints ARM resources (properties
     flattened): also what ARM templates are read into (opsdir_adapter_azure.arm)."""
-    pairs, scope_notices = _scoped(_unique([*_vnets(items), *_vms(items), *_nics(items), *_lbs(items),
-                                            *_addresses(items), *_records(items), *_nsgs(items), *_nats(items),
-                                            *_vault_items(items), *_stores(items), *_functions(items),
-                                            *iam_items(items), *edge_items(items), *network_items(items),
-                                            *database_items(items), *storage_items(items), *disk_items(items),
-                                            *backup_items(items), *audit_items(items), *identity_items(items)]))
+    pairs, scope_notices = items_pairs(items)
     resources, notices = pairs_resources(pairs)
     return resources, (*scope_notices, *notices)
 

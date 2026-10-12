@@ -16,6 +16,7 @@ import re
 from collections import namedtuple
 
 from .hcl import Block, TfBlock
+from .hcl_reader import read_hcl
 from .translate import Raw, TfRef, address, is_quoted_string, parse_ref, ref_address, ref_text, root_items, \
     split_root, template_parts, value_refs
 
@@ -32,10 +33,12 @@ from .translate import Raw, TfRef, address, is_quoted_string, parse_ref, ref_add
 # into it is in. adoptable: (Fields) -> None, or why an adopted one can't be imported with what it expands into (it
 # then stays Terraform). ready: the id suffix of the expansion making it usable (a gateway's attachment): the resources
 # of its template that reference it wait for that one. keep: (Fields, block(address) -> TfBlock|None) -> None, or why
-# this block stays Terraform (what it reads has no native form here: an initiative the table has no id for).
+# this block stays Terraform (what it reads has no native form here: an initiative the table has no id for). waits:
+# (Fields) -> the Terraform values naming resources it waits for beside its depends_on (what it reads in Terraform
+# but not natively: a Front Door route's origins).
 Native = namedtuple("Native", ("type", "properties", "refs", "identifier", "tags", "merge", "expand", "parameters",
-                               "tags_key", "finish", "adoptable", "ready", "keep"),
-                    defaults=(None, {}, None, None, None, None, None, "Tags", None, None, None, None))
+                               "tags_key", "finish", "adoptable", "ready", "keep", "waits"),
+                    defaults=(None, {}, None, None, None, None, None, "Tags", None, None, None, None, None))
 # A Terraform resource type that is part of another resource natively. via: its attribute referencing that resource;
 # into: (the target's properties, Fields, Cx) -> the target's properties with this one's merged in. refs: what a
 # reference to the merged resource reads, of the target ({attribute: as Native.refs}). ordering: whether its depends_on
@@ -79,8 +82,9 @@ Target = namedtuple("Target", ("language", "concat", "join", "trim_prefix"))
 # answer(TfRef, found) (a data table answer that isn't Computed).
 Forms = namedtuple("Forms", ("attribute", "cross", "variable", "answer"))
 # How a target lays out a root: group(TfBlock) -> the key of the group (deployment unit) a resource goes in; region(key)
-# -> that group's region or None; name(Terraform type, name) -> a resource's native id.
-Layout = namedtuple("Layout", ("group", "region", "name"))
+# -> that group's region or None; name(Terraform type, name) -> a resource's native id; unplaced(TfBlock) -> None, or
+# why the target can't name a resource's group (it then stays Terraform; None: every resource has one).
+Layout = namedtuple("Layout", ("group", "region", "name", "unplaced"), defaults=(None,))
 
 
 def fields(body):
@@ -363,9 +367,10 @@ def adopted(items):
 
 def read_root(directory, files, table, language, layout_of):
     """A root read and split for translation (Root): a resource stays Terraform when its type has no native form (in
-    general or in its group's region), when it is adopted and the target can't import it as Terraform does (or with
-    what it expands into), or when it is part of a resource that stays; each one's reason kept. Refuses resource types
-    the table neither maps nor lists as having no native form, and native resources reading ones that stay.
+    general or in its group's region), when the layout can't name its group (Layout.unplaced), when it is adopted and
+    the target can't import it as Terraform does (or with what it expands into), or when it is part of a resource that
+    stays; each one's reason kept. Refuses resource types the table neither maps nor lists as having no native form,
+    and native resources reading ones that stay.
     layout_of(items) -> the root's Layout."""
     items = root_items(files)
     layout = layout_of(items)
@@ -387,6 +392,9 @@ def read_root(directory, files, table, language, layout_of):
         region = layout.region(layout.group(b))
         if t not in types:
             return f"no {language} type"
+        unplaced = layout.unplaced(b) if layout.unplaced and types[t].type is not None else None
+        if unplaced:
+            return unplaced
         if table.unavailable(t, region):
             return f"no {language} type in {region}"
         held = types[t].keep(fields(b.body), by_address.get) if types[t].keep else None
@@ -526,8 +534,12 @@ def group_refs(root, members, data):
 
 
 def depends(root, p, ids):
-    """The native ids a resource's (or a merged resource's) depends_on names, in the same group (among ids)."""
-    names = tuple(r for kv in root.by_address[p.address].body if kv[0] == "depends_on" for r in value_refs(kv[1]))
+    """The native ids a resource's (or a merged resource's) depends_on names, and what its row waits for (Native.waits),
+    in the same group (among ids)."""
+    body = root.by_address[p.address].body
+    waits = p.native.waits(fields(body)) if p.native.waits else ()
+    names = (*(r for kv in body if kv[0] == "depends_on" for r in value_refs(kv[1])),
+             *(r for v in waits for r in value_refs(v)))
     found = (root.placed[ref_address(r)].id for r in names
              if ref_address(r) in root.placed and root.placed[ref_address(r)].group == p.group)
     return tuple(i for i in dict.fromkeys(found) if i != p.id and i in ids)
@@ -560,3 +572,34 @@ def placements(root, where, side_path):
     return {**{a: (Placement("template", where[p.group], p.id) if p.target is None else
                    Placement("merged", where[p.group], p.target)) for a, p in root.placed.items()},
             **{a: Placement("terraform", side_path, why) for a, why in root.reasons.items()}}
+
+
+def side_inputs(files, outputs, output_name):
+    """{variable: value} of the inputs of the Terraform roots kept beside native templates ({path: .tf text}) that the
+    templates' outputs give (outputs: {output name: value}; output_name(variable) -> the name the native render gives
+    the output feeding it): what a deployer passes the side root after the templates."""
+    names = {b.labels[0] for text in files.values() for b in read_hcl(text)
+             if isinstance(b, TfBlock) and b.kind == "variable" and b.labels}
+    return {n: outputs[output_name(n)] for n in names if outputs.get(output_name(n)) is not None}
+
+
+# The placements document's key for each Placement kind's detail
+DETAIL_KEYS = {"template": "id", "merged": "part of", "terraform": "why"}
+
+
+def placements_document(places, relative=lambda path: path):
+    """A root's placements as the JSON document a native render writes beside its templates (placements.json): by
+    address, {"in": the file it went to (relative(path): relative to the native root), "id": its native id | "part of":
+    the address of the resource it is part of | "why": why it stays Terraform}. Operators moving an environment
+    from Terraform to the native form read what to import where; the read-back reads what each native resource
+    realizes."""
+    return {a: {"in": relative(p.where), DETAIL_KEYS[p.kind]: p.detail} for a, p in sorted(places.items())}
+
+
+def placements_of(document, absolute=lambda path: path):
+    """{address: Placement} of a placements document (placements_document's inverse; absolute(path) the path a
+    document's "in" names); entries of another shape left out."""
+    kinds = {key: kind for kind, key in DETAIL_KEYS.items()}
+    return {a: Placement(kinds[k], absolute(e["in"]), e[k]) for a, e in (document or {}).items()
+            if isinstance(e, dict) and isinstance(e.get("in"), str)
+            for k in (next((k for k in kinds if k in e), None),) if k is not None}
