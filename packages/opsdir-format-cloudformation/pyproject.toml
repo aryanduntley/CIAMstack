@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-format-cloudformation"
+version = "0.1.0"
+description = "AWS CloudFormation templates for opsdir adapters: a template model with intrinsic functions as data, written as YAML or JSON."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1"]
+
+[project.entry-points."opsdir.formats"]
+cloudformation-yaml = "opsdir_format_cloudformation.format:YAML_FORMAT"
+cloudformation-json = "opsdir_format_cloudformation.format:JSON_FORMAT"
+
+[tool.setuptools.packages.find]
+where = ["src"]

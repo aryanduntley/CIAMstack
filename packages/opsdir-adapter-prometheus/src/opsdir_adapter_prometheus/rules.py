@@ -40,7 +40,7 @@ def _skipped(m, r, signals):
     role = one(r, "ciamTargetRole")
     if role and not runs_here(m, role):
         return None, None
-    signal = product_signal(signals, r)
+    signal = product_signal(m, signals, r)
     if signal is None:
         return None, (f"alert rule {rdn_value(r)}: no product rendering {m.label} declares signal "
                       f"`{one(r, 'ciamSignal')}`" + (f" for role `{role}`" if role else " (it names no role)"))

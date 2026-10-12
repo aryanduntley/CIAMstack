@@ -122,12 +122,32 @@ def test_an_escalating_grant_a_permission_explains_is_not_a_finding():
 def test_the_workload_identities_an_environment_renders():
     d = _record((), ())
     (w,) = workload_identities(env_model(d, "alpha/prod"), MODEL)
-    assert (w.principal, w.identity_role, w.server_role, w.name) == ("app", "identity-app", "web", "id-alpha")
+    assert (w.principals, w.identity_role, w.server_roles, w.name) == (("app",), "identity-app", ("web",), "id-alpha")
     assert [(x, b.dn.split(",")[0], row.verb) for x, b, row in w.grants] == [
         ("read-secret app-password", "cn=secret-app", "read-secret")]
-    assert w.notes == ("read-secret unbound-secret: role `unbound-secret` has no binding in this environment",)
+    assert w.notes == ("principal app: read-secret unbound-secret: role `unbound-secret` has no binding in this "
+                       "environment",)
     assert workload_identities(env_model(d, "beta/prod"), MODEL) == ()          # no server of role web there
     assert identity_of((w,), "web") == w and identity_of((w,), "db") is None
+
+
+def test_principals_sharing_an_identity_role_are_one_identity_with_their_permits_merged():
+    admin = (_entry(f"cn=admin-runtime,{PERMISSION_SETS}", "ciamPermissionSet",
+                    {"cn": "admin-runtime", "ciamPermits": ("read-secret app-password", "write-secret app-password",
+                                                            "read-secret unbound-secret")}),
+             _entry(f"cn=app-admin,{PRINCIPALS}", "ciamPrincipal",
+                    {"cn": "app-admin", "ciamPrincipalKind": "workload", "ciamIdentityRole": "identity-app",
+                     "ciamTargetRole": "admin", "ciamHoldsSet": f"cn=admin-runtime,{PERMISSION_SETS}",
+                     "ciamCondition": "jit", "ciamOwner": OPS}),
+             _entry(f"cn=admin-1,{ALPHA}", "ciamServer", {"cn": "admin-1", "ciamServerRole": "admin",
+                                                          "ciamHostname": "admin-1.alpha.example.test",
+                                                          "ciamSubnet": f"cn=net,ou=bindings,{ALPHA}"}))
+    (w,) = workload_identities(env_model(_record((), (), extra=admin), "alpha/prod"), MODEL)
+    assert (w.principals, w.server_roles, w.name, w.conditions) == (("app", "app-admin"), ("web", "admin"),
+                                                                    "id-alpha", ("jit",))
+    assert [x for x, _, _ in w.grants] == ["read-secret app-password", "write-secret app-password"]   # once each
+    assert [n.split(":")[0] for n in w.notes] == ["principal app", "principal app-admin"]
+    assert identity_of((w,), "web") == identity_of((w,), "admin") == w
 
 
 def test_kubernetes_service_accounts_assume_the_identity_where_the_role_runs_there():

@@ -1,0 +1,105 @@
+import json
+
+import pytest
+
+from opsdir.connectors.registry import format_named
+from opsdir_format_arm.arm_json import as_arm_json, dependencies, template_doc
+from opsdir_format_arm.bicep import as_bicep, bicep_string, bicep_value
+from opsdir_format_arm.format import ARM_FORMAT, BICEP_FORMAT
+from opsdir_format_arm.template import ArmResource, ArmTemplate, Interp, Param, indexed, resource_types, symbol
+from arm_samples import PLATFORM, SUBSCRIPTION
+
+
+@pytest.mark.parametrize("parts, expected", [(("nsg", "pf-admin"), "nsg_pf_admin"), (("1st",), "r_1st"),
+                                             (("Identity.PF",), "identity_pf")])
+def test_symbols_are_bicep_identifiers(parts, expected):
+    assert symbol(*parts) == expected
+
+
+def test_a_template_is_checked_before_it_is_written():
+    nsg = PLATFORM.resources[0]
+    for bad, why in ((PLATFORM._replace(scope="region"), "unknown template scope"),
+                     (PLATFORM._replace(resources=(nsg, nsg)), "used more than once: nsg_pf"),
+                     (PLATFORM._replace(resources=(nsg._replace(depends_on=("nope",)),)), "doesn't hold: nope"),
+                     (PLATFORM._replace(resources=(nsg, nsg._replace(symbol="x", parent="nsg_pf"))), "child type")):
+        with pytest.raises(ValueError, match=why):
+            indexed(bad)
+
+
+def test_arm_json_is_what_bicep_compiles_the_same_template_to():
+    doc = template_doc(PLATFORM)
+    assert list(doc) == ["$schema", "contentVersion", "metadata", "parameters", "resources", "outputs"]
+    assert doc["metadata"] == {"description": "ciam target/prod: platform"}       # comments are the Bicep file's
+    assert [r["name"] for r in doc["resources"]] == [                             # existing ones aren't deployed
+        "nsg-ciam-prod-pf", "[format('{0}/{1}', 'nsg-ciam-prod-pf', 'allow-https')]",
+        "[format('id-{0}-pf', parameters('env'))]",
+        "[guid(resourceId('Microsoft.KeyVault/vaults', 'kv-ciam-prod'), resourceId("
+        "'Microsoft.ManagedIdentity/userAssignedIdentities', format('id-{0}-pf', parameters('env'))), 'read-secret')]",
+        "to-law"]
+    rule, ra, diag = doc["resources"][1], doc["resources"][3], doc["resources"][4]
+    assert rule["dependsOn"] == ["[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', "
+                                 "format('id-{0}-pf', parameters('env')))]",         # sorted by symbol, as Bicep
+                                 "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-ciam-prod-pf')]"]
+    assert ra["scope"] == "[resourceId('Microsoft.KeyVault/vaults', 'kv-ciam-prod')]" and "kv" not in str(
+        ra["dependsOn"])
+    assert ra["properties"]["principalId"] == ("[reference(resourceId('Microsoft.ManagedIdentity/"
+                                               "userAssignedIdentities', format('id-{0}-pf', parameters('env'))), "
+                                               "'2023-01-31').principalId]")
+    assert ra["properties"]["description"] == "[not an expression] it's ${literal}"   # ARM reads it as text
+    assert ra["properties"]["condition"] == "[[looks like one]"                         # escaped, or ARM evaluates
+    assert diag["properties"]["workspaceId"] == (
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, "
+        "'rg-ciam-shared'), 'Microsoft.OperationalInsights/workspaces', 'law-ciam-shared')]")
+    assert doc["parameters"]["adminSecret"] == {"type": "securestring",
+                                                "metadata": {"description": "set at deploy time"}}
+    assert doc["outputs"]["ruleId"]["value"] == ("[resourceId('Microsoft.Network/networkSecurityGroups/"
+                                                 "securityRules', 'nsg-ciam-prod-pf', 'allow-https')]")
+    assert json.loads(as_arm_json(PLATFORM)) == doc
+
+
+def test_dependencies_are_sorted_by_symbol_and_skip_existing_ones():
+    index = indexed(PLATFORM)
+    assert dependencies(index, index["diag"]) == ("identity_pf", "nsg_pf")       # explicit and scope, by symbol
+    assert dependencies(index, index["ra_pf_read"]) == ("identity_pf",)          # kv_ciam is only read
+
+
+def test_subscription_scope_ids_and_schema():
+    doc = template_doc(SUBSCRIPTION)
+    assert doc["$schema"].endswith("/subscriptionDeploymentTemplate.json#")
+    assert doc["resources"][1]["dependsOn"] == [
+        "[subscriptionResourceId('Microsoft.Security/pricings', 'VirtualMachines')]"]
+    assert as_bicep(SUBSCRIPTION).startswith("targetScope = 'subscription'\n\nresource pricing_vms ")
+
+
+def test_bicep_strings_and_values():
+    assert bicep_string("it's ${x}\n\\") == "'it\\'s \\${x}\\n\\\\'"
+    assert bicep_value({"a b": [1, True, None], "c": {}}) == "{\n  'a b': [\n    1\n    true\n    null\n  ]\n  c: {}\n}"
+    assert bicep_value(Interp(("id-", Param("env"), "-pf"))) == "'id-${env}-pf'"
+
+
+def test_the_bicep_file():
+    text = as_bicep(PLATFORM)
+    assert text.startswith("// Generated by opsdir: do not edit.\n// NOTE: a note\n\n"
+                           "metadata description = 'ciam target/prod: platform'\n\n")
+    assert "@description('set at deploy time')\n@secure()\nparam adminSecret string\n" in text
+    assert ("resource nsg_pf_https 'Microsoft.Network/networkSecurityGroups/securityRules@2024-05-01' = {\n"
+            "  name: 'allow-https'\n  parent: nsg_pf\n") in text
+    assert ("// principals pingfederate and pingfederate-admin\n"
+            "resource identity_pf 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {\n"
+            "  name: 'id-${env}-pf'\n") in text
+    assert ("resource law 'Microsoft.OperationalInsights/workspaces@2025-02-01' existing = {\n"
+            "  name: 'law-ciam-shared'\n  scope: resourceGroup('rg-ciam-shared')\n}") in text
+    assert "  scope: kv_ciam\n  properties: {\n    principalId: identity_pf.properties.principalId\n" in text
+    assert "  dependsOn: [\n    identity_pf\n  ]\n}" in text and text.endswith("empty(adminSecret)\n")
+
+
+def test_resource_types_leave_existing_ones_out():
+    assert "Microsoft.KeyVault/vaults" not in resource_types(PLATFORM)
+    assert resource_types(ArmTemplate("resourceGroup", None, (ArmResource("a", "Microsoft.X/y", "1", "a"),
+                                                              ArmResource("b", "Microsoft.X/y", "1", "b")))) == (
+        "Microsoft.X/y",)
+
+
+def test_the_formats_are_registered():
+    assert format_named("arm-json") is ARM_FORMAT and format_named("bicep") is BICEP_FORMAT
+    assert BICEP_FORMAT.comment == ("//",) and ARM_FORMAT.comment == ()

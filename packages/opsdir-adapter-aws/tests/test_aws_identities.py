@@ -17,7 +17,7 @@ ROW = next(r for r in PERMISSIONS if r.verb == "read-secret")
 
 
 def _rendered(grants, notes=()):
-    return "\n".join(as_text(_identity(None, WorkloadIdentity("pf-engine", "identity-pf-engine", "pf-engine",
+    return "\n".join(as_text(_identity(None, WorkloadIdentity(("pf-engine",), "identity-pf-engine", ("pf-engine",),
                                                       "ciam-prod-pf-engine", grants, notes))))
 
 
@@ -39,7 +39,7 @@ def test_a_secret_under_a_customer_key_also_gets_that_key_through_secrets_manage
                      {"ciamBindingRole": ["secrets-key"], "ciamRefUri": [f"aws-kms://{key_arn}"]})
     m = SimpleNamespace(bindings=(locked, key), cloud=make_entry("cloud=c", ("top", "ciamCloud"),
                                                                  {"ciamRegion": ["us-east-1"]}))
-    out = "\n".join(as_text(_identity(m, WorkloadIdentity("pf-engine", "identity-pf-engine", "pf-engine",
+    out = "\n".join(as_text(_identity(m, WorkloadIdentity(("pf-engine",), "identity-pf-engine", ("pf-engine",),
                                                           "ciam-prod-pf-engine",
                                                           (("read-secret ds-root-password", locked, ROW),), ()))))
     assert '"Sid" : "ReadSecretDsRootPasswordKey"' in out and '"kms:Decrypt"' in out and f'"{key_arn}"' in out
@@ -47,7 +47,8 @@ def test_a_secret_under_a_customer_key_also_gets_that_key_through_secrets_manage
 
 
 def test_what_cant_be_granted_is_a_note_and_no_empty_policy_is_written():
-    out = _rendered((), ("use-key disk-encryption: role `disk-encryption` has no binding in this environment",))
+    out = _rendered((), ("principal pf-engine: use-key disk-encryption: role `disk-encryption` has no binding in this "
+                         "environment",))
     assert "# NOTE: principal pf-engine: use-key disk-encryption: role `disk-encryption` has no binding" in out
     assert "aws_iam_role_policy" not in out and "aws_iam_instance_profile" in out
 
@@ -55,7 +56,7 @@ def test_what_cant_be_granted_is_a_note_and_no_empty_policy_is_written():
 def test_kubernetes_service_accounts_assume_the_role_through_their_clusters_oidc_provider():
     cluster = make_entry("cn=eks,ou=bindings,env=prod", ("top", "ciamCluster"), {
         "ciamBindingRole": ["k8s"], "ciamProviderRef": ["arn:aws:eks:us-east-1:111122223333:cluster/ciam-prod"]})
-    w = WorkloadIdentity("am", "identity-am", "am", "ciam-prod-am", (), (), servers=False,
+    w = WorkloadIdentity(("am",), "identity-am", ("am",), "ciam-prod-am", (), (), servers=False,
                          pods=(Pod("identity", "am", cluster), Pod("identity", "amster", cluster),
                                Pod("tools", "x", None)))
     data = "\n".join(as_text(eks_data((w,))))

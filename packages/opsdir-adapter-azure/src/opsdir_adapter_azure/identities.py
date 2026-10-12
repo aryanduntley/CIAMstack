@@ -8,6 +8,7 @@ import re
 
 from opsdir.core.directory import is_a, one, rdn_of, rdn_value
 from opsdir.core.environment import environment_of, of_class
+from opsdir.domains.access.workloads import principal_label
 from opsdir.domains.data.storage import kept_store
 from opsdir_format_terraform.hcl import comment, ref, tf_block, tf_name
 from .account import tagged
@@ -48,7 +49,7 @@ def scope(b):
 
 
 def notes(w):
-    return tuple(comment(f"NOTE: principal {w.principal}: {note}") for note in w.notes)
+    return tuple(comment(f"NOTE: {note}") for note in w.notes)
 
 
 def assignments(w, principal_id):
@@ -62,7 +63,7 @@ def assignments(w, principal_id):
 def managed_identity(m, w):
     return tf_block("resource", ["azurerm_user_assigned_identity", tf_name(w.identity_role)], [
         ("name", w.name), ("resource_group_name", RG), ("location", LOC),
-        ("tags", tagged(m, {"Principal": w.principal, "Role": w.identity_role, "ManagedBy": "opsdir"}))])
+        ("tags", tagged(m, {"Principal": principal_label(w), "Role": w.identity_role, "ManagedBy": "opsdir"}))])
 
 
 AUDIENCE = "api://AzureADTokenExchange"     # the audience Microsoft Entra workload identity federation expects
@@ -100,8 +101,8 @@ def federated_credentials(w):
     workload identity: its cluster's OIDC issuer, subject system:serviceaccount:<namespace>:<name>); notes for
     service accounts whose cluster the environment doesn't bind."""
     n = tf_name(w.identity_role)
-    return (*(comment(f"NOTE: principal {w.principal}: service account {p.namespace}/{p.service_account} runs in a "
-                      "cluster this environment doesn't bind, so nothing trusts it")
+    return (*(comment(f"NOTE: principal {principal_label(w)}: service account {p.namespace}/{p.service_account} "
+                      "runs in a cluster this environment doesn't bind, so nothing trusts it")
               for p in w.pods if p.cluster is None),
             *(federated_credential(f"{n}_{tf_name(p.namespace)}_{tf_name(p.service_account)}",
                                    f"{w.name}-{p.namespace}-{p.service_account}", n,

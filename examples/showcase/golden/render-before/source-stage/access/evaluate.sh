@@ -14,7 +14,7 @@ aws iam simulate-principal-policy --policy-source-arn arn:aws:iam::111122223333:
 aws iam simulate-principal-policy --policy-source-arn arn:aws:iam::111122223333:role/ciam-prod-ds --action-names logs:PutLogEvents logs:CreateLogStream --resource-arns 'arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/access:*' arn:aws:logs:us-east-1:111122223333:log-group:/ciam/prod/access --output json > "$OUT/evaluations/ciam-prod-ds/write-logs__ops-logs.json"
 aws iam simulate-principal-policy --policy-source-arn arn:aws:iam::111122223333:role/ciam-prod-ds --action-names s3:PutObject --resource-arns 'arn:aws:s3:::example-aero-ciam-stage-ds-backups/*' arn:aws:s3:::example-aero-ciam-stage-ds-backups --output json > "$OUT/evaluations/ciam-prod-ds/write-storage__backup-target.json"
 
-# identity identity-pf (arn:aws:iam::111122223333:role/ciam-prod-pf): pingfederate
+# identity identity-pf (arn:aws:iam::111122223333:role/ciam-prod-pf): pingfederate, pingfederate-admin
 mkdir -p "$OUT/evaluations/ciam-prod-pf"
 # read-secret pf-admin-password: not asked (its role isn't bound here, AWS has no mapping for it, or its evaluator can't answer for it)
 # read-secret pf-ds-bind-password: not asked (its role isn't bound here, AWS has no mapping for it, or its evaluator can't answer for it)

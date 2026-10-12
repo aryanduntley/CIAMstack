@@ -12,7 +12,7 @@ Pure.
 """
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.manifest import header
-from opsdir.domains.access.workloads import landing_identities, landing_zone_owner
+from opsdir.domains.access.workloads import landing_identities, landing_zone_owner, principal_label
 from opsdir.domains.network.plumbing import LANDING_ZONE, NETWORK_FILE, keepers
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import Block, TfBlock, TfFile, distinct, jsonencoded, ref, tf_block, tf_name
@@ -51,7 +51,7 @@ def _operator(m, w):
     return (*notes(w),
             tf_block("resource", ["aws_ssoadmin_permission_set", n], [
                 ("name", w.name[:32]), ("instance_arn", ref(SSO)), ("session_duration", "PT4H"),
-                ("description", f"{w.principal} ({w.identity_role})")]),
+                ("description", f"{principal_label(w)} ({w.identity_role})")]),
             *((tf_block("resource", ["aws_ssoadmin_permission_set_inline_policy", n], [
                 ("instance_arn", ref(SSO)), ("permission_set_arn", ref(f"aws_ssoadmin_permission_set.{n}.arn")),
                 ("inline_policy", jsonencoded({"Version": "2012-10-17", "Statement": found}))]),) if found else ()),

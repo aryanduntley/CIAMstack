@@ -197,10 +197,12 @@ Endpoint = namedtuple("Endpoint", ("kind", "path", "server_role", "versions", "p
 # A neutral signal a product's servers expose (domains/observability: what an alert rule's ciamSignal names): signal
 # the neutral name (replication-delay), server_role the role of the servers exposing it, expr the PromQL expression
 # over the product's own Prometheus metrics giving one value per server or scope (a rate for counters), unit the unit
-# of that value (s, bytes, /s, ratio: what a rule's threshold is converted to), description what it measures. Products
-# declare only what their documentation names; a rule on a signal no product declares needs the metric its
-# environment's cloud runs (its alarm binding's ciamMetric).
-Signal = namedtuple("Signal", ("signal", "server_role", "expr", "unit", "description"))
+# of that value (s, bytes, /s, ratio: what a rule's threshold is converted to), description what it measures, versions
+# the product versions exposing it so (a PEP 440 range, versions.holds), None for every version: a product whose
+# metric names change between releases declares one Signal per range. Products declare only what their documentation
+# names; a rule on a signal no product declares needs the metric its environment's cloud runs (its alarm binding's
+# ciamMetric).
+Signal = namedtuple("Signal", ("signal", "server_role", "expr", "unit", "description", "versions"), defaults=(None,))
 
 # A log a product's servers write (domains/observability.sources: what a log route's ciamLogKind picks lines from):
 # server_role the role of the servers writing it; on "servers" (a file under the server's install root) or "kubernetes"

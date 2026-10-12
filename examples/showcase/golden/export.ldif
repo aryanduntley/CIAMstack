@@ -2877,6 +2877,16 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationDays: 30
 ciamUsedIn: cn=run.properties,ou=config-files,dc=ciam-ops
 
+dn: cn=pf-admin-runtime,ou=permission-sets,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamPermissionSet
+cn: pf-admin-runtime
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPermits: read-secret pf-admin-password
+ciamPermits: write-logs audit-logs
+description: What PingFederate's admin console reads and writes
+
 dn: cn=pf-captcha-secret,ou=credentials,dc=ciam-ops
 objectClass: top
 objectClass: ciamCredential
@@ -3180,6 +3190,18 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrincipalKind: workload
 ciamReviewedOn: 20260601000000Z
 ciamTargetRole: pf-engine
+
+dn: cn=pingfederate-admin,ou=principals,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamPrincipal
+cn: pingfederate-admin
+ciamHoldsSet: cn=pf-admin-runtime,ou=permission-sets,dc=ciam-ops
+ciamIdentityRole: identity-pf
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrincipalKind: workload
+ciamReviewedOn: 20260601000000Z
+ciamTargetRole: pf-admin
 
 dn: cn=pingfederate.bulk.shared,ou=imports,dc=ciam-ops
 objectClass: top

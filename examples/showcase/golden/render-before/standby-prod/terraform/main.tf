@@ -416,7 +416,7 @@ resource "google_storage_bucket_iam_member" "identity_ds_write_storage_backup_ta
 
 resource "google_service_account" "identity_pf" {
   account_id   = "ciam-standby-pf"
-  display_name = "pingfederate (identity-pf)"
+  display_name = "pingfederate and pingfederate-admin (identity-pf)"
 }
 
 resource "google_secret_manager_secret_iam_member" "identity_pf_read_secret_pf_admin_password" {
@@ -709,6 +709,10 @@ resource "google_compute_instance" "pf_admin_1" {
     enable_secure_boot          = true
     enable_vtpm                 = true
     enable_integrity_monitoring = true
+  }
+  service_account {
+    email  = google_service_account.identity_pf.email
+    scopes = ["cloud-platform"]
   }
   metadata = {
     enable-oslogin = "TRUE"
@@ -2273,8 +2277,6 @@ resource "google_logging_project_exclusion" "logs_audit_logs" {
 }
 
 # NOTE: the Ops Agent configuration opsdir renders for configuration management to place (/etc/google-cloud-ops-agent/config.yaml) replaces one the servers already have (the agent reads only that file): merge their own receivers and pipelines into it; the agent itself comes with the host baseline
-
-# NOTE: role pf-admin ships logs to audit-logs, but no workload principal acting for it holds the permit `write-logs audit-logs`: its servers' service account isn't granted roles/logging.logWriter
 
 # NOTE: Assured Workloads (FEDRAMP_MODERATE): Cloud Logging, Compute Engine and GKE are supported products; the Ops Agent isn't listed on its own, and restrictions on log sinks and GKE workload logging under it are to be confirmed
 

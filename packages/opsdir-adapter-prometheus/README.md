@@ -6,13 +6,13 @@ opsdir monitoring add-on: the record's alert rules as Prometheus alerting rules 
 
 ## Where the expressions come from
 
-An alert rule names a neutral signal on a server role (`ciamSignal`, `ciamTargetRole`). The product adapters rendering the environment declare which signals their servers expose as Prometheus metrics (`core.contract.Signal`, `Adapter.signals`). Each declaration is backed by the product's own documentation:
+An alert rule names a neutral signal on a server role (`ciamSignal`, `ciamTargetRole`). The product adapters rendering the environment declare which signals their servers expose as Prometheus metrics (`core.contract.Signal`, `Adapter.signals`). Each declaration is backed by the product's own documentation. A product whose metric names change between releases declares one signal per release line (`Signal.versions`, a PEP 440 range), and the one whose range holds for the versions the role's servers and workloads record is used (none recorded: the newest release's):
 
 | Product | Signals |
 |---|---|
 | PingDS | `replication-delay` (s), `disk-free` (bytes), `heap-used` (bytes), `ldap-errors` (/s) |
 | PingAM | `login-failures` (/s) |
-| PingIDM | `heap-used` (bytes) |
+| PingIDM | `heap-used` (bytes): `idm_jvm_memory_usage_used{location="heap"}` on 8.x, `idm_jvm_memory_usage_heap_used` on 7.x |
 | PingFederate | none: it serves heartbeat statistics, not Prometheus metrics |
 
 How each rule becomes an alerting rule:

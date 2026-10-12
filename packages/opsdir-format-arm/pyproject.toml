@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-format-arm"
+version = "0.1.0"
+description = "Azure Resource Manager templates for opsdir adapters: one template model, written as ARM template JSON or as Bicep."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1"]
+
+[project.entry-points."opsdir.formats"]
+arm-json = "opsdir_format_arm.format:ARM_FORMAT"
+bicep = "opsdir_format_arm.format:BICEP_FORMAT"
+
+[tool.setuptools.packages.find]
+where = ["src"]

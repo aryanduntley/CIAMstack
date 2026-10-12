@@ -1,8 +1,9 @@
 """Access fixture data (80-access): who and what may act on the platform. Permission sets name what may be done as
 verbs on binding roles, so one set means each environment's own secrets, keys, buckets and log destinations;
-principals hold them: PingFederate's and PingDS's servers (workloads), the ciam-ops pipeline (deployer), the platform
-admins (operators, by MFA and just-in-time elevation) and the break-glass account. What realizes them is a binding per
-environment (ACCESS below, used by infrastructure: SOURCE / TARGET / STANDBY): the cloud identity each acts as with
+principals hold them: PingFederate's engines and admin console (two workloads on one identity: one cloud identity
+with both their permissions) and PingDS's servers, the ciam-ops pipeline (deployer), the platform admins (operators,
+by MFA and just-in-time elevation) and the break-glass account. What realizes them is a binding per environment
+(ACCESS below, used by infrastructure: SOURCE / TARGET / STANDBY): the cloud identity each acts as with
 what the cloud grants it, the organization guardrails over the environment, and the ways operators come in.
 
 Planted for the planner to find:
@@ -22,6 +23,8 @@ PERMISSION_SETS = (
     ("pf-runtime", "What PingFederate's servers read and write",
      ("read-secret pf-admin-password", "read-secret pf-signing-key", "read-secret pf-ds-bind-password",
       "write-logs audit-logs", "write-logs ops-logs")),
+    ("pf-admin-runtime", "What PingFederate's admin console reads and writes",
+     ("read-secret pf-admin-password", "write-logs audit-logs")),
     ("ds-runtime", "What the directory servers read and write",
      ("read-secret ds-root-password", "use-key disk-encryption", "write-storage backup-target",
       "write-logs audit-logs", "write-logs ops-logs")),
@@ -33,6 +36,7 @@ PERMISSION_SETS = (
 # cn, kind, identity role, server role it runs on, permission set, conditions, reviewed on, extra attributes
 PRINCIPAL_ROWS = (
     ("pingfederate", "workload", "identity-pf", "pf-engine", "pf-runtime", (), "2026-06-01", {}),
+    ("pingfederate-admin", "workload", "identity-pf", "pf-admin", "pf-admin-runtime", (), "2026-06-01", {}),
     ("pingds", "workload", "identity-ds", "ds", "ds-runtime", (), "2026-06-01", {}),
     ("ciam-ops-ci", "deployer", "identity-ci", None, "release", (), "2026-04-15", {}),
     # planted: reviewed 2025-06-30, more than a year before the plan

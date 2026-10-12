@@ -12,6 +12,11 @@
 # venv (tools/ansible/venv; their own dependencies resolved by pip, not hash-pinned), and the Galaxy collections and
 # roles opsdir-adapter-ansible pins (requirements.py) into tools/ansible/collections and tools/ansible/roles; F5's AS3
 # JSON schema (checked against the SHA-256 pinned below) into tools/ansible.
+# The Bicep CLI (opsdir/scripts/validate-bicep.sh): the release's standalone binary, checked against the SHA-256 pinned
+# below (the digest GitHub reports for the release asset when the version was pinned).
+# cfn-lint (opsdir/scripts/validate-cloudformation.sh): at the version pinned below in its own venv
+# (tools/cfn-lint/venv; its dependencies resolved by pip, not hash-pinned). The wheel ships the region resource specs,
+# so it checks offline.
 set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 TOOLS=$ROOT/tools
@@ -23,6 +28,8 @@ KUBECONFORM_VERSION=0.8.0         # 2026-06-04
 PROMETHEUS_VERSION=3.15.0         # 2026-09-24: its promtool checks opsdir-adapter-prometheus's rule files
 ANSIBLE_CORE_VERSION=2.21.5       # 2026-10-05 (controller Python 3.12-3.14)
 ANSIBLE_LINT_VERSION=26.9.0       # 2026-09-22
+BICEP_VERSION=0.48.1              # 2026-10-05
+CFN_LINT_VERSION=1.57.2           # 2026-10-06 (Python 3.10-3.14)
 AS3_SCHEMA=3.54.0-6               # F5 AS3 LTS JSON schema (opsdir-adapter-f5's declarations)
 AS3_SHA256=9bef9d9e8f2fc6e52eef7491683f09dbacd572d87018b68c49013f9857d38fd3
 
@@ -68,6 +75,8 @@ pinned_sha() {
     kubeconform-linux-arm64) echo 1f53fc8e81258197a35e8603054162a5af1de8c5af13746c71ab680d9534ed87 ;;
     promtool-linux-amd64) echo 2a542df32eac02ee17b9d844fb2aa1de00dafa5476579ba8a3ba862e9d572ea0 ;;
     promtool-linux-arm64) echo f1f90ec08e849d494ca66c611470afc50192f0355f1a61c33f2cbde02d067823 ;;
+    bicep-linux-amd64) echo b09ec25a9d376c1f8e33ede6ed22b587f915ad68488d5db77a6f9541748c7f6e ;;
+    bicep-linux-arm64) echo 9cbf6a211137e894a863fbc842e355c2197fc2124a7bda902afe1bceffa35245 ;;
     *) return 1 ;;
   esac
 }
@@ -82,6 +91,18 @@ pinned_fetch() {
   echo "$sha  $work/archive.tar.gz" | sha256sum -c --quiet - || { echo "$tool: archive doesn't match its pinned SHA-256" >&2; exit 1; }
   tar -xzf "$work/archive.tar.gz" -C "$work" "$member"
   install -m 0755 "$work/$member" "$TOOLS/bin/$tool"
+  rm -rf "$work"
+}
+
+# Download a release's standalone binary, check it against its pinned SHA-256, put it in tools/bin:
+#   pinned_binary <tool> <url>
+pinned_binary() {
+  local tool=$1 url=$2 sha work=$TOOLS/downloads/$1
+  sha=$(pinned_sha "$tool") || { echo "$tool: no pinned binary for $os/$arch" >&2; return 1; }
+  mkdir -p "$work" && chmod 700 "$TOOLS/downloads"
+  curl -fsSL "$url" -o "$work/$tool"
+  echo "$sha  $work/$tool" | sha256sum -c --quiet - || { echo "$tool: binary doesn't match its pinned SHA-256" >&2; exit 1; }
+  install -m 0755 "$work/$tool" "$TOOLS/bin/$tool"
   rm -rf "$work"
 }
 
@@ -109,6 +130,12 @@ else
   pinned_fetch promtool "https://github.com/prometheus/prometheus/releases/download/v$PROMETHEUS_VERSION/prometheus-$PROMETHEUS_VERSION.$os-$arch.tar.gz" \
     "prometheus-$PROMETHEUS_VERSION.$os-$arch/promtool" &&
     echo "promtool $PROMETHEUS_VERSION: tools/bin/promtool (verified)"
+fi
+if [ -x "$TOOLS/bin/bicep" ] && "$TOOLS/bin/bicep" --version | grep -q "version $BICEP_VERSION "; then
+  echo "bicep $BICEP_VERSION: already in tools/bin"
+else
+  pinned_binary bicep "https://github.com/Azure/bicep/releases/download/v$BICEP_VERSION/bicep-$os-$([ "$arch" = amd64 ] && echo x64 || echo arm64)" &&
+    echo "bicep $BICEP_VERSION: tools/bin/bicep (verified)"
 fi
 
 # Ansible: a venv of its own, run without the caller's PYTHONPATH (packages there would shadow the venv's)
@@ -138,3 +165,14 @@ if ! { [ -f "$schema" ] && echo "$AS3_SHA256  $schema" | sha256sum -c --quiet - 
   echo "$AS3_SHA256  $schema" | sha256sum -c --quiet - || { rm -f "$schema"; echo "AS3 schema doesn't match its checksum" >&2; exit 1; }
 fi
 echo "AS3 schema $AS3_SCHEMA: tools/ansible (verified)"
+
+# cfn-lint: a venv of its own, run without the caller's PYTHONPATH
+CFN=$TOOLS/cfn-lint
+if [ -x "$CFN/venv/bin/cfn-lint" ] &&
+   env -u PYTHONPATH "$CFN/venv/bin/python" -m pip show cfn-lint 2>/dev/null | grep -x "Version: $CFN_LINT_VERSION" >/dev/null; then
+  echo "cfn-lint $CFN_LINT_VERSION: already in tools/cfn-lint/venv"
+else
+  python3 -m venv "$CFN/venv"
+  env -u PYTHONPATH PIP_USER=0 "$CFN/venv/bin/pip" install --no-cache-dir -q "cfn-lint==$CFN_LINT_VERSION"
+  echo "cfn-lint $CFN_LINT_VERSION: tools/cfn-lint/venv"
+fi

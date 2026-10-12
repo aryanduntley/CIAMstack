@@ -24,7 +24,7 @@ def _row(verb, cls, kind=None):
     return next(r for r in PERMISSIONS if r.verb == verb and r.binding_class == cls and r.kind in (None, kind))
 
 
-W = WorkloadIdentity("pf-engine", "identity-pf-engine", "pf-engine", "ciam-prod-pf-engine",
+W = WorkloadIdentity(("pf-engine",), "identity-pf-engine", ("pf-engine",), "ciam-prod-pf-engine",
                      (("read-secret pf-admin-password", SECRET, _row("read-secret", "ciamSecretRef")),
                       ("use-key signing", KEY, _row("use-key", "ciamKeyRef")),
                       ("publish-stream audit-events", GRID, _row("publish-stream", "ciamStreamBinding", "topic"))), ())

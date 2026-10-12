@@ -244,7 +244,7 @@ resource "azurerm_user_assigned_identity" "identity_pf" {
     CostCenter  = "CC-1001"
     Environment = "target/prod"
     Owner       = "ciam-platform"
-    Principal   = "pingfederate"
+    Principal   = "pingfederate and pingfederate-admin"
     Role        = "identity-pf"
     ManagedBy   = "opsdir"
   }

@@ -2,7 +2,9 @@
 
 Workloads: each workload principal some server of the environment runs as (its ciamTargetRole), or that its
 workloads on Kubernetes assume (their ciamIdentityRole: the Kubernetes service accounts the cloud trusts through the
-cluster's OIDC issuer, workload identity federation). For the landing zone
+cluster's OIDC issuer, workload identity federation). One identity per identity role: the workload principals that
+share one (an engine and its admin console on one role) act as that one cloud identity, with their permits merged. For
+the landing zone
 (terraform/landing-zone/, applied by whoever keeps it): each deployer principal whose identity the environment binds
 with an OIDC trust (ciamTrustedBy '<issuer URL> <subject>': a CI pipeline), and each operator principal whose identity
 binding names the group it is granted to (its provider ref). For each: the cloud identity's name, and for each permit
@@ -19,11 +21,14 @@ from ..compute.workloads import namespace_of, runs_on_kubernetes, service_accoun
 from .grants import rows_for
 from .principals import permits, principals
 
-# kind: the principal's kind; trust: (issuer, subject) of a deployer's OIDC trust; group: an operator's group (the
-# identity binding's provider ref); conditions: the principal's (jit: granted eligible, not active); pods: the
+# principals: the names of the principals acting as it (one, but every workload principal sharing an identity role);
+# server_roles: the roles whose servers run as it (theirs, once each; () for a principal with none); grants: (permit,
+# binding, row) per permit, once each, sorted; notes: 'principal <name>: <why>' for each permit that can't be granted;
+# kind: the principals' kind; trust: (issuer, subject) of a deployer's OIDC trust; group: an operator's group (the
+# identity binding's provider ref); conditions: the principals' (jit: granted eligible, not active); pods: the
 # Kubernetes service accounts that assume it (Pod, one per workload run on Kubernetes here with its identity role);
-# servers: whether servers of its role run here (and assume it as their own identity)
-WorkloadIdentity = namedtuple("WorkloadIdentity", ("principal", "identity_role", "server_role", "name", "grants",
+# servers: whether servers of its roles run here (and assume it as their own identity)
+WorkloadIdentity = namedtuple("WorkloadIdentity", ("principals", "identity_role", "server_roles", "name", "grants",
                                                    "notes", "kind", "trust", "group", "conditions", "pods", "servers"),
                               defaults=("workload", None, None, (), (), True))
 
@@ -59,11 +64,28 @@ def oidc_trust(binding):
 
 def _identity(m, model, p, default, named=True, **extra):
     done = [_grant(m, model, x) for x in permits(m.d, p)]
-    role = one(p, "ciamIdentityRole")
-    return WorkloadIdentity(rdn_value(p), role, one(p, "ciamTargetRole"),
+    name, role, target = rdn_value(p), one(p, "ciamIdentityRole"), one(p, "ciamTargetRole")
+    return WorkloadIdentity((name,), role, (target,) if target else (),
                             identity_name(m, role, default) if named else default,
-                            tuple(g for g, _ in done if g), tuple(n for _, n in done if n),
+                            tuple(g for g, _ in done if g), tuple(f"principal {name}: {n}" for _, n in done if n),
                             one(p, "ciamPrincipalKind"), conditions=tuple(values(p, "ciamCondition")), **extra)
+
+
+def principal_label(w):
+    """The principals a workload identity acts for, as words (their names joined by 'and')."""
+    return " and ".join(w.principals)
+
+
+def _merged(ws):
+    """One identity for the workload principals sharing an identity role (ws, in record order): the first's name and
+    pods (the role's), every principal and server role, the grants, notes and conditions of all, once each."""
+    once = lambda xs: tuple(dict.fromkeys(xs))                                              # noqa: E731
+    return ws[0]._replace(principals=once(x for w in ws for x in w.principals),
+                          server_roles=once(r for w in ws for r in w.server_roles),
+                          grants=tuple(sorted({g[0]: g for w in ws for g in w.grants}.values(), key=lambda g: g[0])),
+                          notes=once(n for w in ws for n in w.notes),
+                          conditions=once(c for w in ws for c in w.conditions),
+                          servers=any(w.servers for w in ws))
 
 
 def identity_pods(m, identity_role):
@@ -79,16 +101,19 @@ def identity_pods(m, identity_role):
 
 
 def workload_identities(m, model):
-    """The workload principals environment m runs as, each with what its permits need there: those whose role has
-    servers here (the servers' identity), and those its workloads on Kubernetes assume (pods: the service accounts the
-    cloud must trust through their cluster's OIDC issuer)."""
+    """The cloud identities environment m's workload principals run as, one per identity role, each with what its
+    principals' permits need there: those whose role has servers here (the servers' identity), and those its workloads
+    on Kubernetes assume (pods: the service accounts the cloud must trust through their cluster's OIDC issuer).
+    Principals sharing an identity role are one identity (named as the first in record order would be)."""
     def found(p):
         role, pods = one(p, "ciamTargetRole"), identity_pods(m, one(p, "ciamIdentityRole"))
         servers = bool(servers_with_role(m, role))
         return (_identity(m, model, p, f"ciam-{rdn_value(m.env)}-{role}", pods=pods, servers=servers),) \
             if servers or pods else ()
-    return tuple(w for p in principals(m.d) if one(p, "ciamPrincipalKind") == "workload" and one(p, "ciamTargetRole")
+    each = tuple(w for p in principals(m.d) if one(p, "ciamPrincipalKind") == "workload" and one(p, "ciamTargetRole")
                  for w in found(p))
+    key = lambda w: w.identity_role or ("principal", w.principals[0])                       # noqa: E731
+    return tuple(_merged(tuple(w for w in each if key(w) == k)) for k in dict.fromkeys(map(key, each)))
 
 
 def landing_identities(m, model):
@@ -119,4 +144,4 @@ def landing_zone_party(m):
 
 def identity_of(identities, server_role):
     """The workload identity servers of a role run as, or None."""
-    return next((w for w in identities if w.server_role == server_role), None)
+    return next((w for w in identities if server_role in w.server_roles), None)

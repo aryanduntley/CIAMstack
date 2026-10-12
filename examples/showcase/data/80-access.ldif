@@ -18,6 +18,16 @@ ciamPermits: write-logs audit-logs
 ciamPermits: write-logs ops-logs
 description: What PingFederate's servers read and write
 
+dn: cn=pf-admin-runtime,ou=permission-sets,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamPermissionSet
+cn: pf-admin-runtime
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPermits: read-secret pf-admin-password
+ciamPermits: write-logs audit-logs
+description: What PingFederate's admin console reads and writes
+
 dn: cn=ds-runtime,ou=permission-sets,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -68,6 +78,18 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrincipalKind: workload
 ciamReviewedOn: 20260601000000Z
 ciamTargetRole: pf-engine
+
+dn: cn=pingfederate-admin,ou=principals,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamPrincipal
+cn: pingfederate-admin
+ciamHoldsSet: cn=pf-admin-runtime,ou=permission-sets,dc=ciam-ops
+ciamIdentityRole: identity-pf
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrincipalKind: workload
+ciamReviewedOn: 20260601000000Z
+ciamTargetRole: pf-admin
 
 dn: cn=pingds,ou=principals,dc=ciam-ops
 objectClass: top

@@ -39,7 +39,7 @@ GRANTS = (("read-secret pf-admin-password", _binding("ciamSecretRef", "pf-admin-
           ("write-logs audit-logs", _binding("ciamLogDestination", "audit-logs", ciamDestinationKind="log-group",
                                              ciamProviderRef=f"{P}/locations/global/buckets/ciam-audit"),
            _row("write-logs", "ciamLogDestination")))
-W = WorkloadIdentity("pf-engine", "identity-pf-engine", "pf-engine", "ciam-prod-pf-engine", GRANTS, ())
+W = WorkloadIdentity(("pf-engine",), "identity-pf-engine", ("pf-engine",), "ciam-prod-pf-engine", GRANTS, ())
 
 
 def test_a_service_account_with_resource_level_members():
@@ -61,7 +61,7 @@ def test_service_account_ids_google_accepts():
 
 def test_kubernetes_service_accounts_act_as_the_service_account_through_workload_identity():
     cluster = _binding("ciamCluster", "k8s", ciamProviderRef=f"{P}/locations/us-central1/clusters/ciam")
-    w = WorkloadIdentity("am", "identity-am", "am", "ciam-prod-am", (), (), servers=False,
+    w = WorkloadIdentity(("am",), "identity-am", ("am",), "ciam-prod-am", (), (), servers=False,
                          pods=(Pod("identity", "am", cluster), Pod("tools", "x", None)))
     out = "\n".join(as_text(_identity(None, w)))
     assert 'resource "google_service_account_iam_member" "identity_am_identity_am"' in out

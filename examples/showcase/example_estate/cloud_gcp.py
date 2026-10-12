@@ -445,7 +445,8 @@ def _gcp_iam():
     for cn, kind, ref, _, grants in GCP_IDENTITIES:
         for role, _, resource in (g.partition(" on ") for g in grants):
             bindings.setdefault(resource, {}).setdefault(role, []).append(f"{prefix[kind]}:{ref}")
-    shown = {role: f"{cn} ({role})" for cn, _, role, *_ in PRINCIPAL_ROWS}
+    acting = lambda role: " and ".join(cn for cn, _, r, *_ in PRINCIPAL_ROWS if r == role)     # noqa: E731
+    shown = {role: f"{acting(role)} ({role})" for _, _, role, *_ in PRINCIPAL_ROWS}  # as the renderer names it
     accounts = [(cn, ref) for cn, kind, ref, _, _ in GCP_IDENTITIES if kind in ("service-account", "federated")]
     pool = f"projects/{NUMBER}/locations/global/workloadIdentityPools/ciam-prod-ci"
     ci = next((ref, trusted[0].split(" ", 1)[1]) for cn, _, ref, trusted, _ in GCP_IDENTITIES if cn == "identity-ci")

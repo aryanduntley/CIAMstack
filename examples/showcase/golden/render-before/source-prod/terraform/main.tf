@@ -411,7 +411,7 @@ resource "aws_iam_role" "identity_pf" {
     ]
   })
   tags = {
-    Principal = "pingfederate"
+    Principal = "pingfederate and pingfederate-admin"
     Role      = "identity-pf"
     ManagedBy = "opsdir"
   }
@@ -627,6 +627,7 @@ resource "aws_instance" "pf_admin_1" {
   instance_type          = "m6i.large"
   subnet_id              = data.aws_subnet.subnet_pf_a.id
   private_ip             = "10.20.4.10"
+  iam_instance_profile   = aws_iam_instance_profile.identity_pf.name
   vpc_security_group_ids = [aws_security_group.pf_admin.id]
   root_block_device {
     encrypted  = true
@@ -1965,8 +1966,6 @@ resource "aws_cloudwatch_log_group" "ops_logs" {
     BindingRole = "ops-logs"
   }
 }
-
-# NOTE: role pf-admin ships logs to audit-logs, but no workload principal acting for it holds the permit `write-logs audit-logs`: its servers' instance role isn't granted the writes
 
 resource "aws_cloudwatch_metric_alarm" "pf_login_failures" {
   alarm_name          = "pf-login-failures"

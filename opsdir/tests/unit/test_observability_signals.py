@@ -11,8 +11,8 @@ from opsdir.core.interchange.ldif import parse
 from opsdir.core.inventory import duration_seconds
 from opsdir.connectors.observability import signal_check
 from opsdir.domains.observability.naming import ALERT_RULES
-from opsdir.domains.observability.signals import (convert, evaluation, number_text, parse_threshold, promql,
-                                                  threshold_in)
+from opsdir.domains.observability.signals import (convert, evaluation, number_text, parse_threshold, product_signal,
+                                                  promql, threshold_in)
 import mini_estate
 from support import REGISTRY, build_directory
 
@@ -97,6 +97,23 @@ def test_the_clouds_metric_wins_over_a_product_signal():
                          "declares signal `replication-delay` for role `web`")
 
 
+def _server(env, version):
+    return (f"dn: cn=web-1,{env}\nobjectClass: top\nobjectClass: ciamServer\ncn: web-1\nciamServerRole: web\n"
+            f"ciamHostname: web-1.example.test\nciamSubnet: cn=net,ou=bindings,{env}\nciamProductVersion: {version}\n")
+
+
+def test_a_product_signal_declared_per_release_line_is_picked_by_the_recorded_version():
+    old, new = DELAY._replace(expr="old_lag_seconds", versions="<8"), DELAY._replace(versions=">=8")
+    d = _record(_server(ALPHA, "Product 7.5.0"), _server(BETA, "Product 8.1.0"))
+    rule = get(d, LAG)
+    assert product_signal(env_model(d, "alpha/prod"), (new, old), rule) is old
+    assert product_signal(env_model(d, "beta/prod"), (new, old), rule) is new
+    assert product_signal(env_model(d, "alpha/prod"), (new,), rule) is None        # only 8.x declares it
+    bare = _record()                                       # nothing recorded: the newest release's
+    assert product_signal(env_model(bare, "alpha/prod"), (old, new), get(bare, LAG)) is new
+    assert product_signal(env_model(bare, "alpha/prod"), (DELAY,), get(bare, LAG)) is DELAY   # every version
+
+
 def test_a_rule_the_target_delivers_but_cant_evaluate_is_an_action():
     f = _plan(_record(), ())
     assert [t for _, t, _, _ in f.actions] == [
@@ -122,5 +139,6 @@ def test_the_products_declare_only_documented_signals():
         ("replication-delay", "ds", "s"), ("disk-free", "ds", "bytes"), ("heap-used", "ds", "bytes"),
         ("ldap-errors", "ds", "/s")}
     assert [(s.signal, s.server_role) for s in AM.signals] == [("login-failures", "am")]
-    assert [(s.signal, s.server_role) for s in IDM.signals] == [("heap-used", "idm")]
+    assert [(s.signal, s.server_role, s.versions) for s in IDM.signals] == [("heap-used", "idm", ">=8"),
+                                                                            ("heap-used", "idm", "<8")]
     assert PF.signals == ()                 # PingFederate serves heartbeat statistics, no Prometheus endpoint

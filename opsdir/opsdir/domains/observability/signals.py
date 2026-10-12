@@ -3,7 +3,8 @@
 A rule names a neutral signal on a server role (ciamSignal, ciamTargetRole). In an environment it is evaluated on,
 first, the metric the environment's cloud runs for it (the alarm binding realizing the rule: its ciamMetric), else the
 Prometheus expression the product serving the role declares for the signal (core.contract.Signal, from the adapters
-rendering the environment), else nothing: renderers then say what to record, and the planner asks for it.
+rendering the environment; of those declared for some versions, the one whose range holds for the versions the role's
+servers and workloads record), else nothing: renderers then say what to record, and the planner asks for it.
 
 A threshold is a number with its unit (5000 ms, 90 %, 50 /min, 10 GB); it is converted to the unit of what evaluates
 it (a Signal's unit) when both are of one kind: time (ms, s, m, h, d), size (B, KB, MB, GB, TB decimal; KiB, MiB,
@@ -14,6 +15,8 @@ from decimal import Decimal, InvalidOperation
 
 from ...core.directory import one, rdn_value
 from ...core.environment import of_class
+from ...core.versions import holds
+from ..compute.workloads import recorded_versions
 
 # The PromQL operator of each comparison (naming.COMPARISONS).
 PROMQL_OPERATORS = {"gt": ">", "ge": ">=", "lt": "<", "le": "<=", "eq": "==", "ne": "!="}
@@ -77,10 +80,13 @@ def threshold_in(rule, to_unit):
     return number_text(value) if value is not None else None
 
 
-def product_signal(signals, rule):
-    """The Signal a product declares for the rule's signal on its target role, or None."""
+def product_signal(m, signals, rule):
+    """The Signal a product declares for the rule's signal on its target role that holds for what environment m runs
+    of the role (its versions, if declared for some, among the recorded product versions: versions.holds), or None."""
     name, role = one(rule, "ciamSignal"), one(rule, "ciamTargetRole")
-    return next((s for s in signals if s.signal == name and s.server_role == role), None)
+    recorded = recorded_versions(m, role) if role else ()
+    return next((s for s in signals if s.signal == name and s.server_role == role and holds(s.versions, recorded)),
+                None)
 
 
 def alarm_for(m, rule):
@@ -91,7 +97,7 @@ def alarm_for(m, rule):
 
 def evaluation(m, signals, rule):
     """How the rule is evaluated in environment m, given the Signals of the adapters rendering it."""
-    alarm, signal = alarm_for(m, rule), product_signal(signals, rule)
+    alarm, signal = alarm_for(m, rule), product_signal(m, signals, rule)
     if (alarm is not None and one(alarm, "ciamMetric")) or signal is not None:
         return Evaluation(rule, alarm, signal, None)
     role = one(rule, "ciamTargetRole")

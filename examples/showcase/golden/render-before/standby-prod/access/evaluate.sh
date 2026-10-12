@@ -19,7 +19,7 @@ gcloud policy-intelligence troubleshoot-policy iam //logging.googleapis.com/proj
 gcloud policy-intelligence troubleshoot-policy iam //logging.googleapis.com/projects/example-aero-ciam-standby/locations/global/buckets/ciam-ops --principal-email=ciam-standby-ds@example-aero-ciam-standby.iam.gserviceaccount.com --permission=logging.logEntries.create --format=json > "$OUT/evaluations/ciam-standby-ds/write-logs__ops-logs.json"
 gcloud policy-intelligence troubleshoot-policy iam //storage.googleapis.com/projects/_/buckets/example-aero-ciam-standby-ds-backups --principal-email=ciam-standby-ds@example-aero-ciam-standby.iam.gserviceaccount.com --permission=storage.objects.create --format=json > "$OUT/evaluations/ciam-standby-ds/write-storage__backup-target.json"
 
-# identity identity-pf (ciam-standby-pf@example-aero-ciam-standby.iam.gserviceaccount.com): pingfederate
+# identity identity-pf (ciam-standby-pf@example-aero-ciam-standby.iam.gserviceaccount.com): pingfederate, pingfederate-admin
 mkdir -p "$OUT/evaluations/ciam-standby-pf"
 gcloud policy-intelligence troubleshoot-policy iam //secretmanager.googleapis.com/projects/example-aero-ciam-standby/secrets/pf-admin-password --principal-email=ciam-standby-pf@example-aero-ciam-standby.iam.gserviceaccount.com --permission=secretmanager.versions.access --format=json > "$OUT/evaluations/ciam-standby-pf/read-secret__pf-admin-password.json"
 gcloud policy-intelligence troubleshoot-policy iam //secretmanager.googleapis.com/projects/example-aero-ciam-standby/secrets/pf-ds-bind-password --principal-email=ciam-standby-pf@example-aero-ciam-standby.iam.gserviceaccount.com --permission=secretmanager.versions.access --format=json > "$OUT/evaluations/ciam-standby-pf/read-secret__pf-ds-bind-password.json"

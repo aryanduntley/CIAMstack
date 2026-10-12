@@ -14,7 +14,7 @@ Pure.
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.environment import one_role
 from opsdir.core.manifest import header
-from opsdir.domains.access.workloads import landing_identities, landing_zone_owner
+from opsdir.domains.access.workloads import landing_identities, landing_zone_owner, principal_label
 from opsdir.domains.network.plumbing import LANDING_ZONE, NETWORK_FILE, keepers
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import Block, TfFile, distinct, mentions, ref, tf_block, tf_name
@@ -43,7 +43,7 @@ def _eligible(w):
         tf_block("resource", ["azurerm_pim_eligible_role_assignment", f"{n}_{tf_name(permit)}"], [
             ("scope", scope(b)[0]), ("principal_id", w.group),
             ("role_definition_id", ref(f"data.azurerm_role_definition.{n}_{tf_name(permit)}.id")),
-            ("justification", f"{w.principal}: {permit}"),
+            ("justification", f"{principal_label(w)}: {permit}"),
             ("schedule", Block((("expiration", Block((("duration_days", 365),))),)))])))
 
 

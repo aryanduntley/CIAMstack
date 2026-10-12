@@ -7,6 +7,7 @@ import re
 
 from opsdir.core.directory import one
 from opsdir.core.environment import one_role
+from opsdir.domains.access.workloads import principal_label
 from opsdir_format_terraform.hcl import Block, comment, jsonencoded, ref, tf_block, tf_name
 from .access import resources
 
@@ -40,7 +41,7 @@ def statements(m, w):
 
 
 def notes(w):
-    return tuple(comment(f"NOTE: principal {w.principal}: {note}") for note in w.notes)
+    return tuple(comment(f"NOTE: {note}") for note in w.notes)
 
 
 def eks_cluster_name(cluster):
@@ -97,8 +98,8 @@ def pod_trust(w):
     bind)."""
     n = tf_name(w.identity_role)
     clusters = {p.cluster.dn: p.cluster for p in w.pods if p.cluster is not None}.values()
-    unbound = tuple(comment(f"NOTE: principal {w.principal}: service account {p.namespace}/{p.service_account} runs in "
-                            "a cluster this environment doesn't bind, so nothing trusts it")
+    unbound = tuple(comment(f"NOTE: principal {principal_label(w)}: service account {p.namespace}/{p.service_account} "
+                            "runs in a cluster this environment doesn't bind, so nothing trusts it")
                     for p in w.pods if p.cluster is None)
     if not clusters:
         return None, unbound
@@ -119,5 +120,5 @@ def role(m, w, trust):
         ("policy", jsonencoded({"Version": "2012-10-17", "Statement": found}))]),) if found else ()
     return (tf_block("resource", ["aws_iam_role", n], [
                 ("name", w.name), ("assume_role_policy", jsonencoded(trust) if isinstance(trust, dict) else trust),
-                ("tags", {"Principal": w.principal, "Role": w.identity_role, "ManagedBy": "opsdir"})]),
+                ("tags", {"Principal": principal_label(w), "Role": w.identity_role, "ManagedBy": "opsdir"})]),
             *policy)
