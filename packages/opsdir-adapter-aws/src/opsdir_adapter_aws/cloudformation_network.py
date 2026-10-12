@@ -17,6 +17,8 @@ endpoint service's name for consumers, a peering's acceptance, a firewall's endp
 """
 from types import MappingProxyType
 
+from .cloudformation_values import tag_map, truth
+
 NETWORK_TYPES = ("AWS::EC2::RouteTable", "AWS::EC2::Route", "AWS::EC2::SubnetRouteTableAssociation",
                  "AWS::EC2::NetworkAcl", "AWS::EC2::NetworkAclEntry", "AWS::EC2::SubnetNetworkAclAssociation",
                  "AWS::EC2::VPCEndpoint", "AWS::EC2::VPCEndpointService", "AWS::EC2::VPCEndpointServicePermissions",
@@ -38,30 +40,22 @@ _FLOW_SCOPES = MappingProxyType({"VPC": "vpc_id", "Subnet": "subnet_id", "Networ
                                  "TransitGatewayAttachment": "transit_gateway_attachment_id"})
 
 
-def _tags(tags):
-    return {t.get("Key"): t.get("Value") for t in tags or () if isinstance(t, dict) and t.get("Key")}
-
-
-def _truth(v):
-    return None if v is None else str(v).lower() == "true"
-
-
 def _of(declared, *types):
     return [(p, pid) for _, t, p, _, pid in declared if t in types]
 
 
 def _routing(declared):
-    return [*(("aws_route_table", {"id": pid, "vpc_id": p.get("VpcId"), "tags": _tags(p.get("Tags")), "route": []})
+    return [*(("aws_route_table", {"id": pid, "vpc_id": p.get("VpcId"), "tags": tag_map(p.get("Tags")), "route": []})
               for p, pid in _of(declared, "AWS::EC2::RouteTable")),
             *(("aws_route", {attr: p.get(key) for key, attr in _ROUTE.items() if p.get(key)})
               for p, _ in _of(declared, "AWS::EC2::Route")),
             *(("aws_route_table_association", {"route_table_id": p.get("RouteTableId"), "subnet_id": p.get("SubnetId")})
               for p, _ in _of(declared, "AWS::EC2::SubnetRouteTableAssociation")),
-            *(("aws_network_acl", {"id": pid, "vpc_id": p.get("VpcId"), "tags": _tags(p.get("Tags"))})
+            *(("aws_network_acl", {"id": pid, "vpc_id": p.get("VpcId"), "tags": tag_map(p.get("Tags"))})
               for p, pid in _of(declared, "AWS::EC2::NetworkAcl")),
             *(("aws_network_acl_rule", {
                 "network_acl_id": p.get("NetworkAclId"), "rule_number": p.get("RuleNumber"),
-                "egress": _truth(p.get("Egress")) or False, "protocol": str(p.get("Protocol")),
+                "egress": truth(p.get("Egress")) or False, "protocol": str(p.get("Protocol")),
                 "rule_action": p.get("RuleAction"), "cidr_block": p.get("CidrBlock"),
                 "ipv6_cidr_block": p.get("Ipv6CidrBlock"), "from_port": (p.get("PortRange") or {}).get("From", 0),
                 "to_port": (p.get("PortRange") or {}).get("To", 0)})
@@ -75,12 +69,12 @@ def _endpoints(declared):
                 "id": pid, "vpc_id": p.get("VpcId"), "service_name": p.get("ServiceName"),
                 "vpc_endpoint_type": p.get("VpcEndpointType") or "Gateway", "subnet_ids": p.get("SubnetIds") or [],
                 "route_table_ids": p.get("RouteTableIds") or [],
-                "private_dns_enabled": _truth(p.get("PrivateDnsEnabled")),
-                "security_group_ids": p.get("SecurityGroupIds") or [], "tags": _tags(p.get("Tags"))})
+                "private_dns_enabled": truth(p.get("PrivateDnsEnabled")),
+                "security_group_ids": p.get("SecurityGroupIds") or [], "tags": tag_map(p.get("Tags"))})
               for p, pid in _of(declared, "AWS::EC2::VPCEndpoint")),
             *(("aws_vpc_endpoint_service", {
-                "id": pid, "acceptance_required": _truth(p.get("AcceptanceRequired")),
-                "network_load_balancer_arns": p.get("NetworkLoadBalancerArns") or [], "tags": _tags(p.get("Tags"))})
+                "id": pid, "acceptance_required": truth(p.get("AcceptanceRequired")),
+                "network_load_balancer_arns": p.get("NetworkLoadBalancerArns") or [], "tags": tag_map(p.get("Tags"))})
               for p, pid in _of(declared, "AWS::EC2::VPCEndpointService")),
             *(("aws_vpc_endpoint_service_allowed_principal", {"vpc_endpoint_service_id": p.get("ServiceId"),
                                                               "principal_arn": principal})
@@ -89,15 +83,15 @@ def _endpoints(declared):
 
 
 def _links(declared):
-    return [*(("aws_vpc_peering_connection", {"id": pid, "tags": _tags(p.get("Tags")), "vpc_id": p.get("VpcId"),
+    return [*(("aws_vpc_peering_connection", {"id": pid, "tags": tag_map(p.get("Tags")), "vpc_id": p.get("VpcId"),
                                               "peer_vpc_id": p.get("PeerVpcId")})
               for p, pid in _of(declared, "AWS::EC2::VPCPeeringConnection")),
             *(("aws_ec2_transit_gateway_vpc_attachment", {"id": pid, "transit_gateway_id": p.get("TransitGatewayId"),
-                                                          "vpc_id": p.get("VpcId"), "tags": _tags(p.get("Tags"))})
+                                                          "vpc_id": p.get("VpcId"), "tags": tag_map(p.get("Tags"))})
               for p, pid in _of(declared, "AWS::EC2::TransitGatewayAttachment",
                                 "AWS::EC2::TransitGatewayVpcAttachment")),
             *(("aws_vpn_connection", {"id": pid, "customer_gateway_id": p.get("CustomerGatewayId"),
-                                      "vpn_gateway_id": p.get("VpnGatewayId"), "tags": _tags(p.get("Tags"))})
+                                      "vpn_gateway_id": p.get("VpnGatewayId"), "tags": tag_map(p.get("Tags"))})
               for p, pid in _of(declared, "AWS::EC2::VPNConnection")),
             *(("aws_customer_gateway", {"id": pid, "ip_address": p.get("IpAddress"), "bgp_asn": p.get("BgpAsn")})
               for p, pid in _of(declared, "AWS::EC2::CustomerGateway")),
@@ -108,7 +102,7 @@ def _links(declared):
 def _flow_logs(declared):
     return [("aws_flow_log", {"id": pid, "log_destination_type": p.get("LogDestinationType"),
                               "log_destination": p.get("LogDestination"), "log_group_name": p.get("LogGroupName"),
-                              "tags": _tags(p.get("Tags")),
+                              "tags": tag_map(p.get("Tags")),
                               **({_FLOW_SCOPES[p["ResourceType"]]: p.get("ResourceId")}
                                  if p.get("ResourceType") in _FLOW_SCOPES else {})})
             for p, pid in _of(declared, "AWS::EC2::FlowLog")]
@@ -120,10 +114,10 @@ def _firewalls(declared):
         return [{"rules_source": [{"rules_source_list": [{
             "generated_rules_type": source.get("GeneratedRulesType"), "target_types": source.get("TargetTypes") or [],
             "targets": source.get("Targets") or []}]}]}] if source else []
-    return [*(("aws_networkfirewall_rule_group", {"arn": pid, "tags": _tags(p.get("Tags")), "rule_group": listed(p)})
+    return [*(("aws_networkfirewall_rule_group", {"arn": pid, "tags": tag_map(p.get("Tags")), "rule_group": listed(p)})
               for p, pid in _of(declared, "AWS::NetworkFirewall::RuleGroup")),
             *(("aws_networkfirewall_firewall_policy", {
-                "arn": pid, "tags": _tags(p.get("Tags")),
+                "arn": pid, "tags": tag_map(p.get("Tags")),
                 "firewall_policy": [{"stateful_rule_group_reference": [
                     {"resource_arn": r.get("ResourceArn")}
                     for r in (p.get("FirewallPolicy") or {}).get("StatefulRuleGroupReferences") or ()]}]})

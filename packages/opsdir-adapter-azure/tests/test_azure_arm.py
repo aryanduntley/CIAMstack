@@ -244,3 +244,140 @@ def test_subscription_tenant_and_extension_resource_ids_evaluate():
                     "'Microsoft.Authorization/roleAssignments', 'r1')]", ctx) == (
         "/subscriptions/s1/resourceGroups/g1/providers/Microsoft.KeyVault/vaults/kv/providers/"
         "Microsoft.Authorization/roleAssignments/r1")
+
+
+def _state_of(pairs):
+    """A Terraform state (format 4) holding the (type, attributes) pairs, one instance each."""
+    return json.dumps({"version": 4, "terraform_version": "1.9.0", "serial": 1, "lineage": "l", "outputs": {},
+                       "resources": [{"mode": "managed", "type": t, "name": f"r{i}",
+                                      "provider": 'provider["registry.terraform.io/hashicorp/azurerm"]',
+                                      "instances": [{"schema_version": 0, "attributes": a,
+                                                     "sensitive_attributes": []}]}
+                                     for i, (t, a) in enumerate(pairs)]})
+
+
+KV = f"{RG}/providers/Microsoft.KeyVault/vaults/kv-ciam-prod"
+IDENTITY = f"{RG}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-ds"
+SECRETS_USER = "4633458b-17de-408a-b874-0445c86b69e6"            # Key Vault Secrets User
+CRYPTO_OFFICER = "14b46e9e-c2b7-41b4-b07b-48a6ebf60603"          # Key Vault Crypto Officer
+GROUP = "5b2c0000-0000-4000-8000-0000000000a1"
+NIST = f"/subscriptions/{SUB}/providers/Microsoft.Authorization/policyAssignments/ciam-nist-800-53-r5"
+NIST_SET = "/providers/Microsoft.Authorization/policySetDefinitions/179d1daa-458f-4e47-8086-2a68d0d6c38f"
+GROUP_TEMPLATE = {"$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0", "resources": [
+    {"type": "Microsoft.ManagedIdentity/userAssignedIdentities", "apiVersion": "2023-01-31", "name": "id-ds",
+     "location": "[resourceGroup().location]", "tags": {"Role": "identity-ds"}},
+    {"type": "Microsoft.Authorization/roleAssignments", "apiVersion": "2022-04-01",
+     "scope": "[resourceId('Microsoft.KeyVault/vaults/secrets', 'kv-ciam-prod', 'ds-root-password')]",
+     "name": "[guid(resourceId('Microsoft.KeyVault/vaults', 'kv-ciam-prod'), 'read')]",
+     "properties": {"roleDefinitionId": f"[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', "
+                                        f"'{SECRETS_USER}')]",
+                    "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', "
+                                   "'id-ds'), '2023-01-31').principalId]"}},
+    {"type": "Microsoft.Authorization/roleEligibilityScheduleRequests", "apiVersion": "2024-09-01-preview",
+     "scope": "[resourceId('Microsoft.KeyVault/vaults/keys', 'kv-ciam-prod', 'disk-cmk')]",
+     "name": "[guid(resourceId('Microsoft.KeyVault/vaults', 'kv-ciam-prod'), 'eligible')]",
+     "properties": {"principalId": GROUP, "requestType": "AdminAssign",
+                    "roleDefinitionId": f"[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', "
+                                        f"'{CRYPTO_OFFICER}')]"}},
+    {"type": "Microsoft.Network/dnsZones/MX", "apiVersion": "2018-05-01", "name": "example.test/@",
+     "properties": {"TTL": 3600, "MXRecords": [{"preference": 10, "exchange": "mail1.example.test"}]}},
+    {"type": "Microsoft.DBforPostgreSQL/flexibleServers", "apiVersion": "2025-08-01", "name": "psql-grants",
+     "sku": {"name": "Standard_D2ds_v5", "tier": "GeneralPurpose"}, "location": "[resourceGroup().location]",
+     "tags": {"Role": "pf-grants-db"},
+     "properties": {"version": "16", "storage": {"storageSizeGB": 128},
+                    "backup": {"backupRetentionDays": 14, "geoRedundantBackup": "Enabled"}}},
+    {"type": "Microsoft.Authorization/locks", "apiVersion": "2020-05-01", "name": "psql-grants-no-delete",
+     "scope": "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers', 'psql-grants')]",
+     "properties": {"level": "CanNotDelete"}},
+    {"type": "Microsoft.OperationalInsights/workspaces", "apiVersion": "2025-07-01", "name": "law-audit",
+     "tags": {"BindingRole": "audit-logs"}, "properties": {"sku": {"name": "PerGB2018"}, "retentionInDays": 90}},
+    {"type": "Microsoft.Insights/metricAlerts", "apiVersion": "2026-01-01", "name": "ds-replication-lag",
+     "location": "global", "tags": {"Realizes": "replication-lag", "BindingRole": "alarm-lag"},
+     "properties": {"severity": 2, "actions": [{"actionGroupId": f"{RG}/providers/Microsoft.Insights/actionGroups/ag"}],
+                    "criteria": {"allOf": [{"criterionType": "StaticThresholdCriterion", "metricNamespace": "CIAM/DS",
+                                            "metricName": "ReplicationDelay", "operator": "GreaterThan",
+                                            "threshold": 5000, "timeAggregation": "Average"}]}}},
+    {"type": "Microsoft.Insights/webtests", "apiVersion": "2022-06-15", "name": "sso-alive", "kind": "standard",
+     "tags": {"Realizes": "sso-alive", "BindingRole": "canary-sso"},
+     "properties": {"Frequency": 600, "Request": {"RequestUrl": "https://sso.example.test/ping"}}}]}
+SUBSCRIPTION_TEMPLATE = {**GROUP_TEMPLATE, "resources": [
+    {"type": "Microsoft.Authorization/policyAssignments", "apiVersion": "2025-03-01", "name": "ciam-nist-800-53-r5",
+     "properties": {"policyDefinitionId": "[tenantResourceId('Microsoft.Authorization/policySetDefinitions', "
+                                          "'179d1daa-458f-4e47-8086-2a68d0d6c38f')]"}},
+    {"type": "Microsoft.Authorization/policyExemptions", "apiVersion": "2026-01-01-preview",
+     "name": "exc-EXC-7-nist-800-53-r5",
+     "properties": {"policyAssignmentId": "[format('{0}/providers/Microsoft.Authorization/policyAssignments/"
+                                          "ciam-nist-800-53-r5', subscription().id)]",
+                    "exemptionCategory": "Waiver", "policyDefinitionReferenceIds": ["ref-a"],
+                    "metadata": {"exception": "EXC-7"}}},
+    {"type": "Microsoft.Security/alertsSuppressionRules", "apiVersion": "2019-01-01-preview",
+     "name": "exc-EXC-8", "properties": {"alertType": "IpAnomaly", "state": "Enabled", "reason": "FalsePositive",
+                                         "comment": "exception EXC-8"}}]}
+
+
+def test_identities_grants_records_databases_monitoring_and_suppressions_read_as_their_state_does():
+    """A resource group's deployment (a managed identity and its grant named by guid(), its principal by reference();
+    a PIM eligibility request; a public zone's MX records as ARM spells them; a Flexible Server's SKU tier, storage
+    and its lock, the group's location for its geo-backup copy; a workspace, a metric alert, a web test) and the
+    subscription's (a policy assignment, an exemption of it, a Defender alert suppression rule) read to the same
+    resources as the Terraform state of the same resources."""
+    group = {"id": RG, "name": "rg-ciam-prod", "type": "Microsoft.Resources/resourceGroups", "location": "eastus2"}
+    texts = {**{f"rg/{p}": json.dumps(d) for p, d in {"template.json": GROUP_TEMPLATE, "deployment.json": _deployment(),
+                                                       "group.json": group}.items()},
+             **{f"sub/{p}": json.dumps(d) for p, d in {
+                 "template.json": SUBSCRIPTION_TEMPLATE,
+                 "deployment.json": {"id": f"/subscriptions/{SUB}/providers/Microsoft.Resources/deployments/s",
+                                     "name": "s", "properties": {"provisioningState": "Succeeded"}}}.items()}}
+    roles = [("azurerm_role_definition", {"id": f"/providers/Microsoft.Authorization/roleDefinitions/{g}",
+                                          "role_definition_id": g, "name": n})
+             for n, g in (("Key Vault Secrets User", SECRETS_USER), ("Key Vault Crypto Officer", CRYPTO_OFFICER))]
+    server = f"{RG}/providers/Microsoft.DBforPostgreSQL/flexibleServers/psql-grants"
+    pairs = (*roles,
+             ("azurerm_user_assigned_identity", {"id": IDENTITY, "name": "id-ds", "principal_id": "p-ds",
+                                                 "tags": {"Role": "identity-ds"}}),
+             ("azurerm_role_assignment", {"scope": f"{KV}/secrets/ds-root-password", "principal_id": "p-ds",
+                                          "role_definition_id": f"/subscriptions/{SUB}/providers/Microsoft."
+                                                                f"Authorization/roleDefinitions/{SECRETS_USER}"}),
+             ("azurerm_pim_eligible_role_assignment", {
+                 "scope": f"{KV}/keys/disk-cmk", "principal_id": GROUP,
+                 "role_definition_id": f"/subscriptions/{SUB}/providers/Microsoft.Authorization/roleDefinitions/"
+                                       f"{CRYPTO_OFFICER}"}),
+             ("azurerm_dns_mx_record", {"name": "@", "zone_name": "example.test", "ttl": 3600,
+                                        "record": [{"preference": 10, "exchange": "mail1.example.test"}]}),
+             ("azurerm_postgresql_flexible_server", {"id": server, "name": "psql-grants", "version": "16",
+                                                     "sku_name": "GP_Standard_D2ds_v5", "storage_mb": 131072,
+                                                     "backup_retention_days": 14, "location": "eastus2",
+                                                     "geo_redundant_backup_enabled": True,
+                                                     "tags": {"Role": "pf-grants-db"}}),
+             ("azurerm_management_lock", {"scope": server, "lock_level": "CanNotDelete"}),
+             ("azurerm_log_analytics_workspace", {
+                 "id": f"{RG}/providers/Microsoft.OperationalInsights/workspaces/law-audit", "name": "law-audit",
+                 "retention_in_days": 90, "tags": {"BindingRole": "audit-logs"}}),
+             ("azurerm_monitor_metric_alert", {
+                 "id": f"{RG}/providers/Microsoft.Insights/metricAlerts/ds-replication-lag",
+                 "name": "ds-replication-lag", "tags": {"Realizes": "replication-lag", "BindingRole": "alarm-lag"},
+                 "criteria": [{"metric_namespace": "CIAM/DS", "metric_name": "ReplicationDelay"}],
+                 "action": [{"action_group_id": f"{RG}/providers/Microsoft.Insights/actionGroups/ag"}]}),
+             ("azurerm_application_insights_standard_web_test", {
+                 "id": f"{RG}/providers/Microsoft.Insights/webtests/sso-alive", "name": "sso-alive",
+                 "frequency": 600, "tags": {"Realizes": "sso-alive", "BindingRole": "canary-sso"}}),
+             ("azurerm_subscription_policy_assignment", {"id": NIST, "name": "ciam-nist-800-53-r5",
+                                                         "subscription_id": f"/subscriptions/{SUB}",
+                                                         "policy_definition_id": NIST_SET}),
+             ("azurerm_subscription_policy_exemption", {
+                 "id": f"/subscriptions/{SUB}/providers/Microsoft.Authorization/policyExemptions/"
+                       "exc-EXC-7-nist-800-53-r5", "name": "exc-EXC-7-nist-800-53-r5", "policy_assignment_id": NIST,
+                 "policy_definition_reference_ids": ["ref-a"], "metadata": json.dumps({"exception": "EXC-7"})}),
+             ("azapi_resource", {"id": f"/subscriptions/{SUB}/providers/Microsoft.Security/alertsSuppressionRules/"
+                                       "exc-EXC-8", "name": "exc-EXC-8",
+                                 "type": "Microsoft.Security/alertsSuppressionRules@2019-01-01-preview",
+                                 "body": {"properties": {"alertType": "IpAnomaly", "comment": "exception EXC-8"}}}))
+    kinds = ("identity", "record", "database", "logs", "alarm", "canary", "guardrail", "suppression")
+    deployed, _ = arm_resources(texts)
+    from_state, _ = arm_resources({"terraform.tfstate": _state_of(pairs)})
+
+    def kept(resources):
+        return sorted((r.kind, r.name or r.ref, tuple(sorted(r.attrs.items()))) for r in resources if r.kind in kinds)
+    assert kept(deployed) == kept(from_state)
+    assert {k for k, *_ in kept(deployed)} == set(kinds)

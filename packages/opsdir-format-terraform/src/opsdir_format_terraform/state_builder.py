@@ -149,10 +149,11 @@ def _value(v, scope):
     return v
 
 
-def _attributes(body, scope, where):
-    """(attributes, problems) of a body: values evaluated, nested blocks as lists of objects; problems: (path, why)."""
-    kept = tuple((k, v) for k, v in body if k != "#" and k not in META)
-    nested = {k: tuple(_attributes(v.body, scope, f"{where}.{k}") for kk, v in kept if kk == k)
+def _attributes(body, scope, where, top=True):
+    """(attributes, problems) of a body: values evaluated, nested blocks as lists of objects; problems: (path, why).
+    Meta-arguments are the resource's own (top): a nested block may be named like one (a backup rule's lifecycle)."""
+    kept = tuple((k, v) for k, v in body if k != "#" and not (top and k in META))
+    nested = {k: tuple(_attributes(v.body, scope, f"{where}.{k}", False) for kk, v in kept if kk == k)
               for k, v in kept if isinstance(v, Block)}
     values = {k: _value(v, scope) for k, v in kept if not isinstance(v, Block)}
     return ({**{k: v for k, v in values.items() if not isinstance(v, Unresolved)},

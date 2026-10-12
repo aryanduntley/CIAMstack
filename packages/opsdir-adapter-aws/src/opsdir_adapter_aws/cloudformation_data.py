@@ -9,24 +9,14 @@ physical IDs, Fn::GetAtt where it follows from one). Pure.
   AWS::RDS::DBParameterGroup, DBClusterParameterGroup                       -> their parameters
   AWS::Macie::CustomDataIdentifier                                          -> aws_macie2_custom_data_identifier
 """
+from .cloudformation_values import number, tag_map, truth
+
 DATA_TYPES = ("AWS::RDS::DBInstance", "AWS::RDS::DBCluster", "AWS::RDS::DBSubnetGroup", "AWS::RDS::DBParameterGroup",
               "AWS::RDS::DBClusterParameterGroup", "AWS::Macie::CustomDataIdentifier")
 
 
 def _of(declared, type_):
     return [(lid, p, pid) for lid, t, p, _, pid in declared if t == type_]
-
-
-def _tags(tags):
-    return {t.get("Key"): t.get("Value") for t in tags or () if isinstance(t, dict) and t.get("Key")}
-
-
-def _number(v):
-    return int(v) if isinstance(v, str) and v.isdigit() else v
-
-
-def _truth(v):
-    return None if v is None else str(v).lower() == "true"
 
 
 def _instance(lid, p, pid, names):
@@ -38,23 +28,23 @@ def _instance(lid, p, pid, names):
     return "aws_db_instance", {
         "arn": names.get(f"{lid}.DBInstanceArn"), "identifier": p.get("DBInstanceIdentifier") or pid,
         "engine": p.get("Engine"), "engine_version": p.get("EngineVersion"),
-        "instance_class": p.get("DBInstanceClass"), "allocated_storage": _number(p.get("AllocatedStorage")),
-        "multi_az": _truth(p.get("MultiAZ")), "availability_zone": p.get("AvailabilityZone"),
-        "port": _number(p.get("Port")), "storage_encrypted": _truth(p.get("StorageEncrypted")),
-        "kms_key_id": p.get("KmsKeyId"), "backup_retention_period": _number(p.get("BackupRetentionPeriod")),
-        "deletion_protection": _truth(p.get("DeletionProtection")), "db_subnet_group_name": p.get("DBSubnetGroupName"),
-        "parameter_group_name": p.get("DBParameterGroupName"), "tags": _tags(p.get("Tags")),
+        "instance_class": p.get("DBInstanceClass"), "allocated_storage": number(p.get("AllocatedStorage")),
+        "multi_az": truth(p.get("MultiAZ")), "availability_zone": p.get("AvailabilityZone"),
+        "port": number(p.get("Port")), "storage_encrypted": truth(p.get("StorageEncrypted")),
+        "kms_key_id": p.get("KmsKeyId"), "backup_retention_period": number(p.get("BackupRetentionPeriod")),
+        "deletion_protection": truth(p.get("DeletionProtection")), "db_subnet_group_name": p.get("DBSubnetGroupName"),
+        "parameter_group_name": p.get("DBParameterGroupName"), "tags": tag_map(p.get("Tags")),
         "vpc_security_group_ids": list(p.get("VPCSecurityGroups") or ())}
 
 
 def _cluster(lid, p, pid, names):
     return "aws_rds_cluster", {
         "arn": names.get(f"{lid}.DBClusterArn"), "cluster_identifier": p.get("DBClusterIdentifier") or pid,
-        "engine": p.get("Engine"), "engine_version": p.get("EngineVersion"), "port": _number(p.get("Port")),
-        "storage_encrypted": _truth(p.get("StorageEncrypted")), "kms_key_id": p.get("KmsKeyId"),
-        "backup_retention_period": _number(p.get("BackupRetentionPeriod")),
-        "deletion_protection": _truth(p.get("DeletionProtection")), "db_subnet_group_name": p.get("DBSubnetGroupName"),
-        "db_cluster_parameter_group_name": p.get("DBClusterParameterGroupName"), "tags": _tags(p.get("Tags")),
+        "engine": p.get("Engine"), "engine_version": p.get("EngineVersion"), "port": number(p.get("Port")),
+        "storage_encrypted": truth(p.get("StorageEncrypted")), "kms_key_id": p.get("KmsKeyId"),
+        "backup_retention_period": number(p.get("BackupRetentionPeriod")),
+        "deletion_protection": truth(p.get("DeletionProtection")), "db_subnet_group_name": p.get("DBSubnetGroupName"),
+        "db_cluster_parameter_group_name": p.get("DBClusterParameterGroupName"), "tags": tag_map(p.get("Tags")),
         "vpc_security_group_ids": list(p.get("VpcSecurityGroupIds") or ())}
 
 

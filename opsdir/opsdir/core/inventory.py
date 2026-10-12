@@ -216,7 +216,7 @@ def environment_groups(d, spec, resources, summarize=()):
         return (), (f"{spec}: no such environment in the record; nothing imported",)
     table = _imports(d)
     unread = sorted({r.kind for r in resources if r.kind not in table.kinds})
-    resources = tuple(r for r in resources if r.kind in table.kinds)
+    resources = merge_reads(r for r in resources if r.kind in table.kinds)
     kind = table.kinds.__getitem__
 
     def prepared(r):
@@ -390,12 +390,29 @@ def _roles_for(files, spec, resources):
     return placed, tuple(f"{spec}/{n}" for n in notices)
 
 
-def per_file(parse_text):
-    """A folder parser from a one-file parser: parse_text(text) -> (resources, notices) applied to each file."""
+def read_together(file_pairs, pairs_resources):
+    """A folder parser reading every file as one environment: file_pairs(text) -> (pairs, notices) of each file (a
+    Terraform state's resource instances), all the pairs read at once by pairs_resources(pairs) -> (resources,
+    notices), so what one file holds links to what another does (a principal's grants in one root, its identity in
+    another; a flow log and the log group it delivers to)."""
     def parse(texts):
-        each = [parse_text(t) for _, t in sorted(texts.items())]
-        return tuple(r for rs, _ in each for r in rs), tuple(n for _, ns in each for n in ns)
+        each = [file_pairs(t) for _, t in sorted(texts.items())]
+        resources, notices = pairs_resources([p for pairs, _ in each for p in pairs])
+        return resources, (*notices, *(n for _, ns in each for n in ns))
     return parse
+
+
+def merge_reads(resources):
+    """The resources with each object read more than once (kind and ref: managed in one root and looked up in another,
+    listed twice) as one, in the order first read: each attribute, link and tag as first reported (a lookup reports
+    less), its name and role the first given."""
+    def merged(a, b):
+        return a._replace(attrs={**b.attrs, **a.attrs}, links={**b.links, **a.links}, name=a.name or b.name,
+                          role=a.role or b.role,
+                          tags=b.tags if a.tags is None else a.tags if b.tags is None else
+                          MappingProxyType({**b.tags, **a.tags}))
+    return tuple(reduce(lambda acc, r: {**acc, (r.kind, r.ref): merged(acc[(r.kind, r.ref)], r)
+                                        if (r.kind, r.ref) in acc else r}, resources, {}).values())
 
 
 def layout_import(files, d, provider, label, parse, suffix, what, example, summarize=()):

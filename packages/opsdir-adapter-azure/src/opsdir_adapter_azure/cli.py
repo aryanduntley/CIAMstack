@@ -50,6 +50,7 @@ from opsdir.core.contract import Importer
 from opsdir.core.inventory import layout_import
 from .cli_edge import edge_items
 from .cli_iam import iam_items
+from .cli_monitor import monitor_items
 from .cli_identity import CA_KIND, identity_items, is_policy
 from .cli_backup import backup_items
 from .cli_disk import disk_items, os_disk_of
@@ -358,7 +359,7 @@ def items_pairs(items):
                             *_records(items), *_nsgs(items), *_nats(items), *_vault_items(items), *_stores(items),
                             *_functions(items), *iam_items(items), *edge_items(items), *network_items(items),
                             *database_items(items), *storage_items(items), *disk_items(items), *backup_items(items),
-                            *audit_items(items), *identity_items(items)]))
+                            *audit_items(items), *identity_items(items), *monitor_items(items)]))
 
 
 def items_resources(items):

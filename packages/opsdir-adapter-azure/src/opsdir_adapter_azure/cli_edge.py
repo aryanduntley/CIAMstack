@@ -14,9 +14,19 @@ hashicorp/azurerm attribute names the shared mapping reads (opsdir_adapter_azure
     az network private-dns record-set list
   az dns-resolver forwarding-rule list           Microsoft.Network/dnsForwardingRulesets/forwardingRules
 """
-from .arm_ids import arm_segment
+from .arm_ids import arm_field, arm_segment
 
 RECORD_TYPES = ("A", "AAAA", "CNAME", "TXT", "MX", "SRV", "CAA", "NS")
+# what an ARM template's reader reads of these (A record sets: the main reader's, cli._records)
+READ = tuple(t.lower() for t in (
+    "Microsoft.Network/applicationGateways", "Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies",
+    "Microsoft.Network/frontdoorWebApplicationFirewallPolicies", "Microsoft.Cdn/profiles",
+    "Microsoft.Cdn/profiles/afdEndpoints", "Microsoft.Cdn/profiles/originGroups",
+    "Microsoft.Cdn/profiles/originGroups/origins", "Microsoft.Cdn/profiles/securityPolicies",
+    "Microsoft.Network/ddosProtectionPlans", "Microsoft.Network/trafficManagerProfiles", "Microsoft.Network/dnszones",
+    "Microsoft.Network/privateDnsZones", "Microsoft.Network/dnsForwardingRulesets/forwardingRules",
+    *(f"Microsoft.Network/{zones}/{t}" for zones in ("dnszones", "privateDnsZones") for t in RECORD_TYPES
+      if t != "A")))
 
 
 def _low(x):
@@ -136,22 +146,22 @@ def _record_values(item, record_type):
     """A record set's values in azurerm's names for its type."""
     t = record_type.lower()
     if t in ("a", "aaaa"):
-        return {"records": [a.get("ipv4Address") or a.get("ipv6Address")
-                            for a in item.get(f"{t}Records") or item.get(f"{record_type}Records") or ()]}
+        return {"records": [a.get("ipv4Address") or a.get("ipv6Address") for a in arm_field(item, f"{t}Records") or ()]}
     if t == "cname":
-        return {"record": (item.get("cnameRecord") or item.get("CNAMERecord") or {}).get("cname")}
+        return {"record": (arm_field(item, "cnameRecord") or {}).get("cname")}
     if t == "ns":
-        return {"records": [n.get("nsdname") for n in item.get("nsRecords") or ()]}
+        return {"records": [n.get("nsdname") for n in arm_field(item, "nsRecords") or ()]}
     if t == "txt":
-        return {"record": [{"value": "".join(r.get("value") or ())} for r in item.get("txtRecords") or ()]}
+        return {"record": [{"value": "".join(r["value"])} for r in arm_field(item, "txtRecords") or ()
+                           if r.get("value") and all(isinstance(v, str) for v in r["value"])]}   # unknown: left out
     if t == "mx":
         return {"record": [{"preference": r.get("preference"), "exchange": r.get("exchange")}
-                           for r in item.get("mxRecords") or ()]}
+                           for r in arm_field(item, "mxRecords") or ()]}
     if t == "srv":
         return {"record": [{k: r.get(k) for k in ("priority", "weight", "port", "target")}
-                           for r in item.get("srvRecords") or ()]}
+                           for r in arm_field(item, "srvRecords") or ()]}
     return {"record": [{"flags": r.get("flags"), "tag": r.get("tag"), "value": r.get("value")}
-                       for r in item.get("caaRecords") or ()]}
+                       for r in arm_field(item, "caaRecords") or ()]}
 
 
 def _dns(items):

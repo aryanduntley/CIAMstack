@@ -10,6 +10,8 @@ Terraform state. Pure. Items are recognized by their ARM type (opsdir_adapter_az
                                                 built-in ones name the roles PIM assignments use by ID)
   az rest …/roleEligibilityScheduleInstances    Microsoft.Authorization/roleEligibilityScheduleInstances (PIM
                                                 eligible, not active; the role's name from expandedProperties)
+  an ARM template's eligibility requests        Microsoft.Authorization/roleEligibilityScheduleRequests (AdminAssign:
+                                                what the template makes eligible)
   az rest …/denyAssignments                     Microsoft.Authorization/denyAssignments: denials on the principals they
                                                 name (everyone, 00000000-…, less the excluded ones)
   az keyvault show                              Microsoft.KeyVault/vaults: the vault's access policies
@@ -20,7 +22,19 @@ Terraform state. Pure. Items are recognized by their ARM type (opsdir_adapter_az
 import re
 
 FEDERATED = "microsoft.managedidentity/userassignedidentities/federatedidentitycredentials"
+# what an ARM template's reader reads of these
+ELIGIBLE = ("microsoft.authorization/roleeligibilityscheduleinstances",
+            "microsoft.authorization/roleeligibilityschedulerequests")
+READ = ("microsoft.managedidentity/userassignedidentities", FEDERATED, "microsoft.authorization/roleassignments",
+        "microsoft.authorization/roledefinitions", "microsoft.authorization/policyassignments",
+        "microsoft.network/bastionhosts", ELIGIBLE[1])
 _CREDENTIAL = re.compile(r"/federatedidentitycredentials/[^/]+$", re.IGNORECASE)
+
+
+def _assigned_at(assignment_id):
+    """The scope a policy assignment's ID puts it at (an ARM template's says no scope)."""
+    at = (assignment_id or "").lower().find("/providers/microsoft.authorization/policyassignments/")
+    return assignment_id[:at] if at > 0 else None
 
 
 def _props(item):
@@ -81,7 +95,8 @@ def iam_items(items):
                                                     "principal_id": p.get("principalId"),
                                                     "principal_type": p.get("principalType"),
                                                     "condition": p.get("condition")})
-          for p in _of(items, "microsoft.authorization/roleeligibilityscheduleinstances")),
+          for kind in ELIGIBLE for p in _of(items, kind)
+          if str(p.get("requestType") or "AdminAssign").lower() == "adminassign"),
         *(("azure_deny_assignment", {"id": d.get("id"), "name": d.get("denyAssignmentName") or d.get("name"),
                                      "scope": d.get("scope"), "permissions": _permissions(d.get("permissions")),
                                      "principals": [p.get("id") for p in d.get("principals") or ()],
@@ -89,7 +104,8 @@ def iam_items(items):
           for d in _of(items, "microsoft.authorization/denyassignments")),
         *_vault_policies(items),
         *(("azurerm_policy_assignment", {"id": a.get("id"), "name": a.get("name"),
-                                         "policy_definition_id": a.get("policyDefinitionId"), "scope": a.get("scope")})
+                                         "policy_definition_id": a.get("policyDefinitionId"),
+                                         "scope": a.get("scope") or _assigned_at(a.get("id"))})
           for a in _of(items, "microsoft.authorization/policyassignments")),
         *(("azurerm_bastion_host", {"id": b.get("id"), "name": b.get("name"), "tags": b.get("tags") or {}})
           for b in _of(items, "microsoft.network/bastionhosts"))]

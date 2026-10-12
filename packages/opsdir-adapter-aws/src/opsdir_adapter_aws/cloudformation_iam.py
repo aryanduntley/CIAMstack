@@ -14,6 +14,8 @@ one); policy documents become JSON text, as a Terraform state holds them. Pure.
 """
 import json
 
+from .cloudformation_values import tag_map
+
 IAM_TYPES = ("AWS::IAM::Role", "AWS::IAM::OIDCProvider", "AWS::IAM::ManagedPolicy", "AWS::IAM::Policy",
              "AWS::IAM::RolePolicy", "AWS::Organizations::Policy", "AWS::SSO::PermissionSet", "AWS::SSO::Assignment")
 
@@ -22,10 +24,6 @@ def _text(document):
     """A policy document as JSON text (as a state holds it): a resolved Fn::Sub's text as it is, an object as JSON;
     None when it didn't resolve."""
     return document if isinstance(document, str) else json.dumps(document) if isinstance(document, dict) else None
-
-
-def _tags(tags):
-    return {t.get("Key"): t.get("Value") for t in tags or () if isinstance(t, dict) and t.get("Key")}
 
 
 def _of(declared, type_):
@@ -39,7 +37,7 @@ def _roles(declared, names):
         "inline_policy": [{"name": x.get("PolicyName"), "policy": _text(x.get("PolicyDocument"))}
                           for x in p.get("Policies") or () if isinstance(x, dict)],
         "managed_policy_arns": list(p.get("ManagedPolicyArns") or ()),
-        "permissions_boundary": p.get("PermissionsBoundary"), "tags": _tags(p.get("Tags"))})
+        "permissions_boundary": p.get("PermissionsBoundary"), "tags": tag_map(p.get("Tags"))})
         for lid, p, pid in _of(declared, "AWS::IAM::Role")]
 
 
@@ -47,7 +45,7 @@ def _oidc_providers(declared):
     return [("aws_iam_openid_connect_provider", {"arn": pid, "url": p.get("Url"),
                                                  "client_id_list": list(p.get("ClientIdList") or ()),
                                                  "thumbprint_list": list(p.get("ThumbprintList") or ()),
-                                                 "tags": _tags(p.get("Tags"))})
+                                                 "tags": tag_map(p.get("Tags"))})
             for _, p, pid in _of(declared, "AWS::IAM::OIDCProvider")]
 
 
@@ -70,14 +68,14 @@ def _guardrails(declared):
     return [("aws_organizations_policy", {
         "id": str(pid).rsplit("/", 1)[-1], "arn": pid if str(pid).startswith("arn:") else None,
         "name": p.get("Name"), "type": p.get("Type"), "content": _text(p.get("Content")),
-        "tags": _tags(p.get("Tags"))}) for _, p, pid in _of(declared, "AWS::Organizations::Policy")]
+        "tags": tag_map(p.get("Tags"))}) for _, p, pid in _of(declared, "AWS::Organizations::Policy")]
 
 
 def _identity_center(declared, names):
     sets = _of(declared, "AWS::SSO::PermissionSet")
     return [*(("aws_ssoadmin_permission_set", {"arn": names.get(f"{lid}.PermissionSetArn") or pid,
                                                "name": p.get("Name"), "instance_arn": p.get("InstanceArn"),
-                                               "tags": _tags(p.get("Tags"))}) for lid, p, pid in sets),
+                                               "tags": tag_map(p.get("Tags"))}) for lid, p, pid in sets),
             *(("aws_ssoadmin_permission_set_inline_policy", {
                 "permission_set_arn": names.get(f"{lid}.PermissionSetArn") or pid,
                 "inline_policy": _text(p.get("InlinePolicy"))}) for lid, p, pid in sets if p.get("InlinePolicy")),

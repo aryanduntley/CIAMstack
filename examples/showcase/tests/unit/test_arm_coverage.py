@@ -10,12 +10,16 @@ import pytest
 from opsdir.connectors.registry import ADAPTERS, environment_specs, services
 from opsdir.connectors.render import render_parts
 from opsdir_adapter_azure.arm_render import UNPLACED
-from opsdir_adapter_azure.arm_types import DATA, KEPT, NO_NATIVE, TYPES, arm_translation
+from opsdir_adapter_azure.arm import arm_resources
+from opsdir_adapter_azure.arm_types import DATA, KEPT, NO_NATIVE, TYPES, arm_files, arm_translation
+from opsdir_adapter_azure.inventory import pairs_resources, state_pairs
+from opsdir_adapter_azure.rendered_state import rendered_deployments, rendered_states
 from opsdir_adapter_azure.terraform import WHAT, render_files
 from opsdir_format_arm.template import ResourceId
 from opsdir_format_terraform.hcl import TfBlock
 from opsdir_format_terraform.translate import address, root_items, roots
 import azure_sample
+from native_parity import Native, differences
 
 REGIONS = ("eastus2", "usgovvirginia")
 # data sources that are checks (lifecycle conditions): the Terraform root beside the templates keeps them
@@ -115,3 +119,32 @@ def test_a_web_test_is_tied_to_its_component_and_long_txt_values_are_split(sampl
         assert [len(x) for x in value] == [255, 47] and "".join(value) == "v=" + "x" * 300
         profile = _resources(dns, "Microsoft.Network/trafficmanagerprofiles")[0]
         assert profile.fields["location"] == "global"
+
+
+# The Bicep/ARM read-back against the Terraform one (native_parity): only Terraform reads the security services,
+# Defender's sensitive data discovery (a plan extension) and budgets (their ARM reader is milestone 5.6b); a managed
+# identity's client id is Azure's at deployment, which no template holds
+ARM = Native("arm/", lambda m, files: arm_files(m, files, WHAT, ("arm",)), rendered_deployments, arm_resources,
+             rendered_states, state_pairs, pairs_resources, frozenset({"security", "budget", "discovery"}),
+             frozenset({"ciamIdentityClientId"}))
+
+
+def test_the_native_read_back_reads_what_the_terraform_one_does(sample):
+    """Every environment of the sample, in both clouds, reads back the same resources both ways
+    (native_parity.differences): DNS records of every type, Front Door, managed identities and their grants, PIM,
+    MySQL, flow logs, the suppression and the availability test included."""
+    for region, renders in sample.items():
+        for name, m, files, _ in renders:
+            assert differences(ARM, m, files, "alpha/prod") == (set(), set(), {}), (region, name)
+
+
+def test_the_showcases_native_read_back_reads_what_the_terraform_one_does(estate):
+    """So does every Azure environment of the showcase, before and after the approved changes."""
+    found, checked = services(ADAPTERS), []
+    for state, d in estate.items():
+        for spec in environment_specs(d):
+            m, adapters = render_parts(d, spec)[:2]
+            if any(a.name == "azure" for a in adapters):
+                assert differences(ARM, m, render_files(m, found), spec) == (set(), set(), {}), (state, spec)
+                checked.append(spec)
+    assert checked

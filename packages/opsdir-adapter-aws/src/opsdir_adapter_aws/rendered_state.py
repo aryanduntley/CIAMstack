@@ -110,7 +110,9 @@ PHYSICAL_NAMES = MappingProxyType({
     "AWS::S3::Bucket": "BucketName", "AWS::IAM::Role": "RoleName", "AWS::RDS::DBInstance": "DBInstanceIdentifier",
     "AWS::RDS::DBCluster": "DBClusterIdentifier", "AWS::RDS::DBSubnetGroup": "DBSubnetGroupName",
     "AWS::RDS::DBParameterGroup": "DBParameterGroupName",
-    "AWS::RDS::DBClusterParameterGroup": "DBClusterParameterGroupName", "AWS::Logs::LogGroup": "LogGroupName"})
+    "AWS::RDS::DBClusterParameterGroup": "DBClusterParameterGroupName", "AWS::Logs::LogGroup": "LogGroupName",
+    "AWS::Backup::BackupVault": "BackupVaultName", "AWS::CloudWatch::Alarm": "AlarmName",
+    "AWS::Synthetics::Canary": "Name"})
 # Physical ids made from the template's properties (an OIDC provider's ARN names its issuer), as aws_assigned makes
 # the ARN of the Terraform type it came from: (properties, partition, account) -> the physical id
 PHYSICAL_MADE = MappingProxyType({

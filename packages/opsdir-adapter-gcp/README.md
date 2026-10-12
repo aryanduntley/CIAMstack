@@ -170,7 +170,7 @@ opsdir import --dry-run gcp/terraform-state export/                        # wha
 opsdir import --change CHG-… gcp/terraform-state export/                   # record it
 ```
 
-The importer `gcp/terraform-state` reads Terraform state (format version 4, `hashicorp/google`; managed resources and data sources) into the environment's servers and bindings. Environments are chosen by the folder layout, `<cloud>/<env>/`; an environment whose cloud isn't Google Cloud, and a state outside the layout, are named, not imported. Resource names (`projects/<p>/…`) are the provider references; self links are read as the names they end with.
+The importer `gcp/terraform-state` reads Terraform state (format version 4, `hashicorp/google`; managed resources and data sources) into the environment's servers and bindings. Environments are chosen by the folder layout, `<cloud>/<env>/`; an environment whose cloud isn't Google Cloud, and a state outside the layout, are named, not imported. An environment's states are read together, as one import (each root's resources link to the others': a principal's grants in one root and its identity in another), and an object read twice (managed in one root, looked up in another) is placed once, each attribute as reported. Resource names (`projects/<p>/…`) are the provider references; self links are read as the names they end with.
 
 | Google Cloud resource | Record entry | Matched by |
 |---|---|---|

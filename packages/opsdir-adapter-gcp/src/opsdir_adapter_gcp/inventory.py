@@ -62,7 +62,7 @@ from opsdir.core.contract import Importer
 from opsdir_adapter_gcp.edge_inventory import (FORWARDING, backend_of, dns_resources, edge_services, ref_key,
                                                proxy_subnets, service_dns, service_facts)
 from opsdir_adapter_gcp.health_checks import is_probe_rule
-from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, layout_import, of_types, per_file,
+from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, layout_import, of_types, read_together,
                                    realization_roles, resource, tagged_role)
 from opsdir_format_terraform.state import blocks, first_block, read_state
 from .audit import trail_resources
@@ -436,24 +436,32 @@ def pairs_resources(pairs):
              *workload_notices(pairs)))
 
 
-def state_resources(text):
-    """(resources, notices) of a Google Cloud Terraform state."""
+def state_pairs(text):
+    """((Terraform resource type, attributes) pairs, notices) of a Google Cloud Terraform state: its resource
+    instances, the secret-bearing and unmodeled types named (pairs_resources doesn't read them)."""
     found, problem = read_state(text)
     if problem:
         return (), (problem,)
-    pairs = [(r.type, r.attributes) for r in found]
+    pairs = tuple((r.type, r.attributes) for r in found)
     skipped = Counter(t for t, _ in pairs if t in SKIPPED)
-    resources, notices = pairs_resources(pairs)
-    return (resources, (*notices, *(f"{t} ({n}): not read (holds secret values, or isn't modeled yet)"
-                                    for t, n in sorted(skipped.items()))))
+    return pairs, tuple(f"{t} ({n}): not read (holds secret values, or isn't modeled yet)"
+                        for t, n in sorted(skipped.items()))
+
+
+def state_resources(text):
+    """(resources, notices) of a Google Cloud Terraform state."""
+    pairs, skipped = state_pairs(text)
+    resources, notices = pairs_resources(list(pairs))
+    return resources, (*notices, *skipped)
 
 
 # ------------------------------------------------------------------ the importer
 def read_terraform_state(files, d, patterns, at=None):
     """Imported: each environment's servers and bindings from the Google Cloud Terraform states under
-    <cloud>/<env>/."""
-    return layout_import(files, d, PROVIDER, "Google Cloud", per_file(state_resources), ".tfstate", "Terraform state",
-                         "terraform.tfstate", summarize=("identity",))   # groups, users, service agents: counted
+    <cloud>/<env>/, read together (one root's resources link to another's)."""
+    return layout_import(files, d, PROVIDER, "Google Cloud", read_together(state_pairs, pairs_resources), ".tfstate",
+                         "Terraform state", "terraform.tfstate",
+                         summarize=("identity",))   # groups, users, service agents: counted
 
 
 TERRAFORM_STATE = Importer("terraform-state", "Google Cloud Terraform state (terraform.tfstate) under <cloud>/<env>/, "

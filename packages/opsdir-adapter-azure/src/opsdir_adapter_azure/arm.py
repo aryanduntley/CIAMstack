@@ -10,6 +10,7 @@ deployment), holding any of, recognized by shape:
   az deployment group show -g RG -n NAME        the deployment: its subscription and resource group (from its ID), the
                                                 parameter values it ran with, the resources it produced
   a parameters file                             $schema …deploymentParameters.json: parameter values
+  az group show -n RG                           the resource group: its location (resourceGroup().location)
 
 and, anywhere in the environment's folder, the Terraform state of a root kept beside the deployments (*.tfstate: what
 an opsdir Bicep/ARM render keeps in Terraform, applied), read with them by the state reader's mapping, so one import
@@ -17,16 +18,23 @@ sees the whole environment.
 
 A template's expressions are evaluated where they depend only on what the deployment knows: parameters (the
 deployment's, else a parameters file's, else the template's defaults; secure parameters never), variables, concat,
-format, resourceId (and the subscription, tenant and extension resource ids), subscription(), resourceGroup(), equals,
-if, toLower, toUpper, string, replace, split, first,
-last. Anything else (reference, listKeys, uniqueString, copyIndex, …) is counted, and the record keeps its value for
-what it computes. Each resource (nested child resources included, `existing` references and conditions that evaluate
-false excluded, and, when the deployment is given, only those it produced) is given its ARM ID and flattened into the
-shape the Azure CLI prints (properties merged into the resource, sub-resources given their IDs), so the CLI reader
-maps it (opsdir_adapter_azure.cli.items_resources). A Key Vault secret's value is dropped before anything evaluates it.
+format, resourceId (and the subscription, tenant and extension resource ids), subscription(), resourceGroup() (its
+location when the group's `az group show` is given), equals, if, toLower, toUpper, string, replace, split, first, last,
+and guid (a stable stand-in of its arguments, not ARM's own GUID: the names it makes, a role assignment's, are never
+what the record matches on). reference() of a user-assigned identity gives only its principal, as the symbol
+principal:<its ID>, which the identity's own principal is when the template doesn't say it: a grant joins its
+user-assigned identity within the deployment (a system-assigned identity's principal stays unknown). Anything else (the
+rest of reference, listKeys, uniqueString, copyIndex, …) is counted, and the record keeps its value for what it
+computes. Built-in roles are named from the adapter's table of them (arm_types.ROLES), as the Terraform render looks
+them up. Each resource (nested child resources included, `existing` references and conditions that evaluate false
+excluded, and, when the deployment is given, only those it produced) is given its ARM ID where the deployment puts it
+(a resource group's, the subscription's or the tenant's) and flattened into the shape the Azure CLI prints (properties
+merged into the resource, sub-resources given their IDs), so the CLI reader maps it
+(opsdir_adapter_azure.cli.items_resources). A Key Vault secret's value is dropped before anything evaluates it.
 """
 import json
 import re
+import uuid
 from collections import Counter
 
 from opsdir.core.contract import Importer
@@ -37,14 +45,18 @@ from .inventory import PROVIDER, pairs_resources, state_pairs
 from .cli_backup import READ as BACKUP_TYPES
 from .cli_database import READ as DATABASE_TYPES
 from .cli_disk import READ as DISK_TYPES
+from .cli_edge import READ as EDGE_TYPES
+from .cli_iam import READ as IAM_TYPES
+from .cli_monitor import READ as MONITOR_TYPES
 from .cli_storage import READ as STORAGE_TYPES
 from .audit import READ as AUDIT_TYPES
 from .cli_network import TYPES as NETWORK_TYPES
 from .arm_ids import arm_segment
+from .arm_types import ROLES
 
 EVALUATED = ("parameters", "variables", "concat", "format", "resourceId", "subscriptionResourceId", "tenantResourceId",
              "extensionResourceId", "subscription", "resourceGroup", "equals", "if", "toLower", "toUpper", "string",
-             "replace", "split", "first", "last")
+             "replace", "split", "first", "last", "guid")
 ACCOUNT_WIDE = ("secret", "key", "storage", "job")
 READ_TYPES = ("microsoft.network/virtualnetworks", "microsoft.network/virtualnetworks/subnets",
               "microsoft.compute/virtualmachines", "microsoft.network/networkinterfaces",
@@ -56,14 +68,19 @@ READ_TYPES = ("microsoft.network/virtualnetworks", "microsoft.network/virtualnet
               "microsoft.storage/storageaccounts/blobservices/containers", "microsoft.keyvault/vaults/secrets",
               "microsoft.keyvault/vaults/keys", "microsoft.web/sites", "microsoft.web/sites/functions",
               *(t.lower() for t in NETWORK_TYPES), *DATABASE_TYPES, *STORAGE_TYPES, *DISK_TYPES,
-              *BACKUP_TYPES, *AUDIT_TYPES)
+              *BACKUP_TYPES, *AUDIT_TYPES, *EDGE_TYPES, *IAM_TYPES,
+              *MONITOR_TYPES)
 PLACEHOLDER = ("unknown-subscription", "unknown-group")   # IDs without a deployment: links within it still resolve
 SUB_RESOURCES = ("subnets", "ipConfigurations", "frontendIPConfigurations", "backendAddressPools",
                  "loadBalancingRules", "probes", "securityRules", "routes", "privateLinkServiceConnections",
-                 "manualPrivateLinkServiceConnections", "privateDnsZoneConfigs")
+                 "manualPrivateLinkServiceConnections", "privateDnsZoneConfigs", "frontendPorts",
+                 "backendHttpSettingsCollection", "httpListeners", "requestRoutingRules", "sslCertificates",
+                 "gatewayIPConfigurations")
 _UNKNOWN = ("<unknown>",)          # what an expression is when it depends on something the deployment doesn't know
 _TOKEN = re.compile(r"\s*(?:(\d+)|'((?:[^']|'')*)'|([A-Za-z_][A-Za-z0-9_]*)|(\S))")
 _CALL = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)\s*\(")
+_GUIDS = uuid.UUID("2d1f6c0a-6b1e-4a43-9d2e-7c3f1b5a8e90")      # guid()'s stand-in namespace
+IDENTITIES = "microsoft.managedidentity/userassignedidentities"
 
 
 # ------------------------------------------------------------------ expressions
@@ -88,13 +105,19 @@ def _call(name, args, ctx):
         return re.sub(r"\{(\d+)(?::[^}]*)?\}", lambda m: str(args[1 + int(m.group(1))]), args[0])
     if name == "resourceId":
         return _resource_id(args, ctx)
+    if name == "guid":
+        return str(uuid.uuid5(_GUIDS, "-".join(str(a) for a in args)))
+    if name == "reference":
+        return {"principalId": f"principal:{args[0]}"} \
+            if isinstance(args[0], str) and f"/providers/{IDENTITIES}/" in args[0].lower() else _UNKNOWN
     if name in ("subscriptionResourceId", "tenantResourceId", "extensionResourceId"):
         return _scoped_id(name, args, ctx)
     if name == "subscription":
         return {"subscriptionId": ctx["subscription"], "id": f"/subscriptions/{ctx['subscription']}"} \
             if ctx["subscription"] else _UNKNOWN
     if name == "resourceGroup":
-        return {"name": ctx["group"], "id": f"/subscriptions/{ctx['subscription']}/resourceGroups/{ctx['group']}"} \
+        return {"name": ctx["group"], "id": f"/subscriptions/{ctx['subscription']}/resourceGroups/{ctx['group']}",
+                **({"location": ctx["location"]} if ctx.get("location") else {})} \
             if ctx["group"] and ctx["subscription"] else _UNKNOWN
     simple = {"equals": lambda a: a[0] == a[1], "toLower": lambda a: str(a[0]).lower(),
               "toUpper": lambda a: str(a[0]).upper(),
@@ -222,6 +245,14 @@ def arm_id(subscription, group, type_, names):
         "/".join(f"{t}/{n}" for t, n in zip(types, names))
 
 
+def _id_in(ctx, type_, names):
+    """A resource's ARM ID where the deployment puts it: under its resource group; at its subscription, or the tenant,
+    for a deployment there; under placeholders without a deployment (links within it still resolve)."""
+    if ctx.get("scope") is not None and not ctx["group"]:
+        return f"{ctx['scope']}/{_provider_path(type_, names)}"
+    return arm_id(ctx["subscription"] or PLACEHOLDER[0], ctx["group"] or PLACEHOLDER[1], type_, names)
+
+
 def _top(template):
     """The template's top-level resources as a list (symbolic-name templates hold them in an object)."""
     given = template.get("resources") or []
@@ -253,6 +284,12 @@ def _flatten(item, rid):
                 if k in SUB_RESOURCES and isinstance(v, list) else v) for k, v in merged.items()}
 
 
+def _principal(item):
+    """A managed identity with the principal the template doesn't say as reference() gives it (principal:<its ID>)."""
+    return {**item, "principalId": item.get("principalId") or f"principal:{item['id']}"} \
+        if str(item.get("type", "")).lower() == IDENTITIES else item
+
+
 def _vault_item(r, rid):
     """Key Vault secrets and keys as the CLI's data-plane objects: name and tags only for a secret (never its value)."""
     vault, name = r["name"].split("/")[0], r["name"].split("/")[-1]
@@ -273,13 +310,12 @@ def _items(template, ctx, produced):
              for x in _expand(_known(evaluate(_without_secret_values(r), ctx)))]
     kept = [r for r in found if r.get("condition", True) is not False and isinstance(r.get("name"), str)
             and isinstance(r.get("type"), str) and "None" not in r["name"].split("/")]
-    here = (ctx["subscription"] or PLACEHOLDER[0], ctx["group"] or PLACEHOLDER[1])
-    ids = [(r, arm_id(*here, r["type"], r["name"].split("/"))) for r in kept]
+    ids = [(r, _id_in(ctx, r["type"], r["name"].split("/"))) for r in kept]
     live = [(r, rid) for r, rid in ids if produced is None or rid.lower() in produced]
     read = [(r, rid) for r, rid in live if r["type"].lower() in READ_TYPES
             and (ctx["subscription"] or r["type"].lower() != "microsoft.compute/diskencryptionsets")]
     items = [i for r, rid in read for i in (_vault_item(r, rid) if r["type"].lower().startswith("microsoft.keyvault/")
-                                            else [{**_flatten(r, rid), "name": r["name"].split("/")[-1]}])]
+                                            else [_principal({**_flatten(r, rid), "name": r["name"].split("/")[-1]})])]
     return ([(kind_of(i), i) for i in items if kind_of(i)], len(found) - len(kept), len(ids) - len(live),
             Counter(r["type"] for r, _ in live if r["type"].lower() not in READ_TYPES))
 
@@ -297,6 +333,8 @@ def _documents(texts):
             return "template"
         if "/deployments/" in str(doc.get("id", "")).lower() and isinstance(doc.get("properties"), dict):
             return "deployment"
+        if str(doc.get("type", "")).lower() == "microsoft.resources/resourcegroups":
+            return "group"
         return None
     found = [(p.rsplit("/", 1)[0] if "/" in p else "", p, json_document(t)) for p, t in sorted(texts.items())]
     typed = [(f, p, kind(doc), doc) for f, p, doc in found]
@@ -316,11 +354,22 @@ def _context(folder):
                                                                   or {}).items()},
              **{k: (v or {}).get("value", _UNKNOWN) for k, v in
                 ((deployment.get("properties") or {}).get("parameters") or {}).items()}}
+    at = rid.lower().find("/providers/microsoft.resources/deployments/")
     base = {"subscription": arm_segment(rid, "subscriptions"), "group": arm_segment(rid, "resourceGroups"),
+            "scope": rid[:at] if at >= 0 else None,
+            "location": (folder.get("group") or {}).get("location"),
             "variables": template.get("variables") or {}, "parameters": {}}
     defaults = {k: evaluate((v or {}).get("defaultValue", _UNKNOWN), base) for k, v in declared.items()}
     return {**base, "parameters": {k: _UNKNOWN if k in secure else given.get(k, defaults.get(k, _UNKNOWN))
                                    for k in {*declared, *given}}}
+
+
+def deployment_outputs(folder):
+    """{output name: value} of a deployment folder's template outputs that evaluate (what a deployer passes on)."""
+    ctx = _context(folder)
+    values = {k: _known(evaluate((o or {}).get("value"), ctx)) for k, o in (folder["template"].get("outputs")
+                                                                           or {}).items()}
+    return {k: v for k, v in values.items() if v is not None}
 
 
 def deployment_items(folder, label):
@@ -350,7 +399,9 @@ def arm_resources(texts):
     states = tuple(state_pairs(t) for p, t in sorted(texts.items()) if p.endswith(".tfstate"))
     read = [deployment_items(docs, f or ".") for f, docs in folders.items() if docs.get("template")]
     item_pairs, scope_notices = items_pairs([i for items, _ in read for i in items])
-    resources, notices = pairs_resources([*item_pairs, *(p for pairs, _ in states for p in pairs)])
+    roles = [("azurerm_role_definition", {"id": f"/providers/Microsoft.Authorization/roleDefinitions/{g}",
+                                          "role_definition_id": g, "name": n}) for n, g in ROLES.items()]
+    resources, notices = pairs_resources([*item_pairs, *roles, *(p for pairs, _ in states for p in pairs)])
     return resources, (*unknown, *(f"{f or '.'}: no template (the template file, `az bicep build` output, or "
                                    f"`az deployment group export`); not read"
                                    for f, docs in folders.items() if not docs.get("template")),

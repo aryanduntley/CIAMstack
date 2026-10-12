@@ -68,7 +68,7 @@ named in the notices.
 from collections import Counter
 
 from opsdir.core.contract import Importer
-from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, layout_import, of_types, per_file,
+from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, layout_import, of_types, read_together,
                                    realization_roles, resource, tagged_role)
 from opsdir.core.sources import json_document
 from opsdir.domains.messaging.dns import dmarc_policy, spf_authorizes
@@ -191,8 +191,10 @@ def answer_record(found, ip, pip_id):
 
 
 def _frontend_of(fe, pips):
-    """(address, public IP) of a frontend IP configuration."""
-    pip = pips.get(_low(fe.get("public_ip_address_id")))
+    """(address, public IP) of a frontend IP configuration; a public IP not read (a lookup an ARM template names by
+    its ID) is known by its ID and the name in it."""
+    given = fe.get("public_ip_address_id")
+    pip = pips.get(_low(given)) or ({"id": given, "name": given.rstrip("/").rsplit("/", 1)[-1]} if given else None)
     return (fe.get("private_ip_address") if not fe.get("public_ip_address_id") else (pip or {}).get("ip_address")), pip
 
 
@@ -597,9 +599,11 @@ def state_resources(text):
 
 
 def read_terraform_state(files, d, patterns, at=None):
-    """Imported: each environment's servers and bindings from the Azure Terraform states under <cloud>/<env>/."""
-    return layout_import(files, d, PROVIDER, "Azure", per_file(state_resources), ".tfstate", "Terraform state",
-                         "terraform.tfstate", summarize=("identity",))   # groups, users, service agents: counted
+    """Imported: each environment's servers and bindings from the Azure Terraform states under <cloud>/<env>/,
+    read together (one root's resources link to another's)."""
+    return layout_import(files, d, PROVIDER, "Azure", read_together(state_pairs, pairs_resources), ".tfstate",
+                         "Terraform state", "terraform.tfstate",
+                         summarize=("identity",))   # groups, users, service agents: counted
 
 
 TERRAFORM_STATE = Importer("terraform-state", "Azure Terraform state (terraform.tfstate) under <cloud>/<env>/, as "

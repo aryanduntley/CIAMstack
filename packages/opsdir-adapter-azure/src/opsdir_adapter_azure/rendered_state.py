@@ -15,8 +15,9 @@ render was made from:
 
 A Bicep/ARM render (5.6c, decision 2629) reads back through azure/arm from its ARM JSON (arm/; the .bicep is the same
 deployment): each template becomes a deployment folder as the CLI saves one (rendered_deployments): the template and
-`az deployment group show` (the record's subscription, the template's resource group, its parameters' defaults);
-ARM ids come from names, so nothing else is assigned. The Terraform root kept beside the templates becomes its state.
+`az deployment group show` (the record's subscription, the template's resource group, its parameters' defaults) and
+`az group show` (the group in the environment's region); ARM ids come from names, so nothing else is assigned. The
+Terraform root kept beside the templates becomes its state, its inputs the templates' outputs that name them.
 """
 import json
 import posixpath
@@ -25,8 +26,11 @@ from types import MappingProxyType
 
 from opsdir.core.directory import one
 from opsdir.core.environment import env_dn, env_model
+from opsdir_format_terraform.native import side_inputs
 from opsdir_format_terraform.realized import realized
 from opsdir_format_terraform.state_builder import root_states, synthetic
+from .arm import deployment_outputs
+from .plumbing import WATCHER
 from .purview import START
 from .resource_providers import namespace_of
 
@@ -128,7 +132,11 @@ def azure_assigned(m, blocks):
     answers = {"azurerm_resource_group": lambda configured: {"location": region},
                "azurerm_subscription": lambda configured: {"id": f"/subscriptions/{subscription}",
                                                            "subscription_id": subscription,
-                                                           "tenant_id": guid("tenant", subscription)}}
+                                                           "tenant_id": guid("tenant", subscription)},
+               # a key's ARM id without its version (what a role assignment on the key is scoped to)
+               "azurerm_key_vault_key": lambda configured: {
+                   "resource_versionless_id": f"{configured['key_vault_id']}/keys/{configured.get('name')}"}
+               if configured.get("key_vault_id") else {}}
 
     def assigned(mode, type_, name, index, configured):
         made = {"id": resource_id(type_, name, index, configured, subscription)}
@@ -145,8 +153,10 @@ def azure_assigned(m, blocks):
 
 
 # Inputs an operator gives at apply that what is read back depends on: a synthetic value each (the Purview triggers'
-# first run, without which their recurrence isn't in the state)
-INPUTS = MappingProxyType({START: "2026-01-01T02:00:00Z"})
+# first run, without which their recurrence isn't in the state; the region's Network Watcher the flow logs are under,
+# in the group Azure makes for it); a Bicep/ARM render takes them as parameters, the watcher's group as its template
+INPUTS = MappingProxyType({START: "2026-01-01T02:00:00Z", WATCHER[0]: "NetworkWatcher_read_back",
+                           WATCHER[1]: "NetworkWatcherRG"})
 
 
 # The templates a Bicep/ARM render writes at the subscription and tenant scopes (template_name); the others are
@@ -154,19 +164,25 @@ INPUTS = MappingProxyType({START: "2026-01-01T02:00:00Z"})
 SCOPES = ("subscription", "tenant")
 
 
-def _deployment_folder(path, text, subscription):
-    """{path: text} of one rendered ARM template as the deployment folder the CLI saves: the template and the
-    deployment (its scope's id, the parameters' defaults; secure ones never)."""
+def _deployment_folder(path, text, subscription, region):
+    """(folder, {document kind: document}) of one rendered ARM template as the deployment folder the CLI saves: the
+    template, the deployment (its scope's id, the parameters' defaults; secure ones never) and, for a resource group's,
+    the group (in the region)."""
     doc = json.loads(text)
     stem = posixpath.basename(path)[:-len(".json")]
-    scope = f"/subscriptions/{subscription}" + ("" if stem in SCOPES else f"/resourceGroups/{stem}")
-    parameters = {k: {"value": p["defaultValue"]} for k, p in (doc.get("parameters") or {}).items()
-                  if isinstance(p, dict) and "defaultValue" in p and not str(p.get("type", "")).lower().startswith(
-                      "secure")}
+    name = INPUTS.get(stem, stem)                   # a template named after an input group: the group the input names
+    group = f"/subscriptions/{subscription}/resourceGroups/{name}"
+    scope = f"/subscriptions/{subscription}" if stem in SCOPES else group
+    declared = {k: p for k, p in (doc.get("parameters") or {}).items()
+                if isinstance(p, dict) and not str(p.get("type", "")).lower().startswith("secure")}
+    parameters = {**{k: {"value": INPUTS[k]} for k in declared if k in INPUTS},
+                  **{k: {"value": p["defaultValue"]} for k, p in declared.items() if "defaultValue" in p}}
     deployment = {"id": f"{scope}/providers/Microsoft.Resources/deployments/{stem}", "name": stem,
                   "properties": {"provisioningState": "Succeeded", "parameters": parameters}}
-    folder = f"{posixpath.dirname(path)}/{stem}"
-    return {f"{folder}/template.json": text, f"{folder}/deployment.json": json.dumps(deployment)}
+    return f"{posixpath.dirname(path)}/{stem}", {
+        "template": doc, "deployment": deployment,
+        **({} if stem in SCOPES else {"group": {"id": group, "name": name, "type": "Microsoft.Resources/resourceGroups",
+                                                "location": region}})}
 
 
 def rendered_deployments(files, d, environment):
@@ -176,12 +192,15 @@ def rendered_deployments(files, d, environment):
     m = env_model(d, env_dn(environment))
     subscription = one(m.cloud, "ciamAccountRef") or "00000000-0000-0000-0000-000000000000"
     roots = {p.rsplit("/", 1)[0] for p in files if p.endswith("/placements.json")}
-    deployments = {k: v for p in sorted(files) if p.endswith(".json") and not p.endswith("/placements.json")
-                   and posixpath.dirname(p) in roots
-                   for k, v in _deployment_folder(p, files[p], subscription).items()}
+    folders = [_deployment_folder(p, files[p], subscription, one(m.cloud, "ciamRegion") or "")
+               for p in sorted(files) if p.endswith(".json") and not p.endswith("/placements.json")
+               and posixpath.dirname(p) in roots]
+    deployments = {f"{folder}/{kind}.json": json.dumps(doc) for folder, docs in folders for kind, doc in docs.items()}
+    outputs = {k: v for _, docs in folders for k, v in deployment_outputs(docs).items()}
     side = {p: t for p, t in files.items() if p.endswith(".tf") and posixpath.basename(posixpath.dirname(p))
             == "terraform" and posixpath.dirname(posixpath.dirname(p)) in roots}
-    return {**deployments, **root_states(side, environment, lambda blocks: azure_assigned(m, blocks), dict(INPUTS))}
+    return {**deployments, **root_states(side, environment, lambda blocks: azure_assigned(m, blocks),
+                                         {**INPUTS, **side_inputs(side, outputs, lambda variable: variable)})}
 
 
 def rendered_states(files, d, environment):

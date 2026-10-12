@@ -74,45 +74,32 @@ def test_a_cloud_render_reads_back_the_same_from_its_blocks_as_from_its_text(est
 
 # Each cloud's native render (5.6c): its render target and the importer reading it back
 NATIVE = {"aws": ("cloudformation", "aws/cloudformation"), "azure": ("arm", "azure/arm")}
-# Where a native read-back still sees the showcase differently from the Terraform read-back of the same record:
+# Where a native read-back sees the showcase differently from the Terraform read-back of the same record:
 # (environment, which read-back alone records it, the change ('add', 'modify': its attributes) or 'unreported' (the
-# binding is in the record but not in what was read), the binding's cn, attributes). The native readers' gaps, closed
-# by milestone 5.6c's tasks (c) AWS, (d) Azure, (e) the CLI: IAM grants, guardrails, the CDN/WAF edge, security
-# services and egress on AWS; managed identities, WAF policies and the edge, alerts, flow logs, private zones, budgets
-# and exemptions on Azure, PostgreSQL's size and deletion protection as ARM writes them.
+# binding is in the record but not in what was read), the binding's cn, attributes). None is a reader's gap; each is
+# inherent or milestone 5.6b's:
+#   - 5.6b's: the security services and budgets (AWS config, guardduty, security-hub; Azure monthly-spend,
+#     defender-identity, resource-changes);
+#   - a lookup (a data source) is a template parameter or an existing reference, not a resource: where one read-back
+#     reads a looked-up object of a kind the other reads none of, only it judges the record's bindings of that kind
+#     (AWS pf-discovery; Azure snet-aks, snet-edge, zone-public, zone-private's id);
+#   - what the cloud assigns at deployment that no template holds: egress-pf's Elastic IP (a parameter holding its
+#     allocation id), a managed identity's client id (identity-ci and identity-ds change the same grants both ways).
 NATIVE_GAPS = {
     ('source/prod', 'native only', 'unreported', 'config', ()),
     ('source/prod', 'native only', 'unreported', 'egress-pf', ()),
     ('source/prod', 'native only', 'unreported', 'guardduty', ()),
     ('source/prod', 'native only', 'unreported', 'security-hub', ()),
-    ('source/prod', 'terraform only', 'unreported', 'ds-disk-free', ()),
     ('source/stage', 'terraform only', 'unreported', 'pf-discovery', ()),
-    ('target/prod', 'native only', 'modify', 'psql-ciam-prod-pf-grants',
-     ('ciamDbDeletionProtection', 'ciamInstanceSize')),
-    ('target/prod', 'native only', 'modify', 'psql-ciam-prod-pf-grants', ('ciamInstanceSize',)),
-    ('target/prod', 'native only', 'unreported', 'identity-ci', ()),
-    ('target/prod', 'native only', 'unreported', 'identity-ds', ()),
-    ('target/prod', 'native only', 'unreported', 'identity-pf', ()),
+    ('target/prod', 'native only', 'modify', 'identity-ci', ('ciamGrant',)),
+    ('target/prod', 'native only', 'modify', 'identity-ds', ('ciamGrant',)),
     ('target/prod', 'native only', 'unreported', 'snet-aks', ()),
     ('target/prod', 'native only', 'unreported', 'snet-edge', ()),
-    ('target/prod', 'native only', 'unreported', 'svc-apps', ()),
-    ('target/prod', 'native only', 'unreported', 'svc-login', ()),
-    ('target/prod', 'native only', 'unreported', 'svc-sso', ()),
-    ('target/prod', 'terraform only', 'add', 'waf-ciam-prod-svc_login', ()),
-    ('target/prod', 'terraform only', 'add', 'waf-ciam-prod-svc_sso', ()),
-    ('target/prod', 'terraform only', 'modify', 'ds-replication-lag', ('ciamNotifies',)),
-    ('target/prod', 'terraform only', 'modify', 'exc-EXC-2026-03', ('ciamProviderRef',)),
-    ('target/prod', 'terraform only', 'modify', 'flow-vnet', ('ciamProviderRef',)),
     ('target/prod', 'terraform only', 'modify', 'identity-ci', ('ciamGrant', 'ciamIdentityClientId')),
     ('target/prod', 'terraform only', 'modify', 'identity-ds', ('ciamGrant', 'ciamIdentityClientId')),
-    ('target/prod', 'terraform only', 'modify', 'identity-pf', ('ciamGrant', 'ciamIdentityKind', 'ciamTrustedBy')),
     ('target/prod', 'terraform only', 'modify', 'monthly-spend', ('ciamProviderRef',)),
-    ('target/prod', 'terraform only', 'modify', 'svc-apps', ('ciamEdgeFact', 'ciamExposure')),
-    ('target/prod', 'terraform only', 'modify', 'svc-login', ('ciamEdgeFact', 'ciamExposure')),
-    ('target/prod', 'terraform only', 'modify', 'svc-sso', ('ciamEdgeFact', 'ciamExposure')),
     ('target/prod', 'terraform only', 'modify', 'zone-private', ('ciamProviderRef',)),
     ('target/prod', 'terraform only', 'unreported', 'defender-identity', ()),
-    ('target/prod', 'terraform only', 'unreported', 'pf-login-failures', ()),
     ('target/prod', 'terraform only', 'unreported', 'resource-changes', ()),
     ('target/prod', 'terraform only', 'unreported', 'zone-public', ()),
 }

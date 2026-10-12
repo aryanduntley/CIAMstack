@@ -25,7 +25,9 @@ Terraform resource and read by the same mapping (opsdir_adapter_aws.inventory.pa
   Targets), AWS::Route53::RecordSet (+ RecordSetGroup), AWS::SecretsManager::Secret (+ RotationSchedule; SecretString
   is never read), AWS::KMS::Key (+ ReplicaKey), AWS::S3::Bucket, AWS::CloudTrail::Trail (its ARN from the stack's
   region and account; cli_audit.py); the network depth (route tables, network ACLs, VPC endpoints and endpoint
-  services, peering, transit and VPN, flow logs, Network Firewall): cloudformation_network.py
+  services, peering, transit and VPN, flow logs, Network Firewall): cloudformation_network.py; IAM and guardrails,
+  the edge, data stores, suppressions, observability (log groups, alarms, canaries), volumes and backups:
+  cloudformation_iam.py, _edge.py, _data.py, _security.py, _observability.py, _backups.py
 Resources that weren't created (no physical ID, deleted, failed) are skipped; other resource types are counted.
 """
 import re
@@ -39,13 +41,14 @@ from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_document, parsed
 from .cli_audit import trail_attributes
 from .cli_edge import record_attributes
+from .cloudformation_backups import BACKUP_TYPES, backup_stack_pairs
 from .cloudformation_data import DATA_TYPES, data_stack_pairs
 from .cloudformation_edge import EDGE_TYPES, edge_stack_pairs
 from .cloudformation_iam import IAM_TYPES, iam_stack_pairs
 from .cloudformation_network import NETWORK_TYPES, network_stack_pairs
 from .cloudformation_observability import OBSERVABILITY_TYPES, observability_stack_pairs
 from .cloudformation_security import SECURITY_TYPES, security_stack_pairs
-from .cloudformation_values import dns_target, getatt
+from .cloudformation_values import dns_target, getatt, number, tag_map, truth
 from .inventory import PROVIDER, pairs_resources, state_pairs
 
 READ = ("AWS::EC2::VPC", "AWS::EC2::Subnet", "AWS::EC2::Instance", "AWS::EC2::SecurityGroup",
@@ -55,7 +58,8 @@ READ = ("AWS::EC2::VPC", "AWS::EC2::Subnet", "AWS::EC2::Instance", "AWS::EC2::Se
         "AWS::SecretsManager::Secret", "AWS::SecretsManager::RotationSchedule", "AWS::KMS::Key",
         "AWS::KMS::ReplicaKey", "AWS::S3::Bucket", "AWS::Lambda::Function", "AWS::Events::Rule",
         "AWS::Scheduler::Schedule", "AWS::CodePipeline::Pipeline", "AWS::CodeBuild::Project", "AWS::CloudTrail::Trail",
-        *NETWORK_TYPES, *IAM_TYPES, *EDGE_TYPES, *DATA_TYPES, *SECURITY_TYPES, *OBSERVABILITY_TYPES)
+        *NETWORK_TYPES, *IAM_TYPES, *EDGE_TYPES, *DATA_TYPES, *SECURITY_TYPES, *OBSERVABILITY_TYPES,
+        *BACKUP_TYPES)
 EVALUATED = ("Ref", "Fn::Sub", "Fn::Join", "Fn::Select", "Fn::GetAtt")
 NOT_CREATED = ("CREATE_FAILED", "DELETE_COMPLETE", "DELETE_IN_PROGRESS", "DELETE_FAILED")
 ACCOUNT_WIDE = ("secret", "key", "storage")
@@ -144,6 +148,7 @@ def _waf_arn(pid, ps, kind):
 # The Fn::GetAtt attributes that follow from a resource's physical id (its Ref) and the stack's pseudo parameters,
 # by type: (physical id, pseudo parameters) -> the attribute
 GETATT = MappingProxyType({
+    "AWS::EC2::SecurityGroup": {"GroupId": lambda pid, ps: pid},
     "AWS::IAM::Role": {"Arn": _arn("iam", "role/{id}", False)},
     "AWS::IAM::InstanceProfile": {"Arn": _arn("iam", "instance-profile/{id}", False)},
     "AWS::IAM::OIDCProvider": {"Arn": lambda pid, ps: pid},
@@ -154,6 +159,10 @@ GETATT = MappingProxyType({
     "AWS::KMS::Key": {"Arn": _arn("kms", "key/{id}"), "KeyId": lambda pid, ps: pid},
     "AWS::S3::Bucket": {"Arn": lambda pid, ps: f"arn:{ps['AWS::Partition']}:s3:::{pid}"},
     "AWS::Logs::LogGroup": {"Arn": _arn("logs", "log-group:{id}:*")},
+    "AWS::CloudWatch::Alarm": {"Arn": _arn("cloudwatch", "alarm:{id}")},
+    "AWS::DLM::LifecyclePolicy": {"Arn": _arn("dlm", "policy/{id}")},
+    "AWS::Backup::BackupVault": {"BackupVaultArn": _arn("backup", "backup-vault:{id}")},
+    "AWS::Backup::BackupPlan": {"BackupPlanArn": _arn("backup", "backup-plan:{id}")},
     "AWS::SNS::Topic": {"TopicArn": lambda pid, ps: pid},
     "AWS::SecretsManager::Secret": {"Id": lambda pid, ps: pid},
     "AWS::WAFv2::WebACL": {"Arn": lambda pid, ps: _waf_arn(pid, ps, "webacl")},
@@ -235,14 +244,6 @@ def _unevaluated(template):
 
 
 # ------------------------------------------------------------------ normalized to Terraform attribute names
-def _tags(tags):
-    return {t.get("Key"): t.get("Value") for t in tags or () if isinstance(t, dict) and t.get("Key")}
-
-
-def _truth(v):
-    return None if v is None else str(v).lower() == "true"
-
-
 SECRET_PROPERTIES = ("SecretString", "GenerateSecretString", "SecretBinary")    # never read
 
 
@@ -265,10 +266,10 @@ def _public_ip(raw_allocation, names):
 def _network(declared):
     of = {t: [(lg, p, raw, pid) for lg, t2, p, raw, pid in declared if t2 == t] for t in READ}
     return [
-        *(("aws_vpc", {"id": pid, "cidr_block": p.get("CidrBlock"), "tags": _tags(p.get("Tags"))})
+        *(("aws_vpc", {"id": pid, "cidr_block": p.get("CidrBlock"), "tags": tag_map(p.get("Tags"))})
           for _, p, _, pid in of["AWS::EC2::VPC"]),
         *(("aws_subnet", {"id": pid, "vpc_id": p.get("VpcId"), "cidr_block": p.get("CidrBlock"),
-                          "availability_zone": p.get("AvailabilityZone"), "tags": _tags(p.get("Tags"))})
+                          "availability_zone": p.get("AvailabilityZone"), "tags": tag_map(p.get("Tags"))})
           for _, p, _, pid in of["AWS::EC2::Subnet"])]
 
 
@@ -280,7 +281,7 @@ def _instances(declared, names):
                               "availability_zone": p.get("AvailabilityZone"),
                               "subnet_id": p.get("SubnetId") or nic(p).get("SubnetId"),
                               "vpc_security_group_ids": p.get("SecurityGroupIds") or nic(p).get("GroupSet") or [],
-                              "tags": _tags(p.get("Tags"))})
+                              "tags": tag_map(p.get("Tags"))})
             for _, t, p, _, pid in declared if t == "AWS::EC2::Instance"]
 
 
@@ -296,7 +297,7 @@ def _ingress(i):
 
 def _security_groups(declared):
     return [*(("aws_security_group", {"id": pid, "name": p.get("GroupName"), "vpc_id": p.get("VpcId"),
-                                      "tags": _tags(p.get("Tags")),
+                                      "tags": tag_map(p.get("Tags")),
                                       "ingress": [_ingress(i) for i in p.get("SecurityGroupIngress") or ()]})
               for _, t, p, _, pid in declared if t == "AWS::EC2::SecurityGroup"),
             *(("aws_vpc_security_group_ingress_rule", {
@@ -310,7 +311,7 @@ def _security_groups(declared):
 
 def _egress(declared, names):
     return [("aws_nat_gateway", {"id": pid, "public_ip": _public_ip(raw.get("AllocationId"), names),
-                                 "tags": _tags(p.get("Tags"))})
+                                 "tags": tag_map(p.get("Tags"))})
             for _, t, p, raw, pid in declared if t == "AWS::EC2::NatGateway"]
 
 
@@ -328,7 +329,7 @@ def _load_balancers(declared, names):
                         "internal": p.get("Scheme") == "internal", "dns_name": f"cfn:{logical}",
                         "security_groups": list(p.get("SecurityGroups") or ()),
                         "idle_timeout": setting(p, "idle_timeout.timeout_seconds"),
-                        "subnet_mapping": mappings(p, raw), "tags": _tags(p.get("Tags"))})
+                        "subnet_mapping": mappings(p, raw), "tags": tag_map(p.get("Tags"))})
             for logical, t, p, raw, pid in declared if t == "AWS::ElasticLoadBalancingV2::LoadBalancer"]
 
 
@@ -361,10 +362,6 @@ def _forwarding(declared):
               for p, pid in groups for g in p.get("Targets") or ())]
 
 
-def _number(v):
-    return int(v) if isinstance(v, str) and v.isdigit() else v
-
-
 def _records(declared):
     """Record sets (in a RecordSetGroup too): an alias by its target (cfn:<logical ID> for a load balancer or
     distribution of the stack), the others with their TTL, values and routing, as the CLI reader takes them."""
@@ -372,10 +369,10 @@ def _records(declared):
         alias = p.get("AliasTarget")
         return ("aws_route53_record", {
             "name": (p.get("Name") or "").lower().rstrip("."), "zone_id": zone, "type": p.get("Type"),
-            **record_attributes({"Type": p.get("Type"), "TTL": _number(p.get("TTL")),
+            **record_attributes({"Type": p.get("Type"), "TTL": number(p.get("TTL")),
                                  "ResourceRecords": [{"Value": v} for v in p.get("ResourceRecords") or ()],
                                  "SetIdentifier": p.get("SetIdentifier"), "Failover": p.get("Failover"),
-                                 "Weight": _number(p.get("Weight"))}),
+                                 "Weight": number(p.get("Weight"))}),
             "alias": [{"name": dns_target((raw.get("AliasTarget") or {}).get("DNSName"), alias.get("DNSName")),
                        "zone_id": alias.get("HostedZoneId")}] if isinstance(alias, dict) else []})
     return [*(record(p, raw, p.get("HostedZoneId")) for _, t, p, raw, _ in declared
@@ -387,7 +384,7 @@ def _records(declared):
 
 def _secrets(declared):
     """Secrets from their ARN (the physical ID), name and tags; SecretString and GenerateSecretString aren't read."""
-    return [*(("aws_secretsmanager_secret", {"arn": pid, "name": p.get("Name"), "tags": _tags(p.get("Tags"))})
+    return [*(("aws_secretsmanager_secret", {"arn": pid, "name": p.get("Name"), "tags": tag_map(p.get("Tags"))})
               for _, t, p, _, pid in declared if t == "AWS::SecretsManager::Secret"),
             *(("aws_secretsmanager_secret_rotation", {"secret_id": p.get("SecretId"),
                                                       "rotation_lambda_arn": p.get("RotationLambdaARN")})
@@ -400,7 +397,7 @@ def _keys(declared, names):
         where = (names.get("AWS::Partition"), names.get("AWS::Region"), names.get("AWS::AccountId"))
         return f"arn:{where[0]}:kms:{where[1]}:{where[2]}:key/{key_id}" if all(where) else None
     return [*(("aws_kms_key", {"arn": arn(pid), "key_id": pid,
-                               "enable_key_rotation": _truth(p.get("EnableKeyRotation", False))})
+                               "enable_key_rotation": truth(p.get("EnableKeyRotation", False))})
               for _, t, p, _, pid in declared if t == "AWS::KMS::Key" and arn(pid)),     # rotation is off unless set
             *(("aws_kms_replica_key", {"arn": arn(pid), "primary_key_arn": p.get("PrimaryKeyArn")})
               for _, t, p, _, pid in declared if t == "AWS::KMS::ReplicaKey" and arn(pid))]
@@ -426,7 +423,7 @@ def _jobs(declared, names):
     def attrs(lg, t, p, pid):
         given = {"function_name": pid} if t == "AWS::Lambda::Function" else {"name": pid}
         env = p.get("Environment") or {}           # a function's variables; a build project's image
-        return {**given, "arn": arns.get(lg), "runtime": p.get("Runtime"), "tags": _tags(p.get("Tags")),
+        return {**given, "arn": arns.get(lg), "runtime": p.get("Runtime"), "tags": tag_map(p.get("Tags")),
                 "environment": [{"variables": env.get("Variables") or {}}] if t == "AWS::Lambda::Function"
                 else {"image": env.get("Image")}}
     enabled = [(lg, t, p, raw, pid) for lg, t, p, raw, pid in declared if p.get("State", "ENABLED") == "ENABLED"]
@@ -449,7 +446,7 @@ def _trails(declared, names):
         where = (names.get("AWS::Partition"), names.get("AWS::Region"), names.get("AWS::AccountId"))
         return name if name.startswith("arn:") or not all(where) else \
             f"arn:{where[0]}:cloudtrail:{where[1]}:{where[2]}:trail/{name}"
-    return [("aws_cloudtrail", trail_attributes(arn(pid), {"TrailName": pid, **p}, tags=_tags(p.get("Tags"))))
+    return [("aws_cloudtrail", trail_attributes(arn(pid), {"TrailName": pid, **p}, tags=tag_map(p.get("Tags"))))
             for _, t, p, _, pid in declared if t == "AWS::CloudTrail::Trail"]
 
 
@@ -469,7 +466,7 @@ def stack_pairs(stack, resources, template):
              *_trails(declared, names), *network_stack_pairs(declared), *iam_stack_pairs(declared, names),
              *edge_stack_pairs(declared, names, lambda name: (name or "").lower().rstrip(".") or None),
              *data_stack_pairs(declared, names), *security_stack_pairs(declared, names),
-             *observability_stack_pairs(declared, names)],
+             *observability_stack_pairs(declared, names), *backup_stack_pairs(declared, names)],
             (*((f"{label}: {', '.join(f'{fn} ({n})' for fn, n in sorted(_unevaluated(template).items()))} not "
                 f"evaluated; the attributes computed with them keep the record's values",)
                if _unevaluated(template) else ()),

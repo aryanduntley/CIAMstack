@@ -43,6 +43,16 @@ def test_configured_attributes_are_recorded_as_the_state_keeps_them():
     assert found[("data", "aws_vpc", "main")] == {"id": "vpc-1"} and notices == ()
 
 
+
+def test_a_nested_block_named_like_a_meta_argument_is_an_attribute():
+    """Meta-arguments are the resource's own: a backup rule's lifecycle block is configuration, recorded."""
+    plan = TfBlock("resource", ("aws_backup_plan", "daily"), (
+        ("rule", Block((("rule_name", "daily"), ("lifecycle", Block((("delete_after", 35),)))))),
+        ("lifecycle", Block((("prevent_destroy", True),)))))
+    found, _ = _instances(tf_state((plan,))[0])
+    assert found[("managed", "aws_backup_plan", "daily")] == {
+        "id": "aws_backup_plan.daily", "rule": [{"rule_name": "daily", "lifecycle": [{"delete_after": 35}]}]}
+
 def test_counts_templates_variables_and_providers():
     text, notices = tf_state((TERRAFORM, VPC, SG, RULE, *VARIABLES))
     _, doc = _instances(text)

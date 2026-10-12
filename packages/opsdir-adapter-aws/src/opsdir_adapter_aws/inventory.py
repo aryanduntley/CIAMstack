@@ -69,7 +69,7 @@ from collections import Counter
 from functools import reduce
 
 from opsdir.core.contract import Importer
-from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, layout_import, of_types, per_file,
+from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, layout_import, of_types, read_together,
                                    realization_roles, resource, tagged_role)
 from opsdir.domains.messaging.dns import dmarc_policy, spf_authorizes
 from opsdir_format_terraform.state import blocks, read_state
@@ -532,9 +532,11 @@ def state_resources(text):
 
 # ------------------------------------------------------------------ the importer
 def read_terraform_state(files, d, patterns, at=None):
-    """Imported: each environment's servers and bindings from the AWS Terraform states under <cloud>/<env>/."""
-    return layout_import(files, d, PROVIDER, "AWS", per_file(state_resources), ".tfstate", "Terraform state",
-                         "terraform.tfstate", summarize=("identity",))   # groups, users, service agents: counted
+    """Imported: each environment's servers and bindings from the AWS Terraform states under <cloud>/<env>/,
+    read together (one root's resources link to another's)."""
+    return layout_import(files, d, PROVIDER, "AWS", read_together(state_pairs, pairs_resources), ".tfstate",
+                         "Terraform state", "terraform.tfstate",
+                         summarize=("identity",))   # groups, users, service agents: counted
 
 
 TERRAFORM_STATE = Importer("terraform-state", "AWS Terraform state (terraform.tfstate) under <cloud>/<env>/, as the "

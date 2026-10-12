@@ -185,7 +185,7 @@ def _values(t, r):
     keys = {"txt": ("value",), "mx": ("preference", "exchange"), "srv": ("priority", "weight", "port", "target"),
             "caa": ("flags", "tag", "value")}[t]
     return [" ".join(str(x.get(k)) if not (t == "caa" and k == "value") else f'"{x.get(k)}"' for k in keys)
-            for x in r.get("record") or ()]
+            for x in r.get("record") or () if all(x.get(k) is not None for k in keys)]     # unknown values left out
 
 
 def dns_resources(found, served):

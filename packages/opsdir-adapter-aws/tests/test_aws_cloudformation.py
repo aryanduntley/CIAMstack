@@ -490,3 +490,95 @@ def test_an_aurora_cluster_log_group_and_suppressions_read_as_their_state_does()
                                            {"field": "type", "equals": ["Recon:EC2/PortProbeUnprotectedPort"]}]}]}))
     stacked, state = _same(template, physical, pairs, ("database", "logs", "suppression"))
     assert stacked == state and len(stacked) == 3
+
+
+def test_volumes_snapshot_policies_backups_alarms_and_canaries_read_as_their_state_does():
+    """A server's data disk (its attachment, its Lifecycle Manager policy), a backup vault with its lock, a plan and
+    its selection by tag, a metric alarm and a Synthetics canary read to the same resources as their state."""
+    tags = [{"Key": "Volume", "Value": "vol-data"}, {"Key": "Role", "Value": "volume-data"},
+            {"Key": "SnapshotPolicy", "Value": "daily"}]
+    template = {"Resources": {
+        "Ds": {"Type": "AWS::EC2::Instance", "Properties": {
+            "ImageId": "ami-1", "InstanceType": "m6i.large",
+            "Tags": [{"Key": "Name", "Value": "ds-1"}, {"Key": "Role", "Value": "ds"}]}},
+        "Disk": {"Type": "AWS::EC2::Volume", "Properties": {
+            "AvailabilityZone": "us-east-1a", "Size": "500", "VolumeType": "io2", "Iops": 6000, "Encrypted": "true",
+            "KmsKeyId": KEY, "Tags": tags}},
+        "Attach": {"Type": "AWS::EC2::VolumeAttachment", "Properties": {
+            "Device": "/dev/sdf", "VolumeId": {"Ref": "Disk"}, "InstanceId": {"Ref": "Ds"}}},
+        "Daily": {"Type": "AWS::DLM::LifecyclePolicy", "Properties": {
+            "Description": "daily", "State": "ENABLED", "Tags": [{"Key": "Name", "Value": "daily"}],
+            "PolicyDetails": {"ResourceTypes": ["VOLUME"], "TargetTags": [{"Key": "SnapshotPolicy", "Value": "daily"}],
+                              "Schedules": [{"Name": "daily", "CopyTags": True,
+                                             "CreateRule": {"Interval": 24, "IntervalUnit": "HOURS",
+                                                            "Times": ["03:00"]},
+                                             "RetainRule": {"Interval": 7, "IntervalUnit": "DAYS"},
+                                             "CrossRegionCopyRules": [{"Target": "us-west-2", "Encrypted": True,
+                                                                       "RetainRule": {"Interval": 7,
+                                                                                      "IntervalUnit": "DAYS"}}]}]}}},
+        "Vault": {"Type": "AWS::Backup::BackupVault", "Properties": {
+            "BackupVaultName": "ciam-backups", "EncryptionKeyArn": KEY,
+            "LockConfiguration": {"MinRetentionDays": 35, "ChangeableForDays": 3},
+            "BackupVaultTags": {"Name": "ciam-backups", "Role": "backup-vault"}}},
+        "Plan": {"Type": "AWS::Backup::BackupPlan", "Properties": {
+            "BackupPlan": {"BackupPlanName": "backup-daily", "BackupPlanRule": [{
+                "RuleName": "daily", "TargetBackupVault": {"Ref": "Vault"}, "ScheduleExpression": "cron(0 5 ? * * *)",
+                "StartWindowMinutes": 120, "Lifecycle": {"DeleteAfterDays": 35}}]},
+            "BackupPlanTags": {"Name": "backup-daily", "Role": "backup-daily"}}},
+        "Selection": {"Type": "AWS::Backup::BackupSelection", "Properties": {
+            "BackupPlanId": {"Ref": "Plan"}, "BackupSelection": {
+                "SelectionName": "backup-daily", "IamRoleArn": "arn:aws:iam::111122223333:role/backup",
+                "ListOfTags": [{"ConditionType": "STRINGEQUALS", "ConditionKey": "Role",
+                                "ConditionValue": "volume-data"}]}}},
+        "Lag": {"Type": "AWS::CloudWatch::Alarm", "Properties": {
+            "AlarmName": "ds-lag", "Namespace": "CIAM/DS", "MetricName": "ReplicationDelay", "Statistic": "Average",
+            "Period": 60, "EvaluationPeriods": 5, "ComparisonOperator": "GreaterThanThreshold", "Threshold": 5000,
+            "AlarmActions": ["arn:aws:sns:us-east-1:111122223333:page"],
+            "Tags": [{"Key": "Realizes", "Value": "replication-lag"}, {"Key": "BindingRole", "Value": "alarm-lag"}]}},
+        "Login": {"Type": "AWS::Synthetics::Canary", "Properties": {
+            "Name": "sso-login", "RuntimeVersion": "syn-python-selenium-12.0", "Code": {"Handler": "canary.handler"},
+            "ArtifactS3Location": "s3://canaries/sso-login/", "Schedule": {"Expression": "rate(5 minutes)"},
+            "Tags": [{"Key": "Realizes", "Value": "sso-login"}, {"Key": "BindingRole", "Value": "canary-sso"}]}}}}
+    physical = {"Ds": "i-1", "Disk": "vol-1", "Attach": "vol-1-i-1", "Daily": "policy-1", "Vault": "ciam-backups",
+                "Plan": "p-1", "Selection": "s-1", "Lag": "ds-lag", "Login": "sso-login"}
+    vault = f"arn:aws:backup:us-east-1:{ACCOUNT}:backup-vault:ciam-backups"
+    retain = [{"interval": 7, "interval_unit": "DAYS"}]
+    pairs = (("aws_instance", {"id": "i-1", "ami": "ami-1", "instance_type": "m6i.large",
+                               "tags": {"Name": "ds-1", "Role": "ds"}}),
+             ("aws_ebs_volume", {"id": "vol-1", "availability_zone": "us-east-1a", "size": 500, "type": "io2",
+                                 "iops": 6000, "encrypted": True, "kms_key_id": KEY,
+                                 "tags": {t["Key"]: t["Value"] for t in tags}}),
+             ("aws_volume_attachment", {"id": "vol-1-i-1", "volume_id": "vol-1", "instance_id": "i-1",
+                                        "device_name": "/dev/sdf"}),
+             ("aws_dlm_lifecycle_policy", {
+                 "id": "policy-1", "arn": f"arn:aws:dlm:us-east-1:{ACCOUNT}:policy/policy-1", "state": "ENABLED",
+                 "tags": {"Name": "daily"}, "policy_details": [{
+                     "resource_types": ["VOLUME"], "target_tags": {"SnapshotPolicy": "daily"}, "schedule": [{
+                         "name": "daily", "copy_tags": True,
+                         "create_rule": [{"interval": 24, "interval_unit": "HOURS", "times": ["03:00"]}],
+                         "retain_rule": retain, "cross_region_copy_rule": [{"target": "us-west-2", "encrypted": True,
+                                                                            "retain_rule": retain}]}]}]}),
+             ("aws_backup_vault", {"arn": vault, "name": "ciam-backups", "kms_key_arn": KEY,
+                                   "tags": {"Name": "ciam-backups", "Role": "backup-vault"}}),
+             ("aws_backup_vault_lock_configuration", {"backup_vault_name": "ciam-backups", "min_retention_days": 35,
+                                                      "changeable_for_days": 3}),
+             ("aws_backup_plan", {"id": "p-1", "arn": f"arn:aws:backup:us-east-1:{ACCOUNT}:backup-plan:p-1",
+                                  "name": "backup-daily", "tags": {"Name": "backup-daily", "Role": "backup-daily"},
+                                  "rule": [{"rule_name": "daily", "target_vault_name": "ciam-backups",
+                                            "schedule": "cron(0 5 ? * * *)", "start_window": 120,
+                                            "lifecycle": [{"delete_after": 35}]}]}),
+             ("aws_backup_selection", {"id": "s-1", "plan_id": "p-1", "name": "backup-daily",
+                                       "selection_tag": [{"type": "STRINGEQUALS", "key": "Role",
+                                                          "value": "volume-data"}]}),
+             ("aws_cloudwatch_metric_alarm", {
+                 "arn": f"arn:aws:cloudwatch:us-east-1:{ACCOUNT}:alarm:ds-lag", "alarm_name": "ds-lag",
+                 "namespace": "CIAM/DS", "metric_name": "ReplicationDelay",
+                 "alarm_actions": ["arn:aws:sns:us-east-1:111122223333:page"],
+                 "tags": {"Realizes": "replication-lag", "BindingRole": "alarm-lag"}}),
+             ("aws_synthetics_canary", {"arn": f"arn:aws:synthetics:us-east-1:{ACCOUNT}:canary:sso-login",
+                                        "name": "sso-login", "schedule": [{"expression": "rate(5 minutes)"}],
+                                        "artifact_s3_location": "s3://canaries/sso-login/",
+                                        "tags": {"Realizes": "sso-login", "BindingRole": "canary-sso"}}))
+    kinds = ("volume", "snapshot-policy", "backup-vault", "backup-plan", "alarm", "canary")
+    stacked, state = _same(template, physical, pairs, kinds)
+    assert stacked == state and len(stacked) == len(kinds)
