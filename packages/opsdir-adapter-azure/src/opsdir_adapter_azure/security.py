@@ -42,9 +42,11 @@ above it), vulnerability scanning's findings in SecurityNestedRecommendation and
 SecurityRecommendation (RecommendationSeverity at or above it, RecommendationState not Healthy). Defender has no
 critical severity: critical is routed as high (a comment). Anything else is a NOTE.
 
-Read back from Terraform state: azurerm_security_center_subscription_pricing (tier Standard) -> threat detection over
-the areas its plans watch, vulnerability scanning (azurerm_security_center_server_vulnerability_assessments_setting, a
-Containers plan's registry vulnerability assessment), posture (CloudPosture, azurerm_subscription_policy_assignment of
+Read back from Terraform state (and from the CLI and ARM, normalized to the same names: cli_security.py; a policy
+assignment at a subscription's scope as cli_iam reads it too): azurerm_security_center_subscription_pricing (tier
+Standard) -> threat detection over the areas its plans watch, vulnerability scanning
+(azurerm_security_center_server_vulnerability_assessments_setting, a Containers plan's registry vulnerability
+assessment), posture (CloudPosture, azurerm_subscription_policy_assignment of
 a known initiative by its display name) -> security services (kind security), each covering every region, with the
 workspace or Event Hub a continuous export of its findings goes to as their destination, and the incident route: the
 workspace an export filtering them on severity goes to, or the action group a log alert on the table of their kind
@@ -316,6 +318,9 @@ def render_security(m, extra=()):
 
 
 # ------------------------------------------------------------------ read back
+_SUBSCRIPTION_SCOPE = re.compile(r"^/subscriptions/[^/]+/?$", re.IGNORECASE)
+
+
 def _ext(a):
     return {(e.get("name") or "") for e in a.get("extension") or ()}
 
@@ -429,7 +434,9 @@ def security_resources(pairs):
                **_incident(incidents, "vulnerability-scanning")[0]}, name="defender-vulnerability")
         for _ in (1,) if scanned and ref_of)
     names = {v: k for k, v in INITIATIVES.items()}
-    assignments = [a for a in of_types(pairs, ASSIGNMENT) if a.get("display_name") in (*names, BASELINE_NAME)]
+    assignments = [a for a in (*of_types(pairs, ASSIGNMENT), *(a for a in of_types(pairs, "azurerm_policy_assignment")
+                                                               if _SUBSCRIPTION_SCOPE.match(a.get("scope") or "")))
+                   if a.get("display_name") in (*names, BASELINE_NAME)]
     cspm = plans.get(CSPM)
     posture_ref = (cspm or {}).get("id") or next((a.get("id") for a in assignments if a.get("id")), None)
     posture = tuple(resource("security", posture_ref, {

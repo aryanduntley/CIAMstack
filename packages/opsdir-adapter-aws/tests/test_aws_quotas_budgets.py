@@ -3,7 +3,8 @@ defaults and the applied values), read into quota catalogs with applied values o
 quota codes; an approved increase rendered as aws_servicequotas_service_quota. Budgets: aws_budgets_budget filtered by
 the tag policy's environment tag (else the account), a notification per threshold to the channel's topic when it is
 in the budget's account, GovCloud budgets through the provider aliased to the standard account; read back from
-Terraform state with the topic as its channel."""
+Terraform state with the topic as its channel, and from the AWS CLI's outputs of the same budget (saved by account) as
+the same record."""
 import json
 import re
 
@@ -11,6 +12,7 @@ from opsdir.core.interchange.ldif import LdifRecord
 from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.adapter import ADAPTER
 from opsdir_adapter_aws.budgets import budget_resources, needs_billing_provider, render_budgets
+from opsdir_adapter_aws.cli import cli_resources
 from opsdir_adapter_aws.inventory import pairs_resources
 from opsdir_adapter_aws.quotas import quota_commands, read_quotas, render_quota_requests
 from network_fixtures import ALPHA, entry, model
@@ -148,3 +150,50 @@ def test_budgets_are_read_back_from_state_with_their_topic_as_channel():
     resources, _ = pairs_resources([("aws_budgets_budget", a),
                                     ("aws_sns_topic", {"arn": TOPIC_ARN, "name": "cost-alerts"})])
     assert [r.kind for r in resources] == ["channel", "budget"]
+
+
+
+BUDGET_STATE = {"arn": "arn:aws:budgets::111122223333:budget/alpha-prod-monthly", "name": "alpha-prod-monthly",
+                "budget_type": "COST", "limit_amount": "5000.0", "limit_unit": "USD", "time_unit": "MONTHLY",
+                "tags_all": {"Role": "budget"},
+                "notification": [{"comparison_operator": "GREATER_THAN", "threshold": 80,
+                                  "threshold_type": "PERCENTAGE", "notification_type": "ACTUAL",
+                                  "subscriber_sns_topic_arns": [TOPIC_ARN]},
+                                 {"comparison_operator": "GREATER_THAN", "threshold": 100,
+                                  "threshold_type": "PERCENTAGE", "notification_type": "FORECASTED",
+                                  "subscriber_sns_topic_arns": [TOPIC_ARN]}]}
+FOLDER = "budgets/111122223333/alpha-prod-monthly"
+BUDGET_CLI = {
+    "budgets/111122223333.json": {"Budgets": [
+        {"BudgetName": "alpha-prod-monthly", "BudgetType": "COST", "TimeUnit": "MONTHLY",
+         "BudgetLimit": {"Amount": "5000.0", "Unit": "USD"}},
+        {"BudgetName": "untagged daily", "BudgetType": "COST", "TimeUnit": "DAILY",
+         "BudgetLimit": {"Amount": "10.0", "Unit": "USD"}}]},
+    f"{FOLDER}/notifications.json": {"Notifications": [
+        {"NotificationType": "ACTUAL", "ComparisonOperator": "GREATER_THAN", "Threshold": 80.0,
+         "ThresholdType": "PERCENTAGE"},
+        {"NotificationType": "FORECASTED", "ComparisonOperator": "GREATER_THAN", "Threshold": 100.0,
+         "ThresholdType": "PERCENTAGE"},
+        {"NotificationType": "ACTUAL", "ComparisonOperator": "GREATER_THAN", "Threshold": 900.0,
+         "ThresholdType": "ABSOLUTE_VALUE"}]},
+    f"{FOLDER}/subscribers-0.json": {"Subscribers": [{"SubscriptionType": "SNS", "Address": TOPIC_ARN}]},
+    f"{FOLDER}/subscribers-1.json": {"Subscribers": [{"SubscriptionType": "SNS", "Address": TOPIC_ARN}]},
+    f"{FOLDER}/subscribers-2.json": {"Subscribers": [{"SubscriptionType": "EMAIL", "Address": "x@example.test"}]},
+    f"{FOLDER}/tags.json": {"ResourceTags": [{"Key": "Role", "Value": "budget"}]},
+    "topics.json": {"Topics": [{"TopicArn": TOPIC_ARN}]}}
+
+
+def test_the_cli_reads_the_same_budget_as_state():
+    resources, notices = cli_resources({p: json.dumps(d) for p, d in BUDGET_CLI.items()})
+    state, _ = pairs_resources([("aws_budgets_budget", BUDGET_STATE),
+                                ("aws_sns_topic", {"arn": TOPIC_ARN, "name": "cost-alerts"})])
+    assert [r for r in resources if r.kind in ("budget", "channel")] == list(state)
+    assert not [n for n in notices if "not an AWS CLI output" in n]
+
+
+def test_a_govcloud_accounts_budgets_are_its_standard_accounts_in_the_standard_partition():
+    gov = {**BUDGET_CLI, "subnets.json": {"Subnets": [
+        {"SubnetId": "subnet-a", "SubnetArn": "arn:aws-us-gov:ec2:us-gov-west-1:222233334444:subnet/subnet-a"}]}}
+    resources, _ = cli_resources({p: json.dumps(d) for p, d in gov.items()})
+    assert [r.ref for r in resources if r.kind == "budget"] == [
+        "arn:aws:budgets::111122223333:budget/alpha-prod-monthly"]

@@ -12,8 +12,9 @@ by the channel's ciamProviderRef; otherwise the billing account's administrators
 comment). Calling the Budget API with user credentials needs a quota project: the landing zone's provider bills its
 calls to the environment's project (billing_project, user_project_override).
 
-Read back from Terraform state: google_billing_budget -> budgets (kind budget): amount and currency, period, threshold
-rules, the notification channel or topic its updates go to as the channel its alerts go to."""
+Read back from Terraform state (and from gcloud billing budgets list: cli_budgets.py): google_billing_budget ->
+budgets (kind budget): amount and currency, period, threshold rules, the notification channel or topic its updates
+go to as the channel its alerts go to."""
 from decimal import Decimal
 
 from opsdir.core.directory import get, one, rdn_value

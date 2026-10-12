@@ -32,6 +32,8 @@ mapping reads them as reads Terraform state (opsdir_adapter_gcp.inventory.pairs_
   gcloud projects describe <project>            project numbers (in Secret Manager's and others' names) read as IDs
   the network depth: network and hierarchical firewall policies, routes, service attachments, VPN tunnels,
   interconnect attachments, tag values and bindings: see cli_network.py
+  Security Command Center notification configs, enabled services, asset feeds: see cli_security.py
+  gcloud billing budgets list --billing-account=A   billing budgets: see cli_budgets.py
   IAM: IAM and organization policies (asset export --content-type=iam-policy / org-policy, search-all-iam-policies),
   service accounts, custom roles, pool providers, deny policies, Policy Troubleshooter's verdicts: see cli_iam.py
 Subnetworks and instances outside the listed networks are counted, not read. Search results (`gcloud asset
@@ -49,7 +51,9 @@ from opsdir.core.contract import Importer
 from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_records
 from .cli_edge import KINDS as EDGE_KINDS, backend_attributes, edge_pairs, record_routing
+from .cli_budgets import budget_pairs, is_budget
 from .cli_iam import KINDS as IAM_KINDS, iam_kind, iam_pairs
+from .cli_security import security_pairs, security_shape
 from .cli_network import KINDS as NETWORK_KINDS, network_pairs, network_shape
 from .databases import sql_instance
 from .storage import bucket_attributes, transfer_job_attributes
@@ -59,7 +63,8 @@ from .volumes import disk_attributes, policy_attributes
 from .inventory import PROVIDER, pairs_resources
 from .names import name_parts, resource_id
 
-ACCOUNT_WIDE = ("secret", "key", "storage", "job", "stream", "channel", "logs", "alarm", "canary", "identity")
+ACCOUNT_WIDE = ("secret", "key", "storage", "job", "stream", "channel", "logs", "alarm", "canary", "identity",
+                "budget")
 METADATA = ("ciam-role", "ciam-product")         # the instance metadata the mapping reads; never startup scripts
 # Cloud Asset Inventory asset types and gcloud's compute kinds -> what an item is
 KINDS = MappingProxyType({
@@ -94,6 +99,7 @@ KINDS = MappingProxyType({
     "logging.googleapis.com/LogBucket": "log-bucket",
     "logging.googleapis.com/LogSink": "log-sink",
     "sqladmin.googleapis.com/Instance": "database", "sql#instance": "database",
+    "serviceusage.googleapis.com/Service": "service",
     **EDGE_KINDS, **NETWORK_KINDS,
 })
 # asset types another asset already holds: a cluster its node pools, Function a 1st-gen CloudFunction
@@ -123,7 +129,8 @@ def _snake(name):
 def _shape(item):
     """What a gcloud item without a compute kind is, from its fields and name; None when unrecognized."""
     name = item.get("name") or ""
-    found = next((k for k, pattern in NAMED if pattern.match(name)), None)
+    found = next((k for k, pattern in NAMED if pattern.match(name)), None) or security_shape(item) or \
+        ("budget" if is_budget(item) else None)
     if found == "job":
         return "scheduler-job" if "schedule" in item else "run-job"
     if found:
@@ -498,7 +505,9 @@ def cli_resources(texts, at=None):
                                             for d, _ in _of(items, "resource-policy")),
                                           *(backup_attributes(kind, d) for kind, _ in BACKUP_ASSETS
                                             for d, _ in _of(items, kind)),
-                                          *network_pairs(lambda kind: _of(items, kind))], items)
+                                          *network_pairs(lambda kind: _of(items, kind)),
+                                          *security_pairs(lambda kind: _of(items, kind)),
+                                          *budget_pairs(lambda kind: _of(items, kind))], items)
     pairs, scope_notices = _scoped(pairs)
     resources, notices = pairs_resources(pairs)
     return resources, (*unknown, *number_notices, *scope_notices, *notices)

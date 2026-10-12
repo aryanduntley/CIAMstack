@@ -321,8 +321,9 @@ gcloud login (`opsdir_adapter_gcp.collect`), and imports it like an export you s
 Least privilege: `roles/viewer` on the project covers the management reads; narrower, the predefined viewer roles of
 each service read (Cloud Asset Viewer, Compute Viewer, DNS Reader, Cloud Scheduler Viewer, Monitoring Viewer, Cloud
 SQL Viewer, the Backup and DR viewer, Security Reviewer for IAM roles and policies, Organization Policy Viewer, Tag
-Viewer, Workload Identity Pool Viewer, Deny Reviewer), Cloud Asset Viewer on the organization for the inherited IAM
-policies, and Storage Object Viewer on the Terraform state object only (role names to confirm against Google's
+Viewer, Workload Identity Pool Viewer, Deny Reviewer, Security Center Notification Configurations Viewer, Service
+Usage Viewer), Cloud Asset Viewer on the organization for the inherited IAM policies and its asset feeds, Billing
+Account Viewer (or Costs Manager) on the billing account for its budgets, and Storage Object Viewer on the Terraform state object only (role names to confirm against Google's
 predefined roles reference before use). The tests pin every command the collector may run
 (`tests/test_gcp_collect.py`, OPERATIONS) and check what is trimmed.
 
@@ -394,6 +395,16 @@ done
 for c in $(gcloud org-policies list --project=$P --format='value(constraint)'); do
   gcloud org-policies describe "$c" --project=$P --effective --format=json > "$out/org-policy-${c##*/}.json"
 done
+
+# security services and budgets: SCC notification configs (v2, location global) and asset feeds of the project and of
+# the organization, the enabled services (the scanning APIs among them), the billing account's budgets
+ORG=123456789012; BILLING=0X0X0X-0X0X0X-0X0X0X      # the cloud's ciamOrganizationRef and ciamBillingAccountRef
+gcloud scc notifications list --project=$P --location=global --format=json            > $out/scc-notifications.json
+gcloud scc notifications list --organization=$ORG --location=global --format=json     > $out/scc-notifications-organization.json
+gcloud services list --enabled --project=$P --format=json                             > $out/services.json
+gcloud asset feeds list --project=$P --format=json                                    > $out/feeds.json
+gcloud asset feeds list --organization=$ORG --format=json                             > $out/feeds-organization.json
+gcloud billing budgets list --billing-account=$BILLING --format=json                  > $out/budgets.json
 
 opsdir import --dry-run gcp/cli-inventory export/
 opsdir import --change CHG-… gcp/cli-inventory export/

@@ -12,8 +12,11 @@ then each listed item's details (record sets per DNS zone, keys per vault, funct
 origins, firewall policy rule collection groups, PostgreSQL and MySQL parameters, backup policies and instances,
 federated credentials); then monitoring: metric and log query alerts, action groups, Log Analytics workspaces,
 Application Insights standard web tests, the subscription's policy exemptions and Defender for Cloud alert suppression
-rules. VPN connections, action groups (their receivers: webhook and Logic App URLs can carry tokens) and web tests
-(their request headers) are projected to what the importer reads, so those are never fetched; Key Vault secrets are
+rules; Defender for Cloud's plans, the machines' vulnerability assessment setting (az rest: no az command reads it;
+none set leaves its file out), continuous exports, and the consumption budgets of the subscription and the resource
+group (az rest: az consumption is in preview). VPN connections, action groups (their receivers: webhook and Logic App
+URLs can carry tokens), web tests (their request headers) and continuous exports (an Event Hub's connection string, a
+Logic App's URI) are projected to what the importer reads, so those are never fetched; Key Vault secrets are
 listed by name only, never shown.
 
 Terraform state: (a) by default the state blob a collection source names (ciamCollectionSource, importer
@@ -34,13 +37,21 @@ CLOUD_NAMES = {"public": "AzureCloud", "usgovernment": "AzureUSGovernment"}
 VPN_PROJECTION = ("[].{id: id, name: name, type: type, connectionType: connectionType, tags: tags, "
                   "localNetworkGateway2: localNetworkGateway2, virtualNetworkGateway1: virtualNetworkGateway1}")
 ACTION_GROUP_PROJECTION = "[].{id: id, name: name, type: type, tags: tags}"
+# continuous exports: where they send by resource ID only (an Event Hub's connection string and a Logic App's trigger
+# URI are secrets; Microsoft documents them as never returned, and they are projected out all the same), whether the
+# CLI prints the properties flattened or nested
+AUTOMATION_PROJECTION = ("[].{id: id, name: name, type: type, sources: sources || properties.sources, "
+                         "actions: (actions || properties.actions)[].{actionType: actionType, workspaceResourceId: "
+                         "workspaceResourceId, eventHubResourceId: eventHubResourceId, logicAppResourceId: "
+                         "logicAppResourceId}}")
+VA_API, BUDGETS_API = "2023-05-01", "2026-06-01"
 WEB_TEST_PROJECTION = ("[].{id: id, name: name, type: type, tags: tags, kind: kind, frequency: frequency, "
                        "timeout: timeout, enabled: enabled, locations: locations, "
                        "request: request && {requestUrl: request.requestUrl}}")
 
 
-def _az(*args, query=None):
-    return Command(("az", *args, *(("--query", query) if query else ()), "-o", "json"))
+def _az(*args, query=None, absent=()):
+    return Command(("az", *args, *(("--query", query) if query else ()), "-o", "json"), absent=tuple(absent))
 
 
 def _list(done, path):
@@ -125,6 +136,17 @@ def _listings(m, rg, vnet):
         ("web-tests.json", _az("monitor", "app-insights", "web-test", "list", *g, query=WEB_TEST_PROJECTION)),
         ("policy-exemptions.json", _az("policy", "exemption", "list")),
         ("suppression-rules.json", _az("security", "alerts-suppression-rule", "list")),
+        ("security-pricings.json", _az("security", "pricing", "list")),
+        ("security-automations.json", _az("security", "automation", "list", query=AUTOMATION_PROJECTION)),
+        *((p, _az("rest", "--method", "get", "--url", url, absent=absent)) for p, url, absent in (
+            ("vulnerability-assessment.json", f"{_arm(m)}/subscriptions/{sub}/providers/Microsoft.Security/"
+                                              f"serverVulnerabilityAssessmentsSettings/azureServersSetting"
+                                              f"?api-version={VA_API}", ("Not Found",)),
+            ("budgets-subscription.json", f"{_arm(m)}/subscriptions/{sub}/providers/Microsoft.Consumption/budgets"
+                                          f"?api-version={BUDGETS_API}", ()),
+            ("budgets-resource-group.json", f"{_arm(m)}/subscriptions/{sub}/resourceGroups/{rg}/providers/"
+                                            f"Microsoft.Consumption/budgets?api-version={BUDGETS_API}", ()))
+          if sub),
         ("postgres-servers.json", _az("postgres", "flexible-server", "list", *g)),
         ("mysql-servers.json", _az("mysql", "flexible-server", "list", *g)),
         ("disks.json", _az("disk", "list", *g)),

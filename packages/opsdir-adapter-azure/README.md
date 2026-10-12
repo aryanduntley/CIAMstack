@@ -43,7 +43,7 @@ Terraform is the default render target. A render can be written as Bicep, as ARM
 - **Azure Government.** The same templates; the Terraform's Azure Government comments come with them. Data Protection backup vaults and the Entra log export carry a comment that Microsoft's Azure Government documentation doesn't state their availability there.
 - **Checked.** `bicep build` and `bicep lint` pass (errors fail, warnings are shown: `opsdir/scripts/validate-bicep.sh`; tests marked `bicep`), and the ARM JSON equals what `bicep build` compiles. That holds for the showcase and for the Azure sample (`examples/showcase/tests/terraform/azure_sample.py`, which renders every type the renderers write), in eastus2 and usgovvirginia. Every Terraform resource goes exactly one place: a template's resource, part of one, or the Terraform root with its reason.
 - **Placements.** Beside each root's templates, `placements.json` says where every Terraform resource went, by address: the template and resource (`in`, `id`), the resource it is part of (`part of`), or the Terraform root and why it stays there (`why`). Moving an environment from Terraform to Bicep or ARM, it says what to import where; reading the render back, what each template resource realizes.
-- **Read back** (the round trip, `rendered_deployments` in `rendered_state.py`; milestone 5.6c), from the ARM JSON (`arm/`): the `.bicep` is the same deployment (the `bicep` tests prove it), so a render chosen only as Bicep reads nothing back, and the Terraform read-back says so. Each template becomes a deployment folder as the CLI saves one: the template, `az deployment group show` (the record's subscription, the template's resource group, its parameters' defaults) and `az group show` (the group in the environment's region); ARM ids come from names, so nothing else is assigned. The kept Terraform root becomes the state applying it would record, its variables the templates' outputs. `azure/arm` reads them together, as one import, and must read the same record as the Terraform read-back does (`examples/showcase/tests/unit/test_round_trip.py`, `test_arm_coverage.py`). Where it can't, the reason is inherent: a lookup is an `existing` reference, not a resource, so only the read-back that reads a looked-up kind judges the record's bindings of that kind; and what Azure assigns at deployment that no template holds (a managed identity's client id) isn't there. Budgets, Defender's identity coverage and the resource-change alert are read back from Terraform only until milestone 5.6b; kinds the Bicep/ARM render never writes (scale sets, AKS, Service Bus, Event Hubs, Event Grid, Communication Services) aren't read from a template until milestone 5.6d.
+- **Read back** (the round trip, `rendered_deployments` in `rendered_state.py`; milestone 5.6c), from the ARM JSON (`arm/`): the `.bicep` is the same deployment (the `bicep` tests prove it), so a render chosen only as Bicep reads nothing back, and the Terraform read-back says so. Each template becomes a deployment folder as the CLI saves one: the template, `az deployment group show` (the record's subscription, the template's resource group, its parameters' defaults) and `az group show` (the group in the environment's region); ARM ids come from names, so nothing else is assigned. The kept Terraform root becomes the state applying it would record, its variables the templates' outputs. `azure/arm` reads them together, as one import, and must read the same record as the Terraform read-back does (`examples/showcase/tests/unit/test_round_trip.py`, `test_arm_coverage.py`). Where it can't, the reason is inherent: a lookup is an `existing` reference, not a resource, so only the read-back that reads a looked-up kind judges the record's bindings of that kind; and what Azure assigns at deployment that no template holds (a managed identity's client id) isn't there. kinds the Bicep/ARM render never writes (scale sets, AKS, Service Bus, Event Hubs, Event Grid, Communication Services) aren't read from a template until milestone 5.6d.
 - **Not yet.** A deployment (`az deployment group/sub what-if`) against a subscription, and whether a PIM eligibility request deploys again unchanged (milestone 7.2).
 
 
@@ -333,9 +333,12 @@ Azure CLI login (`opsdir_adapter_azure.collect`), and imports it like an export 
   resource group (its network binding's `ciamResourceGroup`, else the environment's), its virtual network, its region,
   the Key Vaults its `azkv://` references name and the storage accounts its object stores name; then each listed
   item's details. `az rest` reads (PIM eligibility, deny assignments) are `--method get` against the cloud's own
-  management endpoint (`management.usgovcloudapi.net` in Azure Government). VPN connections, action groups and
-  Application Insights web tests are projected to what the importer reads (shared keys, receivers' webhook and Logic
-  App URLs, and request headers are never fetched); Key Vault secrets are listed by name, never shown.
+  management endpoint (`management.usgovcloudapi.net` in Azure Government): PIM eligibility, deny assignments, the
+  machines' vulnerability assessment setting (no `az` command reads it; none set leaves its file out) and consumption
+  budgets (`az consumption` is in preview). VPN connections, action groups, Application Insights web tests and Defender
+  continuous exports are projected to what the importer reads (shared keys, receivers' webhook and Logic App URLs,
+  request headers, an Event Hub's connection string and a Logic App's URI are never fetched); Key Vault secrets are
+  listed by name, never shown.
 - `azure/terraform-state`: (a) by default the state blob a collection source names, read with `az storage blob download
   --auth-mode login -o none` to standard output (no `terraform init`, no lock):
 
@@ -351,7 +354,8 @@ Azure CLI login (`opsdir_adapter_azure.collect`), and imports it like an export 
 
 Least privilege: `Reader` on the subscription (management-plane reads: networks, compute, role assignments and
 definitions, policy assignments and exemptions, PIM eligibility, deny assignments, diagnostic settings, alerts,
-action groups, workspaces, web tests, alert suppression rules), `Key Vault Reader` on each
+action groups, workspaces, web tests, alert suppression rules, Defender plans, settings and continuous exports,
+consumption budgets), `Key Vault Reader` on each
 vault the record names (key and secret metadata, never values), and `Storage Blob Data Reader` on the Terraform state
 container only. The tests pin every command the collector may run (`tests/test_azure_collect.py`, OPERATIONS) and
 refuse any that returns secret material (secret show, app settings, connection strings, shared keys, storage keys).
@@ -480,6 +484,20 @@ az monitor app-insights web-test list -g $RG --query '[].{id: id, name: name, ty
 az policy exemption list -o json                                        > $out/policy-exemptions.json
 az security alerts-suppression-rule list -o json                        > $out/suppression-rules.json
 
+# Defender for Cloud: plans, the machines' vulnerability assessment setting (az rest: no az command reads it; a
+# subscription without one answers 404), continuous exports (projected: an Event Hub's connection string and a Logic
+# App's URI are secrets); consumption budgets of the subscription and the resource group (az rest: az consumption is
+# in preview)
+az security pricing list -o json                                        > $out/security-pricings.json
+az security automation list --query '[].{id: id, name: name, type: type, sources: sources || properties.sources, actions: (actions || properties.actions)[].{actionType: actionType, workspaceResourceId: workspaceResourceId, eventHubResourceId: eventHubResourceId, logicAppResourceId: logicAppResourceId}}' -o json \
+                                                                        > $out/security-automations.json
+ARM=https://management.azure.com                                         # management.usgovcloudapi.net in Azure Government
+az rest --url "$ARM/subscriptions/$SUB/providers/Microsoft.Security/serverVulnerabilityAssessmentsSettings/azureServersSetting?api-version=2023-05-01" \
+  > $out/vulnerability-assessment.json || rm -f $out/vulnerability-assessment.json
+az rest --url "$ARM/subscriptions/$SUB/providers/Microsoft.Consumption/budgets?api-version=2026-06-01" > $out/budgets-subscription.json
+az rest --url "$ARM/subscriptions/$SUB/resourceGroups/$RG/providers/Microsoft.Consumption/budgets?api-version=2026-06-01" \
+  > $out/budgets-resource-group.json
+
 opsdir import --dry-run azure/cli-inventory export/
 opsdir import --change CHG-… azure/cli-inventory export/
 ```
@@ -538,7 +556,7 @@ Saved by hand, keep each region's outputs in a folder named after it (`<region>/
 
 ## Budgets
 
-Each budget the platform team keeps (core `estate`: `ciamBudget`) is rendered as `azurerm_consumption_budget_resource_group` on the environment's resource group: its amount, time grain (`Monthly`, `Quarterly`, `Annually`), `time_period` from the input `budget_start_date` (the first of a month; changing it replaces the budget), and a `GreaterThan` notification per `ciamActualThreshold` (`Actual`) and `ciamForecastThreshold` (`Forecasted`) to the action group of the channel its `ciamAlertRole` names (`contact_groups`). Azure needs a notification with a contact on every budget: without thresholds it alerts at 100% spent, without an action group the subscription's Owners (both commented), at most five (the rest named). Budgets count in the billing account's currency (another recorded currency is commented). In Azure Government, Cost Management budgets serve Enterprise Agreement and pay-as-you-go subscriptions, not CSP ones (a comment). Read back from Terraform state (`_resource_group` and `_subscription` budgets).
+Each budget the platform team keeps (core `estate`: `ciamBudget`) is rendered as `azurerm_consumption_budget_resource_group` on the environment's resource group: its amount, time grain (`Monthly`, `Quarterly`, `Annually`), `time_period` from the input `budget_start_date` (the first of a month; changing it replaces the budget), and a `GreaterThan` notification per `ciamActualThreshold` (`Actual`) and `ciamForecastThreshold` (`Forecasted`) to the action group of the channel its `ciamAlertRole` names (`contact_groups`). Azure needs a notification with a contact on every budget: without thresholds it alerts at 100% spent, without an action group the subscription's Owners (both commented), at most five (the rest named). Budgets count in the billing account's currency (another recorded currency is commented). In Azure Government, Cost Management budgets serve Enterprise Agreement and pay-as-you-go subscriptions, not CSP ones (a comment). Read back from Terraform state (`_resource_group` and `_subscription` budgets), and the same from the CLI (`az rest` on `Microsoft.Consumption/budgets` at the subscription and the resource group) and an ARM template (`cli_budgets.py`).
 
 ## Landing zone
 

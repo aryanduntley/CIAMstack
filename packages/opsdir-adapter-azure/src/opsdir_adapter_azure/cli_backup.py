@@ -11,6 +11,8 @@ be nested (`az dataprotection … -o json`) or flattened into the resource (the 
   az dataprotection backup-instance list    …/backupVaults/backupInstances (disk ones) -> azurerm_data_protection_
      --vault-name V                         backup_instance_disk (the disk, its policy)
 """
+from .arm_ids import with_properties
+
 VAULTS = "microsoft.dataprotection/backupvaults"
 POLICIES = "microsoft.dataprotection/backupvaults/backuppolicies"
 INSTANCES = "microsoft.dataprotection/backupvaults/backupinstances"
@@ -18,16 +20,12 @@ READ = (VAULTS, POLICIES, INSTANCES)    # what an ARM template's reader reads of
 DISKS = "microsoft.compute/disks"
 
 
-def _props(item):
-    return {**item, **(item.get("properties") or {})}
-
-
 def _vault_of(child_id):
     return (child_id or "").rsplit("/backupPolicies/", 1)[0].rsplit("/backupInstances/", 1)[0]
 
 
 def _vault(item):
-    p = _props(item)
+    p = with_properties(item)
     storage = (p.get("storageSettings") or [{}])[0]
     security = p.get("securitySettings") or {}
     key = ((security.get("encryptionSettings") or {}).get("keyVaultProperties") or {}).get("keyUri")
@@ -42,7 +40,7 @@ def _vault(item):
 
 
 def _policy(item):
-    p = _props(item)
+    p = with_properties(item)
     if DISKS not in [t.lower() for t in p.get("datasourceTypes") or ()]:
         return []
     rules = p.get("policyRules") or ()
@@ -56,7 +54,7 @@ def _policy(item):
 
 
 def _instance(item):
-    p = _props(item)
+    p = with_properties(item)
     source = p.get("dataSourceInfo") or {}
     if (source.get("datasourceType") or "").lower() != DISKS:
         return []

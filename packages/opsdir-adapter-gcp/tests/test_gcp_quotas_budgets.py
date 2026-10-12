@@ -10,6 +10,7 @@ import re
 from opsdir.core.interchange.ldif import LdifRecord
 from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.adapter import ADAPTER
+from opsdir_adapter_gcp.cli import cli_resources
 from opsdir_adapter_gcp.budgets import budget_notes, budget_provider_settings, budget_resources, render_budgets
 from opsdir_adapter_gcp.landing import render_landing
 from opsdir_adapter_gcp.quotas import quota_commands, read_quotas, render_quota_requests
@@ -131,3 +132,22 @@ def test_budgets_are_read_back_from_state():
     assert (b.attrs["ciamBudgetAmount"], b.attrs["ciamCurrency"], b.attrs["ciamBudgetPeriod"],
             b.attrs["ciamActualThreshold"], b.attrs["ciamForecastThreshold"], b.links["ciamAlertRole"]) == (
         ("5000.5",), ("EUR",), ("quarterly",), ("90",), ("100",), CHANNEL_ID)
+
+
+
+def test_gcloud_reads_the_same_budget_as_state():
+    a = {"name": "billingAccounts/0X0X0X-0X0X0X-0X0X0X/budgets/abc", "display_name": "alpha-prod-monthly",
+         "amount": [{"specified_amount": [{"currency_code": "EUR", "units": "5000", "nanos": 500000000}]}],
+         "budget_filter": [{"calendar_period": "QUARTER", "projects": ["projects/123"]}],
+         "threshold_rules": [{"threshold_percent": 0.9, "spend_basis": "CURRENT_SPEND"},
+                             {"threshold_percent": 1.0, "spend_basis": "FORECASTED_SPEND"}],
+         "all_updates_rule": [{"monitoring_notification_channels": [CHANNEL_ID]}]}
+    listed = [{"name": "billingAccounts/0X0X0X-0X0X0X-0X0X0X/budgets/abc", "displayName": "alpha-prod-monthly",
+               "amount": {"specifiedAmount": {"currencyCode": "EUR", "units": "5000", "nanos": 500000000}},
+               "budgetFilter": {"calendarPeriod": "QUARTER", "projects": ["projects/123"],
+                                "creditTypesTreatment": "INCLUDE_ALL_CREDITS"},
+               "thresholdRules": [{"thresholdPercent": 0.9, "spendBasis": "CURRENT_SPEND"},
+                                  {"thresholdPercent": 1.0, "spendBasis": "FORECASTED_SPEND"}],
+               "notificationsRule": {"monitoringNotificationChannels": [CHANNEL_ID]}, "etag": "x"}]
+    resources, _ = cli_resources({"budgets.json": json.dumps(listed)})
+    assert [r for r in resources if r.kind == "budget"] == list(budget_resources([("google_billing_budget", a)]))

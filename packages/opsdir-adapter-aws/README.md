@@ -41,7 +41,7 @@ Terraform is the default render target. A render can be written as AWS CloudForm
 - **What stays Terraform.** `cloudformation/<rest>/terraform/main.tf`, beside the template and applied after it, its variables taking the template's outputs, with a NOTE naming each resource it keeps and why: no CloudFormation type (the Inspector enabler, Config's retention, Macie's export configuration and classification job, service quota requests, the default route table); in GovCloud, the types GovCloud's resource specification lacks (Macie's account and identifiers, Shield protections, Budgets, CloudFront outside the standard account); an adopted resource CloudFormation can't import by its Terraform import id; and whatever waits for or reads one of these.
 - **Checked.** cfn-lint passes (errors fail, warnings are shown: `opsdir/scripts/validate-cloudformation.sh`; tests marked `cloudformation`), each template naming the region it is checked for in its own metadata, so a GovCloud template is checked against GovCloud's specification. That holds for the showcase and the CloudFormation sample (`examples/showcase/tests/terraform/cloudformation_sample.py`, which renders every type the renderers write), in us-east-1 and us-gov-west-1. Every Terraform resource goes exactly one place: a template's resource, part of one, or the Terraform root with its reason.
 - **Placements.** Beside each root's templates, `placements.json` says where every Terraform resource went, by address: the template and logical id (`in`, `id`), the resource it is part of (`part of`), or the Terraform root and why it stays there (`why`). Moving an environment from Terraform to CloudFormation, it says what to import where; reading the render back, what each template resource realizes.
-- **Read back** (the round trip, `rendered_stacks` in `rendered_state.py`; milestone 5.6c). Each template becomes a stack folder as the CLI saves one: the template, `describe-stacks` (its parameters' defaults, the stack in the cloud's region and account, or the region its provider alias names) and `list-stack-resources`, each resource's physical id what the Terraform read-back assigns the address `placements.json` names (the provider reference of a binding it realizes, else the address itself). The kept Terraform root becomes the state applying it would record, its variables the stacks' outputs. `aws/cloudformation` reads them together, as one import, and must read the same record as the Terraform read-back does (`examples/showcase/tests/unit/test_round_trip.py`, `test_cloudformation_coverage.py`). Where it can't, the reason is inherent: a lookup is a template parameter, not a resource, so only the read-back that reads a looked-up kind judges the record's bindings of that kind; and what AWS assigns at deployment that no template holds (an Elastic IP's address) isn't there. Security services and budgets are read back from Terraform only until milestone 5.6b; kinds the CloudFormation render never writes (autoscaling groups, EKS, queues and streams, SES) aren't read from a template until milestone 5.6d.
+- **Read back** (the round trip, `rendered_stacks` in `rendered_state.py`; milestone 5.6c). Each template becomes a stack folder as the CLI saves one: the template, `describe-stacks` (its parameters' defaults, the stack in the cloud's region and account, or the region its provider alias names) and `list-stack-resources`, each resource's physical id what the Terraform read-back assigns the address `placements.json` names (the provider reference of a binding it realizes, else the address itself). The kept Terraform root becomes the state applying it would record, its variables the stacks' outputs. `aws/cloudformation` reads them together, as one import, and must read the same record as the Terraform read-back does (`examples/showcase/tests/unit/test_round_trip.py`, `test_cloudformation_coverage.py`). Where it can't, the reason is inherent: a lookup is a template parameter, not a resource, so only the read-back that reads a looked-up kind judges the record's bindings of that kind; and what AWS assigns at deployment that no template holds (an Elastic IP's address) isn't there. Kinds the CloudFormation render never writes (autoscaling groups, EKS, queues and streams, SES) aren't read from a template until milestone 5.6d.
 - **Not yet.** `aws cloudformation validate-template` and a deployment in a sandbox account (milestone 7.2).
 
 ## Kubernetes workloads
@@ -326,7 +326,11 @@ AWS CLI login (`opsdir_adapter_aws.collect`), and imports it like an export you 
   pipelines, CloudFront distributions, launch template versions and Synthetics canaries are projected (`--query`) to
   the fields the importer reads, so environment variables, inputs, action configuration, origin custom headers and
   user data are never fetched. A resource without a setting
-  (no bucket policy, no Shield Advanced subscription, a key without rotation support) leaves its file out.
+  (no bucket policy, no Shield Advanced subscription, a key without rotation support) leaves its file out, and so does
+  a security service's organization configuration outside its delegated administrator's account (the generic error
+  its API reference documents for the call: GuardDuty `BadRequestException`, Inspector `AccessDeniedException`,
+  Security Hub `InvalidAccessException`, also for a Security Hub not enabled); the import then names the service as
+  the account's own.
 - Organization control policies (service and resource control policies, read by `aws/cli-inventory` as guardrails)
   can be listed only from the organization's management account or a delegated administrator, so they need a second
   login: a collection source names an AWS CLI profile from your own AWS configuration (SSO or a role chain; opsdir
@@ -345,6 +349,15 @@ AWS CLI login (`opsdir_adapter_aws.collect`), and imports it like an export you 
   ciamImporter: aws/cli-inventory
   ciamSourceRef: aws-profile://org-mgmt
   ```
+- Budgets: the account's own (`budgets describe-budgets --account-id <ciamAccountRef>`, then each budget's
+  notifications, their SNS subscribers, projected so e-mail addresses aren't fetched, and its tags, saved under
+  `budgets/<account>/`). A GovCloud cloud's budgets are its associated standard account's (`ciamBillingAccountRef`):
+  AWS bills GovCloud there and lists no AWS Budgets endpoint in GovCloud. They need a login to that account: a second
+  `aws-profile://` collection source, and only the budget calls run with it. Which profile is which is told by its
+  identity: each profile's `aws sts get-caller-identity` comes first; the one signed in to `ciamBillingAccountRef` reads
+  the budgets, the other the organization's policies (checked against `ciamOrganizationRef` as above). A third profile,
+  or a second one for the same purpose, is a problem. AWS Budgets' endpoint is global (listed under us-east-1) with no
+  FIPS endpoint, so its calls name `--region us-east-1` and never set `AWS_USE_FIPS_ENDPOINT`.
 - `aws/terraform-state`: (a) by default the state object a collection source names, read with `aws s3 cp URI -` (no
   `terraform init`, no lock):
 
@@ -400,6 +413,11 @@ Terraform state object only); `lambda:ListFunctions`, `lambda:ListTags`; `events
 `ec2:DescribeLaunchTemplateVersions`; `eks:ListClusters`, `DescribeCluster`, `ListNodegroups`, `DescribeNodegroup`,
 `ListAddons`, `DescribeAddon`; `cloudwatch:DescribeAlarms`, `ListTagsForResource`; `logs:DescribeLogGroups`,
 `ListTagsForResource`; `synthetics:DescribeCanaries`; `sns:ListTopics`, `ListTagsForResource`;
+`guardduty:ListDetectors`, `GetDetector`, `DescribeOrganizationConfiguration`; `inspector2:BatchGetAccountStatus`,
+`DescribeOrganizationConfiguration`; `config:DescribeConfigurationRecorders`, `DescribeDeliveryChannels`,
+`DescribeRetentionConfigurations`; `securityhub:DescribeHub`, `GetEnabledStandards`,
+`DescribeOrganizationConfiguration`; `budgets:ViewBudget`, `budgets:ListTagsForResource` (a GovCloud cloud's: in its
+standard account, through its profile);
 `iam:GetAccountAuthorizationDetails`;
 `sso:ListInstances`, `ListPermissionSets`, `DescribePermissionSet`, `GetInlinePolicyForPermissionSet`,
 `ListManagedPoliciesInPermissionSet`, `ListAccountAssignments`; `cloudformation:DescribeStacks`,
@@ -591,6 +609,49 @@ for t in $(aws sns list-topics --query 'Topics[].TopicArn' --output text); do
   aws sns list-tags-for-resource --resource-arn "$t"                             > "$out/topic-tags/${t##*:}.json"
 done
 
+# security services: GuardDuty's detectors (get-detector doesn't name its detector: saved by its id), Inspector's
+# account status, AWS Config's recorders, delivery channels and retention, Security Hub and its standards. Each
+# service's organization configuration answers only in its delegated administrator's account (saved there under
+# organization-configuration/; elsewhere the call fails and the service reads as the account's own). The EventBridge
+# rules routing their findings are rules.json and event-targets/ above.
+mkdir -p $out/guardduty $out/organization-configuration
+for d in $(aws guardduty list-detectors --query 'DetectorIds[]' --output text); do
+  aws guardduty get-detector --detector-id "$d"                                  > "$out/guardduty/$d.json"
+  aws guardduty describe-organization-configuration --detector-id "$d" \
+    > "$out/organization-configuration/guardduty-$d.json" || rm -f "$out/organization-configuration/guardduty-$d.json"
+done
+aws inspector2 batch-get-account-status                                          > $out/inspector2.json
+aws configservice describe-configuration-recorders                               > $out/config-recorders.json
+aws configservice describe-delivery-channels                                     > $out/config-channels.json
+aws configservice describe-retention-configurations                              > $out/config-retention.json
+aws securityhub describe-hub > $out/securityhub-hub.json || rm -f $out/securityhub-hub.json    # not enabled: none
+aws securityhub get-enabled-standards > $out/securityhub-standards.json || rm -f $out/securityhub-standards.json
+for svc in inspector2 securityhub; do
+  aws $svc describe-organization-configuration > "$out/organization-configuration/$svc.json" \
+    || rm -f "$out/organization-configuration/$svc.json"
+done
+
+# budgets: each budget's notifications, their subscribers (SNS topics only: no e-mail addresses) and its tags, saved
+# under budgets/<account>/<budget>/ (the outputs name no account or budget; a budget's name percent-encoded, / as %2F).
+# A GovCloud cloud's budgets: signed in to its standard account, ACCOUNT that account's ID. No FIPS endpoint exists.
+ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+mkdir -p $out/budgets
+aws budgets describe-budgets --account-id "$ACCOUNT" --region us-east-1           > "$out/budgets/$ACCOUNT.json"
+aws budgets describe-budgets --account-id "$ACCOUNT" --region us-east-1 --query 'Budgets[].BudgetName' --output text \
+  | tr '\t' '\n' | while IFS= read -r b; do
+  d="$out/budgets/$ACCOUNT/${b//\//%2F}"; mkdir -p "$d"
+  aws budgets describe-notifications-for-budget --account-id "$ACCOUNT" --budget-name "$b" --region us-east-1 > "$d/notifications.json"
+  aws budgets list-tags-for-resource --resource-arn "arn:aws:budgets::$ACCOUNT:budget/$b" --region us-east-1 > "$d/tags.json"
+  count=$(aws budgets describe-notifications-for-budget --account-id "$ACCOUNT" --budget-name "$b" --region us-east-1 \
+          --query 'length(Notifications)' --output text)
+  for i in $(seq 0 $((count - 1))); do
+    n=$(aws budgets describe-notifications-for-budget --account-id "$ACCOUNT" --budget-name "$b" --region us-east-1 \
+        --query "Notifications[$i]" --output json)
+    aws budgets describe-subscribers-for-notification --account-id "$ACCOUNT" --budget-name "$b" --notification "$n" \
+      --query "{Subscribers: Subscribers[?SubscriptionType=='SNS']}" --region us-east-1 > "$d/subscribers-$i.json"
+  done
+done
+
 # IAM: roles and policies (AWS managed ones included), key and bucket policies, Identity Center, control policies
 mkdir -p $out/key-policy $out/bucket-policy $out/sso-inline $out/sso-managed $out/org
 ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
@@ -660,7 +721,7 @@ Or let `opsdir collect` run these calls for the stacks collection sources name (
 
 The template says what each resource is declared with; the stack's resources give the IDs the record matches on (`vpc-…`, `i-…`, ARNs), so a stack without its resource listing is read for nothing and named, and so is a folder without a template. The Terraform state of a root kept beside the stacks (`*.tfstate` anywhere in the environment's folder: what an opsdir CloudFormation render keeps in Terraform, applied) is read with them, so one import sees the whole environment. Values are resolved from the stack's parameters (else the template's defaults), pseudo parameters (`AWS::Region`, `AWS::AccountId`, … from the stack ID) and physical IDs: `Ref`, `Fn::Sub`, `Fn::Join`, `Fn::Select`, and `Fn::GetAtt` where it links resources (a Route 53 alias to its load balancer, a NAT gateway or load balancer to its Elastic IP's address). JSON and YAML templates are read, short tags (`!Ref`, `!Sub`, `!GetAtt`, …) included.
 
-What the stacks declare is read into the same resources as Terraform state (the mapping is shared: VPCs, subnets, instances, security groups and ingress rules, load balancers with listeners and target groups, Route 53 records with their routing, Secrets Manager secrets with rotation schedules, KMS keys, S3 buckets, NAT gateways, Lambda functions, EventBridge rules and their targets (`Fn::GetAtt X.Arn` resolves to X's ARN), Scheduler schedules, CodePipeline pipelines, CodeBuild projects, CloudTrail trails (with their event selectors); IAM roles and policies, OIDC providers, control policies and Identity Center; the edge (CloudFront, WAF, Shield, health checks, Resolver rules); RDS instances, Aurora clusters and their subnet and parameter groups, Macie custom data identifiers; Security Hub automation rules and GuardDuty filters; log groups, metric alarms and Synthetics canaries; EBS volumes with their attachments, Lifecycle Manager policies, AWS Backup vaults (with their lock), plans and selections; ARNs built from the stack's partition, region and account), so the table above, roles and `roles.json` apply unchanged. A KMS key's rotation is off unless the template sets `EnableKeyRotation`, as in CloudFormation. Named in the notices:
+What the stacks declare is read into the same resources as Terraform state (the mapping is shared: VPCs, subnets, instances, security groups and ingress rules, load balancers with listeners and target groups, Route 53 records with their routing, Secrets Manager secrets with rotation schedules, KMS keys, S3 buckets, NAT gateways, Lambda functions, EventBridge rules and their targets (`Fn::GetAtt X.Arn` resolves to X's ARN), Scheduler schedules, CodePipeline pipelines, CodeBuild projects, CloudTrail trails (with their event selectors); IAM roles and policies, OIDC providers, control policies and Identity Center; the edge (CloudFront, WAF, Shield, health checks, Resolver rules); RDS instances, Aurora clusters and their subnet and parameter groups, Macie custom data identifiers; GuardDuty detectors with their features, AWS Config recorders and delivery channels, Security Hub and its standards (Inspector's enabler and Config's retention have no CloudFormation type: a render keeps them in Terraform, read beside the stacks), Security Hub automation rules and GuardDuty filters, and the EventBridge rules routing findings, by their event patterns; log groups, metric alarms and Synthetics canaries; EBS volumes with their attachments, Lifecycle Manager policies, AWS Backup vaults (with their lock), plans and selections; budgets with their notifications' SNS topics; ARNs built from the stack's partition, region and account), so the table above, roles and `roles.json` apply unchanged. A KMS key's rotation is off unless the template sets `EnableKeyRotation`, as in CloudFormation. Named in the notices:
 
 - functions that aren't evaluated (`Fn::If`, `Fn::ImportValue`, `Fn::FindInMap`, `Fn::Cidr`, …), counted per stack: the attributes computed with them keep the record's values;
 - resources without a physical ID (not created, failed, deleted) and resource types not read, counted;
@@ -693,7 +754,7 @@ Applied values take precedence over AWS's defaults (`list-service-quotas` leaves
 
 ## Budgets
 
-Each budget the platform team keeps (core `estate`: `ciamBudget`) is rendered as `aws_budgets_budget` (COST, `limit_amount`/`limit_unit`, `MONTHLY`/`QUARTERLY`/`ANNUALLY`), filtered by the tag policy's environment tag (`TagKeyValue` `user:<key>$<cloud/env>`: activate the tag as a cost allocation tag) or, without one, by the account (`LinkedAccount`), with a `GREATER_THAN` percentage notification per `ciamActualThreshold` (`ACTUAL`) and `ciamForecastThreshold` (`FORECASTED`) to the SNS topic of the channel its `ciamAlertRole` names. AWS Budgets publishes only to a topic in the budget's own account whose policy lets `budgets.amazonaws.com` publish; a channel elsewhere is a `# NOTE` and the notifications are left out. A GovCloud cloud's billing is managed only in its associated standard account: its budgets go through the provider aliased `billing` (us-east-1, `allowed_account_ids` the cloud's `ciamBillingAccountRef`; none: a `# NOTE`), with a comment that how a filter isolates one GovCloud account's spend there isn't documented. Read back from Terraform state as budgets (COST, those periods; percentage thresholds; the first topic as the channel).
+Each budget the platform team keeps (core `estate`: `ciamBudget`) is rendered as `aws_budgets_budget` (COST, `limit_amount`/`limit_unit`, `MONTHLY`/`QUARTERLY`/`ANNUALLY`), filtered by the tag policy's environment tag (`TagKeyValue` `user:<key>$<cloud/env>`: activate the tag as a cost allocation tag) or, without one, by the account (`LinkedAccount`), with a `GREATER_THAN` percentage notification per `ciamActualThreshold` (`ACTUAL`) and `ciamForecastThreshold` (`FORECASTED`) to the SNS topic of the channel its `ciamAlertRole` names. AWS Budgets publishes only to a topic in the budget's own account whose policy lets `budgets.amazonaws.com` publish; a channel elsewhere is a `# NOTE` and the notifications are left out. A GovCloud cloud's billing is managed only in its associated standard account: its budgets go through the provider aliased `billing` (us-east-1, `allowed_account_ids` the cloud's `ciamBillingAccountRef`; none: a `# NOTE`), with a comment that how a filter isolates one GovCloud account's spend there isn't documented. Read back from Terraform state as budgets (COST, those periods; percentage thresholds; the first topic as the channel), and the same from the CLI (`cli_budgets.py`, saved by account under `budgets/`) and CloudFormation (`AWS::Budgets::Budget`); a notification the CLI prints without its `ThresholdType` isn't read as a percentage.
 
 ## Landing zone
 

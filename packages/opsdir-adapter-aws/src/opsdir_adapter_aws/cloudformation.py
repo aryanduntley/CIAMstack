@@ -26,10 +26,13 @@ Terraform resource and read by the same mapping (opsdir_adapter_aws.inventory.pa
   is never read), AWS::KMS::Key (+ ReplicaKey), AWS::S3::Bucket, AWS::CloudTrail::Trail (its ARN from the stack's
   region and account; cli_audit.py); the network depth (route tables, network ACLs, VPC endpoints and endpoint
   services, peering, transit and VPN, flow logs, Network Firewall): cloudformation_network.py; IAM and guardrails,
-  the edge, data stores, suppressions, observability (log groups, alarms, canaries), volumes and backups:
-  cloudformation_iam.py, _edge.py, _data.py, _security.py, _observability.py, _backups.py
+  the edge, data stores, security services (GuardDuty, AWS Config, Security Hub) and suppressions, observability (log
+  groups, alarms, canaries), volumes and backups, budgets; EventBridge rules with their event patterns (findings
+  routes):
+  cloudformation_iam.py, _edge.py, _data.py, _security.py, _observability.py, _backups.py, _budgets.py
 Resources that weren't created (no physical ID, deleted, failed) are skipped; other resource types are counted.
 """
+import json
 import re
 from collections import Counter
 from types import MappingProxyType
@@ -42,6 +45,7 @@ from opsdir.core.sources import json_document, parsed
 from .cli_audit import trail_attributes
 from .cli_edge import record_attributes
 from .cloudformation_backups import BACKUP_TYPES, backup_stack_pairs
+from .cloudformation_budgets import BUDGET_TYPES, budget_stack_pairs
 from .cloudformation_data import DATA_TYPES, data_stack_pairs
 from .cloudformation_edge import EDGE_TYPES, edge_stack_pairs
 from .cloudformation_iam import IAM_TYPES, iam_stack_pairs
@@ -59,7 +63,7 @@ READ = ("AWS::EC2::VPC", "AWS::EC2::Subnet", "AWS::EC2::Instance", "AWS::EC2::Se
         "AWS::KMS::ReplicaKey", "AWS::S3::Bucket", "AWS::Lambda::Function", "AWS::Events::Rule",
         "AWS::Scheduler::Schedule", "AWS::CodePipeline::Pipeline", "AWS::CodeBuild::Project", "AWS::CloudTrail::Trail",
         *NETWORK_TYPES, *IAM_TYPES, *EDGE_TYPES, *DATA_TYPES, *SECURITY_TYPES, *OBSERVABILITY_TYPES,
-        *BACKUP_TYPES)
+        *BACKUP_TYPES, *BUDGET_TYPES)
 EVALUATED = ("Ref", "Fn::Sub", "Fn::Join", "Fn::Select", "Fn::GetAtt")
 NOT_CREATED = ("CREATE_FAILED", "DELETE_COMPLETE", "DELETE_IN_PROGRESS", "DELETE_FAILED")
 ACCOUNT_WIDE = ("secret", "key", "storage")
@@ -409,6 +413,11 @@ JOB_TYPES = MappingProxyType({"AWS::Lambda::Function": ("aws_lambda_function", "
                               "AWS::CodeBuild::Project": ("aws_codebuild_project", "codebuild", "project/{}")})
 
 
+def _pattern(pattern):
+    """A rule's EventPattern (an object, or its JSON text) as the JSON text Terraform holds it as."""
+    return json.dumps(pattern) if isinstance(pattern, dict) else pattern
+
+
 def _jobs(declared, names):
     """Functions, pipelines and build projects (their ARNs built from the stack's partition, region and account), and
     the enabled EventBridge rules and Scheduler schedules that start them (a Fn::GetAtt X.Arn target is X's ARN)."""
@@ -428,7 +437,8 @@ def _jobs(declared, names):
                 else {"image": env.get("Image")}}
     enabled = [(lg, t, p, raw, pid) for lg, t, p, raw, pid in declared if p.get("State", "ENABLED") == "ENABLED"]
     return [*((JOB_TYPES[t][0], attrs(lg, t, p, pid)) for lg, t, p, _, pid in declared if t in JOB_TYPES),
-            *(("aws_cloudwatch_event_rule", {"name": pid, "schedule_expression": p.get("ScheduleExpression")})
+            *(("aws_cloudwatch_event_rule", {"name": pid, "schedule_expression": p.get("ScheduleExpression"),
+                                              "event_pattern": _pattern(p.get("EventPattern"))})
               for _, t, p, _, pid in enabled if t == "AWS::Events::Rule"),
             *(("aws_cloudwatch_event_target", {"rule": pid, "arn": target(r.get("Arn"), t_.get("Arn"))})
               for _, t, p, raw, pid in enabled if t == "AWS::Events::Rule"
@@ -466,6 +476,7 @@ def stack_pairs(stack, resources, template):
              *_trails(declared, names), *network_stack_pairs(declared), *iam_stack_pairs(declared, names),
              *edge_stack_pairs(declared, names, lambda name: (name or "").lower().rstrip(".") or None),
              *data_stack_pairs(declared, names), *security_stack_pairs(declared, names),
+             *budget_stack_pairs(declared, names),
              *observability_stack_pairs(declared, names), *backup_stack_pairs(declared, names)],
             (*((f"{label}: {', '.join(f'{fn} ({n})' for fn, n in sorted(_unevaluated(template).items()))} not "
                 f"evaluated; the attributes computed with them keep the record's values",)

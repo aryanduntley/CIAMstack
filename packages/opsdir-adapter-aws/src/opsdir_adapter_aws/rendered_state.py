@@ -112,35 +112,39 @@ PHYSICAL_NAMES = MappingProxyType({
     "AWS::RDS::DBParameterGroup": "DBParameterGroupName",
     "AWS::RDS::DBClusterParameterGroup": "DBClusterParameterGroupName", "AWS::Logs::LogGroup": "LogGroupName",
     "AWS::Backup::BackupVault": "BackupVaultName", "AWS::CloudWatch::Alarm": "AlarmName",
-    "AWS::Synthetics::Canary": "Name"})
+    "AWS::Synthetics::Canary": "Name", "AWS::Config::ConfigurationRecorder": "Name",
+    "AWS::Config::DeliveryChannel": "Name"})
 # Physical ids made from the template's properties (an OIDC provider's ARN names its issuer), as aws_assigned makes
 # the ARN of the Terraform type it came from: (properties, partition, account) -> the physical id
 PHYSICAL_MADE = MappingProxyType({
+    "AWS::Budgets::Budget": lambda props, partition, account: (props.get("Budget") or {}).get("BudgetName"),
     "AWS::IAM::OIDCProvider": lambda props, partition, account:
         f"arn:{partition}:iam::{account}:oidc-provider/" + str(props.get("Url", "")).removeprefix("https://")})
 PHYSICAL_ARNS = frozenset({"AWS::ElasticLoadBalancingV2::LoadBalancer", "AWS::ElasticLoadBalancingV2::TargetGroup",
                            "AWS::ElasticLoadBalancingV2::Listener", "AWS::SecretsManager::Secret",
                            "AWS::IAM::ManagedPolicy", "AWS::SSO::PermissionSet", "AWS::Organizations::Policy",
                            "AWS::WAFv2::WebACL", "AWS::WAFv2::IPSet", "AWS::Shield::Protection",
-                           "AWS::SecurityHub::AutomationRule"})
+                           "AWS::SecurityHub::AutomationRule", "AWS::SecurityHub::Hub"})
 
 
 def _physical_id(m, address, resource, arn_of, made):
     """The physical id applying gives the native resource (a template's Resources entry) a Terraform address became,
-    as the Terraform read-back assigns it: the name property the type's physical id is (PHYSICAL_NAMES), when the
-    template gives it; else a binding it realizes gives its provider reference (its ARN where the type's physical id
-    is one, else its id); else the ARN arn_of(Terraform type, name) gives (PHYSICAL_ARNS), what made(properties) makes
-    of the template's properties (PHYSICAL_MADE), or the address (the read-back's synthetic id)."""
+    as the Terraform read-back assigns it: the name property the type's physical id is (PHYSICAL_NAMES), or what
+    made(properties) makes of the template's properties (PHYSICAL_MADE: a budget's nested name, an OIDC provider's
+    ARN), when the template gives it; else a binding it realizes gives its provider reference (its ARN where the type's
+    physical id is one, else its id); else the ARN arn_of(Terraform type, name) gives (PHYSICAL_ARNS), or the address
+    (the read-back's synthetic id)."""
     type_, name = address.split("[", 1)[0].split(".", 1)
     kind, props = resource.get("Type"), resource.get("Properties") or {}
     binding = realized(m, REALIZES, type_, name)
     ref = one(binding, "ciamProviderRef") if binding is not None else None
     held = reference_attributes(ref) if ref else {}
-    named = props.get(PHYSICAL_NAMES[kind]) if kind in PHYSICAL_NAMES else None
+    named = props.get(PHYSICAL_NAMES[kind]) if kind in PHYSICAL_NAMES else \
+        made(kind, props) if kind in PHYSICAL_MADE else None
     if isinstance(named, str):
         return named
     return (held.get("arn", held.get("id")) if kind in PHYSICAL_ARNS else held.get("id")) if held else \
-        arn_of(type_, name) if kind in PHYSICAL_ARNS else made(kind, props) if kind in PHYSICAL_MADE else address
+        arn_of(type_, name) if kind in PHYSICAL_ARNS else address
 
 
 _REGION = re.compile(r"^[a-z]{2}(?:_gov)?_[a-z]+_\d$")

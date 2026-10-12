@@ -17,6 +17,12 @@ custom headers). Nothing reads secret values (no get-secret-value, no SSM parame
 "nothing there" for a resource without that setting (a bucket without a policy, Shield without a subscription, a key
 without rotation support) leave their file out.
 
+Security services: GuardDuty's detectors (each one's get-detector saved by its id), Inspector's account status, AWS
+Config's recorders, delivery channels and retention, Security Hub's hub and enabled standards, and each service's
+organization configuration, which only its delegated administrator's account answers: elsewhere the generic error its
+API reference documents for the call (NOT_ADMIN) leaves the file out, as does a Security Hub not enabled, and the
+importer reads the service as the account's own and says so.
+
 Organization control policies (service and resource control policies) can be listed only from the organization's
 management account or a delegated administrator, a login other than the environment's: a collection source for
 aws/cli-inventory names an AWS CLI profile for it (ciamSourceRef aws-profile://<profile>, from the operator's own AWS
@@ -46,7 +52,8 @@ from opsdir.core.directory import one, values
 from opsdir.core.environment import of_class, one_role
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.governance.collection import collection_sources
-from .account import account_id
+from .account import account_id, govcloud, partition, standard_account
+from .cli_budgets import budget_folder
 from .cli_compute import launch_template_ref
 from .cli_monitor import tags_path
 from .cli_outputs import file_name
@@ -72,10 +79,18 @@ PROJECTIONS = {
                                 "VersionNumber, DefaultVersion: DefaultVersion, LaunchTemplateData: {ImageId: "
                                 "LaunchTemplateData.ImageId, InstanceType: LaunchTemplateData.InstanceType, "
                                 "MetadataOptions: {HttpTokens: LaunchTemplateData.MetadataOptions.HttpTokens}}}}",
+    "subscribers": "{Subscribers: Subscribers[?SubscriptionType=='SNS'].{SubscriptionType: SubscriptionType, "
+                   "Address: Address}}",
     "canaries": "{Canaries: Canaries[].{Name: Name, Schedule: Schedule, Tags: Tags, EngineArn: EngineArn, "
                 "ArtifactS3Location: ArtifactS3Location, ExecutionRoleArn: ExecutionRoleArn, "
                 "RuntimeVersion: RuntimeVersion}}",
 }
+# What a service's organization configuration (and a Security Hub not enabled) answers in an account that isn't its
+# delegated administrator: the error codes the API references document for these operations, generic ones (research:
+# no more specific code is documented). The file is left out; the reader then names the service as the account's own.
+NOTIFICATION_KEYS = ("NotificationType", "ComparisonOperator", "Threshold", "ThresholdType")
+NOT_ADMIN = {"guardduty": ("BadRequestException",), "inspector2": ("AccessDeniedException",),
+             "securityhub": ("InvalidAccessException",)}
 STACK_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9-]{0,127}$")
 STACK_ARN = re.compile(r"^arn:aws[a-z-]*:cloudformation:([a-z0-9-]+):(\d{12}):stack/([A-Za-z][A-Za-z0-9-]{0,127})/"
                        r"[A-Za-z0-9-]+$")
@@ -94,13 +109,14 @@ BUCKET_SETTINGS = (("bucket-versioning", "get-bucket-versioning", ()),
                    ("bucket-policy", "get-bucket-policy", ("NoSuchBucketPolicy",)))
 
 
-def _aws(m, *args, query=None, absent=(), region=None):
+def _aws(m, *args, query=None, absent=(), region=None, fips=True):
     """An AWS CLI call for environment m: JSON output, the cloud's region (or the one given: a stack ARN's), FIPS
-    endpoints when it records them."""
+    endpoints when it records them (fips False: a service AWS lists no FIPS endpoint for)."""
     region = region or one(m.cloud, "ciamRegion")
     return Command(("aws", *args, *(("--query", query) if query else ()), "--output", "json",
                     *(("--region", region) if region else ())),
-                   env=(("AWS_USE_FIPS_ENDPOINT", "true"),) if fips_endpoints(m) else (), absent=tuple(absent))
+                   env=(("AWS_USE_FIPS_ENDPOINT", "true"),) if fips and fips_endpoints(m) else (),
+                   absent=tuple(absent))
 
 
 def _doc(done, path):
@@ -192,6 +208,17 @@ def _listings(m, vpc):
         ("log-groups.json", _aws(m, "logs", "describe-log-groups")),
         ("canaries.json", _aws(m, "synthetics", "describe-canaries", query=PROJECTIONS["canaries"])),
         ("topics.json", _aws(m, "sns", "list-topics")),
+        (f"{WORK}guardduty-detectors.json", _aws(m, "guardduty", "list-detectors")),
+        ("inspector2.json", _aws(m, "inspector2", "batch-get-account-status")),
+        ("config-recorders.json", _aws(m, "configservice", "describe-configuration-recorders")),
+        ("config-channels.json", _aws(m, "configservice", "describe-delivery-channels")),
+        ("config-retention.json", _aws(m, "configservice", "describe-retention-configurations")),
+        ("securityhub-hub.json", _aws(m, "securityhub", "describe-hub", absent=NOT_ADMIN["securityhub"])),
+        ("securityhub-standards.json", _aws(m, "securityhub", "get-enabled-standards",
+                                            absent=NOT_ADMIN["securityhub"])),
+        *((f"organization-configuration/{service}.json",
+           _aws(m, service, "describe-organization-configuration", absent=NOT_ADMIN[service]))
+          for service in ("inspector2", "securityhub")),
         ("iam.json", _aws(m, "iam", "get-account-authorization-details")),
         (f"{WORK}sso-instances.json", _aws(m, "sso-admin", "list-instances")),
         *((f"bucket-policy/{b}.json" if folder == "bucket-policy" else f"{folder}/{b}.json",
@@ -286,6 +313,11 @@ def _details(m, done):
                                                              arn)),
             (f"cloudtrail/{_last(arn)}-tags.json", _aws(m, "cloudtrail", "list-tags", "--resource-id-list", arn)))),
         *_compute_details(m, done),
+        *((p, c) for d in _doc(done, f"{WORK}guardduty-detectors.json").get("DetectorIds") or () if isinstance(d, str)
+          for p, c in ((f"guardduty/{d}.json", _aws(m, "guardduty", "get-detector", "--detector-id", d)),
+                       (f"organization-configuration/guardduty-{d}.json",
+                        _aws(m, "guardduty", "describe-organization-configuration", "--detector-id", d,
+                             absent=NOT_ADMIN["guardduty"])))),
         *_monitor_details(m, done),
         *(((f"{WORK}permission-sets.json", _aws(m, "sso-admin", "list-permission-sets", "--instance-arn", sso)),)
           if sso else ()),
@@ -365,9 +397,20 @@ def _local(m, done):
 
 
 def org_profiles(m):
-    """The AWS CLI profiles environment m's aws/cli-inventory collection sources name (aws-profile://<profile>)."""
+    """The AWS CLI profiles environment m's aws/cli-inventory collection sources name (aws-profile://<profile>): one for
+    the organization's policies, and in GovCloud one for the budgets in the standard account; which is which is told
+    by the account each is signed in to (profile_purposes)."""
     return tuple(loc[len("aws-profile://"):] for s in collection_sources(m, "aws/cli-inventory") for loc in s.locations
                  if loc.startswith("aws-profile://"))
+
+
+def profile_purposes(m, local):
+    """{profile: "billing" (signed in to a GovCloud cloud's standard account, ciamBillingAccountRef), "organization"
+    (any other account: checked against ciamOrganizationRef), or None (its identity not read yet)}."""
+    billing = standard_account(m) if govcloud(m) else None
+    return {p: None if f"{WORK}profile-{p}.json" not in local else
+            "billing" if billing and _doc(local, f"{WORK}profile-{p}.json").get("Account") == billing
+            else "organization" for p in org_profiles(m)}
 
 
 def organization_id(m):
@@ -377,16 +420,22 @@ def organization_id(m):
 
 
 def inventory_problems(d, m, options):
-    """Collector.problems of aws/cli-inventory: an organization profile source that can't be used safely."""
+    """Collector.problems of aws/cli-inventory: profile sources that can't be used safely (more than the organization's
+    and, in GovCloud, the standard account's; a name not passed to the AWS CLI; nothing recorded to check them
+    against)."""
     profiles = org_profiles(m)
     if not profiles:
         return ()
-    return (*(("more than one aws-profile:// collection source: name one profile for the organization's policies",)
-              if len(profiles) > 1 else ()),
+    billing = govcloud(m) and standard_account(m)
+    most = 2 if billing else 1
+    return (*(("more than two aws-profile:// collection sources: name one profile for the organization's policies "
+               "and one for the standard account's budgets" if billing else
+               "more than one aws-profile:// collection source: name one profile for the organization's policies",)
+              if len(profiles) > most else ()),
             *(f"aws-profile://{p}: not a profile name opsdir passes to the AWS CLI" for p in profiles
               if not PROFILE.match(p)),
             *(("the cloud records no AWS organization (ciamOrganizationRef o-…) to check the profile against",)
-              if organization_id(m) is None else ()),
+              if organization_id(m) is None and not billing else ()),
             *(("the cloud records no account (ciamAccountRef) whose policies to read",) if not account_id(m) else ()))
 
 
@@ -408,8 +457,7 @@ def _org_steps(m, local, profile):
     """(path, call or problem) of the organization's policies, read with profile: its identity and organization first;
     then, when that is the cloud's organization, the account's parents, the policies attached to each, each policy."""
     org = lambda *args, absent=(): _aws(m, "organizations", *args, "--profile", profile, absent=absent)
-    first = ((f"{WORK}org-caller.json", _aws(m, "sts", "get-caller-identity", "--profile", profile)),
-             (f"{WORK}organization.json", org("describe-organization")))
+    first = ((f"{WORK}organization.json", org("describe-organization")),)
     if f"{WORK}organization.json" not in local:
         return first
     found, want = (_doc(local, f"{WORK}organization.json").get("Organization") or {}).get("Id"), organization_id(m)
@@ -427,16 +475,60 @@ def _org_steps(m, local, profile):
             *((f"org/{p}.json", org("describe-policy", "--policy-id", p)) for p in policies))
 
 
+def _budget_steps(m, local, account, profile=None):
+    """(path, call) of an account's budgets, each one's notifications, their SNS subscribers and its tags: with the
+    environment's login for its own account, or with profile for a GovCloud cloud's standard account. AWS Budgets'
+    endpoint is global, listed under us-east-1, with no FIPS endpoint (AWS General Reference): its calls name us-east-1
+    and never ask for FIPS endpoints."""
+    if not account:
+        return ()
+    login = ("--profile", profile) if profile else ()
+    budgets = lambda *args, query=None: _aws(m, "budgets", *args, *login, query=query, region="us-east-1", fips=False)
+    listing, arn_partition = f"budgets/{account}.json", "aws" if profile else partition(m)
+    names = [n for (n,) in _items(local, listing, "Budgets", "BudgetName") if n]
+    return ((listing, budgets("describe-budgets", "--account-id", account)),
+            *((p, c) for n in names for folder in (budget_folder(account, n),) for p, c in (
+                (f"{folder}/notifications.json", budgets("describe-notifications-for-budget", "--account-id", account,
+                                                         "--budget-name", n)),
+                (f"{folder}/tags.json", budgets("list-tags-for-resource", "--resource-arn",
+                                                f"arn:{arn_partition}:budgets::{account}:budget/{n}")))),
+            *((f"{folder}/subscribers-{i}.json",
+               budgets("describe-subscribers-for-notification", "--account-id", account, "--budget-name", n,
+                       "--notification", json.dumps({k: note[k] for k in NOTIFICATION_KEYS if k in note}),
+                       query=PROJECTIONS["subscribers"]))
+              for n in names for folder in (budget_folder(account, n),)
+              for i, note in enumerate(x for x in _doc(local, f"{folder}/notifications.json").get("Notifications")
+                                       or () if isinstance(x, dict))))
+
+
+def _profile_steps(m, local):
+    """(path, call or problem) of the profile sources: each one's identity first; then the organization's policies with
+    the one signed in elsewhere than the standard account, and the standard account's budgets with the one signed in
+    there (a GovCloud cloud's billing)."""
+    purposes = profile_purposes(m, local)
+    orgs = [p for p, purpose in purposes.items() if purpose == "organization"]
+    billing = [p for p, purpose in purposes.items() if purpose == "billing"]
+    return (*((f"{WORK}profile-{p}.json", _aws(m, "sts", "get-caller-identity", "--profile", p)) for p in purposes),
+            *(_org_steps(m, local, orgs[0]) if orgs else ()),
+            *((f"{WORK}profile-check-{p}", f"profile {p} is a second profile for the organization's policies (the "
+                                           f"standard account is {standard_account(m) or 'not recorded'}): not used")
+              for p in orgs[1:]),
+            *(_budget_steps(m, local, standard_account(m), billing[0]) if billing else ()),
+            *((f"{WORK}profile-check-{p}", f"profile {p} is a second profile for the standard account's budgets: not "
+                                           f"used") for p in billing[1:]))
+
+
 def inventory_steps(d, m, done, options):
-    """The cli-inventory calls still to make (core.contract Collector.steps): the listings, then their items; with an
-    organization profile source, the organization's policies that apply to the account."""
+    """The cli-inventory calls still to make (core.contract Collector.steps): the listings, then their items; the
+    account's budgets (in GovCloud, the standard account's through its profile source); with profile sources, the
+    organization's policies that apply to the account."""
     vpc = _vpc(m)
     if vpc is None:
         return ()
     local = _local(m, done)
-    profiles = org_profiles(m)
     return _in_env(m, (*_listings(m, vpc), *_details(m, local),
-                       *(_org_steps(m, local, profiles[0]) if profiles else ())))
+                       *(() if govcloud(m) else _budget_steps(m, local, account_id(m))),
+                       *_profile_steps(m, local)))
 
 
 def state_steps(d, m, done, options):

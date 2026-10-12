@@ -2,9 +2,14 @@
 areas name, AWS Config into its object store's bucket with its retention, Security Hub with a subscription per
 standard it has (standards it lacks said in a comment), findings sent to an SNS topic by an
 EventBridge rule, organization scope, other regions and services kept by someone else in comments; all of them read back
-from Terraform state, with the topic, bucket or log group their findings go to as the role of that binding."""
+from Terraform state, with the topic, bucket or log group their findings go to as the role of that binding; the AWS
+CLI's outputs of the same services read as the same record (organization scope only from the delegated administrator's
+saved answer)."""
+import json
+
 from opsdir.core.inventory import environment_groups, resource
 from opsdir_format_terraform.hcl import as_text
+from opsdir_adapter_aws.cli import cli_resources
 from opsdir_adapter_aws.inventory import pairs_resources
 from opsdir_adapter_aws.security import render_security, security_resources
 from network_fixtures import ALPHA, entry, model
@@ -109,7 +114,7 @@ def test_the_services_are_read_back_from_state():
         "ciamSecurityKind": ("threat-detection",),
         "ciamSecurityCoverage": ("control-plane", "identity", "network", "containers", "storage"),
         "ciamAuditScope": ("organization",)}, {"ciamFindingsRole": TOPIC_ARN})
-    assert found["vulnerability-scanning"][0]["ciamSecurityCoverage"] == ("containers", "compute")
+    assert found["vulnerability-scanning"][0]["ciamSecurityCoverage"] == ("compute", "containers")   # one order
     assert found["config-recording"] == ({
         "ciamSecurityKind": ("config-recording",), "ciamAuditScope": ("account",), "ciamRetentionDays": ("2557",)},
         {"ciamFindingsRole": "arn:aws:s3:::example-ciam-config"})
@@ -184,3 +189,76 @@ def test_incident_routes_are_read_back_with_their_least_severity():
     assert "ciamIncidentRole" not in found["vulnerability-scanning"].links
     from opsdir_adapter_aws.security import findings_topics
     assert findings_topics(state) == frozenset({TOPIC_ARN, INCIDENT_ARN})
+
+
+
+# ------------------------------------------------------------------ the same services from the AWS CLI
+CLI = {
+    "subnets.json": {"Subnets": [{"SubnetId": "subnet-a", "VpcId": "vpc-1", "CidrBlock": "10.0.1.0/24",
+                                  "SubnetArn": "arn:aws:ec2:us-east-1:111122223333:subnet/subnet-a"}]},
+    "guardduty/12abc.json": {"Status": "ENABLED", "Tags": {"Role": "guardduty"}, "Features": [
+        {"Name": "CLOUD_TRAIL", "Status": "ENABLED"}, {"Name": "S3_DATA_EVENTS", "Status": "ENABLED"},
+        {"Name": "RUNTIME_MONITORING", "Status": "ENABLED",
+         "AdditionalConfiguration": [{"Name": "EKS_ADDON_MANAGEMENT", "Status": "ENABLED"}]},
+        {"Name": "RDS_LOGIN_EVENTS", "Status": "DISABLED"}]},
+    "organization-configuration/guardduty-12abc.json": {"AutoEnable": True, "MemberAccountLimitReached": False},
+    "inspector2.json": {"accounts": [{"accountId": "111122223333", "state": {"status": "ENABLED"}, "resourceState": {
+        "ec2": {"status": "ENABLED"}, "ecr": {"status": "ENABLED"}, "lambda": {"status": "DISABLED"}}}],
+        "failedAccounts": []},
+    "config-recorders.json": {"ConfigurationRecorders": [
+        {"name": "config", "roleARN": "arn:aws:iam::111122223333:role/aws-service-role/config.amazonaws.com/x"},
+        {"name": "AWSConfigurationRecorderForSecurityHub", "servicePrincipal": "securityhub.amazonaws.com"}]},
+    "config-channels.json": {"DeliveryChannels": [{"name": "config", "s3BucketName": "example-ciam-config"}]},
+    "config-retention.json": {"RetentionConfigurations": [{"Name": "default", "RetentionPeriodInDays": 2557}]},
+    "securityhub-hub.json": {"HubArn": "arn:aws:securityhub:us-east-1:111122223333:hub/default",
+                             "AutoEnableControls": True, "ControlFindingGenerator": "SECURITY_CONTROL"},
+    "securityhub-standards.json": {"StandardsSubscriptions": [
+        {"StandardsArn": "arn:aws:securityhub:us-east-1::standards/nist-800-53/v/5.0.0", "StandardsStatus": "READY"},
+        {"StandardsArn": "arn:aws:securityhub:us-east-1::standards/aws-foundational-security-best-practices/v/1.0.0",
+         "StandardsStatus": "READY"},
+        {"StandardsArn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+         "StandardsStatus": "INCOMPLETE"},
+        {"StandardsArn": "arn:aws:securityhub:us-east-1::standards/pci-dss/v/4.0.1", "StandardsStatus": "DELETING"}]},
+    "rules.json": {"Rules": [{"Name": "guardduty-findings", "State": "ENABLED",
+                              "Arn": "arn:aws:events:us-east-1:111122223333:rule/guardduty-findings",
+                              "EventPattern": '{"source":["aws.guardduty"],"detail-type":["GuardDuty Finding"]}'}]},
+    "event-targets/guardduty-findings.json": {"Targets": [{"Id": "topic", "Arn": TOPIC_ARN}]},
+    "topics.json": {"Topics": [{"TopicArn": TOPIC_ARN}]},
+    "topic-tags/security-alerts.json": {"Tags": [{"Key": "Role", "Value": "security-alerts"}]}}
+
+
+def _cli(outputs):
+    return cli_resources({p: json.dumps(doc) for p, doc in outputs.items()})
+
+
+def test_the_cli_reads_the_same_services_and_findings_routes_as_state():
+    resources, notices = _cli(CLI)
+    kinds = ("security", "channel")
+    state = {r.ref: r for r in pairs_resources(STATE)[0] if r.kind in kinds}
+    assert {r.ref: r for r in resources if r.kind in kinds} == state
+    named = "describe-organization-configuration saved (only the delegated administrator's account answers it)"
+    assert set(notices) >= {"config: service-linked recorder(s) AWSConfigurationRecorderForSecurityHub (kept by "
+                            "another AWS service) not read",
+                            f"inspector2: no {named}: read as the account's own",
+                            f"securityhub: no {named}: read as the account's own"}
+
+
+def test_incident_routes_read_the_same_from_the_cli():
+    rules = {"Rules": [*CLI["rules.json"]["Rules"],
+                       {"Name": "hub-incidents", "State": "ENABLED", "EventPattern": json.dumps({
+                           "source": ["aws.securityhub"], "detail-type": ["Security Hub Findings - Imported"],
+                           "detail": {"findings": {"Severity": {"Label": ["HIGH", "CRITICAL"]}}}})}]}
+    found = {r.attrs["ciamSecurityKind"][0]: r for r in _cli({**CLI, "rules.json": rules,
+                                                              "event-targets/hub-incidents.json": {"Targets": [
+                                                                  {"Id": "t", "Arn": INCIDENT_ARN}]}})[0]
+             if r.kind == "security"}
+    assert (found["posture"].attrs["ciamIncidentSeverity"], found["posture"].links["ciamIncidentRole"]) == (
+        ("high",), INCIDENT_ARN)
+
+
+def test_without_an_own_arn_a_detector_is_read_by_its_id_and_named():
+    resources, notices = _cli({p: d for p, d in CLI.items() if p not in ("subnets.json", "securityhub-hub.json",
+                                                                         "rules.json")})
+    assert "12abc" in {r.ref for r in resources if r.kind == "security"}
+    assert ("guardduty: no output names the account and region (describe-subnets, describe-hub, ...): 1 detector(s) "
+            "read by ID") in notices

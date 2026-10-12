@@ -129,11 +129,11 @@ def test_in_govcloud_cloudfront_runs_from_the_standard_accounts_us_east_1_templa
     assert "aws_cloudfront_distribution" in NOT_IN_GOVCLOUD
 
 
-# The CloudFormation read-back against the Terraform one (native_parity): only Terraform reads the security services
-# and budgets (their CloudFormation reader is milestone 5.6b); a physical id carries what AWS assigns
+# The CloudFormation read-back against the Terraform one (native_parity): both read the same kinds; a physical id
+# carries what AWS assigns
 CLOUDFORMATION = Native("cloudformation/", lambda m, files: cloudformation_files(m, files, WHAT), rendered_stacks,
                         cloudformation_resources, rendered_states, state_pairs, pairs_resources,
-                        frozenset({"security", "budget"}), frozenset())
+                        frozenset(), frozenset())
 
 
 def test_the_native_read_back_reads_what_the_terraform_one_does(sample):

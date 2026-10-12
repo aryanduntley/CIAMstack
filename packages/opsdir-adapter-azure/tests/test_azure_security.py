@@ -2,10 +2,14 @@
 plan), the Defender Vulnerability Management setting, Defender CSPM and a policy assignment per framework's built-in
 initiative, continuous export to a Log Analytics workspace; in Azure Government every plan rendered, with a comment
 where one of Microsoft's availability pages lists it as unavailable; configuration recording, identity, services kept by
-someone else and other clouds' baselines in comments; all read back from Terraform state."""
+someone else and other clouds' baselines in comments; all read back from Terraform state, and from the Azure CLI's
+outputs of the same services as the same record."""
+import json
+
 from opsdir.core.directory import make_entry
 from opsdir.core.inventory import environment_groups, resource
 from opsdir_format_terraform.hcl import as_text
+from opsdir_adapter_azure.cli import cli_resources
 from opsdir_adapter_azure.security import render_security, security_resources
 from network_fixtures import ALPHA, entry, model
 
@@ -237,3 +241,42 @@ def test_vulnerability_findings_and_recommendations_page_an_action_group_from_th
     found = {r.attrs["ciamSecurityKind"][0]: r for r in security_resources(state)}
     assert (found["posture"].links.get("ciamIncidentRole"), found["posture"].attrs["ciamIncidentSeverity"]) == (
         GROUP, ("high",))
+
+
+
+# ------------------------------------------------------------------ the same services from the Azure CLI
+CLI = {
+    "pricings.json": {"value": [
+        {"id": f"{SUB}/providers/Microsoft.Security/pricings/{p}", "name": p, "type": "Microsoft.Security/pricings",
+         "pricingTier": tier, "subPlan": sub, "extensions": [{"name": x, "isEnabled": "True"} for x in ext]
+         + [{"name": "AgentlessVmScanning", "isEnabled": "False"}]}
+        for p, tier, sub, ext in (("VirtualMachines", "Standard", "P2", ()), ("Arm", "Standard", None, ()),
+                                  ("KeyVaults", "Free", None, ()),
+                                  ("Containers", "Standard", None, ("ContainerRegistriesVulnerabilityAssessments",)),
+                                  ("CloudPosture", "Standard", None, ()))]},
+    "va.json": {"id": f"{SUB}/providers/Microsoft.Security/serverVulnerabilityAssessmentsSettings/AzureServersSetting",
+                "name": "AzureServersSetting", "kind": "AzureServersSetting",
+                "type": "Microsoft.Security/serverVulnerabilityAssessmentsSettings",
+                "properties": {"selectedProvider": "MdeTvm"}},
+    "policy-assignments.json": [
+        {"id": f"{SUB}/providers/Microsoft.Authorization/policyAssignments/a", "name": "a", "scope": SUB,
+         "type": "Microsoft.Authorization/policyAssignments", "displayName": "NIST SP 800-171 Rev. 2"},
+        {"id": f"{SUB}/providers/Microsoft.Authorization/policyAssignments/b", "name": "b", "scope": SUB,
+         "type": "Microsoft.Authorization/policyAssignments", "displayName": "Allowed locations"}],
+    "automations.json": [{"id": f"{SUB}/resourceGroups/rg-sec/providers/Microsoft.Security/automations/defender-export",
+                          "name": "defender-export", "type": "Microsoft.Security/automations",
+                          "properties": {"isEnabled": True, "sources": [{"eventSource": "Alerts"}],
+                                         "actions": [{"actionType": "Workspace", "workspaceResourceId": WORKSPACE}]}}]}
+
+
+def test_the_cli_reads_the_same_services_as_state():
+    resources, _ = cli_resources({p: json.dumps(d) for p, d in CLI.items()})
+    assert [r for r in resources if r.kind == "security"] == list(security_resources(STATE))
+
+
+def test_an_assignment_below_the_subscription_isnt_posture():
+    nested = {**CLI, "policy-assignments.json": [{**CLI["policy-assignments.json"][0],
+                                                  "scope": f"{SUB}/resourceGroups/rg-app"}]}
+    posture, = [r for r in cli_resources({p: json.dumps(d) for p, d in nested.items()})[0]
+                if r.kind == "security" and r.attrs["ciamSecurityKind"] == ("posture",)]
+    assert "ciamComplianceStandard" not in posture.attrs

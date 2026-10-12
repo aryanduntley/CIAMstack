@@ -121,11 +121,10 @@ def test_a_web_test_is_tied_to_its_component_and_long_txt_values_are_split(sampl
         assert profile.fields["location"] == "global"
 
 
-# The Bicep/ARM read-back against the Terraform one (native_parity): only Terraform reads the security services,
-# Defender's sensitive data discovery (a plan extension) and budgets (their ARM reader is milestone 5.6b); a managed
-# identity's client id is Azure's at deployment, which no template holds
+# The Bicep/ARM read-back against the Terraform one (native_parity): both read the same kinds; a managed identity's
+# client id is Azure's at deployment, which no template holds
 ARM = Native("arm/", lambda m, files: arm_files(m, files, WHAT, ("arm",)), rendered_deployments, arm_resources,
-             rendered_states, state_pairs, pairs_resources, frozenset({"security", "budget", "discovery"}),
+             rendered_states, state_pairs, pairs_resources, frozenset(),
              frozenset({"ciamIdentityClientId"}))
 
 

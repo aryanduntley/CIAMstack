@@ -77,19 +77,14 @@ NATIVE = {"aws": ("cloudformation", "aws/cloudformation"), "azure": ("arm", "azu
 # Where a native read-back sees the showcase differently from the Terraform read-back of the same record:
 # (environment, which read-back alone records it, the change ('add', 'modify': its attributes) or 'unreported' (the
 # binding is in the record but not in what was read), the binding's cn, attributes). None is a reader's gap; each is
-# inherent or milestone 5.6b's:
-#   - 5.6b's: the security services and budgets (AWS config, guardduty, security-hub; Azure monthly-spend,
-#     defender-identity, resource-changes);
+# inherent:
 #   - a lookup (a data source) is a template parameter or an existing reference, not a resource: where one read-back
 #     reads a looked-up object of a kind the other reads none of, only it judges the record's bindings of that kind
 #     (AWS pf-discovery; Azure snet-aks, snet-edge, zone-public, zone-private's id);
 #   - what the cloud assigns at deployment that no template holds: egress-pf's Elastic IP (a parameter holding its
 #     allocation id), a managed identity's client id (identity-ci and identity-ds change the same grants both ways).
 NATIVE_GAPS = {
-    ('source/prod', 'native only', 'unreported', 'config', ()),
     ('source/prod', 'native only', 'unreported', 'egress-pf', ()),
-    ('source/prod', 'native only', 'unreported', 'guardduty', ()),
-    ('source/prod', 'native only', 'unreported', 'security-hub', ()),
     ('source/stage', 'terraform only', 'unreported', 'pf-discovery', ()),
     ('target/prod', 'native only', 'modify', 'identity-ci', ('ciamGrant',)),
     ('target/prod', 'native only', 'modify', 'identity-ds', ('ciamGrant',)),
@@ -97,10 +92,7 @@ NATIVE_GAPS = {
     ('target/prod', 'native only', 'unreported', 'snet-edge', ()),
     ('target/prod', 'terraform only', 'modify', 'identity-ci', ('ciamGrant', 'ciamIdentityClientId')),
     ('target/prod', 'terraform only', 'modify', 'identity-ds', ('ciamGrant', 'ciamIdentityClientId')),
-    ('target/prod', 'terraform only', 'modify', 'monthly-spend', ('ciamProviderRef',)),
     ('target/prod', 'terraform only', 'modify', 'zone-private', ('ciamProviderRef',)),
-    ('target/prod', 'terraform only', 'unreported', 'defender-identity', ()),
-    ('target/prod', 'terraform only', 'unreported', 'resource-changes', ()),
     ('target/prod', 'terraform only', 'unreported', 'zone-public', ()),
 }
 

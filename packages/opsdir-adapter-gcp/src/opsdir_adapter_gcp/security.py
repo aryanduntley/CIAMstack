@@ -30,7 +30,8 @@ Findings at or above a service's ciamIncidentSeverity also go to the incident pr
 second notification config whose filter adds the Security Command Center severities at or above it (severity="HIGH"
 OR severity="CRITICAL"), to the incident role's Pub/Sub topic; an asset feed has no severity (a NOTE).
 
-Read back from Terraform state: SCC notification configs (project or organization, v1 or v2) -> a security service per
+Read back from Terraform state (and from gcloud and Cloud Asset Inventory, normalized to the same names:
+cli_security.py): SCC notification configs (project or organization, v1 or v2) -> a security service per
 finding class their filter streams (no class: threat detection), organization scope for an organization's;
 google_project_service containerscanning / osconfig -> vulnerability scanning over containers / compute; asset feeds
 (project, folder, organization) -> configuration recording (35 days); each with its topic as where findings go. A

@@ -34,7 +34,8 @@ OPERATIONS = {
     "compute vpn-tunnels list", "resource-manager tags bindings list", "resource-manager tags values list",
     "resource-manager tags keys list", "iam service-accounts list", "iam roles list",
     "iam roles describe", "iam workload-identity-pools list", "iam workload-identity-pools providers list",
-    "iam policies list", "iam policies get", "org-policies list", "org-policies describe"}
+    "iam policies list", "iam policies get", "org-policies list", "org-policies describe", "scc notifications list",
+    "services list", "asset feeds list", "billing budgets list"}
 NEVER = ("asset export", "secrets versions access", "--debug", "--log-http", "keys create")
 
 
@@ -157,3 +158,18 @@ def test_terraform_state_from_the_source_object_or_terraform_state_pull():
     assert (path, provenance(call)) == ("gcp/prod/prod.tfstate", "gcloud storage cat gs://ciam-tf-state/ciam/prod.tfstate")
     ((_, pull),) = state_steps(m.d, with_source, {}, {"terraform_dir": "/work/ciam"})
     assert pull.argv == ("terraform", "-chdir=/work/ciam", "state", "pull")
+
+
+
+def test_security_and_budget_calls_of_the_project_organization_and_billing_account():
+    m = _model(ciamOrganizationRef="organizations/4321", ciamBillingAccountRef="billingAccounts/0X0X0X-0X0X0X-0X0X0X")
+    found = {p.removeprefix("gcp/prod/"): c.argv[:-1] for p, c in inventory_steps(m.d, m, {}, {})}
+    assert found["scc-notifications.json"] == ("gcloud", "scc", "notifications", "list", "--project=ciam-prod",
+                                               "--location=global")
+    assert found["scc-notifications-organization.json"][4:] == ("--organization=4321", "--location=global")
+    assert found["services.json"][3:] == ("--enabled", "--project=ciam-prod")
+    assert found["feeds-organization.json"][4:] == ("--organization=4321",)
+    assert found["budgets.json"] == ("gcloud", "billing", "budgets", "list", "--billing-account=0X0X0X-0X0X0X-0X0X0X")
+    plain = _model()
+    assert not {"budgets.json", "feeds-organization.json"} & {p.removeprefix("gcp/prod/")
+                                                              for p, _ in inventory_steps(plain.d, plain, {}, {})}

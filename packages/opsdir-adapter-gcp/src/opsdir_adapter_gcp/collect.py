@@ -9,7 +9,9 @@ Shared VPC host project's networks, the host named by the network binding's prov
 (instances with their metadata, backend health, record sets per zone, schedules, channels, databases, disks, backup
 vaults and plans, edge lists, firewall policies, routes, attachments, tunnels, tag bindings per instance, IAM:
 policies searched in the organization the cloud records or else the project, service accounts, custom roles,
-workload identity providers, deny policies, effective org policies). What may carry secret material is trimmed in
+workload identity providers, deny policies, effective org policies; Security Command Center notification configs (v2,
+location global) and asset feeds of the project and of the organization the cloud records, the enabled services, and
+the budgets of the billing account the cloud records). What may carry secret material is trimmed in
 memory before anything sees it (core.contract keep): instance metadata keeps only the keys the importer reads
 (cli.METADATA: never startup scripts), scheduler jobs only their target's URI or topic (no bodies, headers or
 messages), notification channels lose their labels (addresses, tokens). Secure tag values are listed for each tag key
@@ -28,6 +30,7 @@ from opsdir.core.contract import Collector, Command
 from opsdir.core.directory import one, values
 from opsdir.core.environment import one_role
 from opsdir.domains.governance.collection import collection_sources
+from .budgets import billing_account
 from .account import project_id
 from .cli import METADATA
 
@@ -90,6 +93,7 @@ def _region_of(item):
 def _listings(m, p, host):
     pp, hp, region = f"--project={p}", f"--project={host}", one(m.cloud, "ciamRegion")
     org = (one(m.cloud, "ciamOrganizationRef") or "").rsplit("/", 1)[-1]
+    billing = (billing_account(m) or "").rsplit("/", 1)[-1]
     attachment = f"cloudresourcemanager.googleapis.com/projects/{p}"
     return (
         ("assets.json", _gcloud("asset", "list", pp, "--content-type=resource")),
@@ -128,7 +132,15 @@ def _listings(m, p, host):
         (f"{WORK}pools.json", _gcloud("iam", "workload-identity-pools", "list", "--location=global", pp)),
         (f"{WORK}deny-policies.json", _gcloud("iam", "policies", "list", f"--attachment-point={attachment}",
                                               "--kind=denypolicies")),
-        (f"{WORK}org-policies.json", _gcloud("org-policies", "list", pp)))
+        (f"{WORK}org-policies.json", _gcloud("org-policies", "list", pp)),
+        ("scc-notifications.json", _gcloud("scc", "notifications", "list", pp, "--location=global")),
+        ("services.json", _gcloud("services", "list", "--enabled", pp)),
+        ("feeds.json", _gcloud("asset", "feeds", "list", pp)),
+        *((("scc-notifications-organization.json", _gcloud("scc", "notifications", "list",
+                                                            f"--organization={org}", "--location=global")),
+           ("feeds-organization.json", _gcloud("asset", "feeds", "list", f"--organization={org}"))) if org else ()),
+        *((("budgets.json", _gcloud("billing", "budgets", "list", f"--billing-account={billing}")),)
+          if billing else ()))
 
 
 def _details(m, p, host, done):

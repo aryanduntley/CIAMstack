@@ -40,6 +40,7 @@ def _fixtures(name):
 
 
 _COMPUTE, _MONITOR = _fixtures("test_aws_compute.py"), _fixtures("test_aws_observability.py")
+_SECURITY, _BUDGETS = _fixtures("test_aws_security.py"), _fixtures("test_aws_quotas_budgets.py")
 
 ACCOUNT = "111122223333"
 # every (service, operation) the cli-inventory collector may run: reviewed, read-only, no secret values
@@ -82,7 +83,14 @@ OPERATIONS = {
     ("eks", "list-nodegroups"), ("eks", "describe-nodegroup"), ("eks", "list-addons"), ("eks", "describe-addon"),
     ("cloudwatch", "describe-alarms"), ("cloudwatch", "list-tags-for-resource"), ("logs", "describe-log-groups"),
     ("logs", "list-tags-for-resource"), ("synthetics", "describe-canaries"), ("sns", "list-topics"),
-    ("sns", "list-tags-for-resource")}
+    ("sns", "list-tags-for-resource"), ("guardduty", "list-detectors"), ("guardduty", "get-detector"),
+    ("guardduty", "describe-organization-configuration"), ("inspector2", "batch-get-account-status"),
+    ("inspector2", "describe-organization-configuration"), ("configservice", "describe-configuration-recorders"),
+    ("configservice", "describe-delivery-channels"), ("configservice", "describe-retention-configurations"),
+    ("securityhub", "describe-hub"), ("securityhub", "get-enabled-standards"),
+    ("securityhub", "describe-organization-configuration"), ("budgets", "describe-budgets"),
+    ("budgets", "describe-notifications-for-budget"), ("budgets", "describe-subscribers-for-notification"),
+    ("budgets", "list-tags-for-resource")}
 NEVER = ("get-secret-value", "get-parameter", "get-parameters", "--with-decryption", "describe-instance-attribute",
          "get-function", "get-function-configuration", "get-object", "--debug")
 SSO = "arn:aws:sso:::instance/ssoins-1"
@@ -412,3 +420,115 @@ def test_compute_groups_clusters_and_monitoring_collected_read_as_saved_by_hand(
     collected = cli_resources({**files, **network})[0]                  # the compute fixtures' VPC
     by_hand = cli_resources({p: json.dumps(d) for p, d in {**_COMPUTE.CLI, **_MONITOR.CLI}.items()})[0]
     assert {r.ref: r for r in collected if r.kind in kinds} == {r.ref: r for r in by_hand if r.kind in kinds} != {}
+
+
+def _security_answer(argv):
+    """What the AWS CLI prints for the security calls, from the security reader's fixtures: GuardDuty's organization
+    configuration answers (a delegated administrator for it), Inspector's and Security Hub's refuse."""
+    f, op = _SECURITY.CLI, tuple(argv[1:3])
+    by_op = {("guardduty", "list-detectors"): {"DetectorIds": ["12abc"]},
+             ("guardduty", "get-detector"): f["guardduty/12abc.json"],
+             ("guardduty", "describe-organization-configuration"): f["organization-configuration/guardduty-12abc.json"],
+             ("inspector2", "batch-get-account-status"): f["inspector2.json"],
+             ("configservice", "describe-configuration-recorders"): f["config-recorders.json"],
+             ("configservice", "describe-delivery-channels"): f["config-channels.json"],
+             ("configservice", "describe-retention-configurations"): f["config-retention.json"],
+             ("securityhub", "describe-hub"): f["securityhub-hub.json"],
+             ("securityhub", "get-enabled-standards"): f["securityhub-standards.json"]}
+    if op in (("inspector2", "describe-organization-configuration"),
+              ("securityhub", "describe-organization-configuration")):
+        return None, None                   # not the delegated administrator: the documented error, the file left out
+    return (json.dumps(by_op[op]), None) if op in by_op else _answer(argv)
+
+
+def test_security_services_collected_read_as_saved_by_hand():
+    m = _model(ciamAccountRef=ACCOUNT)
+    c = collect("aws/cli-inventory", COLLECTORS[0], m.d, m, lambda call: _security_answer(call.argv))
+    assert c.problems == ()
+    ran = [shlex.split(x.provenance) for x in c.calls]
+    assert {tuple(a[1:3]) for a in ran} <= OPERATIONS
+    assert ["aws", "guardduty", "get-detector", "--detector-id", "12abc"] == next(
+        a for a in ran if a[2] == "get-detector")[:5]
+    files = {p.split("/", 2)[2]: t for p, t in c.files.items()}
+    assert {"guardduty/12abc.json", "organization-configuration/guardduty-12abc.json", "inspector2.json",
+            "securityhub-standards.json"} <= set(files)
+    refused = {"organization-configuration/inspector2.json", "organization-configuration/securityhub.json"}
+    assert not refused & set(files)
+    security = ("guardduty/", "organization-configuration/", "inspector2", "config-", "securityhub-")
+    assert all(json.loads(files[p]) == d for p, d in _SECURITY.CLI.items() if p.startswith(security))   # as by hand
+    scopes = {r.attrs["ciamSecurityKind"][0]: r.attrs["ciamAuditScope"] for r in cli_resources(files)[0]
+              if r.kind == "security"}
+    assert scopes == {"threat-detection": ("organization",), "vulnerability-scanning": ("account",),
+                      "config-recording": ("account",), "posture": ("account",)}
+
+
+BILLING = "111122223333"             # the budgets fixtures' account: here a GovCloud cloud's standard account
+
+
+def _budget_answer(argv, account=ACCOUNT):
+    """What AWS Budgets prints, from the budget reader's fixtures (saved for BILLING), for the account asked about;
+    the profiles' identities: billing-std in BILLING, org-mgmt elsewhere."""
+    f, op = _BUDGETS.BUDGET_CLI, tuple(argv[1:3])
+    arg = dict(zip(argv[3::1], argv[4::1]))
+    folder = "budgets/111122223333/alpha-prod-monthly"
+    if op == ("sts", "get-caller-identity") and "--profile" in argv:
+        who = BILLING if arg["--profile"] == "billing-std" else "999988887777"
+        return json.dumps({"Account": who}), None
+    if op[0] == "budgets":
+        assert arg.get("--account-id", account) == account
+        if op[1] == "describe-subscribers-for-notification":
+            notes = f[f"{folder}/notifications.json"]["Notifications"]
+            i = next(i for i, n in enumerate(notes) if json.loads(arg["--notification"]) == n)
+            return json.dumps(f[f"{folder}/subscribers-{i}.json"]), None
+        doc = {"describe-budgets": f["budgets/111122223333.json"],
+               "describe-notifications-for-budget": f[f"{folder}/notifications.json"],
+               "list-tags-for-resource": f[f"{folder}/tags.json"]}[op[1]]
+        return json.dumps(doc), None
+    return _org_answer(argv) if "--profile" in argv else _answer(argv)
+
+
+def test_the_accounts_budgets_collected_read_as_saved_by_hand():
+    m = _model(ciamAccountRef=BILLING)
+    c = collect("aws/cli-inventory", COLLECTORS[0], m.d, m, lambda call: _budget_answer(call.argv, BILLING))
+    assert c.problems == ()
+    files = {p.split("/", 2)[2]: t for p, t in c.files.items()}
+    assert all(json.loads(files[p]) == d for p, d in _BUDGETS.BUDGET_CLI.items() if p.startswith("budgets/"))
+    ran = [shlex.split(x.provenance) for x in c.calls]
+    subscribers = next(a for a in ran if a[2] == "describe-subscribers-for-notification")
+    assert subscribers[subscribers.index("--query") + 1] == PROJECTIONS["subscribers"]       # no e-mail addresses
+    assert {tuple(a[1:3]) for a in ran} <= OPERATIONS
+
+
+def test_govcloud_budgets_come_from_the_standard_account_through_its_profile():
+    m = _with_profile(_model(ciamAccountRef=ACCOUNT, ciamOrganizationRef=ORG, ciamRegion="us-gov-west-1",
+                             ciamBillingAccountRef=BILLING), "org-mgmt", "billing-std")
+    assert inventory_problems(m.d, m, {}) == ()
+    c = collect("aws/cli-inventory", COLLECTORS[0], m.d, m, lambda call: _budget_answer(call.argv, BILLING))
+    assert c.problems == ()
+    ran = [shlex.split(x.provenance) for x in c.calls]
+    budgets = [a for a in ran if a[1] == "budgets"]
+    assert budgets and all(a[a.index("--profile") + 1] == "billing-std" and a[-1] == "us-east-1" for a in budgets)
+    assert all(a[a.index("--profile") + 1] == "org-mgmt" for a in ran if a[1] == "organizations")
+    files = {p.split("/", 2)[2] for p in c.files}
+    assert "budgets/111122223333.json" in files and "budgets/222233334444.json" not in files
+    resources, _ = cli_resources({p.split("/", 2)[2]: t for p, t in c.files.items()})
+    assert [r.ref for r in resources if r.kind == "budget"] == [
+        "arn:aws:budgets::111122223333:budget/alpha-prod-monthly"]
+
+
+def test_profile_sources_beyond_the_organizations_and_the_standard_accounts_are_problems():
+    gov = _model(ciamAccountRef=ACCOUNT, ciamRegion="us-gov-west-1", ciamBillingAccountRef=BILLING)
+    assert inventory_problems(gov.d, _with_profile(gov, "a", "b", "c"), {}) == (
+        "more than two aws-profile:// collection sources: name one profile for the organization's policies and one "
+        "for the standard account's budgets",)
+    assert inventory_problems(gov.d, _with_profile(gov, "billing-std"), {}) == ()     # no organization recorded
+
+
+def test_budget_calls_name_us_east_1_and_never_ask_for_fips_endpoints():
+    m = _model(ciamAccountRef=BILLING, ciamFipsEndpoints="TRUE")
+    c = collect("aws/cli-inventory", COLLECTORS[0], m.d, m, lambda call: _budget_answer(call.argv, BILLING))
+    steps = inventory_steps(m.d, m, c.files, {})
+    budgets = [call for _, call in steps if not isinstance(call, str) and call.argv[1] == "budgets"]
+    others = [call for _, call in steps if not isinstance(call, str) and call.argv[1] != "budgets"]
+    assert budgets and all(call.env == () and call.argv[-1] == "us-east-1" for call in budgets)   # no FIPS endpoint
+    assert all(call.env == (("AWS_USE_FIPS_ENDPOINT", "true"),) for call in others)

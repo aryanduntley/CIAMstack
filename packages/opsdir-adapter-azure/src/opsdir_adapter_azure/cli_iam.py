@@ -104,6 +104,7 @@ def iam_items(items):
           for d in _of(items, "microsoft.authorization/denyassignments")),
         *_vault_policies(items),
         *(("azurerm_policy_assignment", {"id": a.get("id"), "name": a.get("name"),
+                                         "display_name": a.get("displayName"),
                                          "policy_definition_id": a.get("policyDefinitionId"),
                                          "scope": a.get("scope") or _assigned_at(a.get("id"))})
           for a in _of(items, "microsoft.authorization/policyassignments")),

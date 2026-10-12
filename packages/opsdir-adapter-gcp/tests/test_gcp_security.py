@@ -1,9 +1,13 @@
 """Cloud security services on Google Cloud: Security Command Center's activation, services and frameworks named as a
 request to the organization's administrators; findings streamed to a Pub/Sub topic by an SCC notification config per
 finding class; the scanning APIs enabled once; a project asset feed exporting configuration changes; other bindings,
-other clouds' baselines and services kept by someone else in comments; all read back from Terraform state."""
+other clouds' baselines and services kept by someone else in comments; all read back from Terraform state, and from
+gcloud's outputs of the same services as the same record."""
+import json
+
 from opsdir.core.inventory import environment_groups, resource
 from opsdir_format_terraform.hcl import as_text
+from opsdir_adapter_gcp.cli import cli_resources
 from opsdir_adapter_gcp.security import render_security, security_resources
 from network_fixtures import ALPHA, entry, model
 
@@ -140,3 +144,28 @@ def test_incident_routes_are_read_back():
     assert ("posture", ("critical",), {"ciamIncidentRole": INCIDENT_TOPIC}, "posture-incidents") in found
     assert found[1] == ("threat-detection", None, {"ciamFindingsRole": TOPIC}, "all")      # the organization's
     assert len(found) == len(security_resources(STATE)) + 1
+
+
+
+# ------------------------------------------------------------------ the same services from gcloud
+CLI = {
+    "scc-notifications.json": [
+        {"name": "projects/example/locations/global/notificationConfigs/scc-findings", "pubsubTopic": TOPIC,
+         "streamingConfig": {"filter": 'finding_class="THREAT" AND state="ACTIVE"'}},
+        {"name": "folders/77/notificationConfigs/folder-wide", "pubsubTopic": TOPIC}],
+    "scc-notifications-organization.json": [
+        {"name": "organizations/123/notificationConfigs/all", "pubsubTopic": TOPIC,
+         "streamingConfig": {"filter": 'state="ACTIVE"'}}],
+    "services.json": [{"name": "projects/example/services/containerscanning.googleapis.com", "state": "ENABLED",
+                       "config": {"name": "containerscanning.googleapis.com"}},
+                      {"name": "projects/example/services/compute.googleapis.com", "state": "ENABLED",
+                       "config": {"name": "compute.googleapis.com"}}],
+    "feeds.json": [{"name": "projects/123/feeds/assets", "contentType": "RESOURCE",
+                    "feedOutputConfig": {"pubsubDestination": {"topic": TOPIC}}}]}
+
+
+def test_gcloud_reads_the_same_services_as_state():
+    resources, notices = cli_resources({p: json.dumps(d) for p, d in CLI.items()})
+    assert [r for r in resources if r.kind == "security"] == list(security_resources(STATE))
+    folder = "scc-notifications.json: 1 item(s) that aren't Cloud Asset Inventory or gcloud output this importer reads"
+    assert f"{folder}; not read" in notices                         # a folder's notification config: no state type

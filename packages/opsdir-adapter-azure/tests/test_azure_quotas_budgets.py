@@ -3,7 +3,8 @@ network usages), read into the subscription's quota catalogs with Total Regional
 kinds and the region told by the path; approved increases named in comments (azurerm can't request one). Budgets:
 azurerm_consumption_budget_resource_group on the environment's resource group from the budget_start_date input, a
 notification per threshold to the channel's action group (100% spent and the subscription's Owners when the record
-gives neither), at most five, the Azure Government note; read back from Terraform state."""
+gives neither), at most five, the Azure Government note; read back from Terraform state, and from the Azure CLI (az
+rest on Microsoft.Consumption/budgets) as the same record."""
 import json
 import re
 
@@ -11,6 +12,7 @@ from opsdir.core.interchange.ldif import LdifRecord
 from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.adapter import ADAPTER
 from opsdir_adapter_azure.budgets import budget_inputs, budget_resources, render_budgets
+from opsdir_adapter_azure.cli import cli_resources
 from opsdir_adapter_azure.quotas import quota_commands, quota_request_notes, read_quotas
 from network_fixtures import ALPHA, entry, model
 
@@ -135,3 +137,31 @@ def test_budgets_are_read_back_from_state():
     assert (b.attrs["ciamBudgetAmount"], b.attrs["ciamBudgetPeriod"], b.attrs["ciamActualThreshold"],
             b.attrs["ciamForecastThreshold"], b.links["ciamAlertRole"], b.tags) == (
         ("5000",), ("quarterly",), ("80",), ("100",), GROUP, None)
+
+
+
+def test_the_cli_reads_the_same_budgets_as_state():
+    rg = f"/subscriptions/{SUB}/resourceGroups/rg/providers/Microsoft.Consumption/budgets/alpha-prod-monthly"
+    sub = f"/subscriptions/{SUB}/providers/Microsoft.Consumption/budgets/subscription-yearly"
+    state = [("azurerm_consumption_budget_resource_group", {
+                  "id": rg, "name": "alpha-prod-monthly", "amount": 5000.0, "time_grain": "BillingQuarter",
+                  "notification": [{"operator": "GreaterThan", "threshold": 80, "threshold_type": "Actual",
+                                    "contact_groups": [GROUP], "enabled": True},
+                                   {"operator": "GreaterThan", "threshold": 100, "threshold_type": "Forecasted",
+                                    "contact_groups": [GROUP], "enabled": True}]}),
+             ("azurerm_consumption_budget_subscription", {"id": sub, "name": "subscription-yearly", "amount": 90000,
+                                                          "time_grain": "Annually", "notification": []})]
+    cli = {"value": [
+        {"id": rg, "name": "alpha-prod-monthly", "type": "Microsoft.Consumption/budgets", "properties": {
+            "amount": 5000.0, "timeGrain": "BillingQuarter", "category": "Cost",
+            "notifications": {"actual_GreaterThan_80_Percent": {"enabled": True, "operator": "GreaterThan",
+                                                                "threshold": 80, "thresholdType": "Actual",
+                                                                "contactGroups": [GROUP]},
+                              "forecasted_GreaterThan_100_Percent": {"enabled": True, "operator": "GreaterThan",
+                                                                     "threshold": 100, "thresholdType": "Forecasted",
+                                                                     "contactGroups": [GROUP],
+                                                                     "contactEmails": ["x@example.test"]}}}}]}
+    yearly = {"value": [{"id": sub, "name": "subscription-yearly", "type": "Microsoft.Consumption/budgets",
+                         "properties": {"amount": 90000, "timeGrain": "Annually", "notifications": {}}}]}
+    resources, _ = cli_resources({"budgets-rg.json": json.dumps(cli), "budgets-subscription.json": json.dumps(yearly)})
+    assert [r for r in resources if r.kind == "budget"] == list(budget_resources(state))

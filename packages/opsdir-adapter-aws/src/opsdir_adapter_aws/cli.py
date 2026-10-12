@@ -35,7 +35,8 @@ matching Terraform resource, so the same mapping reads them as reads Terraform s
   lambda list-functions                 Functions                 -> aws_lambda_function
   lambda list-tags                      Tags                      -> a function's tags; the output doesn't name the
                                                                      function: save it as lambda-tags/<function>.json
-  events list-rules                     Rules                     -> aws_cloudwatch_event_rule (enabled rules)
+  events list-rules                     Rules                     -> aws_cloudwatch_event_rule (enabled rules, their
+                                                                     event patterns)
   events list-targets-by-rule           Targets                   -> aws_cloudwatch_event_target; the output doesn't
                                                                      name its rule: save it as event-targets/<rule>.json
   scheduler get-schedule                ScheduleExpression        -> aws_scheduler_schedule (enabled; one per file)
@@ -56,6 +57,11 @@ matching Terraform resource, so the same mapping reads them as reads Terraform s
   groups and add-ons                                              -> see cli_compute.py
   Monitoring: CloudWatch metric alarms, log groups, Synthetics canaries, SNS topics, with tags saved by name under
   alarm-tags/, log-group-tags/, topic-tags/                        -> see cli_monitor.py
+  Budgets: each account's describe-budgets, its budgets' notifications, SNS subscribers and tags, saved under
+  budgets/<account>/                                               -> see cli_budgets.py
+  Security services: GuardDuty detectors (saved as guardduty/<detector id>.json), Inspector, AWS Config, Security
+  Hub, organization configurations saved from the delegated administrator; EventBridge rules keep their event pattern,
+  which routes findings                                            -> see cli_security.py
 Network resources, autoscaling groups and EKS clusters outside the listed VPCs are counted, not read; secrets, keys,
 buckets, functions, pipelines, build projects, log groups, alarms, canaries and topics are account-wide, so the
 importer counts rather than lists the ones the record doesn't have and nothing names a role for.
@@ -69,8 +75,10 @@ from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_document
 from .cli_audit import KEYS as AUDIT_KEYS, audit_pairs
 from .cli_backup import KEYS as BACKUP_KEYS, backup_pairs, is_backup_tags
+from .cli_budgets import budget_output, budget_pairs
 from .cli_compute import KEYS as COMPUTE_KEYS, compute_pairs
 from .cli_monitor import KEYS as MONITOR_KEYS, TAG_KEYS as MONITOR_TAG_KEYS, is_tags_of, monitor_pairs
+from .cli_security import KEYS as SECURITY_KEYS, security_output, security_pairs
 from .cli_database import KEYS as DATABASE_KEYS, database_pairs
 from .cli_volume import DLM, KEYS as VOLUME_KEYS, is_dlm_output, root_devices, volume_pairs
 from .cli_storage import storage_folder, storage_pairs
@@ -84,12 +92,14 @@ KEYS = ("Vpcs", "Subnets", "Reservations", "SecurityGroups", "SecurityGroupRules
         "TagDescriptions", "Listeners", "TargetGroups", "TargetHealthDescriptions", "ResourceRecordSets", "SecretList",
         "KeyMetadata", "KeyRotationEnabled", "Buckets", "Functions", "Rules", "Targets", "ScheduleExpression",
         "pipeline", "projects", *IAM_KEYS, *EDGE_KEYS, *NETWORK_KEYS, *DATABASE_KEYS, *VOLUME_KEYS, *BACKUP_KEYS,
-        *AUDIT_KEYS, *COMPUTE_KEYS, *MONITOR_KEYS, "Tags", *MONITOR_TAG_KEYS)   # tags last: others carry tags too
+        *AUDIT_KEYS, *COMPUTE_KEYS, *MONITOR_KEYS, *SECURITY_KEYS,
+        "Tags", *MONITOR_TAG_KEYS)   # tags last: others carry tags too
 IN_VPC = ("aws_subnet", "aws_instance", "aws_security_group", "aws_lb", "aws_nat_gateway", "aws_route_table",
           "aws_network_acl", "aws_vpc_endpoint", "aws_ec2_transit_gateway_vpc_attachment", "aws_db_instance",
           "aws_rds_cluster", "aws_rds_cluster_instance", "aws_db_subnet_group", "aws_autoscaling_group",
           "aws_eks_cluster")
-ACCOUNT_WIDE = ("secret", "key", "storage", "job", "identity", "logs", "alarm", "canary", "channel", "stream")
+ACCOUNT_WIDE = ("secret", "key", "storage", "job", "identity", "logs", "alarm", "canary", "channel", "stream",
+                "budget")
 
 
 def _outputs(texts):
@@ -101,6 +111,10 @@ def _outputs(texts):
             return path, folder, doc                       # a bucket's settings: by the folder it is saved under
         if is_dlm_output(path) and doc is not None:
             return path, DLM, doc                          # a Lifecycle Manager policy: its key is IAM's too
+        if budget_output(path) and doc is not None:
+            return path, budget_output(path), doc          # budgets, by account and budget
+        if security_output(path) and doc is not None:
+            return path, security_output(path), doc        # a detector, an organization configuration: by folder
         return next(((path, k, doc) for k in KEYS if k in (doc or {})), None)
     found = {p: recognize(p, t) for p, t in sorted(texts.items())}
     return (tuple(o for o in found.values() if o),
@@ -287,7 +301,7 @@ def _keys(outs):
 
 
 def _enabled(item):
-    return item.get("State", "ENABLED") == "ENABLED"
+    return str(item.get("State", "ENABLED")).startswith("ENABLED")       # ENABLED_WITH_ALL_CLOUDTRAIL_... too
 
 
 def _jobs(outs):
@@ -303,7 +317,8 @@ def _jobs(outs):
                                         "tags": function_tags.get(f.get("FunctionName"), {})})
                for f in items(outs, "Functions")),
              *(("aws_cloudwatch_event_rule", {"name": r.get("Name"), "arn": r.get("Arn"),
-                                              "schedule_expression": r.get("ScheduleExpression")})
+                                              "schedule_expression": r.get("ScheduleExpression"),
+                                              "event_pattern": r.get("EventPattern")})
                for r in rules if _enabled(r)),
              *(("aws_cloudwatch_event_target", {"rule": stem(p), "arn": t.get("Arn")})
                for p, k, doc in outs if k == "Targets" for t in doc.get("Targets") or ()),
@@ -352,15 +367,16 @@ def cli_resources(texts, at=None):
     databases, database_notices = database_pairs(outs)
     compute, compute_notices = compute_pairs(outs)
     monitoring, monitor_notices = monitor_pairs(outs)
+    security, security_notices = security_pairs(outs)
     pairs, scope_notices = _scoped([*_network(outs), *_instances(outs, root_devices(outs)), *_security_groups(outs),
                                     *_load_balancers(outs), *forwarding, *_records(outs), *_secrets(outs), *keys,
                                     *(("aws_s3_bucket", {"bucket": b.get("Name")}) for b in items(outs, "Buckets")),
                                     *jobs, *iam, *edge_pairs(outs, _dns), *network_pairs(outs), *databases,
                                     *storage_pairs(outs), *volume_pairs(outs), *backup_pairs(outs),
-                                    *audit_pairs(outs), *compute, *monitoring])
+                                    *audit_pairs(outs), *compute, *monitoring, *security, *budget_pairs(outs)])
     resources, rule_notices = pairs_resources(pairs)
     return resources, (*unknown, *target_notices, *key_notices, *job_notices, *iam_notices, *database_notices,
-                       *compute_notices, *monitor_notices, *scope_notices, *rule_notices)
+                       *compute_notices, *monitor_notices, *security_notices, *scope_notices, *rule_notices)
 
 
 def read_cli_inventory(files, d, patterns, at=None):

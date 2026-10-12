@@ -9,6 +9,13 @@ def arm_segment(arm_id, after):
     return next((parts[i + 1] for i, p in enumerate(parts[:-1]) if p.lower() == after.lower()), None)
 
 
+def with_properties(item):
+    """An ARM item with its properties merged into it: the CLI prints some resources flattened, others nested under
+    properties, as an ARM template does."""
+    props = item.get("properties")
+    return {**item, **props} if isinstance(props, dict) else item
+
+
 def arm_field(item, name):
     """An item's field by name in any case (the CLI prints mxRecords and frequency; an ARM template may say MXRecords
     and Frequency), None when absent."""

@@ -14,8 +14,8 @@ from opsdir.core.directory import make_entry
 from opsdir.core.environment import env_model
 from opsdir_adapter_azure.adapter import ADAPTER
 from opsdir_adapter_azure.cli import read_cli_inventory
-from opsdir_adapter_azure.collect import (ACTION_GROUP_PROJECTION, COLLECTORS, VPN_PROJECTION, WEB_TEST_PROJECTION,
-                                          identity_check, inventory_steps, state_steps)
+from opsdir_adapter_azure.collect import (ACTION_GROUP_PROJECTION, AUTOMATION_PROJECTION, COLLECTORS, VPN_PROJECTION,
+                                          WEB_TEST_PROJECTION, identity_check, inventory_steps, state_steps)
 
 # the CLI reader's own fixtures (its record and the outputs saved by hand), loaded by path: one source of truth
 _SPEC = importlib.util.spec_from_file_location("azure_cli_fixtures",
@@ -45,7 +45,7 @@ OPERATIONS = {
     "role assignment list", "role definition list", "rest", "keyvault list", "keyvault show", "policy assignment list",
     "network bastion list", "monitor metrics alert list", "monitor scheduled-query list", "monitor action-group list",
     "monitor log-analytics workspace list", "monitor app-insights web-test list", "policy exemption list",
-    "security alerts-suppression-rule list"}
+    "security alerts-suppression-rule list", "security pricing list", "security automation list"}
 NEVER = ("secret show", "secret download", "appsettings", "config", "show-connection-string", "keys list",
          "get-shared-key", "connection-string", "--debug")
 
@@ -139,9 +139,14 @@ def test_exactly_the_reviewed_operations_and_never_a_secret():
                                                                       "monitor app-insights web-test list"))
     assert groups[groups.index("--query") + 1] == ACTION_GROUP_PROJECTION       # receivers' URLs never fetched
     assert tests[tests.index("--query") + 1] == WEB_TEST_PROJECTION             # request headers never fetched
+    exports = next(a for a in ran if _words(a) == "security automation list")
+    assert exports[exports.index("--query") + 1] == AUTOMATION_PROJECTION       # no connection string or URI
     rest = [a for a in ran if _words(a) == "rest"]
     assert all(a[2:4] == ["--method", "get"] and a[5].startswith(f"https://management.azure.com/subscriptions/{SUB_ID}/")
-               for a in rest) and len(rest) == 2
+               for a in rest) and len(rest) == 5
+    assert {a[5].split("/providers/", 1)[1].split("?")[0] for a in rest} >= {
+        "Microsoft.Security/serverVulnerabilityAssessmentsSettings/azureServersSetting",
+        "Microsoft.Consumption/budgets"}
     assert {"dns-example.test.json", "private-dns-id.example.test.json", "kv-key-disk-cmk.json"} <= \
         {x.path.rsplit("/", 1)[-1] for x in c.calls}
 

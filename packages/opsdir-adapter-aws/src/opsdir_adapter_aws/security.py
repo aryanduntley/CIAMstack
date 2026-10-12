@@ -35,14 +35,15 @@ second EventBridge rule filtering on the finding's severity: GuardDuty's numeric
 high 7.0, critical 9.0 and up), Security Hub's detail.findings.Severity.Label and Inspector's detail.severity (the
 labels at or above it); AWS Config has no finding severity (a comment).
 
-Read back from Terraform state: aws_guardduty_detector (+ aws_guardduty_detector_feature, its legacy datasources;
+Read back from Terraform state (and from the CLI and CloudFormation, normalized to the same names: cli_security.py,
+cloudformation_security.py): aws_guardduty_detector (+ aws_guardduty_detector_feature, its legacy datasources;
 aws_guardduty_organization_configuration: organization scope), aws_inspector2_enabler,
 aws_config_configuration_recorder (+ its delivery channel's bucket as the findings destination,
 aws_config_retention_configuration), aws_securityhub_account (+ aws_securityhub_standards_subscription,
 aws_securityhub_organization_configuration) -> security services (kind
 security), the SNS topic or log group an EventBridge rule for the service's findings targets as their destination,
 and the one a rule filtering them on severity targets as their incident route (with the least severity it lets
-through).
+through). Coverage is in one order (AREA_ORDER), whatever order the source lists features or resource types in.
 """
 import json
 
@@ -66,6 +67,8 @@ HUB = "aws_securityhub_account"
 SUBSCRIPTION = "aws_securityhub_standards_subscription"
 RULE, TARGET = "aws_cloudwatch_event_rule", "aws_cloudwatch_event_target"
 FOUNDATIONAL = ("control-plane", "identity", "network")    # what a detector's own sources watch
+AREA_ORDER = ("control-plane", "identity", "network", "compute", "containers", "storage", "databases", "key-vaults",
+              "applications")
 # area -> GuardDuty features (name, additional configurations) that watch it
 AREA_FEATURES = {"storage": (("S3_DATA_EVENTS", ()),),
                  "containers": (("EKS_AUDIT_LOGS", ()),
@@ -286,13 +289,16 @@ def _legacy(a):
     return (*(("storage",) if s3 else ()), *(("containers",) if k8s else ()), *(("compute",) if ebs else ()))
 
 
+def _in_order(areas):
+    """Areas in one order, whatever order the source lists them in."""
+    return tuple(x for x in AREA_ORDER if x in areas)
+
+
 def _detector_areas(a, features):
     found = {FEATURE_AREAS.get(x) for f in features if _enabled(f.get("status"))
              for x in (f.get("name"), *(c.get("name") for c in f.get("additional_configuration") or ()
                                         if _enabled(c.get("status"))))} | set(_legacy(a))
-    return tuple(x for x in ("control-plane", "identity", "network", "compute", "containers", "storage",
-                             "databases", "key-vaults", "applications")
-                 if x in FOUNDATIONAL or x in found)
+    return _in_order(found | set(FOUNDATIONAL))
 
 
 def _least(source, detail):
@@ -384,8 +390,7 @@ def security_resources(pairs):
         for a in of_types(pairs, DETECTOR) if a.get("enable", True) and (a.get("arn") or a.get("id")))
     scanners = tuple(resource("security", f"inspector2:{a.get('id')}", {
         "ciamSecurityKind": "vulnerability-scanning",
-        "ciamSecurityCoverage": tuple(dict.fromkeys(SCANNED[t] for t in a.get("resource_types") or ()
-                                                    if t in SCANNED)),
+        "ciamSecurityCoverage": _in_order({SCANNED[t] for t in a.get("resource_types") or () if t in SCANNED}),
         "ciamAuditScope": _scope(pairs, "aws_inspector2_organization_configuration"),
         **_incident_severity(incidents, "aws.inspector2")},
         links={"ciamFindingsRole": routes.get("aws.inspector2"), **_incident_link(incidents, "aws.inspector2")},
