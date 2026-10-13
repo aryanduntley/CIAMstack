@@ -22,6 +22,9 @@ PARTIES = (      # cn, kind, mail, contact url, display name
     ("authorizing-official", "team", "ciso@example-aero.test", None, "Example Aero CISO (authorizing official)"),
     ("example-aero", "operator", None, None, "Example Aero"),
 )
+# the keepers that take the infrastructure opsdir generates for what they keep: their roots render by default
+# (terraform/landing-zone/[<party>/]); the other parties are asked (decision 2732)
+TAKES_GENERATED = ("network-security", "cloud-landing-zone")
 # what a reporting regime identifies the operator by (synthetic values)
 REPORTING_IDS = {"example-aero": {"ciamCageCode": "0EXA1", "ciamUei": "EXAMPLEAERO0"}}
 # parties' telephones (fictional: 555-01xx numbers are reserved for fiction)
@@ -129,7 +132,8 @@ def owners():
                                                                             else ()),
                                                       *(("ciamReportingIdentity",) if cn in REPORTING_IDS else ())],
                       cn=cn, ciamOwnerKind=kind, mail=mail, ciamContactUrl=url, ciamDisplayName=display,
-                      telephoneNumber=PHONES.get(cn), ciamCostCenter=COST_CENTERS.get(cn), **REPORTING_IDS.get(cn, {}))
+                      telephoneNumber=PHONES.get(cn), ciamCostCenter=COST_CENTERS.get(cn),
+                      ciamTakesGeneratedInfra="TRUE" if cn in TAKES_GENERATED else None, **REPORTING_IDS.get(cn, {}))
                  for cn, kind, mail, url, display in PARTIES)
 
 

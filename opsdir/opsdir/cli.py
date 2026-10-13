@@ -10,10 +10,13 @@
   opsdir search [-b base] [-s scope] FILTER [attr...]
   opsdir report NAME [DN]              portability, unowned, blast-radius DN, and every domain's reports (expiring,
                                        keys ENV, …)
-  opsdir render ENV [-o dir] [--target ADAPTER=T[,T]]...
+  opsdir render ENV [-o dir] [--target ADAPTER=T[,T]]... [--keeper PARTY | --kind CLASS... | --binding DN...]
+                [--as REQUESTER]
                                        e.g. prod environment of a cloud: CLOUD/ENV (default out/ here); --target
                                        picks the outputs of an adapter that offers several (pingfederate=admin-api,
-                                       terraform); default all, recorded in MANIFEST.json
+                                       terraform); default all, recorded in MANIFEST.json. --keeper / --kind /
+                                       --binding: only that slice's infrastructure, complete in its own root (a
+                                       keeper's whatever it takes); --as: who asks (default the database login)
   opsdir plan FROM TO [-o dir]         migration plan + change-request drafts for external parties
   opsdir migrate FROM TO [-o dir]      check both stacks, plan, render the target; exit 1 unless ready
   opsdir fix list FROM TO              the record changes the plan's findings offer (assisted fixes)
@@ -89,6 +92,8 @@ from .connectors.stack import STATUS_HEADERS
 from .core.changeset import describe
 from .core import search as ldap_search
 from .core.directory import gtime_at, values
+from .core.environment import ENVIRONMENT, Scope
+from .domains.governance.naming import OWNERS
 from .core.findings import fix_inputs
 from .core.interchange import ldif
 from .core.interchange.export import export_text  # noqa: F401  (callers import it from here)
@@ -110,7 +115,16 @@ SUBCOMMANDS = (
     ("render", ((("env",), {}), (("-o", "--out"), {}),
                 (("--target",), {"action": "append", "default": [], "metavar": "ADAPTER=T[,T]",
                                  "help": "the render targets of an adapter (pingfederate=admin-api,terraform); "
-                                         "default: all"}))),
+                                         "default: all"}),
+                (("--keeper",), {"metavar": "PARTY", "help": "only what this party keeps (its cn or DN), its root "
+                                                             "whatever it takes"}),
+                (("--kind",), {"action": "append", "default": [], "metavar": "CLASS",
+                               "help": "only the entries of this object class (repeat for several)"}),
+                (("--binding",), {"action": "append", "default": [], "metavar": "DN",
+                                  "help": "only these bindings (repeat for several)"}),
+                (("--as",), {"dest": "requester", "metavar": "REQUESTER",
+                             "help": "who asks for the render (recorded in MANIFEST.json; default the database "
+                                     "login)"}))),
     ("plan", ((("src",), {}), (("dst",), {}), (("-o", "--out"), {}))),
     ("migrate", ((("src",), {}), (("dst",), {}), (("-o", "--out"), {}))),
     ("fix", ((("action",), {"choices": ["list", "show", "propose", "apply", "approved"]}), (("src",), {"nargs": "?"}),
@@ -294,8 +308,22 @@ def render_targets(given):
     return {k: tuple(t for t in v.split(",") if t) for k, v in (g.split("=", 1) for g in given)}
 
 
+def render_scope(keeper, kinds, bindings):
+    """The Scope of render's --keeper (a party's cn or DN), --kind and --binding options: the whole environment when
+    none is given; refused when more than one kind of scope is."""
+    given = [s for s in (("keeper", (keeper,) if keeper else ()), ("class", tuple(kinds)),
+                         ("bindings", tuple(bindings))) if s[1]]
+    if len(given) > 1:
+        raise SystemExit("render takes one of --keeper, --kind or --binding")
+    if not given:
+        return ENVIRONMENT
+    kind, value = given[0]
+    return Scope(kind, tuple(v if kind != "keeper" or "=" in v else f"cn={v},{OWNERS}" for v in value))
+
+
 def _cmd_render(conn, a, as_of):
-    r = ops.render(conn, a.env, render_targets(a.target) or None)
+    r = ops.render(conn, a.env, render_targets(a.target) or None, render_scope(a.keeper, a.kind, a.binding),
+                   a.requester)
     out = write_tree(a.out or pathlib.Path("out") / r.label.replace("/", "-"), r.files)
     return "\n".join((f"rendered {len(r.files)} files for {r.dn} ({r.provider}) → {out}",
                       *(f"  UNBOUND role: {role}" for role in r.unbound)))

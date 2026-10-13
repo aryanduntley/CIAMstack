@@ -11,7 +11,8 @@ TEAM = "cn=network-team,ou=owners,dc=ciam-ops"
 GAMMA = "env=prod,cloud=gamma,ou=environments,dc=ciam-ops"
 NET = "projects/host-proj/global/networks/vpc-gamma"
 TREE = ("dn: ou=owners,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: owners\n",
-        f"dn: {TEAM}\nobjectClass: top\nobjectClass: ciamParty\ncn: network-team\nciamOwnerKind: team\n",
+        f"dn: {TEAM}\nobjectClass: top\nobjectClass: ciamParty\ncn: network-team\nciamOwnerKind: team\n"
+        "ciamTakesGeneratedInfra: TRUE\n",
         "dn: cloud=gamma,ou=environments,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamCloud\ncloud: gamma\n"
         "ciamCloudProvider: gcp\nciamRegion: us-central1\n",
         f"dn: {GAMMA}\nobjectClass: top\nobjectClass: ciamEnvironment\nenv: prod\n",

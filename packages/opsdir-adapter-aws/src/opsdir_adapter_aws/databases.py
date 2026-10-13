@@ -1,7 +1,7 @@
 """AWS: the managed databases (opsdir.domains.data) an environment runs, rendered as Terraform and read back. Pure.
 
-Rendered into the stack's main.tf, for each database the stack keeps (one naming ciamManagedBy is someone else's: a
-comment names them):
+Rendered for every database, each block stamped with its entry (hcl.from_entry), so the render places it in the
+stack's root, its keeper's root, or names it as its keeper's (governance.keepers, decision 2732):
 
   an RDS instance (aws_db_instance), or on Aurora (ciamDbService aurora) a cluster (aws_rds_cluster) with one
   instance, two in different zones when it is zone-redundant (multi_az on RDS)
@@ -31,8 +31,8 @@ from opsdir.core.environment import UNBOUND, bound, of_class
 from opsdir.core.inventory import of_types, resource, tagged_role
 from opsdir.domains.data.databases import database_port, major_version
 from opsdir.domains.network.plumbing import adopted
-from opsdir.domains.network.stack import kept_by, owned, subnets
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
+from opsdir.domains.network.stack import subnets
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_import, tf_name
 from opsdir_format_terraform.state import blocks
 from .network import binding_tags
 from .tags import state_tags as _tags
@@ -142,10 +142,10 @@ def _aurora(b):
 
 
 def copy_regions(m):
-    """The regions environment m's RDS instances (those the stack keeps) copy their automated backups to: the first
-    copy region of each, in order. Each needs a provider of its own (copy_alias)."""
+    """The regions environment m's RDS instances copy their automated backups to: the first copy region of each, in
+    order. Each needs a provider of its own (copy_alias), in whichever root renders the instance."""
     return tuple(dict.fromkeys(values(b, "ciamCopyRegion")[0] for b in of_class(m, "ciamDatabase")
-                               if owned(b) and values(b, "ciamCopyRegion") and not _aurora(b)))
+                               if values(b, "ciamCopyRegion") and not _aurora(b)))
 
 
 def _replica_key(m, b, region):
@@ -242,11 +242,8 @@ def _database(m, b):
 
 
 def render_databases(m):
-    """HCL for environment m's managed databases: those the stack keeps, then comments naming who keeps the others."""
-    dbs = of_class(m, "ciamDatabase")
-    return (*(comment(f"Database '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: not "
-                      "rendered here") for b in dbs if not owned(b)),
-            *(x for b in dbs if owned(b) for x in _database(m, b)))
+    """HCL for environment m's managed databases, each stamped with its entry (the render places it by its keeper)."""
+    return tuple(x for b in of_class(m, "ciamDatabase") for x in from_entry(b.dn, _database(m, b)))
 
 
 # ------------------------------------------------------------------ read back

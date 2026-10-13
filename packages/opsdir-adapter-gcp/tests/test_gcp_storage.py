@@ -1,8 +1,8 @@
 """Object stores on Google Cloud: a bucket the record describes and the stack keeps is rendered with uniform access,
 public access prevention, versioning, a retention policy (locked for compliance), its default KMS key and a lifecycle
 rule per recorded rule, adopted when it exists; its copy to another bucket a Storage Transfer Service replication job
-(Cloud Storage has no replication setting), to anything else a comment; one someone else keeps is named with what to
-ask for. Read back from Terraform state, Cloud Asset Inventory and gcloud (the replica an enabled transfer job copies
+(Cloud Storage has no replication setting), to anything else a comment; one someone else keeps renders too, placed by
+its keeper. Read back from Terraform state, Cloud Asset Inventory and gcloud (the replica an enabled transfer job copies
 it to), what it renders reading back as recorded."""
 import json
 
@@ -56,12 +56,11 @@ def test_a_copy_under_a_prefix_or_to_something_else():
     assert "google_storage_transfer_job" not in other
 
 
-def test_others_buckets_are_named_and_references_left_alone():
+def test_others_buckets_render_too_for_their_keeper_and_references_are_left_alone():
     out = _render(entry(ALPHA, "store", "ciamObjectStore", ciamBindingRole="exports", ciamStorageRef="gs://b",
                         ciamStorageImmutability="governance", ciamStorageLockDays="7",
                         ciamManagedBy="cn=storage-team,ou=owners,dc=ciam-ops"))
-    assert out == ("# Object store 'store' (role exports) is kept by cn=storage-team,ou=owners,dc=ciam-ops: "
-                   "not rendered here. Ask them for: governance lock 7 days")
+    assert 'resource "google_storage_bucket" "store"' in out              # placed by its keeper (render_files)
     referenced = entry(ALPHA, "backup", "ciamBackupTarget", ciamBindingRole="backup-target",
                        ciamStorageRef="gs://alpha-backups")
     assert _render(referenced) == "" and kept_buckets(model(alpha=(referenced,))[1]) == ()

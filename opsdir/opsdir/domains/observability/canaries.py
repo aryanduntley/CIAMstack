@@ -1,16 +1,16 @@
 """What a cloud renders of an environment's synthetic checks, cloud-neutral (each cloud adapter maps it to its own
 checks). Pure.
 
-A canary (ciamCanary) the environment can run (it binds the canary's checked service, ciamCheckedService) is rendered
-as the cloud's synthetic check named as the canary binding realizing it (ciamCanaryBinding, ciamRealizes), else as
-the canary. Its URL: https:// the service name's ciamFqdn (its ciamPort when not 443) and the path the service's
-products serve for the flow (core.contract.Endpoint, through the edge's policies: health -> health, login-page ->
-login, oidc-token -> token), when that path is concrete (no '*'). Its credentials: the first of its ciamUsesRole bound
-here (a secret reference read at run time, never rendered). Not rendered, and said so: a flow that isn't one HTTP
-request the record can describe (saml-sso needs a service provider to start from, ldap-bind isn't HTTP, other), an
-oidc-token check without credentials, a path the products don't name; a check someone else keeps, or an overlay
-inherits from its base (rendered there), is named with its keeper. A canary whose service the environment doesn't
-bind is the planner's blocker, not a renderer's concern.
+A canary (ciamCanary) the environment can run (it binds the canary's checked service, ciamCheckedService) is rendered as
+the cloud's synthetic check named as the canary binding realizing it (ciamCanaryBinding, ciamRealizes), else as the
+canary. Its URL: https:// the service name's ciamFqdn (its ciamPort when not 443) and the path the service's products
+serve for the flow (core.contract.Endpoint, through the edge's policies: health -> health, login-page -> login,
+oidc-token -> token), when that path is concrete (no '*'). Its credentials: the first of its ciamUsesRole bound here (a
+secret reference read at run time, never rendered). Not rendered, and said so: a flow that isn't one HTTP request the
+record can describe (saml-sso needs a service provider to start from, ldap-bind isn't HTTP, other), an oidc-token check
+without credentials, a path the products don't name; a check an overlay inherits from its base (rendered there) is named
+with it, and one someone else keeps is placed by its keeper (governance.keepers). A canary whose service the environment
+doesn't bind is the planner's blocker, not a renderer's concern.
 """
 from collections import namedtuple
 
@@ -25,7 +25,7 @@ from .realized import keeper_of
 
 # A canary as one environment renders it: the canary, the canary binding realizing it (or None), its name there, the
 # flow, the URL it requests, how often it runs (seconds), its credentials' secret binding (or None), who keeps it when
-# this environment doesn't (realized.keeper_of: a party, or the base an overlay inherits it from; or None), and why it
+# this environment doesn't (realized.keeper_of: the base an overlay inherits it from; or None), and why it
 # isn't rendered (None when it is).
 CanarySpec = namedtuple("CanarySpec", ("canary", "binding", "name", "flow", "url", "every", "secret", "keeper", "why"))
 

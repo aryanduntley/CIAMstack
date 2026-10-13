@@ -37,7 +37,7 @@ from opsdir.core.manifest import header
 from opsdir.domains.estate.authorizations import required_levels
 from opsdir.domains.estate.discovery import (custom_identifiers, destination, discovery_services, rescan_line,
                                              rescan_plan)
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_name
 from .storage import bucket_of
 
 TEMPLATE, CONFIG = "google_data_loss_prevention_inspect_template", "google_data_loss_prevention_discovery_config"
@@ -142,11 +142,6 @@ RESCAN_WORKFLOW = r"""main:
     - done:
         return: ${wanted}
 """ % {"api": API}
-
-
-def _keeper(m, s):
-    holder = get(m.d, one(s, "ciamManagedBy"))
-    return rdn_value(holder) if holder is not None else one(s, "ciamManagedBy")
 
 
 def _binding(m, role):
@@ -298,11 +293,11 @@ def _config(m, s):
 
 
 def render_discovery(m):
-    """(HCL and comments, {path: file}) for environment m's data discovery: the rescan workflow when one is used."""
-    kept = [s for s in discovery_services(m) if not one(s, "ciamManagedBy")]
-    hcl = (*(comment(f"Data discovery {rdn_value(s)}: kept by {_keeper(m, s)}, not rendered here")
-             for s in discovery_services(m) if one(s, "ciamManagedBy")),
-           *(x for s in kept for x in _config(m, s)))
+    """(HCL and comments, {path: file}) for environment m's data discovery (whoever keeps each service, stamped with
+    its entry: the render places it by keeper): the rescan workflow when one is used (carried into a keeper root that
+    reads it)."""
+    kept = discovery_services(m)
+    hcl = tuple(x for s in kept for x in from_entry(s.dn, _config(m, s)))
     used = any(scheduled(m, s) and _buckets(m, s)[0] for s in kept)
     return hcl, ({f"terraform/{WORKFLOW_FILE}": workflow_file(m)} if used else {})
 

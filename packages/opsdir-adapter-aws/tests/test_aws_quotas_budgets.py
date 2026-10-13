@@ -119,8 +119,9 @@ def test_without_an_environment_tag_the_account_and_a_topic_elsewhere_is_noted()
         "# NOTE: budget monthly's alerts to cost-alerts: not rendered: AWS Budgets publishes only to a topic in the "
         f"budget's account (999988887777) and {TOPIC_ARN} is elsewhere")
     _, alpha = _alpha(budget(ciamManagedBy="cn=landing-zone,ou=owners,dc=ciam-ops"), TOPIC)
-    assert as_text(render_budgets(alpha)) == (
-        "# Budget monthly: kept by cn=landing-zone,ou=owners,dc=ciam-ops, not rendered here",)
+    kept = render_budgets(alpha)                    # rendered too, placed by its keeper (render_files)
+    assert 'resource "aws_budgets_budget" "monthly"' in "\n".join(as_text(kept))
+    assert {getattr(x, "origin", None) for x in kept} - {None} == {f"cn=monthly,ou=bindings,{ALPHA}"}
 
 
 def test_govcloud_budgets_go_through_the_standard_account():

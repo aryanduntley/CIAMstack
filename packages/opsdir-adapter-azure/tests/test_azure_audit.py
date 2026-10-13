@@ -36,7 +36,6 @@ def test_an_account_trail_the_platform_keeps_is_the_subscription_s_diagnostic_se
                      ciamAllRegions="TRUE", ciamIntegrityValidation="TRUE",
                      ciamProviderRef=f"{SUBSCRIPTION}/providers/Microsoft.Insights/diagnosticSettings/ciam-activity"),
               _trail("to-workspace", "audit-logs"),
-              _trail("org-trail", "audit-logs", ciamManagedBy=PARTY),
               _trail("org-own", "audit-logs", ciamAuditScope="organization"),
               _trail("to-siem", "siem"))
     _, alpha, _ = model(alpha=(STORE, LAW, SIEM, *trails), tree=OWNERS)
@@ -63,7 +62,6 @@ def test_an_account_trail_the_platform_keeps_is_the_subscription_s_diagnostic_se
         "# NOTE: audit trail org-own: not rendered: Azure has no organization trail: each subscription's Activity Log "
         "is exported by its own diagnostic setting (the landing zone's policy deploys them); record it kept by the "
         "landing zone (ciamManagedBy)",
-        "# Audit trail org-trail (account): kept by landing-zone, not rendered here",
         "# NOTE: audit trail to-siem: not rendered: Azure exports the Activity Log to a storage account, a Log "
         "Analytics workspace or an event hub, and siem is none of those", out[-1])
     assert 'log_analytics_workspace_id = "' + WORKSPACE + '"' in out[-1]

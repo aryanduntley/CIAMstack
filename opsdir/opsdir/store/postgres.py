@@ -150,6 +150,11 @@ def entries_after(canon, current, records):
 
 
 # ------------------------------------------------------------------ effects: execute prepared work
+def session_user(conn):
+    """The database login the connection runs as (who a render is requested by, until people are identified: 7.7)."""
+    return conn.execute("select session_user").fetchone()[0]
+
+
 def registry_counts(conn):
     """Effect: (attribute types, object classes) in the registry."""
     return conn.execute("select (select count(*) from attribute_type), (select count(*) from object_class)").fetchone()

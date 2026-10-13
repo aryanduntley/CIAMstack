@@ -76,9 +76,9 @@ def test_security_hub_subscribes_to_the_standards_it_has_and_names_the_rest():
     assert "# hub: organization-wide: enable it for the organization from its management account" in out
 
 
-def test_a_service_someone_else_keeps_is_named_not_rendered():
-    assert _render(svc("org-guardduty", "threat-detection", ciamManagedBy=PARTY)) == (
-        "# Security service org-guardduty (threat-detection): kept by landing-zone, not rendered here")
+def test_a_service_someone_else_keeps_renders_too_for_its_keeper():
+    assert 'resource "aws_guardduty_detector" "org_guardduty"' in _render(
+        svc("org-guardduty", "threat-detection", ciamManagedBy=PARTY))      # placed by its keeper (render_files)
 
 
 DETECTOR = {"id": "12abc", "arn": "arn:aws:guardduty:us-east-1:111122223333:detector/12abc", "enable": True,

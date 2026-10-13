@@ -1311,6 +1311,7 @@ objectClass: ciamParty
 cn: cloud-landing-zone
 ciamDisplayName: Cloud landing zone team
 ciamOwnerKind: team
+ciamTakesGeneratedInfra: TRUE
 mail: landing-zone@example-aero.test
 
 dn: cn=CMMC-2026,ou=assessments,dc=ciam-ops
@@ -2677,6 +2678,7 @@ objectClass: top
 objectClass: ciamParty
 cn: network-security
 ciamOwnerKind: team
+ciamTakesGeneratedInfra: TRUE
 mail: netsec@example-aero.test
 
 dn: cn=noreply@example-aero.test,ou=mail-senders,dc=ciam-ops

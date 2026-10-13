@@ -1,6 +1,7 @@
 """Terraform data read for translation into another infrastructure-as-code language (a cloud's own templates): a
-rendered root's blocks, the references their values make, and the split of a root into what the other language
-writes and what stays Terraform because it has no form there.
+rendered root's blocks, the references their values make, the split of a root into what the other language
+writes and what stays Terraform because it has no form there, and the partition of a root among several Terraform
+roots (each keeper's, a scoped slice), each complete with the inputs it reads from the others.
 A format library: it knows Terraform's references and roots, not any cloud provider or target language. The cloud
 adapters hold the mapping of their resource types and write the target language from what this gives them.
 """
@@ -8,7 +9,7 @@ import posixpath
 import re
 from typing import NamedTuple
 
-from .hcl import Block, TfBlock, TfFile, tf_block, tf_name
+from .hcl import ANCHOR, Block, TfBlock, TfFile, tf_block, tf_name
 
 # A reference an expression makes: kind resource | data | ephemeral | var | local | module | path | self | each |
 # count | terraform; type: the resource, data source or ephemeral resource type ('' for the other kinds); name: the
@@ -324,6 +325,110 @@ def split_root(items, has_native):
     native = tuple(x for comments, b in groups if kept(b, False) for x in (*comments, *((b,) if b else ())))
     side = tuple(x for comments, b in groups if kept(b, True) for x in (*comments, _side_block(b, written)))
     return Split(native, (*side, *_output_variables(outputs)) if side_blocks or checking else (), outputs, unresolved)
+
+
+# A root's items partitioned among Terraform roots (partition). roots: {root: items}, in the order they apply, each
+# complete: its resources and imports, every provider and terraform block, the data, ephemeral, variable and module
+# blocks it reads, the comments above each; a value of a resource another root writes read through an input variable
+# (output_variable names it) and output by that root. inputs, outputs: {root: (TfRef, ...)}, for the roots that have
+# any; order: the roots, each after every root it reads.
+Partition = NamedTuple("Partition", [("roots", dict), ("inputs", dict), ("outputs", dict), ("order", tuple)])
+
+
+def _apply_order(names, reads_from):
+    """names in an order where each comes after every root it reads (reads_from: {root: {root, ...}}), else stable;
+    ValueError naming two roots that read each other (directly or through others)."""
+    done, out = set(), []
+
+    def visit(r, path):
+        if r in path:
+            loop = path[path.index(r):]
+            raise ValueError(f"roots {loop[0]!r} and {loop[-1]!r} read each other's resources ("
+                             f"{' -> '.join((*loop, r))}): no order applies them")
+        if r not in done:
+            for w in sorted(reads_from.get(r, ()), key=names.index):
+                visit(w, (*path, r))
+            done.add(r)
+            out.append(r)
+    for n in names:
+        visit(n, ())
+    return tuple(out)
+
+
+def _outputs_of(refs, sensitive):
+    return tuple(tf_block("output", [output_variable(r)], [
+        ("value", "${" + ref_text(r) + "}"), *((("sensitive", True),) if sensitive(r) else ())]) for r in refs)
+
+
+def _inputs_of(refs, writer, sensitive, label):
+    return tuple(tf_block("variable", [output_variable(r)], [
+        ("description", f"{ref_text(r)}: {label(writer[r])}"),
+        *((("sensitive", True),) if sensitive(r) else ())]) for r in refs)
+
+
+def _applied_before(root):
+    return f"an output of root {root}, applied before this one"
+
+
+def partition(items, place, default, sensitive=lambda r: False, label=_applied_before):
+    """A root's items partitioned among roots (Partition). place(resource block): the root it goes to (by its origin,
+    hcl.from_entry), None for the default root; an import block goes with the resource it adopts, an anchor (and the
+    comments above it) where place puts it. Each root takes
+    every provider and terraform block and the data, ephemeral, variable and module blocks it reads (several roots
+    when several do; the default root's when none does), and the trailing comments go to the default root; with
+    everything placed in the default root it is the items unchanged. A reference to a resource another root writes is
+    read through an input variable, the writing root outputting it (sensitive(ref): marked sensitive on both sides;
+    label(root): what the variable's description says of the root it comes from);
+    a depends_on naming one loses that entry (the order applies it first). ValueError when two roots read each other,
+    or an input's name is a variable the root has already."""
+    groups = _groups(items)
+    blocks = tuple(b for _, b in groups if b is not None)
+    by_address = {address(b): b for b in blocks if address(b)}
+    writes = {address(b): place(b) or default for b in blocks if b.kind == "resource"}
+
+    def root_of(b):
+        if b.kind == ANCHOR:
+            return place(b) or default
+        return writes[address(b)] if b.kind == "resource" else writes.get(_import_target(b), default)
+
+    shared = tuple(b for b in blocks if b.kind in ("provider", "terraform"))
+    placed = tuple(b for b in blocks if b.kind in ("resource", "import", ANCHOR))
+    names = tuple(dict.fromkeys((default, *(root_of(b) for b in placed))))
+    reads = {r: _closure((*(b for b in placed if root_of(b) == r), *shared), by_address) for r in names}
+    unread = {address(b) for b in blocks if b.kind not in ("resource", "import", "provider", "terraform")
+              and not any(address(b) in reads[r] for r in names)}
+    reads[default] = reads[default] | unread
+
+    def kept(b, r):
+        if b is None or b.kind in ("provider", "terraform"):
+            return b is not None or r == default
+        return root_of(b) == r if b.kind in ("resource", "import", ANCHOR) else address(b) in reads[r]
+
+    def foreign(r):
+        return {a for a, w in writes.items() if w != r}
+
+    reading = {r: (*shared, *(b for b in blocks if b.kind not in ("provider", "terraform") and kept(b, r)))
+               for r in names}
+    inputs = {r: tuple(dict.fromkeys(ref for b in reading[r] for ref in _reads(b) if ref_address(ref) in foreign(r)))
+              for r in names}
+    writer = {ref: writes[ref_address(ref)] for refs in inputs.values() for ref in refs}
+    clash = sorted(f"{r}: {a}" for r in names for ref in inputs[r] for a in (f"var.{output_variable(ref)}",)
+                   if a in by_address and kept(by_address[a], r))
+    if clash:
+        raise ValueError(f"an input a root reads another root's resource through is named like a variable it has: "
+                         f"{', '.join(clash)}")
+    after = {r: {writes[ref_address(ref)] for b in reading[r] for ref in value_refs(b.body)
+                 if ref_address(ref) in foreign(r)} for r in names}       # values and depends_on alike
+    trailing = bool(groups) and groups[-1][1] is None
+    # a root with nothing of its own but the providers and what they read is left out
+    held = {r: any(root_of(b) == r for b in placed) or (r == default and bool(unread or trailing)) for r in names}
+    order = tuple(r for r in _apply_order(names, after) if held[r])
+    outputs = {w: tuple(dict.fromkeys(ref for r in order for ref in inputs[r] if writer[ref] == w)) for w in order}
+    roots = {r: (*(x for comments, b in groups if kept(b, r) for x in (*comments, *(() if b is None else (
+                 _side_block(b, foreign(r)) if after[r] else b,)))),
+                 *_inputs_of(inputs[r], writer, sensitive, label), *_outputs_of(outputs[r], sensitive)) for r in order}
+    return Partition(roots, {r: inputs[r] for r in order if inputs[r]}, {r: v for r, v in outputs.items() if v},
+                     order)
 
 
 def no_native_note(split, language, reasons=None):

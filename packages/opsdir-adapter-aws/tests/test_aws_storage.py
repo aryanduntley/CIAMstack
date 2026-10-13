@@ -1,7 +1,8 @@
-"""Object stores on AWS: a bucket the record describes and the stack keeps is rendered with its versioning, Object
-Lock, SSE-KMS, public access block, lifecycle and replication (role and replica key as inputs), adopted when it exists;
-one someone else keeps is named; one the record only references stays a data source. Read back from Terraform state
-and the CLI (each setting saved by bucket under its folder), what it renders reading back as recorded."""
+"""Object stores on AWS: a bucket the record describes and the stack keeps is rendered with its versioning, Object Lock,
+SSE-KMS, public access block, lifecycle and replication (role and replica key as inputs), adopted when it exists; one
+someone else keeps renders too, placed by its keeper; one the record only references stays a data source. Read back from
+Terraform state and the CLI (each setting saved by bucket under its folder), what it renders reading back as
+recorded."""
 import json
 
 from opsdir_format_terraform.hcl import as_text
@@ -48,8 +49,7 @@ def test_lock_without_versioning_turns_it_on_and_others_buckets_are_named():
     assert 'mode = "GOVERNANCE"' in out and 'status = "Enabled"' in out and "import" not in out
     kept = _render(entry(ALPHA, "store", "ciamObjectStore", ciamBindingRole="exports", ciamStorageRef="s3://b",
                          ciamStorageVersioning="TRUE", ciamManagedBy="cn=storage-team,ou=owners,dc=ciam-ops"))
-    assert kept == "# Object store 'store' (role exports) is kept by cn=storage-team,ou=owners,dc=ciam-ops: not " \
-                   "rendered here. Ask them for: versioning"
+    assert 'resource "aws_s3_bucket_versioning" "store"' in kept      # placed by its keeper (test_aws_keeper_roots)
     assert _render(entry(ALPHA, "store", "ciamObjectStore", ciamBindingRole="exports", ciamStorageRef="s3://b")) == ""
 
 

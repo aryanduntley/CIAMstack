@@ -4,8 +4,13 @@ receives, plus the MANIFEST (R10)."""
 from ..core.environment import as_seen
 from ..core.formats import format_of
 from ..core.manifest import manifest
-from .capture import rendered_config
+from ..domains.governance.keepers import check_scope
+from .capture import RenderedConfig, rendered_config
 from .registry import ADAPTERS, FORMATS, environment, services
+
+
+# what a render scoped to a slice receives of the captured config files: none (they are the environment's)
+_NO_CONFIG = RenderedConfig({}, {}, {}, ())
 
 
 def stack_targets(stack):
@@ -57,15 +62,19 @@ def _env_files(a, m, found, targets):
     return a.render_env(m, found, targets[a.name]) if a.name in targets else a.render_env(m, found)
 
 
-def render_parts(d, spec, installed=ADAPTERS, wanted=None):
+def render_parts(d, spec, installed=ADAPTERS, wanted=None, scope=None):
     """(EnvModel as the environment sees the record (its overrides applied), applicable adapters,
     environment-neutral files, environment-specific files, the render targets chosen); wanted: {adapter: (target,
     ...)} (default: those its stack declares, else each adapter's defaults). No provider adapter is needed: an
     environment whose infrastructure no installed adapter renders (a Kubernetes cluster on the operator's own
     hardware) still gets what its other adapters render; one that no installed adapter renders anything for is
-    refused."""
+    refused. scope (core.environment.Scope, 5.7): a keeper, class or bindings scope renders the infrastructure of that
+    slice only (the provider adapters' files, placed by governance.keepers), refused when it selects nothing."""
     shared, adapters = environment(d, spec, installed)
-    m = as_seen(shared)
+    m = as_seen(shared)._replace(scope=scope)
+    check_scope(m)
+    sliced = scope is not None and scope.kind != "environment"
+    adapters = tuple(a for a in adapters if a.kind == "provider") if sliced else adapters
     if not any(a.render_neutral or a.render_env for a in adapters):
         raise SystemExit(f"nothing renders {m.label}: no installed adapter that renders applies to it (provider "
                          f"{m.provider})")
@@ -73,7 +82,11 @@ def render_parts(d, spec, installed=ADAPTERS, wanted=None):
     neutral = {p: text for a in adapters if a.render_neutral for p, text in a.render_neutral(m.d).items()}
     found = services(installed)
     specific = {p: text for a in adapters if a.render_env for p, text in _env_files(a, m, found, targets).items()}
-    return m, adapters, neutral, specific, targets
+    if sliced and not specific:
+        raise SystemExit(f"nothing of {m.label} is rendered for {scope.kind} {', '.join(scope.value)}: a render places "
+                         "by entry what someone else may keep (network plumbing, the landing zone, databases, object "
+                         "stores, volumes, backups, audit trails, monitors, security services, budgets)")
+    return m, adapters, ({} if sliced else neutral), specific, targets
 
 
 def _declared(adapters, path):
@@ -95,19 +108,20 @@ def file_formats(adapters, paths, formats=FORMATS):
     return {p: name for p, (_, name) in found.items()}
 
 
-def assemble(m, adapters, neutral, specific, targets=None):
-    """The environment's files: the adapters' outputs, the captured config files it receives, and the MANIFEST (with
-    the render targets chosen)."""
-    config = rendered_config(m.d, m)
+def assemble(m, adapters, neutral, specific, targets=None, requester=None):
+    """The environment's files: the adapters' outputs, the captured config files it receives (all of the environment
+    only), and the MANIFEST (with the render targets chosen, and the scope and requester of a requested render)."""
+    config = rendered_config(m.d, m) if m.scope is None or m.scope.kind == "environment" else _NO_CONFIG
     clash = sorted(set(config.files) & {*neutral, *specific})
     if clash:
         raise SystemExit(f"captured files and rendered files share paths: {', '.join(clash)}")
     formats = {**file_formats(adapters, (*neutral, *specific)), **config.formats}
     return {**neutral, **specific, **config.files,
             "MANIFEST.json": manifest(m, neutral, specific, formats, config.files, config.scopes, config.not_rendered,
-                                      targets)}
+                                      targets, requester)}
 
 
-def render_env(d, spec, installed=ADAPTERS, wanted=None):
-    m, adapters, neutral, specific, targets = render_parts(d, spec, installed, wanted)
-    return m, assemble(m, adapters, neutral, specific, targets)
+def render_env(d, spec, installed=ADAPTERS, wanted=None, scope=None, requester=None):
+    """(EnvModel, {path: text}) of a render of environment spec: render_parts, assembled with its MANIFEST."""
+    m, adapters, neutral, specific, targets = render_parts(d, spec, installed, wanted, scope)
+    return m, assemble(m, adapters, neutral, specific, targets, requester)

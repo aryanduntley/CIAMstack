@@ -138,10 +138,15 @@ def render_identity_protection(m, s):
 
 
 def uses_azuread(m):
-    """Whether environment m's root renders azuread resources: complete risk policies azuread can express on a service
-    the platform team keeps (no ciamManagedBy)."""
+    """Whether environment m's render writes azuread resources (in whichever root): complete risk policies azuread can
+    express on a service (the placement leaves the provider out of the roots that don't use it)."""
+    return _policies_render(m, security_services(m))
+
+
+def _policies_render(m, services):
+    """Whether any of the services renders risk policies azuread can express (complete in the record)."""
     return any(watches_identity(s) and renders(m, s) and any(p.grant in GRANTS for p in risk_policies(s))
-               for s in security_services(m) if not one(s, "ciamManagedBy"))
+               for s in services)
 
 
 # ------------------------------------------------------------------ planner
@@ -168,7 +173,7 @@ def _needed(m, watching, kept):
     render."""
     return (*(("identity-risk-license", "workload-risk-license") if watching else ()),
             *(("risk-log-permission",) if kept else ()),
-            *(("risk-policy-permission",) if uses_azuread(m) else ()))
+            *(("risk-policy-permission",) if _policies_render(m, kept) else ()))
 
 
 def _hybrid(m, watching, kept, owner, cutover):

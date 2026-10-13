@@ -5,6 +5,7 @@ import pytest
 
 from opsdir.cli import export_text
 from opsdir.connectors.render import render_env
+from opsdir.core.environment import ENVIRONMENT
 from opsdir.core.naming import SUFFIX
 from showcase_support import APPROVED, GOLDEN
 from support import read_tree
@@ -51,5 +52,5 @@ def test_database_agrees_with_the_in_memory_estate(snapshot, estate):
     """Rejected writes left nothing behind: after the approved changes the store holds exactly what applying only
     those changes in memory gives, and renders the same target."""
     assert snapshot["export.ldif"] == export_text(estate["after"], SUFFIX) + "\n"
-    _, files = render_env(estate["after"], "target/prod")
+    _, files = render_env(estate["after"], "target/prod", scope=ENVIRONMENT, requester="opsdir")   # as `opsdir render`
     assert {p: snapshot.get(f"render-after/target-prod/{p}") for p in files} == files

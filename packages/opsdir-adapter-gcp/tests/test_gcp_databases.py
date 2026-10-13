@@ -2,7 +2,8 @@
 tier, disk, zone, REGIONAL when zone-redundant, backups with point-in-time recovery or the binary log, private IP only,
 ssl_mode, flags, CMEK, deletion protection), the administrator password written write-only from an ephemeral Secret
 Manager read (a SQL user, or SQL Server's root password), adopted when it exists; engines Cloud SQL doesn't run and
-databases others keep named. Read back from Terraform state, Cloud Asset Inventory and gcloud; no password is read."""
+databases others keep render too, placed by their keeper. Read back from Terraform state, Cloud Asset Inventory and
+gcloud; no password is read."""
 import copy
 import json
 import re
@@ -70,7 +71,7 @@ def test_mysql_binary_log_sql_server_root_password_and_what_cloud_sql_doesnt_run
     assert "root_password_wo         = ephemeral.google_secret_manager_secret_version.db_sql_admin.secret_data" in out
     assert out.count('resource "google_sql_user"') == 1                    # SQL Server's is its root password
     assert "# Database 'db-ora' runs oracle, which Cloud SQL doesn't: not rendered" in out
-    assert "# Database 'db-dba' (role reports-db) is kept by cn=dba,ou=parties,dc=ciam-ops: not rendered here" in out
+    assert 'resource "google_sql_database_instance" "db_dba"' in out          # placed by its keeper (render_files)
 
 
 def _state(*resources):

@@ -42,7 +42,7 @@ from opsdir.core.manifest import header
 from opsdir.domains.estate.discovery import (custom_identifiers, destination, discovery_services, rescan_line,
                                              rescan_plan)
 from opsdir.domains.estate.naming import RESTRICTED
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_name
 from opsdir_format_terraform.state import blocks
 from .account import account_id
 from .account import govcloud, partition
@@ -113,11 +113,6 @@ def handler(event, context):
         **({"customDataIdentifierIds": IDENTIFIERS} if IDENTIFIERS else {}))
     return {"started": job["jobId"]}
 '''
-
-
-def _keeper(m, s):
-    holder = get(m.d, one(s, "ciamManagedBy"))
-    return rdn_value(holder) if holder is not None else one(s, "ciamManagedBy")
 
 
 def _kept(m):
@@ -206,9 +201,9 @@ def _stores(m, s):
     return [x for x in buckets if x], [r for (r, _), x in zip(found, buckets) if not x]
 
 
-def _identifiers(m):
-    """{name: (terraform name, regular expression)} of the own data types the kept services look for."""
-    return {n: (tf_name(f"cdi_{n}"), rx) for s in _kept(m) for n, rx in custom_identifiers(s)}
+def _identifiers(services):
+    """{name: (terraform name, regular expression)} of the own data types the services look for."""
+    return {n: (tf_name(f"cdi_{n}"), rx) for s in services for n, rx in custom_identifiers(s)}
 
 
 def _job(m, s, ids):
@@ -258,25 +253,27 @@ def _uses_scheduler(m, s):
 
 
 def render_discovery(m):
-    """(HCL and comments, {path: script}) for environment m's data discovery: the scheduler functions' sources."""
-    kept, ids = _kept(m), _identifiers(m)
-    notes = tuple(comment(f"Data discovery {rdn_value(s)}: kept by {_keeper(m, s)}, not rendered here")
-                  for s in discovery_services(m) if one(s, "ciamManagedBy"))
+    """(HCL and comments, {path: script}) for environment m's data discovery (whoever keeps each service): the
+    scheduler functions' sources. Each service's blocks are stamped with its entry, and what the account shares (Macie
+    itself, custom data identifiers, the findings export) with the first service's (the render places them by
+    keeper)."""
+    kept = discovery_services(m)
     if not kept:
-        return notes, {}
+        return (), {}
+    first, ids = kept[0].dn, _identifiers(kept)
     if govcloud(m):
-        return (*notes, comment(f"{GOVCLOUD_NOTE}: data discovery {', '.join(rdn_value(s) for s in kept)} (the planner "
-                                "names the gap)")), {}
+        return from_entry(first, (comment(f"{GOVCLOUD_NOTE}: data discovery {', '.join(rdn_value(s) for s in kept)} "
+                                          "(the planner names the gap)"),)), {}
     scripts = {f"terraform/discovery/{function_name(m, s)}/handler.py": handler_script(m, s)
                for s in kept if _uses_scheduler(m, s)}
-    return (*notes,
-            tf_block("resource", [ACCOUNT, MACIE], [("finding_publishing_frequency", "FIFTEEN_MINUTES"),
-                                                    ("status", "ENABLED")]),
-            *(tf_block("resource", [IDENTIFIER, tf], [("name", n), ("regex", rx),
-                                                      ("depends_on", [ref(f"{ACCOUNT}.{MACIE}")])])
-              for n, (tf, rx) in ids.items()),
-            *(x for s in kept for x in (*_job(m, s, ids), *findings_routing(m, s, "data-discovery"))),
-            *_export(m, kept)), scripts
+    return (*from_entry(first, (
+                tf_block("resource", [ACCOUNT, MACIE], [("finding_publishing_frequency", "FIFTEEN_MINUTES"),
+                                                        ("status", "ENABLED")]),
+                *(tf_block("resource", [IDENTIFIER, tf], [("name", n), ("regex", rx),
+                                                          ("depends_on", [ref(f"{ACCOUNT}.{MACIE}")])])
+                  for n, (tf, rx) in ids.items()))),
+            *(x for s in kept for x in from_entry(s.dn, (*_job(m, s, ids), *findings_routing(m, s, "data-discovery")))),
+            *from_entry(first, _export(m, kept))), scripts
 
 
 def _rescan_lines(m, kept):

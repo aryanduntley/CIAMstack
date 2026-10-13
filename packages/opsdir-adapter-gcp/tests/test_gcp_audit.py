@@ -31,8 +31,7 @@ def _trail(cn, destination, **more):
 
 def test_a_project_trail_the_platform_keeps_is_a_sink_with_its_grant_and_audit_config():
     trails = (_trail("audit-sink", "audit-logs", ciamAuditEvents=("control-plane", "data-read", "data-write"),
-                     ciamIntegrityValidation="TRUE", ciamProviderRef="projects/ciam-prod/sinks/ciam-audit"),
-              _trail("org-trail", "audit-logs", ciamManagedBy=PARTY))
+                     ciamIntegrityValidation="TRUE", ciamProviderRef="projects/ciam-prod/sinks/ciam-audit"),)
     _, alpha, _ = model(alpha=(_bucket(), *trails), tree=OWNERS)
     assert as_text(render_trails(alpha)) == ('''resource "google_logging_project_sink" "audit_sink" {
   # integrity: Google keeps no digest of audit logs; keep them in a bucket whose retention policy is locked '''
@@ -54,7 +53,7 @@ def test_a_project_trail_the_platform_keeps_is_a_sink_with_its_grant_and_audit_c
   audit_log_config {
     log_type = "DATA_WRITE"
   }
-}''', "# Audit trail org-trail (account): kept by landing-zone, not rendered here")
+}''',)
 
 
 def test_an_organization_trail_into_a_locked_bucket_or_a_log_bucket():

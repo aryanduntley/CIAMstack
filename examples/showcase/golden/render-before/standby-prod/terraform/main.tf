@@ -19,12 +19,6 @@ data "google_compute_subnetwork" "subnet_ds" {
   project = "example-aero-net"
 }
 
-data "google_compute_subnetwork" "subnet_edge" {
-  name    = "ciam-standby-proxy"
-  region  = "us-central1"
-  project = "example-aero-net"
-}
-
 data "google_compute_subnetwork" "subnet_idm" {
   name    = "ciam-standby-idm"
   region  = "us-central1"

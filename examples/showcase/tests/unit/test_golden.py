@@ -6,6 +6,7 @@ import pytest
 from opsdir.cli import export_text, format_table, search_text
 from opsdir.connectors.plan import plan, request_drafts, to_markdown
 from opsdir.connectors.render import render_env
+from opsdir.core.environment import ENVIRONMENT
 from opsdir.core.naming import SUFFIX
 from opsdir.domains.directory.drift import DRIFT_HEADERS, drift
 from showcase_support import APPROVED, DATA, GOLDEN, cmd_output
@@ -20,7 +21,8 @@ RENDERS = (("before", SRC, "render-before/source-prod"), ("before", DST, "render
 
 @pytest.mark.parametrize("state, spec, golden", RENDERS)
 def test_render_matches_golden(estate, state, spec, golden):
-    _, files = render_env(estate[state], spec)
+    # as `opsdir render` asks: the whole environment, requested by the dev database's login (the snapshot's)
+    _, files = render_env(estate[state], spec, scope=ENVIRONMENT, requester="opsdir")
     assert files == read_tree(GOLDEN / golden)
 
 

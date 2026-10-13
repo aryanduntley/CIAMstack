@@ -21,7 +21,7 @@ from opsdir.core.directory import get, one, rdn_value
 from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.budgets import budget_channel, budgets, currency, thresholds
 from opsdir.domains.estate.tags import tag_rules
-from opsdir_format_terraform.hcl import Block, blocks_of, comment, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, blocks_of, comment, from_entry, ref, tf_block, tf_name
 from .account import label_key
 from .names import label, resource_id
 
@@ -35,11 +35,6 @@ DISPLAY = 60                                   # display_name's limit
 def billing_account(m):
     """The billing account environment m's cloud's budgets live on (ciamBillingAccountRef), or None."""
     return one(m.cloud, "ciamBillingAccountRef")
-
-
-def landing_budgets(m):
-    """Environment m's budgets the landing zone renders: those the platform team keeps."""
-    return tuple(b for b in budgets(m) if not one(b, "ciamManagedBy"))
 
 
 def _updates(m, b):
@@ -68,11 +63,7 @@ def _amount(b):
 
 
 def _budget(m, b):
-    cn, keeper = rdn_value(b), one(b, "ciamManagedBy")
-    if keeper:
-        holder = get(m.d, keeper)
-        return (comment(f"Budget {cn}: kept by {rdn_value(holder) if holder is not None else keeper}, not rendered "
-                        "here"),)
+    cn = rdn_value(b)
     if not billing_account(m):
         return (comment(f"NOTE: budget {cn}: not rendered: a Google Cloud budget lives on the billing account and the "
                         "cloud names none (ciamBillingAccountRef)"),)
@@ -88,24 +79,26 @@ def _budget(m, b):
 
 
 def render_budgets(m):
-    """HCL (and comments) for environment m's budgets, for the landing-zone root (budget_notes: the platform root's,
-    without a billing account): the project lookup when any is rendered."""
-    out = tuple(x for b in budgets(m) for x in _budget(m, b))
+    """HCL (and comments) for environment m's budgets (whoever keeps each), rendered with the landing zone's parts
+    (budgets are the landing zone's by nature unless ciamManagedBy names another keeper: each stamped with its entry);
+    budget_notes: the platform root's, without a billing account; the project lookup when any is rendered."""
+    out = tuple(x for b in budgets(m) for x in from_entry(b.dn, _budget(m, b)))
     lookup = (tf_block("data", ["google_project", "budgets"], [("project_id", ref("var.project_id"))]),) \
         if blocks_of(out, "resource") else ()
     return (*lookup, *out)
 
 
 def budget_notes(m):
-    """The platform root's notes on environment m's budgets the landing zone can't render: those the platform keeps
-    when its cloud names no billing account."""
-    return () if billing_account(m) else tuple(x for b in landing_budgets(m) for x in _budget(m, b))
+    """The platform root's notes on environment m's budgets nothing can render: every budget, when its cloud names no
+    billing account."""
+    return () if billing_account(m) else tuple(x for b in budgets(m) for x in _budget(m, b))
 
 
 def budget_provider_settings(m):
-    """The landing zone provider's settings for the Budget API under user credentials: a quota project."""
+    """The settings of the provider of a root rendering budgets, for the Budget API under user credentials: a quota
+    project."""
     return (("billing_project", ref("var.project_id")), ("user_project_override", True)) \
-        if billing_account(m) and landing_budgets(m) else ()
+        if billing_account(m) and budgets(m) else ()
 
 
 def _first(v):

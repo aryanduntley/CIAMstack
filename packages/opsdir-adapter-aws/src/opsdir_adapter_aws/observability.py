@@ -24,7 +24,7 @@ from opsdir.core.environment import of_class
 from opsdir.domains.observability.alarms import alarm_specs, condition, in_unit
 from opsdir.domains.observability.realized import keeper_of
 from opsdir.domains.observability.signals import number_text, parse_threshold
-from opsdir_format_terraform.hcl import comment, tf_block, tf_name
+from opsdir_format_terraform.hcl import comment, from_entry, tf_block, tf_name
 
 ALARM = "aws_cloudwatch_metric_alarm"
 LOG_GROUP = "aws_cloudwatch_log_group"
@@ -89,7 +89,8 @@ def _alarm(m, s):
 
 def render_alarms(m):
     """HCL (and comments) for environment m's CloudWatch alarms."""
-    return tuple(x for s in alarm_specs(m) for x in _alarm(m, s))
+    return tuple(x for s in alarm_specs(m)
+                 for x in (from_entry(s.alarm.dn, _alarm(m, s)) if s.alarm is not None else _alarm(m, s)))
 
 
 def retention(days):
@@ -127,4 +128,4 @@ def _log_group(m, b):
 
 def render_log_groups(m):
     """HCL (and comments) for environment m's CloudWatch log groups."""
-    return tuple(x for b in of_class(m, "ciamLogDestination") for x in _log_group(m, b))
+    return tuple(x for b in of_class(m, "ciamLogDestination") for x in from_entry(b.dn, _log_group(m, b)))

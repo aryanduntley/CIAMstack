@@ -1,9 +1,10 @@
 """Google Cloud: the object stores (Cloud Storage buckets, gs://<bucket>) an environment uses, rendered as Terraform and
 read back. Pure.
 
-Rendered into the stack's main.tf, for each bucket the record describes and the stack keeps (one naming ciamManagedBy
-is someone else's: a comment names them and what to ask them for); a bucket the record only references stays a
-reference (the backup target's data source):
+Rendered for each bucket the record describes, each block stamped with its entry (hcl.from_entry), so the render
+places it in the stack's root, its keeper's root, or names it as its keeper's (governance.keepers, decision 2732); a
+bucket the record only references stays a reference (the backup target's data source, unless the stack's root renders
+the bucket):
 
   google_storage_bucket in the environment's region: uniform bucket-level access, public access prevention (enforced
   when blocked), versioning, a retention policy (its days in seconds; locked for compliance, unlocked for governance),
@@ -24,11 +25,10 @@ from bucket to bucket). A setting a source doesn't report is left as the record 
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.environment import UNBOUND, bound, of_class
 from opsdir.core.inventory import of_types, resource
-from opsdir.domains.data.storage import (LifecycleRule, depth_summary, has_depth, kept_store, lifecycle_rules,
+from opsdir.domains.data.storage import (LifecycleRule, has_depth, kept_store, lifecycle_rules,
                                          lifecycle_value)
 from opsdir.domains.network.plumbing import adopted
-from opsdir.domains.network.stack import kept_by, owned
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_import, tf_name
 from opsdir_format_terraform.state import first_block
 from .names import REGION, label, state_labels
 
@@ -42,11 +42,15 @@ def bucket_of(uri):
     return uri[len("gs://"):].split("/", 1)[0] if (uri or "").startswith("gs://") else None
 
 
+def described_buckets(m):
+    """Environment m's object stores in Cloud Storage whose settings the render writes: described by the record
+    (whoever keeps them)."""
+    return tuple(b for b in of_class(m, "ciamObjectStore") if bucket_of(one(b, "ciamStorageRef")) and has_depth(b))
+
+
 def kept_buckets(m):
-    """Environment m's object stores in Cloud Storage whose settings the stack renders: described by the record, kept
-    by the stack."""
-    return tuple(b for b in of_class(m, "ciamObjectStore")
-                 if bucket_of(one(b, "ciamStorageRef")) and kept_store(b))
+    """Environment m's described object stores in Cloud Storage the stack keeps itself (rendered in its own root)."""
+    return tuple(b for b in described_buckets(m) if kept_store(b))
 
 
 # ------------------------------------------------------------------ render
@@ -115,12 +119,9 @@ def _bucket(m, b):
 
 
 def render_object_stores(m):
-    """HCL for environment m's object stores in Cloud Storage the record describes: comments naming who keeps the
-    others and what to ask them for, then those the stack keeps."""
-    described = [b for b in of_class(m, "ciamObjectStore") if bucket_of(one(b, "ciamStorageRef")) and has_depth(b)]
-    return (*(comment(f"Object store '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: "
-                      f"not rendered here. Ask them for: {depth_summary(b)}") for b in described if not owned(b)),
-            *(x for b in kept_buckets(m) for x in _bucket(m, b)))
+    """HCL for environment m's object stores in Cloud Storage the record describes, each stamped with its entry (the
+    render places it by its keeper)."""
+    return tuple(x for b in described_buckets(m) for x in from_entry(b.dn, _bucket(m, b)))
 
 
 # ------------------------------------------------------------------ read back

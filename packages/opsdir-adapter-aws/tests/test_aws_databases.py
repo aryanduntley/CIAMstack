@@ -1,9 +1,9 @@
 """Managed databases on AWS: rendered as an RDS instance or an Aurora cluster with its subnet group, security group,
 parameter group (TLS where it isn't the engine's default) and key, its master password kept by RDS (never in the
-Terraform or the record), adopted when it exists; one someone else keeps is named. Read back from Terraform state and
-the CLI: engine, edition, version, endpoint, availability, TLS, backups, parameters, and its subnets, key and master
-secret as roles; the password is never read. A copy of its automated backups in another region is rendered through
-that region's provider and read back from state and the CLI."""
+Terraform or the record), adopted when it exists; one someone else keeps renders too, placed by its keeper. Read back
+from Terraform state and the CLI: engine, edition, version, endpoint, availability, TLS, backups, parameters, and its
+subnets, key and master secret as roles; the password is never read. A copy of its automated backups in another region
+is rendered through that region's provider and read back from state and the CLI."""
 import json
 import re
 
@@ -70,7 +70,7 @@ def test_tls_off_on_postgresql_16_and_on_for_mysql_are_parameters():
     assert 'availability_zone           = "zone-a"' in on and "multi_az                    = false" in on
 
 
-def test_aurora_is_a_cluster_with_an_instance_in_each_zone_and_others_keep_theirs():
+def test_aurora_is_a_cluster_with_an_instance_in_each_zone_and_others_render_too_for_their_keeper():
     out = _render(entry(ALPHA, "db-sess", "ciamDatabase", ciamBindingRole="sessions-db", ciamDbEngine="postgresql",
                         ciamDbService="aurora", ciamDbEngineVersion="16.2", ciamInstanceSize="db.r6g.large",
                         ciamDbHighAvailability="zone-redundant", ciamDbParameter="work_mem=64MB"),
@@ -82,8 +82,11 @@ def test_aurora_is_a_cluster_with_an_instance_in_each_zone_and_others_keep_their
     assert 'resource "aws_rds_cluster_parameter_group" "db_sess"' in out and 'family = "aurora-postgresql16"' in out
     assert "db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.db_sess.name" in out
     assert out.count('resource "aws_rds_cluster_instance"') == 2 and 'identifier         = "db-sess-2"' in out
-    assert "# Database 'db-dba' (role reports-db) is kept by cn=dba,ou=parties,dc=ciam-ops: not rendered here" in out
-    assert "reports" not in out.split("not rendered here", 1)[1]
+    assert 'resource "aws_db_instance" "db_dba"' in out          # placed by its keeper (test_aws_keeper_roots)
+    m = model(alpha=(entry(ALPHA, "db-dba", "ciamDatabase", ciamBindingRole="reports-db", ciamDbEngine="mysql",
+                           ciamManagedBy="cn=dba,ou=parties,dc=ciam-ops"),))[1]
+    assert {b.origin for b in render_databases(m) if getattr(b, "kind", "") in ("resource", "import")} == {
+        f"cn=db-dba,ou=bindings,{ALPHA}"}
 
 
 def _state(*resources):

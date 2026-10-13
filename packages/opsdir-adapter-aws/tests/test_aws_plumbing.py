@@ -10,7 +10,8 @@ from network_fixtures import ALPHA, BETA, entry, model
 
 NET_TEAM = "cn=net-team,ou=owners,dc=ciam-ops"
 OWNERS = ("dn: ou=owners,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: owners\n",
-          f"dn: {NET_TEAM}\nobjectClass: top\nobjectClass: ciamParty\ncn: net-team\nciamOwnerKind: team\n")
+          f"dn: {NET_TEAM}\nobjectClass: top\nobjectClass: ciamParty\ncn: net-team\nciamOwnerKind: team\n"
+          "ciamTakesGeneratedInfra: TRUE\n")
 EGRESS = entry(ALPHA, "egress", "ciamEgress", ciamBindingRole="egress", ciamCidr="203.0.113.10/31",
                ciamProviderRef="nat-1", ciamZone="zone-a")
 LOGS = entry(ALPHA, "flow-logs", "ciamLogDestination", ciamBindingRole="flow-logs", ciamDestinationKind="log-group",

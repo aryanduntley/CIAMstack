@@ -1,7 +1,7 @@
 """Object stores on Azure: the containers the record describes and the stack keeps are rendered with their storage
 account (versioning, public access, the customer-managed key, a lifecycle rule per container, object replication) and
-their immutability policies, adopted when they exist; a container someone else keeps is named with what to ask them
-for. Read back from Terraform state, the CLI and ARM templates: each container with its account's settings."""
+their immutability policies, adopted when they exist; a container someone else keeps renders too, placed
+by its keeper. Read back from Terraform state, the CLI and ARM templates: each container with its account's settings."""
 import json
 
 from opsdir_format_terraform.hcl import as_text
@@ -51,14 +51,12 @@ def test_a_kept_container_renders_its_account_with_every_setting():
         assert " ".join(text.split()) in " ".join(out.split()), text
 
 
-def test_others_containers_are_named_with_what_to_ask_and_references_are_left_alone():
-    out = _render(entry(ALPHA, "backup", "ciamBackupTarget", **STORE,
-                        ciamManagedBy="cn=storage-team,ou=owners,dc=ciam-ops"))
-    assert out == ("# Object store 'backup' (role backup-target) "
-                   "is kept by cn=storage-team,ou=owners,dc=ciam-ops, with "
-                   "its storage account: not rendered here. Ask them for: versioning; compliance lock 35 days; key "
-                   "disk-encryption; lifecycle 30 cold, 400 delete, noncurrent 30 delete; public access blocked; "
-                   "copied to azblob://stciambackupsdr/ds-backups")
+def test_others_containers_render_too_stamped_for_their_keeper_and_references_are_left_alone():
+    kept = entry(ALPHA, "backup", "ciamBackupTarget", **STORE, ciamManagedBy="cn=storage-team,ou=owners,dc=ciam-ops")
+    out = _render(kept)
+    assert 'resource "azurerm_storage_account" "stciambackups"' in out    # placed by its keeper (render_files)
+    assert {b.origin for b in render_object_stores(model(alpha=(kept,))[1])
+            if getattr(b, "kind", "") == "resource"} == {kept.split("\n", 1)[0][4:]}
     referenced = entry(ALPHA, "backup", "ciamBackupTarget", ciamBindingRole="backup-target",
                        ciamStorageRef="azblob://stciambackups/ds-backups")
     assert _render(referenced) == "" and kept_containers(model(alpha=(referenced,))[1]) == ()

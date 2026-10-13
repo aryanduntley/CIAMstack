@@ -53,7 +53,7 @@ from opsdir.domains.estate.incidents import incident_routes
 from opsdir.domains.estate.naming import SEVERITIES
 from opsdir.domains.estate.security import findings_destination, security_services
 from opsdir.domains.observability.audit import INDEFINITE
-from opsdir_format_terraform.hcl import Block, comment, jsonencoded, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, jsonencoded, ref, tf_block, tf_name
 from .storage import bucket_of
 from .tags import state_tags
 
@@ -252,23 +252,19 @@ _RENDER = {"threat-detection": _detector, "vulnerability-scanning": _scanner, "c
 
 
 def _service(m, s):
-    kind, keeper = one(s, "ciamSecurityKind"), one(s, "ciamManagedBy")
-    if keeper:
-        holder = get(m.d, keeper)
-        return (comment(f"Security service {rdn_value(s)} ({kind}): kept by "
-                        f"{rdn_value(holder) if holder is not None else keeper}, not rendered here"),)
+    kind = one(s, "ciamSecurityKind")
     return (*_RENDER[kind](m, s), *findings_routing(m, s, kind), *_incident_routing(m, s, kind), *_notes(m, s))
 
 
 def render_security(m):
-    """HCL (and comments) for environment m's security services."""
+    """HCL (and comments) for environment m's security services (whoever keeps each), each stamped with its entry
+    (the render places it by its keeper; the lookups go wherever they are read)."""
     services = security_services(m)
     data = (tf_block("data", ["aws_partition", "current"], []), tf_block("data", ["aws_region", "current"], [])) \
-        if any(one(s, "ciamSecurityKind") == "posture" and not one(s, "ciamManagedBy") for s in services) else ()
+        if any(one(s, "ciamSecurityKind") == "posture" for s in services) else ()
     caller = (tf_block("data", ["aws_caller_identity", "current"], []),) \
-        if any(one(s, "ciamSecurityKind") == "vulnerability-scanning" and not one(s, "ciamManagedBy")
-               for s in services) else ()
-    return (*data, *caller, *(x for s in services for x in _service(m, s)))
+        if any(one(s, "ciamSecurityKind") == "vulnerability-scanning" for s in services) else ()
+    return (*data, *caller, *(x for s in services for x in from_entry(s.dn, _service(m, s))))
 
 
 def _enabled(v):

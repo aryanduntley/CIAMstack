@@ -1,8 +1,9 @@
 """Managed databases on Azure: PostgreSQL and MySQL rendered as Flexible Servers (major version, SKU, storage, zone,
 zone-redundant standby, delegated subnet with its private DNS zone an input, customer-managed key through a
-user-assigned identity, the administrator password written write-only from an ephemeral Key Vault read, parameters
-and TLS as configurations, deletion protection as a lock, adopted when it exists); engines Flexible Server doesn't run
-and databases others keep named. Read back from Terraform state and the CLI; the password is never read."""
+user-assigned identity, the administrator password written write-only from an ephemeral Key Vault read, parameters and
+TLS as configurations, deletion protection as a lock, adopted when it exists); engines Flexible Server doesn't run and
+databases others keep render too, placed by their keeper. Read back from Terraform state and the CLI; the password is
+never read."""
 import json
 import re
 
@@ -102,7 +103,7 @@ def test_mysql_storage_tls_off_and_what_flexible_server_doesnt_run():
     assert "server_id" not in out and "public_network_access_enabled" not in out
     assert "azurerm_management_lock" not in out and "import {" not in out and "delegated_subnet_id" not in out
     assert "# Database 'db-sql' runs sqlserver, which Azure Database Flexible Server doesn't" in out
-    assert "# Database 'db-dba' (role reports-db) is kept by cn=dba,ou=parties,dc=ciam-ops: not rendered here" in out
+    assert 'resource "azurerm_postgresql_flexible_server" "db_dba"' in out    # placed by its keeper (render_files)
 
 
 def test_no_credential_role_or_an_unbound_key_is_said():

@@ -1,7 +1,7 @@
 """Disks and snapshot policies on AWS: a role's boot volume on each instance's root_block_device, each data volume an
 EBS volume in the server's zone with its attachment (tagged so Lifecycle Manager finds it), each snapshot policy the
 stack keeps a Lifecycle Manager policy (interval, start, retention, encrypted cross-region copies with the disk key's
-replica or an input); others' named. Read back from Terraform state and the CLI."""
+replica or an input); others' too, placed by their keeper. Read back from Terraform state and the CLI."""
 import json
 
 from opsdir.core.environment import servers_with_role
@@ -84,7 +84,7 @@ def test_a_snapshot_policy_is_a_lifecycle_manager_policy_with_encrypted_copies()
         assert _flat(text) in policies, text
 
 
-def test_an_interval_lifecycle_manager_cannot_take_and_others_policies_are_named():
+def test_an_interval_lifecycle_manager_cannot_take_and_others_policies_render_for_their_keeper():
     odd = entry(BETA, "snapshots-odd", "ciamSnapshotPolicy", ciamBindingRole="snapshots-odd",
                 ciamRetentionDays="7", ciamSnapshotEveryHours="48")
     theirs = entry(BETA, "snapshots-team", "ciamSnapshotPolicy", ciamBindingRole="snapshots-team",
@@ -92,8 +92,7 @@ def test_an_interval_lifecycle_manager_cannot_take_and_others_policies_are_named
     out = "\n".join(as_text(render_snapshot_policies(_m(odd, theirs))))
     assert "# Snapshot policy 'snapshots-odd': Lifecycle Manager snapshots every 1, 2, 3, 4, 6, 8, 12 or 24 hours, " \
            "not 48: not rendered" in out
-    assert "# Snapshot policy 'snapshots-team' (role snapshots-team) is kept by cn=storage-team,ou=owners,dc=ciam-ops" \
-        in out
+    assert 'resource "aws_dlm_lifecycle_policy" "snapshots_team"' in out      # placed by its keeper (render_files)
 
 
 def _state(*resources):

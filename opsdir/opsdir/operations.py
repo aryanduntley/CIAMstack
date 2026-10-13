@@ -15,7 +15,7 @@ from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, 
 from .connectors.render import render_env
 from .connectors.stack import STATUS_HEADERS, stack_rows
 from .core import search as ldap_search
-from .core.environment import env_model
+from .core.environment import ENVIRONMENT, env_model
 from .core.interchange.export import export_text
 from .domains.governance.attempts import attempt_records
 from .store import migrations, postgres as db
@@ -108,10 +108,13 @@ def export(conn, base):
 
 
 # ------------------------------------------------------------------ rendering and moving
-def render(conn, spec, targets=None):
+def render(conn, spec, targets=None, scope=ENVIRONMENT, requester=None):
     """Effect (reads the record): an environment's rendered files; targets: {adapter: (render target, ...)} chosen
-    (default: every target of every adapter)."""
-    m, files = render_env(db.load_directory(conn), spec, wanted=targets)
+    (default: every target of every adapter); scope (core.environment.Scope): the whole environment, or a keeper's,
+    an object class's or named bindings' infrastructure (5.7); requester: who asks (default: the database login),
+    recorded in the MANIFEST."""
+    m, files = render_env(db.load_directory(conn), spec, wanted=targets, scope=scope,
+                          requester=requester or db.session_user(conn))
     return Rendered(m.label, m.dn, m.provider, files, tuple(m.unbound))
 
 

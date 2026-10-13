@@ -54,6 +54,7 @@ objectClass: top
 objectClass: ciamParty
 cn: network-security
 ciamOwnerKind: team
+ciamTakesGeneratedInfra: TRUE
 mail: netsec@example-aero.test
 
 dn: cn=cloud-landing-zone,ou=owners,dc=ciam-ops
@@ -62,6 +63,7 @@ objectClass: ciamParty
 cn: cloud-landing-zone
 ciamDisplayName: Cloud landing zone team
 ciamOwnerKind: team
+ciamTakesGeneratedInfra: TRUE
 mail: landing-zone@example-aero.test
 
 dn: cn=corporate-dns,ou=owners,dc=ciam-ops

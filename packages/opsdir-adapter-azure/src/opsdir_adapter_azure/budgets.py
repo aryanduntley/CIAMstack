@@ -19,7 +19,7 @@ from decimal import Decimal, InvalidOperation
 from opsdir.core.directory import get, one, rdn_value
 from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.budgets import budget_channel, budgets, currency, thresholds
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_name
 
 BUDGET = "azurerm_consumption_budget_resource_group"
 SUBSCRIPTION_BUDGET = "azurerm_consumption_budget_subscription"
@@ -57,11 +57,7 @@ def _notifications(m, b):
 
 
 def _budget(m, b):
-    cn, keeper = rdn_value(b), one(b, "ciamManagedBy")
-    if keeper:
-        holder = get(m.d, keeper)
-        return (comment(f"Budget {cn}: kept by {rdn_value(holder) if holder is not None else keeper}, not rendered "
-                        "here"),)
+    cn = rdn_value(b)
     notifications, notes = _notifications(m, b)
     gov = one(m.cloud, "ciamCloudEnvironment") == "usgovernment"
     return (*notes, *((GOV_NOTE,) if gov else ()),
@@ -76,21 +72,17 @@ def _budget(m, b):
                 ("time_period", Block((("start_date", ref(f"var.{START}")),))), *notifications]))
 
 
-def kept_budgets(m):
-    """Environment m's budgets the platform team keeps (rendered in its root)."""
-    return tuple(b for b in budgets(m) if not one(b, "ciamManagedBy"))
-
-
 def render_budgets(m):
-    """HCL (and comments) for environment m's budgets."""
-    return tuple(x for b in budgets(m) for x in _budget(m, b))
+    """HCL (and comments) for environment m's budgets (whoever keeps each), each stamped with its entry (the render
+    places it by its keeper)."""
+    return tuple(x for b in budgets(m) for x in from_entry(b.dn, _budget(m, b)))
 
 
 def budget_inputs(m):
-    """The input the environment's budgets start from, when it has budgets the platform keeps."""
+    """The input the environment's budgets start from, when it has budgets (in each root rendering one)."""
     return (tf_block("variable", [START], [
         ("description", "The first day of the month the budgets start from (YYYY-MM-01T00:00:00Z; changing it "
-                        "replaces them)"), ("type", ref("string"))]),) if kept_budgets(m) else ()
+                        "replaces them)"), ("type", ref("string"))]),) if budgets(m) else ()
 
 
 def _amount(v):

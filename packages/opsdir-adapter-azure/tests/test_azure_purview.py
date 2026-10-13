@@ -83,8 +83,7 @@ def test_the_grant_on_the_stacks_account_one_referenced_by_id_else_a_comment():
 
 
 def test_nothing_without_an_account_or_an_interval():
-    for service in (dspm(ciamCatalogRef=None), dspm(ciamRescanDays=None),
-                    dspm(ciamManagedBy="cn=nobody,dc=ciam-ops")):
+    for service in (dspm(ciamCatalogRef=None), dspm(ciamRescanDays=None)):
         _, alpha, _ = _setup(service)
         assert render_purview(alpha) == () and purview_inputs(alpha) == () and not renders(alpha)
 

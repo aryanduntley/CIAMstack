@@ -23,7 +23,8 @@ def _records(*extra):
     return "\n".join((
         "dn: dc=ciam-ops\nobjectClass: top\nobjectClass: domain\ndc: ciam-ops\n",
         "dn: ou=owners,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: owners\n",
-        _entry("cn=landing-zone,ou=owners,dc=ciam-ops", "ciamParty", cn="landing-zone", ciamOwnerKind="team"),
+        _entry("cn=landing-zone,ou=owners,dc=ciam-ops", "ciamParty", cn="landing-zone", ciamOwnerKind="team",
+               ciamTakesGeneratedInfra="TRUE"),
         "dn: ou=environments,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: environments\n",
         _entry("cloud=aws,ou=environments,dc=ciam-ops", "ciamCloud", cloud="aws", ciamCloudProvider="aws",
                ciamRegion="us-east-1", ciamOwner="cn=landing-zone,ou=owners,dc=ciam-ops"),

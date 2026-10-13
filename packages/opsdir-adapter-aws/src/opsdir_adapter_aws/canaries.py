@@ -34,7 +34,7 @@ from opsdir.core.manifest import header
 from opsdir.core.settings import setting_value
 from opsdir.domains.edge.exposure import service_exposure
 from opsdir.domains.observability.canaries import canary_specs
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_name
 from .account import partition
 
 CANARY = "aws_synthetics_canary"
@@ -190,5 +190,7 @@ def render_canaries(m, endpoints):
     done = rendered(m, endpoints)
     live = tuple(s for s, why in done if why is None and s.keeper is None)
     runtime = setting_value(m.d, RUNTIME)
-    hcl = (*(x for s, why in done for x in _canary(m, s, why, runtime)), *(_role(m, live) if live else ()))
+    hcl = (*(x for s, why in done for x in (from_entry(s.binding.dn, _canary(m, s, why, runtime))
+                                             if s.binding is not None else _canary(m, s, why, runtime))),
+           *(_role(m, live) if live else ()))
     return hcl, {f"terraform/canaries/{canary_name(s.name)}/python/canary.py": script(m, s) for s in live}

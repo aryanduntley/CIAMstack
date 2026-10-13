@@ -10,20 +10,8 @@ data "aws_subnet" "subnet_am_a" {
   id = "subnet-0c77d88e99fa00b1a"
 }
 
-data "aws_subnet" "subnet_am_b" {
-  id = "subnet-0c77d88e99fa00b1b"
-}
-
 data "aws_subnet" "subnet_ds_a" {
   id = "subnet-0a11b22c33d44e55a"
-}
-
-data "aws_subnet" "subnet_ds_b" {
-  id = "subnet-0a11b22c33d44e55b"
-}
-
-data "aws_subnet" "subnet_ds_c" {
-  id = "subnet-0a11b22c33d44e55c"
 }
 
 data "aws_subnet" "subnet_idm_a" {

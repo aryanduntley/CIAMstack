@@ -17,7 +17,7 @@ from opsdir.core.directory import one, rdn_value
 from opsdir.core.environment import one_role
 from opsdir.domains.edge.exposure import service_exposure
 from opsdir.domains.observability.canaries import canary_specs
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_name
 from .names import label
 
 CHECK = "google_monitoring_uptime_check_config"
@@ -56,4 +56,5 @@ def _check(m, spec):
 
 def render_checks(m, endpoints):
     """HCL (and comments) for environment m's uptime checks."""
-    return tuple(x for s in canary_specs(m, endpoints) for x in _check(m, s))
+    return tuple(x for s in canary_specs(m, endpoints)
+                 for x in (from_entry(s.binding.dn, _check(m, s)) if s.binding is not None else _check(m, s)))

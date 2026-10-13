@@ -20,7 +20,7 @@ data discovery (kind discovery)."""
 from opsdir.core.directory import get, is_kind, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.discovery import custom_identifiers, discovery_services, rescan_days
-from opsdir_format_terraform.hcl import comment
+from opsdir_format_terraform.hcl import comment, from_entry
 from .purview import purview_read, renders as purview_renders, scanned
 from .security import CSPM, PRICING
 
@@ -31,19 +31,12 @@ GOV_NOTE = ("Azure Government: Defender for Cloud's support matrix lists Defende
             "(2026-10-08): rendered, confirm with the account team")
 
 
-def _keeper(m, s):
-    holder = get(m.d, one(s, "ciamManagedBy"))
-    return rdn_value(holder) if holder is not None else one(s, "ciamManagedBy")
-
-
-def _kept(m):
-    return [s for s in discovery_services(m) if not one(s, "ciamManagedBy")]
-
-
 def discovery_plans(m):
-    """((plan, subplan, extensions), ...) environment m's kept data discovery needs of Defender (merged with the
-    security services' plans by render_security)."""
-    return ((CSPM, None, (EXTENSION,)),) if _kept(m) else ()
+    """((plan, subplan, extensions, origin), ...) environment m's data discovery needs of Defender (merged with the
+    security services' plans by render_security; origin: the first discovery service, whose keeper's root takes the
+    plan when no security service needs it first)."""
+    found = discovery_services(m)
+    return ((CSPM, None, (EXTENSION,), found[0].dn),) if found else ()
 
 
 def _unsupported(m, s):
@@ -80,11 +73,10 @@ def _notes(m, s):
 def render_discovery(m):
     """Comments for environment m's data discovery (its Defender plan extension is rendered with the security
     services' plans)."""
-    held = tuple(comment(f"Data discovery {rdn_value(s)}: kept by {_keeper(m, s)}, not rendered here")
-                 for s in discovery_services(m) if one(s, "ciamManagedBy"))
-    kept = _kept(m)
-    gov = (comment(GOV_NOTE),) if kept and one(m.cloud, "ciamCloudEnvironment") == "usgovernment" else ()
-    return (*held, *gov, *(x for s in kept for x in _notes(m, s)))
+    found = discovery_services(m)
+    gov = from_entry(found[0].dn, (comment(GOV_NOTE),)) \
+        if found and one(m.cloud, "ciamCloudEnvironment") == "usgovernment" else ()
+    return (*gov, *(x for s in found for x in from_entry(s.dn, _notes(m, s))))
 
 
 def discovery_resources(pairs):

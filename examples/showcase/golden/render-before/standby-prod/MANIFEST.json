@@ -2,6 +2,11 @@
   "environment": "env=prod,cloud=standby,ou=environments,dc=ciam-ops",
   "provider": "gcp",
   "unbound_roles": [],
+  "scope": {
+    "kind": "environment",
+    "value": []
+  },
+  "requester": "opsdir",
   "render_targets": {
     "pingfederate": [
       "admin-api",
@@ -268,7 +273,7 @@
     "terraform/landing-zone/network-security/network.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "f31f71acdf05d522849af8e1f9aa2074f7964f2a60e2fd7c03faf961d02077e9"
+      "sha256": "cbc28e8039703e07088f2c581cf27aa63840012fdc08529c8e589460627f2fe4"
     },
     "terraform/landing-zone/network-security/providers.tf": {
       "scope": "landing-zone",
@@ -288,7 +293,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "8777e6ba19e465f201103e41764a7df67aa7fd95a6c3b1cb09729a8bf58f9f52"
+      "sha256": "73a90961d1a813b29d714c8ebb7cd4a4f7888ef5cab944676125f906091411df"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

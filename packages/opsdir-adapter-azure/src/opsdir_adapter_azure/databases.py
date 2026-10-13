@@ -1,8 +1,9 @@
 """Azure: the managed databases (opsdir.domains.data) an environment runs, rendered as Terraform and read back. Pure.
 
-Rendered into the stack's main.tf, for each database the stack keeps (one naming ciamManagedBy is someone else's: a
-comment names them). PostgreSQL and MySQL run on Azure Database Flexible Server; other engines have no Flexible
-Server (SQL Server is Azure SQL, a different offering): a comment.
+Rendered for every database, each block stamped with its entry (hcl.from_entry), so the render places it in the
+stack's root, its keeper's root, or names it as its keeper's (governance.keepers, decision 2732). PostgreSQL and
+MySQL run on Azure Database Flexible Server; other engines have no Flexible Server (SQL Server is Azure SQL, a
+different offering): a comment.
 
   azurerm_postgresql_flexible_server / azurerm_mysql_flexible_server: its version (Flexible Server takes PostgreSQL's
   major version and MySQL's 5.7 or 8.0.21: Azure keeps the minor version current), SKU (ciamInstanceSize), storage,
@@ -33,8 +34,8 @@ from opsdir.core.inventory import of_types, resource, tagged_role
 from opsdir.domains.data.naming import DEFAULT_PORTS
 from opsdir.domains.data.databases import database_port, major_version
 from opsdir.domains.network.plumbing import adopted
-from opsdir.domains.network.stack import kept_by, owned, subnets
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
+from opsdir.domains.network.stack import subnets
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_import, tf_name
 from .arm_ids import subnet_ref
 from .cmk import customer_key, key_ref, role_uri, vault_object
 from .identities import LOC, RG
@@ -180,11 +181,8 @@ def _database(m, b):
 
 
 def render_databases(m):
-    """HCL for environment m's managed databases: those the stack keeps, then comments naming who keeps the others."""
-    dbs = of_class(m, "ciamDatabase")
-    return (*(comment(f"Database '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: not "
-                      "rendered here") for b in dbs if not owned(b)),
-            *(x for b in dbs if owned(b) for x in _database(m, b)))
+    """HCL for environment m's managed databases, each stamped with its entry (the render places it by its keeper)."""
+    return tuple(x for b in of_class(m, "ciamDatabase") for x in from_entry(b.dn, _database(m, b)))
 
 
 # ------------------------------------------------------------------ read back

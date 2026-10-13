@@ -1,11 +1,10 @@
 """Control-plane audit trails on AWS (core observability: ciamAuditTrail) as CloudTrail trails. Pure.
 
-Rendered in the platform's own root: each trail the platform team keeps (no ciamManagedBy) as an aws_cloudtrail
+Rendered for every trail, stamped with its entry (placed by its keeper: governance.keepers) as an aws_cloudtrail
 delivering to the S3 bucket of the object store its ciamLogDestinationRole names: all regions (with global services'
-events), log file integrity validation, the organization's trail when its scope is organization. Not rendered, and
-said so: a trail someone else keeps (an organization trail the landing zone keeps: named with its keeper), a trail
-whose records go to a CloudWatch log group (that delivery also needs a role CloudTrail assumes), and data events (a
-trail logs data events only for the resources its event selectors name, which the record doesn't say).
+events), log file integrity validation, the organization's trail when its scope is organization. Not rendered, and said
+so: a trail whose records go to a CloudWatch log group (that delivery also needs a role CloudTrail assumes), and data
+events (a trail logs data events only for the resources its event selectors name, which the record doesn't say).
 
 Read back from Terraform state: aws_cloudtrail -> audit trail (kind audit): organization or account, the activity its
 event selectors record (none: control-plane, CloudTrail's default), all regions, integrity validation, and where its
@@ -13,9 +12,9 @@ records go (its bucket, or its CloudWatch log group) as the role of that object 
 """
 from opsdir.core.directory import is_kind, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource, tagged_role
-from opsdir.domains.observability.audit import audit_trails, trail_destination, trail_keeper
+from opsdir.domains.observability.audit import audit_trails, trail_destination
 from opsdir.domains.observability.naming import AUDIT_EVENTS
-from opsdir_format_terraform.hcl import comment, tf_block, tf_name
+from opsdir_format_terraform.hcl import comment, from_entry, tf_block, tf_name
 from .storage import bucket_of
 from .tags import state_tags
 
@@ -28,10 +27,7 @@ def _name(trail):
 
 
 def _trail(m, t):
-    cn, keeper, dest = rdn_value(t), trail_keeper(m, t), trail_destination(m, t)
-    if keeper is not None:
-        return (comment(f"Audit trail {cn} ({one(t, 'ciamAuditScope')}): kept by {rdn_value(keeper)}, not rendered "
-                        "here"),)
+    cn, dest = rdn_value(t), trail_destination(m, t)
     bucket = bucket_of(one(dest, "ciamStorageRef")) if dest is not None and is_kind(m.d, dest, "ciamObjectStore") \
         else None
     if bucket is None:
@@ -51,7 +47,7 @@ def _trail(m, t):
 
 def render_trails(m):
     """HCL (and comments) for environment m's control-plane audit trails."""
-    return tuple(x for t in audit_trails(m) for x in _trail(m, t))
+    return tuple(x for t in audit_trails(m) for x in from_entry(t.dn, _trail(m, t)))
 
 
 def _flag(v):

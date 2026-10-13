@@ -42,7 +42,7 @@ from opsdir.domains.data.volumes import (POLICY, boot_volume, data_volumes, is_e
                                          volume_key_role, volume_policy)
 from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_import, tf_name
 from opsdir_format_terraform.state import blocks, first_block
 from .backups import disk_plans
 from .names import REGION, label, name_parts, resource_id, state_labels
@@ -102,9 +102,9 @@ def boot_disk(m, s, kms):
 
 
 def _scheduled(m, p):
-    """Whether a disk's policy is a snapshot schedule this stack renders (a backup plan backs disks up its own way:
-    backups.py)."""
-    return p is not None and owned(p) and is_kind(m.d, p, POLICY)
+    """Whether a disk's policy is a snapshot schedule the render writes, in whichever root (a backup plan backs disks
+    up its own way: backups.py)."""
+    return p is not None and is_kind(m.d, p, POLICY)
 
 
 def _attach_policy(p, n, disk, zone):
@@ -115,39 +115,40 @@ def _attach_policy(p, n, disk, zone):
 
 def server_volumes(m, s):
     """HCL for instance s's data volumes (each a disk in its zone, attached) and the snapshot schedules its disks
-    follow (attachments; the boot disk by the instance's name)."""
-    n, zone, out = tf_name(rdn_value(s)), one(s, "ciamZone"), []
+    follow (attachments; the boot disk by the instance's name). Each volume's blocks are stamped with its entry
+    (hcl.from_entry): one someone else keeps goes to their root with its attachments (reading the instance); a schedule
+    another root writes is read through an input."""
+    n, zone = tf_name(rdn_value(s)), one(s, "ciamZone")
     boot = boot_volume(m, one(s, "ciamServerRole"))
     boot_policy = volume_policy(m, boot) if boot is not None else None
-    if _scheduled(m, boot_policy):
-        out.append(_attach_policy(boot_policy, f"{n}_boot", ref(f"google_compute_instance.{n}.name"), zone))
-    for v in data_volumes(m, one(s, "ciamServerRole")):
-        if not owned(v):
-            out.append(comment(f"Volume '{rdn_value(v)}' of {rdn_value(s)} is kept by {kept_by(m, v)}: not rendered "
-                               "here"))
-            continue
-        dn, kind, policy = tf_name(f"{rdn_value(s)}_{rdn_value(v)}"), TYPES.get(one(v, "ciamVolumeClass"),
-                                                                              "pd-balanced"), volume_policy(m, v)
-        policy_role = one(policy, "ciamBindingRole") if policy is not None else None
-        key, notes = _key(m, v)
-        out += [*notes,
-                *((comment(f"{rdn_value(v)}: {kind} needs a machine series that takes Hyperdisk"),)
-                  if kind.startswith("hyperdisk") else ()),
-                *((comment(f"{rdn_value(s)} mounts {rdn_value(v)} at {one(v, 'ciamMountPath')} (its own configuration, "
-                           "not Terraform)"),) if one(v, "ciamMountPath") else ()),
-                tf_block("resource", ["google_compute_disk", dn], [
-                    ("name", f"{rdn_value(s)}-{rdn_value(v)}"), ("zone", zone), ("type", kind),
-                    *_given(("size", _int(v, "ciamVolumeSizeGb")),
-                            ("provisioned_iops", _int(v, "ciamIops") if kind in IOPS else None),
-                            ("provisioned_throughput", _int(v, "ciamThroughputMb") if kind in THROUGHPUT else None)),
-                    *((("disk_encryption_key", Block((("kms_key_self_link", key),))),) if key else ()),
-                    ("labels", _labels(v, server=rdn_value(s), snapshot_policy=policy_role))]),
-                tf_block("resource", ["google_compute_attached_disk", dn], [
-                    ("disk", ref(f"google_compute_disk.{dn}.id")), ("instance", ref(f"google_compute_instance.{n}.id")),
-                    ("device_name", label(rdn_value(v)))]),
-                *((_attach_policy(policy, dn, ref(f"google_compute_disk.{dn}.name"), zone),)
-                  if _scheduled(m, policy) else ())]
-    return tuple(out)
+    return (*((_attach_policy(boot_policy, f"{n}_boot", ref(f"google_compute_instance.{n}.name"), zone),)
+              if _scheduled(m, boot_policy) else ()),
+            *(x for v in data_volumes(m, one(s, "ciamServerRole")) for x in from_entry(v.dn, _server_volume(m, s, v))))
+
+
+def _server_volume(m, s, v):
+    n, zone = tf_name(rdn_value(s)), one(s, "ciamZone")
+    dn, kind, policy = tf_name(f"{rdn_value(s)}_{rdn_value(v)}"), TYPES.get(one(v, "ciamVolumeClass"),
+                                                                          "pd-balanced"), volume_policy(m, v)
+    policy_role = one(policy, "ciamBindingRole") if policy is not None else None
+    key, notes = _key(m, v)
+    return (*notes,
+            *((comment(f"{rdn_value(v)}: {kind} needs a machine series that takes Hyperdisk"),)
+              if kind.startswith("hyperdisk") else ()),
+            *((comment(f"{rdn_value(s)} mounts {rdn_value(v)} at {one(v, 'ciamMountPath')} (its own configuration, "
+                       "not Terraform)"),) if one(v, "ciamMountPath") else ()),
+            tf_block("resource", ["google_compute_disk", dn], [
+                ("name", f"{rdn_value(s)}-{rdn_value(v)}"), ("zone", zone), ("type", kind),
+                *_given(("size", _int(v, "ciamVolumeSizeGb")),
+                        ("provisioned_iops", _int(v, "ciamIops") if kind in IOPS else None),
+                        ("provisioned_throughput", _int(v, "ciamThroughputMb") if kind in THROUGHPUT else None)),
+                *((("disk_encryption_key", Block((("kms_key_self_link", key),))),) if key else ()),
+                ("labels", _labels(v, server=rdn_value(s), snapshot_policy=policy_role))]),
+            tf_block("resource", ["google_compute_attached_disk", dn], [
+                ("disk", ref(f"google_compute_disk.{dn}.id")), ("instance", ref(f"google_compute_instance.{n}.id")),
+                ("device_name", label(rdn_value(v)))]),
+            *((_attach_policy(policy, dn, ref(f"google_compute_disk.{dn}.name"), zone),)
+              if _scheduled(m, policy) else ()))
 
 
 def _template_disk(m, v, boot, image, kms):
@@ -250,11 +251,8 @@ def _policy(m, p):
 
 
 def render_snapshot_policies(m):
-    """HCL for environment m's snapshot policies: comments naming who keeps the others, then those the stack keeps."""
-    policies = of_class(m, POLICY)
-    return (*(comment(f"Snapshot policy '{rdn_value(p)}' (role {one(p, 'ciamBindingRole')}) is kept by "
-                      f"{kept_by(m, p)}: not rendered here") for p in policies if not owned(p)),
-            *(x for p in policies if owned(p) for x in _policy(m, p)))
+    """HCL for environment m's snapshot policies, each stamped with its entry (the render places it by its keeper)."""
+    return tuple(x for p in of_class(m, POLICY) for x in from_entry(p.dn, _policy(m, p)))
 
 
 # ------------------------------------------------------------------ read back

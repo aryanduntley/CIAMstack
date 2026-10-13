@@ -24,7 +24,7 @@ from opsdir.core.directory import get, one, rdn_value
 from opsdir.core.inventory import of_types, resource, tagged_role
 from opsdir.domains.estate.budgets import budget_channel, budgets, currency, thresholds
 from opsdir.domains.estate.tags import tag_rules
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_name
 from .account import account_id, govcloud, standard_account
 from .tags import state_tags
 
@@ -70,11 +70,7 @@ def _filter(m):
 
 
 def _budget(m, b):
-    cn, keeper = rdn_value(b), one(b, "ciamManagedBy")
-    if keeper:
-        holder = get(m.d, keeper)
-        return (comment(f"Budget {cn}: kept by {rdn_value(holder) if holder is not None else keeper}, not rendered "
-                        "here"),)
+    cn = rdn_value(b)
     if govcloud(m) and not standard_account(m):
         return (comment(f"NOTE: budget {cn}: not rendered: GovCloud's billing is managed in its associated standard "
                         "account and the cloud names none (ciamBillingAccountRef)"),)
@@ -93,14 +89,15 @@ def _budget(m, b):
 
 
 def needs_billing_provider(m):
-    """Whether environment m's root needs the provider aliased to its standard (billing) account: a GovCloud cloud
-    naming one, with a budget the platform keeps."""
-    return govcloud(m) and bool(standard_account(m)) and any(not one(b, "ciamManagedBy") for b in budgets(m))
+    """Whether environment m's render needs the provider aliased to its standard (billing) account: a GovCloud cloud
+    naming one, with a budget (the placement keeps the alias in the roots rendering one)."""
+    return govcloud(m) and bool(standard_account(m)) and bool(budgets(m))
 
 
 def render_budgets(m):
-    """HCL (and comments) for environment m's budgets."""
-    return tuple(x for b in budgets(m) for x in _budget(m, b))
+    """HCL (and comments) for environment m's budgets (whoever keeps each), each stamped with its entry (the render
+    places it by its keeper)."""
+    return tuple(x for b in budgets(m) for x in from_entry(b.dn, _budget(m, b)))
 
 
 def _amount(v):

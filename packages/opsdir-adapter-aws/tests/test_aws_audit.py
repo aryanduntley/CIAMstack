@@ -29,7 +29,6 @@ def test_an_account_trail_the_platform_keeps_is_rendered_into_its_bucket():
     trails = (_trail("cloudtrail", "audit-logs", ciamAuditEvents=("control-plane", "data-write"), ciamAllRegions="TRUE",
                      ciamIntegrityValidation="TRUE",
                      ciamProviderRef="arn:aws:cloudtrail:us-east-1:111122223333:trail/ciam-prod"),
-              _trail("org-trail", "audit-logs", ciamManagedBy=PARTY),
               _trail("to-logs", "app-logs"))
     _, alpha, _ = model(alpha=(BUCKET, GROUP, *trails), tree=OWNERS)
     assert as_text(render_trails(alpha)) == ('''resource "aws_cloudtrail" "cloudtrail" {
@@ -39,7 +38,7 @@ def test_an_account_trail_the_platform_keeps_is_rendered_into_its_bucket():
   is_multi_region_trail         = true
   include_global_service_events = true
   enable_log_file_validation    = true
-}''', "# Audit trail org-trail (account): kept by landing-zone, not rendered here",
+}''',
         "# NOTE: audit trail to-logs: not rendered: its records go to a CloudWatch log group, a delivery that also "
         "needs a role CloudTrail assumes")
 

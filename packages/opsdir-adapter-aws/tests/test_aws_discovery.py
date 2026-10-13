@@ -1,9 +1,9 @@
 """Data discovery on AWS as Amazon Macie: the account enabled, a custom data identifier per own data type, a scheduled
 classification job over the S3 buckets of the stores examined (daily, weekly or monthly), findings sent by an
-EventBridge rule, results exported to a KMS-encrypted bucket; stores that aren't S3 and discovery kept by someone else
-in comments; an interval Macie's schedule doesn't offer exactly as an EventBridge Scheduler schedule and a Lambda
-starting one-time jobs once due; GovCloud not rendered, with an action (a blocker for restricted data); all of it read
-back from Terraform state."""
+EventBridge rule, results exported to a KMS-encrypted bucket; stores that aren't S3 in comments (discovery someone else
+keeps renders for its keeper); an interval Macie's schedule doesn't offer exactly as an EventBridge Scheduler schedule
+and a Lambda starting one-time jobs once due; GovCloud not rendered, with an action (a blocker for restricted data); all
+of it read back from Terraform state."""
 from opsdir.core.directory import make_entry
 from opsdir.core.interchange.ldif import LdifRecord
 from opsdir.core.inventory import environment_groups, resource
@@ -82,8 +82,8 @@ def test_schedules_and_what_isnt_rendered():
     assert "# NOTE: data discovery macie-weekly: no classification job: the cloud records no account" in _out(alpha)[0]
     _, alpha, _ = _alpha(entry(ALPHA, "org-macie", "ciamDataDiscovery", ciamBindingRole="data-discovery",
                                ciamManagedBy="cn=landing-zone,ou=owners,dc=ciam-ops"))
-    assert as_text(render_discovery(alpha)) == (
-        ("# Data discovery org-macie: kept by cn=landing-zone,ou=owners,dc=ciam-ops, not rendered here",), {})
+    hcl, _ = render_discovery(alpha)                # rendered too, placed by its keeper (render_files)
+    assert {getattr(x, "origin", None) for x in hcl} - {None} == {f"cn=org-macie,ou=bindings,{ALPHA}"}
 
 
 def test_govcloud_renders_nothing_and_gives_an_action():

@@ -16,9 +16,9 @@ from opsdir.domains.access.workloads import identity_of, workload_identities
 from opsdir.domains.edge.exposure import exposure_unknown, is_internal, service_exposure
 from opsdir.domains.edge.gateways import role_gateway
 from opsdir.domains.edge.records import forwarders
-from opsdir.domains.network.plumbing import LANDING_ZONE
+from opsdir.domains.governance.keepers import keeper
 from opsdir.domains.edge.resolve import inspected, service_edge
-from opsdir_format_terraform.hcl import (Block, TfFile, blocks_of, comment, ref, tf_block,
+from opsdir_format_terraform.hcl import (Block, blocks_of, comment, ref, tf_block,
                                         tf_name, unbound_comments, written)
 from .access import ACCESS
 from .databases import render_databases
@@ -42,8 +42,9 @@ from .compute_groups import render_groups
 from .frontdoor import endpoint, front_door
 from .identities import LOC, RG, aks_data, identity, scope_data, vm_identity
 from .ingress import gateway_front
-from .landing import render_landing
-from .resource_providers import registration_note, resource_providers
+from .landing import landing_parts, placed_roots
+from opsdir_format_terraform.placing import MAIN, PROVIDERS
+from opsdir.domains.governance.keepers import scope_folder
 from .network import render_network
 from .plumbing import network_data
 from .account import azuread_provider, provider_block, required_providers, subscription_variable, tagged
@@ -237,9 +238,12 @@ def _key_vault_secrets(m):
 
 
 def _interconnect_note(m, ic):
-    peer = follow(m.d, ic, "ciamPeerEnvironment")
+    """The stack's header line for an interconnect: its keeper's (the landing zone's unless ciamManagedBy names
+    another party), rendered in their root or asked of them."""
+    peer, k = follow(m.d, ic, "ciamPeerEnvironment"), keeper(m, ic, landing_zone=True)
+    where = "rendered in their root" if k.takes else "asked of them"
     return (f"# Interconnect '{rdn_value(ic)}' to {peer.dn}: {one(ic, 'ciamInterconnectKind')}. "
-            "Provided by the landing zone; not managed here.")
+            f"Kept by {k.name} ({where}); not managed here.")
 
 
 def render_files(m, services):
@@ -266,13 +270,7 @@ def render_files(m, services):
            *_key_vault_secrets(m), *scope_data(m, identities))
     out = tuple(x for i, x in enumerate(out) if not (x in blocks_of(out[:i], "data")))     # a data source once
     notes = "\n".join(_interconnect_note(m, ic) for ic in of_class(m, "ciamInterconnect"))
-    main = TfFile(header(m, "Azure infrastructure for the CIAM platform", HCL) + unbound_comments(m.unbound) + notes
-                  + "\n", out)
-    landing = render_landing(m, platform=main.items)
-    alone = () if f"{LANDING_ZONE}/providers.tf" in landing else \
-        registration_note(*resource_providers((*main.items, *(x for f in landing.values() for x in f.items))))
-    providers = TfFile(header(m, "Providers and inputs", HCL), (
-        *alone,
+    providers = (
         required_providers(uses_azapi(m) or purview_renders(m), uses_azuread(m)),
         provider_block(m),
         *((azapi_provider(m),) if uses_azapi(m) or purview_renders(m) else ()),
@@ -283,8 +281,12 @@ def render_files(m, services):
         *purview_inputs(m),
         *((tf_block("variable", [FORWARDING_RULESET], [
             ("description", "The landing zone's DNS forwarding ruleset the forwarding rules join"),
-            ("type", ref("string"))]),) if forwarders(m, hosted=False) else ())))
-    return {"terraform/providers.tf": providers, "terraform/main.tf": main, **container_files, **landing}
+            ("type", ref("string"))]),) if forwarders(m, hosted=False) else ()))
+    landing, landing_dns = landing_parts(m)
+    roots = placed_roots(m, ((PROVIDERS, providers), (MAIN, out), *landing), landing_dns, lambda name: (
+        header(m, WHAT, HCL) + unbound_comments(m.unbound) + notes + "\n" if name == MAIN else
+        header(m, "Providers and inputs", HCL)))
+    return roots if scope_folder(m) is not None else {**roots, **container_files}     # a slice: its root only
 
 
 WHAT = "Azure infrastructure for the CIAM platform"

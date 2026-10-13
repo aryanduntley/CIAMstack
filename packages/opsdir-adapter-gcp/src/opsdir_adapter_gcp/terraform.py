@@ -35,7 +35,9 @@ from opsdir_adapter_gcp.firewall_policy import health_check_rule, policy_firewal
 from opsdir_adapter_gcp.health_checks import probe_ranges
 from opsdir_adapter_gcp.identities import identity, project_of
 from opsdir_adapter_gcp.ingress import gateway_front, gateway_negs
-from opsdir_adapter_gcp.landing import render_landing
+from opsdir_adapter_gcp.landing import STACK, landing_parts, placed_roots
+from opsdir_format_terraform.placing import MAIN, PROVIDERS, carried_files
+from opsdir.domains.governance.keepers import scope_folder
 from opsdir_adapter_gcp.names import name_parts
 from opsdir_adapter_gcp.names import NETWORK, PRIORITIES, REGION, label, network_tag
 from opsdir_adapter_gcp.network import render_network
@@ -53,7 +55,7 @@ from opsdir_adapter_gcp.budgets import budget_notes
 from opsdir_adapter_gcp.volumes import boot_disk, render_snapshot_policies, server_volumes
 from opsdir_adapter_gcp.compute_groups import render_groups
 from opsdir_format_terraform.format import FORMAT as HCL
-from opsdir_format_terraform.hcl import Block, TfFile, comment, ref, tf_block, tf_name, unbound_comments, written
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name, unbound_comments, written
 from .account import project_variable, provider_block, required_providers
 
 _tag, _label = network_tag, label
@@ -284,15 +286,19 @@ def render_files(m, services):
            *discovery, *render_suppressions(m),
            *render_quota_requests(m), *budget_notes(m),
            *_references(m))
-    main = TfFile(header(m, "Google Cloud infrastructure for the CIAM platform", HCL) + unbound_comments(m.unbound),
-                  out)
-    providers = TfFile(header(m, "Providers and inputs", HCL), (
+    providers = (
         required_providers(),
         provider_block(m, ("project", ref("var.project_id")), ("region", REGION)),
         project_variable(m),
-        tf_block("variable", ["region"], [("type", ref("string")), ("default", one(m.cloud, "ciamRegion"))])))
-    return {"terraform/providers.tf": providers, "terraform/main.tf": main, **workflows, **render_landing(m),
-            **evaluation_files(m, ACCESS, "Google Cloud")}
+        tf_block("variable", ["region"], [("type", ref("string")), ("default", one(m.cloud, "ciamRegion"))]))
+    landing, landing_dns = landing_parts(m)
+    roots = placed_roots(m, ((PROVIDERS, providers), (MAIN, out), *landing), landing_dns, lambda name: (
+        header(m, "Google Cloud infrastructure for the CIAM platform", HCL) + unbound_comments(m.unbound)
+        if name == MAIN else header(m, "Providers and inputs", HCL)))
+    carried = carried_files(roots, workflows, STACK)
+    if scope_folder(m) is not None:                 # a slice: its root and the files it reads, nothing of the stack's
+        return {**roots, **carried}
+    return {**roots, **workflows, **carried, **evaluation_files(m, ACCESS, "Google Cloud")}
 
 
 def render(m, services):

@@ -2,6 +2,11 @@
   "environment": "env=prod,cloud=target,ou=environments,dc=ciam-ops",
   "provider": "azure",
   "unbound_roles": [],
+  "scope": {
+    "kind": "environment",
+    "value": []
+  },
+  "requester": "opsdir",
   "render_targets": {
     "azure": [
       "terraform"
@@ -386,7 +391,7 @@
     "terraform/landing-zone/network-security/network.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "75763dbaa50b214e81184f459073d11d925bcea282f637c9d01f032b5a07bcdd"
+      "sha256": "07247b1cb600baf7118078e5ca1196518ad3880bc3b4f1e5eda29ae2aa87586b"
     },
     "terraform/landing-zone/network-security/providers.tf": {
       "scope": "landing-zone",
@@ -396,7 +401,7 @@
     "terraform/landing-zone/network.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "60811b8dc4c56c2683ccf10c67e420f31b2bbd6522f7414c200883687d1a12e8"
+      "sha256": "c544c494afbd43340009968229db110c2c33b8b527f72458dbac14b00b4d4d0d"
     },
     "terraform/landing-zone/providers.tf": {
       "scope": "landing-zone",
@@ -406,7 +411,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "09787b4682f558925be0855a88112504befbe7dd9d75d3f65e316bd57a8e5b50"
+      "sha256": "dd3cd267f1cdab8360a666a70788c1f610267ceef71d4dd3b9134fe7a1fff3e6"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

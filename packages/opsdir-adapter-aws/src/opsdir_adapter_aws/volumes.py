@@ -36,7 +36,7 @@ from opsdir.domains.data.volumes import (POLICY, boot_volume, data_volumes, disk
                                          tagged_disks, volume_key_role, volume_policy)
 from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_import, tf_name
 from opsdir_format_terraform.state import blocks, first_block
 from .tags import state_tags as _cloud_tags
 
@@ -98,31 +98,28 @@ def root_block_device(m, s, kms):
 
 
 def server_volumes(m, s):
-    """HCL for server s's data volumes: each an EBS volume in its zone and its attachment."""
-    n = tf_name(rdn_value(s))
-    out = []
-    for i, v in enumerate(data_volumes(m, one(s, "ciamServerRole"))):
-        vn, policy = tf_name(f"{rdn_value(s)}_{rdn_value(v)}"), volume_policy(m, v)
-        policy_role = one(policy, "ciamBindingRole") if policy is not None else None
-        if not owned(v):
-            out.append(comment(f"Volume '{rdn_value(v)}' of {rdn_value(s)} is kept by {kept_by(m, v)}: not rendered "
-                               "here"))
-            continue
-        if i >= len(DEVICES):
-            out.append(comment(f"Volume '{rdn_value(v)}' of {rdn_value(s)}: no device name left to attach it at"))
-            continue
-        encryption, notes = _key(m, v)
-        out += [*notes,
-                *((comment(f"{rdn_value(s)} mounts {rdn_value(v)} at {one(v, 'ciamMountPath')} (its own configuration, "
-                           "not Terraform)"),) if one(v, "ciamMountPath") else ()),
-                tf_block("resource", ["aws_ebs_volume", vn], [
-                    ("availability_zone", one(s, "ciamZone")), *_disk(v), *encryption,
-                    ("tags", {"Name": f"{rdn_value(s)}-{rdn_value(v)}",
-                              **_tags(v, Server=rdn_value(s), SnapshotPolicy=policy_role)})]),
-                tf_block("resource", ["aws_volume_attachment", vn], [
-                    ("device_name", f"/dev/sd{DEVICES[i]}"), ("volume_id", ref(f"aws_ebs_volume.{vn}.id")),
-                    ("instance_id", ref(f"aws_instance.{n}.id"))])]
-    return tuple(out)
+    """HCL for server s's data volumes: each an EBS volume in its zone and its attachment, stamped with the volume's
+    entry (hcl.from_entry): one someone else keeps goes to their root with its attachment (reading the instance)."""
+    return tuple(x for i, v in enumerate(data_volumes(m, one(s, "ciamServerRole")))
+                 for x in from_entry(v.dn, _server_volume(m, s, i, v)))
+
+
+def _server_volume(m, s, i, v):
+    n, vn, policy = tf_name(rdn_value(s)), tf_name(f"{rdn_value(s)}_{rdn_value(v)}"), volume_policy(m, v)
+    policy_role = one(policy, "ciamBindingRole") if policy is not None else None
+    if i >= len(DEVICES):
+        return (comment(f"Volume '{rdn_value(v)}' of {rdn_value(s)}: no device name left to attach it at"),)
+    encryption, notes = _key(m, v)
+    return (*notes,
+            *((comment(f"{rdn_value(s)} mounts {rdn_value(v)} at {one(v, 'ciamMountPath')} (its own configuration, "
+                       "not Terraform)"),) if one(v, "ciamMountPath") else ()),
+            tf_block("resource", ["aws_ebs_volume", vn], [
+                ("availability_zone", one(s, "ciamZone")), *_disk(v), *encryption,
+                ("tags", {"Name": f"{rdn_value(s)}-{rdn_value(v)}",
+                          **_tags(v, Server=rdn_value(s), SnapshotPolicy=policy_role)})]),
+            tf_block("resource", ["aws_volume_attachment", vn], [
+                ("device_name", f"/dev/sd{DEVICES[i]}"), ("volume_id", ref(f"aws_ebs_volume.{vn}.id")),
+                ("instance_id", ref(f"aws_instance.{n}.id"))]))
 
 
 def _template_disk(m, device, v, kms):
@@ -219,18 +216,15 @@ def _policy(m, p):
 
 
 def render_snapshot_policies(m):
-    """HCL for environment m's snapshot policies: comments naming who keeps the others, then those the stack keeps
-    (with Lifecycle Manager's role an input)."""
+    """HCL for environment m's snapshot policies, each stamped with its entry (the render places it by its keeper),
+    with Lifecycle Manager's role an input of each root rendering one."""
     policies = of_class(m, POLICY)
-    kept = [p for p in policies if owned(p)]
-    return (*(comment(f"Snapshot policy '{rdn_value(p)}' (role {one(p, 'ciamBindingRole')}) is kept by "
-                      f"{kept_by(m, p)}: not rendered here") for p in policies if not owned(p)),
-            *((tf_block("variable", [DLM_ROLE], [
+    return (*((tf_block("variable", [DLM_ROLE], [
                 ("type", ref("string")),
                 ("description", "The IAM role Data Lifecycle Manager snapshots with "
                                 "(AWSDataLifecycleManagerDefaultRole)")]),)
-              if kept else ()),
-            *(x for p in kept for x in _policy(m, p)))
+              if policies else ()),
+            *(x for p in policies for x in from_entry(p.dn, _policy(m, p))))
 
 
 # ------------------------------------------------------------------ read back

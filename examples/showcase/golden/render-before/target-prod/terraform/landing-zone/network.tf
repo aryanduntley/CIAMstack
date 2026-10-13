@@ -2,59 +2,6 @@
 # Azure network kept by cloud-landing-zone for the CIAM platform: applied by them, not by the platform's pipeline
 # Do not edit. Change the operations directory (under an approved change) and re-render.
 
-data "azurerm_virtual_network" "main" {
-  name                = "vnet-ciam-prod"
-  resource_group_name = data.azurerm_resource_group.main.name
-}
-
-data "azurerm_subnet" "snet_aks" {
-  name                 = "snet-aks"
-  virtual_network_name = "vnet-ciam-prod"
-  resource_group_name  = data.azurerm_resource_group.main.name
-}
-
-data "azurerm_subnet" "snet_am" {
-  name                 = "snet-am"
-  virtual_network_name = "vnet-ciam-prod"
-  resource_group_name  = data.azurerm_resource_group.main.name
-}
-
-data "azurerm_subnet" "snet_db" {
-  name                 = "snet-db"
-  virtual_network_name = "vnet-ciam-prod"
-  resource_group_name  = data.azurerm_resource_group.main.name
-}
-
-data "azurerm_subnet" "snet_ds" {
-  name                 = "snet-ds"
-  virtual_network_name = "vnet-ciam-prod"
-  resource_group_name  = data.azurerm_resource_group.main.name
-}
-
-data "azurerm_subnet" "snet_edge" {
-  name                 = "snet-appgw"
-  virtual_network_name = "vnet-ciam-prod"
-  resource_group_name  = data.azurerm_resource_group.main.name
-}
-
-data "azurerm_subnet" "snet_idm" {
-  name                 = "snet-idm"
-  virtual_network_name = "vnet-ciam-prod"
-  resource_group_name  = data.azurerm_resource_group.main.name
-}
-
-data "azurerm_subnet" "snet_ig" {
-  name                 = "snet-ig"
-  virtual_network_name = "vnet-ciam-prod"
-  resource_group_name  = data.azurerm_resource_group.main.name
-}
-
-data "azurerm_subnet" "snet_pf" {
-  name                 = "snet-pf"
-  virtual_network_name = "vnet-ciam-prod"
-  resource_group_name  = data.azurerm_resource_group.main.name
-}
-
 resource "azurerm_nat_gateway" "egress_pf" {
   name                = "natgw-ciam-prod"
   location            = data.azurerm_resource_group.main.location

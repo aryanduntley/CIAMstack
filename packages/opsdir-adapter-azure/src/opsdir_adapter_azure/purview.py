@@ -38,7 +38,7 @@ from opsdir.domains.estate.authorizations import unmet_configurations
 from opsdir.domains.estate.discovery import ANY_DAYS, custom_identifiers, discovery_services, rescan_line, rescan_plan
 from opsdir.domains.data.storage import kept_store
 from opsdir.domains.network.stack import kept_by
-from opsdir_format_terraform.hcl import comment, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import comment, from_entry, ref, tf_block, tf_name
 from .account import azapi_allowed
 from .storage import container_of
 
@@ -70,10 +70,9 @@ def _store(m, role):
 
 
 def scanned(m):
-    """((service, account, N), ...): environment m's data discovery services the platform keeps that scan through a
+    """((service, account, N), ...): environment m's data discovery services (whoever keeps them) that scan through a
     Purview account every N days (an account and an interval recorded), whatever renders them."""
-    found = ((s, account_name(one(s, "ciamCatalogRef")), rescan_plan(s, ANY_DAYS)) for s in discovery_services(m)
-             if not one(s, "ciamManagedBy"))
+    found = ((s, account_name(one(s, "ciamCatalogRef")), rescan_plan(s, ANY_DAYS)) for s in discovery_services(m))
     return tuple((s, a, plan.days) for s, a, plan in found if a and plan is not None)
 
 
@@ -196,15 +195,16 @@ def render_purview(m):
     if not found:
         return ()
     if _government(m):
-        return tuple(comment(f"{rdn_value(s)}: Microsoft Purview scans every {d} days aren't rendered in Azure "
-                             "Government: azapi's Purview token audience there is unverified (see the plan)")
-                     for s, _, d in found)
+        return tuple(x for s, _, d in found for x in from_entry(s.dn, (
+            comment(f"{rdn_value(s)}: Microsoft Purview scans every {d} days aren't rendered in Azure Government: "
+                    "azapi's Purview token audience there is unverified (see the plan)"),)))
     if not azapi_allowed(m):
-        return tuple(comment(f"{rdn_value(s)}: Microsoft Purview scans every {d} days need the azapi add-on "
-                             "(ciamProviderAddOn azapi): not rendered") for s, _, d in found)
+        return tuple(x for s, _, d in found for x in from_entry(s.dn, (
+            comment(f"{rdn_value(s)}: Microsoft Purview scans every {d} days need the azapi add-on (ciamProviderAddOn "
+                    "azapi): not rendered"),)))
     accounts = {a: s for s, a, _ in reversed(found)}           # each account once, by its first service
     return (*(_account_data(s, a) for a, s in accounts.items()),
-            *(x for s, a, d in found for x in _service(m, s, a, d)))
+            *(x for s, a, d in found for x in from_entry(s.dn, _service(m, s, a, d))))
 
 
 def purview_inputs(m):

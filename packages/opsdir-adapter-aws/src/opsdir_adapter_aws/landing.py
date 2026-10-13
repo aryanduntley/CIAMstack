@@ -1,5 +1,8 @@
 """AWS landing zone: what the platform needs from the organization rather than its own Terraform, rendered for whoever
-keeps the landing zone (terraform/landing-zone/; the MANIFEST marks it landing-zone, the header names the owner).
+keeps the landing zone (terraform/landing-zone/ when its keeper takes generated infrastructure, else named and asked:
+governance.keepers; the MANIFEST marks it landing-zone, the header names the owner). Given as render parts the
+environment's render places (opsdir_format_terraform.placing), the root's providers being the platform's own less the
+account pin (a landing zone's keeper may apply from another account).
 
   CI deployers     an IAM OIDC provider per issuer and a role each deployer's pipeline assumes with its token
                    (sts:AssumeRoleWithWebIdentity, the audience and the subject pinned), with its least-privilege policy
@@ -10,12 +13,17 @@ keeps the landing zone (terraform/landing-zone/; the MANIFEST marks it landing-z
                    keeps (ciamManagedBy) goes in that party's own root, terraform/landing-zone/<party>/
 Pure.
 """
+import posixpath
+
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.manifest import header
-from opsdir.domains.access.workloads import landing_identities, landing_zone_owner, principal_label
+from opsdir.domains.access.workloads import landing_identities, principal_label
+from opsdir.domains.governance.keepers import (LANDING, SLICE, asked_lines, in_scope, named_keeper, placement,
+                                             root_keeper, scope_title, source_label)
 from opsdir.domains.network.plumbing import LANDING_ZONE, NETWORK_FILE, keepers
 from opsdir_format_terraform.format import FORMAT as HCL
-from opsdir_format_terraform.hcl import Block, TfBlock, TfFile, distinct, jsonencoded, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, TfBlock, TfFile, comment, from_entry, jsonencoded, ref, tf_block, tf_name
+from opsdir_format_terraform.placing import MAIN, PROVIDERS, place_roots
 from .access import ACCESS
 from .account import account_id, provider_block, required_providers
 from .guardrails import render_guardrails
@@ -23,6 +31,7 @@ from .identities import notes, role, statements
 from .plumbing import render_plumbing
 
 SSO = "tolist(data.aws_ssoadmin_instances.sso.arns)[0]"
+STACK = "terraform"           # the stack's own root
 
 
 def _host(issuer):
@@ -61,24 +70,17 @@ def _operator(m, w):
                 ("target_id", ref("var.account_id")), ("target_type", "AWS_ACCOUNT")]))
 
 
-def _providers(m, variables):
-    """providers.tf of a landing-zone root: the AWS provider in the environment's region, and the root's inputs."""
-    return TfFile(header(m, "Providers and inputs (landing zone)", HCL),
-                  (required_providers(), provider_block(m, own_account=False), *variables))
-
-
 def _identities(m, guardrails):
-    """(main.tf TfFile or None, its inputs) of the identities and guardrails environment m's landing zone grants."""
+    """(items, inputs) of the identities and guardrails environment m's landing zone grants, stamped as the landing
+    zone's (governance.keepers.LANDING), or ((), ())."""
     deployers, operators = landing_identities(m, ACCESS)
     fences = tuple(guardrails(m))
     if not (deployers or operators or fences):
-        return None, ()
+        return (), ()
     issuers = dict.fromkeys(w.trust[0] for w in deployers)
     out = (*(_provider(i) for i in issuers), *(x for w in deployers for x in _deployer(m, w)),
            *((tf_block("data", ["aws_ssoadmin_instances", "sso"], []),) if operators else ()),
            *(x for w in operators for x in _operator(m, w)), *fences)
-    what = (f"AWS landing zone for the CIAM platform, kept by {landing_zone_owner(m)}: applied by the landing zone, "
-            "not by the platform's pipeline")
     variables = (*((tf_block("variable", ["account_id"], [("type", ref("string")),
                                                           ("description", f"The account {rdn_value(m.env)} runs in"),
                                                           *((("default", account_id(m)),) if account_id(m) else ())]),)
@@ -88,19 +90,76 @@ def _identities(m, guardrails):
                      ("description", "The organizational unit or account the guardrails attach to")]),)
                    if any(isinstance(f, TfBlock) and f.labels[0].startswith("aws_organizations_policy")
                           for f in fences) else ()))
-    return TfFile(header(m, what, HCL), out), variables
+    return from_entry(LANDING, out), variables
+
+
+def landing_parts(m, guardrails=render_guardrails, plumbing=render_plumbing):
+    """(parts, landing): what environment m's landing zone and the keepers of its plumbing keep, as render parts
+    ((file name, items, origin), ...) placed with the rest of the render (opsdir_format_terraform.placing): the
+    landing zone's identities and guardrails (main.tf, their inputs in providers.tf), each keeper's plumbing
+    (network.tf, its inputs in providers.tf), each part's loose comments with its origin; landing: the plumbing
+    bindings' DNs (the landing zone's by nature, governance.keepers)."""
+    main, inputs = _identities(m, guardrails)
+    found = keepers(m)
+    nets = tuple(plumbing(m, k) for k in found)
+    parts = ((MAIN, main, LANDING), (PROVIDERS, inputs, LANDING),
+             *(x for k, r in zip(found, nets) for x in (
+                 (NETWORK_FILE, (*r.shared, *r.blocks), k.bindings[0].dn), (PROVIDERS, r.variables, k.bindings[0].dn))))
+    return parts, frozenset(b.dn for k in found for b in k.bindings)
+
+
+def keeper_head(m, root, name, keeper):
+    """The header of file name in a keeper's root (keeper: who keeps it; root: the landing zone's or another
+    party's)."""
+    if name == PROVIDERS:
+        return header(m, "Providers and inputs (landing zone)", HCL)
+    if name == NETWORK_FILE:
+        what = f"AWS network kept by {keeper} for the CIAM platform: applied by them, not by the platform's pipeline"
+    elif root == LANDING_ZONE:
+        what = (f"AWS landing zone for the CIAM platform, kept by {keeper}: applied by the landing zone, not by the "
+                "platform's pipeline")
+    else:
+        what = (f"AWS infrastructure kept by {keeper} for the CIAM platform: applied by them, not by the platform's "
+                "pipeline")
+    return header(m, what, HCL)
+
+
+def _unpinned(m):
+    """adjust(root, items) of the placement: a keeper's root takes the platform's providers less the pin to the
+    platform's own account (the keeper may apply from another); the standard account's aliases keep theirs."""
+    pin = ("allowed_account_ids", [account_id(m)])
+    return lambda root, items: items if root == STACK else tuple(
+        x._replace(body=tuple(kv for kv in x.body if kv != pin)) if isinstance(x, TfBlock) and x.kind == "provider"
+        else x for x in items)
+
+
+def placed_roots(m, parts, landing_dns, stack_head):
+    """{path: TfFile} of environment m's Terraform roots: its render parts placed by who keeps what
+    (governance.keepers.placement, opsdir_format_terraform.placing): the stack's root (stack_head(file name): its
+    files' headers), each keeper's that takes generated infrastructure, and in the stack's main.tf a comment for each
+    entry asked of a keeper instead."""
+    placed = place_roots(parts, placement(m, landing_dns), STACK, named=named_keeper, adjust=_unpinned(m),
+                         label=source_label)
+
+    def head(root, name, files):
+        if root == STACK:
+            return stack_head(name)
+        if root == SLICE:
+            return header(m, "Providers and inputs (a slice)" if name == PROVIDERS else
+                          f"AWS infrastructure for the CIAM platform, {scope_title(m)}: a slice rendered on "
+                          "request, applied after the roots it reads", HCL)
+        return keeper_head(m, root, name, root_keeper(m, (b.origin for items in files.values() for b in items
+                                                          if isinstance(b, TfBlock)), landing_dns))
+    notes = tuple(comment(line) for line in asked_lines(m, placed.named))
+    return {f"{root}/{name}": TfFile(head(root, name, files),
+                                     (*items, *(notes if (root, name) == (STACK, MAIN) else ())))
+            for root, files in placed.files.items() if in_scope(m, root) for name, items in files.items()}
 
 
 def render_landing(m, guardrails=render_guardrails, plumbing=render_plumbing):
-    """{path: TfFile} of environment m's landing zone (identities, guardrails, the network plumbing its owner keeps)
-    and of each other party's root keeping some of its plumbing, or {} when it needs nothing from anyone."""
-    main, inputs = _identities(m, guardrails)
-    nets = tuple((k, plumbing(m, k)) for k in keepers(m))
-    roots = dict.fromkeys((*((LANDING_ZONE,) if main else ()), *(k.folder for k, _ in nets)))
-    network = {f"{k.folder}/{NETWORK_FILE}": TfFile(header(
-        m, f"AWS network kept by {k.name} for the CIAM platform: applied by them, not by the platform's pipeline",
-        HCL), (*r.shared, *r.blocks)) for k, r in nets}
-    providers = {f"{f}/providers.tf": _providers(m, distinct((
-        *(inputs if f == LANDING_ZONE else ()), *(v for k, r in nets if k.folder == f for v in r.variables))))
-        for f in roots}
-    return {**providers, **({f"{LANDING_ZONE}/main.tf": main} if main else {}), **network}
+    """{path: TfFile} of the keepers' roots environment m's landing zone and plumbing place into (the landing zone's,
+    each other party's that takes generated infrastructure), as the environment's render writes them, or {}."""
+    parts, landing = landing_parts(m, guardrails, plumbing)
+    roots = placed_roots(m, ((PROVIDERS, (required_providers(), provider_block(m))), *parts), landing,
+                         lambda name: "")
+    return {p: f for p, f in roots.items() if posixpath.dirname(p) != STACK}

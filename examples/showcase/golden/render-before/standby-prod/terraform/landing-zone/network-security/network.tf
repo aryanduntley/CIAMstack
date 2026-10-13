@@ -7,42 +7,6 @@ data "google_compute_network" "main" {
   project = "example-aero-net"
 }
 
-data "google_compute_subnetwork" "subnet_am" {
-  name    = "ciam-standby-am"
-  region  = "us-central1"
-  project = "example-aero-net"
-}
-
-data "google_compute_subnetwork" "subnet_ds" {
-  name    = "ciam-standby-ds"
-  region  = "us-central1"
-  project = "example-aero-net"
-}
-
-data "google_compute_subnetwork" "subnet_edge" {
-  name    = "ciam-standby-proxy"
-  region  = "us-central1"
-  project = "example-aero-net"
-}
-
-data "google_compute_subnetwork" "subnet_idm" {
-  name    = "ciam-standby-idm"
-  region  = "us-central1"
-  project = "example-aero-net"
-}
-
-data "google_compute_subnetwork" "subnet_ig" {
-  name    = "ciam-standby-ig"
-  region  = "us-central1"
-  project = "example-aero-net"
-}
-
-data "google_compute_subnetwork" "subnet_pf" {
-  name    = "ciam-standby-pf"
-  region  = "us-central1"
-  project = "example-aero-net"
-}
-
 resource "google_compute_global_address" "psa_services" {
   name          = "ciam-standby-services"
   project       = "example-aero-net"

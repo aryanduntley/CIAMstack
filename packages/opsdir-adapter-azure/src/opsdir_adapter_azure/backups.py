@@ -29,12 +29,12 @@ import re
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import of_class, servers_with_role
 from opsdir.core.inventory import of_types, resource, tagged_role
+from opsdir.domains.governance.keepers import is_rendered
 from opsdir.domains.data.backups import VAULT, plan_vault
 from opsdir.domains.data.protection import PLAN, schedule_of
 from opsdir.domains.data.volumes import VOLUME, volume_policy
 from opsdir.domains.network.plumbing import adopted
-from opsdir.domains.network.stack import kept_by, owned
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_import, tf_name
 from .cmk import CMK_ROLE, key_ref, key_sources
 from .identities import LOC, RG
 from .account import government_unstated, tagged
@@ -117,15 +117,16 @@ def _volumes(m, p):
 
 def _disks(m, p):
     """(server, volume) of every managed disk plan p backs up (its volumes on each VM of their role)."""
-    return tuple((s, v) for v in _volumes(m, p) if owned(v) for s in servers_with_role(m, one(v, "ciamTargetRole")))
+    return tuple((s, v) for v in _volumes(m, p) if is_rendered(m, v)
+                 for s in servers_with_role(m, one(v, "ciamTargetRole")))
 
 
 def _plan(m, p):
     n, s, v = tf_name(rdn_value(p)), schedule_of(p), plan_vault(m, p)
     interval = disk_interval(s.every, s.at)
-    if v is None or not owned(v):
+    if v is None or not is_rendered(m, v):
         return (comment(f"Backup plan '{rdn_value(p)}': its vault (role {one(p, 'ciamBackupVaultRole')}) isn't one "
-                        "this environment's stack keeps: not rendered"),)
+                        "this environment's render writes: not rendered"),)
     if interval is None:
         return (comment(f"Backup plan '{rdn_value(p)}': disk backup runs every 1, 2, 4, 6, 8 or 12 hours or daily, not "
                         f"every {s.every} hours: not rendered"),)
@@ -160,15 +161,12 @@ def _plan(m, p):
 
 
 def render_backups(m):
-    """HCL for environment m's backup vaults and plans: comments naming who keeps the others, then the vaults and plans
-    the stack keeps."""
+    """HCL for environment m's backup vaults and plans (whoever keeps them), each stamped with its entry (the render
+    places it by its keeper; a plan reads a vault or disks another root writes through inputs)."""
     vaults, plans = of_class(m, VAULT), of_class(m, PLAN)
-    with_disks = {plan_vault(m, p).dn for p in plans if owned(p) and plan_vault(m, p) is not None and _disks(m, p)}
-    return (*(comment(f"Backup {'vault' if b in vaults else 'plan'} '{rdn_value(b)}' (role "
-                      f"{one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: not rendered here")
-              for b in (*vaults, *plans) if not owned(b)),
-            *(x for v in vaults if owned(v) for x in _vault(m, v, v.dn in with_disks)),
-            *(x for p in plans if owned(p) for x in _plan(m, p)))
+    with_disks = {plan_vault(m, p).dn for p in plans if plan_vault(m, p) is not None and _disks(m, p)}
+    return (*(x for v in vaults for x in from_entry(v.dn, _vault(m, v, v.dn in with_disks))),
+            *(x for p in plans for x in from_entry(p.dn, _plan(m, p))))
 
 
 # ------------------------------------------------------------------ read back

@@ -2,6 +2,11 @@
   "environment": "env=stage,cloud=source,ou=environments,dc=ciam-ops",
   "provider": "aws",
   "unbound_roles": [],
+  "scope": {
+    "kind": "environment",
+    "value": []
+  },
+  "requester": "opsdir",
   "render_targets": {
     "aws": [
       "terraform"
@@ -397,7 +402,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "fdf774b46bc5c65ffa6033e17e170d7ffd3139254b3ba92fbb7f68181a4aaad1"
+      "sha256": "a80acbc891de70187734beed590025f8786a43a2c10c2e09cc7631697b0894c1"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

@@ -25,11 +25,11 @@ import re
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import UNBOUND, of_class, secret
 from opsdir.core.inventory import of_types, resource, tagged_role
+from opsdir.domains.governance.keepers import is_rendered
 from opsdir.domains.data.backups import VAULT, plan_vault
 from opsdir.domains.data.protection import PLAN, schedule_of
 from opsdir.domains.network.plumbing import adopted
-from opsdir.domains.network.stack import kept_by, owned
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_import, tf_name
 from opsdir_format_terraform.state import blocks, first_block
 from .tags import state_tags as _cloud_tags
 
@@ -106,7 +106,7 @@ def _plan(m, p):
     if cron is None:
         return (comment(f"Backup plan '{rdn_value(p)}': AWS Backup schedules by cron; every {s.every} hours isn't a "
                         "whole number of days: not rendered"),)
-    target = (ref(f"aws_backup_vault.{tf_name(rdn_value(v))}.name") if v is not None and owned(v) else
+    target = (ref(f"aws_backup_vault.{tf_name(rdn_value(v))}.name") if v is not None and is_rendered(m, v) else
               one(v, "ciamProviderRef").rsplit(":", 1)[1] if v is not None and one(v, "ciamProviderRef") else None)
     if target is None:
         return (comment(f"Backup plan '{rdn_value(p)}': {UNBOUND}{one(p, 'ciamBackupVaultRole')}: no backup vault "
@@ -135,18 +135,15 @@ def _plan(m, p):
 
 
 def render_backups(m):
-    """HCL for environment m's backup vaults and plans: comments naming who keeps the others, then those the stack
-    keeps (AWS Backup's IAM role an input)."""
+    """HCL for environment m's backup vaults and plans (whoever keeps them), each stamped with its entry (the render
+    places it by its keeper), AWS Backup's IAM role an input of each root rendering a plan."""
     vaults, plans = of_class(m, VAULT), of_class(m, PLAN)
-    kept = [b for b in (*vaults, *plans) if not owned(b)]
-    return (*(comment(f"Backup {'vault' if b in vaults else 'plan'} '{rdn_value(b)}' (role "
-                      f"{one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: not rendered here") for b in kept),
-            *((tf_block("variable", [BACKUP_ROLE], [
+    return (*((tf_block("variable", [BACKUP_ROLE], [
                 ("type", ref("string")),
                 ("description", "The IAM role AWS Backup backs up and restores with (AWSBackupDefaultServiceRole)")]),)
-              if any(owned(p) for p in plans) else ()),
-            *(x for v in vaults if owned(v) for x in _vault(m, v)),
-            *(x for p in plans if owned(p) for x in _plan(m, p)))
+              if plans else ()),
+            *(x for v in vaults for x in from_entry(v.dn, _vault(m, v))),
+            *(x for p in plans for x in from_entry(p.dn, _plan(m, p))))
 
 
 # ------------------------------------------------------------------ read back

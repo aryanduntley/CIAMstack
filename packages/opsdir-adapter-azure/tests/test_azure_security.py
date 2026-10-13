@@ -85,12 +85,12 @@ def test_posture_assigns_each_framework_s_built_in_initiative():
     assert 'display_name = "DoD Impact Level 5"' in gov and "list CMMC Level 3, not CMMC 2.0 Level 2" in gov
 
 
-def test_config_recording_and_services_kept_elsewhere_are_comments():
+def test_config_recording_is_a_comment_and_services_kept_elsewhere_render_for_their_keeper():
     assert _render(svc("changes", "config-recording")) == (
         "# changes: Azure records resource changes itself (Resource Graph change history, about 14 days): nothing to "
         "enable; keeping them longer needs an export (not rendered)")
-    assert _render(svc("org-defender", "threat-detection", ciamManagedBy=PARTY)) == (
-        "# Security service org-defender (threat-detection): kept by landing-zone, not rendered here")
+    assert _render(svc("org-defender", "threat-detection", ciamManagedBy=PARTY)) == _render(
+        svc("org-defender", "threat-detection"))           # the same blocks, placed by its keeper (render_files)
 
 
 STATE = [("azurerm_security_center_subscription_pricing", {

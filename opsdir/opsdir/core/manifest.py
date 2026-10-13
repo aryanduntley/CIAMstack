@@ -26,11 +26,12 @@ def _override(o):
             "values": list(values(o, "ciamOverrideValue")), "from": overridden_in(o)}
 
 
-def manifest(m, neutral, specific, formats, captured=None, scopes=None, not_rendered=(), targets=None):
-    """MANIFEST.json text: environment, provider, unbound roles, the render targets chosen (for adapters that declare
-    any), the overrides the environment rendered with (when it has any: an environment-neutral file then carries its
-    values), each file's scope, format and SHA-256 (captured config files included, marked captured), and the
-    captured files that could not be rendered, with why."""
+def manifest(m, neutral, specific, formats, captured=None, scopes=None, not_rendered=(), targets=None, requester=None):
+    """MANIFEST.json text: environment, provider, unbound roles, the render's scope (m.scope, when the render names one:
+    5.7) and who requested it (when known), the render targets chosen (for adapters that declare any), the overrides
+    the environment rendered with (when it has any: an environment-neutral file then carries its values), each file's
+    scope, format and SHA-256 (captured config files included, marked captured), and the captured files that could
+    not be rendered, with why."""
     captured, scopes = captured or {}, scopes or {}
     files = {p: {"scope": _scope(p, neutral, scopes), "format": formats[p],
                  **({"captured": True} if p in captured else {}), "sha256": hashlib.sha256(c.encode()).hexdigest()}
@@ -39,6 +40,8 @@ def manifest(m, neutral, specific, formats, captured=None, scopes=None, not_rend
         if not_rendered else {}
     overrides = {"overrides": [_override(o) for o in m.overrides]} if m.overrides else {}
     chosen = {"render_targets": {a: list(ts) for a, ts in sorted(targets.items())}} if targets else {}
-    return json.dumps({"environment": m.dn, "provider": m.provider, "unbound_roles": list(m.unbound), **chosen,
+    asked = {**({"scope": {"kind": m.scope.kind, "value": list(m.scope.value)}} if m.scope is not None else {}),
+             **({"requester": requester} if requester else {})}
+    return json.dumps({"environment": m.dn, "provider": m.provider, "unbound_roles": list(m.unbound), **asked, **chosen,
                        **overrides,
                        "files": files, **missing}, indent=2) + "\n"

@@ -59,7 +59,7 @@ from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.incidents import incident_routes
 from opsdir.domains.estate.naming import ALL_USERS, SEVERITIES
 from opsdir.domains.estate.security import findings_destination, security_services
-from opsdir_format_terraform.hcl import Block, comment, mentions, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, mentions, ref, tf_block, tf_name
 from .identities import LOC, RG
 from .identity_protection import identity_read, render_identity_protection
 
@@ -143,17 +143,15 @@ def _confirm(m, key):
     return ((f"{GOV_NOTES[key]}: rendered, confirm with the account team",) if _gov(m) and key in GOV_NOTES else ())
 
 
-def _kept(m):
-    return [s for s in security_services(m) if not one(s, "ciamManagedBy")]
-
-
 def _plans(services, extra=()):
-    """((plan, subplan, extensions), ...) the kept services need (and extra plans: data discovery's), one per plan,
-    extensions merged."""
-    wanted = [*(p for s in services for p in _service_plans(s)), *extra]
-    names = list(dict.fromkeys(p for p, _, _ in wanted))
-    return tuple((p, next((sub for q, sub, _ in wanted if q == p and sub), None),
-                  tuple(dict.fromkeys(x for q, _, ext in wanted if q == p for x in ext))) for p in names)
+    """((plan, subplan, extensions, origin), ...) the services need (and extra plans: data discovery's, each with its
+    origin), one per plan, extensions merged; origin: the entry of the first that needs it (its pricing is placed with
+    that entry's keeper)."""
+    wanted = [*((*p, s.dn) for s in services for p in _service_plans(s)), *extra]
+    names = list(dict.fromkeys(p for p, _, _, _ in wanted))
+    return tuple((p, next((sub for q, sub, _, _ in wanted if q == p and sub), None),
+                  tuple(dict.fromkeys(x for q, _, ext, _ in wanted if q == p for x in ext)),
+                  next(o for q, _, _, o in wanted if q == p)) for p in names)
 
 
 def _service_plans(s):
@@ -290,11 +288,7 @@ def _incident_routing(m, s, kind):
 
 
 def _service(m, s):
-    cn, kind, keeper = rdn_value(s), one(s, "ciamSecurityKind"), one(s, "ciamManagedBy")
-    if keeper:
-        holder = get(m.d, keeper)
-        return (comment(f"Security service {cn} ({kind}): kept by "
-                        f"{rdn_value(holder) if holder is not None else keeper}, not rendered here"),)
+    cn, kind = rdn_value(s), one(s, "ciamSecurityKind")
     body = (_scanner(m, s) if kind == "vulnerability-scanning" else _posture(m, s) if kind == "posture" else
             (comment(f"{cn}: Azure records resource changes itself (Resource Graph change history, about 14 days): "
                      "nothing to enable; keeping them longer needs an export (not rendered)"),)
@@ -309,10 +303,12 @@ def _service(m, s):
 def render_security(m, extra=()):
     """HCL (and comments) for environment m's security services: the subscription data source when anything refers
     to it, the merged Defender plans (with extra plans: data discovery's, discovery.discovery_plans), then each
-    service's own blocks and comments."""
-    kept = _kept(m)
-    out = (*(_pricing(m, *p) for p in _plans(kept, extra)),
-           *(x for s in security_services(m) for x in _service(m, s)))
+    service's own blocks and comments; each stamped with the entry it is for (a plan's with the first service needing
+    it), so the render places it by keeper."""
+    services = security_services(m)
+    out = (*(x for p, sub, ext, origin in _plans(services, extra)
+             for x in from_entry(origin, (_pricing(m, p, sub, ext),))),
+           *(x for s in services for x in from_entry(s.dn, _service(m, s))))
     return ((tf_block("data", ["azurerm_subscription", "current"], []),)
             if mentions(out, SUBSCRIPTION) else ()) + out
 

@@ -26,7 +26,7 @@ from opsdir.domains.observability.alarms import alarm_specs, condition, in_unit
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.realized import keeper_of
 from opsdir.domains.observability.signals import number_text, parse_threshold
-from opsdir_format_terraform.hcl import Block, comment, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, tf_block, tf_name
 from .names import label, resource_id
 
 POLICY = "google_monitoring_alert_policy"
@@ -103,7 +103,8 @@ def _policy(m, s):
 
 def render_policies(m):
     """HCL (and comments) for environment m's Cloud Monitoring alert policies."""
-    return tuple(x for s in alarm_specs(m) for x in _policy(m, s))
+    return tuple(x for s in alarm_specs(m)
+                 for x in (from_entry(s.alarm.dn, _policy(m, s)) if s.alarm is not None else _policy(m, s)))
 
 
 def bucket_retention(days):
@@ -148,4 +149,4 @@ def _bucket(m, b):
 
 def render_buckets(m):
     """HCL (and comments) for environment m's Cloud Logging buckets."""
-    return tuple(x for b in of_class(m, "ciamLogDestination") for x in _bucket(m, b))
+    return tuple(x for b in of_class(m, "ciamLogDestination") for x in from_entry(b.dn, _bucket(m, b)))

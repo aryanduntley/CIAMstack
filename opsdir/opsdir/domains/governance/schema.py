@@ -32,6 +32,11 @@ ATTRIBUTES = (
                  'Contact / escalation link'),
     AttributeDef(124, 'ciamDisplayName', 'string', 'meta', True,
                  'Name used in correspondence (the organization operating the platform, a team)'),
+    AttributeDef(646, 'ciamTakesGeneratedInfra', 'bool', 'meta', True,
+                 'Whether the party takes the infrastructure opsdir generates for what it keeps (ciamManagedBy, the '
+                 'landing zone it owns): TRUE, the default render gives it its own complete root to apply; absent or '
+                 'FALSE, what it keeps is named in the render and asked of it in a request, and its root is rendered '
+                 'only on a keeper-scoped request'),
     AttributeDef(421, 'ciamChangeRecords', 'string', 'meta', True,
                  'The LDIF change records a proposed change applies once approved (an assisted fix, from an '
                  'operator or an AI): what the approver reviews and what is applied, unchanged'),
@@ -92,7 +97,7 @@ CLASSES = (
              ('ciamSeverity', 'ciamInvolved', 'ciamRootCause'),
              'Incident / postmortem'),
     ClassDef(32, 'ciamParty', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamOwnerKind'),
-             ('mail', 'telephoneNumber', 'ciamContactUrl', 'ciamDisplayName'),
+             ('mail', 'telephoneNumber', 'ciamContactUrl', 'ciamDisplayName', 'ciamTakesGeneratedInfra'),
              'Team, partner, vendor, or the operator of the platform (how to reach it: mail, telephone, contact '
              'link)'),
     ClassDef(91, 'ciamImportRun', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamImporter', 'ciamImportScope',

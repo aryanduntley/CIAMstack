@@ -57,9 +57,9 @@ def test_monthly_no_template_and_what_isnt_rendered():
     assert "pub_sub_notification" not in out and "profiled daily" not in out
     assert "# NOTE: data discovery sdp: no discovery config: it examines no Cloud Storage bucket here" in _render(
         entry(ALPHA, "sdp", "ciamDataDiscovery", ciamBindingRole="data-discovery", ciamScansRole=("pf-grants-db",)))
-    assert _render(entry(ALPHA, "org", "ciamDataDiscovery", ciamBindingRole="data-discovery",
-                         ciamManagedBy="cn=nobody,dc=ciam-ops")) == \
-        "# Data discovery org: kept by cn=nobody,dc=ciam-ops, not rendered here"
+    kept = entry(ALPHA, "org", "ciamDataDiscovery", ciamBindingRole="data-discovery")
+    assert _render(kept.replace("ciamBindingRole", "ciamManagedBy: cn=nobody,dc=ciam-ops\nciamBindingRole")) == \
+        _render(kept)                                   # the same blocks, placed by its keeper (render_files)
     assert info_type("employee-id") == "EMPLOYEE_ID"
 
 

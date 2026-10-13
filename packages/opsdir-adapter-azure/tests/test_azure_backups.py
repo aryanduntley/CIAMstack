@@ -88,7 +88,7 @@ def test_what_it_can_t_render_is_said():
                  ciamBackupVaultRole="vault-none", ciamRetentionDays="7")
     out = "\n".join(as_text(render_backups(_m(VAULT, odd, lost))))
     assert "disk backup runs every 1, 2, 4, 6, 8 or 12 hours or daily, not every 3 hours: not rendered" in out
-    assert "its vault (role vault-none) isn't one this environment's stack keeps: not rendered" in out
+    assert "its vault (role vault-none) isn't one this environment's render writes: not rendered" in out
     assert "vault_main_snapshots" not in out                      # no plan backs up disks into it
 
 

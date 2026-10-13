@@ -1,8 +1,9 @@
 """AWS: the object stores (S3 buckets) an environment uses, rendered as Terraform and read back. Pure.
 
-Rendered into the stack's main.tf, for each object store whose record says how it keeps what it holds
-(opsdir.domains.data.storage) and that the stack keeps (one naming ciamManagedBy is someone else's: a comment names
-them); a store the record only references stays a reference (the backup target's data source):
+Rendered for each object store whose record says how it keeps what it holds (opsdir.domains.data.storage), each block
+stamped with its entry (hcl.from_entry), so the render places it in the stack's root, its keeper's root, or names it as
+its keeper's (governance.keepers, decision 2732); a store the record only references stays a reference (the backup
+target's data source, unless the stack's root renders the store):
 
   aws_s3_bucket (Object Lock enabled when its objects are locked: only possible when the bucket is created) with its
   versioning, its default Object Lock retention (GOVERNANCE or COMPLIANCE, days), SSE-KMS with the key of its key role
@@ -20,11 +21,10 @@ of each. A setting a source doesn't report is left as the record has it.
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.environment import UNBOUND, bound, of_class
 from opsdir.core.inventory import of_types, resource, tagged_role
-from opsdir.domains.data.storage import (LifecycleRule, depth_summary, has_depth, kept_store, lifecycle_rules,
+from opsdir.domains.data.storage import (LifecycleRule, has_depth, kept_store, lifecycle_rules,
                                          lifecycle_value)
 from opsdir.domains.network.plumbing import adopted
-from opsdir.domains.network.stack import kept_by, owned
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_import, tf_name
 from opsdir_format_terraform.state import blocks
 from .network import binding_tags
 from .tags import state_tags
@@ -41,11 +41,15 @@ def bucket_of(uri):
     return uri[len("s3://"):].split("/", 1)[0] if (uri or "").startswith("s3://") else None
 
 
+def described_buckets(m):
+    """Environment m's object stores on S3 whose settings the render writes: described by the record (whoever keeps
+    them)."""
+    return tuple(b for b in of_class(m, "ciamObjectStore") if bucket_of(one(b, "ciamStorageRef")) and has_depth(b))
+
+
 def kept_buckets(m):
-    """Environment m's object stores on S3 whose settings the stack renders: described by the record, kept by the
-    stack."""
-    return tuple(b for b in of_class(m, "ciamObjectStore")
-                 if bucket_of(one(b, "ciamStorageRef")) and kept_store(b))
+    """Environment m's described object stores on S3 the stack keeps itself (rendered in its own root)."""
+    return tuple(b for b in described_buckets(m) if kept_store(b))
 
 
 # ------------------------------------------------------------------ render
@@ -134,12 +138,9 @@ def _replication(b, n, target, replica, key):
 
 
 def render_object_stores(m):
-    """HCL for environment m's object stores the record describes: comments naming who keeps the others and what to
-    ask them for, then those the stack keeps."""
-    described = [b for b in of_class(m, "ciamObjectStore") if bucket_of(one(b, "ciamStorageRef")) and has_depth(b)]
-    return (*(comment(f"Object store '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: "
-                      f"not rendered here. Ask them for: {depth_summary(b)}") for b in described if not owned(b)),
-            *(x for b in kept_buckets(m) for x in _bucket(m, b)))
+    """HCL for environment m's object stores the record describes, each stamped with its entry (the render places it
+    by its keeper)."""
+    return tuple(x for b in described_buckets(m) for x in from_entry(b.dn, _bucket(m, b)))
 
 
 # ------------------------------------------------------------------ read back

@@ -273,12 +273,22 @@ _TOPICS = {None: ("Landing zone changes", "in the landing zone you keep (the ren
                   "hold what we can describe)"),
            "dns": ("DNS changes", "in the DNS zones you run"),
            "network": ("Network changes", "in the network you keep (where an item is rendered as Terraform, its "
-                       "root is named)")}
+                       "root is named)"),
+           "on-prem": ("On-prem changes", "at the sites you keep")}
+# a topic no entry above describes (a check's own): asked all the same, never dropped
+_OTHER_TOPIC = ("Changes", "in what you keep")
+
+
+def _topic(topic):
+    """(subject, where) of a request topic."""
+    return _TOPICS.get(topic, _OTHER_TOPIC)
 
 
 def _asks(asks):
-    """((topic, items), ...) of a request's items with no allowlist, by topic in _TOPICS order."""
-    return tuple((topic, items) for topic in _TOPICS
+    """((topic, items), ...) of a request's items with no allowlist, by topic: _TOPICS order, then any other topic in
+    the order first asked."""
+    order = (*_TOPICS, *dict.fromkeys(a[2] for a in asks if a[2] not in _TOPICS))
+    return tuple((topic, items) for topic in order
                  for items in ([a for a in asks if a[2] == topic],) if items)
 
 
@@ -290,7 +300,7 @@ def _landing_draft(p, mgr, asks, platform, signer):
     """A request to a party keeping systems the target relies on (its landing zone, DNS zones it runs): what to set up
     or change there before cutover."""
     (topic, first), *more = _asks(asks)
-    subject, where = _TOPICS[topic]
+    subject, where = _topic(topic)
     return (f"To: {rdn_value(mgr)} <{one(mgr, 'mail', 'n/a')}>",
             f"Subject: {subject} needed for {p.dst.label}" + (f" before {p.cutover}" if p.cutover else ""),
             "",
@@ -298,7 +308,7 @@ def _landing_draft(p, mgr, asks, platform, signer):
             f"We are moving {platform} to {p.dst.label}" + (f"; planned cutover is {p.cutover}." if p.cutover else ".")
             + f" Please set up the following {where}:", "",
             *_ask_lines(first),
-            *(line for t, items in more for line in ("", f"Also, {_TOPICS[t][1]}:", "", *_ask_lines(items))),
+            *(line for t, items in more for line in ("", f"Also, {_topic(t)[1]}:", "", *_ask_lines(items))),
             "", "Thank you,", signer, "", "_Generated from the operations directory._")
 
 
@@ -324,7 +334,7 @@ def _request_draft(p, mgr, items):
                for xa, new, role, by in items),
              "", "Please keep the existing entries until we confirm cutover; we'll tell you when they can go.",
              *(line for t, group in _asks(asks)
-               for line in ("", f"Also, {_TOPICS[t][1].split(' (')[0]}:", "", *_ask_lines(group))),
+               for line in ("", f"Also, {_topic(t)[1].split(' (')[0]}:", "", *_ask_lines(group))),
              "", "Thank you,", signer, "",
              f"_Generated from the operations directory; entries {', '.join(rdn_value(x[0]) for x in items)}._")
     return "\n".join(lines) + "\n"

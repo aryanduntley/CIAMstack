@@ -1,8 +1,9 @@
 """Google Cloud: the managed databases (opsdir.domains.data) an environment runs, rendered as Terraform and read back.
 Pure.
 
-Rendered into the stack's main.tf, for each database the stack keeps (one naming ciamManagedBy is someone else's: a
-comment names them). PostgreSQL, MySQL and SQL Server run on Cloud SQL; other engines are a comment.
+Rendered for every database, each block stamped with its entry (hcl.from_entry), so the render places it in the
+stack's root, its keeper's root, or names it as its keeper's (governance.keepers, decision 2732). PostgreSQL, MySQL and
+SQL Server run on Cloud SQL; other engines are a comment.
 
   google_sql_database_instance: database_version from the engine, major version and edition (POSTGRES_16, MYSQL_8_0,
   SQLSERVER_2019_STANDARD: Cloud SQL keeps minor versions current), tier (ciamInstanceSize), disk size, its zone as
@@ -29,8 +30,7 @@ from opsdir.core.inventory import of_types, resource
 from opsdir.domains.data.naming import DEFAULT_PORTS
 from opsdir.domains.data.databases import major_version
 from opsdir.domains.network.plumbing import adopted
-from opsdir.domains.network.stack import kept_by, owned
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_import, tf_name
 from opsdir_format_terraform.state import first_block
 from .names import NETWORK, REGION, label, name_parts, resource_id
 
@@ -168,11 +168,8 @@ def _database(m, b):
 
 
 def render_databases(m):
-    """HCL for environment m's managed databases: those the stack keeps, then comments naming who keeps the others."""
-    dbs = of_class(m, "ciamDatabase")
-    return (*(comment(f"Database '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) is kept by {kept_by(m, b)}: not "
-                      "rendered here") for b in dbs if not owned(b)),
-            *(x for b in dbs if owned(b) for x in _database(m, b)))
+    """HCL for environment m's managed databases, each stamped with its entry (the render places it by its keeper)."""
+    return tuple(x for b in of_class(m, "ciamDatabase") for x in from_entry(b.dn, _database(m, b)))
 
 
 # ------------------------------------------------------------------ read back

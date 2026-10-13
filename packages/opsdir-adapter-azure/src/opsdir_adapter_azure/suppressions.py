@@ -30,7 +30,7 @@ from opsdir.core.directory import date_of, get, one, rdn_value, values
 from opsdir.core.environment import of_class
 from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.poam import exception_of, suppression_name
-from opsdir_format_terraform.hcl import comment, jsonencoded, mentions, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import comment, from_entry, jsonencoded, mentions, ref, tf_block, tf_name
 from .account import azapi_allowed
 
 EXEMPTION = "azurerm_subscription_policy_exemption"
@@ -121,7 +121,8 @@ def _alert_rules(m, s):
 
 
 def _kept(m):
-    return [s for s in of_class(m, SUPPRESSION) if not one(s, "ciamManagedBy")]
+    """Environment m's suppressions, whoever keeps them (each placed by its keeper)."""
+    return of_class(m, SUPPRESSION)
 
 
 def uses_azapi(m):
@@ -139,14 +140,11 @@ def azapi_provider(m):
 
 def render_suppressions(m):
     """HCL (and comments) for environment m's suppressions."""
-    kept, held = _kept(m), [s for s in of_class(m, SUPPRESSION) if one(s, "ciamManagedBy")]
-    out = tuple(x for s in kept for x in (*_exemptions(m, s), *_alert_rules(m, s),
-                                          *((comment(f"{suppression_name(s)}: not Azure's (not rendered here): "
-                                                     f"{', '.join(_others(s))}"),) if _others(s) else ())))
-    return ((tf_block("data", ["azurerm_subscription", "current"], []),) if mentions(out, SUBSCRIPTION) else ()) \
-        + out + tuple(comment(f"Suppression {suppression_name(s)}: kept by "
-                              f"{rdn_value(get(m.d, one(s, 'ciamManagedBy')))}, not rendered here")
-                      for s in held if get(m.d, one(s, "ciamManagedBy")) is not None)
+    out = tuple(x for s in _kept(m) for x in from_entry(s.dn, (
+        *_exemptions(m, s), *_alert_rules(m, s),
+        *((comment(f"{suppression_name(s)}: not Azure's (not rendered here): {', '.join(_others(s))}"),)
+          if _others(s) else ()))))
+    return ((tf_block("data", ["azurerm_subscription", "current"], []),) if mentions(out, SUBSCRIPTION) else ()) + out
 
 
 # ------------------------------------------------------------------ read back

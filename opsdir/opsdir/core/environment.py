@@ -6,7 +6,7 @@ the caller (the adapters that apply), never hardcoded here, plus the roles the e
 An overlay environment's bindings, stack, declared roles and overrides include what it inherits (core.overlays).
 """
 from collections import namedtuple
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 from .directory import Directory, Entry, children, follow, get, is_kind, norm_dn, one, rdn_value, subtree, values
 from .naming import branch, env_label, rdn_safe
@@ -18,13 +18,19 @@ UNBOUND = "UNBOUND:"              # a value from a role the environment doesn't 
 # One declared component of an environment's stack: the adapter (by registered name) that fills a role, the adapter
 # versions it accepts and where to get it (or None), and the adapter's render targets it renders (() = its defaults).
 StackComponent = namedtuple("StackComponent", ("role", "adapter", "versions", "source", "targets"), defaults=((),))
+# The slice of an environment a render writes (5.7): kind environment (all of it, value ()), keeper (value: the party's
+# DN), class (value: object class names) or bindings (value: the entries' DNs); governance.keepers places by it.
+Scope = NamedTuple("Scope", [("kind", str), ("value", tuple)])
+ENVIRONMENT = Scope("environment", ())
 EnvModel = NamedTuple("EnvModel", [("d", Directory), ("dn", str), ("env", Entry), ("cloud", Entry),
                                    ("provider", str), ("label", str), ("servers", tuple),
                                    ("bindings", tuple), ("unbound", tuple),
                                    ("stack", tuple),        # StackComponents, empty when none is declared
                                    ("declared_roles", tuple),   # roles the environment declares it must bind
                                    ("overrides", tuple),        # ciamOverride entries that apply to it
-                                   ("lineage", tuple)])         # the environment, then its bases (overlays)
+                                   ("lineage", tuple),          # the environment, then its bases (overlays)
+                                   ("scope", Optional[Scope])])  # what a render writes of it (None: all of it)
+EnvModel.__new__.__defaults__ = (None,)
 
 
 def env_dn(spec):

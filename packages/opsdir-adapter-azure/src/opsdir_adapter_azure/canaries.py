@@ -18,7 +18,7 @@ from opsdir.core.directory import one, rdn_value
 from opsdir.core.environment import one_role
 from opsdir.domains.edge.exposure import service_exposure
 from opsdir.domains.observability.canaries import canary_specs
-from opsdir_format_terraform.hcl import Block, blocks_of, comment, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, blocks_of, comment, from_entry, ref, tf_block, tf_name
 from .account import government, tagged
 from .identities import LOC, RG
 
@@ -62,7 +62,8 @@ def _test(m, spec):
 
 def render_tests(m, endpoints):
     """HCL (and comments) for environment m's availability tests, and the input they need when there is one."""
-    out = tuple(x for s in canary_specs(m, endpoints) for x in _test(m, s))
+    out = tuple(x for s in canary_specs(m, endpoints)
+                for x in (from_entry(s.binding.dn, _test(m, s)) if s.binding is not None else _test(m, s)))
     needs = bool(blocks_of(out, "resource"))
     return (*out, *((tf_block("variable", [INPUT], [
         ("description", "The workspace-based Application Insights resource the availability tests belong to"),

@@ -35,7 +35,8 @@ from opsdir_adapter_gcp.firewall_policy import egress_rules, network_project, po
 from opsdir_adapter_gcp.identities import project_of
 from opsdir_adapter_gcp.names import NETWORK, label, name_parts, network_tag
 from opsdir_adapter_gcp.network import peering_connection_id, private_endpoint
-from opsdir_format_terraform.hcl import Block, blocks_of, comment, distinct, ref, tf_block, tf_import, tf_name
+from opsdir_format_terraform.hcl import (Block, blocks_of, comment, distinct, from_entry, ref, tf_block, tf_import,
+                                         tf_name)
 
 # blocks: what the binding renders; variables: inputs only its keeper knows; shared: data sources and resources
 # rendered once in the root, however many bindings use them
@@ -349,9 +350,11 @@ RENDERERS = (("ciamEgress", egress), ("ciamRouteTable", route_table), ("ciamNetw
 
 def render_plumbing(m, keeper):
     """Rendered of what a keeper keeps of environment m's plumbing (opsdir.domains.network.plumbing.Keeper): the
-    network and subnetwork data sources and what bindings share first, inputs unique by name."""
+    network and subnetwork data sources and what bindings share first, inputs unique by name; each binding's blocks
+    stamped with its entry, what they share with the keeper's first (hcl.from_entry)."""
     here = {b.dn for b in keeper.bindings}
-    parts = tuple(next(fn for oc, fn in RENDERERS if is_kind(m.d, b, oc))(m, b, here) for b in keeper.bindings)
-    return Rendered(tuple(x for p in parts for x in p.blocks),
-                    distinct(tuple(v for p in parts for v in p.variables)),
-                    (*network_data(m), *distinct(tuple(x for p in parts for x in p.shared))))
+    parts = tuple((b, next(fn for oc, fn in RENDERERS if is_kind(m.d, b, oc))(m, b, here)) for b in keeper.bindings)
+    return Rendered(tuple(x for b, p in parts for x in from_entry(b.dn, p.blocks)),
+                    distinct(tuple(v for _, p in parts for v in p.variables)),
+                    (*network_data(m), *from_entry(keeper.bindings[0].dn,
+                                                   distinct(tuple(x for _, p in parts for x in p.shared)))))

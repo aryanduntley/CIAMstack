@@ -17,7 +17,8 @@ from support import REGISTRY, build_directory
 
 TEAM = "cn=net-team,ou=owners,dc=ciam-ops"
 OWNERS = ("dn: ou=owners,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: owners\n",
-          f"dn: {TEAM}\nobjectClass: top\nobjectClass: ciamParty\ncn: net-team\nciamOwnerKind: team\n")
+          f"dn: {TEAM}\nobjectClass: top\nobjectClass: ciamParty\ncn: net-team\nciamOwnerKind: team\n"
+          "ciamTakesGeneratedInfra: TRUE\n")        # its root renders (governance.keepers)
 SUB = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups"
 HOST = "projects/example-net"
 # cloud: (renderer, {placeholder: its provider ref there}); a network ref may carry more of the network's attributes

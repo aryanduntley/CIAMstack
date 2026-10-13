@@ -4,7 +4,7 @@ A format library: it knows HCL, not any cloud provider or product.
 import json
 import re
 from itertools import groupby
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 
 def tf_name(s):
@@ -17,8 +17,14 @@ def tf_name(s):
 Block = NamedTuple("Block", [("body", tuple)])
 # A top-level block of a Terraform file (resource, data, variable, provider, terraform, ...) as data: what block()
 # writes it from. body: (key, value) pairs, a value a nested Block, ("#", comment), str (a '${...}' string is a raw
-# expression), int, float, bool, a list (tuple) or an object (dict, keys as written) of such values.
-TfBlock = NamedTuple("TfBlock", [("kind", str), ("labels", tuple), ("body", tuple)])
+# expression), int, float, bool, a list (tuple) or an object (dict, keys as written) of such values. origin: the DN of
+# the record entry a resource or import block renders (from_entry), which decides the root it is placed in (partition);
+# None when unstamped (the default root's). Not written: text read back has none.
+TfBlock = NamedTuple("TfBlock", [("kind", str), ("labels", tuple), ("body", tuple), ("origin", Optional[str])])
+TfBlock.__new__.__defaults__ = (None,)
+# The kind of an anchor: a TfBlock written as nothing, closing an entry's items that end in comments (from_entry), so
+# the partition places those comments with the entry's root rather than with whatever block follows.
+ANCHOR = "anchor"
 
 
 def hcl(v, indent=0):
@@ -63,12 +69,13 @@ def _body_line(k, v, pad, indent, width):
     if k == "#":
         return f"{pad}  # {v}"
     if isinstance(v, Block):
-        return block(k, (), v.body, indent + 1)
+        return block(k, (), v.body, indent=indent + 1)
     return f"{pad}  {k.ljust(width)} = {hcl(v, indent + 1)}"
 
 
-def block(kind, labels, body, indent=0):
-    """HCL block. body: (key, value) pairs, where a value may be a nested Block, or ("#", comment)."""
+def block(kind, labels, body, origin=None, *, indent=0):
+    """HCL block. body: (key, value) pairs, where a value may be a nested Block, or ("#", comment). origin (a
+    TfBlock's, so block(*tf_block) writes one) is not written."""
     pad = "  " * indent
     widths = _key_widths(body)
     head = pad + kind + "".join(f' "{lab}"' for lab in labels) + " {"
@@ -83,6 +90,18 @@ def ref(expr):
 def tf_block(kind, labels, body):
     """A top-level block as data (TfBlock): labels and body as tuples. What a renderer returns; hcl_item writes it."""
     return TfBlock(kind, tuple(labels), tuple(body))
+
+
+def from_entry(dn, items):
+    """A renderer's items for one record entry (dn) with that entry stamped as the origin of each resource and import
+    block not stamped already (what the partition places by); data, variable, provider and terraform blocks and
+    comments unchanged (they go wherever they are read); items ending in comments (or only comments) closed by an
+    anchor of that origin, so those comments stay with the entry."""
+    items = tuple(items)
+    stamped = tuple(x._replace(origin=dn) if isinstance(x, TfBlock) and x.kind in ("resource", "import")
+                    and x.origin is None else x for x in items)
+    trailing = bool(items) and not isinstance(items[-1], TfBlock)
+    return (*stamped, TfBlock(ANCHOR, (), (), dn)) if trailing else stamped
 
 
 def comment(text):
@@ -106,7 +125,7 @@ def hcl_item(item):
     """A top-level item's text: a TfBlock as block() writes it, a comment ('#', text) as its `# text` line; TypeError
     on anything else (text never passes as an item)."""
     if isinstance(item, TfBlock):
-        return block(*item)
+        return "" if item.kind == ANCHOR else block(item.kind, item.labels, item.body)
     if isinstance(item, tuple) and len(item) == 2 and item[0] == "#" and isinstance(item[1], str):
         return f"# {item[1]}"
     raise TypeError(f"not a Terraform item: {item!r:.80}")
@@ -115,7 +134,8 @@ def hcl_item(item):
 def hcl_file(f):
     """A TfFile's text, the one writer of a rendered .tf file: its head, a blank line, the items one blank line apart,
     a final newline."""
-    return f.head + "\n" + "\n\n".join(hcl_item(x) for x in f.items) + "\n"
+    return f.head + "\n" + "\n\n".join(hcl_item(x) for x in f.items
+                                       if not (isinstance(x, TfBlock) and x.kind == ANCHOR)) + "\n"
 
 
 def blocks_of(items, kind="resource", type_=None):
@@ -150,15 +170,15 @@ def distinct(items):
 def as_text(v):
     """A renderer's output with its Terraform data written as text, for a caller (a test, a report) that reads a
     helper's result as text: a TfFile as hcl_file writes it, a TfBlock or comment item as hcl_item, through tuples,
-    lists, dicts and NamedTuples; anything else as it is."""
+    lists (anchors left out), dicts and NamedTuples; anything else as it is."""
     if isinstance(v, TfFile):
         return hcl_file(v)
     if isinstance(v, TfBlock) or (isinstance(v, tuple) and len(v) == 2 and v[0] == "#" and isinstance(v[1], str)):
         return hcl_item(v)
     if isinstance(v, tuple) and hasattr(v, "_fields"):
         return type(v)(*(as_text(x) for x in v))
-    if isinstance(v, (tuple, list)):
-        return type(v)(as_text(x) for x in v)
+    if isinstance(v, (tuple, list)):        # anchors are never written: left out
+        return type(v)(as_text(x) for x in v if not (isinstance(x, TfBlock) and x.kind == ANCHOR))
     if isinstance(v, dict):
         return {k: as_text(x) for k, x in v.items()}
     return v

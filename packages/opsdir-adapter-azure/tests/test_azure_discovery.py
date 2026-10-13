@@ -51,13 +51,13 @@ def test_what_microsoft_decides_is_said_in_comments():
     assert "Azure Government" not in out and "refreshes" not in "\n".join(as_text(render_discovery(_alpha(dspm()))))
 
 
-def test_azure_government_and_someone_elses_discovery_are_comments():
+def test_azure_government_is_a_comment_and_someone_elses_discovery_renders_for_its_keeper():
     assert "# Azure Government: Defender for Cloud's support matrix lists Defender CSPM's sensitive data scanning" \
         in "\n".join(as_text(render_discovery(_alpha(dspm(), gov=True))))
     held = entry(ALPHA, "org", "ciamDataDiscovery", ciamBindingRole="data-discovery",
                  ciamManagedBy="cn=nobody,dc=ciam-ops")
-    assert as_text(render_discovery(_alpha(held))) == (
-        "# Data discovery org: kept by cn=nobody,dc=ciam-ops, not rendered here",)
+    out = render_discovery(_alpha(held))           # placed by its keeper (render_files)
+    assert {getattr(x, "origin", None) for x in out} - {None} == {f"cn=org,ou=bindings,{ALPHA}"}
 
 
 def test_read_back_from_state():

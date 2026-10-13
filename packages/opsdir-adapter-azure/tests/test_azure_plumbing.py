@@ -11,6 +11,9 @@ from support import REGISTRY, build_directory
 
 LZ, NET = "terraform/landing-zone", "terraform/landing-zone/network.tf"
 TEAM = "cn=network-security,ou=parties,dc=ciam-ops"
+PARTIES = ("dn: ou=parties,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: parties\n",
+           f"dn: {TEAM}\nobjectClass: top\nobjectClass: ciamParty\ncn: network-security\nciamOwnerKind: team\n"
+           "ciamTakesGeneratedInfra: TRUE\n")
 ARM = "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Network"
 GAMMA = "env=prod,cloud=gamma,ou=environments,dc=ciam-ops"
 AZURE_PEER = ("dn: cloud=gamma,ou=environments,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamCloud\ncloud: gamma\n"
@@ -178,15 +181,15 @@ def test_what_another_party_keeps_goes_in_its_own_root():
                          ciamProviderRef=f"{ARM}/privateEndpoints/pe-1"),
                    entry(ALPHA, "fw", "ciamProxy", ciamBindingRole="fw", ciamProxyKind="firewall",
                          ciamAllowedDestination="metadata.example.test", ciamManagedBy=TEAM,
-                         ciamProviderRef=f"{ARM}/firewallPolicies/fwp"))
+                         ciamProviderRef=f"{ARM}/firewallPolicies/fwp"), tree=PARTIES)
     out = files[f"{LZ}/network-security/network.tf"]
     assert set(files) == {f"{LZ}/network-security/network.tf", f"{LZ}/network-security/providers.tf"}
-    assert "Azure network kept by cn=network-security,ou=parties,dc=ciam-ops" in out
+    assert "Azure network kept by network-security" in out
     assert 'resource "azurerm_private_endpoint" "pe"' in out and f'id = "{ARM}/privateEndpoints/pe-1"' in out
     assert 'resource "azurerm_firewall_policy_rule_collection_group" "fw_sites"' in out
 
 
-def test_a_landing_zone_with_guardrails_and_plumbing_declares_its_data_sources_once():
+def test_a_landing_zone_with_guardrails_and_plumbing_declares_its_data_sources_once_beside_their_reader():
     env = "env=prod,cloud=az,ou=environments,dc=ciam-ops"
     ldif = "\n".join((
         "dn: dc=ciam-ops\nobjectClass: top\nobjectClass: domain\ndc: ciam-ops\n",
@@ -201,9 +204,8 @@ def test_a_landing_zone_with_guardrails_and_plumbing_declares_its_data_sources_o
     m = env_model(build_directory(REGISTRY, tuple(parse(ldif))), "az/prod")
     files = as_text(render_landing(m, guardrails=lambda _: (comment("a guardrail"),)))
     main = files[f"{LZ}/main.tf"]
-    assert 'data "azurerm_resource_group" "main"' in main and "# a guardrail" in main
-    assert 'data "azurerm_resource_group" "main"' not in files[NET]
-    assert 'data "azurerm_virtual_network" "main"' in files[NET]
-    assert 'name                = "vnet-ciam-prod"' in files[NET]
+    assert 'data "azurerm_resource_group" "main"' not in main and "# a guardrail" in main
+    assert files[NET].count('data "azurerm_resource_group" "main"') == 1     # what reads it is the plumbing
+    assert 'data "azurerm_virtual_network" "main"' not in files[NET]     # nothing here reads it: the stack's
     providers = files[f"{LZ}/providers.tf"]
     assert 'variable "subscription_id"' in providers and 'variable "egress_ip_0"' in providers

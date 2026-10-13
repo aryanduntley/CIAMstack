@@ -23,9 +23,10 @@ from decimal import Decimal
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.environment import of_class, servers_with_role
 from opsdir.domains.observability.alarms import alarm_specs, condition, in_unit
+from opsdir.domains.governance.keepers import is_rendered
 from opsdir.domains.observability.realized import keeper_of
 from opsdir.domains.observability.signals import number_text, parse_threshold
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_name
 from .account import tagged
 from .identities import LOC, RG
 
@@ -132,7 +133,8 @@ def _alert(m, s):
 
 def render_alerts(m):
     """HCL (and comments) for environment m's Azure Monitor metric alerts."""
-    return tuple(x for s in alarm_specs(m) for x in _alert(m, s))
+    return tuple(x for s in alarm_specs(m)
+                 for x in (from_entry(s.alarm.dn, _alert(m, s)) if s.alarm is not None else _alert(m, s)))
 
 
 def workspace_retention(days):
@@ -177,9 +179,10 @@ def workspace_id(m, b):
     renders it, else its recorded ID; None for another kind or no workspace ID."""
     if b is None or one(b, "ciamDestinationKind") != "workspace" or workspace_name(b) is None:
         return None
-    return one(b, "ciamProviderRef") if keeper_of(m, b) else ref(f"{WORKSPACE}.{tf_name(rdn_value(b))}.id")
+    return one(b, "ciamProviderRef") if keeper_of(m, b) or not is_rendered(m, b) else \
+        ref(f"{WORKSPACE}.{tf_name(rdn_value(b))}.id")
 
 
 def render_workspaces(m):
     """HCL (and comments) for environment m's Log Analytics workspaces."""
-    return tuple(x for b in of_class(m, "ciamLogDestination") for x in _workspace(m, b))
+    return tuple(x for b in of_class(m, "ciamLogDestination") for x in from_entry(b.dn, _workspace(m, b)))

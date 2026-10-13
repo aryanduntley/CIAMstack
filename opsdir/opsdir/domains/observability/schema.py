@@ -83,14 +83,14 @@ CLASSES = (
     ClassDef(65, 'ciamAlertChannel', 'ciamBinding', 'STRUCTURAL', ('ciamChannelKind',), ('ciamProviderRef',),
              'What delivers alerts of a role in an environment (a topic, an action group, a paging service)'),
     ClassDef(66, 'ciamLogDestination', 'ciamBinding', 'STRUCTURAL', ('ciamDestinationKind',),
-             ('ciamProviderRef', 'ciamRetentionDays'),
+             ('ciamProviderRef', 'ciamRetentionDays', 'ciamManagedBy'),
              'What keeps logs of a role in an environment, and for how many days (0: kept indefinitely)'),
     ClassDef(67, 'ciamAlarmBinding', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef',),
-             ('ciamRealizes', 'ciamNotifies', 'ciamMetric'),
+             ('ciamRealizes', 'ciamNotifies', 'ciamMetric', 'ciamManagedBy'),
              'An alarm a cloud runs in an environment: the alert rule it realizes, what it evaluates, what it '
              'notifies'),
     ClassDef(68, 'ciamCanaryBinding', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef',),
-             ('ciamRealizes', 'ciamInterval', 'ciamStorageRef'),
+             ('ciamRealizes', 'ciamInterval', 'ciamStorageRef', 'ciamManagedBy'),
              'A synthetic check a cloud runs in an environment: the canary it realizes, how often, and where it keeps '
              'its results when the cloud asks for a place (ciamStorageRef: CloudWatch Synthetics\' S3 artifact '
              'location)'),

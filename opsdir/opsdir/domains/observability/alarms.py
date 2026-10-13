@@ -1,16 +1,16 @@
 """What a cloud renders of an environment's alerting, cloud-neutral (each cloud adapter maps it to its own alarms).
 Pure.
 
-An alert rule the environment delivers (its ciamAlertRole is bound here: the channel) is rendered as the cloud's
-alarm when the environment records the alarm realizing it (a ciamAlarmBinding naming the rule in ciamRealizes) with
-the metric it evaluates (ciamMetric): the binding is the alarm's name, role and metric, the rule its condition and
-period. A rule without such an alarm here is named, not rendered (a product's Prometheus signal is evaluated by the
-Prometheus add-on instead); an alarm someone else keeps (ciamManagedBy), or an overlay inherits from its base
-(rendered there), is named with its keeper. A rule the environment doesn't deliver is the planner's blocker, not a
-renderer's concern.
+An alert rule the environment delivers (its ciamAlertRole is bound here: the channel) is rendered as the cloud's alarm
+when the environment records the alarm realizing it (a ciamAlarmBinding naming the rule in ciamRealizes) with the metric
+it evaluates (ciamMetric): the binding is the alarm's name, role and metric, the rule its condition and period. A rule
+without such an alarm here is named, not rendered (a product's Prometheus signal is evaluated by the Prometheus add-on
+instead); an alarm an overlay inherits from its base (rendered there) is named with it, and one someone else keeps
+(ciamManagedBy) is placed by its keeper (governance.keepers). A rule the environment doesn't deliver is the planner's
+blocker, not a renderer's concern.
 
-The condition in a cloud's own terms: thresholds are compared in the unit they are written in where the cloud's
-alarms can say it (cloud_threshold); rates (/s, /min, /h) become counts over a window a cloud evaluates.
+The condition in a cloud's own terms: thresholds are compared in the unit they are written in where the cloud's alarms
+can say it (cloud_threshold); rates (/s, /min, /h) become counts over a window a cloud evaluates.
 """
 from collections import namedtuple
 from decimal import Decimal
@@ -23,7 +23,7 @@ from .realized import keeper_of
 from .signals import UNITS, alarm_for, number_text, parse_threshold
 
 # A rule as one environment renders it: the rule, its alarm binding (or None), the channel delivering it, who keeps
-# the alarm when this environment doesn't (realized.keeper_of: a party, or the base an overlay inherits it from; or
+# the alarm when this environment doesn't (realized.keeper_of: the base an overlay inherits it from; or
 # None), and why it isn't rendered (None when it is).
 AlarmSpec = namedtuple("AlarmSpec", ("rule", "alarm", "channel", "keeper", "why"))
 

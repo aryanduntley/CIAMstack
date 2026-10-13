@@ -2,6 +2,11 @@
   "environment": "env=lab,cloud=hq,ou=environments,dc=ciam-ops",
   "provider": "onprem",
   "unbound_roles": [],
+  "scope": {
+    "kind": "environment",
+    "value": []
+  },
+  "requester": "opsdir",
   "render_targets": {
     "pingfederate": [
       "admin-api",

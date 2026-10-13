@@ -3,11 +3,12 @@ and read back. Pure.
 
 Versioning, public access, the customer-managed key, lifecycle management and object replication are the storage
 account's settings, not the container's: the stack renders an account (with every described container in it) when it
-keeps those containers. A container someone else keeps (ciamManagedBy) is theirs and so is its account: a comment names
-the keeper and what to ask them for. A container the record only references is left alone (its account a data source
-where an identity's grant needs it).
+keeps those containers. A container someone else keeps (ciamManagedBy) is theirs and so is its account: each block is
+stamped with its container's entry, the account's with its first container's (hcl.from_entry), so the render places
+them in the stack's root, their keeper's root, or names them as the keeper's (governance.keepers, decision 2732). A
+container the record only references is left alone (its account a data source where an identity's grant needs it).
 
-Rendered into the stack's main.tf, per account the stack keeps:
+Rendered per account of the described containers:
   azurerm_storage_account: Standard, zone-redundant (ZRS), TLS 1.2, HTTPS only, nested items public only when nothing
   blocks it, blob versioning (and the change feed object replication needs), the user-assigned identity its key needs
   azurerm_storage_account_customer_managed_key: the key of its containers' key role (customer_key)
@@ -28,11 +29,10 @@ from itertools import groupby
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.environment import of_class
 from opsdir.core.inventory import of_types, resource
-from opsdir.domains.data.storage import (LifecycleRule, depth_summary, has_depth, kept_store, lifecycle_rules,
+from opsdir.domains.data.storage import (LifecycleRule, has_depth, kept_store, lifecycle_rules,
                                          lifecycle_value)
 from opsdir.domains.network.plumbing import adopted
-from opsdir.domains.network.stack import kept_by, owned
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_import, tf_name
 from .arm_ids import arm_segment
 from .cli_storage import BASE, VERSION
 from .cmk import customer_key, key_ref
@@ -53,11 +53,16 @@ def container_of(uri):
     return (account, container.split("/", 1)[0]) if account and container else None
 
 
+def described_containers(m):
+    """Environment m's object stores in blob containers whose settings the render writes: described by the record
+    (whoever keeps them)."""
+    return tuple(b for b in of_class(m, "ciamObjectStore") if container_of(one(b, "ciamStorageRef")) and has_depth(b))
+
+
 def kept_containers(m):
-    """Environment m's object stores in blob containers whose settings the stack renders: described by the record,
-    kept by the stack."""
-    return tuple(b for b in of_class(m, "ciamObjectStore")
-                 if container_of(one(b, "ciamStorageRef")) and kept_store(b))
+    """Environment m's described object stores in blob containers the stack keeps itself (rendered in its own
+    root)."""
+    return tuple(b for b in described_containers(m) if kept_store(b))
 
 
 # ------------------------------------------------------------------ render
@@ -142,17 +147,14 @@ def _container(b):
 
 
 def render_object_stores(m):
-    """HCL for environment m's object stores in blob containers the record describes: comments naming who keeps the
-    others and what to ask them for, then each account the stack keeps with its containers."""
-    described = [b for b in of_class(m, "ciamObjectStore") if container_of(one(b, "ciamStorageRef")) and has_depth(b)]
-    kept = sorted(kept_containers(m), key=lambda b: (container_of(one(b, "ciamStorageRef")), b.dn))
-    return (*(comment(f"Object store '{rdn_value(b)}' (role {one(b, 'ciamBindingRole')}) "
-                      f"is kept by {kept_by(m, b)}, with its "
-                      f"storage account: not rendered here. Ask them for: {depth_summary(b)}") for b in described
-              if not owned(b)),
-            *(x for account, stores in groupby(kept, key=lambda b: container_of(one(b, "ciamStorageRef"))[0])
-              for group in (tuple(stores),)
-              for x in (*_account(m, account, group), *(y for b in group for y in _container(b)))))
+    """HCL for environment m's object stores in blob containers the record describes: each account with its
+    containers, stamped with their entries (the account with its first container's), which the render places by
+    keeper."""
+    found = sorted(described_containers(m), key=lambda b: (container_of(one(b, "ciamStorageRef")), b.dn))
+    return tuple(x for account, stores in groupby(found, key=lambda b: container_of(one(b, "ciamStorageRef"))[0])
+                 for group in (tuple(stores),)
+                 for x in (*from_entry(group[0].dn, _account(m, account, group)),
+                           *(y for b in group for y in from_entry(b.dn, _container(b)))))
 
 
 # ------------------------------------------------------------------ read back

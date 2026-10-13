@@ -18,6 +18,8 @@ from opsdir.domains.edge.gateways import role_gateway
 from opsdir.domains.edge.records import forwarders
 from opsdir.domains.edge.resolve import inspected, service_edge
 from opsdir_format_terraform.hcl import Block, TfFile, comment, ref, tf_block, tf_name, unbound_comments, written
+from opsdir_format_terraform.placing import MAIN, PROVIDERS, carried_files
+from opsdir.domains.governance.keepers import scope_folder
 from .access import ACCESS
 from .audit import render_trails
 from .log_agent import log_notes
@@ -36,7 +38,7 @@ from .edge import US_EAST_1, alb_service, health_check, probe_ingress, servers_b
 from .fluent_bit import fluent_bit_clusters, fluent_bit_notes, render_fluent_bit
 from .identities import EC2_TRUST, eks_cluster_data, identity_clusters, notes, pod_trust, role
 from .ingress import gateway_front
-from .landing import render_landing
+from .landing import STACK, landing_parts, placed_roots
 from .network import render_network
 from .backups import render_backups
 from .account import govcloud, provider_block, required_providers, standard_account
@@ -233,8 +235,7 @@ def render_files(m, services):
            *discovery, *render_suppressions(m),
            *render_budgets(m), *render_quota_requests(m),
            *_references(m))
-    main = TfFile(header(m, WHAT, HCL) + unbound_comments(m.unbound), out)
-    providers = TfFile(header(m, "Providers", HCL), (
+    providers = (
         required_providers(bool(scripts) or bool(handlers)),
         provider_block(m),
         *((_us_east_1(m),) if _fronted(m, endpoints) and (standard_account(m) or not govcloud(m)) else ()),
@@ -244,10 +245,14 @@ def render_files(m, services):
                           "standard account", account=standard_account(m)),) if needs_billing_provider(m) else ()),
         *((tf_block("variable", [RESOLVER_ENDPOINT], [
             ("description", "The landing zone's outbound Route 53 Resolver endpoint the forwarding rules use"),
-            ("type", ref("string"))]),) if forwarders(m, hosted=False) else ())))
-    return {"terraform/providers.tf": providers, "terraform/main.tf": main, **scripts, **handlers, **shipping_files,
-            **render_landing(m),
-            **evaluation_files(m, ACCESS, "AWS")}
+            ("type", ref("string"))]),) if forwarders(m, hosted=False) else ()))
+    landing, landing_dns = landing_parts(m)
+    roots = placed_roots(m, ((PROVIDERS, providers), (MAIN, out), *landing), landing_dns, lambda name: (
+        header(m, WHAT, HCL) + unbound_comments(m.unbound) if name == MAIN else header(m, "Providers", HCL)))
+    carried = carried_files(roots, {**scripts, **handlers}, STACK)
+    if scope_folder(m) is not None:                 # a slice: its root and the files it reads, nothing of the stack's
+        return {**roots, **carried}
+    return {**roots, **scripts, **handlers, **carried, **shipping_files, **evaluation_files(m, ACCESS, "AWS")}
 
 
 def render(m, services, targets=DEFAULT_TARGETS):

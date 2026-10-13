@@ -31,7 +31,8 @@ from opsdir.core.network import is_private
 from opsdir.domains.network.plumbing import adopted, peer_cloud, peer_network, route_target
 from opsdir.domains.network.routing import parse_route
 from opsdir.domains.network.stack import subnets
-from opsdir_format_terraform.hcl import Block, blocks_of, comment, distinct, ref, tf_block, tf_import, tf_name
+from opsdir_format_terraform.hcl import (Block, blocks_of, comment, distinct, from_entry, ref, tf_block, tf_import,
+                                         tf_name)
 from .arm_ids import arm_segment
 from .identities import LOC, RG
 from .network import application_rules, binding_tags, private_endpoint
@@ -367,9 +368,11 @@ RENDERERS = (("ciamEgress", egress), ("ciamRouteTable", route_table), ("ciamNetw
 
 def render_plumbing(m, keeper):
     """Rendered of what a keeper keeps of environment m's plumbing (opsdir.domains.network.plumbing.Keeper): the
-    resource group, VNet and subnet data sources and what bindings share first, inputs unique by name."""
+    resource group, VNet and subnet data sources and what bindings share first, inputs unique by name; each binding's
+    blocks stamped with its entry, what they share with the keeper's first (hcl.from_entry)."""
     here = {b.dn for b in keeper.bindings}
-    parts = tuple(next(fn for oc, fn in RENDERERS if is_kind(m.d, b, oc))(m, b, here) for b in keeper.bindings)
-    return Rendered(tuple(x for p in parts for x in p.blocks),
-                    distinct(tuple(v for p in parts for v in p.variables)),
-                    (*network_data(m), *distinct(tuple(x for p in parts for x in p.shared))))
+    parts = tuple((b, next(fn for oc, fn in RENDERERS if is_kind(m.d, b, oc))(m, b, here)) for b in keeper.bindings)
+    return Rendered(tuple(x for b, p in parts for x in from_entry(b.dn, p.blocks)),
+                    distinct(tuple(v for _, p in parts for v in p.variables)),
+                    (*network_data(m), *from_entry(keeper.bindings[0].dn,
+                                                   distinct(tuple(x for _, p in parts for x in p.shared)))))

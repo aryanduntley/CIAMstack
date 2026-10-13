@@ -119,9 +119,9 @@ def test_defaults_azure_needs_and_the_government_note():
     out = flat(as_text(render_budgets(alpha)))
     assert out.count("notification {") == 5 and "Azure takes five notifications: 100% Actual left out" in out
     _, alpha = _alpha(budget(ciamManagedBy="cn=finance,ou=owners,dc=ciam-ops"))
-    assert as_text(render_budgets(alpha)) == (
-        "# Budget monthly: kept by cn=finance,ou=owners,dc=ciam-ops, not rendered here",)
-    assert budget_inputs(alpha) == ()
+    assert 'resource "azurerm_consumption_budget_resource_group" "monthly"' in "\n".join(
+        as_text(render_budgets(alpha)))               # rendered too, placed by its keeper (render_files)
+    assert budget_inputs(alpha) != ()               # its start date: an input of the root rendering it
 
 
 def test_budgets_are_read_back_from_state():

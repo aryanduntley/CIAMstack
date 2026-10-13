@@ -31,8 +31,8 @@ def test_a_suppression_renders_an_automation_rule_and_a_guardduty_filter_named_a
     assert out.endswith("# exc-EXC-7: not AWS's (not rendered here): azure:policy:abc")
 
 
-def test_a_suppression_someone_else_keeps_is_a_comment():
-    assert _render("aws:securityhub:IAM.6", managed="cn=sec,ou=owners,dc=ciam-ops") == ""
+def test_a_suppression_someone_else_keeps_renders_too_for_its_keeper():
+    assert "aws_securityhub_automation_rule" in _render("aws:securityhub:IAM.6", managed="cn=sec,ou=owners,dc=ciam-ops")
 
 
 def test_suppressions_are_read_back_merged_per_name():

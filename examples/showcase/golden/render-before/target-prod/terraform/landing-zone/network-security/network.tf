@@ -11,32 +11,14 @@ data "azurerm_virtual_network" "main" {
   resource_group_name = data.azurerm_resource_group.main.name
 }
 
-data "azurerm_subnet" "snet_aks" {
-  name                 = "snet-aks"
-  virtual_network_name = "vnet-ciam-prod"
-  resource_group_name  = data.azurerm_resource_group.main.name
-}
-
 data "azurerm_subnet" "snet_am" {
   name                 = "snet-am"
   virtual_network_name = "vnet-ciam-prod"
   resource_group_name  = data.azurerm_resource_group.main.name
 }
 
-data "azurerm_subnet" "snet_db" {
-  name                 = "snet-db"
-  virtual_network_name = "vnet-ciam-prod"
-  resource_group_name  = data.azurerm_resource_group.main.name
-}
-
 data "azurerm_subnet" "snet_ds" {
   name                 = "snet-ds"
-  virtual_network_name = "vnet-ciam-prod"
-  resource_group_name  = data.azurerm_resource_group.main.name
-}
-
-data "azurerm_subnet" "snet_edge" {
-  name                 = "snet-appgw"
   virtual_network_name = "vnet-ciam-prod"
   resource_group_name  = data.azurerm_resource_group.main.name
 }

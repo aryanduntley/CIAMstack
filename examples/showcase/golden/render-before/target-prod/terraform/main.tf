@@ -2,25 +2,14 @@
 # Azure infrastructure for the CIAM platform
 # Do not edit. Change the operations directory (under an approved change) and re-render.
 # UNBOUND: required role 'backup-target' has no binding in this environment
-# Interconnect 'link-source' to env=prod,cloud=source,ou=environments,dc=ciam-ops: site-to-site VPN (landing-zone managed). Provided by the landing zone; not managed here.
+# Interconnect 'link-source' to env=prod,cloud=source,ou=environments,dc=ciam-ops: site-to-site VPN (landing-zone managed). Kept by cloud-landing-zone (rendered in their root); not managed here.
 
 data "azurerm_resource_group" "main" {
   name = "rg-ciam-prod"
 }
 
-data "azurerm_virtual_network" "main" {
-  name                = "vnet-ciam-prod"
-  resource_group_name = data.azurerm_resource_group.main.name
-}
-
 data "azurerm_subnet" "snet_aks" {
   name                 = "snet-aks"
-  virtual_network_name = "vnet-ciam-prod"
-  resource_group_name  = data.azurerm_resource_group.main.name
-}
-
-data "azurerm_subnet" "snet_am" {
-  name                 = "snet-am"
   virtual_network_name = "vnet-ciam-prod"
   resource_group_name  = data.azurerm_resource_group.main.name
 }
@@ -39,18 +28,6 @@ data "azurerm_subnet" "snet_ds" {
 
 data "azurerm_subnet" "snet_edge" {
   name                 = "snet-appgw"
-  virtual_network_name = "vnet-ciam-prod"
-  resource_group_name  = data.azurerm_resource_group.main.name
-}
-
-data "azurerm_subnet" "snet_idm" {
-  name                 = "snet-idm"
-  virtual_network_name = "vnet-ciam-prod"
-  resource_group_name  = data.azurerm_resource_group.main.name
-}
-
-data "azurerm_subnet" "snet_ig" {
-  name                 = "snet-ig"
   virtual_network_name = "vnet-ciam-prod"
   resource_group_name  = data.azurerm_resource_group.main.name
 }

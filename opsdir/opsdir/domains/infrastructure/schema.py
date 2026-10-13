@@ -102,7 +102,9 @@ ATTRIBUTES = (
     AttributeDef(39, 'ciamRetentionDays', 'int', 'intent', True,
                  'Retention period in days'),
     AttributeDef(40, 'ciamManagedBy', 'dn', 'meta', True,
-                 'Party that operates it outside the platform (an external allowlist, a DNS zone)'),
+                 "Party that keeps it outside the platform's own stack (an external allowlist, a DNS zone, network "
+                 'plumbing, a database, any binding another team runs): its keeper, whose root renders it or who is '
+                 'asked for it'),
     AttributeDef(41, 'ciamExternalSystem', 'string', 'meta', True,
                  'Where the allowlist lives (partner firewall, app egress policy, SaaS IP list)'),
     AttributeDef(42, 'ciamAllowlistDirection', 'enum:consumer-egress|partner-ingress|partner-egress', 'meta', True,
@@ -180,7 +182,7 @@ CLASSES = (
              ('ciamProtocol', 'ciamAllowsConsumer', 'ciamRulePriority', 'ciamPolicyRole', 'ciamManagedBy'),
              'Inbound allow rule'),
     ClassDef(12, 'ciamEgress', 'ciamBinding', 'STRUCTURAL', ('ciamCidr',),
-             ('ciamNatAllocation', 'ciamZone'),
+             ('ciamNatAllocation', 'ciamZone', 'ciamManagedBy'),
              'Outbound (NAT) addresses our services send from'),
     ClassDef(13, 'ciamExternalAllowlist', 'ciamObject', 'STRUCTURAL',
              ('cn', 'ciamManagedBy', 'ciamRefersToRole', 'ciamRecordedCidr', 'ciamAllowlistDirection'),

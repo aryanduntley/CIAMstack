@@ -29,7 +29,7 @@ from opsdir.core.inventory import of_types, resource, tagged_role
 from opsdir.domains.data.volumes import (POLICY, boot_volume, data_volumes, disk_tags, is_encrypted, tagged_disks,
                                          volume_key_role, volume_policy)
 from opsdir.domains.network.stack import kept_by, owned
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_name
 from opsdir_format_terraform.state import blocks, first_block
 from .backups import disk_policies
 from .cmk import key_ref
@@ -93,34 +93,33 @@ def boot_tag(m, s):
 
 
 def server_volumes(m, s):
-    """HCL for VM s's data volumes: each a managed disk in its zone and its attachment."""
-    n, out = tf_name(rdn_value(s)), []
-    for lun, v in enumerate(data_volumes(m, one(s, "ciamServerRole"))):
-        if not owned(v):
-            out.append(comment(f"Volume '{rdn_value(v)}' of {rdn_value(s)} is kept by {kept_by(m, v)}: not rendered "
-                               "here"))
-            continue
-        dn, kind, policy = tf_name(f"{rdn_value(s)}_{rdn_value(v)}"), TYPES.get(one(v, "ciamVolumeClass"),
-                                                                              "Premium_LRS"), volume_policy(m, v)
-        encryption, notes = _encryption_set(m, v)
-        tags = {"Volume": rdn_value(v), "Role": one(v, "ciamBindingRole"), "Server": rdn_value(s),
-                **({"SnapshotPolicy": one(policy, "ciamBindingRole")} if policy is not None else {}),
-                "ManagedBy": "opsdir"}
-        out += [*notes,
-                *((comment(f"{rdn_value(s)} mounts {rdn_value(v)} at {one(v, 'ciamMountPath')} (its own configuration, "
-                           "not Terraform)"),) if one(v, "ciamMountPath") else ()),
-                tf_block("resource", ["azurerm_managed_disk", dn], [
-                    ("name", f"disk-{rdn_value(s)}-{rdn_value(v)}"), ("location", LOC), ("resource_group_name", RG),
-                    ("zone", one(s, "ciamZone")), ("storage_account_type", kind), ("create_option", "Empty"),
-                    *_given(("disk_size_gb", _int(v, "ciamVolumeSizeGb")),
-                            ("disk_iops_read_write", _int(v, "ciamIops") if kind in PROVISIONED else None),
-                            ("disk_mbps_read_write", _int(v, "ciamThroughputMb") if kind in PROVISIONED else None)),
-                    *encryption, ("tags", tagged(m, tags))]),
-                tf_block("resource", ["azurerm_virtual_machine_data_disk_attachment", dn], [
-                    ("managed_disk_id", ref(f"azurerm_managed_disk.{dn}.id")),
-                    ("virtual_machine_id", ref(f"azurerm_linux_virtual_machine.{n}.id")), ("lun", lun),
-                    ("caching", "None")])]
-    return tuple(out)
+    """HCL for VM s's data volumes: each a managed disk in its zone and its attachment, stamped with the volume's
+    entry (hcl.from_entry): one someone else keeps goes to their root with its attachment (reading the VM)."""
+    return tuple(x for lun, v in enumerate(data_volumes(m, one(s, "ciamServerRole")))
+                 for x in from_entry(v.dn, _server_volume(m, s, lun, v)))
+
+
+def _server_volume(m, s, lun, v):
+    n, dn = tf_name(rdn_value(s)), tf_name(f"{rdn_value(s)}_{rdn_value(v)}")
+    kind, policy = TYPES.get(one(v, "ciamVolumeClass"), "Premium_LRS"), volume_policy(m, v)
+    encryption, notes = _encryption_set(m, v)
+    tags = {"Volume": rdn_value(v), "Role": one(v, "ciamBindingRole"), "Server": rdn_value(s),
+            **({"SnapshotPolicy": one(policy, "ciamBindingRole")} if policy is not None else {}),
+            "ManagedBy": "opsdir"}
+    return (*notes,
+            *((comment(f"{rdn_value(s)} mounts {rdn_value(v)} at {one(v, 'ciamMountPath')} (its own configuration, "
+                       "not Terraform)"),) if one(v, "ciamMountPath") else ()),
+            tf_block("resource", ["azurerm_managed_disk", dn], [
+                ("name", f"disk-{rdn_value(s)}-{rdn_value(v)}"), ("location", LOC), ("resource_group_name", RG),
+                ("zone", one(s, "ciamZone")), ("storage_account_type", kind), ("create_option", "Empty"),
+                *_given(("disk_size_gb", _int(v, "ciamVolumeSizeGb")),
+                        ("disk_iops_read_write", _int(v, "ciamIops") if kind in PROVISIONED else None),
+                        ("disk_mbps_read_write", _int(v, "ciamThroughputMb") if kind in PROVISIONED else None)),
+                *encryption, ("tags", tagged(m, tags))]),
+            tf_block("resource", ["azurerm_virtual_machine_data_disk_attachment", dn], [
+                ("managed_disk_id", ref(f"azurerm_managed_disk.{dn}.id")),
+                ("virtual_machine_id", ref(f"azurerm_linux_virtual_machine.{n}.id")), ("lun", lun),
+                ("caching", "None")]))
 
 
 def _data_disk(m, g, lun, v):

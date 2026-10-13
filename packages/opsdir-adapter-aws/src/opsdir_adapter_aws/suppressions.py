@@ -19,7 +19,7 @@ from opsdir.core.directory import date_of, get, one, rdn_value, values
 from opsdir.core.environment import of_class
 from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.poam import exception_of, suppression_name
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_name
 from .account import govcloud
 
 RULE, FILTER = "aws_securityhub_automation_rule", "aws_guardduty_filter"
@@ -76,18 +76,16 @@ def _filter(m, s, rank):
 
 
 def render_suppressions(m):
-    """HCL (and comments) for environment m's suppressions."""
-    kept = [s for s in of_class(m, SUPPRESSION) if not one(s, "ciamManagedBy")]
-    held = [s for s in of_class(m, SUPPRESSION) if one(s, "ciamManagedBy")]
+    """HCL (and comments) for environment m's suppressions (whoever keeps each), each stamped with its entry (the
+    render places it by its keeper)."""
+    kept = of_class(m, SUPPRESSION)
     data = (tf_block("data", ["aws_guardduty_detector", "suppressions"], []),) if any(_refs(s, "guardduty")
                                                                                     for s in kept) else ()
     return (*data,
-            *(x for i, s in enumerate(kept, 1) for x in (*_rule(m, s, i), *_filter(m, s, i),
-                                                          *((comment(f"{suppression_name(s)}: not AWS's (not "
-                                                                     f"rendered here): {', '.join(_others(s))}"),)
-                                                            if _others(s) else ()))),
-            *(comment(f"Suppression {suppression_name(s)}: kept by {rdn_value(get(m.d, one(s, 'ciamManagedBy')))}, not "
-                      "rendered here") for s in held if get(m.d, one(s, "ciamManagedBy")) is not None))
+            *(x for i, s in enumerate(kept, 1)
+              for x in from_entry(s.dn, (*_rule(m, s, i), *_filter(m, s, i),
+                                         *((comment(f"{suppression_name(s)}: not AWS's (not rendered here): "
+                                                    f"{', '.join(_others(s))}"),) if _others(s) else ())))))
 
 
 # ------------------------------------------------------------------ read back

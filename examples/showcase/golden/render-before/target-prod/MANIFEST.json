@@ -4,6 +4,11 @@
   "unbound_roles": [
     "backup-target"
   ],
+  "scope": {
+    "kind": "environment",
+    "value": []
+  },
+  "requester": "opsdir",
   "render_targets": {
     "azure": [
       "terraform"
@@ -388,7 +393,7 @@
     "terraform/landing-zone/network-security/network.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "75763dbaa50b214e81184f459073d11d925bcea282f637c9d01f032b5a07bcdd"
+      "sha256": "07247b1cb600baf7118078e5ca1196518ad3880bc3b4f1e5eda29ae2aa87586b"
     },
     "terraform/landing-zone/network-security/providers.tf": {
       "scope": "landing-zone",
@@ -398,7 +403,7 @@
     "terraform/landing-zone/network.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "60811b8dc4c56c2683ccf10c67e420f31b2bbd6522f7414c200883687d1a12e8"
+      "sha256": "c544c494afbd43340009968229db110c2c33b8b527f72458dbac14b00b4d4d0d"
     },
     "terraform/landing-zone/providers.tf": {
       "scope": "landing-zone",
@@ -408,7 +413,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "42e84f11356abae196b793439c3f18159eb221aeb72a621fe02aafe3137e5fe8"
+      "sha256": "c39bed21d62739caf2462fa09e22e4885fc0f81f2181a328f10b920cc8612e56"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

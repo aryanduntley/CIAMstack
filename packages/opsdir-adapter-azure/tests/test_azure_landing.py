@@ -4,7 +4,9 @@ principal's condition says jit), the owner in the header; nothing when the envir
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import LdifRecord, parse
 from opsdir_format_terraform.hcl import as_text, tf_block
-from opsdir_adapter_azure.landing import render_landing
+from opsdir_adapter_azure.account import provider_block, required_providers, subscription_variable
+from opsdir_adapter_azure.landing import landing_parts, placed_roots, render_landing
+from opsdir_format_terraform.placing import MAIN, PROVIDERS
 from support import REGISTRY, build_directory
 
 ENV = "env=prod,cloud=az,ou=environments,dc=ciam-ops"
@@ -66,7 +68,10 @@ def test_a_deployers_federated_identity_and_an_operator_groups_assignments():
 def test_the_landing_zone_registers_the_resource_providers_every_root_needs():
     m = env_model(_record(), "az/prod")
     platform = tf_block("resource", ["azurerm_linux_virtual_machine", "ds_1"], [])
-    out = as_text(render_landing(m, platform=(platform,)))["terraform/landing-zone/providers.tf"]
+    parts, landing = landing_parts(m)
+    files = placed_roots(m, ((PROVIDERS, (required_providers(), provider_block(m), subscription_variable(m))),
+                             (MAIN, (platform,)), *parts), landing, lambda name: "")
+    out = as_text(files)["terraform/landing-zone/providers.tf"]
     assert 'resource_provider_registrations = "none"' in out
     listed = out[out.index("resource_providers_to_register"):].split("]")[0]
     assert '"Microsoft.Compute"' in listed and '"Microsoft.ManagedIdentity"' in listed

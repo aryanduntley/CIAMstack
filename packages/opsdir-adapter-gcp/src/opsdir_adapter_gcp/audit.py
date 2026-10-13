@@ -5,7 +5,7 @@ Cloud Audit Logs record who did what in a project (Admin Activity: always on, ev
 audit config turns it on, for every service at once); Google keeps Admin Activity 400 days in the built-in _Required
 bucket. A sink exports them where the record says, for as long as that keeps them.
 
-Rendered in the platform's own root, for each trail the platform team keeps (no ciamManagedBy):
+Rendered for every trail, stamped with its entry (placed by its keeper: governance.keepers):
   google_logging_project_sink (account scope), or google_logging_organization_sink with include_children on the
   organization an input names (organization scope): filter logName:"cloudaudit.googleapis.com" (every audit log), a
   unique writer identity, and the destination its ciamLogDestinationRole names: an object store's bucket
@@ -32,9 +32,8 @@ from urllib.parse import unquote
 
 from opsdir.core.directory import is_kind, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource
-from opsdir.domains.observability.audit import (PROTECTED, audit_trails, store_protection, trail_destination,
-                                               trail_keeper)
-from opsdir_format_terraform.hcl import Block, comment, mentions, ref, tf_block, tf_name
+from opsdir.domains.observability.audit import PROTECTED, audit_trails, store_protection, trail_destination
+from opsdir_format_terraform.hcl import Block, comment, from_entry, mentions, ref, tf_block, tf_name
 from .names import resource_id
 from .storage import bucket_of, kept_buckets
 
@@ -82,10 +81,7 @@ def _data(n, org, events):
 
 
 def _trail(m, t):
-    cn, keeper, dest = rdn_value(t), trail_keeper(m, t), trail_destination(m, t)
-    if keeper is not None:
-        return (comment(f"Audit trail {cn} ({one(t, 'ciamAuditScope')}): kept by {rdn_value(keeper)}, not rendered "
-                        "here"),)
+    cn, dest = rdn_value(t), trail_destination(m, t)
     n = tf_name(cn)
     org = one(t, "ciamAuditScope") == "organization"
     sink = f"google_logging_{'organization' if org else 'project'}_sink"
@@ -109,7 +105,7 @@ def _trail(m, t):
 def render_trails(m):
     """HCL (and comments) for environment m's control-plane audit trails; the organization input once, when an
     organization sink is rendered."""
-    out = tuple(x for t in audit_trails(m) for x in _trail(m, t))
+    out = tuple(x for t in audit_trails(m) for x in from_entry(t.dn, _trail(m, t)))
     org = mentions(out, f"var.{ORGANIZATION}")
     return ((tf_block("variable", [ORGANIZATION], [
         ("type", ref("string")), ("description", "The organization whose audit logs the organization sink exports")]),)

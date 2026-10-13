@@ -4,12 +4,12 @@ by a diagnostic setting. Pure.
 The Activity Log records who did what to a subscription's resources, in every region (it is global), kept 90 days by
 Azure itself; a diagnostic setting on the subscription keeps it longer, where the record says.
 
-Rendered in the platform's own root: each account trail the platform team keeps (no ciamManagedBy) as an
+Rendered for every trail, stamped with its entry (placed by its keeper: governance.keepers): each account trail as an
 azurerm_monitor_diagnostic_setting on the subscription (data.azurerm_subscription.current) exporting the audit
 categories (Administrative, Security, Policy) to what its ciamLogDestinationRole names: an object store's storage
 account (Azure writes into its container insights-activity-logs) or a Log Analytics workspace (ciamLogDestination);
 the destination's ID from its ciamProviderRef, the account the stack renders, or an input. Not rendered, and said so:
-a trail someone else keeps (named with its keeper), an organization trail (Azure has none: each subscription's
+an organization trail (Azure has none: each subscription's
 setting, usually deployed by the landing zone's policy), data reads and writes (each resource's own diagnostic
 settings log them), another destination. Azure keeps no digest of the logs it writes: integrity is a container with
 a locked immutability policy (ciamStorageImmutability compliance; core observability.audit grades it as validation's
@@ -25,9 +25,8 @@ import re
 
 from opsdir.core.directory import is_kind, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource
-from opsdir.domains.observability.audit import (PROTECTED, audit_trails, store_protection, trail_destination,
-                                               trail_keeper)
-from opsdir_format_terraform.hcl import Block, blocks_of, comment, ref, tf_block, tf_name
+from opsdir.domains.observability.audit import PROTECTED, audit_trails, store_protection, trail_destination
+from opsdir_format_terraform.hcl import Block, blocks_of, comment, from_entry, ref, tf_block, tf_name
 from .arm_ids import arm_segment
 from .storage import container_of, kept_containers
 
@@ -89,10 +88,7 @@ def _not_rendered(cn, why):
 
 
 def _trail(m, t):
-    cn, keeper, dest = rdn_value(t), trail_keeper(m, t), trail_destination(m, t)
-    if keeper is not None:
-        return (comment(f"Audit trail {cn} ({one(t, 'ciamAuditScope')}): kept by {rdn_value(keeper)}, not rendered "
-                        "here"),)
+    cn, dest = rdn_value(t), trail_destination(m, t)
     if one(t, "ciamAuditScope") == "organization":
         return _not_rendered(cn, "Azure has no organization trail: each subscription's Activity Log is exported by its "
                                  "own diagnostic setting (the landing zone's policy deploys them); record it kept by "
@@ -119,7 +115,7 @@ def _trail(m, t):
 def render_trails(m):
     """HCL (and comments) for environment m's control-plane audit trails: the subscription data source once, when a
     diagnostic setting is rendered."""
-    out = tuple(x for t in audit_trails(m) for x in _trail(m, t))
+    out = tuple(x for t in audit_trails(m) for x in from_entry(t.dn, _trail(m, t)))
     return ((tf_block("data", ["azurerm_subscription", "current"], []),) if blocks_of(out, "resource", SETTING)
             else ()) + out
 

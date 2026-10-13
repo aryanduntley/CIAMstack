@@ -168,9 +168,11 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.39 NAME 'ciamRetentionDays' DESC 'Re
  21.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int' X-ORIGIN 'op
  sdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.40 NAME 'ciamManagedBy' DESC 'Party 
- that operates it outside the platform (an external allowlist, a DNS zone)' 
- EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE
- -VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+ that keeps it outside the platform\27s own stack (an external allowlist, a 
+ DNS zone, network plumbing, a database, any binding another team runs): its
+  keeper, whose root renders it or who is asked for it' EQUALITY distinguish
+ edNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY
+  'meta' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.41 NAME 'ciamExternalSystem' DESC 'W
  here the allowlist lives (partner firewall, app egress policy, SaaS IP list
  )' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VAL
@@ -2974,6 +2976,14 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.645 NAME 'ciamRenderTarget' DESC 'A
  dir render --target`), else the adapter\27s defaults' EQUALITY caseIgnoreMa
  tch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VALUE-TY
  PE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.646 NAME 'ciamTakesGeneratedInfra' D
+ ESC 'Whether the party takes the infrastructure opsdir generates for what i
+ t keeps (ciamManagedBy, the landing zone it owns): TRUE, the default render
+  gives it its own complete root to apply; absent or FALSE, what it keeps is
+  named in the render and asked of it in a request, and its root is rendered
+  only on a keeper-scoped request' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.
+ 1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'bool' X-OR
+ IGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -3021,7 +3031,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.11 NAME 'ciamKeyRef' DESC 'Reference
  lFrom ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.12 NAME 'ciamEgress' DESC 'Outbound (
  NAT) addresses our services send from' SUP ciamBinding STRUCTURAL MUST ciam
- Cidr MAY ( ciamNatAllocation $ ciamZone ) X-ORIGIN 'opsdir' )
+ Cidr MAY ( ciamNatAllocation $ ciamZone $ ciamManagedBy ) X-ORIGIN 'opsdir'
+  )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.13 NAME 'ciamExternalAllowlist' DESC 
  'An allowlist in someone else\27s system that contains our addresses' SUP c
  iamObject STRUCTURAL MUST ( cn $ ciamManagedBy $ ciamRefersToRole $ ciamRec
@@ -3108,8 +3119,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.31 NAME 'ciamIncident' DESC 'Incident
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.32 NAME 'ciamParty' DESC 'Team, partn
  er, vendor, or the operator of the platform (how to reach it: mail, telepho
  ne, contact link)' SUP ciamObject STRUCTURAL MUST ( cn $ ciamOwnerKind ) MA
- Y ( mail $ telephoneNumber $ ciamContactUrl $ ciamDisplayName ) X-ORIGIN 'o
- psdir' )
+ Y ( mail $ telephoneNumber $ ciamContactUrl $ ciamDisplayName $ ciamTakesGe
+ neratedInfra ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.33 NAME 'ciamStackComponent' DESC 'On
  e component of an environment stack: the adapter that fills a role' SUP cia
  mObject STRUCTURAL MUST ( cn $ ciamStackRole $ ciamAdapter ) MAY ( ciamAdap
@@ -3284,17 +3295,18 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.65 NAME 'ciamAlertChannel' DESC 'What
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.66 NAME 'ciamLogDestination' DESC 'Wh
  at keeps logs of a role in an environment, and for how many days (0: kept i
  ndefinitely)' SUP ciamBinding STRUCTURAL MUST ciamDestinationKind MAY ( cia
- mProviderRef $ ciamRetentionDays ) X-ORIGIN 'opsdir' )
+ mProviderRef $ ciamRetentionDays $ ciamManagedBy ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.67 NAME 'ciamAlarmBinding' DESC 'An a
  larm a cloud runs in an environment: the alert rule it realizes, what it ev
  aluates, what it notifies' SUP ciamBinding STRUCTURAL MUST ciamProviderRef 
- MAY ( ciamRealizes $ ciamNotifies $ ciamMetric ) X-ORIGIN 'opsdir' )
+ MAY ( ciamRealizes $ ciamNotifies $ ciamMetric $ ciamManagedBy ) X-ORIGIN '
+ opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.68 NAME 'ciamCanaryBinding' DESC 'A s
  ynthetic check a cloud runs in an environment: the canary it realizes, how 
  often, and where it keeps its results when the cloud asks for a place (ciam
  StorageRef: CloudWatch Synthetics\27 S3 artifact location)' SUP ciamBinding
   STRUCTURAL MUST ciamProviderRef MAY ( ciamRealizes $ ciamInterval $ ciamSt
- orageRef ) X-ORIGIN 'opsdir' )
+ orageRef $ ciamManagedBy ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.69 NAME 'ciamPermissionSet' DESC 'Wha
  t may be done, as verbs on binding roles: the same set means each environme
  nt\27s own resources' SUP ciamObject STRUCTURAL MUST ( cn $ ciamPermits ) X

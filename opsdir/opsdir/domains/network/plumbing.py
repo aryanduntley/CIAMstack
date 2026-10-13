@@ -2,18 +2,17 @@
 platform's own Terraform doesn't keep (its NAT egress, route tables, network ACLs, interconnects and flow logs always;
 private endpoints and egress firewalls when ciamManagedBy names someone else), grouped by who keeps them. The landing
 zone's owner keeps what names no one else, in terraform/landing-zone/; each other party named keeps its own root in
-terraform/landing-zone/<party>/, applied by that team. A binding with a provider ref already exists (the render adopts
-it with an import block); one without is still to be built, which the planner asks its keeper for. Pure."""
-import re
+terraform/landing-zone/<party>/, applied by that team (governance.keepers decides who and where). A binding with a
+provider ref already exists (the render adopts it with an import block); one without is still to be built, which the
+planner asks its keeper for. Pure."""
 from typing import NamedTuple, Optional
 
 from ...core.directory import children, get, is_kind, one, rdn_value, values
 from ...core.environment import EnvModel, of_class, one_role
 from ...core.naming import env_label
-from ..access.workloads import landing_zone_owner, landing_zone_party
-from .stack import kept_by, owned
+from ..governance.keepers import LANDING_ZONE, keeper
+from .stack import owned
 
-LANDING_ZONE = "terraform/landing-zone"
 NETWORK_FILE = "network.tf"
 # what is always the landing zone's (or the party ciamManagedBy names), in render order
 PLUMBING = ("ciamEgress", "ciamRouteTable", "ciamNetworkAcl", "ciamInterconnect", "ciamFlowLog")
@@ -21,8 +20,10 @@ PLUMBING = ("ciamEgress", "ciamRouteTable", "ciamNetworkAcl", "ciamInterconnect"
 KEPT_ELSEWHERE = ("ciamPrivateEndpoint", "ciamProxy")
 
 # name: who keeps it (as findings name owners); folder: the Terraform root it renders into; party: their entry (None
-# when the record names none); bindings: what they keep, in PLUMBING order
-Keeper = NamedTuple("Keeper", [("name", str), ("folder", str), ("party", Optional[object]), ("bindings", tuple)])
+# when the record names none); bindings: what they keep, in PLUMBING order; takes: whether the default render gives
+# them that root (governance.keepers)
+Keeper = NamedTuple("Keeper", [("name", str), ("folder", str), ("party", Optional[object]), ("bindings", tuple),
+                               ("takes", bool)])
 
 
 def plumbing(m: EnvModel):
@@ -33,26 +34,13 @@ def plumbing(m: EnvModel):
     return (*(b for oc in PLUMBING for b in of_class(m, oc)), *elsewhere)
 
 
-def _slug(name):
-    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "keeper"
-
-
-def keeper_of(m, b):
-    """(name, folder, party) of who keeps binding b of environment m: the landing zone's owner unless ciamManagedBy
-    names another party (its own folder under the landing zone's)."""
-    lz = landing_zone_party(m)
-    dn = one(b, "ciamManagedBy")
-    if dn is None or (lz is not None and dn == lz.dn):
-        return landing_zone_owner(m), LANDING_ZONE, lz
-    return kept_by(m, b), f"{LANDING_ZONE}/{_slug(dn.split(',', 1)[0].split('=', 1)[-1])}", get(m.d, dn)
-
-
 def keepers(m: EnvModel):
-    """(Keeper, ...) of environment m's plumbing, the landing zone's owner first, then each other party in order."""
-    found = tuple((keeper_of(m, b), b) for b in plumbing(m))
-    folders = sorted(dict.fromkeys(k[1] for k, _ in found), key=lambda f: (f != LANDING_ZONE, f))
-    return tuple(Keeper(*next(k for k, _ in found if k[1] == f), tuple(b for k, b in found if k[1] == f))
-                 for f in folders)
+    """(Keeper, ...) of environment m's plumbing, the landing zone's owner first, then each other party in order: the
+    landing zone's keeper unless ciamManagedBy names another party (governance.keepers.keeper)."""
+    found = tuple((keeper(m, b, landing_zone=True), b) for b in plumbing(m))
+    folders = sorted(dict.fromkeys(k.folder for k, _ in found), key=lambda f: (f != LANDING_ZONE, f))
+    return tuple(Keeper(k.name, k.folder, k.party, tuple(b for k_, b in found if k_.folder == f), k.takes)
+                 for f in folders for k in (next(k for k, _ in found if k.folder == f),))
 
 
 def adopted(b):

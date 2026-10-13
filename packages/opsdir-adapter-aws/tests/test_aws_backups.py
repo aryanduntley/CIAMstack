@@ -84,9 +84,8 @@ def test_what_it_can_t_render_is_said():
     kept = entry(BETA, "backup-dba", "ciamBackupPlan", ciamBindingRole="backup-dba", ciamProtectsRole="x",
                  ciamBackupVaultRole="vault-main", ciamRetentionDays="7",
                  ciamManagedBy="cn=network-security,ou=owners,dc=ciam-ops")
-    assert "Backup plan 'backup-dba' (role backup-dba) is kept by cn=network-security,ou=owners,dc=ciam-ops: not " \
-        "rendered here" in \
-        "\n".join(as_text(render_backups(_m(kept))))
+    others = render_backups(_m(kept))           # rendered for its keeper, who the render places it with
+    assert {getattr(b, "origin", None) for b in others} - {None} == {kept.split("\n", 1)[0][4:]}
 
 
 VAULT_STATE = ("aws_backup_vault", {"name": "ciam-prod-vault-main", "arn": VAULT_ARN, "kms_key_arn": ARN,

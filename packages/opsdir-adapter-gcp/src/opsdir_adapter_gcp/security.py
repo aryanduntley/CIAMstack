@@ -45,7 +45,7 @@ from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.incidents import incident_routes
 from opsdir.domains.estate.naming import SEVERITIES
 from opsdir.domains.estate.security import findings_destination, security_services
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_name
 
 NOTIFICATION = "google_scc_v2_project_notification_config"
 NOTIFICATIONS = (("google_scc_v2_project_notification_config", "account"), ("google_scc_project_notification_config",
@@ -165,28 +165,28 @@ _RENDER = {"threat-detection": _detection, "vulnerability-scanning": _scanning, 
 
 
 def _service(m, s):
-    cn, kind, keeper = rdn_value(s), one(s, "ciamSecurityKind"), one(s, "ciamManagedBy")
-    if keeper:
-        holder = get(m.d, keeper)
-        return (comment(f"Security service {cn} ({kind}): kept by "
-                        f"{rdn_value(holder) if holder is not None else keeper}, not rendered here"),)
+    cn, kind = rdn_value(s), one(s, "ciamSecurityKind")
     return (*_RENDER[kind](m, s), *_notification(m, s, kind), *_incident_notification(m, s, kind),
             *((_request(cn, "organization-wide (Security Command Center and its notification at the organization)"),)
               if one(s, "ciamAuditScope") == "organization" else ()))
 
 
 def _apis(m):
-    """The scanning APIs the kept vulnerability-scanning services need, once each."""
-    kept = [s for s in security_services(m, "vulnerability-scanning") if not one(s, "ciamManagedBy")]
-    return tuple(dict.fromkeys(SCANNING[a] for s in kept for a in (values(s, "ciamSecurityCoverage") or ("compute",))
-                               if a in SCANNING))
+    """((API, origin), ...): the scanning APIs the vulnerability-scanning services need, once each, with the entry of
+    the first service needing it (the API is placed with that entry's keeper)."""
+    found = ((SCANNING[a], s.dn) for s in security_services(m, "vulnerability-scanning")
+             for a in (values(s, "ciamSecurityCoverage") or ("compute",)) if a in SCANNING)
+    return tuple({api: origin for api, origin in reversed(tuple(found))}.items())[::-1]
 
 
 def render_security(m):
-    """HCL (and comments) for environment m's security services: the scanning APIs once, then each service."""
-    return (*(tf_block("resource", ["google_project_service", tf_name(api.split(".")[0])], [
-                ("project", PROJECT), ("service", api), ("disable_on_destroy", False)]) for api in _apis(m)),
-            *(x for s in security_services(m) for x in _service(m, s)))
+    """HCL (and comments) for environment m's security services (whoever keeps each): the scanning APIs once, then
+    each service, stamped with its entry (an API with the first service needing it) so the render places it by
+    keeper."""
+    return (*(x for api, origin in _apis(m) for x in from_entry(origin, (
+                tf_block("resource", ["google_project_service", tf_name(api.split(".")[0])], [
+                    ("project", PROJECT), ("service", api), ("disable_on_destroy", False)]),))),
+            *(x for s in security_services(m) for x in from_entry(s.dn, _service(m, s))))
 
 
 # ------------------------------------------------------------------ read back

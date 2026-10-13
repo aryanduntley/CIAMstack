@@ -10,7 +10,6 @@ from ...core.directory import is_a, one, rdn_value, sorted_by_dn, subtree, value
 from ...core.environment import environment_of, inherited_from, of_class
 from ...core.findings import findings, responsible
 from ...core.naming import branch, env_label
-from ..network.stack import kept_by
 from .alerts import alert_rules, canaries
 
 MONITOR_HEADERS = ("environment", "monitor", "kind", "realizes", "evaluates", "notifies", "every", "provider ref")
@@ -19,13 +18,11 @@ KINDS = (("ciamAlarmBinding", "alarm", "alert rule", alert_rules), ("ciamCanaryB
 
 
 def keeper_of(m, b):
-    """Who keeps a monitoring binding's resource when environment m's root doesn't render it: the party it names
-    (ciamManagedBy: network.stack.kept_by), or the base environment overlay m inherits it from; None when it is m's
-    to render (or b is None)."""
+    """Who renders a monitoring binding's resource instead of environment m's render: the base environment overlay m
+    inherits it from; None when m's render writes it (or b is None). One a party keeps (ciamManagedBy) is rendered by
+    m's render and placed by its keeper (governance.keepers)."""
     if b is None:
         return None
-    if one(b, "ciamManagedBy"):
-        return kept_by(m, b)
     base = inherited_from(m, b)
     return f"{base} (this environment inherits it)" if base else None
 
