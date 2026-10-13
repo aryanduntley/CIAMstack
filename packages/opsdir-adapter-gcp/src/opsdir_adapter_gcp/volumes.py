@@ -17,6 +17,8 @@ rendered as Terraform and read back. Pure.
   snapshots labelled policy (the record's name: the schedule's own is ciam-<env>-<name>) and role; attached to
   each disk that follows it (boot disks by their instance's name) by google_compute_disk_resource_policy_attachment.
   One someone else keeps is a comment naming them; an adopted one an import block.
+  a compute group's disks (template_disks): its instance template's disk blocks, the boot volume from its image and
+  each data volume it keeps, labelled, keyed and following their snapshot schedule as an instance's disks.
 Class to type: standard pd-standard, ssd pd-ssd, provisioned hyperdisk-balanced (TYPES; the reader also takes
 pd-balanced as ssd, pd-extreme and the other Hyperdisks as provisioned). Hyperdisk needs a machine series that takes
 it (a comment says so).
@@ -25,7 +27,8 @@ Read back from (google type, attributes) pairs, Terraform state as it is or Clou
 normalized to it (cli.py: compute#disk, ResourcePolicy): google_compute_disk grouped by label volume into one volume
 of the role their instances run (the most common size, type, IOPS and throughput; its key as its key role, the
 schedule its resource policies or attachments name as its snapshot policy), instances' boot_disk labelled volume as
-the role's boot volume, google_compute_resource_policy with a snapshot schedule as snapshot policies (hours,
+the role's boot volume, instance templates' disks labelled volume as the volumes of the role the template's label
+names (template_disks_read), google_compute_resource_policy with a snapshot schedule as snapshot policies (hours,
 start, retention days, a storage location outside its region as its copy region, consistency), named by its
 snapshots' label policy, else its own name. A disk attached to
 the environment's instances without a volume label is named.
@@ -145,6 +148,68 @@ def server_volumes(m, s):
                 *((_attach_policy(policy, dn, ref(f"google_compute_disk.{dn}.name"), zone),)
                   if _scheduled(m, policy) else ())]
     return tuple(out)
+
+
+def _template_disk(m, v, boot, image, kms):
+    """(comments, an instance template's disk Block) for volume v (the role's boot disk when v is None: from the image,
+    encrypted with the disk-encryption key, kms its reference URI or None)."""
+    if v is None:
+        key = (("disk_encryption_key", Block((("kms_key_self_link", kms.split("://", 1)[1]),))),) if kms else \
+            (("#", "UNBOUND: no disk-encryption key binding in this environment"),)
+        return (), Block((("boot", True), ("auto_delete", True), ("source_image", image), *key))
+    kind, policy = TYPES.get(one(v, "ciamVolumeClass"), "pd-balanced"), volume_policy(m, v)
+    kind = ("pd-ssd" if kind not in ("pd-standard", "pd-ssd") else kind) if boot else kind
+    key, notes = _key(m, v)
+    hyperdisk = (comment(f"{rdn_value(v)}: {kind} needs a machine series that takes Hyperdisk"),) \
+        if kind.startswith("hyperdisk") else ()
+    return (*notes, *hyperdisk), Block((
+        ("boot", boot), ("auto_delete", True), *((("source_image", image),) if boot else ()),
+        *((("device_name", label(rdn_value(v))),) if not boot else ()), ("disk_type", kind),
+        *_given(("disk_size_gb", _int(v, "ciamVolumeSizeGb")),
+                ("provisioned_iops", _int(v, "ciamIops") if kind in IOPS and not boot else None),
+                ("provisioned_throughput", _int(v, "ciamThroughputMb") if kind in THROUGHPUT and not boot else None)),
+        *((("resource_policies", [ref(f"google_compute_resource_policy.{tf_name(rdn_value(policy))}.id")]),)
+          if _scheduled(m, policy) else ()),
+        *((("disk_encryption_key", Block((("kms_key_self_link", key),))),) if key else ()),
+        ("labels", _labels(v, snapshot_policy=one(policy, "ciamBindingRole") if policy is not None else None))))
+
+
+def template_disks(m, g, kms):
+    """A compute group's disks in its instance template: (comments, disk items): its role's boot volume from the
+    group's image (pd-ssd at most, as an instance's), then each data volume it keeps, every disk labelled volume and
+    role as an instance's are, encrypted with its key, following its snapshot schedule when the stack renders one."""
+    role, image = one(g, "ciamTargetRole"), recorded(g, "ciamImageRef", "image")
+    boot = boot_volume(m, role)
+    data = data_volumes(m, role)
+    kept = tuple(comment(f"Volume '{rdn_value(v)}' of group {rdn_value(g)} is kept by {kept_by(m, v)}: not rendered "
+                         "here") for v in data if not owned(v))
+    disks = (_template_disk(m, boot, True, image, kms),
+             *(_template_disk(m, v, False, image, kms) for v in data if owned(v)))
+    mounts = tuple(comment(f"{rdn_value(g)}'s instances mount {rdn_value(v)} at {one(v, 'ciamMountPath')} (their own "
+                           "configuration, not Terraform)") for v in data if owned(v) and one(v, "ciamMountPath"))
+    return (*kept, *mounts, *(c for cs, _ in disks for c in cs)), tuple(("disk", b) for _, b in disks)
+
+
+TEMPLATES = ("google_compute_instance_template", "google_compute_region_instance_template")
+
+
+def template_disks_read(pairs):
+    """(disks as google_compute_disk-shaped dicts (boot: whether a template's boot disk), {disk id: the template
+    holding it}) of the instance templates' disks labelled volume (a compute group's, template_disks)."""
+    found, holders = [], {}
+    for t in of_types(pairs, *TEMPLATES):
+        tid = resource_id(t.get("id") or t.get("self_link") or t.get("name") or "")
+        for i, d in enumerate(blocks(t.get("disk"))):
+            if not (d.get("labels") or {}).get("volume"):
+                continue
+            did = f"{tid}/disks/{i}"
+            found.append({"id": did, "name": d.get("device_name") or did, "type": d.get("disk_type"),
+                          "size": d.get("disk_size_gb"), "provisioned_iops": d.get("provisioned_iops"),
+                          "provisioned_throughput": d.get("provisioned_throughput"),
+                          "disk_encryption_key": d.get("disk_encryption_key") or [], "labels": d.get("labels") or {},
+                          "resource_policies": d.get("resource_policies") or [], "boot": d.get("boot") is True})
+            holders[did] = t
+    return tuple(found), holders
 
 
 def _schedule(p):
@@ -285,12 +350,15 @@ def volume_resources(pairs):
     followed = {resource_id(a.get("disk")).rsplit("/", 1)[-1]: refs.get(a.get("name")) or refs.get(
                     resource_id(a.get("name")))
                 for a in of_types(pairs, "google_compute_disk_resource_policy_attachment")}
-    disks = [d for d in of_types(pairs, "google_compute_disk") if d.get("id") or d.get("self_link")]
+    templated, holders = template_disks_read(pairs)
+    disks = [*(d for d in of_types(pairs, "google_compute_disk") if d.get("id") or d.get("self_link")), *templated]
 
     def disk_id(d):
         return resource_id(d.get("id") or d.get("self_link"))
 
     def users(d):
+        if disk_id(d) in holders:
+            return [holders[disk_id(d)]]
         found = [instances.get(resource_id(u)) or by_name.get(u.rsplit("/", 1)[-1]) for u in d.get("users") or ()]
         return [u for u in found if u] or ([attached[disk_id(d)]] if attached.get(disk_id(d)) else []) or \
             [i for i in instances.values() if i.get("name") == d.get("name")]
@@ -303,7 +371,8 @@ def volume_resources(pairs):
         return _key_path(first_block(d.get("disk_encryption_key")).get("kms_key_self_link"))
     grouped = {}
     for d in disks:
-        grouped.setdefault(((d.get("labels") or {}).get("volume"), _is_boot(d, instances)), []).append(d)
+        boot = d["boot"] if disk_id(d) in holders else _is_boot(d, instances)
+        grouped.setdefault(((d.get("labels") or {}).get("volume"), boot), []).append(d)
 
     def volume(name, boot, found):
         kinds = [_type(d.get("type")) for d in found]

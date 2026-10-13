@@ -153,12 +153,13 @@ def _affinity(spec):
 Backend = namedtuple("Backend", ("backends", "port_name", "port", "target", "host"), defaults=(None,))
 
 
-def servers_backend(m, svc, groups):
-    """The Backend of a service name's servers: their instance groups (terraform names, named port "ciam"), reached
-    by the role's network tag."""
-    return Backend(tuple(("backend", Block((("group", ref(f"google_compute_instance_group.{g}.self_link")),
-                                            ("balancing_mode", "UTILIZATION"), ("capacity_scaler", 1.0))))
-                         for g in groups),
+def servers_backend(m, svc, groups, managed=()):
+    """The Backend of a service name's servers: their instance groups (terraform names, named port "ciam") and the
+    managed instance groups of its role's compute groups (managed: their instance_group references), reached by the
+    role's network tag."""
+    return Backend(tuple(("backend", Block((("group", g), ("balancing_mode", "UTILIZATION"),
+                                            ("capacity_scaler", 1.0))))
+                         for g in (*(ref(f"google_compute_instance_group.{g}.self_link") for g in groups), *managed)),
                    "ciam", None, (("target_tags", [network_tag(m, one(svc, "ciamTargetRole"))]),))
 
 

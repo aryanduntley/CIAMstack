@@ -328,13 +328,22 @@ def _compute_groups(items):
                     "distribution_policy_zones": [_last(z.get("zone"))
                                                   for z in (d.get("distributionPolicy") or {}).get("zones") or ()]})
 
+    def disk(k):
+        params = k.get("initializeParams") or {}
+        key = (k.get("diskEncryptionKey") or {}).get("kmsKeyName")
+        return {"boot": k.get("boot") is True, "device_name": k.get("deviceName"),
+                "source_image": resource_id(params.get("sourceImage")), "disk_type": _last(params.get("diskType")),
+                "disk_size_gb": int(params["diskSizeGb"]) if params.get("diskSizeGb") else None,
+                "provisioned_iops": params.get("provisionedIops"),
+                "provisioned_throughput": params.get("provisionedThroughput"), "labels": params.get("labels") or {},
+                "resource_policies": [resource_id(x) for x in params.get("resourcePolicies") or ()],
+                "disk_encryption_key": [{"kms_key_self_link": key}] if key else []}
+
     def template(d):
         props = d.get("properties") or {}
         return ("google_compute_instance_template", {
             "id": _self(d), "name": d.get("name"), "machine_type": props.get("machineType"),
-            "labels": props.get("labels") or {},
-            "disk": [{"source_image": resource_id((k.get("initializeParams") or {}).get("sourceImage"))}
-                     for k in props.get("disks") or ()]})
+            "labels": props.get("labels") or {}, "disk": [disk(k) for k in props.get("disks") or ()]})
     return [*(manager(d) for d, _ in _of(items, "group-manager")),
             *(template(d) for d, _ in _of(items, "template")),
             *(("google_compute_autoscaler", {"target": resource_id(d.get("target")), "autoscaling_policy": [{

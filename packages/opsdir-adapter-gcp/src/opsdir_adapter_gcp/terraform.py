@@ -16,6 +16,7 @@ from itertools import chain
 
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import of_class, one_role, recorded, secret, servers_with_role, subnet_of
+from opsdir.domains.compute.hosts import group_subnets, own_groups
 from opsdir.domains.compute.workloads import cluster_subnets, kubernetes_note, only_on_kubernetes
 from opsdir.core.manifest import header
 from opsdir.domains.infrastructure.firewall import rule_priorities, rule_purpose
@@ -50,6 +51,7 @@ from opsdir_adapter_gcp.suppressions import render_suppressions
 from opsdir_adapter_gcp.quotas import render_quota_requests
 from opsdir_adapter_gcp.budgets import budget_notes
 from opsdir_adapter_gcp.volumes import boot_disk, render_snapshot_policies, server_volumes
+from opsdir_adapter_gcp.compute_groups import render_groups
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import Block, TfFile, comment, ref, tf_block, tf_name, unbound_comments, written
 from .account import project_variable, provider_block, required_providers
@@ -173,6 +175,10 @@ def _service(m, svc, endpoints=()):
         return gateway_front(m, svc, gw, endpoints, _frontend(svc, n, ip, internal), placement)
     scheme = "INTERNAL" if internal else "EXTERNAL"
     targets = servers_with_role(m, one(svc, "ciamTargetRole"))
+    groups_ = own_groups(m, target)
+    managed = tuple(ref(f"google_compute_region_instance_group_manager.{tf_name(rdn_value(g))}.instance_group")
+                    for g in groups_)
+    subnets = (*(subnet_of(m, t) for t in targets), *(s for g in groups_ for s in group_subnets(m, g)))
     data, address = _frontend(svc, n, ip, internal)
     spec = service_edge(m, svc, endpoints)
     cdn = spec is not None and spec.cdn
@@ -183,13 +189,14 @@ def _service(m, svc, endpoints=()):
         ("instances", [ref(f"google_compute_instance.{tf_name(rdn_value(t))}.self_link")
                        for t in targets if one(t, "ciamZone") == zone]), *named]) for zone in _zones(targets))
     placement = ((("network", NETWORK), ("subnetwork", ref(
-        f"data.google_compute_subnetwork.{tf_name(rdn_value(subnet_of(m, targets[0])))}.self_link")))
-        if internal and targets else ())
+        f"data.google_compute_subnetwork.{tf_name(rdn_value(subnets[0]))}.self_link")))
+        if internal and subnets else ())
     record = service_record(m.d, m, svc, n, cdn)
     if layer7:
         admit = health_check_rule if firewall_model(m) == "policy" else None
         return (*groups, *application_lb(m, svc, spec,
-                                         servers_backend(m, svc, tuple(f"{n}_{tf_name(z)}" for z in _zones(targets))),
+                                         servers_backend(m, svc, tuple(f"{n}_{tf_name(z)}" for z in _zones(targets)),
+                                                         managed),
                                          (data, address), placement[1:], admit), *record)
     (check, kind), tuning = _l4_tuning(spec) if spec is not None else ((None, ()), ())
     health = kind[0] if kind else ("tcp_health_check", ())
@@ -208,16 +215,29 @@ def _service(m, svc, endpoints=()):
                 ("name", name), ("region", REGION), ("load_balancing_scheme", scheme), ("protocol", "TCP"),
                 *((("port_name", "ciam"),) if not internal else ()),
                 ("health_checks", [ref(f"google_compute_region_health_check.{n}.id")]), *tuning,
-                *(("backend", Block((
-                    ("group", ref(f"google_compute_instance_group.{n}_{tf_name(zone)}.self_link")),
-                    ("balancing_mode", "CONNECTION"), *capacity)))
-                  for zone in _zones(targets))]),
+                *(("backend", Block((("group", group), ("balancing_mode", "CONNECTION"), *capacity)))
+                  for group in (*(ref(f"google_compute_instance_group.{n}_{tf_name(zone)}.self_link")
+                                  for zone in _zones(targets)), *managed))]),
             tf_block("resource", ["google_compute_forwarding_rule", n], [
                 ("name", name), ("region", REGION), ("load_balancing_scheme", scheme), ("ip_protocol", "TCP"),
                 *forwarded, *((("ip_address", address),) if address else ()),
                 ("backend_service", ref(f"google_compute_region_backend_service.{n}.id")), *placement,
                 ("labels", {"service": _label(one(svc, "ciamFqdn")), "managed_by": "opsdir"})]),
             *(network_ddos(m, n, spec) if spec is not None and not internal else ()), *record)
+
+
+def _ports(m, endpoints):
+    """{server role: the ports the service names reaching it name 'ciam' on its instance groups}: the named port its
+    compute groups' managed instance groups carry (an INTERNAL passthrough service names none)."""
+    found = {}
+    for svc in of_class(m, "ciamServiceName"):
+        role, ports = one(svc, "ciamTargetRole"), values(svc, "ciamPort")
+        if service_exposure(svc) is None or only_on_kubernetes(m, role) or not ports:
+            continue
+        spec = service_edge(m, svc, endpoints)
+        if not is_internal(svc) or (spec is not None and (spec.layer7 or spec.cdn)):
+            found.setdefault(role, []).append(int(ports[0]))
+    return {role: tuple(p) for role, p in found.items()}
 
 
 def _secret(b):
@@ -253,6 +273,7 @@ def render_files(m, services):
     discovery, workflows = render_discovery(m)
     out = (*network_data(m), *_firewall(m), *chain.from_iterable(identity(m, w) for w in identities),
            *chain.from_iterable(_instance(m, s, kms, identities) for s in m.servers),
+           *render_groups(m, kms, identities, _ports(m, endpoints)),
            *render_snapshot_policies(m), *render_backups(m),
            *gateway_negs(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),

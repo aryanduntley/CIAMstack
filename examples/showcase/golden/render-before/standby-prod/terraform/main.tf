@@ -800,6 +800,82 @@ resource "google_compute_instance" "pf_engine_2" {
   }
 }
 
+resource "google_compute_instance_template" "mig_pf_engine" {
+  name_prefix           = "ciam-pf-engine-"
+  machine_type          = "n2-standard-2"
+  tags                  = ["ciam-prod-pf-engine"]
+  resource_manager_tags = zipmap([google_tags_tag_key.server_role.id], [google_tags_tag_value.pf_engine.id])
+  disk {
+    boot         = true
+    auto_delete  = true
+    source_image = "projects/example-aero-images/global/images/pingfederate-12-1-4-rhel9"
+    disk_encryption_key {
+      kms_key_self_link = "projects/example-aero-ciam-standby/locations/us-central1/keyRings/ciam/cryptoKeys/disk"
+    }
+  }
+  network_interface {
+    subnetwork = data.google_compute_subnetwork.subnet_pf.self_link
+  }
+  shielded_instance_config {
+    enable_secure_boot          = true
+    enable_vtpm                 = true
+    enable_integrity_monitoring = true
+  }
+  service_account {
+    email  = google_service_account.identity_pf.email
+    scopes = ["cloud-platform"]
+  }
+  metadata = {
+    enable-oslogin = "TRUE"
+    ciam-role      = "pf-engine"
+  }
+  labels = {
+    role        = "pf-engine"
+    bindingrole = "compute-pf-engine"
+    managed_by  = "opsdir"
+  }
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# mig-pf-engine exists: applying gives it a new instance template, which its instances run when they are next replaced
+
+resource "google_compute_region_instance_group_manager" "mig_pf_engine" {
+  name               = "ciam-pf-engine"
+  region             = var.region
+  base_instance_name = "ciam-pf-engine"
+  version {
+    instance_template = google_compute_instance_template.mig_pf_engine.id
+  }
+  distribution_policy_zones = ["us-central1-a", "us-central1-b"]
+  target_size               = 2
+  named_port {
+    name = "ciam"
+    port = 443
+  }
+  lifecycle {
+    ignore_changes = [target_size]
+  }
+}
+
+import {
+  to = google_compute_region_instance_group_manager.mig_pf_engine
+  id = "projects/example-aero-ciam-standby/regions/us-central1/instanceGroupManagers/ciam-pf-engine"
+}
+
+# mig-pf-engine exists: an autoscaler it already has must be imported by hand (its ID isn't recorded), or applying adds a second one
+
+resource "google_compute_region_autoscaler" "mig_pf_engine" {
+  name   = "ciam-pf-engine-autoscaler"
+  region = var.region
+  target = google_compute_region_instance_group_manager.mig_pf_engine.id
+  autoscaling_policy {
+    min_replicas = 2
+    max_replicas = 4
+  }
+}
+
 resource "google_compute_resource_policy" "snapshots_daily" {
   name        = "ciam-prod-snapshots-daily"
   region      = var.region
@@ -1813,6 +1889,11 @@ resource "google_compute_region_backend_service" "svc_sso" {
   }
   backend {
     group           = google_compute_instance_group.svc_sso_us_central1_b.self_link
+    balancing_mode  = "UTILIZATION"
+    capacity_scaler = 1.0
+  }
+  backend {
+    group           = google_compute_region_instance_group_manager.mig_pf_engine.instance_group
     balancing_mode  = "UTILIZATION"
     capacity_scaler = 1.0
   }

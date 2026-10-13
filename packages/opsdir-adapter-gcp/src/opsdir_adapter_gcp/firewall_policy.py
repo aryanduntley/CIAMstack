@@ -7,10 +7,13 @@ the service names and the egress allowlist become the policy's rules. The policy
 network's project (a Shared VPC's host project); binding a tag value needs the Tag User role on it, an access request.
 Which the network evaluates first, its VPC rules or the policy, is the network's setting (the landing zone's): said in a
 comment. Hierarchical policies are read, never rendered. Pure."""
+import json
+
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import of_class, one_role
 from opsdir.domains.infrastructure.firewall import rule_priorities, rule_purpose
-from opsdir.domains.network.stack import allowlist, network_policy, owned, private_ranges
+from opsdir.domains.compute.hosts import run_roles
+from opsdir.domains.network.stack import allowlist, firewall_model, network_policy, owned, private_ranges
 from opsdir_adapter_gcp.identities import project_of
 from opsdir_adapter_gcp.names import name_parts
 from opsdir_adapter_gcp.names import MANAGED, NETWORK, PRIORITIES
@@ -35,8 +38,22 @@ def network_project(m):
 
 
 def roles(m):
-    """The server roles environment m's instances carry, sorted."""
-    return tuple(sorted({one(s, "ciamServerRole") for s in m.servers}))
+    """The server roles environment m's instances carry (its servers' and its own compute groups'), sorted."""
+    return tuple(sorted(set(run_roles(m))))
+
+
+def template_tags(m, role):
+    """A compute group's instance template's resource_manager_tags argument binding its instances to the role's tag
+    value (the policy model), or none (VPC rules target network tags)."""
+    if firewall_model(m) != "policy":
+        return ()
+    key, value = (_expression(v) for v in (_tag_key(m)[1], tag_value(role)))
+    return (("resource_manager_tags", ref(f"zipmap([{key}], [{value}])")),)       # a key that is a reference
+
+
+def _expression(v):
+    """A value as an expression: a reference's own text, a literal quoted."""
+    return v[2:-1] if v.startswith("${") and v.endswith("}") else json.dumps(v)
 
 
 def tag_value(role):
