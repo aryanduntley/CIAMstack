@@ -10,7 +10,7 @@ from opsdir.core.directory import is_a, one, rdn_of, rdn_value
 from opsdir.core.environment import environment_of, of_class
 from opsdir.domains.access.workloads import principal_label
 from opsdir.domains.data.storage import kept_store
-from opsdir_format_terraform.hcl import comment, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from .account import tagged
 from .arm_ids import arm_segment
 
@@ -109,6 +109,14 @@ def federated_credentials(w):
                                    ref(f"data.azurerm_kubernetes_cluster.{_aks(p.cluster)}.oidc_issuer_url"),
                                    f"system:serviceaccount:{p.namespace}:{p.service_account}")
               for p in w.pods if p.cluster is not None))
+
+
+def vm_identity(w, agent=False):
+    """A VM's or scale set's identity block: its workload's user-assigned identity (w, or None), a system-assigned one
+    for the Azure Monitor Agent opsdir installs on it (agent: log_collection), both, or none."""
+    kinds = (*(("SystemAssigned",) if agent else ()), *(("UserAssigned",) if w else ()))
+    return (("identity", Block((("type", ", ".join(kinds)), *((("identity_ids", [
+        ref(f"azurerm_user_assigned_identity.{tf_name(w.identity_role)}.id")]),) if w else ())))),) if kinds else ()
 
 
 def identity(m, w):

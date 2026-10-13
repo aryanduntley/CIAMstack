@@ -18,6 +18,7 @@ COMPUTE, DISKS, STORAGE, POSTGRES, BACKUP = "2026-04-01", "2025-01-02", "2025-06
 # (research 2595; 2622: the Bicep type index, the newest)
 CDN, FD_WAF, DNS, PRIVATE_DNS = "2026-07-01", "2026-04-01", "2018-05-01", "2024-06-01"
 MYSQL, TM, WEBTESTS, EXEMPTIONS = "2024-12-30", "2026-09-01", "2022-06-15", "2026-01-01-preview"
+AUTOSCALE = "2022-10-01"        # the newest autoscalesettings version the Bicep type index has (probed 2026-10-12)
 # Types ARM has no form for: they stay in the Terraform root beside the templates (research 2595).
 NO_NATIVE = frozenset({"azapi_data_plane_resource", "azuread_conditional_access_policy"})
 _SUBNET = ("a property of the landing zone's subnet: ARM sets it only by re-declaring the whole subnet, which the "
@@ -277,31 +278,122 @@ def _identity(v, cx):
                          **({"userAssignedIdentities": {i: {} for i in ids}} if ids else {})}}
 
 
-def _vm(f, cx):
-    """A Linux virtual machine: hardware, OS profile (SSH keys only), storage (image, OS disk), NICs."""
-    user = cx.value(f["admin_username"])
+def _managed(disk, cx):
+    """A disk block's managedDisk: its type and disk encryption set."""
+    return {"storageAccountType": cx.value(disk["storage_account_type"]),
+            **({"diskEncryptionSet": {"id": cx.value(disk["disk_encryption_set_id"])}}
+               if "disk_encryption_set_id" in disk else {})}
+
+
+def _os_disk(f, cx):
+    """A VM's or scale set's os_disk as ARM's osDisk (from its image)."""
     disk = one(f, "os_disk")
+    unknown = sorted(set(disk) - {"caching", "storage_account_type", "disk_encryption_set_id", "disk_size_gb"})
+    if unknown:
+        raise SystemExit(f"{cx.where}.os_disk: no ARM form for {', '.join(unknown)}")
+    return {"createOption": "FromImage", "caching": cx.value(disk["caching"]), "managedDisk": _managed(disk, cx),
+            **({"diskSizeGB": cx.value(disk["disk_size_gb"])} if "disk_size_gb" in disk else {})}
+
+
+def _linux(f, cx, name_key):
+    """An osProfile for SSH keys only (password authentication off), its computer name under name_key."""
+    user = cx.value(f["admin_username"])
     keys = [{"path": f"/home/{user}/.ssh/authorized_keys", "keyData": cx.value(k["public_key"])}
             for k in f.get("admin_ssh_key", ())]
+    return {name_key: cx.value(f.get("computer_name", f["name"])), "adminUsername": user,
+            "linuxConfiguration": {"disablePasswordAuthentication": True, "ssh": {"publicKeys": keys}}}
+
+
+def _vm(f, cx):
+    """A Linux virtual machine: hardware, OS profile (SSH keys only), storage (image, OS disk), NICs."""
     rest = {k: v for k, v in own(f).items() if k not in ("admin_ssh_key", "os_disk", "admin_username", "size",
                                                          "computer_name", "network_interface_ids",
                                                          "source_image_id")}
-    unknown = sorted(set(disk) - {"caching", "storage_account_type", "disk_encryption_set_id"})
-    if unknown:
-        raise SystemExit(f"{cx.where}.os_disk: no ARM form for {', '.join(unknown)}")
-    managed = {"storageAccountType": cx.value(disk["storage_account_type"]),
-               **({"diskEncryptionSet": {"id": cx.value(disk["disk_encryption_set_id"])}}
-                  if "disk_encryption_set_id" in disk else {})}
     return {**obj(rest, cx, {**BASE, "zone": Custom(lambda v, c: {"zones": [c.value(v)]}),
                              "identity": Custom(_identity)}),
             "hardwareProfile": {"vmSize": cx.value(f["size"])},
-            "osProfile": {"computerName": cx.value(f.get("computer_name", f["name"])), "adminUsername": user,
-                          "linuxConfiguration": {"disablePasswordAuthentication": True,
-                                                 "ssh": {"publicKeys": keys}}},
-            "storageProfile": {"imageReference": {"id": cx.value(f["source_image_id"])},
-                               "osDisk": {"createOption": "FromImage", "caching": cx.value(disk["caching"]),
-                                          "managedDisk": managed}},
+            "osProfile": _linux(f, cx, "computerName"),
+            "storageProfile": {"imageReference": {"id": cx.value(f["source_image_id"])}, "osDisk": _os_disk(f, cx)},
             "networkProfile": {"networkInterfaces": [{"id": i} for i in cx.value(f["network_interface_ids"])]}}
+
+
+SCALE_SET_DATA_DISK = {"lun": "lun", "caching": "caching", "create_option": "createOption",
+                       "disk_size_gb": "diskSizeGB", "disk_iops_read_write": "diskIOPSReadWrite",
+                       "disk_mbps_read_write": "diskMBpsReadWrite", "storage_account_type": None,
+                       "disk_encryption_set_id": None}
+
+
+def _scale_set_disk(d, cx):
+    return {**obj(d, cx, SCALE_SET_DATA_DISK, f"{cx.where}.data_disk"), "managedDisk": _managed(d, cx)}
+
+
+def _ids(name):
+    """A list of IDs as ARM's [{id}, ...] under name."""
+    return Custom(lambda v, cx: {name: [{"id": i} for i in cx.value(v)]})
+
+
+IP_CONFIGURATION = {"name": None, "primary": "primary",
+                    "subnet_id": Custom(lambda v, cx: {"subnet": {"id": cx.value(v)}}),
+                    "load_balancer_backend_address_pool_ids": _ids("loadBalancerBackendAddressPools"),
+                    "application_gateway_backend_address_pool_ids": _ids("applicationGatewayBackendAddressPools")}
+
+
+def _set_ip_configuration(c, cx):
+    return {"name": cx.value(c["name"]),
+            "properties": obj(c, cx, IP_CONFIGURATION, f"{cx.where}.ip_configuration")}
+
+
+def _interface(n, cx):
+    return {"name": cx.value(n["name"]), "properties": {
+        **obj({k: v for k, v in n.items() if k != "ip_configuration"}, cx, {
+            "name": None, "primary": "primary",
+            "network_security_group_id": Custom(lambda v, x: {"networkSecurityGroup": {"id": x.value(v)}})},
+              f"{cx.where}.network_interface"),
+        "ipConfigurations": [_set_ip_configuration(c, cx) for c in n.get("ip_configuration", ())]}}
+
+
+def _scale_set(f, cx):
+    """A Linux virtual machine scale set (Uniform orchestration, manual upgrades: Terraform's defaults): its size and
+    instance count as its sku, zones, identity, and the virtual machine profile (OS profile with SSH keys, image, OS
+    and data disks, network interfaces with their backend pools)."""
+    rest = {k: v for k, v in own(f).items() if k not in ("admin_ssh_key", "os_disk", "data_disk", "admin_username",
+                                                         "sku", "instances", "source_image_id", "network_interface",
+                                                         "computer_name_prefix")}
+    return {**obj(rest, cx, {**BASE, "zones": "zones", "identity": Custom(_identity)}),
+            "sku": {"name": cx.value(f["sku"]), "tier": "Standard", "capacity": cx.value(f.get("instances", 0))},
+            "orchestrationMode": "Uniform", "upgradePolicy": {"mode": "Manual"},
+            "virtualMachineProfile": {
+                "osProfile": _linux({**f, "computer_name": f.get("computer_name_prefix", f["name"])}, cx,
+                                    "computerNamePrefix"),
+                "storageProfile": {"imageReference": {"id": cx.value(f["source_image_id"])},
+                                   "osDisk": _os_disk(f, cx),
+                                   **({"dataDisks": [_scale_set_disk(d, cx) for d in f["data_disk"]]}
+                                      if f.get("data_disk") else {})},
+                "networkProfile": {"networkInterfaceConfigurations": [_interface(n, cx)
+                                                                      for n in f.get("network_interface", ())]}}}
+
+
+def _text(v):
+    """A number as ARM's string ('2'), an expression as string(...) of it."""
+    return str(v) if isinstance(v, (int, str)) else Call("string", (v,))
+
+
+def _autoscale(f, cx):
+    """An autoscale setting: its profiles' capacity (ARM's counts are strings), no rules (the record holds a range,
+    not when to move in it), on its target."""
+    def profile(p):
+        c = one(p, "capacity")
+        return {"name": cx.value(p["name"]), "capacity": {k: _text(cx.value(c[k])) for k in ("default", "minimum",
+                                                                                           "maximum")},
+                "rules": []}
+    unknown = sorted(k for p in f.get("profile", ()) for k in p if k not in ("name", "capacity"))
+    if unknown:
+        raise SystemExit(f"{cx.where}.profile: no ARM form for {', '.join(unknown)}")
+    return {**obj({k: v for k, v in own(f).items() if k not in ("profile", "target_resource_id", "enabled")}, cx,
+                  BASE),
+            "name": cx.value(f["name"]), "enabled": cx.value(f.get("enabled", True)),
+            "targetResourceUri": cx.value(f["target_resource_id"]),
+            "profiles": [profile(p) for p in f.get("profile", ())]}
 
 
 def _data_disk(props, f, cx):
@@ -446,11 +538,13 @@ def _flexible(dns_key):
     return props
 
 
-def _configuration(type_, api, server):
-    """A server parameter, user-set (the configurations child of either engine's flexible server)."""
-    return Native(Arm(type_, api, Parent("server_id", server)), {
-        "name": None, "server_id": None, "value": Custom(lambda v, cx: {"value": cx.value(v),
-                                                                        "source": "user-override"})},
+def _configuration(type_, api, server, by="id"):
+    """A server parameter, user-set (the configurations child of either engine's flexible server: PostgreSQL's names
+    its server by ID, MySQL's by name in its resource group)."""
+    parent = Parent("server_id", server) if by == "id" else Parent("server_name", server, "name")
+    return Native(Arm(type_, api, parent), {
+        "name": None, "server_id": None, "server_name": None, "resource_group_name": None,
+        "value": Custom(lambda v, cx: {"value": cx.value(v), "source": "user-override"})},
         {"id": "id"}, "name")
 
 
@@ -1154,6 +1248,10 @@ TYPES = {
                                             {"id": "id", "name": "name",
                                              "identity[0].principal_id": "identity.principalId"}, "name", "map"),
     "azurerm_virtual_machine_data_disk_attachment": Native(None, merge=Merge("virtual_machine_id", _data_disk)),
+    "azurerm_linux_virtual_machine_scale_set": Native(Arm("Microsoft.Compute/virtualMachineScaleSets", COMPUTE),
+                                                      _scale_set, {"id": "id", "name": "name"}, "name", "map"),
+    "azurerm_monitor_autoscale_setting": Native(Arm("Microsoft.Insights/autoscalesettings", AUTOSCALE), _autoscale,
+                                                {"id": "id"}, "name", "map"),
     "azurerm_managed_disk": Native(Arm("Microsoft.Compute/disks", DISKS), _disk, {"id": "id"}, "name", "map"),
     "azurerm_virtual_machine_extension": Native(Arm("Microsoft.Compute/virtualMachines/extensions", COMPUTE,
                                                     Parent("virtual_machine_id", "Microsoft.Compute/virtualMachines")),
@@ -1202,7 +1300,7 @@ TYPES = {
                                             {"id": "id", "name": "name", "fqdn": "fullyQualifiedDomainName"},
                                             "name", "map"),
     "azurerm_mysql_flexible_server_configuration": _configuration(
-        "Microsoft.DBforMySQL/flexibleServers/configurations", MYSQL, "Microsoft.DBforMySQL/flexibleServers"),
+        "Microsoft.DBforMySQL/flexibleServers/configurations", MYSQL, "Microsoft.DBforMySQL/flexibleServers", "name"),
     # monitoring
     "azurerm_log_analytics_workspace_table_custom_log": Native(Arm(
         "Microsoft.OperationalInsights/workspaces/tables", OPINSIGHTS,

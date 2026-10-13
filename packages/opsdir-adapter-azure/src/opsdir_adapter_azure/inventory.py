@@ -82,7 +82,7 @@ from .iam import iam_resources
 from .databases import database_resources, database_security_groups, geo_backup_notices
 from .nsg_rules import allows_in, group_rules, rule_ports, rule_sources, source_cidr
 from .backups import backup_resources
-from .volumes import volume_resources
+from .volumes import SCALE_SETS, volume_resources
 from .storage import object_store_resources
 from .audit import trail_resources
 from .budgets import budget_resources
@@ -400,8 +400,6 @@ def _jobs(found):
                  for a in of_types(found, *FUNCTION_APPS) if a.get("id"))
 
 
-SCALE_SETS = ("azurerm_linux_virtual_machine_scale_set", "azurerm_windows_virtual_machine_scale_set",
-              "azurerm_orchestrated_virtual_machine_scale_set")
 # AKS add-ons, by the argument that enables each: (argument, add-on name)
 AKS_ADDONS = (("azure_policy_enabled", "azure-policy"), ("oms_agent", "oms-agent"),
               ("key_vault_secrets_provider", "key-vault-secrets-provider"),

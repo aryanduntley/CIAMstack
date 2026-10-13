@@ -44,7 +44,8 @@ REALIZES = MappingProxyType({
     "aws_route53_resolver_rule": "ciamDnsForwarder", "aws_organizations_policy": "ciamGuardrail",
     "aws_cloudtrail": "ciamAuditTrail", "aws_cloudwatch_log_group": "ciamLogDestination",
     "aws_cloudwatch_metric_alarm": "ciamAlarmBinding", "aws_synthetics_canary": "ciamCanaryBinding",
-    "aws_iam_role": "ciamIdentityBinding", "aws_securityhub_automation_rule": "ciamSuppression"})
+    "aws_iam_role": "ciamIdentityBinding", "aws_securityhub_automation_rule": "ciamSuppression",
+    "aws_autoscaling_group": "ciamComputeGroup"})
 # What AWS assigns a resource of a type beyond its id and ARN, as the importers read it: (block name, configured
 # attributes, partition, region, account) -> attributes
 ASSIGNS = MappingProxyType({

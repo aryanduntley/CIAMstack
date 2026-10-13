@@ -78,7 +78,9 @@ PROJECTIONS = {
                                 "LaunchTemplateId, LaunchTemplateName: LaunchTemplateName, VersionNumber: "
                                 "VersionNumber, DefaultVersion: DefaultVersion, LaunchTemplateData: {ImageId: "
                                 "LaunchTemplateData.ImageId, InstanceType: LaunchTemplateData.InstanceType, "
-                                "MetadataOptions: {HttpTokens: LaunchTemplateData.MetadataOptions.HttpTokens}}}}",
+                                "MetadataOptions: {HttpTokens: LaunchTemplateData.MetadataOptions.HttpTokens}, "
+                                "BlockDeviceMappings: LaunchTemplateData.BlockDeviceMappings, TagSpecifications: "
+                                "LaunchTemplateData.TagSpecifications}}}",
     "subscribers": "{Subscribers: Subscribers[?SubscriptionType=='SNS'].{SubscriptionType: SubscriptionType, "
                    "Address: Address}}",
     "canaries": "{Canaries: Canaries[].{Name: Name, Schedule: Schedule, Tags: Tags, EngineArn: EngineArn, "

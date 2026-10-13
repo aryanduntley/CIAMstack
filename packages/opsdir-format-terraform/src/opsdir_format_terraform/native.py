@@ -26,7 +26,8 @@ from .translate import Raw, TfRef, address, is_quoted_string, parse_ref, ref_add
 # Forms.attribute reads) | (native id) -> value | Attribute}: what a reference to it reads. identifier: how an
 # existing one is imported (the target's), None when the target can't import it from what Terraform imports it by (an
 # adopted one then stays Terraform, beside the template). tags: how the resource's tags (with the provider's default
-# tags under them) are written ("list" or "map", under tags_key); None when the type takes no tags. merge: Merge, for
+# tags under them) are written under tags_key: "list", "map", or (tags) -> the value (a launch template's tag
+# specifications); None when the type takes no tags. merge: Merge, for
 # a type that is part of another resource. expand: (native id, Fields, Cx) -> ((id suffix, type, properties[, (the
 # parent's import id) -> its import identifier]), ...): further resources it is written as. parameters: (Fields, Cx)
 # -> what the deployer must give (the target's declarations). finish: (properties) -> properties, once what merges

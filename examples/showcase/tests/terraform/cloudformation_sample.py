@@ -2,9 +2,12 @@
 given (the clouds moved there by a change record, on an account): every kind of network plumbing (the plumbing sample,
 its peer's network bound so the peering renders), the front before a cluster's gateway behind CloudFront with address
 rules and Shield Advanced's automatic response (the gateway sample), a failover pair's health checks (the edge
-fixtures' DNS estate), an Aurora cluster, a suppression, a quota request, Macie's scheduled job, and Fluent Bit's role
+fixtures' DNS estate), an Aurora cluster, a suppression, a quota request, Macie's scheduled job, a compute group with
+its role's boot and data disks (a launch template and an autoscaling group), and Fluent Bit's role
 its pods assume through the cluster's OIDC provider (IRSA): every resource and data source type the AWS renderers
 write that the showcase doesn't."""
+import pathlib
+
 from opsdir.connectors.registry import services
 from opsdir.core.contract import LogSource
 from opsdir.core.environment import env_model
@@ -12,6 +15,7 @@ from opsdir.core.interchange.ldif import LdifRecord, parse
 from opsdir.domains.compute.naming import WORKLOADS, workload_dn
 from opsdir.domains.observability.naming import LOG_ROUTES
 from opsdir_adapter_aws.terraform import render_files
+from opsdir_format_terraform.hcl import written
 import edge_fixtures
 import gateway_sample
 import mini_estate
@@ -85,7 +89,21 @@ STORES = (entry(ALPHA, "backups", "ciamObjectStore", ciamBindingRole="ds-backups
                 ciamEncryptedByRole="db-key"),
           entry(ALPHA, "security-alerts", "ciamAlertChannel", ciamBindingRole="security-alerts",
                 ciamChannelKind="topic", ciamProviderRef=f"arn:aws:sns:us-east-1:{ACCOUNT}:security-alerts"))
+# a compute group of a role no server runs (its own security group), designed (no provider ref), with its role's
+# disks: a boot volume and a data volume one snapshot policy copies
+GROUP = (entry(ALPHA, "asg-app", "ciamComputeGroup", ciamBindingRole="compute-app", ciamTargetRole="app",
+               ciamImageRef="ami-0123456789abcdef0", ciamInstanceSize="m6i.large", ciamMinSize="1", ciamMaxSize="3",
+               ciamDesiredSize="2", ciamSubnetRole=("subnet-ds", "subnet-web"), ciamMetadataTokens="TRUE"),
+         entry(ALPHA, "vol-app-boot", "ciamVolume", ciamBindingRole="volume-app-boot", ciamTargetRole="app",
+               ciamVolumeKind="boot", ciamVolumeSizeGb="40", ciamVolumeClass="ssd",
+               ciamSnapshotPolicyRole="app-snapshots"),
+         entry(ALPHA, "vol-app-data", "ciamVolume", ciamBindingRole="volume-app-data", ciamTargetRole="app",
+               ciamVolumeKind="data", ciamMountPath="/opt/app", ciamVolumeSizeGb="100", ciamVolumeClass="ssd",
+               ciamSnapshotPolicyRole="app-snapshots"),
+         entry(ALPHA, "app-snapshots", "ciamSnapshotPolicy", ciamBindingRole="app-snapshots", ciamRetentionDays="7",
+               ciamSnapshotAt="02:00"))
 RECORDS = (
+    *GROUP,
     entry(ALPHA, "key-db", "ciamKeyRef", ciamBindingRole="db-key", ciamRefUri=f"aws-kms://{KEY_ARN}"),
     entry(ALPHA, "db-grants", "ciamDatabase", **DB),
     entry(ALPHA, "exc-EXC-7", "ciamSuppression", ciamBindingRole="suppression-EXC-7", ciamExceptionRef=EXC,
@@ -130,3 +148,14 @@ def environments(region):
 def renders(region):
     """((name, environment model, its AWS render {path: TfFile | text}), ...) of the sample in region."""
     return tuple((name, m, render_files(m, found)) for name, m, found in environments(region))
+
+
+def write_samples(root, region="us-east-1", names=("services",)):
+    """Write the Terraform roots of the sample's environments named (in region) under root/<name>/; the root."""
+    for name, _, files in renders(region):
+        if name in names:
+            for path, text in written({p: f for p, f in files.items() if p.startswith("terraform/")}).items():
+                out = pathlib.Path(root) / name / path
+                out.parent.mkdir(parents=True, exist_ok=True)
+                out.write_text(text)
+    return root

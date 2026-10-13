@@ -112,11 +112,12 @@ CLASSES = (
               'ciamInEnvironment', 'ciamOnProvider'),
              "What a server role's servers run beyond its product: OS, Java runtime and truststore additions, "
              "limits, kernel settings, agents, service units"),
-    ClassDef(51, 'ciamComputeGroup', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef', 'ciamTargetRole'),
-             ('ciamImageRef', 'ciamImageBuild', 'ciamInstanceSize', 'ciamMinSize', 'ciamMaxSize', 'ciamDesiredSize',
-              'ciamSpansZone', 'ciamMetadataTokens'),
+    ClassDef(51, 'ciamComputeGroup', 'ciamBinding', 'STRUCTURAL', ('ciamTargetRole',),
+             ('ciamProviderRef', 'ciamImageRef', 'ciamImageBuild', 'ciamInstanceSize', 'ciamMinSize', 'ciamMaxSize',
+              'ciamDesiredSize', 'ciamSpansZone', 'ciamSubnetRole', 'ciamMetadataTokens'),
              "Where an environment runs a server role's instances as a group (an autoscaling group, a scale set): "
-             "image, size, scale, zones"),
+             "image, size, scale, zones, the subnets its instances sit in; designed (rendered) or adopted (its "
+             "provider ref)"),
     ClassDef(52, 'ciamCluster', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef',),
              ('ciamClusterVersion', 'ciamClusterAddon', 'ciamNodePool', 'ciamSpansZone', 'ciamSubnetRole'),
              'A managed Kubernetes cluster an environment runs workloads in: version, add-ons, node pools, the '

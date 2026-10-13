@@ -11,7 +11,7 @@ PROXY = ProxySettings("proxy.corp.example", 3128, ("localhost", "10.20.*"), None
 
 def test_advanced_server_properties_and_jvm_options():
     m = SimpleNamespace(servers=(make_entry("cn=am-1", ("ciamServer",), {"ciamServerRole": ("am",)}),),
-                        d=make_directory((), {}, ()))
+                        bindings=(), d=make_directory((), {}, ()))
     assert [(s.place, s.locator, s.value) for s in ADAPTER.proxy_settings(m, PROXY)] == [
         ("advanced server properties (server defaults)", "org.forgerock.openam.httpclienthandler.system.proxy.uri",
          "http://proxy.corp.example:3128"),
@@ -20,4 +20,4 @@ def test_advanced_server_properties_and_jvm_options():
         ("the JVM options of its container (JAVA_OPTS)", "JVM options",
          "-Dhttp.proxyHost=proxy.corp.example -Dhttp.proxyPort=3128 -Dhttps.proxyHost=proxy.corp.example "
          "-Dhttps.proxyPort=3128 -Dhttp.nonProxyHosts=localhost|10.20.*")]
-    assert ADAPTER.proxy_settings(SimpleNamespace(servers=(), d=make_directory((), {}, ())), PROXY) == ()
+    assert ADAPTER.proxy_settings(SimpleNamespace(servers=(), bindings=(), d=make_directory((), {}, ())), PROXY) == ()

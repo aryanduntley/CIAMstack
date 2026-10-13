@@ -8,9 +8,10 @@ from ...core.directory import is_kind, one, rdn_value, subtree, values
 from ...core.environment import environment_of, of_class, one_role
 from ...core.findings import Fix, bindings_container, findings, merge_findings, responsible, templated_entry
 from ...core.naming import branch, env_label
+from ..compute.hosts import runs_role
 from .kept import carry_fix, key_dropped, lock_text, lock_weakened
 from .protection import PLAN, compare_protection, schedule_of
-from .volumes import VOLUME, runs_role, volume_policy
+from .volumes import VOLUME, volume_policy
 
 VAULT = "ciamBackupVault"
 AREA = "Backups"

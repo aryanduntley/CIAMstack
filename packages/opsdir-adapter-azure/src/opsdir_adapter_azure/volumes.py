@@ -26,11 +26,11 @@ from collections import Counter
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.environment import UNBOUND, of_class, one_role
 from opsdir.core.inventory import of_types, resource, tagged_role
-from opsdir.domains.data.volumes import (POLICY, boot_volume, data_volumes, is_encrypted, volume_key_role,
-                                         volume_policy)
+from opsdir.domains.data.volumes import (POLICY, boot_volume, data_volumes, disk_tags, is_encrypted, tagged_disks,
+                                         volume_key_role, volume_policy)
 from opsdir.domains.network.stack import kept_by, owned
 from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
-from opsdir_format_terraform.state import first_block
+from opsdir_format_terraform.state import blocks, first_block
 from .backups import disk_policies
 from .cmk import key_ref
 from .identities import LOC, RG
@@ -69,7 +69,11 @@ def _encryption_set(m, v):
 def os_disk(m, s, des):
     """(comments, the os_disk Block) of VM s: its role's boot volume (size, type, disk encryption set), else Premium_LRS
     encrypted with the disk-encryption binding's set (des: that binding, or None)."""
-    v = boot_volume(m, one(s, "ciamServerRole"))
+    return _os_disk(m, one(s, "ciamServerRole"), des)
+
+
+def _os_disk(m, role, des):
+    v = boot_volume(m, role)
     if v is None:
         encryption = (("disk_encryption_set_id", one(des, "ciamProviderRef")) if des and one(des, "ciamProviderRef")
                       else ("#", "UNBOUND: no disk-encryption binding in this environment"))
@@ -119,6 +123,44 @@ def server_volumes(m, s):
     return tuple(out)
 
 
+def _data_disk(m, g, lun, v):
+    """(comments, the scale set's data_disk Block for volume v at a LUN, or None when it records no size)."""
+    kind, policy = TYPES.get(one(v, "ciamVolumeClass"), "Premium_LRS"), volume_policy(m, v)
+    size = _int(v, "ciamVolumeSizeGb")
+    if size is None:
+        return (comment(f"Volume '{rdn_value(v)}' of group {rdn_value(g)} records no size (ciamVolumeSizeGb), which "
+                        "a scale set's data disk needs: not rendered"),), None
+    encryption, notes = _encryption_set(m, v)
+    unprotected = (comment(f"{rdn_value(v)} of group {rdn_value(g)}: Azure Backup's disk backup protects managed disks "
+                           "one by one, not a scale set's: plan "
+                           f"{one(policy, 'ciamBindingRole')} doesn't back it up"),) if policy is not None else ()
+    return (*notes, *unprotected,
+            *((comment(f"{rdn_value(g)}'s instances mount {rdn_value(v)} at {one(v, 'ciamMountPath')} (their own "
+                       "configuration, not Terraform)"),) if one(v, "ciamMountPath") else ())), \
+        Block((("lun", lun), ("caching", "None"), ("storage_account_type", kind), ("create_option", "Empty"),
+               ("disk_size_gb", size),
+               *_given(("disk_iops_read_write", _int(v, "ciamIops") if kind in PROVISIONED else None),
+                       ("disk_mbps_read_write", _int(v, "ciamThroughputMb") if kind in PROVISIONED
+                        else None)),
+               *encryption))
+
+
+def scale_set_disks(m, g, des):
+    """A compute group's disks on its scale set: (comments, the os_disk Block (its role's boot volume, as a VM's),
+    data_disk items at LUN 0, 1, ... for the data volumes it keeps, the tags naming its disks (core data.volumes
+    disk_tags, LUNs as slots)). des: the disk-encryption binding, or None. A scale set's disks carry no tags of their
+    own; Azure Backup's disk backup can't protect them (said)."""
+    role = one(g, "ciamTargetRole")
+    notes, osd = _os_disk(m, role, des)
+    data = data_volumes(m, role)
+    kept = tuple(comment(f"Volume '{rdn_value(v)}' of group {rdn_value(g)} is kept by {kept_by(m, v)}: not rendered "
+                         "here") for v in data if not owned(v))
+    disks = tuple((lun, v, *_data_disk(m, g, lun, v)) for lun, v in enumerate(v for v in data if owned(v)))
+    return ((*notes, *kept, *(c for _, _, cs, _ in disks for c in cs)), osd,
+            tuple(("data_disk", b) for _, _, _, b in disks if b is not None),
+            disk_tags(boot_volume(m, role), tuple((str(lun), v) for lun, v, _, b in disks if b is not None)))
+
+
 def snapshot_policy_notes(m):
     """Comments for environment m's snapshot policies: Azure snapshots managed disks on a schedule only with Azure
     Backup's disk backup, which a backup plan renders (opsdir_adapter_azure.backups); someone else's named."""
@@ -141,11 +183,32 @@ def _common(values_):
 
 
 VMS = ("azurerm_linux_virtual_machine", "azurerm_windows_virtual_machine")
+SCALE_SETS = ("azurerm_linux_virtual_machine_scale_set", "azurerm_windows_virtual_machine_scale_set",
+              "azurerm_orchestrated_virtual_machine_scale_set")
+
+
+def scale_set_disks_read(pairs):
+    """(data disks as (azurerm_managed_disk-shaped dict tagged Volume, the scale set they attach to), (scale set, its
+    os_disk) pairs for boot volumes) of the scale sets whose tags name their disks (BootVolume, DataVolumes by LUN:
+    a compute group's, scale_set_disks)."""
+    data, boots = [], []
+    for ss in of_types(pairs, *SCALE_SETS):
+        boot, slots = tagged_disks(ss.get("tags"))
+        where = ss.get("id") or ss.get("name")
+        by_lun = {str(d.get("lun")): d for d in blocks(ss.get("data_disk"))}
+        data += [({"id": f"{where}/dataDisks/{lun}", "storage_account_type": d.get("storage_account_type"),
+                   "disk_size_gb": d.get("disk_size_gb"),
+                   "disk_iops_read_write": d.get("disk_iops_read_write"),
+                   "disk_mbps_read_write": d.get("disk_mbps_read_write"),
+                   "disk_encryption_set_id": d.get("disk_encryption_set_id"), "tags": {"Volume": name}}, ss)
+                 for lun, name in slots.items() for d in (by_lun.get(lun),) if d]
+        boots += [(ss, first_block(ss.get("os_disk")))] if boot is not None else []
+    return tuple(data), tuple(boots)
 
 
 def volume_resources(pairs):
     """(volume resources, notices) of (azurerm type, attributes) pairs: data disks grouped by tag Volume, VMs' OS
-    disks by their tag BootVolume."""
+    disks by their tag BootVolume, compute groups' scale set disks by the scale set's tags (scale_set_disks_read)."""
     vms = {_low(v.get("id")): v for v in of_types(pairs, *VMS) if v.get("id")}
     sets = {_low(e.get("id")): key_ref(e.get("key_vault_key_id"))
             for e in of_types(pairs, "azurerm_disk_encryption_set")}
@@ -154,7 +217,9 @@ def volume_resources(pairs):
         return sets.get(_low(des)) if des else None
     attached = {_low(a.get("managed_disk_id")): vms.get(_low(a.get("virtual_machine_id")), {})
                 for a in of_types(pairs, "azurerm_virtual_machine_data_disk_attachment")}
-    disks = [d for d in of_types(pairs, "azurerm_managed_disk") if d.get("id")]
+    in_sets, set_boots = scale_set_disks_read(pairs)
+    attached = {**attached, **{_low(d["id"]): ss for d, ss in in_sets}}
+    disks = [*(d for d in of_types(pairs, "azurerm_managed_disk") if d.get("id")), *(d for d, _ in in_sets)]
     followed = disk_policies(pairs)
     named = {}
     for d in disks:
@@ -176,7 +241,7 @@ def volume_resources(pairs):
                    "ciamSnapshotPolicyRole": _common(followed.get(_low(d.get("id"))) for d in found)},
             name=name, role=_common(tagged_role(d.get("tags") or {}) for d in found), tags=found[0].get("tags") or {})
     booted = {}
-    for vm in vms.values():
+    for vm in (*vms.values(), *(ss for ss, _ in set_boots)):
         if (vm.get("tags") or {}).get("BootVolume"):
             booted.setdefault(vm["tags"]["BootVolume"], []).append((vm, first_block(vm.get("os_disk"))))
 

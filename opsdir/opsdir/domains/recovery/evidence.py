@@ -8,10 +8,11 @@ from collections import namedtuple
 from ...core.directory import children, date_of, is_kind, norm_dn, one, rdn_value, values
 from ...core.environment import env_model, one_role
 from ...core.naming import env_label
+from ..compute.hosts import runs_role
 from ..data.backups import protected_roles
 from ..data.protection import schedule_of, words
 from ..data.restores import tests_of
-from ..data.volumes import VOLUME, runs_role
+from ..data.volumes import VOLUME
 from .intent import joining, minutes, region_of
 from .naming import DRILLS
 

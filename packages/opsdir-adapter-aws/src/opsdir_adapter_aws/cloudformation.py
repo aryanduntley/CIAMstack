@@ -28,8 +28,8 @@ Terraform resource and read by the same mapping (opsdir_adapter_aws.inventory.pa
   services, peering, transit and VPN, flow logs, Network Firewall): cloudformation_network.py; IAM and guardrails,
   the edge, data stores, security services (GuardDuty, AWS Config, Security Hub) and suppressions, observability (log
   groups, alarms, canaries), volumes and backups, budgets; EventBridge rules with their event patterns (findings
-  routes):
-  cloudformation_iam.py, _edge.py, _data.py, _security.py, _observability.py, _backups.py, _budgets.py
+  routes); compute groups (autoscaling groups and their launch templates):
+  cloudformation_iam.py, _edge.py, _data.py, _security.py, _observability.py, _backups.py, _budgets.py, _compute.py
 Resources that weren't created (no physical ID, deleted, failed) are skipped; other resource types are counted.
 """
 import json
@@ -46,6 +46,7 @@ from .cli_audit import trail_attributes
 from .cli_edge import record_attributes
 from .cloudformation_backups import BACKUP_TYPES, backup_stack_pairs
 from .cloudformation_budgets import BUDGET_TYPES, budget_stack_pairs
+from .cloudformation_compute import COMPUTE_TYPES, compute_stack_pairs
 from .cloudformation_data import DATA_TYPES, data_stack_pairs
 from .cloudformation_edge import EDGE_TYPES, edge_stack_pairs
 from .cloudformation_iam import IAM_TYPES, iam_stack_pairs
@@ -63,7 +64,7 @@ READ = ("AWS::EC2::VPC", "AWS::EC2::Subnet", "AWS::EC2::Instance", "AWS::EC2::Se
         "AWS::KMS::ReplicaKey", "AWS::S3::Bucket", "AWS::Lambda::Function", "AWS::Events::Rule",
         "AWS::Scheduler::Schedule", "AWS::CodePipeline::Pipeline", "AWS::CodeBuild::Project", "AWS::CloudTrail::Trail",
         *NETWORK_TYPES, *IAM_TYPES, *EDGE_TYPES, *DATA_TYPES, *SECURITY_TYPES, *OBSERVABILITY_TYPES,
-        *BACKUP_TYPES, *BUDGET_TYPES)
+        *BACKUP_TYPES, *BUDGET_TYPES, *COMPUTE_TYPES)
 EVALUATED = ("Ref", "Fn::Sub", "Fn::Join", "Fn::Select", "Fn::GetAtt")
 NOT_CREATED = ("CREATE_FAILED", "DELETE_COMPLETE", "DELETE_IN_PROGRESS", "DELETE_FAILED")
 ACCOUNT_WIDE = ("secret", "key", "storage")
@@ -153,6 +154,7 @@ def _waf_arn(pid, ps, kind):
 # by type: (physical id, pseudo parameters) -> the attribute
 GETATT = MappingProxyType({
     "AWS::EC2::SecurityGroup": {"GroupId": lambda pid, ps: pid},
+    "AWS::EC2::LaunchTemplate": {"LaunchTemplateId": lambda pid, ps: pid},
     "AWS::IAM::Role": {"Arn": _arn("iam", "role/{id}", False)},
     "AWS::IAM::InstanceProfile": {"Arn": _arn("iam", "instance-profile/{id}", False)},
     "AWS::IAM::OIDCProvider": {"Arn": lambda pid, ps: pid},
@@ -477,7 +479,8 @@ def stack_pairs(stack, resources, template):
              *edge_stack_pairs(declared, names, lambda name: (name or "").lower().rstrip(".") or None),
              *data_stack_pairs(declared, names), *security_stack_pairs(declared, names),
              *budget_stack_pairs(declared, names),
-             *observability_stack_pairs(declared, names), *backup_stack_pairs(declared, names)],
+             *observability_stack_pairs(declared, names), *backup_stack_pairs(declared, names),
+             *compute_stack_pairs(declared, names)],
             (*((f"{label}: {', '.join(f'{fn} ({n})' for fn, n in sorted(_unevaluated(template).items()))} not "
                 f"evaluated; the attributes computed with them keep the record's values",)
                if _unevaluated(template) else ()),

@@ -131,6 +131,12 @@ def test_the_workload_identities_an_environment_renders():
     assert identity_of((w,), "web") == w and identity_of((w,), "db") is None
 
 
+def test_a_role_only_a_compute_group_runs_gets_its_identity():
+    group = (_binding(BETA, "asg-web", "ciamComputeGroup", "compute-web", {"ciamTargetRole": "web"}),)
+    (w,) = workload_identities(env_model(_record((), (), extra=group), "beta/prod"), MODEL)
+    assert (w.principals, w.server_roles, w.servers) == (("app",), ("web",), True)
+
+
 def test_principals_sharing_an_identity_role_are_one_identity_with_their_permits_merged():
     admin = (_entry(f"cn=admin-runtime,{PERMISSION_SETS}", "ciamPermissionSet",
                     {"cn": "admin-runtime", "ciamPermits": ("read-secret app-password", "write-secret app-password",

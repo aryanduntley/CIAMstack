@@ -96,7 +96,10 @@ def test_mysql_storage_tls_off_and_what_flexible_server_doesnt_run():
                         ciamManagedBy="cn=dba,ou=parties,dc=ciam-ops"))
     assert 'resource "azurerm_mysql_flexible_server" "db_sess"' in out and 'version             = "8.0.21"' in out
     assert "storage {\n    size_gb = 64\n  }" in out
-    assert 'name      = "require_secure_transport"' in out and 'value     = "off"' in out
+    flat = " ".join(out.split())
+    assert 'name = "require_secure_transport" resource_group_name = data.azurerm_resource_group.main.name ' \
+           'server_name = azurerm_mysql_flexible_server.db_sess.name value = "off"' in flat      # MySQL's: by name
+    assert "server_id" not in out and "public_network_access_enabled" not in out
     assert "azurerm_management_lock" not in out and "import {" not in out and "delegated_subnet_id" not in out
     assert "# Database 'db-sql' runs sqlserver, which Azure Database Flexible Server doesn't" in out
     assert "# Database 'db-dba' (role reports-db) is kept by cn=dba,ou=parties,dc=ciam-ops: not rendered here" in out
@@ -138,6 +141,21 @@ def test_a_flexible_server_is_read_back_from_state_without_its_password():
     assert db.links == {"ciamSubnetRole": "vnet-ciam/snet-db", "ciamEncryptedByRole": "azkv-key://kv-ciam/keys/db-key"}
     assert "never-read-this" not in repr(resources) and "ciam_admin" not in repr(resources)
     assert not any("flexible_server" in n for n in notices)
+
+
+def test_a_mysql_configuration_names_its_server_and_is_read_with_it():
+    mysql = {"id": "/subscriptions/0/resourceGroups/rg/providers/Microsoft.DBforMySQL/flexibleServers/db-sess",
+             "name": "db-sess", "version": "8.0.21"}
+    resources, _ = state_resources(_state(
+        ("azurerm_mysql_flexible_server", "sess", mysql),
+        ("azurerm_mysql_flexible_server_configuration", "tls", {"name": "require_secure_transport",
+                                                                "server_name": "db-sess", "resource_group_name": "rg",
+                                                                "value": "off"}),
+        ("azurerm_mysql_flexible_server_configuration", "log", {
+            "id": f"{mysql['id']}/configurations/slow_query_log", "name": "slow_query_log", "server_name": "db-sess",
+            "resource_group_name": "rg", "value": "ON"})))
+    (db,) = (r for r in resources if r.kind == "database")
+    assert (db.attrs["ciamDbTlsRequired"], db.attrs["ciamDbParameter"]) == (("FALSE",), ("slow_query_log=ON",))
 
 
 def test_the_cli_reads_the_same_with_user_set_parameters_only_and_the_lock():

@@ -172,7 +172,7 @@ def _gcp_services(p):
 def _gcp_references(p):
     """Secrets (named by project number), the disk key, the backup bucket, the audit topic and the engines' group."""
     key = p["key"][0].split("://", 1)[1]
-    (mig, _, target, ref, image, size, least, runs, most, zones, _), = p["compute"]
+    (mig, _, target, ref, image, size, least, runs, most, zones, _, _), = p["compute"]
     template = f"{GAPI}/{PROJECT}/global/instanceTemplates/{ref.rsplit('/', 1)[1]}-1"
     return [*(_asset("secretmanager.googleapis.com/Secret", {"name": f"projects/{NUMBER}/secrets/{role}",
                                                              "labels": {"role": role},

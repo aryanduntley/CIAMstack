@@ -4,14 +4,18 @@ kind of network plumbing (the plumbing sample, its peer's network bound so the p
 cluster's gateway behind Front Door with address rules (the gateway sample), DNS records of every type in a public and
 a private zone with weighted and failover names (Traffic Manager) and forwarders (the edge fixtures' DNS estate), a
 MySQL server, a blob container copied to another account, a suppression, an availability test, a NAT gateway
-for egress and a private endpoint to blob storage: every resource and
+for egress, a private endpoint to blob storage and a compute group with its role's disks (a scale set and its autoscale
+setting): every resource and
 data source type the Azure renderers write that the showcase doesn't."""
+import pathlib
+
 from opsdir.connectors.registry import services
 from opsdir.core.contract import Endpoint
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import LdifRecord, parse
 from opsdir.domains.observability.naming import CANARIES
 from opsdir_adapter_azure.terraform import render_files
+from opsdir_format_terraform.hcl import written
 import edge_fixtures
 import gateway_sample
 import mini_estate
@@ -135,6 +139,17 @@ EGRESS = entry(ALPHA, "egress", "ciamEgress", ciamBindingRole="pf-egress", ciamC
                ciamNatAllocation="static")
 
 
+# a compute group of a role no server runs, designed, with its role's boot and provisioned data disk
+GROUP = (entry(ALPHA, "vmss-app", "ciamComputeGroup", ciamBindingRole="compute-app", ciamTargetRole="app",
+               ciamImageRef=IMAGE, ciamInstanceSize="Standard_D2s_v5", ciamMinSize="1", ciamMaxSize="3",
+               ciamDesiredSize="2", ciamSpansZone=("1", "2"), ciamSubnetRole="subnet-web"),
+         entry(ALPHA, "vol-app-boot", "ciamVolume", ciamBindingRole="volume-app-boot", ciamTargetRole="app",
+               ciamVolumeKind="boot", ciamVolumeSizeGb="64", ciamVolumeClass="ssd"),
+         entry(ALPHA, "vol-app-data", "ciamVolume", ciamBindingRole="volume-app-data", ciamTargetRole="app",
+               ciamVolumeKind="data", ciamVolumeSizeGb="128", ciamVolumeClass="provisioned", ciamIops="5000",
+               ciamThroughputMb="200"))
+
+
 def environments(region):
     """((name, environment model, services), ...): the sample's environments in region, each rendered with
     services."""
@@ -144,7 +159,8 @@ def environments(region):
     return (("plumbing", plumbing, found),
             ("gateway", _gateway(region), found),
             ("dns", _dns(region), found),
-            ("services", model(alpha=(KEY_DB, SECRET_DB, _db(region), STORE, SUPPRESSION, SSO, EGRESS, BLOB_ENDPOINT),
+            ("services", model(alpha=(KEY_DB, SECRET_DB, _db(region), STORE, SUPPRESSION, SSO, EGRESS, BLOB_ENDPOINT,
+                                      *GROUP),
                                tree=(*EXCEPTIONS, *CANARY), changes=(*placed(region), *bound()))[1],
              found._replace(endpoints=(*found.endpoints, *ENDPOINTS))))
 
@@ -152,3 +168,14 @@ def environments(region):
 def renders(region):
     """((name, environment model, its Azure render {path: TfFile | text}), ...) of the sample in region."""
     return tuple((name, m, render_files(m, found)) for name, m, found in environments(region))
+
+
+def write_samples(root, region="eastus2", names=("services",)):
+    """Write the Terraform roots of the sample's environments named (in region) under root/<name>/; the root."""
+    for name, _, files in renders(region):
+        if name in names:
+            for path, text in written({p: f for p, f in files.items() if p.startswith("terraform/")}).items():
+                out = pathlib.Path(root) / name / path
+                out.parent.mkdir(parents=True, exist_ok=True)
+                out.write_text(text)
+    return root

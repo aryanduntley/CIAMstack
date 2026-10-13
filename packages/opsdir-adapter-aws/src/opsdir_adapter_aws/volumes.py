@@ -11,6 +11,9 @@ Terraform. Pure.
   snapshot ciamRetentionDays and copying it, encrypted, to each ciamCopyRegion (at most three; the copy's key is the
   disk key's replica there when it is a multi-region key replicated to that region, else an input). Lifecycle
   Manager's role is an input. One someone else keeps is a comment naming them; an adopted one an import block.
+  a compute group's disks (template_disks): its launch template's block_device_mappings, the boot volume at the AMI's
+  root device and the data volumes at /dev/sdf ..., its instances tagged BootVolume and DataVolumes naming them (a
+  template tags all its disks alike), its disks tagged Group and SnapshotPolicy when they name one policy.
 Class to type: standard st1, ssd gp3, provisioned io2 (VOLUME_TYPES; the reader also takes gp2, io1, sc1, standard).
 
 Read back from (Terraform type, attributes) pairs, Terraform state as it is or the CLI normalized to it (cli.py):
@@ -18,9 +21,10 @@ aws_ebs_volume (+ aws_volume_attachment) grouped by their tag Volume into one vo
 (the most common size, type, IOPS and throughput: a server that differs is named; encrypted only when all are), each
 instance's root_block_device tagged Volume as its role's boot volume, and aws_dlm_lifecycle_policy as snapshot
 policies (interval in hours, start, retention in days, copy regions; consistency crash), linked to the volumes its
-target tag SnapshotPolicy names. An EBS volume attached to one of the environment's instances without a Volume tag,
-an untagged root disk that isn't encrypted, a policy that keeps snapshots by count or is disabled: named, not
-recorded.
+target tag SnapshotPolicy names; a launch template's disks named by its instance tags (BootVolume, DataVolumes) as
+the volumes of the role its instances run. An EBS volume attached to one of the environment's instances without a
+Volume tag, an untagged root disk that isn't encrypted, a policy that keeps snapshots by count or is disabled:
+named, not recorded.
 """
 from collections import Counter
 import re
@@ -28,8 +32,8 @@ import re
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import UNBOUND, of_class, secret
 from opsdir.core.inventory import of_types, resource, tagged_role
-from opsdir.domains.data.volumes import (POLICY, boot_volume, data_volumes, is_encrypted, snapshot_every,
-                                         volume_key_role, volume_policy)
+from opsdir.domains.data.volumes import (POLICY, boot_volume, data_volumes, disk_tags, is_encrypted, snapshot_every,
+                                         tagged_disks, volume_key_role, volume_policy)
 from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import kept_by, owned
 from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
@@ -66,11 +70,12 @@ def _key(m, v):
     return (("encrypted", True), ("kms_key_id", uri.split("://", 1)[1])), ()
 
 
-def _disk(v):
-    """The size, type, IOPS and throughput a volume records (each where it records it)."""
-    return _given(("volume_size" if one(v, "ciamVolumeKind") == "boot" else "size", _int(v, "ciamVolumeSizeGb")),
-                  ("volume_type" if one(v, "ciamVolumeKind") == "boot" else "type",
-                   VOLUME_TYPES.get(one(v, "ciamVolumeClass"))),
+def _disk(v, block=None):
+    """The size, type, IOPS and throughput a volume records (each where it records it), named as a block device
+    (volume_size, volume_type: block, else a boot volume) or an EBS volume (size, type) names them."""
+    block = one(v, "ciamVolumeKind") == "boot" if block is None else block
+    return _given(("volume_size" if block else "size", _int(v, "ciamVolumeSizeGb")),
+                  ("volume_type" if block else "type", VOLUME_TYPES.get(one(v, "ciamVolumeClass"))),
                   ("iops", _int(v, "ciamIops")), ("throughput", _int(v, "ciamThroughputMb")))
 
 
@@ -88,7 +93,7 @@ def root_block_device(m, s, kms):
                else ("#", "UNBOUND: no disk-encryption key binding in this environment"))
         return ("root_block_device", Block((("encrypted", True), key)))
     encryption, notes = _key(m, v)
-    return ("root_block_device", Block((*_disk(v), *encryption, *(("#", n[2:]) for n in notes),
+    return ("root_block_device", Block((*_disk(v), *encryption, *(("#", n[1]) for n in notes),
                                         ("tags", _tags(v)))))
 
 
@@ -118,6 +123,51 @@ def server_volumes(m, s):
                     ("device_name", f"/dev/sd{DEVICES[i]}"), ("volume_id", ref(f"aws_ebs_volume.{vn}.id")),
                     ("instance_id", ref(f"aws_instance.{n}.id"))])]
     return tuple(out)
+
+
+def _template_disk(m, device, v, kms):
+    """A launch template's block_device_mappings for volume v at device (the role's boot disk when v is None:
+    encrypted with the environment's disk key, kms its reference URI or None), deleted with the instance."""
+    if v is None:
+        key = (("kms_key_id", kms.split("://", 1)[1]) if kms
+               else ("#", "UNBOUND: no disk-encryption key binding in this environment"))
+        ebs = (("encrypted", True), key)
+    else:
+        encryption, notes = _key(m, v)
+        ebs = (*_disk(v, True), *encryption, *(("#", n[1]) for n in notes))
+    return ("block_device_mappings", Block((("device_name", device),
+                                            ("ebs", Block((*ebs, ("delete_on_termination", True)))))))
+
+
+def template_disks(m, g, root_device, kms):
+    """A compute group's disks in its launch template: (block_device_mappings items with the notes about them, the
+    instance tags naming its disks (core data.volumes.disk_tags), the tags every disk it creates carries). Its role's
+    boot volume at root_device (the AMI's), its data volumes at /dev/sdf, /dev/sdg ... (those it keeps), all
+    encrypted; one snapshot policy tag (SnapshotPolicy, Lifecycle Manager's target) when its disks name one policy,
+    since a template tags every disk alike."""
+    role = one(g, "ciamTargetRole")
+    boot, data = boot_volume(m, role), data_volumes(m, role)
+    placed = tuple((v, f"/dev/sd{DEVICES[i]}") for i, v in enumerate(v for v in data if owned(v))
+                   if i < len(DEVICES))
+    kept = tuple(v for v in data if not owned(v))
+    unplaced = tuple(v for v in data if owned(v) and v.dn not in {w.dn for w, _ in placed})
+    disks = (*((boot,) if boot is not None else ()), *(v for v, _ in placed))
+    policies = {one(p, "ciamBindingRole") if p is not None else None for p in (volume_policy(m, v) for v in disks)}
+    policy = next(iter(policies)) if len(policies) == 1 else None
+    notes = (*(("#", f"Volume '{rdn_value(v)}' of group {rdn_value(g)} is kept by {kept_by(m, v)}: not rendered "
+                     "here") for v in kept),
+             *(("#", f"Volume '{rdn_value(v)}' of group {rdn_value(g)}: no device name left to attach it at")
+               for v in unplaced),
+             *(("#", f"{rdn_value(g)}'s instances mount {rdn_value(v)} at {one(v, 'ciamMountPath')} (their own "
+                     "configuration, not Terraform)") for v, _ in placed if one(v, "ciamMountPath")),
+             *((("#", f"{rdn_value(g)}'s disks don't all name one snapshot policy "
+                      f"({', '.join(sorted(r or 'none' for r in policies))}); a launch template tags them alike, so "
+                      "none is tagged SnapshotPolicy: snapshot them with a backup plan on the group's tag Role"),)
+               if len(policies) > 1 else ()))
+    mappings = (_template_disk(m, root_device, boot, kms),
+                *(_template_disk(m, device, v, kms) for v, device in placed))
+    return ((*notes, *mappings), disk_tags(boot, tuple((d.removeprefix("/dev/"), v) for v, d in placed)),
+            {"Group": rdn_value(g), **({"SnapshotPolicy": policy} if policy else {}), "ManagedBy": "opsdir"})
 
 
 def _copy_key(m, p, region):
@@ -237,13 +287,46 @@ def _policies(pairs):
     return tuple(out), targets, tuple(notices)
 
 
+def _tag_specs(t):
+    """{resource type: tags} of a launch template's tag_specifications."""
+    return {x.get("resource_type"): dict(x.get("tags") or {}) for x in blocks(t.get("tag_specifications"))}
+
+
+def template_disks_read(pairs):
+    """(data disks as EBS volumes, (instance, root disk) pairs) of the launch templates whose instance tags name their
+    disks (BootVolume, DataVolumes: a compute group's, template_disks): each data disk an aws_ebs_volume-shaped dict
+    (size, type, iops, throughput, encryption; the tags its disks carry, Volume, and ServerRole the instances' Role),
+    the boot disk a root_block_device-shaped one tagged Volume, with the instances' tags."""
+    data, boots = [], []
+    for t in of_types(pairs, "aws_launch_template"):
+        specs = _tag_specs(t)
+        instance, volume = specs.get("instance", {}), specs.get("volume", {})
+        boot, slots = tagged_disks(instance)
+        if boot is None and not slots:
+            continue
+        where = t.get("name") or t.get("id")
+        mappings = {m.get("device_name"): first_block(m.get("ebs")) for m in blocks(t.get("block_device_mappings"))}
+        devices = {f"/dev/{slot}": name for slot, name in slots.items()}
+        data += [{"id": f"{where} {device}", "size": e.get("volume_size"), "type": e.get("volume_type"),
+                  "iops": e.get("iops"), "throughput": e.get("throughput"), "encrypted": e.get("encrypted"),
+                  "kms_key_id": e.get("kms_key_id"),
+                  "tags": {**volume, "Volume": devices[device], "ServerRole": instance.get("Role")}}
+                 for device, e in mappings.items() if device in devices]
+        root = next((e for device, e in mappings.items() if device not in devices), None)
+        if boot is not None and root is not None:
+            boots.append(({"tags": {**instance, "Name": where}}, {**root, "tags": {**volume, "Volume": boot}}))
+    return tuple(data), tuple(boots)
+
+
 def volume_resources(pairs):
-    """(volume and snapshot policy resources, notices) of (Terraform type, attributes) pairs."""
+    """(volume and snapshot policy resources, notices) of (Terraform type, attributes) pairs: servers' disks, and
+    compute groups' through their launch templates (template_disks_read)."""
     policies, targets, notices = _policies(pairs)
     instances = {i.get("id"): i for i in of_types(pairs, "aws_instance") if i.get("id")}
     attached = {a.get("volume_id"): instances.get(a.get("instance_id"), {})
                 for a in of_types(pairs, "aws_volume_attachment")}
-    ebs = [v for v in of_types(pairs, "aws_ebs_volume") if v.get("id")]
+    templated, template_boots = template_disks_read(pairs)
+    ebs = [*(v for v in of_types(pairs, "aws_ebs_volume") if v.get("id")), *templated]
     named = {}
     for v in ebs:
         named.setdefault(_cloud_tags(v).get("Volume"), []).append(v)
@@ -259,7 +342,7 @@ def volume_resources(pairs):
                         links={"ciamEncryptedByRole": _common(d.get("kms_key_id") for d in disks),
                                "ciamSnapshotPolicyRole": targets.get(policy)},
                         name=name, role=_common(_cloud_tags(d).get("Role") for d in disks), tags=_cloud_tags(disks[0]))
-    roots = [(i, first_block(i.get("root_block_device"))) for i in instances.values()]
+    roots = [*((i, first_block(i.get("root_block_device"))) for i in instances.values()), *template_boots]
     booted = {}
     for i, r in roots:
         if (r.get("tags") or {}).get("Volume"):

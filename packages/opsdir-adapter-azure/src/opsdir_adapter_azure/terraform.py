@@ -6,7 +6,8 @@ Azure Monitor Agent from here (log_collection.agent_hosts) also gets a system-as
 from itertools import chain
 
 from opsdir.core.directory import follow, one, rdn_value, values
-from opsdir.core.environment import UNBOUND, of_class, one_role, recorded, servers_with_role, subnet_of
+from opsdir.core.environment import UNBOUND, by_role, of_class, one_role, recorded, servers_with_role, subnet_of
+from opsdir.domains.compute.hosts import group_subnets, own_groups, run_roles
 from opsdir.domains.compute.workloads import kubernetes_note, only_on_kubernetes
 from opsdir.core.manifest import header
 from opsdir_format_terraform.format import FORMAT as HCL
@@ -36,9 +37,10 @@ from .security import render_security
 from .backups import render_backups
 from .volumes import boot_tag, os_disk, server_volumes, snapshot_policy_notes
 from .dns import FORWARDING_RULESET, forwarding_rules, public_ip_name, records, service_record, unrecorded_answer
-from .edge import ddos_note, gateway_service, servers_backend
+from .edge import EDGE_SUBNET, ddos_note, gateway_service, servers_backend
+from .compute_groups import render_groups
 from .frontdoor import endpoint, front_door
-from .identities import LOC, RG, aks_data, identity, scope_data
+from .identities import LOC, RG, aks_data, identity, scope_data, vm_identity
 from .ingress import gateway_front
 from .landing import render_landing
 from .resource_providers import registration_note, resource_providers
@@ -69,22 +71,15 @@ def _security_rule(m, fw, prio, pinned):
 
 
 def _security_groups(m):
-    """One network security group per server role; rules from the firewall bindings."""
-    roles = sorted({one(s, "ciamServerRole") for s in m.servers})
+    """One network security group per server role run here (its servers' or its compute groups'); rules from the
+    firewall bindings."""
+    roles = sorted(set(run_roles(m)))
     rules = of_class(m, "ciamFirewallRule")
     prios = rule_priorities(rules, *PRIORITIES)
     return (*(tf_block("resource", ["azurerm_network_security_group", tf_name(role)], [
                 ("name", f"nsg-ciam-{rdn_value(m.env)}-{role}"), ("location", LOC), ("resource_group_name", RG),
                 ("tags", tagged(m, {"ManagedBy": "opsdir"}))]) for role in roles),
             *chain.from_iterable(_security_rule(m, fw, *prios[fw.dn]) for fw in rules))
-
-
-def _identity(w, agent):
-    """A VM's identity block: its workload's user-assigned identity, a system-assigned one for the Azure Monitor
-    Agent opsdir installs on it (log_collection), both, or none."""
-    kinds = (*(("SystemAssigned",) if agent else ()), *(("UserAssigned",) if w else ()))
-    return (("identity", Block((("type", ", ".join(kinds)), *((("identity_ids", [
-        ref(f"azurerm_user_assigned_identity.{tf_name(w.identity_role)}.id")]),) if w else ())))),) if kinds else ()
 
 
 def _server(m, s, des, identities=(), agents=frozenset()):
@@ -110,16 +105,17 @@ def _server(m, s, des, identities=(), agents=frozenset()):
                 ("source_image_id", recorded(s, "ciamImageRef", "image")),
                 ("admin_ssh_key", Block((("username", "ciamadmin"), ("public_key", ref("var.admin_ssh_public_key"))))),
                 ("os_disk", disk),
-                *_identity(w, rdn_value(s) in agents),
+                *vm_identity(w, rdn_value(s) in agents),
                 ("tags", tagged(m, {"Role": role, "Hostname": one(s, "ciamHostname"),
                           "Product": one(s, "ciamProductVersion", ""), **boot_tag(m, s), "ManagedBy": "opsdir"}))]),
             *server_volumes(m, s))
 
 
-def _frontend(m, svc, n, ip, internal, targets):
-    """(data sources needed, frontend_ip_configuration body); an internal one sits in its first server's subnet."""
+def _frontend(m, svc, n, ip, internal, subnets):
+    """(data sources needed, frontend_ip_configuration body); an internal one sits in the first of its targets'
+    subnets (its servers', then its compute groups')."""
     if internal:
-        subnet = ref(f"data.azurerm_subnet.{tf_name(rdn_value(subnet_of(m, targets[0])))}.id") if targets else \
+        subnet = ref(f"data.azurerm_subnet.{tf_name(rdn_value(subnets[0]))}.id") if subnets else \
             f"{UNBOUND}{one(svc, 'ciamTargetRole')}-subnet"
         return (), (("name", "frontend"), ("zones", ["1", "2", "3"]), ("subnet_id", subnet),
                     *((("private_ip_address_allocation", "Static"), ("private_ip_address", ip)) if ip else
@@ -183,7 +179,8 @@ def _service(m, svc, endpoints=()):
     record = service_record(m.d, m, svc, n, endpoint(n) if cdn else None, unrecorded_answer(svc, n, layer7))
     if layer7:
         return (*gateway_service(m, svc, spec, servers_backend(targets)), *fronted, *record)
-    data, fe = _frontend(m, svc, n, ip, internal, targets)
+    data, fe = _frontend(m, svc, n, ip, internal, (*(subnet_of(m, t) for t in targets),
+                                                    *(s for g in own_groups(m, role) for s in group_subnets(m, g))))
     blind = (comment("the protection policy's request inspection needs TLS terminated at the edge; not rendered"),) \
         if spec is not None and inspected(spec) and not cdn else ()
     return (*data, *blind, *(ddos_note(spec) if spec is not None else ()),
@@ -199,6 +196,25 @@ def _service(m, svc, endpoints=()):
                    ("ip_configuration_name", "primary"),
                    ("backend_address_pool_id", ref(f"azurerm_lb_backend_address_pool.{n}.id"))]) for t in targets),
             *chain.from_iterable(_lb_port(n, port, spec) for port in values(svc, "ciamPort")), *fronted, *record)
+
+
+def _pools(m, endpoints):
+    """{server role: (load balancer backend pool IDs, Application Gateway backend pool IDs)} (references) of the
+    service names that reach a role here: the pools its compute groups' instances join."""
+    found = {}
+    for svc in of_class(m, "ciamServiceName"):
+        role, n = one(svc, "ciamTargetRole"), tf_name(rdn_value(svc))
+        if service_exposure(svc) is None or only_on_kubernetes(m, role):
+            continue
+        spec = service_edge(m, svc, endpoints)
+        lb, gateway = found.get(role, ((), ()))
+        if spec is not None and spec.layer7:
+            gateway += (f"{ref(f'azurerm_application_gateway.{n}.id')}/backendAddressPools/servers",) \
+                if by_role(m, EDGE_SUBNET) else ()
+        else:
+            lb += (ref(f"azurerm_lb_backend_address_pool.{n}.id"),)
+        found[role] = (lb, gateway)
+    return found
 
 
 def _key_vault_secrets(m):
@@ -235,7 +251,8 @@ def render_files(m, services):
     containers, container_files = render_container_logs(m, services) if services else ((), {})
     out = (*network_data(m), *_security_groups(m), *aks_data(identities),
            *chain.from_iterable(identity(m, w) for w in identities),
-           *chain.from_iterable(_server(m, s, des, identities, agents) for s in m.servers), *snapshot_policy_notes(m),
+           *chain.from_iterable(_server(m, s, des, identities, agents) for s in m.servers),
+           *render_groups(m, des, identities, _pools(m, endpoints)), *snapshot_policy_notes(m),
            *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),

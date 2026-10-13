@@ -116,11 +116,12 @@ SOURCE = MappingProxyType({
     # DNS zones, forwarders, the SSO certificate in the cloud's store, edge subnets; what the source's edge runs (edge)
     "edge": EDGE["source"], "service_attrs": SERVICE_ATTRS["source"],
     "network": NETWORK["source"], "databases": DATABASES["source"], "volumes": VOLUMES["source"],
-    # compute groups: (name, binding role, server role, provider ref, image, size, min, desired, max, zones, tokens)
+    # compute groups: (name, binding role, server role, provider ref, image, size, min, desired, max, zones, subnet
+    # role, tokens)
     "compute": (("asg-pf-engine", "compute-pf-engine", "pf-engine",
                  "arn:aws:autoscaling:us-east-1:111122223333:autoScalingGroup:6d4c1f0e-0000-4000-8000-00000000a001:"
                  "autoScalingGroupName/ciam-prod-pf-engine", "ami-0fedcba9876543210", "m6i.large", 2, 2, 4,
-                 ("us-east-1a", "us-east-1b"), "TRUE"),),
+                 ("us-east-1a", "us-east-1b"), "subnet-pf", "TRUE"),),
     "servers": [("ds-1", "ds", "ds-1.aws.internal.example-aero.test", "10.20.1.11", "us-east-1a", "m6i.xlarge",
                  "ami-0abcdef1234567890", "subnet-ds-a", DS_V),
                 ("ds-2", "ds", "ds-2.aws.internal.example-aero.test", "10.20.2.11", "us-east-1b", "m6i.xlarge",
@@ -284,7 +285,7 @@ STANDBY = MappingProxyType({
     "compute": (("mig-pf-engine", "compute-pf-engine", "pf-engine",
                  f"{PROJECT}/regions/us-central1/instanceGroupManagers/ciam-pf-engine",
                  GIMG + "pingfederate-12-1-4-rhel9", "n2-standard-2", 2, 2, 4, ("us-central1-a", "us-central1-b"),
-                 None),),
+                 "subnet-pf", None),),
     "interconnect": ("link-source", "Cloud VPN to AWS (landing-zone managed)", AWS, ["10.20.0.0/16"]),
     "servers": [("ds-1", "ds", "ds-1.gcp.internal.example-aero.test", "10.70.1.11", "us-central1-a", "n2-standard-4",
                  GIMG + "pingds-8-1-2-rhel9", "subnet-ds", DS_N),
@@ -364,8 +365,10 @@ def _bindings(file, env, p):
               if p.get("discovery_protocol") else ()),
             *(spec(file, b(cn), ["top", "ciamComputeGroup"], cn=cn, ciamBindingRole=role, ciamTargetRole=target,
                    ciamProviderRef=ref, ciamImageRef=image, ciamInstanceSize=size, ciamMinSize=least,
-                   ciamDesiredSize=runs, ciamMaxSize=most, ciamSpansZone=list(zones), ciamMetadataTokens=tokens)
-              for cn, role, target, ref, image, size, least, runs, most, zones, tokens in p.get("compute") or ()),
+                   ciamDesiredSize=runs, ciamMaxSize=most, ciamSpansZone=list(zones), ciamSubnetRole=subnets,
+                   ciamMetadataTokens=tokens)
+              for cn, role, target, ref, image, size, least, runs, most, zones, subnets, tokens
+              in p.get("compute") or ()),
             *(spec(file, b(cn), ["top", "ciamSendingIdentity"], cn=cn, ciamBindingRole=role, ciamSenderDomain=domain,
                    ciamProviderRef=ref, ciamDkimVerified=dkim, ciamSpfAuthorized=spf, ciamDmarcPolicy=dmarc)
               for cn, role, domain, ref, dkim, spf, dmarc in p.get("sending") or ()),

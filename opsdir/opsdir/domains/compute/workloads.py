@@ -20,7 +20,7 @@ from ...core.directory import children, is_a, one, rdn_value, values
 from ...core.environment import bound_nowhere, environment_of, one_role, servers_with_role
 from ...core.findings import findings, merge_findings, responsible
 from ...core.naming import env_label
-from .hosts import baseline_for, compute_rows
+from .hosts import baseline_for, compute_rows, runs_role
 from .naming import WORKLOAD_SECRET, WORKLOADS
 
 WORKLOAD_HEADERS = ("workload", "kind", "role", "cluster", "namespace", "workload role", "identity", "pod security",
@@ -132,14 +132,16 @@ def kubernetes_roles(m):
 
 
 def runs_here(m, role):
-    """Whether environment m runs a server role at all: on servers, or on Kubernetes (its workloads there)."""
-    return bool(servers_with_role(m, role)) or role in kubernetes_roles(m)
+    """Whether environment m runs a server role at all: on servers (its own or a compute group's), or on Kubernetes
+    (its workloads there)."""
+    return runs_role(m, role) or role in kubernetes_roles(m)
 
 
 def only_on_kubernetes(m, role):
-    """Whether environment m runs a server role on Kubernetes and on no server: what reaches it there is the
-    cluster's (its ingress, its network policies), not a load balancer's pool or a firewall rule on servers."""
-    return role in kubernetes_roles(m) and not servers_with_role(m, role)
+    """Whether environment m runs a server role on Kubernetes and on no server (its own or a compute group's): what
+    reaches it there is the cluster's (its ingress, its network policies), not a load balancer's pool or a firewall
+    rule on servers."""
+    return role in kubernetes_roles(m) and not runs_role(m, role)
 
 
 def kubernetes_note(m, what, role):

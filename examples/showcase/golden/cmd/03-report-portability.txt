@@ -2,7 +2,7 @@ portability  values
 -----------  ------
 meta         2510
 intent       1606
-binding      1289
+binding      1291
 observed     381
 secret-ref   121
 contract     107

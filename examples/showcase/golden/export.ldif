@@ -6838,6 +6838,7 @@ ciamProviderRef: arn:aws:autoscaling:us-east-1:111122223333:autoScalingGroup:6
  d4c1f0e-0000-4000-8000-00000000a001:autoScalingGroupName/ciam-prod-pf-engine
 ciamSpansZone: us-east-1a
 ciamSpansZone: us-east-1b
+ciamSubnetRole: subnet-pf
 ciamTargetRole: pf-engine
 
 dn: cn=assets,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
@@ -8989,6 +8990,7 @@ ciamProviderRef: projects/example-aero-ciam-standby/regions/us-central1/instan
  ceGroupManagers/ciam-pf-engine
 ciamSpansZone: us-central1-a
 ciamSpansZone: us-central1-b
+ciamSubnetRole: subnet-pf
 ciamTargetRole: pf-engine
 
 dn: cn=monitoring,ou=stack,env=lab,cloud=hq,ou=environments,dc=ciam-ops

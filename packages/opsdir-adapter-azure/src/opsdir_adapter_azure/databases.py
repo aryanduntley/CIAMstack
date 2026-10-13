@@ -156,11 +156,15 @@ def _database(m, b):
         *geo,
         *((("high_availability", Block((("mode", "ZoneRedundant"),))),)
           if one(b, "ciamDbHighAvailability") == "zone-redundant" else ()),
+        # a MySQL server in a delegated subnet has no public access (the provider has no argument for it)
         *((("delegated_subnet_id", ref(f"data.azurerm_subnet.{tf_name(rdn_value(nets[0]))}.id")),
-           ("private_dns_zone_id", ref(f"var.{dns}")), ("public_network_access_enabled", False)) if nets else ()),
+           ("private_dns_zone_id", ref(f"var.{dns}")),
+           *((("public_network_access_enabled", False),) if engine == "postgresql" else ())) if nets else ()),
         ("administrator_login", ref(f"var.{login}")), *pw_body, *key_body, ("tags", tagged(m, binding_tags(b)))])
+    server_of = ((("server_id", ref(f"{kind}.{n}.id")),) if engine == "postgresql" else
+                 (("resource_group_name", RG), ("server_name", ref(f"{kind}.{n}.name"))))
     settings = tuple(tf_block("resource", [f"{kind}_configuration", tf_name(f"{cn}_{k}")], [
-        ("name", k), ("server_id", ref(f"{kind}.{n}.id")), ("value", v)])
+        ("name", k), *server_of, ("value", v)])
         for k, v in sorted(_settings(b, engine).items()))
     lock = (tf_block("resource", ["azurerm_management_lock", n], [
         ("name", f"{cn}-no-delete"), ("scope", ref(f"{kind}.{n}.id")), ("lock_level", "CanNotDelete"),
@@ -203,9 +207,17 @@ def database_security_groups(pairs):
     return {g: frozenset(s for g2, s in links if g2 == g) for g in dict.fromkeys(g for g, _ in links)}
 
 
+def _configured(c):
+    """The key of the server a configuration sets: its server_id (PostgreSQL's), else the server ID its own ID starts
+    with, else 'name:<server_name>' (MySQL's names its server)."""
+    sid = c.get("server_id") or ((c.get("id") or "").split("/configurations/", 1)[0]
+                                 if "/configurations/" in (c.get("id") or "") else None)
+    return sid.lower() if sid else f"name:{(c.get('server_name') or '').lower()}"
+
+
 def _server(kind, a, settings, locked, admitted=()):
     engine = ENGINES[kind]
-    own = settings.get((a.get("id") or "").lower(), {})
+    own = {**settings.get(f"name:{(a.get('name') or '').lower()}", {}), **settings.get((a.get("id") or "").lower(), {})}
     tls = own.get(TLS)
     retention = a.get("backup_retention_days")
     storage = a.get("storage_mb") and int(a["storage_mb"]) // 1024 or _first(a.get("storage")).get("size_gb")
@@ -246,7 +258,7 @@ def database_resources(pairs):
     def ranges(a):
         subnet = _low(a.get("delegated_subnet_id"))
         return tuple(c for g, subnets in guards.items() if subnet in subnets for c in admitted.get(g, ()))
-    configs = [((c.get("server_id") or "").lower(), c.get("name"), str(c.get("value")))
+    configs = [(_configured(c), c.get("name"), str(c.get("value")))
                for kind in SERVERS.values() for c in of_types(pairs, f"{kind}_configuration")]
     settings = {sid: {n: v for s, n, v in configs if s == sid} for sid in {s for s, _, _ in configs}}
     locked = {(lk.get("scope") or "").lower() for lk in of_types(pairs, "azurerm_management_lock")

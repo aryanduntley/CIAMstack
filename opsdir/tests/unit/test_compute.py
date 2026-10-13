@@ -227,6 +227,16 @@ def test_compute_groups_and_clusters_are_bindings_a_cloud_reads():
     assert any("untagged" in n for n in notices)
 
 
+def test_a_group_reported_by_its_name_only_is_the_recorded_one_and_keeps_its_arn():
+    arn = "arn:aws:autoscaling:us-east-1:111122223333:autoScalingGroup:6d4c:autoScalingGroupName/ciam-web"
+    d = directory(_group(BETA, "asg-web", "web", "ciamMaxSize: 4\n").replace("ref-asg-web", arn))
+    groups, _ = environment_groups(d, "beta/prod", (
+        resource("compute", "ciam-web", {"ciamTargetRole": "web", "ciamMaxSize": "6"}, name="ciam-web",
+                 role="asg-web"),))
+    (dn, (e,)), = groups
+    assert (dn, one(e, "ciamProviderRef"), one(e, "ciamMaxSize")) == (f"cn=asg-web,ou=bindings,{BETA}", arn, "6")
+
+
 def test_a_workload_secret_named_like_a_password_is_not_taken_for_one():
     value = "pf-admin/PING_IDENTITY_PASSWORD <- pf-admin-password"      # the store refuses what the scan finds
     assert scan(value, CORE_PATTERNS) == () and re.match(WORKLOAD_SECRET, value)

@@ -558,6 +558,8 @@ resource "aws_instance" "pf_engine_s1" {
   }
 }
 
+# Compute group asg-pf-engine is source/prod's (this environment inherits it): rendered there
+
 # ds-s1 mounts vol-ds-data-stage at /opt/ds/db (its own configuration, not Terraform)
 
 resource "aws_ebs_volume" "ds_s1_vol_ds_data_stage" {

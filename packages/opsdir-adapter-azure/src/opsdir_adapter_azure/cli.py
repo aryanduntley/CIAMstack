@@ -61,6 +61,7 @@ from .cli_budgets import budget_items
 from .cli_security import security_items
 from .cli_identity import CA_KIND, identity_items, is_policy
 from .cli_backup import backup_items
+from .cli_compute import compute_items
 from .cli_disk import disk_items, os_disk_of
 from .cli_database import database_items
 from .cli_storage import storage_items
@@ -378,7 +379,7 @@ def items_pairs(items):
                             *_functions(items), *iam_items(items), *edge_items(items), *network_items(items),
                             *database_items(items), *storage_items(items), *disk_items(items), *backup_items(items),
                             *audit_items(items), *identity_items(items), *monitor_items(items),
-                            *security_items(items), *budget_items(items)]))
+                            *security_items(items), *budget_items(items), *compute_items(items)]))
 
 
 def items_resources(items):

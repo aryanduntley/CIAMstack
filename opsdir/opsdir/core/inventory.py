@@ -159,10 +159,19 @@ def _same(attr, reported, recorded, ported=frozenset()):
         {v.lower() for v in reported} == {_PORT.sub("", v).lower() for v in recorded}
 
 
+def _shortened(k, held, ref):
+    """Whether a source reports only the short form (k.alias, a bare name) of the reference the record holds: the
+    record keeps its fuller one (an ARN a CloudFormation stack can't give)."""
+    recorded = one(held, "ciamProviderRef") if held is not None else None
+    return bool(recorded and ref and k.alias is not None and ref != recorded and not any(c in ref for c in "/:")
+                and k.alias(recorded) == k.alias(ref))
+
+
 def _entry(dn, r, k, held, links, name):
     linked = {attr: v for attr, ref in r.links.items() for v in (_resolved(links, attr, ref),) if v}
     resolved = k.resolve(r.attrs, links[True]) if k.resolve is not None else {}
-    given = {**r.attrs, **resolved, **linked, **({"ciamProviderRef": (r.ref,)} if k.match == "ref" and r.ref else {})}
+    reported = k.match == "ref" and r.ref and not _shortened(k, held, r.ref)
+    given = {**r.attrs, **resolved, **linked, **({"ciamProviderRef": (r.ref,)} if reported else {})}
     if held is not None:
         same = {a: held.attrs[a] for a, v in given.items() if a in held.attrs and _same(a, v, held.attrs[a], k.ported)}
         return make_entry(held.dn, held.classes, {**{a: v for a, v in held.attrs.items() if a not in given}, **given,

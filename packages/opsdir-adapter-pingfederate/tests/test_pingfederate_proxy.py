@@ -12,7 +12,7 @@ PROXY = ProxySettings("proxy.corp.example", 3128, ("localhost", "10.20.*"), None
 
 def _env(*roles):
     return SimpleNamespace(servers=tuple(make_entry(f"cn=s{i}", ("ciamServer",), {"ciamServerRole": (r,)})
-                                         for i, r in enumerate(roles)), d=make_directory((), {}, ()))
+                                         for i, r in enumerate(roles)), bindings=(), d=make_directory((), {}, ()))
 
 
 def test_run_properties_on_each_node_role_and_revocation_on_the_admin_node():

@@ -150,6 +150,8 @@ def _listings(m, rg, vnet):
         ("postgres-servers.json", _az("postgres", "flexible-server", "list", *g)),
         ("mysql-servers.json", _az("mysql", "flexible-server", "list", *g)),
         ("disks.json", _az("disk", "list", *g)),
+        ("scale-sets.json", _az("vmss", "list", *g)),
+        ("autoscale-settings.json", _az("monitor", "autoscale", "list", *g)),
         ("backup-vaults.json", _az("dataprotection", "backup-vault", "list", *g)),
         ("locks.json", _az("lock", "list", *g)),
         ("identities.json", _az("identity", "list")),

@@ -8,6 +8,7 @@ from ...core.environment import one_role
 from ...core.findings import Fix, Option, findings, merge_findings, responsible
 from ...core.network import covers
 from ...core.overlays import override_differences
+from ..compute.hosts import compute_groups
 from ..compute.workloads import product_versions, workload_binding, workloads
 from .naming import EXTERNAL_ALLOWLISTS
 
@@ -78,16 +79,40 @@ def _allowlist(ctx, xa):
 SERVER_INPUTS = (("ciamImageRef", "image"), ("ciamInstanceSize", "size"))   # what a server's render can't do without
 
 
+def _missing(e):
+    return [w for a, w in SERVER_INPUTS if not one(e, a)]
+
+
+def _group_inputs(ctx, g):
+    """A target compute group's blockers: no image or size (its template writes UNBOUND values), no subnet its
+    instances can sit in (no ciamSubnetRole), a subnet role it names that the environment doesn't bind."""
+    m, name = ctx.dst, f"Compute group `{rdn_value(g)}` in {ctx.dst.label}"
+    owner, missing = responsible(ctx.d, g, m.env), _missing(g)
+    unbound = [r for r in values(g, "ciamSubnetRole") if one_role(m, r) is None]
+    return [
+        *([("Compute", f"{name} records no {' or '.join(missing)} "
+            f"({', '.join(a for a, w in SERVER_INPUTS if w in missing)}): its render writes UNBOUND values there, so "
+            "applying it fails. Record them.", owner)] if missing else []),
+        *([("Compute", f"{name} names subnet role(s) {', '.join(f'`{r}`' for r in unbound)} that "
+            f"{m.label} doesn't bind: its instances can't be placed there. Bind them, or name bound subnets.",
+            owner)] if unbound else []),
+        *([("Compute", f"{name} names no subnet its instances sit in (ciamSubnetRole): its render can't place "
+            "them. Record the subnet roles, one per zone it spans.", owner)]
+          if not values(g, "ciamSubnetRole") else [])]
+
+
 def check_server_inputs(ctx):
-    """Blockers for the target's servers that record no image or size: their render writes UNBOUND values, so
-    applying it fails. Registered by the providers that render servers (the cloud adapters), not by the domain: an
-    on-prem site's servers already exist."""
+    """Blockers for the target's servers that record no image or size (their render writes UNBOUND values, so
+    applying it fails), and for its compute groups missing an image, a size or a bound subnet. Registered by the
+    providers that render servers (the cloud adapters), not by the domain: an on-prem site's servers already
+    exist."""
     m = ctx.dst
     return findings(blockers=[
-        ("Servers", f"Server `{rdn_value(s)}` in {m.label} records no {' or '.join(missing)} "
-         f"({', '.join(a for a, w in SERVER_INPUTS if w in missing)}): its render writes UNBOUND values there, so "
-         "applying it fails. Record them.", responsible(ctx.d, s, m.env))
-        for s in m.servers for missing in ([w for a, w in SERVER_INPUTS if not one(s, a)],) if missing])
+        *(("Servers", f"Server `{rdn_value(s)}` in {m.label} records no {' or '.join(missing)} "
+           f"({', '.join(a for a, w in SERVER_INPUTS if w in missing)}): its render writes UNBOUND values there, so "
+           "applying it fails. Record them.", responsible(ctx.d, s, m.env))
+          for s in m.servers for missing in (_missing(s),) if missing),
+        *(b for g in compute_groups(m) for b in _group_inputs(ctx, g))])
 
 
 def check_allowlists(ctx):

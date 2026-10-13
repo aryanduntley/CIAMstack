@@ -198,6 +198,11 @@ def _no_default_egress(props):
     return props if props.get("SecurityGroupEgress") else {**props, "SecurityGroupEgress": [NO_EGRESS]}
 
 
+METADATA_OPTIONS = Nest("MetadataOptions", {
+    "http_tokens": "HttpTokens", "http_endpoint": "HttpEndpoint",
+    "http_put_response_hop_limit": "HttpPutResponseHopLimit", "instance_metadata_tags": "InstanceMetadataTags"})
+
+
 def _instance(f, cx):
     """An instance; its root_block_device as the AMI's root device mapping (the root device name a parameter: Terraform
     asks the AMI for it, CloudFormation can't)."""
@@ -209,10 +214,7 @@ def _instance(f, cx):
                            "availability_zone": "AvailabilityZone", "user_data": "UserData",
                            "ebs_optimized": "EbsOptimized", "monitoring": "Monitoring",
                            "disable_api_termination": "DisableApiTermination",
-                           "metadata_options": Nest("MetadataOptions", {
-                               "http_tokens": "HttpTokens", "http_endpoint": "HttpEndpoint",
-                               "http_put_response_hop_limit": "HttpPutResponseHopLimit",
-                               "instance_metadata_tags": "InstanceMetadataTags"})})
+                           "metadata_options": METADATA_OPTIONS})
     if not root:
         return props
     ebs = obj(root[0], cx, {"encrypted": "Encrypted", "kms_key_id": "KmsKeyId", "volume_size": "VolumeSize",
@@ -231,6 +233,56 @@ def _root_device(f, cx):
     return (Parameter(_root_device_id(f["ami"]), "String", None,
                       f"The root device name of AMI {f['ami']} (its RootDeviceName: /dev/xvda on Amazon Linux, "
                       "/dev/sda1 on most others), which Terraform reads from the AMI"),)
+
+
+def _ami_of(f):
+    """The image a data aws_ami looks up by its image-id filter (what compute_groups writes), else None."""
+    return next((v[0] for b in f.get("filter") or () if b.get("name") == "image-id" for v in (b.get("values"),)
+                 if v), None)
+
+
+def _ami(f, a):
+    """A data aws_ami's root device name: a parameter (Terraform asks the AMI for it, CloudFormation can't)."""
+    return Parameter(_root_device_id(_ami_of(f)), "String", None,
+                     f"The root device name of AMI {_ami_of(f)} (its RootDeviceName: /dev/xvda on Amazon Linux, "
+                     "/dev/sda1 on most others), which Terraform reads from the AMI") \
+        if a == "root_device_name" else None
+
+
+EBS = {"encrypted": "Encrypted", "kms_key_id": "KmsKeyId", "volume_size": "VolumeSize", "volume_type": "VolumeType",
+       "iops": "Iops", "throughput": "Throughput", "delete_on_termination": "DeleteOnTermination",
+       "snapshot_id": "SnapshotId"}
+
+
+def _launch_template(f, cx):
+    """A launch template: its name, and the rest as its LaunchTemplateData (disks, instance and volume tag
+    specifications); its own tags are the template's (launch-template) tag specification (the engine's)."""
+    data = obj({k: v for k, v in own(f).items() if k != "name"}, cx, {
+        "image_id": "ImageId", "instance_type": "InstanceType", "key_name": "KeyName", "user_data": "UserData",
+        "ebs_optimized": "EbsOptimized", "vpc_security_group_ids": "SecurityGroupIds",
+        "iam_instance_profile": Nest("IamInstanceProfile", {"name": "Name", "arn": "Arn"}),
+        "metadata_options": METADATA_OPTIONS,
+        "block_device_mappings": Nest("BlockDeviceMappings", {"device_name": "DeviceName",
+                                                              "ebs": Nest("Ebs", EBS)}, True),
+        "tag_specifications": Nest("TagSpecifications", {
+            "resource_type": "ResourceType", "tags": Custom(lambda v, cx_: {"Tags": tag_list(cx_.value(v))})}, True)})
+    return {**({"LaunchTemplateName": cx.value(f["name"])} if f.get("name") else {}), "LaunchTemplateData": data}
+
+
+def _template_tags(tags):
+    return [{"ResourceType": "launch-template", "Tags": tag_list(tags)}]
+
+
+AUTOSCALING_GROUP = {
+    "name": "AutoScalingGroupName", "min_size": "MinSize", "max_size": "MaxSize", "desired_capacity": "DesiredCapacity",
+    "vpc_zone_identifier": "VPCZoneIdentifier", "target_group_arns": "TargetGroupARNs",
+    "health_check_type": "HealthCheckType", "health_check_grace_period": "HealthCheckGracePeriod",
+    "launch_template": Nest("LaunchTemplate", {"id": "LaunchTemplateId", "name": "LaunchTemplateName",
+                                               "version": "Version"}),
+    # an autoscaling group's tags are its tag blocks, each saying whether instances take it (Terraform's default tags
+    # don't reach them, nor CloudFormation's here)
+    "tag": Custom(lambda v, cx: {"Tags": [{"Key": cx.value(t["key"]), "Value": cx.value(t["value"]),
+                                           "PropagateAtLaunch": cx.value(t["propagate_at_launch"])} for t in v]})}
 
 
 SG_RULE = {"security_group_id": "GroupId", "cidr_ipv4": "CidrIp", "cidr_ipv6": "CidrIpv6", "description": "Description",
@@ -770,6 +822,12 @@ TYPES = {
     # compute
     "aws_instance": Native("AWS::EC2::Instance", _instance, {"id": "Ref", "private_ip": "PrivateIp"}, "InstanceId",
                            "list", parameters=_root_device),
+    "aws_launch_template": Native("AWS::EC2::LaunchTemplate", _launch_template,
+                                  {"id": "Ref", "latest_version": "LatestVersionNumber",
+                                   "default_version": "DefaultVersionNumber"}, "LaunchTemplateId", _template_tags,
+                                  tags_key="TagSpecifications"),
+    "aws_autoscaling_group": Native("AWS::AutoScaling::AutoScalingGroup", AUTOSCALING_GROUP,
+                                    {"id": "Ref", "name": "Ref"}, "AutoScalingGroupName"),
     "aws_iam_instance_profile": Native("AWS::IAM::InstanceProfile", _instance_profile,
                                        {"name": "Ref", "id": "Ref", "arn": "Arn"}, "InstanceProfileName"),
     "aws_lambda_function": Native("AWS::Lambda::Function", lambda f, cx: _lambda(f, cx),
@@ -1023,6 +1081,7 @@ def _looked_up(what, attributes=("id",)):
 
 DATA = {
     "archive_file": _packaged,
+    "aws_ami": _ami,
     "aws_cloudfront_cache_policy": _managed_policy(MANAGED_CACHE_POLICIES, "cache policy"),
     "aws_cloudfront_origin_request_policy": _managed_policy(MANAGED_ORIGIN_REQUEST_POLICIES, "origin request policy"),
     "aws_ec2_managed_prefix_list": _looked_up(lambda f: f"The ID of AWS-managed prefix list {f.get('name')} in "

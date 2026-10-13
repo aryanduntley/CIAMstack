@@ -304,7 +304,9 @@ def _tagged(native_type, f, props, default, cx, where):
             raise SystemExit(f"{where}: tagged in Terraform, but its CloudFormation type takes no tags")
         return props
     found = cx.value({**default, **tags})
-    return {**props, native_type.tags_key: tag_list(found) if native_type.tags == "list" else found}
+    form = native_type.tags
+    return {**props, native_type.tags_key: form(found) if callable(form) else tag_list(found) if form == "list"
+            else found}
 
 
 def _cx(root, stack, resolve):

@@ -43,7 +43,8 @@ REALIZES = MappingProxyType({
     "azurerm_postgresql_flexible_server": "ciamDatabase", "azurerm_route_table": "ciamRouteTable",
     "azurerm_network_watcher_flow_log": "ciamFlowLog", "azurerm_web_application_firewall_policy": "ciamEdgeService",
     "azurerm_monitor_action_group": "ciamAlertChannel", "azurerm_consumption_budget_subscription": "ciamBudget",
-    "azurerm_application_insights_standard_web_test": "ciamCanaryBinding"})
+    "azurerm_application_insights_standard_web_test": "ciamCanaryBinding",
+    "azurerm_linux_virtual_machine_scale_set": "ciamComputeGroup"})
 # The ARM resource type of an azurerm type in its resource provider (resource_providers.namespace_of)
 ARM_TYPES = MappingProxyType({
     "azurerm_kubernetes_cluster": "managedClusters", "azurerm_key_vault": "vaults",
@@ -61,7 +62,9 @@ ARM_TYPES = MappingProxyType({
     "azurerm_monitor_metric_alert": "metricAlerts", "azurerm_monitor_data_collection_rule": "dataCollectionRules",
     "azurerm_monitor_data_collection_endpoint": "dataCollectionEndpoints", "azurerm_application_insights": "components",
     "azurerm_application_insights_standard_web_test": "webTests",
-    "azurerm_data_protection_backup_vault": "backupVaults", "azurerm_security_center_automation": "automations"})
+    "azurerm_data_protection_backup_vault": "backupVaults", "azurerm_security_center_automation": "automations",
+    "azurerm_linux_virtual_machine_scale_set": "virtualMachineScaleSets",
+    "azurerm_monitor_autoscale_setting": "autoscalesettings"})
 # What the record holds of what Azure assigned a realized binding's resource:
 # {type: {state attribute: record attribute}}
 RECORDED = MappingProxyType({"azurerm_user_assigned_identity": {"client_id": "ciamIdentityClientId"}})

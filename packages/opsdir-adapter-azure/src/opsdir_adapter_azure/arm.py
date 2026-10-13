@@ -44,6 +44,7 @@ from .cli import items_pairs, kind_of
 from .inventory import PROVIDER, pairs_resources, state_pairs
 from .cli_backup import READ as BACKUP_TYPES
 from .cli_database import READ as DATABASE_TYPES
+from .cli_compute import READ as COMPUTE_TYPES
 from .cli_disk import READ as DISK_TYPES
 from .cli_edge import READ as EDGE_TYPES
 from .cli_iam import READ as IAM_TYPES
@@ -71,7 +72,7 @@ READ_TYPES = ("microsoft.network/virtualnetworks", "microsoft.network/virtualnet
               "microsoft.keyvault/vaults/keys", "microsoft.web/sites", "microsoft.web/sites/functions",
               *(t.lower() for t in NETWORK_TYPES), *DATABASE_TYPES, *STORAGE_TYPES, *DISK_TYPES,
               *BACKUP_TYPES, *AUDIT_TYPES, *EDGE_TYPES, *IAM_TYPES,
-              *MONITOR_TYPES, *SECURITY_TYPES, *BUDGET_TYPES)
+              *MONITOR_TYPES, *SECURITY_TYPES, *BUDGET_TYPES, *COMPUTE_TYPES)
 PLACEHOLDER = ("unknown-subscription", "unknown-group")   # IDs without a deployment: links within it still resolve
 SUB_RESOURCES = ("subnets", "ipConfigurations", "frontendIPConfigurations", "backendAddressPools",
                  "loadBalancingRules", "probes", "securityRules", "routes", "privateLinkServiceConnections",

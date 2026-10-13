@@ -5,7 +5,7 @@ and clouds' adapters and the Kubernetes package read their own sources into thes
 environment runs a workload on Kubernetes) are local: the target may run the role on servers instead, which the
 workloads check judges."""
 from ...core.contract import Domain, ImportKind, directory_report
-from .hosts import BASELINE_HEADERS, COMPUTE_HEADERS, baseline_rows, check_hosts
+from .hosts import BASELINE_HEADERS, COMPUTE_HEADERS, baseline_rows, check_hosts, group_ref_name
 from .schema import FRAGMENT
 from .workloads import WORKLOAD_HEADERS, all_compute_rows, check_workloads, workload_rows
 
@@ -14,6 +14,7 @@ DOMAIN = Domain(name="compute", schema=FRAGMENT, required_roles=(), sql=(),
                          "compute": directory_report(COMPUTE_HEADERS, all_compute_rows),
                          "workloads": directory_report(WORKLOAD_HEADERS, workload_rows)},
                 checks=(check_hosts, check_workloads), order=58, vocabulary={},
-                import_kinds=(ImportKind("compute", "ciamComputeGroup", ("ciamTargetRole",)),
+                import_kinds=(ImportKind("compute", "ciamComputeGroup", ("ciamTargetRole",),
+                                         alias=group_ref_name),
                               ImportKind("cluster", "ciamCluster")),
                 local_classes=("ciamWorkloadBinding",))

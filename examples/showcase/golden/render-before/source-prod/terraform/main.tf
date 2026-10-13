@@ -682,6 +682,90 @@ resource "aws_instance" "pf_engine_2" {
   }
 }
 
+data "aws_ami" "asg_pf_engine" {
+  filter {
+    name   = "image-id"
+    values = ["ami-0fedcba9876543210"]
+  }
+}
+
+resource "aws_launch_template" "asg_pf_engine" {
+  name          = "ciam-prod-pf-engine"
+  image_id      = "ami-0fedcba9876543210"
+  instance_type = "m6i.large"
+  iam_instance_profile {
+    name = aws_iam_instance_profile.identity_pf.name
+  }
+  vpc_security_group_ids = [aws_security_group.pf_engine.id]
+  metadata_options {
+    http_endpoint = "enabled"
+    http_tokens   = "required"
+  }
+  block_device_mappings {
+    device_name = data.aws_ami.asg_pf_engine.root_device_name
+    ebs {
+      encrypted             = true
+      kms_key_id            = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
+      delete_on_termination = true
+    }
+  }
+  tag_specifications {
+    resource_type = "instance"
+    tags = {
+      Name        = "ciam-prod-pf-engine"
+      Role        = "pf-engine"
+      BindingRole = "compute-pf-engine"
+      ManagedBy   = "opsdir"
+    }
+  }
+  tag_specifications {
+    resource_type = "volume"
+    tags = {
+      Group     = "asg-pf-engine"
+      ManagedBy = "opsdir"
+    }
+  }
+  tags = {
+    ManagedBy = "opsdir"
+  }
+}
+
+# asg-pf-engine exists: applying gives it launch template ciam-prod-pf-engine, which its instances run when they are next replaced
+
+resource "aws_autoscaling_group" "asg_pf_engine" {
+  name                = "ciam-prod-pf-engine"
+  min_size            = 2
+  max_size            = 4
+  desired_capacity    = 2
+  vpc_zone_identifier = [data.aws_subnet.subnet_pf_a.id, data.aws_subnet.subnet_pf_b.id]
+  launch_template {
+    id      = aws_launch_template.asg_pf_engine.id
+    version = aws_launch_template.asg_pf_engine.latest_version
+  }
+  target_group_arns = [aws_lb_target_group.svc_sso_443.arn]
+  health_check_type = "ELB"
+  tag {
+    key                 = "Role"
+    value               = "pf-engine"
+    propagate_at_launch = false
+  }
+  tag {
+    key                 = "BindingRole"
+    value               = "compute-pf-engine"
+    propagate_at_launch = false
+  }
+  tag {
+    key                 = "ManagedBy"
+    value               = "opsdir"
+    propagate_at_launch = false
+  }
+}
+
+import {
+  to = aws_autoscaling_group.asg_pf_engine
+  id = "ciam-prod-pf-engine"
+}
+
 # ds-1 mounts vol-ds-data at /opt/ds/db (its own configuration, not Terraform)
 
 resource "aws_ebs_volume" "ds_1_vol_ds_data" {

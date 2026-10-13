@@ -6,6 +6,7 @@ from itertools import chain
 
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import of_class, one_role, recorded, secret, servers_with_role, subnet_of
+from opsdir.domains.compute.hosts import group_subnets, own_groups, run_roles
 from opsdir.domains.compute.workloads import kubernetes_note, only_on_kubernetes
 from opsdir.core.manifest import header
 from opsdir_format_terraform.format import FORMAT as HCL
@@ -25,6 +26,7 @@ from .canaries import render_canaries
 from .discovery import render_discovery
 from .security import render_security
 from .suppressions import render_suppressions
+from .compute_groups import render_groups
 from .budgets import BILLING, BILLING_REGION, needs_billing_provider, render_budgets
 from .quotas import render_quota_requests
 from .cdn import fronted
@@ -54,8 +56,9 @@ DEFAULT_TARGETS = tuple(t[0] for t in TARGETS if len(t) < 3)
 
 
 def _security_groups(m):
-    """One security group per server role; ingress rules from the firewall bindings."""
-    roles = sorted({one(s, "ciamServerRole") for s in m.servers})
+    """One security group per server role run here (its servers' or its compute groups'); ingress rules from the
+    firewall bindings."""
+    roles = sorted(set(run_roles(m)))
     groups = (tf_block("resource", ["aws_security_group", tf_name(role)], [
         ("name", f"ciam-{rdn_value(m.env)}-{role}"), ("description", f"CIAM {role} ({m.label})"),
         ("vpc_id", ref("data.aws_vpc.main.id")), ("tags", {"ManagedBy": "opsdir"})]) for role in roles)
@@ -143,7 +146,9 @@ def _service(m, svc, endpoints=()):
     ip = one(svc, "ciamFrontendIp")
     internal = is_internal(svc)
     targets = servers_with_role(m, one(svc, "ciamTargetRole"))
-    subnets = sorted({rdn_value(subnet_of(m, t)): subnet_of(m, t) for t in targets}.items())
+    subnets = sorted({rdn_value(s): s for s in (*(subnet_of(m, t) for t in targets),
+                                                 *(s for g in own_groups(m, one(svc, "ciamTargetRole"))
+                                                   for s in group_subnets(m, g)))}.items())
     spec = service_edge(m, svc, endpoints)
     if spec is not None and spec.layer7:
         balancer = alb_service(m, svc, spec, servers_backend(svc, targets), tuple(sub for _, sub in subnets))
@@ -160,6 +165,18 @@ def _service(m, svc, endpoints=()):
                     *(shield(n, spec, f"aws_lb.{n}.arn") if spec is not None and not spec.cdn else ()))
     cdn = spec is not None and spec.cdn
     return (*balancer, *(fronted(m, svc, spec, n) if cdn else service_record(m.d, m, svc, n)))
+
+
+def _target_groups(m):
+    """{server role: the target group ARNs (references) of the service names a load balancer here sends to it}: what
+    its compute groups register their instances in."""
+    found = {}
+    for svc in of_class(m, "ciamServiceName"):
+        role = one(svc, "ciamTargetRole")
+        if service_exposure(svc) is not None and not only_on_kubernetes(m, role):
+            found.setdefault(role, []).extend(ref(f"aws_lb_target_group.{tf_name(rdn_value(svc))}_{port}.arn")
+                                              for port in values(svc, "ciamPort"))
+    return {role: tuple(arns) for role, arns in found.items()}
 
 
 def _references(m):
@@ -204,6 +221,7 @@ def render_files(m, services):
     out = (*network_data(m), *_security_groups(m), *eks_cluster_data(clusters),
            *chain.from_iterable(_identity(m, w) for w in identities),
            *(_instance(m, s, kms, identities) for s in m.servers),
+           *render_groups(m, kms, identities, _target_groups(m)),
            *chain.from_iterable(server_volumes(m, s) for s in m.servers), *render_snapshot_policies(m),
            *render_backups(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),

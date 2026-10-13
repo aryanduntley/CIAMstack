@@ -5,11 +5,11 @@ snapshotted as often and as long, and copied to another region where the source 
 adapters share: a role's volumes, a volume's key and snapshot policy. Pure."""
 from ...core.changeset import set_values
 from ...core.directory import is_kind, make_entry, one, rdn_value, subtree, values
-from ...core.environment import bound_nowhere, environment_of, of_class, one_role, servers_with_role
+from ...core.environment import bound_nowhere, environment_of, of_class, one_role
 from ...core.findings import (Fix, bindings_container, choice_fix, findings, merge_findings, responsible,
                               templated_entry)
 from ...core.naming import branch, env_label
-from ..compute.hosts import compute_groups
+from ..compute.hosts import runs_role
 from .kept import carry_fix, key_choice_fix
 from .protection import PLAN, compare_protection, schedule_of
 
@@ -60,6 +60,24 @@ def snapshot_every(p):
     return schedule_of(p).every
 
 
+# A compute group's instances name the disks their template gives them (a template's disks take one tag set for all,
+# so no disk can carry its own Volume tag): BootVolume its boot volume, DataVolumes "<slot>=<volume> ..." each data
+# volume at its slot (a device name, a LUN), space-separated as every cloud's tag values allow.
+BOOT_TAG, DATA_TAG = "BootVolume", "DataVolumes"
+
+
+def disk_tags(boot, slots):
+    """The instance tags naming a compute group's disks: boot (a volume, or None) and slots ((slot, volume), ...)."""
+    return {**({BOOT_TAG: rdn_value(boot)} if boot is not None else {}),
+            **({DATA_TAG: " ".join(f"{slot}={rdn_value(v)}" for slot, v in slots)} if slots else {})}
+
+
+def tagged_disks(tags):
+    """(boot volume name or None, {slot: data volume name}) from the instance tags disk_tags writes."""
+    pairs = (p.split("=", 1) for p in ((tags or {}).get(DATA_TAG) or "").split() if "=" in p)
+    return (tags or {}).get(BOOT_TAG) or None, {slot: name for slot, name in pairs if slot and name}
+
+
 # ------------------------------------------------------------------ report
 def _policies(d, env):
     """{binding role: snapshot policy or backup plan} of an environment's own subtree (env: its DN)."""
@@ -81,11 +99,6 @@ def volume_rows(d, dn=None):
 
 
 # ------------------------------------------------------------------ check
-def runs_role(m, role):
-    """Whether environment m runs servers of a role (its own, or a compute group's)."""
-    return bool(servers_with_role(m, role)) or any(one(g, "ciamTargetRole") == role for g in compute_groups(m))
-
-
 def _apply(ctx):
     return (f"Apply the rendered volumes in {ctx.dst.label} (its keeper's root when someone else keeps them).",)
 

@@ -15,8 +15,9 @@ silently left out.
 from collections import namedtuple
 
 from ...core.directory import get, one, rdn_value, values
-from ...core.environment import of_class, one_role, servers_with_role
+from ...core.environment import of_class, one_role
 from ...core.findings import responsible
+from ..compute.hosts import runs_role
 from ..compute.workloads import namespace_of, runs_on_kubernetes, service_account_of, workloads
 from .grants import rows_for
 from .principals import permits, principals
@@ -102,12 +103,13 @@ def identity_pods(m, identity_role):
 
 def workload_identities(m, model):
     """The cloud identities environment m's workload principals run as, one per identity role, each with what its
-    principals' permits need there: those whose role has servers here (the servers' identity), and those its workloads
-    on Kubernetes assume (pods: the service accounts the cloud must trust through their cluster's OIDC issuer).
-    Principals sharing an identity role are one identity (named as the first in record order would be)."""
+    principals' permits need there: those whose role has servers here, its own or a compute group's (the servers'
+    identity), and those its workloads on Kubernetes assume (pods: the service accounts the cloud must trust through
+    their cluster's OIDC issuer). Principals sharing an identity role are one identity (named as the first in record
+    order would be)."""
     def found(p):
         role, pods = one(p, "ciamTargetRole"), identity_pods(m, one(p, "ciamIdentityRole"))
-        servers = bool(servers_with_role(m, role))
+        servers = runs_role(m, role)
         return (_identity(m, model, p, f"ciam-{rdn_value(m.env)}-{role}", pods=pods, servers=servers),) \
             if servers or pods else ()
     each = tuple(w for p in principals(m.d) if one(p, "ciamPrincipalKind") == "workload" and one(p, "ciamTargetRole")

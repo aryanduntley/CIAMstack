@@ -543,6 +543,7 @@ ciamProviderRef: projects/example-aero-ciam-standby/regions/us-central1/instan
  ceGroupManagers/ciam-pf-engine
 ciamSpansZone: us-central1-a
 ciamSpansZone: us-central1-b
+ciamSubnetRole: subnet-pf
 ciamTargetRole: pf-engine
 
 dn: cn=audit-topic,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops

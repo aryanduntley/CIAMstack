@@ -12,7 +12,7 @@ what the record alone can tell: truststore additions it can't reproduce, names p
 runs servers of without a recorded baseline, and a target's compute that is less safe or less spread than the source's.
 """
 from ...core.directory import children, get, is_a, make_entry, one, rdn_value, values
-from ...core.environment import applies_in, environment_of, scope_of, servers_with_role
+from ...core.environment import applies_in, by_role, environment_of, inherited_from, scope_of, servers_with_role
 from ...core.changeset import set_values
 from ...core.findings import Fix, findings, merge_findings, responsible
 from ...core.naming import env_label
@@ -88,6 +88,43 @@ def baseline_rows(d, dn=None):
 
 def compute_groups(m):
     return tuple(b for b in m.bindings if is_a(b, "ciamComputeGroup"))
+
+
+def group_ref_name(ref):
+    """A compute group's own name from its provider ref, the ref's last path segment (an autoscaling group's ARN, a
+    scale set's or an instance group manager's resource ID end in it): what an import matches a group by when its
+    source reports the name only (a CloudFormation stack's autoscaling group)."""
+    return (ref or "").rsplit("/", 1)[-1] or None
+
+
+def own_groups(m, role=None):
+    """Environment m's own compute groups (of a server role, when given): what its render renders (one it inherits as
+    an overlay is its base's)."""
+    return tuple(g for g in compute_groups(m) if inherited_from(m, g) is None
+                 and (role is None or one(g, "ciamTargetRole") == role))
+
+
+def groups_with_role(m, role):
+    """Environment m's compute groups running servers of a role (ciamTargetRole)."""
+    return tuple(g for g in compute_groups(m) if one(g, "ciamTargetRole") == role)
+
+
+def runs_role(m, role):
+    """Whether environment m runs servers of a role (its own, or a compute group's)."""
+    return bool(servers_with_role(m, role)) or bool(groups_with_role(m, role))
+
+
+def run_roles(m):
+    """The server roles environment m runs, its servers' first, then its own compute groups', without repeats: what
+    its cloud render gives a security group."""
+    return tuple(dict.fromkeys((*(one(s, "ciamServerRole") for s in m.servers),
+                                *(one(g, "ciamTargetRole") for g in own_groups(m)))))
+
+
+def group_subnets(m, group):
+    """The subnet bindings a compute group's instances sit in: every binding environment m has of each of its subnet
+    roles (ciamSubnetRole; a role usually binds one subnet per zone), in recorded order, without repeats."""
+    return tuple({b.dn: b for r in values(group, "ciamSubnetRole") for b in by_role(m, r)}.values())
 
 
 def _scale(e):
