@@ -2026,13 +2026,42 @@ resource "aws_route53_resolver_rule_association" "fwd_corp_ad_0" {
   vpc_id           = data.aws_vpc.main.id
 }
 
+# NOTE: audit trail cloudtrail: bucket example-aero-ciam-prod-cloudtrail (audit-archive) must let cloudtrail.amazonaws.com s3:GetBucketAcl on arn:aws:s3:::example-aero-ciam-prod-cloudtrail; s3:PutObject on arn:aws:s3:::example-aero-ciam-prod-cloudtrail/AWSLogs/111122223333/* (s3:x-amz-acl bucket-owner-full-control on writes; aws:SourceArn arn:aws:cloudtrail:us-east-1:111122223333:trail/ciam-prod): its policy isn't rendered: the bucket exists already (ciamProviderRef)
+
 resource "aws_cloudtrail" "cloudtrail" {
-  # data-write events: log them with event selectors naming the resources (not rendered)
+  # data-write events: database pf-grants has none (queries aren't API calls CloudTrail records)
+  # data-write events: reading the 23 secrets is a Secrets Manager management event, recorded with control-plane
   name                          = "ciam-prod"
   s3_bucket_name                = "example-aero-ciam-prod-cloudtrail"
   is_multi_region_trail         = true
   include_global_service_events = true
   enable_log_file_validation    = true
+  advanced_event_selector {
+    name = "Management events"
+    field_selector {
+      field  = "eventCategory"
+      equals = ["Management"]
+    }
+  }
+  advanced_event_selector {
+    name = "data-write on S3 objects"
+    field_selector {
+      field  = "eventCategory"
+      equals = ["Data"]
+    }
+    field_selector {
+      field  = "resources.type"
+      equals = ["AWS::S3::Object"]
+    }
+    field_selector {
+      field  = "readOnly"
+      equals = ["false"]
+    }
+    field_selector {
+      field       = "resources.ARN"
+      starts_with = ["arn:aws:s3:::example-aero-ciam-prod-config/", "arn:aws:s3:::example-aero-ciam-prod-ds-backups/", "arn:aws:s3:::example-aero-ciam-prod-pf-cluster/"]
+    }
+  }
 }
 
 resource "aws_cloudwatch_log_group" "audit_logs" {
@@ -2256,7 +2285,7 @@ resource "aws_cloudwatch_event_target" "guardduty_incidents" {
   arn  = "arn:aws:sns:us-east-1:111122223333:ciam-prod-security-incidents"
 }
 
-# guardduty: runs in every region: each region needs its own (this root renders us-east-1)
+# NOTE: guardduty: runs in every region, but the region catalog holds no aws regions (`opsdir prerequisites`): only us-east-1 renders
 
 resource "aws_inspector2_enabler" "inspector" {
   account_ids    = [data.aws_caller_identity.current.account_id]

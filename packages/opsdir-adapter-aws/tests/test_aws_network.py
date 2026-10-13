@@ -89,7 +89,7 @@ def test_the_stacks_egress_firewall_gets_a_domain_allowlist_rule_group():
 def test_what_others_keep_is_a_comment_naming_them():
     party = ("dn: ou=owners,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: owners\n",
              "dn: cn=net-team,ou=owners,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamParty\ncn: net-team\n"
-             "ciamOwnerKind: team\n")
+             "ciamOwnerKind: team\nciamTakesGeneratedInfra: TRUE\n")
     out = _render(entry(ALPHA, "hub-fw", "ciamProxy", ciamBindingRole="hub-firewall", ciamProxyKind="firewall",
                         ciamAllowedDestination="idp.partner.example",
                         ciamManagedBy="cn=net-team,ou=owners,dc=ciam-ops"),

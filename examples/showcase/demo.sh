@@ -205,6 +205,9 @@ od modify --change CHG-2036 changes/CHG-2036-scoped-agents-and-jobs.ldif
 echo "-- the target's hybrid identity: password hashes synced beside pass-through, passwords written back to the"
 echo "   corporate AD, and Defender for Identity (kept by security operations) watching the AD"
 od modify --change CHG-2037 changes/CHG-2037-target-hybrid-identity.ldif
+echo "-- the target keeps its resource change history as long as the source (2557 days): an hourly export of"
+echo "   Resource Graph's changes into its security workspace"
+od modify --change CHG-2038 changes/CHG-2038-target-change-history.ldif
 od report baselines
 rm -rf out/hq-lab
 od render hq/lab

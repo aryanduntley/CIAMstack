@@ -26,9 +26,35 @@ keeps is named in a comment):
 Findings of GuardDuty, Inspector and Security Hub go where ciamFindingsRole says through an EventBridge rule: to an
 alert channel's SNS topic or a log destination's CloudWatch log group (their ciamProviderRef ARNs; the topic's or log
 group's resource policy must let EventBridge deliver, said in a comment); an object store isn't an EventBridge target
-(a comment). An organization-wide service (ciamAuditScope organization) is enabled for the organization from its
-management account or delegated administrator, and a service in every region (ciamAllRegions) needs a detector, hub
-or recorder in each region: both said in a comment, this root renders its own account and region.
+(a comment).
+
+An organization-wide service (ciamAuditScope organization, milestone 5.7b, decision 2777) is enabled by the
+organization, its part stamped with the entry's organization origin (kept by ciamManagedBy, else the landing zone's
+keeper): the management account (provider aws.management) registers the security services' delegated administrator
+(ciamSecurityAdminRef), whose account (provider aws.security_admin) holds the organization configuration:
+  threat-detection        its own detector and features, aws_guardduty_organization_configuration enabling every member
+                          (auto_enable_organization_members ALL) and an aws_guardduty_organization_configuration_feature
+                          per feature its areas need
+  vulnerability-scanning  its own enabler, aws_inspector2_organization_configuration enabling the scans of its areas for
+                          every member
+  posture                 its own hub, a finding aggregator, aws_securityhub_organization_configuration in central
+                          configuration, an aws_securityhub_configuration_policy enabling the standards for every
+                          account, associated with the organization's root
+  config-recording        AWS Config's delegated administrator (aws_organizations_delegated_administrator) and an
+                          organization aggregator through a role with AWSConfigRoleForOrganizations; an organization
+                          can't turn members' recorders on this way, so the environment's own recorder stays
+The environment's own root keeps the findings and incident routing and a line saying who enables it; in every region
+(ciamAllRegions) the GuardDuty and Inspector parts are made in each region (management_<region>, security_admin_<region>
+providers). Without the accounts the record must name (ciamManagementRef, ciamSecurityAdminRef), a NOTE.
+
+A service in every region (ciamAllRegions, milestone 5.7b) renders its detector, enabler, hub or recorder in each region
+it may run in (security_regions): the region catalog's available regions of the cloud's partition, less those the
+environment's region guardrail denies (no action runs there, so nothing to watch; the detector couldn't be made).
+Opt-in regions are named, not rendered: the catalog doesn't say whether the account opted in. Each region's copy goes
+through an aws provider of its own (region_<region>: Terraform providers have no for_each), named after the region; IAM
+roles are global and made once; AWS Config records global resource types in the cloud's region only. Security Hub
+aggregates every region's findings in the cloud's region (a finding aggregator), where the findings routing is; without
+it, the other regions' findings stay there (said in a comment).
 
 Findings at or above a service's ciamIncidentSeverity also go to the incident process (its ciamIncidentRole) through a
 second EventBridge rule filtering on the finding's severity: GuardDuty's numeric detail.severity (low 1.0, medium 4.0,
@@ -46,14 +72,21 @@ and the one a rule filtering them on severity targets as their incident route (w
 through). Coverage is in one order (AREA_ORDER), whatever order the source lists features or resource types in.
 """
 import json
+import re
+from collections import namedtuple
 
 from opsdir.core.directory import get, is_kind, one, rdn_value, values
+from opsdir.core.environment import of_class
 from opsdir.core.inventory import of_types, resource, tagged_role
 from opsdir.domains.estate.incidents import incident_routes
 from opsdir.domains.estate.naming import SEVERITIES
+from opsdir.domains.estate.regions import catalog_regions
+from opsdir.domains.estate.residency import permitted_regions
 from opsdir.domains.estate.security import findings_destination, security_services
+from opsdir.domains.governance.keepers import organization_line, organization_origin, organization_wide
 from opsdir.domains.observability.audit import INDEFINITE
-from opsdir_format_terraform.hcl import Block, comment, from_entry, jsonencoded, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, TfBlock, comment, from_entry, jsonencoded, ref, tf_block, tf_name
+from .account import MANAGEMENT, SECURITY_ADMIN, management_account, partition, security_admin_account
 from .storage import bucket_of
 from .tags import state_tags
 
@@ -66,6 +99,19 @@ RETENTION = "aws_config_retention_configuration"
 HUB = "aws_securityhub_account"
 SUBSCRIPTION = "aws_securityhub_standards_subscription"
 RULE, TARGET = "aws_cloudwatch_event_rule", "aws_cloudwatch_event_target"
+AGGREGATOR = "aws_securityhub_finding_aggregator"
+STATUS = "aws_config_configuration_recorder_status"
+GD_ADMIN, GD_ORG = "aws_guardduty_organization_admin_account", "aws_guardduty_organization_configuration"
+GD_ORG_FEATURE = "aws_guardduty_organization_configuration_feature"
+INSPECTOR_ADMIN, INSPECTOR_ORG = "aws_inspector2_delegated_admin_account", "aws_inspector2_organization_configuration"
+HUB_ADMIN, HUB_ORG = "aws_securityhub_organization_admin_account", "aws_securityhub_organization_configuration"
+HUB_POLICY, HUB_ASSOCIATION = "aws_securityhub_configuration_policy", "aws_securityhub_configuration_policy_association"
+DELEGATED, CONFIG_AGGREGATOR = "aws_organizations_delegated_administrator", "aws_config_configuration_aggregator"
+# what a region of its own holds (IAM is global: made once; EventBridge routing stays in the cloud's region; Security
+# Hub's central configuration and AWS Config's aggregator span every region from the cloud's)
+REGIONAL = (DETECTOR, FEATURE, ENABLER, RECORDER, CHANNEL, RETENTION, STATUS, HUB, SUBSCRIPTION, GD_ADMIN, GD_ORG,
+            GD_ORG_FEATURE, INSPECTOR_ADMIN, INSPECTOR_ORG)
+_ADDRESS = re.compile(r"\b(aws_[a-z0-9_]+)\.([A-Za-z0-9_-]+)")
 FOUNDATIONAL = ("control-plane", "identity", "network")    # what a detector's own sources watch
 AREA_ORDER = ("control-plane", "identity", "network", "compute", "containers", "storage", "databases", "key-vaults",
               "applications")
@@ -105,14 +151,215 @@ _HUB = "arn:${data.aws_partition.current.partition}:securityhub:${data.aws_regio
 GUARDDUTY_FLOOR = {"low": 1, "medium": 4, "high": 7, "critical": 9}
 
 
-def _notes(m, s):
-    """Comments every kept service carries: organization scope, every region."""
-    cn = rdn_value(s)
-    return (*((comment(f"{cn}: organization-wide: enable it for the organization from its management account or "
-                       "delegated administrator (not rendered here)"),)
-              if one(s, "ciamAuditScope") == "organization" else ()),
-            *((comment(f"{cn}: runs in every region: each region needs its own (this root renders "
-                       f"{one(m.cloud, 'ciamRegion')})"),) if one(s, "ciamAllRegions") == "TRUE" else ()))
+def region_alias(region):
+    """The aws provider alias a security service's copy in region is made through."""
+    return f"region_{tf_name(region)}"
+
+
+def _guardrail(m):
+    """The environment's guardrail denying every region but those it may use (ciamDenies region-escape), or None."""
+    return next((g for g in of_class(m, "ciamGuardrail") if "region-escape" in values(g, "ciamDenies")), None)
+
+
+# regions: the other regions a service in every region runs in; denied: those the region guardrail denies; opt_in:
+# those open only to accounts that opt in; listed: whether the catalog holds any region of the cloud's partition
+Regions = namedtuple("Regions", ("regions", "denied", "opt_in", "listed"))
+
+
+def security_regions(m):
+    """The regions besides its own a security service of environment m in every region runs in (Regions): the region
+    catalog's available regions of the cloud's partition (GovCloud's or the others), less those its region guardrail
+    denies; opt-in regions apart (the catalog doesn't say whether the account opted in)."""
+    home = one(m.cloud, "ciamRegion") or ""
+    gov = home.startswith("us-gov-")
+    listed = [r for r in catalog_regions(m.d, "aws") if rdn_value(r).startswith("us-gov-") == gov]
+    allowed = set(permitted_regions(m)) if _guardrail(m) is not None else None
+    available = [rdn_value(r) for r in listed if one(r, "ciamRegionStatus") == "available" and rdn_value(r) != home]
+    return Regions(tuple(r for r in available if allowed is None or r in allowed),
+                   tuple(r for r in available if allowed is not None and r not in allowed),
+                   tuple(rdn_value(r) for r in listed if one(r, "ciamRegionStatus") == "opt-in"), bool(listed))
+
+
+def every_region(m):
+    """The regions environment m's security services in every region need a provider for (region_alias)."""
+    wanted = any(one(s, "ciamAllRegions") == "TRUE" for s in security_services(m))
+    return security_regions(m).regions if wanted else ()
+
+
+def _rewrite(v, renamed, region):
+    """A body value with references to renamed resources pointing at their copies and the region lookup's value
+    the region itself."""
+    if isinstance(v, str):
+        v = _ADDRESS.sub(lambda x: f"{x.group(0)}_{tf_name(region)}" if x.group(0) in renamed else x.group(0), v)
+        return v.replace("${data.aws_region.current.region}", region)
+    if isinstance(v, Block):
+        return Block(tuple((k, _rewrite(x, renamed, region)) for k, x in v.body))
+    if isinstance(v, (list, tuple)):
+        return type(v)(_rewrite(x, renamed, region) for x in v)
+    if isinstance(v, dict):
+        return {k: _rewrite(x, renamed, region) for k, x in v.items()}
+    return v
+
+
+def _local_only(b):
+    """A regional AWS Config recorder: global resource types are recorded in the cloud's region only."""
+    if b.labels[0] != RECORDER:
+        return b
+    return b._replace(body=tuple((k, Block(tuple((kk, False if kk == "include_global_resource_types" else vv)
+                                                 for kk, vv in v.body))) if k == "recording_group" else (k, v)
+                                 for k, v in b.body))
+
+
+def _provider_in(b, region):
+    """The provider a block's copy in region is made through: its own account's in that region (an aliased provider
+    <alias>_<region>), else the environment's (region_alias)."""
+    given = next((v for k, v in b.body if k == "provider"), None)
+    alias = given[len("${aws."):-1] if given else None
+    return ref(f"aws.{alias}_{tf_name(region)}" if alias else f"aws.{region_alias(region)}")
+
+
+def in_region(items, region):
+    """The copy of a service's regional resources (REGIONAL) for region: each named <name>_<region>, made through
+    that region's provider for its account (_provider_in), references among them following; comments and global
+    resources left to the original."""
+    blocks = [x for x in items if isinstance(x, TfBlock) and x.kind == "resource" and x.labels[0] in REGIONAL]
+    renamed = {f"{b.labels[0]}.{b.labels[1]}" for b in blocks}
+    return tuple(_local_only(b._replace(
+        labels=(b.labels[0], f"{b.labels[1]}_{tf_name(region)}"),
+        body=(("provider", _provider_in(b, region)),
+              *((k, _rewrite(v, renamed, region)) for k, v in b.body if k not in ("#", "provider"))))) for b in blocks)
+
+
+def _everywhere(m, s, own):
+    """What a service in every region adds to its own region's resources: their copy in each other region, Security
+    Hub's finding aggregator (for the environment's own hub), and comments naming where it runs and where it doesn't."""
+    cn, home, found = rdn_value(s), one(m.cloud, "ciamRegion"), security_regions(m)
+    aggregate = not organization_wide(s)
+    if not found.listed:
+        return (comment(f"NOTE: {cn}: runs in every region, but the region catalog holds no aws regions (`opsdir "
+                        f"prerequisites`): only {home} renders"),)
+    kind, n = one(s, "ciamSecurityKind"), tf_name(cn)
+    guardrail = _guardrail(m)
+    return (comment(f"{cn}: in every region: {', '.join((home, *found.regions))}"),
+            *((comment(f"{cn}: not in {', '.join(found.denied)}: guardrail {rdn_value(guardrail)} denies every "
+                       "action there"),) if found.denied else ()),
+            *((comment(f"{cn}: not in opt-in regions {', '.join(found.opt_in)}: the record doesn't say the account "
+                       "opted in (enable it there once it does)"),) if found.opt_in else ()),
+            *((tf_block("resource", [AGGREGATOR, n], [("linking_mode", "ALL_REGIONS"),
+                                                      ("depends_on", [ref(f"{HUB}.{n}")])]),)
+              if kind == "posture" and found.regions and aggregate else ()),
+            *((comment(f"{cn}: its findings in the other regions stay there unless Security Hub aggregates them (a "
+                       "posture service in every region)"),)
+              if kind != "posture" and found.regions and findings_destination(m, s) is not None and aggregate
+              else ()),
+            *(x for r in found.regions for x in in_region(own, r)))
+
+
+# ------------------------------------------------------------------ organization-wide (5.7b)
+def _as_admin(items):
+    """A service's own resources as its delegated administrator's: named <name>_admin, made through
+    aws.security_admin, references among them following (IAM, routing and comments left out)."""
+    blocks = [x for x in items if isinstance(x, TfBlock) and x.kind == "resource" and x.labels[0] in REGIONAL]
+    renamed = {f"{b.labels[0]}.{b.labels[1]}" for b in blocks}
+
+    def admin(v):
+        return _ADDRESS.sub(lambda x: f"{x.group(0)}_admin" if x.group(0) in renamed else x.group(0), v) \
+            if isinstance(v, str) else Block(tuple((k, admin(x)) for k, x in v.body)) if isinstance(v, Block) else \
+            type(v)(admin(x) for x in v) if isinstance(v, (list, tuple)) else v
+    return tuple(b._replace(labels=(b.labels[0], f"{b.labels[1]}_admin"),
+                            body=(("provider", ref(f"aws.{SECURITY_ADMIN}")),
+                                  *((k, admin(v)) for k, v in b.body if k != "#"))) for b in blocks)
+
+
+def _org_detection(m, s, n, mgmt, adm, admin):
+    features = _features(values(s, "ciamSecurityCoverage"))
+    return (tf_block("resource", [GD_ADMIN, n], [mgmt, ("admin_account_id", admin)]),
+            *_as_admin(_detector(m, s)),
+            tf_block("resource", [GD_ORG, n], [
+                adm, ("detector_id", ref(f"{DETECTOR}.{n}_admin.id")), ("auto_enable_organization_members", "ALL"),
+                ("depends_on", [ref(f"{GD_ADMIN}.{n}")])]),
+            *(tf_block("resource", [GD_ORG_FEATURE, f"{n}_{tf_name(f.lower())}"], [
+                adm, ("detector_id", ref(f"{DETECTOR}.{n}_admin.id")), ("name", f), ("auto_enable", "ALL"),
+                *(("additional_configuration", Block((("name", x), ("auto_enable", "ALL")))) for x in extra),
+                ("depends_on", [ref(f"{GD_ORG}.{n}")])]) for f, extra in features))
+
+
+def _org_scanning(m, s, n, mgmt, adm, admin):
+    kinds = list(_scan_kinds(s))
+    return (tf_block("resource", [INSPECTOR_ADMIN, n], [mgmt, ("account_id", admin)]),
+            tf_block("resource", [ENABLER, f"{n}_admin"], [adm, ("account_ids", [admin]), ("resource_types", kinds),
+                                                           ("depends_on", [ref(f"{INSPECTOR_ADMIN}.{n}")])]),
+            tf_block("resource", [INSPECTOR_ORG, n], [
+                adm, ("auto_enable", Block(tuple((k.lower(), k in kinds) for k in ("EC2", "ECR", "LAMBDA",
+                                                                                    "LAMBDA_CODE")))),
+                ("depends_on", [ref(f"{ENABLER}.{n}_admin")])]))
+
+
+def _org_posture(m, s, n, mgmt, adm, admin):
+    arns = [_HUB + path for path in (*(STANDARDS.get(k) for k in values(s, "ciamComplianceStandard")),
+                                     *(BASELINES.get(k) for k in values(s, "ciamSecurityBaseline"))) if path]
+    missing = [k for k in (*values(s, "ciamComplianceStandard"), *values(s, "ciamSecurityBaseline"))
+               if k not in STANDARDS and k not in BASELINES]
+    return (tf_block("resource", [HUB_ADMIN, n], [mgmt, ("admin_account_id", admin)]),
+            tf_block("resource", [HUB, f"{n}_admin"], [
+                adm, ("enable_default_standards", False), ("auto_enable_controls", True),
+                ("control_finding_generator", "SECURITY_CONTROL"), ("depends_on", [ref(f"{HUB_ADMIN}.{n}")])]),
+            tf_block("resource", [AGGREGATOR, f"{n}_admin"], [adm, ("linking_mode", "ALL_REGIONS"),
+                                                              ("depends_on", [ref(f"{HUB}.{n}_admin")])]),
+            tf_block("resource", [HUB_ORG, n], [
+                adm, ("auto_enable", False), ("auto_enable_standards", "NONE"),
+                ("organization_configuration", Block((("configuration_type", "CENTRAL"),))),
+                ("depends_on", [ref(f"{AGGREGATOR}.{n}_admin")])]),
+            tf_block("resource", [HUB_POLICY, n], [
+                adm, ("name", rdn_value(s)), ("description", f"{rdn_value(s)}: Security Hub for every account"),
+                ("configuration_policy", Block((
+                    ("service_enabled", True), ("enabled_standard_arns", arns),
+                    ("security_controls_configuration", Block((("disabled_control_identifiers", []),)))))),
+                ("depends_on", [ref(f"{HUB_ORG}.{n}")])]),
+            tf_block("data", ["aws_organizations_organization", SECURITY_ADMIN], [adm]),
+            tf_block("resource", [HUB_ASSOCIATION, n], [
+                adm, ("target_id", ref(f"data.aws_organizations_organization.{SECURITY_ADMIN}.roots[0].id")),
+                ("policy_id", ref(f"{HUB_POLICY}.{n}.id"))]),
+            *((comment(f"{rdn_value(s)}: Security Hub has no standard for {', '.join(missing)}: assess it another way "
+                       "(an AWS Audit Manager framework, a Config conformance pack), not rendered"),)
+              if missing else ()))
+
+
+def _org_recording(m, s, n, mgmt, adm, admin):
+    trust = {"Version": "2012-10-17", "Statement": [{
+        "Effect": "Allow", "Principal": {"Service": "config.amazonaws.com"}, "Action": "sts:AssumeRole"}]}
+    return (tf_block("resource", [DELEGATED, f"{n}_config"], [mgmt, ("account_id", admin),
+                                                              ("service_principal", "config.amazonaws.com")]),
+            tf_block("resource", ["aws_iam_role", f"{n}_aggregator"], [
+                adm, ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(s)}-aggregator"[:64]),
+                ("assume_role_policy", json.dumps(trust, separators=(",", ":")))]),
+            tf_block("resource", ["aws_iam_role_policy_attachment", f"{n}_aggregator"], [
+                adm, ("role", ref(f"aws_iam_role.{n}_aggregator.name")),
+                ("policy_arn", f"arn:{partition(m)}:iam::aws:policy/service-role/AWSConfigRoleForOrganizations")]),
+            tf_block("resource", [CONFIG_AGGREGATOR, n], [
+                adm, ("name", rdn_value(s)),
+                ("organization_aggregation_source", Block((("all_regions", True),
+                                                           ("role_arn", ref(f"aws_iam_role.{n}_aggregator.arn"))))),
+                ("depends_on", [ref(f"aws_iam_role_policy_attachment.{n}_aggregator"),
+                                ref(f"{DELEGATED}.{n}_config")])]))
+
+
+_ORGANIZATION = {"threat-detection": _org_detection, "vulnerability-scanning": _org_scanning,
+                 "posture": _org_posture, "config-recording": _org_recording}
+
+
+def organization_part(m, s):
+    """(the organization part of an organization-wide service, a NOTE for the environment's own part or None): what
+    the management account and the security services' delegated administrator make for every member account."""
+    missing = [a for a, v in (("ciamManagementRef", management_account(m)),
+                              ("ciamSecurityAdminRef", security_admin_account(m))) if not v]
+    if missing:
+        return (), comment(f"NOTE: {rdn_value(s)}: organization-wide, but not rendered: the record doesn't name "
+                           f"{' and '.join(missing)} (the organization's management account, its security services' "
+                           "delegated administrator)")
+    kind, n = one(s, "ciamSecurityKind"), tf_name(rdn_value(s))
+    mgmt, adm = ("provider", ref(f"aws.{MANAGEMENT}")), ("provider", ref(f"aws.{SECURITY_ADMIN}"))
+    return _ORGANIZATION[kind](m, s, n, mgmt, adm, security_admin_account(m)), None
 
 
 def _features(areas):
@@ -134,9 +381,14 @@ def _detector(m, s):
                        "use (control-plane)"),) if "key-vaults" in areas else ()))
 
 
+def _scan_kinds(s):
+    """The resource types Inspector scans for a service's areas (EC2 and ECR when it names none)."""
+    return tuple(dict.fromkeys(t for a in values(s, "ciamSecurityCoverage") for t in INSPECTED.get(a, ()))) or \
+        ("EC2", "ECR")
+
+
 def _scanner(m, s):
-    areas = values(s, "ciamSecurityCoverage")
-    kinds = tuple(dict.fromkeys(t for a in areas for t in INSPECTED.get(a, ()))) or ("EC2", "ECR")
+    kinds = _scan_kinds(s)
     return (tf_block("resource", [ENABLER, tf_name(rdn_value(s))], [
         ("account_ids", [ref("data.aws_caller_identity.current.account_id")]), ("resource_types", list(kinds))]),)
 
@@ -252,8 +504,22 @@ _RENDER = {"threat-detection": _detector, "vulnerability-scanning": _scanner, "c
 
 
 def _service(m, s):
+    """(a service's items in the environment's render, its organization part): an organization-wide one keeps only
+    its routing here (AWS Config its recorder too: the organization can't turn members' recorders on) and a line saying
+    who enables it."""
     kind = one(s, "ciamSecurityKind")
-    return (*_RENDER[kind](m, s), *findings_routing(m, s, kind), *_incident_routing(m, s, kind), *_notes(m, s))
+    everywhere = one(s, "ciamAllRegions") == "TRUE"
+    routing = (*findings_routing(m, s, kind), *_incident_routing(m, s, kind))
+    if not organization_wide(s):
+        own = _RENDER[kind](m, s)
+        return (*own, *routing, *(_everywhere(m, s, own) if everywhere else ())), ()
+    org, note = organization_part(m, s)
+    own = _RENDER[kind](m, s) if kind == "config-recording" else ()
+    return ((*own, *routing, *(_everywhere(m, s, own) if everywhere and own else ()),
+             *((note,) if note else (comment(organization_line(m, s)),)),
+             *((comment(f"{rdn_value(s)}: an organization can't turn members' AWS Config recorders on: this account "
+                        "records its own"),) if own else ())),
+            (*org, *((x for r in security_regions(m).regions for x in in_region(org, r)) if everywhere else ())))
 
 
 def render_security(m):
@@ -264,7 +530,9 @@ def render_security(m):
         if any(one(s, "ciamSecurityKind") == "posture" for s in services) else ()
     caller = (tf_block("data", ["aws_caller_identity", "current"], []),) \
         if any(one(s, "ciamSecurityKind") == "vulnerability-scanning" for s in services) else ()
-    return (*data, *caller, *(x for s in services for x in from_entry(s.dn, _service(m, s))))
+    parts = tuple((s, _service(m, s)) for s in services)
+    return (*data, *caller, *(x for s, (own, org) in parts
+                              for x in (*from_entry(s.dn, own), *from_entry(organization_origin(s.dn), org))))
 
 
 def _enabled(v):
@@ -393,18 +661,30 @@ def security_resources(pairs):
         name="inspector")
         for a in of_types(pairs, ENABLER) if a.get("id"))
     recorders = tuple(resource("security", f"config-recorder:{a.get('name')}", {
-        "ciamSecurityKind": "config-recording", "ciamAuditScope": "account",
+        "ciamSecurityKind": "config-recording",
+        "ciamAuditScope": "organization" if any(a.get("organization_aggregation_source")
+                                                for a in of_types(pairs, CONFIG_AGGREGATOR)) else "account",
         "ciamRetentionDays": retention},
         links={"ciamFindingsRole": f"arn:aws:s3:::{buckets[a.get('name')]}" if buckets.get(a.get("name")) else None},
         name=a.get("name"))
         for a in of_types(pairs, RECORDER) if a.get("name"))
     hubs = tuple(resource("security", a.get("arn") or a.get("id"), {
         "ciamSecurityKind": "posture",
-        "ciamComplianceStandard": tuple(sorted(k for k, base in standards if not base)),
-        "ciamSecurityBaseline": tuple(sorted(k for k, base in standards if base)),
+        "ciamComplianceStandard": tuple(sorted({k for k, base in standards if not base})),   # once, whatever the
+        "ciamSecurityBaseline": tuple(sorted({k for k, base in standards if base})),         # regions subscribing
         "ciamAuditScope": _scope(pairs, "aws_securityhub_organization_configuration"),
         **_incident_severity(incidents, "aws.securityhub")},
         links={"ciamFindingsRole": routes.get("aws.securityhub"), **_incident_link(incidents, "aws.securityhub")},
         name="security-hub")
         for a in of_types(pairs, HUB) if a.get("arn") or a.get("id"))
-    return (*detectors, *scanners, *recorders, *hubs)
+    return (*_folded(detectors), *_folded(scanners), *_folded(recorders), *_folded(hubs))
+
+
+def _folded(found):
+    """A kind's services as one: the copies a service in every region has (one detector, enabler, recorder or hub per
+    region, an account holds no more) read as one of them, in every region (ciamAllRegions): the one first by its
+    reference, whatever order the source lists them in."""
+    if len(found) < 2:
+        return found
+    first = min(found, key=lambda r: (r.ref or "", r.name or ""))
+    return (first._replace(attrs={**first.attrs, "ciamAllRegions": ("TRUE",)}),)

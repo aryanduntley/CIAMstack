@@ -143,3 +143,42 @@ def test_the_cli_reads_one_scope():
     assert render_scope(None, ["ciamDatabase"], []) == Scope("class", ("ciamDatabase",))
     with pytest.raises(SystemExit, match="one of"):
         render_scope("dba", ["ciamDatabase"], [])
+
+
+# ------------------------------------------------------------------ organization-wide parts (5.7b, decision 2777)
+ORG_SVC = entry(ALPHA, "detector", "ciamSecurityService", ciamBindingRole="detector",
+                ciamSecurityKind="threat-detection", ciamAuditScope="organization")
+OWN_SVC = entry(ALPHA, "scanner", "ciamSecurityService", ciamBindingRole="scanner",
+                ciamSecurityKind="vulnerability-scanning", ciamAuditScope="account")
+NET_SVC = entry(ALPHA, "posture", "ciamSecurityService", ciamBindingRole="posture", ciamSecurityKind="posture",
+                ciamAuditScope="organization", ciamManagedBy=NET_TEAM)
+
+
+def test_an_entry_s_organization_part_is_kept_with_the_landing_zone_and_its_own_part_where_the_entry_goes():
+    from opsdir.domains.governance.keepers import (keeper_of_origin, organization_origin, organization_wide,
+                                                   origin_entry, placement)
+    m = _alpha(GUARDRAIL, ORG_SVC, OWN_SVC, NET_SVC, lz_takes="TRUE")
+    detector, scanner, posture = (_of(m, cn) for cn in ("detector", "scanner", "posture"))
+    assert organization_wide(detector) and not organization_wide(scanner)
+    assert origin_entry(organization_origin(detector.dn)) == detector.dn and origin_entry(detector.dn) == detector.dn
+    place = placement(m)
+    assert place(detector.dn) is None                                      # its findings routing: the stack's
+    assert place(organization_origin(detector.dn)) == LANDING_ZONE         # its organization part
+    assert place(organization_origin(posture.dn)) == f"{LANDING_ZONE}/net-team"   # ciamManagedBy wins
+    assert keeper_of_origin(m, organization_origin("cn=gone,dc=x")) is None
+
+
+def test_an_asked_keeper_s_organization_part_is_named_as_organization_wide_and_scopes_follow_the_entry():
+    from opsdir.core.environment import Scope
+    from opsdir.domains.governance.keepers import NAMED, asked_lines, organization_line, organization_origin, placement
+    m = _alpha(GUARDRAIL, ORG_SVC)                                         # lz-team takes nothing: asked
+    detector = _of(m, "detector")
+    assert placement(m)(organization_origin(detector.dn)) == NAMED + "lz-team"
+    (line,) = asked_lines(m, {NAMED + "lz-team": ((organization_origin(detector.dn), "aws_x.y"),)})
+    assert line.startswith("detector (organization-wide): kept by lz-team, not rendered here (aws_x.y)")
+    assert organization_line(m, detector) == "detector: organization-wide: enabled for every account by lz-team " \
+                                             "(asked of them)"
+    sliced = m._replace(scope=Scope("bindings", (detector.dn,)))
+    assert placement(sliced)(organization_origin(detector.dn)) == "terraform/slice"
+    taking = _alpha(GUARDRAIL, ORG_SVC, lz_takes="TRUE")
+    assert organization_line(taking, _of(taking, "detector")).endswith(f"by lz-team (in their root {LANDING_ZONE})")

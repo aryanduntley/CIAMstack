@@ -80,6 +80,25 @@ def subscription_variable(m, described=False):
         *((("default", subscription_id(m)),) if subscription_id(m) else ())])
 
 
+MANAGEMENT_GROUP = "management_group_id"
+
+
+def management_group(m):
+    """The management group environment m's cloud makes its organization-wide settings on (ciamManagementRef: a name
+    or its resource ID), as a resource ID, or None."""
+    ref_ = one(m.cloud, "ciamManagementRef")
+    return None if not ref_ else ref_ if ref_.startswith("/") else \
+        f"/providers/Microsoft.Management/managementGroups/{ref_}"
+
+
+def management_group_variable(m):
+    """The management_group_id input of a root of environment m, defaulting to the recorded management group."""
+    return tf_block("variable", [MANAGEMENT_GROUP], [
+        ("type", ref("string")),
+        ("description", "The management group organization-wide settings are made on (its resource ID)"),
+        *((("default", management_group(m)),) if management_group(m) else ())])
+
+
 def tagged(m, own):
     """A resource's tags in environment m: the tag policy's, with the resource's own over them."""
     return {**required_tags(m), **own}

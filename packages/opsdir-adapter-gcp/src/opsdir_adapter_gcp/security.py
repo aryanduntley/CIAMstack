@@ -123,18 +123,26 @@ def _request(cn, what):
     return comment(f"{cn}: {what}: a request to the organization's administrators (not rendered)")
 
 
+# Security Command Center's activation has no Terraform resource, and enabling its services has only google-beta's
+# (google_scc_management_*_security_center_service): the build stays GA-only (decision 2789)
+BETA_ONLY = "activation has no Terraform resource and enabling its services only a google-beta one"
+
+
 def _detection(m, s):
     cn, areas = rdn_value(s), values(s, "ciamSecurityCoverage")
     services = [name for name, watched in DETECTORS if set(watched) & set(areas)] or ["Event Threat Detection"]
-    return (_request(cn, f"Security Command Center (Premium or Enterprise) activated with {', '.join(services)}"),
+    return (_request(cn, f"Security Command Center (Premium or Enterprise) activated with {', '.join(services)} "
+                         f"({BETA_ONLY})"),
             *((comment(f"{cn}: no Security Command Center service watches key vaults on their own (Event Threat "
                        "Detection sees Cloud KMS use in the audit logs)"),) if "key-vaults" in areas else ()))
 
 
 def _scanning(m, s):
     cn, areas = rdn_value(s), values(s, "ciamSecurityCoverage") or ("compute",)
-    return (*((comment(f"{cn}: VM Manager reports vulnerabilities once the instances carry metadata "
-                       "enable-osconfig=TRUE (not rendered here)"),) if "compute" in areas else ()),
+    return (*((tf_block("resource", ["google_compute_project_metadata_item", tf_name(f"{cn}_osconfig")], [
+                  ("#", "VM Manager reports the instances' vulnerabilities once they run the OS Config agent"),
+                  ("project", PROJECT), ("key", "enable-osconfig"), ("value", "TRUE")]),)
+              if "compute" in areas else ()),
             *((_request(cn, "Web Security Scanner (Security Command Center) for applications"),)
               if "applications" in areas else ()))
 
@@ -153,7 +161,8 @@ def _posture(m, s):
     cn = rdn_value(s)
     frameworks = values(s, "ciamComplianceStandard")
     others = [b for b in values(s, "ciamSecurityBaseline") if b != BASELINE]
-    return (_request(cn, "Security Command Center (Premium or Enterprise) activated with Security Health Analytics"),
+    return (_request(cn, f"Security Command Center (Premium or Enterprise) activated with Security Health Analytics "
+                         f"({BETA_ONLY})"),
             *((_request(cn, f"{', '.join(frameworks)} assessed by Compliance Manager framework deployments (FedRAMP, "
                             "IL and ITAR regimes held by an Assured Workloads folder)"),) if frameworks else ()),
             *((comment(f"{cn}: {', '.join(others)}: another cloud's baseline, not Google Cloud's (not rendered)"),)

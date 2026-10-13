@@ -1176,7 +1176,7 @@ resource "azurerm_application_gateway" "svc_sso" {
 
 # Egress firewall 'egress-firewall' is kept by network-security; its allowlist is rendered in their root, not here.
 
-# Egress forward-proxy 'hub-proxy' is kept by network-security; its allowlist is rendered in their root, not here.
+# Egress passes forward-proxy 'hub-proxy' (proxy.hub.example-aero.test:3128), kept by network-security: its allowlist is kept there, not rendered as cloud firewall rules.
 
 data "azurerm_key_vault" "pe_secrets_kv_ciam_prod" {
   name                = "kv-ciam-prod"
@@ -2161,7 +2161,203 @@ resource "azurerm_security_center_automation" "defender_vulnerability_export" {
   }
 }
 
-# resource-changes: Azure records resource changes itself (Resource Graph change history, about 14 days): nothing to enable; keeping them longer needs an export (not rendered)
+# resource-changes: Resource Graph keeps resource changes 14 days: every hour a Logic App copies them into CiamResourceChanges_CL in security-logs (Microsoft's documented way to keep them longer; a run reads at most 1000 changes, more need the query's skipToken paging)
+
+resource "azurerm_log_analytics_workspace_table_custom_log" "resource_changes_changes" {
+  # Log Analytics keeps rows beyond 730 days in whole years, at most 4383: 2557 days kept 2922
+  name                    = "CiamResourceChanges_CL"
+  workspace_id            = azurerm_log_analytics_workspace.security_logs.id
+  plan                    = "Analytics"
+  retention_in_days       = 730
+  total_retention_in_days = 2922
+  column {
+    name = "TimeGenerated"
+    type = "dateTime"
+  }
+  column {
+    name = "ChangeId"
+    type = "string"
+  }
+  column {
+    name = "ChangeType"
+    type = "string"
+  }
+  column {
+    name = "TargetResourceId"
+    type = "string"
+  }
+  column {
+    name = "TargetResourceType"
+    type = "string"
+  }
+  column {
+    name = "Changes"
+    type = "dynamic"
+  }
+  column {
+    name = "ChangeAttributes"
+    type = "dynamic"
+  }
+}
+
+resource "azurerm_monitor_data_collection_endpoint" "resource_changes_changes" {
+  name                = "dce-ciam-prod-changes"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  description         = "resource-changes: resource changes kept beyond Resource Graph's 14 days (opsdir)"
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Realizes    = "resource-changes"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_monitor_data_collection_rule" "resource_changes_changes" {
+  name                        = "dcr-ciam-prod-changes"
+  location                    = data.azurerm_resource_group.main.location
+  resource_group_name         = data.azurerm_resource_group.main.name
+  data_collection_endpoint_id = azurerm_monitor_data_collection_endpoint.resource_changes_changes.id
+  destinations {
+    log_analytics {
+      name                  = "workspace"
+      workspace_resource_id = azurerm_log_analytics_workspace.security_logs.id
+    }
+  }
+  stream_declaration {
+    stream_name = "Custom-ResourceChanges"
+    column {
+      name = "TimeGenerated"
+      type = "datetime"
+    }
+    column {
+      name = "ChangeId"
+      type = "string"
+    }
+    column {
+      name = "ChangeType"
+      type = "string"
+    }
+    column {
+      name = "TargetResourceId"
+      type = "string"
+    }
+    column {
+      name = "TargetResourceType"
+      type = "string"
+    }
+    column {
+      name = "Changes"
+      type = "dynamic"
+    }
+    column {
+      name = "ChangeAttributes"
+      type = "dynamic"
+    }
+  }
+  data_flow {
+    streams       = ["Custom-ResourceChanges"]
+    destinations  = ["workspace"]
+    transform_kql = "source"
+    output_stream = "Custom-CiamResourceChanges_CL"
+  }
+  depends_on = [azurerm_log_analytics_workspace_table_custom_log.resource_changes_changes]
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Realizes    = "resource-changes"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_logic_app_workflow" "resource_changes_changes" {
+  name                = "la-ciam-prod-changes"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  identity {
+    type = "SystemAssigned"
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Realizes    = "resource-changes"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_logic_app_trigger_recurrence" "resource_changes_changes" {
+  name         = "Hourly"
+  logic_app_id = azurerm_logic_app_workflow.resource_changes_changes.id
+  frequency    = "Hour"
+  interval     = 1
+}
+
+resource "azurerm_logic_app_action_custom" "resource_changes_changes_query_changes" {
+  name         = "Query_changes"
+  logic_app_id = azurerm_logic_app_workflow.resource_changes_changes.id
+  body = jsonencode({
+    "type" : "Http",
+    "inputs" : {
+      "method" : "POST",
+      "uri" : "https://management.azure.com/providers/Microsoft.ResourceGraph/resources?api-version=2022-10-01",
+      "body" : {
+        "subscriptions" : [
+          "${data.azurerm_subscription.current.subscription_id}"
+        ],
+        "query" : "resourcechanges | extend t = todatetime(properties.changeAttributes.timestamp) | where t > ago(1h) | project TimeGenerated = t, ChangeId = tostring(properties.changeAttributes.changeId), ChangeType = tostring(properties.changeType), TargetResourceId = tostring(properties.targetResourceId), TargetResourceType = tostring(properties.targetResourceType), Changes = properties.changes, ChangeAttributes = properties.changeAttributes",
+        "options" : {
+          "$top" : 1000,
+          "resultFormat" : "objectArray"
+        }
+      },
+      "authentication" : {
+        "type" : "ManagedServiceIdentity",
+        "audience" : "https://management.azure.com/"
+      }
+    }
+  })
+}
+
+resource "azurerm_logic_app_action_custom" "resource_changes_changes_keep_changes" {
+  name         = "Keep_changes"
+  logic_app_id = azurerm_logic_app_workflow.resource_changes_changes.id
+  body = jsonencode({
+    "type" : "Http",
+    "runAfter" : {
+      "Query_changes" : [
+        "Succeeded"
+      ]
+    },
+    "inputs" : {
+      "method" : "POST",
+      "uri" : "${azurerm_monitor_data_collection_endpoint.resource_changes_changes.logs_ingestion_endpoint}/dataCollectionRules/${azurerm_monitor_data_collection_rule.resource_changes_changes.immutable_id}/streams/Custom-ResourceChanges?api-version=2023-01-01",
+      "headers" : {
+        "Content-Type" : "application/json"
+      },
+      "body" : "@body('Query_changes')?['data']",
+      "authentication" : {
+        "type" : "ManagedServiceIdentity",
+        "audience" : "https://monitor.azure.com"
+      }
+    }
+  })
+}
+
+resource "azurerm_role_assignment" "resource_changes_changes_reader" {
+  # Resource Graph answers with what its caller may read
+  scope                = data.azurerm_subscription.current.id
+  role_definition_name = "Reader"
+  principal_id         = azurerm_logic_app_workflow.resource_changes_changes.identity[0].principal_id
+}
+
+resource "azurerm_role_assignment" "resource_changes_changes_publisher" {
+  scope                = azurerm_monitor_data_collection_rule.resource_changes_changes.id
+  role_definition_name = "Monitoring Metrics Publisher"
+  principal_id         = azurerm_logic_app_workflow.resource_changes_changes.identity[0].principal_id
+}
 
 # dspm: Defender for Cloud's sensitive data discovery (Defender CSPM, SensitiveDataDiscovery) examines every block blob, Azure Files and ADLS Gen2 storage account and Azure SQL database in the subscription, by sampling (complete cataloguing needs Microsoft Purview scanning: its scans below)
 

@@ -29,6 +29,7 @@ NAMESPACES = (
     ("azurerm_linux_virtual_machine", "Microsoft.Compute"),
     ("azurerm_local_network_gateway", "Microsoft.Network"),
     ("azurerm_log_analytics_", "Microsoft.OperationalInsights"),
+    ("azurerm_logic_app_", "Microsoft.Logic"),
     ("azurerm_managed_disk", "Microsoft.Compute"),
     ("azurerm_management_group_policy_", "Microsoft.Authorization"),
     ("azurerm_management_lock", "Microsoft.Authorization"),

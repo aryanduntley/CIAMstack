@@ -7,8 +7,12 @@ from opsdir.domains.network.stack import (allowlist, egress_firewalls, elsewhere
 from network_fixtures import ALPHA, entry, model
 
 NET_TEAM = "cn=net-team,ou=owners,dc=ciam-ops"
+HUB_TEAM = "cn=hub-team,ou=owners,dc=ciam-ops"
+# net-team takes the infrastructure opsdir generates (its root renders what it keeps); hub-team doesn't (it is asked)
 OWNERS = ("dn: ou=owners,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: owners\n",
-          f"dn: {NET_TEAM}\nobjectClass: top\nobjectClass: ciamParty\ncn: net-team\nciamOwnerKind: team\n")
+          f"dn: {NET_TEAM}\nobjectClass: top\nobjectClass: ciamParty\ncn: net-team\nciamOwnerKind: team\n"
+          "ciamTakesGeneratedInfra: TRUE\n",
+          f"dn: {HUB_TEAM}\nobjectClass: top\nobjectClass: ciamParty\ncn: hub-team\nciamOwnerKind: team\n")
 
 
 def _alpha(*records):
@@ -58,6 +62,22 @@ def test_only_the_stacks_own_firewalls_render_their_allowlist_and_other_proxies_
         "Egress firewall 'hub-fw' is kept by net-team; its allowlist is rendered in their root, not here.",
         "Egress passes forward-proxy 'squid' (proxy.example.test:3128): its allowlist is kept there, not rendered "
         "as cloud firewall rules.")
+
+
+def test_what_an_asked_keeper_keeps_is_asked_and_no_root_renders_a_forward_proxy():
+    m = _alpha(entry(ALPHA, "pe-hub", "ciamPrivateEndpoint", ciamBindingRole="pe-hub", ciamPrivateService="apis",
+                     ciamManagedBy=HUB_TEAM),
+               entry(ALPHA, "hub-fw", "ciamProxy", ciamBindingRole="hub-firewall", ciamProxyKind="firewall",
+                     ciamManagedBy=HUB_TEAM),
+               entry(ALPHA, "squid", "ciamProxy", ciamBindingRole="forward-proxy", ciamProxyKind="forward-proxy",
+                     ciamManagedBy=NET_TEAM))
+    assert elsewhere(m) == (
+        "Private endpoint 'pe-hub' (apis) is kept by hub-team; asked of them, not rendered here (they take no "
+        "generated infrastructure).",
+        "Egress firewall 'hub-fw' is kept by hub-team; its allowlist is asked of them, not rendered here (they take "
+        "no generated infrastructure).",
+        "Egress passes forward-proxy 'squid', kept by net-team: its allowlist is kept there, not rendered as cloud "
+        "firewall rules.")
 
 
 def test_private_ranges_are_the_network_interconnects_and_endpoint_addresses_and_ranges():

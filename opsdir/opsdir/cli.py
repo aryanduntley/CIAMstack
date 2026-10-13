@@ -18,7 +18,9 @@
                                        --binding: only that slice's infrastructure, complete in its own root (a
                                        keeper's whatever it takes); --as: who asks (default the database login)
   opsdir plan FROM TO [-o dir]         migration plan + change-request drafts for external parties
-  opsdir migrate FROM TO [-o dir]      check both stacks, plan, render the target; exit 1 unless ready
+  opsdir migrate FROM TO [-o dir] [--as REQUESTER]
+                                       check both stacks, plan, render the target (--as: who runs it, recorded in
+                                       its MANIFEST); exit 1 unless ready
   opsdir fix list FROM TO              the record changes the plan's findings offer (assisted fixes)
   opsdir fix show FROM TO KEY          one fix: the change records, the steps outside the record, what it could hide
   opsdir fix propose FROM TO KEY --change CHG-… [--option O] [--input K=V …] [--title T]
@@ -126,7 +128,10 @@ SUBCOMMANDS = (
                              "help": "who asks for the render (recorded in MANIFEST.json; default the database "
                                      "login)"}))),
     ("plan", ((("src",), {}), (("dst",), {}), (("-o", "--out"), {}))),
-    ("migrate", ((("src",), {}), (("dst",), {}), (("-o", "--out"), {}))),
+    ("migrate", ((("src",), {}), (("dst",), {}), (("-o", "--out"), {}),
+                 (("--as",), {"dest": "requester", "metavar": "REQUESTER",
+                              "help": "who runs the migration (recorded in the target's MANIFEST.json; default the "
+                                      "database login)"}))),
     ("fix", ((("action",), {"choices": ["list", "show", "propose", "apply", "approved"]}), (("src",), {"nargs": "?"}),
              (("dst",), {"nargs": "?"}), (("key",), {"nargs": "?"}), (("--change",), {}), (("--title",), {}),
              (("--option",), {"help": "the choice, for a fix that offers options"}),
@@ -340,7 +345,7 @@ def _cmd_plan(conn, a, as_of):
 def _cmd_migrate(conn, a, as_of):
     label = f"migration-{a.src.replace('/', '-')}-to-{a.dst.replace('/', '-')}"
     out = pathlib.Path(a.out or pathlib.Path("out") / label)
-    r = ops.migrate(conn, a.src, a.dst, as_of)
+    r = ops.migrate(conn, a.src, a.dst, as_of, a.requester)
     write_tree(out, r.files)
     return migrated_text(r.run, out), (0 if r.run.ready else 1)
 

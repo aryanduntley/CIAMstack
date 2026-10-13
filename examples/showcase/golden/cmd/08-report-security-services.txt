@@ -10,6 +10,6 @@ target/prod   defender                threat-detection        account  yes      
 target/prod   defender-cspm           posture                 account  yes                                                                                  nist-800-53-r5, microsoft-cloud-security-benchmark  security-findings  400          platform
 target/prod   defender-identity       threat-detection                              on-prem-directory                                                                                                           security-findings  400          security-operations
 target/prod   defender-vulnerability  vulnerability-scanning  account  yes          compute                                                                                                                     security-findings  400          platform
-target/prod   resource-changes        config-recording        account  yes                                                                                                                                                         14           platform
+target/prod   resource-changes        config-recording        account  yes                                                                                                                                      security-findings  2557         platform
 (11 rows)
 exit 0

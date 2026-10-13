@@ -25,6 +25,8 @@ _SUBNET = ("a property of the landing zone's subnet: ARM sets it only by re-decl
            "landing zone keeps")
 _PARENT_INPUT = ("a child of the {}, which the root takes as an input: ARM deploys a child in its parent's resource "
                  "group, which the record doesn't hold")
+_MANAGEMENT_GROUP = ("made on the management group the record names (a management-group scope deployment): its keeper "
+                     "applies it with Terraform, with the role assignments and remediation it needs")
 # Types kept in Terraform for a stated reason.
 KEPT = {
     "azurerm_subnet_network_security_group_association": _SUBNET,
@@ -32,6 +34,9 @@ KEPT = {
     "azurerm_subnet_nat_gateway_association": _SUBNET,
     "azurerm_virtual_hub_connection": _PARENT_INPUT.format("virtual WAN hub"),
     "azurerm_private_dns_resolver_forwarding_rule": _PARENT_INPUT.format("landing zone's DNS forwarding ruleset"),
+    # organization-wide Defender (5.7b): the management group's part, in the landing zone keeper's root
+    "azurerm_management_group_policy_assignment": _MANAGEMENT_GROUP,
+    "azurerm_management_group_policy_remediation": _MANAGEMENT_GROUP,
     "azurerm_storage_object_replication": (
         "ARM sets object replication on the destination account first, in that account's resource group, and the "
         "source's policy takes the id it returns; the destination is an input the record holds no group for"),
@@ -59,6 +64,7 @@ ROLES = {
     "Monitoring Reader": "43d0d8ad-25c7-4714-9337-8ba259a9fe05",
     "Network Contributor": "4d97b98b-1d4f-4787-a291-c67834d212e7",
     "Private DNS Zone Contributor": "b12aa53e-6015-4669-85d0-8515ebb3ae7f",
+    "Reader": "acdd72a7-3385-48ef-bd42-f606fba81ae7",          # Microsoft built-in roles page (checked 2026-10-13)
     "Role Based Access Control Administrator": "f58310d9-a9f6-439a-9e8d-f62e7b41a168",
     "Storage Blob Data Contributor": "ba92f5b4-2d11-453d-a403-e96b0029c9fe",
     "Storage Blob Data Owner": "b7e6dc6d-f1e8-4753-8033-0f276bb0955b",
@@ -184,6 +190,11 @@ DATA = {
     "azurerm_role_definition": lambda f, a: (Computed(lambda f, value: _role_definition(value(f["name"]),
                                                                                          "data.azurerm_role_definition"))
                                              if a in ("id", "role_definition_id") else None),
+    # a built-in policy definition by its GUID name (organization-wide Defender, 5.7b): its id; its roles are read
+    # only by the management group's part, which stays Terraform (KEPT)
+    "azurerm_policy_definition": lambda f, a: (Computed(lambda f, value: "/providers/Microsoft.Authorization/"
+                                                        f"policyDefinitions/{value(f.get('name'))}")
+                                               if a == "id" else None),
     "azurerm_policy_set_definition": lambda f, a: (Computed(lambda f, value: _initiative(
         value(f.get("display_name", f.get("name"))), "data.azurerm_policy_set_definition")) if a == "id" else None),
     "azapi_resource": lambda f, a: (Lookup(Existing(f["type"].split("@")[0], f["type"].split("@")[1],
@@ -874,7 +885,17 @@ def _automation(f, cx):
         "action": Custom(lambda v, c: {"actions": [{"actionType": c.value(x["type"]), **(
             {"workspaceResourceId": c.value(x["resource_id"])} if c.value(x["type"]) == "Workspace" else
             {"logicAppResourceId": c.value(x["resource_id"])} if c.value(x["type"]) == "LogicApp" else
-            {"eventHubResourceId": c.value(x["resource_id"])})} for x in v]})})
+            {"eventHubResourceId": c.value(x["resource_id"]),
+             **({"connectionString": c.value(x["connection_string"])} if "connection_string" in x else {})})}
+            for x in v]})})
+
+
+def _contact(f, cx):
+    """Defender's security contact in the API azurerm writes it with (email, phone, On/Off notifications)."""
+    def on(name):
+        return Custom(lambda v, c: {name: "On" if c.value(v) else "Off"})
+    return obj(own(f), cx, {"name": None, "email": "email", "phone": "phone",
+                            "alert_notifications": on("alertNotifications"), "alerts_to_admins": on("alertsToAdmins")})
 
 # ------------------------------------------------------------------ access, subscription and tenant scope
 
@@ -934,13 +955,48 @@ def _budget(f, cx):
                 for i, n in enumerate(f.get("notification", ()))}}
 
 
+# ------------------------------------------------------------------ Logic Apps (5.7b: change history kept longer)
+_WORKFLOW_SCHEMA = ("https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/"
+                    "workflowdefinition.json#")
+
+
+def _workflow(f, cx):
+    """A Logic App: enabled, its identity, a definition its trigger and actions are merged into."""
+    found = own(f)
+    identity = (found.get("identity") or [{}])[0]
+    return {**obj({k: v for k, v in found.items() if k != "identity"}, cx, BASE), "state": "Enabled",
+            **({"identity": {"type": cx.value(identity["type"])}} if identity else {}),
+            "definition": {"$schema": _WORKFLOW_SCHEMA, "contentVersion": "1.0.0.0", "triggers": {}, "actions": {},
+                           "outputs": {}}}
+
+
+def _recurrence(props, f, cx):
+    found = own(f)
+    trigger = {"type": "Recurrence", "recurrence": {"frequency": cx.value(found["frequency"]),
+                                                    "interval": cx.value(found["interval"])}}
+    return {**props, "definition": {**props["definition"], "triggers": {
+        **props["definition"]["triggers"], cx.value(found["name"]): trigger}}}
+
+
+def _custom_action(props, f, cx):
+    found = own(f)
+    return {**props, "definition": {**props["definition"], "actions": {
+        **props["definition"]["actions"], cx.value(found["name"]): cx.value(found["body"])}}}
+
+
 def _azapi(f, cx):
-    """An azapi resource: its body, whose properties are the resource's (the rest top-level fields)."""
-    body = cx.value(f.get("body", {}))
-    rest = sorted(set(own(f)) - {"type", "name", "parent_id", "body", "schema_validation_enabled"})
+    """An azapi resource: its body, whose properties are the resource's (the rest top-level fields), and its location
+    and managed identity as the resource's (a Logic App's system-assigned identity, 5.7b)."""
+    found = own(f)
+    body = cx.value(found.get("body", {}))
+    rest = sorted(set(found) - {"type", "name", "parent_id", "body", "schema_validation_enabled", "location",
+                                "identity"})
     if rest:
         raise SystemExit(f"{cx.where}: no ARM form for {', '.join(rest)}")
-    return {**{k: v for k, v in body.items() if k != "properties"}, **body.get("properties", {})}
+    identity = (found.get("identity") or [{}])[0]
+    return {**{k: v for k, v in body.items() if k != "properties"}, **body.get("properties", {}),
+            **({"location": cx.value(found["location"])} if "location" in found else {}),
+            **({"identity": {"type": cx.value(identity["type"])}} if identity else {})}
 
 # ------------------------------------------------------------------ DNS records, Traffic Manager
 
@@ -1208,8 +1264,13 @@ TYPES = {
     "azurerm_consumption_budget_resource_group": Native(Arm("Microsoft.Consumption/budgets", "2024-08-01",
                                                             extends="resource_group_id"), _budget, {"id": "id"},
                                                         "name"),
+    "azurerm_logic_app_workflow": Native(Arm("Microsoft.Logic/workflows", "2019-05-01"), _workflow,
+                                         {"id": "id", "identity[0].principal_id": "identity.principalId"}, "name",
+                                         "map"),
+    "azurerm_logic_app_trigger_recurrence": Native(None, merge=Merge("logic_app_id", _recurrence)),
+    "azurerm_logic_app_action_custom": Native(None, merge=Merge("logic_app_id", _custom_action)),
     "azapi_resource": Native(Arm(lambda f: tuple(f["type"].split("@")), None, extends="parent_id"), _azapi,
-                             {"id": "id"}, "name"),
+                             {"id": "id", "identity[0].principal_id": "identity.principalId"}, "name", "map"),
     # edge and private connectivity
     "azurerm_application_gateway": Native(Arm("Microsoft.Network/applicationGateways", NETWORK,
                                               fields=("location", "tags", "zones", "identity")), _gateway,
@@ -1243,6 +1304,9 @@ TYPES = {
         Parent("vault_id", "Microsoft.DataProtection/backupVaults")), _disk_instance, {"id": "id"}, "name"),
     "azurerm_security_center_automation": Native(Arm("Microsoft.Security/automations", "2019-01-01-preview"),
                                                  _automation, {"id": "id"}, "name", "map"),
+    # the legacy contact API azurerm's resource writes (the 2020/2023 previews take emails and role notifications)
+    "azurerm_security_center_contact": Native(Arm("Microsoft.Security/securityContacts", "2017-08-01-preview",
+                                                  deploy="subscription"), _contact, {"id": "id"}, "name"),
     # compute
     "azurerm_linux_virtual_machine": Native(Arm("Microsoft.Compute/virtualMachines", COMPUTE), _vm,
                                             {"id": "id", "name": "name",
@@ -1306,10 +1370,11 @@ TYPES = {
         "Microsoft.OperationalInsights/workspaces/tables", OPINSIGHTS,
         Parent("workspace_id", "Microsoft.OperationalInsights/workspaces"), fields=()), lambda f, cx: obj(own(f), cx, {
             "name": None, "workspace_id": None, "plan": "plan", "retention_in_days": "retentionInDays",
+            "total_retention_in_days": "totalRetentionInDays",
             "column": Custom(lambda v, c: {"schema": {"name": c.value(f["name"]), "columns": [
                 {"name": c.value(x["name"]), "type": c.value(x["type"])} for x in v]}})}), {"id": "id"}, "name"),
     "azurerm_monitor_data_collection_rule": Native(Arm("Microsoft.Insights/dataCollectionRules", INSIGHTS), _dcr,
-                                                   {"id": "id"}, "name", "map"),
+                                                   {"id": "id", "immutable_id": "immutableId"}, "name", "map"),
     "azurerm_monitor_data_collection_rule_association": Native(Arm(
         "Microsoft.Insights/dataCollectionRuleAssociations", INSIGHTS, extends="target_resource_id"), {
         "name": None, "target_resource_id": None, "data_collection_rule_id": "dataCollectionRuleId",
@@ -1323,7 +1388,8 @@ TYPES = {
     "azurerm_management_lock": Native(Arm("Microsoft.Authorization/locks", "2020-05-01", extends="scope"), {
         "name": None, "scope": None, "lock_level": "level", "notes": "notes"}, {"id": "id"}, "name"),
     "azurerm_monitor_data_collection_endpoint": Native(Arm("Microsoft.Insights/dataCollectionEndpoints", INSIGHTS), {
-        **BASE, "kind": "kind", "description": "description"}, {"id": "id"}, "name", "map"),
+        **BASE, "kind": "kind", "description": "description"},
+        {"id": "id", "logs_ingestion_endpoint": "logsIngestion.endpoint"}, "name", "map"),
     # DNS records (public and private zones), Traffic Manager
     **RECORDS,
     "azurerm_traffic_manager_profile": Native(Arm("Microsoft.Network/trafficmanagerprofiles", TM), _traffic_manager,

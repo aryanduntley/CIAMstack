@@ -380,11 +380,16 @@ def partition(items, place, default, sensitive=lambda r: False, label=_applied_b
     read through an input variable, the writing root outputting it (sensitive(ref): marked sensitive on both sides;
     label(root): what the variable's description says of the root it comes from);
     a depends_on naming one loses that entry (the order applies it first). ValueError when two roots read each other,
-    or an input's name is a variable the root has already."""
+    an input's name is a variable the root has already, or one resource address is placed in two roots (a renderer
+    wrote it twice: each root would hold both)."""
     groups = _groups(items)
     blocks = tuple(b for _, b in groups if b is not None)
     by_address = {address(b): b for b in blocks if address(b)}
-    writes = {address(b): place(b) or default for b in blocks if b.kind == "resource"}
+    placed_in = tuple((address(b), place(b) or default) for b in blocks if b.kind == "resource")
+    writes = dict(placed_in)
+    twice = sorted({a for a, r in placed_in if writes[a] != r})
+    if twice:
+        raise ValueError(f"resources placed in two roots: {', '.join(twice)} (render each once, read it across roots)")
 
     def root_of(b):
         if b.kind == ANCHOR:

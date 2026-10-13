@@ -5,6 +5,7 @@ where one of Microsoft's availability pages lists it as unavailable; configurati
 someone else and other clouds' baselines in comments; all read back from Terraform state, and from the Azure CLI's
 outputs of the same services as the same record."""
 import json
+import re
 
 from opsdir.core.directory import make_entry
 from opsdir.core.inventory import environment_groups, resource
@@ -56,8 +57,8 @@ def test_findings_go_to_the_workspace_by_continuous_export():
     assert "# NOTE" not in _render(svc("defender", "threat-detection", ciamFindingsRole="nowhere"))
     hub = entry(ALPHA, "event-hub", "ciamLogDestination", ciamBindingRole="event-hub", ciamDestinationKind="other",
                 ciamProviderRef=f"{SUB}/resourceGroups/rg/providers/Microsoft.EventHub/namespaces/ns/eventhubs/sec")
-    assert "# NOTE: defender's findings to event-hub: not rendered: continuous export is rendered to a Log Analytics " \
-           "workspace" in _render(hub, svc("defender", "threat-detection", ciamFindingsRole="event-hub"))
+    assert "# NOTE: defender's findings to event-hub: not rendered: event-hub is no Log Analytics workspace or Event " \
+           "Hub" in _render(hub, svc("defender", "threat-detection", ciamFindingsRole="event-hub"))
 
 
 def test_in_azure_government_every_plan_is_rendered_with_a_comment_where_a_page_lists_it_unavailable():
@@ -71,7 +72,7 @@ def test_in_azure_government_every_plan_is_rendered_with_a_comment_where_a_page_
 
 
 def test_posture_assigns_each_framework_s_built_in_initiative():
-    out = _render(svc("cspm", "posture", ciamAuditScope="organization",
+    out = _render(svc("cspm", "posture",
                       ciamComplianceStandard=("nist-800-171-r2", "cmmc-l2", "dod-il5", "hitrust"),
                       ciamSecurityBaseline=("microsoft-cloud-security-benchmark", "aws-foundational")))
     assert 'resource_type = "CloudPosture"' in out
@@ -80,15 +81,14 @@ def test_posture_assigns_each_framework_s_built_in_initiative():
     assert "# cspm: Defender for Cloud assigns the Microsoft cloud security benchmark itself" in out
     assert "# cspm: Azure has no built-in initiative here for dod-il5, hitrust (not rendered)" in out
     assert "# cspm: aws-foundational: another cloud's baseline, not Azure's (not rendered)" in out
-    assert "# cspm: organization-wide: enable it on the management group with Azure Policy" in out
     gov = _render(svc("cspm", "posture", ciamComplianceStandard=("cmmc-l2", "dod-il5")), gov=True)
     assert 'display_name = "DoD Impact Level 5"' in gov and "list CMMC Level 3, not CMMC 2.0 Level 2" in gov
 
 
 def test_config_recording_is_a_comment_and_services_kept_elsewhere_render_for_their_keeper():
     assert _render(svc("changes", "config-recording")) == (
-        "# changes: Azure records resource changes itself (Resource Graph change history, about 14 days): nothing to "
-        "enable; keeping them longer needs an export (not rendered)")
+        "# changes: Azure records resource changes itself (Resource Graph change history, 14 days): nothing to "
+        "enable; a longer ciamRetentionDays renders an export keeping them")
     assert _render(svc("org-defender", "threat-detection", ciamManagedBy=PARTY)) == _render(
         svc("org-defender", "threat-detection"))           # the same blocks, placed by its keeper (render_files)
 
@@ -280,3 +280,106 @@ def test_an_assignment_below_the_subscription_isnt_posture():
     posture, = [r for r in cli_resources({p: json.dumps(d) for p, d in nested.items()})[0]
                 if r.kind == "security" and r.attrs["ciamSecurityKind"] == ("posture",)]
     assert "ciamComplianceStandard" not in posture.attrs
+
+
+# ------------------------------------------------------------------ Event Hub export, security contacts (5.7b)
+HUB_ID = f"{SUB}/resourceGroups/rg/providers/Microsoft.EventHub/namespaces/ns/eventhubs/sec"
+SEND = entry(ALPHA, "sec-send", "ciamSecretRef", ciamBindingRole="sec-hub-send", ciamRefUri="azkv://ciam-kv/sec-hub-send")
+STREAM = entry(ALPHA, "sec-hub", "ciamStreamBinding", ciamBindingRole="sec-hub", ciamStreamKind="event-hub",
+               ciamProviderRef=HUB_ID, ciamSendSecretRole="sec-hub-send")
+MAIL = entry(ALPHA, "soc-mail", "ciamAlertChannel", ciamBindingRole="soc-mail", ciamChannelKind="email",
+             ciamProviderRef="mailto:soc@example.test")
+
+
+def test_findings_go_to_an_event_hub_with_the_connection_string_its_send_secret_holds():
+    out = _render(STREAM, SEND, svc("defender", "threat-detection", ciamFindingsRole="sec-hub"))
+    assert 'type              = "EventHub"' in out and f'resource_id       = "{HUB_ID}"' in out
+    assert "connection_string = data.azurerm_key_vault_secret.defender_export.value" in out
+    assert 'data "azurerm_key_vault_secret" "defender_export"' in out and 'name                = "ciam-kv"' in out
+    assert "Terraform state keeps it (sensitive): protect the state" in out
+    unsent = STREAM.replace("ciamSendSecretRole: sec-hub-send\n", "")
+    assert "names no secret holding its connection string (ciamSendSecretRole)" in _render(
+        unsent, svc("defender", "threat-detection", ciamFindingsRole="sec-hub"))
+
+
+def test_email_channels_are_the_subscription_s_one_security_contact():
+    out = _render(MAIL, svc("defender", "threat-detection", ciamFindingsRole="soc-mail"),
+                  svc("scanner", "vulnerability-scanning", ciamFindingsRole="soc-mail"))
+    assert out.count('resource "azurerm_security_center_contact"') == 1
+    assert 'email               = "soc@example.test"' in out and "alerts_to_admins    = true" in out
+    assert "# defender: its findings reach soc@example.test as Defender's security contact" in out
+    assert "# NOTE" not in out
+
+
+def test_incidents_by_email_name_the_minimum_severity_only_the_preview_api_sets():
+    out = _render(MAIL, svc("defender", "threat-detection", ciamFindingsRole="security-logs",
+                            ciamIncidentRole="soc-mail", ciamIncidentSeverity="high"))
+    assert "# defender: its incidents reach soc@example.test as Defender's security contact; Defender's own minimum " \
+           "alert severity (high) is set only by the securityContacts 2023-12-01-preview API" in out
+
+
+# ------------------------------------------------------------------ organization-wide (5.7b, decision 2777)
+def _organization(*records, mg="corp-security"):
+    from opsdir.core.interchange.ldif import LdifRecord
+    change = LdifRecord("cloud=alpha,ou=environments,dc=ciam-ops", "modify", {}, (
+        ("add", "objectClass", ("ciamCloudAccount",)), *((("replace", "ciamManagementRef", (mg,)),) if mg else ())))
+    _, alpha, _ = model(alpha=(LOGS, *records), tree=OWNERS, changes=(change,))
+    from opsdir.domains.governance.keepers import ORGANIZATION
+    items = render_security(alpha)
+    org = [x for x in items if getattr(x, "origin", None) and x.origin.startswith(ORGANIZATION)]
+    return "\n\n".join(as_text(tuple(x for x in items if x not in org))), "\n\n".join(as_text(tuple(org)))
+
+
+def test_an_organization_wide_service_enables_its_plans_on_the_management_group():
+    own, org = _organization(svc("defender", "threat-detection", ciamAuditScope="organization",
+                                 ciamFindingsRole="security-logs",
+                                 ciamSecurityCoverage=("control-plane", "compute", "applications")))
+    assert "azurerm_security_center_subscription_pricing" not in own and 'event_source = "Alerts"' in own
+    assert "# defender: organization-wide: enabled for every account by" in own
+    assert 'name = "5eb6d64a-4086-4d7a-92da-ec51aed0332d"' in own + org      # Servers, by its GUID (a lookup)
+    assert re.search(r'resource "azurerm_management_group_policy_assignment" "defender_virtualmachines" \{', org)
+    assert re.search(r'management_group_id += var\.management_group_id', org) and 'type = "SystemAssigned"' in org
+    assert "for_each           = toset(data.azurerm_policy_definition.defender_arm.role_definition_ids)" in org
+    assert ("principal_id       = azurerm_management_group_policy_assignment.defender_arm.identity[0].principal_id"
+            in org)
+    assert re.search(r'resource "azurerm_management_group_policy_remediation" "defender_appservices"', org)
+    assert "# defender: no built-in policy enables Defender plan Api at scale (an audit policy only)" in own + org
+    assert 'variable "management_group_id"' in own + org
+
+
+def test_organization_wide_posture_assigns_its_frameworks_on_the_management_group_or_is_said_so():
+    own, org = _organization(svc("cspm", "posture", ciamAuditScope="organization",
+                                 ciamComplianceStandard="nist-800-171-r2"))
+    assert 'name = "72f8cee7-2937-403d-84a1-a4e3e57f3c21"' in own + org
+    assert 'display_name         = "NIST SP 800-171 Rev. 2"' in org
+    own, org = _organization(svc("cspm", "posture", ciamAuditScope="organization"), mg=None)
+    assert org == "" and "the record doesn't name the management group (ciamManagementRef)" in own
+
+
+# ------------------------------------------------------------------ change history kept longer (5.7b, decision 2777)
+def test_changes_kept_longer_than_resource_graph_does_are_copied_hourly_into_log_analytics():
+    out = _render(svc("changes", "config-recording", ciamFindingsRole="security-logs", ciamRetentionDays="2557"))
+    assert 'name      = "CiamResourceChanges_CL"' in out or re.search(r'name +\= "CiamResourceChanges_CL"', out)
+    assert re.search(r"retention_in_days += 730", out) and re.search(r"total_retention_in_days += 2922", out)
+    assert "Log Analytics keeps rows beyond 730 days in whole years, at most 4383: 2557 days kept 2922" in out
+    assert 'resource "azurerm_monitor_data_collection_endpoint" "changes_changes"' in out
+    assert re.search(r'output_stream += "Custom-CiamResourceChanges_CL"', out)
+    assert 'resource "azurerm_logic_app_workflow" "changes_changes"' in out and "azapi" not in out
+    assert 'resource "azurerm_logic_app_trigger_recurrence" "changes_changes"' in out
+    assert 'resource "azurerm_logic_app_action_custom" "changes_changes_keep_changes"' in out
+    assert "https://management.azure.com/providers/Microsoft.ResourceGraph/resources?api-version=2022-10-01" in out
+    assert ("${azurerm_monitor_data_collection_endpoint.changes_changes.logs_ingestion_endpoint}/dataCollectionRules/"
+            "${azurerm_monitor_data_collection_rule.changes_changes.immutable_id}/streams/Custom-ResourceChanges"
+            ) in out
+    assert '"audience" : "https://monitor.azure.com"' in out and '"$top" : 1000' in out
+    assert 'role_definition_name = "Reader"' in out and 'role_definition_name = "Monitoring Metrics Publisher"' in out
+    gov = _render(svc("changes", "config-recording", ciamFindingsRole="security-logs", ciamRetentionDays="90"),
+                  gov=True)
+    assert "https://management.usgovcloudapi.net" in gov and '"audience" : "https://monitor.azure.us"' in gov
+    assert "total_retention_in_days" not in gov
+
+
+def test_changes_kept_longer_without_a_workspace_are_said_so():
+    out = _render(svc("changes", "config-recording", ciamRetentionDays="90"))
+    assert "# NOTE: changes: keeping resource changes 90 days, longer than Resource Graph's 14, needs a Log " \
+           "Analytics workspace" in out

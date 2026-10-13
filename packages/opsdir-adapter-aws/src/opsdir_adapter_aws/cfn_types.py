@@ -12,7 +12,11 @@ from .cfn_render import (Attribute, Computed, Custom, Derived, Merge, Native, Ne
 # default route table, which exists with the VPC, has none to adopt it).
 NO_NATIVE = frozenset({"aws_inspector2_enabler", "aws_config_retention_configuration",
                        "aws_macie2_classification_export_configuration", "aws_macie2_classification_job",
-                       "aws_servicequotas_service_quota", "aws_default_route_table"})
+                       "aws_servicequotas_service_quota", "aws_default_route_table",
+                       # organization-wide security services (5.7b): no CloudFormation type in cfn-lint's schemas
+                       "aws_guardduty_organization_admin_account", "aws_guardduty_organization_configuration",
+                       "aws_guardduty_organization_configuration_feature", "aws_inspector2_delegated_admin_account",
+                       "aws_inspector2_organization_configuration", "aws_organizations_delegated_administrator"})
 # Types whose CloudFormation type AWS's GovCloud resource specification doesn't have (cfn-lint's us-gov-west-1
 # schemas): in a GovCloud template they stay Terraform too.
 NOT_IN_GOVCLOUD = frozenset({"aws_macie2_account", "aws_macie2_custom_data_identifier", "aws_shield_protection",
@@ -120,11 +124,48 @@ def _budget(f, cx):
     return {"Budget": budget, **({"NotificationsWithSubscribers": notifications} if notifications else {})}
 
 
+# ------------------------------------------------------------------ Security Hub organization-wide (5.7b)
+def _first_block(f, name):
+    found = f.get(name) or ()
+    return found[0] if found else {}
+
+
+def _hub_organization(f, cx):
+    f = own(f)
+    kind = _first_block(f, "organization_configuration").get("configuration_type")
+    return {"AutoEnable": cx.value(f.get("auto_enable", False)),
+            **({"AutoEnableStandards": cx.value(f["auto_enable_standards"])} if "auto_enable_standards" in f else {}),
+            **({"ConfigurationType": cx.value(kind)} if kind is not None else {})}
+
+
+def _hub_policy(f, cx):
+    f = own(f)
+    p = _first_block(f, "configuration_policy")
+    controls = _first_block(p, "security_controls_configuration")
+    return {"Name": cx.value(f["name"]), **({"Description": cx.value(f["description"])} if "description" in f else {}),
+            "ConfigurationPolicy": {"SecurityHub": {
+                "ServiceEnabled": cx.value(p.get("service_enabled", True)),
+                "EnabledStandardIdentifiers": cx.value(p.get("enabled_standard_arns", [])),
+                "SecurityControlsConfiguration": {
+                    "DisabledSecurityControlIdentifiers": cx.value(controls.get("disabled_control_identifiers", []))}}}}
+
+
+def _hub_association(f, cx):
+    """A configuration policy's association: with the organization's root (what the render associates it with)."""
+    f = own(f)
+    return {"TargetId": cx.value(f["target_id"]), "TargetType": "ROOT",
+            "ConfigurationPolicyId": cx.value(f["policy_id"])}
+
+
 # ------------------------------------------------------------------ IAM
 
 def _role_policy(props, f, cx):
     return {**props, "Policies": [*props.get("Policies", []), obj(own(f), cx, {
         "role": None, "name": "PolicyName", "policy": "PolicyDocument"})]}
+
+
+def _attached_policy(props, f, cx):
+    return {**props, "ManagedPolicyArns": [*props.get("ManagedPolicyArns", []), cx.value(own(f)["policy_arn"])]}
 
 
 def _instance_profile(f, cx):
@@ -606,8 +647,17 @@ TYPES = {
         "enable_log_file_validation": "EnableLogFileValidation", "is_organization_trail": "IsOrganizationTrail",
         "kms_key_id": "KMSKeyId", "cloud_watch_logs_group_arn": "CloudWatchLogsLogGroupArn",
         "cloud_watch_logs_role_arn": "CloudWatchLogsRoleArn", "sns_topic_name": "SnsTopicName",
-        "enable_logging": "IsLogging"}, IsLogging=True), {"arn": "Arn", "id": "Ref", "name": "Ref"}, "TrailName",
-        "list"),
+        "enable_logging": "IsLogging",
+        "advanced_event_selector": Nest("AdvancedEventSelectors", {"name": "Name", "field_selector": Nest(
+            "FieldSelectors", {"field": "Field", "equals": "Equals", "starts_with": "StartsWith",
+                               "ends_with": "EndsWith", "not_equals": "NotEquals",
+                               "not_starts_with": "NotStartsWith", "not_ends_with": "NotEndsWith"}, True)}, True)},
+        IsLogging=True), {"arn": "Arn", "id": "Ref", "name": "Ref"}, "TrailName", "list"),
+    "aws_config_configuration_aggregator": Native("AWS::Config::ConfigurationAggregator", {
+        "name": "ConfigurationAggregatorName",
+        "organization_aggregation_source": Nest("OrganizationAggregationSource", {
+            "all_regions": "AllAwsRegions", "regions": "AwsRegions", "role_arn": "RoleArn"})},
+        {"id": "Ref", "name": "Ref", "arn": "ConfigurationAggregatorArn"}, "ConfigurationAggregatorName", "list"),
     "aws_cloudwatch_log_group": Native("AWS::Logs::LogGroup", {
         "name": "LogGroupName", "retention_in_days": "RetentionInDays", "kms_key_id": "KmsKeyId",
         "log_group_class": "LogGroupClass"},
@@ -860,6 +910,7 @@ TYPES = {
         "permissions_boundary": "PermissionsBoundary", "managed_policy_arns": "ManagedPolicyArns"},
         {"id": "Ref", "name": "Ref", "arn": "Arn", "unique_id": "RoleId"}, "RoleName", "list"),
     "aws_iam_role_policy": Native(None, merge=Merge("role", _role_policy)),
+    "aws_iam_role_policy_attachment": Native(None, merge=Merge("role", _attached_policy)),
     "aws_iam_openid_connect_provider": Native("AWS::IAM::OIDCProvider", {
         "url": "Url", "client_id_list": "ClientIdList", "thumbprint_list": "ThumbprintList"},
         {"arn": "Ref", "id": "Ref"}, "Arn", "list"),
@@ -901,6 +952,17 @@ TYPES = {
         "control_finding_generator": "ControlFindingGenerator"}, {"id": "Ref", "arn": "ARN"}),
     "aws_securityhub_standards_subscription": Native("AWS::SecurityHub::Standard", {"standards_arn": "StandardsArn"},
                                                      {"id": "Ref", "arn": "Ref"}),
+    "aws_securityhub_finding_aggregator": Native("AWS::SecurityHub::FindingAggregator", {
+        "linking_mode": "RegionLinkingMode", "specified_regions": "Regions"}, {"id": "Ref", "arn": "Ref"}),
+    # organization-wide (5.7b): the delegated administrator, central configuration, a policy on the root
+    "aws_securityhub_organization_admin_account": Native("AWS::SecurityHub::DelegatedAdmin", {
+        "admin_account_id": "AdminAccountId"}, {"id": "Ref"}),
+    "aws_securityhub_organization_configuration": Native("AWS::SecurityHub::OrganizationConfiguration",
+                                                         _hub_organization, {"id": "Ref"}),
+    "aws_securityhub_configuration_policy": Native("AWS::SecurityHub::ConfigurationPolicy", _hub_policy,
+                                                   {"id": "Id", "arn": "Ref"}),
+    "aws_securityhub_configuration_policy_association": Native("AWS::SecurityHub::PolicyAssociation",
+                                                               _hub_association, {"id": "Ref"}),
     "aws_securityhub_automation_rule": Native("AWS::SecurityHub::AutomationRule", {
         "rule_name": "RuleName", "rule_order": "RuleOrder", "description": "Description",
         "rule_status": "RuleStatus", "is_terminal": "IsTerminal",
@@ -930,6 +992,8 @@ TYPES = {
     "aws_s3_bucket": Native("AWS::S3::Bucket", {
         "bucket": "BucketName", "object_lock_enabled": "ObjectLockEnabled", "force_destroy": None},
         S3_BUCKET_REFS, "BucketName", "list"),
+    "aws_s3_bucket_policy": Native("AWS::S3::BucketPolicy", {"bucket": "Bucket", "policy": "PolicyDocument"},
+                                   {"id": "Ref"}),
     "aws_s3_bucket_versioning": Native(None, merge=Merge("bucket", _bucket_setting("VersioningConfiguration", {
         "versioning_configuration": Custom(lambda v, cx: obj(v[0], cx, {"status": "Status",
                                                                         "mfa_delete": None}))}), S3_BUCKET_REFS)),
@@ -1089,6 +1153,7 @@ DATA = {
     "aws_eks_cluster": lambda f, a: (Derived(_issuer(f), lambda r: concat("https://", r))
                                      if a == "identity[0].oidc[0].issuer" else None),
     "aws_guardduty_detector": _looked_up(lambda f: "The account's GuardDuty detector ID in this region"),
+    "aws_organizations_organization": _looked_up(lambda f: "The organization's root ID (r-...)", ("roots[0].id",)),
     "aws_iam_openid_connect_provider": _oidc_provider,
     "aws_iam_policy_document": lambda f, a: Computed(_policy_document) if a == "json" else None,
     "aws_internet_gateway": _looked_up(lambda f: "The ID of the internet gateway attached to the VPC"),

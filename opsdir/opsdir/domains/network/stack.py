@@ -1,12 +1,13 @@
 """What an environment's own stack renders of its network depth, read neutrally for the cloud adapters: the bindings it
-keeps (one naming ciamManagedBy is kept by someone else: the landing zone, a network team, whose root renders it), the
-subnets a binding names by role, what a private endpoint reaches, the service name an endpoint service exposes, the
-egress firewalls whose domain allowlist it renders, the ranges the stack reaches privately and the environment's
-firewall model and policy. Nothing recorded, nothing rendered. Pure."""
+keeps (one naming ciamManagedBy is kept by someone else: the landing zone, a network team, whose root renders it or who
+is asked for it), the subnets a binding names by role, what a private endpoint reaches, the service name an endpoint
+service exposes, the egress firewalls whose domain allowlist it renders, the ranges the stack reaches privately and the
+environment's firewall model and policy. Nothing recorded, nothing rendered. Pure."""
 import re
 
 from ...core.directory import get, is_kind, one, rdn_value, values
 from ...core.environment import by_role, of_class, one_role
+from ..governance.keepers import keeper
 from .naming import DESTINATION
 
 # what a destination's port is when it names none
@@ -93,13 +94,19 @@ def network_policy(m):
 
 def elsewhere(m):
     """Sentences naming the private endpoints and egress controls of environment m someone else keeps (their root
-    renders them) and the proxies that aren't the stack's firewall, for the stack's render to say where they are."""
+    renders them when they take generated infrastructure, else they are asked: governance.keepers) and the proxies that
+    aren't a firewall someone else keeps (no root renders a forward proxy's allowlist), for the stack's render to say
+    where they are."""
+    def where(b):
+        return ("rendered in their root, not here." if keeper(m, b).takes else
+                "asked of them, not rendered here (they take no generated infrastructure).")
     kept = tuple(f"Private endpoint '{rdn_value(p)}' ({one(p, 'ciamPrivateService')}) is kept by {kept_by(m, p)}; "
-                 "rendered in their root, not here." for p in of_class(m, "ciamPrivateEndpoint") if not owned(p))
-    proxies = tuple(f"Egress {one(p, 'ciamProxyKind')} '{rdn_value(p)}' is kept by {kept_by(m, p)}; its allowlist "
-                    "is rendered in their root, not here." if not owned(p) else
+                 f"{where(p)}" for p in of_class(m, "ciamPrivateEndpoint") if not owned(p))
+    proxies = tuple(f"Egress firewall '{rdn_value(p)}' is kept by {kept_by(m, p)}; its allowlist is {where(p)}"
+                    if one(p, "ciamProxyKind") == "firewall" else
                     f"Egress passes {one(p, 'ciamProxyKind')} '{rdn_value(p)}'"
                     + (f" ({one(p, 'ciamProxyAddress')})" if one(p, "ciamProxyAddress") else "")
+                    + ("" if owned(p) else f", kept by {kept_by(m, p)}")
                     + ": its allowlist is kept there, not rendered as cloud firewall rules."
                     for p in of_class(m, "ciamProxy") if not owned(p) or one(p, "ciamProxyKind") != "firewall")
     return (*kept, *proxies)

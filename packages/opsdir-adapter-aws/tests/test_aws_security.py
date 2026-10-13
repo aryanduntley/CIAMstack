@@ -6,6 +6,7 @@ from Terraform state, with the topic, bucket or log group their findings go to a
 CLI's outputs of the same services read as the same record (organization scope only from the delegated administrator's
 saved answer)."""
 import json
+import re
 
 from opsdir.core.inventory import environment_groups, resource
 from opsdir_format_terraform.hcl import as_text
@@ -43,7 +44,7 @@ def test_guardduty_turns_on_a_feature_per_area_and_sends_findings_to_the_topic()
     assert out.count("additional_configuration {") == 3 and '"EC2_AGENT_MANAGEMENT"' in out
     assert "# guardduty: GuardDuty has no plan for key vaults" in out
     assert '"aws.guardduty"' in out and f'arn  = "{TOPIC_ARN}"' in out
-    assert "# guardduty: runs in every region: each region needs its own (this root renders region-1)" in out
+    assert "# NOTE: guardduty: runs in every region, but the region catalog holds no aws regions" in out
 
 
 def test_inspector_scans_the_resource_types_of_its_areas():
@@ -65,7 +66,7 @@ def test_aws_config_records_into_its_object_store_s_bucket_or_isn_t_rendered():
 
 
 def test_security_hub_subscribes_to_the_standards_it_has_and_names_the_rest():
-    out = _render(svc("hub", "posture", ciamAuditScope="organization", ciamSecurityBaseline=("aws-foundational",),
+    out = _render(svc("hub", "posture", ciamSecurityBaseline=("aws-foundational",),
                       ciamComplianceStandard=("nist-800-53-r5", "nist-800-171-r2", "cmmc-l2")))
     assert 'data "aws_partition" "current"' in out and 'control_finding_generator = "SECURITY_CONTROL"' in out
     assert ("arn:${data.aws_partition.current.partition}:securityhub:${data.aws_region.current.region}::standards/"
@@ -73,7 +74,6 @@ def test_security_hub_subscribes_to_the_standards_it_has_and_names_the_rest():
     assert "aws-foundational-security-best-practices/v/1.0.0" in out
     assert "standards/nist-800-171/v/2.0.0" in out and "describe-standards" not in out
     assert "# hub: Security Hub has no standard for cmmc-l2: assess it another way" in out
-    assert "# hub: organization-wide: enable it for the organization from its management account" in out
 
 
 def test_a_service_someone_else_keeps_renders_too_for_its_keeper():
@@ -262,3 +262,138 @@ def test_without_an_own_arn_a_detector_is_read_by_its_id_and_named():
     assert "12abc" in {r.ref for r in resources if r.kind == "security"}
     assert ("guardduty: no output names the account and region (describe-subnets, describe-hub, ...): 1 detector(s) "
             "read by ID") in notices
+
+
+# ------------------------------------------------------------------ every region (5.7b)
+CATALOG = "cn=aws,ou=regions,dc=ciam-ops"
+OU = "dn: ou={0},dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: {0}\n"
+REGIONS = (OU.format("regions"), OU.format("residencies"),
+           f"dn: {CATALOG}\nobjectClass: top\nobjectClass: ciamRegionCatalog\ncn: aws\nciamCloudProvider: aws\n",
+           *(entry(CATALOG, code, "ciamCloudRegion", ciamRegionStatus=status)
+             for code, status in (("region-1", "available"), ("region-2", "available"), ("region-3", "available"),
+                                  ("region-4", "opt-in"))))
+FENCE = entry(ALPHA, "fence", "ciamGuardrail", ciamBindingRole="fence", ciamDenies="region-escape")
+
+
+def _everywhere(*services, fenced=False):
+    from opsdir.core.interchange.ldif import LdifRecord
+    residency = entry("ou=residencies,dc=ciam-ops", "two", "ciamResidency",
+                      ciamAllowedRegion=(f"cn=region-1,{CATALOG}", f"cn=region-2,{CATALOG}"))
+    held = LdifRecord(ALPHA, "modify", {}, (("add", "objectClass", ("ciamEnvironmentPlacement",)),
+                                             ("replace", "ciamResidencyRef", ("cn=two,ou=residencies,dc=ciam-ops",))))
+    aws = LdifRecord("cloud=alpha,ou=environments,dc=ciam-ops", "modify", {},
+                     (("replace", "ciamCloudProvider", ("aws",)),))
+    _, alpha, _ = model(alpha=(BUCKET, TOPIC, *((FENCE,) if fenced else ()), *services),
+                        tree=(*OWNERS, *REGIONS, residency), changes=(held, aws))
+    return alpha
+
+
+def test_a_service_in_every_region_is_copied_to_each_region_its_guardrail_allows_through_a_provider_of_its_own():
+    from opsdir_adapter_aws.security import every_region, region_alias, security_regions
+    hub = svc("security-hub", "posture", ciamAllRegions="TRUE", ciamComplianceStandard="nist-800-53-r5",
+              ciamFindingsRole="security-alerts")
+    config = svc("config", "config-recording", ciamAllRegions="TRUE", ciamFindingsRole="config-history")
+    m = _everywhere(hub, config, fenced=True)
+    found = security_regions(m)
+    assert (found.regions, found.denied, found.opt_in) == (("region-2",), ("region-3",), ("region-4",))
+    assert every_region(m) == ("region-2",) and region_alias("us-gov-west-1") == "region_us_gov_west_1"
+    out = "\n\n".join(as_text(render_security(m)))
+    assert "# security-hub: in every region: region-1, region-2" in out
+    assert "# security-hub: not in region-3: guardrail fence denies every action there" in out
+    assert "# security-hub: not in opt-in regions region-4: the record doesn't say the account opted in" in out
+    assert 'resource "aws_securityhub_account" "security_hub_region_2" {\n  provider' in out
+    assert "= aws.region_region_2" in out
+    assert "securityhub:region-2::standards/nist-800-53" in out                      # the region's own standard
+    assert "depends_on    = [aws_securityhub_account.security_hub_region_2]" in out
+    assert 'resource "aws_securityhub_finding_aggregator" "security_hub"' in out
+    assert out.count('resource "aws_iam_service_linked_role"') == 1                 # IAM: once
+    regional = out.split('resource "aws_config_configuration_recorder" "config_region_2"', 1)[1].split("\n}", 1)[0]
+    assert "include_global_resource_types = false" in regional
+    assert re.search(r"role_arn +\= aws_iam_service_linked_role\.config_config\.arn", regional)
+    assert out.count('resource "aws_cloudwatch_event_rule"') == 1                    # routing: the cloud's region
+
+
+def test_without_a_guardrail_every_available_region_and_other_regions_findings_are_said_to_stay_there():
+    from opsdir_adapter_aws.security import security_regions
+    m = _everywhere(svc("guardduty", "threat-detection", ciamAllRegions="TRUE", ciamFindingsRole="security-alerts"))
+    assert security_regions(m).regions == ("region-2", "region-3")
+    out = "\n\n".join(as_text(render_security(m)))
+    assert 'resource "aws_guardduty_detector" "guardduty_region_3"' in out
+    assert "# guardduty: its findings in the other regions stay there unless Security Hub aggregates them" in out
+
+
+def test_regional_copies_read_back_as_one_service_in_every_region():
+    second = {**DETECTOR, "id": "34def", "arn": "arn:aws:guardduty:us-west-2:111122223333:detector/34def"}
+    found = [r for r in security_resources([("aws_guardduty_detector", DETECTOR), ("aws_guardduty_detector", second)])
+             if r.attrs.get("ciamSecurityKind") == ("threat-detection",)]
+    assert len(found) == 1 and found[0].attrs["ciamAllRegions"] == ("TRUE",)
+    (one_region,) = security_resources([("aws_guardduty_detector", DETECTOR)])
+    assert "ciamAllRegions" not in one_region.attrs
+
+
+# ------------------------------------------------------------------ organization-wide (5.7b, decision 2777)
+def _organization(*services, regions=False, **cloud):
+    from opsdir.core.interchange.ldif import LdifRecord
+    accounts = LdifRecord("cloud=alpha,ou=environments,dc=ciam-ops", "modify", {}, (
+        ("add", "objectClass", ("ciamCloudAccount",)), ("replace", "ciamCloudProvider", ("aws",)),
+        *(("replace", k, (v,)) for k, v in {"ciamAccountRef": "111122223333", "ciamManagementRef": "999988887777",
+                                            "ciamSecurityAdminRef": "555566667777", **cloud}.items() if v)))
+    _, alpha, _ = model(alpha=(BUCKET, TOPIC, *services), tree=(*OWNERS, *(REGIONS if regions else ())),
+                        changes=(accounts,))
+    return alpha
+
+
+def _parts(m):
+    from opsdir.domains.governance.keepers import ORGANIZATION
+    items = render_security(m)
+    org = [x for x in items if getattr(x, "origin", None) and x.origin.startswith(ORGANIZATION)]
+    return "\n\n".join(as_text(tuple(x for x in items if x not in org))), "\n\n".join(as_text(tuple(org)))
+
+
+def test_an_organization_wide_detector_is_the_delegated_administrator_s_enabling_every_member():
+    detector = svc("guardduty", "threat-detection", ciamAuditScope="organization", ciamFindingsRole="security-alerts",
+                   ciamSecurityCoverage=("control-plane", "compute"))
+    own, org = _parts(_organization(detector))
+    assert "aws_guardduty_detector" not in own and '"aws.guardduty"' in own                   # routing only
+    assert "# guardduty: organization-wide: enabled for every account by" in own
+    assert re.search(r'resource "aws_guardduty_organization_admin_account" "guardduty" \{\n  provider +'
+                     r'= aws.management\n  admin_account_id = "555566667777"', org)
+    assert 'resource "aws_guardduty_detector" "guardduty_admin"' in org and "= aws.security_admin" in org
+    assert re.search(r'auto_enable_organization_members = "ALL"', org)
+    assert 'resource "aws_guardduty_organization_configuration_feature" "guardduty_runtime_monitoring"' in org
+    assert re.search(r"detector_id += aws_guardduty_detector\.guardduty_admin\.id", org)
+
+
+def test_an_organization_wide_scanner_hub_and_recorder():
+    scanner = svc("inspector", "vulnerability-scanning", ciamAuditScope="organization",
+                  ciamSecurityCoverage=("containers",))
+    hub = svc("hub", "posture", ciamAuditScope="organization", ciamComplianceStandard="nist-800-53-r5")
+    config = svc("config", "config-recording", ciamAuditScope="organization", ciamFindingsRole="config-history")
+    own, org = _parts(_organization(scanner, hub, config))
+    assert re.search(r"auto_enable \{\n    ec2 += false\n    ecr += true", org)
+    assert 'account_ids    = ["555566667777"]' in org or re.search(r'account_ids += \["555566667777"\]', org)
+    assert re.search(r'configuration_type = "CENTRAL"', org) and 'linking_mode = "ALL_REGIONS"' in org
+    assert "standards/nist-800-53/v/5.0.0" in org
+    assert "data.aws_organizations_organization.security_admin.roots[0].id" in org
+    assert re.search(r'service_principal += "config.amazonaws.com"', org) and "AWSConfigRoleForOrganizations" in org
+    assert 'resource "aws_config_configuration_recorder" "config"' in own                  # its own recorder stays
+    assert "# config: an organization can't turn members' AWS Config recorders on" in own
+
+
+def test_without_the_organization_s_accounts_an_organization_wide_service_is_said_so():
+    own, org = _parts(_organization(svc("guardduty", "threat-detection", ciamAuditScope="organization"),
+                                    ciamSecurityAdminRef=None))
+    assert org == "" and "# NOTE: guardduty: organization-wide, but not rendered: the record doesn't name " \
+                         "ciamSecurityAdminRef" in own
+
+
+def test_an_organization_wide_service_in_every_region_is_registered_and_configured_in_each():
+    from opsdir_adapter_aws.account import organization_providers
+    m = _organization(svc("guardduty", "threat-detection", ciamAuditScope="organization", ciamAllRegions="TRUE"),
+                      regions=True)
+    _, org = _parts(m)
+    assert 'resource "aws_guardduty_organization_admin_account" "guardduty_region_2"' in org
+    assert "= aws.management_region_2" in org and "= aws.security_admin_region_2" in org
+    assert re.search(r"detector_id += aws_guardduty_detector\.guardduty_admin_region_2\.id", org)
+    aliases = [b.body[1][1] for b in organization_providers(m, ("region-2",))]
+    assert aliases == ["management", "management_region_2", "security_admin", "security_admin_region_2"]

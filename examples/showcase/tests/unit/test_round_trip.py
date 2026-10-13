@@ -18,8 +18,7 @@ AS_DATA = {"aws": aws, "azure": azure, "gcp": gcp}
 
 INTENT = {f"{a.name}/{rb.importer}" for a in ADAPTERS for rb in a.reads_back if rb.intent}
 # What a render can't express yet, so reading it back drops it: (DN, attribute) -> why
-KNOWN = {("cn=cloudtrail,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops", "ciamAuditEvents"):
-         "CloudTrail data events aren't rendered yet (milestone 5.7, note 1950): the trail renders control-plane only"}
+KNOWN = {}                       # CloudTrail data events render since milestone 5.7b (note 1950): none left
 
 
 @pytest.mark.parametrize("state", ["before", "after"])

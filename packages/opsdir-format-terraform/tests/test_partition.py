@@ -83,6 +83,12 @@ def test_roots_reading_each_other_are_refused():
         partition((PROVIDER, *a, *b), _place, "terraform")
 
 
+def test_one_resource_placed_in_two_roots_is_refused():
+    gateway = tf_block("resource", ["aws_vpn_gateway", "main"], [("vpc_id", "${data.aws_vpc.main.id}")])
+    with pytest.raises(ValueError, match="placed in two roots: aws_vpn_gateway.main"):
+        partition((PROVIDER, VPC, *from_entry(DBA, (gateway,)), *from_entry(NET, (gateway,))), _place, "terraform")
+
+
 def test_an_input_named_like_a_variable_the_root_has_is_refused():
     clash = tf_block("variable", ["aws_db_instance_grants_address"], [("type", "${string}")])
     server = SERVER._replace(body=(*SERVER.body, ("tags", {"x": "${var.aws_db_instance_grants_address}"})))

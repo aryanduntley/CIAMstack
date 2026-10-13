@@ -102,6 +102,23 @@ def test_root_states_take_the_inputs_an_operator_gives():
     assert found(root_states(files, "x/prod", variables={"start": "now"}))["body"] == {"when": "now"}
 
 
+def test_an_input_another_root_outputs_takes_its_value_through_a_chain_of_roots():
+    lz = (tf_block("resource", ["t_gateway", "main"], [("name", "gw")]),
+          tf_block("output", ["t_gateway_main_id"], [("value", ref("t_gateway.main.id"))]))
+    team = (tf_block("variable", ["t_gateway_main_id"], [("type", ref("string"))]),
+            tf_block("resource", ["t_link", "b"], [("gateway", ref("var.t_gateway_main_id"))]),
+            tf_block("output", ["t_link_b_id"], [("value", ref("t_link.b.id"))]))
+    slice_ = (tf_block("variable", ["t_link_b_id"], [("type", ref("string"))]),
+              tf_block("resource", ["t_route", "r"], [("link", ref("var.t_link_b_id"))]))
+    files = {"x/prod/terraform/zone/main.tf": TfFile("# lz\n", lz),         # named against the apply order
+             "x/prod/terraform/team/main.tf": TfFile("# team\n", team),
+             "x/prod/terraform/slice/main.tf": TfFile("# slice\n", slice_)}
+    states = root_states(files, "x/prod")
+    (link,) = read_state(states["x/prod/terraform-team.tfstate"])[0]
+    (route,) = read_state(states["x/prod/terraform-slice.tfstate"])[0]
+    assert link.attributes["gateway"] == "t_gateway.main" and route.attributes["link"] == "t_link.b"
+
+
 def test_a_root_given_as_the_files_it_is_written_from_has_the_state_of_their_text():
     items = (tf_block("variable", ["region"], [("default", "eu-west-1")]), comment("NOTE: named, not rendered"),
              tf_block("resource", ["t_vpc", "main"], [("name", "main"), ("tags", {"Where": "${var.region}"})]),

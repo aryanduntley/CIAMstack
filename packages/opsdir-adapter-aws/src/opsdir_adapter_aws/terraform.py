@@ -26,7 +26,7 @@ from .log_agent import log_notes
 from .observability import render_alarms, render_log_groups
 from .canaries import render_canaries
 from .discovery import render_discovery
-from .security import render_security
+from .security import every_region, region_alias, render_security
 from .suppressions import render_suppressions
 from .compute_groups import render_groups
 from .budgets import BILLING, BILLING_REGION, needs_billing_provider, render_budgets
@@ -41,7 +41,7 @@ from .ingress import gateway_front
 from .landing import STACK, landing_parts, placed_roots
 from .network import render_network
 from .backups import render_backups
-from .account import govcloud, provider_block, required_providers, standard_account
+from .account import govcloud, organization_providers, provider_block, required_providers, standard_account
 from .volumes import render_snapshot_policies, root_block_device, server_volumes
 from .databases import copy_alias, copy_regions, render_databases
 from .storage import kept_buckets, render_object_stores
@@ -243,6 +243,8 @@ def render_files(m, services):
           for r in copy_regions(m)),
         *((provider_block(m, BILLING_REGION, BILLING, "GovCloud's billing (AWS Budgets) is managed in its associated "
                           "standard account", account=standard_account(m)),) if needs_billing_provider(m) else ()),
+        *organization_providers(m, every_region(m)),
+        *(provider_block(m, r, region_alias(r), f"Security services in {r}") for r in every_region(m)),
         *((tf_block("variable", [RESOLVER_ENDPOINT], [
             ("description", "The landing zone's outbound Route 53 Resolver endpoint the forwarding rules use"),
             ("type", ref("string"))]),) if forwarders(m, hosted=False) else ()))

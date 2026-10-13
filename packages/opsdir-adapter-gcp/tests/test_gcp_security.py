@@ -33,8 +33,8 @@ def test_threat_detection_is_a_request_and_its_findings_stream_to_the_topic():
     out = _render(svc("scc", "threat-detection", ciamFindingsRole="security-findings", ciamAuditScope="organization",
                       ciamSecurityCoverage=("control-plane", "containers", "compute", "key-vaults")))
     assert ("# scc: Security Command Center (Premium or Enterprise) activated with Event Threat Detection, Container "
-            "Threat Detection, VM Threat Detection: a request to the organization's administrators (not "
-            "rendered)") in out
+            "Threat Detection, VM Threat Detection (activation has no Terraform resource and enabling its services "
+            "only a google-beta one): a request to the organization's administrators (not rendered)") in out
     assert "# scc: no Security Command Center service watches key vaults on their own" in out
     assert 'resource "google_scc_v2_project_notification_config" "scc_findings"' in out
     assert f'pubsub_topic = "{TOPIC}"' in out and 'filter = "finding_class=\\"THREAT\\" AND state=\\"ACTIVE\\""' in out
@@ -48,7 +48,8 @@ def test_scanning_apis_are_enabled_once_across_services():
                   svc("scan-b", "vulnerability-scanning", ciamSecurityCoverage=("containers", "applications")))
     assert out.count('service            = "containerscanning.googleapis.com"') == 1
     assert out.count('"osconfig.googleapis.com"') == 1
-    assert "# scan-a: VM Manager reports vulnerabilities once the instances carry metadata enable-osconfig=TRUE" in out
+    assert out.count('resource "google_compute_project_metadata_item"') == 1                 # scan-b: no compute
+    assert 'key     = "enable-osconfig"' in out and 'value   = "TRUE"' in out
     assert "# scan-b: Web Security Scanner (Security Command Center) for applications: a request" in out
 
 

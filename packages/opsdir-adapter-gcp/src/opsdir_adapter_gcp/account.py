@@ -36,6 +36,25 @@ def project_variable(m, described=False):
         *((("default", project_id(m)),) if project_id(m) else ())])
 
 
+ORGANIZATION = "organization_id"
+
+
+def organization_id(m):
+    """The organization environment m's cloud belongs to (its ciamOrganizationRef organizations/<id>, or a bare id), or
+    None when the record names none or a folder."""
+    ref_ = one(m.cloud, "ciamOrganizationRef") or ""
+    kind, _, rest = ref_.rpartition("/")
+    return rest if rest and kind in ("", "organizations") else None
+
+
+def organization_variable(m, description):
+    """The organization_id input of a root of environment m (organization-wide settings are made on it), defaulting
+    to the recorded organization."""
+    return tf_block("variable", [ORGANIZATION], [
+        ("type", ref("string")), ("description", description),
+        *((("default", organization_id(m)),) if organization_id(m) else ())])
+
+
 # the Assured Workloads compliance regime of each required level, the most demanding first
 REGIMES = (("dod-il5", "IL5"), ("dod-il4", "IL4"), ("fedramp-high", "FEDRAMP_HIGH"),
            ("fedramp-moderate", "FEDRAMP_MODERATE"), ("dod-il2", "IL2"))

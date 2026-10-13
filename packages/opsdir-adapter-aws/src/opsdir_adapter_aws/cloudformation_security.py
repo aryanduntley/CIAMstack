@@ -11,15 +11,19 @@ reader's terraform_shape gives a rule's criteria and actions as Terraform blocks
   AWS::SecurityHub::Standard          -> aws_securityhub_standards_subscription
   AWS::SecurityHub::AutomationRule    -> aws_securityhub_automation_rule (its criteria, its actions)
   AWS::GuardDuty::Filter              -> aws_guardduty_filter (its criteria per field, its action)
-Inspector's enabler, Config's retention and the services' organization configurations have no CloudFormation type: an
-opsdir render keeps them in the Terraform root beside the stacks, read with them.
+  AWS::SecurityHub::OrganizationConfiguration -> aws_securityhub_organization_configuration (organization scope, 5.7b)
+  AWS::Config::ConfigurationAggregator         -> aws_config_configuration_aggregator (an organization source: AWS
+                                                  Config's organization scope)
+Inspector's enabler, Config's retention and GuardDuty's and Inspector's organization configurations have no
+CloudFormation type: an opsdir render keeps them in the Terraform root beside the stacks, read with them.
 """
 from .cli_edge import terraform_shape
 from .cloudformation_values import tag_map, truth
 
 SECURITY_TYPES = ("AWS::GuardDuty::Detector", "AWS::Config::ConfigurationRecorder", "AWS::Config::DeliveryChannel",
                   "AWS::SecurityHub::Hub", "AWS::SecurityHub::Standard", "AWS::SecurityHub::AutomationRule",
-                  "AWS::GuardDuty::Filter")
+                  "AWS::GuardDuty::Filter", "AWS::SecurityHub::OrganizationConfiguration",
+                  "AWS::Config::ConfigurationAggregator")
 
 
 def _of(declared, type_):
@@ -65,7 +69,17 @@ def _services(declared, names):
                                            "control_finding_generator": p.get("ControlFindingGenerator")})
               for lid, p, pid in _of(declared, "AWS::SecurityHub::Hub")),
             *(("aws_securityhub_standards_subscription", {"standards_arn": p.get("StandardsArn"), "id": pid})
-              for _, p, pid in _of(declared, "AWS::SecurityHub::Standard"))]
+              for _, p, pid in _of(declared, "AWS::SecurityHub::Standard")),
+            *(("aws_securityhub_organization_configuration", {
+                "auto_enable": p.get("AutoEnable"),
+                "organization_configuration": [{"configuration_type": p.get("ConfigurationType")}]})
+              for _, p, pid in _of(declared, "AWS::SecurityHub::OrganizationConfiguration")),
+            *(("aws_config_configuration_aggregator", {
+                "name": p.get("ConfigurationAggregatorName") or pid,
+                "organization_aggregation_source": [{"all_regions": src.get("AllAwsRegions"),
+                                                     "role_arn": src.get("RoleArn")}]})
+              for _, p, pid in _of(declared, "AWS::Config::ConfigurationAggregator")
+              for src in (p.get("OrganizationAggregationSource"),) if isinstance(src, dict))]
 
 
 def security_stack_pairs(declared, names):

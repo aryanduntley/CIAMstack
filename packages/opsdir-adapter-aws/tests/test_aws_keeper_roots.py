@@ -84,10 +84,17 @@ def test_an_organization_trail_the_landing_zone_keeps_renders_in_its_root():
                    ciamStorageRef="s3://example-ciam-audit")
     trail = entry(ALPHA, "org-trail", "ciamAuditTrail", ciamBindingRole="org-trail", ciamAuditScope="organization",
                   ciamLogDestinationRole="audit-logs", ciamManagedBy=LZ)
-    files = _files(GUARDRAIL, bucket, trail)
+    from opsdir.core.interchange.ldif import LdifRecord
+    management = LdifRecord("cloud=alpha,ou=environments,dc=ciam-ops", "modify", {}, (
+        ("add", "objectClass", ("ciamCloudAccount",)), ("replace", "ciamManagementRef", ("999988887777",))))
+    files = as_text(render_files(model(alpha=(GUARDRAIL, bucket, trail), tree=_owners(),
+                                       changes=(management,))[1], None))
     lz = files["terraform/landing-zone/main.tf"]
     assert 'resource "aws_cloudtrail" "org_trail"' in lz and "is_organization_trail         = true" in lz
+    assert "provider                      = aws.management" in lz and 'alias               = "management"' in \
+        files["terraform/landing-zone/providers.tf"]
     assert "aws_cloudtrail" not in files["terraform/main.tf"]
+    assert "# org-trail: organization-wide: enabled for every account by" in files["terraform/main.tf"]
 
 
 def test_a_log_group_another_team_keeps_renders_in_their_root():

@@ -31,16 +31,22 @@ def test_an_account_trail_the_platform_keeps_is_rendered_into_its_bucket():
                      ciamProviderRef="arn:aws:cloudtrail:us-east-1:111122223333:trail/ciam-prod"),
               _trail("to-logs", "app-logs"))
     _, alpha, _ = model(alpha=(BUCKET, GROUP, *trails), tree=OWNERS)
-    assert as_text(render_trails(alpha)) == ('''resource "aws_cloudtrail" "cloudtrail" {
-  # data-write events: log them with event selectors naming the resources (not rendered)
+    note, trail, logs = as_text(render_trails(alpha))
+    assert note.startswith("# NOTE: audit trail cloudtrail: bucket example-ciam-audit (audit-logs) must let "
+                           "cloudtrail.amazonaws.com s3:GetBucketAcl on arn:aws:s3:::example-ciam-audit; s3:PutObject "
+                           "on arn:aws:s3:::example-ciam-audit/AWSLogs/111122223333/* (s3:x-amz-acl ")
+    assert note.endswith("aws:SourceArn arn:aws:cloudtrail:us-east-1:111122223333:trail/ciam-prod): its policy isn't "
+                         "rendered: the record doesn't describe the bucket")
+    assert trail == '''resource "aws_cloudtrail" "cloudtrail" {
+  # data-write events: no data resource to log but the trail's own bucket (logging its writes would log themselves)
   name                          = "ciam-prod"
   s3_bucket_name                = "example-ciam-audit"
   is_multi_region_trail         = true
   include_global_service_events = true
   enable_log_file_validation    = true
-}''',
-        "# NOTE: audit trail to-logs: not rendered: its records go to a CloudWatch log group, a delivery that also "
-        "needs a role CloudTrail assumes")
+}'''
+    assert logs.startswith("# NOTE: audit trail to-logs: not rendered: its records go to a CloudWatch log group, but "
+                           "CloudTrail keeps them in an S3 bucket")
 
 
 def test_the_activity_a_trail_records_comes_from_its_event_selectors():
@@ -110,3 +116,116 @@ def test_a_cloudformation_trail_is_read_with_its_arn_from_the_stack():
         "ciamAuditScope": ("account",), "ciamAuditEvents": ("control-plane",), "ciamAllRegions": ("FALSE",),
         "ciamIntegrityValidation": ("TRUE",)}, {"ciamLogDestinationRole": "arn:aws:s3:::example-ciam-audit"},
         "cloudtrail")]
+
+
+# ------------------------------------------------------------------ organization trails, streaming, data events (5.7b)
+def _cloud(**attrs):
+    from opsdir.core.interchange.ldif import LdifRecord
+    return LdifRecord("cloud=alpha,ou=environments,dc=ciam-ops", "modify", {}, (
+        ("add", "objectClass", ("ciamCloudAccount",)), *(("replace", k, (v,)) for k, v in attrs.items())))
+
+
+ACCOUNT = _cloud(ciamAccountRef="111122223333", ciamManagementRef="999988887777",
+                 ciamOrganizationRef="o-exampleorg")
+FILES = entry(ALPHA, "files", "ciamObjectStore", ciamBindingRole="files", ciamStorageRef="s3://example-ciam-files")
+NEW_BUCKET = entry(ALPHA, "audit-logs", "ciamObjectStore", ciamBindingRole="audit-logs",
+                   ciamStorageRef="s3://example-ciam-audit", ciamStorageVersioning="TRUE")
+SECRET = entry(ALPHA, "db-password", "ciamSecretRef", ciamBindingRole="db-password",
+               ciamRefUri="aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:db")
+STREAM = entry(ALPHA, "trail-logs", "ciamLogDestination", ciamBindingRole="trail-logs", ciamDestinationKind="log-group",
+               ciamProviderRef="arn:aws:logs:us-east-1:111122223333:log-group:/ciam/trail:*", ciamRetentionDays="30")
+
+
+def _org_trail(cn, destination, **more):
+    return entry(ALPHA, cn, "ciamAuditTrail", ciamBindingRole=cn, ciamAuditScope="organization",
+                 ciamLogDestinationRole=destination, **more)
+
+
+def _render(*records):
+    return as_text(render_trails(model(alpha=records, tree=OWNERS, changes=(ACCOUNT,))[1]))
+
+
+def test_data_events_select_the_environment_s_own_buckets_and_keep_management_events_by_a_selector():
+    trail = _trail("cloudtrail", "audit-logs", ciamAuditEvents=("control-plane", "data-write"))
+    policy, block = _render(NEW_BUCKET, FILES, SECRET, trail)
+    assert block.count("advanced_event_selector {") == 2
+    assert 'name = "Management events"' in block and 'equals = ["Management"]' in block
+    assert 'name = "data-write on S3 objects"' in block and 'equals = ["AWS::S3::Object"]' in block
+    assert 'equals = ["false"]' in block and 'starts_with = ["arn:aws:s3:::example-ciam-files/"]' in block
+    assert "example-ciam-audit/" not in block                             # its own bucket: never selected
+    assert "# data-write events: reading the 1 secret is a Secrets Manager management event" in block
+    assert "depends_on = [aws_s3_bucket_policy.cloudtrail_delivery]" in block
+    statements = json.loads(json.loads(policy.split("policy = ", 1)[1].rsplit("\n", 1)[0]))["Statement"]
+    assert [s["Action"] for s in statements] == ["s3:GetBucketAcl", "s3:PutObject"]
+    assert statements[1]["Resource"] == "arn:aws:s3:::example-ciam-audit/AWSLogs/111122223333/*"
+    assert statements[1]["Condition"]["StringEquals"] == {
+        "aws:SourceArn": "arn:aws:cloudtrail:region-1:111122223333:trail/cloudtrail",
+        "s3:x-amz-acl": "bucket-owner-full-control"}
+
+
+def test_a_trail_naming_its_data_resources_logs_those_reads_only():
+    trail = _trail("reads", "audit-logs", ciamAuditEvents="data-read", ciamAuditResourceRole="files")
+    block = _render(BUCKET, FILES, NEW_BUCKET, trail)[-1]
+    assert 'equals = ["true"]' in block and "Management" not in block and "example-ciam-files/" in block
+
+
+def test_an_organization_trail_is_made_from_the_management_account_writes_the_organization_s_logs_and_streams():
+    trail = _org_trail("org-trail", "audit-logs", ciamAuditStreamRole="trail-logs")
+    policy, role, role_policy, block, line = _render(NEW_BUCKET, STREAM, trail)
+    assert "provider                      = aws.management" in block and "is_organization_trail         = true" in block
+    assert "cloud_watch_logs_group_arn    = \"${aws_cloudwatch_log_group.trail_logs.arn}:*\"" in block
+    assert "cloud_watch_logs_role_arn     = aws_iam_role.org_trail_logs.arn" in block
+    assert "provider           = aws.management" in role and "cloudtrail.amazonaws.com" in role
+    streams = json.loads(json.loads(role_policy.split("policy   = ", 1)[1].rsplit("\n", 1)[0]))["Statement"][0]
+    assert streams["Resource"] == [
+        "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/trail:log-stream:999988887777_CloudTrail_*",
+        "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/trail:log-stream:o-exampleorg_*"]
+    assert "AWSLogs/o-exampleorg/*" in policy and "999988887777:trail/org-trail" in policy
+    assert line == ("# org-trail: organization-wide: enabled for every account by **NO OWNER** (in their root "
+                    "terraform/landing-zone)")                     # no landing zone party to ask: its root renders
+
+
+def test_an_organization_trail_without_a_management_account_or_a_stream_that_isn_t_a_log_group_is_said_so():
+    from opsdir.core.environment import env_model
+    trail = _org_trail("org-trail", "audit-logs")
+    d, _, _ = model(alpha=(NEW_BUCKET, trail), tree=OWNERS, changes=(_cloud(ciamAccountRef="111122223333"),))
+    note, _ = as_text(render_trails(env_model(d, "alpha/prod")))
+    assert note.endswith("which the record doesn't name (ciamManagementRef)")
+    odd = _trail("cloudtrail", "audit-logs", ciamAuditStreamRole="files")
+    assert any("streams only to a CloudWatch log group" in x for x in _render(NEW_BUCKET, FILES, odd))
+
+
+def test_cloudformation_writes_the_trail_s_selectors_stream_role_and_bucket_policy_natively():
+    from types import SimpleNamespace
+    from opsdir_format_terraform.hcl import TfBlock, TfFile, tf_block
+    from opsdir_adapter_aws.cfn_types import cloudformation_translation
+    from opsdir_adapter_aws.observability import render_log_groups
+    from opsdir_adapter_aws.storage import render_object_stores
+    trail = _trail("cloudtrail", "audit-logs", ciamAuditEvents=("control-plane", "data-write"),
+                   ciamAuditStreamRole="trail-logs")
+    m = model(alpha=(NEW_BUCKET, FILES, STREAM, trail), tree=OWNERS, changes=(ACCOUNT,))[1]
+    items = tuple(x for x in (*render_object_stores(m), *render_log_groups(m), *render_trails(m))
+                  if isinstance(x, TfBlock))
+    files = {"terraform/main.tf": TfFile("", (tf_block("provider", ["aws"], [("region", "us-east-1")]), *items))}
+    done = cloudformation_translation(SimpleNamespace(dn=m.dn, label="alpha/prod"), files, "AWS infrastructure")
+    (template,) = done.templates.values()
+    found = {r.logical_id: r for r in template.resources}
+    props = found["CloudtrailCloudtrail"].properties
+    assert [s["Name"] for s in props["AdvancedEventSelectors"]] == ["Management events", "data-write on S3 objects"]
+    assert {"Field": "resources.ARN", "StartsWith": ["arn:aws:s3:::example-ciam-files/"]} in \
+        props["AdvancedEventSelectors"][1]["FieldSelectors"]
+    assert "CloudWatchLogsLogGroupArn" in props and "CloudWatchLogsRoleArn" in props
+    policy = found["S3BucketPolicyCloudtrailDelivery"].properties
+    assert json.loads(policy["PolicyDocument"])["Statement"][0]["Action"] == "s3:GetBucketAcl"   # as the role's
+    assert found["IamRoleCloudtrailLogs"].properties["Policies"][0]["PolicyName"] == "cloudtrail-logs"
+
+
+def test_a_trail_read_back_names_the_log_group_it_streams_to_beside_its_bucket():
+    (r,) = trail_resources([("aws_cloudtrail", {
+        "arn": "arn:aws:cloudtrail:us-east-1:111122223333:trail/t", "name": "t", "s3_bucket_name": "b",
+        "cloud_watch_logs_group_arn": "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/trail:*",
+        "advanced_event_selector": [{"field_selector": [{"field": "eventCategory", "equals": ["Data"]},
+                                                        {"field": "readOnly", "equals": ["false"]}]}]})])
+    assert r.links == {"ciamLogDestinationRole": "arn:aws:s3:::b",
+                       "ciamAuditStreamRole": "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/trail"}
+    assert r.attrs["ciamAuditEvents"] == ("data-write",)

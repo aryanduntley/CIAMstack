@@ -24,6 +24,9 @@ from .naming import AUDIT_EVENTS, AUDIT_ROLE
 
 AREA = "Audit"
 TRAIL = "ciamAuditTrail"
+# What a trail recording data events logs when it names no resources: the environment's own data resources (decision
+# 2777): object stores, databases, secrets
+DATA_CLASSES = ("ciamObjectStore", "ciamDatabase", "ciamSecretRef")
 INDEFINITE = 0                     # ciamRetentionDays of a destination that never expires records
 AUDIT_HEADERS = ("environment", "audit trail", "scope", "records", "all regions", "integrity", "kept in",
                  "keep (days)", "kept by")
@@ -55,6 +58,24 @@ def trail_keeper(m, trail):
 def trail_destination(m, trail):
     """The binding of environment m that keeps an audit trail's records (its ciamLogDestinationRole), or None."""
     role = one(trail, "ciamLogDestinationRole")
+    return one_role(m, role) if role else None
+
+
+def data_resources(m, trail):
+    """The bindings of environment m whose data access an audit trail records: none unless it records data-read or
+    data-write events; else those its ciamAuditResourceRole names, or with none named the environment's own data
+    resources (object stores, databases, secrets: DATA_CLASSES)."""
+    if not set(values(trail, "ciamAuditEvents")) - {"control-plane"}:
+        return ()
+    named = values(trail, "ciamAuditResourceRole")
+    if named:
+        return tuple(b for role in named for b in (one_role(m, role),) if b is not None)
+    return tuple(b for oc in DATA_CLASSES for b in of_class(m, oc))
+
+
+def trail_stream(m, trail):
+    """The binding of environment m an audit trail also streams its records to (its ciamAuditStreamRole), or None."""
+    role = one(trail, "ciamAuditStreamRole")
     return one_role(m, role) if role else None
 
 

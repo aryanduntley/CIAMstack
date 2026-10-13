@@ -129,6 +129,8 @@ def _target(m, route, here):
         return ref("data.aws_internet_gateway.main.id"), (), (IGW,)
     if b is not None and b.dn in here and _address(m, b):
         return ref(_address(m, b)), (), ()
+    if b is not None and route.kind == "vpn" and _gateway_link(m) is not None:
+        return ref("aws_vpn_gateway.main.id"), (), ()     # the VPC's one, read across roots when another writes it
     if b is not None and route.kind == "vpn":
         return ref("var.vpn_gateway_id"), (_var("vpn_gateway_id", f"The VPN gateway {rdn_value(b)} connects to (kept "
                                                                   "with the VPN)"),), ()
@@ -196,6 +198,13 @@ def network_acl(m, b, here=()):
 
 
 # ------------------------------------------------------------------ interconnects
+def _gateway_link(m):
+    """The VPN link the VPC's VPN gateway renders with: the first one the environment renders. A VPC attaches one VPN
+    gateway, so the other links' VPN connections read it, across roots when someone else keeps them."""
+    return next((i for i in of_class(m, "ciamInterconnect")
+                 if one(i, "ciamLinkKind") == "vpn" and one(i, "ciamPeerGateway")), None)
+
+
 def _vpn_gateway(m):
     """The VPC's VPN gateway, its Amazon-side ASN the first VPN link's local one."""
     asn = next((one(i, "ciamLocalAsn") for i in of_class(m, "ciamInterconnect")
@@ -230,7 +239,9 @@ def _vpn(m, b, n):
     static = tuple(tf_block("resource", ["aws_vpn_connection_route", f"{n}_{i}"], [
         ("destination_cidr_block", c), ("vpn_connection_id", ref(f"aws_vpn_connection.{n}.id"))])
         for i, c in enumerate(values(b, "ciamAcceptedCidr"))) if peer_asn is None else ()
+    owns = _gateway_link(m).dn == b.dn
     return Rendered((
+        *((_vpn_gateway(m),) if owns else ()),
         tf_block("resource", ["aws_customer_gateway", n], [
             ("bgp_asn", int(peer_asn or 65000)), ("ip_address", gateway), ("type", "ipsec.1"),
             ("tags", binding_tags(b))]),
@@ -238,7 +249,7 @@ def _vpn(m, b, n):
             ("customer_gateway_id", ref(f"aws_customer_gateway.{n}.id")),
             ("vpn_gateway_id", ref("aws_vpn_gateway.main.id")), ("type", "ipsec.1"),
             ("static_routes_only", peer_asn is None), ("tags", binding_tags(b))]),
-        *_adopt(f"aws_vpn_connection.{n}", b), *static), (), (_vpn_gateway(m),))
+        *_adopt(f"aws_vpn_connection.{n}", b), *static), (), ())
 
 
 def interconnect(m, b, here=()):

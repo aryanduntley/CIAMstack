@@ -1047,7 +1047,7 @@ resource "azurerm_application_gateway" "svc_sso" {
 
 # Egress firewall 'egress-firewall' is kept by network-security; its allowlist is rendered in their root, not here.
 
-# Egress forward-proxy 'hub-proxy' is kept by network-security; its allowlist is rendered in their root, not here.
+# Egress passes forward-proxy 'hub-proxy' (proxy.hub.example-aero.test:3128), kept by network-security: its allowlist is kept there, not rendered as cloud firewall rules.
 
 data "azurerm_key_vault" "pe_secrets_kv_ciam_prod" {
   name                = "kv-ciam-prod"

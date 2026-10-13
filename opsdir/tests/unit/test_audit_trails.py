@@ -119,3 +119,27 @@ def test_a_log_destination_never_counts_and_each_side_is_graded_by_its_own_evide
         "user can lift) and beta/prod's aren't: turn on the cloud's cryptographic validation where it has one "
         "(CloudTrail log file validation), or keep the target's exported records in a locked immutable (WORM) object "
         "store."]
+
+
+def test_a_trail_logs_the_data_it_names_else_the_environment_s_own_and_streams_where_it_says():
+    from opsdir.domains.observability.audit import data_resources, trail_stream
+    bucket = entry(ALPHA, "files", "ciamObjectStore", ciamBindingRole="files")
+    db = entry(ALPHA, "db", "ciamDatabase", ciamBindingRole="db", ciamDbEngine="postgres")
+    logs = entry(ALPHA, "trail-logs", "ciamLogDestination", ciamBindingRole="trail-logs",
+                 ciamDestinationKind="log-group")
+    control = entry(ALPHA, "control", "ciamAuditTrail", ciamBindingRole="control", ciamAuditScope="account",
+                    ciamAuditEvents="control-plane", ciamAuditStreamRole="trail-logs")
+    own = entry(ALPHA, "own", "ciamAuditTrail", ciamBindingRole="own", ciamAuditScope="account",
+                ciamAuditEvents=("control-plane", "data-write"))
+    named = entry(ALPHA, "named", "ciamAuditTrail", ciamBindingRole="named", ciamAuditScope="account",
+                  ciamAuditEvents="data-read", ciamAuditResourceRole=("files", "nowhere"))
+    m = model(alpha=(bucket, db, logs, control, own, named))[1]
+    trail = {t.dn.split(",")[0][3:]: t for t in audit_trails(m)}
+    assert data_resources(m, trail["control"]) == ()                      # control-plane only
+    assert [rdn(b) for b in data_resources(m, trail["own"])] == ["files", "db"]   # none named: its own
+    assert [rdn(b) for b in data_resources(m, trail["named"])] == ["files"]       # a role it doesn't bind: none
+    assert rdn(trail_stream(m, trail["control"])) == "trail-logs" and trail_stream(m, trail["own"]) is None
+
+
+def rdn(b):
+    return b.dn.split(",")[0][3:]

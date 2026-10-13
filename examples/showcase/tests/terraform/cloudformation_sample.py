@@ -37,6 +37,8 @@ def placed(region):
     return tuple(LdifRecord(f"cloud={c},ou=environments,dc=ciam-ops", "modify", {}, (
         ("add", "objectClass", ("ciamCloudAccount",)), ("replace", "ciamRegion", (region,)),
         ("replace", "ciamCloudProvider", ("aws",)), ("replace", "ciamAccountRef", (GOV_ACCOUNT if gov else ACCOUNT,)),
+        # the organization's management account and its security services' delegated administrator (5.7b)
+        ("replace", "ciamManagementRef", ("999988887777",)), ("replace", "ciamSecurityAdminRef", ("555566667777",)),
         *standard))
         for c in ("alpha", "beta"))
 
@@ -83,12 +85,22 @@ EXC = "cn=EXC-7,ou=exceptions,dc=ciam-ops"
 EXCEPTIONS = (OU.format("ou=exceptions,dc=ciam-ops", "exceptions"),
               f"dn: {EXC}\nobjectClass: top\nobjectClass: ciamRiskException\ncn: EXC-7\n"
               "ciamExceptionKind: false-positive\nciamExceptionStatus: approved\n"
-              f"ciamAffectedEnvironment: {ALPHA}\nciamExpiresAt: 20270331000000Z\n")
+              f"ciamAffectedEnvironment: {ALPHA}\nciamExpiresAt: 20270331000000Z\n",
+              # the region catalog a service in every region runs through (5.7b): a second region per partition
+              OU.format("ou=regions,dc=ciam-ops", "regions"),
+              "dn: cn=aws,ou=regions,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamRegionCatalog\ncn: aws\n"
+              "ciamCloudProvider: aws\n",
+              *(entry("cn=aws,ou=regions,dc=ciam-ops", code, "ciamCloudRegion", ciamRegionStatus="available")
+                for code in ("us-east-1", "us-west-2", "us-gov-west-1", "us-gov-east-1")))
 STORES = (entry(ALPHA, "backups", "ciamObjectStore", ciamBindingRole="ds-backups", ciamStorageRef="s3://ea-backups"),
           entry(ALPHA, "audit", "ciamObjectStore", ciamBindingRole="audit-archive", ciamStorageRef="s3://ea-audit",
                 ciamEncryptedByRole="db-key"),
           entry(ALPHA, "security-alerts", "ciamAlertChannel", ciamBindingRole="security-alerts",
-                ciamChannelKind="topic", ciamProviderRef=f"arn:aws:sns:us-east-1:{ACCOUNT}:security-alerts"))
+                ciamChannelKind="topic", ciamProviderRef=f"arn:aws:sns:us-east-1:{ACCOUNT}:security-alerts"),
+          # a trail into a bucket this render creates (its delivery policy rendered) logging data writes (5.7b)
+          entry(ALPHA, "trail", "ciamAuditTrail", ciamBindingRole="audit-trail", ciamAuditScope="account",
+                ciamAuditEvents=("control-plane", "data-write"), ciamAllRegions="TRUE",
+                ciamIntegrityValidation="TRUE", ciamLogDestinationRole="audit-archive"))
 # a compute group of a role no server runs (its own security group), designed (no provider ref), with its role's
 # disks: a boot volume and a data volume one snapshot policy copies
 GROUP = (entry(ALPHA, "asg-app", "ciamComputeGroup", ciamBindingRole="compute-app", ciamTargetRole="app",
@@ -111,6 +123,16 @@ RECORDS = (
     entry(ALPHA, "cpus", "ciamQuotaNeed", ciamBindingRole="cpus", ciamQuotaKind="vcpus", ciamQuotaNeeded="16",
           ciamQuotaDecision="request"),
     *STORES,
+    entry(ALPHA, "security-hub", "ciamSecurityService", ciamBindingRole="security-hub", ciamSecurityKind="posture",
+          ciamAllRegions="TRUE", ciamSecurityBaseline="aws-foundational"),
+    # organization-wide services (5.7b): enabled by the delegated administrator, the landing zone's root
+    *(entry(ALPHA, cn, "ciamSecurityService", ciamBindingRole=cn, ciamSecurityKind=kind, ciamAuditScope="organization",
+            **more)
+      for cn, kind, more in (("org-guardduty", "threat-detection",
+                              {"ciamAllRegions": "TRUE", "ciamSecurityCoverage": ("control-plane", "compute")}),
+                             ("org-inspector", "vulnerability-scanning", {"ciamSecurityCoverage": ("containers",)}),
+                             ("org-hub", "posture", {"ciamComplianceStandard": "nist-800-53-r5"}),
+                             ("org-config", "config-recording", {"ciamFindingsRole": "ds-backups"}))),
     entry(ALPHA, "macie-weekly", "ciamDataDiscovery", ciamBindingRole="data-discovery", ciamScansRole="ds-backups",
           ciamCustomIdentifier=("cui-marking: CUI//[A-Z-]+",), ciamRescanDays="7",
           ciamFindingsRole="security-alerts", ciamResultsRole="audit-archive"))

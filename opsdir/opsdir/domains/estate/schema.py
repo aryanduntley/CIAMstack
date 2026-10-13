@@ -45,6 +45,12 @@ ATTRIBUTES = (
     AttributeDef(483, 'ciamOrganizationRef', 'string', 'binding', True,
                  'The organization the account belongs to: an AWS organization, an Azure tenant, a Google Cloud '
                  'organization or folder'),
+    AttributeDef(649, 'ciamManagementRef', 'string', 'binding', True,
+                 "Where a cloud's organization-wide settings are made: an AWS organization's management account ID, "
+                 "an Azure management group ID (a Google Cloud organization's are made on its ciamOrganizationRef)"),
+    AttributeDef(650, 'ciamSecurityAdminRef', 'string', 'binding', True,
+                 "The account that administers a cloud's security services for the whole organization: an AWS "
+                 "delegated administrator account ID (GuardDuty, Inspector, Security Hub, Config)"),
     AttributeDef(484, 'ciamCostCenter', 'string', 'meta', True,
                  "The cost center a party's spending is charged to (resources of environments it owns are tagged "
                  "with it where the tag policy says so)"),
@@ -357,9 +363,11 @@ ATTRIBUTES = (
 )
 CLASSES = (
     ClassDef(103, 'ciamCloudAccount', 'top', 'AUXILIARY', (),
-             ('ciamAccountRef', 'ciamOrganizationRef', 'ciamBillingAccountRef', 'ciamProviderAddOn',
+             ('ciamAccountRef', 'ciamOrganizationRef', 'ciamManagementRef', 'ciamSecurityAdminRef',
+              'ciamBillingAccountRef', 'ciamProviderAddOn',
               'ciamOnPremDirectory', 'ciamDirectorySync', 'ciamPasswordWriteback'),
-             "Added to a cloud: the account its environments run in, the organization above it, the account its "
+             "Added to a cloud: the account its environments run in, the organization above it, where its "
+             "organization-wide settings are made and who administers its security services, the account its "
              "billing is managed from, the Terraform provider add-ons its roots may use and the on-prem directory its "
              "users come from (how they sign in, whether passwords are written back)"),
     ClassDef(104, 'ciamEnvironmentPlacement', 'top', 'AUXILIARY', (),

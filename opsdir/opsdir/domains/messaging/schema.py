@@ -61,6 +61,9 @@ ATTRIBUTES = (
     AttributeDef(287, 'ciamStreamRole', 'string', 'intent', True,
                  'The binding role of the queue, topic or bus that carries a stream in each environment'),
     AttributeDef(288, 'ciamConsumedBy', 'string', 'intent', False, 'Who reads a stream (a SIEM, a CRM, a team)'),
+    AttributeDef(651, 'ciamSendSecretRole', 'string', 'binding', True,
+                 "Binding role of the secret holding what a producer sends to a stream with (an Event Hub's connection "
+                 "string), read when applied: a reference, never the value"),
 )
 CLASSES = (
     ClassDef(54, 'ciamExternalService', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamServiceKind'),
@@ -80,7 +83,8 @@ CLASSES = (
     ClassDef(57, 'ciamEventStream', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamStreamKind'),
              ('ciamEventType', 'ciamPublishedBy', 'ciamStreamRole', 'ciamConsumedBy', 'ciamCriticality'),
              'Identity events the platform publishes: what carries them, which events, who publishes and reads them'),
-    ClassDef(58, 'ciamStreamBinding', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef',), ('ciamStreamKind',),
+    ClassDef(58, 'ciamStreamBinding', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef',),
+             ('ciamStreamKind', 'ciamSendSecretRole'),
              'The queue, topic or bus that carries a stream in an environment'),
 )
 

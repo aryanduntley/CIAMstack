@@ -4,7 +4,13 @@ plumbing, the identities and guardrails it holds) is kept by the landing zone's 
 that takes generated infrastructure (ciamTakesGeneratedInfra TRUE on its party entry) gets its own complete root:
 terraform/landing-zone/ for the landing zone's owner, terraform/landing-zone/<party>/ for any other party, applied by
 that team. A keeper that doesn't is named in the render and asked in a request; its root is rendered only when a render
-is scoped to it. A landing zone with no party recorded keeps its root, as there is no one to ask. Pure."""
+is scoped to it. A landing zone with no party recorded keeps its root, as there is no one to ask.
+
+What an organization enables once for every member (an organization-wide security service's delegated administrator
+and configuration, an organization audit trail: ciamAuditScope organization) is the landing zone's by nature too: a
+renderer stamps that part with the entry's organization origin (organization_origin), kept by the party ciamManagedBy
+names, else by the landing zone's owner, while the rest of the entry (its findings routing) stays where the entry
+goes (decision 2777). Pure."""
 import re
 from typing import NamedTuple, Optional
 
@@ -18,6 +24,8 @@ TAKES = "ciamTakesGeneratedInfra"
 LANDING = "landing-zone"
 # a root name prefix: a keeper named and asked, whose root the default render leaves out (NAMED + its name)
 NAMED = "named:"
+# an origin prefix: the organization-wide part of an entry (ORGANIZATION + its DN), kept with the landing zone
+ORGANIZATION = "organization:"
 # the root a class or bindings scope renders as (its own, complete with the inputs it reads from the others)
 SLICE = "terraform/slice"
 
@@ -78,14 +86,40 @@ def root_of(m, e, landing_zone=False):
     return _root(keeper(m, e, landing_zone))
 
 
+def organization_wide(e):
+    """Whether entry e is enabled for the whole organization (ciamAuditScope organization), not one account."""
+    return one(e, "ciamAuditScope") == "organization"
+
+
+def organization_origin(dn):
+    """The origin a renderer stamps an entry's organization-wide part with (hcl.from_entry keeps a stamped origin): kept
+    with the landing zone, apart from the rest of the entry."""
+    return ORGANIZATION + dn
+
+
+def origin_entry(origin):
+    """The DN of the entry an origin renders (an organization origin's entry), or the origin itself (LANDING, None)."""
+    return origin[len(ORGANIZATION):] if origin and origin.startswith(ORGANIZATION) else origin
+
+
 def keeper_of_origin(m, origin, landing=frozenset()):
     """Who keeps what a rendered block of that origin (hcl.from_entry) renders in environment m: LANDING the landing
-    zone's keeper; an entry's DN its keeper (landing: the DNs that are the landing zone's by nature, its plumbing); None
-    for the stack's own, for no origin (unstamped) or an origin naming no entry."""
+    zone's keeper; an entry's DN its keeper (landing: the DNs that are the landing zone's by nature, its plumbing); an
+    entry's organization origin the keeper of what is the landing zone's by nature; None for the stack's own, for no
+    origin (unstamped) or an origin naming no entry."""
     if origin == LANDING:
         return landing_zone_keeper(m)
-    e = get(m.d, origin) if origin else None
-    return None if e is None else keeper(m, e, origin in landing)
+    dn = origin_entry(origin)
+    e = get(m.d, dn) if dn else None
+    return None if e is None else keeper(m, e, dn in landing or dn != origin)
+
+
+def organization_line(m, e):
+    """What an environment's own render says of entry e's organization-wide part, kept elsewhere: who enables it for
+    every account, in which root (or asked of them)."""
+    k = keeper(m, e, True)
+    where = f"in their root {k.folder}" if k.takes else "asked of them"
+    return f"{rdn_value(e)}: organization-wide: enabled for every account by {k.name} ({where})"
 
 
 def scope_folder(m):
@@ -103,7 +137,7 @@ def _in_slice(m, origin, landing):
     if s.kind == "keeper":
         k = keeper_of_origin(m, origin, landing)
         return k is not None and k.folder == scope_folder(m)
-    e = get(m.d, origin) if origin and origin != LANDING else None
+    e = get(m.d, origin_entry(origin)) if origin and origin != LANDING else None
     if e is None:
         return False
     return any(is_kind(m.d, e, oc) for oc in s.value) if s.kind == "class" else e.dn in s.value
@@ -163,8 +197,9 @@ def asked_lines(m, named):
     """The lines a stack's render writes for what keepers who take no generated infrastructure keep, one per entry:
     named: {NAMED root: ((origin, address), ...)} (the rendered resources each entry would have)."""
     def label(origin):
-        e = get(m.d, origin) if origin and origin != LANDING else None
-        return "The landing zone" if origin == LANDING else rdn_value(e) if e is not None else origin
+        e = get(m.d, origin_entry(origin)) if origin and origin != LANDING else None
+        wide = " (organization-wide)" if origin != origin_entry(origin) else ""
+        return "The landing zone" if origin == LANDING else rdn_value(e) + wide if e is not None else origin
     return tuple(f"{label(origin)}: kept by {named_keeper(root)}, not rendered here "
                  f"({', '.join(a for o, a in found if o == origin)}): they take no generated infrastructure, so it is "
                  "asked of them; a render scoped to them gives their root"

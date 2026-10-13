@@ -120,6 +120,7 @@ cap 08-apply-chg-2034 od modify --change CHG-2034 changes/CHG-2034-target-data-d
 cap 08-apply-chg-2035 od import --change CHG-2035 --at 20260923090000Z onprem/sites exports/sites/onprem
 cap 08-apply-chg-2036 od modify --change CHG-2036 changes/CHG-2036-scoped-agents-and-jobs.ldif
 cap 08-apply-chg-2037 od modify --change CHG-2037 changes/CHG-2037-target-hybrid-identity.ldif
+cap 08-apply-chg-2038 od modify --change CHG-2038 changes/CHG-2038-target-change-history.ldif
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions
 cap 08-report-residency od report residency

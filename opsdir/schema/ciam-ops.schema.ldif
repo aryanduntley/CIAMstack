@@ -2984,6 +2984,35 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.646 NAME 'ciamTakesGeneratedInfra' D
   only on a keeper-scoped request' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.
  1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'bool' X-OR
  IGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.647 NAME 'ciamAuditResourceRole' DES
+ C 'The binding role of a data resource (an object store, a function, a tabl
+ e, a secret) whose data access an audit trail records (ciamAuditEvents data
+ -read / data-write); none named: the environment\27s own data resources' EQ
+ UALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY '
+ intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.648 NAME 'ciamAuditStreamRole' DESC 
+ 'The binding role of a log destination an audit trail also streams its reco
+ rds to, beside the store keeping them (CloudTrail to CloudWatch Logs)' EQUA
+ LITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PO
+ RTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.649 NAME 'ciamManagementRef' DESC 'W
+ here a cloud\27s organization-wide settings are made: an AWS organization\2
+ 7s management account ID, an Azure management group ID (a Google Cloud orga
+ nization\27s are made on its ciamOrganizationRef)' EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' 
+ X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.650 NAME 'ciamSecurityAdminRef' DESC
+  'The account that administers a cloud\27s security services for the whole 
+ organization: an AWS delegated administrator account ID (GuardDuty, Inspect
+ or, Security Hub, Config)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466
+ .115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-
+ ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.651 NAME 'ciamSendSecretRole' DESC '
+ Binding role of the secret holding what a producer sends to a stream with (
+ an Event Hub\27s connection string), read when applied: a reference, never 
+ the value' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SI
+ NGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' 
+ )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -3255,7 +3284,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.57 NAME 'ciamEventStream' DESC 'Ident
  $ ciamCriticality ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.58 NAME 'ciamStreamBinding' DESC 'The
   queue, topic or bus that carries a stream in an environment' SUP ciamBindi
- ng STRUCTURAL MUST ciamProviderRef MAY ciamStreamKind X-ORIGIN 'opsdir' )
+ ng STRUCTURAL MUST ciamProviderRef MAY ( ciamStreamKind $ ciamSendSecretRol
+ e ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.59 NAME 'ciamDataProfile' DESC 'The s
  hape of an environment\27s user data, values-free: counts and distributions
  ' SUP ciamObject STRUCTURAL MUST ( cn $ ciamProfiledEnvironment $ ciamCaptu
@@ -3502,12 +3532,13 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.102 NAME 'ciamFailoverDrill' DESC 'On
  unbookRef ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.103 NAME 'ciamCloudAccount' DESC 'Add
  ed to a cloud: the account its environments run in, the organization above 
- it, the account its billing is managed from, the Terraform provider add-ons
-  its roots may use and the on-prem directory its users come from (how they 
- sign in, whether passwords are written back)' SUP top AUXILIARY MAY ( ciamA
- ccountRef $ ciamOrganizationRef $ ciamBillingAccountRef $ ciamProviderAddOn
-  $ ciamOnPremDirectory $ ciamDirectorySync $ ciamPasswordWriteback ) X-ORIG
- IN 'opsdir' )
+ it, where its organization-wide settings are made and who administers its s
+ ecurity services, the account its billing is managed from, the Terraform pr
+ ovider add-ons its roots may use and the on-prem directory its users come f
+ rom (how they sign in, whether passwords are written back)' SUP top AUXILIA
+ RY MAY ( ciamAccountRef $ ciamOrganizationRef $ ciamManagementRef $ ciamSec
+ urityAdminRef $ ciamBillingAccountRef $ ciamProviderAddOn $ ciamOnPremDirec
+ tory $ ciamDirectorySync $ ciamPasswordWriteback ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.104 NAME 'ciamEnvironmentPlacement' D
  ESC 'Added to an environment: the resource group its resources go in (where
   the cloud has them), how sensitive its data is, the residency and reportin
@@ -3547,7 +3578,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.111 NAME 'ciamAuditTrail' DESC 'An en
  t when it isn\27t the platform team (an organization trail the landing zone
   keeps)' SUP ciamBinding STRUCTURAL MUST ciamAuditScope MAY ( ciamAuditEven
  ts $ ciamAllRegions $ ciamIntegrityValidation $ ciamLogDestinationRole $ ci
- amProviderRef $ ciamManagedBy ) X-ORIGIN 'opsdir' )
+ amAuditResourceRole $ ciamAuditStreamRole $ ciamProviderRef $ ciamManagedBy
+  ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.112 NAME 'ciamSecurityService' DESC '
  A cloud security service an environment runs (threat detection, vulnerabili
  ty scanning, configuration recording, posture assessment): what it watches 

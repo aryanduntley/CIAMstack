@@ -149,6 +149,22 @@ def test_flow_logs_on_the_vpc_or_each_subnet_to_their_destination():
     assert 'variable "flow_logs_role_arn"' in inputs
 
 
+def test_the_vpc_s_vpn_gateway_renders_once_with_the_first_vpn_and_another_keeper_s_vpn_reads_it():
+    ours = entry(ALPHA, "vpn-a", "ciamInterconnect", ciamBindingRole="vpn-a", ciamInterconnectKind="VPN",
+                 ciamLinkKind="vpn", ciamPeerEnvironment=BETA, ciamSourceCidr="10.9.0.0/16",
+                 ciamPeerGateway="198.51.100.1", ciamLocalAsn="64512")
+    theirs = entry(ALPHA, "vpn-b", "ciamInterconnect", ciamBindingRole="vpn-b", ciamInterconnectKind="VPN",
+                   ciamLinkKind="vpn", ciamPeerEnvironment=BETA, ciamSourceCidr="10.9.0.0/16",
+                   ciamPeerGateway="198.51.100.2", ciamAcceptedCidr="192.168.0.0/16", ciamManagedBy=NET_TEAM)
+    table = entry(ALPHA, "rt", "ciamRouteTable", ciamBindingRole="rt", ciamRoute=("192.168.0.0/16 vpn vpn-b",))
+    files = as_text(render_landing(model(alpha=(ours, theirs, table), tree=OWNERS)[1]))
+    lz, team = files["terraform/landing-zone/network.tf"], files["terraform/landing-zone/net-team/network.tf"]
+    assert lz.count('resource "aws_vpn_gateway" "main"') == 1 and 'resource "aws_vpn_gateway"' not in team
+    assert "vpn_gateway_id      = var.aws_vpn_gateway_main_id" in team         # an output of the landing zone's root
+    assert 'output "aws_vpn_gateway_main_id"' in files["terraform/landing-zone/providers.tf"]
+    assert "gateway_id = aws_vpn_gateway.main.id" in lz and "var.vpn_gateway_id" not in lz   # the route: the VPC's
+
+
 def test_what_another_party_keeps_renders_in_their_root_with_its_own_providers():
     pe = entry(ALPHA, "pe-hub", "ciamPrivateEndpoint", ciamBindingRole="pe-hub", ciamPrivateService="secrets",
                ciamPrivateEndpointKind="interface", ciamSubnetRole="subnet-ds", ciamManagedBy=NET_TEAM,

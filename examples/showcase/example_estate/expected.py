@@ -290,9 +290,10 @@ EXPECTED = MappingProxyType({
         ("A88", "Security",
          "source/prod exports its configuration history and target/prod keeps it in the service only",
          "AWS Config delivers the source's history to a bucket; Azure's change history (CHG-2024) stays in Resource "
-         "Graph", None, "CHG-2024"),
+         "Graph", "CHG-2038", "CHG-2024"),
         ("A89", "Security", "source/prod keeps its config-recording records 2557 days and target/prod 14 days",
-         "the source keeps seven years of configuration history; Azure keeps 14 days (CHG-2024)", None, "CHG-2024"),
+         "the source keeps seven years of configuration history; Azure keeps 14 days (CHG-2024)", "CHG-2038",
+         "CHG-2024"),
         ("A91", "Budgets", "source/prod has a budget (monthly-spend: 25000 USD monthly) and target/prod none",
          "the source's spending is held to an AWS Budgets budget; the target was set up without one", "CHG-2028"),
         ("A92", "Quotas", "target/prod's quota limits (azure account 00000000-0000-0000-0000-000000000000 in eastus2) "

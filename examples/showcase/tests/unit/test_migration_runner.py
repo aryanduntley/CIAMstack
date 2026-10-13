@@ -15,7 +15,8 @@ SRC, DST = "source/prod", "target/prod"
 
 
 def _run(estate, as_of, src, dst, state="before", adapters=ADAPTERS):
-    return migration.run(estate[state], src, dst, as_of, adapters, ADAPTER_VERSIONS)
+    # run as the showcase's database login, as `opsdir migrate` does by default (the golden target's MANIFEST names it)
+    return migration.run(estate[state], src, dst, as_of, adapters, ADAPTER_VERSIONS, "opsdir")
 
 
 @pytest.mark.parametrize("src, dst, provider", [(SRC, DST, "azure"), (DST, SRC, "aws")])

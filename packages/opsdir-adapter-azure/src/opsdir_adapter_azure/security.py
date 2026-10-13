@@ -15,8 +15,9 @@ merged into one azurerm_security_center_subscription_pricing (tier Standard) per
   vulnerability-scanning  compute: VirtualMachines P2 and the server vulnerability assessment setting (Microsoft
                           Defender Vulnerability Management, MdeTvm); containers: Containers with registry vulnerability
                           assessment; applications: no Defender scanner (a comment); compute when no area is named
-  config-recording        Azure records resource changes itself (Resource Graph change history, about 14 days): nothing
-                          to enable, a comment; keeping it longer needs an export, not rendered
+  config-recording        Azure records resource changes itself (Resource Graph change history, 14 days): nothing
+                          to enable, a comment; a longer ciamRetentionDays renders an hourly export into its findings
+                          workspace (change_history, 5.7b)
   posture                 CloudPosture (Defender CSPM) and a subscription policy assignment of each framework's built-in
                           initiative, found by display name (nist-800-53-r5 NIST SP 800-53 Rev. 5, nist-800-171-r2 NIST
                           SP 800-171 Rev. 2, fedramp-high, fedramp-moderate, cmmc-l2 CMMC 2.0 Level 2, cmmc-l3, dod-il4,
@@ -28,9 +29,18 @@ to offer what the record asks for), and a plan or feature one of Microsoft's ava
 there carries a comment naming the page, to confirm with the account team. Findings go where ciamFindingsRole says
 through continuous export (azurerm_security_center_automation: alerts for threat detection, sub-assessments for
 vulnerability scanning, assessments and regulatory compliance for posture) to a Log Analytics workspace (a log
-destination's ciamProviderRef); an Event Hub (its connection string is a secret) or another binding is a NOTE. An
-organization-wide service is enabled on the management group by Azure Policy (a comment). Defender covers the whole
-subscription, every region.
+destination's ciamProviderRef) or an Event Hub (a stream binding of kind event-hub, milestone 5.7b: its connection
+string read from the Key Vault secret its ciamSendSecretRole names when applied; Terraform state keeps it, sensitive).
+An email alert channel (its address the ciamProviderRef) the findings or incidents go to is the subscription's one
+Defender security contact (alert notifications, the subscription's owners too; the minimum severity only the preview
+securityContacts API sets is named in a comment); another binding is a NOTE. An
+organization-wide service (milestone 5.7b, decision 2777) is enabled on the management group (ciamManagementRef;
+var.management_group_id) by Azure Policy, its part kept with the landing zone (organization origin): per Defender plan
+it needs, the built-in DeployIfNotExists policy (PLAN_POLICIES, by definition GUID) assigned with a system-assigned
+identity, a role assignment for each role the definition lists, and a remediation for the subscriptions already there;
+posture's frameworks' initiatives assigned there too; Defender for APIs has no enabling policy (a comment). The
+environment's own root keeps the service's continuous export and incident routing and a line naming who enables it.
+Defender covers the whole subscription, every region.
 
 Findings at or above a service's ciamIncidentSeverity also go to the incident process (its ciamIncidentRole): to a Log
 Analytics workspace by a second continuous export whose sources carry one rule set per Defender severity at or above it
@@ -60,6 +70,10 @@ from opsdir.domains.estate.incidents import incident_routes
 from opsdir.domains.estate.naming import ALL_USERS, SEVERITIES
 from opsdir.domains.estate.security import findings_destination, security_services
 from opsdir_format_terraform.hcl import Block, comment, from_entry, mentions, ref, tf_block, tf_name
+from opsdir.domains.governance.keepers import organization_line, organization_origin
+from .account import management_group, management_group_variable
+from .change_history import render_change_history
+from .cmk import role_uri, vault_object
 from .identities import LOC, RG
 from .identity_protection import identity_read, render_identity_protection
 
@@ -95,6 +109,22 @@ INITIATIVES = {"nist-800-53-r5": "NIST SP 800-53 Rev. 5", "nist-800-171-r2": "NI
                "cmmc-l2": "CMMC 2.0 Level 2", "cmmc-l3": "CMMC Level 3", "dod-il4": "DoD Impact Level 4",
                "dod-il5": "DoD Impact Level 5", "cis": "CIS Microsoft Azure Foundations Benchmark v2.0.0",
                "pci-dss": "PCI DSS v4.0.1", "iso-27001": "ISO 27001:2013", "soc2": "SOC 2 Type 2"}
+# plan -> the built-in DeployIfNotExists policy definition enabling it for every subscription under a management group
+# (Azure/azure-policy built-in JSON, research 2792); Defender for APIs has none (an audit policy only)
+PLAN_POLICIES = {"VirtualMachines": "5eb6d64a-4086-4d7a-92da-ec51aed0332d",
+                 "Containers": "efd4031d-b232-4595-babf-ae817348e91b",
+                 "StorageAccounts": "cfdc5972-75b3-4418-8ae1-7f5c36839390",
+                 "SqlServers": "b99b73e7-074b-4089-9395-b7236f094491",
+                 "SqlServerVirtualMachines": "50ea7265-7d8c-429e-9a7d-ca1f410191c3",
+                 "OpenSourceRelationalDatabases": "44433aa3-7ec2-4002-93ea-65c65ff0310a",
+                 "CosmosDbs": "82bf5b87-728b-4a74-ba4d-6123845cf542",
+                 "AppServices": "b40e7bcd-a1e5-47fe-b9cf-2f534d0bfb7d",
+                 "KeyVaults": "1f725891-01c0-420a-9059-4fa46cb770b7",
+                 "Arm": "b7021b2b-08fd-4dc0-9de7-3c6ece09faf9",
+                 "CloudPosture": "72f8cee7-2937-403d-84a1-a4e3e57f3c21"}
+MG_ASSIGNMENT = "azurerm_management_group_policy_assignment"
+MG_REMEDIATION = "azurerm_management_group_policy_remediation"
+MG = ref("var.management_group_id")
 BASELINE = "microsoft-cloud-security-benchmark"
 BASELINE_NAME = "Microsoft cloud security benchmark"
 _REGIONAL = "Microsoft's \"Microsoft Defender for Cloud regional availability\" (2026-10)"
@@ -200,22 +230,85 @@ def _posture(m, s):
               if others else ()))
 
 
+def _event_hub(m, binding):
+    """The Event Hub a binding is (a stream binding of kind event-hub: its ciamProviderRef the hub's ID), or None."""
+    return one(binding, "ciamProviderRef") if binding is not None and is_kind(m.d, binding, "ciamStreamBinding") \
+        and one(binding, "ciamStreamKind") == "event-hub" else None
+
+
+def export_action(m, binding, n):
+    """(the action block a continuous export to binding takes, the items it needs, why it can't be rendered or None):
+    a Log Analytics workspace by its ID, or an Event Hub by its ID with the connection string its send secret holds
+    (ciamSendSecretRole: a Key Vault reference, read when applied; azurerm has no write-only argument for it, so the
+    value lands in Terraform state, marked sensitive)."""
+    workspace = _workspace_of(m, binding)
+    if workspace:
+        return Block((("type", "Workspace"), ("resource_id", workspace))), (), None
+    hub = _event_hub(m, binding)
+    if hub is None:
+        return None, (), (f"{rdn_value(binding)} is no Log Analytics workspace or Event Hub (ciamProviderRef)"
+                          if binding is not None else "nothing is bound to it")
+    uri, note = role_uri(m, one(binding, "ciamSendSecretRole"), "send secret")
+    if uri is None:
+        return None, (), (note[1] if note else f"Event Hub {rdn_value(binding)} names no secret holding its connection "
+                                               "string (ciamSendSecretRole)")
+    vault, name = vault_object(uri)
+    return (Block((("type", "EventHub"), ("resource_id", hub),
+                   ("connection_string", ref(f"data.azurerm_key_vault_secret.{n}.value")))),
+            (comment(f"{n}: the Event Hub's connection string is read from Key Vault when applied; Terraform state "
+                     "keeps it (sensitive): protect the state"),
+             tf_block("data", ["azurerm_key_vault", n], [("name", vault), ("resource_group_name", RG)]),
+             tf_block("data", ["azurerm_key_vault_secret", n], [
+                 ("name", name), ("key_vault_id", ref(f"data.azurerm_key_vault.{n}.id"))])), None)
+
+
 def _export(m, s, kind):
-    """The continuous export of a service's findings to the workspace its ciamFindingsRole names, or a note."""
+    """The continuous export of a service's findings to the workspace or Event Hub its ciamFindingsRole names, or a
+    note."""
     cn, dest = rdn_value(s), findings_destination(m, s)
     if dest is None or kind not in EXPORTS:
         return ()
-    workspace = one(dest, "ciamProviderRef") if is_kind(m.d, dest, "ciamLogDestination") and \
-        one(dest, "ciamDestinationKind") == "workspace" else None
-    if not workspace:
-        return (comment(f"NOTE: {cn}'s findings to {one(s, 'ciamFindingsRole')}: not rendered: continuous export is "
-                        "rendered to a Log Analytics workspace (ciamProviderRef); an Event Hub needs a connection "
-                        "string (a secret)"),)
-    return (tf_block("resource", [AUTOMATION, tf_name(f"{cn}_export")], [
+    n = tf_name(f"{cn}_export")
+    action, needed, why = export_action(m, dest, n)
+    if action is None:
+        return (*_contact(m, s, dest, "findings"),) or \
+            (comment(f"NOTE: {cn}'s findings to {one(s, 'ciamFindingsRole')}: not rendered: {why}"),)
+    return (*needed, tf_block("resource", [AUTOMATION, n], [
         ("name", f"{cn}-export"), ("location", LOC), ("resource_group_name", RG),
-        ("scopes", [ref(f"{SUBSCRIPTION}.id")]),
-        ("action", Block((("type", "Workspace"), ("resource_id", workspace)))),
-        *(("source", Block((("event_source", src),))) for src in EXPORTS[kind])]),)
+        ("scopes", [ref(f"{SUBSCRIPTION}.id")]), ("action", action),
+        *(("source", Block((("event_source", src),))) for src in EXPORTS[kind])]))
+
+
+def _email(m, binding):
+    """The address of an email alert channel (ciamChannelKind email; its ciamProviderRef, mailto: or bare), or None."""
+    ref_ = one(binding, "ciamProviderRef") if binding is not None and is_kind(m.d, binding, "ciamAlertChannel") \
+        and one(binding, "ciamChannelKind") == "email" else None
+    address = (ref_ or "").removeprefix("mailto:")
+    return address if "@" in address else None
+
+
+def _contact(m, s, binding, what, severity=None):
+    """The comment saying a service's findings or incidents reach an email channel as Defender's security contact
+    (contacts: the one contact rendered for the subscription); () when the binding isn't one."""
+    address = _email(m, binding)
+    if address is None:
+        return ()
+    return (comment(f"{rdn_value(s)}: its {what} reach {address} as Defender's security contact"
+                    + (f"; Defender's own minimum alert severity ({severity}) is set only by the securityContacts "
+                       "2023-12-01-preview API: set it there" if severity else "")),)
+
+
+def contacts(m, services):
+    """(the subscription's one Defender security contact for every email channel the services' findings or incidents
+    go to (their addresses, ';'-joined), the first service needing it) or None."""
+    found = [(s, a) for s in services
+             for b in (findings_destination(m, s), *(r.binding for r in incident_routes(m) if r.service.dn == s.dn))
+             for a in (_email(m, b),) if a and not _workspace_of(m, b) and not _event_hub(m, b)]
+    if not found:
+        return None
+    return tf_block("resource", ["azurerm_security_center_contact", "default"], [
+        ("name", "default1"), ("email", ";".join(dict.fromkeys(a for _, a in found))),
+        ("alert_notifications", True), ("alerts_to_admins", True)]), found[0][0]
 
 
 def _levels(severity):
@@ -262,15 +355,18 @@ def _incident_routing(m, s, kind):
     cn, n = rdn_value(s), tf_name(f"{rdn_value(s)}_incidents")
     critical = ((comment(f"{cn}: Defender has no critical severity: its high findings go to {route.role}"),)
                 if route.severity == "critical" else ())
-    workspace, group = _workspace_of(m, route.binding), _action_group_of(route.binding)
-    if workspace:
-        return (*critical, tf_block("resource", [AUTOMATION, n], [
+    group = _action_group_of(route.binding)
+    action, needed, _ = export_action(m, route.binding, n)
+    if action is not None:
+        return (*critical, *needed, tf_block("resource", [AUTOMATION, n], [
             ("name", f"{cn}-incidents"), ("location", LOC), ("resource_group_name", RG),
             ("description", f"{cn}'s {route.severity} and worse findings to {route.role} (incident process)"),
-            ("scopes", [ref(f"{SUBSCRIPTION}.id")]),
-            ("action", Block((("type", "Workspace"), ("resource_id", workspace)))),
+            ("scopes", [ref(f"{SUBSCRIPTION}.id")]), ("action", action),
             *(("source", Block((("event_source", src), *severity_rule_sets(src, route.severity))))
               for src in EXPORTS[kind] if src in SEVERITY_PATHS)]))
+    contact = _contact(m, s, route.binding, "incidents", route.severity)
+    if contact:
+        return (*critical, *contact)
     findings_ws = _workspace_of(m, findings_destination(m, s))
     if group and kind in INCIDENT_TABLES and findings_ws:
         return (*critical, tf_block("resource", [QUERY_ALERT, n], [
@@ -283,21 +379,77 @@ def _incident_routing(m, s, kind):
             ("action", Block((("action_groups", [group]),)))]))
     why = (f"a log alert on {INCIDENT_TABLES[kind][0]} needs the service's findings exported to a Log Analytics "
            "workspace (its ciamFindingsRole)" if group and kind in INCIDENT_TABLES else
-           f"{rdn_value(route.binding)} is no Log Analytics workspace or action group (ciamProviderRef)")
+           f"{rdn_value(route.binding)} is no Log Analytics workspace, Event Hub, email channel or action group "
+           "(ciamProviderRef)")
     return (comment(f"NOTE: {cn}'s incidents to {route.role}: not rendered: {why}"),)
 
 
+def _enabled_by_policy(m, s, plan):
+    """The management group's DeployIfNotExists assignment enabling a Defender plan for every subscription: the
+    definition by its GUID, a system-assigned identity, a role assignment for each role the definition lists, and a
+    remediation for the subscriptions already there."""
+    n, guid = tf_name(f"{rdn_value(s)}_{plan}"), PLAN_POLICIES.get(plan)
+    if guid is None:
+        return (comment(f"{rdn_value(s)}: no built-in policy enables Defender plan {plan} at scale (an audit policy "
+                        "only): enable it in each subscription"),)
+    name = f"mdc-{plan.lower()}"[:24]
+    gov = (("#", f"{plan}: Microsoft doesn't confirm built-in policy {guid} exists in Azure Government: check it "
+                 f"there (az policy definition show --name {guid})"),) if _gov(m) else ()
+    return (tf_block("data", ["azurerm_policy_definition", n], [("name", guid)]),
+            tf_block("resource", [MG_ASSIGNMENT, n], [
+                *gov, *(("#", note) for note in _confirm(m, plan)),
+                ("name", name), ("display_name", f"Defender for Cloud plan {plan} in every subscription"),
+                ("management_group_id", MG), ("policy_definition_id", ref(f"data.azurerm_policy_definition.{n}.id")),
+                ("location", one(m.cloud, "ciamRegion")), ("identity", Block((("type", "SystemAssigned"),)))]),
+            tf_block("resource", ["azurerm_role_assignment", n], [
+                ("#", "each role the policy's remediation needs, as its definition lists them"),
+                ("for_each", ref(f"toset(data.azurerm_policy_definition.{n}.role_definition_ids)")),
+                ("scope", MG), ("role_definition_id", ref("each.value")),
+                ("principal_id", ref(f"{MG_ASSIGNMENT}.{n}.identity[0].principal_id"))]),
+            tf_block("resource", [MG_REMEDIATION, n], [
+                ("name", f"{name}-fix"), ("management_group_id", MG),
+                ("policy_assignment_id", ref(f"{MG_ASSIGNMENT}.{n}.id")),
+                ("depends_on", [ref(f"azurerm_role_assignment.{n}")])]))
+
+
+def organization_part(m, s):
+    """(the organization part of an organization-wide security service, a NOTE for the environment's own part or
+    None): on the management group (ciamManagementRef), the policies enabling each Defender plan it needs for every
+    subscription and, for posture, its frameworks' initiatives."""
+    if management_group(m) is None:
+        return (), comment(f"NOTE: {rdn_value(s)}: organization-wide, but not rendered: the record doesn't name the "
+                           "management group (ciamManagementRef)")
+    plans = tuple(dict.fromkeys(p for p, _, _ in _service_plans(s)))
+    frameworks = [k for k in values(s, "ciamComplianceStandard")
+                  if k in INITIATIVES and not (k in GOV_ONLY and not _gov(m))]
+    return ((*(x for p in plans for x in _enabled_by_policy(m, s, p)),
+             *(x for k in frameworks for x in (
+                 tf_block("data", ["azurerm_policy_set_definition", tf_name(k)], [("display_name", INITIATIVES[k])]),
+                 tf_block("resource", [MG_ASSIGNMENT, tf_name(f"{rdn_value(s)}_{k}")], [
+                     *(("#", note) for note in _confirm(m, k)),
+                     ("name", f"ciam-{k}"[:24]), ("display_name", INITIATIVES[k]), ("management_group_id", MG),
+                     ("policy_definition_id", ref(f"data.azurerm_policy_set_definition.{tf_name(k)}.id"))])))),
+            None)
+
+
 def _service(m, s):
+    """(a service's items in the environment's render, its organization part): an organization-wide one keeps its
+    continuous export and incident routing here and a line saying who enables it (decision 2777)."""
     cn, kind = rdn_value(s), one(s, "ciamSecurityKind")
+    routing = (*_export(m, s, kind), *_incident_routing(m, s, kind))
+    if one(s, "ciamAuditScope") == "organization" and kind != "identity-protection" and kind in _ORGANIZATION_KINDS:
+        org, note = organization_part(m, s)
+        return (*routing, note if note else comment(organization_line(m, s))), org
     body = (_scanner(m, s) if kind == "vulnerability-scanning" else _posture(m, s) if kind == "posture" else
-            (comment(f"{cn}: Azure records resource changes itself (Resource Graph change history, about 14 days): "
-                     "nothing to enable; keeping them longer needs an export (not rendered)"),)
+            (render_change_history(m, s) or
+             (comment(f"{cn}: Azure records resource changes itself (Resource Graph change history, 14 days): "
+                      "nothing to enable; a longer ciamRetentionDays renders an export keeping them"),))
             if kind == "config-recording" else
             render_identity_protection(m, s))
-    return (*body, *_export(m, s, kind), *_incident_routing(m, s, kind),
-            *((comment(f"{cn}: organization-wide: enable it on the management group with Azure Policy (not rendered "
-                       "here)"),)
-              if one(s, "ciamAuditScope") == "organization" else ()))
+    return (*body, *routing), ()
+
+
+_ORGANIZATION_KINDS = ("threat-detection", "vulnerability-scanning", "posture")
 
 
 def render_security(m, extra=()):
@@ -306,11 +458,20 @@ def render_security(m, extra=()):
     service's own blocks and comments; each stamped with the entry it is for (a plan's with the first service needing
     it), so the render places it by keeper."""
     services = security_services(m)
-    out = (*(x for p, sub, ext, origin in _plans(services, extra)
+    contact = contacts(m, services)
+    own = tuple(s for s in services if not _organization_wide(s))
+    parts = tuple((s, _service(m, s)) for s in services)
+    out = (*(x for p, sub, ext, origin in _plans(own, extra)
              for x in from_entry(origin, (_pricing(m, p, sub, ext),))),
-           *(x for s in services for x in from_entry(s.dn, _service(m, s))))
-    return ((tf_block("data", ["azurerm_subscription", "current"], []),)
-            if mentions(out, SUBSCRIPTION) else ()) + out
+           *(from_entry(contact[1].dn, (contact[0],)) if contact else ()),
+           *(x for s, (mine, org) in parts
+             for x in (*from_entry(s.dn, mine), *from_entry(organization_origin(s.dn), org))))
+    return ((tf_block("data", ["azurerm_subscription", "current"], []),) if mentions(out, SUBSCRIPTION) else ()) + \
+        ((management_group_variable(m),) if mentions(out, "var.management_group_id") else ()) + out
+
+
+def _organization_wide(s):
+    return one(s, "ciamAuditScope") == "organization" and one(s, "ciamSecurityKind") in _ORGANIZATION_KINDS
 
 
 # ------------------------------------------------------------------ read back

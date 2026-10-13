@@ -22,7 +22,7 @@ from .observability import log_collection_check, signal_check
 from .proxies import proxy_check
 from .upgrades import upgrade_check
 from ..core.directory import children, date_of, follow, get, is_kind, one, rdn_value, values
-from ..core.environment import EnvModel, by_role, environment_of, one_role, of_class
+from ..core.environment import ENVIRONMENT, EnvModel, by_role, environment_of, one_role, of_class
 from ..core.findings import (Fix, bindings_container, findings, merge_findings, owner_label, responsible,
                              templated_entry)
 from ..core.naming import env_label
@@ -204,12 +204,14 @@ def render_summary(adapters):
     return ", ".join(items[:-1]) + ", and " + items[-1] if len(items) > 1 else (items[0] if items else "nothing")
 
 
-def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS):
-    """Plan moving src to dst with the installed adapters: render both, run every check, collect the findings."""
+def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS, requester=None):
+    """Plan moving src to dst with the installed adapters: render both (the target whole, its MANIFEST naming
+    requester when given: who runs the migration), run every check, collect the findings."""
     src, src_adapters, src_neutral, src_specific, src_targets = render_parts(d, src_spec, installed)
-    dst, adapters, dst_neutral, dst_specific, dst_targets = render_parts(d, dst_spec, installed)   # every target
+    dst, adapters, dst_neutral, dst_specific, dst_targets = render_parts(d, dst_spec, installed,   # every target
+                                                                         scope=ENVIRONMENT)
     cutover = date_of(dst.env, "ciamPlannedCutover")
-    dst_files = assemble(dst, adapters, dst_neutral, dst_specific, dst_targets)
+    dst_files = assemble(dst, adapters, dst_neutral, dst_specific, dst_targets, requester=requester)
     ctx = PlanContext(d, src, dst, cutover, as_of, assemble(src, src_adapters, src_neutral, src_specific, src_targets),
                       dst_files,
                       tuple(src_neutral))

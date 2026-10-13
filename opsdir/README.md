@@ -40,8 +40,9 @@ On a machine whose global pip config sets `user = true`, pip refuses it inside a
 ./opsdir.sh report NAME [DN]          # portability, unowned, blast-radius DN, settings, and every domain's reports (consumers,
                                       # keys ENV, drift, ...); dates as of --as-of
 ./opsdir.sh render CLOUD/ENV [-o DIR] [--target ADAPTER=T[,T]]  # everything the environment's adapters render, plus MANIFEST.json
+            [--keeper PARTY | --kind CLASS... | --binding DN...] [--as REQUESTER]   # or one slice of its infrastructure (below)
 ./opsdir.sh plan SRC DST [-o DIR]     # what blocks moving SRC to DST, dated actions, request drafts
-./opsdir.sh migrate SRC DST [-o DIR]  # check both stacks, plan, render the target; exit 1 unless ready
+./opsdir.sh migrate SRC DST [-o DIR] [--as REQUESTER]  # check both stacks, plan, render the target; exit 1 unless ready
 ./opsdir.sh export [-b BASE]          # entries as LDIF (for review)
 ./opsdir.sh history [DN]              # governed changes
 ./opsdir.sh workspace create|status|diff|cutover     # migration workspaces (below)
@@ -53,6 +54,49 @@ Admin API requests (`admin-api`) and as Terraform for Ping's provider (`terrafor
 renders one; every target is rendered by default except those an adapter offers only when asked (PingFederate's
 `terraform-imports`, import blocks adopting an existing PingFederate's objects), and MANIFEST.json records the targets chosen. An adapter or
 target the environment doesn't have is refused, naming those it has. Plans and migrations render every target.
+
+### Who keeps what, and where it renders
+
+Infrastructure the stack doesn't keep itself names its keeper: a binding's `ciamManagedBy` (a `ciamParty`), and for what
+is the landing zone's by nature (its identities and guardrails, the network's plumbing) the landing zone's owner. Each
+party records whether it takes the infrastructure opsdir generates for what it keeps (`ciamTakesGeneratedInfra`, on
+`ciamParty`). The default render of an environment writes:
+
+- the stack's own root (`terraform/`);
+- a complete root for each keeper that takes generated infrastructure: `terraform/landing-zone/` for the landing
+  zone's owner (also when no party is recorded for it), `terraform/landing-zone/<party>/` for any other party. A
+  reference from one root to another becomes an input of the root that reads it and an output of the root that
+  writes it; the input says which root it comes from, applied first;
+- for a keeper that doesn't (the setting absent or FALSE), nothing: one comment per entry in the stack's root names
+  what they keep and its addresses, and the planner drafts the request to them (`requests/<party>.md`).
+
+Every kept kind follows this, on every cloud: network plumbing, the landing zone, databases, object stores, volumes,
+snapshot policies, backups, audit trails, monitors (alarms, log destinations, canaries), security services,
+suppressions, data discovery and budgets (`opsdir.domains.governance.keepers` decides; each cloud adapter places).
+
+### Scoped renders
+
+A render can be asked for one slice of an environment's infrastructure, complete in its own root:
+
+- `--keeper PARTY` (a party's cn or DN): everything that party keeps, in its root, whatever its setting says (so a
+  keeper who is asked can still be handed its root);
+- `--kind CLASS` (repeatable): the entries of those object classes, in `terraform/slice/`;
+- `--binding DN` (repeatable): those bindings, in `terraform/slice/`.
+
+The rest of the environment isn't written; the slice reads what it needs from it through inputs. A scoped render
+holds the provider adapters' infrastructure only (no product configuration, no captured files). It is refused for a
+party the record doesn't have, bindings the environment doesn't bind, or a scope that selects nothing (the refusal
+lists the kinds a render places by entry, which are the ones a slice can hold).
+
+Every render's MANIFEST.json records who asked (`requester`: `--as`, default the database login) and, for a scoped
+render, its `scope` (kind and value). A migration's target render records them too: its scope is the whole
+environment and its requester whoever runs `migrate` (`--as`).
+
+Before a render or a migration runs, the operations layer asks an authorization policy whether the requester may do
+it over that area (environment, scope, and for a migration its source), and stops with a message naming all three if
+not, before the record is loaded (`operations.authorize`, `opsdir.domains.governance.authorization`). Every front end
+goes through it. The default policy allows everyone; people, teams and their grants come with milestone 7.7 as the
+policy it asks.
 
 
 ## Collecting from the live system
@@ -237,7 +281,8 @@ opsdir/                      the package (names no platform, product, vendor or 
     federation/              SAML/OIDC integrations and claim maps, the platform's own identity services, and the
                              protocols' standard vocabulary (grant types, auth methods, bindings, NameID formats)
     pki/                     certificates and their expiry
-    governance/              owners (including the operator), changes, incidents, runbooks
+    governance/              owners (including the operator), changes, incidents, runbooks, keepers (who keeps an
+                             entry and which root it renders in, scopes), authorization (the policy asked first)
     configuration/           config files held setting by setting, bundles, the string census
     automation/              jobs: cron, timers, scheduled tasks, functions, pipelines (what runs, when, where, owner)
     compute/                 host baselines per server role, compute groups, clusters and workload bindings per environment, workloads

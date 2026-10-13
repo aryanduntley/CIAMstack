@@ -18,6 +18,7 @@ from .core import search as ldap_search
 from .core.environment import ENVIRONMENT, env_model
 from .core.interchange.export import export_text
 from .domains.governance.attempts import attempt_records
+from .domains.governance.authorization import Area, allow_all, refusal
 from .store import migrations, postgres as db
 from .store.queries import fetch_history
 
@@ -107,14 +108,25 @@ def export(conn, base):
     return export_text(db.load_directory(conn), base)
 
 
+# ------------------------------------------------------------------ authorization
+def authorize(policy, requester, action, area):
+    """Effect (refuses): SystemExit naming requester, action and area when policy refuses (governance.authorization;
+    7.7 plugs its grants in as the policy). Every operation that acts on an environment asks it first, before the
+    record is loaded."""
+    why = refusal(policy, requester, action, area)
+    if why is not None:
+        raise SystemExit(why)
+
+
 # ------------------------------------------------------------------ rendering and moving
-def render(conn, spec, targets=None, scope=ENVIRONMENT, requester=None):
+def render(conn, spec, targets=None, scope=ENVIRONMENT, requester=None, policy=allow_all):
     """Effect (reads the record): an environment's rendered files; targets: {adapter: (render target, ...)} chosen
     (default: every target of every adapter); scope (core.environment.Scope): the whole environment, or a keeper's,
     an object class's or named bindings' infrastructure (5.7); requester: who asks (default: the database login),
-    recorded in the MANIFEST."""
-    m, files = render_env(db.load_directory(conn), spec, wanted=targets, scope=scope,
-                          requester=requester or db.session_user(conn))
+    authorized by policy (default: everyone) and recorded in the MANIFEST."""
+    who = requester or db.session_user(conn)
+    authorize(policy, who, "render", Area(spec, scope))
+    m, files = render_env(db.load_directory(conn), spec, wanted=targets, scope=scope, requester=who)
     return Rendered(m.label, m.dn, m.provider, files, tuple(m.unbound))
 
 
@@ -124,9 +136,12 @@ def plan(conn, src, dst, as_of):
     return Planned(p, planmod.to_markdown(p), planmod.request_drafts(p))
 
 
-def migrate(conn, src, dst, as_of):
-    """Effect (reads the record): check both stacks, plan and render the target."""
-    r = migration.run(db.load_directory(conn), src, dst, as_of, ADAPTERS, ADAPTER_VERSIONS)
+def migrate(conn, src, dst, as_of, requester=None, policy=allow_all):
+    """Effect (reads the record): check both stacks, plan and render the target; requester: who asks (default: the
+    database login), authorized by policy (default: everyone) and recorded in the target's MANIFEST."""
+    who = requester or db.session_user(conn)
+    authorize(policy, who, "migrate", Area(dst, ENVIRONMENT, src))
+    r = migration.run(db.load_directory(conn), src, dst, as_of, ADAPTERS, ADAPTER_VERSIONS, who)
     return Migrated(r, migration.output_files(r))
 
 

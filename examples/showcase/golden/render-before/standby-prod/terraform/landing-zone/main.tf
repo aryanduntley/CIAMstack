@@ -170,4 +170,8 @@ resource "google_assured_workloads_workload" "ciam_prod" {
   location          = "us-central1"
   organization      = "123456789012"
   billing_account   = "billingAccounts/01A2B3-C4D5E6-F7A8B9"
+  lifecycle {
+    # its compliance regime can't change: replacing it would move every project out of the regime's controls
+    prevent_destroy = true
+  }
 }

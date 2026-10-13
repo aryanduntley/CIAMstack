@@ -373,6 +373,16 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Sync the target's password hashes, write passwords back, watch the 
  corporate AD (Defender for Identity)
 
+dn: cn=CHG-2038,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2038
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Keep the target's resource change history 2557 days by exporting it
+  to its security workspace
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

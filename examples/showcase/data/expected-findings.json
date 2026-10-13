@@ -917,7 +917,7 @@
       "area": "Security",
       "match": "source/prod exports its configuration history and target/prod keeps it in the service only",
       "planted": "AWS Config delivers the source's history to a bucket; Azure's change history (CHG-2024) stays in Resource Graph",
-      "cleared_by": null,
+      "cleared_by": "CHG-2038",
       "raised_by": "CHG-2024"
     },
     {
@@ -925,7 +925,7 @@
       "area": "Security",
       "match": "source/prod keeps its config-recording records 2557 days and target/prod 14 days",
       "planted": "the source keeps seven years of configuration history; Azure keeps 14 days (CHG-2024)",
-      "cleared_by": null,
+      "cleared_by": "CHG-2038",
       "raised_by": "CHG-2024"
     },
     {

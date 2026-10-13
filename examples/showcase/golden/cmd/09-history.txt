@@ -410,4 +410,5 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2036  update  cn=ds-nightly-export,ou=jobs,dc=ciam-ops
 <TIMESTAMP>          CHG-2037  update  cloud=target,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2037  insert  cn=defender-identity,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
-(410 rows)
+<TIMESTAMP>          CHG-2038  update  cn=resource-changes,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+(411 rows)

@@ -16,6 +16,7 @@ variable's default. An expression it can't evaluate leaves its attribute out and
 """
 import json
 import re
+from functools import reduce
 from typing import NamedTuple
 
 from .hcl import Block, TfBlock, TfFile, hcl
@@ -204,17 +205,31 @@ def _provider(block, sources):
         (f".{alias}" if alias else "")
 
 
-def tf_state(blocks, assigned=None, variables=None):
-    """(state text, notices): the version 4 state of one Terraform root (its TfBlocks, all files) as `terraform apply`
-    would record it. assigned(mode, type, name, index, configured) -> the attributes the provider assigns or a data
-    source returns (default: synthetic, an id); variables: {name: value}, else each variable's default."""
+def _root_scope(blocks, assigned, variables):
+    """The _Scope a root's blocks are evaluated in: its resource and data blocks, variables given else defaulted."""
     found = {("data" if b.kind == "data" else "managed", b.labels[0], b.labels[1]): b for b in blocks
              if b.kind in ("resource", "data") and len(b.labels) == 2}
     bare = _Scope(found, {}, assigned or synthetic, None, ())
     defaults = {b.labels[0]: _value(v, bare) for b in blocks if b.kind == "variable" and b.labels
                 for k, v in b.body if k == "default"}
-    scope = bare._replace(variables={**{k: v for k, v in defaults.items() if not isinstance(v, Unresolved)},
-                                     **(variables or {})})
+    return bare._replace(variables={**{k: v for k, v in defaults.items() if not isinstance(v, Unresolved)},
+                                    **(variables or {})})
+
+
+def _outputs(blocks, assigned, variables):
+    """{output name: value} of a root: each output block's value evaluated (those it can't evaluate left out)."""
+    scope = _root_scope(blocks, assigned, variables)
+    values = {b.labels[0]: _value(v, scope) for b in blocks if b.kind == "output" and b.labels
+              for k, v in b.body if k == "value"}
+    return {k: v for k, v in values.items() if not isinstance(v, Unresolved)}
+
+
+def tf_state(blocks, assigned=None, variables=None):
+    """(state text, notices): the version 4 state of one Terraform root (its TfBlocks, all files) as `terraform apply`
+    would record it. assigned(mode, type, name, index, configured) -> the attributes the provider assigns or a data
+    source returns (default: synthetic, an id); variables: {name: value}, else each variable's default."""
+    scope = _root_scope(blocks, assigned, variables)
+    found = scope.found
     sources = _providers(blocks)
     counts = {address: _count(block, scope) for address, block in found.items()}
     evaluated = {address: tuple((i, _evaluated(address, i, scope)) for i in
@@ -243,12 +258,19 @@ def root_states(files, environment, assigned_for=None, variables=None):
     each folder's files are one root, its state named after the folder below the environment's (the environment's own
     folder: terraform.tfstate; <env>/landing-zone/: landing-zone.tfstate), placed in the environment's folder.
     assigned_for(blocks) -> the root's assigned() (see tf_state), from what the cloud adapter knows; default
-    synthetic. variables: {name: value} for inputs an operator gives at apply (no default), the same for every root."""
+    synthetic. variables: {name: value} for inputs an operator gives at apply (no default), the same for every root.
+    An input a root reads from another root's output (opsdir_format_terraform.translate.partition: one name on both
+    sides) takes that output's value, as applying the roots in order would give it."""
     folders = sorted({p.rsplit("/", 1)[0] for p in files if p.endswith(".tf")})
     roots = {f: tuple(b for p in sorted(files) if p.endswith(".tf") and p.rsplit("/", 1)[0] == f
                       for b in _blocks(files[p])) for f in folders}
     named = {f: (f[len(environment) + 1:] if f.startswith(environment + "/") else
                  "" if f == environment else f).replace("/", "-") or "terraform" for f in folders}
-    return {f"{environment}/{named[f]}.tfstate": tf_state(blocks, assigned_for(blocks) if assigned_for else None,
-                                                          variables)[0]
+    assigned = {f: assigned_for(blocks) if assigned_for else None for f, blocks in roots.items()}
+
+    def outputs(known):                  # one more step of the apply order: every root's outputs, given those known
+        return {k: v for f, blocks in roots.items()
+                for k, v in _outputs(blocks, assigned[f], {**known, **(variables or {})}).items()}
+    given = reduce(lambda known, _: outputs(known), folders, {})
+    return {f"{environment}/{named[f]}.tfstate": tf_state(blocks, assigned[f], {**given, **(variables or {})})[0]
             for f, blocks in roots.items()}

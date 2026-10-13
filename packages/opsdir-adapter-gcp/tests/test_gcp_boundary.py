@@ -44,6 +44,7 @@ def test_the_workload_takes_the_most_demanding_regime_or_is_a_note():
     (out,) = as_text(render_workload(b))
     assert 'compliance_regime = "IL4"' in out and 'organization      = "123456789"' in out
     assert 'billing_account   = "billingAccounts/01A2B3-C4D5E6-F7A8B9"' in out
+    assert "prevent_destroy = true" in out                     # its regime can't change: never replaced (5.7b)
     assert render_workload(_model(met=())[2]) == ()
     assert as_text(render_workload(_model(levels=("fedramp-moderate",))[2]))[0].count('"FEDRAMP_MODERATE"') == 1
     _, _, bare = model(beta=BINDINGS, tree=TREE, changes=(LdifRecord(BETA, "modify", {}, (

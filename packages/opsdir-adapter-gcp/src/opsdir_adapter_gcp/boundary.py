@@ -9,7 +9,7 @@ from opsdir.core.directory import one, rdn_value
 from opsdir.core.inventory import of_types
 from opsdir.domains.edge.records import is_hosted
 from opsdir.domains.estate.authorizations import boundary_findings, services_used
-from opsdir_format_terraform.hcl import comment, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, comment, tf_block, tf_name
 from .account import regime
 
 VPC, MONITORING, STORAGE = "Virtual Private Cloud (VPC)", "Cloud Monitoring", "Cloud Storage"
@@ -68,7 +68,9 @@ def render_workload(m):
     return (tf_block("resource", [WORKLOAD, tf_name(f"ciam_{rdn_value(m.env)}")], [
         ("compliance_regime", regime_), ("display_name", f"ciam-{rdn_value(m.env)}"[:30]),
         ("location", one(m.cloud, "ciamRegion")), ("organization", org),
-        ("billing_account", f"billingAccounts/{billing}")]),)
+        ("billing_account", f"billingAccounts/{billing}"),
+        ("lifecycle", Block((("#", "its compliance regime can't change: replacing it would move every project out of "
+                                   "the regime's controls"), ("prevent_destroy", True))))]),)
 
 
 def workload_notices(pairs):

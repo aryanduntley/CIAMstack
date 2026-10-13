@@ -5,7 +5,7 @@ tags, and AWS's FIPS endpoints when the cloud says its clients use them. Pure.""
 from opsdir.core.directory import one
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.estate.tags import required_tags
-from opsdir_format_terraform.hcl import Block, tf_block
+from opsdir_format_terraform.hcl import Block, tf_block, tf_name
 
 AWS_VERSION = "~> 6.68"             # validated against hashicorp/aws 6.68.0
 ARCHIVE_VERSION = "~> 2.8"          # validated against hashicorp/archive 2.8.1
@@ -37,6 +37,33 @@ def standard_account(m):
 def account_id(m):
     """The AWS account environment m's cloud records (ciamAccountRef), or None."""
     return one(m.cloud, "ciamAccountRef")
+
+
+MANAGEMENT, SECURITY_ADMIN = "management", "security_admin"
+
+
+def management_account(m):
+    """The organization's management account environment m's cloud records (ciamManagementRef), or None."""
+    return one(m.cloud, "ciamManagementRef")
+
+
+def security_admin_account(m):
+    """The delegated administrator account of the organization's security services (ciamSecurityAdminRef), or None."""
+    return one(m.cloud, "ciamSecurityAdminRef")
+
+
+def organization_providers(m, regions=()):
+    """The aws providers organization-wide settings are made through, for the accounts the record names, in the
+    cloud's region and in each of regions (<alias>_<region>: a service in every region): the management account's (an
+    organization trail, the delegated administrators it registers) and the security services' delegated
+    administrator's (their organization configuration). A root keeps those it uses."""
+    accounts = ((MANAGEMENT, management_account(m), "The organization's management account: organization-wide "
+                 "settings (an organization trail, delegated administrators)"),
+                (SECURITY_ADMIN, security_admin_account(m), "The delegated administrator of the organization's "
+                 "security services: their organization-wide configuration"))
+    return tuple(provider_block(m, region, alias if region is None else f"{alias}_{tf_name(region)}",
+                                what if region is None else f"{what}, in {region}", account=account)
+                 for alias, account, what in accounts if account for region in (None, *regions))
 
 
 def provider_block(m, region=None, alias=None, comment=None, own_account=True, account=None):

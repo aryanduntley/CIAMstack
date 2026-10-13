@@ -65,6 +65,13 @@ ATTRIBUTES = (
     AttributeDef(498, 'ciamIntegrityValidation', 'bool', 'binding', True,
                  "Whether the cloud cryptographically validates an audit trail's records (CloudTrail's signed digest "
                  "files); a locked immutable store keeping them is graded through its ciamStorageImmutability"),
+    AttributeDef(647, 'ciamAuditResourceRole', 'string', 'intent', False,
+                 "The binding role of a data resource (an object store, a function, a table, a secret) whose data "
+                 "access an audit trail records (ciamAuditEvents data-read / data-write); none named: the "
+                 "environment's own data resources"),
+    AttributeDef(648, 'ciamAuditStreamRole', 'string', 'intent', True,
+                 "The binding role of a log destination an audit trail also streams its records to, beside the store "
+                 "keeping them (CloudTrail to CloudWatch Logs)"),
 )
 CLASSES = (
     ClassDef(62, 'ciamAlertRule', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamSignal', 'ciamAlertRole'),
@@ -96,7 +103,7 @@ CLASSES = (
              'location)'),
     ClassDef(111, 'ciamAuditTrail', 'ciamBinding', 'STRUCTURAL', ('ciamAuditScope',),
              ('ciamAuditEvents', 'ciamAllRegions', 'ciamIntegrityValidation', 'ciamLogDestinationRole',
-              'ciamProviderRef', 'ciamManagedBy'),
+              'ciamAuditResourceRole', 'ciamAuditStreamRole', 'ciamProviderRef', 'ciamManagedBy'),
              "An environment's control-plane audit trail (CloudTrail, the Activity Log's diagnostic setting, Cloud "
              "Audit Logs' sinks): what it records, where its records go (a log destination's or object store's "
              "role), and who keeps it when it isn't the platform team (an organization trail the landing zone keeps)"),

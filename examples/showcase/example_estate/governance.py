@@ -102,6 +102,8 @@ CHANGES = (
      "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2037", "Sync the target's password hashes, write passwords back, watch the corporate AD (Defender for "
      "Identity)", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2038", "Keep the target's resource change history 2557 days by exporting it to its security workspace",
+     "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

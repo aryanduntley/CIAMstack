@@ -2401,7 +2401,7 @@ resource "google_cloud_asset_project_feed" "assets" {
   }
 }
 
-# scc: Security Command Center (Premium or Enterprise) activated with Event Threat Detection, Container Threat Detection, VM Threat Detection: a request to the organization's administrators (not rendered)
+# scc: Security Command Center (Premium or Enterprise) activated with Event Threat Detection, Container Threat Detection, VM Threat Detection (activation has no Terraform resource and enabling its services only a google-beta one): a request to the organization's administrators (not rendered)
 
 resource "google_scc_v2_project_notification_config" "scc_findings" {
   # Security Command Center's service agent must be able to publish to the topic

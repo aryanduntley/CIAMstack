@@ -34,6 +34,7 @@ from opsdir.core.directory import is_kind, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource
 from opsdir.domains.observability.audit import PROTECTED, audit_trails, store_protection, trail_destination
 from opsdir_format_terraform.hcl import Block, comment, from_entry, mentions, ref, tf_block, tf_name
+from .account import ORGANIZATION, organization_variable
 from .names import resource_id
 from .storage import bucket_of, kept_buckets
 
@@ -44,7 +45,6 @@ CONFIGS = (("google_project_iam_audit_config", "projects", "project"),
            ("google_organization_iam_audit_config", "organizations", "org_id"),
            ("google_folder_iam_audit_config", "folders", "folder"))
 DATA_LOGS = (("data-read", "DATA_READ"), ("data-write", "DATA_WRITE"))
-ORGANIZATION = "organization_id"
 
 
 def _name(trail):
@@ -107,9 +107,8 @@ def render_trails(m):
     organization sink is rendered."""
     out = tuple(x for t in audit_trails(m) for x in from_entry(t.dn, _trail(m, t)))
     org = mentions(out, f"var.{ORGANIZATION}")
-    return ((tf_block("variable", [ORGANIZATION], [
-        ("type", ref("string")), ("description", "The organization whose audit logs the organization sink exports")]),)
-        if org else ()) + out
+    return ((organization_variable(m, "The organization whose audit logs the organization sink exports"),)
+            if org else ()) + out
 
 
 # ------------------------------------------------------------------ read back

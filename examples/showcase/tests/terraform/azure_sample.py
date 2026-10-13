@@ -43,7 +43,8 @@ def placed(region):
     return tuple(LdifRecord(f"cloud={c},ou=environments,dc=ciam-ops", "modify", {}, (
         ("add", "objectClass", ("ciamCloudAccount",)), ("replace", "ciamRegion", (region,)),
         ("replace", "ciamCloudProvider", ("azure",)), ("replace", "ciamAccountRef", (SUBSCRIPTION,)),
-        ("replace", "ciamCloudEnvironment", ("usgovernment" if government(region) else "public",))))
+        ("replace", "ciamCloudEnvironment", ("usgovernment" if government(region) else "public",)),
+        ("replace", "ciamManagementRef", ("corp-security",))))          # the management group (5.7b)
         for c in ("alpha", "beta"))
 
 
@@ -139,6 +140,32 @@ EGRESS = entry(ALPHA, "egress", "ciamEgress", ciamBindingRole="pf-egress", ciamC
                ciamNatAllocation="static")
 
 
+# Defender's findings continuously exported to an Event Hub (its connection string a Key Vault reference) and its high
+# incidents by email to the security contact (5.7b)
+SECURITY = (entry(ALPHA, "sec-hub-send", "ciamSecretRef", ciamBindingRole="sec-hub-send",
+                  ciamRefUri="azkv://kv-ciam-prod/sec-hub-send"),
+            entry(ALPHA, "sec-hub", "ciamStreamBinding", ciamBindingRole="sec-hub", ciamStreamKind="event-hub",
+                  ciamSendSecretRole="sec-hub-send",
+                  ciamProviderRef="/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam/"
+                                  "providers/Microsoft.EventHub/namespaces/ehn-ciam/eventhubs/security"),
+            entry(ALPHA, "soc-mail", "ciamAlertChannel", ciamBindingRole="soc-mail", ciamChannelKind="email",
+                  ciamProviderRef="mailto:soc@example.test"),
+            entry(ALPHA, "defender", "ciamSecurityService", ciamBindingRole="defender",
+                  ciamSecurityKind="threat-detection", ciamSecurityCoverage=("control-plane", "compute"),
+                  ciamFindingsRole="sec-hub", ciamIncidentRole="soc-mail", ciamIncidentSeverity="high"),
+            # resource changes kept 2557 days, copied hourly from Resource Graph into the workspace (5.7b)
+            entry(ALPHA, "security-logs", "ciamLogDestination", ciamBindingRole="security-logs",
+                  ciamDestinationKind="workspace",
+                  ciamProviderRef="/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam/"
+                                  "providers/Microsoft.OperationalInsights/workspaces/law-ciam-security"),
+            entry(ALPHA, "changes", "ciamSecurityService", ciamBindingRole="changes",
+                  ciamSecurityKind="config-recording", ciamFindingsRole="security-logs", ciamRetentionDays="2557"),
+            # enabled for every subscription on the management group, with its frameworks (5.7b)
+            entry(ALPHA, "org-defender", "ciamSecurityService", ciamBindingRole="org-defender",
+                  ciamSecurityKind="posture", ciamAuditScope="organization",
+                  ciamComplianceStandard="nist-800-171-r2"))
+
+
 # a compute group of a role no server runs, designed, with its role's boot and provisioned data disk
 GROUP = (entry(ALPHA, "vmss-app", "ciamComputeGroup", ciamBindingRole="compute-app", ciamTargetRole="app",
                ciamImageRef=IMAGE, ciamInstanceSize="Standard_D2s_v5", ciamMinSize="1", ciamMaxSize="3",
@@ -160,7 +187,7 @@ def environments(region):
             ("gateway", _gateway(region), found),
             ("dns", _dns(region), found),
             ("services", model(alpha=(KEY_DB, SECRET_DB, _db(region), STORE, SUPPRESSION, SSO, EGRESS, BLOB_ENDPOINT,
-                                      *GROUP),
+                                      *GROUP, *SECURITY),
                                tree=(*EXCEPTIONS, *CANARY), changes=(*placed(region), *bound()))[1],
              found._replace(endpoints=(*found.endpoints, *ENDPOINTS))))
 
