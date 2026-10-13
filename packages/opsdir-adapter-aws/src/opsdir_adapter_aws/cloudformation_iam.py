@@ -11,13 +11,17 @@ one); policy documents become JSON text, as a Terraform state holds them. Pure.
   AWS::SSO::PermissionSet (+ InlinePolicy, ManagedPolicies)                    -> aws_ssoadmin_permission_set (+ its
                                                                                   inline policy and attachments)
   AWS::SSO::Assignment                                                         -> aws_ssoadmin_account_assignment
+  AWS::S3::BucketPolicy, AWS::SecretsManager::ResourcePolicy (resource         -> aws_s3_bucket_policy,
+    policies: who else they let in)                                               aws_secretsmanager_secret_policy
+  AWS::EC2::InstanceConnectEndpoint (a session access path; its Ref is its id) -> aws_ec2_instance_connect_endpoint
 """
 import json
 
-from .cloudformation_values import tag_map
+from .cloudformation_values import stack_arn, tag_map
 
 IAM_TYPES = ("AWS::IAM::Role", "AWS::IAM::OIDCProvider", "AWS::IAM::ManagedPolicy", "AWS::IAM::Policy",
-             "AWS::IAM::RolePolicy", "AWS::Organizations::Policy", "AWS::SSO::PermissionSet", "AWS::SSO::Assignment")
+             "AWS::IAM::RolePolicy", "AWS::Organizations::Policy", "AWS::SSO::PermissionSet", "AWS::SSO::Assignment",
+             "AWS::S3::BucketPolicy", "AWS::SecretsManager::ResourcePolicy", "AWS::EC2::InstanceConnectEndpoint")
 
 
 def _text(document):
@@ -89,9 +93,25 @@ def _identity_center(declared, names):
               for _, p, _ in _of(declared, "AWS::SSO::Assignment"))]
 
 
+def _resource_policies(declared):
+    """Buckets' and secrets' policies. A secret policy's SecretId may name the secret; its Ref is the secret's ARN."""
+    return [*(("aws_s3_bucket_policy", {"bucket": p.get("Bucket"), "policy": _text(p.get("PolicyDocument"))})
+              for _, p, _ in _of(declared, "AWS::S3::BucketPolicy")),
+            *(("aws_secretsmanager_secret_policy", {
+                "secret_arn": pid if str(pid).startswith("arn:") else p.get("SecretId"),
+                "policy": _text(p.get("ResourcePolicy"))})
+              for _, p, pid in _of(declared, "AWS::SecretsManager::ResourcePolicy"))]
+
+
+def _access_paths(declared, names):
+    return [("aws_ec2_instance_connect_endpoint", {
+        "id": pid, "arn": stack_arn(names, "ec2", f"instance-connect-endpoint/{pid}"), "subnet_id": p.get("SubnetId"),
+        "tags": tag_map(p.get("Tags"))}) for _, p, pid in _of(declared, "AWS::EC2::InstanceConnectEndpoint")]
+
+
 def iam_stack_pairs(declared, names):
     """(Terraform resource type, attributes) pairs of IAM, Organizations and Identity Center among a stack's declared
     resources ((logical ID, type, resolved properties, raw properties, physical ID), ...); names: what references
     resolve to (for the Fn::GetAtt attributes)."""
     return [*_roles(declared, names), *_oidc_providers(declared), *_policies(declared), *_guardrails(declared),
-            *_identity_center(declared, names)]
+            *_identity_center(declared, names), *_resource_policies(declared), *_access_paths(declared, names)]

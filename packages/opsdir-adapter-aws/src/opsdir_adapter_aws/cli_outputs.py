@@ -35,6 +35,20 @@ def named(path):
     return unquote(stem(path))
 
 
+def under(path, folder):
+    """Whether a file is saved under folder/ (at the top or deeper)."""
+    return path.startswith(f"{folder}/") or f"/{folder}/" in path
+
+
+def folder_tags(outs, folder):
+    """{resource name: tags} of the tag outputs saved as folder/<name, percent-encoded>.json: a Tags list ([{Key,
+    Value}]), a Tags map (SQS's) or a tags map (CloudWatch Logs')."""
+    def as_dict(tags):
+        return dict(tags) if isinstance(tags, dict) else tags_of(tags)
+    return {named(p): as_dict(doc.get("tags") if k == "tags" else doc.get("Tags"))
+            for p, k, doc in outs if k in ("Tags", "tags") and under(p, folder)}
+
+
 _HOME = re.compile(r"^arn:(aws[a-z-]*):[a-z0-9-]+:([a-z]{2}(?:-gov)?-[a-z]+-\d):(\d{12}):")
 # Outputs whose ARNs are the environment's own account and region, in the order they are trusted
 _OWN_ARNS = (("Subnets", "SubnetArn"), ("HubArn", None), ("ConfigurationRecorders", "arn"), ("Rules", "Arn"))

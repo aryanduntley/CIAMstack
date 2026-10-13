@@ -2,22 +2,24 @@
 azure/cli-inventory reads, and the Terraform state azure/terraform-state reads, for one environment, read-only. Pure:
 the core runs them.
 
-Every call is `az ... -o json` under the operator's own login. First `az account show`: its id must be the
-subscription the cloud records (ciamAccountRef) and its environmentName the cloud's (AzureCloud, or
-AzureUSGovernment when ciamCloudEnvironment is usgovernment); else nothing is read. The inventory follows the README's
-script, scoped as it is: the environment's resource group (the network binding's ciamResourceGroup, else the
-environment's), its virtual network (the network binding's provider ref), its region (the cloud's ciamRegion), the Key
-Vaults its azkv:// references name and the storage accounts its azblob:// object stores name; the listings first,
-then each listed item's details (record sets per DNS zone, keys per vault, functions per app, Front Door endpoints and
-origins, firewall policy rule collection groups, PostgreSQL and MySQL parameters, backup policies and instances,
-federated credentials); then monitoring: metric and log query alerts, action groups, Log Analytics workspaces,
-Application Insights standard web tests, the subscription's policy exemptions and Defender for Cloud alert suppression
-rules; Defender for Cloud's plans, the machines' vulnerability assessment setting (az rest: no az command reads it;
-none set leaves its file out), continuous exports, and the consumption budgets of the subscription and the resource
-group (az rest: az consumption is in preview). VPN connections, action groups (their receivers: webhook and Logic App
-URLs can carry tokens), web tests (their request headers) and continuous exports (an Event Hub's connection string, a
-Logic App's URI) are projected to what the importer reads, so those are never fetched; Key Vault secrets are
-listed by name only, never shown.
+Every call is `az ... -o json` under the operator's own login. First `az account show`: its id must be the subscription
+the cloud records (ciamAccountRef) and its environmentName the cloud's (AzureCloud, or AzureUSGovernment when
+ciamCloudEnvironment is usgovernment); else nothing is read. The inventory follows the README's script, scoped as it is:
+the environment's resource group (the network binding's ciamResourceGroup, else the environment's), its virtual network
+(the network binding's provider ref), its region (the cloud's ciamRegion), the Key Vaults its azkv:// references name
+and the storage accounts its azblob:// object stores name; the listings first, then each listed item's details (record
+sets per DNS zone, keys per vault, functions per app, Front Door endpoints and origins, firewall policy rule collection
+groups, PostgreSQL and MySQL parameters, backup policies and instances, federated credentials, Service Bus queues and
+topics and Event Hubs per namespace, email domains per Communication Services email service: the namespaces and email
+services themselves only the collector reads, _work/); AKS clusters (az aks list holds every node pool), Event Grid
+topics; then monitoring: metric and log query alerts, action groups, Log Analytics workspaces, Application Insights
+standard web tests, the subscription's policy exemptions and Defender for Cloud alert suppression rules; Defender for
+Cloud's plans, the machines' vulnerability assessment setting (az rest: no az command reads it; none set leaves its file
+out), continuous exports, and the consumption budgets of the subscription and the resource group (az rest: az
+consumption is in preview). VPN connections, action groups (their receivers: webhook and Logic App URLs can carry
+tokens), web tests (their request headers) and continuous exports (an Event Hub's connection string, a Logic App's URI)
+are projected to what the importer reads, so those are never fetched; Key Vault secrets are listed by name only, never
+shown.
 
 Terraform state: (a) by default the state blob a collection source names (ciamCollectionSource, importer
 azure/terraform-state, ciamSourceRef azblob://<account>/<container>/<blob>, a workspace's blob as named), read with
@@ -32,6 +34,7 @@ from opsdir.domains.governance.collection import collection_sources
 from .account import subscription_id
 from .storage import container_of
 
+WORK = "_work/"            # what only the collector reads (core collecting keeps it out of the export), as AWS's
 ARM = {"public": "https://management.azure.com", "usgovernment": "https://management.usgovcloudapi.net"}
 CLOUD_NAMES = {"public": "AzureCloud", "usgovernment": "AzureUSGovernment"}
 VPN_PROJECTION = ("[].{id: id, name: name, type: type, connectionType: connectionType, tags: tags, "
@@ -151,6 +154,11 @@ def _listings(m, rg, vnet):
         ("mysql-servers.json", _az("mysql", "flexible-server", "list", *g)),
         ("disks.json", _az("disk", "list", *g)),
         ("scale-sets.json", _az("vmss", "list", *g)),
+        ("aks.json", _az("aks", "list", *g)),
+        (f"{WORK}servicebus-namespaces.json", _az("servicebus", "namespace", "list", *g)),
+        (f"{WORK}eventhubs-namespaces.json", _az("eventhubs", "namespace", "list", *g)),
+        ("eventgrid-topics.json", _az("eventgrid", "topic", "list", *g)),
+        (f"{WORK}email-services.json", _az("communication", "email", "list", *g)),
         ("autoscale-settings.json", _az("monitor", "autoscale", "list", *g)),
         ("backup-vaults.json", _az("dataprotection", "backup-vault", "list", *g)),
         ("locks.json", _az("lock", "list", *g)),
@@ -207,11 +215,20 @@ def _details(m, rg, done):
                                          "-g", group))
           for name, group in _names(done, "identities.json", "name", "resourceGroup") if name and group),
         *((f"vault-{kv}.json", _az("keyvault", "show", "-n", kv))
-          for (kv,) in _names(done, "keyvaults.json", "name") if kv in recorded_vaults(m)))
+          for (kv,) in _names(done, "keyvaults.json", "name") if kv in recorded_vaults(m)),
+        *((p, c) for (ns,) in _names(done, f"{WORK}servicebus-namespaces.json", "name") for p, c in (
+            (f"servicebus-queues-{ns}.json", _az("servicebus", "queue", "list", *g, "--namespace-name", ns)),
+            (f"servicebus-topics-{ns}.json", _az("servicebus", "topic", "list", *g, "--namespace-name", ns)))),
+        *((f"eventhubs-{ns}.json", _az("eventhubs", "eventhub", "list", *g, "--namespace-name", ns))
+          for (ns,) in _names(done, f"{WORK}eventhubs-namespaces.json", "name")),
+        *((f"email-domains-{svc}.json", _az("communication", "email", "domain", "list", *g,
+                                            "--email-service-name", svc))
+          for (svc,) in _names(done, f"{WORK}email-services.json", "name")))
 
 
 def _in_env(m, pairs):
-    return tuple((f"{m.label}/{p}", c) for p, c in pairs)
+    """The pairs with their paths under the environment's folder (<cloud>/<env>/), work files left as they are."""
+    return tuple((p if p.startswith(WORK) else f"{m.label}/{p}", c) for p, c in pairs)
 
 
 def _local(m, done):

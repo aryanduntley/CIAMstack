@@ -20,6 +20,8 @@ other AWS CLI outputs (opsdir_adapter_aws.cli):
     permission-set                                              sso-inline/<permission set name>.json
   sso-admin list-managed-policies-in-     AttachedManagedPolicies -> its managed policies; save it as
     permission-set                                              sso-managed/<permission set name>.json
+  ec2 describe-instance-connect-          InstanceConnectEndpoints -> aws_ec2_instance_connect_endpoint (a session
+    endpoints                                                   access path; failed and deleting ones skipped)
   iam simulate-principal-policy           EvaluationResults  -> the role's ciamEvaluated, saved by the renderer's
                                                                 access/evaluate.sh as evaluations/<role>/<verb>__<role>
                                                                 .json (opsdir.domains.access.evaluations)
@@ -29,7 +31,7 @@ from .access import simulation_verdict
 from .cli_outputs import stem, tags_of
 
 KEYS = ("RoleDetailList", "ResourcePolicy", "PermissionSet", "AccountAssignments", "InlinePolicy",
-        "AttachedManagedPolicies", "EvaluationResults", "Policy")
+        "AttachedManagedPolicies", "EvaluationResults", "Policy", "InstanceConnectEndpoints")
 EVALUATOR = "aws-simulator"
 
 
@@ -113,12 +115,22 @@ def _with_evaluations(pairs, outs, at):
               for who, verdicts in found.items() if who not in named)]
 
 
+def _access_paths(outs):
+    """EC2 Instance Connect Endpoints that are there or being made (not failed, not deleting or deleted)."""
+    return [("aws_ec2_instance_connect_endpoint", {
+                "id": e.get("InstanceConnectEndpointId"), "arn": e.get("InstanceConnectEndpointArn"),
+                "subnet_id": e.get("SubnetId"), "vpc_id": e.get("VpcId"), "tags": tags_of(e.get("Tags"))})
+            for _, doc in _of(outs, "InstanceConnectEndpoints") for e in doc.get("InstanceConnectEndpoints") or ()
+            if isinstance(e, dict) and not str(e.get("State", "")).startswith("delete")
+            and not str(e.get("State", "")).endswith("failed")]
+
+
 def iam_pairs(outs, at=None):
     """(pairs, notices) of the IAM outputs among an environment's recognized AWS CLI outputs ((path, key, document),
     ...); at dates the evaluator's verdicts (the import's time)."""
     roles, role_notices = _authorization(outs)
     policies, policy_notices = _policies(outs)
-    pairs = [*roles, *policies, *_identity_center(outs),
+    pairs = [*roles, *policies, *_identity_center(outs), *_access_paths(outs),
              *(("aws_secretsmanager_secret_policy", {"secret_arn": doc.get("ARN"), "policy": doc["ResourcePolicy"]})
                for _, doc in _of(outs, "ResourcePolicy") if doc.get("ResourcePolicy"))]
     return _with_evaluations(pairs, outs, at), (*role_notices, *policy_notices)

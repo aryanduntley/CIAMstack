@@ -9,12 +9,14 @@ come resolved (Ref to physical IDs, Fn::GetAtt where it follows from one). Pure.
                                                     enabled)
   AWS::CloudFront::Distribution                  -> aws_cloudfront_distribution (origins, web ACL, TLS minimum)
   AWS::Route53Resolver::ResolverRule             -> aws_route53_resolver_rule
+  AWS::Route53::HostedZone                       -> aws_route53_zone (its Ref is its zone id; private when it names
+                                                    VPCs; HostedZoneTags)
 """
 from .cli_edge import terraform_shape
-from .cloudformation_values import dns_target
+from .cloudformation_values import dns_target, tag_map
 
 EDGE_TYPES = ("AWS::WAFv2::WebACL", "AWS::WAFv2::IPSet", "AWS::WAFv2::WebACLAssociation", "AWS::Shield::Protection",
-              "AWS::CloudFront::Distribution", "AWS::Route53Resolver::ResolverRule")
+              "AWS::CloudFront::Distribution", "AWS::Route53Resolver::ResolverRule", "AWS::Route53::HostedZone")
 
 
 def _of(declared, type_):
@@ -70,9 +72,15 @@ def _resolver_rules(declared):
             for _, p, pid in _of(declared, "AWS::Route53Resolver::ResolverRule")]
 
 
+def _zones(declared, dns):
+    return [("aws_route53_zone", {"zone_id": pid, "name": dns(p.get("Name")), "vpc": [{}] if p.get("VPCs") else [],
+                                  "tags": tag_map(p.get("HostedZoneTags"))})
+            for _, p, pid in _of(declared, "AWS::Route53::HostedZone")]
+
+
 def edge_stack_pairs(declared, names, dns):
     """(Terraform resource type, attributes) pairs of the edge among a stack's declared resources ((logical ID, type,
     resolved properties, raw properties, physical ID), ...); names: what references resolve to; dns normalizes a DNS
     name."""
     return [*_waf(declared, names), *_shield(declared, names), *_distributions(declared, names, dns),
-            *_resolver_rules(declared)]
+            *_resolver_rules(declared), *_zones(declared, dns)]

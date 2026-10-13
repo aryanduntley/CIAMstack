@@ -1,7 +1,9 @@
 """Template values the CloudFormation readers share. Pure.
 
   getatt(v)                     (logical ID, attribute) of a Fn::GetAtt, else None
-  tag_map(tags)                 {key: value} of a CloudFormation Tags list
+  tag_map(tags)                 {key: value} of a CloudFormation Tags list (a Tags map as given)
+  stack_arn(names, service, resource, region)
+                                an ARN in the stack's partition, region and account (its pseudo parameters)
   truth(v)                      a boolean property (true, "true", "True"), None when absent
   number(v)                     a digit string as an int (a parameter's value), else as given
   dns_target(raw, resolved)     a DNS name a value gives (an alias's target, a distribution's origin) as the stack's
@@ -20,8 +22,18 @@ def getatt(v):
 
 
 def tag_map(tags):
-    """{key: value} of a CloudFormation Tags list ([{Key, Value}, ...])."""
+    """{key: value} of a CloudFormation Tags list ([{Key, Value}, ...]); a Tags map (an EKS node group's) as given."""
+    if isinstance(tags, dict):
+        return dict(tags)
     return {t.get("Key"): t.get("Value") for t in tags or () if isinstance(t, dict) and t.get("Key")}
+
+
+def stack_arn(names, service, resource, region=True):
+    """arn:<partition>:<service>:<region>:<account>:<resource> from the stack's pseudo parameters (names holds them);
+    no region for a global service's ARN."""
+    partition, account = names.get("AWS::Partition") or "aws", names.get("AWS::AccountId") or ""
+    where = (names.get("AWS::Region") or "") if region else ""
+    return f"arn:{partition}:{service}:{where}:{account}:{resource}"
 
 
 def truth(v):

@@ -13,7 +13,7 @@ from opsdir.connectors.collecting import collect, provenance
 from opsdir.core.directory import make_entry
 from opsdir.core.environment import env_model
 from opsdir_adapter_azure.adapter import ADAPTER
-from opsdir_adapter_azure.cli import read_cli_inventory
+from opsdir_adapter_azure.cli import cli_resources, read_cli_inventory
 from opsdir_adapter_azure.collect import (ACTION_GROUP_PROJECTION, AUTOMATION_PROJECTION, COLLECTORS, VPN_PROJECTION,
                                           WEB_TEST_PROJECTION, identity_check, inventory_steps, state_steps)
 
@@ -46,7 +46,10 @@ OPERATIONS = {
     "role assignment list", "role definition list", "rest", "keyvault list", "keyvault show", "policy assignment list",
     "network bastion list", "monitor metrics alert list", "monitor scheduled-query list", "monitor action-group list",
     "monitor log-analytics workspace list", "monitor app-insights web-test list", "policy exemption list",
-    "security alerts-suppression-rule list", "security pricing list", "security automation list"}
+    "security alerts-suppression-rule list", "security pricing list", "security automation list",
+    "aks list", "servicebus namespace list", "servicebus queue list", "servicebus topic list",
+    "eventhubs namespace list", "eventhubs eventhub list", "eventgrid topic list", "communication email list",
+    "communication email domain list"}
 NEVER = ("secret show", "secret download", "appsettings", "config", "show-connection-string", "keys list",
          "get-shared-key", "connection-string", "--debug")
 
@@ -96,6 +99,49 @@ def _answer(argv):
 
 def _run(call):
     return _answer(call.argv)
+
+
+def _fixtures(name):
+    """Another test module's fixtures, loaded by path."""
+    spec = importlib.util.spec_from_file_location(f"azure_{name}_fixtures", pathlib.Path(__file__).with_name(name))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+_COMPUTE, _MESSAGING = _fixtures("test_azure_compute.py"), _fixtures("test_azure_messaging.py")
+
+
+def _messaging_answer(argv):
+    """What az prints for the AKS and messaging calls, from those readers' own fixtures."""
+    cmd, f = _words(argv), _MESSAGING.CLI
+    arg = dict(zip(argv[1:], argv[2:]))
+    answers = {"aks list": _COMPUTE.AKS_CLI["aks.json"], "servicebus namespace list": [{"name": "sb"}],
+               "eventhubs namespace list": [{"name": "eh"}], "eventgrid topic list": f["eventgrid-topics.json"],
+               "communication email list": [{"name": "ecs-ciam"}],
+               "servicebus queue list": f.get(f"servicebus-queues-{arg.get('--namespace-name')}.json"),
+               "servicebus topic list": f.get(f"servicebus-topics-{arg.get('--namespace-name')}.json"),
+               "eventhubs eventhub list": f.get(f"eventhubs-{arg.get('--namespace-name')}.json"),
+               "communication email domain list": f.get(f"email-domains-{arg.get('--email-service-name')}.json")}
+    return (json.dumps(answers[cmd]), None) if cmd in answers else _answer(argv)
+
+
+def test_aks_and_messaging_collected_read_as_saved_by_hand():
+    """az aks list (no nodepool list: it holds every pool), Service Bus queues and topics and Event Hubs per namespace,
+    Event Grid topics, email domains per email service; the namespaces and services only the collector reads."""
+    m = _model(ciamAccountRef=SUB_ID)
+    c = collect("azure/cli-inventory", COLLECTORS[0], m.d, m, lambda call: _messaging_answer(call.argv))
+    assert c.problems == ()
+    ran = [shlex.split(x.provenance) for x in c.calls]
+    assert {_words(a) for a in ran} <= OPERATIONS and "aks nodepool list" not in {_words(a) for a in ran}
+    files = {p.split("/", 2)[2]: t for p, t in c.files.items()}
+    assert {"aks.json", "servicebus-queues-sb.json", "servicebus-topics-sb.json", "eventhubs-eh.json",
+            "eventgrid-topics.json", "email-domains-ecs-ciam.json"} <= set(files)
+    assert not [p for p in files if "namespaces" in p or p.startswith("email-services")]     # _work/, not exported
+    kinds = ("cluster", *_MESSAGING.KINDS)
+    collected = cli_resources(files)[0]
+    by_hand = cli_resources({p: json.dumps(d) for p, d in {**_COMPUTE.AKS_CLI, **_MESSAGING.CLI}.items()})[0]
+    assert {r.ref: r for r in collected if r.kind in kinds} == {r.ref: r for r in by_hand if r.kind in kinds} != {}
 
 
 def test_the_collectors_are_declared_on_the_adapter():

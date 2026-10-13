@@ -8,11 +8,28 @@ compute groups from them, volumes a scale set's disks). Pure.
                                   size and instance count (its sku), zones, image, OS and data disks, tags
   az monitor autoscale list       Microsoft.Insights/autoscalesettings -> azurerm_monitor_autoscale_setting (its target
                                   and each profile's capacity)
+  az aks list                     Microsoft.ContainerService/managedClusters -> azurerm_kubernetes_cluster: version,
+                                  enabled add-ons (addonProfiles by azurerm's keys, OIDC issuer, workload identity,
+                                  Defender), its first System pool as the default node pool, every other pool in its
+                                  agentPoolProfiles as azurerm_kubernetes_cluster_node_pool
+  az aks nodepool list            Microsoft.ContainerService/managedClusters/agentPools -> its node pools (an ARM
+                                  template's separate pools); a pool listed both ways is read once
 """
+
+import re
 
 SCALE_SETS = "microsoft.compute/virtualmachinescalesets"
 AUTOSCALE = "microsoft.insights/autoscalesettings"
-READ = (SCALE_SETS, AUTOSCALE)       # what an ARM template's reader reads of these
+CLUSTERS = "microsoft.containerservice/managedclusters"
+POOLS = "microsoft.containerservice/managedclusters/agentpools"
+READ = (SCALE_SETS, AUTOSCALE, CLUSTERS, POOLS)       # what an ARM template's reader reads of these
+# addonProfiles keys as azurerm names them (internal/services/containers/kubernetes_addons.go), by its arguments
+ADDON_PROFILES = (("azurepolicy", "azure_policy_enabled", True), ("omsagent", "oms_agent", False),
+                  ("azurekeyvaultsecretsprovider", "key_vault_secrets_provider", False),
+                  ("ingressapplicationgateway", "ingress_application_gateway", False),
+                  ("httpapplicationrouting", "http_application_routing_enabled", True),
+                  ("openservicemesh", "open_service_mesh_enabled", True))
+_AGENT_POOLS = re.compile(r"/agentPools/(?=[^/]+$)", re.IGNORECASE)
 
 
 def _id(o):
@@ -63,7 +80,57 @@ def _autoscale(a):
                     for p in a.get("profiles") or ()]})
 
 
+def _pool(p, cluster_id=None):
+    """A node pool's azurerm attributes (min and max only when it autoscales, as azurerm keeps them)."""
+    scaling = p.get("enableAutoScaling") is True
+    return {**({"kubernetes_cluster_id": cluster_id} if cluster_id else {}), "name": p.get("name"),
+            "vm_size": p.get("vmSize"), "node_count": _number(p.get("count")),
+            "min_count": _number(p.get("minCount")) if scaling else None,
+            "max_count": _number(p.get("maxCount")) if scaling else None,
+            "zones": [str(z) for z in p.get("availabilityZones") or ()], "vnet_subnet_id": p.get("vnetSubnetId"),
+            "mode": p.get("mode")}
+
+
+def _on(o):
+    return isinstance(o, dict) and o.get("enabled") is True
+
+
+def _cluster(c, separate):
+    """azurerm_kubernetes_cluster with its default node pool, and the other pools as their own resources; separate:
+    the names of the pools listed on their own (read from there)."""
+    inline = [p for p in c.get("agentPoolProfiles") or () if isinstance(p, dict) and p.get("name") not in separate]
+    default = next((p for p in inline if p.get("mode") == "System"), inline[0] if inline else None)
+    addons = {str(k).lower(): v for k, v in (c.get("addonProfiles") or {}).items()}
+    security = c.get("securityProfile") or {}
+    return [("azurerm_kubernetes_cluster", {
+                "id": c.get("id"), "name": c.get("name"),
+                "kubernetes_version": c.get("kubernetesVersion") or c.get("currentKubernetesVersion"),
+                "default_node_pool": [_pool(default)] if default else [], "tags": c.get("tags") or {},
+                **{arg: (_on(addons.get(key)) if flag else [{}] if _on(addons.get(key)) else [])
+                   for key, arg, flag in ADDON_PROFILES},
+                "oidc_issuer_enabled": _on(c.get("oidcIssuerProfile")),
+                "workload_identity_enabled": _on(security.get("workloadIdentity")),
+                "microsoft_defender": [{}] if _on((security.get("defender") or {}).get("securityMonitoring")) else []}),
+            *(("azurerm_kubernetes_cluster_node_pool", _pool(p, c.get("id"))) for p in inline if p is not default)]
+
+
+def _cluster_id(pool_id):
+    """The cluster a pool's ID is under, else None."""
+    parts = _AGENT_POOLS.split(pool_id or "")
+    return parts[0] if len(parts) == 2 else None
+
+
+def _clusters(items):
+    pools = [(p, _cluster_id(p.get("id"))) for k, p in items if k == POOLS]
+
+    def separate(cluster_id):
+        return {p.get("name") for p, owner in pools if owner and owner.lower() == (cluster_id or "").lower()}
+    return [*(x for k, c in items if k == CLUSTERS for x in _cluster(c, separate(c.get("id")))),
+            *(("azurerm_kubernetes_cluster_node_pool", _pool(p, owner)) for p, owner in pools)]
+
+
 def compute_items(items):
-    """(azurerm type, attributes) pairs of the scale sets and autoscale settings among (kind, item) pairs."""
+    """(azurerm type, attributes) pairs of the scale sets, autoscale settings, AKS clusters and their node pools among
+    (kind, item) pairs."""
     return [*(_scale_set(i) for k, i in items if k == SCALE_SETS),
-            *(_autoscale(i) for k, i in items if k == AUTOSCALE)]
+            *(_autoscale(i) for k, i in items if k == AUTOSCALE), *_clusters(items)]

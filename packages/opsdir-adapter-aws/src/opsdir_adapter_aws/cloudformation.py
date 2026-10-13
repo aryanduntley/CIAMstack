@@ -28,8 +28,10 @@ Terraform resource and read by the same mapping (opsdir_adapter_aws.inventory.pa
   services, peering, transit and VPN, flow logs, Network Firewall): cloudformation_network.py; IAM and guardrails,
   the edge, data stores, security services (GuardDuty, AWS Config, Security Hub) and suppressions, observability (log
   groups, alarms, canaries), volumes and backups, budgets; EventBridge rules with their event patterns (findings
-  routes); compute groups (autoscaling groups and their launch templates):
-  cloudformation_iam.py, _edge.py, _data.py, _security.py, _observability.py, _backups.py, _budgets.py, _compute.py
+  routes); compute groups (autoscaling groups and their launch templates) and EKS clusters; resource policies and
+  Instance Connect Endpoints; hosted zones; queues, topics, event buses, data streams and SES identities:
+  cloudformation_iam.py, _edge.py, _data.py, _security.py, _observability.py, _backups.py, _budgets.py, _compute.py,
+  _messaging.py
 Resources that weren't created (no physical ID, deleted, failed) are skipped; other resource types are counted.
 """
 import json
@@ -50,10 +52,11 @@ from .cloudformation_compute import COMPUTE_TYPES, compute_stack_pairs
 from .cloudformation_data import DATA_TYPES, data_stack_pairs
 from .cloudformation_edge import EDGE_TYPES, edge_stack_pairs
 from .cloudformation_iam import IAM_TYPES, iam_stack_pairs
+from .cloudformation_messaging import MESSAGING_TYPES, messaging_stack_pairs
 from .cloudformation_network import NETWORK_TYPES, network_stack_pairs
 from .cloudformation_observability import OBSERVABILITY_TYPES, observability_stack_pairs
 from .cloudformation_security import SECURITY_TYPES, security_stack_pairs
-from .cloudformation_values import dns_target, getatt, number, tag_map, truth
+from .cloudformation_values import dns_target, getatt, number, stack_arn, tag_map, truth
 from .inventory import PROVIDER, pairs_resources, state_pairs
 
 READ = ("AWS::EC2::VPC", "AWS::EC2::Subnet", "AWS::EC2::Instance", "AWS::EC2::SecurityGroup",
@@ -64,7 +67,7 @@ READ = ("AWS::EC2::VPC", "AWS::EC2::Subnet", "AWS::EC2::Instance", "AWS::EC2::Se
         "AWS::KMS::ReplicaKey", "AWS::S3::Bucket", "AWS::Lambda::Function", "AWS::Events::Rule",
         "AWS::Scheduler::Schedule", "AWS::CodePipeline::Pipeline", "AWS::CodeBuild::Project", "AWS::CloudTrail::Trail",
         *NETWORK_TYPES, *IAM_TYPES, *EDGE_TYPES, *DATA_TYPES, *SECURITY_TYPES, *OBSERVABILITY_TYPES,
-        *BACKUP_TYPES, *BUDGET_TYPES, *COMPUTE_TYPES)
+        *BACKUP_TYPES, *BUDGET_TYPES, *COMPUTE_TYPES, *MESSAGING_TYPES)
 EVALUATED = ("Ref", "Fn::Sub", "Fn::Join", "Fn::Select", "Fn::GetAtt")
 NOT_CREATED = ("CREATE_FAILED", "DELETE_COMPLETE", "DELETE_IN_PROGRESS", "DELETE_FAILED")
 ACCOUNT_WIDE = ("secret", "key", "storage")
@@ -133,8 +136,7 @@ def _pseudo(stack, resources):
 
 def _arn(service, path, region=True):
     """An ARN maker for a type's GetAtt: arn:<partition>:<service>:<region>:<account>:<path with {id}>."""
-    return lambda pid, ps: (f"arn:{ps['AWS::Partition']}:{service}:{ps['AWS::Region'] or '' if region else ''}:"
-                            f"{ps['AWS::AccountId'] or ''}:{path.format(id=pid)}")
+    return lambda pid, ps: stack_arn(ps, service, path.format(id=pid), region)
 
 
 def _waf_arn(pid, ps, kind):
@@ -155,6 +157,7 @@ def _waf_arn(pid, ps, kind):
 GETATT = MappingProxyType({
     "AWS::EC2::SecurityGroup": {"GroupId": lambda pid, ps: pid},
     "AWS::EC2::LaunchTemplate": {"LaunchTemplateId": lambda pid, ps: pid},
+    "AWS::EKS::Cluster": {"Arn": _arn("eks", "cluster/{id}")},
     "AWS::IAM::Role": {"Arn": _arn("iam", "role/{id}", False)},
     "AWS::IAM::InstanceProfile": {"Arn": _arn("iam", "instance-profile/{id}", False)},
     "AWS::IAM::OIDCProvider": {"Arn": lambda pid, ps: pid},
@@ -170,6 +173,12 @@ GETATT = MappingProxyType({
     "AWS::Backup::BackupVault": {"BackupVaultArn": _arn("backup", "backup-vault:{id}")},
     "AWS::Backup::BackupPlan": {"BackupPlanArn": _arn("backup", "backup-plan:{id}")},
     "AWS::SNS::Topic": {"TopicArn": lambda pid, ps: pid},
+    "AWS::Route53::HostedZone": {"Id": lambda pid, ps: pid},
+    "AWS::SQS::Queue": {"Arn": lambda pid, ps: stack_arn(ps, "sqs", str(pid).rsplit("/", 1)[-1]),
+                        "QueueName": lambda pid, ps: str(pid).rsplit("/", 1)[-1], "QueueUrl": lambda pid, ps: pid},
+    "AWS::Events::EventBus": {"Arn": lambda pid, ps: stack_arn(ps, "events", f"event-bus/{pid}"),
+                              "Name": lambda pid, ps: pid},      # its Ref is its name (a partner bus's holds '/')
+    "AWS::Kinesis::Stream": {"Arn": _arn("kinesis", "stream/{id}")},
     "AWS::SecretsManager::Secret": {"Id": lambda pid, ps: pid},
     "AWS::WAFv2::WebACL": {"Arn": lambda pid, ps: _waf_arn(pid, ps, "webacl")},
     "AWS::WAFv2::IPSet": {"Arn": lambda pid, ps: _waf_arn(pid, ps, "ipset")},
@@ -480,7 +489,7 @@ def stack_pairs(stack, resources, template):
              *data_stack_pairs(declared, names), *security_stack_pairs(declared, names),
              *budget_stack_pairs(declared, names),
              *observability_stack_pairs(declared, names), *backup_stack_pairs(declared, names),
-             *compute_stack_pairs(declared, names)],
+             *compute_stack_pairs(declared, names), *messaging_stack_pairs(declared, names)],
             (*((f"{label}: {', '.join(f'{fn} ({n})' for fn, n in sorted(_unevaluated(template).items()))} not "
                 f"evaluated; the attributes computed with them keep the record's values",)
                if _unevaluated(template) else ()),

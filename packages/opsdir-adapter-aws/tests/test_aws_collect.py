@@ -41,6 +41,7 @@ def _fixtures(name):
 
 _COMPUTE, _MONITOR = _fixtures("test_aws_compute.py"), _fixtures("test_aws_observability.py")
 _SECURITY, _BUDGETS = _fixtures("test_aws_security.py"), _fixtures("test_aws_quotas_budgets.py")
+_MESSAGING = _fixtures("test_aws_messaging.py")
 
 ACCOUNT = "111122223333"
 # every (service, operation) the cli-inventory collector may run: reviewed, read-only, no secret values
@@ -90,7 +91,10 @@ OPERATIONS = {
     ("securityhub", "describe-hub"), ("securityhub", "get-enabled-standards"),
     ("securityhub", "describe-organization-configuration"), ("budgets", "describe-budgets"),
     ("budgets", "describe-notifications-for-budget"), ("budgets", "describe-subscribers-for-notification"),
-    ("budgets", "list-tags-for-resource")}
+    ("budgets", "list-tags-for-resource"), ("sqs", "list-queues"), ("sqs", "get-queue-attributes"),
+    ("sqs", "list-queue-tags"), ("events", "list-event-buses"), ("events", "list-tags-for-resource"),
+    ("kinesis", "list-streams"), ("kinesis", "list-tags-for-resource"), ("sesv2", "list-email-identities"),
+    ("sesv2", "get-email-identity"), ("ec2", "describe-instance-connect-endpoints")}
 NEVER = ("get-secret-value", "get-parameter", "get-parameters", "--with-decryption", "describe-instance-attribute",
          "get-function", "get-function-configuration", "get-object", "--debug")
 SSO = "arn:aws:sso:::instance/ssoins-1"
@@ -419,6 +423,54 @@ def test_compute_groups_clusters_and_monitoring_collected_read_as_saved_by_hand(
     kinds = ("compute", "cluster", *_MONITOR.KINDS)
     collected = cli_resources({**files, **network})[0]                  # the compute fixtures' VPC
     by_hand = cli_resources({p: json.dumps(d) for p, d in {**_COMPUTE.CLI, **_MONITOR.CLI}.items()})[0]
+    assert {r.ref: r for r in collected if r.kind in kinds} == {r.ref: r for r in by_hand if r.kind in kinds} != {}
+
+
+def _messaging_answer(argv):
+    """What the AWS CLI prints for the messaging calls (after their --query), from that reader's own fixtures."""
+    f, op = _MESSAGING.CLI, tuple(argv[1:3])
+    arg = dict(zip(argv[3::1], argv[4::1]))
+    queue = (arg.get("--queue-url") or "").rsplit("/", 1)[-1]
+    tagged = {"events": "event-bus-tags", "kinesis": "stream-tags"}
+    answers = {
+        ("sqs", "list-queues"): {"QueueUrls": [f"https://sqs.us-east-1.amazonaws.com/{ACCOUNT}/{q}"
+                                               for q in ("ciam-crm", "ciam-crm-dlq")]},
+        ("sqs", "get-queue-attributes"): {"QueueArn": f"arn:aws:sqs:us-east-1:{ACCOUNT}:{queue}"},
+        ("sqs", "list-queue-tags"): f.get(f"queue-tags/{queue}.json"),
+        ("events", "list-event-buses"): f["event-buses.json"], ("kinesis", "list-streams"): f["streams.json"],
+        ("sesv2", "list-email-identities"): {"EmailIdentities": [
+            {"IdentityName": "example.test", "IdentityType": "DOMAIN"},
+            {"IdentityName": "ops@example.test", "IdentityType": "EMAIL_ADDRESS"}]},
+        ("sesv2", "get-email-identity"): f.get(f"email-identities/{arg.get('--email-identity')}.json")}
+    if op[1] == "list-tags-for-resource" and op[0] in tagged:
+        name = (arg["--resource-arn"].split(":event-bus/", 1) + [""])[1] or arg["--resource-arn"].rsplit("/", 1)[-1]
+        return json.dumps(f[f"{tagged[op[0]]}/{name.replace('/', '%2F')}.json"]), None
+    return (json.dumps(answers[op]), None) if op in answers else _answer(argv)
+
+
+def test_messaging_collected_reads_as_saved_by_hand():
+    """Queues (ARN and tags, projected), event buses' and streams' tags (none asked for the default bus) and SES
+    domain identities (projected: no policies; addresses aren't asked for) read to the same record as the outputs
+    saved by hand."""
+    m = _model(ciamAccountRef=ACCOUNT)
+    c = collect("aws/cli-inventory", COLLECTORS[0], m.d, m, lambda call: _messaging_answer(call.argv))
+    assert c.problems == ()
+    ran = [shlex.split(x.provenance) for x in c.calls]
+    assert {tuple(a[1:3]) for a in ran} <= OPERATIONS
+    for op, projection in (("get-queue-attributes", "queue-arn"), ("list-queue-tags", "queue-tags"),
+                           ("get-email-identity", "email-identity")):
+        assert all(a[a.index("--query") + 1] == PROJECTIONS[projection] for a in ran if a[2] == op)
+    assert [a[a.index("--email-identity") + 1] for a in ran if a[2] == "get-email-identity"] == ["example.test"]
+    buses = [a[a.index("--resource-arn") + 1] for a in ran if a[1:3] == ["events", "list-tags-for-resource"]]
+    assert len(buses) == 2 and not [b for b in buses if b.endswith("/default")]
+    files = {p.split("/", 2)[2]: t for p, t in c.files.items()}
+    assert {"queues/ciam-crm.json", "queue-tags/ciam-crm-dlq.json", "event-bus-tags/ciam-audit.json",
+            "event-bus-tags/aws.partner%2Fexample.com%2F123%2Faudit.json", "stream-tags/ciam-logs.json",
+            "email-identities/example.test.json"} <= set(files)
+    network = {p: json.dumps(_MESSAGING.CLI[p]) for p in ("vpcs.json", "subnets.json")}
+    collected = cli_resources({**files, **network})[0]
+    by_hand = cli_resources({p: json.dumps(d) for p, d in _MESSAGING.CLI.items()})[0]
+    kinds = _MESSAGING.KINDS
     assert {r.ref: r for r in collected if r.kind in kinds} == {r.ref: r for r in by_hand if r.kind in kinds} != {}
 
 

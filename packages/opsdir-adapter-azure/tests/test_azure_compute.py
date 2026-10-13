@@ -1,8 +1,10 @@
 """Azure compute: virtual machine scale sets read as compute groups (the server role they run, SKU, instances, zones,
 image, min/max from the autoscale setting that targets them) and AKS clusters as clusters (version, enabled add-ons,
-node pools), from Terraform state."""
+node pools), from Terraform state; the Azure CLI's az aks list reads as the same cluster (every pool in its
+agentPoolProfiles, add-ons by azurerm's profile keys)."""
 import json
 
+from opsdir_adapter_azure.cli import cli_resources
 from opsdir_adapter_azure.inventory import state_resources
 
 RG = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers"
@@ -57,3 +59,30 @@ def test_an_aks_cluster_with_its_pools_and_enabled_addons():
                          "ciamNodePool": ("ds: Standard_E4s_v5, 3-3", "system: Standard_D2s_v5, 2-3"),
                          "ciamSpansZone": ("1", "2", "3")}
     assert aks.links == {"ciamSubnetRole": ("vnet-ciam/aks",)}     # the subnets its pools' nodes sit in
+
+
+AKS_CLI = {"aks.json": [{
+    "id": AKS, "name": "aks-ciam", "type": "Microsoft.ContainerService/ManagedClusters", "tags": {"BindingRole": "k8s"},
+    "kubernetesVersion": "1.30.3", "currentKubernetesVersion": "1.30.3", "oidcIssuerProfile": {"enabled": True},
+    "securityProfile": {"workloadIdentity": {"enabled": True}},
+    "addonProfiles": {"azurepolicy": {"enabled": True}, "omsagent": {"enabled": False},
+                      "azureKeyvaultSecretsProvider": {"enabled": True, "config": {"enableSecretRotation": "true"}}},
+    "agentPoolProfiles": [
+        {"name": "system", "mode": "System", "vmSize": "Standard_D2s_v5", "count": 2, "enableAutoScaling": True,
+         "minCount": 2, "maxCount": 3, "availabilityZones": ["1", "2"],
+         "vnetSubnetId": f"{RG}/Microsoft.Network/virtualNetworks/vnet-ciam/subnets/aks"},
+        {"name": "ds", "mode": "User", "vmSize": "Standard_E4s_v5", "count": 3, "enableAutoScaling": False,
+         "availabilityZones": ["3"]}]}]}
+
+
+def test_the_cli_reads_the_same_aks_cluster_as_state():
+    resources, _ = cli_resources({p: json.dumps(d) for p, d in AKS_CLI.items()})
+    assert {r.ref: r for r in resources if r.kind == "cluster"} == _by_kind("cluster") != {}
+
+
+def test_a_pool_listed_on_its_own_is_read_once():
+    """az aks nodepool list (or an ARM template's agentPools) beside the cluster: the pool counts once."""
+    pool = {**AKS_CLI["aks.json"][0]["agentPoolProfiles"][1], "id": f"{AKS}/agentPools/ds",
+            "type": "Microsoft.ContainerService/managedClusters/agentPools"}
+    resources, _ = cli_resources({**{p: json.dumps(d) for p, d in AKS_CLI.items()}, "pools.json": json.dumps([pool])})
+    assert {r.ref: r for r in resources if r.kind == "cluster"} == _by_kind("cluster")

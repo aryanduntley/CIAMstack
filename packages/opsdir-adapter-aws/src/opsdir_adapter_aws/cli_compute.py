@@ -102,28 +102,38 @@ def _groups(groups, vpc_of_subnet):
     return [group_pair(g, vpc_of_subnet) for g in groups if g.get("Status") != "Delete in progress"]
 
 
+def cluster_pair(c):
+    """(aws_eks_cluster, attributes) of a cluster as describe-cluster prints it."""
+    config = c.get("resourcesVpcConfig") or {}
+    return ("aws_eks_cluster", {"arn": c.get("arn"), "name": c.get("name"), "version": c.get("version"),
+                                "vpc_id": config.get("vpcId"),
+                                "vpc_config": [{"subnet_ids": config.get("subnetIds") or []}],
+                                "tags": c.get("tags") or {}})
+
+
+def node_group_pair(n):
+    """(aws_eks_node_group, attributes) of a node group as describe-nodegroup prints it."""
+    scale = n.get("scalingConfig") or {}
+    return ("aws_eks_node_group", {"arn": n.get("nodegroupArn"), "cluster_name": n.get("clusterName"),
+                                   "node_group_name": n.get("nodegroupName"),
+                                   "instance_types": n.get("instanceTypes") or [], "subnet_ids": n.get("subnets") or [],
+                                   "scaling_config": [{"min_size": scale.get("minSize"),
+                                                       "max_size": scale.get("maxSize"),
+                                                       "desired_size": scale.get("desiredSize")}],
+                                   "tags": n.get("tags") or {}})
+
+
+def addon_pair(a):
+    """(aws_eks_addon, attributes) of an add-on as describe-addon prints it."""
+    return ("aws_eks_addon", {"arn": a.get("addonArn"), "cluster_name": a.get("clusterName"),
+                              "addon_name": a.get("addonName"), "addon_version": a.get("addonVersion"),
+                              "tags": a.get("tags") or {}})
+
+
 def _eks(outs):
-    clusters = [doc["cluster"] for _, doc in documents(outs, "cluster") if isinstance(doc["cluster"], dict)]
-    nodegroups = [doc["nodegroup"] for _, doc in documents(outs, "nodegroup") if isinstance(doc["nodegroup"], dict)]
-    addons = [doc["addon"] for _, doc in documents(outs, "addon") if isinstance(doc["addon"], dict)]
-    return [*(("aws_eks_cluster", {"arn": c.get("arn"), "name": c.get("name"), "version": c.get("version"),
-                                   "vpc_id": (c.get("resourcesVpcConfig") or {}).get("vpcId"),
-                                   "vpc_config": [{"subnet_ids": (c.get("resourcesVpcConfig") or {}).get("subnetIds")
-                                                   or []}], "tags": c.get("tags") or {}})
-              for c in clusters if c.get("status") != "DELETING"),
-            *(("aws_eks_node_group", {"arn": n.get("nodegroupArn"), "cluster_name": n.get("clusterName"),
-                                      "node_group_name": n.get("nodegroupName"),
-                                      "instance_types": n.get("instanceTypes") or [],
-                                      "subnet_ids": n.get("subnets") or [],
-                                      "scaling_config": [{"min_size": scale.get("minSize"),
-                                                          "max_size": scale.get("maxSize"),
-                                                          "desired_size": scale.get("desiredSize")}],
-                                      "tags": n.get("tags") or {}})
-              for n in nodegroups if n.get("status") != "DELETING" for scale in (n.get("scalingConfig") or {},)),
-            *(("aws_eks_addon", {"arn": a.get("addonArn"), "cluster_name": a.get("clusterName"),
-                                 "addon_name": a.get("addonName"), "addon_version": a.get("addonVersion"),
-                                 "tags": a.get("tags") or {}})
-              for a in addons if a.get("status") != "DELETING")]
+    shapes = (("cluster", cluster_pair), ("nodegroup", node_group_pair), ("addon", addon_pair))
+    return [pair(doc[key]) for key, pair in shapes for _, doc in documents(outs, key)
+            if isinstance(doc[key], dict) and doc[key].get("status") != "DELETING"]
 
 
 def compute_pairs(outs):

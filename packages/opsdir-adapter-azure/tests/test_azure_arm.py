@@ -381,3 +381,84 @@ def test_identities_grants_records_databases_monitoring_and_suppressions_read_as
         return sorted((r.kind, r.name or r.ref, tuple(sorted(r.attrs.items()))) for r in resources if r.kind in kinds)
     assert kept(deployed) == kept(from_state)
     assert {k for k, *_ in kept(deployed)} == set(kinds)
+
+
+AKS = f"{RG}/providers/Microsoft.ContainerService/managedClusters/aks-ciam"
+AKS_SUBNET = f"{RG}/providers/Microsoft.Network/virtualNetworks/vnet-ciam/subnets/aks"
+EMAIL = f"{RG}/providers/Microsoft.Communication/emailServices/ecs-ciam/domains/example.test"
+SELECTORS = {"DKIM": "selector1-azurecomm-prod-net._domainkey", "DKIM2": "selector2-azurecomm-prod-net._domainkey"}
+MESSAGING_TEMPLATE = {**GROUP_TEMPLATE, "resources": [
+    {"type": "Microsoft.ContainerService/managedClusters", "apiVersion": "2026-05-01", "name": "aks-ciam",
+     "location": "[resourceGroup().location]", "tags": {"BindingRole": "k8s"},
+     "properties": {"kubernetesVersion": "1.30.3", "oidcIssuerProfile": {"enabled": True},
+                    "securityProfile": {"workloadIdentity": {"enabled": True}},
+                    "addonProfiles": {"azurepolicy": {"enabled": True}, "omsagent": {"enabled": False},
+                                      "azureKeyvaultSecretsProvider": {"enabled": True}},
+                    "agentPoolProfiles": [{"name": "system", "mode": "System", "vmSize": "Standard_D2s_v5",
+                                           "count": 2, "enableAutoScaling": True, "minCount": 2, "maxCount": 3,
+                                           "availabilityZones": ["1", "2"], "vnetSubnetId": AKS_SUBNET}]}},
+    {"type": "Microsoft.ContainerService/managedClusters/agentPools", "apiVersion": "2026-02-01",
+     "name": "aks-ciam/ds", "properties": {"mode": "User", "vmSize": "Standard_E4s_v5", "count": 3,
+                                           "availabilityZones": ["3"]}},
+    {"type": "Microsoft.ServiceBus/namespaces", "apiVersion": "2026-01-01", "name": "sb",
+     "location": "[resourceGroup().location]"},
+    {"type": "Microsoft.ServiceBus/namespaces/queues", "apiVersion": "2026-01-01", "name": "sb/crm"},
+    {"type": "Microsoft.EventGrid/topics", "apiVersion": "2025-02-15", "name": "audit",
+     "location": "[resourceGroup().location]", "tags": {"Role": "audit-events"}},
+    {"type": "Microsoft.Communication/emailServices", "apiVersion": "2026-03-18", "name": "ecs-ciam",
+     "location": "global"},
+    {"type": "Microsoft.Communication/emailServices/domains", "apiVersion": "2026-03-18",
+     "name": "ecs-ciam/example.test", "location": "global", "tags": {"Role": "mail-sending"},
+     "properties": {"domainManagement": "CustomerManaged", "verificationRecords": {
+         k: {"type": "CNAME", "name": v, "value": f"{v}.azurecomm.net", "ttl": 3600} for k, v in SELECTORS.items()}}},
+    {"type": "Microsoft.Authorization/roleAssignmentScheduleRequests", "apiVersion": "2024-09-01-preview",
+     "scope": "[resourceId('Microsoft.KeyVault/vaults/keys', 'kv-ciam-prod', 'disk-cmk')]",
+     "name": "[guid(resourceId('Microsoft.KeyVault/vaults', 'kv-ciam-prod'), 'active')]",
+     "properties": {"principalId": GROUP, "requestType": "AdminAssign",
+                    "roleDefinitionId": f"[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', "
+                                        f"'{CRYPTO_OFFICER}')]"}}]}
+
+
+def test_aks_messaging_email_and_pim_active_read_as_their_state_does():
+    """A deployment's AKS cluster (its System pool inline, another pool as its own agentPools resource, add-ons by
+    azurerm's profile keys), a Service Bus queue, an Event Grid topic, a Communication Services email domain with
+    the DKIM selectors its verification names, and a PIM active assignment request read to the same resources as the
+    Terraform state of the same resources."""
+    texts = {f"rg/{p}": json.dumps(d) for p, d in {"template.json": MESSAGING_TEMPLATE,
+                                                    "deployment.json": _deployment()}.items()}
+    pairs = (("azurerm_kubernetes_cluster", {
+                 "id": AKS, "name": "aks-ciam", "kubernetes_version": "1.30.3", "azure_policy_enabled": True,
+                 "workload_identity_enabled": True, "oidc_issuer_enabled": True, "oms_agent": [],
+                 "key_vault_secrets_provider": [{"secret_rotation_enabled": True}], "tags": {"BindingRole": "k8s"},
+                 "default_node_pool": [{"name": "system", "vm_size": "Standard_D2s_v5", "min_count": 2,
+                                        "max_count": 3, "zones": ["1", "2"], "vnet_subnet_id": AKS_SUBNET}]}),
+             ("azurerm_kubernetes_cluster_node_pool", {"kubernetes_cluster_id": AKS, "name": "ds",
+                                                       "vm_size": "Standard_E4s_v5", "node_count": 3, "zones": ["3"]}),
+             ("azurerm_servicebus_queue", {"id": f"{RG}/providers/Microsoft.ServiceBus/namespaces/sb/queues/crm",
+                                           "name": "crm"}),
+             ("azurerm_eventgrid_topic", {"id": f"{RG}/providers/Microsoft.EventGrid/topics/audit", "name": "audit",
+                                          "tags": {"Role": "audit-events"}}),
+             ("azurerm_email_communication_service_domain", {
+                 "id": EMAIL, "name": "example.test", "domain_management": "CustomerManaged",
+                 "tags": {"Role": "mail-sending"},
+                 "verification_records": [{k.lower(): [{"name": v}] for k, v in SELECTORS.items()}]}),
+             ("azurerm_pim_active_role_assignment", {
+                 "scope": f"{KV}/keys/disk-cmk", "principal_id": GROUP,
+                 "role_definition_id": f"/subscriptions/{SUB}/providers/Microsoft.Authorization/roleDefinitions/"
+                                       f"{CRYPTO_OFFICER}"}))
+    kinds = ("cluster", "stream", "sending", "identity")
+    deployed, _ = arm_resources(texts)
+    from_state, _ = arm_resources({"terraform.tfstate": _state_of(pairs)})
+
+    def kept(resources):
+        return sorted((r.kind, r.ref, r.name, tuple(sorted(r.attrs.items())), tuple(sorted(r.links.items())))
+                      for r in resources if r.kind in kinds)
+    assert kept(deployed) == kept(from_state)
+    assert {k for k, *_ in kept(deployed)} == set(kinds)
+    aks = next(r for r in deployed if r.kind == "cluster")
+    assert aks.attrs["ciamNodePool"] == ("ds: Standard_E4s_v5, 3-3", "system: Standard_D2s_v5, 2-3")
+    assert aks.attrs["ciamClusterAddon"] == ("azure-policy", "key-vault-secrets-provider", "oidc-issuer",
+                                             "workload-identity")
+    assert next(r for r in deployed if r.kind == "sending").attrs["ciamDkimVerified"] == ("FALSE",)  # not in DNS
+    grants = next(r for r in deployed if r.kind == "identity" and r.ref == GROUP).attrs["ciamGrant"]
+    assert grants and not any("eligible" in g for g in grants)

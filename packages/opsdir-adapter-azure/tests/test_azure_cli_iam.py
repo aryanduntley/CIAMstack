@@ -1,9 +1,12 @@
 """Azure access control read from the Azure CLI's and `az rest`'s outputs, as from Terraform state: identities and
 federated credentials, role assignments (conditions; custom roles expanded, built-in definitions naming roles), PIM
-eligibility with the role's name, deny assignments as denials, vault access policies, policy assignments, bastions."""
+eligibility with the role's name, deny assignments as denials, vault access policies, policy assignments, bastions.
+A PIM active assignment is a role assignment live (decision 2720): role assignment list gives the same grant as its
+state."""
 import json
 
 from opsdir_adapter_azure.cli import cli_resources
+from opsdir_adapter_azure.inventory import state_resources
 
 SUB = "/subscriptions/0000-1111"
 RG = f"{SUB}/resourceGroups/rg-ciam-prod"
@@ -87,3 +90,21 @@ def test_access_control_from_the_cli_reads_as_from_state():
     assert fence.attrs["ciamDenies"] == ("key-deletion",)
     assert _one(resources, "access", f"{RG}/providers/Microsoft.Network/bastionHosts/bas-ciam").role == "access-bastion"
     assert not [n for n in notices if "aren't Azure CLI output" in n]
+
+
+def test_a_pim_active_assignment_reads_from_role_assignment_list_as_from_its_state():
+    """az role assignment list holds PIM's active assignments (each schedule instance's originRoleAssignmentId), so
+    the CLI reads the same grant as azurerm_pim_active_role_assignment; no schedule instance is read."""
+    role = f"{SUB}{AUTH}/roleDefinitions/14b46e9e-c2b7-41b4-b07b-48a6ebf60603"
+    state = json.dumps({"version": 4, "terraform_version": "1.9.0", "resources": [{
+        "mode": "managed", "type": "azurerm_pim_active_role_assignment", "name": "kv",
+        "provider": 'provider["registry.terraform.io/hashicorp/azurerm"]',
+        "instances": [{"attributes": {"scope": VAULT, "principal_id": GROUP, "role_definition_id": role,
+                                      "role_definition_name": "Key Vault Crypto Officer"}}]}]})
+    cli = {"assignments.json": json.dumps([{"type": "Microsoft.Authorization/roleAssignments", "scope": VAULT,
+                                            "principalId": GROUP, "roleDefinitionId": role,
+                                            "roleDefinitionName": "Key Vault Crypto Officer"}])}
+
+    def grants(resources):
+        return {r.ref: r.attrs.get("ciamGrant") for r in resources if r.kind == "identity"}
+    assert grants(cli_resources(cli)[0]) == grants(state_resources(state)[0]) != {}

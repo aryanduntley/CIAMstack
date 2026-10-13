@@ -44,6 +44,9 @@ of the matching hashicorp/azurerm resource, so the same mapping reads them as re
   Defender for Cloud: plans (az security pricing list), the machines' vulnerability assessment setting (az rest),
   continuous exports (az security automation list)                 see cli_security.py
   consumption budgets (az rest at the subscription and resource group)   see cli_budgets.py
+  scale sets, autoscale settings, AKS clusters and node pools      see cli_compute.py
+  Service Bus queues and topics, Event Hubs, Event Grid topics, Communication Services email domains
+                                                                   see cli_messaging.py
 Subnets, interfaces and VMs outside the listed virtual networks are counted, not read; secrets, keys and containers
 are listed per vault and account, and function apps per resource group, so the importer counts rather than lists the
 ones the record doesn't have and nothing names a role for.
@@ -62,6 +65,7 @@ from .cli_security import security_items
 from .cli_identity import CA_KIND, identity_items, is_policy
 from .cli_backup import backup_items
 from .cli_compute import compute_items
+from .cli_messaging import messaging_items
 from .cli_disk import disk_items, os_disk_of
 from .cli_database import database_items
 from .cli_storage import storage_items
@@ -379,7 +383,8 @@ def items_pairs(items):
                             *_functions(items), *iam_items(items), *edge_items(items), *network_items(items),
                             *database_items(items), *storage_items(items), *disk_items(items), *backup_items(items),
                             *audit_items(items), *identity_items(items), *monitor_items(items),
-                            *security_items(items), *budget_items(items), *compute_items(items)]))
+                            *security_items(items), *budget_items(items), *compute_items(items),
+                            *messaging_items(items)]))
 
 
 def items_resources(items):

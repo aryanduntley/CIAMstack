@@ -15,7 +15,7 @@
 """
 import re
 
-from .cli_outputs import file_name, items, named, tags_of
+from .cli_outputs import file_name, folder_tags, items, under
 
 KEYS = ("MetricAlarms", "logGroups", "Canaries", "Topics")
 TAG_KEYS = ("tags",)                      # a log group's tags; alarms' and topics' are Tags, recognized last
@@ -25,17 +25,11 @@ _ENGINE = re.compile(r"^arn:([^:]+):lambda:([^:]+):(\d+):")
 
 def is_tags_of(path):
     """Whether a file is a monitoring resource's tags (saved under alarm-tags/, log-group-tags/ or topic-tags/)."""
-    return any(path.startswith(f"{t}/") or f"/{t}/" in path for t in TAGS)
-
-
-def _tags(outs, folder):
-    """{resource name: tags} of the tag outputs saved under folder/ (a Tags list or a tags map)."""
-    return {named(p): (doc["tags"] if k == "tags" else tags_of(doc.get("Tags")))
-            for p, k, doc in outs if k in ("Tags", "tags") and (p.startswith(f"{folder}/") or f"/{folder}/" in p)}
+    return any(under(path, t) for t in TAGS)
 
 
 def _alarms(outs):
-    tags = _tags(outs, "alarm-tags")
+    tags = folder_tags(outs, "alarm-tags")
     return [("aws_cloudwatch_metric_alarm", {
                 "arn": a.get("AlarmArn"), "alarm_name": a.get("AlarmName"),
                 "alarm_description": a.get("AlarmDescription"), "namespace": a.get("Namespace"),
@@ -51,7 +45,7 @@ def _alarms(outs):
 
 
 def _log_groups(outs):
-    tags = _tags(outs, "log-group-tags")
+    tags = folder_tags(outs, "log-group-tags")
     return [("aws_cloudwatch_log_group", {
                 "arn": g.get("logGroupArn") or (g.get("arn") or "").removesuffix(":*") or None,
                 "name": g.get("logGroupName"), "retention_in_days": g.get("retentionInDays", 0),
@@ -80,7 +74,7 @@ def _canaries(outs):
 
 
 def _topics(outs):
-    tags = _tags(outs, "topic-tags")
+    tags = folder_tags(outs, "topic-tags")
     return [("aws_sns_topic", {"arn": t.get("TopicArn"), "name": t["TopicArn"].rsplit(":", 1)[-1],
                                "tags": tags.get(t["TopicArn"].rsplit(":", 1)[-1], {})})
             for t in items(outs, "Topics") if t.get("TopicArn")]

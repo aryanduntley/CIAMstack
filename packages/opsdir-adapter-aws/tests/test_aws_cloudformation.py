@@ -2,7 +2,9 @@
 short tags, parameters, a DNS alias and an Elastic IP linked with Fn::GetAtt) that match the record change nothing;
 a changed template replaces the record's values; functions that aren't evaluated are counted and leave the record's
 values alone; resources without a physical ID, other resource types and unknown files are named; secret values in a
-template are never read."""
+template are never read. Each family (IAM, edge, DNS, data, volumes and backups, observability, EKS, hosted zones,
+resource policies and Instance Connect, messaging) reads to the same resources as the Terraform state of the same
+resources."""
 import json
 
 from opsdir.connectors.importing import import_changes
@@ -582,3 +584,132 @@ def test_volumes_snapshot_policies_backups_alarms_and_canaries_read_as_their_sta
     kinds = ("volume", "snapshot-policy", "backup-vault", "backup-plan", "alarm", "canary")
     stacked, state = _same(template, physical, pairs, kinds)
     assert stacked == state and len(stacked) == len(kinds)
+
+
+def test_eks_clusters_with_their_node_groups_and_addons_read_as_their_state_does():
+    """A cluster, its node groups (one named only by its Ref) and an add-on read to the same cluster as their state."""
+    template = {"Resources": {
+        "Eks": {"Type": "AWS::EKS::Cluster", "Properties": {
+            "Name": "ciam-prod", "Version": "1.30", "RoleArn": f"arn:aws:iam::{ACCOUNT}:role/eks",
+            "ResourcesVpcConfig": {"SubnetIds": ["subnet-a", "subnet-b"]}}},
+        "System": {"Type": "AWS::EKS::Nodegroup", "Properties": {
+            "ClusterName": {"Ref": "Eks"}, "NodegroupName": "system", "InstanceTypes": ["m6i.large"],
+            "Subnets": ["subnet-a"], "ScalingConfig": {"MinSize": 2, "MaxSize": 5, "DesiredSize": 3},
+            "Tags": {"Team": "ciam"}}},
+        "Batch": {"Type": "AWS::EKS::Nodegroup", "Properties": {
+            "ClusterName": {"Ref": "Eks"}, "Subnets": ["subnet-b"], "ScalingConfig": {"MinSize": 1, "MaxSize": 2}}},
+        "Cni": {"Type": "AWS::EKS::Addon", "Properties": {
+            "ClusterName": {"Ref": "Eks"}, "AddonName": "vpc-cni", "AddonVersion": "v1.18.1"}}}}
+    physical = {"Eks": "ciam-prod", "System": "ciam-prod/system", "Batch": "ciam-prod/batch-0a1b",
+                "Cni": "ciam-prod|vpc-cni"}
+    pairs = (("aws_eks_cluster", {"arn": f"arn:aws:eks:us-east-1:{ACCOUNT}:cluster/ciam-prod", "name": "ciam-prod",
+                                  "version": "1.30", "vpc_config": [{"subnet_ids": ["subnet-a", "subnet-b"]}]}),
+             ("aws_eks_node_group", {"cluster_name": "ciam-prod", "node_group_name": "system",
+                                     "instance_types": ["m6i.large"], "subnet_ids": ["subnet-a"],
+                                     "scaling_config": [{"min_size": 2, "max_size": 5, "desired_size": 3}]}),
+             ("aws_eks_node_group", {"cluster_name": "ciam-prod", "node_group_name": "batch-0a1b",
+                                     "subnet_ids": ["subnet-b"], "scaling_config": [{"min_size": 1, "max_size": 2}]}),
+             ("aws_eks_addon", {"cluster_name": "ciam-prod", "addon_name": "vpc-cni", "addon_version": "v1.18.1"}))
+    stacked, state = _same(template, physical, pairs, ("cluster",))
+    assert stacked == state and len(stacked) == 1
+    assert "batch-0a1b: ?, 1-2" in stacked[0] and "vpc-cni v1.18.1" in stacked[0]
+
+
+def test_hosted_zones_resource_policies_and_instance_connect_read_as_their_state_does():
+    """A public and a private hosted zone, a bucket's and a secret's policies granting a role, and an EC2 Instance
+    Connect Endpoint read to the same zones, identity grants and access path as their state."""
+    reader_arn = f"arn:aws:iam::{ACCOUNT}:role/ciam-prod-reader"
+    trust = {"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Action": "sts:AssumeRole",
+                                                      "Principal": {"Service": "ec2.amazonaws.com"}}]}
+
+    def allow(action, resource, principal):
+        return {"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Action": action, "Resource": resource,
+                                                        "Principal": {"AWS": principal}}]}
+    template = {"Resources": {
+        "Zone": {"Type": "AWS::Route53::HostedZone", "Properties": {
+            "Name": "example.test.", "HostedZoneTags": [{"Key": "Role", "Value": "zone-public"}]}},
+        "Internal": {"Type": "AWS::Route53::HostedZone", "Properties": {
+            "Name": "internal.example.test", "VPCs": [{"VPCId": "vpc-1", "VPCRegion": "us-east-1"}]}},
+        "Reader": {"Type": "AWS::IAM::Role", "Properties": {"RoleName": "ciam-prod-reader",
+                                                            "AssumeRolePolicyDocument": trust}},
+        "ExportsPolicy": {"Type": "AWS::S3::BucketPolicy", "Properties": {
+            "Bucket": "ciam-exports",
+            "PolicyDocument": allow("s3:GetObject", "arn:aws:s3:::ciam-exports/*", {"Fn::GetAtt": ["Reader", "Arn"]})}},
+        "SecretPolicy": {"Type": "AWS::SecretsManager::ResourcePolicy", "Properties": {   # by name; its Ref is the ARN
+            "SecretId": "ciam/prod/ds-root-password", "ResourcePolicy": allow("secretsmanager:GetSecretValue", "*",
+                                                        {"Fn::GetAtt": ["Reader", "Arn"]})}},
+        "Eice": {"Type": "AWS::EC2::InstanceConnectEndpoint", "Properties": {
+            "SubnetId": "subnet-a", "Tags": [{"Key": "Name", "Value": "eice-prod"},
+                                             {"Key": "Role", "Value": "access-session"}]}}}}
+    physical = {"Zone": "Z1", "Internal": "Z2", "Reader": "ciam-prod-reader", "ExportsPolicy": "ciam-exports",
+                "SecretPolicy": SECRET, "Eice": "eice-0123"}
+    pairs = (("aws_route53_zone", {"zone_id": "Z1", "name": "example.test", "tags": {"Role": "zone-public"}}),
+             ("aws_route53_zone", {"zone_id": "Z2", "name": "internal.example.test",
+                                   "vpc": [{"vpc_id": "vpc-1", "vpc_region": "us-east-1"}]}),
+             ("aws_iam_role", {"name": "ciam-prod-reader", "arn": reader_arn, "assume_role_policy": json.dumps(trust)}),
+             ("aws_s3_bucket_policy", {"bucket": "ciam-exports", "policy": json.dumps(
+                 allow("s3:GetObject", "arn:aws:s3:::ciam-exports/*", reader_arn))}),
+             ("aws_secretsmanager_secret_policy", {"secret_arn": SECRET, "policy": json.dumps(
+                 allow("secretsmanager:GetSecretValue", "*", reader_arn))}),
+             ("aws_ec2_instance_connect_endpoint", {
+                 "id": "eice-0123", "arn": f"arn:aws:ec2:us-east-1:{ACCOUNT}:instance-connect-endpoint/eice-0123",
+                 "subnet_id": "subnet-a", "tags": {"Name": "eice-prod", "Role": "access-session"}}))
+    stacked, state = _same(template, physical, pairs, ("zone", "identity", "access"))
+    assert stacked == state and len(stacked) == 4
+    assert "'ciamZoneVisibility': ('private',)" in next(r for r in stacked if "internal.example.test" in r)
+    reader = next(r for r in stacked if "ciam-prod-reader" in r)
+    assert "s3:GetObject" in reader and "secretsmanager:GetSecretValue" in reader
+
+
+def test_queues_topics_buses_streams_and_ses_identities_read_as_their_state_does():
+    """A queue (its Ref a URL), a topic, an event bus, a data stream and a domain identity with its SPF and DMARC
+    records read to the same stream carriers and sending identity as their state; an address identity is left out.
+    Whether SES verified the domain's DKIM isn't in a template, so the state here doesn't say either."""
+    template = {"Resources": {
+        "Crm": {"Type": "AWS::SQS::Queue", "Properties": {
+            "QueueName": "ciam-crm", "Tags": [{"Key": "Role", "Value": "crm-queue"}]}},
+        "Alerts": {"Type": "AWS::SNS::Topic", "Properties": {"TopicName": "ciam-alerts"}},
+        "Audit": {"Type": "AWS::Events::EventBus", "Properties": {"Name": "ciam-audit"}},
+        "Logs": {"Type": "AWS::Kinesis::Stream", "Properties": {
+            "Name": "ciam-logs", "ShardCount": 1, "Tags": [{"Key": "Role", "Value": "log-stream"}]}},
+        "Domain": {"Type": "AWS::SES::EmailIdentity", "Properties": {"EmailIdentity": "example.test"}},
+        "Ops": {"Type": "AWS::SES::EmailIdentity", "Properties": {"EmailIdentity": "ops@example.test"}},
+        "Spf": {"Type": "AWS::Route53::RecordSet", "Properties": {
+            "HostedZoneId": "Z1", "Name": "example.test.", "Type": "TXT", "TTL": "300",
+            "ResourceRecords": ['"v=spf1 include:amazonses.com ~all"']}},
+        "Dmarc": {"Type": "AWS::Route53::RecordSet", "Properties": {
+            "HostedZoneId": "Z1", "Name": "_dmarc.example.test.", "Type": "TXT", "TTL": "300",
+            "ResourceRecords": ['"v=DMARC1; p=reject"']}}}}
+    physical = {"Crm": f"https://sqs.us-east-1.amazonaws.com/{ACCOUNT}/ciam-crm",
+                "Alerts": f"arn:aws:sns:us-east-1:{ACCOUNT}:ciam-alerts", "Audit": "ciam-audit", "Logs": "ciam-logs",
+                "Domain": "example.test", "Ops": "ops@example.test", "Spf": "spf", "Dmarc": "dmarc"}
+    pairs = (("aws_sqs_queue", {"arn": f"arn:aws:sqs:us-east-1:{ACCOUNT}:ciam-crm", "name": "ciam-crm",
+                                "tags": {"Role": "crm-queue"}}),
+             ("aws_sns_topic", {"arn": f"arn:aws:sns:us-east-1:{ACCOUNT}:ciam-alerts", "name": "ciam-alerts"}),
+             ("aws_cloudwatch_event_bus", {"arn": f"arn:aws:events:us-east-1:{ACCOUNT}:event-bus/ciam-audit",
+                                           "name": "ciam-audit"}),
+             ("aws_kinesis_stream", {"arn": f"arn:aws:kinesis:us-east-1:{ACCOUNT}:stream/ciam-logs",
+                                     "name": "ciam-logs", "tags": {"Role": "log-stream"}}),
+             ("aws_sesv2_email_identity", {"arn": f"arn:aws:ses:us-east-1:{ACCOUNT}:identity/example.test",
+                                           "email_identity": "example.test"}),
+             ("aws_sesv2_email_identity", {"arn": f"arn:aws:ses:us-east-1:{ACCOUNT}:identity/ops@example.test",
+                                           "email_identity": "ops@example.test"}),
+             ("aws_route53_record", {"name": "example.test", "zone_id": "Z1", "type": "TXT", "ttl": 300,
+                                     "records": ["v=spf1 include:amazonses.com ~all"]}),
+             ("aws_route53_record", {"name": "_dmarc.example.test", "zone_id": "Z1", "type": "TXT", "ttl": 300,
+                                     "records": ["v=DMARC1; p=reject"]}))
+    stacked, state = _same(template, physical, pairs, ("stream", "sending"))
+    assert stacked == state and len(stacked) == 5
+    sending = next(r for r in stacked if "ses-example.test" in r)
+    assert "'ciamSpfAuthorized': ('TRUE',)" in sending and "'ciamDmarcPolicy': ('reject',)" in sending
+
+
+def test_a_partner_event_bus_keeps_its_whole_name():
+    """A partner event bus's name holds '/': its Ref is the whole name, and so are its name and ARN."""
+    name = "aws.partner/example.com/123/audit"
+    template = {"Resources": {"Partner": {"Type": "AWS::Events::EventBus", "Properties": {
+        "Name": name, "EventSourceName": name}}}}
+    pairs = (("aws_cloudwatch_event_bus", {"arn": f"arn:aws:events:us-east-1:{ACCOUNT}:event-bus/{name}",
+                                           "name": name}),)
+    stacked, state = _same(template, {"Partner": name}, pairs, ("stream",))
+    assert stacked == state and len(stacked) == 1 and f"event-bus/{name}" in stacked[0]

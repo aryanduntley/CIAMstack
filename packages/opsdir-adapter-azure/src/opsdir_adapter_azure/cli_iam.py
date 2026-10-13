@@ -12,6 +12,11 @@ Terraform state. Pure. Items are recognized by their ARM type (opsdir_adapter_az
                                                 eligible, not active; the role's name from expandedProperties)
   an ARM template's eligibility requests        Microsoft.Authorization/roleEligibilityScheduleRequests (AdminAssign:
                                                 what the template makes eligible)
+  an ARM template's active assignment requests  Microsoft.Authorization/roleAssignmentScheduleRequests (AdminAssign:
+                                                PIM active, as azurerm_pim_active_role_assignment). Live, an active
+                                                PIM assignment is a role assignment (its schedule instance's
+                                                originRoleAssignmentId), so role assignment list already holds it:
+                                                schedule instances aren't read (decision 2720)
   az rest …/denyAssignments                     Microsoft.Authorization/denyAssignments: denials on the principals they
                                                 name (everyone, 00000000-…, less the excluded ones)
   az keyvault show                              Microsoft.KeyVault/vaults: the vault's access policies
@@ -21,13 +26,16 @@ Terraform state. Pure. Items are recognized by their ARM type (opsdir_adapter_az
 """
 import re
 
+from .cli_items import flattened
+
 FEDERATED = "microsoft.managedidentity/userassignedidentities/federatedidentitycredentials"
 # what an ARM template's reader reads of these
 ELIGIBLE = ("microsoft.authorization/roleeligibilityscheduleinstances",
             "microsoft.authorization/roleeligibilityschedulerequests")
+ACTIVE = "microsoft.authorization/roleassignmentschedulerequests"
 READ = ("microsoft.managedidentity/userassignedidentities", FEDERATED, "microsoft.authorization/roleassignments",
         "microsoft.authorization/roledefinitions", "microsoft.authorization/policyassignments",
-        "microsoft.network/bastionhosts", ELIGIBLE[1])
+        "microsoft.network/bastionhosts", ELIGIBLE[1], ACTIVE)
 _CREDENTIAL = re.compile(r"/federatedidentitycredentials/[^/]+$", re.IGNORECASE)
 
 
@@ -37,13 +45,8 @@ def _assigned_at(assignment_id):
     return assignment_id[:at] if at > 0 else None
 
 
-def _props(item):
-    """An item's fields, its properties flattened into them (as the CLI prints most resources)."""
-    return {**item, **(item.get("properties") or {})} if isinstance(item.get("properties"), dict) else item
-
-
 def _of(items, kind):
-    return [_props(i) for k, i in items if k == kind]
+    return [flattened(i) for k, i in items if k == kind]
 
 
 def _permissions(blocks):
@@ -97,6 +100,12 @@ def iam_items(items):
                                                     "condition": p.get("condition")})
           for kind in ELIGIBLE for p in _of(items, kind)
           if str(p.get("requestType") or "AdminAssign").lower() == "adminassign"),
+        *(("azurerm_pim_active_role_assignment", {"scope": p.get("scope"), "role_definition_name": role(p),
+                                                  "role_definition_id": p.get("roleDefinitionId"),
+                                                  "principal_id": p.get("principalId"),
+                                                  "principal_type": p.get("principalType"),
+                                                  "condition": p.get("condition")})
+          for p in _of(items, ACTIVE) if str(p.get("requestType") or "AdminAssign").lower() == "adminassign"),
         *(("azure_deny_assignment", {"id": d.get("id"), "name": d.get("denyAssignmentName") or d.get("name"),
                                      "scope": d.get("scope"), "permissions": _permissions(d.get("permissions")),
                                      "principals": [p.get("id") for p in d.get("principals") or ()],

@@ -1,15 +1,17 @@
 """AWS IAM read from Terraform state into the record's identities, guardrails and access paths: a role's trust, grants,
 denials and boundary; resource policies on the roles they name; permission sets by group; control policies with what
-they prevent; the key that encrypts a secret; and what the record then says of a permission."""
+they prevent; the key that encrypts a secret; and what the record then says of a permission. EC2 Instance Connect
+Endpoints from the AWS CLI read as the same session access paths as their state."""
 import json
 from types import SimpleNamespace
 
 from opsdir.core.directory import make_directory, one, values
 from opsdir.domains.access.grants import ALLOWED, DENIED, UNKNOWN, effective
 from opsdir_adapter_aws.access import ACCESS
+from opsdir_adapter_aws.cli import cli_resources
 from opsdir_adapter_aws.guardrails import _statements
 from opsdir_adapter_aws.iam import iam_resources
-from opsdir_adapter_aws.inventory import read_terraform_state
+from opsdir_adapter_aws.inventory import read_terraform_state, state_resources
 from support import BARE, SUPERS, imported_directory
 
 ACCT = "arn:aws:iam::111122223333"
@@ -173,3 +175,28 @@ def test_a_deny_or_a_ceiling_in_the_state_decides_it():
     env, _, _ = _imported(_state(conditional))
     identity = next(e for e in env.bindings if one(e, "ciamBindingRole") == "identity-pf")
     assert effective(ACCESS, env, "read-secret pf-admin-password", identity).state == UNKNOWN
+
+
+def test_the_cli_reads_instance_connect_endpoints_as_state_does():
+    """EC2 Instance Connect Endpoints from describe-instance-connect-endpoints read as the same session access paths
+    as their state; one in another VPC is counted, not read, and a failed one is skipped."""
+    arn = "arn:aws:ec2:us-east-1:111122223333:instance-connect-endpoint/eice-0123"
+    tags = {"Name": "eice-prod", "Role": "access-session"}
+    state = json.dumps({"version": 4, "terraform_version": "1.9.0", "resources": [{
+        "mode": "managed", "type": "aws_ec2_instance_connect_endpoint", "name": "prod",
+        "provider": 'provider["registry.terraform.io/hashicorp/aws"]',
+        "instances": [{"attributes": {"id": "eice-0123", "arn": arn, "subnet_id": "subnet-a", "vpc_id": "vpc-1",
+                                      "tags": tags}}]}]})
+    endpoint = {"InstanceConnectEndpointId": "eice-0123", "InstanceConnectEndpointArn": arn, "SubnetId": "subnet-a",
+                "VpcId": "vpc-1", "State": "create-complete",
+                "Tags": [{"Key": k, "Value": v} for k, v in tags.items()]}
+    cli = {"vpcs.json": {"Vpcs": [{"VpcId": "vpc-1", "CidrBlock": "10.0.0.0/16"}]},
+           "instance-connect-endpoints.json": {"InstanceConnectEndpoints": [
+               endpoint, {**endpoint, "InstanceConnectEndpointId": "eice-other", "VpcId": "vpc-2",
+                          "InstanceConnectEndpointArn": arn.replace("0123", "other")},
+               {**endpoint, "InstanceConnectEndpointId": "eice-failed", "State": "create-failed",
+                "InstanceConnectEndpointArn": arn.replace("0123", "failed")}]}}
+    read, notices = cli_resources({p: json.dumps(d) for p, d in cli.items()})
+    access = {r.ref: r for r in read if r.kind == "access"}
+    assert access == {r.ref: r for r in state_resources(state)[0] if r.kind == "access"} and list(access) == [arn]
+    assert "aws_ec2_instance_connect_endpoint (1): outside the listed VPCs (vpc-1); not read" in notices

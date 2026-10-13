@@ -13,9 +13,10 @@ collector reads are kept out of the export (_work/).
 Outputs that can carry secret material are projected to the fields the reader uses (--query), so the values are never
 fetched: Lambda functions (environment variables), CodeBuild projects (environment variables), Scheduler schedules and
 EventBridge targets (their input), CodePipeline pipelines (action configuration), CloudFront distributions (origin
-custom headers). Nothing reads secret values (no get-secret-value, no SSM parameters, no user data). Calls that answer
-"nothing there" for a resource without that setting (a bucket without a policy, Shield without a subscription, a key
-without rotation support) leave their file out.
+custom headers). Messaging is projected to what the reader uses too: a queue's ARN and tags, an SES identity's type,
+DKIM status and tags (not its sending authorization policies). Nothing reads secret values (no get-secret-value, no SSM
+parameters, no user data). Calls that answer "nothing there" for a resource without that setting (a bucket without a
+policy, Shield without a subscription, a key without rotation support) leave their file out.
 
 Security services: GuardDuty's detectors (each one's get-detector saved by its id), Inspector's account status, AWS
 Config's recorders, delivery channels and retention, Security Hub's hub and enabled standards, and each service's
@@ -86,6 +87,9 @@ PROJECTIONS = {
     "canaries": "{Canaries: Canaries[].{Name: Name, Schedule: Schedule, Tags: Tags, EngineArn: EngineArn, "
                 "ArtifactS3Location: ArtifactS3Location, ExecutionRoleArn: ExecutionRoleArn, "
                 "RuntimeVersion: RuntimeVersion}}",
+    "queue-arn": "{QueueArn: Attributes.QueueArn}",
+    "queue-tags": "{Tags: Tags}",                     # always a Tags key, also for a queue without tags
+    "email-identity": "{IdentityType: IdentityType, DkimAttributes: {Status: DkimAttributes.Status}, Tags: Tags}",
 }
 # What a service's organization configuration (and a Security Hub not enabled) answers in an account that isn't its
 # delegated administrator: the error codes the API references document for these operations, generic ones (research:
@@ -210,6 +214,11 @@ def _listings(m, vpc):
         ("log-groups.json", _aws(m, "logs", "describe-log-groups")),
         ("canaries.json", _aws(m, "synthetics", "describe-canaries", query=PROJECTIONS["canaries"])),
         ("topics.json", _aws(m, "sns", "list-topics")),
+        (f"{WORK}queues.json", _aws(m, "sqs", "list-queues")),
+        ("event-buses.json", _aws(m, "events", "list-event-buses")),
+        ("streams.json", _aws(m, "kinesis", "list-streams")),
+        (f"{WORK}email-identities.json", _aws(m, "sesv2", "list-email-identities")),
+        ("instance-connect-endpoints.json", _aws(m, "ec2", "describe-instance-connect-endpoints", *in_vpc)),
         (f"{WORK}guardduty-detectors.json", _aws(m, "guardduty", "list-detectors")),
         ("inspector2.json", _aws(m, "inspector2", "batch-get-account-status")),
         ("config-recorders.json", _aws(m, "configservice", "describe-configuration-recorders")),
@@ -321,6 +330,7 @@ def _details(m, done):
                         _aws(m, "guardduty", "describe-organization-configuration", "--detector-id", d,
                              absent=NOT_ADMIN["guardduty"])))),
         *_monitor_details(m, done),
+        *_messaging_details(m, done),
         *(((f"{WORK}permission-sets.json", _aws(m, "sso-admin", "list-permission-sets", "--instance-arn", sso)),)
           if sso else ()),
         *((p, c) for ps in (_doc(done, f"{WORK}permission-sets.json").get("PermissionSets") or ()) if sso
@@ -365,6 +375,28 @@ def _monitor_details(m, done):
           if name and (arn or star)),
         *((tags_path("topic-tags", _last(arn)), _aws(m, "sns", "list-tags-for-resource", "--resource-arn", arn))
           for (arn,) in _items(done, "topics.json", "Topics", "TopicArn") if arn))
+
+
+def _messaging_details(m, done):
+    """(path, call) of each queue's ARN and tags (named by the queue), each event bus's and stream's tags (the default
+    bus, which the record leaves out, has none asked), and each SES domain identity (addresses aren't read)."""
+    queues = [(url, url.rsplit("/", 1)[-1]) for url in _doc(done, f"{WORK}queues.json").get("QueueUrls") or ()
+              if isinstance(url, str)]
+    return (
+        *((p, c) for url, name in queues for p, c in (
+            (f"queues/{file_name(name)}.json", _aws(m, "sqs", "get-queue-attributes", "--queue-url", url,
+                                                    "--attribute-names", "QueueArn", query=PROJECTIONS["queue-arn"])),
+            (tags_path("queue-tags", name), _aws(m, "sqs", "list-queue-tags", "--queue-url", url,
+                                                 query=PROJECTIONS["queue-tags"])))),
+        *((tags_path("event-bus-tags", name), _aws(m, "events", "list-tags-for-resource", "--resource-arn", arn))
+          for name, arn in _items(done, "event-buses.json", "EventBuses", "Name", "Arn") if arn and name != "default"),
+        *((tags_path("stream-tags", name), _aws(m, "kinesis", "list-tags-for-resource", "--resource-arn", arn))
+          for name, arn, status in _items(done, "streams.json", "StreamSummaries", "StreamName", "StreamARN",
+                                          "StreamStatus") if arn and status != "DELETING"),
+        *((f"email-identities/{file_name(name)}.json",
+           _aws(m, "sesv2", "get-email-identity", "--email-identity", name, query=PROJECTIONS["email-identity"]))
+          for name, kind in _items(done, f"{WORK}email-identities.json", "EmailIdentities", "IdentityName",
+                                   "IdentityType") if name and kind == "DOMAIN"))
 
 
 def _permission_set(m, done, sso, ps):
