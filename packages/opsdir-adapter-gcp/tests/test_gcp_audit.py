@@ -72,6 +72,10 @@ def test_an_organization_trail_into_a_locked_bucket_or_a_log_bucket():
     assert any(f'destination            = "logging.googleapis.com/{LOG_BUCKET}"' in x for x in out)
     assert "# NOTE: audit trail to-siem: not rendered: a sink exports to a bucket, a log bucket, BigQuery or " \
            "Pub/Sub, and siem is none of those" in out
+    from opsdir.core.notes import note_comment
+    from opsdir_adapter_gcp.audit import audit_notes
+    (siem_,) = audit_notes(alpha)
+    assert f"# {note_comment(siem_)}" in out and (siem_.area, siem_.severity) == ("Audit", "blocker")
 
 
 def test_the_activity_a_sink_exports_comes_from_its_filter_and_its_parent_s_audit_configs():

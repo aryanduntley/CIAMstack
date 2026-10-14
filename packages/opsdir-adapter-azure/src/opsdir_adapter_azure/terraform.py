@@ -10,6 +10,7 @@ from opsdir.core.environment import UNBOUND, by_role, of_class, one_role, record
 from opsdir.domains.compute.hosts import group_subnets, own_groups, run_roles
 from opsdir.domains.compute.workloads import kubernetes_note, only_on_kubernetes
 from opsdir.core.manifest import header
+from opsdir.core.notes import note_comment
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir.domains.infrastructure.firewall import rule_priorities, rule_purpose
 from opsdir.domains.access.workloads import identity_of, workload_identities
@@ -23,18 +24,18 @@ from opsdir_format_terraform.hcl import (Block, TfFile, blocks_of, comment, ref,
 from .access import ACCESS
 from .databases import render_databases
 from .storage import render_object_stores
-from .audit import render_trails
+from .audit import audit_notes, render_trails
 from .container_logs import container_log_notes, render_container_logs
 from .log_collection import agent_hosts, log_collection_notes, render_log_collection
-from .observability import render_alerts, render_workspaces
-from .canaries import render_tests
-from .check_jobs import render_jobs
+from .observability import alert_notes, render_alerts, render_workspaces, workspace_notes
+from .canaries import render_tests, test_notes
+from .check_jobs import job_notes, render_jobs
 from .budgets import budget_inputs, render_budgets
 from .quotas import quota_request_notes
-from .suppressions import azapi_provider, render_suppressions, uses_azapi
-from .discovery import discovery_plans, render_discovery
+from .suppressions import azapi_provider, render_suppressions, suppression_notes, uses_azapi
+from .discovery import discovery_notes, discovery_plans, render_discovery
 from .purview import purview_inputs, render_purview, renders as purview_renders
-from .security import render_security
+from .security import render_security, security_notes
 from .backups import render_backups
 from .volumes import boot_tag, os_disk, server_volumes, snapshot_policy_notes
 from .dns import FORWARDING_RULESET, forwarding_rules, public_ip_name, records, service_record, unrecorded_answer
@@ -43,6 +44,7 @@ from .compute_groups import render_groups
 from .frontdoor import endpoint, front_door
 from .identities import LOC, RG, aks_data, identity, scope_data, vm_identity
 from .ingress import gateway_front
+from .guardrails import guardrail_notes
 from .landing import STACK, landing_parts, placed_roots
 from opsdir_format_terraform.placing import MAIN, PROVIDERS, carried_files
 from opsdir.domains.governance.keepers import scope_folder
@@ -263,8 +265,9 @@ def render_files(m, services):
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
            *forwarding_rules(m), *render_trails(m), *render_workspaces(m),
-           *(render_log_collection(m, services) + log_collection_notes(m, services) if services else ()),
-           *containers, *(container_log_notes(m, services) if services else ()),
+           *(render_log_collection(m, services) if services else ()),
+           *(comment(note_comment(n)) for n in (log_collection_notes(m, services) if services else ())),
+           *containers, *(comment(note_comment(n)) for n in (container_log_notes(m, services) if services else ())),
            *render_alerts(m),
            *render_tests(m, endpoints), *jobs,
            *render_security(m, discovery_plans(m)), *render_discovery(m), *render_purview(m),
@@ -318,3 +321,16 @@ def render(m, services, targets=DEFAULT_TARGETS):
                            {p: v for p, v in terraform.items() if isinstance(v, str)}, STACK)
     return written({**{p: v for p, v in files.items() if p not in terraform},
                     **(terraform if TERRAFORM in targets else {}), **native, **beside})
+
+
+def render_notes(m, services):
+    """Adapter notes (core.notes, flow 43): what environment m's Azure render leaves out or to a person, as data: the
+    synthetic checks it doesn't render (availability tests, check jobs), the check jobs' subnet delegation and what to
+    expect of their first runs; then the security services', audit trails', data discovery's, suppressions',
+    guardrails', alert rules', workspaces' and log shipping's (servers, containers) notes; each written as its
+    comment."""
+    endpoints = services.endpoints if services else ()
+    return (*test_notes(m, endpoints), *job_notes(m, endpoints), *security_notes(m, discovery_plans(m)),
+            *audit_notes(m), *discovery_notes(m), *suppression_notes(m), *guardrail_notes(m), *alert_notes(m),
+            *workspace_notes(m),
+            *((*log_collection_notes(m, services), *container_log_notes(m, services)) if services else ()))

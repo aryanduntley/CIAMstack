@@ -51,6 +51,11 @@ def test_the_workload_takes_the_most_demanding_regime_or_is_a_note():
         ("add", "objectClass", ("ciamEnvironmentPlacement",)),
         ("replace", "ciamConfigurationMet", ("assured-workload",)))),))
     assert as_text(render_workload(bare))[0].startswith("# NOTE: beta/prod's Assured Workloads workload: not rendered")
+    from opsdir.core.notes import note_comment
+    from opsdir_adapter_gcp.boundary import workload_notes
+    (workload,) = workload_notes(bare)
+    assert as_text(render_workload(bare)) == (f"# {note_comment(workload)}",) and workload.severity == "blocker"
+    assert workload_notes(_model(met=())[2]) == ()
     assert "a required level or regulated data (ciamRequiredAuthorization, ciamRegulatedData)" in as_text(
         render_workload(bare))[0]
 

@@ -9,8 +9,9 @@ comment), after its exception (exc-<exception>):
                                               definitions its reference ids name (the whole initiative without):
                                               category Mitigated for a compensating control, Waiver otherwise, expiring
                                               with the exception, its exception in the metadata; in Azure
-                                              Government a comment that Defender's own recommendation exemptions
-                                              aren't offered there and may not reflect Azure Policy's
+                                              Government an action (gov_note, flow 43): Defender's own
+                                              recommendation exemptions aren't offered there and may not reflect
+                                              Azure Policy's, confirm with the account team
   azure:alerts:<alert type>                   a Defender for Cloud alert suppression rule
                                               (Microsoft.Security/alertsSuppressionRules@2019-01-01-preview, reason
                                               FalsePositive for a false positive, Other otherwise, expiring with the
@@ -29,6 +30,7 @@ import json
 from opsdir.core.directory import date_of, get, one, rdn_value, values
 from opsdir.core.environment import of_class
 from opsdir.core.inventory import of_types, resource
+from opsdir.core.notes import note, note_comment
 from opsdir.domains.estate.poam import exception_of, suppression_name
 from opsdir_format_terraform.hcl import comment, from_entry, jsonencoded, mentions, ref, tf_block, tf_name
 from .account import azapi_allowed
@@ -40,7 +42,7 @@ ALERT_RULES_API = f"{ALERT_RULES}@2019-01-01-preview"
 SUBSCRIPTION = "data.azurerm_subscription.current"
 ASSIGNMENT_PREFIX = "ciam-"           # the posture renderer's assignment names: ciam-<framework>
 SUPPRESSION = "ciamSuppression"
-GOV_EXEMPTION_NOTE = ("Azure Government: Microsoft's \"Cloud feature availability for US Government customers\" and "
+GOV_EXEMPTION_NOTE = ("Microsoft's \"Cloud feature availability for US Government customers\" and "
                       "Defender for Cloud's support matrix (2026-10) list Defender's recommendation exemptions as not "
                       "available there; the Azure Policy exemption below is (Azure Policy is), but Defender may not "
                       "fully reflect exemptions made in Azure Policy: confirm with the account team")
@@ -77,10 +79,28 @@ def _frameworks(s):
     return {fw: tuple(x for f, _, x in pairs if f == fw and x) for fw in dict.fromkeys(f for f, _, _ in pairs)}
 
 
+def gov_note(m, s):
+    """The render note of a suppression's Azure Policy exemptions in Azure Government, where Defender's own
+    recommendation exemptions aren't offered (an action: confirm Defender reflects them), or None."""
+    if not (_frameworks(s) and _government(m)):
+        return None
+    return note("Security", "action", f"suppression {suppression_name(s)} in Azure Government", GOV_EXEMPTION_NOTE,
+                ("Ask Microsoft's account team whether Defender for Cloud reflects Azure Policy exemptions in Azure "
+                 "Government",
+                 "After applying, check that the exempted recommendations show as exempt in Defender for Cloud; if "
+                 "they don't, track the exception by hand"), s.dn, m.label)
+
+
+def suppression_notes(m):
+    """The render notes of environment m's suppressions (render_suppressions writes their comments)."""
+    return tuple(n for s in _kept(m) for n in (gov_note(m, s),) if n is not None)
+
+
 def _exemptions(m, s):
     name, exc = suppression_name(s), _exception(m, s)
     category = "Mitigated" if _kind(m, s) == "compensating-control" else "Waiver"
-    gov = (comment(GOV_EXEMPTION_NOTE),) if _frameworks(s) and _government(m) else ()
+    found = gov_note(m, s)
+    gov = (comment(note_comment(found)),) if found is not None else ()
     return gov + tuple(tf_block("resource", [EXEMPTION, tf_name(f"{name}_{fw}")], [
         ("name", f"{name}-{fw}"), ("subscription_id", ref(f"{SUBSCRIPTION}.id")),
         ("policy_assignment_id",

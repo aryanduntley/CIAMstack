@@ -397,3 +397,34 @@ def test_an_organization_wide_service_in_every_region_is_registered_and_configur
     assert re.search(r"detector_id += aws_guardduty_detector\.guardduty_admin_region_2\.id", org)
     aliases = [b.body[1][1] for b in organization_providers(m, ("region-2",))]
     assert aliases == ["management", "management_region_2", "security_admin", "security_admin_region_2"]
+
+
+def _noted(notes, items):
+    """Whether each note's comment is in the rendered items and every NOTE comment there is a note's (flow 43)."""
+    from opsdir.core.notes import note_comment
+    return sorted(f"# {note_comment(n)}" for n in notes) == sorted(
+        x for x in as_text(items) if isinstance(x, str) and x.startswith("# NOTE:"))
+
+
+def test_what_a_service_s_render_leaves_out_is_a_render_note_written_as_its_comment():
+    from opsdir_adapter_aws.security import security_notes
+    _, alpha, _ = model(alpha=(BUCKET, TOPIC, INCIDENTS,
+                               svc("guardduty", "threat-detection", ciamFindingsRole="config-history",
+                                   ciamAllRegions="TRUE"),
+                               svc("config", "config-recording", ciamFindingsRole="security-alerts",
+                                   ciamIncidentRole="security-incidents")), tree=OWNERS)
+    notes = {n.subject: n for n in security_notes(alpha)}
+    assert _noted(notes.values(), render_security(alpha))
+    assert {k: n.severity for k, n in notes.items()} == {
+        "guardduty's findings to config-history": "blocker", "guardduty": "blocker",
+        "security service config (config-recording)": "blocker", "config's incidents to security-incidents": "action"}
+    findings = notes["guardduty's findings to config-history"]
+    assert {n.area for n in notes.values()} == {"Security"} and findings.entry == f"cn=guardduty,ou=bindings,{ALPHA}"
+    assert findings.how[0].startswith("Bind config-history to an alert channel (its SNS topic's ARN")
+    assert notes["guardduty"].how == ("Fetch the region catalog (`opsdir prerequisites`), then re-render",)
+    assert notes["config's incidents to security-incidents"].how[0].startswith(
+        "Make an EventBridge rule on AWS Config's \"Config Rules Compliance Change\"")
+    m = _organization(svc("guardduty", "threat-detection", ciamAuditScope="organization"), ciamSecurityAdminRef=None)
+    (org,) = security_notes(m)
+    assert _noted((org,), render_security(m)) and (org.severity, org.scope) == ("blocker", "the organization")
+    assert org.how == ("Record ciamSecurityAdminRef on alpha, under an approved change, and re-render",)

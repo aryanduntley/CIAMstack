@@ -100,6 +100,10 @@ EXPECTED = MappingProxyType({
          "Kubernetes", "the audit shipping cron runs on the engines' servers; on AKS it must become a CronJob", None),
         ("B41", "Ports", "target/prod: `ds` listens on tcp 1636 (PingIDM connector ldap) for `idm`",
          "IDM moves to AKS: no firewall rule admits the cluster's nodes to the directory (a fix admits them)", None),
+        # the target's alert rules as its cloud renders them (render notes, flow 43)
+        ("B42", "Monitoring", "target/prod: alert rule login-failures: not rendered: its alarm is a log query alert",
+         "the target's login-failures alarm is a log query alert the record holds no query for: Azure Monitor "
+         "can't render it, so the alert won't exist (a render note)", None),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -411,6 +415,17 @@ EXPECTED = MappingProxyType({
         ("A131", "ForgeOps", "ForgeOps in target/prod (namespace `ciam`) generates AM's and IDM's keystore (the "
          "keystore-create job) while the record holds am-keystore", "the target's AM/IDM keys are generated in the "
          "cluster, not the record's", "CHG-2043"),
+        ("A132", "Network", "target/prod: subnet snet-checks: must be delegated to Microsoft.App/environments",
+         "the target's check jobs need their subnet delegated to Container Apps by the network's keeper (a render "
+         "note)", None),
+        ("A133", "Render", "target/prod's render holds", "the target's render holds NOTE comments no renderer "
+         "classifies yet (render notes to review)", None),
+        ("A134", "Monitoring", "target/prod: check image: build it from images/ciam-check/",
+         "the target's check jobs run an image the organization builds, signs and verifies (a render note for the "
+         "pipeline's owner)", None),
+        ("A135", "Monitoring", "target/prod: check jobs: whoever may start one can override its image",
+         "starting a check job can run other code with its identity and secrets: keep that right to trusted "
+         "identities (a render note)", None),
     ],
 })
 

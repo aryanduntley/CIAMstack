@@ -16,7 +16,8 @@ internet-facing: the test locations reach public endpoints only) are scripted ch
 jobs). A test someone else keeps, or an overlay inherits from its base, is named with its keeper.
 """
 from opsdir.core.directory import one, rdn_value
-from opsdir.domains.observability.canaries import GET_FLOWS, canary_specs
+from opsdir.core.notes import note_comment
+from opsdir.domains.observability.canaries import GET_FLOWS, canary_specs, unrendered_note
 from opsdir_format_terraform.hcl import Block, blocks_of, comment, from_entry, ref, tf_block, tf_name
 from .account import government, tagged
 from .identities import LOC, RG
@@ -43,7 +44,7 @@ def insights_input():
 def _test(m, spec):
     cn = rdn_value(spec.canary)
     if spec.why:
-        return (comment(f"NOTE: canary {cn}: not rendered: {spec.why}"),)
+        return (comment(note_comment(unrendered_note(m, spec))),)
     if spec.keeper is not None:
         return (comment(f"Availability test {spec.name} ({cn}): kept by {spec.keeper}, not rendered here"),)
     frequency = next((f for f in FREQUENCIES if f >= spec.every), FREQUENCIES[-1])
@@ -64,3 +65,9 @@ def render_tests(m, endpoints):
     out = tuple(x for s in canary_specs(m, endpoints) if s.why or standard(s)
                 for x in (from_entry(s.binding.dn, _test(m, s)) if s.binding is not None else _test(m, s)))
     return (*out, *((insights_input(),) if blocks_of(out, "resource") else ()))
+
+
+def test_notes(m, endpoints):
+    """The render notes of environment m's checks canary_specs doesn't render (render_tests writes their comments;
+    the scripted checks' are check_jobs')."""
+    return tuple(unrendered_note(m, s) for s in canary_specs(m, endpoints) if s.why)

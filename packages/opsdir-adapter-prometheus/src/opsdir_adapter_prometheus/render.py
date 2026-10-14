@@ -1,16 +1,17 @@
 """The Prometheus add-on's render for an environment. Pure.
 
-prometheus/rules/ciam.rules.yml: the alerting rules (rules.rule_set), with a NOTE naming each rule not rendered and
-why. Where the environment has servers of role monitoring: ansible/prometheus-rules.yml, the play writing that file
-into the rules folder (estate setting prometheus-rules-dir) on them, checked by `promtool check rules` before it
-replaces the running one, and reloading Prometheus. Where it runs roles on Kubernetes and has rules:
-kubernetes/prometheus/prometheusrule.yaml, the same groups as a prometheus-operator PrometheusRule
-(monitoring.coreos.com/v1) in the namespace and with the release label the estate settings give.
+prometheus/rules/ciam.rules.yml: the alerting rules (rules.rule_set), with the comment of the render note of each rule
+not rendered, saying why (render_notes, flow 43). Where the environment has servers of role monitoring:
+ansible/prometheus-rules.yml, the play writing that file into the rules folder (estate setting prometheus-rules-dir) on
+them, checked by `promtool check rules` before it replaces the running one, and reloading Prometheus. Where it runs
+roles on Kubernetes and has rules: kubernetes/prometheus/prometheusrule.yaml, the same groups as a prometheus-operator
+PrometheusRule (monitoring.coreos.com/v1) in the namespace and with the release label the estate settings give.
 """
 from opsdir.core.environment import servers_with_role
 from opsdir.core.formats import YAML
 from opsdir.core.interchange.yaml_text import dump
 from opsdir.core.manifest import header
+from opsdir.core.notes import note_comment
 from opsdir.core.settings import setting_value
 from opsdir.domains.compute.workloads import kubernetes_roles
 from opsdir_adapter_ansible.names import ansible_name
@@ -30,8 +31,8 @@ def _yaml(value):
 
 
 def rules_file(m, groups, skipped):
-    """The rule file's text: header, a NOTE per rule not rendered, the groups."""
-    notes = "".join(f"# NOTE: {why}: not rendered\n" for why in skipped)
+    """The rule file's text: header, the comment of each rule's render note (skipped: not rendered), the groups."""
+    notes = "".join(f"# {note_comment(n)}\n" for n in skipped)
     return header(m, "Prometheus alerting rules from the record's alert rules", YAML) + notes + \
         _yaml({"groups": groups})
 
@@ -59,6 +60,12 @@ def prometheus_rule(m, groups):
                          "labels": {"release": setting_value(m.d, RULE_RELEASE),
                                     "app.kubernetes.io/managed-by": "opsdir"}},
             "spec": {"groups": groups}}
+
+
+def render_notes(m, services):
+    """Adapter notes (core.notes, flow 43): the alert rules environment m's Prometheus render leaves out and why (the
+    rule file writes their comments)."""
+    return rule_set(m, services.signals(m))[1] if services else ()
 
 
 def render(m, services):

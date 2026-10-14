@@ -1,0 +1,77 @@
+{
+  "environment": "env=lab,cloud=hq,ou=environments,dc=ciam-ops",
+  "counts": {
+    "blocker": 3,
+    "action": 0,
+    "note": 1,
+    "to_review": 0
+  },
+  "notes": [
+    {
+      "area": "Monitoring",
+      "severity": "blocker",
+      "subject": "canary directory-bind",
+      "text": "not rendered: no adapter in hq/lab's stack renders synthetic checks (its provider: onprem)",
+      "how": [
+        "Declare an adapter that renders synthetic checks in the environment's stack (installed: aws, azure, gcp), under an approved change, and re-render",
+        "Or run the check on a schedule from the environment's own servers (configuration management), feeding the alert rule it fires"
+      ],
+      "entry": "cn=directory-bind,ou=canaries,dc=ciam-ops",
+      "scope": "ldap-bind check of ds-ldaps-service in hq/lab; alert rule login-failures goes without it",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": []
+    },
+    {
+      "area": "Monitoring",
+      "severity": "blocker",
+      "subject": "canary portal-sso",
+      "text": "not rendered: no adapter in hq/lab's stack renders synthetic checks (its provider: onprem)",
+      "how": [
+        "Declare an adapter that renders synthetic checks in the environment's stack (installed: aws, azure, gcp), under an approved change, and re-render",
+        "Or run the check on a schedule from the environment's own servers (configuration management), feeding the alert rule it fires"
+      ],
+      "entry": "cn=portal-sso,ou=canaries,dc=ciam-ops",
+      "scope": "saml-sso check of pf-sso-service in hq/lab; alert rule login-failures goes without it",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": []
+    },
+    {
+      "area": "Monitoring",
+      "severity": "blocker",
+      "subject": "canary sso-login",
+      "text": "not rendered: no adapter in hq/lab's stack renders synthetic checks (its provider: onprem)",
+      "how": [
+        "Declare an adapter that renders synthetic checks in the environment's stack (installed: aws, azure, gcp), under an approved change, and re-render",
+        "Or run the check on a schedule from the environment's own servers (configuration management), feeding the alert rule it fires"
+      ],
+      "entry": "cn=sso-login,ou=canaries,dc=ciam-ops",
+      "scope": "oidc-token check of pf-sso-service in hq/lab; alert rule login-failures goes without it",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": []
+    },
+    {
+      "area": "Monitoring",
+      "severity": "note",
+      "subject": "alert rule login-failures",
+      "text": "no product rendering hq/lab declares signal `login-failures` for role `pf-engine`: not rendered",
+      "how": [],
+      "entry": "cn=login-failures,ou=alert-rules,dc=ciam-ops",
+      "scope": "hq/lab",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "prometheus/rules/ciam.rules.yml",
+          "line": 4
+        }
+      ]
+    }
+  ]
+}

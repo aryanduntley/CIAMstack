@@ -5,7 +5,7 @@ as a PrometheusRule where roles run on Kubernetes. It registers the server role 
 runs on)."""
 from opsdir.core.contract import Adapter
 from .checks import check_placed
-from .render import HOSTS, render
+from .render import HOSTS, render, render_notes
 from .settings import SETTINGS
 
 ADAPTER = Adapter(name="prometheus", kind="platform", applies=None, required_roles=(),
@@ -16,4 +16,4 @@ ADAPTER = Adapter(name="prometheus", kind="platform", applies=None, required_rol
                   formats=(("prometheus/rules/*.yml", "yaml"), ("ansible/*.yml", "yaml"),
                            ("kubernetes/prometheus/*.yaml", "yaml")),
                   products=(), secret_patterns=(), importers=(), profile_terms=None, access=None,
-                  settings=SETTINGS)
+                  settings=SETTINGS, notes=render_notes)

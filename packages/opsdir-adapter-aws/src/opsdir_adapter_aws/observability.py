@@ -21,7 +21,8 @@ from decimal import Decimal
 
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.environment import of_class
-from opsdir.domains.observability.alarms import alarm_specs, condition, in_unit
+from opsdir.core.notes import RECORD, note, note_comment
+from opsdir.domains.observability.alarms import alarm_note, alarm_notes, alarm_specs, condition, in_unit
 from opsdir.domains.observability.realized import keeper_of
 from opsdir.domains.observability.signals import number_text, parse_threshold
 from opsdir_format_terraform.hcl import comment, from_entry, tf_block, tf_name
@@ -58,21 +59,34 @@ def _topic(channel):
     return ref if ref.startswith("arn:") and ":sns:" in ref else None
 
 
+def _why(m, s):
+    """Why CloudWatch can't express spec s's alarm, or None."""
+    operator, c = OPERATORS.get(one(s.rule, "ciamComparison") or ""), condition(s.rule)
+    metric = (one(s.alarm, "ciamMetric") or "").partition(" ")[2]
+    return (f"CloudWatch has no comparison {one(s.rule, 'ciamComparison')!r}" if operator is None
+            else f"its threshold {one(s.rule, 'ciamThreshold')!r} isn't a number with a known unit" if c is None
+            else f"its alarm's metric {one(s.alarm, 'ciamMetric')!r} isn't '<namespace> <metric name>'"
+            if not metric or " " in metric else None)
+
+
+def alert_notes(m):
+    """The render notes of environment m's alert rules CloudWatch doesn't render (render_alarms writes their
+    comments)."""
+    return alarm_notes(m, _why)
+
+
 def _alarm(m, s):
     rule = rdn_value(s.rule)
     if s.why:
-        return (comment(f"NOTE: alert rule {rule}: not rendered: {s.why}"),)
+        return (comment(note_comment(alarm_note(m, s))),)
     name = rdn_value(s.alarm)
     if s.keeper is not None:
         return (comment(f"Alarm {name} (alert rule {rule}): kept by {s.keeper}, not rendered here"),)
     operator, c = OPERATORS.get(one(s.rule, "ciamComparison") or ""), condition(s.rule)
     namespace, _, metric = (one(s.alarm, "ciamMetric") or "").partition(" ")
-    why = (f"CloudWatch has no comparison {one(s.rule, 'ciamComparison')!r}" if operator is None
-           else f"its threshold {one(s.rule, 'ciamThreshold')!r} isn't a number with a known unit" if c is None
-           else f"its alarm's metric {one(s.alarm, 'ciamMetric')!r} isn't '<namespace> <metric name>'"
-           if not metric or " " in metric else None)
+    why = _why(m, s)
     if why:
-        return (comment(f"NOTE: alert rule {rule}: not rendered: {why}"),)
+        return (comment(note_comment(alarm_note(m, s, why))),)
     threshold, unit = _threshold(s.rule, c)
     topic = _topic(s.channel)
     return (tf_block("resource", [ALARM, tf_name(name)], [
@@ -110,6 +124,22 @@ def group_name(b):
         else None
 
 
+def destination_note(m, b):
+    """The render note of a log destination of kind log-group this render makes but whose ciamProviderRef isn't a log
+    group ARN (a blocker: no log group), or None."""
+    if one(b, "ciamDestinationKind") != "log-group" or keeper_of(m, b) or group_name(b) is not None:
+        return None
+    return note("Monitoring", "blocker", f"log destination {rdn_value(b)}",
+                "not rendered: its ciamProviderRef isn't a log group ARN",
+                (f"Record the log group's ARN as {rdn_value(b)}'s ciamProviderRef "
+                 f"(arn:<partition>:logs:<region>:<account>:log-group:<name>), {RECORD}",), b.dn, m.label)
+
+
+def log_group_notes(m):
+    """The render notes of environment m's log destinations (render_log_groups writes their comments)."""
+    return tuple(n for b in of_class(m, "ciamLogDestination") for n in (destination_note(m, b),) if n is not None)
+
+
 def _log_group(m, b):
     cn, name, keeper = rdn_value(b), group_name(b), keeper_of(m, b)
     if one(b, "ciamDestinationKind") != "log-group":
@@ -117,7 +147,7 @@ def _log_group(m, b):
     if keeper:
         return (comment(f"Log group {cn}: kept by {keeper}, not rendered here"),)
     if name is None:
-        return (comment(f"NOTE: log destination {cn}: not rendered: its ciamProviderRef isn't a log group ARN"),)
+        return (comment(note_comment(destination_note(m, b))),)
     days, why = retention(int(one(b, "ciamRetentionDays") or 0)) if one(b, "ciamRetentionDays") is not None \
         else (None, "no retention recorded (ciamRetentionDays): CloudWatch keeps its logs indefinitely")
     return (tf_block("resource", [LOG_GROUP, tf_name(cn)], [

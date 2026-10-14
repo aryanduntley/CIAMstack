@@ -65,6 +65,11 @@ def test_guardrails_as_organization_policies_each_constraint_once():
     assert out.count('resource "google_org_policy_policy" "iam_disableserviceaccountkeycreation"') == 1
     assert "cloudkms.disableBeforeDestroy" in out
     assert "# NOTE: guardrail baseline: metadata-v1: the metadata server already requires" in out
+    from opsdir.core.notes import note_comment
+    from opsdir_adapter_gcp.guardrails import guardrail_notes
+    (metadata,) = guardrail_notes(m)
+    assert f"# {note_comment(metadata)}" in out.splitlines() and (metadata.area, metadata.severity) == (
+        "Guardrails", "note")
 
 
 def test_the_resource_locations_are_the_regions_the_environment_s_residency_allows():

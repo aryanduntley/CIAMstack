@@ -84,6 +84,12 @@ def test_what_a_metric_alert_cant_say_is_named():
     assert notes == [
         "# NOTE: alert rule not-equal: not rendered: a metric alert has no comparison 'ne'",
         "# NOTE: alert rule queried: not rendered: its alarm is a log query alert and the record holds no query"]
+    from opsdir.core.notes import note_comment
+    from opsdir_adapter_azure.observability import alert_notes
+    found = alert_notes(_beta())
+    assert [f"# {note_comment(n)}" for n in found] == notes and {n.severity for n in found} == {"blocker"}
+    assert found[1].how[1] == ("Or evaluate the rule another way: a Prometheus signal a product declares, or an alert "
+                               "made by hand")
 
 
 def test_workspaces_keep_logs_within_what_a_workspace_allows():

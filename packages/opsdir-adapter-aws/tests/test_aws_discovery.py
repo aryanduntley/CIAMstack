@@ -14,8 +14,8 @@ from types import SimpleNamespace
 
 from opsdir.domains.estate.discovery import rescan_due
 from opsdir_format_terraform.hcl import as_text
-from opsdir_adapter_aws.discovery import (check_discovery_availability, discovery_resources, handler_script,
-                                          render_discovery)
+from opsdir_adapter_aws.discovery import (check_discovery_availability, discovery_notes, discovery_resources,
+                                          handler_script, render_discovery)
 from opsdir_adapter_aws.inventory import pairs_resources
 from opsdir_adapter_aws.rendered_state import rendered_states
 from opsdir_format_terraform.hcl import TfBlock, block
@@ -89,9 +89,11 @@ def test_schedules_and_what_isnt_rendered():
 def test_govcloud_renders_nothing_and_gives_an_action():
     d, alpha, beta = _alpha(macie(), region="us-gov-west-1")
     assert as_text(render_discovery(alpha)) == ((
-        "# Amazon Macie isn't offered in GovCloud: AWS's General Reference lists no GovCloud endpoint for it and its "
-        "FedRAMP services-in-scope page marks it for US East/West only: not rendered: data discovery macie-weekly (the "
-        "planner names the gap)",), {})
+        "# NOTE: data discovery macie-weekly: Amazon Macie isn't offered in GovCloud: AWS's General Reference lists no "
+        "GovCloud endpoint for it and its FedRAMP services-in-scope page marks it for US East/West only: not rendered "
+        "(the planner names the gap)",), {})
+    (gov,) = discovery_notes(alpha)
+    assert gov.severity == "note"                   # the planner's action below is the finding: no duplicate
     f = check_discovery_availability(context(d, beta, alpha, cutover="2026-12-01"))
     assert [a[1] for a in f.actions] == [
         "alpha/prod runs data discovery (macie-weekly) in GovCloud: Amazon Macie isn't offered in GovCloud: AWS's "
@@ -247,3 +249,22 @@ def test_the_function_starts_a_job_only_when_due(monkeypatch, tmp_path):
                               (dt.date(2026, 9, 1), dt.date(2026, 10, 1), 30)):
         assert module["due"](last, today, days) == rescan_due(last, today, days)
 
+
+
+def test_what_discovery_s_render_leaves_out_is_a_render_note_written_as_its_comment():
+    from opsdir.core.notes import note_comment
+    _, alpha, _ = _alpha(entry(ALPHA, "macie-weekly", "ciamDataDiscovery", ciamBindingRole="data-discovery",
+                               ciamScansRole="ds-backups", ciamFindingsRole="ds-backups", ciamResultsRole="ds-backups"),
+                         account=None)
+    notes = {n.subject: n for n in discovery_notes(alpha)}
+    assert sorted(f"# {note_comment(n)}" for n in notes.values()) == sorted(
+        x for x in as_text(render_discovery(alpha))[0] if x.startswith("# NOTE:"))
+    assert {k: n.severity for k, n in notes.items()} == {
+        "data discovery macie-weekly": "blocker", "macie-weekly's findings to ds-backups": "blocker",
+        "data discovery macie-weekly's results to ds-backups": "blocker"}
+    assert notes["data discovery macie-weekly's results to ds-backups"].how[0].startswith(
+        "Record the KMS key the store is encrypted with")
+    _, alpha, _ = _alpha(entry(ALPHA, "db-only", "ciamDataDiscovery", ciamBindingRole="data-discovery",
+                               ciamScansRole="pf-grants-db"))
+    (only,) = discovery_notes(alpha)
+    assert (only.severity, only.how) == ("action", ("Examine pf-grants-db another way: Macie examines S3 only",))

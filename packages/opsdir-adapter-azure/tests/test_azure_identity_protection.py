@@ -83,6 +83,13 @@ def test_risk_remediation_is_a_note_until_azuread_can_express_it():
     assert "# NOTE: defender: 'user high+: risk-remediation': not rendered: azuread can't express Microsoft's risk " \
            "remediation yet" in out
     assert out.count('resource "azuread_conditional_access_policy"') == 1 and uses_azuread(m)
+    from opsdir.core.notes import note_comment
+    from opsdir_adapter_azure.identity_protection import identity_notes
+    from opsdir.domains.estate.security import security_services
+    (remediation,) = identity_notes(m, security_services(m)[0])
+    assert f"# {note_comment(remediation)}" in out.splitlines() and remediation.severity == "action"
+    assert remediation.how[0] == ("Make the Conditional Access policy in Microsoft Entra by hand: user risk high and "
+                                  "above, grant: require risk remediation")
     only, _ = _render(ciamRiskPolicy="user high+: risk-remediation", ciamPolicyCovers="identity-admins")
     assert not uses_azuread(only)
 

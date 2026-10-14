@@ -10,15 +10,16 @@ lines, of the route's kinds. Pure.
 docs.cloud.google.com/kubernetes-engine/docs/concepts/about-logs, .../logging/docs/structured-logging,
 .../logging/docs/view/query-library (research notes 2329, 2363).
 
-Named instead (# NOTE): a role on Kubernetes in no cluster the environment binds, a cluster in another project (its
+Named instead, each a render note (container_log_notes, flow 43) written as its comment: a role on Kubernetes in no
+cluster the environment binds, a cluster in another project (its
 logs land there: a sink here doesn't see them), and that the clusters' workload logging (logging_config WORKLOADS,
 GKE's default) must stay on.
 """
 from opsdir.core.directory import rdn_value, values
+from opsdir.core.notes import RECORD, note
 from opsdir.domains.compute.workloads import role_clusters, role_namespaces
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.sources import ALL, containers_of, kept_clauses, shipments
-from opsdir_format_terraform.hcl import comment
 from .account import project_id
 from .kubernetes import cluster_parts
 from .logging_filter import all_of, any_of, field_of, kept, literal
@@ -69,18 +70,26 @@ def container_filter(m, x, sources):
 
 
 def container_log_notes(m, services):
-    """HCL comments naming the container output environment m's routes don't ship to Cloud Logging buckets, and what
-    shipping it needs."""
+    """The render notes of the container output environment m's routes don't ship to Cloud Logging buckets, and what
+    shipping it needs, each once (log_sink_notes gathers them; render_files writes their comments): a role in no
+    bound cluster (a blocker), a cluster in another project (an action: a sink there), the clusters' workload logging
+    (a note)."""
     found = container_shipments(m, services)
     shipped = {c.dn: c for x in found for c in visible_clusters(m, x.role)}.values()
     return tuple(dict.fromkeys((
-        *(comment(f"NOTE: log route {rdn_value(x.route)}: role {x.role}'s container output not shipped: the role runs "
-                  "on Kubernetes here in no cluster the environment binds")
+        *(note("Logs", "blocker", f"log route {rdn_value(x.route)}", f"role {x.role}'s container output not shipped: "
+               "the role runs on Kubernetes here in no cluster the environment binds",
+               (f"Bind the GKE cluster role {x.role} runs on in this environment, or run it on servers, {RECORD}",),
+               x.route.dn, m.label)
           for x in found if not role_clusters(m, x.role)),
-        *(comment(f"NOTE: log route {rdn_value(x.route)}: role {x.role}'s container output in cluster {rdn_value(c)} "
-                  f"not shipped: the cluster is in project {cluster_parts(c)[0]}, whose logs a sink in {project_id(m)} "
-                  "doesn't see (route them with a sink there)") for x in found for c in role_clusters(m, x.role)
-          if cluster_parts(c)[0] not in (None, project_id(m))),
-        *((comment(f"NOTE: GKE clusters {', '.join(rdn_value(c) for c in shipped)}: their workload logging "
-                   "(logging_config WORKLOADS, GKE's default) must stay on for the log sinks to see container output"),)
+        *(note("Logs", "action", f"log route {rdn_value(x.route)}", f"role {x.role}'s container output in cluster "
+               f"{rdn_value(c)} not shipped: the cluster is in project {cluster_parts(c)[0]}, whose logs a sink in "
+               f"{project_id(m)} doesn't see (route them with a sink there)",
+               (f"Make a log sink in project {cluster_parts(c)[0]} routing the role's container output to the "
+                "route's bucket, by hand (and grant its writer identity roles/logging.bucketWriter there)",),
+               x.route.dn, f"project {cluster_parts(c)[0]}")
+          for x in found for c in role_clusters(m, x.role) if cluster_parts(c)[0] not in (None, project_id(m))),
+        *((note("Logs", "note", f"GKE clusters {', '.join(rdn_value(c) for c in shipped)}", "their workload logging "
+                "(logging_config WORKLOADS, GKE's default) must stay on for the log sinks to see container output",
+                (), None, m.label),)
           if shipped else ()))))

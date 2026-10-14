@@ -14,7 +14,7 @@ from .log_agent import host_files
 from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
 from .regions import PREREQUISITE, REGIONS
 from .secrets import SECRET_PATTERNS, secretsmanager_command, secretsmanager_lookup
-from .terraform import TARGETS, render
+from .terraform import TARGETS, render, render_notes
 from .canaries import RUNTIME
 from .rendered_state import rendered_stacks, rendered_states
 
@@ -54,4 +54,5 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                   reads_back=(ReadBack("terraform-state", "terraform/*.tf", "terraform/", "{environment}/", False,
                                        rendered_states, intent=True),
                               ReadBack("cloudformation", "cloudformation/*", "cloudformation/", "{environment}/", True,
-                                       rendered_stacks, intent=True)))
+                                       rendered_stacks, intent=True)),
+                  notes=render_notes, renders_synthetic_checks=True)

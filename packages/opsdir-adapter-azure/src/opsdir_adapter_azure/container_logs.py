@@ -17,7 +17,8 @@ learn.microsoft.com/azure/azure-monitor/containers/container-insights-multitenan
 .../container-insights-logs-schema, aka.ms/aks-enable-monitoring-multitenancy-onboarding-template-file (research
 notes 2352, 2354).
 
-Named instead (# NOTE): a route whose destination here isn't a workspace, a role on Kubernetes in no cluster the
+Named instead, each a render note (container_log_notes, flow 43) written as its comment: a route whose destination
+here isn't a workspace, a role on Kubernetes in no cluster the
 environment binds, more than 30 such rules on one cluster (Container insights' limit), and in Azure Government that
 multitenant logging there is to be confirmed (no Government availability row names it).
 """
@@ -27,13 +28,15 @@ from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.formats import YAML
 from opsdir.core.interchange.yaml_text import dump
 from opsdir.core.manifest import header
+from opsdir.core.notes import RECORD, note
 from opsdir.domains.compute.workloads import role_clusters, role_namespaces
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.sources import ALL, containers_of, kept_clauses, shipments
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, ref, tf_block, tf_name
 from .account import government, tagged
 from .identities import LOC, RG
 from .kql import field_of, kept, literal
+from .log_collection import WORKSPACE_HOW
 from .observability import workspace_id
 
 ENDPOINT, RULE, ASSOCIATION = ("azurerm_monitor_data_collection_endpoint", "azurerm_monitor_data_collection_rule",
@@ -139,20 +142,28 @@ def render_container_logs(m, services):
 
 
 def container_log_notes(m, services):
-    """HCL comments naming the container output environment m's routes don't ship to Log Analytics, and what to
-    confirm."""
+    """The render notes of the container output environment m's routes don't ship to Log Analytics (blockers), and in
+    Azure Government what to confirm (an action); each once (render_files writes their comments)."""
     every = tuple(x for x in shipments(m, log_routes(m.d), services.logs(m)) if x.on == "kubernetes")
     rules = cluster_routes(m, services)
     per_cluster = {c.dn: (c, sum(1 for k, _, _ in rules if k.dn == c.dn)) for c, _, _ in rules}
     return tuple(dict.fromkeys((
-        *(comment(f"NOTE: log route {rdn_value(x.route)}: role {x.role}'s container output not shipped: its "
-                  f"destination {rdn_value(x.destination)} isn't a Log Analytics workspace (kind workspace, a "
-                  "workspace ID)")
+        *(note("Logs", "blocker", f"log route {rdn_value(x.route)}", f"role {x.role}'s container output not shipped: "
+               f"its destination {rdn_value(x.destination)} isn't a Log Analytics workspace (kind workspace, a "
+               "workspace ID)", WORKSPACE_HOW, x.route.dn, m.label)
           for x in every if x.destination is not None and workspace_id(m, x.destination) is None),
-        *(comment(f"NOTE: log route {rdn_value(x.route)}: role {x.role}'s container output not shipped: the role runs "
-                  "on Kubernetes here in no cluster the environment binds")
+        *(note("Logs", "blocker", f"log route {rdn_value(x.route)}", f"role {x.role}'s container output not shipped: "
+               "the role runs on Kubernetes here in no cluster the environment binds",
+               (f"Bind the AKS cluster role {x.role} runs on in this environment, or run it on servers, {RECORD}",),
+               x.route.dn, m.label)
           for x in every if workspace_id(m, x.destination) is not None and not role_clusters(m, x.role)),
-        *(comment(f"NOTE: cluster {rdn_value(c)}: {n} log routes need {n} multitenant logging rules; Container "
-                  f"insights takes {LIMIT} per cluster") for c, n in per_cluster.values() if n > LIMIT),
-        *((comment("NOTE: Azure Government: Container insights multitenant logging is to be confirmed there (no "
-                   "Government availability row names it)"),) if rules and government(m) else ()))))
+        *(note("Logs", "blocker", f"cluster {rdn_value(c)}", f"{n} log routes need {n} multitenant logging rules; "
+               f"Container insights takes {LIMIT} per cluster",
+               (f"Merge the routes of cluster {rdn_value(c)} that go to the same workspace, or split its roles "
+                f"across clusters, so it needs {LIMIT} rules or fewer, {RECORD}",), c.dn, m.label)
+          for c, n in per_cluster.values() if n > LIMIT),
+        *((note("Logs", "action", "Azure Government", "Container insights multitenant logging is to be confirmed "
+                "there (no Government availability row names it)",
+                ("Ask Microsoft's account team whether Container insights multitenant logging is available in the "
+                 "environment's Azure Government region before relying on it",), None, m.label),)
+          if rules and government(m) else ()))))

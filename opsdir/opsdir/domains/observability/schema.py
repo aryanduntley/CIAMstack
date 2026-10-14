@@ -100,11 +100,13 @@ CLASSES = (
              'An alarm a cloud runs in an environment: the alert rule it realizes, what it evaluates, what it '
              'notifies'),
     ClassDef(68, 'ciamCanaryBinding', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef',),
-             ('ciamRealizes', 'ciamInterval', 'ciamStorageRef', 'ciamSubnetRole', 'ciamManagedBy'),
+             ('ciamRealizes', 'ciamInterval', 'ciamStorageRef', 'ciamSubnetRole', 'ciamManagedBy',
+              'ciamContainerImage'),
              'A synthetic check a cloud runs in an environment: the canary it realizes, how often, where it keeps '
              'its results when the cloud asks for a place (ciamStorageRef: CloudWatch Synthetics\' S3 artifact '
              'location), and the subnets a check of an internal service name runs from (ciamSubnetRole; else those '
-             'the firewall rules admit to the service)'),
+             'the firewall rules admit to the service); the image its job runs where the cloud runs one the '
+             'organization builds (ciamContainerImage check=<registry>/<repository>@sha256:<digest>)'),
     ClassDef(111, 'ciamAuditTrail', 'ciamBinding', 'STRUCTURAL', ('ciamAuditScope',),
              ('ciamAuditEvents', 'ciamAllRegions', 'ciamIntegrityValidation', 'ciamLogDestinationRole',
               'ciamAuditResourceRole', 'ciamAuditStreamRole', 'ciamProviderRef', 'ciamManagedBy'),

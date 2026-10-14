@@ -4,7 +4,7 @@ Microsoft Entra ID Protection: Defender for Cloud has no plan for identity. Pure
   - its risk logs exported where the service's findings go (azurerm_monitor_aad_diagnostic_setting: RiskyUsers,
     UserRiskEvents, RiskyServicePrincipals, ServicePrincipalRiskEvents), to the Log Analytics workspace its findings
     role names (observability.workspace_id: the one this root renders, else its recorded ID); another destination is a
-    NOTE;
+    blocker;
   - its risk-based policies (core estate risk_policies) as Conditional Access (azuread_conditional_access_policy), one
     per policy, only when the record states them completely (whom they cover, whom they leave out, what they grant):
     users and groups by their identity bindings' object ids (ciamProviderRef), report-only
@@ -31,6 +31,7 @@ from typing import NamedTuple, Optional
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.findings import findings, responsible
 from opsdir.core.inventory import of_types
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.estate.authorizations import unmet_configurations
 from opsdir.domains.estate.hybrid import (DIRECTORY_AREA, directory_sync, directory_watchers, on_prem_directories,
                                          password_writeback)
@@ -52,7 +53,7 @@ MFA_STRENGTH = "/policies/authenticationStrengthPolicies/00000000-0000-0000-0000
 # What a policy's grant requires in Conditional Access: (operator, built-in controls, authentication strength, sign-in
 # frequency interval). mfa is the built-in Multifactor authentication strength (Microsoft's current how-to; it can't
 # sit beside the mfa control); password change needs mfa with it (AND). Microsoft's risk remediation (authentication
-# strength + riskRemediation, every time) isn't one azuread accepts yet (3.10.0): a NOTE (research note 2496).
+# strength + riskRemediation, every time) isn't one azuread accepts yet (3.10.0): an action (research note 2496).
 GRANTS = MappingProxyType({"mfa": ("OR", (), MFA_STRENGTH, None), "block": ("OR", ("block",), None, None),
                            "password-change": ("AND", ("mfa", "passwordChange"), None, None)})
 
@@ -62,15 +63,51 @@ def watches_identity(s):
     return one(s, "ciamSecurityKind") == "threat-detection" and "identity" in s.attrs.get("ciamSecurityCoverage", ())
 
 
+def export_note(m, s):
+    """The render note of Entra ID Protection's risk logs when a service's findings go to no Log Analytics workspace
+    (a blocker: they aren't exported), or None."""
+    if workspace_id(m, findings_destination(m, s)):
+        return None
+    where = one(s, "ciamFindingsRole")
+    return note("Security", "blocker", rdn_value(s), "Entra ID Protection's risk logs not exported: "
+                + (f"{where} is no Log Analytics workspace (ciamProviderRef)" if where else
+                   "the service sends its findings nowhere (ciamFindingsRole)"),
+                (f"Bind {where} to a Log Analytics workspace (ciamDestinationKind workspace, its resource ID as "
+                 f"ciamProviderRef), {RECORD}",) if where else
+                (f"Record the service's ciamFindingsRole, bound to a Log Analytics workspace, {RECORD}",), s.dn,
+                m.label)
+
+
+def remediation_note(m, s, p):
+    """The render note of a risk policy whose grant azuread can't express (Microsoft's risk remediation: an action,
+    configured in Microsoft Entra by hand)."""
+    return note("Security", "action", rdn_value(s), f"'{p.subject} {p.level}+: {p.grant}': not rendered: azuread "
+                "can't express Microsoft's risk remediation yet; configure it in Microsoft Entra, or record "
+                "password-change",
+                (f"Make the Conditional Access policy in Microsoft Entra by hand: {p.subject} risk {p.level} and "
+                 "above, grant: require risk remediation",
+                 f"Or record the policy's grant as password-change, {RECORD}"), s.dn, m.label)
+
+
+def _unexpressed(m, s):
+    return tuple(p for p in risk_policies(s) if p.grant not in GRANTS) if renders(m, s) else ()
+
+
+def identity_notes(m, s):
+    """The render notes of a kept service's identity protection (render_identity_protection writes their comments):
+    the risk-log export's and each risk policy it can't express; () for one not watching identity."""
+    if not watches_identity(s):
+        return ()
+    return tuple(n for n in (export_note(m, s), *(remediation_note(m, s, p) for p in _unexpressed(m, s)))
+                 if n is not None)
+
+
 def risk_export(m, s):
     """The diagnostic setting exporting Entra ID Protection's risk logs to the workspace a service's findings go to,
-    or a NOTE when they go elsewhere or nowhere."""
+    or its note's comment (export_note) when they go elsewhere or nowhere."""
     cn, workspace = rdn_value(s), workspace_id(m, findings_destination(m, s))
     if not workspace:
-        where = one(s, "ciamFindingsRole")
-        return (comment(f"NOTE: {cn}: Entra ID Protection's risk logs not exported: "
-                        + (f"{where} is no Log Analytics workspace (ciamProviderRef)" if where else
-                           "the service sends its findings nowhere (ciamFindingsRole)")),)
+        return (comment(note_comment(export_note(m, s))),)
     return (*government_unstated(m, "exporting Microsoft Entra logs by a diagnostic setting (microsoft.aadiam)"),
             tf_block("resource", [RISK_EXPORT, tf_name(f"{cn}_identity_risk")], [
         ("name", f"{cn}-identity-risk"), ("log_analytics_workspace_id", workspace),
@@ -124,16 +161,14 @@ def render_identity_protection(m, s):
         return directory_note(s)
     cn, complete = rdn_value(s), renders(m, s)
     policies = tuple(conditional_access(m, s, p) for p in risk_policies(s) if p.grant in GRANTS) if complete else ()
-    unexpressed = tuple(p for p in risk_policies(s) if p.grant not in GRANTS) if complete else ()
+    unexpressed = _unexpressed(m, s)
     return (*directory_note(s),
             comment(f"{cn}: identity: Microsoft Entra ID Protection (Defender for Cloud has no plan for identity); its "
                     "risk signals and policies need Entra ID P2"),
             *risk_export(m, s),
             *(comment(f"{cn}: risk policies not rendered: {p}") for p in policy_problems(m, s)),
             *(comment(f"{cn}: {a}") for a in (policy_advice(m, s) if policies else ())),
-            *(comment(f"NOTE: {cn}: '{p.subject} {p.level}+: {p.grant}': not rendered: azuread can't express "
-                      "Microsoft's risk remediation yet; configure it in Microsoft Entra, or record password-change")
-              for p in unexpressed),
+            *(comment(note_comment(remediation_note(m, s, p))) for p in unexpressed),
             *policies)
 
 

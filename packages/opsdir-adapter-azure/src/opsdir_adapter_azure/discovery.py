@@ -13,12 +13,14 @@ cataloguing needs Microsoft Purview scanning (not rendered).
 
 In Azure Government: Defender for Cloud's support matrix lists Defender CSPM's "Sensitive data scanning (DSPM)" GA (and
 Defender for Storage's sensitive data threat detection not available), while the data security posture prerequisites
-page lists only commercial regions for storage accounts (2026-10-08): rendered, with a comment to confirm.
+page lists only commercial regions for storage accounts (2026-10-08): rendered, with an action to confirm (gov_note,
+flow 43), written as its comment.
 
 Read back from Terraform state: the CloudPosture pricing (tier Standard) with the SensitiveDataDiscovery extension ->
 data discovery (kind discovery)."""
 from opsdir.core.directory import get, is_kind, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource
+from opsdir.core.notes import note, note_comment
 from opsdir.domains.estate.discovery import custom_identifiers, discovery_services, rescan_days
 from opsdir_format_terraform.hcl import comment, from_entry
 from .purview import purview_read, renders as purview_renders, scanned
@@ -26,9 +28,9 @@ from .security import CSPM, PRICING
 
 EXTENSION = "SensitiveDataDiscovery"
 SUPPORTED_ENGINES = ("sqlserver",)          # Azure SQL Database (ENGINES in boundary: SQL Database)
-GOV_NOTE = ("Azure Government: Defender for Cloud's support matrix lists Defender CSPM's sensitive data scanning "
-            "(DSPM) GA, its data security posture prerequisites page only commercial regions for storage accounts "
-            "(2026-10-08): rendered, confirm with the account team")
+GOV_NOTE = ("Defender for Cloud's support matrix lists Defender CSPM's sensitive data scanning (DSPM) GA, its data "
+            "security posture prerequisites page only commercial regions for storage accounts (2026-10-08): rendered, "
+            "confirm with the account team")
 
 
 def discovery_plans(m):
@@ -70,12 +72,29 @@ def _notes(m, s):
               if one(s, "ciamResultsRole") else ()))
 
 
+def gov_note(m):
+    """The render note of data discovery in Azure Government, rendered though one of Microsoft's pages lists only
+    commercial regions for it (an action: confirm with the account team), or None."""
+    found = discovery_services(m)
+    if not found or one(m.cloud, "ciamCloudEnvironment") != "usgovernment":
+        return None
+    return note("Data discovery", "action", f"data discovery {', '.join(rdn_value(s) for s in found)} in Azure "
+                "Government", GOV_NOTE,
+                ("Ask Microsoft's account team whether Defender CSPM's sensitive data scanning covers the "
+                 "environment's storage accounts in its Azure Government region before relying on it",),
+                found[0].dn, m.label)
+
+
+def discovery_notes(m):
+    """The render notes of environment m's data discovery (render_discovery writes their comments)."""
+    return tuple(n for n in (gov_note(m),) if n is not None)
+
+
 def render_discovery(m):
     """Comments for environment m's data discovery (its Defender plan extension is rendered with the security
-    services' plans)."""
-    found = discovery_services(m)
-    gov = from_entry(found[0].dn, (comment(GOV_NOTE),)) \
-        if found and one(m.cloud, "ciamCloudEnvironment") == "usgovernment" else ()
+    services' plans), gov_note's first in Azure Government."""
+    found, missing = discovery_services(m), gov_note(m)
+    gov = from_entry(found[0].dn, (comment(note_comment(missing)),)) if missing is not None else ()
     return (*gov, *(x for s in found for x in from_entry(s.dn, _notes(m, s))))
 
 

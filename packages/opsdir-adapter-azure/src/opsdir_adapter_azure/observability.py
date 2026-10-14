@@ -22,7 +22,8 @@ from decimal import Decimal
 
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.environment import of_class, servers_with_role
-from opsdir.domains.observability.alarms import alarm_specs, condition, in_unit
+from opsdir.core.notes import RECORD, note, note_comment
+from opsdir.domains.observability.alarms import alarm_note, alarm_notes, alarm_specs, condition, in_unit
 from opsdir.domains.governance.keepers import is_rendered
 from opsdir.domains.observability.realized import keeper_of
 from opsdir.domains.observability.signals import number_text, parse_threshold
@@ -97,10 +98,22 @@ def _why(m, s, operator, c, metric):
     return None
 
 
+def _alert_why(m, s):
+    """Why Azure Monitor can't express spec s's alarm as a metric alert, or None."""
+    operator, c = OPERATORS.get(one(s.rule, "ciamComparison") or ""), condition(s.rule)
+    return _why(m, s, operator, c, (one(s.alarm, "ciamMetric") or "").partition(" ")[2])
+
+
+def alert_notes(m):
+    """The render notes of environment m's alert rules Azure Monitor doesn't render (render_alerts writes their
+    comments)."""
+    return alarm_notes(m, _alert_why)
+
+
 def _alert(m, s):
     rule = rdn_value(s.rule)
     if s.why:
-        return (comment(f"NOTE: alert rule {rule}: not rendered: {s.why}"),)
+        return (comment(note_comment(alarm_note(m, s))),)
     name = rdn_value(s.alarm)
     if s.keeper is not None:
         return (comment(f"Alarm {name} (alert rule {rule}): kept by {s.keeper}, not rendered here"),)
@@ -108,7 +121,7 @@ def _alert(m, s):
     namespace, _, metric = (one(s.alarm, "ciamMetric") or "").partition(" ")
     why = _why(m, s, operator, c, metric)
     if why:
-        return (comment(f"NOTE: alert rule {rule}: not rendered: {why}"),)
+        return (comment(note_comment(alarm_note(m, s, why))),)
     window = next((w for w in WINDOWS if w >= c.window * c.windows), WINDOWS[-1])
     threshold, compared = _threshold(s.rule, c, window)
     vms = [ref(f"azurerm_linux_virtual_machine.{tf_name(rdn_value(v))}.id")
@@ -157,6 +170,23 @@ def workspace_name(b):
     return ref_[i + len(marker):].split("/", 1)[0] if i >= 0 else None
 
 
+def destination_note(m, b):
+    """The render note of a log destination of kind workspace this render makes but whose ciamProviderRef isn't a Log
+    Analytics workspace ID (a blocker: no workspace), or None."""
+    if one(b, "ciamDestinationKind") != "workspace" or keeper_of(m, b) or workspace_name(b) is not None:
+        return None
+    return note("Monitoring", "blocker", f"log destination {rdn_value(b)}",
+                "not rendered: its ciamProviderRef isn't a Log Analytics workspace ID",
+                (f"Record the workspace's resource ID as {rdn_value(b)}'s ciamProviderRef (/subscriptions/<id>/"
+                 f"resourceGroups/<group>/providers/Microsoft.OperationalInsights/workspaces/<name>), {RECORD}",),
+                b.dn, m.label)
+
+
+def workspace_notes(m):
+    """The render notes of environment m's log destinations (render_workspaces writes their comments)."""
+    return tuple(n for b in of_class(m, "ciamLogDestination") for n in (destination_note(m, b),) if n is not None)
+
+
 def _workspace(m, b):
     cn, name = rdn_value(b), workspace_name(b)
     if one(b, "ciamDestinationKind") != "workspace":
@@ -164,8 +194,7 @@ def _workspace(m, b):
     if keeper_of(m, b):
         return (comment(f"Log Analytics workspace {cn}: kept by {keeper_of(m, b)}, not rendered here"),)
     if name is None:
-        return (comment(f"NOTE: log destination {cn}: not rendered: its ciamProviderRef isn't a Log Analytics "
-                        "workspace ID"),)
+        return (comment(note_comment(destination_note(m, b))),)
     days, why = workspace_retention(int(one(b, "ciamRetentionDays"))) if one(b, "ciamRetentionDays") is not None \
         else (None, "no retention recorded (ciamRetentionDays): the workspace keeps Azure's default")
     return (tf_block("resource", [WORKSPACE, tf_name(cn)], [

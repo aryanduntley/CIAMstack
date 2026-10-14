@@ -38,11 +38,13 @@ KEPT = {
     # organization-wide Defender (5.7b): the management group's part, in the landing zone keeper's root
     "azurerm_management_group_policy_assignment": _MANAGEMENT_GROUP,
     "azurerm_management_group_policy_remediation": _MANAGEMENT_GROUP,
-    # the scripted checks' jobs (check_jobs): each runs its script read from a file beside the root (file()), which a
-    # template has no way to read; the environment, identity and grants they use are written natively
-    "azurerm_container_app_job": ("its check script is read from a file beside the root (file()), which a template "
-                                  "has no form for: the job is applied after the template, with the environment, "
-                                  "identity and grants it reads"),
+    # the scripted checks' jobs (check_jobs): no ARM form is written for them yet (and in the script form each reads
+    # its runner from a file beside the root, file(), which a template can't); the environment, identities and grants
+    # they use are written natively
+    "azurerm_container_app_job": ("no ARM form is written for the check jobs yet (in the script form each also reads "
+                                  "its runner from a file beside the root, file(), which a template has no form for): "
+                                  "the job is applied after the template, with the environment, identity and grants it "
+                                  "reads"),
     "azurerm_storage_object_replication": (
         "ARM sets object replication on the destination account first, in that account's resource group, and the "
         "source's policy takes the id it returns; the destination is an input the record holds no group for"),

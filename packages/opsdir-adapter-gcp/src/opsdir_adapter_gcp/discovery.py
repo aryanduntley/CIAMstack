@@ -4,9 +4,9 @@ For each data discovery the platform team keeps (one someone else keeps is named
 custom regular-expression info types of a google_data_loss_prevention_inspect_template (named by their names in upper
 case), and a google_data_loss_prevention_discovery_config in the project and the cloud's region, running, profiling the
 Cloud Storage buckets of the object stores it examines (a bucket-name regular expression) with that template. Profile
-events (new, changed) go to the Pub/Sub topic of
-the binding ciamFindingsRole names (ciamProviderRef projects/<p>/topics/<t>; another binding is a NOTE). Other stores it
-examines (databases, volumes) are a comment: only Cloud Storage targets are rendered. It exports detailed profiles to
+events (new, changed) go to the Pub/Sub topic of the binding ciamFindingsRole names (ciamProviderRef
+projects/<p>/topics/<t>; another binding is a blocker: discovery_notes, flow 43). Other stores it examines (databases,
+volumes) are a comment: only Cloud Storage targets are rendered. It exports detailed profiles to
 BigQuery only: a ciamResultsRole is a comment.
 
 How often is the record's ciamRescanDays, never rounded (core estate discovery: rescan_plan). Sensitive Data Protection
@@ -34,6 +34,7 @@ from opsdir.core.findings import findings, responsible
 from opsdir.core.formats import YAML
 from opsdir.core.inventory import of_types, resource
 from opsdir.core.manifest import header
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.estate.authorizations import required_levels
 from opsdir.domains.estate.discovery import (custom_identifiers, destination, discovery_services, rescan_line,
                                              rescan_plan)
@@ -261,22 +262,48 @@ def _topic(m, s):
     return dest, (pref if pref and "/topics/" in pref else None)
 
 
+def findings_note(m, s):
+    """The render note of a data discovery's findings whose ciamFindingsRole binding names no Pub/Sub topic (a
+    blocker: profile events go nowhere), or None."""
+    dest, topic = _topic(m, s)
+    if dest is None or topic:
+        return None
+    return note("Data discovery", "blocker", f"{rdn_value(s)}'s findings to {one(s, 'ciamFindingsRole')}",
+                f"not rendered: {rdn_value(dest)} names no Pub/Sub topic (ciamProviderRef projects/<p>/topics/<t>)",
+                (f"Record {rdn_value(dest)}'s Pub/Sub topic (ciamProviderRef projects/<p>/topics/<t>), {RECORD}",),
+                s.dn, m.label)
+
+
+def config_note(m, s):
+    """The render note of a data discovery examining no Cloud Storage bucket here (no discovery config), or None: an
+    action when the stores it examines aren't buckets (only Cloud Storage targets are rendered), else a note."""
+    buckets, others = _buckets(m, s)
+    if buckets:
+        return None
+    return note("Data discovery", "action" if others else "note", f"data discovery {rdn_value(s)}",
+                "no discovery config: it examines no Cloud Storage bucket here",
+                (f"Profile {', '.join(others)} another way (a Sensitive Data Protection discovery config for that "
+                 "store, by hand)",) if others else (), s.dn, m.label)
+
+
+def discovery_notes(m):
+    """The render notes of environment m's data discovery (render_discovery writes their comments)."""
+    return tuple(n for s in discovery_services(m) for n in (findings_note(m, s), config_note(m, s)) if n is not None)
+
+
 def _config(m, s):
     cn, n = rdn_value(s), tf_name(rdn_value(s))
     buckets, others = _buckets(m, s)
-    frequency, status, note = _refresh(m, s)
-    dest, topic = _topic(m, s)
-    notes = (*note,
+    frequency, status, refresh = _refresh(m, s)
+    topic, unsent, none = _topic(m, s)[1], findings_note(m, s), config_note(m, s)
+    notes = (*refresh,
              *((comment(f"{cn}: only Cloud Storage targets are rendered: {', '.join(others)} not examined here"),)
                if others else ()),
-             *((comment(f"NOTE: {cn}'s findings to {one(s, 'ciamFindingsRole')}: not rendered: {rdn_value(dest)} names "
-                        "no Pub/Sub topic (ciamProviderRef projects/<p>/topics/<t>)"),)
-               if dest is not None and not topic else ()),
+             *((comment(note_comment(unsent)),) if unsent is not None else ()),
              *((comment(f"{cn}: Sensitive Data Protection exports detailed profiles to BigQuery only: "
                         f"{one(s, 'ciamResultsRole')} isn't written to"),) if one(s, "ciamResultsRole") else ()))
-    if not buckets:
-        return (*notes, comment(f"NOTE: data discovery {cn}: no discovery config: it examines no Cloud Storage bucket "
-                                "here"))
+    if none is not None:
+        return (*notes, comment(note_comment(none)))
     regex = "^(" + "|".join(re.escape(b) for b in buckets) + ")$"
     return (*notes, *_template(s, n), tf_block("resource", [CONFIG, n], [
         ("parent", PARENT), ("location", ref("var.region")), ("display_name", cn), ("status", status),

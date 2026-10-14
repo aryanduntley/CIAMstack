@@ -1,7 +1,8 @@
 """Google Cloud's health-check probe sources for its load balancers (docs.cloud.google.com,
 load-balancing/docs/health-check-concepts), and Cloud Monitoring's private uptime checkers (monitoring/uptime-checks/
 private-checks). A firewall rule admitting them belongs to a load balancer or a check, not to the record's firewall
-rules: the renderer adds one per service and the importers leave them out."""
+rules: the renderer adds one per load-balanced service and the importers leave them out (opsdir renders no private
+uptime check, decision 2859, but a rule admitting their checkers is still someone's check, not the record's rule)."""
 
 _PROBES = {"INTERNAL": ("35.191.0.0/16",),
            "EXTERNAL": ("35.191.0.0/16", "209.85.152.0/22", "209.85.204.0/22"),

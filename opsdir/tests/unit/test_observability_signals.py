@@ -83,8 +83,7 @@ def test_a_rule_becomes_promql_in_the_signals_unit():
     assert threshold_in(rule, "s") == "5"
     assert promql(rule, DELAY) == ("(max by (instance) (lag_seconds)) > 5", None)
     expr, why = promql(rule, DELAY._replace(unit="bytes"))
-    assert expr is None and why == ("alert rule replication-lag's threshold '5000 ms' can't be read in "
-                                    "replication-delay's unit (bytes)")
+    assert expr is None and why == "its threshold '5000 ms' can't be read in replication-delay's unit (bytes)"
 
 
 def test_the_clouds_metric_wins_over_a_product_signal():

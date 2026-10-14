@@ -31,6 +31,9 @@ AZ_WORKSPACES = ("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGr
                  "Microsoft.OperationalInsights/workspaces/{}")
 AZ_JOBS = ("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/"
            "Microsoft.App/jobs/{}")
+# the check image Example Aero's pipeline built, signed and pushed from the render's images/ciam-check/ (by digest)
+AZ_CHECK_IMAGE = ("check=crexampleaerociam.azurecr.io/ciam/check@sha256:"
+                  "574144c3681fe0e10565a329003298f27890e7589c4e5aa6ea7eb102ce0e9c1e")
 
 
 def entries():
@@ -133,16 +136,17 @@ MONITORING = {
         ("ciamAlarmBinding", "pf-login-failures", "alarm-login-failures",
          {"ciamProviderRef": AZ_INSIGHTS.format("scheduledQueryRules/pf-login-failures"),
           "ciamRealizes": "login-failures", "ciamMetric": "log query"}),
-        # the token and bind checks are Container Apps jobs (a standard web test can't read a secret or bind); the
-        # SAML sign-in's GET a standard web test
+        # the token and bind checks are Container Apps jobs (a standard web test can't read a secret or bind), running
+        # the check image the organization built and recorded; the SAML sign-in's GET a standard web test
         ("ciamCanaryBinding", "sso-login", "canary-sso-login",
-         {"ciamProviderRef": AZ_JOBS.format("sso-login"), "ciamRealizes": "sso-login", "ciamInterval": "5m"}),
+         {"ciamProviderRef": AZ_JOBS.format("sso-login"), "ciamRealizes": "sso-login", "ciamInterval": "5m",
+          "ciamContainerImage": AZ_CHECK_IMAGE}),
         ("ciamCanaryBinding", "portal-sso", "canary-portal-sso",
          {"ciamProviderRef": AZ_INSIGHTS.format("webtests/portal-sso"), "ciamRealizes": "portal-sso",
           "ciamInterval": "10m"}),
         ("ciamCanaryBinding", "directory-bind", "canary-directory-bind",
          {"ciamProviderRef": AZ_JOBS.format("directory-bind"), "ciamRealizes": "directory-bind",
-          "ciamInterval": "5m", "ciamSubnetRole": "subnet-checks"}),
+          "ciamInterval": "5m", "ciamSubnetRole": "subnet-checks", "ciamContainerImage": AZ_CHECK_IMAGE}),
         # planted: an unlocked immutability policy (governance), and control-plane activity only
         ("ciamObjectStore", "activity-logs", "audit-archive",
          {"ciamStorageRef": "azblob://stciamprodaudit/insights-activity-logs",

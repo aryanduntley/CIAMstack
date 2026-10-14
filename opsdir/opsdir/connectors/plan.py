@@ -26,6 +26,7 @@ from ..core.environment import ENVIRONMENT, EnvModel, by_role, environment_of, o
 from ..core.findings import (Fix, bindings_container, findings, merge_findings, owner_label, responsible,
                              templated_entry)
 from ..core.naming import env_label
+from ..core.notes import notes_findings, parsed
 from ..core.overlays import override_differences
 from ..domains.compute.workloads import placed_on_kubernetes
 from ..domains.directory.domain import consumers_of_role
@@ -165,8 +166,14 @@ def _check_required(ctx):
                               for r in ctx.dst.unbound if r not in src_roles])
 
 
+def _check_render_notes(ctx):
+    """What the target's render couldn't do or leaves to a person (its NOTES.json, core.notes): blockers and actions,
+    and the NOTE comments still to review."""
+    return notes_findings(ctx.dst, parsed(ctx.dst_files["NOTES.json"]), responsible(ctx.d, ctx.dst.env))
+
+
 # ------------------------------------------------------------------ composition
-CROSS_DOMAIN_CHECKS = (_check_neutral, _check_contracts, _check_roles, _check_required)
+CROSS_DOMAIN_CHECKS = (_check_neutral, _check_contracts, _check_roles, _check_required, _check_render_notes)
 
 
 def check_name(check):
@@ -211,8 +218,10 @@ def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS, requ
     dst, adapters, dst_neutral, dst_specific, dst_targets = render_parts(d, dst_spec, installed,   # every target
                                                                          scope=ENVIRONMENT)
     cutover = date_of(dst.env, "ciamPlannedCutover")
-    dst_files = assemble(dst, adapters, dst_neutral, dst_specific, dst_targets, requester=requester)
-    ctx = PlanContext(d, src, dst, cutover, as_of, assemble(src, src_adapters, src_neutral, src_specific, src_targets),
+    dst_files = assemble(dst, adapters, dst_neutral, dst_specific, dst_targets, requester=requester,
+                         installed=installed)
+    ctx = PlanContext(d, src, dst, cutover, as_of,
+                      assemble(src, src_adapters, src_neutral, src_specific, src_targets, installed=installed),
                       dst_files,
                       tuple(src_neutral))
     f = merge_findings([*(run_check(check, ctx) for check in checks(adapters, domains)),

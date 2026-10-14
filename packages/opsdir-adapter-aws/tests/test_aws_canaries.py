@@ -81,12 +81,10 @@ def test_what_a_canary_cant_reach_or_keep_is_named():
     hcl, scripts = _render(ALIVE.replace("ciamStorageRef: s3://example-ciam-canaries/alive/\n", ""))
     assert [x for x in hcl if x.startswith("#")] == [
         "# NOTE: canary intranet: not rendered: service name svc-admin is internal and no subnet is named to run its "
-        "canary from: name one on its canary binding (ciamSubnetRole), or record a firewall rule admitting a subnet to "
-        "web",
+        "check from",
         "# NOTE: canary sso-alive: not rendered: its canary binding ciam-sso-alive records no S3 location for its "
         "artifacts (ciamStorageRef s3://bucket/prefix)",
-        "# NOTE: canary sso-token: not rendered: no place for its artifacts: record its canary binding with an S3 "
-        "location (ciamStorageRef s3://bucket/prefix)"]
+        "# NOTE: canary sso-token: not rendered: no place for its artifacts: it has no canary binding"]
     assert scripts == {} and not any("aws_iam_role" in x for x in hcl)
 
 
@@ -156,3 +154,17 @@ def test_a_saml_sign_in_check_gets_the_identity_provider_s_start_for_its_service
     script = as_text(render_canaries(alpha, ENDPOINTS))[1]["terraform/canaries/portal-sso/python/canary.py"]
     assert ("URL = 'https://sso.example.test/idp/startSSO.ping?PartnerSpId=https%3A%2F%2Fportal.example.test%2Fsp'"
             in script and 'method="GET"' in script and "saml-sso check" in script)
+
+
+def test_what_a_canary_cant_run_is_a_render_note_with_how_to_handle_it():
+    from opsdir.core.notes import note_comment
+    from opsdir_adapter_aws.canaries import canary_notes
+    hcl, _ = _render(ALIVE.replace("ciamStorageRef: s3://example-ciam-canaries/alive/\n", ""))
+    _, alpha, _ = model(alpha=(*BINDINGS, ALIVE.replace("ciamStorageRef: s3://example-ciam-canaries/alive/\n", "")),
+                        tree=TREE)
+    notes = canary_notes(alpha, ENDPOINTS)
+    assert [f"# {note_comment(n)}" for n in notes] == [x for x in hcl if x.startswith("#")]
+    intranet = notes[0]
+    assert intranet.how == ("Name the subnet role it runs from on its canary binding (ciamSubnetRole), or record a "
+                            "firewall rule admitting a subnet to web, under an approved change, and re-render",)
+    assert {n.severity for n in notes} == {"action"} and all(n.area == "Monitoring" for n in notes)

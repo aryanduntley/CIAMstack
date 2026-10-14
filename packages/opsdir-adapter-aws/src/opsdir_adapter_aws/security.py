@@ -45,7 +45,9 @@ keeper): the management account (provider aws.management) registers the security
                           can't turn members' recorders on this way, so the environment's own recorder stays
 The environment's own root keeps the findings and incident routing and a line saying who enables it; in every region
 (ciamAllRegions) the GuardDuty and Inspector parts are made in each region (management_<region>, security_admin_<region>
-providers). Without the accounts the record must name (ciamManagementRef, ciamSecurityAdminRef), a NOTE.
+providers). Without the accounts the record must name (ciamManagementRef, ciamSecurityAdminRef), not rendered.
+
+What isn't rendered, or is left to a person, is a render note (security_notes, flow 43), written as its comment.
 
 A service in every region (ciamAllRegions, milestone 5.7b) renders its detector, enabler, hub or recorder in each region
 it may run in (security_regions): the region catalog's available regions of the cloud's partition, less those the
@@ -78,6 +80,7 @@ from collections import namedtuple
 from opsdir.core.directory import get, is_kind, one, rdn_value, values
 from opsdir.core.environment import of_class
 from opsdir.core.inventory import of_types, resource, tagged_role
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.estate.incidents import incident_routes
 from opsdir.domains.estate.naming import SEVERITIES
 from opsdir.domains.estate.regions import catalog_regions
@@ -149,6 +152,7 @@ SOURCES = {"threat-detection": ("aws.guardduty", "GuardDuty Finding"),
 _HUB = "arn:${data.aws_partition.current.partition}:securityhub:${data.aws_region.current.region}::"
 # the least GuardDuty severity value of each level (GuardDuty's severity levels: low 1.0-3.9 .. critical 9.0-10.0)
 GUARDDUTY_FLOOR = {"low": 1, "medium": 4, "high": 7, "critical": 9}
+AREA = "Security"
 
 
 def region_alias(region):
@@ -230,14 +234,25 @@ def in_region(items, region):
               *((k, _rewrite(v, renamed, region)) for k, v in b.body if k not in ("#", "provider"))))) for b in blocks)
 
 
+def regions_note(m, s):
+    """The render note of a service in every region when the region catalog holds no aws regions (a blocker: only
+    the cloud's own region renders), or None."""
+    if security_regions(m).listed:
+        return None
+    home = one(m.cloud, "ciamRegion")
+    return note(AREA, "blocker", rdn_value(s), "runs in every region, but the region catalog holds no aws regions "
+                f"(`opsdir prerequisites`): only {home} renders",
+                ("Fetch the region catalog (`opsdir prerequisites`), then re-render",), s.dn,
+                f"every region of {m.label} but {home}")
+
+
 def _everywhere(m, s, own):
     """What a service in every region adds to its own region's resources: their copy in each other region, Security
     Hub's finding aggregator (for the environment's own hub), and comments naming where it runs and where it doesn't."""
     cn, home, found = rdn_value(s), one(m.cloud, "ciamRegion"), security_regions(m)
     aggregate = not organization_wide(s)
     if not found.listed:
-        return (comment(f"NOTE: {cn}: runs in every region, but the region catalog holds no aws regions (`opsdir "
-                        f"prerequisites`): only {home} renders"),)
+        return (comment(note_comment(regions_note(m, s))),)
     kind, n = one(s, "ciamSecurityKind"), tf_name(cn)
     guardrail = _guardrail(m)
     return (comment(f"{cn}: in every region: {', '.join((home, *found.regions))}"),
@@ -348,15 +363,26 @@ _ORGANIZATION = {"threat-detection": _org_detection, "vulnerability-scanning": _
                  "posture": _org_posture, "config-recording": _org_recording}
 
 
-def organization_part(m, s):
-    """(the organization part of an organization-wide service, a NOTE for the environment's own part or None): what
-    the management account and the security services' delegated administrator make for every member account."""
+def organization_note(m, s):
+    """The render note of an organization-wide service without the accounts its organization part is made from (a
+    blocker), or None."""
     missing = [a for a, v in (("ciamManagementRef", management_account(m)),
                               ("ciamSecurityAdminRef", security_admin_account(m))) if not v]
-    if missing:
-        return (), comment(f"NOTE: {rdn_value(s)}: organization-wide, but not rendered: the record doesn't name "
-                           f"{' and '.join(missing)} (the organization's management account, its security services' "
-                           "delegated administrator)")
+    if not missing:
+        return None
+    return note(AREA, "blocker", rdn_value(s), f"organization-wide, but not rendered: the record doesn't name "
+                f"{' and '.join(missing)} (the organization's management account, its security services' delegated "
+                "administrator)",
+                (f"Record {' and '.join(missing)} on {rdn_value(m.cloud)}, {RECORD}",), s.dn, "the organization")
+
+
+def organization_part(m, s):
+    """(the organization part of an organization-wide service, the comment of its note (organization_note) for the
+    environment's own part or None): what the management account and the security services' delegated administrator
+    make for every member account."""
+    missing = organization_note(m, s)
+    if missing is not None:
+        return (), comment(note_comment(missing))
     kind, n = one(s, "ciamSecurityKind"), tf_name(rdn_value(s))
     mgmt, adm = ("provider", ref(f"aws.{MANAGEMENT}")), ("provider", ref(f"aws.{SECURITY_ADMIN}"))
     return _ORGANIZATION[kind](m, s, n, mgmt, adm, security_admin_account(m)), None
@@ -403,13 +429,27 @@ def _retention(s, n):
         (tf_block("resource", [RETENTION, n], [("retention_period_in_days", kept)]),)
 
 
-def _recorder(m, s):
-    cn, n, dest = rdn_value(s), tf_name(rdn_value(s)), findings_destination(m, s)
-    bucket = bucket_of(one(dest, "ciamStorageRef")) if dest is not None and is_kind(m.d, dest, "ciamObjectStore") \
+def _config_bucket(m, s):
+    dest = findings_destination(m, s)
+    return bucket_of(one(dest, "ciamStorageRef")) if dest is not None and is_kind(m.d, dest, "ciamObjectStore") \
         else None
+
+
+def recorder_note(m, s):
+    """The render note of a config-recording service AWS Config has no S3 bucket to deliver to (a blocker: no
+    recorder), or None."""
+    if _config_bucket(m, s) is not None:
+        return None
+    return note(AREA, "blocker", f"security service {rdn_value(s)} (config-recording)", "not rendered: AWS Config "
+                "delivers to an S3 bucket and no object store here is its ciamFindingsRole",
+                (f"Record the object store of the S3 bucket AWS Config delivers to as the service's ciamFindingsRole, "
+                 f"{RECORD}",), s.dn, m.label)
+
+
+def _recorder(m, s):
+    cn, n, bucket = rdn_value(s), tf_name(rdn_value(s)), _config_bucket(m, s)
     if bucket is None:
-        return (comment(f"NOTE: security service {cn} (config-recording): not rendered: AWS Config delivers to an S3 "
-                        "bucket and no object store here is its ciamFindingsRole"),)
+        return (comment(note_comment(recorder_note(m, s))),)
     return (tf_block("resource", ["aws_iam_service_linked_role", f"{n}_config"],
                      [("aws_service_name", "config.amazonaws.com")]),
             tf_block("resource", [RECORDER, n], [
@@ -438,16 +478,40 @@ def _hub(m, s):
               if missing else ()))
 
 
+def _target(m, dest):
+    return one(dest, "ciamProviderRef") if not is_kind(m.d, dest, "ciamObjectStore") else None
+
+
+def _route_note(m, s, dest, role, what, store_why):
+    """The blocker of a service's findings or incidents (what) to role, whose binding dest is no EventBridge target."""
+    store = is_kind(m.d, dest, "ciamObjectStore")
+    return note(AREA, "blocker", f"{rdn_value(s)}'s {what} to {role}",
+                f"not rendered: {store_why if store else f'{rdn_value(dest)} names no ARN (ciamProviderRef)'}",
+                (f"Bind {role} to an alert channel (its SNS topic's ARN as ciamProviderRef) or a log destination (its "
+                 f"CloudWatch log group's ARN), {RECORD}",) if store else
+                (f"Record the ARN of {rdn_value(dest)}'s SNS topic or CloudWatch log group (ciamProviderRef), "
+                 f"{RECORD}",), s.dn, m.label)
+
+
+def findings_note(m, s, kind):
+    """The render note of a service's findings route EventBridge can't deliver (a blocker: the findings go nowhere),
+    or None."""
+    dest = findings_destination(m, s)
+    if dest is None or kind not in SOURCES or _target(m, dest):
+        return None
+    return _route_note(m, s, dest, one(s, "ciamFindingsRole"), "findings",
+                       "an object store isn't an EventBridge target (deliver through a Firehose stream)")
+
+
 def findings_routing(m, s, kind):
-    """The EventBridge rule and target sending a service's findings where its ciamFindingsRole says, or a note."""
+    """The EventBridge rule and target sending a service's findings where its ciamFindingsRole says, or its note's
+    comment (findings_note)."""
     cn, dest = rdn_value(s), findings_destination(m, s)
     if dest is None or kind not in SOURCES:
         return ()
-    target = one(dest, "ciamProviderRef") if not is_kind(m.d, dest, "ciamObjectStore") else None
-    if not target:
-        why = ("an object store isn't an EventBridge target (deliver through a Firehose stream)"
-               if is_kind(m.d, dest, "ciamObjectStore") else f"{rdn_value(dest)} names no ARN (ciamProviderRef)")
-        return (comment(f"NOTE: {cn}'s findings to {one(s, 'ciamFindingsRole')}: not rendered: {why}"),)
+    target, found = _target(m, dest), findings_note(m, s, kind)
+    if found is not None:
+        return (comment(note_comment(found)),)
     n, (source, detail) = tf_name(f"{cn}_findings"), SOURCES[kind]
     return (tf_block("resource", [RULE, n], [
                 ("name", f"{cn}-findings"), ("description", f"{cn}'s findings to {one(s, 'ciamFindingsRole')}"),
@@ -471,23 +535,41 @@ def severity_filter(source, severity):
     return {"severity": _labels(severity)}
 
 
+def _route(m, s):
+    return next((r for r in incident_routes(m) if r.service.dn == s.dn), None)
+
+
+def incident_note(m, s, kind):
+    """The render note of a service's incident route this render doesn't make, or None: AWS Config's findings have
+    no severity to filter on (an action: route its compliance changes by hand), or the route's binding is no
+    EventBridge target (a blocker)."""
+    route = _route(m, s)
+    if route is None:
+        return None
+    if kind not in SOURCES:
+        return note(AREA, "action", f"{rdn_value(s)}'s incidents to {route.role}", "not rendered: AWS Config's "
+                    "findings have no severity (route its compliance changes through a Config rule's EventBridge "
+                    "event)",
+                    (f"Make an EventBridge rule on AWS Config's \"Config Rules Compliance Change\" events, for the "
+                     f"rules that matter, targeting {route.role}'s SNS topic or log group",
+                     f"Or remove the service's ciamIncidentRole, {RECORD}"), s.dn, m.label)
+    if route.binding is None or _target(m, route.binding):
+        return None
+    return _route_note(m, s, route.binding, route.role, "incidents", "an object store isn't an EventBridge target")
+
+
 def _incident_routing(m, s, kind):
     """The EventBridge rule and target sending a service's findings at or above its incident severity to the incident
-    process (its ciamIncidentRole), or a note."""
-    route = next((r for r in incident_routes(m) if r.service.dn == s.dn), None)
+    process (its ciamIncidentRole), or its note's comment (incident_note)."""
+    route, found = _route(m, s), incident_note(m, s, kind)
     if route is None:
         return ()
+    if found is not None:
+        return (comment(note_comment(found)),)
     cn, dest = rdn_value(s), route.binding
-    if kind not in SOURCES:
-        return (comment(f"NOTE: {cn}'s incidents to {route.role}: not rendered: AWS Config's findings have no severity "
-                        "(route its compliance changes through a Config rule's EventBridge event)"),)
     if dest is None:
         return ()
-    target = one(dest, "ciamProviderRef") if not is_kind(m.d, dest, "ciamObjectStore") else None
-    if not target:
-        why = ("an object store isn't an EventBridge target" if is_kind(m.d, dest, "ciamObjectStore") else
-               f"{rdn_value(dest)} names no ARN (ciamProviderRef)")
-        return (comment(f"NOTE: {cn}'s incidents to {route.role}: not rendered: {why}"),)
+    target = _target(m, dest)
     n, (source, detail) = tf_name(f"{cn}_incidents"), SOURCES[kind]
     return (tf_block("resource", [RULE, n], [
                 ("name", f"{cn}-incidents"),
@@ -513,13 +595,26 @@ def _service(m, s):
     if not organization_wide(s):
         own = _RENDER[kind](m, s)
         return (*own, *routing, *(_everywhere(m, s, own) if everywhere else ())), ()
-    org, note = organization_part(m, s)
+    org, missing = organization_part(m, s)
     own = _RENDER[kind](m, s) if kind == "config-recording" else ()
     return ((*own, *routing, *(_everywhere(m, s, own) if everywhere and own else ()),
-             *((note,) if note else (comment(organization_line(m, s)),)),
+             *((missing,) if missing else (comment(organization_line(m, s)),)),
              *((comment(f"{rdn_value(s)}: an organization can't turn members' AWS Config recorders on: this account "
                         "records its own"),) if own else ())),
             (*org, *((x for r in security_regions(m).regions for x in in_region(org, r)) if everywhere else ())))
+
+
+def security_notes(m):
+    """The render notes of environment m's security services (render_security writes their comments), in the order
+    _service writes them: its own part's (AWS Config's recorder, every region), its routes', its organization part's."""
+    def of(s):
+        kind, org = one(s, "ciamSecurityKind"), organization_wide(s)
+        own = kind == "config-recording" or not org
+        return (recorder_note(m, s) if kind == "config-recording" else None,
+                findings_note(m, s, kind), incident_note(m, s, kind),
+                regions_note(m, s) if own and one(s, "ciamAllRegions") == "TRUE" else None,
+                organization_note(m, s) if org else None)
+    return tuple(n for s in security_services(m) for n in of(s) if n is not None)
 
 
 def render_security(m):

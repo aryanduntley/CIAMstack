@@ -5,12 +5,14 @@ Statements follow AWS's examples (github.com/aws-samples/service-control-policy-
 457), without their privileged-role exemptions: add one where the organization keeps such a role. Adapted: the
 CloudTrail statement covers every trail (the example names one) and leaves trail creation allowed. IMDSv2 follows the
 EC2 User Guide's example. Not rendered: public-storage (AWS's mechanism, the Organizations S3 policy type, needs the
-aws provider v6), and any denial AWS has no statement for; each is a NOTE. region-escape allows the regions the
+aws provider v6), and any denial AWS has no statement for; each is an action (guardrail_notes, flow 43), written as
+its comment. region-escape allows the regions the
 environment may hold resources in (estate.residency.permitted_regions: its cloud's region and those its residency
 allows).
 """
 from opsdir.core.directory import rdn_value, values
 from opsdir.core.environment import of_class
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.access.naming import DENIALS
 from opsdir.domains.estate.residency import permitted_regions
 from opsdir_format_terraform.hcl import comment, jsonencoded, ref, tf_block, tf_name
@@ -57,14 +59,31 @@ def denials_of(statements):
     return tuple(dict.fromkeys(sids[s.get("Sid")] for s in statements if s.get("Sid") in sids))
 
 
+def guardrail_note(m, g, d):
+    """The render note of guardrail g's denial d when AWS has no SCP statement for it (an action: enforce it
+    another way), or None."""
+    if _statements(d, permitted_regions(m)):
+        return None
+    return note("Guardrails", "action", f"guardrail {rdn_value(g)}", f"{d}: "
+                f"{NOT_RENDERED.get(d, 'AWS has no statement for it')}",
+                (f"Prevent {d} another way where the guardrail applies (an organization policy of another type, a "
+                 "Config rule), or remove it from the guardrail's ciamDenies, " + RECORD,), g.dn, m.label)
+
+
+def guardrail_notes(m):
+    """The render notes of environment m's guardrails (render_guardrails writes their comments)."""
+    return tuple(n for g in of_class(m, "ciamGuardrail") for d in values(g, "ciamDenies")
+                 for n in (guardrail_note(m, g, d),) if n is not None)
+
+
 def render_guardrails(m):
-    """HCL for environment m's guardrails: per guardrail an SCP and its attachment; a NOTE for what isn't rendered."""
+    """HCL for environment m's guardrails: per guardrail an SCP and its attachment; a note (guardrail_note) for what
+    isn't rendered."""
     def one_guardrail(g):
         n, regions = tf_name(rdn_value(g)), permitted_regions(m)
         denials = values(g, "ciamDenies")
         found = [s for d in denials for s in _statements(d, regions)]
-        skipped = [comment(f"NOTE: guardrail {rdn_value(g)}: {d}: {NOT_RENDERED.get(d, 'AWS has no statement for it')}")
-                   for d in denials if not _statements(d, regions)]
+        skipped = [comment(note_comment(x)) for d in denials for x in (guardrail_note(m, g, d),) if x is not None]
         return (*skipped, *((
             tf_block("resource", ["aws_organizations_policy", n], [
                 ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(g)}"), ("type", "SERVICE_CONTROL_POLICY"),

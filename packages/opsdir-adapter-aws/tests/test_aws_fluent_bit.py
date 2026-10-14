@@ -95,10 +95,13 @@ def test_the_kustomization_and_the_daemonset():
 
 def test_whats_not_shipped_is_named_and_the_render_carries_it_all():
     alpha = _alpha()
-    assert as_text(fluent_bit_notes(alpha, _services())) == (
+    from opsdir.core.notes import note_comment
+    (siem,) = fluent_bit_notes(alpha, _services())
+    assert f"# {note_comment(siem)}" == (
         "# NOTE: log route to-siem: role am's container output not shipped: its destination siem isn't a CloudWatch "
-        "log group (kind log-group, a log group ARN)",)
+        "log group (kind log-group, a log group ARN)") and siem.severity == "blocker"
     out = render(alpha, _services())
+    assert f"# {note_comment(siem)}" in out["terraform/main.tf"].splitlines()
     assert out["terraform/main.tf"].count('data "aws_eks_cluster" "ciam_eks"') == 1
     assert 'resource "aws_iam_role" "fluent_bit_ciam_eks"' in out["terraform/main.tf"]
     assert "kubernetes/fluent-bit/ciam-eks/daemonset.yaml" in out

@@ -8,7 +8,6 @@ from opsdir.core.contract import LogSource
 from opsdir.core.interchange.ldif import LdifRecord
 from opsdir.domains.access.naming import PERMISSION_SETS, PRINCIPALS
 from opsdir.domains.observability.naming import LOG_ROUTES
-from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.log_agent import CONFIG, RELOAD, host_files, log_notes
 from network_fixtures import ALPHA, entry, model
 
@@ -79,8 +78,17 @@ def test_the_fips_endpoint_when_the_cloud_uses_them():
     assert json.loads(first.text)["logs"]["endpoint_override"] == "https://logs-fips.region-1.amazonaws.com"
 
 
+def _comments(notes):
+    from opsdir.core.notes import note_comment
+    return tuple(f"# {note_comment(n)}" for n in notes)
+
+
 def test_what_isnt_shipped_or_only_in_part_is_named():
-    assert as_text(log_notes(_alpha(), _services())) == (
+    notes = log_notes(_alpha(), _services())
+    assert {(n.area, n.severity) for n in notes} == {("Logs", "blocker")}
+    assert notes[-1].how == ("Grant a workload principal acting for role web the permit `write-logs ops-logs`, under "
+                             "an approved change, and re-render",)
+    assert _comments(notes) == (
         "# NOTE: log route access-logs: /opt/ds/audit/*.json on ds-1 not shipped: the route takes only some of its "
         "lines, and the CloudWatch agent can't tell them apart by their JSON fields",
         "# NOTE: log route access-logs: /srv/ds/audit/*.json on ds-2 not shipped: the route takes only some of its "
@@ -89,7 +97,7 @@ def test_what_isnt_shipped_or_only_in_part_is_named():
         "log group (kind log-group, a log group ARN)",
         "# NOTE: log route to-siem: /srv/ds/logs/errors on ds-2 not shipped: its destination siem isn't a CloudWatch "
         "log group (kind log-group, a log group ARN)",
-        "# NOTE: role web ships logs to ops-logs, but no workload principal acting for it holds the permit "
+        "# NOTE: role web: ships logs to ops-logs, but no workload principal acting for it holds the permit "
         "`write-logs ops-logs`: its servers' instance role isn't granted the writes")
 
 
@@ -99,6 +107,7 @@ def test_a_glob_ships_only_the_newest_file_it_matches():
     (agent,) = host_files(alpha, services()._replace(logs=lambda m: globbed))
     assert json.loads(agent.text)["logs"]["logs_collected"]["files"]["collect_list"][0]["log_stream_name"] == (
         "{instance_id}/log/_.log")
-    assert as_text(log_notes(alpha, services()._replace(logs=lambda m: globbed)))[0] == (
+    (glob, *_) = log_notes(alpha, services()._replace(logs=lambda m: globbed))
+    assert _comments((glob,))[0] == (
         "# NOTE: log route access-logs: /opt/web/log/*.log on web-1: the CloudWatch agent ships only the most "
-        "recently modified file the glob matches")
+        "recently modified file the glob matches") and glob.severity == "action"

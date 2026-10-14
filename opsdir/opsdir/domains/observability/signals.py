@@ -107,12 +107,13 @@ def evaluation(m, signals, rule):
 
 
 def promql(rule, signal):
-    """(PromQL alert expression for the rule on a product Signal, None) or (None, why it can't be written)."""
+    """(PromQL alert expression for the rule on a product Signal, None) or (None, why it can't be written, about
+    the rule)."""
     op = PROMQL_OPERATORS.get(one(rule, "ciamComparison") or "")
     if op is None:
-        return None, f"alert rule {rdn_value(rule)} records no comparison (ciamComparison)"
+        return None, "it records no comparison (ciamComparison)"
     threshold = threshold_in(rule, signal.unit)
     if threshold is None:
-        return None, (f"alert rule {rdn_value(rule)}'s threshold {one(rule, 'ciamThreshold')!r} can't be read in "
+        return None, (f"its threshold {one(rule, 'ciamThreshold')!r} can't be read in "
                       f"{signal.signal}'s unit ({signal.unit})")
     return f"({signal.expr}) {op} {threshold}", None

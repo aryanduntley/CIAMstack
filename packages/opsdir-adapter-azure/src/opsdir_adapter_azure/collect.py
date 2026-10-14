@@ -54,7 +54,9 @@ WEB_TEST_PROJECTION = ("[].{id: id, name: name, type: type, tags: tags, kind: ki
                        "request: request && {requestUrl: request.requestUrl}}")
 # a job's schedule and tags only: its containers' environment variables and its secrets' references stay unread
 JOB_PROJECTION = ("[].{id: id, name: name, type: type, tags: tags, "
-                  "cronExpression: properties.configuration.scheduleTriggerConfig.cronExpression}")
+                  "cronExpression: properties.configuration.scheduleTriggerConfig.cronExpression, "
+                  "image: properties.template.containers[0].image, "
+                  "registries: properties.configuration.registries[].server}")
 
 
 def _az(*args, query=None, absent=()):

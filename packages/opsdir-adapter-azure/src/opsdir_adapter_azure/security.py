@@ -33,7 +33,7 @@ destination's ciamProviderRef) or an Event Hub (a stream binding of kind event-h
 string read from the Key Vault secret its ciamSendSecretRole names when applied; Terraform state keeps it, sensitive).
 An email alert channel (its address the ciamProviderRef) the findings or incidents go to is the subscription's one
 Defender security contact (alert notifications, the subscription's owners too; the minimum severity only the preview
-securityContacts API sets is named in a comment); another binding is a NOTE. An
+securityContacts API sets is named in a comment); another binding is a blocker. An
 organization-wide service (milestone 5.7b, decision 2777) is enabled on the management group (ciamManagementRef;
 var.management_group_id) by Azure Policy, its part kept with the landing zone (organization origin): per Defender plan
 it needs, the built-in DeployIfNotExists policy (PLAN_POLICIES, by definition GUID) assigned with a system-assigned
@@ -50,7 +50,9 @@ alert (azurerm_monitor_scheduled_query_rules_alert_v2) on the table the workspac
 to keeps them in (Azure Monitor's table reference): threat detection's alerts in SecurityAlert (AlertSeverity at or
 above it), vulnerability scanning's findings in SecurityNestedRecommendation and posture's recommendations in
 SecurityRecommendation (RecommendationSeverity at or above it, RecommendationState not Healthy). Defender has no
-critical severity: critical is routed as high (a comment). Anything else is a NOTE.
+critical severity: critical is routed as high (a comment). Anything else is a blocker. In Azure Government, what one of
+Microsoft's pages lists as unavailable there is rendered all the same, and an action: confirm with the account team.
+Each is a render note (security_notes, flow 43), written as its comment.
 
 Read back from Terraform state (and from the CLI and ARM, normalized to the same names: cli_security.py; a policy
 assignment at a subscription's scope as cli_iam reads it too): azurerm_security_center_subscription_pricing (tier
@@ -66,16 +68,17 @@ import re
 
 from opsdir.core.directory import get, is_kind, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.estate.incidents import incident_routes
 from opsdir.domains.estate.naming import ALL_USERS, SEVERITIES
 from opsdir.domains.estate.security import findings_destination, security_services
 from opsdir_format_terraform.hcl import Block, comment, from_entry, mentions, ref, tf_block, tf_name
 from opsdir.domains.governance.keepers import organization_line, organization_origin
 from .account import management_group, management_group_variable
-from .change_history import render_change_history
+from .change_history import history_note, render_change_history
 from .cmk import role_uri, vault_object
 from .identities import LOC, RG
-from .identity_protection import identity_read, render_identity_protection
+from .identity_protection import identity_notes, identity_read, render_identity_protection
 
 PRICING = "azurerm_security_center_subscription_pricing"
 VA_SETTING = "azurerm_security_center_server_vulnerability_assessments_setting"
@@ -162,15 +165,43 @@ SEVERITY_PATHS = {"Alerts": ("Severity", str.lower), "Assessments": ("properties
                   "SubAssessments": ("properties.metadata.severity", str.capitalize)}
 # Azure Monitor alert severity (0 severest) of an incident route by its least severity
 MONITOR_SEVERITY = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+AREA = "Security"
 
 
 def _gov(m):
     return one(m.cloud, "ciamCloudEnvironment") == "usgovernment"
 
 
+def gov_note(m, key):
+    """The render note of a plan, feature or initiative a Microsoft page lists as unavailable in Azure Government,
+    rendered all the same (an action: confirm with the account team), or None (elsewhere, or not listed)."""
+    if not (_gov(m) and key in GOV_NOTES):
+        return None
+    what = "vulnerability assessment for machines" if key == VA_SETTING else \
+        f"initiative {INITIATIVES[key]}" if key in INITIATIVES else f"Defender plan {key}"
+    return note(AREA, "action", f"{what} in Azure Government", f"{GOV_NOTES[key]}: rendered, confirm with the "
+                "account team",
+                (f"Ask Microsoft's account team whether {what} is available in the environment's Azure Government "
+                 "region before relying on it",
+                 f"If it isn't, remove what needs it from the security services' record, {RECORD}"), None, m.label)
+
+
 def _confirm(m, key):
-    """The Azure Government comment for a plan, feature or initiative a Microsoft page lists as unavailable, or ()."""
-    return ((f"{GOV_NOTES[key]}: rendered, confirm with the account team",) if _gov(m) and key in GOV_NOTES else ())
+    """The comment text of a key's Azure Government note (gov_note), or ()."""
+    found = gov_note(m, key)
+    return (note_comment(found),) if found is not None else ()
+
+
+def policy_gov_note(m, plan, guid):
+    """The render note of a built-in policy enabling a Defender plan that Microsoft doesn't confirm exists in Azure
+    Government (an action: check it there), or None elsewhere."""
+    if not _gov(m):
+        return None
+    return note(AREA, "action", f"policy {guid} in Azure Government", f"{plan}: Microsoft doesn't confirm built-in "
+                f"policy {guid} exists in Azure Government: check it there (az policy definition show --name {guid})",
+                (f"Run `az policy definition show --name {guid}` against Azure Government (az cloud set --name "
+                 "AzureUSGovernment)",
+                 f"If it doesn't exist, enable Defender plan {plan} in each subscription instead"), None, m.label)
 
 
 def _plans(services, extra=()):
@@ -262,17 +293,35 @@ def export_action(m, binding, n):
                  ("name", name), ("key_vault_id", ref(f"data.azurerm_key_vault.{n}.id"))])), None)
 
 
+def _route_how(role):
+    return (f"Bind {role} to a Log Analytics workspace (its resource ID as ciamProviderRef), an Event Hub with the "
+            f"secret holding its connection string (ciamSendSecretRole) or an email alert channel, {RECORD}",)
+
+
+def findings_note(m, s, kind):
+    """The render note of a service's findings that continuous export can't send where its ciamFindingsRole says
+    (neither a workspace, an Event Hub with its secret, nor an email channel: a blocker), or None."""
+    dest = findings_destination(m, s)
+    if dest is None or kind not in EXPORTS:
+        return None
+    action, _, why = export_action(m, dest, "")
+    if action is not None or _email(m, dest):
+        return None
+    role = one(s, "ciamFindingsRole")
+    return note(AREA, "blocker", f"{rdn_value(s)}'s findings to {role}", f"not rendered: {why}", _route_how(role),
+                s.dn, m.label)
+
+
 def _export(m, s, kind):
-    """The continuous export of a service's findings to the workspace or Event Hub its ciamFindingsRole names, or a
-    note."""
+    """The continuous export of a service's findings to the workspace or Event Hub its ciamFindingsRole names, the
+    security contact's comment for an email channel, or its note's comment (findings_note)."""
     cn, dest = rdn_value(s), findings_destination(m, s)
     if dest is None or kind not in EXPORTS:
         return ()
     n = tf_name(f"{cn}_export")
-    action, needed, why = export_action(m, dest, n)
+    action, needed, _ = export_action(m, dest, n)
     if action is None:
-        return (*_contact(m, s, dest, "findings"),) or \
-            (comment(f"NOTE: {cn}'s findings to {one(s, 'ciamFindingsRole')}: not rendered: {why}"),)
+        return (*_contact(m, s, dest, "findings"),) or (comment(note_comment(findings_note(m, s, kind))),)
     return (*needed, tf_block("resource", [AUTOMATION, n], [
         ("name", f"{cn}-export"), ("location", LOC), ("resource_group_name", RG),
         ("scopes", [ref(f"{SUBSCRIPTION}.id")]), ("action", action),
@@ -346,9 +395,34 @@ def _action_group_of(binding):
     return ref_ if ref_ and "/actiongroups/" in ref_.lower() else None
 
 
+def incident_note(m, s, kind):
+    """The render note of a service's incident route this render can't make (a blocker), or None: its binding is no
+    workspace, Event Hub, email channel or action group, or a log alert to its action group has no workspace the
+    service's findings are exported to."""
+    route = next((r for r in incident_routes(m) if r.service.dn == s.dn), None)
+    if route is None or route.binding is None or kind not in EXPORTS:
+        return None
+    group = _action_group_of(route.binding)
+    findings_ws = _workspace_of(m, findings_destination(m, s))
+    if export_action(m, route.binding, "")[0] is not None or _email(m, route.binding) or \
+            (group and kind in INCIDENT_TABLES and findings_ws):
+        return None
+    alert = group and kind in INCIDENT_TABLES
+    why = (f"a log alert on {INCIDENT_TABLES[kind][0]} needs the service's findings exported to a Log Analytics "
+           "workspace (its ciamFindingsRole)" if alert else
+           f"{rdn_value(route.binding)} is no Log Analytics workspace, Event Hub, email channel or action group "
+           "(ciamProviderRef)")
+    how = ((f"Export the service's findings to a Log Analytics workspace (bind its ciamFindingsRole to one), "
+            f"{RECORD}",) if alert else
+           (f"Bind {route.role} to a Log Analytics workspace, an Event Hub, an email alert channel or an action group "
+            f"(its resource ID as ciamProviderRef), {RECORD}",))
+    return note(AREA, "blocker", f"{rdn_value(s)}'s incidents to {route.role}", f"not rendered: {why}", how, s.dn,
+                m.label)
+
+
 def _incident_routing(m, s, kind):
     """The continuous export (or log alert) sending a service's findings at or above its incident severity to the
-    incident process (its ciamIncidentRole), or a note."""
+    incident process (its ciamIncidentRole), or its note's comment (incident_note)."""
     route = next((r for r in incident_routes(m) if r.service.dn == s.dn), None)
     if route is None or route.binding is None or kind not in EXPORTS:
         return ()
@@ -377,11 +451,7 @@ def _incident_routing(m, s, kind):
             ("criteria", Block((("query", incident_query(kind, route.severity)), ("time_aggregation_method", "Count"),
                                 ("operator", "GreaterThan"), ("threshold", 0)))),
             ("action", Block((("action_groups", [group]),)))]))
-    why = (f"a log alert on {INCIDENT_TABLES[kind][0]} needs the service's findings exported to a Log Analytics "
-           "workspace (its ciamFindingsRole)" if group and kind in INCIDENT_TABLES else
-           f"{rdn_value(route.binding)} is no Log Analytics workspace, Event Hub, email channel or action group "
-           "(ciamProviderRef)")
-    return (comment(f"NOTE: {cn}'s incidents to {route.role}: not rendered: {why}"),)
+    return (comment(note_comment(incident_note(m, s, kind))),)
 
 
 def _enabled_by_policy(m, s, plan):
@@ -393,8 +463,7 @@ def _enabled_by_policy(m, s, plan):
         return (comment(f"{rdn_value(s)}: no built-in policy enables Defender plan {plan} at scale (an audit policy "
                         "only): enable it in each subscription"),)
     name = f"mdc-{plan.lower()}"[:24]
-    gov = (("#", f"{plan}: Microsoft doesn't confirm built-in policy {guid} exists in Azure Government: check it "
-                 f"there (az policy definition show --name {guid})"),) if _gov(m) else ()
+    gov = (("#", note_comment(policy_gov_note(m, plan, guid))),) if _gov(m) else ()
     return (tf_block("data", ["azurerm_policy_definition", n], [("name", guid)]),
             tf_block("resource", [MG_ASSIGNMENT, n], [
                 *gov, *(("#", note) for note in _confirm(m, plan)),
@@ -412,13 +481,24 @@ def _enabled_by_policy(m, s, plan):
                 ("depends_on", [ref(f"azurerm_role_assignment.{n}")])]))
 
 
+def organization_note(m, s):
+    """The render note of an organization-wide security service without the management group its part is made on
+    (ciamManagementRef: a blocker), or None."""
+    if management_group(m) is not None:
+        return None
+    return note(AREA, "blocker", rdn_value(s), "organization-wide, but not rendered: the record doesn't name the "
+                "management group (ciamManagementRef)",
+                (f"Record the management group on {rdn_value(m.cloud)} (ciamManagementRef: its name or resource ID), "
+                 f"{RECORD}",), s.dn, "the organization")
+
+
 def organization_part(m, s):
-    """(the organization part of an organization-wide security service, a NOTE for the environment's own part or
-    None): on the management group (ciamManagementRef), the policies enabling each Defender plan it needs for every
-    subscription and, for posture, its frameworks' initiatives."""
-    if management_group(m) is None:
-        return (), comment(f"NOTE: {rdn_value(s)}: organization-wide, but not rendered: the record doesn't name the "
-                           "management group (ciamManagementRef)")
+    """(the organization part of an organization-wide security service, its note's comment (organization_note) for
+    the environment's own part or None): on the management group (ciamManagementRef), the policies enabling each
+    Defender plan it needs for every subscription and, for posture, its frameworks' initiatives."""
+    missing = organization_note(m, s)
+    if missing is not None:
+        return (), comment(note_comment(missing))
     plans = tuple(dict.fromkeys(p for p, _, _ in _service_plans(s)))
     frameworks = [k for k in values(s, "ciamComplianceStandard")
                   if k in INITIATIVES and not (k in GOV_ONLY and not _gov(m))]
@@ -438,8 +518,8 @@ def _service(m, s):
     cn, kind = rdn_value(s), one(s, "ciamSecurityKind")
     routing = (*_export(m, s, kind), *_incident_routing(m, s, kind))
     if one(s, "ciamAuditScope") == "organization" and kind != "identity-protection" and kind in _ORGANIZATION_KINDS:
-        org, note = organization_part(m, s)
-        return (*routing, note if note else comment(organization_line(m, s))), org
+        org, missing = organization_part(m, s)
+        return (*routing, missing if missing else comment(organization_line(m, s))), org
     body = (_scanner(m, s) if kind == "vulnerability-scanning" else _posture(m, s) if kind == "posture" else
             (render_change_history(m, s) or
              (comment(f"{cn}: Azure records resource changes itself (Resource Graph change history, 14 days): "
@@ -468,6 +548,38 @@ def render_security(m, extra=()):
              for x in (*from_entry(s.dn, mine), *from_entry(organization_origin(s.dn), org))))
     return ((tf_block("data", ["azurerm_subscription", "current"], []),) if mentions(out, SUBSCRIPTION) else ()) + \
         ((management_group_variable(m),) if mentions(out, "var.management_group_id") else ()) + out
+
+
+def _government_notes(m, extra):
+    """The Azure Government notes of what environment m's security render confirms (gov_note, policy_gov_note): its
+    own services' Defender plans (and extra plans), vulnerability assessment, posture initiatives; the
+    organization-wide services' plans' policies and initiatives on the management group."""
+    if not _gov(m):
+        return ()
+    services = security_services(m)
+    own = [s for s in services if not _organization_wide(s)]
+    org = [s for s in services if _organization_wide(s) and management_group(m) is not None]
+    plans = [p for s in org for p in dict.fromkeys(p for p, _, _ in _service_plans(s)) if PLAN_POLICIES.get(p)]
+    keys = (*(p for p, _, _, _ in _plans(own, extra)),
+            *(VA_SETTING for s in own if one(s, "ciamSecurityKind") == "vulnerability-scanning"
+              and "compute" in (values(s, "ciamSecurityCoverage") or ("compute",))),
+            *(k for s in own if one(s, "ciamSecurityKind") == "posture" for k in values(s, "ciamComplianceStandard")
+              if k in INITIATIVES),
+            *plans, *(k for s in org for k in values(s, "ciamComplianceStandard") if k in INITIATIVES))
+    return (*(gov_note(m, k) for k in keys), *(policy_gov_note(m, p, PLAN_POLICIES[p]) for p in plans))
+
+
+def security_notes(m, extra=()):
+    """The render notes of environment m's security services (render_security writes their comments, with the same
+    extra plans): each service's findings and incident routes', its organization part's, a kept service's change
+    history and identity protection notes; then the Azure Government confirmations; each once."""
+    def of(s):
+        kind, org = one(s, "ciamSecurityKind"), _organization_wide(s)
+        body = () if org or kind in ("vulnerability-scanning", "posture") else \
+            (history_note(m, s),) if kind == "config-recording" else identity_notes(m, s)
+        return (findings_note(m, s, kind), incident_note(m, s, kind), organization_note(m, s) if org else None, *body)
+    found = (*(n for s in security_services(m) for n in of(s)), *_government_notes(m, extra))
+    return tuple(dict.fromkeys(n for n in found if n is not None))
 
 
 def _organization_wide(s):

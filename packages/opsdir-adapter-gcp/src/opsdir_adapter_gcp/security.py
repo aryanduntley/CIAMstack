@@ -27,11 +27,12 @@ this renders what a project can hold and names the rest as a request:
 Findings of threat detection, vulnerability scanning and posture go where ciamFindingsRole says through a
 google_scc_v2_project_notification_config streaming the finding class (THREAT, VULNERABILITY, MISCONFIGURATION) to the
 Pub/Sub topic its binding names (ciamProviderRef projects/<p>/topics/<t>; Security Command Center's service agent must
-be able to publish, a comment); any other binding is a NOTE. Security Command Center covers every region.
+be able to publish, a comment); any other binding is a blocker. Security Command Center covers every region.
 
 Findings at or above a service's ciamIncidentSeverity also go to the incident process (its ciamIncidentRole) through a
 second notification config whose filter adds the Security Command Center severities at or above it (severity="HIGH"
-OR severity="CRITICAL"), to the incident role's Pub/Sub topic; an asset feed has no severity (a NOTE).
+OR severity="CRITICAL"), to the incident role's Pub/Sub topic; an asset feed has no severity (an action). Each is a
+render note (security_notes, flow 43), written as its comment.
 
 Read back from Terraform state (and from gcloud and Cloud Asset Inventory, normalized to the same names:
 cli_security.py): SCC notification configs (project or organization, v1 or v2) -> a security service per
@@ -48,6 +49,7 @@ import re
 
 from opsdir.core.directory import get, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.estate.incidents import incident_routes
 from opsdir.domains.estate.naming import SEVERITIES
 from opsdir.domains.estate.security import findings_destination, security_services
@@ -81,10 +83,23 @@ def _topic(m, s):
     return pref if pref and "/topics/" in pref else None
 
 
-def _no_topic(m, s, what):
+TOPIC_HOW = "Pub/Sub topic (ciamProviderRef projects/<p>/topics/<t>)"
+
+
+def topic_note(m, s, what):
+    """The render note of a service's findings or configuration changes (what) whose ciamFindingsRole binding names
+    no Pub/Sub topic (a blocker: they go nowhere), or None (a topic, or no binding)."""
     dest = findings_destination(m, s)
-    return (comment(f"NOTE: {rdn_value(s)}'s {what} to {one(s, 'ciamFindingsRole')}: not rendered: {rdn_value(dest)} "
-                    "names no Pub/Sub topic (ciamProviderRef projects/<p>/topics/<t>)"),) if dest is not None else ()
+    if dest is None or _topic(m, s) is not None:
+        return None
+    return note("Security", "blocker", f"{rdn_value(s)}'s {what} to {one(s, 'ciamFindingsRole')}",
+                f"not rendered: {rdn_value(dest)} names no Pub/Sub topic (ciamProviderRef projects/<p>/topics/<t>)",
+                (f"Record {rdn_value(dest)}'s {TOPIC_HOW}, {RECORD}",), s.dn, m.label)
+
+
+def _no_topic(m, s, what):
+    found = topic_note(m, s, what)
+    return (comment(note_comment(found)),) if found is not None else ()
 
 
 def _notification(m, s, kind):
@@ -106,20 +121,50 @@ def severity_filter(kind, severity):
     return f'finding_class="{CLASSES[kind]}" AND state="ACTIVE" AND ({levels})'
 
 
+def _route(m, s):
+    return next((r for r in incident_routes(m) if r.service.dn == s.dn), None)
+
+
+def incident_note(m, s, kind):
+    """The render note of a service's incident route this render doesn't make, or None: an asset feed's changes have
+    no severity (an action: route them another way), or the route's binding names no Pub/Sub topic (a blocker)."""
+    route = _route(m, s)
+    if route is None or route.binding is None:
+        return None
+    subject = f"{rdn_value(s)}'s incidents to {route.role}"
+    if kind not in CLASSES:
+        return note("Security", "action", subject, "not rendered: an asset feed's changes have no severity",
+                    (f"Pick the changes that are incidents another way (a subscription on the feed's topic filtering "
+                     f"them) and send them to {route.role}",
+                     f"Or remove the service's ciamIncidentRole, {RECORD}"), s.dn, m.label)
+    topic = one(route.binding, "ciamProviderRef")
+    if topic and "/topics/" in topic:
+        return None
+    return note("Security", "blocker", subject, f"not rendered: {rdn_value(route.binding)} names no Pub/Sub topic "
+                "(ciamProviderRef projects/<p>/topics/<t>)", (f"Record {rdn_value(route.binding)}'s {TOPIC_HOW}, "
+                                                              f"{RECORD}",), s.dn, m.label)
+
+
+def security_notes(m):
+    """The render notes of environment m's security services (render_security writes their comments): each one's
+    findings (or, recording configuration, its changes') and incident routes'."""
+    def of(s):
+        kind = one(s, "ciamSecurityKind")
+        what = "configuration changes" if kind == "config-recording" else "findings" if kind in CLASSES else None
+        return (topic_note(m, s, what) if what else None, incident_note(m, s, kind))
+    return tuple(n for s in security_services(m) for n in of(s) if n is not None)
+
+
 def _incident_notification(m, s, kind):
     """The notification config sending a service's findings at or above its incident severity to the incident
-    process's Pub/Sub topic (its ciamIncidentRole), or a note."""
-    route = next((r for r in incident_routes(m) if r.service.dn == s.dn), None)
+    process's Pub/Sub topic (its ciamIncidentRole), or its note's comment (incident_note)."""
+    route = _route(m, s)
     if route is None or route.binding is None:
         return ()
-    cn = rdn_value(s)
-    if kind not in CLASSES:
-        return (comment(f"NOTE: {cn}'s incidents to {route.role}: not rendered: an asset feed's changes have no "
-                        "severity"),)
+    cn, found = rdn_value(s), incident_note(m, s, kind)
+    if found is not None:
+        return (comment(note_comment(found)),)
     topic = one(route.binding, "ciamProviderRef")
-    if not topic or "/topics/" not in topic:
-        return (comment(f"NOTE: {cn}'s incidents to {route.role}: not rendered: {rdn_value(route.binding)} names no "
-                        "Pub/Sub topic (ciamProviderRef projects/<p>/topics/<t>)"),)
     return (tf_block("resource", [NOTIFICATION, tf_name(f"{cn}_incidents")], [
         ("#", "Security Command Center's service agent must be able to publish to the topic"),
         ("config_id", f"{cn}-incidents"), ("project", PROJECT), ("location", "global"),

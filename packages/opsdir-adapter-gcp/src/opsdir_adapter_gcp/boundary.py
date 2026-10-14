@@ -7,6 +7,7 @@ the compliance regime of the level it requires (IL5, IL4, FEDRAMP_HIGH, FEDRAMP_
 named in an import notice when read back. Google has no mail service: a sending identity is named nowhere. Pure."""
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.inventory import of_types
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.edge.records import is_hosted
 from opsdir.domains.estate.authorizations import boundary_findings, required_levels, services_used
 from opsdir.domains.estate.regulated import placement_findings, regulated_data
@@ -52,21 +53,46 @@ def check_boundary(ctx):
     return boundary_findings(ctx, gcp_services(ctx.dst))
 
 
-def render_workload(m):
-    """The Assured Workloads workload environment m records as in place (ciamConfigurationMet assured-workload), in its
-    landing zone, or a note when its organization, billing account or required level isn't recorded."""
-    if "assured-workload" not in (m.env.attrs.get("ciamConfigurationMet") or ()):
-        return ()
-    regime_ = regime(m)
+def _workload_inputs(m):
+    """(compliance regime, organization ID, billing account) of environment m's workload, each None when unrecorded."""
     org = (one(m.cloud, "ciamOrganizationRef") or "").rsplit("/", 1)[-1]
-    billing = one(m.cloud, "ciamBillingAccountRef")
+    return regime(m), org, one(m.cloud, "ciamBillingAccountRef")
+
+
+def workload_note(m):
+    """The render note of the Assured Workloads workload environment m records as in place when the record doesn't
+    name its required level, organization or billing account (a blocker: the regime's controls aren't applied), or
+    None."""
+    if "assured-workload" not in (m.env.attrs.get("ciamConfigurationMet") or ()):
+        return None
+    regime_, org, billing = _workload_inputs(m)
     missing = [w for w, have in (("a required level or regulated data (ciamRequiredAuthorization, "
                                   "ciamRegulatedData)", regime_),
                                  ("its organization (ciamOrganizationRef)", org),
                                  ("its billing account (ciamBillingAccountRef)", billing)) if not have]
-    if missing:
-        return (comment(f"NOTE: {m.label}'s Assured Workloads workload: not rendered: "
-                        f"the record names no {', '.join(missing)}"),)
+    if not missing:
+        return None
+    return note("Compliance", "blocker", f"{m.label}'s Assured Workloads workload",
+                f"not rendered: the record names no {', '.join(missing)}",
+                (f"Record {', '.join(missing)} (the environment's level or data on {rdn_value(m.env)}, the "
+                 f"organization and billing account on {rdn_value(m.cloud)}), {RECORD}",), m.env.dn, "the organization")
+
+
+def workload_notes(m):
+    """The render notes of environment m's Assured Workloads workload (render_workload writes their comments)."""
+    return tuple(n for n in (workload_note(m),) if n is not None)
+
+
+def render_workload(m):
+    """The Assured Workloads workload environment m records as in place (ciamConfigurationMet assured-workload), in its
+    landing zone, or its note's comment (workload_note) when its organization, billing account or required level isn't
+    recorded."""
+    if "assured-workload" not in (m.env.attrs.get("ciamConfigurationMet") or ()):
+        return ()
+    regime_, org, billing = _workload_inputs(m)
+    missing = workload_note(m)
+    if missing is not None:
+        return (comment(note_comment(missing)),)
     return (tf_block("resource", [WORKLOAD, tf_name(f"ciam_{rdn_value(m.env)}")], [
         ("compliance_regime", regime_), ("display_name", f"ciam-{rdn_value(m.env)}"[:30]),
         ("location", one(m.cloud, "ciamRegion")), ("organization", org),

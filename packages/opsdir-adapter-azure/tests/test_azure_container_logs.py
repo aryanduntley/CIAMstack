@@ -69,6 +69,14 @@ def test_a_rule_per_route_keeps_its_roles_pods_containers_and_kinds():
 
 def test_what_isnt_shipped_is_named():
     alpha, _ = _render()
-    assert as_text(container_log_notes(alpha, services()._replace(logs=lambda m: (AM, TAIL)))) == (
+    assert {n.severity for n in container_log_notes(alpha, services()._replace(logs=lambda m: (AM, TAIL)))} == {
+        "blocker"}
+    assert _comments(container_log_notes(alpha, services()._replace(logs=lambda m: (AM, TAIL)))) == (
         "# NOTE: log route to-siem: role am's container output not shipped: its destination siem isn't a Log "
         "Analytics workspace (kind workspace, a workspace ID)",)
+
+
+def _comments(notes):
+    """The comments render_files writes for notes (flow 43)."""
+    from opsdir.core.notes import note_comment
+    return tuple(f"# {note_comment(n)}" for n in notes)

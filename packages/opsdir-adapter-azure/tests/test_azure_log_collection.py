@@ -77,7 +77,9 @@ def test_a_route_is_a_custom_table_a_rule_with_a_stream_per_file_and_an_associat
 
 
 def test_what_isnt_shipped_or_ships_differently_is_named():
-    notes = as_text(log_collection_notes(_alpha(), _services()))
+    found = log_collection_notes(_alpha(), _services())
+    notes = _comments(found)
+    assert {n.severity for n in found} == {"blocker"}
     assert notes[0].startswith("# NOTE: log route errors: /opt/ds/logs/errors not shipped: its destination siem isn't")
     assert not any("Azure Monitor Agent" in n for n in notes)   # installed here: nothing to name
     assert not any("Azure Government" in n for n in notes)
@@ -110,7 +112,13 @@ def test_a_baseline_bringing_the_agent_keeps_it_out_and_is_named():
     hcl = "\n".join(as_text(render_log_collection(alpha, _services())))
     assert "ama_ds_1" not in hcl and "ama_web_1" in hcl
     assert ("# NOTE: role ds: the Azure Monitor Agent comes with its host baseline (azuremonitoragent 1.33.2), not "
-            "installed here") in as_text(log_collection_notes(alpha, _services()))
+            "installed here") in _comments(log_collection_notes(alpha, _services()))
     main = render(alpha, _services())["terraform/main.tf"]
     vm = main.split('resource "azurerm_linux_virtual_machine" "ds_1"', 1)[1].split("\n}", 1)[0]
     assert "SystemAssigned" not in vm
+
+
+def _comments(notes):
+    """The comments render_files writes for notes (flow 43)."""
+    from opsdir.core.notes import note_comment
+    return tuple(f"# {note_comment(n)}" for n in notes)

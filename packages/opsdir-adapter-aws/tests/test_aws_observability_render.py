@@ -86,6 +86,11 @@ def test_what_cloudwatch_cant_say_or_nothing_realizes_is_named():
         "# NOTE: alert rule disk: not rendered: CloudWatch has no comparison 'eq'",
         "# NOTE: alert rule unalarmed: not rendered: no alarm in alpha/prod realizes it (a ciamAlarmBinding with "
         "ciamRealizes unalarmed): record the one the cloud runs, or let Prometheus evaluate it"]
+    from opsdir.core.notes import note_comment
+    from opsdir_adapter_aws.observability import alert_notes
+    found = alert_notes(_alpha())
+    assert [f"# {note_comment(n)}" for n in found] == notes
+    assert [n.severity for n in found] == ["blocker", "note"]      # the planner's signal check covers the second
     # elsewhere goes to alerts-ticket, which alpha doesn't bind: the planner's blocker, not rendered or named here
 
 

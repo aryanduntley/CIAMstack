@@ -173,3 +173,27 @@ def test_gcloud_reads_the_same_services_as_state():
     assert [r for r in resources if r.kind == "security"] == list(security_resources(STATE))
     folder = "scc-notifications.json: 1 item(s) that aren't Cloud Asset Inventory or gcloud output this importer reads"
     assert f"{folder}; not read" in notices                         # a folder's notification config: no state type
+
+
+def _noted(notes, items):
+    """Whether each note's comment is in the rendered items and every NOTE comment there is a note's (flow 43)."""
+    from opsdir.core.notes import note_comment
+    lines = [x.strip() for t in as_text(items) if isinstance(t, str) for x in t.splitlines()]
+    return {f"# {note_comment(n)}" for n in notes} == {x for x in lines if x.startswith("# NOTE:")}
+
+
+def test_what_a_service_s_render_leaves_out_is_a_render_note_written_as_its_comment():
+    from opsdir_adapter_gcp.security import security_notes
+    _, alpha, _ = model(alpha=(STREAM, LOGS, INCIDENTS,
+                               svc("scc", "threat-detection", ciamFindingsRole="app-logs"),
+                               svc("assets", "config-recording", ciamFindingsRole="app-logs",
+                                   ciamIncidentRole="security-incidents"),
+                               svc("shared", "posture", ciamIncidentRole="app-logs")), tree=OWNERS)
+    notes = {n.subject: n for n in security_notes(alpha)}
+    assert _noted(notes.values(), render_security(alpha))
+    assert {k: n.severity for k, n in notes.items()} == {
+        "scc's findings to app-logs": "blocker", "assets's configuration changes to app-logs": "blocker",
+        "assets's incidents to security-incidents": "action", "shared's incidents to app-logs": "blocker"}
+    assert notes["scc's findings to app-logs"].how == (
+        "Record app-logs's Pub/Sub topic (ciamProviderRef projects/<p>/topics/<t>), under an approved change, and "
+        "re-render",)

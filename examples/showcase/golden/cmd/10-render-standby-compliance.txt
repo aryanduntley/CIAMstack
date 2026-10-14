@@ -1,2 +1,3 @@
-rendered 3 files for env=prod,cloud=standby,ou=environments,dc=ciam-ops (gcp) → <OUT>/render-after/standby-prod-compliance
+rendered 5 files for env=prod,cloud=standby,ou=environments,dc=ciam-ops (gcp) → <OUT>/render-after/standby-prod-compliance
+notes: nothing to handle
 exit 0

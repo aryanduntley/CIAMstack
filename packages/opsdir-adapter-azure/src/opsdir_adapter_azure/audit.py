@@ -13,7 +13,8 @@ an organization trail (Azure has none: each subscription's
 setting, usually deployed by the landing zone's policy), data reads and writes (each resource's own diagnostic
 settings log them), another destination. Azure keeps no digest of the logs it writes: integrity is a container with
 a locked immutability policy (ciamStorageImmutability compliance; core observability.audit grades it as validation's
-equal), noted when the trail asks for integrity validation without one (an unlocked policy can be lifted).
+equal), noted when the trail asks for integrity validation without one (an unlocked policy can be lifted). What isn't
+rendered, or is left to a person, is a render note (audit_notes, flow 43), written as its comment.
 
 Read back from (azurerm type, attributes) pairs (Terraform state as it is; `az monitor diagnostic-settings
 subscription list` and an ARM template's subscription diagnostic settings normalized to it, audit_items):
@@ -25,6 +26,7 @@ import re
 
 from opsdir.core.directory import is_kind, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.observability.audit import PROTECTED, audit_trails, store_protection, trail_destination
 from opsdir_format_terraform.hcl import Block, blocks_of, comment, from_entry, ref, tf_block, tf_name
 from .arm_ids import arm_segment
@@ -50,12 +52,11 @@ def _variable(name, what):
 
 
 def _store(m, n, dest):
-    """(destination argument, notes, variables) of an object store destination."""
+    """(destination argument, notes, variables) of an object store destination (notes: container_note's comment)."""
     account, container = container_of(one(dest, "ciamStorageRef"))
     pref = one(dest, "ciamProviderRef") or ""
-    elsewhere = (comment(f"NOTE: Azure writes the Activity Log to container {CONTAINER} of storage account {account}, "
-                         f"not {container}: record that container as the object store"),) \
-        if container != CONTAINER else ()
+    found = container_note(m, dest)
+    elsewhere = (comment(note_comment(found)),) if found is not None else ()
     if any(container_of(one(b, "ciamStorageRef"))[0] == account for b in kept_containers(m)):
         return ("storage_account_id", ref(f"azurerm_storage_account.{tf_name(account)}.id")), elsewhere, ()
     if "/blobservices/" in pref.lower():
@@ -83,23 +84,58 @@ def _destination(m, n, dest):
     return None
 
 
-def _not_rendered(cn, why):
-    return (comment(f"NOTE: audit trail {cn}: not rendered: {why}"),)
+def container_note(m, dest):
+    """The render note of an object store the Activity Log is recorded in whose container isn't the one Azure writes
+    it to (insights-activity-logs: an action, the record's change), or None."""
+    account, container = container_of(one(dest, "ciamStorageRef"))
+    if container == CONTAINER:
+        return None
+    return note("Audit", "action", f"Activity Log in {rdn_value(dest)}", f"Azure writes the Activity Log to container "
+                f"{CONTAINER} of storage account {account}, not {container}: record that container as the object store",
+                (f"Record {rdn_value(dest)}'s ciamStorageRef as container {CONTAINER} of storage account {account}, "
+                 f"{RECORD}",), dest.dn, f"storage account {account}")
+
+
+def unrendered_note(m, t):
+    """The render note of trail t when environment m doesn't render it (a blocker: the Activity Log isn't exported),
+    or None: an organization trail (Azure has none: the landing zone's policy deploys each subscription's), or no
+    destination Azure exports to."""
+    cn, dest = rdn_value(t), trail_destination(m, t)
+    if one(t, "ciamAuditScope") == "organization":
+        return note("Audit", "blocker", f"audit trail {cn}", "not rendered: Azure has no organization trail: each "
+                    "subscription's Activity Log is exported by its own diagnostic setting (the landing zone's policy "
+                    "deploys them); record it kept by the landing zone (ciamManagedBy)",
+                    (f"Record the trail kept by the landing zone (ciamManagedBy), whose policy deploys each "
+                     f"subscription's diagnostic setting, {RECORD}",), t.dn, "the organization")
+    if dest is not None and _destination(m, tf_name(cn), dest) is not None:
+        return None
+    return note("Audit", "blocker", f"audit trail {cn}", "not rendered: " + (
+                "no storage account or Log Analytics workspace here keeps its records (ciamLogDestinationRole)"
+                if dest is None else f"Azure exports the Activity Log to a storage account, a Log Analytics "
+                f"workspace or an event hub, and {rdn_value(dest)} is none of those"),
+                (f"Bind the trail's ciamLogDestinationRole to an object store (a storage account's container) or a "
+                 f"Log Analytics workspace, {RECORD}",), t.dn, m.label)
+
+
+def audit_notes(m):
+    """The render notes of environment m's audit trails (render_trails writes their comments): a trail it doesn't
+    render, else its object store's container."""
+    def of(t):
+        found = unrendered_note(m, t)
+        if found is not None:
+            return found
+        dest = trail_destination(m, t)
+        return container_note(m, dest) if is_kind(m.d, dest, "ciamObjectStore") else None
+    return tuple(n for t in audit_trails(m) for n in (of(t),) if n is not None)
 
 
 def _trail(m, t):
     cn, dest = rdn_value(t), trail_destination(m, t)
-    if one(t, "ciamAuditScope") == "organization":
-        return _not_rendered(cn, "Azure has no organization trail: each subscription's Activity Log is exported by its "
-                                 "own diagnostic setting (the landing zone's policy deploys them); record it kept by "
-                                 "the landing zone (ciamManagedBy)")
+    missing = unrendered_note(m, t)
+    if missing is not None:
+        return (comment(note_comment(missing)),)
     n = tf_name(cn)
-    found = _destination(m, n, dest) if dest is not None else None
-    if found is None:
-        return _not_rendered(cn, "no storage account or Log Analytics workspace here keeps its records "
-                                 "(ciamLogDestinationRole)" if dest is None else
-                                 f"Azure exports the Activity Log to a storage account, a Log Analytics workspace or "
-                                 f"an event hub, and {rdn_value(dest)} is none of those")
+    found = _destination(m, n, dest)
     target, notes, variables = found
     data = [e for e in values(t, "ciamAuditEvents") if e != "control-plane"]
     unlocked = one(t, "ciamIntegrityValidation") == "TRUE" and store_protection(m, t) < PROTECTED

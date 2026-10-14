@@ -12,10 +12,11 @@ from typing import NamedTuple
 from .connectors import capture as capturemod, importing, migration, plan as planmod, profiling, reports, workspace
 from .connectors import fixes as fixmod, prerequisites as prereqmod, settings as settingsmod
 from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, host_files_of, schema_sync, store_parts
-from .connectors.render import render_env
-from .connectors.stack import STATUS_HEADERS, stack_rows
+from .connectors.render import environment_notes, render_env
+from .connectors.stack import STATUS_HEADERS, note_rows, stack_rows
 from .core import search as ldap_search
 from .core.environment import ENVIRONMENT, env_model
+from .core.notes import parsed
 from .core.interchange.export import export_text
 from .domains.governance.attempts import attempt_records
 from .domains.governance.authorization import Area, allow_all, refusal
@@ -29,7 +30,8 @@ Loaded = NamedTuple("Loaded", [("entries", int), ("references", int)])
 StackCheck = NamedTuple("StackCheck", [("headers", tuple), ("rows", tuple), ("problems", int)])
 Rows = NamedTuple("Rows", [("headers", tuple), ("rows", tuple)])
 Rendered = NamedTuple("Rendered", [("label", str), ("dn", str), ("provider", str), ("files", dict),
-                                   ("unbound", tuple)])                      # files: {relative path: text}
+                                   ("unbound", tuple), ("notes", tuple)])    # files: {relative path: text};
+                                                                             # notes: core.notes RenderNotes
 Planned = NamedTuple("Planned", [("plan", object), ("markdown", str), ("drafts", dict)])
 Migrated = NamedTuple("Migrated", [("run", object), ("files", dict)])       # run: connectors.migration.MigrationRun
 Applied = NamedTuple("Applied", [("change_id", str), ("lines", tuple)])      # one line per applied change record
@@ -65,10 +67,13 @@ def modify(conn, records, change_id):
 
 # ------------------------------------------------------------------ reading the record
 def stack_check(d, specs=()):
-    """Every environment's declared stack against the installed adapters (all environments when none are named)."""
-    results = [stack_rows(m, ADAPTERS, ADAPTER_VERSIONS, host_files_of(m))
-               for m in (env_model(d, spec) for spec in specs or environment_specs(d))]
-    return StackCheck(STATUS_HEADERS, tuple(row for rows, _ in results for row in rows), sum(n for _, n in results))
+    """Every environment's declared stack against the installed adapters (all environments when none are named), and
+    after each its render's blockers and actions (render notes, rendering nothing: they aren't stack problems)."""
+    results = [(*stack_rows(m, ADAPTERS, ADAPTER_VERSIONS, host_files_of(m)), spec)
+               for spec in specs or environment_specs(d) for m in (env_model(d, spec),)]
+    return StackCheck(STATUS_HEADERS, tuple(row for rows, _, spec in results
+                                            for row in (*rows, *note_rows(*environment_notes(d, spec)))),
+                      sum(n for _, n, _ in results))
 
 
 def check(conn, specs=()):
@@ -123,11 +128,11 @@ def render(conn, spec, targets=None, scope=ENVIRONMENT, requester=None, policy=a
     """Effect (reads the record): an environment's rendered files; targets: {adapter: (render target, ...)} chosen
     (default: every target of every adapter); scope (core.environment.Scope): the whole environment, or a keeper's,
     an object class's or named bindings' infrastructure (5.7); requester: who asks (default: the database login),
-    authorized by policy (default: everyone) and recorded in the MANIFEST."""
+    authorized by policy (default: everyone) and recorded in the MANIFEST; with the render's notes (NOTES.json)."""
     who = requester or db.session_user(conn)
     authorize(policy, who, "render", Area(spec, scope))
     m, files = render_env(db.load_directory(conn), spec, wanted=targets, scope=scope, requester=who)
-    return Rendered(m.label, m.dn, m.provider, files, tuple(m.unbound))
+    return Rendered(m.label, m.dn, m.provider, files, tuple(m.unbound), parsed(files["NOTES.json"]))
 
 
 def plan(conn, src, dst, as_of):

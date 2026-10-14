@@ -10,7 +10,8 @@ when records span lines. No retention: the group's Terraform keeps it (fragments
 agent). With FIPS endpoints the agent sends to CloudWatch Logs' FIPS endpoint (endpoint_override).
 docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Agent-Configuration-File-Details.html
 
-Named in main.tf instead (# NOTE): a file a route takes only some lines of (the agent filters raw lines with regular
+Named in main.tf instead, each a render note (log_notes, flow 43) written as its comment: a file a route takes only
+some lines of (the agent filters raw lines with regular
 expressions, not JSON fields), a destination that isn't a log group here, a glob (the agent ships only the most
 recently modified file it matches), and a role no workload principal lets write to the group (permit write-logs
 <destination role>: the servers' instance role gets its grants from the record).
@@ -19,11 +20,15 @@ import json
 
 from opsdir.core.contract import HostFile
 from opsdir.core.directory import one, rdn_value
+from opsdir.core.notes import RECORD, note
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.sources import ALL, shipments, unpermitted
-from opsdir_format_terraform.hcl import comment
 from .observability import group_name
+
+# how to handle a route's destination that isn't a CloudWatch log group (also Fluent Bit's)
+DESTINATION_HOW = (f"Bind the route's destination role to a log destination of kind log-group with its log group ARN "
+                   f"(ciamProviderRef), {RECORD}",)
 
 AGENT = "/opt/aws/amazon-cloudwatch-agent"
 CONFIG = f"{AGENT}/etc/opsdir-logs.json"
@@ -68,25 +73,39 @@ def host_files(m, services):
                           RELOAD, "0644", hosts) for role, hosts in groups)
 
 
-def _why(x):
-    route = f"log route {rdn_value(x.route)}: {x.path} on {', '.join(x.hosts)}"
+def _note(m, x):
+    """The render note of a server's log file the CloudWatch agent doesn't ship (a blocker), or ships only in part
+    (a glob: an action), or None; a destination not bound here is the planner's."""
+    subject, where = f"log route {rdn_value(x.route)}", f"{x.path} on {', '.join(x.hosts)}"
     if x.destination is None:
-        return None                         # the route's destination isn't bound here: the planner names it
+        return None
     if log_group(x.destination) is None:
-        return (f"{route} not shipped: its destination {rdn_value(x.destination)} isn't a CloudWatch log group (kind "
-                "log-group, a log group ARN)")
+        return note("Logs", "blocker", subject, f"{where} not shipped: its destination {rdn_value(x.destination)} "
+                    "isn't a CloudWatch log group (kind log-group, a log group ARN)", DESTINATION_HOW, x.route.dn,
+                    m.label)
     if x.lines != ALL:
-        return (f"{route} not shipped: the route takes only some of its lines, and the CloudWatch agent can't tell "
-                "them apart by their JSON fields")
+        return note("Logs", "blocker", subject, f"{where} not shipped: the route takes only some of its lines, and "
+                    "the CloudWatch agent can't tell them apart by their JSON fields",
+                    (f"Have the route take every kind of log {x.path} holds, so the whole file ships, {RECORD}",
+                     "Or pick the lines after they land (a CloudWatch Logs subscription or metric filter), by hand"),
+                    x.route.dn, m.label)
     if "*" in x.source.path or "?" in x.source.path:
-        return f"{route}: the CloudWatch agent ships only the most recently modified file the glob matches"
+        return note("Logs", "action", subject, f"{where}: the CloudWatch agent ships only the most recently modified "
+                    "file the glob matches",
+                    ("Check that only one file matching it is written at a time; if several are, ship the others "
+                     "another way, by hand",), x.route.dn, m.label)
     return None
 
 
 def log_notes(m, services):
-    """HCL comments naming what environment m's servers' log routes can't ship to CloudWatch, or ship only in part."""
+    """The render notes of what environment m's servers' log routes can't ship to CloudWatch, or ship only in part,
+    each once (render_files writes their comments): a file's (_note), and a role no workload principal lets write
+    to its destination (a blocker)."""
     found = host_shipments(m, services)
-    return (*(comment(f"NOTE: {why}") for why in dict.fromkeys(_why(x) for x in found) if why),
-            *(comment(f"NOTE: role {role} ships logs to {dest}, but no workload principal acting for it holds the "
-                      f"permit `write-logs {dest}`: its servers' instance role isn't granted the writes")
-              for role, dest in unpermitted(m, tuple(x for x in found if _shipped(x)))))
+    return tuple(dict.fromkeys((
+        *(n for n in (_note(m, x) for x in found) if n is not None),
+        *(note("Logs", "blocker", f"role {role}", f"ships logs to {dest}, but no workload principal acting for it "
+               f"holds the permit `write-logs {dest}`: its servers' instance role isn't granted the writes",
+               (f"Grant a workload principal acting for role {role} the permit `write-logs {dest}`, {RECORD}",),
+               None, m.label)
+          for role, dest in unpermitted(m, tuple(x for x in found if _shipped(x)))))))

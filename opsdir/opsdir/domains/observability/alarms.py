@@ -9,6 +9,10 @@ instead); an alarm an overlay inherits from its base (rendered there) is named w
 (ciamManagedBy) is placed by its keeper (governance.keepers). A rule the environment doesn't deliver is the planner's
 blocker, not a renderer's concern.
 
+What a cloud doesn't render is a render note (alarm_note, flow 43): a plain note when no alarm here realizes the rule
+with a metric (the planner's signal check raises a rule nothing evaluates; a Prometheus signal may evaluate it), a
+blocker when the cloud can't express the alarm the record holds (the planner takes it as evaluated).
+
 The condition in a cloud's own terms: thresholds are compared in the unit they are written in where the cloud's alarms
 can say it (cloud_threshold); rates (/s, /min, /h) become counts over a window a cloud evaluates.
 """
@@ -18,6 +22,7 @@ from decimal import Decimal
 from ...core.directory import one, rdn_value
 from ...core.environment import one_role
 from ...core.inventory import duration_seconds
+from ...core.notes import RECORD, note
 from .alerts import alert_rules
 from .realized import keeper_of
 from .signals import UNITS, alarm_for, number_text, parse_threshold
@@ -52,6 +57,30 @@ def alarm_specs(m):
         return AlarmSpec(rule, alarm, one_role(m, one(rule, "ciamAlertRole")), keeper_of(m, alarm),
                          _why_not(m, rule, alarm))
     return tuple(spec(r) for r in alert_rules(m.d) if one_role(m, one(r, "ciamAlertRole")) is not None)
+
+
+def alarm_note(m, s, why=None):
+    """The render note of alert rule spec s a cloud of environment m doesn't render: the core's why (s.why: no alarm
+    realizes it, or its alarm records no metric) a plain note; else the cloud's why a blocker, about the alarm the
+    record holds (it won't exist)."""
+    rule = rdn_value(s.rule)
+    if s.why:
+        return note("Monitoring", "note", f"alert rule {rule}", f"not rendered: {s.why}", (), s.rule.dn, m.label)
+    return note("Monitoring", "blocker", f"alert rule {rule}", f"not rendered: {why}",
+                (f"Record alarm {rdn_value(s.alarm)} in a form the cloud's alarms take ({why}), {RECORD}",
+                 "Or evaluate the rule another way: a Prometheus signal a product declares, or an alert made by hand"),
+                s.alarm.dn, m.label)
+
+
+def alarm_notes(m, why_of):
+    """The render notes of environment m's alert rules a cloud doesn't render: why_of(m, s) is the cloud's why it
+    can't express spec s's alarm, or None; a rule whose alarm someone else keeps is theirs."""
+    def of(s):
+        if s.why:
+            return alarm_note(m, s)
+        why = why_of(m, s) if s.keeper is None else None
+        return alarm_note(m, s, why) if why else None
+    return tuple(n for n in map(of, alarm_specs(m)) if n is not None)
 
 
 def _windows(rule, window):

@@ -229,3 +229,24 @@ def test_a_trail_read_back_names_the_log_group_it_streams_to_beside_its_bucket()
     assert r.links == {"ciamLogDestinationRole": "arn:aws:s3:::b",
                        "ciamAuditStreamRole": "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/trail"}
     assert r.attrs["ciamAuditEvents"] == ("data-write",)
+
+
+def test_what_a_trail_s_render_leaves_out_is_a_render_note_written_as_its_comment():
+    from opsdir.core.notes import note_comment
+    from opsdir_adapter_aws.audit import audit_notes
+    trails = (_trail("cloudtrail", "audit-logs", ciamAuditStreamRole="app-logs",
+                     ciamProviderRef="arn:aws:cloudtrail:us-east-1:111122223333:trail/ciam-prod"),
+              _trail("to-logs", "app-logs"))
+    _, alpha, _ = model(alpha=(BUCKET, GROUP, *trails), tree=OWNERS)
+    notes = audit_notes(alpha)
+    assert sorted(f"# {note_comment(n)}" for n in notes) == sorted(
+        x for x in as_text(render_trails(alpha)) if x.startswith("# NOTE:"))
+    policy, stream, logs = notes
+    assert (policy.severity, policy.entry, policy.scope) == (
+        "action", f"cn=audit-logs,ou=bindings,{ALPHA}", "bucket example-ciam-audit")
+    statements = json.loads(policy.how[0].split("policy: ", 1)[1])
+    assert [s["Sid"] for s in statements] == ["AWSCloudTrailAclCheck", "AWSCloudTrailWrite"]
+    assert stream.severity == logs.severity == "blocker" and {n.area for n in notes} == {"Audit"}
+    assert stream.text.startswith("streams only to a CloudWatch log group (its ciamAuditStreamRole app-logs")
+    assert logs.how[0].startswith("Record the object store of the S3 bucket keeping the trail's records as its "
+                                  "ciamLogDestinationRole and app-logs as its ciamAuditStreamRole")

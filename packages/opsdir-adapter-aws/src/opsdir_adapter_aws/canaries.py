@@ -29,7 +29,8 @@ canary runs in the VPC; and secretsmanager:GetSecretValue on each credentials se
 Not rendered, and said so: what canary_specs names; a service name whose exposure isn't recorded; an internal one
 with no subnet to run from; credentials that aren't a Secrets Manager secret; no artifact location (no canary binding,
 or one without an s3:// ciamStorageRef). A canary someone else keeps, or an overlay inherits from its base, is named
-with its keeper.
+with its keeper. What isn't rendered is a render note (canary_notes: why and how to handle it; flow 43), written as
+its comment.
 """
 import json
 import re
@@ -41,7 +42,9 @@ from opsdir.core.environment import one_role
 from opsdir.core.formats import PYTHON
 from opsdir.core.manifest import header
 from opsdir.core.settings import setting_value
-from opsdir.domains.observability.canaries import canary_specs
+from opsdir.core.notes import note_comment
+from opsdir.domains.observability.canaries import (RECORD, Reason, canary_specs, no_subnet, unknown_exposure,
+                                                   unrendered_note)
 from opsdir.domains.observability.probes import PYTHON_PROBES
 from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_name
 from .account import partition
@@ -103,36 +106,42 @@ def artifact_location(spec):
     return (bucket, prefix.strip("/") + "/" if prefix.strip("/") else "") if bucket else None
 
 
-def _why(m, spec):
-    svc = one_role(m, one(spec.canary, "ciamCheckedService"))
+def _reason(m, spec):
+    """Why a canary isn't rendered (a Reason with how to handle it; the spec's own first), else None."""
     if spec.why:
-        return spec.why
+        return Reason(spec.why, spec.how)
     if spec.exposure is None:
-        return (f"service name {rdn_value(svc)} records neither a frontend address nor its exposure: whether its "
-                "canary runs in the VPC is unknown")
+        return unknown_exposure(m, spec)
     if spec.exposure == "internal" and not spec.subnets:
-        return (f"service name {rdn_value(svc)} is internal and no subnet is named to run its canary from: name one "
-                "on its canary binding (ciamSubnetRole), or record a firewall rule admitting a subnet to "
-                + one(svc, "ciamTargetRole") + (f" on {one(svc, 'ciamPort')}" if one(svc, "ciamPort") else ""))
+        return no_subnet(m, spec)
     if spec.secret is not None and _secret_arn(spec) is None:
-        return f"its credentials ({rdn_value(spec.secret)}) aren't a Secrets Manager secret (aws-sm://)"
+        return Reason(f"its credentials ({rdn_value(spec.secret)}) aren't a Secrets Manager secret (aws-sm://)",
+                      (f"Keep the check's credentials in a Secrets Manager secret and point {rdn_value(spec.secret)} "
+                       f"at it (ciamRefUri aws-sm://...), {RECORD}",))
     if spec.keeper is None and artifact_location(spec) is None:
-        return ("no place for its artifacts: record its canary binding with an S3 location (ciamStorageRef "
-                "s3://bucket/prefix)" if spec.binding is None else
-                f"its canary binding {rdn_value(spec.binding)} records no S3 location for its artifacts "
-                "(ciamStorageRef s3://bucket/prefix)")
+        where = "its canary binding" if spec.binding is None else rdn_value(spec.binding)
+        return Reason("no place for its artifacts: it has no canary binding" if spec.binding is None else
+                      f"its canary binding {rdn_value(spec.binding)} records no S3 location for its artifacts "
+                      "(ciamStorageRef s3://bucket/prefix)",
+                      (f"Record {where} with the S3 location its artifacts go to (ciamStorageRef s3://bucket/prefix), "
+                       f"{RECORD}",))
     return None
 
 
 def rendered(m, endpoints):
-    """(CanarySpec, why not or None) of environment m's canaries, given the products' Endpoints."""
-    return tuple((s, _why(m, s)) for s in canary_specs(m, endpoints))
+    """(CanarySpec, Reason it isn't rendered or None) of environment m's canaries, given the products' Endpoints."""
+    return tuple((s, _reason(m, s)) for s in canary_specs(m, endpoints))
 
 
-def _canary(m, spec, why, runtime):
+def canary_notes(m, endpoints):
+    """The render notes of environment m's canaries it doesn't render (render_canaries writes their comments)."""
+    return tuple(unrendered_note(m, s, reason) for s, reason in rendered(m, endpoints) if reason)
+
+
+def _canary(m, spec, reason, runtime):
     cn = rdn_value(spec.canary)
-    if why:
-        return (comment(f"NOTE: canary {cn}: not rendered: {why}"),)
+    if reason:
+        return (comment(note_comment(unrendered_note(m, spec, reason))),)
     name = canary_name(spec.name)
     if spec.keeper is not None:
         return (comment(f"Canary {name} ({cn}): kept by {spec.keeper}, not rendered here"),)

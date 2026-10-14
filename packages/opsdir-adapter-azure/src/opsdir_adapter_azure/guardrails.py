@@ -3,12 +3,14 @@ definition to the subscription, by the definition's ID (display names aren't uni
 
 Definitions from the Azure/azure-policy repository (checked 2026-10-02, note 457). audit-log-disable has no built-in:
 the nearest, "Do not allow deletion of resource types" on diagnostic settings, blocks deleting them, not changing
-them (said in a comment). Not applicable on Azure, and NOTEs: service-account-keys (service principal secrets belong to
-Entra ID), metadata-v1, root-use. region-escape (allowed locations) allows the regions the environment may hold
-resources in (estate.residency.permitted_regions: its cloud's region and those its residency allows).
+them (said in a comment). Not applicable on Azure, and plain notes: service-account-keys (service principal secrets
+belong to Entra ID), metadata-v1, root-use; a denial with no built-in is an action (guardrail_notes, flow 43).
+region-escape (allowed locations) allows the regions the environment may hold resources in
+(estate.residency.permitted_regions: its cloud's region and those its residency allows).
 """
 from opsdir.core.directory import rdn_value, values
 from opsdir.core.environment import of_class
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.access.naming import DENIALS
 from opsdir.domains.estate.residency import permitted_regions
 from opsdir_format_terraform.hcl import comment, jsonencoded, ref, tf_block, tf_name
@@ -39,13 +41,31 @@ def denial_of(definition_id):
     return next((d for d in DENIALS if (_assignment(d, ()) or (None,))[0] == guid), None)
 
 
+def guardrail_note(m, g, d):
+    """The render note of guardrail g's denial d when Azure has no built-in policy for it, or None: a plain note when
+    it doesn't apply on Azure (NOT_APPLICABLE), else an action (prevent it another way)."""
+    if _assignment(d, permitted_regions(m)) is not None:
+        return None
+    if d in NOT_APPLICABLE:
+        return note("Guardrails", "note", f"guardrail {rdn_value(g)}", f"{d}: {NOT_APPLICABLE[d]}", (), g.dn, m.label)
+    return note("Guardrails", "action", f"guardrail {rdn_value(g)}", f"{d}: Azure has no built-in for it",
+                (f"Prevent {d} another way where the guardrail applies (a custom Azure Policy definition), or remove "
+                 f"it from the guardrail's ciamDenies, {RECORD}",), g.dn, m.label)
+
+
+def guardrail_notes(m):
+    """The render notes of environment m's guardrails (render_guardrails writes their comments)."""
+    return tuple(n for g in of_class(m, "ciamGuardrail") for d in values(g, "ciamDenies")
+                 for n in (guardrail_note(m, g, d),) if n is not None)
+
+
 def render_guardrails(m):
-    """HCL for environment m's guardrails: an assignment per denial; a NOTE for what Azure has no policy for."""
+    """HCL for environment m's guardrails: an assignment per denial; its note's comment (guardrail_note) for what
+    Azure has no policy for."""
     def one_denial(g, d):
         found = _assignment(d, permitted_regions(m))
         if found is None:
-            return (comment(f"NOTE: guardrail {rdn_value(g)}: {d}: "
-                            f"{NOT_APPLICABLE.get(d, 'Azure has no built-in for it')}"),)
+            return (comment(note_comment(guardrail_note(m, g, d))),)
         definition, parameters, note = found
         return (tf_block("resource", ["azurerm_subscription_policy_assignment", tf_name(f"{rdn_value(g)}_{d}")], [
             *((("#", note),) if note else ()),

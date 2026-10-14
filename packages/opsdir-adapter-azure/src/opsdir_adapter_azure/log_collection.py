@@ -17,7 +17,8 @@ upgrade) on each server shipping logs here, authenticating with its virtual mach
 then Azure Policy or the image brings it, and that is named instead (user decision 2358, amending 2328).
 learn.microsoft.com/azure/azure-monitor/agents/azure-monitor-agent-manage (research note 2354).
 
-Named instead (# NOTE): a route whose destination here isn't a workspace; a file whose records span lines (the agent
+Named instead, each a render note (log_collection_notes, flow 43) written as its comment: a route whose destination
+here isn't a workspace; a file whose records span lines (the agent
 starts a record only at a timestamp of a fixed set of formats, not a pattern: each line arrives as a record); per
 role, that its host baseline brings the agent; and, in Azure Government, that custom text log collection there is to
 be confirmed (research 2352: no Government row names it).
@@ -25,14 +26,19 @@ be confirmed (research 2352: no Government row names it).
 import re
 
 from opsdir.core.directory import one, rdn_value, values
+from opsdir.core.notes import RECORD, note
 from opsdir.domains.compute.hosts import baseline_for
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.sources import ALL, kept_clauses, shipments
-from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import Block, ref, tf_block, tf_name
 from .account import government, tagged
 from .identities import LOC, RG
 from .kql import field_of, kept
 from .observability import workspace_id
+
+# how to handle a route's destination that isn't a Log Analytics workspace (also container_logs')
+WORKSPACE_HOW = (f"Bind the route's destination role to a log destination of kind workspace with its workspace ID "
+                 f"(ciamProviderRef), {RECORD}",)
 
 TABLE, RULE, ASSOCIATION = ("azurerm_log_analytics_workspace_table_custom_log", "azurerm_monitor_data_collection_rule",
                             "azurerm_monitor_data_collection_rule_association")
@@ -136,20 +142,26 @@ def render_log_collection(m, services):
 
 
 def log_collection_notes(m, services):
-    """HCL comments naming what environment m's servers' log routes don't ship to Log Analytics, or ship differently,
-    and what collecting them needs."""
+    """The render notes of what environment m's servers' log routes don't ship to Log Analytics (blockers), or ship
+    differently and what collecting them needs (notes), and in Azure Government what to confirm (an action); each
+    once (render_files writes their comments)."""
     every = tuple(x for x in shipments(m, log_routes(m.d), services.logs(m)) if x.on == "servers")
     found = host_shipments(m, services)
     return tuple(dict.fromkeys((
-        *(comment(f"NOTE: log route {rdn_value(x.route)}: {x.path} not shipped: its destination "
-                  f"{rdn_value(x.destination)} isn't a Log Analytics workspace (kind workspace, a workspace ID)")
+        *(note("Logs", "blocker", f"log route {rdn_value(x.route)}", f"{x.path} not shipped: its destination "
+               f"{rdn_value(x.destination)} isn't a Log Analytics workspace (kind workspace, a workspace ID)",
+               WORKSPACE_HOW, x.route.dn, m.label)
           for x in every if x.destination is not None and workspace_id(m, x.destination) is None),
-        *(comment(f"NOTE: log route {rdn_value(x.route)}: {x.path}: records spanning lines arrive line by line (the "
-                  "Azure Monitor Agent starts a record only at a timestamp of a fixed set of formats)")
+        *(note("Logs", "note", f"log route {rdn_value(x.route)}", f"{x.path}: records spanning lines arrive line by "
+               "line (the Azure Monitor Agent starts a record only at a timestamp of a fixed set of formats)", (),
+               x.route.dn, m.label)
           for x in found if x.source.line_start),
-        *(comment(f"NOTE: role {role}: the Azure Monitor Agent comes with its host baseline ({agent}), not installed "
-                  "here")
+        *(note("Logs", "note", f"role {role}", f"the Azure Monitor Agent comes with its host baseline ({agent}), not "
+               "installed here", (), None, m.label)
           for role, agent in ((r, baseline_agent(m, r)) for r in dict.fromkeys(x.source.server_role for x in found))
           if agent),
-        *((comment("NOTE: Azure Government: collecting custom text logs with the Azure Monitor Agent is to be "
-                   "confirmed there (no Government availability row names it)"),) if found and government(m) else ()))))
+        *((note("Logs", "action", "Azure Government", "collecting custom text logs with the Azure Monitor Agent is to "
+                "be confirmed there (no Government availability row names it)",
+                ("Ask Microsoft's account team whether the Azure Monitor Agent collects custom text logs in the "
+                 "environment's Azure Government region before relying on it",), None, m.label),)
+          if found and government(m) else ()))))

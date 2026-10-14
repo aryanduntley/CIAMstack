@@ -22,8 +22,9 @@ kubernetes/fluent-bit/<cluster>/, a kustomization of:
 Terraform: the role (trusting the cluster's OIDC provider for ciam-logging/fluent-bit) with logs:CreateLogStream,
 PutLogEvents and DescribeLogStreams on the routes' log groups.
 
-Named in main.tf instead (# NOTE): a route whose destination isn't a log group here, a role that runs on Kubernetes
-here in no cluster the environment binds. With FIPS endpoints the outputs send to CloudWatch Logs' FIPS endpoint.
+Named in main.tf instead, each a render note (fluent_bit_notes, flow 43) written as its comment: a route whose
+destination isn't a log group here, a role that runs on Kubernetes here in no cluster the environment binds. With FIPS
+endpoints the outputs send to CloudWatch Logs' FIPS endpoint.
 Sources (research 2344): docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Container-Insights-setup-logs-FluentBit
 .html, docs.fluentbit.io/manual/data-pipeline/filters/rewrite-tag, .../outputs/cloudwatch, .../filters/kubernetes.
 """
@@ -34,15 +35,16 @@ from opsdir.core.environment import UNBOUND
 from opsdir.core.formats import YAML
 from opsdir.core.interchange.yaml_text import documents, dump
 from opsdir.core.manifest import header
+from opsdir.core.notes import RECORD, note
 from opsdir.domains.compute.workloads import role_clusters
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.sources import kinds_of, shipments
-from opsdir_format_terraform.hcl import comment, jsonencoded, ref, tf_block, tf_name
+from opsdir_format_terraform.hcl import jsonencoded, ref, tf_block, tf_name
 from .access import resources
 from .account import account_id, partition
 from .identities import eks_cluster_name, irsa_statement
-from .log_agent import log_group
+from .log_agent import DESTINATION_HOW, log_group
 
 IMAGE = "public.ecr.aws/aws-observability/aws-for-fluent-bit:3.4.17"    # 2026-09-17: Fluent Bit 5.0.9
 NAMESPACE, ACCOUNT = "ciam-logging", "fluent-bit"
@@ -237,12 +239,16 @@ def render_fluent_bit(m, services):
 
 
 def fluent_bit_notes(m, services):
-    """HCL comments naming the container logs environment m's routes can't ship to CloudWatch."""
+    """The render notes of the container logs environment m's routes can't ship to CloudWatch (blockers), each once
+    (render_files writes their comments)."""
     found = tuple(x for x in shipments(m, log_routes(m.d), services.logs(m)) if x.on == "kubernetes")
     return tuple(dict.fromkeys(
-        comment(f"NOTE: log route {rdn_value(x.route)}: role {x.role}'s container output " + (
+        note("Logs", "blocker", f"log route {rdn_value(x.route)}", f"role {x.role}'s container output " + (
             f"not shipped: its destination {rdn_value(x.destination)} isn't a CloudWatch log group (kind log-group, a "
             "log group ARN)" if log_group(x.destination) is None else
-            "not shipped: the role runs on Kubernetes here in no cluster the environment binds"))
+            "not shipped: the role runs on Kubernetes here in no cluster the environment binds"),
+            DESTINATION_HOW if log_group(x.destination) is None else
+            (f"Bind the EKS cluster role {x.role} runs on in this environment, or run it on servers, {RECORD}",),
+            x.route.dn, m.label)
         for x in found if x.destination is not None and (log_group(x.destination) is None
                                                           or not role_clusters(m, x.role))))

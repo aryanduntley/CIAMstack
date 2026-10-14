@@ -8,16 +8,24 @@ can't write it, so after the move it watches nothing. A rule delivered nowhere i
 blocker, so it isn't repeated here. Likewise a log route the target keeps whose files sit on servers recording no
 install root is an action (nothing can locate them), as is one collecting from a server role whose logs there hold
 none of its kinds: either way nothing ships them.
+
+Which synthetic checks each environment renders (the canary-coverage report): every canary it could run, rendered,
+inherited or kept by someone else, or not rendered with the render note that says why (connectors.render
+environment_notes: the adapters' and the core's own).
 """
 from ..core.contract import directory_report
 from ..core.directory import one, rdn_value, values
 from ..core.environment import one_role
 from ..core.findings import findings, responsible
 from ..domains.observability.alerts import alert_rules
+from ..domains.observability.canaries import canary_specs
 from ..domains.observability.logs import log_routes
 from ..domains.observability.signals import evaluation
 from ..domains.observability.sources import COLLECTION_HEADERS, collection_rows, collections, uncollected
-from .registry import ADAPTERS, environment
+from .registry import ADAPTERS, environment, environment_specs, services
+from .render import environment_notes
+
+COVERAGE_HEADERS = ("environment", "canary", "flow", "owner", "rendered")
 
 
 def signal_check(dst_adapters):
@@ -74,3 +82,28 @@ def log_collection_report(installed=ADAPTERS):
         m, adapters = environment(d, dn, installed)
         return collection_rows(m, log_routes(d), _sources(adapters))
     return directory_report(COLLECTION_HEADERS, rows, needs_dn=True)
+
+
+def _covered(m, spec, notes):
+    n = notes.get(f"canary {rdn_value(spec.canary)}")
+    if n is not None:
+        return ", ".join(n.owners) or "**NO OWNER**", f"NO ({n.severity}): {n.text.removeprefix('not rendered: ')}"
+    return (responsible(m.d, spec.binding, spec.canary, m.env),
+            f"inherited or kept: {spec.keeper}" if spec.keeper else "yes")
+
+
+def coverage_rows(d, spec, installed=ADAPTERS):
+    """(environment, canary, flow, owner, rendered) of each canary environment spec could run: yes; inherited or kept
+    (by whom); or NO (severity: why, from its render note)."""
+    m, notes = environment_notes(d, spec, installed)
+    by_subject = {n.subject: n for n in notes}
+    return tuple((m.label, rdn_value(s.canary), s.flow, *_covered(m, s, by_subject))
+                 for s in canary_specs(m, services(installed).endpoints))
+
+
+def coverage_report(installed=ADAPTERS):
+    """The `canary-coverage` report (an environment's DN, else every environment): which synthetic checks each
+    renders."""
+    def rows(d, dn):
+        return tuple(r for spec in ((dn,) if dn else environment_specs(d)) for r in coverage_rows(d, spec, installed))
+    return directory_report(COVERAGE_HEADERS, rows)

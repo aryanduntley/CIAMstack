@@ -19,7 +19,8 @@ while one is unfinished), the rule of core estate discovery's rescan_due. Least 
 create and describe classification jobs, list them, and write its own log group; the scheduler's role (trusted by
 scheduler.amazonaws.com for the account's default schedule group) may only invoke the function. The function's
 environment and tags (Realizes, RescanDays) say what it runs, so the reader recovers the interval; the plan names which
-mechanism applies (check_discovery_availability's OK line).
+mechanism applies (check_discovery_availability's OK line). What isn't rendered is a render note (discovery_notes, flow
+43), written as its comment.
 
 In GovCloud (a us-gov- region) nothing is rendered for Macie, only a comment, and the check gives an action, or a
 blocker where the environment's data is restricted (as for a missing data discovery): AWS's General Reference lists no
@@ -39,6 +40,7 @@ from opsdir.core.findings import findings, responsible
 from opsdir.core.formats import PYTHON
 from opsdir.core.inventory import of_types, resource
 from opsdir.core.manifest import header
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.estate.discovery import (custom_identifiers, destination, discovery_services, rescan_line,
                                              rescan_plan)
 from opsdir.domains.estate.naming import RESTRICTED
@@ -46,12 +48,13 @@ from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_bloc
 from opsdir_format_terraform.state import blocks
 from .account import account_id
 from .account import govcloud, partition
-from .security import findings_routes, findings_routing
+from .security import findings_note, findings_routes, findings_routing
 from .storage import bucket_of, key_arn
 
 ACCOUNT, IDENTIFIER, JOB = "aws_macie2_account", "aws_macie2_custom_data_identifier", "aws_macie2_classification_job"
 EXPORT = "aws_macie2_classification_export_configuration"
 MACIE = "macie"
+AREA = "Data discovery"
 GOVCLOUD_NOTE = ("Amazon Macie isn't offered in GovCloud: AWS's General Reference lists no GovCloud endpoint for it "
                  "and its FedRAMP services-in-scope page marks it for US East/West only: not rendered")
 DAYS = {"daily_schedule": 1, "weekly_schedule": 7, "monthly_schedule": 30}
@@ -206,16 +209,30 @@ def _identifiers(services):
     return {n: (tf_name(f"cdi_{n}"), rx) for s in services for n, rx in custom_identifiers(s)}
 
 
+def job_note(m, s):
+    """The render note of a data discovery without a classification job, or None: examining no S3 bucket here (an
+    action when the stores it examines aren't S3 buckets, which Macie can't; else a note: nothing to examine), or
+    without the account the job runs in (a blocker)."""
+    cn, (buckets, others) = rdn_value(s), _stores(m, s)
+    if not buckets:
+        return note(AREA, "action" if others else "note", f"data discovery {cn}",
+                    "no classification job: it examines no S3 bucket here",
+                    (f"Examine {', '.join(others)} another way: Macie examines S3 only",) if others else (),
+                    s.dn, m.label)
+    if account_id(m) is None:
+        return note(AREA, "blocker", f"data discovery {cn}",
+                    "no classification job: the cloud records no account (ciamAccountRef)",
+                    (f"Record the account on {rdn_value(m.cloud)} (ciamAccountRef), {RECORD}",), s.dn, m.label)
+    return None
+
+
 def _job(m, s, ids):
     cn, n = rdn_value(s), tf_name(rdn_value(s))
     buckets, others = _stores(m, s)
-    account = account_id(m)
+    account, found = account_id(m), job_note(m, s)
     notes = (*((comment(f"{cn}: Macie examines S3 only: {', '.join(others)} not examined here"),) if others else ()),)
-    if not buckets:
-        return (*notes, comment(f"NOTE: data discovery {cn}: no classification job: it examines no S3 bucket here"))
-    if account is None:
-        return (*notes, comment(f"NOTE: data discovery {cn}: no classification job: the cloud records no account "
-                                "(ciamAccountRef)"))
+    if found is not None:
+        return (*notes, comment(note_comment(found)))
     plan = rescan_plan(s, OFFERED)
     if plan is not None and not plan.native:
         return (*notes, *_scheduled(m, s, ids, plan.days, buckets, account))
@@ -228,19 +245,43 @@ def _job(m, s, ids):
         ("depends_on", [ref(f"{ACCOUNT}.{MACIE}")])]))
 
 
-def _export(m, services):
-    """The classification export configuration to the first results store, or a note (one per account)."""
+def _results(m, services):
+    """(the first service with a results store, its S3 bucket or None, that store's KMS key ARN or None), or None."""
     s = next((x for x in services if one(x, "ciamResultsRole")), None)
     if s is None:
-        return ()
+        return None
     dest = destination(m, s, "ciamResultsRole")
     bucket = bucket_of(one(dest, "ciamStorageRef")) if dest is not None and is_kind(m.d, dest, "ciamObjectStore") \
         else None
-    key = key_arn(m, dest)[0] if bucket else None
-    if bucket is None or key is None:
-        why = "it isn't an S3 bucket here" if bucket is None else "its store has no KMS key (Macie requires one)"
-        return (comment(f"NOTE: data discovery {rdn_value(s)}'s results to {one(s, 'ciamResultsRole')}: not rendered: "
-                        f"{why}"),)
+    return s, bucket, key_arn(m, dest)[0] if bucket else None
+
+
+def export_note(m, services):
+    """The render note of the classification export when it isn't rendered (a blocker: Macie's detailed results go
+    nowhere), or None: its store isn't an S3 bucket here, or has no KMS key (Macie requires one)."""
+    found = _results(m, services)
+    if found is None or (found[1] and found[2]):
+        return None
+    s, bucket, _ = found
+    role = one(s, "ciamResultsRole")
+    return note(AREA, "blocker", f"data discovery {rdn_value(s)}'s results to {role}",
+                "not rendered: " + ("it isn't an S3 bucket here" if bucket is None else
+                                    "its store has no KMS key (Macie requires one)"),
+                (f"Bind {role} to an object store with an S3 bucket (ciamStorageRef), {RECORD}",) if bucket is None
+                else (f"Record the KMS key the store is encrypted with: its ciamEncryptedByRole and that role's key "
+                      f"binding (ciamRefUri), {RECORD}",), s.dn, m.label)
+
+
+def _export(m, services):
+    """The classification export configuration to the first results store, or its note's comment (export_note; one
+    per account)."""
+    found = _results(m, services)
+    if found is None:
+        return ()
+    missing = export_note(m, services)
+    if missing is not None:
+        return (comment(note_comment(missing)),)
+    _, bucket, key = found
     return (tf_block("resource", [EXPORT, MACIE], [
         ("s3_destination", Block((("bucket_name", bucket), ("key_prefix", f"macie/{rdn_value(m.env)}/"),
                                   ("kms_key_arn", key)))),
@@ -250,6 +291,25 @@ def _export(m, services):
 def _uses_scheduler(m, s):
     plan = rescan_plan(s, OFFERED)
     return plan is not None and not plan.native and bool(_stores(m, s)[0]) and account_id(m) is not None
+
+
+def govcloud_note(m, kept):
+    """The render note of data discovery in GovCloud, where nothing is rendered for Macie: a plain note, since the
+    planner raises the gap itself (check_discovery_availability: an action, a blocker for restricted data)."""
+    return note(AREA, "note", f"data discovery {', '.join(rdn_value(s) for s in kept)}",
+                f"{GOVCLOUD_NOTE} (the planner names the gap)", (), kept[0].dn, m.label)
+
+
+def discovery_notes(m):
+    """The render notes of environment m's data discovery (render_discovery writes their comments): in GovCloud the
+    one note that nothing is rendered; elsewhere each service's job and findings route, then the account's export."""
+    kept = discovery_services(m)
+    if not kept:
+        return ()
+    if govcloud(m):
+        return (govcloud_note(m, kept),)
+    found = (*(n for s in kept for n in (job_note(m, s), findings_note(m, s, "data-discovery"))), export_note(m, kept))
+    return tuple(n for n in found if n is not None)
 
 
 def render_discovery(m):
@@ -262,8 +322,7 @@ def render_discovery(m):
         return (), {}
     first, ids = kept[0].dn, _identifiers(kept)
     if govcloud(m):
-        return from_entry(first, (comment(f"{GOVCLOUD_NOTE}: data discovery {', '.join(rdn_value(s) for s in kept)} "
-                                          "(the planner names the gap)"),)), {}
+        return from_entry(first, (comment(note_comment(govcloud_note(m, kept))),)), {}
     scripts = {f"terraform/discovery/{function_name(m, s)}/handler.py": handler_script(m, s)
                for s in kept if _uses_scheduler(m, s)}
     return (*from_entry(first, (

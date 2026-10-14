@@ -94,6 +94,10 @@ def test_guardrails_as_built_in_policy_assignments():
             'e56962a6-4747-49cd-b67b-bf8b01975c4c"') in out and '"eastus2"' in out
     assert "blocks deleting diagnostic settings, not changing them" in out
     assert "# NOTE: guardrail baseline: root-use: Azure has no root user" in out
+    from opsdir.core.notes import note_comment
+    from opsdir_adapter_azure.guardrails import guardrail_notes
+    (root,) = guardrail_notes(env_model(d, "az/prod"))
+    assert f"# {note_comment(root)}" in out.splitlines() and (root.area, root.severity) == ("Guardrails", "note")
     assert 'data "azurerm_subscription" "current"' in out
 
 

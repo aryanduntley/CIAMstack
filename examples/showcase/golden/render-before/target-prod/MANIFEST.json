@@ -211,6 +211,16 @@
       "format": "yaml",
       "sha256": "0048ac17d7edaeffa2a0e55c1000212aff394c12879d9faea01c730e3fa59026"
     },
+    "images/ciam-check/Dockerfile": {
+      "scope": "environment-specific",
+      "format": "dockerfile",
+      "sha256": "129d3dc7cb245d643c66edb61c59731217d7d3fb4e24467562efa2901bc32a79"
+    },
+    "images/ciam-check/check.py": {
+      "scope": "environment-specific",
+      "format": "python",
+      "sha256": "bc3d4b357fc39a102bc1dc25d79f3e9d749abc59cc489b6a78f6b9e1a016a510"
+    },
     "kubernetes/azure-monitor/aks/container-azm-ms-agentconfig.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
@@ -386,16 +396,6 @@
       "format": "xml",
       "sha256": "6bb13c0304722ca9b2942a2ef00ea6fd2648469d599edcdd4c48e099f6b80d37"
     },
-    "terraform/checks/directory-bind/check.py": {
-      "scope": "environment-specific",
-      "format": "python",
-      "sha256": "cf871a4ce8f9935dc16b2c1236152a659ccb6038f016bb4509be9a459531ce9e"
-    },
-    "terraform/checks/sso-login/check.py": {
-      "scope": "environment-specific",
-      "format": "python",
-      "sha256": "f165365f5a4ada243635be3221f1269f49932d7c21c8f029582cf45ea7f82bcb"
-    },
     "terraform/landing-zone/main.tf": {
       "scope": "landing-zone",
       "format": "hcl",
@@ -424,7 +424,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "f97f04687eac7d775c2eca4cb5fe8ab6613b27364ed1bb611793c20fd1c0fb78"
+      "sha256": "aedabcebda37aa5eea40e03610415e356e7d844ac4b59ed14d5f82c3bc5039f9"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

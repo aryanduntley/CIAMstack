@@ -92,9 +92,12 @@ def test_kept_resources_say_why(translated):
         "part of azurerm_data_protection_backup_vault.ciam_backups natively, but waits for "
         "azurerm_role_assignment.ciam_backups_cmk, which reads it: a cycle there")
     jobs = [a for a in why if a.startswith("azurerm_container_app_job.")]       # the scripted checks (check_jobs)
-    assert jobs and all(why[a].startswith("its check script is read from a file beside the root") for a in jobs)
-    assert why["azurerm_role_assignment.checks_publisher"].startswith("what names its ARM deployment scope")
-    assert {a.split(".")[0] for a in why if a != "azurerm_role_assignment.checks_publisher"} <= {
+    assert jobs and all(why[a].startswith("no ARM form is written for the check jobs yet") for a in jobs)
+    publishers = [a for a in why if a.startswith("azurerm_role_assignment.check_") and a.endswith("_publisher")]
+    pulls = [a for a in why if a.startswith("azurerm_role_assignment.check_") and a.endswith("_pull")]
+    assert len(publishers) == len(pulls) == len(jobs)                   # each job's own identity's grants
+    assert all(why[a].startswith("what names its ARM deployment scope") for a in (*publishers, *pulls))
+    assert {a.split(".")[0] for a in why if a not in (*publishers, *pulls)} <= {
         "azurerm_data_protection_backup_vault_customer_managed_key", "azurerm_subnet_route_table_association",
         "azurerm_subnet_network_security_group_association", "azuread_conditional_access_policy",
         "azapi_data_plane_resource", "azurerm_container_app_job", "data"}

@@ -118,18 +118,27 @@ def test_a_sink_and_an_exclusion_per_route_from_servers_and_containers():
     assert "unique_writer_identity = true" in hcl
 
 
+def _comments(notes):
+    """The comments render_files writes for notes (flow 43)."""
+    from opsdir.core.notes import note_comment
+    return tuple(f"# {note_comment(n)}" for n in notes)
+
+
 def test_what_isnt_shipped_or_ships_differently_is_named():
-    notes = as_text(log_sink_notes(_alpha(), _services()))
+    found = log_sink_notes(_alpha(), _services())
+    notes = _comments(found)
+    assert {n.subject: n.severity for n in found if n.subject in ("Ops Agent configuration", "GKE clusters gke")} == {
+        "Ops Agent configuration": "action", "GKE clusters gke": "note"}
     assert "# NOTE: log route errors: role ds's logs not shipped: its destination siem isn't a Cloud Logging " \
            "bucket (projects/<p>/locations/<l>/buckets/<b>)" in notes
-    assert any(n.startswith("# NOTE: the Ops Agent configuration opsdir renders for configuration management to "
+    assert any(n.startswith("# NOTE: Ops Agent configuration: opsdir renders it for configuration management to "
                             "place") for n in notes)
     assert any("ships logs to ops-logs, but no workload principal" in n for n in notes)
     assert any(n.startswith("# NOTE: GKE clusters gke: their workload logging") for n in notes)
     assert ("# NOTE: log route audit-logs: bucket audit is in project proj-logs: grant the sink's writer identity "
             "roles/logging.bucketWriter there") in notes
     assert not any("Assured Workloads" in n for n in notes)
-    elsewhere = as_text(log_sink_notes(_alpha(cluster_project="proj-b"), _services()))
+    elsewhere = _comments(log_sink_notes(_alpha(cluster_project="proj-b"), _services()))
     assert any("in cluster gke not shipped: the cluster is in project proj-b" in n for n in elsewhere)
     assert all(r.dn.split(",")[0] != "cn=audit-logs" for r, _, _ in route_filters(_alpha("proj-b"), _services()))
 
@@ -137,6 +146,6 @@ def test_what_isnt_shipped_or_ships_differently_is_named():
 def test_an_assured_workloads_regime_is_named_with_what_to_confirm():
     alpha = _alpha(levels=("fedramp-high", "dod-il4"))
     assert regime(alpha) == "IL4"
-    notes = as_text(log_sink_notes(alpha, _services()))
+    notes = _comments(log_sink_notes(alpha, _services()))
     assert any(n.startswith("# NOTE: Assured Workloads (IL4): Cloud Logging, Compute Engine and GKE are supported "
                             "products; the Ops Agent isn't listed") for n in notes)

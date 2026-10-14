@@ -1,0 +1,261 @@
+{
+  "environment": "env=prod,cloud=target,ou=environments,dc=ciam-ops",
+  "counts": {
+    "blocker": 1,
+    "action": 3,
+    "note": 3,
+    "to_review": 6
+  },
+  "notes": [
+    {
+      "area": "Monitoring",
+      "severity": "blocker",
+      "subject": "alert rule login-failures",
+      "text": "not rendered: its alarm is a log query alert and the record holds no query",
+      "how": [
+        "Record alarm pf-login-failures in a form the cloud's alarms take (its alarm is a log query alert and the record holds no query), under an approved change, and re-render",
+        "Or evaluate the rule another way: a Prometheus signal a product declares, or an alert made by hand"
+      ],
+      "entry": "cn=pf-login-failures,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+      "scope": "target/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 1730
+        }
+      ]
+    },
+    {
+      "area": "Monitoring",
+      "severity": "action",
+      "subject": "check image",
+      "text": "build it from images/ciam-check/ (FROM mcr.microsoft.com/azurelinux/distroless/python:3.12-nonroot), sign it, verify its signature before it is used (Container Apps doesn't verify signatures), push it, and record its digest on each canary binding",
+      "how": [
+        "Build the image from this build context in the organization's pipeline (pin the base image by digest: setting azure-check-image)",
+        "Sign it (the organization's signing, e.g. Notary Project signatures kept in the registry) and verify the signature by digest before promoting it; Azure Container Apps pulls whatever the job names",
+        "Push it to a registry the environment's jobs reach (a private one: allow ARM audience tokens for managed identity pulls, az acr config authentication-as-arm)",
+        "Record it on each canary binding (ciamContainerImage check=<registry>/<repository>@sha256:<digest>), under an approved change, and re-render; rebuild only when opsdir's probes change (this file's text)"
+      ],
+      "entry": null,
+      "scope": "image pipeline and registry of target/prod (crexampleaerociam.azurecr.io)",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "images/ciam-check/Dockerfile",
+          "line": 4
+        }
+      ]
+    },
+    {
+      "area": "Monitoring",
+      "severity": "action",
+      "subject": "check jobs",
+      "text": "whoever may start one can override its image, command and environment and use its identity and secrets (Microsoft's jobs documentation): keep that right to identities trusted with them; the built-in Container Apps Jobs Operator and Contributor roles can also read the jobs' secrets",
+      "how": [
+        "Give operators a custom role with only Microsoft.App/jobs/read, jobs/start/action, jobs/stop/action, jobs/stop/execution/action, jobs/executions/read, jobs/execution/read and Microsoft.App/managedEnvironments/read (not the Microsoft.App/jobs/*/action wildcard), assigned only to those trusted with the jobs' identities"
+      ],
+      "entry": null,
+      "scope": "role assignments on target/prod's jobs",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 2039
+        }
+      ]
+    },
+    {
+      "area": "Network",
+      "severity": "action",
+      "subject": "subnet snet-checks",
+      "text": "must be delegated to Microsoft.App/environments and hold nothing else before the checks' Container Apps environment is applied",
+      "how": [
+        "Have the network's keeper delegate subnet snet-checks to Microsoft.App/environments (and move anything else out of it), then apply"
+      ],
+      "entry": "cn=snet-checks,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+      "scope": "virtual network of target/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 2014
+        }
+      ]
+    },
+    {
+      "area": "Monitoring",
+      "severity": "note",
+      "subject": "alert rule login-failures",
+      "text": "no product rendering target/prod declares signal `login-failures` for role `pf-engine`: not rendered",
+      "how": [],
+      "entry": "cn=login-failures,ou=alert-rules,dc=ciam-ops",
+      "scope": "target/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "prometheus/rules/ciam.rules.yml",
+          "line": 4
+        }
+      ]
+    },
+    {
+      "area": "Monitoring",
+      "severity": "note",
+      "subject": "check jobs",
+      "text": "the first runs may fail to post their results (403) until Azure has propagated each job's identity's Monitoring Metrics Publisher role (minutes)",
+      "how": [
+        "If the first runs' availability results are missing, wait for the role assignment to propagate; nothing to change"
+      ],
+      "entry": null,
+      "scope": "Application Insights of target/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 2041
+        }
+      ]
+    },
+    {
+      "area": "Monitoring",
+      "severity": "note",
+      "subject": "check jobs",
+      "text": "their results are posted as Microsoft.ApplicationInsights.Availability items with an Entra token, a form not yet confirmed against a live Application Insights",
+      "how": [
+        "After the first runs, confirm their results appear in Application Insights (availabilityResults); if not, report it with the job's log"
+      ],
+      "entry": null,
+      "scope": "Application Insights of target/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 2043
+        }
+      ]
+    },
+    {
+      "area": null,
+      "severity": null,
+      "subject": "",
+      "text": "firewall rule `fw-apps-public` reaches role `ig`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
+      "how": [],
+      "entry": null,
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 74
+        }
+      ]
+    },
+    {
+      "area": null,
+      "severity": null,
+      "subject": "",
+      "text": "firewall rule `fw-login-public` reaches role `am`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
+      "how": [],
+      "entry": null,
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 121
+        }
+      ]
+    },
+    {
+      "area": null,
+      "severity": null,
+      "subject": "",
+      "text": "firewall rule `fw-pf-cluster` reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
+      "how": [],
+      "entry": null,
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 123
+        }
+      ]
+    },
+    {
+      "area": null,
+      "severity": null,
+      "subject": "",
+      "text": "firewall rule `fw-pf-cluster-admin` reaches role `pf-admin`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
+      "how": [],
+      "entry": null,
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 125
+        }
+      ]
+    },
+    {
+      "area": null,
+      "severity": null,
+      "subject": "",
+      "text": "firewall rule `fw-sso-public` reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
+      "how": [],
+      "entry": null,
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 157
+        }
+      ]
+    },
+    {
+      "area": null,
+      "severity": null,
+      "subject": "",
+      "text": "principal pingds: write-storage backup-target: role `backup-target` has no binding in this environment",
+      "how": [],
+      "entry": null,
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 179
+        }
+      ]
+    }
+  ]
+}

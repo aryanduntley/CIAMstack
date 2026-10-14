@@ -32,6 +32,7 @@ from urllib.parse import unquote
 
 from opsdir.core.directory import is_kind, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.observability.audit import PROTECTED, audit_trails, store_protection, trail_destination
 from opsdir_format_terraform.hcl import Block, comment, from_entry, mentions, ref, tf_block, tf_name
 from .account import ORGANIZATION, organization_variable
@@ -80,16 +81,39 @@ def _data(n, org, events):
                                              *(("audit_log_config", Block((("log_type", log),))) for log in logs)]),)
 
 
+def _sink(t):
+    return f"google_logging_{'organization' if one(t, 'ciamAuditScope') == 'organization' else 'project'}_sink"
+
+
+def unrendered_note(m, t):
+    """The render note of trail t when environment m doesn't render it (a blocker: no sink exports its audit logs):
+    no destination a sink exports to; or None."""
+    cn, dest = rdn_value(t), trail_destination(m, t)
+    n = tf_name(cn)
+    if dest is not None and _destination(m, n, f"{_sink(t)}.{n}", dest) is not None:
+        return None
+    return note("Audit", "blocker", f"audit trail {cn}", "not rendered: " + (
+                "no bucket or log bucket here keeps its records (ciamLogDestinationRole)" if dest is None else
+                f"a sink exports to a bucket, a log bucket, BigQuery or Pub/Sub, and {rdn_value(dest)} is none of "
+                "those"),
+                (f"Bind the trail's ciamLogDestinationRole to a Cloud Storage bucket, a log bucket, a BigQuery dataset "
+                 f"or a Pub/Sub topic, {RECORD}",), t.dn, m.label)
+
+
+def audit_notes(m):
+    """The render notes of environment m's audit trails (render_trails writes their comments)."""
+    return tuple(n for t in audit_trails(m) for n in (unrendered_note(m, t),) if n is not None)
+
+
 def _trail(m, t):
     cn, dest = rdn_value(t), trail_destination(m, t)
     n = tf_name(cn)
     org = one(t, "ciamAuditScope") == "organization"
-    sink = f"google_logging_{'organization' if org else 'project'}_sink"
-    found = _destination(m, n, f"{sink}.{n}", dest) if dest is not None else None
-    if found is None:
-        why = ("no bucket or log bucket here keeps its records (ciamLogDestinationRole)" if dest is None else
-               f"a sink exports to a bucket, a log bucket, BigQuery or Pub/Sub, and {rdn_value(dest)} is none of those")
-        return (comment(f"NOTE: audit trail {cn}: not rendered: {why}"),)
+    sink = _sink(t)
+    missing = unrendered_note(m, t)
+    if missing is not None:
+        return (comment(note_comment(missing)),)
+    found = _destination(m, n, f"{sink}.{n}", dest)
     destination, grants, notes = found
     unlocked = one(t, "ciamIntegrityValidation") == "TRUE" and store_protection(m, t) < PROTECTED
     return (*notes, tf_block("resource", [sink, n], [

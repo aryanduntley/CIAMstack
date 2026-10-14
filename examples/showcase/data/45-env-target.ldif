@@ -575,6 +575,8 @@ objectClass: top
 objectClass: ciamCanaryBinding
 cn: sso-login
 ciamBindingRole: canary-sso-login
+ciamContainerImage: check=crexampleaerociam.azurecr.io/ciam/check@sha256:57414
+ 4c3681fe0e10565a329003298f27890e7589c4e5aa6ea7eb102ce0e9c1e
 ciamInterval: 5m
 ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
  roups/rg-ciam-prod/providers/Microsoft.App/jobs/sso-login
@@ -595,6 +597,8 @@ objectClass: top
 objectClass: ciamCanaryBinding
 cn: directory-bind
 ciamBindingRole: canary-directory-bind
+ciamContainerImage: check=crexampleaerociam.azurecr.io/ciam/check@sha256:57414
+ 4c3681fe0e10565a329003298f27890e7589c4e5aa6ea7eb102ce0e9c1e
 ciamInterval: 5m
 ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
  roups/rg-ciam-prod/providers/Microsoft.App/jobs/directory-bind

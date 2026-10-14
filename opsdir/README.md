@@ -25,7 +25,8 @@ On a machine whose global pip config sets `user = true`, pip refuses it inside a
 ./opsdir.sh init                      # DROPS the opsdir schema, then creates it (all migrations, views, registry)
 ./opsdir.sh upgrade                   # upgrade it in place instead: pending migrations, keeping data and history
 ./opsdir.sh load FILE.ldif...         # load LDIF content under change BOOTSTRAP
-./opsdir.sh check [CLOUD/ENV...]      # each environment's declared stack vs the installed adapters
+./opsdir.sh check [CLOUD/ENV...]      # each environment's declared stack vs the installed adapters, and its render's
+                                      # blockers and actions (render notes)
 ./opsdir.sh modify --change CHG-… FILE.ldif   # apply LDIF change records under an approved change
 ./opsdir.sh import [--change CHG-…] ADAPTER[/IMPORTER] PATH [--dry-run] [--at TIME] [--take K|all] [--keep K|all]
                                       # read a product's export into the record (conflicts decided: below)
@@ -39,7 +40,7 @@ On a machine whose global pip config sets `user = true`, pip refuses it inside a
 ./opsdir.sh search -b BASE 'FILTER' [ATTR...] # RFC 4515 search, as LDIF or a table of attributes
 ./opsdir.sh report NAME [DN]          # portability, unowned, blast-radius DN, settings, and every domain's reports (consumers,
                                       # keys ENV, drift, ...); dates as of --as-of
-./opsdir.sh render CLOUD/ENV [-o DIR] [--target ADAPTER=T[,T]]  # everything the environment's adapters render, plus MANIFEST.json
+./opsdir.sh render CLOUD/ENV [-o DIR] [--target ADAPTER=T[,T]]  # everything the environment's adapters render, plus MANIFEST.json, NOTES.md/.json
             [--keeper PARTY | --kind CLASS... | --binding DN...] [--as REQUESTER]   # or one slice of its infrastructure (below)
 ./opsdir.sh plan SRC DST [-o DIR]     # what blocks moving SRC to DST, dated actions, request drafts
 ./opsdir.sh migrate SRC DST [-o DIR] [--as REQUESTER]  # check both stacks, plan, render the target; exit 1 unless ready
@@ -87,6 +88,14 @@ The rest of the environment isn't written; the slice reads what it needs from it
 holds the provider adapters' infrastructure only (no product configuration, no captured files). It is refused for a
 party the record doesn't have, bindings the environment doesn't bind, or a scope that selects nothing (the refusal
 lists the kinds a render places by entry, which are the ones a slice can hold).
+
+Every render's NOTES.md and NOTES.json list what it could not do or leaves to a person: what, where (file:line), who
+(the owners of what it concerns, else the environment's) and how, as a blocker, an action or a note; the files' `NOTE`
+comments not yet classified are listed to review. `opsdir render` prints the counts and each blocker; `opsdir check`
+lists every environment's render blockers and actions (without rendering it), and the plan raises the target's as
+findings. `opsdir report canary-coverage` shows, per environment, which synthetic checks it renders and why not. An
+adapter that renders synthetic checks declares it (`renders_synthetic_checks`): an environment none of whose adapters
+does has every canary it could run as a note of its own.
 
 Every render's MANIFEST.json records who asked (`requester`: `--as`, default the database login) and, for a scoped
 render, its `scope` (kind and value). A migration's target render records them too: its scope is the whole

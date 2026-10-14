@@ -1,9 +1,12 @@
 """Render a complete, working configuration set for one environment: the applicable adapters' outputs, each in a
 format the adapter declares and some installed package registers, the captured config files the environment
-receives, plus the MANIFEST (R10)."""
+receives, plus the MANIFEST (R10) and the render's notes (NOTES.md, NOTES.json: what it could not do, or leaves to a
+person, core.notes)."""
 from ..core.environment import as_seen
 from ..core.formats import format_of
 from ..core.manifest import manifest
+from ..core.notes import collected, notes_json, notes_markdown, ordered, with_owners
+from ..domains.observability.canaries import unrun_notes
 from ..core.profiles import profile_tree
 from ..domains.governance.keepers import check_scope
 from .capture import RenderedConfig, rendered_config
@@ -121,20 +124,42 @@ def file_formats(adapters, paths, formats=FORMATS):
     return {p: name for p, (_, name) in found.items()}
 
 
-def assemble(m, adapters, neutral, specific, targets=None, requester=None):
+def adapter_notes(m, adapters, installed=ADAPTERS):
+    """The RenderNotes of environment m's render: those the adapters rendering it return (Adapter.notes, with the
+    Services of the installed adapters, as their render_env gets them), then the core's own: its canaries none of them
+    renders (observability unrun_notes, naming the installed adapters that render synthetic checks)."""
+    found = services(installed)
+    return (*(n for a in adapters if a.notes for n in a.notes(m, found)),
+            *unrun_notes(m, adapters, found.endpoints, tuple(a.name for a in installed if a.renders_synthetic_checks)))
+
+
+def environment_notes(d, spec, installed=ADAPTERS):
+    """(EnvModel as the environment sees the record, its render's RenderNotes with owners, no places) without
+    rendering it: what `opsdir check` lists."""
+    shared, adapters = environment(d, spec, installed)
+    m = as_seen(shared)
+    return m, ordered(with_owners(m.d, m.env, adapter_notes(m, adapters, installed)))
+
+
+def assemble(m, adapters, neutral, specific, targets=None, requester=None, installed=ADAPTERS):
     """The environment's files: the adapters' outputs, the captured config files it receives (all of the environment
-    only), and the MANIFEST (with the render targets chosen, and the scope and requester of a requested render)."""
+    only), the MANIFEST (with the render targets chosen, and the scope and requester of a requested render), and the
+    render's notes, NOTES.md and NOTES.json (the adapters' notes located in the files, the files' other NOTE comments
+    to review, core.notes.collected; always written: none says nothing needs handling)."""
     config = rendered_config(m.d, m) if m.scope is None or m.scope.kind == "environment" else _NO_CONFIG
     clash = sorted(set(config.files) & {*neutral, *specific})
     if clash:
         raise SystemExit(f"captured files and rendered files share paths: {', '.join(clash)}")
     formats = {**file_formats(adapters, (*neutral, *specific)), **config.formats}
-    return {**neutral, **specific, **config.files,
+    files = {**neutral, **specific, **config.files}
+    notes = collected(m, adapter_notes(m, adapters, installed), files)
+    return {**files,
             "MANIFEST.json": manifest(m, neutral, specific, formats, config.files, config.scopes, config.not_rendered,
-                                      targets, requester)}
+                                      targets, requester),
+            "NOTES.md": notes_markdown(m, notes), "NOTES.json": notes_json(m, notes)}
 
 
 def render_env(d, spec, installed=ADAPTERS, wanted=None, scope=None, requester=None):
     """(EnvModel, {path: text}) of a render of environment spec: render_parts, assembled with its MANIFEST."""
     m, adapters, neutral, specific, targets = render_parts(d, spec, installed, wanted, scope)
-    return m, assemble(m, adapters, neutral, specific, targets, requester)
+    return m, assemble(m, adapters, neutral, specific, targets, requester, installed)

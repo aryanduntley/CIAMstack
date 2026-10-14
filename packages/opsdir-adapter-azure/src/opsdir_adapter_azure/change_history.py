@@ -21,9 +21,10 @@ ciamFindingsRole, this renders:
                                                     Publisher on the rule (ingestion)
 
 A run reads at most 1000 changes (Resource Graph's page): more in an hour need the query's skipToken paging (a comment).
-Without a workspace to keep them in, a NOTE.
+Without a workspace to keep them in, not rendered: a blocker (history_note, flow 43), written as its comment.
 """
 from opsdir.core.directory import one, rdn_value
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.estate.security import findings_destination
 from opsdir.domains.observability.audit import INDEFINITE
 from opsdir_format_terraform.hcl import Block, comment, jsonencoded, ref, tf_block, tf_name
@@ -146,15 +147,25 @@ def _export(m, s, dest):
                 ("principal_id", ref(f"{workflow}.identity[0].principal_id"))]))
 
 
+def history_note(m, s):
+    """The render note of a config-recording service keeping resource changes longer than Resource Graph's 14 days
+    with no Log Analytics workspace to copy them to (a blocker), or None."""
+    if not needs_export(m, s) or workspace_id(m, findings_destination(m, s)) is not None:
+        return None
+    return note("Security", "blocker", rdn_value(s), f"keeping resource changes {one(s, 'ciamRetentionDays')} days, "
+                f"longer than Resource Graph's {NATIVE_DAYS}, needs a Log Analytics workspace to copy them to (its "
+                "ciamFindingsRole): not rendered",
+                (f"Bind the service's ciamFindingsRole to a Log Analytics workspace, or record ciamRetentionDays "
+                 f"{NATIVE_DAYS} or less, {RECORD}",), s.dn, m.label)
+
+
 def render_change_history(m, s):
     """HCL for a config-recording service of environment m keeping resource changes longer than Resource Graph's 14
-    days (needs_export): the table, endpoint, rule, Logic App and role assignments, or a NOTE without a workspace; ()
-    when it doesn't ask for more."""
+    days (needs_export): the table, endpoint, rule, Logic App and role assignments, or its note's comment
+    (history_note) without a workspace; () when it doesn't ask for more."""
     if not needs_export(m, s):
         return ()
-    dest = findings_destination(m, s)
-    if workspace_id(m, dest) is None:
-        return (comment(f"NOTE: {rdn_value(s)}: keeping resource changes {one(s, 'ciamRetentionDays')} days, longer "
-                        f"than Resource Graph's {NATIVE_DAYS}, needs a Log Analytics workspace to copy them to (its "
-                        "ciamFindingsRole): not rendered"),)
-    return _export(m, s, dest)
+    found = history_note(m, s)
+    if found is not None:
+        return (comment(note_comment(found)),)
+    return _export(m, s, findings_destination(m, s))

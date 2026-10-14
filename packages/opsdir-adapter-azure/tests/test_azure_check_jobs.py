@@ -1,6 +1,9 @@
-"""Scripted synthetic checks on Azure rendered from the record as Container Apps scheduled jobs: an oidc-token check
-reading its Key Vault secret when it runs, an LDAPS bind of an internal service from the subnet the firewall admits,
-one environment and one identity for them, results reported to Application Insights; what can't run is named."""
+"""Scripted synthetic checks on Azure rendered from the record as Container Apps scheduled jobs: every job runs the same
+runner, given its check as data; by default from the image the organization builds from the rendered build context and
+records on each canary binding by digest (pulled with the job's own identity), else (a lab's choice) read from a
+variable; an oidc-token check reading its Key Vault secret when it runs, an LDAPS bind of an internal service from the
+subnet the firewall admits, one environment and an identity per job, results reported to Application Insights; what
+can't run, or needs a person, is a render note."""
 import ast
 import io
 import json
@@ -9,15 +12,23 @@ import urllib.request
 from opsdir.core.contract import Endpoint
 from opsdir.domains.observability.naming import CANARIES
 from opsdir_format_terraform.hcl import as_text
+import opsdir_adapter_azure.check_jobs as check_jobs
 from opsdir_adapter_azure.check_jobs import cron, job_name, render_jobs
 from network_fixtures import BETA, entry, model, rule
 
 ENDPOINTS = (Endpoint("health", "/pf/heartbeat.ping", "web"), Endpoint("token", "/as/token.oauth2", "web"))
+DIGEST = "sha256:" + "0" * 63 + "1"
+IMAGE = f"crciam.azurecr.io/ciam/check@{DIGEST}"
 
 
 def _canary(cn, **attrs):
     return entry(CANARIES, cn, "ciamCanary", **attrs).replace("objectClass: ciamCanary",
                                                                "objectClass: ciamObject\nobjectClass: ciamCanary")
+
+
+def _binding(cn, canary, image=IMAGE):
+    return entry(BETA, cn, "ciamCanaryBinding", ciamBindingRole=f"canary-{canary}", ciamRealizes=canary,
+                 **({"ciamContainerImage": f"check={image}"} if image else {}))
 
 
 TREE = (f"dn: {CANARIES}\nobjectClass: top\nobjectClass: organizationalUnit\nou: canaries\n",
@@ -27,80 +38,133 @@ TREE = (f"dn: {CANARIES}\nobjectClass: top\nobjectClass: organizationalUnit\nou:
 BINDINGS = (entry(BETA, "svc-sso", "ciamServiceName", ciamBindingRole="sso", ciamFqdn="sso.example.test",
                   ciamTargetRole="web", ciamFrontendIp="203.0.113.10"),
             entry(BETA, "client", "ciamSecretRef", ciamBindingRole="client", ciamRefUri="azkv://kv-ciam/canary-client"),
-            entry(BETA, "Token-Check", "ciamCanaryBinding", ciamBindingRole="canary-sso-token",
-                  ciamRealizes="sso-token"))
+            _binding("Token-Check", "sso-token"))
 LDAP = (_canary("directory", ciamCheckedService="ldaps", ciamCanaryFlow="ldap-bind", ciamUsesRole="client"),
         _canary("anonymous", ciamCheckedService="ldaps", ciamCanaryFlow="ldap-bind"))
 INTERNAL = (entry(BETA, "svc-ldaps", "ciamServiceName", ciamBindingRole="ldaps", ciamFqdn="ldap.example.test",
                   ciamPort="1636", ciamTargetRole="ds", ciamFrontendIp="10.1.1.100"),
-            rule(BETA, "fw-web-ds", "10.1.2.0/24", "1636", "ds"))
+            rule(BETA, "fw-web-ds", "10.1.2.0/24", "1636", "ds"),
+            _binding("directory", "directory"), _binding("anonymous", "anonymous"))
 
 
-def _render(bindings=BINDINGS, tree=TREE, gov=False):
+def _model(bindings=BINDINGS, tree=TREE, gov=False):
     _, _, beta = model(beta=bindings, tree=tree)
     if gov:
         beta = beta._replace(cloud=beta.cloud._replace(attrs={**beta.cloud.attrs, "ciamRegion": ("usgovvirginia",)}))
-    hcl, scripts = as_text(render_jobs(beta, ENDPOINTS))
-    return "\n".join(hcl), hcl, scripts
+    return beta
 
 
-def test_a_token_check_runs_as_a_scheduled_job_reading_its_secret_from_key_vault():
-    text, _, scripts = _render()
-    assert 'resource "azurerm_container_app_job" "token_check" {' in text
-    assert 'name                         = "token-check"' in text
-    assert 'cron_expression          = "*/10 * * * *"' in text                     # 7m raised to 10m
-    assert "replica_retry_limit          = 0" in text and 'workload_profile_name        = "Consumption"' in text
+def _render(bindings=BINDINGS, tree=TREE, gov=False):
+    hcl, files = as_text(render_jobs(_model(bindings, tree, gov), ENDPOINTS))
+    return "\n".join(hcl), hcl, files
+
+
+def _job(text, name):
+    job = text[text.index(f'resource "azurerm_container_app_job" "{name}"'):]
+    return job[:job.index("\n}\n")]
+
+
+def test_a_job_runs_the_recorded_image_given_its_check_as_data():
+    text, _, files = _render()
+    job = _job(text, "token_check")
+    assert 'name                         = "token-check"' in job
+    assert 'cron_expression          = "*/10 * * * *"' in job                       # 7m raised to 10m
+    assert "replica_retry_limit          = 0" in job and 'workload_profile_name        = "Consumption"' in job
+    assert ("  registry {\n    server   = \"crciam.azurecr.io\"\n"
+            "    identity = azurerm_user_assigned_identity.check_token_check.id\n  }\n") in job
+    assert f'      image  = "{IMAGE}"' in job and "command" not in job and "CHECK_SCRIPT" not in job
+    for name, value in (("CHECK_FLOW", "oidc-token"), ("CHECK_URL", "https://sso.example.test/as/token.oauth2"),
+                        ("CHECK_TEST", "Token-Check"), ("CHECK_AUDIENCE", "https://monitor.azure.com")):
+        assert f'        name  = "{name}"\n        value = "{value}"' in job                # data, never code
     assert ('    key_vault_secret_id = "${data.azurerm_key_vault.kv_ciam.vault_uri}secrets/canary-client"\n'
-            '    identity            = azurerm_user_assigned_identity.checks.id\n') in text
-    assert 'data "azurerm_key_vault" "kv_ciam" {' in text
-    assert 'value = file("${path.module}/checks/token-check/check.py")' in text
-    assert 'name        = "CHECK_CREDENTIALS"\n        secret_name = "credentials"' in text
-    assert 'Realizes    = "sso-token"' in text and 'BindingRole = "canary-sso-token"' in text
+            '    identity            = azurerm_user_assigned_identity.check_token_check.id\n') in job
+    assert 'name        = "CHECK_CREDENTIALS"\n        secret_name = "credentials"' in job
+    assert 'Realizes    = "sso-token"' in job and 'BindingRole = "canary-sso-token"' in job
     assert "sso-alive" not in text                                  # a standard web test's (canaries)
-    script = scripts["terraform/checks/token-check/check.py"]
-    assert "URL = 'https://sso.example.test/as/token.oauth2'" in script and "FLOW = 'oidc-token'" in script
-    assert "AUDIENCE = 'https://monitor.azure.com'" in script
-    ast.parse(script)
+    assert sorted(files) == ["images/ciam-check/Dockerfile", "images/ciam-check/check.py"]
+    ast.parse(files["images/ciam-check/check.py"])
 
 
-def test_one_environment_and_identity_with_the_grants_the_jobs_need():
+def test_the_build_context_builds_the_runner_from_the_base_image_as_non_root():
+    _, _, files = _render()
+    dockerfile = files["images/ciam-check/Dockerfile"]
+    assert dockerfile.startswith("# Generated by opsdir from ")
+    assert "\n# NOTE: check image: build it from " in dockerfile
+    assert "FROM mcr.microsoft.com/azurelinux/distroless/python:3.12-nonroot\n" in dockerfile
+    assert "COPY check.py /opt/ciam-check/check.py\nUSER nonroot\n" in dockerfile
+    assert dockerfile.endswith('ENTRYPOINT ["/usr/bin/python3", "/opt/ciam-check/check.py"]\n')
+    runner = files["images/ciam-check/check.py"]
+    assert 'FLOW = os.environ["CHECK_FLOW"]' in runner and "sso.example.test" not in runner   # one image for all
+
+
+def test_one_environment_and_an_identity_per_job_with_only_its_own_grants():
     text, hcl, _ = _render()
     assert 'resource "azurerm_container_app_environment" "checks" {' in text
     assert "infrastructure_subnet_id" not in text                   # a public check: no virtual network
-    assert ('resource "azurerm_role_assignment" "checks_kv_ciam_canary_client" {\n'
+    assert ('resource "azurerm_user_assigned_identity" "check_token_check" {\n'
+            '  name                = "id-ciam-prod-token-check"\n') in text
+    assert ('resource "azurerm_role_assignment" "check_token_check_secret" {\n'
             '  scope                = "${data.azurerm_key_vault.kv_ciam.id}/secrets/canary-client"\n'
-            '  role_definition_name = "Key Vault Secrets User"\n') in text
-    assert ('  scope                = var.application_insights_id\n'
+            '  role_definition_name = "Key Vault Secrets User"\n'
+            '  principal_id         = azurerm_user_assigned_identity.check_token_check.principal_id\n') in text
+    assert ('resource "azurerm_role_assignment" "check_token_check_publisher" {\n'
+            '  scope                = var.application_insights_id\n'
             '  role_definition_name = "Monitoring Metrics Publisher"\n') in text
-    assert ("depends_on = [azurerm_role_assignment.checks_publisher, "
-            "azurerm_role_assignment.checks_kv_ciam_canary_client]") in text
+    assert ('resource "azurerm_role_assignment" "check_token_check_pull" {\n'
+            '  scope                = var.registry_crciam_azurecr_io_id\n'
+            '  role_definition_name = "AcrPull"\n') in text
+    assert ("depends_on = [azurerm_role_assignment.check_token_check_publisher, "
+            "azurerm_role_assignment.check_token_check_secret, azurerm_role_assignment.check_token_check_pull]") in text
+    assert text.count('role_definition_name = "Key Vault Secrets User"') == 1      # no other job reads the secret
     assert any(x.startswith('variable "application_insights_connection_string"') and "sensitive   = true" in x
                for x in hcl)
     assert any(x.startswith('variable "application_insights_id"') for x in hcl)
+    assert any(x.startswith('variable "registry_crciam_azurecr_io_id"') for x in hcl)
 
 
 def test_an_internal_ldap_check_runs_in_the_subnet_the_firewall_admits():
-    text, _, scripts = _render((*BINDINGS, *INTERNAL), (*TREE, *LDAP))
+    text, _, _ = _render((*BINDINGS, *INTERNAL), (*TREE, *LDAP))
     assert ("  infrastructure_subnet_id       = data.azurerm_subnet.subnet_web.id\n"
             "  internal_load_balancer_enabled = true\n") in text
-    assert "# Subnet subnet-web must be delegated to Microsoft.App/environments" in text
-    anonymous, bound = scripts["terraform/checks/anonymous/check.py"], scripts["terraform/checks/directory/check.py"]
-    assert "URL = 'ldaps://ldap.example.test:1636'" in anonymous and "FLOW = 'ldap-bind'" in bound
-    job = text[text.index('resource "azurerm_container_app_job" "anonymous"'):]
-    job = job[:job.index("\n}\n")]
-    assert "CHECK_CREDENTIALS" not in job and "key_vault_secret_id" not in job      # an anonymous bind
+    assert "# NOTE: subnet subnet-web: must be delegated to Microsoft.App/environments" in text
+    anonymous = _job(text, "anonymous")
+    assert 'value = "ldaps://ldap.example.test:1636"' in anonymous and 'value = "ldap-bind"' in anonymous
+    assert "CHECK_CREDENTIALS" not in anonymous and "key_vault_secret_id" not in anonymous   # an anonymous bind
 
 
-def test_what_a_job_cant_run_is_named():
+def test_what_a_job_cant_run_is_a_note_and_the_image_is_still_to_build():
     vault = tuple(b.replace("azkv://kv-ciam/canary-client", "vault://secret/canary") for b in BINDINGS)
-    _, hcl, _ = _render(vault)
+    _, hcl, files = _render(vault)
     assert hcl == ("# NOTE: canary sso-token: not rendered: its credentials (client) aren't a Key Vault secret "
-                   "(azkv://)",)
+                   "(azkv://)",) and files == {}
+    unrecorded = (*BINDINGS[:2], _binding("Token-Check", "sso-token", image=None))
+    _, hcl, files = _render(unrecorded)
+    assert hcl == ("# NOTE: canary sso-token: not rendered: its canary binding Token-Check records no check image to "
+                   "run (azure-check-delivery image)",)
+    assert sorted(files) == ["images/ciam-check/Dockerfile", "images/ciam-check/check.py"]   # what to build it from
+
+
+def test_an_image_recorded_by_tag_runs_with_a_note_to_pin_its_digest():
+    tagged = (*BINDINGS[:2], _binding("Token-Check", "sso-token", image="crciam.azurecr.io/ciam/check:1.0"))
+    text, _, _ = _render(tagged)
+    assert ("# NOTE: check job token-check: runs crciam.azurecr.io/ciam/check:1.0 by tag: a tag can move to an image "
+            "nobody signed or verified") in text
+    assert 'image  = "crciam.azurecr.io/ciam/check:1.0"' in _job(text, "token_check")
 
 
 def test_azure_government_checks_ask_its_own_monitor_audience():
-    _, _, scripts = _render(gov=True)
-    assert "AUDIENCE = 'https://monitor.azure.us'" in scripts["terraform/checks/token-check/check.py"]
+    text, _, _ = _render(gov=True)
+    assert '        name  = "CHECK_AUDIENCE"\n        value = "https://monitor.azure.us"' in text
+
+
+def test_a_lab_may_run_the_runner_from_a_variable_instead(monkeypatch):
+    monkeypatch.setattr(check_jobs, "delivery", lambda m: "script")
+    text, hcl, files = _render()
+    job = _job(text, "token_check")
+    assert '= "mcr.microsoft.com/azurelinux/distroless/python:3.12-nonroot"' in job        # the base image
+    assert '"import os; exec(os.environ[\'CHECK_SCRIPT\'])"' in job and "registry" not in job
+    assert 'value = file("${path.module}/checks/check.py")' in job and "_pull" not in text
+    assert sorted(files) == ["terraform/checks/check.py"] and not any("registry_" in x for x in hcl)
 
 
 def test_names_and_schedules():
@@ -121,8 +185,8 @@ class _Answer(io.BytesIO):
         return False
 
 
-def test_the_script_reports_an_availability_result_with_an_entra_token(monkeypatch):
-    _, _, scripts = _render()
+def test_the_runner_reports_an_availability_result_with_an_entra_token(monkeypatch):
+    _, _, files = _render()
     sent = []
 
     def urlopen(request, timeout=None):
@@ -137,10 +201,12 @@ def test_the_script_reports_an_availability_result_with_an_entra_token(monkeypat
     monkeypatch.setattr(urllib.request, "urlopen", urlopen)
     for k, v in {"APPLICATIONINSIGHTS_CONNECTION_STRING": "InstrumentationKey=ik;IngestionEndpoint=https://in.test/",
                  "IDENTITY_ENDPOINT": "http://identity/token", "IDENTITY_HEADER": "h", "AZURE_CLIENT_ID": "cid",
-                 "CHECK_LOCATION": "eastus",
+                 "CHECK_LOCATION": "eastus", "CHECK_FLOW": "oidc-token",
+                 "CHECK_URL": "https://sso.example.test/as/token.oauth2", "CHECK_TEST": "Token-Check",
+                 "CHECK_AUDIENCE": "https://monitor.azure.com",
                  "CHECK_CREDENTIALS": json.dumps({"client_id": "c", "client_secret": "s"})}.items():
         monkeypatch.setenv(k, v)
-    exec(compile(scripts["terraform/checks/token-check/check.py"], "check.py", "exec"), {})
+    exec(compile(files["images/ciam-check/check.py"], "check.py", "exec"), {})
     track = sent[-1]
     assert track.full_url == "https://in.test/v2.1/track" and track.get_header("Authorization") == "Bearer entra"
     assert "client_id=cid" in sent[1].full_url and "monitor.azure.com" in sent[1].full_url
@@ -151,7 +217,7 @@ def test_the_script_reports_an_availability_result_with_an_entra_token(monkeypat
     assert data["message"] == "HTTP 200, access token issued" and data["duration"].startswith("00.00:00:")
 
 
-def test_a_job_reads_back_as_the_canary_binding_it_realizes_from_state_cli_and_arm():
+def test_a_job_reads_back_as_the_canary_binding_it_realizes_with_its_image_from_state_cli_and_arm():
     from opsdir_adapter_azure.check_jobs import cron_seconds
     from opsdir_adapter_azure.cli_monitor import monitor_items
     from opsdir_adapter_azure.inventory import pairs_resources
@@ -160,41 +226,104 @@ def test_a_job_reads_back_as_the_canary_binding_it_realizes_from_state_cli_and_a
     tags = {"Realizes": "sso-token", "BindingRole": "canary-sso-token"}
     job_id = "/subscriptions/0/resourceGroups/rg/providers/Microsoft.App/jobs/token-check"
     state = ("azurerm_container_app_job", {"id": job_id, "name": "token-check", "tags": tags,
-                                            "schedule_trigger_config": [{"cron_expression": "*/10 * * * *"}]})
+                                            "schedule_trigger_config": [{"cron_expression": "*/10 * * * *"}],
+                                            "template": [{"container": [{"image": IMAGE}]}],
+                                            "registry": [{"server": "crciam.azurecr.io"}]})
     other = ("azurerm_container_app_job", {"id": job_id + "-x", "name": "batch", "tags": {},
                                             "schedule_trigger_config": [{"cron_expression": "0 0 * * *"}]})
     flat = {"id": job_id, "name": "token-check", "type": "Microsoft.App/jobs", "tags": tags,
-            "cronExpression": "*/10 * * * *"}
+            "cronExpression": "*/10 * * * *", "image": IMAGE, "registries": ["crciam.azurecr.io"]}
     nested = {"id": job_id, "name": "token-check", "type": "Microsoft.App/jobs", "tags": tags,
-              "properties": {"configuration": {"scheduleTriggerConfig": {"cronExpression": "*/10 * * * *"}}}}
+              "properties": {"configuration": {"scheduleTriggerConfig": {"cronExpression": "*/10 * * * *"},
+                                               "registries": [{"server": "crciam.azurecr.io", "identity": "x"}]},
+                             "template": {"containers": [{"name": "check", "image": IMAGE}]}}}
     cli = [p for item in (flat, nested) for p in monitor_items([("microsoft.app/jobs", item)])]
     assert cli == [state, state]
     canaries = [r for r in pairs_resources([state, other])[0] if r.kind == "canary"]
     assert [(r.ref, r.attrs, r.role) for r in canaries] == [
-        (job_id, {"ciamInterval": ("10m",), "ciamRealizes": ("sso-token",)}, "canary-sso-token")]
+        (job_id, {"ciamInterval": ("10m",), "ciamRealizes": ("sso-token",),
+                  "ciamContainerImage": (f"check={IMAGE}",)}, "canary-sso-token")]
+    script_form = ("azurerm_container_app_job", {**state[1], "registry": []})          # the base image: not recorded
+    assert "ciamContainerImage" not in [r for r in pairs_resources([script_form])[0] if r.kind == "canary"][0].attrs
 
 
-def test_as_bicep_the_environment_is_native_and_the_jobs_stay_terraform_with_their_scripts(monkeypatch):
+def test_as_bicep_the_environment_is_native_and_the_jobs_stay_terraform(monkeypatch):
     from types import SimpleNamespace
     from opsdir_format_terraform.hcl import TfFile, ref, tf_block
     import opsdir_adapter_azure.terraform as terraform
     stub = SimpleNamespace(dn="env=prod,cloud=alpha,ou=environments,dc=ciam-ops", label="alpha/prod")
-    _, _, beta = model(beta=(*BINDINGS, *INTERNAL), tree=(*TREE, *LDAP))
-    hcl, scripts = render_jobs(beta, ENDPOINTS)
+    hcl, files = render_jobs(_model((*BINDINGS, *INTERNAL), (*TREE, *LDAP)), ENDPOINTS)
     root = TfFile("", (tf_block("data", ["azurerm_resource_group", "main"], [("name", "rg-a")]),
                        tf_block("data", ["azurerm_subnet", "subnet_web"], [
                            ("name", "snet-web"), ("virtual_network_name", "vnet-a"),
                            ("resource_group_name", ref("data.azurerm_resource_group.main.name"))]), *hcl))
-    monkeypatch.setattr(terraform, "render_files", lambda m, services: {"terraform/main.tf": root, **scripts})
-    files = terraform.render(stub, None, ("bicep",))
-    assert "terraform/main.tf" not in files
-    template = files["bicep/rg-a.bicep"]
-    assert "resource container_app_environment_checks 'Microsoft.App/managedEnvironments@2026-07-01' = {" in template
+    monkeypatch.setattr(terraform, "render_files", lambda m, services: {"terraform/main.tf": root, **files})
+    out = terraform.render(stub, None, ("bicep",))
+    assert "terraform/main.tf" not in out
+    template = out["bicep/rg-a.bicep"]
+    assert ("resource container_app_environment_checks_subnet_web 'Microsoft.App/managedEnvironments@2026-07-01' = {"
+            in template)
     assert "infrastructureSubnetId: subnets_snet_web.id\n      internal: true" in template
     assert "'4633458b-17de-408a-b874-0445c86b69e6')" in template                 # Key Vault Secrets User
-    side = files["bicep/terraform/main.tf"]
-    assert "#   azurerm_container_app_job.token_check: its check script is read from a file beside the root" in side
-    assert "container_app_environment_id = var.azurerm_container_app_environment_checks_id" in side
-    assert "depends_on = [azurerm_role_assignment.checks_publisher]" in side      # the template's grant: applied
-    assert {p for p in files if p.endswith("check.py")} == {f"bicep/terraform/checks/{n}/check.py"
-                                                             for n in ("anonymous", "directory", "token-check")}
+    side = out["bicep/terraform/main.tf"]
+    assert "#   azurerm_container_app_job.token_check: no ARM form is written for the check jobs yet" in side
+    assert "container_app_environment_id = var.azurerm_container_app_environment_checks_subnet_web_id" in side
+    assert "depends_on = [azurerm_role_assignment.check_token_check_publisher" in side   # the template's grants
+    assert {p for p in out if p.endswith("check.py")} == {"images/ciam-check/check.py"}   # nothing read beside it
+
+
+def test_the_jobs_notes_are_written_as_their_comments():
+    from opsdir.core.notes import note_comment
+    from opsdir_adapter_azure.check_jobs import job_notes
+    text, _, files = _render((*BINDINGS, *INTERNAL), (*TREE, *LDAP))
+    notes = job_notes(_model((*BINDINGS, *INTERNAL), (*TREE, *LDAP)), ENDPOINTS)
+    written = text + files["images/ciam-check/Dockerfile"]
+    assert all(f"# {note_comment(n)}" in written for n in notes)
+    delegation = next(n for n in notes if n.area == "Network")
+    assert (delegation.severity, delegation.subject) == ("action", "subnet subnet-web")
+    assert delegation.how[0].startswith("Have the network's keeper delegate subnet subnet-web")
+    build = next(n for n in notes if n.subject == "check image")
+    assert build.severity == "action" and build.scope.endswith("(crciam.azurecr.io)")
+    assert any("Notary Project" in step for step in build.how)
+    start = next(n for n in notes if n.subject == "check jobs" and n.severity == "action")
+    assert "jobs/start/action" in start.how[0]
+    assert [n.severity for n in notes if n.subject == "check jobs"] == ["action", "note", "note"]
+
+
+SUBNETS = (entry(BETA, "subnet-checks", "ciamSubnetBinding", ciamBindingRole="subnet-checks", ciamCidr="10.1.9.0/27"),
+           entry(BETA, "subnet-tiny", "ciamSubnetBinding", ciamBindingRole="subnet-tiny", ciamCidr="10.1.8.0/28"),
+           entry(BETA, "svc-admin", "ciamServiceName", ciamBindingRole="admin", ciamFqdn="admin.example.test",
+                 ciamTargetRole="web", ciamFrontendIp="10.1.2.50"),
+           _binding("admin-check", "admin-alive").replace("ciamRealizes: admin-alive\n",
+                                                          "ciamRealizes: admin-alive\nciamSubnetRole: subnet-checks\n"))
+ADMIN = (_canary("admin-alive", ciamCheckedService="admin", ciamCanaryFlow="health"),)
+
+
+def test_each_subnet_the_checks_run_from_gets_its_own_environment():
+    text, _, _ = _render((*BINDINGS, *INTERNAL, *SUBNETS), (*TREE, *LDAP, *ADMIN))
+    assert text.count('resource "azurerm_container_app_environment"') == 2       # no check left out
+    assert ('resource "azurerm_container_app_environment" "checks_subnet_web" {\n'
+            '  name                           = "cae-ciam-prod-subnet-web"\n') in text
+    assert ('resource "azurerm_container_app_environment" "checks_subnet_checks" {\n'
+            '  name                           = "cae-ciam-prod-subnet-checks"\n') in text
+    assert "container_app_environment_id = azurerm_container_app_environment.checks_subnet_checks.id" in _job(
+        text, "admin_check")
+    assert "container_app_environment_id = azurerm_container_app_environment.checks_subnet_web.id" in _job(
+        text, "directory")
+    assert "checks_subnet_checks.id" in _job(text, "token_check")      # a public check: the first one placed
+    assert text.count("# NOTE: subnet subnet-") == 2 and "not run from" not in text
+
+
+def test_a_check_runs_from_a_subnet_large_enough_else_it_is_named():
+    from opsdir_adapter_azure.check_jobs import placed
+    from opsdir.domains.observability.canaries import canary_specs
+    tiny_first = tuple(b.replace("ciamSubnetRole: subnet-checks", "ciamSubnetRole: subnet-tiny\n"
+                                 "ciamSubnetRole: subnet-checks") for b in SUBNETS)
+    m = _model((*BINDINGS, *tiny_first), (*TREE, *ADMIN))
+    spec = next(s for s in canary_specs(m, ENDPOINTS) if s.name == "admin-check")
+    assert [x.dn.split(",")[0] for x in spec.subnets] == ["cn=subnet-tiny", "cn=subnet-checks"]
+    assert placed((spec,))["admin-check"].dn.startswith("cn=subnet-checks,")     # the /28 skipped for the /27
+    only_tiny = tuple(b.replace("ciamSubnetRole: subnet-checks", "ciamSubnetRole: subnet-tiny") for b in SUBNETS)
+    _, hcl, _ = _render((*BINDINGS, *only_tiny), (*TREE, *ADMIN))
+    assert ("# NOTE: canary admin-alive: not rendered: subnet subnet-tiny (10.1.8.0/28) is smaller than the /27 a "
+            "Container Apps environment with workload profiles needs") in hcl

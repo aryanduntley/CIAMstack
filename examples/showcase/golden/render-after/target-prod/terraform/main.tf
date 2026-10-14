@@ -2019,11 +2019,41 @@ variable "application_insights_id" {
   type        = string
 }
 
+resource "azurerm_user_assigned_identity" "check_directory_bind" {
+  name                = "id-ciam-prod-directory-bind"
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = data.azurerm_resource_group.main.location
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_role_assignment" "check_directory_bind_publisher" {
+  scope                = var.application_insights_id
+  role_definition_name = "Monitoring Metrics Publisher"
+  principal_id         = azurerm_user_assigned_identity.check_directory_bind.principal_id
+}
+
+resource "azurerm_role_assignment" "check_directory_bind_secret" {
+  scope                = "${data.azurerm_key_vault.kv_ciam_prod.id}/secrets/canary-bind"
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.check_directory_bind.principal_id
+}
+
+resource "azurerm_role_assignment" "check_directory_bind_pull" {
+  scope                = var.registry_crexampleaerociam_azurecr_io_id
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_user_assigned_identity.check_directory_bind.principal_id
+}
+
 resource "azurerm_container_app_job" "directory_bind" {
   name                         = "directory-bind"
   resource_group_name          = data.azurerm_resource_group.main.name
   location                     = data.azurerm_resource_group.main.location
-  container_app_environment_id = azurerm_container_app_environment.checks.id
+  container_app_environment_id = azurerm_container_app_environment.checks_snet_checks.id
   workload_profile_name        = "Consumption"
   replica_timeout_in_seconds   = 120
   replica_retry_limit          = 0
@@ -2034,7 +2064,7 @@ resource "azurerm_container_app_job" "directory_bind" {
   }
   identity {
     type         = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.checks.id]
+    identity_ids = [azurerm_user_assigned_identity.check_directory_bind.id]
   }
   secret {
     name  = "appinsights"
@@ -2043,18 +2073,33 @@ resource "azurerm_container_app_job" "directory_bind" {
   secret {
     name                = "credentials"
     key_vault_secret_id = "${data.azurerm_key_vault.kv_ciam_prod.vault_uri}secrets/canary-bind"
-    identity            = azurerm_user_assigned_identity.checks.id
+    identity            = azurerm_user_assigned_identity.check_directory_bind.id
+  }
+  registry {
+    server   = "crexampleaerociam.azurecr.io"
+    identity = azurerm_user_assigned_identity.check_directory_bind.id
   }
   template {
     container {
-      name    = "check"
-      image   = "mcr.microsoft.com/azurelinux/base/python:3.12"
-      cpu     = 0.25
-      memory  = "0.5Gi"
-      command = ["python3", "-c", "import os; exec(os.environ['CHECK_SCRIPT'])"]
+      name   = "check"
+      image  = "crexampleaerociam.azurecr.io/ciam/check@sha256:574144c3681fe0e10565a329003298f27890e7589c4e5aa6ea7eb102ce0e9c1e"
+      cpu    = 0.25
+      memory = "0.5Gi"
       env {
-        name  = "CHECK_SCRIPT"
-        value = file("${path.module}/checks/directory-bind/check.py")
+        name  = "CHECK_FLOW"
+        value = "ldap-bind"
+      }
+      env {
+        name  = "CHECK_URL"
+        value = "ldaps://ldap.id.example-aero.test:1636"
+      }
+      env {
+        name  = "CHECK_TEST"
+        value = "directory-bind"
+      }
+      env {
+        name  = "CHECK_AUDIENCE"
+        value = "https://monitor.azure.com"
       }
       env {
         name  = "CHECK_LOCATION"
@@ -2062,7 +2107,7 @@ resource "azurerm_container_app_job" "directory_bind" {
       }
       env {
         name  = "AZURE_CLIENT_ID"
-        value = azurerm_user_assigned_identity.checks.client_id
+        value = azurerm_user_assigned_identity.check_directory_bind.client_id
       }
       env {
         name        = "APPLICATIONINSIGHTS_CONNECTION_STRING"
@@ -2081,14 +2126,44 @@ resource "azurerm_container_app_job" "directory_bind" {
     Realizes    = "directory-bind"
     BindingRole = "canary-directory-bind"
   }
-  depends_on = [azurerm_role_assignment.checks_publisher, azurerm_role_assignment.checks_kv_ciam_prod_canary_bind]
+  depends_on = [azurerm_role_assignment.check_directory_bind_publisher, azurerm_role_assignment.check_directory_bind_secret, azurerm_role_assignment.check_directory_bind_pull]
+}
+
+resource "azurerm_user_assigned_identity" "check_sso_login" {
+  name                = "id-ciam-prod-sso-login"
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = data.azurerm_resource_group.main.location
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_role_assignment" "check_sso_login_publisher" {
+  scope                = var.application_insights_id
+  role_definition_name = "Monitoring Metrics Publisher"
+  principal_id         = azurerm_user_assigned_identity.check_sso_login.principal_id
+}
+
+resource "azurerm_role_assignment" "check_sso_login_secret" {
+  scope                = "${data.azurerm_key_vault.kv_ciam_prod.id}/secrets/canary-client"
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.check_sso_login.principal_id
+}
+
+resource "azurerm_role_assignment" "check_sso_login_pull" {
+  scope                = var.registry_crexampleaerociam_azurecr_io_id
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_user_assigned_identity.check_sso_login.principal_id
 }
 
 resource "azurerm_container_app_job" "sso_login" {
   name                         = "sso-login"
   resource_group_name          = data.azurerm_resource_group.main.name
   location                     = data.azurerm_resource_group.main.location
-  container_app_environment_id = azurerm_container_app_environment.checks.id
+  container_app_environment_id = azurerm_container_app_environment.checks_snet_checks.id
   workload_profile_name        = "Consumption"
   replica_timeout_in_seconds   = 120
   replica_retry_limit          = 0
@@ -2099,7 +2174,7 @@ resource "azurerm_container_app_job" "sso_login" {
   }
   identity {
     type         = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.checks.id]
+    identity_ids = [azurerm_user_assigned_identity.check_sso_login.id]
   }
   secret {
     name  = "appinsights"
@@ -2108,18 +2183,33 @@ resource "azurerm_container_app_job" "sso_login" {
   secret {
     name                = "credentials"
     key_vault_secret_id = "${data.azurerm_key_vault.kv_ciam_prod.vault_uri}secrets/canary-client"
-    identity            = azurerm_user_assigned_identity.checks.id
+    identity            = azurerm_user_assigned_identity.check_sso_login.id
+  }
+  registry {
+    server   = "crexampleaerociam.azurecr.io"
+    identity = azurerm_user_assigned_identity.check_sso_login.id
   }
   template {
     container {
-      name    = "check"
-      image   = "mcr.microsoft.com/azurelinux/base/python:3.12"
-      cpu     = 0.25
-      memory  = "0.5Gi"
-      command = ["python3", "-c", "import os; exec(os.environ['CHECK_SCRIPT'])"]
+      name   = "check"
+      image  = "crexampleaerociam.azurecr.io/ciam/check@sha256:574144c3681fe0e10565a329003298f27890e7589c4e5aa6ea7eb102ce0e9c1e"
+      cpu    = 0.25
+      memory = "0.5Gi"
       env {
-        name  = "CHECK_SCRIPT"
-        value = file("${path.module}/checks/sso-login/check.py")
+        name  = "CHECK_FLOW"
+        value = "oidc-token"
+      }
+      env {
+        name  = "CHECK_URL"
+        value = "https://sso.example-aero.test/as/token.oauth2"
+      }
+      env {
+        name  = "CHECK_TEST"
+        value = "sso-login"
+      }
+      env {
+        name  = "CHECK_AUDIENCE"
+        value = "https://monitor.azure.com"
       }
       env {
         name  = "CHECK_LOCATION"
@@ -2127,7 +2217,7 @@ resource "azurerm_container_app_job" "sso_login" {
       }
       env {
         name  = "AZURE_CLIENT_ID"
-        value = azurerm_user_assigned_identity.checks.client_id
+        value = azurerm_user_assigned_identity.check_sso_login.client_id
       }
       env {
         name        = "APPLICATIONINSIGHTS_CONNECTION_STRING"
@@ -2146,13 +2236,13 @@ resource "azurerm_container_app_job" "sso_login" {
     Realizes    = "sso-login"
     BindingRole = "canary-sso-login"
   }
-  depends_on = [azurerm_role_assignment.checks_publisher, azurerm_role_assignment.checks_kv_ciam_prod_canary_client]
+  depends_on = [azurerm_role_assignment.check_sso_login_publisher, azurerm_role_assignment.check_sso_login_secret, azurerm_role_assignment.check_sso_login_pull]
 }
 
-# Subnet snet-checks must be delegated to Microsoft.App/environments (the network's keeper delegates it) and hold nothing else
+# NOTE: subnet snet-checks: must be delegated to Microsoft.App/environments and hold nothing else before the checks' Container Apps environment is applied
 
-resource "azurerm_container_app_environment" "checks" {
-  name                           = "cae-ciam-prod-checks"
+resource "azurerm_container_app_environment" "checks_snet_checks" {
+  name                           = "cae-ciam-prod-snet-checks"
   resource_group_name            = data.azurerm_resource_group.main.name
   location                       = data.azurerm_resource_group.main.location
   infrastructure_subnet_id       = data.azurerm_subnet.snet_checks.id
@@ -2174,40 +2264,21 @@ data "azurerm_key_vault" "kv_ciam_prod" {
   resource_group_name = data.azurerm_resource_group.main.name
 }
 
-resource "azurerm_user_assigned_identity" "checks" {
-  name                = "id-ciam-prod-checks"
-  resource_group_name = data.azurerm_resource_group.main.name
-  location            = data.azurerm_resource_group.main.location
-  tags = {
-    CostCenter  = "CC-1001"
-    Environment = "target/prod"
-    Owner       = "ciam-platform"
-    ManagedBy   = "opsdir"
-  }
-}
+# NOTE: check jobs: whoever may start one can override its image, command and environment and use its identity and secrets (Microsoft's jobs documentation): keep that right to identities trusted with them; the built-in Container Apps Jobs Operator and Contributor roles can also read the jobs' secrets
 
-resource "azurerm_role_assignment" "checks_publisher" {
-  scope                = var.application_insights_id
-  role_definition_name = "Monitoring Metrics Publisher"
-  principal_id         = azurerm_user_assigned_identity.checks.principal_id
-}
+# NOTE: check jobs: the first runs may fail to post their results (403) until Azure has propagated each job's identity's Monitoring Metrics Publisher role (minutes)
 
-resource "azurerm_role_assignment" "checks_kv_ciam_prod_canary_bind" {
-  scope                = "${data.azurerm_key_vault.kv_ciam_prod.id}/secrets/canary-bind"
-  role_definition_name = "Key Vault Secrets User"
-  principal_id         = azurerm_user_assigned_identity.checks.principal_id
-}
-
-resource "azurerm_role_assignment" "checks_kv_ciam_prod_canary_client" {
-  scope                = "${data.azurerm_key_vault.kv_ciam_prod.id}/secrets/canary-client"
-  role_definition_name = "Key Vault Secrets User"
-  principal_id         = azurerm_user_assigned_identity.checks.principal_id
-}
+# NOTE: check jobs: their results are posted as Microsoft.ApplicationInsights.Availability items with an Entra token, a form not yet confirmed against a live Application Insights
 
 variable "application_insights_connection_string" {
   description = "The connection string of the Application Insights resource the scripted checks report to (the one application_insights_id names)"
   type        = string
   sensitive   = true
+}
+
+variable "registry_crexampleaerociam_azurecr_io_id" {
+  description = "The resource ID of the container registry crexampleaerociam.azurecr.io the check jobs pull their image from (each job's identity gets AcrPull on it)"
+  type        = string
 }
 
 resource "azurerm_security_center_subscription_pricing" "arm" {

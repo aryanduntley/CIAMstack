@@ -22,7 +22,8 @@ from decimal import Decimal
 
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import of_class
-from opsdir.domains.observability.alarms import alarm_specs, condition, in_unit
+from opsdir.core.notes import note_comment
+from opsdir.domains.observability.alarms import alarm_note, alarm_notes, alarm_specs, condition, in_unit
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.realized import keeper_of
 from opsdir.domains.observability.signals import number_text, parse_threshold
@@ -65,23 +66,36 @@ def _channel(channel):
     return ref_ if "/notificationChannels/" in ref_ else None
 
 
+def _why(m, s):
+    """Why Cloud Monitoring can't express spec s's alarm as an alert policy, or None."""
+    comparison, c, metric = COMPARISONS.get(one(s.rule, "ciamComparison") or ""), condition(s.rule), \
+        one(s.alarm, "ciamMetric") or ""
+    return ("its alarm is a log-based alert and the record holds no query" if metric == "log query"
+            else f"its alarm's metric {metric!r} isn't a metric type (<service>/<path>)" if "/" not in metric
+            or " " in metric
+            else f"Cloud Monitoring has no comparison {one(s.rule, 'ciamComparison')!r}" if comparison is None
+            else f"its threshold {one(s.rule, 'ciamThreshold')!r} isn't a number with a known unit" if c is None
+            else None)
+
+
+def alert_notes(m):
+    """The render notes of environment m's alert rules Cloud Monitoring doesn't render (render_policies writes their
+    comments)."""
+    return alarm_notes(m, _why)
+
+
 def _policy(m, s):
     rule = rdn_value(s.rule)
     if s.why:
-        return (comment(f"NOTE: alert rule {rule}: not rendered: {s.why}"),)
+        return (comment(note_comment(alarm_note(m, s))),)
     name = rdn_value(s.alarm)
     if s.keeper is not None:
         return (comment(f"Alert policy {name} (alert rule {rule}): kept by {s.keeper}, not rendered here"),)
     comparison, c, metric = COMPARISONS.get(one(s.rule, "ciamComparison") or ""), condition(s.rule), \
         one(s.alarm, "ciamMetric") or ""
-    why = ("its alarm is a log-based alert and the record holds no query" if metric == "log query"
-           else f"its alarm's metric {metric!r} isn't a metric type (<service>/<path>)" if "/" not in metric
-           or " " in metric
-           else f"Cloud Monitoring has no comparison {one(s.rule, 'ciamComparison')!r}" if comparison is None
-           else f"its threshold {one(s.rule, 'ciamThreshold')!r} isn't a number with a known unit" if c is None
-           else None)
+    why = _why(m, s)
     if why:
-        return (comment(f"NOTE: alert rule {rule}: not rendered: {why}"),)
+        return (comment(note_comment(alarm_note(m, s, why))),)
     threshold, compared = _threshold(s.rule, c)
     target = _channel(s.channel)
     return (tf_block("resource", [POLICY, tf_name(name)], [

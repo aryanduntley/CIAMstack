@@ -19,6 +19,7 @@ from opsdir.core.environment import of_class, one_role, recorded, secret, server
 from opsdir.domains.compute.hosts import group_subnets, own_groups
 from opsdir.domains.compute.workloads import cluster_subnets, kubernetes_note, only_on_kubernetes
 from opsdir.core.manifest import header
+from opsdir.core.notes import note_comment
 from opsdir.domains.infrastructure.firewall import rule_priorities, rule_purpose
 from opsdir.domains.access.evaluations import evaluation_files
 from opsdir.domains.access.workloads import identity_of, workload_identities
@@ -43,13 +44,15 @@ from opsdir_adapter_gcp.names import NETWORK, PRIORITIES, REGION, label, network
 from opsdir_adapter_gcp.network import render_network
 from opsdir_adapter_gcp.plumbing import network_data
 from opsdir_adapter_gcp.backups import render_backups
-from opsdir_adapter_gcp.audit import render_trails
+from opsdir_adapter_gcp.audit import audit_notes, render_trails
 from opsdir_adapter_gcp.log_sinks import log_sink_notes, render_log_sinks
-from opsdir_adapter_gcp.observability import render_buckets, render_policies
-from opsdir_adapter_gcp.canaries import render_checks
-from opsdir_adapter_gcp.synthetic_monitors import render_monitors
-from opsdir_adapter_gcp.discovery import render_discovery
-from opsdir_adapter_gcp.security import render_security
+from opsdir_adapter_gcp.observability import alert_notes, render_buckets, render_policies
+from opsdir_adapter_gcp.canaries import render_checks, uptime_notes
+from opsdir_adapter_gcp.synthetic_monitors import monitor_notes, render_monitors
+from opsdir_adapter_gcp.discovery import discovery_notes, render_discovery
+from opsdir_adapter_gcp.boundary import workload_notes
+from opsdir_adapter_gcp.guardrails import guardrail_notes
+from opsdir_adapter_gcp.security import render_security, security_notes
 from opsdir_adapter_gcp.suppressions import render_suppressions
 from opsdir_adapter_gcp.quotas import render_quota_requests
 from opsdir_adapter_gcp.budgets import budget_notes
@@ -283,7 +286,9 @@ def render_files(m, services):
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
            *forwarding_zones(m), *render_trails(m), *render_buckets(m),
-           *(render_log_sinks(m, services) + log_sink_notes(m, services) if services else ()), *render_policies(m),
+           *(render_log_sinks(m, services) if services else ()),
+           *(comment(note_comment(n)) for n in (log_sink_notes(m, services) if services else ())),
+           *render_policies(m),
            *render_checks(m, endpoints), *monitors, *render_security(m),
            *discovery, *render_suppressions(m),
            *render_quota_requests(m), *budget_notes(m),
@@ -307,3 +312,14 @@ def render(m, services):
     """Adapter render: environment m's Google Cloud files as text, each Terraform file written once from its
     TfFile."""
     return written(render_files(m, services))
+
+
+def render_notes(m, services):
+    """Adapter notes (core.notes, flow 43): what environment m's Google Cloud render leaves out or to a person, as
+    data, each written as its comment: the synthetic checks it doesn't render (uptime checks, synthetic monitors), then
+    the security services', audit trails', data discovery's, guardrails', Assured Workloads workload's, alert rules'
+    and log shipping's (sinks, the Ops Agent, containers) notes."""
+    endpoints = services.endpoints if services else ()
+    return (*uptime_notes(m, endpoints), *monitor_notes(m, endpoints), *security_notes(m), *audit_notes(m),
+            *discovery_notes(m), *guardrail_notes(m), *workload_notes(m), *alert_notes(m),
+            *(log_sink_notes(m, services) if services else ()))

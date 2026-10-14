@@ -57,6 +57,12 @@ def test_monthly_no_template_and_what_isnt_rendered():
     assert "pub_sub_notification" not in out and "profiled daily" not in out
     assert "# NOTE: data discovery sdp: no discovery config: it examines no Cloud Storage bucket here" in _render(
         entry(ALPHA, "sdp", "ciamDataDiscovery", ciamBindingRole="data-discovery", ciamScansRole=("pf-grants-db",)))
+    from opsdir.core.notes import note_comment
+    from opsdir_adapter_gcp.discovery import discovery_notes, render_discovery
+    _, alpha, _ = model(alpha=(*STORES, entry(ALPHA, "sdp", "ciamDataDiscovery", ciamBindingRole="data-discovery",
+                                              ciamScansRole=("pf-grants-db",))))
+    (db,) = discovery_notes(alpha)
+    assert f"# {note_comment(db)}" in as_text(render_discovery(alpha))[0] and db.severity == "action"
     kept = entry(ALPHA, "org", "ciamDataDiscovery", ciamBindingRole="data-discovery")
     assert _render(kept.replace("ciamBindingRole", "ciamManagedBy: cn=nobody,dc=ciam-ops\nciamBindingRole")) == \
         _render(kept)                                   # the same blocks, placed by its keeper (render_files)

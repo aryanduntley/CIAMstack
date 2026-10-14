@@ -383,3 +383,31 @@ def test_changes_kept_longer_without_a_workspace_are_said_so():
     out = _render(svc("changes", "config-recording", ciamRetentionDays="90"))
     assert "# NOTE: changes: keeping resource changes 90 days, longer than Resource Graph's 14, needs a Log " \
            "Analytics workspace" in out
+
+
+def _noted(notes, items):
+    """Whether each note's comment is in the rendered items and every NOTE comment there is a note's (flow 43)."""
+    from opsdir.core.notes import note_comment
+    lines = [x.strip() for t in as_text(items) if isinstance(t, str) for x in t.splitlines()]
+    return {f"# {note_comment(n)}" for n in notes} == {x for x in lines if x.startswith("# NOTE:")}
+
+
+def test_what_a_service_s_render_leaves_out_is_a_render_note_written_as_its_comment():
+    from opsdir_adapter_azure.security import security_notes
+    hub = entry(ALPHA, "event-hub", "ciamLogDestination", ciamBindingRole="event-hub", ciamDestinationKind="other",
+                ciamProviderRef=f"{SUB}/resourceGroups/rg/providers/Microsoft.EventHub/namespaces/ns/eventhubs/sec")
+    _, alpha, _ = model(alpha=(LOGS, hub, PAGER,
+                               svc("defender", "threat-detection", ciamFindingsRole="event-hub",
+                                   ciamIncidentRole="security-incidents", ciamSecurityCoverage=("containers",)),
+                               svc("changes", "config-recording", ciamRetentionDays="90")), tree=OWNERS)
+    notes = {n.subject: n for n in security_notes(alpha)}
+    assert _noted(notes.values(), render_security(alpha))
+    assert {k: n.severity for k, n in notes.items()} == {
+        "defender's findings to event-hub": "blocker", "defender's incidents to security-incidents": "blocker",
+        "changes": "blocker"}
+    gov = alpha._replace(cloud=make_entry(alpha.cloud.dn, alpha.cloud.classes,
+                                          {**alpha.cloud.attrs, "ciamCloudEnvironment": ("usgovernment",)}))
+    confirmed = [n for n in security_notes(gov) if n.severity == "action"]
+    assert _noted(security_notes(gov), render_security(gov))
+    assert [n.subject for n in confirmed] == ["Defender plan Containers in Azure Government"]
+    assert confirmed[0].how[0].startswith("Ask Microsoft's account team whether Defender plan Containers is available")

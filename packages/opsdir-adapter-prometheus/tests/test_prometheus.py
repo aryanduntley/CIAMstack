@@ -73,8 +73,12 @@ def test_rules_are_grouped_by_their_channel_and_read_in_the_signals_unit():
                                    "runbook": "https://runbooks.example.test/WI-7"}}
     assert heap["expr"] == "(ds_jvm_memory_heap_used_bytes) >= 3221225472" and "for" not in heap
     # pf-engine doesn't run here: not this environment's concern
-    assert skipped == ("alert rule disk-low: no product rendering alpha/prod declares signal `disk-free` for role `ds`",
-                       "alert rule heap-in-ms's threshold '5 ms' can't be read in heap-used's unit (bytes)")
+    from opsdir.core.notes import note_comment
+    assert tuple(note_comment(n) for n in skipped) == (
+        "NOTE: alert rule disk-low: no product rendering alpha/prod declares signal `disk-free` for role `ds`: not "
+        "rendered",
+        "NOTE: alert rule heap-in-ms: its threshold '5 ms' can't be read in heap-used's unit (bytes): not rendered")
+    assert [n.severity for n in skipped] == ["note", "blocker"]           # no cloud alarm realizes heap-in-ms
 
 
 def test_the_rule_file_names_what_it_leaves_out_and_the_play_writes_it_on_the_monitoring_servers():

@@ -87,7 +87,7 @@ def fixed_point(d, spec, installed=ADAPTERS, wanted=None, at=None, known=()):
     trips = round_trip(d, spec, installed, wanted, at)
     gaps = {(norm_dn(dn), attr) for dn, attr in known}
     after = record_after(d, _replayed(tuple(c for rt in trips for c in rt.changes), gaps))
-    first, second = (assemble(*render_parts(x, spec, installed, wanted)) for x in (d, after))
+    first, second = (assemble(*render_parts(x, spec, installed, wanted), installed=installed) for x in (d, after))
     return tuple(sorted(p for p in {*first, *second} if first.get(p) != second.get(p)))
 
 
@@ -96,5 +96,5 @@ def round_trip(d, spec, installed=ADAPTERS, wanted=None, at=None):
     then read back by each applicable adapter's ReadBacks against the record as the environment sees it (its overrides
     applied, as the render saw it)."""
     m, adapters, neutral, specific, targets = render_parts(d, spec, installed, wanted)
-    rendered = assemble(m, adapters, neutral, specific, targets)
+    rendered = assemble(m, adapters, neutral, specific, targets, installed=installed)
     return tuple(rt for a in adapters for rt in read_back(m.d, a, rendered, installed, at, spec))

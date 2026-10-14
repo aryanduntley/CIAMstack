@@ -363,9 +363,15 @@ Adapter = namedtuple("Adapter", (
     "reads_back",           # ReadBacks: which of its importers read which of its rendered files back (round trip)
     "profile",              # ProductProfile (core.profiles): which of its rendered files are its product's own
                             # instance files and where, for a deployment kit's profiles, or None
-    "render_profiles"),     # (EnvModel, {product: {instance path: text}}, targets chosen) -> {path: text}: a kit's
+    "render_profiles",      # (EnvModel, {product: {instance path: text}}, targets chosen) -> {path: text}: a kit's
                             # render of the products' profiles in its layout (after every adapter's render_env), or None
-    defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, (), (), None, None))
+    "notes",                # (EnvModel, Services) -> (RenderNote, ...) (core.notes): what its render of the environment
+                            # leaves out or to a person, as data (each also written as the comment note_comment gives),
+                            # or None (its NOTE comments are then collected as notes to review)
+    "renders_synthetic_checks"),    # whether it renders an environment's synthetic checks (canaries): where no
+                                    # adapter rendering an environment does, its canaries are render notes of their own
+    defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, (), (), None, None,
+              None, False))
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

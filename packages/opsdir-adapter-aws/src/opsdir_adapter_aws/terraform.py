@@ -9,6 +9,7 @@ from opsdir.core.environment import of_class, one_role, recorded, secret, server
 from opsdir.domains.compute.hosts import group_subnets, own_groups, run_roles
 from opsdir.domains.compute.workloads import kubernetes_note, only_on_kubernetes
 from opsdir.core.manifest import header
+from opsdir.core.notes import note_comment
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir.domains.infrastructure.firewall import rule_purpose
 from opsdir.domains.access.evaluations import evaluation_files
@@ -21,12 +22,12 @@ from opsdir_format_terraform.hcl import Block, TfFile, comment, ref, tf_block, t
 from opsdir_format_terraform.placing import MAIN, PROVIDERS, carried_files
 from opsdir.domains.governance.keepers import scope_folder
 from .access import ACCESS
-from .audit import render_trails
+from .audit import audit_notes, render_trails
 from .log_agent import log_notes
-from .observability import render_alarms, render_log_groups
-from .canaries import render_canaries
-from .discovery import render_discovery
-from .security import every_region, region_alias, render_security
+from .observability import alert_notes, log_group_notes, render_alarms, render_log_groups
+from .canaries import canary_notes, render_canaries
+from .discovery import discovery_notes, render_discovery
+from .security import every_region, region_alias, render_security, security_notes
 from .suppressions import render_suppressions
 from .compute_groups import render_groups
 from .budgets import BILLING, BILLING_REGION, needs_billing_provider, render_budgets
@@ -38,6 +39,7 @@ from .edge import US_EAST_1, alb_service, health_check, probe_ingress, servers_b
 from .fluent_bit import fluent_bit_clusters, fluent_bit_notes, render_fluent_bit
 from .identities import EC2_TRUST, eks_cluster_data, identity_clusters, notes, pod_trust, role
 from .ingress import gateway_front
+from .guardrails import guardrail_notes
 from .landing import STACK, landing_parts, placed_roots
 from .network import render_network
 from .backups import render_backups
@@ -229,8 +231,9 @@ def render_files(m, services):
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
            *resolver_rules(m), *render_trails(m), *render_log_groups(m),
-           *(log_notes(m, services) if services else ()), *shipping,
-           *(fluent_bit_notes(m, services) if services else ()), *render_alarms(m), *canaries,
+           *(comment(note_comment(n)) for n in (log_notes(m, services) if services else ())), *shipping,
+           *(comment(note_comment(n)) for n in (fluent_bit_notes(m, services) if services else ())),
+           *render_alarms(m), *canaries,
            *render_security(m),
            *discovery, *render_suppressions(m),
            *render_budgets(m), *render_quota_requests(m),
@@ -266,3 +269,12 @@ def render(m, services, targets=DEFAULT_TARGETS):
     native = cloudformation_files(m, files, WHAT) if CLOUDFORMATION in targets else {}
     return written({**{p: v for p, v in files.items() if p not in terraform},
                     **(terraform if TERRAFORM in targets else {}), **native})
+
+
+def render_notes(m, services):
+    """Adapter notes (core.notes, flow 43): what environment m's AWS render leaves out or to a person, as data, each
+    written as its comment: the canaries it doesn't render, then its security services', audit trails', data
+    discovery's, guardrails', alert rules', log destinations' and log shipping's (servers, Fluent Bit) notes."""
+    return (*canary_notes(m, services.endpoints if services else ()), *security_notes(m), *audit_notes(m),
+            *discovery_notes(m), *guardrail_notes(m), *alert_notes(m), *log_group_notes(m),
+            *((*log_notes(m, services), *fluent_bit_notes(m, services)) if services else ()))

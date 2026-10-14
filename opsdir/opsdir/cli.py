@@ -100,6 +100,7 @@ from .core.findings import fix_inputs
 from .core.interchange import ldif
 from .core.interchange.export import export_text  # noqa: F401  (callers import it from here)
 from .core.naming import SUFFIX
+from .core.notes import summary
 from .domains.governance.collection import declared_adapters
 from .store import postgres as db
 
@@ -331,7 +332,10 @@ def _cmd_render(conn, a, as_of):
                    a.requester)
     out = write_tree(a.out or pathlib.Path("out") / r.label.replace("/", "-"), r.files)
     return "\n".join((f"rendered {len(r.files)} files for {r.dn} ({r.provider}) → {out}",
-                      *(f"  UNBOUND role: {role}" for role in r.unbound)))
+                      *(f"  UNBOUND role: {role}" for role in r.unbound),
+                      f"notes: {summary(r.notes)}" + (f" (see {out}/NOTES.md)" if r.notes else ""),
+                      *(f"  BLOCKER {n.subject}: {n.text} [{', '.join(n.owners) or 'NO OWNER'}]"
+                        for n in r.notes if n.severity == "blocker")))
 
 
 def _cmd_plan(conn, a, as_of):

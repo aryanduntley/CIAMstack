@@ -5,7 +5,7 @@ from opsdir.domains.infrastructure.firewall import priority_check
 from .access import ACCESS
 from .boundary import check_boundary, check_regulated_placement
 from .arm import ARM
-from .check_jobs import IMAGE
+from .check_jobs import DELIVERY, IMAGE
 from .cli import CLI_INVENTORY
 from .collect import COLLECTORS
 from .identity_protection import check_identity_protection
@@ -16,7 +16,7 @@ from .kubernetes import SECRET_DELIVERY, workload_identity
 from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
 from .regions import PREREQUISITE, REGIONS
 from .secrets import SECRET_PATTERNS, keyvault_command, keyvault_lookup
-from .terraform import PRIORITIES, TARGETS, render
+from .terraform import PRIORITIES, TARGETS, render, render_notes
 from .rendered_state import rendered_deployments, rendered_states
 
 PROVIDER = "azure"
@@ -36,18 +36,20 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                   neutral_label=None,
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamOnProvider": (PROVIDER,),
                               "ciamCloudEnvironment": ("public", "usgovernment")}, schema=None,
-                  formats=(("terraform/*.tf", "hcl"), ("terraform/checks/*/check.py", "python"),
-                           ("bicep/*/checks/*/check.py", "python"), ("arm/*/checks/*/check.py", "python"),
+                  formats=(("terraform/*.tf", "hcl"), ("terraform/checks/check.py", "python"),
+                           ("bicep/*/checks/check.py", "python"), ("arm/*/checks/check.py", "python"),
+                           ("images/*/Dockerfile", "dockerfile"), ("images/*/check.py", "python"),
                            ("bicep/*.bicep", "bicep"), ("bicep/*.tf", "hcl"),
                            ("bicep/*placements.json", "json"), ("arm/*placements.json", "json"),
                            ("arm/*.json", "arm-json"), ("arm/*.tf", "hcl"), ("kubernetes/azure-monitor/*", "yaml")),
                   products=(),
                   secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY, ARM, REGIONS, QUOTAS),
                   profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE),
-                  collectors=COLLECTORS, render_targets=TARGETS, settings=(IMAGE,),
+                  collectors=COLLECTORS, render_targets=TARGETS, settings=(IMAGE, DELIVERY),
                   workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY,
                   gateway_plug=gateway_plug, ansible_lookup={"azkv": keyvault_lookup},
                   reads_back=(ReadBack("terraform-state", "terraform/*.tf", "terraform/", "{environment}/", False,
                                        rendered_states, intent=True),
                               ReadBack("arm", "arm/*", "arm/", "{environment}/", True, rendered_deployments,
-                                       intent=True)))
+                                       intent=True)),
+                  notes=render_notes, renders_synthetic_checks=True)

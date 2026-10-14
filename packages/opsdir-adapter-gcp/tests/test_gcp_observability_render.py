@@ -66,6 +66,10 @@ def test_a_log_based_alarm_is_named():
     assert [x for x in as_text(render_policies(_beta())) if x.startswith("#")] == [
         "# NOTE: alert rule login-failures: not rendered: its alarm is a log-based alert and the record holds no "
         "query"]
+    from opsdir.core.notes import note_comment
+    from opsdir_adapter_gcp.observability import alert_notes
+    (login,) = alert_notes(_beta())
+    assert f"# {note_comment(login)}" in as_text(render_policies(_beta())) and login.severity == "blocker"
 
 
 def test_log_buckets_keep_logs_as_recorded_and_are_named_for_locking_under_legal_hold():

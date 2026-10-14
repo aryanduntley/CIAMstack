@@ -1,22 +1,25 @@
 """Scripted synthetic checks on Google Cloud (core observability: domains/observability/canaries) as Cloud Monitoring
-synthetic monitors: the checks no uptime check's GET makes (canaries.standard): an oidc-token check (it reads its
-credentials when it runs) and an ldap-bind check (not HTTP), of a public or an internal service name. Decision 2833,
-research 2832, 2840, 2848. Pure.
+synthetic monitors: the checks no uptime check makes (canaries.standard): an oidc-token check (it reads its
+credentials when it runs) and an ldap-bind check (not HTTP), of a public or an internal service name, and every check
+of an internal service name, its GETs included (decision 2859: Google's private uptime checks don't follow redirects
+or validate certificates; the probes do). Decision 2833, research 2832, 2840, 2848, 2857. Pure.
 
 Each is a 2nd gen Cloud Run function (google_cloudfunctions2_function named as its canary binding: lowercase letters,
 digits and -) in Node.js (nodejs24, the newest GA runtime), its source opsdir renders (terraform/checks/<name>/:
 index.js with its do-not-edit header, the shared probes of observability.probes NODE_PROBES and the handler below;
 package.json naming @google-cloud/functions-framework and @google-cloud/synthetics-sdk-api at their current releases)
-zipped by the
-archive provider into the Cloud Storage location its canary binding names (ciamStorageRef gs://bucket[/prefix]: the
-location is the environment's, as AWS's canary artifacts) as <prefix>check-<name>.zip, the function building from
-that object's generation, so a changed zip replaces the object and redeploys the function;
+zipped by the archive provider into the Cloud Storage location its canary binding names (ciamStorageRef
+gs://bucket[/prefix]: the location is the environment's, as AWS's canary artifacts) as <prefix>check-<name>.zip, the
+function building from that object's generation, so a changed zip replaces the object and redeploys the function;
 and the uptime check running it (synthetic_monitor, its period the next Google offers, its timeout 60s), user labels
-realizes and bindingrole so the inventory reads it back. One instance at most, 256 MB, 60 seconds.
+realizes and bindingrole so the inventory reads it back. One instance at most, 60 seconds, 2 GiB and one CPU (Google
+recommends at least 2 GiB for a synthetic monitor's function, research 2857; its own sample uses 256 MiB).
 
 Its credentials, when it has some, are a Secret Manager secret (gcp-sm://projects/<p>/secrets/<name>, its JSON holding
-client_id and client_secret, or bind_dn and password, as on the other clouds) the platform puts in CHECK_CREDENTIALS
-(secret_environment_variables, the latest version): never written anywhere opsdir renders. A check of an internal
+client_id and client_secret, or bind_dn and password, as on the other clouds) the platform mounts as a file
+(secret_volumes, CREDENTIALS, the latest version) the handler reads each time the check runs, so a rotated secret is
+used at the next run (a secret environment variable is read only when an instance starts): never written anywhere
+opsdir renders. A check of an internal
 service name runs with Direct VPC egress (private ranges only) in the first subnet canary_specs gives it (its
 binding's ciamSubnetRole, else those the firewall rules admit to the service).
 
@@ -28,17 +31,19 @@ bucket); Cloud Monitoring may invoke the functions by default. The functions wai
 Not rendered, and said so: what canary_specs names; a check in an Assured Workloads workload (canaries.assured); a
 service name whose exposure isn't recorded; an internal one with no subnet to run from; no source location (no canary
 binding, or one without a gs:// ciamStorageRef); credentials that aren't a global Secret Manager secret (the function's
-secret environment variables name one by project and name). A check someone else keeps, or an overlay inherits from
-its base, is named with its keeper.
+secret volumes name one by project and name). A check someone else keeps, or an overlay inherits from
+its base, is named with its keeper. What isn't rendered is a render note (monitor_notes: why and how; flow 43),
+written as its comment.
 """
 import json
 import re
 
 from opsdir.core.directory import one, rdn_value
-from opsdir.core.environment import one_role
 from opsdir.core.formats import JAVASCRIPT
 from opsdir.core.manifest import header
-from opsdir.domains.observability.canaries import canary_specs
+from opsdir.core.notes import note_comment
+from opsdir.domains.observability.canaries import (RECORD, Reason, canary_specs, no_subnet, unknown_exposure,
+                                                   unrendered_note)
 from opsdir.domains.observability.probes import NODE_PROBES
 from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_name
 from .canaries import assured, check_name, labels, period, standard
@@ -52,19 +57,23 @@ PACKAGES = {"@google-cloud/functions-framework": "^5.0.5", "@google-cloud/synthe
 SECRET = re.compile(r"^gcp-sm://projects/([^/]+)/secrets/([^/]+)$")
 RUNTIME_SA, BUILD_SA = "google_service_account.checks", "google_service_account.checks_build"
 BUILD_ROLES = ("roles/logging.logWriter", "roles/artifactregistry.writer")
+# where the platform mounts a check's credentials secret (its latest version, fetched when the file is read)
+MOUNT, CREDENTIALS_FILE = "/etc/secrets/check", "credentials"
 
-# The function's handler, after the probes (observability.probes NODE_PROBES): the credentials from CHECK_CREDENTIALS
-# (filled from Secret Manager; none: an anonymous LDAP bind), the probe run; a rejection fails the synthetic monitor.
+# The function's handler, after the probes (observability.probes NODE_PROBES): the credentials read from the mounted
+# secret at each run (null: none, an anonymous LDAP bind), the probe run; a rejection fails the synthetic monitor.
 HANDLER = '''
+const fs = require("fs");
 const functions = require("@google-cloud/functions-framework");
 const {{runSyntheticHandler}} = require("@google-cloud/synthetics-sdk-api");
 
 const CHECK_FLOW = {flow};
 const CHECK_URL = {url};
+const CREDENTIALS = {credentials};
 
 functions.http("{entry}", runSyntheticHandler(async ({{logger}}) => {{
   // The {flow_text} check of CHECK_URL: the probe rejects when it fails, failing the synthetic monitor.
-  const creds = process.env.CHECK_CREDENTIALS ? JSON.parse(process.env.CHECK_CREDENTIALS) : null;
+  const creds = CREDENTIALS ? JSON.parse(fs.readFileSync(CREDENTIALS, "utf8")) : null;
   logger.info(`${{CHECK_URL}}: ${{await probe(CHECK_FLOW, CHECK_URL, creds)}}`);
 }}));
 '''
@@ -89,8 +98,9 @@ def _secret(spec):
 def index_js(m, spec):
     """The function's index.js, with its do-not-edit header."""
     return (header(m, f"Cloud Monitoring synthetic monitor {check_name(spec.name)} ({spec.flow})", JAVASCRIPT)
-            + NODE_PROBES + HANDLER.format(flow=json.dumps(spec.flow), url=json.dumps(spec.url), entry=ENTRY,
-                                           flow_text=spec.flow))
+            + NODE_PROBES + HANDLER.format(
+                flow=json.dumps(spec.flow), url=json.dumps(spec.url), entry=ENTRY, flow_text=spec.flow,
+                credentials=json.dumps(f"{MOUNT}/{CREDENTIALS_FILE}" if spec.secret is not None else None)))
 
 
 def package_json(m, spec):
@@ -108,41 +118,49 @@ def scripted(specs):
     return tuple(s for s in specs if not s.why and not standard(s))
 
 
-def _why(m, spec):
-    svc = one_role(m, one(spec.canary, "ciamCheckedService"))
+def _reason(m, spec):
+    """Why a synthetic monitor isn't rendered (a Reason with how to handle it), else None."""
     if assured(m):
         return assured(m)
     if spec.exposure is None:
-        return (f"service name {rdn_value(svc)} records neither a frontend address nor its exposure: whether its "
-                "check runs in the network is unknown")
+        return unknown_exposure(m, spec)
     if spec.exposure == "internal" and not spec.subnets:
-        return (f"service name {rdn_value(svc)} is internal and no subnet is named to run its check from: name one on "
-                "its canary binding (ciamSubnetRole), or record a firewall rule admitting a subnet to "
-                + one(svc, "ciamTargetRole") + (f" on {one(svc, 'ciamPort')}" if one(svc, "ciamPort") else ""))
+        return no_subnet(m, spec)
     if spec.keeper is None and source_location(spec) is None:
-        return ("no place for its function's source: record its canary binding with a Cloud Storage location "
-                "(ciamStorageRef gs://bucket/prefix)" if spec.binding is None else
-                f"its canary binding {rdn_value(spec.binding)} records no Cloud Storage location for its function's "
-                "source (ciamStorageRef gs://bucket/prefix)")
+        where = "its canary binding" if spec.binding is None else rdn_value(spec.binding)
+        return Reason("no place for its function's source: it has no canary binding" if spec.binding is None else
+                      f"its canary binding {rdn_value(spec.binding)} records no Cloud Storage location for its "
+                      "function's source (ciamStorageRef gs://bucket/prefix)",
+                      (f"Record {where} with the Cloud Storage location its function's source goes to (ciamStorageRef "
+                       f"gs://bucket/prefix), {RECORD}",))
     if spec.secret is not None and _secret(spec) is None:
-        return (f"its credentials ({rdn_value(spec.secret)}) aren't a global Secret Manager secret "
-                "(gcp-sm://projects/<p>/secrets/<name>)")
+        return Reason(f"its credentials ({rdn_value(spec.secret)}) aren't a global Secret Manager secret "
+                      "(gcp-sm://projects/<p>/secrets/<name>)",
+                      (f"Keep the check's credentials in a global Secret Manager secret and point "
+                       f"{rdn_value(spec.secret)} at it (ciamRefUri gcp-sm://projects/<p>/secrets/<name>), {RECORD}",))
     return None
 
 
 def rendered(m, endpoints):
-    """(CanarySpec, why not or None) of environment m's synthetic monitors, given the products' Endpoints."""
-    return tuple((s, _why(m, s)) for s in scripted(canary_specs(m, endpoints)))
+    """(CanarySpec, Reason it isn't rendered or None) of environment m's synthetic monitors, given the products'
+    Endpoints."""
+    return tuple((s, _reason(m, s)) for s in scripted(canary_specs(m, endpoints)))
+
+
+def monitor_notes(m, endpoints):
+    """The render notes of environment m's synthetic monitors it doesn't render (render_monitors writes their
+    comments)."""
+    return tuple(unrendered_note(m, s, reason) for s, reason in rendered(m, endpoints) if reason)
 
 
 def _grant(secret):
     return f"checks_{tf_name(secret[0])}_{tf_name(secret[1])}"
 
 
-def _monitor(m, spec, why):
+def _monitor(m, spec, reason):
     cn = rdn_value(spec.canary)
-    if why:
-        return (comment(f"NOTE: canary {cn}: not rendered: {why}"),)
+    if reason:
+        return (comment(note_comment(unrendered_note(m, spec, reason))),)
     name = check_name(spec.name)
     if spec.keeper is not None:
         return (comment(f"Synthetic monitor {name} ({cn}): kept by {spec.keeper}, not rendered here"),)
@@ -168,11 +186,11 @@ def _monitor(m, spec, why):
                     ("bucket", bucket), ("object", ref(f"google_storage_bucket_object.{zipped}.name")),
                     ("generation", ref(f"google_storage_bucket_object.{zipped}.generation"))))),)))))),
             ("service_config", Block((
-                ("available_memory", "256M"), ("timeout_seconds", 60), ("max_instance_count", 1),
-                ("service_account_email", ref(f"{RUNTIME_SA}.email")),
-                *((("secret_environment_variables", Block((
-                    ("key", "CHECK_CREDENTIALS"), ("project_id", secret[0]), ("secret", secret[1]),
-                    ("version", "latest")))),) if secret else ()),
+                ("available_memory", "2Gi"), ("available_cpu", "1"), ("timeout_seconds", 60),
+                ("max_instance_count", 1), ("service_account_email", ref(f"{RUNTIME_SA}.email")),
+                *((("secret_volumes", Block((
+                    ("mount_path", MOUNT), ("project_id", secret[0]), ("secret", secret[1]),
+                    ("versions", Block((("version", "latest"), ("path", CREDENTIALS_FILE))))))),) if secret else ()),
                 *vpc))),
             ("labels", {"realizes": labels(spec)["realizes"], "managed_by": "opsdir"}),
             ("depends_on", [ref("google_project_iam_member.checks_trace"),

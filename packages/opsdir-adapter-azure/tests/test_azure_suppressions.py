@@ -43,7 +43,12 @@ def test_policy_refs_render_an_exemption_per_framework():
 
 def test_in_azure_government_an_exemption_names_what_defender_doesnt_offer_there():
     out = "\n\n".join(as_text(render_suppressions(_model("azure:policy:cis", gov=True))))
-    assert out.count("# Azure Government: Microsoft's \"Cloud feature availability for US Government customers\"") == 1
+    assert out.count("# NOTE: suppression exc-EXC-7 in Azure Government: Microsoft's \"Cloud feature availability for "
+                     "US Government customers\"") == 1
+    from opsdir.core.notes import note_comment
+    from opsdir_adapter_azure.suppressions import suppression_notes
+    (confirm,) = suppression_notes(_model("azure:policy:cis", gov=True))
+    assert f"# {note_comment(confirm)}" in out.splitlines() and confirm.severity == "action"
     assert "Defender's recommendation exemptions as not available there" in out
     assert 'resource "azurerm_subscription_policy_exemption" "exc_exc_7_cis"' in out
 

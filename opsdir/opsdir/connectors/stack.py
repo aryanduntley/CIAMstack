@@ -107,3 +107,10 @@ def _stack_rows(m, adapters, versions):
     rows = ([(m.label, c.role, c.adapter, status) for c, status, _ in declared]
             + [(m.label, "-", a.name, "applies to the environment's data but is not in its stack") for a in undeclared])
     return (*rows, *products), sum(problem for _, _, problem in declared) + len(undeclared) + len(products)
+
+
+def note_rows(m, notes):
+    """Stack check rows of environment m's render blockers and actions (core.notes RenderNotes): each with its owners;
+    the rest is in its render's NOTES.md."""
+    return tuple((m.label, "-", "-", f"render {n.severity}: {n.subject}: {n.text} [{', '.join(n.owners) or 'NO OWNER'}]"
+                  f" (opsdir render {m.label}: NOTES.md)") for n in notes if n.severity in ("blocker", "action"))

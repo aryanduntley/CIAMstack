@@ -4,7 +4,9 @@ Rendered for every trail, stamped with its entry (placed by its keeper: governan
 delivering to the S3 bucket of the object store its ciamLogDestinationRole names: all regions (with global services'
 events), log file integrity validation. The bucket must let CloudTrail write (s3:GetBucketAcl on it, s3:PutObject under
 AWSLogs/<account>/ and, for an organization trail, AWSLogs/<organization>/, for this trail only): a bucket this render
-creates gets that policy; one that exists or someone else keeps is told in a NOTE (its policy is theirs).
+creates gets that policy; one that exists or someone else keeps is an action for its keeper, with the statements its
+policy must hold (its policy is theirs). What isn't rendered is a render note (audit_notes, flow 43), written as its
+comment.
 - An organization trail (ciamAuditScope organization, milestone 5.7b) is made from the organization's management
   account (provider aws.management) and kept with the landing zone (its organization origin); the environment's own
   root says who enables it.
@@ -26,6 +28,7 @@ import json
 
 from opsdir.core.directory import is_kind, one, rdn_value, values
 from opsdir.core.inventory import of_types, resource, tagged_role
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.governance.keepers import organization_line, organization_origin, organization_wide
 from opsdir.domains.observability.audit import audit_trails, data_resources, trail_destination, trail_stream
 from opsdir.domains.observability.naming import AUDIT_EVENTS
@@ -38,6 +41,7 @@ from .tags import state_tags
 
 TRAIL_TYPE = "aws_cloudtrail"
 SERVICE = "cloudtrail.amazonaws.com"
+AREA = "Audit"
 
 
 def _name(trail):
@@ -92,24 +96,95 @@ def delivery_statements(m, t, bucket):
               if org else ()))
 
 
-def _policy_note(m, t, dest, bucket, why):
-    lines = "; ".join(f"{s['Action']} on {s['Resource']}" for s in delivery_statements(m, t, bucket))
-    return comment(f"NOTE: audit trail {rdn_value(t)}: bucket {bucket} ({rdn_value(dest)}) must let {SERVICE} {lines}"
-                   f" (s3:x-amz-acl bucket-owner-full-control on writes; aws:SourceArn {trail_arn(m, t)}): its policy "
-                   f"isn't rendered: {why}")
+def _bucket(m, dest):
+    return bucket_of(one(dest, "ciamStorageRef")) if dest is not None and is_kind(m.d, dest, "ciamObjectStore") \
+        else None
+
+
+def _scope(m, t):
+    owner = _owner(m, t)
+    return f"AWS account {owner}" if owner else m.label
+
+
+def unrendered_note(m, t):
+    """The render note of trail t when environment m doesn't render it (a blocker: its records would go nowhere), or
+    None: no object store keeps its records, or an organization trail without the management account."""
+    cn, dest = rdn_value(t), trail_destination(m, t)
+    if _bucket(m, dest) is None:
+        if dest is not None:
+            return note(AREA, "blocker", f"audit trail {cn}", "not rendered: its records go to a CloudWatch log "
+                        "group, but CloudTrail keeps them in an S3 bucket (ciamLogDestinationRole an object store; a "
+                        "log group it also streams to is its ciamAuditStreamRole)",
+                        (f"Record the object store of the S3 bucket keeping the trail's records as its "
+                         f"ciamLogDestinationRole and {rdn_value(dest)} as its ciamAuditStreamRole, {RECORD}",),
+                        t.dn, _scope(m, t))
+        return note(AREA, "blocker", f"audit trail {cn}",
+                    "not rendered: no object store here keeps its records (ciamLogDestinationRole)",
+                    (f"Record the object store of the S3 bucket keeping the trail's records as its "
+                     f"ciamLogDestinationRole, {RECORD}",), t.dn, _scope(m, t))
+    if organization_wide(t) and management_account(m) is None:
+        return note(AREA, "blocker", f"audit trail {cn}", "not rendered: an organization trail is made from the "
+                    "organization's management account, which the record doesn't name (ciamManagementRef)",
+                    (f"Record the organization's management account on {rdn_value(m.cloud)} (ciamManagementRef), "
+                     f"{RECORD}",), t.dn, "the organization")
+    return None
+
+
+def policy_note(m, t):
+    """The render note of a rendered trail t's bucket delivery policy when this render doesn't write it, or None:
+    without the account the trail is made in, a blocker (no policy can name the trail); for a bucket the record
+    doesn't describe or that exists already, an action for whoever keeps the bucket (its policy is theirs): the
+    statements it must hold."""
+    cn, dest = rdn_value(t), trail_destination(m, t)
+    bucket = _bucket(m, dest)
+    if trail_arn(m, t) is None:
+        return note(AREA, "blocker", f"audit trail {cn}", "its bucket's delivery policy isn't rendered: the record "
+                    "names no account it is made in",
+                    (f"Record the account the trail is made in on {rdn_value(m.cloud)}: ciamAccountRef (an "
+                     f"organization trail: ciamManagementRef), {RECORD}",), t.dn, _scope(m, t))
+    why = ("the record doesn't describe the bucket" if dest.dn not in {b.dn for b in described_buckets(m)} else
+           "the bucket exists already (ciamProviderRef)" if one(dest, "ciamProviderRef") else None)
+    if why is None:
+        return None
+    statements = delivery_statements(m, t, bucket)
+    lines = "; ".join(f"{s['Action']} on {s['Resource']}" for s in statements)
+    return note(AREA, "action", f"audit trail {cn}",
+                f"bucket {bucket} ({rdn_value(dest)}) must let {SERVICE} {lines} (s3:x-amz-acl "
+                f"bucket-owner-full-control on writes; aws:SourceArn {trail_arn(m, t)}): its policy isn't rendered: "
+                f"{why}",
+                (f"Add these statements to bucket {bucket}'s policy: "
+                 f"{json.dumps(list(statements), separators=(',', ':'))}",
+                 "Then apply the trail: CloudTrail checks the bucket's policy when the trail is created"),
+                dest.dn, f"bucket {bucket}")
+
+
+def stream_note(m, t):
+    """The render note of trail t's stream when its ciamAuditStreamRole is no CloudWatch log group with an ARN (a
+    blocker: the stream won't exist), or None."""
+    b = trail_stream(m, t)
+    if b is None or (one(b, "ciamDestinationKind") == "log-group" and group_name(b) is not None):
+        return None
+    return note(AREA, "blocker", f"audit trail {rdn_value(t)}",
+                f"streams only to a CloudWatch log group (its ciamAuditStreamRole {rdn_value(b)} isn't one with a log "
+                "group ARN): not streamed",
+                (f"Record a CloudWatch log group (ciamDestinationKind log-group, its ARN as ciamProviderRef) as the "
+                 f"trail's ciamAuditStreamRole, or remove the role, {RECORD}",), t.dn, _scope(m, t))
+
+
+def audit_notes(m):
+    """The render notes of environment m's audit trails (render_trails writes their comments): a trail it doesn't
+    render, else its bucket policy left to the bucket's keeper and a stream it doesn't make."""
+    return tuple(n for t in audit_trails(m) for n in ((unrendered_note(m, t),) if unrendered_note(m, t) else
+                                                       (policy_note(m, t), stream_note(m, t))) if n is not None)
 
 
 def _bucket_policy(m, t, dest, bucket):
-    """(items, depends_on): the trail's bucket's delivery policy when this render creates the bucket, else a NOTE
-    naming the statements its policy must hold (an existing bucket's policy, or one someone else keeps, isn't ours to
-    replace); nothing without the trail's account."""
-    if trail_arn(m, t) is None:
-        return (comment(f"NOTE: audit trail {rdn_value(t)}: its bucket's delivery policy isn't rendered: the record "
-                        "names no account it is made in"),), ()
-    if dest.dn not in {b.dn for b in described_buckets(m)}:
-        return (_policy_note(m, t, dest, bucket, "the record doesn't describe the bucket"),), ()
-    if one(dest, "ciamProviderRef"):
-        return (_policy_note(m, t, dest, bucket, "the bucket exists already (ciamProviderRef)"),), ()
+    """(items, depends_on): the trail's bucket's delivery policy when this render creates the bucket, else its note
+    (policy_note: the statements its policy must hold; an existing bucket's policy, or one someone else keeps, isn't
+    ours to replace)."""
+    found = policy_note(m, t)
+    if found is not None:
+        return (comment(note_comment(found)),), ()
     n = tf_name(rdn_value(t))
     policy = json.dumps({"Version": "2012-10-17", "Statement": list(delivery_statements(m, t, bucket))},
                         separators=(",", ":"))
@@ -164,10 +239,9 @@ def _stream(m, t, n):
     b = trail_stream(m, t)
     if b is None:
         return (), ()
-    name, arn = group_name(b), (one(b, "ciamProviderRef") or "").removesuffix(":*")
-    if one(b, "ciamDestinationKind") != "log-group" or name is None:
-        return (), (comment(f"NOTE: audit trail {rdn_value(t)}: streams only to a CloudWatch log group (its "
-                            f"ciamAuditStreamRole {rdn_value(b)} isn't one with a log group ARN): not streamed"),)
+    arn, found = (one(b, "ciamProviderRef") or "").removesuffix(":*"), stream_note(m, t)
+    if found is not None:
+        return (), (comment(note_comment(found)),)
     rendered = keeper_of(m, b) is None
     group = f"${{{LOG_GROUP}.{tf_name(rdn_value(b))}.arn}}" if rendered else arn
     org = organization_ref(m) if organization_wide(t) else None
@@ -190,17 +264,10 @@ def _stream(m, t, n):
 
 
 def _trail(m, t):
-    cn, dest, n = rdn_value(t), trail_destination(m, t), tf_name(rdn_value(t))
-    bucket = bucket_of(one(dest, "ciamStorageRef")) if dest is not None and is_kind(m.d, dest, "ciamObjectStore") \
-        else None
-    if bucket is None:
-        why = ("its records go to a CloudWatch log group, but CloudTrail keeps them in an S3 bucket "
-               "(ciamLogDestinationRole an object store; a log group it also streams to is its ciamAuditStreamRole)"
-               if dest is not None else "no object store here keeps its records (ciamLogDestinationRole)")
-        return (comment(f"NOTE: audit trail {cn}: not rendered: {why}"),)
-    if organization_wide(t) and management_account(m) is None:
-        return (comment(f"NOTE: audit trail {cn}: not rendered: an organization trail is made from the "
-                        "organization's management account, which the record doesn't name (ciamManagementRef)"),)
+    dest, n = trail_destination(m, t), tf_name(rdn_value(t))
+    bucket, found = _bucket(m, dest), unrendered_note(m, t)
+    if found is not None:
+        return (comment(note_comment(found)),)
     everywhere = one(t, "ciamAllRegions") == "TRUE"
     selectors, notes = _data_selectors(m, t, dest)
     streamed, stream_items = _stream(m, t, n)

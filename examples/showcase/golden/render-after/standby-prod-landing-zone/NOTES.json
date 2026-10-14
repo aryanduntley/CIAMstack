@@ -1,0 +1,10 @@
+{
+  "environment": "env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+  "counts": {
+    "blocker": 0,
+    "action": 0,
+    "note": 0,
+    "to_review": 0
+  },
+  "notes": []
+}

@@ -90,14 +90,20 @@ def _suppression_rule(r):
 
 
 def _job(j):
-    """A Container Apps job: its cron expression, flattened by the collector's projection or nested as the CLI and
-    an ARM template hold it (properties.configuration.scheduleTriggerConfig)."""
+    """A Container Apps job: its cron expression, its container's image and the registries it pulls from (the
+    Terraform state's names), flattened by the collector's projection or nested as the CLI and an ARM template hold it
+    (properties.configuration.scheduleTriggerConfig / .registries, properties.template.containers)."""
     props = arm_field(j, "properties") or {}
-    trigger = arm_field(arm_field(props, "configuration") or arm_field(j, "configuration") or {},
-                        "scheduleTriggerConfig") or {}
+    config = arm_field(props, "configuration") or arm_field(j, "configuration") or {}
+    trigger = arm_field(config, "scheduleTriggerConfig") or {}
     expression = arm_field(j, "cronExpression") or arm_field(trigger, "cronExpression")
+    containers = arm_field(arm_field(props, "template") or {}, "containers") or [{}]
+    image = arm_field(j, "image") or arm_field(containers[0] or {}, "image")
+    servers = arm_field(j, "registries") or [arm_field(r, "server") for r in arm_field(config, "registries") or []]
     return {"id": j.get("id"), "name": j.get("name"), "tags": j.get("tags") or {},
-            "schedule_trigger_config": [{"cron_expression": expression}] if expression else []}
+            "schedule_trigger_config": [{"cron_expression": expression}] if expression else [],
+            "template": [{"container": [{"image": image}]}] if image else [],
+            "registry": [{"server": s} for s in servers if s]}
 
 
 def monitor_items(items):

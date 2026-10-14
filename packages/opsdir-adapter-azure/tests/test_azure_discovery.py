@@ -52,8 +52,14 @@ def test_what_microsoft_decides_is_said_in_comments():
 
 
 def test_azure_government_is_a_comment_and_someone_elses_discovery_renders_for_its_keeper():
-    assert "# Azure Government: Defender for Cloud's support matrix lists Defender CSPM's sensitive data scanning" \
-        in "\n".join(as_text(render_discovery(_alpha(dspm(), gov=True))))
+    gov = _alpha(dspm(), gov=True)
+    assert "in Azure Government: Defender for Cloud's support matrix lists Defender CSPM's sensitive data scanning" \
+        in "\n".join(as_text(render_discovery(gov)))
+    from opsdir.core.notes import note_comment
+    from opsdir_adapter_azure.discovery import discovery_notes
+    (confirm,) = discovery_notes(gov)
+    assert f"# {note_comment(confirm)}" in as_text(render_discovery(gov)) and confirm.severity == "action"
+    assert discovery_notes(_alpha(dspm())) == ()
     held = entry(ALPHA, "org", "ciamDataDiscovery", ciamBindingRole="data-discovery",
                  ciamManagedBy="cn=nobody,dc=ciam-ops")
     out = render_discovery(_alpha(held))           # placed by its keeper (render_files)

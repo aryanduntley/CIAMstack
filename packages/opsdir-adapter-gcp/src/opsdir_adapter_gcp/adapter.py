@@ -16,7 +16,7 @@ from .secrets import SECRET_PATTERNS, secret_manager_command
 from .names import PRIORITIES
 from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
 from .regions import PREREQUISITE, REGIONS
-from .terraform import render
+from .terraform import render, render_notes
 from .rendered_state import rendered_states
 
 PROVIDER = "gcp"
@@ -47,4 +47,5 @@ ADAPTER = Adapter(name="gcp", kind="provider", applies=applies, required_roles=(
                   workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY,
                   gateway_plug=gateway_plug, host_files=host_files,
                   reads_back=(ReadBack("terraform-state", "terraform/*.tf", "terraform/", "{environment}/", False,
-                                       rendered_states, intent=True),))
+                                       rendered_states, intent=True),),
+                  notes=render_notes, renders_synthetic_checks=True)

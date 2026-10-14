@@ -290,6 +290,13 @@
       "match": "target/prod: `ds` listens on tcp 1636 (PingIDM connector ldap) for `idm`",
       "planted": "IDM moves to AKS: no firewall rule admits the cluster's nodes to the directory (a fix admits them)",
       "cleared_by": null
+    },
+    {
+      "id": "B42",
+      "area": "Monitoring",
+      "match": "target/prod: alert rule login-failures: not rendered: its alarm is a log query alert",
+      "planted": "the target's login-failures alarm is a log query alert the record holds no query for: Azure Monitor can't render it, so the alert won't exist (a render note)",
+      "cleared_by": null
     }
   ],
   "actions": [
@@ -1219,6 +1226,34 @@
       "match": "ForgeOps in target/prod (namespace `ciam`) generates AM's and IDM's keystore (the keystore-create job) while the record holds am-keystore",
       "planted": "the target's AM/IDM keys are generated in the cluster, not the record's",
       "cleared_by": "CHG-2043"
+    },
+    {
+      "id": "A132",
+      "area": "Network",
+      "match": "target/prod: subnet snet-checks: must be delegated to Microsoft.App/environments",
+      "planted": "the target's check jobs need their subnet delegated to Container Apps by the network's keeper (a render note)",
+      "cleared_by": null
+    },
+    {
+      "id": "A133",
+      "area": "Render",
+      "match": "target/prod's render holds",
+      "planted": "the target's render holds NOTE comments no renderer classifies yet (render notes to review)",
+      "cleared_by": null
+    },
+    {
+      "id": "A134",
+      "area": "Monitoring",
+      "match": "target/prod: check image: build it from images/ciam-check/",
+      "planted": "the target's check jobs run an image the organization builds, signs and verifies (a render note for the pipeline's owner)",
+      "cleared_by": null
+    },
+    {
+      "id": "A135",
+      "area": "Monitoring",
+      "match": "target/prod: check jobs: whoever may start one can override its image",
+      "planted": "starting a check job can run other code with its identity and secrets: keep that right to trusted identities (a render note)",
+      "cleared_by": null
     }
   ]
 }

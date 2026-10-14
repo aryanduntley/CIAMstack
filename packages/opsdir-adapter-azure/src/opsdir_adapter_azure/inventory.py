@@ -47,7 +47,8 @@ state_names.reader_names), managed resources and data sources:
   azurerm_application_insights_standard_     -> synthetic check (kind canary, ciamCanaryBinding): its frequency as an
     web_test                                     interval, the canary it realizes (tag Realizes)
   azurerm_container_app_job                   -> scripted synthetic check (kind canary, ciamCanaryBinding), a job
-                                                 tagged Realizes only: its schedule as an interval (check_jobs)
+                                                 tagged Realizes only: its schedule as an interval (check_jobs), the
+                                                 image it pulls from a registry (ciamContainerImage check=<image>)
   azurerm_postgresql_flexible_server,        -> database (kind database, ciamDatabase): engine, version, endpoint,
     azurerm_mysql_flexible_server (+ their       SKU, storage, zone, availability, TLS, backups, parameters, deletion
     _configuration, azurerm_management_lock)     protection (a lock), its subnet and key as roles; never its password:
@@ -546,17 +547,24 @@ def _schedule(job):
     return cron_seconds(config.get("cron_expression"))
 
 
+def _pulled_image(job):
+    """The image a check job pulls from a registry (its container's, when it names a registry: image delivery), as
+    ciamContainerImage check=<image>; none for a job running the base image (script delivery)."""
+    image = ((((job.get("template") or [{}])[0] or {}).get("container") or [{}])[0] or {}).get("image")
+    return {"ciamContainerImage": f"check={image}"} if image and job.get("registry") else {}
+
+
 def _canaries(found):
     """Application Insights standard web tests and the scripted checks' Container Apps jobs (those tagged Realizes):
-    how often each runs, the canary it realizes."""
-    def canary(a, seconds):
+    how often each runs, the canary it realizes, and the image a job pulls (_pulled_image)."""
+    def canary(a, seconds, extra=None):
         role, realizes = realization_roles(_tags(a), "canary")
         return resource("canary", a.get("id"), {"ciamInterval": duration_text(seconds),
-                                                "ciamRealizes": realizes}, name=a.get("name"), role=role,
-                        tags=_tags(a))
+                                                "ciamRealizes": realizes, **(extra or {})}, name=a.get("name"),
+                        role=role, tags=_tags(a))
     return (*(canary(a, a.get("frequency")) for a in of_types(found, "azurerm_application_insights_standard_web_test")
               if a.get("id")),
-            *(canary(a, _schedule(a)) for a in of_types(found, "azurerm_container_app_job")
+            *(canary(a, _schedule(a), _pulled_image(a)) for a in of_types(found, "azurerm_container_app_job")
               if a.get("id") and _tags(a).get("Realizes")))
 
 

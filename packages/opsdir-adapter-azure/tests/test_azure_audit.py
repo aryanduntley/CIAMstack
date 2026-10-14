@@ -76,8 +76,13 @@ def test_a_locked_container_proves_integrity_and_another_container_is_named():
     _, alpha, _ = model(alpha=(_locked("compliance"),
                                _trail("activity-log", "activity-logs", ciamIntegrityValidation="TRUE")))
     out = as_text(render_trails(alpha))
-    assert out[1] == ("# NOTE: Azure writes the Activity Log to container insights-activity-logs of storage account "
-                      "stciamaudit, not audit: record that container as the object store")
+    assert out[1] == ("# NOTE: Activity Log in activity-logs: Azure writes the Activity Log to container "
+                      "insights-activity-logs of storage account stciamaudit, not audit: record that container as the "
+                      "object store")
+    from opsdir_adapter_azure.audit import audit_notes
+    (container,) = audit_notes(alpha)
+    assert _noted((container,), render_trails(alpha)) and (container.area, container.severity) == ("Audit", "action")
+    assert container.how[0].startswith("Record activity-logs's ciamStorageRef as container insights-activity-logs")
     assert "storage_account_id = azurerm_storage_account.stciamaudit.id" in out[2] and "integrity" not in out[2]
 
 
@@ -141,3 +146,18 @@ def test_an_arm_template_s_subscription_setting_is_read_and_a_resource_s_own_is_
     resources, _ = arm_resources({"main.json": json.dumps(template)})
     assert [(r.name, r.attrs["ciamAuditEvents"]) for r in resources if r.kind == "audit"] == [
         ("ciam-activity", ("control-plane",))]
+
+
+def _noted(notes, items):
+    """Whether each note's comment is in the rendered items and every NOTE comment there is a note's (flow 43)."""
+    from opsdir.core.notes import note_comment
+    lines = [x.strip() for t in as_text(items) if isinstance(t, str) for x in t.splitlines()]
+    return {f"# {note_comment(n)}" for n in notes} == {x for x in lines if x.startswith("# NOTE:")}
+
+
+def test_a_trail_azure_doesn_t_export_is_a_blocker_written_as_its_comment():
+    from opsdir_adapter_azure.audit import audit_notes
+    _, alpha, _ = model(alpha=(_trail("org-trail", "activity-logs", ciamAuditScope="organization"),
+                               _trail("nowhere", "missing")))
+    notes = audit_notes(alpha)
+    assert _noted(notes, render_trails(alpha)) and {n.severity for n in notes} == {"blocker"} and len(notes) == 2

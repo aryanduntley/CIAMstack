@@ -84,6 +84,11 @@ def test_guardrails_as_service_control_policies():
     assert 'resource "aws_organizations_policy" "baseline"' in out and 'type        = "SERVICE_CONTROL_POLICY"' in out
     assert '"aws:RequestedRegion" : [' in out and '"us-east-1"' in out and '"Sid" : "DenyRoot"' in out
     assert "# NOTE: guardrail baseline: public-storage: AWS's mechanism is the Organizations S3 policy type" in out
+    from opsdir.core.notes import note_comment
+    from opsdir_adapter_aws.guardrails import guardrail_notes
+    (public,) = guardrail_notes(env_model(build_directory(REGISTRY, tuple(parse(_records(guardrail)))), "aws/prod"))
+    assert f"# {note_comment(public)}" in out.splitlines()
+    assert (public.area, public.severity) == ("Guardrails", "action")
     assert 'target_id = var.guardrail_target_id' in out
     assert 'variable "guardrail_target_id"' in files["terraform/landing-zone/providers.tf"]
 

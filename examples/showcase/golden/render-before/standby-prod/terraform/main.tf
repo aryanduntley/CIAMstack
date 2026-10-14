@@ -2351,7 +2351,7 @@ resource "google_logging_project_exclusion" "logs_audit_logs" {
   filter      = "(logName =~ \"/logs/ciam_ds_logs_audit$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_audit_log$\") OR (logName =~ \"/logs/ciam_pf_engine_pingfederate_log_provisioner_audit_log$\") OR (logName =~ \"/logs/ciam_pf_admin_pingfederate_log_admin_log$\") OR (logName =~ \"/logs/ciam_pf_admin_pingfederate_log_admin_event_detail_log$\") OR (logName =~ \"/logs/ciam_pf_admin_pingfederate_log_admin_api_log$\") OR (logName =~ \"/logs/ciam_pf_admin_pingfederate_log_admin_request_log$\")"
 }
 
-# NOTE: the Ops Agent configuration opsdir renders for configuration management to place (/etc/google-cloud-ops-agent/config.yaml) replaces one the servers already have (the agent reads only that file): merge their own receivers and pipelines into it; the agent itself comes with the host baseline
+# NOTE: Ops Agent configuration: opsdir renders it for configuration management to place (/etc/google-cloud-ops-agent/config.yaml); it replaces one the servers already have (the agent reads only that file): merge their own receivers and pipelines into it; the agent itself comes with the host baseline
 
 # NOTE: Assured Workloads (FEDRAMP_MODERATE): Cloud Logging, Compute Engine and GKE are supported products; the Ops Agent isn't listed on its own, and restrictions on log sinks and GKE workload logging under it are to be confirmed
 

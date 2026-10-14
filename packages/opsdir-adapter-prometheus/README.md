@@ -26,7 +26,7 @@ How each rule becomes an alerting rule:
 Rules that aren't rendered:
 
 - **A rule on a role the environment doesn't run:** left out.
-- **A rule whose signal no product here declares, or whose threshold can't be read in the signal's unit:** named in a `# NOTE` at the top of the rule file. The planner's signal check asks for a metric when nothing in the target evaluates a rule.
+- **A rule whose signal no product here declares, or whose threshold can't be read in the signal's unit:** a render note (flow 43), written as its `# NOTE` at the top of the rule file and listed in the render's NOTES.md: a plain note when no product declares the signal (a cloud alarm may realize the rule; the planner's signal check asks for a metric when nothing in the target evaluates it), a blocker when the signal is declared but the rule can't be written in its unit and no cloud alarm with a metric realizes it.
 
 ## What it renders
 

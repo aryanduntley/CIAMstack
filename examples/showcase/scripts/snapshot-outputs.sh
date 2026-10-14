@@ -66,6 +66,7 @@ cap 03-report-keys-source od report keys source/prod
 cap 03-report-keys-target od report keys target/prod
 cap 03-report-log-collection-source od report log-collection source/prod
 cap 03-report-log-collection-target od report log-collection target/prod
+cap 03-report-canary-coverage od report canary-coverage
 cap 03-report-rotation-impact od report rotation-impact "$ROTATE"
 cap 03-report-overrides od report overrides
 cap 03-report-keys-stage od report keys source/stage
