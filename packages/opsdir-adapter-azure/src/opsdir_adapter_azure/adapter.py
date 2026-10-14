@@ -3,7 +3,7 @@ from opsdir.core.contract import Adapter, ReadBack
 from opsdir.domains.infrastructure.checks import check_server_inputs
 from opsdir.domains.infrastructure.firewall import priority_check
 from .access import ACCESS
-from .boundary import check_boundary
+from .boundary import check_boundary, check_regulated_placement
 from .arm import ARM
 from .cli import CLI_INVENTORY
 from .collect import COLLECTORS
@@ -27,7 +27,8 @@ def applies(m):
 
 ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles=(),
                   render_neutral=None, render_env=render,
-                  checks=(priority_check(*PRIORITIES), check_boundary, check_server_inputs, check_identity_protection,
+                  checks=(priority_check(*PRIORITIES), check_boundary, check_regulated_placement, check_server_inputs,
+                          check_identity_protection,
                           check_discovery_cadence),
                   ref_schemes=("azkv", "azkv-key", "azkv-cert", "azblob"),
                   secret_schemes={"azkv": keyvault_command}, renders="Terraform for the target cloud",

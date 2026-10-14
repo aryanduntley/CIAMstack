@@ -18,6 +18,7 @@ from opsdir.core.directory import one, values
 from opsdir.core.formats import YAML
 from opsdir.core.interchange.yaml_text import dump
 from opsdir.core.manifest import header
+from opsdir.domains.compute.workloads import profile_repo, workload_binding
 from opsdir_adapter_kubernetes.kits import chart_image, pod_labels_of, replicas_of, resources_of, storage_of, \
     workload_marks
 from opsdir_adapter_kubernetes.names import DERIVED
@@ -26,7 +27,8 @@ from .discovery import recorded_query
 from .log_sidecars import picked, product_logs, shared_logs
 from .routes import gateway_fronted
 from .products import image_of, placements, secret_keys, workload_of
-from .release import CHART, DNS_QUERY, EULA, PRODUCTS, RELEASE, REPOSITORY, VERSION
+from .release import (CHART, DNS_QUERY, EULA, PRODUCTS, PROFILE_BRANCH, PROFILE_PATH, PROFILE_URL, RELEASE,
+                      REPOSITORY, VERSION)
 
 
 def _container(m, w):
@@ -77,18 +79,27 @@ def _ingress(m, w):
             "tls": [{"secretName": "_defaultTlsSecret_", "hosts": list(hosts)}]} if hosts else None
 
 
+def profile_envs(m, w):
+    """The image's server profile variables of a workload whose binding names a profile repository (ciamProfileRepo:
+    SERVER_PROFILE_URL, _PATH, _BRANCH); {} when the profile is built into its image."""
+    repo = profile_repo(workload_binding(m, w))
+    return {} if repo is None else {k: v for k, v in zip((PROFILE_URL, PROFILE_PATH, PROFILE_BRANCH), repo) if v}
+
+
 def product_values(m, services, p, product):
     """One product's values: enabled, and when a workload runs it its image, container (replicas, resources, Secret
-    environment variables), service account, pod labels and storage, Secret files, ingress, log sidecars."""
+    environment variables), service account, pod labels and storage, Secret files, ingress, log sidecars, the server
+    profile it fetches (profile_envs)."""
     w = workload_of(p, product.name)
     if w is None:
         return {"enabled": False}
     repository, tag = chart_image(image_of(m, p, product.name))
-    container, files, ingress = _container(m, w), _secret_volumes(w), _ingress(m, w)
+    container, files, ingress, envs = _container(m, w), _secret_volumes(w), _ingress(m, w), profile_envs(m, w)
     _, found, stateful = _logs(m, p, product)
     return {"enabled": True, "image": {"repositoryFqn": repository, "tag": tag},
             **({"container": container} if container else {}),
             "rbac": {"serviceAccountName": service_account_of(w)}, "workload": _workload(m, services, w, found),
+            **({"envs": envs} if envs else {}),
             **({"secretVolumes": files} if files else {}), **({"ingress": ingress} if ingress else {}),
             **product_logs(found, stateful)}
 
@@ -116,6 +127,7 @@ def helm_files(m, services, p):
             header(m, what, YAML) + dump(chart_values(m, services, p))}
 
 
-def render(m, services):
-    """Adapter render_env, {path: text}: per namespace, the chart's values."""
+def render(m, services, targets=()):
+    """Adapter render_env, {path: text}: per namespace, the chart's values (the server profile, on request, is
+    profiles.render_profiles')."""
     return {path: text for p in placements(m) for path, text in helm_files(m, services, p).items()}

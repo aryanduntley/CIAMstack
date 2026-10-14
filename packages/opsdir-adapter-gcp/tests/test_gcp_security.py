@@ -1,8 +1,8 @@
-"""Cloud security services on Google Cloud: Security Command Center's activation, services and frameworks named as a
-request to the organization's administrators; findings streamed to a Pub/Sub topic by an SCC notification config per
-finding class; the scanning APIs enabled once; a project asset feed exporting configuration changes; other bindings,
-other clouds' baselines in comments (services kept by someone else render for their keeper); all read back from
-Terraform state, and from gcloud's outputs of the same services as the same record."""
+"""Cloud security services on Google Cloud: Security Command Center's activation and services named as a request to the
+organization's administrators (frameworks: test_gcp_compliance); findings streamed to a Pub/Sub topic by an SCC
+notification config per finding class; the scanning APIs enabled once; a project asset feed exporting configuration
+changes; other bindings, other clouds' baselines in comments (services kept by someone else render for their keeper);
+all read back from Terraform state, and from gcloud's outputs of the same services as the same record."""
 import json
 
 from opsdir.core.inventory import environment_groups, resource
@@ -61,11 +61,14 @@ def test_configuration_changes_are_exported_by_an_asset_feed():
         "# assets: Cloud Asset Inventory keeps 35 days of resource history itself")
 
 
-def test_posture_frameworks_are_a_request_and_other_clouds_baselines_are_named():
+def test_posture_frameworks_google_lacks_are_named_and_other_clouds_baselines_too():
     out = _render(svc("sha", "posture", ciamComplianceStandard=("nist-800-171-r2", "fedramp-high"),
                       ciamSecurityBaseline=("gcp-default", "aws-foundational")))
-    assert ("# sha: nist-800-171-r2, fedramp-high assessed by Compliance Manager framework deployments (FedRAMP, IL "
-            "and ITAR regimes held by an Assured Workloads folder): a request") in out
+    assert "# sha: nist-800-171-r2: Compliance Manager offers no framework for it (not rendered)" in out
+    assert ("# sha: fedramp-high: Compliance Manager offers no framework for it (held by an Assured Workloads folder, "
+            "from the cloud authorization's level)") in out
+    assert ("# sha: gcp-default assessed by a Compliance Manager framework deployment: the cloud names no organization "
+            "(ciamOrganizationRef): a request") in out                          # deployments: test_gcp_compliance
     assert "# sha: aws-foundational: another cloud's baseline, not Google Cloud's (not rendered)" in out
     assert _render(svc("org-scc", "threat-detection", ciamManagedBy=PARTY)) == _render(
         svc("org-scc", "threat-detection"))                # the same blocks, placed by its keeper (render_files)

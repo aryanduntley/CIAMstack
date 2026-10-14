@@ -13,12 +13,17 @@
     ],
     "forgeops": [
       "helm",
-      "kustomize"
+      "kustomize",
+      "config-profiles"
     ],
     "kubernetes": [],
+    "ping-devops": [
+      "server-profile"
+    ],
     "pingfederate": [
       "admin-api",
-      "terraform"
+      "terraform",
+      "bulk-config"
     ]
   },
   "files": {
@@ -143,10 +148,140 @@
       "captured": true,
       "sha256": "6946e9fa32350e6dde16047ae678192573d8eca0688961b0a510811e011864f0"
     },
+    "forgeops/config-profiles/ciam/README.md": {
+      "scope": "environment-specific",
+      "format": "markdown",
+      "sha256": "10e3f93f61c84d5a9d441d751c98eba4e4e30437d0dd27bb9640e5b622bec87a"
+    },
+    "forgeops/config-profiles/ciam/amster/Dockerfile": {
+      "scope": "environment-specific",
+      "format": "dockerfile",
+      "sha256": "b8a65a438f967bd30f244bd272a413955be94babea40f162fe806923bad0a5c5"
+    },
+    "forgeops/config-profiles/ciam/amster/config-profiles/opsdir/config/global/Realms/partners.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "81d7d7515ff9d35b54fdf406cde579efe7e0ed11ca540dd4988fa44ac739fd07"
+    },
+    "forgeops/config-profiles/ciam/amster/config-profiles/opsdir/config/realms/root-partners/Applications/partner-apps.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "36b35c84cf5fec41475dc1242aecf43d9c22d3627981df4483265983c869e605"
+    },
+    "forgeops/config-profiles/ciam/amster/config-profiles/opsdir/config/realms/root-partners/AuthTree/PartnerLogin.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "d7eeeb1eb97ffa52274fe7d4709e5071762c770414d6d741a1805aaa8cc23943"
+    },
+    "forgeops/config-profiles/ciam/amster/config-profiles/opsdir/config/realms/root-partners/DataStoreDecisionNode/5e1d0c9b-0004-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "ee251eda445b48183fde1e32b4bbeef3270ba1ef0e68d169e6b2c4686227d1ea"
+    },
+    "forgeops/config-profiles/ciam/amster/config-profiles/opsdir/config/realms/root-partners/OAuth2Clients/partner-portal.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "ee10b46182ca98d2f205437a21fd2b9898931ddb5f3ffda99d2b638ad1263631"
+    },
+    "forgeops/config-profiles/ciam/amster/config-profiles/opsdir/config/realms/root-partners/OAuth2Provider/OAuth2Provider.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "1808094cf7dab551ce36b7684a2978599c56c8854e2c698a51f306b1d8db9fac"
+    },
+    "forgeops/config-profiles/ciam/amster/config-profiles/opsdir/config/realms/root-partners/OneTimePasswordCollectorDecisionNode/5e1d0c9b-0007-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "76ab84cfa9c8493bd0fb84667724c5cb8e8076064b9abed292c224f02af4185b"
+    },
+    "forgeops/config-profiles/ciam/amster/config-profiles/opsdir/config/realms/root-partners/OneTimePasswordGeneratorNode/5e1d0c9b-0005-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "a7e8dfa24f6ea4d60c4cd33884ff1751acd303398e2601a4266bdedef83bc4a3"
+    },
+    "forgeops/config-profiles/ciam/amster/config-profiles/opsdir/config/realms/root-partners/OneTimePasswordSmtpSenderNode/5e1d0c9b-0006-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "313af4f0b11c12400316ed48c1c830f943a594b462b2eefca6a093f21888e836"
+    },
+    "forgeops/config-profiles/ciam/amster/config-profiles/opsdir/config/realms/root-partners/PageNode/5e1d0c9b-0001-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "b004e0719a07b6983dd9efb570f6f6e28cbaf370f25fe41586df100ff375a963"
+    },
+    "forgeops/config-profiles/ciam/amster/config-profiles/opsdir/config/realms/root-partners/PasswordCollectorNode/5e1d0c9b-0003-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "9c5e9949274792117247f9e3997949048122cdc42c3cd5894930ed872f912316"
+    },
+    "forgeops/config-profiles/ciam/amster/config-profiles/opsdir/config/realms/root-partners/Policies/partner-portal-access.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "0afcecea68f13b1a223478ad14c360b7522a70b84af3fdd3b12e2e3e982f94fb"
+    },
+    "forgeops/config-profiles/ciam/amster/config-profiles/opsdir/config/realms/root-partners/UsernameCollectorNode/5e1d0c9b-0002-4a6b-8c7d-9e0f1a2b3c4d.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "5b4ef2dc500317b2ef3a5c42cb81045ba988138a390b811dd24379535da4bf61"
+    },
+    "forgeops/config-profiles/ciam/idm/Dockerfile": {
+      "scope": "environment-specific",
+      "format": "dockerfile",
+      "sha256": "31ff578ef81eb0a57132fe3a1b51f8f1c9e5a5bf15024264f8cf720ff15a9d99"
+    },
+    "forgeops/config-profiles/ciam/idm/config-profiles/opsdir/conf/audit.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "6946e9fa32350e6dde16047ae678192573d8eca0688961b0a510811e011864f0"
+    },
+    "forgeops/config-profiles/ciam/idm/config-profiles/opsdir/conf/managed.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "cf05c6a125025cd00c1301cb987f030028906e57bc08770a2993ce40452ce23c"
+    },
+    "forgeops/config-profiles/ciam/idm/config-profiles/opsdir/conf/provisioner.openicf-hrdb.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "9bfdeb52d1f8ad5a9b5a0c08a6ebd7422a82ab0a488982c65e9f535f3e346dd9"
+    },
+    "forgeops/config-profiles/ciam/idm/config-profiles/opsdir/conf/provisioner.openicf-ldap.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "718996fbbe532c9c5ea7b6af0d28f02280476be5dc9ca747412bbc8cc518c753"
+    },
+    "forgeops/config-profiles/ciam/idm/config-profiles/opsdir/conf/schedule-reconcile-hr.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "0e5edb2672f3380227d325e64bc900a1608a6f32c8d0f4667a7939b7a228a6d8"
+    },
+    "forgeops/config-profiles/ciam/idm/config-profiles/opsdir/conf/sync.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "3d8cd9c31ffd2d5814c3c34e18ba71d193acfd7ee94e776f0e0bb5343e584318"
+    },
+    "forgeops/config-profiles/ciam/ig/Dockerfile": {
+      "scope": "environment-specific",
+      "format": "dockerfile",
+      "sha256": "e127b44e2f16c153884a3fd9a26f4708d7d9866eb0a8715bfca47fb99aba58fe"
+    },
+    "forgeops/config-profiles/ciam/ig/config-profiles/opsdir/config/admin.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "416d3e7721a0ff94123158e9744486c99566decd99382d98a1f3f165becf81e1"
+    },
+    "forgeops/config-profiles/ciam/ig/config-profiles/opsdir/config/config.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "bf953996c739c80ae2317a6018f25d5746b718e382d38df6ef909fb0b9ab5a50"
+    },
+    "forgeops/config-profiles/ciam/ig/config-profiles/opsdir/config/routes/partner-portal.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "cd1beac9ef8c5d82f87547ed1f8f3865b8e86ca0ae12aa7cbda38ff57e0f096f"
+    },
     "forgeops/helm/ciam/identity-platform-values.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "990a055cfe8166350e735b5de27e628ba8994e93361408683ebf674526f98860"
+      "sha256": "7bde57fd23ffededa844c3f6b0238aed290cad601ba0abb295c85710c7af0fd7"
     },
     "forgeops/helm/ciam/ping-gateway-values.yaml": {
       "scope": "environment-specific",
@@ -186,22 +321,17 @@
     "forgeops/kustomize/overlay/ciam/idm/kustomization.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "ce9bb5f443ad62a5d483ac85e22c810a0df4176a53d57ce8ec68a66cc45a0eeb"
+      "sha256": "f643edc43db9fd19b18858223f3805267a3a0bf818aa01e6cd6f2b9e198ac638"
     },
     "forgeops/kustomize/overlay/ciam/ig/kustomization.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
       "sha256": "97462f2b7ebf3ab7c1d5e8fce5d3452b128e512d02ed2177405a7d8bb359521a"
     },
-    "forgeops/kustomize/overlay/ciam/keystore-create/kustomization.yaml": {
-      "scope": "environment-specific",
-      "format": "yaml",
-      "sha256": "6c228fae8836838344b4e55a29f1e0770c061bf58de7b78e3321ddd53164d091"
-    },
     "forgeops/kustomize/overlay/ciam/kustomization.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "b94938fdaacc4b952b6e0dd382dcef3d2ca17f8930c30d77ae271bfe0d620f0a"
+      "sha256": "0e870104530fcb0d4d6db87b57489632cb2d3a462b4c864bcd02279c909c84ec"
     },
     "forgeops/kustomize/overlay/ciam/login-ui/kustomization.yaml": {
       "scope": "environment-specific",
@@ -241,7 +371,7 @@
     "kubernetes/ciam/secrets-required.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "708319e639f3c502c2f32bf83bea494f888f2337fd0d23f6362bc70a015f53a1"
+      "sha256": "52566a8742e63df6b4382de8b22d8fd7e6c4536444eea7c76a68334c4a3d47a4"
     },
     "kubernetes/ciam/serviceaccounts.yaml": {
       "scope": "environment-specific",
@@ -296,12 +426,37 @@
     "ping-devops/helm/ciam/ping-devops-values.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "054308eb9e61c443c9439312f60bdd4779e8111561a42836e34c0886d999fc05"
+      "sha256": "4b644560b31d54df6a55d9a8cb1f69505bbf6e2fff6f5e2e9d97e0f844bfdb72"
+    },
+    "ping-devops/server-profile/ciam/README.md": {
+      "scope": "environment-specific",
+      "format": "markdown",
+      "sha256": "a7f6f37cd2d33bde2e8ff15fe74a9883caea2c3bf0bcbcfefaf9d8eab661aace"
+    },
+    "ping-devops/server-profile/ciam/pingfederate/instance/bin/run.properties.subst": {
+      "scope": "environment-specific",
+      "format": "java-properties",
+      "sha256": "05069bbc11ad30739f6882db9b72792c719f131f3722f11fc17363c2479d762f"
+    },
+    "ping-devops/server-profile/ciam/pingfederate/instance/bulk-config/data.json.subst": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "623e6621f638e3e78ccc3013b261dd8d14b7df195905b1054e1b3512698c8e48"
+    },
+    "ping-devops/server-profile/ciam/pingfederate/instance/server/default/data/atm/default-atm.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "5d64b31420d4627260d1bd2cf0b9dd3bdea95d85f02350aa7bc5bb115da37904"
     },
     "pingfederate/admin-api/requests.json": {
       "scope": "environment-specific",
       "format": "json",
       "sha256": "33eca9b9aa8ff70d16d8b3c5c48d635c14d6db3fccc66e227854c2764d1ec0ad"
+    },
+    "pingfederate/bulk-config/data.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "29f5c0884174fc935f8b6ba1db6b65a3be2561de0003a6bef576568bf3dfe1da"
     },
     "pingfederate/terraform/main.tf": {
       "scope": "environment-specific",

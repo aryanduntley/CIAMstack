@@ -52,6 +52,13 @@ def health_port(endpoints, server_role, recorded=()):
                  and holds(e.versions, recorded)), None)
 
 
+def endpoint_query(endpoints, server_role, kind, recorded=()):
+    """The query string (Endpoint.query, {entity} standing for a partner's entity ID) the servers of a role take on
+    their declared endpoint of a kind, for the recorded product versions; None when none declares one."""
+    return next((e.query for e in endpoints if e.server_role == server_role and e.kind == kind and e.query
+                 and holds(e.versions, recorded)), None)
+
+
 def certificate_ref(m, svc):
     """The reference (ciamRefUri) of the certificate store entry holding the certificate a service name presents in
     environment m, or None."""

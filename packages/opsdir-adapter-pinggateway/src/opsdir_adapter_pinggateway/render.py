@@ -12,9 +12,14 @@ from types import MappingProxyType
 from opsdir.core.directory import children, one, rdn_value, values
 from opsdir.core.environment import one_role
 from opsdir.core.jsondata import held_json
+from opsdir.core.profiles import ProductProfile
 from .naming import ROUTES
 
 FORMATS = (("pinggateway/routes/*.json", "json"),)
+# The gateway's configuration as it reads it under its instance directory (config/config.json, admin.json,
+# config/routes/): the product profile a deployment kit consumes (core.profiles)
+PROFILE = ProductProfile("PingGateway", (("pinggateway/routes/", "config/routes/"),
+                                         ("files/pinggateway/", "")))
 DEFAULT_PORTS = MappingProxyType({"https": "443", "http": "80"})
 
 

@@ -1,0 +1,12 @@
+# CHG-2042 (approved): the standby will hold ITAR technical data (export-controlled defense data the program shares
+# with its suppliers). Its Assured Workloads folder therefore takes Google's ITAR package instead of FedRAMP Moderate's:
+# one folder holds one regime, and the data's comes first (milestone 5.7b). The planner names what that leaves to
+# confirm (FedRAMP Moderate's package not applied, customer-managed keys) once the standby is a move's target;
+# `opsdir report regulated-data` lists it.
+dn: env=prod,cloud=standby,ou=environments,dc=ciam-ops
+changetype: modify
+add: ciamRegulatedData
+ciamRegulatedData: itar
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2042,ou=changes,dc=ciam-ops

@@ -1,0 +1,62 @@
+[
+  {
+    "name": "organizations/123456789012/locations/global/cloudControls/builtin-audit-logging-enabled",
+    "majorRevisionId": "1",
+    "supportedEnforcementModes": [
+      "DETECTIVE"
+    ],
+    "supportedCloudProviders": [
+      "GCP"
+    ]
+  },
+  {
+    "name": "organizations/123456789012/locations/global/cloudControls/builtin-cmek-on-cloud-sql",
+    "majorRevisionId": "2",
+    "supportedEnforcementModes": [
+      "DETECTIVE"
+    ],
+    "supportedCloudProviders": [
+      "GCP"
+    ]
+  },
+  {
+    "name": "organizations/123456789012/locations/global/cloudControls/builtin-os-login-enabled",
+    "majorRevisionId": "1",
+    "supportedEnforcementModes": [
+      "DETECTIVE",
+      "PREVENTIVE"
+    ],
+    "supportedCloudProviders": [
+      "GCP"
+    ]
+  },
+  {
+    "name": "organizations/123456789012/locations/global/cloudControls/builtin-restrict-public-buckets",
+    "majorRevisionId": "1",
+    "supportedEnforcementModes": [
+      "DETECTIVE",
+      "PREVENTIVE"
+    ],
+    "supportedCloudProviders": [
+      "GCP"
+    ]
+  },
+  {
+    "name": "organizations/123456789012/locations/global/cloudControls/builtin-restrict-resource-locations",
+    "majorRevisionId": "1",
+    "supportedEnforcementModes": [
+      "DETECTIVE",
+      "PREVENTIVE"
+    ],
+    "supportedCloudProviders": [
+      "GCP"
+    ],
+    "parameterSpec": [
+      {
+        "name": "allowedLocations",
+        "isRequired": true,
+        "valueType": "STRINGLIST"
+      }
+    ]
+  }
+]

@@ -1,0 +1,17 @@
+# CHG-2039 (approved): the standby assesses itself against NIST SP 800-53 Rev. 5 (what production's FedRAMP Moderate
+# package and the target's FedRAMP High are built on) and its cloud's CIS benchmark, with Security Command Center's
+# Compliance Manager, its misconfiguration findings to the security topic. The deployments need Google's frameworks in
+# the record first (CHG-2041: prerequisite gcp-frameworks); until then they are a request.
+dn: cn=compliance,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamSecurityService
+cn: compliance
+ciamBindingRole: posture
+ciamSecurityKind: posture
+ciamComplianceStandard: nist-800-53-r5
+ciamComplianceStandard: cis
+ciamAuditScope: account
+ciamAllRegions: TRUE
+ciamFindingsRole: security-findings
+ciamChangeRef: cn=CHG-2039,ou=changes,dc=ciam-ops

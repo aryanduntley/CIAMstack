@@ -49,6 +49,11 @@ FILE_KEYS = (("pingfederate.lic", "/opt/in/instance/server/default/conf/pingfede
 LICENSE_KEY = "pingfederate.lic"
 DEVOPS_KEYS = ("PING_IDENTITY_DEVOPS_USER", "PING_IDENTITY_DEVOPS_KEY")    # a license from Ping's license server
 ADMIN_PASSWORD = "PING_IDENTITY_PASSWORD"   # the image's default is published
+SERVER_PROFILE = "server-profile"           # render target: PingFederate's configuration as a server profile
+PROFILE_DIR = "pingfederate"                 # the profile's folder (the product's, as Ping's profile repositories)
+# where a container fetches its profile from Git (the image's variables; credentials are Secret keys the workload
+# records: SERVER_PROFILE_GIT_USER, SERVER_PROFILE_GIT_PASSWORD)
+PROFILE_URL, PROFILE_PATH, PROFILE_BRANCH = "SERVER_PROFILE_URL", "SERVER_PROFILE_PATH", "SERVER_PROFILE_BRANCH"
 EULA = "PING_IDENTITY_ACCEPT_EULA"          # the image starts only with YES (the organization accepts the terms)
 
 

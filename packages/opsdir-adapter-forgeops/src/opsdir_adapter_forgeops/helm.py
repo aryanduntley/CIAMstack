@@ -14,8 +14,9 @@ from opsdir.core.interchange.yaml_text import dump
 from opsdir.core.manifest import header
 from opsdir_adapter_kubernetes.kits import chart_image
 from .routes import gateway_fronted
-from .components import (ds_in_cluster, ds_servers, external_ds, idm_ds_env, image_of, ingress_hosts, on_in,
-                         pod_annotations, pod_labels, replicas, resources, service_account, storage)
+from .components import (config_image, ds_in_cluster, ds_servers, external_ds, idm_ds_env, image_of, ingress_hosts,
+                         keystore_from_record, on_in, pod_annotations, pod_labels, profile_env, replicas, resources,
+                         service_account, storage)
 from .release import COMPONENTS, HELM, IDENTITY_PLATFORM, PING_GATEWAY, VERSION
 
 
@@ -31,22 +32,24 @@ def _volume_claim(size, storage_class):
             **({"resources": {"requests": {"storage": size}}} if size else {})}
 
 
-def component_values(m, services, p, c):
+def component_values(m, services, p, c, profiled=False):
     """One component's values: enabled, and when on its image, replicas, resources, pod labels, the pod annotations
-    that make it read back as the record (components.pod_annotations), (DS) volume claim from the record, and (IDM
-    with DS on servers) the variables pointing it at them."""
+    that make it read back as the record (components.pod_annotations), (DS) volume claim from the record,
+    (keystore-create) force unless the record delivers the keystore (force false: the job off, AM and IDM still mount
+    it), and (IDM with DS on servers) the variables pointing it at them, then (AM, IDM, PingGateway) the profile
+    secrets' variables the record maps (components.profile_env)."""
     if c.name not in p.on:
         return {"enabled": False}
     n, r, labels = replicas(m, p, c.name), resources(m, p, c.name), pod_labels(m, services, p, c.name)
-    marks = pod_annotations(m, p, c.name)
+    marks = pod_annotations(m, p, c.name, profiled)
     claim = _volume_claim(*storage(m, p, c.name)) if c.kind == "StatefulSet" else {}
-    env = idm_ds_env(m, p) if c.name == "idm" else []
+    env = [*(idm_ds_env(m, p) if c.name == "idm" else []), *profile_env(p, c.name)]
     return {"enabled": True, c.helm_image: helm_image(image_of(m, p, c.name)),
             **({"replicaCount": n} if n is not None and c.kind != "Job" else {}),
             **({"resources": r} if r else {}), **({"podLabels": labels} if labels else {}),
             **({"podAnnotations": marks} if marks else {}),
             **({"volumeClaimSpec": claim} if claim else {}), **({"env": env} if env else {}),
-            **({"force": True} if c.name == "keystore-create" else {})}
+            **({"force": not keystore_from_record(m, p)} if c.name == "keystore-create" else {})}
 
 
 def _service_account(p, chart):
@@ -54,10 +57,11 @@ def _service_account(p, chart):
     return {"create": False, **({"name": sa} if sa else {})}
 
 
-def identity_platform_values(m, services, p):
+def identity_platform_values(m, services, p, profiled=False):
     """The identity-platform chart's values for a placement: the workloads' service account, no Secrets made by the
     chart, ingress hosts (Ingresses off behind a cluster gateway), DS on servers (external_ds; with no DS in the
-    cluster, no self-signed DS certificates: the servers' CA comes from the record), each component."""
+    cluster, no self-signed DS certificates: the servers' CA comes from the record), each component; with config
+    profiles (profiled), IDM's configuration image (idm_custom) the record names."""
     platform = {"disable_secret_agent_config": True, "secrets_enabled": True, "base_generate": True, "secrets": {},
                 **({} if ds_in_cluster(p) else {"ds_certs": {"enabled": False}}),
                 "ingress": ({"enabled": False} if gateway_fronted(m, IDENTITY_PLATFORM) else
@@ -66,11 +70,14 @@ def identity_platform_values(m, services, p):
         platform["external_ds"] = {"enabled": True, "cts_hosts": ds_servers(m, p, "ds-cts"),
                                    "idrepo_hosts": ds_servers(m, p, "ds-idrepo")}
     return {"serviceAccount": _service_account(p, IDENTITY_PLATFORM), "platform": platform,
-            **{c.values: component_values(m, services, p, c) for c in COMPONENTS if c.chart == IDENTITY_PLATFORM},
-            "ssh_keygen": {"enabled": "am" in p.on}}
+            **{c.values: component_values(m, services, p, c, profiled) for c in COMPONENTS
+               if c.chart == IDENTITY_PLATFORM},
+            "ssh_keygen": {"enabled": "am" in p.on},
+            **({"idm_custom": {"image": helm_image(config_image(m, p, "idm-custom"))}}
+               if profiled and "idm" in p.on else {})}
 
 
-def ping_gateway_values(m, services, p):
+def ping_gateway_values(m, services, p, profiled=False):
     """The ping-gateway chart's values for a placement: service account, ingress hosts (off behind a cluster gateway),
     ig."""
     (ig,) = (c for c in COMPONENTS if c.chart == PING_GATEWAY)
@@ -80,11 +87,12 @@ def ping_gateway_values(m, services, p):
             ig.values: component_values(m, services, p, ig)}
 
 
-def helm_files(m, services, p):
-    """{path: text}: forgeops/helm/<namespace>/<chart>-values.yaml for each chart with a component on."""
+def helm_files(m, services, p, profiled=False):
+    """{path: text}: forgeops/helm/<namespace>/<chart>-values.yaml for each chart with a component on (profiled: run
+    the config profiles' images)."""
     charts = ((IDENTITY_PLATFORM, identity_platform_values), (PING_GATEWAY, ping_gateway_values))
     what = lambda chart: (f"ForgeOps {VERSION} Helm values, chart {chart}: helm upgrade --install {chart} "
                           f"<ForgeOps {VERSION} checkout>/charts/{chart} --namespace {p.namespace} -f <this file>")
     return {f"forgeops/{HELM}/{p.namespace}/{chart}-values.yaml":
-            header(m, what(chart), YAML) + dump(values(m, services, p))
+            header(m, what(chart), YAML) + dump(values(m, services, p, profiled))
             for chart, values in charts if on_in(p, chart)}

@@ -26,6 +26,7 @@ SCRIPTS = SHOWCASE / "scripts"
 ImportStep = NamedTuple("ImportStep", [("spec", str), ("root", pathlib.Path), ("at", str)])
 REGIONS = SHOWCASE / "exports" / "regions"
 QUOTAS = SHOWCASE / "exports" / "quotas"
+FRAMEWORKS = SHOWCASE / "exports" / "frameworks"
 # the approved changes the showcase applies, in order: (change id, LDIF file or ImportStep)
 APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ldif"),
             ("CHG-2003", SHOWCASE / "changes" / "CHG-2003-stable-ldaps-name.ldif"),
@@ -55,7 +56,11 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2035", ImportStep("onprem/sites", SHOWCASE / "exports" / "sites" / "onprem", "20260923090000Z")),
             ("CHG-2036", SHOWCASE / "changes" / "CHG-2036-scoped-agents-and-jobs.ldif"),
             ("CHG-2037", SHOWCASE / "changes" / "CHG-2037-target-hybrid-identity.ldif"),
-            ("CHG-2038", SHOWCASE / "changes" / "CHG-2038-target-change-history.ldif"))
+            ("CHG-2038", SHOWCASE / "changes" / "CHG-2038-target-change-history.ldif"),
+            ("CHG-2039", SHOWCASE / "changes" / "CHG-2039-standby-compliance-frameworks.ldif"),
+            ("CHG-2041", ImportStep("gcp/frameworks", FRAMEWORKS / "gcp", "20260923090000Z")),
+            ("CHG-2042", SHOWCASE / "changes" / "CHG-2042-standby-itar-data.ldif"),
+            ("CHG-2043", SHOWCASE / "changes" / "CHG-2043-target-profiles.ldif"))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
 # night before, all of them)
 IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", "20260920030000Z"),

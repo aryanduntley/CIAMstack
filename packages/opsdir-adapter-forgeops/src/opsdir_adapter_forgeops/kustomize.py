@@ -18,8 +18,8 @@ from opsdir.core.manifest import header
 from opsdir_adapter_kubernetes.kits import split_image
 from opsdir_adapter_kubernetes.render import service_account_of
 from .routes import gateway_fronted
-from .components import ds_servers, idm_ds_env, image_of, ingress_hosts, pod_annotations, pod_labels, replicas, \
-    resources, storage, workload_of
+from .components import (config_image, ds_servers, idm_ds_env, image_of, ingress_hosts, keystore_from_record,
+                         pod_annotations, pod_labels, profile_env, replicas, resources, storage, workload_of)
 from .release import COMPONENTS, IDENTITY_PLATFORM, KUSTOMIZE, TOOLING_IMAGES, VERSION
 
 KUSTOMIZATION = {"apiVersion": "kustomize.config.k8s.io/v1beta1", "kind": "Kustomization"}
@@ -50,7 +50,7 @@ def platform_config(m, p):
 def _workload_patch(m, p, c):
     w = workload_of(p, c.name)
     n, r = replicas(m, p, c.name), resources(m, p, c.name)
-    env = idm_ds_env(m, p) if c.name == "idm" else []
+    env = [*(idm_ds_env(m, p) if c.name == "idm" else []), *profile_env(p, c.name)]
     if w is None or c.container is None:
         return None
     container = {**({"resources": r} if r else {}), **({"env": env} if env else {})}
@@ -60,10 +60,10 @@ def _workload_patch(m, p, c):
             "spec": {**({"replicas": n} if n is not None else {}), "template": {"spec": pod}}}
 
 
-def _marks_patch(m, p, c):
+def _marks_patch(m, p, c, profiled=False):
     """The patch annotating a component's workload object with its marks (the importer reads them there first), or
     None without any."""
-    marks = pod_annotations(m, p, c.name)
+    marks = pod_annotations(m, p, c.name, profiled)
     return {"patch": dump({"apiVersion": "batch/v1" if c.kind == "Job" else "apps/v1", "kind": c.kind,
                            "metadata": {"name": c.name, "annotations": marks}})} if marks else None
 
@@ -86,10 +86,10 @@ def _ingress_patch(m, c, host):
                            {"op": "replace", "path": "/spec/tls/0/hosts", "value": [host]}])}
 
 
-def component_kustomization(m, services, p, c):
+def component_kustomization(m, services, p, c, profiled=False):
     """One component's overlay kustomization: its base, image, pod-template labels, its marks, and patches for what
     the record holds."""
-    workload, ops, marks = _workload_patch(m, p, c), _storage_ops(m, p, c), _marks_patch(m, p, c)
+    workload, ops, marks = _workload_patch(m, p, c), _storage_ops(m, p, c), _marks_patch(m, p, c, profiled)
     host = _host(p, c)
     patches = [*([{"patch": dump(workload)}] if workload else []), *([marks] if marks else []),
                *([{"target": {"kind": c.kind, "name": c.name}, "patch": dump(ops)}] if ops else []),
@@ -101,11 +101,19 @@ def component_kustomization(m, services, p, c):
             **({"patches": patches} if patches else {})}
 
 
-def kustomize_files(m, services, p):
+def _tooling(m, p, profiled):
+    """The bases' tooling images: the chart's defaults, IDM's configuration image the record names with config
+    profiles (profiled)."""
+    return [kustomize_image(name, config_image(m, p, name) if profiled and name == "idm-custom" and "idm" in p.on
+                            else ref) for name, ref in TOOLING_IMAGES]
+
+
+def kustomize_files(m, services, p, profiled=False):
     """{path: text}: the overlay forgeops/kustomize/overlay/<namespace>/: its kustomization, base/ and a folder per
-    component on."""
+    component on (profiled: run the config profiles' images)."""
     root = f"forgeops/{KUSTOMIZE}/overlay/{p.namespace}"
-    on = [c for c in COMPONENTS if c.name in p.on and c.base]
+    on = [c for c in COMPONENTS if c.name in p.on and c.base
+          and not (c.name == "keystore-create" and keystore_from_record(m, p))]
     chart_only = [c.name for c in COMPONENTS if c.name in p.on and not c.base]
     text = lambda what, value: header(m, f"ForgeOps {VERSION} overlay, {what}", YAML) + dump(value)
     unbased = (f" ({', '.join(chart_only)}: the chart's only, not in the Kustomize bases: not rendered; Kustomize "
@@ -114,10 +122,10 @@ def kustomize_files(m, services, p):
                 f"namespace {p.namespace}: copy this folder into a ForgeOps {VERSION} checkout's kustomize/overlay/"
                 f"{unbased}",
                 {**KUSTOMIZATION, "namespace": p.namespace, "resources": ["./base", *(f"./{c.name}" for c in on)],
-                 "images": [kustomize_image(name, ref) for name, ref in TOOLING_IMAGES]}),
+                 "images": _tooling(m, p, profiled)}),
             f"{root}/base/kustomization.yaml": text("the platform configuration",
                                                     {**KUSTOMIZATION, "resources": ["../../../base/platform"],
                                                      "patches": [{"path": "platform-config.yaml"}]}),
             f"{root}/base/platform-config.yaml": text("the platform configuration", platform_config(m, p)),
-            **{f"{root}/{c.name}/kustomization.yaml": text(c.name, component_kustomization(m, services, p, c))
+            **{f"{root}/{c.name}/kustomization.yaml": text(c.name, component_kustomization(m, services, p, c, profiled))
                for c in on}}

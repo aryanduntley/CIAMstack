@@ -1,0 +1,29 @@
+{
+  "metadata": {
+    "realm": "/partners",
+    "entityType": "Policies",
+    "entityId": "partner-portal-access",
+    "pathParams": {}
+  },
+  "data": {
+    "_id": "partner-portal-access",
+    "name": "partner-portal-access",
+    "applicationName": "partner-apps",
+    "actionValues": {
+      "GET": true,
+      "POST": true
+    },
+    "active": true,
+    "condition": {
+      "authLevel": 2,
+      "type": "AuthLevel"
+    },
+    "description": "Partner staff who signed in with a one-time code may use the partner portal",
+    "resources": [
+      "https://partners.example-aero.test/*"
+    ],
+    "subject": {
+      "type": "AuthenticatedUsers"
+    }
+  }
+}

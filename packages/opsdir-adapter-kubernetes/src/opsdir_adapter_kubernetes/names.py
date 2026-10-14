@@ -10,13 +10,16 @@ MANAGED_BY = ("app.kubernetes.io/managed-by", "opsdir")
 # of its workload binding, the binding role of its cloud identity, its record name when the kit names the object
 # otherwise; on a pod that is part of another workload (a kit's companion: ForgeOps' UIs and amster with AM),
 # "<workload>/<container>": the record's workload whose binding holds its image, under that container name; and the
-# containers (comma-separated) the kit derives from the record (log sidecars), which are no images of the workload.
+# containers (comma-separated) the kit derives from the record (log sidecars), which are no images of the workload;
+# and "<record container>=<pod container>, ..." where the record keeps an image under another name than the pod's
+# container (or init container) running it (a kit's configuration image in its init container).
 CLUSTER_ROLE = "opsdir.io/cluster-role"
 WORKLOAD_ROLE = "opsdir.io/workload-role"
 IDENTITY_ROLE = "opsdir.io/identity-role"
 WORKLOAD_NAME = "opsdir.io/workload"
 IMAGE_OF = "opsdir.io/image-of"
 DERIVED = "opsdir.io/derived-containers"
+CONTAINER_NAMES = "opsdir.io/container-names"
 
 
 def k8s_name(text):

@@ -14,7 +14,7 @@ from .logs import LOGS
 from .proxy import proxy_settings
 from .naming import SERVER_ROLES
 from .nodes import NODE_FILES
-from .render import ENDPOINTS, TARGETS, render_env, render_neutral
+from .render import ENDPOINTS, PROFILE, TARGETS, render_env, render_neutral
 from .schema import FRAGMENT
 from .versions import VERSION_CHANGES
 
@@ -35,11 +35,13 @@ ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required
                           check_smtp_auth, check_service_roles, check_jdbc_drivers), ref_schemes=(),
                   secret_schemes={},
                   renders="PingFederate's configuration for each environment as Admin API requests checked against its "
-                          "version's spec and as Terraform for its provider, and cluster discovery",
+                          "version's spec, as Terraform for its provider or, on request, as a bulk import document, "
+                          "and cluster discovery",
                   neutral_label="PingFederate",
                   vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES,
                               "pingfedDiscoveryProtocol": CHOICES}, schema=FRAGMENT,
-                  formats=(("pingfederate/admin-api/*.json", "json"), ("pingfederate/terraform/*.tf", "hcl"),
+                  formats=(("pingfederate/admin-api/*.json", "json"), ("pingfederate/bulk-config/*.json", "json"),
+                           ("pingfederate/terraform/*.tf", "hcl"),
                            ("pingfederate/cluster/*.properties", "java-properties"),
                            *SAML_FORMATS, *OIDC_FORMATS),
                   products=(("PingFederate", ">=11,<14"),),
@@ -47,6 +49,8 @@ ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required
                   access=None, endpoints=ENDPOINTS, listeners=listeners,
                   proxy_settings=proxy_settings, collectors=COLLECTORS, render_targets=TARGETS,
                   logs=LOGS, version_changes=VERSION_CHANGES,
-                  reads_back=(ReadBack("bulk", "pingfederate/*.json"),
+                  profile=PROFILE,
+                  # its bulk importer reads back the Admin API requests (bulk-config/data.json holds the same)
+                  reads_back=(ReadBack("bulk", "pingfederate/admin-api/*.json"),
                               ReadBack("cluster", "pingfederate/cluster/jgroups.properties", "pingfederate/cluster/",
                                        "{environment}/", True)))

@@ -3,17 +3,23 @@
 What the rendered values and overlay can't settle on their own, as actions: Secrets the release's pods read that the
 record doesn't deliver (no workload in the namespace records the key, and ForgeOps doesn't make it), the one service
 account the identity-platform chart runs every pod as, a ds workload ForgeOps can't place (it runs DS as ds-idrepo or
-ds-cts), one DS store in the cluster and the other on servers (unsupported: one truststore CA), and ForgeOps' public
-images (for development and testing only).
+ds-cts), one DS store in the cluster and the other on servers (unsupported: one truststore CA), ForgeOps' public images
+(for development and testing only), and a config profile's secret variable (OPSDIR_<ROLE>) the record doesn't deliver
+to its component (when the target renders config profiles).
 """
+import re
+
 from opsdir.core.directory import rdn_value
+from opsdir.core.environment import one_role
 from opsdir.core.findings import findings, responsible
 from opsdir.domains.compute.workloads import workload_secrets
 from opsdir_adapter_kubernetes.render import namespace_of, on_kubernetes, service_account_of
-from .components import image_of, placements, split_ds, unplaced
-from .release import HELM, IDENTITY_PLATFORM, KUSTOMIZE, SERVERS_CA, component, kit_secrets, public_image
+from .components import image_of, keystore_from_record, placements, slot_envs, split_ds, unplaced
+from .release import (AMSTER_ENV_SECRET, CONFIG_PROFILES, HELM, IDENTITY_PLATFORM, KEYSTORE_KEY, KEYSTORE_ROLES,
+                      KEYSTORE_SECRET, KUSTOMIZE, SERVERS_CA, component, kit_secrets, public_image)
 
 AREA = "ForgeOps"
+_TOKEN = re.compile(r"&\{(opsdir\.[a-z0-9.]+)\}")
 
 
 def _recorded(m, ns):
@@ -57,9 +63,40 @@ def _split(m, p):
         if split else ()
 
 
+def unmapped_slots(m, p, files):
+    """((component, variable), ...): the secret variables a namespace's rendered config profiles read (their
+    &{opsdir.<role>} tokens) that the record doesn't deliver to the component (components.slot_envs)."""
+    root = f"forgeops/{CONFIG_PROFILES}/{p.namespace}/"
+    found = {(path[len(root):].split("/", 1)[0], token.upper().replace(".", "_"))
+             for path, text in files.items() if path.startswith(root) and "/" in path[len(root):]
+             for token in _TOKEN.findall(text)}
+    return tuple(sorted((c, v) for c, v in found if v not in slot_envs(m, p, c)))
+
+
+def _slot_text(m, p, c, v):
+    where = (f"`{AMSTER_ENV_SECRET}/{v} <- <role>` on a workload in the namespace (the amster job reads that Secret "
+             "whole)" if c == "amster" else f"`<secret>/{v} <- <role>` on the {c} workload")
+    return (f"ForgeOps config profile `{c}` in {m.label} (namespace `{p.namespace}`) reads `{v}`, which the record "
+            f"doesn't deliver: record ciamWorkloadSecret {where} (the namespace's config-profiles README names the "
+            "role).")
+
+
+def _keystore(m, p):
+    """The action naming the keystore the release generates while the environment binds the record's (am-keystore,
+    idm-keystore), or ()."""
+    bound = [r for r in KEYSTORE_ROLES if one_role(m, r) is not None]
+    if not bound or not {"am", "idm"} & set(p.on) or keystore_from_record(m, p):
+        return ()
+    return (f"ForgeOps in {m.label} (namespace `{p.namespace}`) generates AM's and IDM's keystore (the keystore-create "
+            f"job) while the record holds {', '.join(bound)}: map it on a workload (ciamWorkloadSecret "
+            f"{KEYSTORE_SECRET}/{KEYSTORE_KEY} <- <role>) so the release runs the record's keys and generates none. "
+            "The keystore must hold the aliases the job makes (the chart's keystore_create.config.keytoolAliases).",)
+
+
 def check_forgeops(ctx):
     """Actions on the target: ForgeOps Secrets the record doesn't deliver, one service account per Helm release, ds
-    workloads ForgeOps can't place, a DS layout split between the cluster and servers, ForgeOps' public images."""
+    workloads ForgeOps can't place, a DS layout split between the cluster and servers, ForgeOps' public images, config
+    profiles' secret variables the record doesn't deliver."""
     m = ctx.dst
     spaces = placements(m)
     if not spaces and not unplaced(m):
@@ -72,7 +109,9 @@ def check_forgeops(ctx):
                f"or `ds-cts`: name the workload after the one it is, or it isn't deployed." for w in unplaced(m)),
              *(f"ForgeOps component `{c}` in {m.label} (namespace `{p.namespace}`) runs ForgeOps' public image "
                f"`{ref}`: those images are for development and testing only; production deployments run images "
-               f"they build." for p in spaces for c in p.on for ref in (image_of(m, p, c),) if public_image(ref)))
+               f"they build." for p in spaces for c in p.on for ref in (image_of(m, p, c),) if public_image(ref)),
+             *(_slot_text(m, p, c, v) for p in spaces for c, v in unmapped_slots(m, p, ctx.dst_files)),
+             *(t for p in spaces for t in _keystore(m, p)))
     actions = tuple((AREA, t, owner, None) for t in texts)
     ok = () if actions else (f"ForgeOps in {m.label} has every Secret its pods read recorded or made, and its own "
                              "images.",)

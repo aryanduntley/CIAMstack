@@ -1,0 +1,5 @@
+environment   regulated data  from         cloud environment  region
+------------  --------------  -----------  -----------------  -----------
+standby/prod  itar            environment  public             us-central1
+(1 rows)
+exit 0

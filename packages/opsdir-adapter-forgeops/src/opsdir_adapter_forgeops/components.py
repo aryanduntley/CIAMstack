@@ -15,13 +15,16 @@ from collections import namedtuple
 
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import UNBOUND, one_role
+from opsdir.core.profiles import SLOT_PREFIX
 from opsdir.core.versions import holds
-from opsdir.domains.compute.workloads import recorded_versions
+from opsdir.domains.compute.workloads import recorded_versions, workload_secrets
 from opsdir.domains.infrastructure.external import role_hosts
 from opsdir_adapter_kubernetes.kits import (image_named, image_of_mark, only_image, pod_labels_of, replicas_of,
                                              resources_of, storage_of, workload_marks)
+from opsdir_adapter_kubernetes.names import CONTAINER_NAMES
 from opsdir_adapter_kubernetes.render import ROLE_LABEL, namespace_of, on_kubernetes, service_account_of
-from .release import (COMPANION_IMAGES, COMPANION_ROLES, COMPONENTS, DS_LDAPS_PORT, IDM_ADMIN_UI, IDM_ADMIN_UI_VERSIONS,
+from .release import (AMSTER_ENV_SECRET, COMPANION_IMAGES, COMPANION_ROLES, COMPONENTS, CONFIG_INIT, DS_LDAPS_PORT,
+                      IDM_ADMIN_UI, IDM_ADMIN_UI_VERSIONS, KEYSTORE_KEY, KEYSTORE_SECRET, PROFILE_BUILDS,
                       ROLE_COMPONENTS, UIS, component)
 
 DS_SERVICE_ROLE = "ds-ldaps-service"
@@ -159,13 +162,18 @@ def pod_labels(m, services, p, name):
     return pod_labels_of(m, services, w) if w is not None else {ROLE_LABEL: lead} if lead else {}
 
 
-def pod_annotations(m, p, name):
+def pod_annotations(m, p, name, profiled=False):
     """The marks a component's pods carry so the deployment reads back as the record: its workload's (cluster role,
-    workload role, name), or a companion's opsdir.io/image-of naming the workload whose binding keeps its image
-    (release.COMPANION_IMAGES); {} otherwise."""
+    workload role, name; with config profiles (profiled) and a configuration image the record names, opsdir.io/
+    container-names giving its init container's image the record's container name: idm-custom=custom-vol-init), or a
+    companion's opsdir.io/image-of naming the workload whose binding keeps its image (release.COMPANION_IMAGES); {}
+    otherwise."""
     w = workload_of(p, name)
+    custom = f"{name}-custom"
     if w is not None:
-        return workload_marks(w)
+        configured = profiled and any(c == name and how == "config" for c, _, how, _ in PROFILE_BUILDS) \
+            and image_named(m, [x for _, x in p.placed], (custom,))
+        return {**workload_marks(w), **({CONTAINER_NAMES: f"{custom}={CONFIG_INIT}"} if configured else {})}
     return image_of_mark(m, [x for _, x in p.placed], component(name).containers[0]) if name in COMPANION_IMAGES \
         else {}
 
@@ -178,3 +186,36 @@ def on_in(p, chart):
 def service_account(p, chart):
     """The service account the placed workloads of a chart's components run as (the first's), or None."""
     return next((service_account_of(w) for c, w in p.placed for x in on_in(p, chart) if x.name == c), None)
+
+
+def profile_env(p, name):
+    """[{name, valueFrom}]: the profile secrets a component's workload records (ciamWorkloadSecret
+    <secret>/OPSDIR_<ROLE> <- <role>, core.profiles.slot_env) as environment variables from their Secret keys, which
+    its configuration tokens (&{opsdir.<role>}) read; [] for a component without a workload of its own."""
+    w = workload_of(p, name)
+    return [{"name": key, "valueFrom": {"secretKeyRef": {"name": secret, "key": key}}}
+            for secret, key, _ in (workload_secrets(w) if w is not None else ()) if key.startswith(SLOT_PREFIX)]
+
+
+def config_image(m, p, container):
+    """The configuration image a component's config profile is built into: the image the placement's workload
+    bindings name for that container (ciamContainerImage idm-custom=<ref>), else UNBOUND:forgeops-<container>-image."""
+    return image_named(m, [w for _, w in p.placed], (container,)) or f"{UNBOUND}forgeops-{container}-image"
+
+
+def slot_envs(m, p, name):
+    """The profile secret variables (OPSDIR_*) the record delivers to a component in a placement: its workload's
+    (profile_env); for amster, the keys of amster-env-secrets the namespace's workloads record (the job reads that
+    Secret whole)."""
+    if name == "amster":
+        return {k for w in on_kubernetes(m) if namespace_of(w) == p.namespace for s, k, _ in workload_secrets(w)
+                if s == AMSTER_ENV_SECRET and k.startswith(SLOT_PREFIX)}
+    return {e["name"] for e in profile_env(p, name)}
+
+
+def keystore_from_record(m, p):
+    """Whether a workload in a placement's namespace maps the release's keystore Secret (ciamWorkloadSecret
+    keystore/keystore.jceks <- <role>): the record's keystore, delivered by the kubernetes adapter, so the release
+    generates none (the keystore-create job off)."""
+    return any(s == KEYSTORE_SECRET and k == KEYSTORE_KEY for w in on_kubernetes(m) if namespace_of(w) == p.namespace
+               for s, k, _ in workload_secrets(w))

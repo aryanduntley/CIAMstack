@@ -154,6 +154,11 @@ objectClass: organizationalUnit
 ou: feature-flags
 description: Feature switches of the login experience (a custom record type)
 
+dn: ou=frameworks,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: frameworks
+
 dn: ou=header-contracts,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -552,6 +557,7 @@ dn: cn=am,ou=workloads,dc=ciam-ops
 objectClass: top
 objectClass: ciamWorkload
 cn: am
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops
 ciamClusterRole: k8s-cluster
 ciamIngressHost: login.example-aero.test
 ciamNamespace: ciam
@@ -564,6 +570,7 @@ ciamWorkloadSecret: am-env-secrets/AM_PASSWORDS_AMADMIN_CLEAR <- am-admin-pass
  word
 ciamWorkloadSecret: ds-env-secrets/AM_STORES_USER_PASSWORD <- am-ds-bind-passw
  ord
+ciamWorkloadSecret: keystore/keystore.jceks <- am-keystore
 
 dn: cn=am-admin-password,ou=credentials,dc=ciam-ops
 objectClass: top
@@ -1219,6 +1226,16 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Keep the target's resource change history 2557 days by exporting it
   to its security workspace
 
+dn: cn=CHG-2039,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2039
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Assess the standby against NIST SP 800-53 Rev. 5 and its CIS benchm
+ ark with Compliance Manager
+
 dn: cn=CHG-2040,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange
@@ -1227,6 +1244,36 @@ ciamApprovedBy: CAB 2026-09-04
 ciamChangeStatus: applied
 ciamPlannedAt: 20260906000000Z
 ciamTitle: Allow target DS subnet on the replication port
+
+dn: cn=CHG-2041,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2041
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Fetch Google Cloud's Compliance Manager frameworks for the standby'
+ s organization (prerequisite gcp-frameworks)
+
+dn: cn=CHG-2042,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2042
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the ITAR technical data the standby will hold (its Assured W
+ orkloads folder takes the ITAR package)
+
+dn: cn=CHG-2043,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2043
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Build the target's product configuration into its deployment: confi
+ g profiles and PingFederate's server profile
 
 dn: cn=ciam-admins,ou=principals,dc=ciam-ops
 objectClass: top
@@ -2034,6 +2081,16 @@ objectClass: ciamRegionCatalog
 cn: gcp
 ciamCloudProvider: gcp
 
+dn: cn=gcp.frameworks.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: gcp.frameworks.shared
+ciamChangeRef: cn=CHG-2041,ou=changes,dc=ciam-ops
+ciamImportScope: cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: gcp/frameworks
+
 dn: cn=gcp.quotas.shared,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -2054,6 +2111,13 @@ ciamChangeRef: cn=CHG-2022,ou=changes,dc=ciam-ops
 ciamImportScope: cn=gcp,ou=regions,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
 ciamImporter: gcp/regions
+
+dn: cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+objectClass: top
+objectClass: ciamFrameworkCatalog
+cn: gcp:123456789012
+ciamCloudProvider: gcp
+ciamOrganizationRef: 123456789012
 
 dn: cn=gcp:example-aero-ciam-standby:us-central1,ou=quotas,dc=ciam-ops
 objectClass: top
@@ -2223,6 +2287,7 @@ dn: cn=idm,ou=workloads,dc=ciam-ops
 objectClass: top
 objectClass: ciamWorkload
 cn: idm
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops
 ciamClusterRole: k8s-cluster
 ciamIngressHost: login.example-aero.test
 ciamNamespace: ciam
@@ -2234,6 +2299,9 @@ ciamWorkloadRole: idm-workload
 ciamWorkloadSecret: idm-env-secrets/OPENIDM_ADMIN_PASSWORD <- idm-admin-passwo
  rd
 ciamWorkloadSecret: ds-passwords/dirmanager.pw <- ds-root-password
+ciamWorkloadSecret: idm-profile/OPSDIR_IDM_HRDB_PASSWORD <- idm-hrdb-password
+ciamWorkloadSecret: idm-profile/OPSDIR_IDM_DS_BIND_PASSWORD <- idm-ds-bind-pas
+ sword
 
 dn: cn=idm-admin-password,ou=credentials,dc=ciam-ops
 objectClass: top
@@ -2844,6 +2912,7 @@ dn: cn=pf-admin,ou=workloads,dc=ciam-ops
 objectClass: top
 objectClass: ciamWorkload
 cn: pf-admin
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops
 ciamClusterRole: k8s-cluster
 ciamIdentityRole: identity-pf
 ciamNamespace: ciam
@@ -2854,6 +2923,21 @@ ciamTargetRole: pf-admin
 ciamWorkloadKind: statefulset
 ciamWorkloadRole: pf-admin-workload
 ciamWorkloadSecret: pf-admin/PING_IDENTITY_PASSWORD <- pf-admin-password
+ciamWorkloadSecret: pf-profile/OPSDIR_PF_SIGNING_KEY <- pf-signing-key
+ciamWorkloadSecret: pf-profile/OPSDIR_PF_SIGNING_KEY_PASSWORD <- pf-signing-ke
+ y-password
+ciamWorkloadSecret: pf-profile/OPSDIR_SSO_TLS_KEYSTORE <- sso-tls-keystore
+ciamWorkloadSecret: pf-profile/OPSDIR_SSO_TLS_KEYSTORE_PASSWORD <- sso-tls-key
+ store-password
+ciamWorkloadSecret: pf-profile/OPSDIR_PF_CORP_AD_BIND_PASSWORD <- pf-corp-ad-b
+ ind-password
+ciamWorkloadSecret: pf-profile/OPSDIR_PF_GRANTS_DB_PASSWORD <- pf-grants-db-pa
+ ssword
+ciamWorkloadSecret: pf-profile/OPSDIR_PF_DS_BIND_PASSWORD <- pf-ds-bind-passwo
+ rd
+ciamWorkloadSecret: pf-profile/OPSDIR_PF_SMTP_PASSWORD <- pf-smtp-password
+ciamWorkloadSecret: pf-profile/OPSDIR_PF_CAPTCHA_SECRET <- pf-captcha-secret
+ciamWorkloadSecret: pf-profile/OPSDIR_PF_ADMIN_PASSWORD <- pf-admin-password
 
 dn: cn=pf-admin-aws,ou=baselines,dc=ciam-ops
 objectClass: top
@@ -2997,6 +3081,7 @@ dn: cn=pf-engine,ou=workloads,dc=ciam-ops
 objectClass: top
 objectClass: ciamWorkload
 cn: pf-engine
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops
 ciamClusterRole: k8s-cluster
 ciamIdentityRole: identity-pf
 ciamIngressHost: sso.example-aero.test
@@ -3007,6 +3092,7 @@ ciamServiceAccount: pingfederate
 ciamTargetRole: pf-engine
 ciamWorkloadKind: deployment
 ciamWorkloadRole: pf-engine-workload
+ciamWorkloadSecret: pf-profile/OPSDIR_PF_ADMIN_PASSWORD <- pf-admin-password
 
 dn: cn=pf-engine-aws,ou=baselines,dc=ciam-ops
 objectClass: top
@@ -4533,6 +4619,50 @@ ciamLocator: pf.log.eventdetail
 ciamSettingRaw: false
 ciamSettingValue: false
 
+dn: cn=builtin-cis-gcp-3-0,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+objectClass: top
+objectClass: ciamProviderFramework
+cn: builtin-cis-gcp-3-0
+ciamComplianceStandard: cis
+ciamEnforcementMode: detective
+ciamFrameworkName: CIS Google Cloud Computing Platform Benchmark v3.0
+ciamProviderRef: organizations/123456789012/locations/global/frameworks/builti
+ n-cis-gcp-3-0
+ciamRevision: 1
+
+dn: cn=builtin-nist-800-53-r5,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+objectClass: top
+objectClass: ciamProviderFramework
+cn: builtin-nist-800-53-r5
+ciamComplianceStandard: nist-800-53-r5
+ciamEnforcementMode: detective
+ciamFrameworkName: NIST SP 800-53 R5
+ciamProviderRef: organizations/123456789012/locations/global/frameworks/builti
+ n-nist-800-53-r5
+ciamRevision: 2
+
+dn: cn=builtin-security-essentials,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+objectClass: top
+objectClass: ciamProviderFramework
+cn: builtin-security-essentials
+ciamEnforcementMode: detective
+ciamFrameworkName: Google Cloud Security Essentials
+ciamProviderRef: organizations/123456789012/locations/global/frameworks/builti
+ n-security-essentials
+ciamRevision: 3
+ciamSecurityBaseline: gcp-default
+
+dn: cn=builtin-soc-2,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+objectClass: top
+objectClass: ciamProviderFramework
+cn: builtin-soc-2
+ciamComplianceStandard: soc2
+ciamEnforcementMode: detective
+ciamFrameworkName: SOC 2
+ciamProviderRef: organizations/123456789012/locations/global/frameworks/builti
+ n-soc-2
+ciamRevision: 1
+
 dn: cn=c2b0c64ab8450466,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
 objectClass: top
 objectClass: ciamOccurrence
@@ -5243,11 +5373,13 @@ objectClass: ciamStandby
 objectClass: ciamEnvironmentPlacement
 env: prod
 ciamAuthorizationRef: cn=FR1805751477,ou=authorizations,dc=ciam-ops
+ciamChangeRef: cn=CHG-2042,ou=changes,dc=ciam-ops
 ciamConfigurationMet: assured-workload
 ciamDataClassification: confidential
 ciamJoinsDeploymentOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamLifecycle: building
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRegulatedData: itar
 ciamReportingObligationRef: cn=dfars-7012,ou=reporting-obligations,dc=ciam-ops
 ciamResidencyRef: cn=us,ou=residencies,dc=ciam-ops
 ciamRunbookRef: cn=WI-CIAM-016,ou=runbooks,dc=ciam-ops
@@ -5486,6 +5618,75 @@ ciamLargestValueBytes: 20
 ciamLdapName: appentitlement
 ciamMostValues: 1
 ciamProfiledAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
+
+dn: cn=builtin-audit-logging-enabled,cn=builtin-cis-gcp-3-0,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+objectClass: top
+objectClass: ciamProviderControl
+cn: builtin-audit-logging-enabled
+ciamEnforcementMode: detective
+ciamProviderRef: organizations/123456789012/locations/global/cloudControls/bui
+ ltin-audit-logging-enabled
+ciamRevision: 1
+
+dn: cn=builtin-audit-logging-enabled,cn=builtin-nist-800-53-r5,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+objectClass: top
+objectClass: ciamProviderControl
+cn: builtin-audit-logging-enabled
+ciamEnforcementMode: detective
+ciamProviderRef: organizations/123456789012/locations/global/cloudControls/bui
+ ltin-audit-logging-enabled
+ciamRevision: 1
+
+dn: cn=builtin-cmek-on-cloud-sql,cn=builtin-nist-800-53-r5,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+objectClass: top
+objectClass: ciamProviderControl
+cn: builtin-cmek-on-cloud-sql
+ciamEnforcementMode: detective
+ciamProviderRef: organizations/123456789012/locations/global/cloudControls/bui
+ ltin-cmek-on-cloud-sql
+ciamRevision: 2
+
+dn: cn=builtin-os-login-enabled,cn=builtin-cis-gcp-3-0,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+objectClass: top
+objectClass: ciamProviderControl
+cn: builtin-os-login-enabled
+ciamEnforcementMode: detective
+ciamEnforcementMode: preventive
+ciamProviderRef: organizations/123456789012/locations/global/cloudControls/bui
+ ltin-os-login-enabled
+ciamRevision: 1
+
+dn: cn=builtin-restrict-public-buckets,cn=builtin-cis-gcp-3-0,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+objectClass: top
+objectClass: ciamProviderControl
+cn: builtin-restrict-public-buckets
+ciamEnforcementMode: detective
+ciamEnforcementMode: preventive
+ciamProviderRef: organizations/123456789012/locations/global/cloudControls/bui
+ ltin-restrict-public-buckets
+ciamRevision: 1
+
+dn: cn=builtin-restrict-public-buckets,cn=builtin-nist-800-53-r5,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+objectClass: top
+objectClass: ciamProviderControl
+cn: builtin-restrict-public-buckets
+ciamEnforcementMode: detective
+ciamEnforcementMode: preventive
+ciamProviderRef: organizations/123456789012/locations/global/cloudControls/bui
+ ltin-restrict-public-buckets
+ciamRevision: 1
+
+dn: cn=builtin-restrict-resource-locations,cn=builtin-nist-800-53-r5,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+objectClass: top
+objectClass: ciamProviderControl
+cn: builtin-restrict-resource-locations
+ciamControlParameter: allowedLocations={"stringListValue": {"values": ["in:us-
+ locations"]}}
+ciamEnforcementMode: detective
+ciamEnforcementMode: preventive
+ciamProviderRef: organizations/123456789012/locations/global/cloudControls/bui
+ ltin-restrict-resource-locations
+ciamRevision: 1
 
 dn: cn=challengeanswer,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
 objectClass: top
@@ -7203,6 +7404,19 @@ cn: companyId
 ciamIndexType: equality
 ciamIndexedAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
 
+dn: cn=compliance,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecurityService
+cn: compliance
+ciamAllRegions: TRUE
+ciamAuditScope: account
+ciamBindingRole: posture
+ciamChangeRef: cn=CHG-2039,ou=changes,dc=ciam-ops
+ciamComplianceStandard: nist-800-53-r5
+ciamComplianceStandard: cis
+ciamFindingsRole: security-findings
+ciamSecurityKind: posture
+
 dn: cn=config,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSecurityService
@@ -7654,6 +7868,10 @@ ciamAdapter: pingfederate
 ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
  s/opsdir-adapter-pingfederate
 ciamAdapterVersion: >=0.1,<1
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops
+ciamRenderTarget: admin-api
+ciamRenderTarget: terraform
+ciamRenderTarget: bulk-config
 ciamStackRole: federation
 
 dn: cn=File-Based Debug Logger,ou=log-publishers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
@@ -8674,7 +8892,9 @@ objectClass: top
 objectClass: ciamWorkloadBinding
 cn: idm
 ciamBindingRole: idm-workload
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops
 ciamContainerImage: openidm=crciamprod.azurecr.io/ciam/idm:8.1.2
+ciamContainerImage: idm-custom=crciamprod.azurecr.io/ciam/idm-config:8.1.2
 ciamCpuRequest: 1
 ciamMemoryLimit: 2Gi
 ciamMemoryRequest: 2Gi
@@ -8781,6 +9001,10 @@ ciamAdapter: forgeops
 ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
  s/opsdir-adapter-forgeops
 ciamAdapterVersion: >=0.1,<1
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops
+ciamRenderTarget: helm
+ciamRenderTarget: kustomize
+ciamRenderTarget: config-profiles
 ciamStackRole: kit-forgeops
 
 dn: cn=kit-ping-devops,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
@@ -8791,6 +9015,8 @@ ciamAdapter: ping-devops
 ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
  s/opsdir-adapter-ping-devops
 ciamAdapterVersion: >=0.1,<1
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops
+ciamRenderTarget: server-profile
 ciamStackRole: kit-ping-devops
 
 dn: cn=lastLoginTime,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
@@ -9280,6 +9506,7 @@ objectClass: top
 objectClass: ciamWorkloadBinding
 cn: pf-admin
 ciamBindingRole: pf-admin-workload
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops
 ciamContainerImage: pingfederate-admin=crciamprod.azurecr.io/ciam/pingfederate
  :13.1.3
 ciamCpuLimit: 2
@@ -9287,6 +9514,8 @@ ciamCpuRequest: 1
 ciamMemoryLimit: 4Gi
 ciamMemoryRequest: 4Gi
 ciamProductVersion: PingFederate 13.1.3
+ciamProfileRepo: https://git.example-aero.test/ciam/server-profiles.git#pingfe
+ derate@main
 ciamStorageClass: managed-csi-premium
 ciamStorageSize: 8Gi
 ciamWorkloadReplicas: 1
@@ -9328,6 +9557,7 @@ objectClass: top
 objectClass: ciamWorkloadBinding
 cn: pf-engine
 ciamBindingRole: pf-engine-workload
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops
 ciamContainerImage: pingfederate-engine=crciamprod.azurecr.io/ciam/pingfederat
  e:13.1.3
 ciamCpuLimit: 2
@@ -9335,6 +9565,8 @@ ciamCpuRequest: 1
 ciamMemoryLimit: 4Gi
 ciamMemoryRequest: 4Gi
 ciamProductVersion: PingFederate 13.1.3
+ciamProfileRepo: https://git.example-aero.test/ciam/server-profiles.git#pingfe
+ derate@main
 ciamWorkloadReplicas: 2
 
 dn: cn=pf-grants,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops

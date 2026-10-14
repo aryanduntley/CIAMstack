@@ -1,16 +1,17 @@
 """CloudWatch Synthetics canaries rendered from the record: a script per canary (GET for health, a client-credentials
-token request reading its secret when it runs), the canary named as its binding, its artifacts where its binding says,
-one execution role for the environment; what a canary outside a VPC can't reach or the record can't describe is
-named."""
+token request reading its secret when it runs, an LDAPS simple bind), the canary named as its binding, its artifacts
+where its binding says, one execution role for the environment; a canary of an internal service in the VPC, in the
+subnets the firewall admits, with its own security group; what the record can't describe is named."""
 import ast
 
 from opsdir.core.contract import Endpoint
 from opsdir.domains.observability.naming import CANARIES
 from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.canaries import render_canaries
-from network_fixtures import ALPHA, entry, model
+from network_fixtures import ALPHA, entry, model, rule
 
-ENDPOINTS = (Endpoint("health", "/pf/heartbeat.ping", "web"), Endpoint("token", "/as/token.oauth2", "web"))
+ENDPOINTS = (Endpoint("health", "/pf/heartbeat.ping", "web"), Endpoint("token", "/as/token.oauth2", "web"),
+             Endpoint("saml-start", "/idp/startSSO.ping", "web", query="PartnerSpId={entity}"))
 SECRET = "arn:aws:secretsmanager:us-east-1:111122223333:secret:canary-client"
 
 
@@ -79,10 +80,79 @@ def test_one_role_lets_the_canaries_write_their_artifacts_and_read_their_secret(
 def test_what_a_canary_cant_reach_or_keep_is_named():
     hcl, scripts = _render(ALIVE.replace("ciamStorageRef: s3://example-ciam-canaries/alive/\n", ""))
     assert [x for x in hcl if x.startswith("#")] == [
-        "# NOTE: canary intranet: not rendered: service name svc-admin isn't recorded as internet-facing: a canary "
-        "outside a VPC can't reach it (canaries in a VPC aren't rendered yet)",
+        "# NOTE: canary intranet: not rendered: service name svc-admin is internal and no subnet is named to run its "
+        "canary from: name one on its canary binding (ciamSubnetRole), or record a firewall rule admitting a subnet to "
+        "web",
         "# NOTE: canary sso-alive: not rendered: its canary binding ciam-sso-alive records no S3 location for its "
         "artifacts (ciamStorageRef s3://bucket/prefix)",
         "# NOTE: canary sso-token: not rendered: no place for its artifacts: record its canary binding with an S3 "
         "location (ciamStorageRef s3://bucket/prefix)"]
     assert scripts == {} and not any("aws_iam_role" in x for x in hcl)
+
+
+LDAP = (_canary("directory", ciamCheckedService="ldaps", ciamCanaryFlow="ldap-bind", ciamUsesRole="canary-client"),
+        _canary("anonymous", ciamCheckedService="ldaps", ciamCanaryFlow="ldap-bind"))
+INTERNAL = (
+    entry(ALPHA, "svc-ldaps", "ciamServiceName", ciamBindingRole="ldaps", ciamFqdn="ldap.example.test",
+          ciamPort="1636", ciamTargetRole="ds", ciamFrontendIp="10.1.1.100"),
+    rule(ALPHA, "fw-web-ds", "10.1.2.0/24", "1636", "ds"),
+    *(entry(ALPHA, n, "ciamCanaryBinding", ciamBindingRole=f"canary-{n}", ciamRealizes=n,
+            ciamProviderRef=f"arn:aws:synthetics:us-east-1:111122223333:canary:{n}",
+            ciamStorageRef="s3://example-ciam-canaries") for n in ("directory", "anonymous")))
+
+
+def test_a_canary_of_an_internal_service_runs_in_the_vpc_from_a_subnet_the_firewall_admits():
+    _, alpha, _ = model(alpha=(*BINDINGS, *INTERNAL), tree=(*TREE, *LDAP))
+    hcl, scripts = as_text(render_canaries(alpha, ENDPOINTS))
+    text = "\n".join(hcl)
+    assert ('  vpc_config {\n'
+            '    subnet_ids         = [data.aws_subnet.subnet_web.id]\n'
+            '    security_group_ids = [aws_security_group.canaries.id]\n'
+            '  }') in text
+    assert 'resource "aws_security_group" "canaries" {' in text and 'vpc_id      = data.aws_vpc.main.id' in text
+    assert ('  cidr_ipv4         = "10.1.1.100/32"\n  from_port         = 1636\n  to_port           = 1636\n'
+            in text)
+    assert '  cidr_ipv4         = "0.0.0.0/0"\n  from_port         = 443\n' in text
+    assert "ec2:CreateNetworkInterface" in text and "ec2:DeleteNetworkInterface" in text
+    bound, anonymous = (scripts[f"terraform/canaries/{n}/python/canary.py"] for n in ("directory", "anonymous"))
+    assert "URL = 'ldaps://ldap.example.test:1636'" in bound and f"SECRET_ID = '{SECRET}'" in bound
+    assert "SECRET_ID = None" in anonymous and 'b"\\x03"' in anonymous
+    for text_ in scripts.values():
+        ast.parse(text_)
+
+
+def test_the_ldap_bind_script_binds_and_reads_the_result(monkeypatch):
+    _, alpha, _ = model(alpha=(*BINDINGS, *INTERNAL), tree=(*TREE, *LDAP))
+    source = as_text(render_canaries(alpha, ENDPOINTS))[1]["terraform/canaries/anonymous/python/canary.py"]
+    import sys
+    import types
+    fake = types.ModuleType("aws_synthetics.common")
+    fake.synthetics_logger = types.SimpleNamespace(info=lambda *_: None)
+    monkeypatch.setitem(sys.modules, "aws_synthetics", types.ModuleType("aws_synthetics"))
+    monkeypatch.setitem(sys.modules, "aws_synthetics.common", fake)
+    monkeypatch.setitem(sys.modules, "boto3", types.ModuleType("boto3"))
+    space = {}
+    exec(compile(source, "canary.py", "exec"), space)
+    request = space["_element"](0x30, space["_element"](0x02, b"\x01") + space["_element"](
+        0x60, space["_element"](0x02, b"\x03") + space["_element"](0x04, b"") + space["_element"](0x80, b"")))
+    assert request == bytes.fromhex("300c020101600702010304008000")      # RFC 4511 anonymous simple bind
+    answer = bytes.fromhex("300c02010161070a010004000400")               # bindResponse, success
+    (_, _), (op, result) = space["_parts"](space["_parts"](answer)[0][1])[:2]
+    assert (op, space["_parts"](result)[0]) == (0x61, (0x0A, b"\x00"))
+
+
+def test_a_saml_sign_in_check_gets_the_identity_provider_s_start_for_its_service_provider():
+    integration = ("dn: ou=integrations,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\n"
+                   "ou: integrations\n",
+                   "dn: cn=portal,ou=integrations,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamObject\n"
+                   "objectClass: ciamIntegration\ncn: portal\nciamProtocolType: saml2-sp\n"
+                   "ciamEntityId: https://portal.example.test/sp\n",
+                   _canary("portal-sso", ciamCheckedService="sso", ciamCanaryFlow="saml-sso",
+                           ciamStartsFrom="cn=portal,ou=integrations,dc=ciam-ops"))
+    binding = entry(ALPHA, "portal-sso", "ciamCanaryBinding", ciamBindingRole="canary-portal-sso",
+                    ciamRealizes="portal-sso", ciamProviderRef="arn:aws:synthetics:us-east-1:111122223333:canary:p",
+                    ciamStorageRef="s3://example-ciam-canaries")
+    _, alpha, _ = model(alpha=(*BINDINGS, binding), tree=(*TREE, *integration))
+    script = as_text(render_canaries(alpha, ENDPOINTS))[1]["terraform/canaries/portal-sso/python/canary.py"]
+    assert ("URL = 'https://sso.example.test/idp/startSSO.ping?PartnerSpId=https%3A%2F%2Fportal.example.test%2Fsp'"
+            in script and 'method="GET"' in script and "saml-sso check" in script)

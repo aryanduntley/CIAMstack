@@ -278,7 +278,13 @@ def test_the_fetch_script_pins_the_release():
                     reason="no tools (opsdir/scripts/fetch-tools.sh) or ForgeOps source (fetch-forgeops.sh)")
 @pytest.mark.parametrize("extra", [(), DS, GATEWAY], ids=["ds-on-servers", "ds-in-the-cluster", "behind-a-gateway"])
 def test_the_render_builds_and_is_valid_kubernetes(tmp_path, extra):
-    files = render(model(*extra), services(INSTALLED), ("helm", "kustomize"))
+    built = _built_and_valid(tmp_path, render(model(*extra), services(INSTALLED), ("helm", "kustomize")))
+    assert ("kind: Ingress" in built) == (extra != GATEWAY)          # behind a gateway, its routes serve
+
+
+def _built_and_valid(tmp_path, files):
+    """The overlay built by kustomize, after the Helm values and the overlay pass validate-kubernetes.sh; no base
+    placeholder image left."""
     shutil.copytree(SOURCE / "kustomize" / "base", tmp_path / "kustomize" / "base")
     for path, text in files.items():
         target = tmp_path / path.replace("forgeops/", "", 1)
@@ -292,9 +298,18 @@ def test_the_render_builds_and_is_valid_kubernetes(tmp_path, extra):
     assert done.returncode == 0, done.stdout + done.stderr
     built = subprocess.run([str(ROOT / "tools" / "bin" / "kustomize"), "build",
                             str(tmp_path / "kustomize" / "overlay" / "identity")], capture_output=True, text=True)
-    assert ("kind: Ingress" in built.stdout) == (extra != GATEWAY)          # behind a gateway, its routes serve
     images = set(re.findall(r"^\s+image: (\S+)$", built.stdout, re.M))
     assert images and not [i for i in images if not re.search(r"[:@]", i)], images    # no base placeholder left
+    return built.stdout
+
+
+@pytest.mark.kubernetes
+@pytest.mark.skipif(not (ROOT / "tools" / "bin" / "kubeconform").exists() or not (SOURCE / ".complete").exists(),
+                    reason="no tools (opsdir/scripts/fetch-tools.sh) or ForgeOps source (fetch-forgeops.sh)")
+def test_the_render_with_config_profiles_builds_and_is_valid_kubernetes(tmp_path):
+    files = render(_mapped(HR_SECRET), services(INSTALLED), ("helm", "kustomize", release.CONFIG_PROFILES))
+    built = _built_and_valid(tmp_path, files)
+    assert f"image: {IDM_CONFIG_IMAGE}" in built and "OPSDIR_IDM_HRDB_PASSWORD" in built
 
 
 def _with_idm_admin_ui(version):
@@ -319,3 +334,119 @@ def test_idms_admin_ui_pod_is_on_for_idm_8_1_when_the_record_names_its_image():
     assert ("idm", "/admin", "idm", 80) not in declared
     overlay = render(m, services(INSTALLED), ("kustomize",))["forgeops/kustomize/overlay/identity/kustomization.yaml"]
     assert "idm-admin-ui: the chart's only, not in the Kustomize bases: not rendered" in overlay
+
+
+# ------------------------------------------------------------------ config profiles (5.9)
+from opsdir_adapter_forgeops.checks import unmapped_slots              # noqa: E402
+from opsdir_adapter_forgeops.profiles import render_profiles           # noqa: E402
+
+HR_SECRET = _binding("hr", "ciamSecretRef", "idm-hrdb-password", "ciamRefUri: fake://secrets/hr\n")
+IDM_CONFIG_IMAGE = "registry.example.test/ciam/idm-config:1"
+PROFILES = {"PingIDM": {"conf/provisioner.openicf-hr.json": '{"password": "${secret:fake://secrets/hr}"}\n',
+                        "conf/managed.json": "{}\n"},
+            "PingAM": {"config/realms/root/OAuth2Clients/portal.json": "{}\n"},
+            "PingGateway": {"config/routes/portal.json": "{}\n"}}
+ROOT_PROFILES = "forgeops/config-profiles/identity/"
+
+
+def _mapped(*extra):
+    """The model with the IDM workload delivering the profile's secret variable, and its configuration image."""
+    base = tuple(b.replace("ciamWorkloadRole: idm-workload\n", "ciamWorkloadRole: idm-workload\nciamWorkloadSecret: "
+                           "idm-profile/OPSDIR_IDM_HRDB_PASSWORD <- idm-hrdb-password\n")
+                 .replace("ciamContainerImage: main=", f"ciamContainerImage: idm-custom={IDM_CONFIG_IMAGE}\n"
+                          "ciamContainerImage: main=") for b in BASE)
+    d = build_directory(REGISTRY, tuple(parse("\n".join((mini_estate.LDIF, *base, *extra)))))
+    return env_model(d, "alpha/prod")
+
+
+def test_config_profiles_build_each_product_s_files_with_secrets_as_tokens():
+    m = model(HR_SECRET)
+    assert render_profiles(m, PROFILES, ("helm", "kustomize")) == {}           # only when asked
+    files = render_profiles(m, PROFILES, (release.CONFIG_PROFILES,))
+    assert files[ROOT_PROFILES + "idm/config-profiles/opsdir/conf/provisioner.openicf-hr.json"] == (
+        '{"password": "&{opsdir.idm.hrdb.password}"}\n')                    # never the reference, never a value
+    idm, amster, ig = (files[ROOT_PROFILES + f"{c}/Dockerfile"] for c in ("idm", "amster", "ig"))
+    assert "FROM ${REPO}:${TAG}" in idm and "COPY --chown=11111:0 config-profiles/${CONFIG_PROFILE}/ /config/" in idm
+    assert "FROM ${BASE_IMAGE}" in amster and "config-profiles/${CONFIG_PROFILE}/ /opt/amster" in amster
+    assert "registry.example.test/ciam/amster:7.5.1 is what the release runs" in amster
+    assert "config-profiles/${CONFIG_PROFILE}/ ${IG_INSTANCE_DIR}" in ig
+    assert ROOT_PROFILES + "amster/config-profiles/opsdir/config/realms/root/OAuth2Clients/portal.json" in files
+    assert ("| idm | `&{opsdir.idm.hrdb.password}` | `OPSDIR_IDM_HRDB_PASSWORD` | idm-hrdb-password | **no** |"
+            in files[ROOT_PROFILES + "README.md"])
+    assert ("| idm-hrdb-password | yes |" in render_profiles(_mapped(HR_SECRET), PROFILES,
+                                                             (release.CONFIG_PROFILES,))[ROOT_PROFILES + "README.md"])
+    assert render_profiles(m, {"PingIDM": {}}, (release.CONFIG_PROFILES,)) == {}    # nothing to build
+
+
+def test_the_values_and_overlay_run_the_profiles_images_and_deliver_their_variables():
+    m = _mapped(HR_SECRET)
+    files = render(m, services(INSTALLED), ("helm", "kustomize", release.CONFIG_PROFILES))
+    v = _doc(files, "forgeops/helm/identity/identity-platform-values.yaml")
+    assert v["idm_custom"] == {"image": helm_image(IDM_CONFIG_IMAGE)}
+    assert {"name": "OPSDIR_IDM_HRDB_PASSWORD", "valueFrom": {"secretKeyRef": {
+        "name": "idm-profile", "key": "OPSDIR_IDM_HRDB_PASSWORD"}}} in v["idm"]["env"]
+    k = _doc(files, "forgeops/kustomize/overlay/identity/kustomization.yaml")
+    assert {"name": "idm-custom", "newName": "registry.example.test/ciam/idm-config", "newTag": "1"} in k["images"]
+    assert "idm_custom" not in _doc(render(m, services(INSTALLED), ("helm",)),
+                                    "forgeops/helm/identity/identity-platform-values.yaml")   # without profiles
+    unbound = _doc(render(model(), services(INSTALLED), ("helm", release.CONFIG_PROFILES)),
+                   "forgeops/helm/identity/identity-platform-values.yaml")["idm_custom"]
+    assert unbound["image"]["repository"] == "UNBOUND"                     # the record names no configuration image
+
+
+def test_the_planner_names_a_profile_variable_the_record_doesnt_deliver():
+    m = model(HR_SECRET)
+    files = render_profiles(m, PROFILES, (release.CONFIG_PROFILES,))
+    (p,) = placements(m)
+    assert unmapped_slots(m, p, files) == (("idm", "OPSDIR_IDM_HRDB_PASSWORD"),)
+    ctx = PlanContext(m.d, m, m, None, None, {}, files, ())
+    assert any("config profile `idm`" in a[1] and "`<secret>/OPSDIR_IDM_HRDB_PASSWORD <- <role>` on the idm workload"
+               in a[1] for a in check_forgeops(ctx).actions)
+    mapped = _mapped(HR_SECRET)
+    assert unmapped_slots(mapped, placements(mapped)[0], files) == ()
+
+
+# ------------------------------------------------------------------ the keystore from the record (5.9, deferred 2136)
+AM_KEYSTORE = _binding("am-keystore", "ciamSecretRef", "am-keystore", "ciamRefUri: fake://secrets/am-keystore\n")
+
+
+def _keystore_mapped(*extra):
+    """The model with the AM workload mapping the release's keystore Secret to the record's am-keystore."""
+    base = tuple(b.replace("ciamWorkloadSecret: am-env-secrets/AM_ENCRYPTION_KEY <- am-encryption\n",
+                           "ciamWorkloadSecret: am-env-secrets/AM_ENCRYPTION_KEY <- am-encryption\n"
+                           "ciamWorkloadSecret: keystore/keystore.jceks <- am-keystore\n") for b in BASE)
+    d = build_directory(REGISTRY, tuple(parse("\n".join((mini_estate.LDIF, *base, *extra)))))
+    return env_model(d, "alpha/prod")
+
+
+def test_the_release_generates_the_keystore_unless_the_record_delivers_it():
+    generated = render(model(AM_KEYSTORE), services(INSTALLED), ("helm", "kustomize"))
+    assert _doc(generated, "forgeops/helm/identity/identity-platform-values.yaml")["keystore_create"]["force"] is True
+    assert "./keystore-create" in _doc(generated, "forgeops/kustomize/overlay/identity/kustomization.yaml")["resources"]
+    actions = [a[1] for a in check_forgeops(_context(model(AM_KEYSTORE))).actions]
+    assert any("generates AM's and IDM's keystore (the keystore-create job) while the record holds am-keystore" in a
+               for a in actions)
+    assert not any("keystore-create job) while" in a for a in [x[1] for x in check_forgeops(_context(model())).actions])
+    mapped = _keystore_mapped(AM_KEYSTORE)
+    delivered = render(mapped, services(INSTALLED), ("helm", "kustomize"))
+    values = _doc(delivered, "forgeops/helm/identity/identity-platform-values.yaml")["keystore_create"]
+    assert values["force"] is False and values["enabled"] is True     # the job off; AM and IDM still mount `keystore`
+    overlay = _doc(delivered, "forgeops/kustomize/overlay/identity/kustomization.yaml")["resources"]
+    assert "./keystore-create" not in overlay and "./am" in overlay
+    assert not any("keystore-create job) while" in a for a in [x[1] for x in check_forgeops(_context(mapped)).actions])
+
+
+@pytest.mark.kubernetes
+@pytest.mark.skipif(not (ROOT / "tools" / "bin" / "kubeconform").exists() or not (SOURCE / ".complete").exists(),
+                    reason="no tools (opsdir/scripts/fetch-tools.sh) or ForgeOps source (fetch-forgeops.sh)")
+def test_the_render_with_the_record_s_keystore_builds_and_is_valid_kubernetes(tmp_path):
+    files = render(_keystore_mapped(AM_KEYSTORE), services(INSTALLED), ("helm", "kustomize"))
+    built = _built_and_valid(tmp_path, files)
+    jobs = [d["metadata"]["name"] for d in yaml.safe_load_all(built) if d and d.get("kind") == "Job"]
+    assert jobs and not [j for j in jobs if j.startswith("keystore-create")], jobs   # nothing generates the keystore
+    helm = subprocess.run([str(ROOT / "tools" / "bin" / "helm"), "template", "identity-platform",
+                           str(SOURCE / "charts" / "identity-platform"), "-f",
+                           str(tmp_path / "helm" / "identity" / "identity-platform-values.yaml")],
+                          capture_output=True, text=True)
+    assert helm.returncode == 0, helm.stderr
+    assert "name: keystore-create-" not in helm.stdout and "secretName: keystore\n" in helm.stdout

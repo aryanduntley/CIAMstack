@@ -1,0 +1,2 @@
+CHG-2039: add cn=compliance,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+exit 0

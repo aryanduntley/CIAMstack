@@ -1,0 +1,66 @@
+{
+  "mappings": [
+    {
+      "name": "hr_managedUser",
+      "source": "system/hrdb/employee",
+      "target": "managed/user",
+      "policies": [
+        {
+          "action": "CREATE",
+          "situation": "ABSENT"
+        },
+        {
+          "action": "UPDATE",
+          "situation": "CONFIRMED"
+        },
+        {
+          "action": "UNLINK",
+          "situation": "SOURCE_MISSING"
+        }
+      ],
+      "properties": [
+        {
+          "source": "employeeNumber",
+          "target": "employeeNumber"
+        },
+        {
+          "source": "email",
+          "target": "mail"
+        },
+        {
+          "source": "company",
+          "target": "companyId"
+        }
+      ]
+    },
+    {
+      "name": "managedUser_systemLdapAccount",
+      "source": "managed/user",
+      "target": "system/ldap/account",
+      "policies": [
+        {
+          "action": "CREATE",
+          "situation": "ABSENT"
+        },
+        {
+          "action": "UPDATE",
+          "situation": "FOUND"
+        }
+      ],
+      "properties": [
+        {
+          "source": "userName",
+          "target": "uid"
+        },
+        {
+          "source": "mail",
+          "target": "mail"
+        },
+        {
+          "source": "companyId",
+          "target": "companyId"
+        }
+      ]
+    }
+  ]
+}

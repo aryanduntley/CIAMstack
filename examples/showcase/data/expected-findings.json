@@ -1212,6 +1212,13 @@
       "match": "target/prod's cloud takes its users from corp.example-aero.internal and no threat detection covers the directory",
       "planted": "nothing watches the corporate AD the target's users come from (Defender for Identity)",
       "cleared_by": "CHG-2037"
+    },
+    {
+      "id": "A131",
+      "area": "ForgeOps",
+      "match": "ForgeOps in target/prod (namespace `ciam`) generates AM's and IDM's keystore (the keystore-create job) while the record holds am-keystore",
+      "planted": "the target's AM/IDM keys are generated in the cluster, not the record's",
+      "cleared_by": "CHG-2043"
     }
   ]
 }

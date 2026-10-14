@@ -14,6 +14,7 @@ The JSON follows the shape of Amster exports (metadata + data) but is not valida
 from urllib.parse import urlsplit
 
 from opsdir.core.directory import children, one, rdn_value, values
+from opsdir.core.profiles import ProductProfile
 from opsdir.core.jsondata import held_json, indented
 from opsdir.domains.federation.services import claims, integrations_served
 from opsdir_base_oidc.discovery import OidcEndpoints
@@ -23,6 +24,9 @@ from .naming import JOURNEYS, POLICY_SETS, realm_container
 from .realms import ROOT, export_dir, meta_alias, oauth2_path, realm_path, realms
 
 FORMATS = (("am/*.json", "json"),)
+# The Amster entities as an Amster import reads them (import-config --path <dir>: global/ and realms/ under it),
+# the captured ones beside them: the product profile a deployment kit consumes (core.profiles)
+PROFILE = ProductProfile("PingAM", (("am/", "config/"), ("files/am/", "config/")))
 
 
 def entity(path, entity_type, entity_id, data):

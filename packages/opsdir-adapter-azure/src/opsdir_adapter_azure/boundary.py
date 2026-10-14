@@ -13,6 +13,8 @@ quotas hold no customer data and are named nowhere. Pure."""
 from opsdir.core.directory import one
 from opsdir.domains.edge.records import is_hosted
 from opsdir.domains.estate.authorizations import boundary_findings, services_used
+from opsdir.domains.estate.regulated import placement_findings, regulated_data
+from .account import government
 
 VNET, MONITOR, KEY_VAULT, BLOBS = "Virtual Network", "Azure Monitor", "Key Vault", "Storage: Blobs"
 VMS = "Virtual Machines"
@@ -54,3 +56,28 @@ def azure_services(m):
 def check_boundary(ctx):
     """The target's services outside the authorization it relies on."""
     return boundary_findings(ctx, azure_services(ctx.dst))
+
+
+# Where Microsoft says Azure can hold regulated data (its ITAR, EAR, CJIS, HIPAA and IRS 1075 offering pages; research
+# note 2805): Azure and Azure Government alike, with Azure Government adding US storage and screened US persons for
+# export-controlled data and CJIS personnel checks; in commercial Azure the customer's end-to-end encryption, with keys
+# under its control, carries it (decision 2807: an action). IRS 1075 takes Microsoft's contractual amendment, HIPAA its
+# Business Associate Agreement (the Product Terms) and in-scope services, in either cloud.
+COMMERCIAL = ("commercial Azure holds it only behind the customer's end-to-end encryption with keys under its "
+              "control (customer-managed keys in a Key Vault HSM); Microsoft names Azure Government as the better fit "
+              "(US storage and screened US persons by contract).")
+
+
+def regulated_verdicts(m):
+    """((regime, 'action', why), ...) of the regulated data environment m holds on Azure."""
+    return tuple(v for r in regulated_data(m) for v in (
+        ((r, "action", COMMERCIAL),) if r in ("itar", "ear", "cjis") and not government(m) else
+        ((r, "action", "Microsoft's IRS 1075 contractual amendment is in place, and FTI is encrypted with FIPS 140 "
+                       "validated cryptography under customer-managed keys."),) if r == "irs-1075" else
+        ((r, "action", "keep it on in-scope services under Microsoft's Business Associate Agreement (the Product "
+                       "Terms)."),) if r == "hipaa" else ()))
+
+
+def check_regulated_placement(ctx):
+    """What Azure leaves to the customer for the regulated data the target holds."""
+    return placement_findings(ctx, regulated_verdicts(ctx.dst))

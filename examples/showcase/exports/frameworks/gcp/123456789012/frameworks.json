@@ -1,0 +1,121 @@
+[
+  {
+    "name": "organizations/123456789012/locations/global/frameworks/builtin-nist-800-53-r5",
+    "majorRevisionId": "2",
+    "displayName": "NIST SP 800-53 R5",
+    "type": "BUILT_IN",
+    "category": [
+      "INDUSTRY_DEFINED_STANDARD"
+    ],
+    "supportedCloudProviders": [
+      "GCP"
+    ],
+    "supportedEnforcementModes": [
+      "DETECTIVE"
+    ],
+    "supportedTargetResourceTypes": [
+      "TARGET_RESOURCE_CRM_TYPE_ORG",
+      "TARGET_RESOURCE_CRM_TYPE_FOLDER",
+      "TARGET_RESOURCE_CRM_TYPE_PROJECT"
+    ],
+    "cloudControlDetails": [
+      {
+        "name": "organizations/123456789012/locations/global/cloudControls/builtin-audit-logging-enabled",
+        "majorRevisionId": "1"
+      },
+      {
+        "name": "organizations/123456789012/locations/global/cloudControls/builtin-cmek-on-cloud-sql",
+        "majorRevisionId": "2"
+      },
+      {
+        "name": "organizations/123456789012/locations/global/cloudControls/builtin-restrict-public-buckets",
+        "majorRevisionId": "1"
+      },
+      {
+        "name": "organizations/123456789012/locations/global/cloudControls/builtin-restrict-resource-locations",
+        "majorRevisionId": "1",
+        "parameters": [
+          {
+            "name": "allowedLocations",
+            "parameterValue": {
+              "stringListValue": {
+                "values": [
+                  "in:us-locations"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "organizations/123456789012/locations/global/frameworks/builtin-cis-gcp-3-0",
+    "majorRevisionId": "1",
+    "displayName": "CIS Google Cloud Computing Platform Benchmark v3.0",
+    "type": "BUILT_IN",
+    "category": [
+      "INDUSTRY_DEFINED_STANDARD"
+    ],
+    "supportedCloudProviders": [
+      "GCP"
+    ],
+    "supportedEnforcementModes": [
+      "DETECTIVE"
+    ],
+    "cloudControlDetails": [
+      {
+        "name": "organizations/123456789012/locations/global/cloudControls/builtin-audit-logging-enabled",
+        "majorRevisionId": "1"
+      },
+      {
+        "name": "organizations/123456789012/locations/global/cloudControls/builtin-restrict-public-buckets",
+        "majorRevisionId": "1"
+      },
+      {
+        "name": "organizations/123456789012/locations/global/cloudControls/builtin-os-login-enabled",
+        "majorRevisionId": "1"
+      }
+    ]
+  },
+  {
+    "name": "organizations/123456789012/locations/global/frameworks/builtin-security-essentials",
+    "majorRevisionId": "3",
+    "displayName": "Google Cloud Security Essentials",
+    "type": "BUILT_IN",
+    "category": [
+      "SECURITY_BENCHMARKS"
+    ],
+    "supportedCloudProviders": [
+      "GCP"
+    ],
+    "supportedEnforcementModes": [
+      "DETECTIVE"
+    ],
+    "cloudControlDetails": [
+      {
+        "name": "organizations/123456789012/locations/global/cloudControls/builtin-restrict-public-buckets",
+        "majorRevisionId": "1"
+      },
+      {
+        "name": "organizations/123456789012/locations/global/cloudControls/builtin-os-login-enabled",
+        "majorRevisionId": "1"
+      }
+    ]
+  },
+  {
+    "name": "organizations/123456789012/locations/global/frameworks/builtin-soc-2",
+    "majorRevisionId": "1",
+    "displayName": "SOC 2",
+    "type": "BUILT_IN",
+    "supportedEnforcementModes": [
+      "DETECTIVE"
+    ],
+    "cloudControlDetails": [
+      {
+        "name": "organizations/123456789012/locations/global/cloudControls/builtin-audit-logging-enabled",
+        "majorRevisionId": "1"
+      }
+    ]
+  }
+]

@@ -10,7 +10,7 @@ from .listeners import listeners
 from .logs import LOGS
 from .proxy import proxy_settings
 from .realms import ENDPOINTS, SERVER_ROLES
-from .render import FORMATS, render_neutral
+from .render import FORMATS, PROFILE, render_neutral
 from .schema import FRAGMENT
 from .signals import SIGNALS
 from .versions import VERSION_CHANGES
@@ -35,4 +35,4 @@ ADAPTER = Adapter(name="pingam", kind="product", applies=applies, required_roles
                   endpoints=ENDPOINTS, listeners=listeners,
                   proxy_settings=proxy_settings, collectors=COLLECTORS, signals=SIGNALS,
                   logs=LOGS, version_changes=VERSION_CHANGES,
-                  reads_back=(ReadBack("amster", "am/*", "am/"),))
+                  profile=PROFILE, reads_back=(ReadBack("amster", "am/*", "am/"),))

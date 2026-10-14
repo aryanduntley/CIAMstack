@@ -12,7 +12,10 @@ below the level or not in good standing (certified, validated, or equivalent wit
 its boundary blocks the move, as does a control the target's authorization leaves to the customer that the source's
 covered (inherited or shared) and nothing meets: no implementation, exception or POA&M item. An in-scope list older than
 90 days, a configuration the authorization requires that the target hasn't recorded, and a target outside the system
-boundary the source is inside give actions."""
+boundary the source is inside give actions. An environment holding regulated data (regulated.py) relies on an
+authorization too; the source's regulated data the target doesn't record blocks the move (check_regulated_data), and a
+target holding export-controlled data without US data location and US-person support recorded, or regulated data
+classified below restricted, gives actions (where the cloud may hold it is its adapter's check)."""
 from collections import namedtuple
 import datetime as dt
 
@@ -23,7 +26,8 @@ from ...core.environment import env_model
 from ...core.findings import findings, responsible
 from ...core.naming import SUFFIX, branch
 from .incidents import obligations_of
-from .naming import AUTHORIZATION_LEVELS, AUTHORIZATIONS, RESTRICTED, SCOPE_STALE_DAYS, STANDING
+from .naming import AUTHORIZATION_LEVELS, AUTHORIZATIONS, EXPORT_CONTROLLED, RESTRICTED, SCOPE_STALE_DAYS, STANDING
+from .regulated import AREA as REGULATED, regulated_data
 
 AREA = "Authorization"
 AUTHORIZATION, BOUNDARY, RESPONSIBILITY = "ciamCloudAuthorization", "ciamSystemBoundary", "ciamControlResponsibility"
@@ -88,8 +92,16 @@ def level_met(granted, required):
 
 
 def held_to(m):
-    """Whether environment m must rely on an authorization: a level is required or its data is restricted."""
-    return bool(required_levels(m)) or one(m.env, "ciamDataClassification") == RESTRICTED
+    """Whether environment m must rely on an authorization: a level is required, its data is restricted or it holds
+    regulated data."""
+    return bool(required_levels(m)) or one(m.env, "ciamDataClassification") == RESTRICTED or bool(regulated_data(m))
+
+
+def _why_held(m):
+    """Why environment m must rely on an authorization, as the missing-authorization blocker says it."""
+    return (f" and requires {', '.join(required_levels(m))}" if required_levels(m) else
+            f" while its data is classified {RESTRICTED}" if one(m.env, "ciamDataClassification") == RESTRICTED else
+            f" while it holds {', '.join(regulated_data(m))} data" if regulated_data(m) else "")
 
 
 def _standing(ctx, auth, owner):
@@ -152,10 +164,9 @@ def check_authorization(ctx):
     owner = responsible(ctx.d, ctx.dst.env)
     missing = [] if dst_auth is not None else [(AREA, (
         f"{ctx.dst.label} names `{ref}` as its cloud authorization, which isn't one" if ref else
-        f"{ctx.dst.label} relies on no cloud authorization") + (
-        f" and requires {', '.join(required_levels(ctx.dst))}" if required_levels(ctx.dst) else
-        f" while its data is classified {RESTRICTED}") + ": record the authorization of the offering it runs on "
-        "(ciamAuthorizationRef).", owner)] if held or ref else []
+        f"{ctx.dst.label} relies on no cloud authorization") + _why_held(ctx.dst)
+        + ": record the authorization of the offering it runs on (ciamAuthorizationRef).", owner)] \
+        if held or ref else []
     standing = _standing(ctx, dst_auth, owner) if dst_auth is not None and held else []
     as_of = date_of(dst_auth, "ciamScopeAsOf") if dst_auth is not None else None
     stale = [(AREA, f"Authorization `{rdn_value(dst_auth)}`'s in-scope service list is "
@@ -252,3 +263,30 @@ def responsibility_rows(d, dn=None):
              one(r, "ciamCustomerAction", ""), _met(d, r) or ("" if one(r, "ciamResponsibility") != "customer"
                                                                else "nothing recorded"))
             for r in subtree(d, SUFFIX, RESPONSIBILITY)]
+
+
+def check_regulated_data(ctx):
+    """The regulated data the target must hold as the source does, and what holding it asks of the customer whatever the
+    cloud (where the cloud may hold it: its adapter's check, regulated.placement_findings). Nothing when neither
+    environment holds any."""
+    src, dst = regulated_data(ctx.src), regulated_data(ctx.dst)
+    if not (src or dst):
+        return findings()
+    owner = responsible(ctx.d, ctx.dst.env)
+    dropped = [(REGULATED, f"{ctx.src.label} holds {r} data and {ctx.dst.label} doesn't record it (ciamRegulatedData): "
+                           "record what the target will hold, so the planner checks where it may be held.", owner)
+               for r in src if r not in dst]
+    export = [r for r in dst if r in EXPORT_CONTROLLED]
+    config = [(REGULATED, f"{ctx.dst.label} holds {', '.join(export)} data and doesn't record {c} "
+                          "(ciamConfigurationMet): export-controlled technical data stays in the US and only US "
+                          "persons, or those an export authorization covers, may reach it; that is the customer's to "
+                          "configure, whatever the cloud.", owner, ctx.cutover)
+              for c in (unmet_configurations(ctx.dst, ("us-data-location", "us-person-support")) if export else ())]
+    level = one(ctx.dst.env, "ciamDataClassification")
+    classified = [(REGULATED, f"{ctx.dst.label} holds {', '.join(dst)} data and its data is classified "
+                              f"{level or 'nothing'}: classify it {RESTRICTED} (ciamDataClassification).", owner,
+                   ctx.cutover)] if dst and level != RESTRICTED else []
+    blockers, actions = dropped, [*config, *classified]
+    return findings(blockers=blockers, actions=actions,
+                    ok=() if blockers or actions or not dst else
+                    (f"{ctx.dst.label} records the {', '.join(dst)} data it holds and what it needs in place.",))

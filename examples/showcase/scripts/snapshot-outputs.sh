@@ -121,6 +121,11 @@ cap 08-apply-chg-2035 od import --change CHG-2035 --at 20260923090000Z onprem/si
 cap 08-apply-chg-2036 od modify --change CHG-2036 changes/CHG-2036-scoped-agents-and-jobs.ldif
 cap 08-apply-chg-2037 od modify --change CHG-2037 changes/CHG-2037-target-hybrid-identity.ldif
 cap 08-apply-chg-2038 od modify --change CHG-2038 changes/CHG-2038-target-change-history.ldif
+cap 08-apply-chg-2039 od modify --change CHG-2039 changes/CHG-2039-standby-compliance-frameworks.ldif
+cap 08-apply-chg-2041 od import --change CHG-2041 --at 20260923090000Z gcp/frameworks exports/frameworks/gcp
+cap 08-apply-chg-2042 od modify --change CHG-2042 changes/CHG-2042-standby-itar-data.ldif
+cap 08-apply-chg-2043 od modify --change CHG-2043 changes/CHG-2043-target-profiles.ldif
+cap 08-report-regulated-data od report regulated-data
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions
 cap 08-report-residency od report residency
@@ -138,6 +143,10 @@ od history 2>&1 | sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{
 
 cap 10-render-target-after od render target/prod -o "$OUT/render-after/target-prod"
 cap 10-render-lab-after od render hq/lab -o "$OUT/render-after/hq-lab"
+cap 10-render-standby-compliance od render standby/prod --binding cn=compliance,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops \
+    -o "$OUT/render-after/standby-prod-compliance"
+cap 10-render-standby-landing-zone od render standby/prod --keeper cloud-landing-zone \
+    -o "$OUT/render-after/standby-prod-landing-zone"
 cap 10-report-keys-lab od report keys hq/lab
 cap 10-file-run-properties-lab od file run.properties --env hq/lab
 cap 10-report-baselines-after od report baselines

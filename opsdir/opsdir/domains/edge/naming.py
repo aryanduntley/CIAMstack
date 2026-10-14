@@ -22,7 +22,7 @@ WAF_CATEGORIES = ("core-rules", "known-bad-inputs", "ip-reputation", "bot-contro
                   "account-creation-fraud")
 # What an endpoint a product declares is for; renderers aim rate limits, exclusions, health checks and cache bypasses
 # at them, and the planner asks for protection of the sensitive ones on public services.
-ENDPOINT_KINDS = ("login", "token", "password-reset", "registration", "saml-post", "health")
+ENDPOINT_KINDS = ("login", "token", "password-reset", "registration", "saml-post", "saml-start", "health")
 SENSITIVE = ("login", "token", "password-reset", "registration")
 DDOS_TIERS = ("standard", "network-advanced", "application-advanced")
 

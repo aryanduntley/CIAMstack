@@ -72,7 +72,8 @@ def test_the_region_list_is_a_prerequisite_fetched_by_running_gcloud():
     assert prerequisite_rows(d, (ADAPTER,)) == (
         ("gcp-regions", "gcp", "not needed yet", "opsdir import gcp/regions --run",
          "gcloud compute regions list --format=json > regions.json"),
-        ("gcp-quotas", "gcp", "met", "opsdir import gcp/quotas --run", ""))   # no environment needs a quota
+        ("gcp-quotas", "gcp", "met", "opsdir import gcp/quotas --run", ""),   # no environment needs a quota
+        ("gcp-frameworks", "gcp", "met", "opsdir import gcp/frameworks --run", ""))   # nor names a framework
 
 
 def test_the_provider_notes_that_google_cloud_has_no_fips_endpoints_to_switch_to():

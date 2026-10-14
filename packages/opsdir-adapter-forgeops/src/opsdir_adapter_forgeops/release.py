@@ -19,6 +19,22 @@ PUBLIC_IMAGES = "us-docker.pkg.dev/forgeops-public/"
 IDENTITY_PLATFORM, PING_GATEWAY = "identity-platform", "ping-gateway"
 CHART_VERSION = "1.0.0"                 # both charts at this release
 HELM, KUSTOMIZE = "helm", "kustomize"
+CONFIG_PROFILES = "config-profiles"     # render target: the products' configuration as ForgeOps config profiles
+PROFILE_NAME = "opsdir"                 # the profile's folder under each component's config-profiles/ (CONFIG_PROFILE)
+# What each component's config profile builds into (docker/<component>/ at the release): (component, product whose
+# profile it carries, how: "config" a busybox configuration image (Dockerfile-custom: /config/, read by the chart's
+# <component>_custom init container; its image the record names for that container), "derived" the component's own
+# image rebuilt on the record's base (Dockerfile: the profile under where it reads its configuration), destination).
+# AM's own file-based configuration is left to its image: the record's AM configuration is Amster's (decision 2817).
+CONFIG_INIT = "custom-vol-init"       # the init container running a component's configuration image
+PROFILE_BUILDS = (("idm", "PingIDM", "config", "/config/"), ("amster", "PingAM", "derived", "/opt/amster"),
+                  ("ig", "PingGateway", "derived", "${IG_INSTANCE_DIR}"))
+# AM's and IDM's keystore (deferred 2136 part 4): the Secret and key the release mounts it from, and the roles the
+# product adapters bind it to. A workload mapping that key delivers the record's keystore; the release then makes none.
+KEYSTORE_SECRET, KEYSTORE_KEY = "keystore", "keystore.jceks"
+KEYSTORE_ROLES = ("am-keystore", "idm-keystore")
+# The Secret the amster job reads every variable from (envFrom): a profile's secrets for amster are its keys.
+AMSTER_ENV_SECRET = "amster-env-secrets"
 DS_LDAPS_PORT = 1636                    # the in-cluster DS LDAPS port ForgeOps addresses (ds-idrepo-0.ds-idrepo:1636)
 
 # One component. name: ForgeOps' own (its workload's, its overlay folder's); chart and values: its chart and key in the

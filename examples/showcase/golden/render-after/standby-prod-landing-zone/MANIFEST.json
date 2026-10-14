@@ -1,0 +1,29 @@
+{
+  "environment": "env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+  "provider": "gcp",
+  "unbound_roles": [],
+  "scope": {
+    "kind": "keeper",
+    "value": [
+      "cn=cloud-landing-zone,ou=owners,dc=ciam-ops"
+    ]
+  },
+  "requester": "opsdir",
+  "files": {
+    "terraform/landing-zone/main.tf": {
+      "scope": "landing-zone",
+      "format": "hcl",
+      "sha256": "dc4653905f2a77742ddf49a799856cd37fedb777c165f74e0e3f6f4f31b105d0"
+    },
+    "terraform/landing-zone/network.tf": {
+      "scope": "landing-zone",
+      "format": "hcl",
+      "sha256": "f69fa8e4762c4869bc6bd36a1171aedb3d585d6518c6c18b7d13659ea232abfd"
+    },
+    "terraform/landing-zone/providers.tf": {
+      "scope": "landing-zone",
+      "format": "hcl",
+      "sha256": "388e6816b2a84b042bfe5e88a195839ac1e5bcfd6bdd5aebcbe6480e667c7e53"
+    }
+  }
+}

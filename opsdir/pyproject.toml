@@ -57,6 +57,7 @@ html = "opsdir.core.formats:HTML"
 markdown = "opsdir.core.formats:MARKDOWN"
 pem = "opsdir.core.formats:PEM"
 text = "opsdir.core.formats:TEXT"
+dockerfile = "opsdir.core.formats:DOCKERFILE"
 
 [tool.setuptools.packages.find]
 include = ["opsdir*"]

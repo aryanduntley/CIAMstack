@@ -68,6 +68,24 @@ Everything else comes from the record (`ciamWorkloadSecret`, delivered by the ku
 - under Kustomize also `amster`, `ds-ssl-keypair` and `ds-master-keypair`
 - with DS on servers only, `ds-ssl-keypair` `ca.crt` (the servers' CA), under both targets
 
+## Config profiles (target `config-profiles`, on request)
+
+`opsdir render <env> --target forgeops=helm,kustomize,config-profiles` also renders the products' configuration the way ForgeOps builds it into images. Each product adapter declares which of its files are its product's own instance files. The render hands those trees to this adapter, which writes one build context per component under `forgeops/config-profiles/<namespace>/<component>/`, in the release's `docker/<component>/` layout: `config-profiles/opsdir/` and the `Dockerfile` that builds it. Your CI builds and pushes each; the values and the overlay then run them.
+
+| Component | Profile | Image |
+|---|---|---|
+| `idm` | PingIDM's `conf/` (and captured `resolver/`) | a busybox configuration image with the profile under `/config/`; the chart's `idm_custom` init container copies it over IDM's configuration on first start. The record names it as the container `idm-custom` on IDM's workload binding (`ciamContainerImage idm-custom=<ref>`), else `UNBOUND` |
+| `amster` | PingAM's Amster entities (`config/global/`, `config/realms/<realm>/...`) | the amster image rebuilt `FROM ${BASE_IMAGE}` with the profile under `/opt/amster`; the amster job imports `/opt/amster/config` |
+| `ig` | PingGateway's `config/config.json`, `admin.json` and `config/routes/` | the PingGateway image rebuilt `FROM ${BASE_IMAGE}` with the profile under `${IG_INSTANCE_DIR}` (the chart's `ig_custom` image isn't wired into its templates) |
+
+AM's own file-based configuration stays its image's: the record's AM configuration is Amster's.
+
+No profile holds a secret. Where a product renders a secret reference, the profile holds `&{opsdir.<role>}` (the role's dashes as dots). IDM, PingGateway and Amster fill that token from the environment variable `OPSDIR_<ROLE>`. You map the variable on the workload like any other Secret key: `ciamWorkloadSecret: <secret>/OPSDIR_<ROLE> <- <role>`. The values and the overlay then add it to the AM, IDM and PingGateway containers. The amster job reads `amster-env-secrets` whole, so amster's variables go in that Secret. Each namespace's `README.md` lists every token, its variable and role, and whether the record maps it.
+
+## The keystore from the record
+
+By default the release's keystore-create job generates AM's and IDM's keystore (the `keystore` Secret). To run the record's keystore instead, map it on a workload in the namespace: `ciamWorkloadSecret: keystore/keystore.jceks <- <role>`, for example the `am-keystore` role the pingam adapter requires. The kubernetes adapter then delivers it from the record's reference, and nothing generates one. The Helm values set `keystore_create.force: false`, which turns the job off while AM and IDM still mount `keystore` and `keystore-create`. The Kustomize overlay leaves the `keystore-create` component out. The keystore must hold the aliases the job would make (the chart's `keystore_create.config.keytoolAliases`), with `KEYSTORE_PASSWORD` in `keystore-create`. Apply the kubernetes adapter's Secrets before the release, so the pods find them.
+
 ## Routes behind a cluster gateway
 
 ForgeOps' own Ingresses use the `nginx` class and nginx annotations, a controller the Kubernetes project has retired. When the record has a cluster gateway (`ciamClusterGateway`, the core edge domain) in front of the roles a chart serves, that chart's Ingresses are off: Helm `platform.ingress.enabled: false` (identity-platform for AM and IDM, ping-gateway for IG), and the Kustomize overlay deletes them (`$patch: delete`). Their paths are declared as routes (`release.ROUTES`, `routes.py`), which opsdir-adapter-kubernetes renders as Gateway API HTTPRoutes:
@@ -91,7 +109,9 @@ The release's pods' container ports (`release.py`, `POD_PORTS`), declared as lis
 - ForgeOps workloads of one namespace that name different service accounts (one per Helm release);
 - a ds workload ForgeOps can't place (not named `ds-idrepo` or `ds-cts`);
 - one DS store in the cluster and the other on servers while AM or IDM runs there. This layout isn't supported: ForgeOps then makes the DS certificates, so AM's and IDM's truststore holds only ForgeOps' CA and not the CA that signed the DS servers' certificates. Run both stores in the cluster or both on servers;
-- a component running a ForgeOps public image.
+- a component running a ForgeOps public image;
+- a config profile's secret variable (`OPSDIR_<ROLE>`) the record doesn't deliver to its component, when the target renders config profiles;
+- the keystore-create job generating the keystore while the environment binds `am-keystore` or `idm-keystore` that no workload maps.
 
 ## The ForgeOps source
 
@@ -100,7 +120,5 @@ The release's pods' container ports (`release.py`, `POD_PORTS`), declared as lis
 Tests: `tests/test_forgeops.py`.
 
 Not done here:
-- AM/IDM keystore content from the record's keys; the keystore-create job generates it.
-- Product configuration packaged as ForgeOps config profiles (milestone 5.9).
 
 Installing the package registers it with opsdir (entry point `opsdir.adapters`: `forgeops`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.

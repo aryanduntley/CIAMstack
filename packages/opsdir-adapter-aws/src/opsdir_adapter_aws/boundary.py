@@ -12,6 +12,8 @@ customer data. Pure."""
 from opsdir.core.directory import one
 from opsdir.domains.edge.records import is_hosted
 from opsdir.domains.estate.authorizations import boundary_findings, services_used
+from opsdir.domains.estate.regulated import placement_findings, regulated_data
+from .account import govcloud
 
 VPC, EC2 = "Amazon Virtual Private Cloud (VPC)", "Amazon Elastic Compute Cloud (EC2)"
 EBS = "Amazon Elastic Block Store (EBS)"
@@ -72,3 +74,31 @@ def aws_services(m):
 def check_boundary(ctx):
     """The target's services outside the authorization it relies on."""
     return boundary_findings(ctx, aws_services(ctx.dst), COVERED)
+
+
+# Where AWS says it can hold regulated data (aws.amazon.com/compliance/itar, the GovCloud User Guide's compliance page,
+# AWS's CJIS and IRS 1075 pages; research note 2805): export-controlled data (ITAR, EAR) only in AWS GovCloud (US),
+# where some services' metadata may not hold it; CJIS and IRS 1075 in GovCloud and the US commercial regions; PHI on
+# HIPAA-eligible services under AWS's BAA, anywhere.
+GOVCLOUD_CAVEATS = ("keep it out of what AWS's GovCloud guide says may not hold export-controlled data (S3 bucket "
+                    "names and object metadata, Direct Connect metadata; CloudFront is outside GovCloud and its ITAR "
+                    "boundary).")
+
+
+def regulated_verdicts(m):
+    """((regime, 'blocker' or 'action', why), ...) of the regulated data environment m holds on AWS."""
+    region = one(m.cloud, "ciamRegion") or "its region"
+    us = region.startswith("us-")
+    return tuple(v for r in regulated_data(m) for v in (
+        ((r, "action", GOVCLOUD_CAVEATS),) if r in ("itar", "ear") and govcloud(m) else
+        ((r, "blocker", f"AWS holds export-controlled data only in AWS GovCloud (US) and {region} is a commercial "
+                        "region: move it to GovCloud."),) if r in ("itar", "ear") else
+        ((r, "blocker", f"AWS holds {r.upper()} workloads in GovCloud and its US regions, and {region} is outside the "
+                        "US."),) if r in ("cjis", "irs-1075") and not us else
+        ((r, "action", "keep it on HIPAA-eligible services under the account's Business Associate Addendum (AWS "
+                       "Artifact)."),) if r == "hipaa" else ()))
+
+
+def check_regulated_placement(ctx):
+    """The regulated data the target holds where AWS says it may not, and what AWS leaves to the customer."""
+    return placement_findings(ctx, regulated_verdicts(ctx.dst))

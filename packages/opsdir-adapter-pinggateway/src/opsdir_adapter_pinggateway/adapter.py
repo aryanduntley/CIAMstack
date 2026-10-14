@@ -7,7 +7,7 @@ from .listeners import listeners
 from .logs import LOGS
 from .proxy import proxy_settings
 from .naming import ENDPOINTS, SERVER_ROLES
-from .render import FORMATS, render_env
+from .render import FORMATS, PROFILE, render_env
 from .schema import FRAGMENT
 from .versions import VERSION_CHANGES
 
@@ -28,4 +28,4 @@ ADAPTER = Adapter(name="pinggateway", kind="product", applies=applies, required_
                   secret_patterns=(), importers=(GATEWAY_CONFIG,), profile_terms=None, access=None,
                   endpoints=ENDPOINTS, listeners=listeners,
                   proxy_settings=proxy_settings, logs=LOGS, version_changes=VERSION_CHANGES,
-                  reads_back=(ReadBack("config", "pinggateway/*", "pinggateway/"),))
+                  profile=PROFILE, reads_back=(ReadBack("config", "pinggateway/*", "pinggateway/"),))

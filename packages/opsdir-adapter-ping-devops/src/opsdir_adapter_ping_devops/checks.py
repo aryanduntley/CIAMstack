@@ -4,15 +4,18 @@ What the rendered values can't settle on their own, as actions: a PingFederate w
 (a license file key, or Ping's DevOps credentials for its license server), an admin console with no
 PING_IDENTITY_PASSWORD recorded (the image's default is published), more than one admin console replica, engines
 with no admin console in their namespace (the chart clusters them through it), workloads beyond the one per
-product the chart runs, and a cluster discovery the record doesn't bind as DNS_PING through the chart's cluster service
-(with the fix binding it).
+product the chart runs, a cluster discovery the record doesn't bind as DNS_PING through the chart's cluster service
+(with the fix binding it), and a rendered server profile's secret variable the record doesn't deliver.
 """
+import re
+
 from opsdir.core.directory import rdn_value
 from opsdir.core.findings import findings, responsible
 from opsdir_adapter_kubernetes.kits import replicas_of
 from .discovery import discovery_gap
 from .products import placements, secret_keys, unplaced, workload_of
-from .release import ADMIN_PASSWORD, DEVOPS_KEYS, LICENSE_KEY
+from .profiles import delivered
+from .release import ADMIN_PASSWORD, CHART, DEVOPS_KEYS, LICENSE_KEY, SERVER_PROFILE
 
 AREA = "PingFederate on Kubernetes"
 ADMIN, ENGINE = "pingfederate-admin", "pingfederate-engine"
@@ -41,9 +44,22 @@ def _texts(m, p):
                f"admin console of their release, so run `pf-admin` in the namespace too.")
 
 
+_VARIABLE = re.compile(r"\$\{(OPSDIR_[A-Z0-9_]+)\}")
+
+
+def unmapped_variables(p, files):
+    """The secret variables (OPSDIR_*) a namespace's rendered server profile substitutes that the record doesn't
+    deliver to its PingFederate workloads (profiles.delivered)."""
+    root = f"{CHART}/{SERVER_PROFILE}/{p.namespace}/"
+    found = {v for path, text in files.items() if path.startswith(root) and path.endswith(".subst")
+             for v in _VARIABLE.findall(text)}
+    return tuple(sorted(found - delivered(p)))
+
+
 def check_ping_devops(ctx):
     """Actions on the target: PingFederate licenses, the admin password, admin console replicas, engines without
-    their admin console, workloads beyond one per product, cluster discovery (with its fix)."""
+    their admin console, workloads beyond one per product, cluster discovery (with its fix), a server profile's
+    secret variables the record doesn't deliver."""
     m = ctx.dst
     spaces = placements(m)
     if not spaces:
@@ -52,7 +68,10 @@ def check_ping_devops(ctx):
     texts = (*(t for p in spaces for t in _texts(m, p)),
              *(f"Workload `{rdn_value(w)}` runs `{name}` in {m.label} (namespace `{ns}`) beside another: the chart "
                f"runs one per release, so it isn't deployed. Scale the first (ciamWorkloadReplicas) or give it its own "
-               f"namespace." for ns, name, w in unplaced(m)))
+               f"namespace." for ns, name, w in unplaced(m)),
+             *(f"PingFederate's server profile in {m.label} (namespace `{p.namespace}`) substitutes `{v}`, which the "
+               f"record doesn't deliver: record ciamWorkloadSecret `<secret>/{v} <- <role>` on its workloads (the "
+               f"profile's README names the role)." for p in spaces for v in unmapped_variables(p, ctx.dst_files)))
     gaps = tuple(g for p in spaces for g in (discovery_gap(m, p),) if g is not None)
     actions = tuple((AREA, t, owner, None) for t in (*texts, *(t for t, _ in gaps)))
     ok = () if actions else (f"PingFederate on Kubernetes in {m.label} has its licenses, admin password and cluster "

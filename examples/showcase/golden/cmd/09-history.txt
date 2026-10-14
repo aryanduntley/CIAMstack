@@ -411,4 +411,30 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2037  update  cloud=target,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2037  insert  cn=defender-identity,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2038  update  cn=resource-changes,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
-(411 rows)
+<TIMESTAMP>          CHG-2039  insert  cn=compliance,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2041  insert  ou=frameworks,dc=ciam-ops
+<TIMESTAMP>          CHG-2041  insert  cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+<TIMESTAMP>          CHG-2041  insert  cn=builtin-cis-gcp-3-0,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+<TIMESTAMP>          CHG-2041  insert  cn=builtin-nist-800-53-r5,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+<TIMESTAMP>          CHG-2041  insert  cn=builtin-security-essentials,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+<TIMESTAMP>          CHG-2041  insert  cn=builtin-soc-2,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+<TIMESTAMP>          CHG-2041  insert  cn=builtin-audit-logging-enabled,cn=builtin-cis-gcp-3-0,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+<TIMESTAMP>          CHG-2041  insert  cn=builtin-audit-logging-enabled,cn=builtin-nist-800-53-r5,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+<TIMESTAMP>          CHG-2041  insert  cn=builtin-cmek-on-cloud-sql,cn=builtin-nist-800-53-r5,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+<TIMESTAMP>          CHG-2041  insert  cn=builtin-os-login-enabled,cn=builtin-cis-gcp-3-0,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+<TIMESTAMP>          CHG-2041  insert  cn=builtin-restrict-public-buckets,cn=builtin-cis-gcp-3-0,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+<TIMESTAMP>          CHG-2041  insert  cn=builtin-restrict-public-buckets,cn=builtin-nist-800-53-r5,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+<TIMESTAMP>          CHG-2041  insert  cn=builtin-restrict-resource-locations,cn=builtin-nist-800-53-r5,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
+<TIMESTAMP>          CHG-2041  insert  cn=gcp.frameworks.shared,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2042  update  env=prod,cloud=standby,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2043  update  cn=kit-forgeops,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2043  update  cn=federation,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2043  update  cn=kit-ping-devops,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2043  update  cn=idm,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2043  update  cn=pf-admin,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2043  update  cn=pf-engine,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2043  update  cn=idm,ou=workloads,dc=ciam-ops
+<TIMESTAMP>          CHG-2043  update  cn=pf-admin,ou=workloads,dc=ciam-ops
+<TIMESTAMP>          CHG-2043  update  cn=pf-engine,ou=workloads,dc=ciam-ops
+<TIMESTAMP>          CHG-2043  update  cn=am,ou=workloads,dc=ciam-ops
+(437 rows)

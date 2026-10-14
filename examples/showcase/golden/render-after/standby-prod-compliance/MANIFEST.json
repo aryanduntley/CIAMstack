@@ -1,0 +1,24 @@
+{
+  "environment": "env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+  "provider": "gcp",
+  "unbound_roles": [],
+  "scope": {
+    "kind": "bindings",
+    "value": [
+      "cn=compliance,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops"
+    ]
+  },
+  "requester": "opsdir",
+  "files": {
+    "terraform/slice/main.tf": {
+      "scope": "environment-specific",
+      "format": "hcl",
+      "sha256": "c051d2a591912a09dbb887d2836a03f57eb8baaa2b39fbcc3676ce9b931ee4c5"
+    },
+    "terraform/slice/providers.tf": {
+      "scope": "environment-specific",
+      "format": "hcl",
+      "sha256": "bec71e0002b09ef499fd27083cdd7fc3c66ccf84a954f35f107e695ddc741c24"
+    }
+  }
+}

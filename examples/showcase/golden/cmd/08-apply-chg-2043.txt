@@ -1,0 +1,11 @@
+CHG-2043: modify cn=kit-forgeops,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2043: modify cn=federation,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2043: modify cn=kit-ping-devops,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2043: modify cn=idm,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2043: modify cn=pf-admin,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2043: modify cn=pf-engine,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2043: modify cn=idm,ou=workloads,dc=ciam-ops
+CHG-2043: modify cn=pf-admin,ou=workloads,dc=ciam-ops
+CHG-2043: modify cn=pf-engine,ou=workloads,dc=ciam-ops
+CHG-2043: modify cn=am,ou=workloads,dc=ciam-ops
+exit 0

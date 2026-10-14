@@ -79,7 +79,7 @@ The workload binding (manifests under `<cloud>/<env>/`):
 | From | Recorded |
 |---|---|
 | the workload role | `ciamBindingRole` |
-| the pod template's containers, then its companions' | `ciamContainerImage`: `container=image`, one per container; not those the mark `opsdir.io/derived-containers` names (comma-separated: a kit's log sidecars, derived from the record's log routes) |
+| the pod template's containers, then its companions' | `ciamContainerImage`: `container=image`, one per container; not those the mark `opsdir.io/derived-containers` names (comma-separated: a kit's log sidecars, derived from the record's log routes); then those the mark `opsdir.io/container-names` names (`<record container>=<pod container>`, comma-separated: a kit's configuration image in an init container, ForgeOps' `idm-custom=custom-vol-init`), under the record's name |
 | `spec.replicas` (not for a DaemonSet) | `ciamWorkloadReplicas` |
 | the first container's `resources` | `ciamCpuRequest`, `ciamCpuLimit`, `ciamMemoryRequest`, `ciamMemoryLimit` |
 | its first volume claim template | `ciamStorageSize`, `ciamStorageClass` |

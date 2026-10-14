@@ -18,6 +18,7 @@
       "kustomize"
     ],
     "kubernetes": [],
+    "ping-devops": [],
     "pingfederate": [
       "admin-api",
       "terraform"

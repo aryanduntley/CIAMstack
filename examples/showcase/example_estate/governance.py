@@ -104,6 +104,14 @@ CHANGES = (
      "Identity)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2038", "Keep the target's resource change history 2557 days by exporting it to its security workspace",
      "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2039", "Assess the standby against NIST SP 800-53 Rev. 5 and its CIS benchmark with Compliance Manager",
+     "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2041", "Fetch Google Cloud's Compliance Manager frameworks for the standby's organization (prerequisite "
+     "gcp-frameworks)", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2042", "Record the ITAR technical data the standby will hold (its Assured Workloads folder takes the ITAR "
+     "package)", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2043", "Build the target's product configuration into its deployment: config profiles and PingFederate's "
+     "server profile", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

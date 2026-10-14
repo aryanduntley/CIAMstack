@@ -24,6 +24,56 @@ pingfederate-admin:
         secretKeyRef:
           name: pf-admin
           key: PING_IDENTITY_PASSWORD
+    - name: OPSDIR_PF_SIGNING_KEY
+      valueFrom:
+        secretKeyRef:
+          name: pf-profile
+          key: OPSDIR_PF_SIGNING_KEY
+    - name: OPSDIR_PF_SIGNING_KEY_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: pf-profile
+          key: OPSDIR_PF_SIGNING_KEY_PASSWORD
+    - name: OPSDIR_SSO_TLS_KEYSTORE
+      valueFrom:
+        secretKeyRef:
+          name: pf-profile
+          key: OPSDIR_SSO_TLS_KEYSTORE
+    - name: OPSDIR_SSO_TLS_KEYSTORE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: pf-profile
+          key: OPSDIR_SSO_TLS_KEYSTORE_PASSWORD
+    - name: OPSDIR_PF_CORP_AD_BIND_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: pf-profile
+          key: OPSDIR_PF_CORP_AD_BIND_PASSWORD
+    - name: OPSDIR_PF_GRANTS_DB_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: pf-profile
+          key: OPSDIR_PF_GRANTS_DB_PASSWORD
+    - name: OPSDIR_PF_DS_BIND_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: pf-profile
+          key: OPSDIR_PF_DS_BIND_PASSWORD
+    - name: OPSDIR_PF_SMTP_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: pf-profile
+          key: OPSDIR_PF_SMTP_PASSWORD
+    - name: OPSDIR_PF_CAPTCHA_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: pf-profile
+          key: OPSDIR_PF_CAPTCHA_SECRET
+    - name: OPSDIR_PF_ADMIN_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: pf-profile
+          key: OPSDIR_PF_ADMIN_PASSWORD
   rbac:
     serviceAccountName: pingfederate
   workload:
@@ -47,6 +97,10 @@ pingfederate-admin:
               resources:
                 requests:
                   storage: "8Gi"
+  envs:
+    SERVER_PROFILE_URL: https://git.example-aero.test/ciam/server-profiles.git
+    SERVER_PROFILE_PATH: pingfederate
+    SERVER_PROFILE_BRANCH: main
   includeSidecars:
   - pf-log-admin
   - pf-log-admin-event-detail
@@ -66,6 +120,12 @@ pingfederate-engine:
       limits:
         cpu: "2"
         memory: "4Gi"
+    env:
+    - name: OPSDIR_PF_ADMIN_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: pf-profile
+          key: OPSDIR_PF_ADMIN_PASSWORD
   rbac:
     serviceAccountName: pingfederate
   workload:
@@ -78,6 +138,10 @@ pingfederate-engine:
       opsdir.io/identity-role: identity-pf
       opsdir.io/workload: pf-engine
       opsdir.io/derived-containers: pf-log-runtime-request,pf-log-request,pf-log-runtime-api,pf-log-audit,pf-log-provisioner-audit
+  envs:
+    SERVER_PROFILE_URL: https://git.example-aero.test/ciam/server-profiles.git
+    SERVER_PROFILE_PATH: pingfederate
+    SERVER_PROFILE_BRANCH: main
   includeSidecars:
   - pf-log-runtime-request
   - pf-log-request

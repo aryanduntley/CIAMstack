@@ -9,7 +9,6 @@ resources:
 - "./am"
 - "./amster"
 - "./idm"
-- "./keystore-create"
 - "./admin-ui"
 - "./end-user-ui"
 - "./login-ui"
@@ -19,8 +18,8 @@ images:
   newName: busybox
   newTag: musl
 - name: idm-custom
-  newName: busybox
-  newTag: musl
+  newName: crciamprod.azurecr.io/ciam/idm-config
+  newTag: "8.1.2"
 - name: kubectl
   newName: us-docker.pkg.dev/forgeops-public/images/kubectl
   newTag: "1.36.1"

@@ -8,9 +8,10 @@ named in an import notice when read back. Google has no mail service: a sending 
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.inventory import of_types
 from opsdir.domains.edge.records import is_hosted
-from opsdir.domains.estate.authorizations import boundary_findings, services_used
+from opsdir.domains.estate.authorizations import boundary_findings, required_levels, services_used
+from opsdir.domains.estate.regulated import placement_findings, regulated_data
 from opsdir_format_terraform.hcl import Block, comment, tf_block, tf_name
-from .account import regime
+from .account import DATA_REGIMES, data_regime, level_regime, regime
 
 VPC, MONITORING, STORAGE = "Virtual Private Cloud (VPC)", "Cloud Monitoring", "Cloud Storage"
 EDGE = {"waf": "Google Cloud Armor", "ddos": "Google Cloud Armor", "cdn": "Cloud CDN", "api-gateway": "API Gateway"}
@@ -59,7 +60,8 @@ def render_workload(m):
     regime_ = regime(m)
     org = (one(m.cloud, "ciamOrganizationRef") or "").rsplit("/", 1)[-1]
     billing = one(m.cloud, "ciamBillingAccountRef")
-    missing = [w for w, have in (("a required level (ciamRequiredAuthorization)", regime_),
+    missing = [w for w, have in (("a required level or regulated data (ciamRequiredAuthorization, "
+                                  "ciamRegulatedData)", regime_),
                                  ("its organization (ciamOrganizationRef)", org),
                                  ("its billing account (ciamBillingAccountRef)", billing)) if not have]
     if missing:
@@ -79,3 +81,43 @@ def workload_notices(pairs):
     return tuple(f"Assured Workloads workload {a.get('display_name') or a.get('name')}: {a.get('compliance_regime')} "
                  "(record it on the environment: ciamConfigurationMet assured-workload)"
                  for a in of_types(pairs, WORKLOAD) if a.get("compliance_regime"))
+
+
+# Where Google says it can hold regulated data (Assured Workloads' control packages and locations; research note 2805):
+# in an Assured Workloads folder of its regime only, one regime per folder, ITAR, CJIS and IRS 1075 in US locations;
+# ITAR and CJIS with customer-managed encryption keys; no package for EAR.
+US_ONLY = ("itar", "cjis", "irs-1075")
+CMEK = ("itar", "cjis")
+
+
+def _us(region):
+    return region == "us" or region.startswith("us-")
+
+
+def regulated_verdicts(m):
+    """((regime, 'blocker' or 'action', why), ...) of the regulated data environment m holds on Google Cloud."""
+    held, region = regulated_data(m), one(m.cloud, "ciamRegion") or ""
+    folder, has = data_regime(m), "assured-workload" in (m.env.attrs.get("ciamConfigurationMet") or ())
+    regimes = dict(DATA_REGIMES)
+    per = tuple(v for r in held for v in (
+        ((r, "action", "Google has no Assured Workloads package for EAR: its ITAR folder (US locations, US-person "
+                       "support) is the nearest; confirm the export classification with the export compliance "
+                       "officer."),) if r == "ear" else (
+            *(((r, "blocker", f"Google holds it in an Assured Workloads {regimes[r]} folder and {m.label} records "
+                              "none (ciamConfigurationMet assured-workload)."),) if not has else ()),
+            *(((r, "blocker", f"one Assured Workloads folder holds one regime and {m.label}'s takes {folder}: hold "
+                              f"{r} data in an environment of its own."),) if regimes[r] != folder else ()),
+            *(((r, "blocker", f"Google offers {regimes[r]} in US locations only and {region or 'its region'} isn't "
+                              "one."),) if r in US_ONLY and not _us(region) else ()),
+            *(((r, "action", "Google requires customer-managed encryption keys (Cloud KMS) for it."),)
+              if r in CMEK else ()))))
+    level = level_regime(m)
+    return per + (((next(r for r in held if regimes.get(r) == folder), "action",
+                    f"{m.label} requires {', '.join(required_levels(m))} and its Assured Workloads folder applies "
+                    f"{folder}'s package, not {level}'s: confirm with the authorizing official."),)
+                   if folder and level else ())
+
+
+def check_regulated_placement(ctx):
+    """The regulated data the target holds where Google says it may not, and what Google leaves to the customer."""
+    return placement_findings(ctx, regulated_verdicts(ctx.dst))

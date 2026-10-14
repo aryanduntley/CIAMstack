@@ -51,6 +51,8 @@ def test_the_workload_takes_the_most_demanding_regime_or_is_a_note():
         ("add", "objectClass", ("ciamEnvironmentPlacement",)),
         ("replace", "ciamConfigurationMet", ("assured-workload",)))),))
     assert as_text(render_workload(bare))[0].startswith("# NOTE: beta/prod's Assured Workloads workload: not rendered")
+    assert "a required level or regulated data (ciamRequiredAuthorization, ciamRegulatedData)" in as_text(
+        render_workload(bare))[0]
 
 
 def test_workloads_are_named_in_an_import_notice():

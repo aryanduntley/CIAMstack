@@ -41,6 +41,9 @@ ATTRIBUTES = (
                  'health probe'),
     AttributeDef(319, 'ciamInterval', 'string', 'intent', True, 'How often a synthetic check runs (5m)', PERIOD),
     AttributeDef(320, 'ciamFeedsAlert', 'dn', 'intent', True, 'The alert rule a failing synthetic check fires'),
+    AttributeDef(658, 'ciamStartsFrom', 'dn', 'intent', True,
+                 'The SAML integration (a service provider) a SAML sign-in check starts from: the identity provider '
+                 'is asked to sign in to it'),
     # ------------------------------------------------------------------ bindings
     AttributeDef(321, 'ciamChannelKind', enum_type(CHANNEL_KINDS), 'binding', True,
                  'What delivers alerts in an environment: a topic, an action group, a paging service, ...'),
@@ -84,9 +87,9 @@ CLASSES = (
              "Where a server role's logs go and how long they must be kept (an obligation: audit logs survive a "
              "move and the source's decommissioning)"),
     ClassDef(64, 'ciamCanary', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamCheckedService', 'ciamCanaryFlow'),
-             ('ciamInterval', 'ciamUsesRole', 'ciamFeedsAlert'),
+             ('ciamInterval', 'ciamUsesRole', 'ciamFeedsAlert', 'ciamStartsFrom'),
              'A synthetic check that signs in as a user would: what it exercises, how often, the secret role of its '
-             'test credentials, the alert it fires'),
+             'test credentials, the alert it fires, the SAML integration a SAML sign-in starts from'),
     ClassDef(65, 'ciamAlertChannel', 'ciamBinding', 'STRUCTURAL', ('ciamChannelKind',), ('ciamProviderRef',),
              'What delivers alerts of a role in an environment (a topic, an action group, a paging service)'),
     ClassDef(66, 'ciamLogDestination', 'ciamBinding', 'STRUCTURAL', ('ciamDestinationKind',),
@@ -97,10 +100,11 @@ CLASSES = (
              'An alarm a cloud runs in an environment: the alert rule it realizes, what it evaluates, what it '
              'notifies'),
     ClassDef(68, 'ciamCanaryBinding', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef',),
-             ('ciamRealizes', 'ciamInterval', 'ciamStorageRef', 'ciamManagedBy'),
-             'A synthetic check a cloud runs in an environment: the canary it realizes, how often, and where it keeps '
+             ('ciamRealizes', 'ciamInterval', 'ciamStorageRef', 'ciamSubnetRole', 'ciamManagedBy'),
+             'A synthetic check a cloud runs in an environment: the canary it realizes, how often, where it keeps '
              'its results when the cloud asks for a place (ciamStorageRef: CloudWatch Synthetics\' S3 artifact '
-             'location)'),
+             'location), and the subnets a check of an internal service name runs from (ciamSubnetRole; else those '
+             'the firewall rules admit to the service)'),
     ClassDef(111, 'ciamAuditTrail', 'ciamBinding', 'STRUCTURAL', ('ciamAuditScope',),
              ('ciamAuditEvents', 'ciamAllRegions', 'ciamIntegrityValidation', 'ciamLogDestinationRole',
               'ciamAuditResourceRole', 'ciamAuditStreamRole', 'ciamProviderRef', 'ciamManagedBy'),

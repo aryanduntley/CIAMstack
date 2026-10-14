@@ -7,6 +7,8 @@ WORKLOAD_KINDS = ("statefulset", "deployment", "daemonset", "other")
 QUANTITY = r"^[0-9]+(\.[0-9]+)?(m|k|M|G|T|P|E|Ki|Mi|Gi|Ti|Pi|Ei)?$"      # a Kubernetes resource quantity
 # <secret name>/<key>=<secret role>: a Secret's name (DNS subdomain), one of its keys, the role that fills it
 WORKLOAD_SECRET = r"^[a-z0-9]([-a-z0-9.]*[a-z0-9])?/[-._A-Za-z0-9]+ <- [^\s]+$"
+# where a workload's configuration profile is kept for its containers to fetch: <git URL>[#<path>][@<branch>]
+PROFILE_REPO = r"^(https://|ssh://|git@)[^\s#@]+(@[^\s#@]+)?[^\s#]*(#[^\s@]+)?(@[^\s#@/]+)?$"
 
 
 def baseline_dn(role):

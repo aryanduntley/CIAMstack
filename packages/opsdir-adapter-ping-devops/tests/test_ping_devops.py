@@ -285,3 +285,64 @@ def test_the_chart_runs_the_sidecars_beside_pingfederate(tmp_path):
     admin = pods["pingfederate-pingfederate-admin"]
     assert {"name": "out-dir", "mountPath": "/pf-out", "readOnly": True} in admin["containers"][1]["volumeMounts"]
     assert any(v["name"] == "out-dir" and "persistentVolumeClaim" in v for v in admin["volumes"])
+
+
+# ------------------------------------------------------------------ server profile (5.9)
+from opsdir_adapter_ping_devops.checks import unmapped_variables       # noqa: E402
+from opsdir_adapter_ping_devops.profiles import render_profiles        # noqa: E402
+
+GRANTS = _binding("grants", "ciamSecretRef", "pf-grants-db-password", "ciamRefUri: fake://secrets/grants\n")
+REPO = "https://git.example.test/ops/profiles.git#pingfederate@main"
+PROFILE = {"instance/bulk-config/data.json": '{"password": "${secret:fake://secrets/grants}"}\n',
+           "instance/server/default/data/atm/default-atm.json": "{}\n"}
+ROOT_PROFILE = "ping-devops/server-profile/identity/"
+
+
+def _with(binding_extra="", workload_extra=""):
+    """The base record with both PingFederate bindings and the admin workload extended."""
+    admin, engine = "ciamBindingRole: pf-admin-workload\n", "ciamBindingRole: pf-engine-workload\n"
+    base = tuple(b.replace(admin, admin + binding_extra).replace(engine, engine + binding_extra)
+                 .replace("ciamWorkloadSecret: pf-admin/PING_IDENTITY_PASSWORD",
+                          f"{workload_extra}ciamWorkloadSecret: pf-admin/PING_IDENTITY_PASSWORD") for b in BASE)
+    return model(GRANTS, base=base)
+
+
+def test_the_server_profile_substitutes_secrets_and_is_built_into_the_image():
+    m = model(GRANTS)
+    assert render_profiles(m, {"PingFederate": PROFILE}, ()) == {}                   # only when asked
+    files = render_profiles(m, {"PingFederate": PROFILE}, (release.SERVER_PROFILE,))
+    assert files[ROOT_PROFILE + "pingfederate/instance/bulk-config/data.json.subst"] == (
+        '{"password": "${OPSDIR_PF_GRANTS_DB_PASSWORD}"}\n')          # substituted at start, never a value
+    assert ROOT_PROFILE + "pingfederate/instance/server/default/data/atm/default-atm.json" in files   # no .subst
+    assert "COPY --chown=ping:identity pingfederate/ /opt/in/" in files[ROOT_PROFILE + "Dockerfile"]
+    readme = files[ROOT_PROFILE + "README.md"]
+    assert f"push it as `{PF_IMAGE}`" in readme
+    assert "| `OPSDIR_PF_GRANTS_DB_PASSWORD` | pf-grants-db-password | **no** |" in readme
+    assert render_profiles(m, {}, (release.SERVER_PROFILE,)) == {}
+
+
+def test_a_profile_repository_is_fetched_by_the_containers():
+    m = _with(f"ciamProfileRepo: {REPO}\n",
+              "ciamWorkloadSecret: pf-admin/OPSDIR_PF_GRANTS_DB_PASSWORD <- pf-grants-db-password\n")
+    values = _values(m)
+    assert values["pingfederate-admin"]["envs"] == {"SERVER_PROFILE_URL": "https://git.example.test/ops/profiles.git",
+                                                    "SERVER_PROFILE_PATH": "pingfederate",
+                                                    "SERVER_PROFILE_BRANCH": "main"}
+    files = render_profiles(m, {"PingFederate": PROFILE}, (release.SERVER_PROFILE,))
+    assert ROOT_PROFILE + "Dockerfile" not in files                     # both fetch it: nothing to build
+    readme = files[ROOT_PROFILE + "README.md"]
+    assert "fetched from `https://git.example.test/ops/profiles.git` path `pingfederate` branch `main`" in readme
+    assert "| `OPSDIR_PF_GRANTS_DB_PASSWORD` | pf-grants-db-password | yes |" in readme
+    assert "envs" not in _values(model(GRANTS))["pingfederate-admin"]   # built into the image: no variables
+
+
+def test_the_planner_names_a_profile_variable_the_record_doesnt_deliver():
+    m = model(GRANTS)
+    files = render_profiles(m, {"PingFederate": PROFILE}, (release.SERVER_PROFILE,))
+    (p,) = placements(m)
+    assert unmapped_variables(p, files) == ("OPSDIR_PF_GRANTS_DB_PASSWORD",)
+    actions = [a[1] for a in check_ping_devops(PlanContext(m.d, m, m, None, None, {}, files, ())).actions]
+    assert any("substitutes `OPSDIR_PF_GRANTS_DB_PASSWORD`" in a for a in actions)
+    mapped = _with(workload_extra="ciamWorkloadSecret: pf-admin/OPSDIR_PF_GRANTS_DB_PASSWORD <- "
+                                  "pf-grants-db-password\n")
+    assert unmapped_variables(placements(mapped)[0], files) == ()

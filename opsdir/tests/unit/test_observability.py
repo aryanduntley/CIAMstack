@@ -187,3 +187,12 @@ def test_alarms_nobody_described_and_rules_nothing_runs_are_actions():
     indefinite = build_directory(REGISTRY, tuple(parse(mini_estate.LDIF + "\n" + "\n".join(BASE).replace(
         "ciamRetentionDays: 90", "ciamRetentionDays: 0"))))
     assert _plan(indefinite, check_logs).blockers == ()               # 0: the target never expires them
+
+
+def test_a_saml_sign_in_check_names_the_service_provider_it_starts_from():
+    saml = _entry(f"cn=saml,{CANARIES}", "ciamCanary",
+                  {"cn": "saml", "ciamCheckedService": "login-service", "ciamCanaryFlow": "saml-sso",
+                   "ciamFeedsAlert": f"cn=login-failures,{ALERT_RULES}"})
+    f = _plan(_record(saml), check_alerts)
+    assert ("Canary `saml` is a SAML sign-in but names no SAML service provider with an entity ID to start from "
+            "(ciamStartsFrom): no cloud renders it. Name the integration.") in [t for _, t, _, _ in f.actions]

@@ -279,3 +279,17 @@ def check_workloads(ctx):
     if parts.blockers or parts.actions:
         return parts
     return parts._replace(ok=(*parts.ok, f"The {len(held)} workload(s) have somewhere to run in {ctx.dst.label}."))
+
+
+def profile_repo(b):
+    """(git URL, path or None, branch or None) of where a workload binding keeps its configuration profile
+    (ciamProfileRepo <git URL>[#<path>][@<branch>]), or None when the profile is built into the image."""
+    ref = one(b, "ciamProfileRepo") if b is not None else None
+    if not ref:
+        return None
+    url, _, rest = ref.partition("#")
+    if rest:
+        path, _, branch = rest.partition("@")
+        return url, path or None, branch or None
+    head, at, branch = url.rpartition("@")
+    return (head, None, branch) if at and "/" not in branch and ":" not in branch and "/" in head else (url, None, None)

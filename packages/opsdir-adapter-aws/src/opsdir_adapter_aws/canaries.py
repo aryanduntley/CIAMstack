@@ -8,32 +8,41 @@ the estate setting aws-canary-runtime names (syn-python-selenium-12.0 by default
 which), at its interval (rate(n minutes)), its artifacts where its canary binding says (ciamStorageRef, an s3://
 bucket and optional prefix: the location is the environment's, so other clouds' checks, which keep their own
 results, need no such store), tagged Realizes and BindingRole so the inventory reads it back. The script
-requests the URL: GET for health and login-page (any answer below 400 passes); for oidc-token a client-credentials
-POST to the token endpoint with the client's id and secret read when it runs from the canary's credentials secret
-(Secrets Manager, its JSON holding client_id and client_secret), passing when the answer holds an access_token. The
-secret is never written anywhere opsdir renders.
+makes its flow's request (observability.probes: a GET, a client-credentials token request, an LDAPS simple bind) with
+the credentials it reads when it runs from the canary's credentials secret (Secrets Manager, its JSON holding client_id
+and client_secret, or bind_dn and password; an LDAP bind without credentials is anonymous). The secret is never
+written anywhere opsdir renders.
+
+A canary of an internal service name runs in the VPC (vpc_config): in the subnets canary_specs gives (its binding's
+ciamSubnetRole, else those the firewall rules admit to the service), with the environment's canaries' security group
+(aws_security_group canaries: out to each checked service on its port, at its frontend address or else the network's
+ranges, and out on 443 to the AWS APIs it calls: S3, CloudWatch, CloudWatch Logs, Secrets Manager, through NAT or the
+VPC endpoints com.amazonaws.<region>.monitoring, logs and secretsmanager and an S3 gateway endpoint, as AWS
+documents).
 
 One execution role for the environment's canaries (aws_iam_role ciam-<env>-canaries, trusted by Lambda) with the
-permissions CloudWatch Synthetics documents for a canary without KMS or VPC access: its artifacts at each location, its
-own log groups (/aws/lambda/cwsyn-<name>-*), s3:ListAllMyBuckets, xray:PutTraceSegments, cloudwatch:PutMetricData in
-the CloudWatchSynthetics namespace; and secretsmanager:GetSecretValue on each credentials secret.
+permissions CloudWatch Synthetics documents: its artifacts at each location, its own log groups
+(/aws/lambda/cwsyn-<name>-*), s3:ListAllMyBuckets, xray:PutTraceSegments, cloudwatch:PutMetricData in the
+CloudWatchSynthetics namespace; ec2:CreateNetworkInterface, DescribeNetworkInterfaces and DeleteNetworkInterface when a
+canary runs in the VPC; and secretsmanager:GetSecretValue on each credentials secret.
 
-Not rendered, and said so: what canary_specs names; a service name that isn't internet-facing (a canary outside a VPC
-can't reach it; one in a VPC isn't rendered yet); credentials that aren't a Secrets Manager secret; no artifact
-location (no canary binding, or one without an s3:// ciamStorageRef). A canary someone else keeps, or an overlay
-inherits from its base, is named with its keeper.
+Not rendered, and said so: what canary_specs names; a service name whose exposure isn't recorded; an internal one
+with no subnet to run from; credentials that aren't a Secrets Manager secret; no artifact location (no canary binding,
+or one without an s3:// ciamStorageRef). A canary someone else keeps, or an overlay inherits from its base, is named
+with its keeper.
 """
 import json
 import re
+from urllib.parse import urlsplit
 
 from opsdir.core.contract import Setting
-from opsdir.core.directory import one, rdn_value
+from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import one_role
 from opsdir.core.formats import PYTHON
 from opsdir.core.manifest import header
 from opsdir.core.settings import setting_value
-from opsdir.domains.edge.exposure import service_exposure
 from opsdir.domains.observability.canaries import canary_specs
+from opsdir.domains.observability.probes import PYTHON_PROBES
 from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_name
 from .account import partition
 
@@ -54,51 +63,29 @@ def _secret_arn(spec):
     return uri[len(SECRETS):] if uri and uri.startswith(SECRETS) else None
 
 
-GET_SCRIPT = '''import urllib.request
-
-from aws_synthetics.common import synthetics_logger as logger
-
-URL = {url!r}
-
-
-def handler(event, context):
-    """{flow} check: GET the URL; urllib raises on an answer of 400 or more, failing the canary."""
-    with urllib.request.urlopen(urllib.request.Request(URL, method="GET"), timeout=10) as response:
-        logger.info(f"{{URL}}: HTTP {{response.status}}")
-'''
-
-TOKEN_SCRIPT = '''import base64
-import json
-import urllib.parse
-import urllib.request
-
+# The canary's handler, after the probes (observability.probes): the credentials read from Secrets Manager when it
+# runs (oidc-token: {"client_id", "client_secret"}; ldap-bind: {"bind_dn", "password"}; none: an anonymous bind)
+HANDLER = '''
 import boto3
 from aws_synthetics.common import synthetics_logger as logger
 
+FLOW = {flow!r}
 URL = {url!r}
-# the client's credentials, read when the canary runs: {{"client_id", "client_secret"}}
 SECRET_ID = {secret!r}
 
 
 def handler(event, context):
-    """oidc-token check: a client-credentials grant at the token endpoint must return an access token."""
-    creds = json.loads(boto3.client("secretsmanager").get_secret_value(SecretId=SECRET_ID)["SecretString"])
-    basic = base64.b64encode(f"{{creds['client_id']}}:{{creds['client_secret']}}".encode()).decode()
-    request = urllib.request.Request(URL, data=urllib.parse.urlencode({{"grant_type": "client_credentials"}}).encode(),
-                                     method="POST", headers={{"Authorization": f"Basic {{basic}}",
-                                                              "Content-Type": "application/x-www-form-urlencoded"}})
-    with urllib.request.urlopen(request, timeout=10) as response:
-        if not json.loads(response.read()).get("access_token"):
-            raise Exception(f"{{URL}}: no access_token in the answer")
-        logger.info(f"{{URL}}: HTTP {{response.status}}, access token issued")
+    """{flow} check of URL: the probe raises when it fails, failing the canary."""
+    creds = (json.loads(boto3.client("secretsmanager").get_secret_value(SecretId=SECRET_ID)["SecretString"])
+             if SECRET_ID else None)
+    logger.info(f"{{URL}}: {{probe(FLOW, URL, creds)}}")
 '''
 
 
 def script(m, spec):
     """The canary's Python script, with its do-not-edit header."""
-    body = (TOKEN_SCRIPT.format(url=spec.url, secret=_secret_arn(spec)) if spec.flow == "oidc-token"
-            else GET_SCRIPT.format(url=spec.url, flow=spec.flow))
-    return header(m, f"CloudWatch Synthetics canary {canary_name(spec.name)} ({spec.flow})", PYTHON) + body
+    return (header(m, f"CloudWatch Synthetics canary {canary_name(spec.name)} ({spec.flow})", PYTHON) + PYTHON_PROBES
+            + HANDLER.format(flow=spec.flow, url=spec.url, secret=_secret_arn(spec)))
 
 
 def _schedule(every):
@@ -120,10 +107,14 @@ def _why(m, spec):
     svc = one_role(m, one(spec.canary, "ciamCheckedService"))
     if spec.why:
         return spec.why
-    if service_exposure(svc) != "internet":
-        return (f"service name {rdn_value(svc)} isn't recorded as internet-facing: a canary outside a VPC can't reach "
-                "it (canaries in a VPC aren't rendered yet)")
-    if spec.flow == "oidc-token" and _secret_arn(spec) is None:
+    if spec.exposure is None:
+        return (f"service name {rdn_value(svc)} records neither a frontend address nor its exposure: whether its "
+                "canary runs in the VPC is unknown")
+    if spec.exposure == "internal" and not spec.subnets:
+        return (f"service name {rdn_value(svc)} is internal and no subnet is named to run its canary from: name one "
+                "on its canary binding (ciamSubnetRole), or record a firewall rule admitting a subnet to "
+                + one(svc, "ciamTargetRole") + (f" on {one(svc, 'ciamPort')}" if one(svc, "ciamPort") else ""))
+    if spec.secret is not None and _secret_arn(spec) is None:
         return f"its credentials ({rdn_value(spec.secret)}) aren't a Secrets Manager secret (aws-sm://)"
     if spec.keeper is None and artifact_location(spec) is None:
         return ("no place for its artifacts: record its canary binding with an S3 location (ciamStorageRef "
@@ -155,14 +146,43 @@ def _canary(m, spec, why, runtime):
                 ("artifact_s3_location", "s3://{}/{}".format(*artifact_location(spec))),
                 ("execution_role_arn", ref("aws_iam_role.canaries.arn")), ("start_canary", True),
                 ("schedule", Block((("expression", _schedule(spec.every)),))),
+                *((("vpc_config", Block((
+                    ("subnet_ids", [ref(f"data.aws_subnet.{tf_name(rdn_value(s))}.id") for s in spec.subnets]),
+                    ("security_group_ids", [ref("aws_security_group.canaries.id")])))),)
+                  if spec.exposure == "internal" else ()),
                 ("tags", {"Realizes": cn, "BindingRole": one(spec.binding, "ciamBindingRole")
                           if spec.binding is not None else f"canary-{cn}"})]))
+
+
+def _destinations(m, specs):
+    """((cidr, port), ...) the canaries in the VPC request: each checked service's frontend address, else the
+    network's ranges, on its port."""
+    def where(s):
+        svc, url = one_role(m, one(s.canary, "ciamCheckedService")), urlsplit(s.url)
+        net = one_role(m, "network")
+        ip = one(svc, "ciamFrontendIp")
+        return tuple((c, url.port or 443) for c in ((f"{ip}/32",) if ip else values(net, "ciamCidr") if net else ()))
+    return tuple(dict.fromkeys(d for s in specs for d in where(s)))
+
+
+def _security_group(m, specs):
+    """The canaries' security group in the VPC: out to the services they check, and to the AWS APIs on 443."""
+    rules = (*((c, p, "checked services") for c, p in _destinations(m, specs)), ("0.0.0.0/0", 443, "AWS APIs"))
+    return (tf_block("resource", ["aws_security_group", "canaries"], [
+                ("name", f"ciam-{rdn_value(m.env)}-canaries"),
+                ("description", f"CIAM synthetic checks in the VPC ({m.label})"),
+                ("vpc_id", ref("data.aws_vpc.main.id")), ("tags", {"ManagedBy": "opsdir"})]),
+            *(tf_block("resource", ["aws_vpc_security_group_egress_rule", tf_name(f"canaries_{i}_{port}")], [
+                ("security_group_id", ref("aws_security_group.canaries.id")), ("cidr_ipv4", cidr),
+                ("from_port", port), ("to_port", port), ("ip_protocol", "tcp"), ("description", what)])
+              for i, (cidr, port, what) in enumerate(rules)))
 
 
 def _role(m, specs):
     names, part = [canary_name(s.name) for s in specs], partition(m)
     places = sorted({artifact_location(s) for s in specs})
-    secrets = sorted({_secret_arn(s) for s in specs if s.flow == "oidc-token"})
+    secrets = sorted({_secret_arn(s) for s in specs if s.secret is not None})
+    inside = any(s.exposure == "internal" for s in specs)
     statements = [
         {"Effect": "Allow", "Action": ["s3:PutObject", "s3:GetObject"],
          "Resource": [f"arn:{part}:s3:::{bucket}/{prefix}*" for bucket, prefix in places]},
@@ -173,6 +193,8 @@ def _role(m, specs):
         {"Effect": "Allow", "Action": ["s3:ListAllMyBuckets", "xray:PutTraceSegments"], "Resource": ["*"]},
         {"Effect": "Allow", "Action": "cloudwatch:PutMetricData", "Resource": "*",
          "Condition": {"StringEquals": {"cloudwatch:namespace": "CloudWatchSynthetics"}}},
+        *(({"Effect": "Allow", "Action": ["ec2:CreateNetworkInterface", "ec2:DescribeNetworkInterfaces",
+                                          "ec2:DeleteNetworkInterface"], "Resource": ["*"]},) if inside else ()),
         *(({"Effect": "Allow", "Action": ["secretsmanager:GetSecretValue"], "Resource": secrets},) if secrets else ())]
     trust = {"Version": "2012-10-17",
              "Statement": [{"Effect": "Allow", "Principal": {"Service": "lambda.amazonaws.com"},
@@ -189,8 +211,10 @@ def render_canaries(m, endpoints):
     """(HCL and comments, {path: script}) of environment m's canaries."""
     done = rendered(m, endpoints)
     live = tuple(s for s, why in done if why is None and s.keeper is None)
+    inside = tuple(s for s in live if s.exposure == "internal")
     runtime = setting_value(m.d, RUNTIME)
     hcl = (*(x for s, why in done for x in (from_entry(s.binding.dn, _canary(m, s, why, runtime))
                                              if s.binding is not None else _canary(m, s, why, runtime))),
-           *(_role(m, live) if live else ()))
+           *(_role(m, live) if live else ()),
+           *(_security_group(m, inside) if inside else ()))
     return hcl, {f"terraform/canaries/{canary_name(s.name)}/python/canary.py": script(m, s) for s in live}

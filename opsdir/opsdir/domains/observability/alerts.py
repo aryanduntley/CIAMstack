@@ -4,8 +4,9 @@ An alert rule is intent: a neutral signal on a server role, the condition that f
 says what to do, and the role of the channel that delivers it (ciamAlertRole), which each environment binds (a
 topic, an action group, a paging service). A canary signs in as a user would against the service name a role
 publishes (ciamCheckedService), with test credentials from a secret role (ciamUsesRole), and fires an alert rule when
-it fails (ciamFeedsAlert). Roles neither environment binds are blockers (the core role check covers one only the
-source binds): alerts that go nowhere and checks that check nothing are what a move breaks silently.
+it fails (ciamFeedsAlert); a SAML sign-in check starts from a SAML integration (ciamStartsFrom: a service provider
+with an entity ID). Roles neither environment binds are blockers (the core role check covers one only the source
+binds): alerts that go nowhere and checks that check nothing are what a move breaks silently.
 """
 from ...core.directory import children, follow, get, one, rdn_value, values
 from ...core.environment import bound_nowhere
@@ -62,14 +63,24 @@ def _rule(ctx, r):
                      "it.", owner, None),) if not values(r, "ciamOwner") else ())])
 
 
+def starts_nowhere(d, c):
+    """Whether a SAML sign-in check names no SAML service provider with an entity ID to start from."""
+    sp = follow(d, c, "ciamStartsFrom")
+    return one(c, "ciamCanaryFlow") == "saml-sso" and (
+        sp is None or one(sp, "ciamProtocolType") != "saml2-sp" or not one(sp, "ciamEntityId"))
+
+
 def _canary(ctx, c):
     name, owner = rdn_value(c), responsible(ctx.d, c, ctx.dst.env)
     nowhere = bound_nowhere((one(c, "ciamCheckedService"), *values(c, "ciamUsesRole")), ctx.src, ctx.dst)
     return findings(
         blockers=[("Canary", f"Canary `{name}` needs role `{r}`, which neither {ctx.src.label} nor {ctx.dst.label} "
                    "binds: it checks nothing. Record each environment's.", owner) for r in nowhere],
-        actions=[("Canary", f"Canary `{name}` fires no alert rule: when it fails, nobody hears. Name the rule it "
-                  "feeds (ciamFeedsAlert).", owner, None)] if not one(c, "ciamFeedsAlert") else [])
+        actions=[*((("Canary", f"Canary `{name}` fires no alert rule: when it fails, nobody hears. Name the rule it "
+                     "feeds (ciamFeedsAlert).", owner, None),) if not one(c, "ciamFeedsAlert") else ()),
+                 *((("Canary", f"Canary `{name}` is a SAML sign-in but names no SAML service provider with an entity "
+                     "ID to start from (ciamStartsFrom): no cloud renders it. Name the integration.", owner, None),)
+                   if starts_nowhere(ctx.d, c) else ())])
 
 
 def check_alerts(ctx):

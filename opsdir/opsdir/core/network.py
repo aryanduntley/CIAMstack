@@ -14,6 +14,7 @@ def is_private(ip):
 
 
 def covers(cidrs, addr):
-    """Whether an address or range lies inside any of the given CIDRs."""
+    """Whether an address or range lies inside any of the given CIDRs (those of the other IP version never hold it)."""
     net = ipaddress.ip_network(addr, strict=False)
-    return any(net.subnet_of(ipaddress.ip_network(c, strict=False)) for c in cidrs)
+    return any(net.subnet_of(c) for c in (ipaddress.ip_network(c, strict=False) for c in cidrs)
+               if c.version == net.version)

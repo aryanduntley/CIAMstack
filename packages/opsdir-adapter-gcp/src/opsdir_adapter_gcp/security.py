@@ -1,12 +1,12 @@
 """Cloud security services on Google Cloud (core estate: ciamSecurityService) as Security Command Center, Cloud Asset
-Inventory and the scanning APIs. Pure.
+Inventory, the scanning APIs and Compliance Manager. Pure.
 
 Security Command Center is activated for an organization (or a project) at a tier, and its services (Event Threat
 Detection, Container Threat Detection, VM Threat Detection, Security Health Analytics, Web Security Scanner) are turned
 on there, by the organization's administrators: the google provider has no resource for either. Its compliance
-frameworks are Compliance Manager deployments, and FedRAMP, IL and ITAR regimes are Assured Workloads folders, both on
-the organization. So for each service the platform team keeps (no ciamManagedBy; one someone else keeps is named in a
-comment) this renders what a project can hold and names the rest as a request:
+frameworks are Compliance Manager framework deployments (compliance.py), and FedRAMP and IL regimes Assured Workloads
+folders. So for each service the platform team keeps (no ciamManagedBy; one someone else keeps is named in a comment)
+this renders what a project can hold and names the rest as a request:
 
   threat-detection        a comment naming the tier and the services its areas need: Event Threat Detection
                           (control-plane, identity, network, storage, databases), Container Threat Detection
@@ -18,8 +18,11 @@ comment) this renders what a project can hold and names the rest as a request:
   config-recording        Cloud Asset Inventory keeps 35 days of resource history itself; a
                           google_cloud_asset_project_feed of every resource's changes to the Pub/Sub topic its
                           ciamFindingsRole names exports it
-  posture                 Security Health Analytics (part of the tier, a comment); frameworks and the gcp-default
-                          baseline as the request above; other clouds' baselines named in a comment
+  posture                 Security Health Analytics (part of the tier, a request); each framework and the gcp-default
+                          baseline (Security Essentials) a google_cloud_security_compliance_framework_deployment from
+                          the framework catalog (compliance.py: on the project, or organization-wide on the
+                          organization, kept with the landing zone), else a request saying why; frameworks Google
+                          doesn't offer and other clouds' baselines named in a comment
 
 Findings of threat detection, vulnerability scanning and posture go where ciamFindingsRole says through a
 google_scc_v2_project_notification_config streaming the finding class (THREAT, VULNERABILITY, MISCONFIGURATION) to the
@@ -34,7 +37,10 @@ Read back from Terraform state (and from gcloud and Cloud Asset Inventory, norma
 cli_security.py): SCC notification configs (project or organization, v1 or v2) -> a security service per
 finding class their filter streams (no class: threat detection), organization scope for an organization's;
 google_project_service containerscanning / osconfig -> vulnerability scanning over containers / compute; asset feeds
-(project, folder, organization) -> configuration recording (35 days); each with its topic as where findings go. A
+(project, folder, organization) -> configuration recording (35 days); each with its topic as where findings go;
+framework deployments -> the frameworks and baseline a posture service assesses (compliance.deployment_keys), folded
+into the posture service the notification configs give (else one of their own, organization-wide when one targets
+the organization). A
 notification config whose filter names severities is the incident route of its class's service (its topic, the least
 severity it lets through).
 """
@@ -45,7 +51,10 @@ from opsdir.core.inventory import of_types, resource
 from opsdir.domains.estate.incidents import incident_routes
 from opsdir.domains.estate.naming import SEVERITIES
 from opsdir.domains.estate.security import findings_destination, security_services
-from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_name
+from opsdir.domains.governance.keepers import organization_line, organization_wide
+from opsdir_format_terraform.hcl import Block, TfBlock, comment, from_entry, mentions, ref, tf_block, tf_name
+from .account import ORGANIZATION, organization_variable
+from .compliance import BASELINE, deployment, deployment_keys
 
 NOTIFICATION = "google_scc_v2_project_notification_config"
 NOTIFICATIONS = (("google_scc_v2_project_notification_config", "account"), ("google_scc_project_notification_config",
@@ -62,7 +71,6 @@ DETECTORS = (("Event Threat Detection", ("control-plane", "identity", "network",
              ("Cloud Run Threat Detection", ("applications",)))
 SCANNING = {"containers": "containerscanning.googleapis.com", "compute": "osconfig.googleapis.com"}
 APIS = {v: k for k, v in SCANNING.items()}
-BASELINE = "gcp-default"
 NATIVE_DAYS = 35                     # Cloud Asset Inventory's own resource history
 
 
@@ -159,12 +167,15 @@ def _recording(m, s):
 
 def _posture(m, s):
     cn = rdn_value(s)
-    frameworks = values(s, "ciamComplianceStandard")
-    others = [b for b in values(s, "ciamSecurityBaseline") if b != BASELINE]
+    baselines = values(s, "ciamSecurityBaseline")
+    others = [b for b in baselines if b != BASELINE]
+    deployed = tuple(x for k in (*values(s, "ciamComplianceStandard"), *((BASELINE,) if BASELINE in baselines else ()))
+                     for x in deployment(m, s, k, lambda what: _request(cn, what)))
     return (_request(cn, f"Security Command Center (Premium or Enterprise) activated with Security Health Analytics "
                          f"({BETA_ONLY})"),
-            *((_request(cn, f"{', '.join(frameworks)} assessed by Compliance Manager framework deployments (FedRAMP, "
-                            "IL and ITAR regimes held by an Assured Workloads folder)"),) if frameworks else ()),
+            *deployed,
+            *((comment(organization_line(m, s)),)
+              if organization_wide(s) and any(isinstance(x, TfBlock) for x in deployed) else ()),
             *((comment(f"{cn}: {', '.join(others)}: another cloud's baseline, not Google Cloud's (not rendered)"),)
               if others else ()))
 
@@ -190,12 +201,15 @@ def _apis(m):
 
 def render_security(m):
     """HCL (and comments) for environment m's security services (whoever keeps each): the scanning APIs once, then
-    each service, stamped with its entry (an API with the first service needing it) so the render places it by
-    keeper."""
-    return (*(x for api, origin in _apis(m) for x in from_entry(origin, (
-                tf_block("resource", ["google_project_service", tf_name(api.split(".")[0])], [
-                    ("project", PROJECT), ("service", api), ("disable_on_destroy", False)]),))),
-            *(x for s in security_services(m) for x in from_entry(s.dn, _service(m, s))))
+    each service, stamped with its entry (an API with the first service needing it; an organization-wide framework
+    deployment with its organization origin) so the render places it by keeper; the organization input once, when a
+    deployment is made in the organization."""
+    out = (*(x for api, origin in _apis(m) for x in from_entry(origin, (
+               tf_block("resource", ["google_project_service", tf_name(api.split(".")[0])], [
+                   ("project", PROJECT), ("service", api), ("disable_on_destroy", False)]),))),
+           *(x for s in security_services(m) for x in from_entry(s.dn, _service(m, s))))
+    return ((organization_variable(m, "The organization the compliance frameworks are deployed in"),)
+            if mentions(out, f"var.{ORGANIZATION}") else ()) + out
 
 
 # ------------------------------------------------------------------ read back
@@ -268,4 +282,20 @@ def security_resources(pairs):
                    "ciamRetentionDays": NATIVE_DAYS, **every},
                    links={"ciamFindingsRole": _feed_topic(a)}, name=a.get("feed_id"))
                for t, scope in FEEDS for a in of_types(pairs, t) if a.get("feed_id"))]
-    return tuple(found)
+    return _assessed(tuple(found), deployment_keys(pairs), every)
+
+
+def _assessed(found, keys, every):
+    """The security services with the frameworks and baseline the framework deployments assess folded into the first
+    posture service (else one of their own)."""
+    if not keys:
+        return found
+    attrs = {"ciamComplianceStandard": tuple(dict.fromkeys(k for k, _ in keys if k != BASELINE)),
+             "ciamSecurityBaseline": tuple(dict.fromkeys(k for k, _ in keys if k == BASELINE))}
+    first = next((i for i, r in enumerate(found) if r.attrs.get("ciamSecurityKind") == ("posture",)), None)
+    if first is None:
+        return (*found, resource("security", "compliance-manager", {
+            "ciamSecurityKind": "posture", "ciamAuditScope": "organization" if any(w for _, w in keys) else "account",
+            **every, **attrs}, name="posture"))
+    r = found[first]
+    return (*found[:first], r._replace(attrs={**r.attrs, **{k: v for k, v in attrs.items() if v}}), *found[first + 1:])

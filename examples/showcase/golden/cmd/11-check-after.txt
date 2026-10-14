@@ -25,7 +25,7 @@ Expected findings check (after changes)
            B38  cleared by CHG-2034: production's Macie examines the directory backups for sensitive data (CUI markings, employee numbers); the target runs no data discovery, a blocker once it is held to FedRAMP Moderate (DFARS) → gone
            B39  cleared by CHG-2034: the target has no data discovery binding: Macie examines the source's backups → gone
            B33  cleared by CHG-2029: production is held to DFARS 252.204-7012 (72-hour reporting on DIBNet); the target to no reporting obligation → gone
-  actions  planted 130   expected now 103   detected 103   missed 0   unexpected 0
+  actions  planted 131   expected now 103   detected 103   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone
@@ -53,6 +53,7 @@ Expected findings check (after changes)
            A128 cleared by CHG-2037: the corporate AD's users sign in by pass-through only: no leaked-credential detection, no password change for a risky user → gone
            A129 cleared by CHG-2037: a password changed in Entra wouldn't reach the corporate AD → gone
            A130 cleared by CHG-2037: nothing watches the corporate AD the target's users come from (Defender for Identity) → gone
+           A131 cleared by CHG-2043: the target's AM/IDM keys are generated in the cluster, not the record's → gone
            A70  raised by CHG-2017: the target's backup container (CHG-2017) has no immutability policy: a backup can be deleted early → reported
            A71  raised by CHG-2017: nothing copies the target's backups to another region; the source replicates to us-west-2 → reported
            A75  raised by CHG-2019: the target's disk backup (CHG-2019) keeps snapshots in its own region: Azure disk backup can't copy them → reported

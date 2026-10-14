@@ -408,6 +408,9 @@ EXPECTED = MappingProxyType({
         ("A130", "Identity protection", "target/prod's cloud takes its users from corp.example-aero.internal and no "
          "threat detection covers the directory", "nothing watches the corporate AD the target's users come from "
          "(Defender for Identity)", "CHG-2037"),
+        ("A131", "ForgeOps", "ForgeOps in target/prod (namespace `ciam`) generates AM's and IDM's keystore (the "
+         "keystore-create job) while the record holds am-keystore", "the target's AM/IDM keys are generated in the "
+         "cluster, not the record's", "CHG-2043"),
     ],
 })
 

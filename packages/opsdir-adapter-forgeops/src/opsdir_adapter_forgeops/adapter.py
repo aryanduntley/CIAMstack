@@ -5,14 +5,23 @@ from opsdir.core.contract import Adapter
 from .checks import check_forgeops
 from .listeners import listeners
 from .logs import LOGS
+from .profiles import render_profiles
 from .render import TARGETS, applies, render
 from .routes import routes
+
+# a config profile's files by their kind (the products' own: JSON, properties, scripts; anything else as text), then
+# the values and overlay
+_PROFILES = "forgeops/config-profiles/"
+FORMATS = ((_PROFILES + "*/Dockerfile", "dockerfile"), (_PROFILES + "*.json", "json"),
+           (_PROFILES + "*.properties", "java-properties"), (_PROFILES + "*.md", "markdown"),
+           (_PROFILES + "*.groovy", "groovy"), (_PROFILES + "*.js", "javascript"), (_PROFILES + "*.xml", "xml"),
+           (_PROFILES + "*", "text"), ("forgeops/*", "yaml"))
 
 ADAPTER = Adapter(name="forgeops", kind="platform", applies=applies, required_roles=(),
                   render_neutral=None, render_env=render, checks=(check_forgeops,), ref_schemes=(),
                   secret_schemes={},
-                  renders="ForgeOps Helm values (identity-platform, ping-gateway) and a Kustomize overlay for the "
-                          "workloads run on Kubernetes",
-                  neutral_label=None, vocabulary={}, schema=None, formats=(("forgeops/*", "yaml"),), products=(),
+                  renders="ForgeOps Helm values (identity-platform, ping-gateway), a Kustomize overlay and, on "
+                          "request, the products' config profiles for the workloads run on Kubernetes",
+                  neutral_label=None, vocabulary={}, schema=None, formats=FORMATS, products=(),
                   secret_patterns=(), importers=(), profile_terms=None, access=None, render_targets=TARGETS,
-                  listeners=listeners, routes=routes, logs=LOGS)
+                  listeners=listeners, routes=routes, logs=LOGS, render_profiles=render_profiles)

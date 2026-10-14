@@ -41,6 +41,8 @@ HTML = _format("html", "HTML", "text/html", (".html", ".htm"), ("<!--", "-->"))
 MARKDOWN = _format("markdown", "Markdown", "text/markdown", (".md",), ("<!--", "-->"))
 PEM = _format("pem", "PEM certificate or public key (RFC 7468)", "application/x-pem-file", (".pem", ".crt"), ())
 TEXT = _format("text", "Plain text", "text/plain", (".txt",), ())
+# a container image build (named Dockerfile, no extension: adapters declare it by path)
+DOCKERFILE = _format("dockerfile", "Dockerfile (container image build)", "text/x-dockerfile", (), ("#",))
 
 
 def format_of(path, declarations):

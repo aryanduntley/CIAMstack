@@ -15,11 +15,13 @@ the standard documents at PingFederate's endpoint paths (environment-neutral).
 Endpoint paths are PingFederate's defaults.
 """
 from opsdir.core.contract import Endpoint
+from opsdir.core.profiles import ProductProfile
 from opsdir.domains.federation.services import identity_services
 from opsdir_base_oidc.discovery import OidcEndpoints
 from opsdir_base_oidc.render import oidc_files
 from opsdir_base_saml.render import SamlEndpoints, saml_files
 from .admin_api import admin_api_files
+from .bulk import bulk_files
 from .discovery import discovery_file
 from .terraform_target import terraform_files, terraform_import_files
 from .naming import SERVER_ROLES
@@ -29,11 +31,13 @@ SAML_ENDPOINTS = SamlEndpoints(sso=(("HTTP-Redirect", "/idp/SSO.saml2"), ("HTTP-
 OIDC_ENDPOINTS = OidcEndpoints(authorization="/as/authorization.oauth2", token="/as/token.oauth2",
                                userinfo="/idp/userinfo.openid", jwks="/pf/JWKS", end_session="/idp/startSLO.ping")
 # What the edge treats specially (contract.Endpoint): sign-in and token from the endpoints above, SAML posts (the IdP's
-# and, as a service provider, its assertion consumer), self-service password reset, and the heartbeat
-ENDPOINTS = tuple(Endpoint(kind, path, "pf-engine") for kind, path in (
+# and, as a service provider, its assertion consumer), self-service password reset, the heartbeat, and the IdP-initiated
+# start of a SAML sign-in to a service provider (a synthetic check's entry point)
+ENDPOINTS = (*(Endpoint(kind, path, "pf-engine") for kind, path in (
     ("login", OIDC_ENDPOINTS.authorization), *(("login", p) for b, p in SAML_ENDPOINTS.sso if b == "HTTP-Redirect"),
     ("token", OIDC_ENDPOINTS.token), *(("saml-post", p) for b, p in SAML_ENDPOINTS.sso if b == "HTTP-POST"),
-    ("saml-post", "/sp/ACS.saml2"), ("password-reset", "/ext/pwdreset/*"), ("health", "/pf/heartbeat.ping")))
+    ("saml-post", "/sp/ACS.saml2"), ("password-reset", "/ext/pwdreset/*"), ("health", "/pf/heartbeat.ping"))),
+    Endpoint("saml-start", "/idp/startSSO.ping", "pf-engine", query="PartnerSpId={entity}"))
 
 
 def render_neutral(d):
@@ -47,7 +51,13 @@ def render_neutral(d):
 TARGETS = (("admin-api", "Admin API requests checked against the version's spec (pingfederate/admin-api/)"),
            ("terraform", "Terraform for the pingidentity/pingfederate provider (pingfederate/terraform/)"),
            ("terraform-imports", "import blocks adopting the objects an existing PingFederate already holds "
-                                 "(pingfederate/terraform/imports.tf; with terraform)", False))
+                                 "(pingfederate/terraform/imports.tf; with terraform)", False),
+           ("bulk-config", "the configuration as a bulk import document, a server profile's "
+                           "instance/bulk-config/data.json (pingfederate/bulk-config/)", False))
+# its product profile (core.profiles): the bulk document and the captured files (bin/run.properties, ...) as a Ping
+# server profile's instance/ tree holds them
+PROFILE = ProductProfile("PingFederate", (("pingfederate/bulk-config/", "instance/bulk-config/"),
+                                          ("files/pingfederate/", "instance/")))
 
 
 def render_env(m, services, targets=tuple(t[0] for t in TARGETS if len(t) < 3)):
@@ -58,4 +68,5 @@ def render_env(m, services, targets=tuple(t[0] for t in TARGETS if len(t) < 3)):
         raise SystemExit("pingfederate=terraform-imports adopts what the terraform target renders: choose both")
     return {**(admin_api_files(m) if "admin-api" in targets else {}),
             **(terraform_files(m) if "terraform" in targets else {}),
-            **(terraform_import_files(m) if "terraform-imports" in targets else {}), **discovery_file(m)}
+            **(terraform_import_files(m) if "terraform-imports" in targets else {}),
+            **(bulk_files(m) if "bulk-config" in targets else {}), **discovery_file(m)}

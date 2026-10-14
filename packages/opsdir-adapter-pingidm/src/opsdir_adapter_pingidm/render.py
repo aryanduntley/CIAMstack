@@ -15,11 +15,15 @@ blocks on both).
 
 from opsdir.core.directory import children, one, rdn_value, values
 from opsdir.core.environment import bound, secret_placeholder
+from opsdir.core.profiles import ProductProfile
 from opsdir.core.jsondata import WITHHELD, held_json, indented, with_value, with_values
 from opsdir.domains.infrastructure.external import is_jdbc_url, jdbc_hosts, role_hosts, with_jdbc_hosts
 from .naming import CONNECTORS, MANAGED, MAPPINGS, SCHEDULES
 
 FORMATS = (("pingidm/conf/*.json", "json"),)
+# The project as IDM reads it (conf/, resolver/ under its instance), captured files included: the product profile a
+# deployment kit consumes (core.profiles)
+PROFILE = ProductProfile("PingIDM", (("pingidm/conf/", "conf/"), ("files/pingidm/", "")))
 
 
 def _config(e, attr="pingidmConfig"):

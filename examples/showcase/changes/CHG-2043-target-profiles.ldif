@@ -1,0 +1,101 @@
+# CHG-2043 (approved): the target builds its products' configuration into what its Kubernetes deployment runs
+# (milestone 5.9). ForgeOps renders IDM's, amster's and PingGateway's config profiles (IDM's into the configuration
+# image idm-config, amster's and PingGateway's into their images); PingFederate's configuration becomes a server
+# profile (its bulk import document) that the admin and engine fetch from the platform's profile repository. No
+# profile holds a secret: IDM's connector passwords and PingFederate's keys and passwords are OPSDIR_<ROLE>
+# variables the pods read from the Secret keys mapped here. AM and IDM run the record's keystore (am-keystore)
+# instead of one the release generates.
+
+dn: cn=kit-forgeops,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: modify
+add: ciamRenderTarget
+ciamRenderTarget: helm
+ciamRenderTarget: kustomize
+ciamRenderTarget: config-profiles
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops
+
+dn: cn=federation,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: modify
+add: ciamRenderTarget
+ciamRenderTarget: admin-api
+ciamRenderTarget: terraform
+ciamRenderTarget: bulk-config
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops
+
+dn: cn=kit-ping-devops,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: modify
+add: ciamRenderTarget
+ciamRenderTarget: server-profile
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops
+
+dn: cn=idm,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: modify
+add: ciamContainerImage
+ciamContainerImage: idm-custom=crciamprod.azurecr.io/ciam/idm-config:8.1.2
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops
+
+dn: cn=pf-admin,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: modify
+add: ciamProfileRepo
+ciamProfileRepo: https://git.example-aero.test/ciam/server-profiles.git#pingfederate@main
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops
+
+dn: cn=pf-engine,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: modify
+add: ciamProfileRepo
+ciamProfileRepo: https://git.example-aero.test/ciam/server-profiles.git#pingfederate@main
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops
+
+dn: cn=idm,ou=workloads,dc=ciam-ops
+changetype: modify
+add: ciamWorkloadSecret
+ciamWorkloadSecret: idm-profile/OPSDIR_IDM_HRDB_PASSWORD <- idm-hrdb-password
+ciamWorkloadSecret: idm-profile/OPSDIR_IDM_DS_BIND_PASSWORD <- idm-ds-bind-password
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops
+
+dn: cn=pf-admin,ou=workloads,dc=ciam-ops
+changetype: modify
+add: ciamWorkloadSecret
+ciamWorkloadSecret: pf-profile/OPSDIR_PF_SIGNING_KEY <- pf-signing-key
+ciamWorkloadSecret: pf-profile/OPSDIR_PF_SIGNING_KEY_PASSWORD <- pf-signing-key-password
+ciamWorkloadSecret: pf-profile/OPSDIR_SSO_TLS_KEYSTORE <- sso-tls-keystore
+ciamWorkloadSecret: pf-profile/OPSDIR_SSO_TLS_KEYSTORE_PASSWORD <- sso-tls-keystore-password
+ciamWorkloadSecret: pf-profile/OPSDIR_PF_CORP_AD_BIND_PASSWORD <- pf-corp-ad-bind-password
+ciamWorkloadSecret: pf-profile/OPSDIR_PF_GRANTS_DB_PASSWORD <- pf-grants-db-password
+ciamWorkloadSecret: pf-profile/OPSDIR_PF_DS_BIND_PASSWORD <- pf-ds-bind-password
+ciamWorkloadSecret: pf-profile/OPSDIR_PF_SMTP_PASSWORD <- pf-smtp-password
+ciamWorkloadSecret: pf-profile/OPSDIR_PF_CAPTCHA_SECRET <- pf-captcha-secret
+ciamWorkloadSecret: pf-profile/OPSDIR_PF_ADMIN_PASSWORD <- pf-admin-password
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops
+
+dn: cn=pf-engine,ou=workloads,dc=ciam-ops
+changetype: modify
+add: ciamWorkloadSecret
+ciamWorkloadSecret: pf-profile/OPSDIR_PF_ADMIN_PASSWORD <- pf-admin-password
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops
+
+dn: cn=am,ou=workloads,dc=ciam-ops
+changetype: modify
+add: ciamWorkloadSecret
+ciamWorkloadSecret: keystore/keystore.jceks <- am-keystore
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2043,ou=changes,dc=ciam-ops

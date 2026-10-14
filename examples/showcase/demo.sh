@@ -208,6 +208,20 @@ od modify --change CHG-2037 changes/CHG-2037-target-hybrid-identity.ldif
 echo "-- the target keeps its resource change history as long as the source (2557 days): an hourly export of"
 echo "   Resource Graph's changes into its security workspace"
 od modify --change CHG-2038 changes/CHG-2038-target-change-history.ldif
+echo "-- the standby assesses itself against NIST SP 800-53 Rev. 5 and its CIS benchmark with Compliance Manager:"
+echo "   Google's frameworks fetched into the record (prerequisite gcp-frameworks), then deployed from it"
+od modify --change CHG-2039 changes/CHG-2039-standby-compliance-frameworks.ldif
+od import --change CHG-2041 --at 20260923090000Z gcp/frameworks exports/frameworks/gcp
+rm -rf out/standby-prod-compliance
+od render standby/prod --binding cn=compliance,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops -o out/standby-prod-compliance
+echo "-- the standby will hold ITAR technical data: its Assured Workloads folder takes Google's ITAR package"
+od modify --change CHG-2042 changes/CHG-2042-standby-itar-data.ldif
+echo "-- the target builds its products' configuration into its deployment: ForgeOps config profiles, PingFederate's"
+echo "   server profile (fetched from the platform's profile repository); secrets only as variables from Secret keys"
+od modify --change CHG-2043 changes/CHG-2043-target-profiles.ldif
+od report regulated-data
+rm -rf out/standby-prod-landing-zone
+od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone
 od report baselines
 rm -rf out/hq-lab
 od render hq/lab

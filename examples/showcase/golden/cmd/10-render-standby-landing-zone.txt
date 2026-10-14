@@ -1,0 +1,2 @@
+rendered 4 files for env=prod,cloud=standby,ou=environments,dc=ciam-ops (gcp) → <OUT>/render-after/standby-prod-landing-zone
+exit 0

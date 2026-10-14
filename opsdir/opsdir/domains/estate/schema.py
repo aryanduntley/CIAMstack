@@ -16,7 +16,10 @@ discovery services (ciamDataDiscovery: the stores each examines for sensitive da
 looks for, how often, where its findings go and where it keeps its results). What an environment
 needs of a provider limit (ciamQuotaNeed: virtual CPUs, public addresses, networks, ...) is a binding too, with the
 operator's decision when the provider grants less; the limits themselves are fetched from the provider into the quota
-catalog (under ou=quotas, one ciamQuotaCatalog per account and region, a ciamQuotaLimit per quota). A budget
+catalog (under ou=quotas, one ciamQuotaCatalog per account and region, a ciamQuotaLimit per quota). The compliance
+frameworks a provider offers are fetched the same way into the framework catalog (under ou=frameworks, one
+ciamFrameworkCatalog per provider and organization, a ciamProviderFramework per framework, its ciamProviderControl
+entries when a posture service names it), for the renderers deploying what a posture service assesses. A budget
 (ciamBudget) caps an environment's spending per period and says at which shares of it, spent or forecast, whom to
 alert; the account billing is managed from is the cloud's ciamBillingAccountRef. The reporting obligations (under
 ou=reporting-obligations: a regime's clock from discovery to report, the authority reports go to, who files them, the
@@ -33,8 +36,10 @@ from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
 from .naming import (AMOUNT, ASSESSMENT_KINDS, AUTHORIZATION_STATUSES, CONFIGURATIONS, DIRECTORY_SYNC, LEVELS,
                      MET_CONFIGURATIONS, RESPONSIBILITY,
                      ASSESSMENT_STATUSES, BUDGET_PERIODS, CAGE_CODE, CLASSIFICATIONS,
-                     CONTROL_REF, CURRENCY, DISCOVERY_SOURCES, EXCEPTION_KINDS, EXCEPTION_STATUSES, FINDING_REF,
-                     MEDIA_REQUESTS, POAM_STATUSES, QUOTA_DECISIONS, QUOTA_KINDS, REGION_STATUSES, RISK_RATINGS,
+                     CONTROL_REF, CURRENCY, DISCOVERY_SOURCES, ENFORCEMENT_MODES, EXCEPTION_KINDS, EXCEPTION_STATUSES,
+                     FINDING_REF,
+                     MEDIA_REQUESTS, POAM_STATUSES, QUOTA_DECISIONS, QUOTA_KINDS, REGION_STATUSES, REGULATED_DATA,
+                     RISK_RATINGS,
                      SECURITY_AREAS, SECURITY_KINDS, SEVERITIES, STANDARD_ID, TAG_SOURCES, UEI, CUSTOM_IDENTIFIER,
                      POLICY_MODES, POLICY_SUBJECT, RISK_POLICY)
 
@@ -121,6 +126,16 @@ ATTRIBUTES = (
     AttributeDef(510, 'ciamQuotaName', 'string', 'meta', True,
                  "A quota's name as its provider shows it (Running On-Demand Standard instances, "
                  "Total Regional vCPUs)"),
+    AttributeDef(652, 'ciamFrameworkName', 'string', 'meta', True,
+                 "A provider compliance framework's name as its provider shows it (NIST SP 800-53 R5)"),
+    AttributeDef(653, 'ciamRevision', 'string', 'observed', True,
+                 "The revision of a provider's compliance framework or control, as fetched (a deployment names it)"),
+    AttributeDef(654, 'ciamEnforcementMode', enum_type(ENFORCEMENT_MODES), 'observed', False,
+                 "How a provider's compliance framework or control can be enforced, as fetched: preventive (blocks "
+                 "a non-compliant change), detective (finds and reports one), audit (gathers evidence)"),
+    AttributeDef(655, 'ciamControlParameter', 'string', 'observed', False,
+                 "A parameter a provider's control requires, as fetched: name=<its default as JSON>, or the name "
+                 "alone when it has no default"),
     AttributeDef(511, 'ciamBudgetAmount', 'string', 'binding', True,
                  "How much a budget allows an environment to spend each period, in its currency (1500, 1500.50)",
                  (("X-PATTERN", AMOUNT),)),
@@ -311,6 +326,10 @@ ATTRIBUTES = (
     AttributeDef(585, 'ciamRequiredAuthorization', enum_type(LEVELS), 'intent', False,
                  "A level an environment's cloud authorization must meet (an obligation's requirement: dfars-7012 "
                  "asks for fedramp-moderate; a DoD contract for dod-il4 or dod-il5)"),
+    AttributeDef(656, 'ciamRegulatedData', enum_type(REGULATED_DATA), 'intent', False,
+                 "Regulated data an environment holds (or an obligation brings), by regime: itar, ear (export-"
+                 "controlled technical data), cjis (criminal justice information), hipaa (protected health "
+                 "information), irs-1075 (federal tax information); where it may be held is the cloud's to say"),
     AttributeDef(586, 'ciamRequiresConfiguration', enum_type(CONFIGURATIONS), 'meta', False,
                  "What a customer must configure for its use to be inside an authorization's boundary: "
                  "assured-workload, us-data-location, us-person-support, il5-isolation"),
@@ -372,10 +391,11 @@ CLASSES = (
              "users come from (how they sign in, whether passwords are written back)"),
     ClassDef(104, 'ciamEnvironmentPlacement', 'top', 'AUXILIARY', (),
              ('ciamResourceGroup', 'ciamDataClassification', 'ciamResidencyRef', 'ciamReportingObligationRef',
-              'ciamAuthorizationRef', 'ciamRequiredAuthorization', 'ciamConfigurationMet'),
+              'ciamAuthorizationRef', 'ciamRequiredAuthorization', 'ciamConfigurationMet', 'ciamRegulatedData'),
              "Added to an environment: the resource group its resources go in (where the cloud has them), how "
-             "sensitive its data is, the residency and reporting obligations it is held to, the cloud authorization it "
-             "relies on (the level it requires, the configurations it has in place)"),
+             "sensitive its data is and the regulated data it holds, the residency and reporting obligations it is "
+             "held to, the cloud authorization it relies on (the level it requires, the configurations it has in "
+             "place)"),
     ClassDef(105, 'ciamChargedParty', 'top', 'AUXILIARY', (), ('ciamCostCenter',),
              "Added to a party: the cost center its spending is charged to"),
     ClassDef(106, 'ciamTagRule', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTagKey', 'ciamTagSource'), ('ciamTagValue',),
@@ -418,15 +438,29 @@ CLASSES = (
              ('ciamQuotaName', 'ciamQuotaUsage', 'ciamQuotaKind'),
              "One limit of a quota catalog, named by the provider's quota id: the value granted, its name, the "
              "usage when fetched and the quota kind it answers"),
+    ClassDef(134, 'ciamFrameworkCatalog', 'ciamObject', 'STRUCTURAL',
+             ('cn', 'ciamCloudProvider', 'ciamOrganizationRef'), (),
+             "The compliance frameworks a provider offers one organization (under ou=frameworks), as fetched: its "
+             "ciamProviderFramework entries"),
+    ClassDef(135, 'ciamProviderFramework', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamProviderRef', 'ciamRevision'),
+             ('ciamFrameworkName', 'ciamEnforcementMode', 'ciamComplianceStandard', 'ciamSecurityBaseline'),
+             "One framework of a framework catalog, named by the provider's framework id: its full name, revision, "
+             "name as shown, how it can be enforced and the framework or baseline it answers (by the neutral id a "
+             "posture service names); its ciamProviderControl entries when a posture service names it"),
+    ClassDef(136, 'ciamProviderControl', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamProviderRef', 'ciamRevision'),
+             ('ciamEnforcementMode', 'ciamControlParameter'),
+             "One control of a provider framework, named by the provider's control id: its full name, revision, "
+             "how it can be enforced and the parameters it requires (a deployment of the framework lists every one)"),
     ClassDef(117, 'ciamReportingObligation', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamReportingHours'),
              ('ciamInternalReportingHours', 'ciamReportingAuthority', 'ciamReportingParty', 'ciamMalwareSubmission',
               'ciamPreservationDays', 'ciamReportingCertificateRef', 'ciamContractNumber', 'ciamPrimeParty',
-              'ciamRunbookRef', 'ciamDocUrl', 'ciamRequiredAuthorization'),
+              'ciamRunbookRef', 'ciamDocUrl', 'ciamRequiredAuthorization', 'ciamRegulatedData'),
              "An incident reporting obligation the estate is held to (under ou=reporting-obligations, named by the "
              "regime's id: dfars-7012): the hours from discovery to report, to the operator's own incident response "
              "and to the authority; who files and with which certificate; where malware goes; how long evidence is "
              "preserved after a report (and the runbook placing the hold); the contracts imposing it and the prime "
-             "contractor a subcontractor reports to"),
+             "contractor a subcontractor reports to; the authorization level it requires and the regulated data it "
+             "brings"),
     ClassDef(118, 'ciamReportingIdentity', 'top', 'AUXILIARY', (), ('ciamCageCode', 'ciamUei'),
              "Added to a party: what a reporting regime asks to identify it by (CAGE code, Unique Entity ID)"),
     ClassDef(119, 'ciamReportableIncident', 'top', 'AUXILIARY', (),

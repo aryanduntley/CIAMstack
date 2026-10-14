@@ -44,6 +44,18 @@ Per product (the one without a workload is `enabled: false`), from the record:
 
 What the record doesn't hold stays the chart's default. That includes the engines' wait for the admin console (an init container running the chart's `pingidentity/pingtoolkit:2609`) and PingFederate's other clustering settings (`OPERATIONAL_MODE`, `DNS_RECORD_TYPE` A).
 
+## Server profile (target `server-profile`, on request)
+
+`opsdir render <env> --target pingfederate=admin-api,terraform,bulk-config --target ping-devops=server-profile` renders PingFederate's configuration as a Ping server profile under `ping-devops/server-profile/<namespace>/pingfederate/`. The `pingfederate` adapter's bulk-config target gives `instance/bulk-config/data.json`, which the image imports when the admin console starts and then replicates to the engines. The captured files keep their instance paths, for example `instance/bin/run.properties`.
+
+No profile holds a secret. Where PingFederate's configuration needs one, the profile holds `${OPSDIR_<ROLE>}` and the file is named `<file>.subst`, so the image fills it from the environment at start. A key pair's `fileData` is the PKCS#12 file, base64-encoded. You map the variable on the workload like any other Secret key: `ciamWorkloadSecret: <secret>/OPSDIR_<ROLE> <- <role>`. The values already deliver every key the workload records.
+
+Where the profile comes from is up to the record:
+- When the workload binding names a repository (`ciamProfileRepo: <git URL>[#<path>][@<branch>]`), the values set `SERVER_PROFILE_URL`, `_PATH` and `_BRANCH`, and the containers fetch it. Commit the `pingfederate/` folder there. A private repository's credentials are Secret keys the workload records (`SERVER_PROFILE_GIT_USER`, `SERVER_PROFILE_GIT_PASSWORD`).
+- Otherwise the `Dockerfile` beside the profile rebuilds the record's image with it in `/opt/in`. Build with `--build-arg BASE_IMAGE=<the PingFederate image to start from>` and push it as the image the record names.
+
+A `README.md` per namespace lists each product's way, each variable, its role and whether the record maps it. The planner names the unmapped ones.
+
 ## Listeners
 
 The chart's PingFederate pods' container ports (`release.py`, `POD_PORTS`), declared as listeners `on="kubernetes"`: the admin console's 9999 (operators, and the engines' wait for it), the engines' runtime 9031 (clients), and the cluster ports 7600 and 7700 between the admin console and the engines. The kubernetes adapter's network policies admit them to the pods; the firewall checks leave them out.
@@ -57,6 +69,7 @@ The chart's PingFederate pods' container ports (`release.py`, `POD_PORTS`), decl
 - engines in a namespace with no admin console (the chart clusters engines with their release's admin console);
 - a workload of a role beyond the first in its namespace (not deployed);
 - a cluster discovery that isn't `DNS_PING` through the chart's cluster service (no binding, another protocol, another DNS name). Its fix binds it (`pingfedClusterDiscovery`, `DNS_PING`, `ciamFqdn` the service's name), replacing a binding of another class under the same name. The core's binding check may also offer to bind the role the way the source does (an S3 bucket, for instance); on Kubernetes, take this fix instead.
+- a server profile's `OPSDIR_<ROLE>` variable the record doesn't deliver, when the target renders the server profile.
 
 ## The chart
 
@@ -66,7 +79,7 @@ Tests: `tests/test_ping_devops.py`.
 
 Not done here:
 - The chart's own Secret Provider Class mount, for the kubernetes adapter's `csi` target. Use `external-secrets`.
-- PingFederate's configuration. The `pingfederate` adapter renders it (Admin API payloads, Terraform) to apply to the running admin console; server profiles are milestone 5.9.
+- PingFederate's configuration as Admin API payloads or Terraform, applied to the running admin console: the `pingfederate` adapter renders those (the server profile above is its bulk import document).
 - The rest of the chart's products.
 
 Installing the package registers it with opsdir (entry point `opsdir.adapters`: `ping-devops`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.

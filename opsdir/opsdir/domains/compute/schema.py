@@ -3,7 +3,7 @@ baseline and a workload are intent, the same in every environment; the compute a
 autoscaling group, a scale set), the managed Kubernetes cluster it runs workloads in and how it runs each workload
 there (images, replicas, resources, storage: its workload binding) are bindings."""
 from ...core.standard import AttributeDef, ClassDef, fragment
-from .naming import QUANTITY, WORKLOAD_SECRET
+from .naming import PROFILE_REPO, QUANTITY, WORKLOAD_SECRET
 
 ATTRIBUTES = (
     # ------------------------------------------------------------------ host baseline (per server role)
@@ -103,6 +103,11 @@ ATTRIBUTES = (
     AttributeDef(614, 'ciamMemoryLimit', 'string', 'binding', True,
                  "The memory a workload's main container is limited to, as Kubernetes writes it",
                  (("X-PATTERN", QUANTITY),)),
+    AttributeDef(657, 'ciamProfileRepo', 'string', 'binding', True,
+                 "Where an environment keeps a workload's configuration profile for its containers to fetch at start "
+                 "(a Ping server profile): <git URL>[#<path>][@<branch>]; its credentials, if any, are Secret keys "
+                 "the workload reads (ciamWorkloadSecret). None: the profile is built into the image",
+                 (("X-PATTERN", PROFILE_REPO),)),
 )
 CLASSES = (
     ClassDef(50, 'ciamHostBaseline', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTargetRole'),
@@ -129,9 +134,11 @@ CLASSES = (
              'A server role run as containers: how, where, with which identity, security and secrets'),
     ClassDef(130, 'ciamWorkloadBinding', 'ciamBinding', 'STRUCTURAL', (),
              ('ciamContainerImage', 'ciamWorkloadReplicas', 'ciamCpuRequest', 'ciamCpuLimit', 'ciamMemoryRequest',
-              'ciamMemoryLimit', 'ciamStorageSize', 'ciamStorageClass', 'ciamProviderRef', 'ciamProductVersion'),
+              'ciamMemoryLimit', 'ciamStorageSize', 'ciamStorageClass', 'ciamProviderRef', 'ciamProductVersion',
+              'ciamProfileRepo'),
              "How an environment runs a workload on Kubernetes (its role is the workload's ciamWorkloadRole): "
-             "images, the product version they run, replicas, resources, storage"),
+             "images, the product version they run, replicas, resources, storage, where its configuration profile "
+             "is kept"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

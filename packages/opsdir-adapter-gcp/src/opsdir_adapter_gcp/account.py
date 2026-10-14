@@ -9,6 +9,7 @@ import re
 
 from opsdir.core.directory import one, rdn_value
 from opsdir.domains.estate.authorizations import required_levels
+from opsdir.domains.estate.regulated import regulated_data
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.estate.tags import required_tags
 from opsdir_format_terraform.hcl import Block, ref, tf_block
@@ -60,10 +61,29 @@ REGIMES = (("dod-il5", "IL5"), ("dod-il4", "IL4"), ("fedramp-high", "FEDRAMP_HIG
            ("fedramp-moderate", "FEDRAMP_MODERATE"), ("dod-il2", "IL2"))
 
 
-def regime(m):
+# the Assured Workloads compliance regime holding each kind of regulated data (google 8.6's values; the API renamed them
+# DATA_BOUNDARY_FOR_ITAR and so on), the most demanding first; Google has no package for EAR (research note 2805)
+DATA_REGIMES = (("itar", "ITAR"), ("cjis", "CJIS"), ("irs-1075", "IRS_1075"),
+                ("hipaa", "HEALTHCARE_AND_LIFE_SCIENCES_CONTROLS_US_SUPPORT"))
+
+
+def level_regime(m):
     """The Assured Workloads compliance regime environment m's most demanding required authorization level asks for
     (IL5, IL4, FEDRAMP_HIGH, FEDRAMP_MODERATE, IL2), or None when it requires none of them."""
     return next((r for level, r in REGIMES if level in required_levels(m)), None)
+
+
+def data_regime(m):
+    """The Assured Workloads compliance regime the regulated data environment m holds asks for (ITAR, CJIS, IRS_1075,
+    the healthcare package), the most demanding first, or None."""
+    return next((r for kind, r in DATA_REGIMES if kind in regulated_data(m)), None)
+
+
+def regime(m):
+    """The compliance regime of environment m's Assured Workloads workload: one per workload, so the regulated data's
+    when it holds some (a legal duty over the data: decision 2807; the planner names the level's package it doesn't
+    apply), else its required level's, else None."""
+    return data_regime(m) or level_regime(m)
 
 
 def label_key(key):

@@ -76,7 +76,8 @@ def test_only_the_targets_chosen_are_rendered():
     from opsdir_adapter_pingfederate.adapter import ADAPTER
     from opsdir_adapter_pingfederate.admin_api import OUTPUT as REQUESTS
     m = _API._env(_API._after(), "PingFederate 12.1.4")
-    assert [t[0] for t in ADAPTER.render_targets] == ["admin-api", "terraform", "terraform-imports"]
+    assert [t[0] for t in ADAPTER.render_targets] == ["admin-api", "terraform", "terraform-imports",
+                                                       "bulk-config"]
     both = ADAPTER.render_env(m, None)
     assert REQUESTS in both and f"{OUTPUT}main.tf" in both
     assert set(ADAPTER.render_env(m, None, ("admin-api",))) == {p for p in both if not p.startswith(OUTPUT)}

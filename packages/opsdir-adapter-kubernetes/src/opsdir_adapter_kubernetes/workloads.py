@@ -41,7 +41,9 @@ adds (owners, criticality) is kept.
 A companion (a StatefulSet, Deployment, DaemonSet or Job marked opsdir.io/image-of: <workload>/<container>) is part of
 another workload, as a deployment kit runs it with that workload (ForgeOps' UIs and amster with AM): it is no workload
 of its own, and the named container's image (its containers' or init containers') is that workload's binding's, under
-that container name, after the workload's own.
+that container name, after the workload's own. A workload marked opsdir.io/container-names (<record container>=<pod
+container>, ...) keeps those images too, the record's name for the pod's container or init container running it (a
+kit's configuration image in an init container), after its own containers'.
 """
 import yaml
 
@@ -55,7 +57,8 @@ from opsdir.domains.automation.naming import job_dn
 from opsdir.domains.automation.pipelines import jobs_container
 from opsdir.domains.compute.naming import WORKLOADS, workload_dn
 from .gateway_import import read_gateways
-from .names import CLUSTER_ROLE, DERIVED, IDENTITY_ROLE, IMAGE_OF, MANAGED_BY, WORKLOAD_NAME, WORKLOAD_ROLE
+from .names import (CLUSTER_ROLE, CONTAINER_NAMES, DERIVED, IDENTITY_ROLE, IMAGE_OF, MANAGED_BY, WORKLOAD_NAME,
+                    WORKLOAD_ROLE)
 from .render import ROLE_LABEL
 
 KINDS = (("StatefulSet", "statefulset"), ("Deployment", "deployment"), ("DaemonSet", "daemonset"))
@@ -95,6 +98,15 @@ def _labels(o):
 
 def _annotations(o):
     return _meta(o).get("annotations") or {}
+
+
+def renamed_images(o):
+    """((record container, image), ...) a workload's opsdir.io/container-names mark names: each pod container (or
+    init container) it names, under the record's name for it."""
+    pairs = [p.strip().split("=", 1) for p in (mark(o, CONTAINER_NAMES) or "").split(",") if "=" in p]
+    every = {c.get("name"): c.get("image") for c in (*_containers(o), *(_pod_spec(o).get("initContainers") or ()))
+             if isinstance(c, dict)}
+    return tuple((record, every[pod]) for record, pod in pairs if every.get(pod))
 
 
 def mark(o, key):
@@ -253,6 +265,7 @@ def binding_entry(d, env, name, o, companions=()):
              "ciamContainerImage": tuple(dict.fromkeys((*(f"{c.get('name')}={c.get('image')}" for c in _containers(o)
                                                          if c.get("image") and c.get("name")
                                                          and c.get("name") not in derived),
+                                                       *(f"{c}={i}" for c, i in renamed_images(o)),
                                                        *(f"{c}={i}" for c, i in companions)))),
              "ciamWorkloadReplicas": (str(replicas) if o.get("kind") != "DaemonSet" and replicas is not None
                                       else None,),

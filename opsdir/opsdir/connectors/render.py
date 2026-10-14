@@ -4,6 +4,7 @@ receives, plus the MANIFEST (R10)."""
 from ..core.environment import as_seen
 from ..core.formats import format_of
 from ..core.manifest import manifest
+from ..core.profiles import profile_tree
 from ..domains.governance.keepers import check_scope
 from .capture import RenderedConfig, rendered_config
 from .registry import ADAPTERS, FORMATS, environment, services
@@ -62,6 +63,17 @@ def _env_files(a, m, found, targets):
     return a.render_env(m, found, targets[a.name]) if a.name in targets else a.render_env(m, found)
 
 
+def _kit_profiles(m, adapters, neutral, specific, targets):
+    """The deployment kits' renders of the products' profiles (Adapter.render_profiles): every product adapter's
+    instance files (core.profiles.profile_tree) of what the environment renders, captured files included."""
+    kits = [a for a in adapters if a.render_profiles]
+    if not kits:
+        return {}
+    files = {**neutral, **specific, **rendered_config(m.d, m).files}
+    profiles = {a.profile.product: profile_tree(a.profile, files) for a in adapters if a.profile}
+    return {p: text for a in kits for p, text in a.render_profiles(m, profiles, targets.get(a.name, ())).items()}
+
+
 def render_parts(d, spec, installed=ADAPTERS, wanted=None, scope=None):
     """(EnvModel as the environment sees the record (its overrides applied), applicable adapters,
     environment-neutral files, environment-specific files, the render targets chosen); wanted: {adapter: (target,
@@ -82,6 +94,7 @@ def render_parts(d, spec, installed=ADAPTERS, wanted=None, scope=None):
     neutral = {p: text for a in adapters if a.render_neutral for p, text in a.render_neutral(m.d).items()}
     found = services(installed)
     specific = {p: text for a in adapters if a.render_env for p, text in _env_files(a, m, found, targets).items()}
+    specific = {**specific, **_kit_profiles(m, adapters, neutral, specific, targets)} if not sliced else specific
     if sliced and not specific:
         raise SystemExit(f"nothing of {m.label} is rendered for {scope.kind} {', '.join(scope.value)}: a render places "
                          "by entry what someone else may keep (network plumbing, the landing zone, databases, object "

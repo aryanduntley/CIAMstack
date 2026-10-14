@@ -9,12 +9,16 @@ resource names. Pure.
         projects/<p>/services/<api> -> google_project_service (enabled ones)
   gcloud asset feeds list --project=P|--folder=F|--organization=O
         projects|folders|organizations/<id>/feeds/<id> -> google_cloud_asset_project|folder|organization_feed
+  gcloud compliance-manager framework-deployments list --organization=O --location=global
+        organizations/<o>/locations/<l>/frameworkDeployments/<id>
+        -> google_cloud_security_compliance_framework_deployment (description, framework, target)
 """
 import re
 
 NOTIFICATION = re.compile(r"^(projects|organizations)/[^/]+/(locations/[^/]+/)?notificationConfigs/[^/]+$")
 SERVICE = re.compile(r"^projects/([^/]+)/services/([^/]+)$")
 FEED = re.compile(r"^(projects|folders|organizations)/[^/]+/feeds/[^/]+$")
+DEPLOYMENT = re.compile(r"^organizations/[^/]+/locations/[^/]+/frameworkDeployments/[^/]+$")
 NOTIFICATION_TYPES = {("projects", True): "google_scc_v2_project_notification_config",
                       ("projects", False): "google_scc_project_notification_config",
                       ("organizations", True): "google_scc_v2_organization_notification_config",
@@ -27,7 +31,7 @@ def security_shape(item):
     """What a security item is by its resource name, else None."""
     name = item.get("name") or ""
     return ("notification-config" if NOTIFICATION.match(name) else "service" if SERVICE.match(name)
-            else "feed" if FEED.match(name) else None)
+            else "feed" if FEED.match(name) else "framework-deployment" if DEPLOYMENT.match(name) else None)
 
 
 def _last(name):
@@ -56,9 +60,21 @@ def _feed(d):
                                                                   .get("pubsubDestination") or {}).get("topic")}]}]})
 
 
+def _deployment(d):
+    fw = d.get("framework") or {}
+    target = d.get("targetResourceConfig") or {}
+    return ("google_cloud_security_compliance_framework_deployment", {
+        "name": d.get("name"), "framework_deployment_id": _last(d.get("name")), "description": d.get("description"),
+        "framework": [{"framework": fw.get("framework"), "major_revision_id": fw.get("majorRevisionId")}],
+        "target_resource_config": [{"existing_target_resource": target.get("existingTargetResource")}],
+        "computed_target_resource": d.get("computedTargetResource")})
+
+
 def security_pairs(of):
-    """The (google type, attributes) pairs of the notification configs, enabled services and asset feeds."""
+    """The (google type, attributes) pairs of the notification configs, enabled services, asset feeds and framework
+    deployments."""
     return [*(_notification(d) for d, _ in of("notification-config")),
             *(_service(d) for d, _ in of("service") if SERVICE.match(d.get("name") or "")
               and (d.get("state") or "ENABLED") == "ENABLED"),
-            *(_feed(d) for d, _ in of("feed"))]
+            *(_feed(d) for d, _ in of("feed")),
+            *(_deployment(d) for d, _ in of("framework-deployment"))]

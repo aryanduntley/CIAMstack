@@ -3,10 +3,11 @@ from opsdir.core.contract import Adapter, ReadBack
 from opsdir.domains.infrastructure.checks import check_server_inputs
 from opsdir.domains.infrastructure.firewall import priority_check
 from .access import ACCESS
-from .boundary import check_boundary
+from .boundary import check_boundary, check_regulated_placement
 from .cli import CLI_INVENTORY
 from .collect import COLLECTORS
 from .discovery import check_discovery_cadence
+from .frameworks import FRAMEWORKS, PREREQUISITE as FRAMEWORK_PREREQUISITE
 from .inventory import TERRAFORM_STATE
 from .ingress import gateway_plug
 from .kubernetes import SECRET_DELIVERY, workload_identity
@@ -27,7 +28,8 @@ def applies(m):
 
 ADAPTER = Adapter(name="gcp", kind="provider", applies=applies, required_roles=(),
                   render_neutral=None, render_env=render,
-                  checks=(priority_check(*PRIORITIES), check_boundary, check_server_inputs, check_discovery_cadence),
+                  checks=(priority_check(*PRIORITIES), check_boundary, check_regulated_placement, check_server_inputs,
+                          check_discovery_cadence),
                   ref_schemes=("gcp-sm", "gcp-kms", "gcp-cert", "gs"),
                   secret_schemes={"gcp-sm": secret_manager_command}, renders="Terraform for the target cloud",
                   neutral_label=None,
@@ -35,8 +37,10 @@ ADAPTER = Adapter(name="gcp", kind="provider", applies=applies, required_roles=(
                               "ciamCloudEnvironment": ("public",)}, schema=None,
                   formats=(("terraform/*.tf", "hcl"), ("terraform/discovery/*.yaml", "yaml"), ("access/*.sh", "shell")),
                   products=(),
-                  secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY, REGIONS, QUOTAS),
-                  profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE),
+                  secret_patterns=SECRET_PATTERNS,
+                  importers=(TERRAFORM_STATE, CLI_INVENTORY, REGIONS, QUOTAS, FRAMEWORKS),
+                  profile_terms=None, access=ACCESS,
+                  prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE, FRAMEWORK_PREREQUISITE),
                   collectors=COLLECTORS,
                   workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY,
                   gateway_plug=gateway_plug, host_files=host_files,

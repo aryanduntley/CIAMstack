@@ -42,6 +42,11 @@ QUOTA_KINDS = ("vcpus", "public-ips", "networks", "load-balancers", "database-in
 # ciamQuotaRequested, else the need), or deny it (the move stops)
 QUOTA_DECISIONS = ("request", "deny")
 QUOTAS = branch("quotas")               # the provider limits fetched: one ciamQuotaCatalog per account and region
+# the compliance frameworks providers offer, fetched: one ciamFrameworkCatalog per provider and organization
+FRAMEWORKS = branch("frameworks")
+# how a provider framework's control is enforced: preventive (blocks a non-compliant change), detective (finds and
+# reports one), audit (gathers evidence)
+ENFORCEMENT_MODES = ("preventive", "detective", "audit")
 BUDGET_PERIODS = ("monthly", "quarterly", "annually")
 AMOUNT = r"[0-9]{1,12}(\.[0-9]{1,2})?"   # a budget's amount in its currency: 1500, 1500.50
 CURRENCY = r"[A-Z]{3}"                  # ISO 4217: USD, EUR
@@ -117,6 +122,12 @@ STANDING = frozenset(("certified", "validated", "equivalent"))
 RESPONSIBILITY = ("inherited", "shared", "customer")
 # what a customer must configure for its use to be inside an authorization's boundary
 CONFIGURATIONS = ("assured-workload", "us-data-location", "us-person-support", "il5-isolation")
+# the regulated data an environment holds, by regime (what the data is, not an authorization level, framework or
+# classification): ITAR and EAR export-controlled technical data, criminal justice information (FBI CJIS Security
+# Policy), protected health information (HIPAA), federal tax information (IRS Publication 1075); the cloud adapters say
+# where their provider can hold each
+REGULATED_DATA = ("itar", "ear", "cjis", "hipaa", "irs-1075")
+EXPORT_CONTROLLED = ("itar", "ear")
 # what an environment's threat detection watching identity needs in place, beyond the authorization's: the license
 # for users' risk signals and for workload identities' (service principals'), and the deploying identity's right to
 # write sign-in policies and to export the risk logs

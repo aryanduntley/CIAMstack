@@ -31,6 +31,8 @@ Per environment also `pingfederate/cluster/jgroups.properties`, the cluster's di
 - `saml/sp/`, `saml/partner-idp/`: every SAML partner's metadata as recorded; `oidc/clients/`: every OIDC client's registration metadata.
 - `saml/idp/<service>.xml`, `oidc/discovery/<service>.json`: the IdP metadata and OpenID provider metadata of the identity services its servers serve (`ciamTargetRole` `pf-engine` or `pf-admin`), with PingFederate's default endpoint paths (`/idp/SSO.saml2`, `/as/authorization.oauth2`, `/as/token.oauth2`, `/pf/JWKS`, ...).
 
+**As a server profile's bulk import** (`--target pingfederate=...,bulk-config`, only when asked): `pingfederate/bulk-config/data.json` holds the same requests as a bulk import document (`metadata.pfVersion` the version the environment runs, as four numbers). Each request becomes a `SAVE` of the collection it creates in, a settings resource's path, or a key pair's kind for its import; consecutive ones of a type are one operation. It is the product profile's `instance/bulk-config/data.json`: the `ping-devops` adapter's `server-profile` target places it, and the bulk importer reads it back.
+
 ## Admin API specs (validation offline)
 
 The Admin API spec of each supported PingFederate version (12.1, 12.2, 12.3, 13.0, 13.1) is vendored as package data

@@ -187,12 +187,15 @@ AccessModel = namedtuple("AccessModel", ("permissions", "escalations", "covers",
                          defaults=(None,))
 
 # An endpoint a product serves that the edge treats specially: kind is one of the edge domain's endpoint kinds (login,
-# token, password-reset, registration, saml-post, health), path a URL path where '*' stands for one or more path
-# segments (/am/json/realms/*/authenticate), server_role the role of the servers serving it, versions the product
+# token, password-reset, registration, saml-post, saml-start, health), path a URL path where '*' stands for one or more
+# path segments (/am/json/realms/*/authenticate), server_role the role of the servers serving it, versions the product
 # versions serving it there (a PEP 440 range, versions.holds), None for every version, port the port it is served on
-# when not the service's (a product's separate admin port, which a health check then probes), else None. Products
+# when not the service's (a product's separate admin port, which a health check then probes), else None, query the
+# query string a request to it carries, where {entity} stands for a partner's entity ID, URL-encoded (saml-start: the
+# identity provider's own start of a sign-in to a service provider, PartnerSpId={entity}), else None. Products
 # declare their defaults; a policy's ciamEndpointPath says where an estate moved one.
-Endpoint = namedtuple("Endpoint", ("kind", "path", "server_role", "versions", "port"), defaults=(None, None))
+Endpoint = namedtuple("Endpoint", ("kind", "path", "server_role", "versions", "port", "query"),
+                      defaults=(None, None, None))
 
 # A neutral signal a product's servers expose (domains/observability: what an alert rule's ciamSignal names): signal
 # the neutral name (replication-delay), server_role the role of the servers exposing it, expr the PromQL expression
@@ -357,8 +360,12 @@ Adapter = namedtuple("Adapter", (
                             # configuration-management adapter does): without one in the stack they go nowhere
     "version_changes",      # VersionChanges: what changes between the releases of its products (the planner's
                             # upgrade check)
-    "reads_back"),          # ReadBacks: which of its importers read which of its rendered files back (round trip)
-    defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, (), ()))
+    "reads_back",           # ReadBacks: which of its importers read which of its rendered files back (round trip)
+    "profile",              # ProductProfile (core.profiles): which of its rendered files are its product's own
+                            # instance files and where, for a deployment kit's profiles, or None
+    "render_profiles"),     # (EnvModel, {product: {instance path: text}}, targets chosen) -> {path: text}: a kit's
+                            # render of the products' profiles in its layout (after every adapter's render_env), or None
+    defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, (), (), None, None))
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

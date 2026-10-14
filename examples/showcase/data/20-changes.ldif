@@ -383,6 +383,46 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Keep the target's resource change history 2557 days by exporting it
   to its security workspace
 
+dn: cn=CHG-2039,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2039
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Assess the standby against NIST SP 800-53 Rev. 5 and its CIS benchm
+ ark with Compliance Manager
+
+dn: cn=CHG-2041,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2041
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Fetch Google Cloud's Compliance Manager frameworks for the standby'
+ s organization (prerequisite gcp-frameworks)
+
+dn: cn=CHG-2042,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2042
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the ITAR technical data the standby will hold (its Assured W
+ orkloads folder takes the ITAR package)
+
+dn: cn=CHG-2043,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2043
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Build the target's product configuration into its deployment: confi
+ g profiles and PingFederate's server profile
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange
