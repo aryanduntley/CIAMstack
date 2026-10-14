@@ -52,7 +52,9 @@ def test_the_policy_model_targets_secure_tags_in_the_networks_project(network):
     assert out == "\n\n".join(as_text(policy_firewall(m)))
     assert "network_firewall_policy_enforcement_order = BEFORE_CLASSIC_FIREWALL" in out
     assert "# The network's project is host-net: the policy, its rules and the tag key live there" in out
-    assert "roles/resourcemanager.tagUser" in out
+    assert "# NOTE: secure tags: binding the tag values to the instances needs roles/resourcemanager.tagUser" in out
+    from opsdir_adapter_gcp.firewall_policy import policy_notes
+    assert policy_notes(m)[-1].severity == "action" and policy_notes(m)[-1].subject == "secure tags"
     assert 'resource "google_compute_network_firewall_policy" "network_policy"' in out
     assert 'name        = "ciam-prod-policy"' in out and 'project     = "host-net"' in out
     assert "attachment_target = data.google_compute_network.main.self_link" in out

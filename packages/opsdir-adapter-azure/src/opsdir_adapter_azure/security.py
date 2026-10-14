@@ -244,8 +244,6 @@ def _posture(m, s):
     cn = rdn_value(s)
     frameworks = values(s, "ciamComplianceStandard")
     known = [k for k in frameworks if k in INITIATIVES and not (k in GOV_ONLY and not _gov(m))]
-    unknown = [k for k in frameworks if k not in known]
-    others = [b for b in values(s, "ciamSecurityBaseline") if b != BASELINE]
     return (*(x for k in known for x in (
                 tf_block("data", ["azurerm_policy_set_definition", tf_name(k)], [("display_name", INITIATIVES[k])]),
                 tf_block("resource", [ASSIGNMENT, tf_name(f"{cn}_{k}")], [
@@ -255,10 +253,22 @@ def _posture(m, s):
                     ("subscription_id", ref(f"{SUBSCRIPTION}.id"))]))),
             *((comment(f"{cn}: Defender for Cloud assigns the {BASELINE_NAME} itself (its default assignment)"),)
               if BASELINE in values(s, "ciamSecurityBaseline") else ()),
-            *((comment(f"{cn}: Azure has no built-in initiative here for {', '.join(unknown)} (not rendered)"),)
+            *(comment(note_comment(n)) for n in posture_notes(m, s)))
+
+
+def posture_notes(m, s):
+    """The render notes of a posture service's frameworks Azure has no built-in initiative for here (an action:
+    assess them another way) and of its other clouds' baselines (a plain note)."""
+    cn, frameworks = rdn_value(s), values(s, "ciamComplianceStandard")
+    known = [k for k in frameworks if k in INITIATIVES and not (k in GOV_ONLY and not _gov(m))]
+    unknown = [k for k in frameworks if k not in known]
+    others = [b for b in values(s, "ciamSecurityBaseline") if b != BASELINE]
+    return (*((note(AREA, "action", cn, f"Azure has no built-in initiative here for {', '.join(unknown)} (not "
+                    "rendered)", (f"Assess {', '.join(unknown)} another way (a custom Azure Policy initiative, or "
+                                  "Defender for Cloud's regulatory compliance standards), by hand",), s.dn, m.label),)
               if unknown else ()),
-            *((comment(f"{cn}: {', '.join(others)}: another cloud's baseline, not Azure's (not rendered)"),)
-              if others else ()))
+            *((note(AREA, "note", cn, f"{', '.join(others)}: another cloud's baseline, not Azure's (not rendered)", (),
+                    s.dn, m.label),) if others else ()))
 
 
 def _event_hub(m, binding):
@@ -575,7 +585,7 @@ def security_notes(m, extra=()):
     history and identity protection notes; then the Azure Government confirmations; each once."""
     def of(s):
         kind, org = one(s, "ciamSecurityKind"), _organization_wide(s)
-        body = () if org or kind in ("vulnerability-scanning", "posture") else \
+        body = () if org or kind == "vulnerability-scanning" else posture_notes(m, s) if kind == "posture" else \
             (history_note(m, s),) if kind == "config-recording" else identity_notes(m, s)
         return (findings_note(m, s, kind), incident_note(m, s, kind), organization_note(m, s) if org else None, *body)
     found = (*(n for s in security_services(m) for n in of(s)), *_government_notes(m, extra))

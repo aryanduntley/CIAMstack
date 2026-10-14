@@ -26,6 +26,7 @@ from opsdir.core.directory import one
 from opsdir.core.sources import json_document
 from opsdir.domains.estate.quotas import (QuotaRow, limits_fetched, need_key, needed, quota_import, quota_needs,
                                           quota_regions)
+from opsdir.core.notes import note, note_comment
 from opsdir_format_terraform.hcl import comment
 from .account import subscription_id
 from .inventory import PROVIDER
@@ -97,12 +98,24 @@ PREREQUISITE = Prerequisite("azure-quotas", "Azure's usage limits for the subscr
                             partial(limits_fetched, provider=PROVIDER))
 
 
-def quota_request_notes(m):
-    """Comments naming each increase the operator decided to request for environment m (azurerm can't request
-    one)."""
+def quota_note(m, n, key):
+    """The render note (an action) of an increase the operator decided to request (need n, its key): azurerm can't
+    request one, so someone files it."""
     region, sub = one(m.cloud, "ciamRegion"), subscription_id(m) or "(the subscription)"
-    return tuple(comment(f"Quota request ({key}): raise it to {one(n, 'ciamQuotaRequested') or needed(m, key)} for "
-                         f"subscription {sub} in {region} through the Quota API (`az quota update`, Microsoft.Quota) "
-                         "or a support request: azurerm has no resource for it; Microsoft's pages don't say whether "
-                         "the Quota API serves Azure Government")
-                 for n in quota_needs(m) if one(n, "ciamQuotaDecision") == "request" for key in (need_key(n),))
+    value = one(n, "ciamQuotaRequested") or needed(m, key)
+    return note("Quotas", "action", f"quota request ({key})", f"raise it to {value} for subscription {sub} in "
+                f"{region}: azurerm has no resource for it",
+                ("Request it through the Quota API (`az quota update`, Microsoft.Quota) or a support request; "
+                 "Microsoft's pages don't say whether the Quota API serves Azure Government",), n.dn,
+                f"subscription {sub}")
+
+
+def quota_notes(m):
+    """The quota_note of each increase the operator decided to request for environment m."""
+    return tuple(quota_note(m, n, need_key(n)) for n in quota_needs(m) if one(n, "ciamQuotaDecision") == "request")
+
+
+def render_quota_requests(m):
+    """Comments naming each increase the operator decided to request for environment m (quota_note: azurerm can't
+    request one)."""
+    return tuple(comment(note_comment(n)) for n in quota_notes(m))

@@ -29,6 +29,7 @@ import re
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import of_class, servers_with_role
 from opsdir.core.inventory import of_types, resource, tagged_role
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.governance.keepers import is_rendered
 from opsdir.domains.data.backups import VAULT, plan_vault
 from opsdir.domains.data.protection import PLAN, schedule_of
@@ -37,7 +38,7 @@ from opsdir.domains.network.plumbing import adopted
 from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_import, tf_name
 from .cmk import CMK_ROLE, key_ref, key_sources
 from .identities import LOC, RG
-from .account import government_unstated, tagged
+from .account import government_unstated, tagged, unstated_note
 
 ANCHOR = "2024-01-01"                    # the date a repeating interval starts counting from (any past day)
 DISK_HOURS = (1, 2, 4, 6, 8, 12, 24)     # the intervals disk backup takes
@@ -85,7 +86,7 @@ def _vault(m, v, disks):
             *((comment(f"Vault '{rdn_value(v)}': immutability Locked can't be turned off once set"),)
               if mode == "compliance" else ()),
             *((comment(f"Vault '{rdn_value(v)}': {note[1]}"),) if note else ()),
-            *government_unstated(m, "Data Protection backup vaults (Azure Backup's disk backup)", "are"),
+            *government_unstated(m, VAULTS, "are"),
             tf_block("resource", ["azurerm_data_protection_backup_vault", n], [
                 ("name", _name(m, v)), ("resource_group_name", RG), ("location", LOC),
                 ("datastore_type", "VaultStore"), ("redundancy", "GeoRedundant" if geo else "LocallyRedundant"),
@@ -121,24 +122,41 @@ def _disks(m, p):
                  for s in servers_with_role(m, one(v, "ciamTargetRole")))
 
 
+def plan_notes(m, p):
+    """The render notes of a backup plan: not rendered (a blocker) when its vault isn't one this render writes or disk
+    backup doesn't offer its interval; else copies disk backup can't make (a blocker) and a retention longer than it
+    keeps (an action: it is shortened)."""
+    s, v, subject = schedule_of(p), plan_vault(m, p), f"Backup plan '{rdn_value(p)}'"
+    if v is None or not is_rendered(m, v):
+        return (note("Backups", "blocker", subject, f"its vault (role {one(p, 'ciamBackupVaultRole')}) isn't one this "
+                     "environment's render writes: not rendered",
+                     (f"Bind {one(p, 'ciamBackupVaultRole')} to a backup vault this environment keeps, {RECORD}",),
+                     p.dn),)
+    if disk_interval(s.every, s.at) is None:
+        return (note("Backups", "blocker", subject, f"disk backup runs every 1, 2, 4, 6, 8 or 12 hours or daily, not "
+                     f"every {s.every} hours: not rendered",
+                     (f"Record an interval disk backup takes (ciamBackupEvery), {RECORD}",), p.dn),)
+    return (*((note("Backups", "blocker", subject, f"disk backup keeps snapshots in the disk's region; copies to "
+                    f"{', '.join(s.copies)} aren't rendered",
+                    (f"Copy the snapshots to {', '.join(s.copies)} another way (a vault-tier backup in a "
+                     "geo-redundant vault), or remove the plan's copy regions, " + RECORD,), p.dn),)
+              if s.copies else ()),
+            *((note("Backups", "action", subject, f"disk backup keeps a snapshot at most {MAX_DAYS} days, not "
+                    f"{s.retention}", (f"Keep copies older than {MAX_DAYS} days another way, by hand",), p.dn),)
+              if s.retention and s.retention > MAX_DAYS else ()))
+
+
 def _plan(m, p):
     n, s, v = tf_name(rdn_value(p)), schedule_of(p), plan_vault(m, p)
-    interval = disk_interval(s.every, s.at)
-    if v is None or not is_rendered(m, v):
-        return (comment(f"Backup plan '{rdn_value(p)}': its vault (role {one(p, 'ciamBackupVaultRole')}) isn't one "
-                        "this environment's render writes: not rendered"),)
-    if interval is None:
-        return (comment(f"Backup plan '{rdn_value(p)}': disk backup runs every 1, 2, 4, 6, 8 or 12 hours or daily, not "
-                        f"every {s.every} hours: not rendered"),)
+    interval, found = disk_interval(s.every, s.at), plan_notes(m, p)
+    if v is None or not is_rendered(m, v) or interval is None:
+        return tuple(comment(note_comment(x)) for x in found)
     vault = f"azurerm_data_protection_backup_vault.{tf_name(rdn_value(v))}"
     volume_roles = {one(x, "ciamBindingRole") for x in _volumes(m, p)}
     others = [r for r in values(p, "ciamProtectsRole") if r not in volume_roles]
     keep = min(s.retention or MAX_DAYS, MAX_DAYS)
     policy = f"azurerm_data_protection_backup_policy_disk.{n}"
-    return (*((comment(f"Backup plan '{rdn_value(p)}': disk backup keeps snapshots in the disk's region; copies to "
-                       f"{', '.join(s.copies)} aren't rendered"),) if s.copies else ()),
-            *((comment(f"Backup plan '{rdn_value(p)}': disk backup keeps a snapshot at most {MAX_DAYS} days, not "
-                       f"{s.retention}"),) if s.retention and s.retention > MAX_DAYS else ()),
+    return (*(comment(note_comment(x)) for x in found),
             *(comment(f"Backup plan '{rdn_value(p)}' protects {r}, which isn't a volume: not rendered here")
               for r in others),
             tf_block("resource", ["azurerm_data_protection_backup_policy_disk", n], [
@@ -158,6 +176,16 @@ def _plan(m, p):
                             ("depends_on", [ref(f"azurerm_role_assignment.{n}_{dn}_reader"),
                                             ref(f"azurerm_role_assignment.{tf_name(rdn_value(v))}_snapshots")])]))),
             *((tf_import(policy, one(p, "ciamProviderRef")),) if adopted(p) else ()))
+
+
+VAULTS = "Data Protection backup vaults (Azure Backup's disk backup)"
+
+
+def backup_notes(m):
+    """The render notes of environment m's backup vaults and plans (render_backups writes their comments): in Azure
+    Government, that the vaults' availability there is unstated (once); each plan's (plan_notes)."""
+    found = unstated_note(m, VAULTS, "are") if of_class(m, VAULT) else None
+    return (*((found,) if found is not None else ()), *(n for p in of_class(m, PLAN) for n in plan_notes(m, p)))
 
 
 def render_backups(m):

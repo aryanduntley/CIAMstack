@@ -14,6 +14,7 @@ from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import inherited_from, recorded
 from opsdir.domains.access.workloads import identity_of
 from opsdir.domains.compute.hosts import compute_groups, group_subnets
+from opsdir.core.notes import note, note_comment
 from opsdir.domains.network.plumbing import adopted
 from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
 from .firewall_policy import template_tags
@@ -59,8 +60,7 @@ def _manager(m, g, n, ports):
     first = _count(g, "ciamDesiredSize", "desired-size") if one(g, "ciamDesiredSize") \
         else _count(g, "ciamMinSize", "min-size")
     scaled = bool(one(g, "ciamMinSize") and one(g, "ciamMaxSize"))
-    return (*((comment(f"{rdn_value(g)} exists: applying gives it a new instance template, which its instances run "
-                       "when they are next replaced"),) if adopted(g) else ()),
+    return (*((comment(note_comment(template_note(g))),) if adopted(g) else ()),
             tf_block("resource", ["google_compute_region_instance_group_manager", n], [
                 ("name", group_name(m, g)), ("region", REGION), ("base_instance_name", group_name(m, g)),
                 ("version", Block((("instance_template", ref(f"google_compute_instance_template.{n}.id")),))),
@@ -75,11 +75,35 @@ def _manager(m, g, n, ports):
               if adopted(g) else ()))
 
 
+def template_note(g):
+    """The render note of an existing (adopted) group (an action): applying gives it a new instance template, which
+    its instances run only once they are replaced."""
+    return note("Compute", "action", rdn_value(g), "exists: applying gives it a new instance template, which its "
+                "instances run when they are next replaced",
+                ("After applying, start a rolling update of the managed instance group so its instances run the new "
+                 "template",), g.dn)
+
+
+def autoscaler_note(g):
+    """The render note of an existing (adopted) group's autoscaler (an action: import the one it has by hand, its ID
+    isn't recorded, or applying adds a second one)."""
+    return note("Compute", "action", rdn_value(g), "exists: an autoscaler it already has must be imported by hand (its "
+                "ID isn't recorded), or applying adds a second one",
+                ("Before applying, import the group's autoscaler into the rendered google_compute_region_autoscaler "
+                 "(terraform import, its ID)",), g.dn)
+
+
+def group_notes(m):
+    """The render notes of environment m's compute groups (render_groups writes their comments)."""
+    kept = tuple(g for g in compute_groups(m) if adopted(g) and not inherited_from(m, g))
+    return (*(template_note(g) for g in kept),
+            *(autoscaler_note(g) for g in kept if one(g, "ciamMinSize") and one(g, "ciamMaxSize")))
+
+
 def _autoscaler(m, g, n):
     if not (one(g, "ciamMinSize") and one(g, "ciamMaxSize")):
         return ()
-    return (*((comment(f"{rdn_value(g)} exists: an autoscaler it already has must be imported by hand (its ID isn't "
-                       "recorded), or applying adds a second one"),) if adopted(g) else ()),
+    return (*((comment(note_comment(autoscaler_note(g))),) if adopted(g) else ()),
             tf_block("resource", ["google_compute_region_autoscaler", n], [
         ("name", f"{group_name(m, g)}-autoscaler"), ("region", REGION),
         ("target", ref(f"google_compute_region_instance_group_manager.{n}.id")),

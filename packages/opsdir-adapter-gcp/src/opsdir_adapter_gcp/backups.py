@@ -29,6 +29,7 @@ import re
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import of_class, servers_with_role
 from opsdir.core.inventory import of_types, resource
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.governance.keepers import is_rendered
 from opsdir.domains.data.backups import VAULT, plan_vault
 from opsdir.domains.data.protection import PLAN, schedule_of
@@ -93,17 +94,65 @@ def _location(m, v):
     return copies[0] if copies else REGION
 
 
+def vault_notes(m, v):
+    """The render notes (actions) of a backup vault: a compliance lock takes effect at a date someone sets (its
+    effective_time); cross-region restore needs the region named in its plans' copy regions (else it stays in the
+    environment's region)."""
+    subject = f"Vault '{rdn_value(v)}'"
+    return (*((note("Backups", "action", subject, "a compliance lock is the vault's effective_time (after it, the "
+                    "minimum can't be lowered): set the date when it takes effect",
+                    ("Set the vault's effective_time to the date its lock takes effect, by hand, once its retention is "
+                     "confirmed",), v.dn),) if (one(v, "ciamStorageImmutability") or "none") == "compliance" else ()),
+            *((note("Backups", "action", f"{subject} restores in another region through its location", "name the "
+                    "region in its plans' ciamCopyRegion",
+                    (f"Record the region it restores in as its plans' ciamCopyRegion, {RECORD}",), v.dn),)
+              if one(v, "ciamCrossRegionRestore") == "TRUE" and _location(m, v) == REGION else ()))
+
+
+def plan_note(m, p):
+    """The render note of a backup plan Backup and DR can't take as recorded (a blocker: not rendered), or None: its
+    vault isn't one this render writes, an interval it doesn't offer, or a retention below its vault's lock
+    (refused)."""
+    s, v, subject = schedule_of(p), plan_vault(m, p), f"Backup plan '{rdn_value(p)}'"
+    if v is None or not is_rendered(m, v):
+        return note("Backups", "blocker", subject, f"its vault (role {one(p, 'ciamBackupVaultRole')}) isn't one this "
+                    "environment's render writes: not rendered",
+                    (f"Bind {one(p, 'ciamBackupVaultRole')} to a backup vault this environment keeps, {RECORD}",), p.dn)
+    if backup_rule(p) is None:
+        return note("Backups", "blocker", subject, f"Backup and DR backs up every 6 to 23 hours or daily, not every "
+                    f"{s.every} hours: not rendered", (f"Record an interval Backup and DR takes, {RECORD}",), p.dn)
+    minimum = int(one(v, "ciamStorageLockDays") or 1) if (one(v, "ciamStorageImmutability") or "none") != "none" else 1
+    if (s.retention or 1) < minimum:
+        return note("Backups", "blocker", subject, f"keeps backups {s.retention} days, less than its vault enforces "
+                    f"({minimum}), which Backup and DR refuses: not rendered",
+                    (f"Record a retention of at least {minimum} days, or a shorter vault lock, {RECORD}",), p.dn)
+    return None
+
+
+def copies_note(p):
+    """The render note of a rendered backup plan's copy regions past its vault's location (a blocker: the rest
+    aren't rendered), or None."""
+    s = schedule_of(p)
+    if len(s.copies) <= 1:
+        return None
+    return note("Backups", "blocker", f"Backup plan '{rdn_value(p)}'", f"copies go to its vault's location, "
+                f"{s.copies[0]}; {', '.join(s.copies[1:])} not rendered",
+                (f"Record one copy region per plan, a plan per region with a vault there, {RECORD}",), p.dn)
+
+
+def backup_notes(m):
+    """The render notes of environment m's backup vaults and plans (render_backups writes their comments)."""
+    return (*(n for v in of_class(m, VAULT) for n in vault_notes(m, v)),
+            *(n for p in of_class(m, PLAN) for n in ((plan_note(m, p),) if plan_note(m, p) else (copies_note(p),))
+              if n is not None))
+
+
 def _vault(m, v):
     n, mode = tf_name(rdn_value(v)), one(v, "ciamStorageImmutability") or "none"
     days = int(one(v, "ciamStorageLockDays") or 1) if mode != "none" else 1
     return (*((comment(f"Vault '{rdn_value(v)}': nothing locked; Backup and DR enforces at least a day"),)
               if mode == "none" else ()),
-            *((comment(f"Vault '{rdn_value(v)}': a compliance lock is the vault's effective_time (after it, the "
-                       "minimum can't be lowered): set the date when it takes effect"),)
-              if mode == "compliance" else ()),
-            *((comment(f"Vault '{rdn_value(v)}' restores in another region through its location: name the region in "
-                       "its plans' ciamCopyRegion"),)
-              if one(v, "ciamCrossRegionRestore") == "TRUE" and _location(m, v) == REGION else ()),
+            *(comment(note_comment(x)) for x in vault_notes(m, v)),
             tf_block("resource", ["google_backup_dr_backup_vault", n], [
                 ("location", _location(m, v)), ("backup_vault_id", label(f"ciam-{rdn_value(m.env)}-{rdn_value(v)}")),
                 ("backup_minimum_enforced_retention_duration", f"{days * DAY}s"), ("labels", _labels(v))]),
@@ -118,22 +167,14 @@ def _volumes(m, p):
 
 
 def _plan(m, p):
-    n, s, v, rule = tf_name(rdn_value(p)), schedule_of(p), plan_vault(m, p), backup_rule(p)
-    if v is None or not is_rendered(m, v):
-        return (comment(f"Backup plan '{rdn_value(p)}': its vault (role {one(p, 'ciamBackupVaultRole')}) isn't one "
-                        "this environment's render writes: not rendered"),)
-    if rule is None:
-        return (comment(f"Backup plan '{rdn_value(p)}': Backup and DR backs up every 6 to 23 hours or daily, not every "
-                        f"{s.every} hours: not rendered"),)
-    minimum = int(one(v, "ciamStorageLockDays") or 1) if (one(v, "ciamStorageImmutability") or "none") != "none" else 1
-    if (s.retention or 1) < minimum:
-        return (comment(f"Backup plan '{rdn_value(p)}': keeps backups {s.retention} days, less than its vault enforces "
-                        f"({minimum}), which Backup and DR refuses: not rendered"),)
+    n, v, rule = tf_name(rdn_value(p)), plan_vault(m, p), backup_rule(p)
+    missing, copies = plan_note(m, p), copies_note(p)
+    if missing is not None:
+        return (comment(note_comment(missing)),)
     volumes = _volumes(m, p)
     others = [r for r in values(p, "ciamProtectsRole") if r not in {one(x, "ciamBindingRole") for x in volumes}]
     plan = f"google_backup_dr_backup_plan.{n}"
-    return (*((comment(f"Backup plan '{rdn_value(p)}': copies go to its vault's location, {s.copies[0]}; "
-                       f"{', '.join(s.copies[1:])} not rendered"),) if len(s.copies) > 1 else ()),
+    return (*((comment(note_comment(copies)),) if copies is not None else ()),
             *(comment(f"Backup plan '{rdn_value(p)}' protects {r}, which isn't a volume: not rendered here")
               for r in others),
             tf_block("resource", ["google_backup_dr_backup_plan", n], [

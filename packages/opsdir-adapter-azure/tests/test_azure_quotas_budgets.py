@@ -13,7 +13,7 @@ from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_azure.adapter import ADAPTER
 from opsdir_adapter_azure.budgets import budget_inputs, budget_resources, render_budgets
 from opsdir_adapter_azure.cli import cli_resources
-from opsdir_adapter_azure.quotas import quota_commands, quota_request_notes, read_quotas
+from opsdir_adapter_azure.quotas import quota_commands, quota_notes, read_quotas, render_quota_requests
 from network_fixtures import ALPHA, entry, model
 
 CLOUD = "cloud=alpha,ou=environments,dc=ciam-ops"
@@ -91,9 +91,11 @@ def test_usages_are_read_into_the_subscription_s_catalog():
 def test_approved_increases_are_named_in_comments():
     _, alpha = _alpha(need("cpus", "vcpus", 16, ciamQuotaDecision="request"),
                       need("ips", "public-ips", 4, ciamQuotaDecision="deny"))
-    note, = as_text(quota_request_notes(alpha))
-    assert note.startswith(f"# Quota request (vcpus): raise it to 16 for subscription {SUB} in eastus2 through the "
-                           "Quota API (`az quota update`, Microsoft.Quota)")
+    note, = as_text(render_quota_requests(alpha))
+    assert note == f"# NOTE: quota request (vcpus): raise it to 16 for subscription {SUB} in eastus2: azurerm has no " \
+                   "resource for it"
+    found, = quota_notes(alpha)
+    assert (found.severity, found.scope) == ("action", f"subscription {SUB}") and "Quota API" in found.how[0]
 
 
 def test_a_budget_on_the_resource_group_alerts_the_action_group():
@@ -113,7 +115,9 @@ def test_defaults_azure_needs_and_the_government_note():
     assert "# budget monthly: no thresholds recorded: Azure needs a notification, so it alerts at 100% spent" in out
     assert "# budget monthly: nowhere names no action group: its alerts go to the subscription's Owners" in out
     assert "# budget monthly: Azure counts it in the billing account's currency, not EUR" in out
-    assert "# Azure Government: Cost Management budgets serve Enterprise Agreement and pay-as-you-go" in out
+    assert "# NOTE: Azure Government: Cost Management budgets serve Enterprise Agreement and pay-as-you-go" in out
+    from opsdir_adapter_azure.budgets import budget_notes
+    assert [n.severity for n in budget_notes(alpha)] == ["action"]
     assert 'threshold = 100' in out and 'contact_roles = ["Owner"]' in out
     _, alpha = _alpha(budget(ciamActualThreshold=("50", "60", "70", "80", "90", "100")), CHANNEL)
     out = flat(as_text(render_budgets(alpha)))

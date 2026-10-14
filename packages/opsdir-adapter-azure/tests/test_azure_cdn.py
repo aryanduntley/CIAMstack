@@ -40,7 +40,8 @@ def test_without_inspection_standard_front_door_over_the_load_balancer_with_a_ma
             and 'name                           = "load-balancer"' in out)
     assert 'certificate_type = "ManagedCertificate"' in out and "firewall_policy" not in out
     assert 'minimum_version  = "TLS12"' in out and "minimum_tls_version" not in out
-    assert _fd(spec(cdn=True), "10.60.250.10").startswith("# `sso.example.test`: a CDN in front of a private address")
+    assert _fd(spec(cdn=True), "10.60.250.10") == "# NOTE: service name `sso` (sso.example.test): a CDN in front of " \
+        "a private address needs Front Door Premium's Private Link origin: not rendered, so no CDN fronts it"
 
 
 def test_the_gateway_behind_front_door_keeps_no_waf():
@@ -49,3 +50,28 @@ def test_the_gateway_behind_front_door_keeps_no_waf():
     backend = servers_backend((server("pf-1", "10.60.2.10"),))
     out = "\n".join(as_text(gateway_service(edge, svc, spec(cdn=True), backend)))
     assert 'name = "Standard_v2"' in out and "web_application_firewall_policy" not in out
+
+
+def test_the_edge_notes_are_the_comments_its_service_names_write():
+    from opsdir.core.environment import of_class
+    from opsdir.core.notes import note_comment
+    from opsdir.domains.edge.resolve import inspection_notes
+    from opsdir_format_terraform.hcl import as_text
+    from opsdir_adapter_azure.frontdoor import frontdoor_notes
+    from opsdir_adapter_azure.terraform import _service
+    from edge_fixtures import note_lines, noted_edges
+    _, m = noted_edges()
+    out = "\n".join(x for svc in of_class(m, "ciamServiceName") for x in as_text(_service(m, svc, ())))
+    notes = (*inspection_notes(m, ()), *frontdoor_notes(m, ()))
+    assert set(note_lines(out)) == {note_comment(n) for n in notes}
+    assert [(n.severity, n.subject) for n in notes] == [
+        ("note", "service name `svc-l4` (l4.example.test)"),
+        ("blocker", "service name `svc-cdn-in` (cdn-in.example.test)")]
+
+
+def test_a_key_vault_certificate_needs_front_doors_grant_on_the_vault():
+    from opsdir.core.notes import note_comment
+    from opsdir_adapter_azure.frontdoor import vault_note
+    out = _fd(spec(cdn=True, certificate="azkv-cert://kv-edge/sso"))
+    assert f"# {note_comment(vault_note(environment(), 'kv-edge'))}" in out
+    assert vault_note(environment(), "kv-edge").severity == "action"

@@ -12,6 +12,7 @@ from opsdir.domains.estate.authorizations import required_levels
 from opsdir.domains.estate.regulated import regulated_data
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.estate.tags import required_tags
+from opsdir.core.notes import note, note_comment
 from opsdir_format_terraform.hcl import Block, ref, tf_block
 from .names import label
 
@@ -99,13 +100,20 @@ def default_labels(m):
     return {label_key(k): label(v) for k, v in required_tags(m).items()}
 
 
-FIPS_NOTE = ("FIPS endpoints: the google provider has no FIPS endpoint switch; FIPS 140 is met by Google Cloud's own "
-             "validated modules, or enforced for a folder with Assured Workloads")
+FIPS_NOTE = ("the google provider has no FIPS endpoint switch; FIPS 140 is met by Google Cloud's own validated "
+             "modules, or enforced for a folder with Assured Workloads")
+
+
+def fips_note(m):
+    """The render note (a plain note) of environment m's FIPS endpoints the google provider has no switch for, or
+    None; every provider block writes its comment."""
+    return note("Security", "note", "FIPS endpoints", FIPS_NOTE, (), None, m.label) if fips_endpoints(m) else None
 
 
 def provider_block(m, *body):
     """The google provider block of environment m: a FIPS note when its cloud uses FIPS endpoints, the given settings,
     then the policy's default labels."""
     labels = default_labels(m)
-    return tf_block("provider", ["google"], [*((("#", FIPS_NOTE),) if fips_endpoints(m) else ()), *body,
+    return tf_block("provider", ["google"], [*((("#", note_comment(fips_note(m))),) if fips_endpoints(m) else ()),
+                                             *body,
                                              *((("default_labels", labels),) if labels else ())])

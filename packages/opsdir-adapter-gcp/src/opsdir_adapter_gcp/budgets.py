@@ -1,16 +1,16 @@
 """Budgets on Google Cloud (core estate: ciamBudget) as Cloud Billing budgets. Pure.
 
 A budget lives on the billing account (the cloud's ciamBillingAccountRef), where only its administrators or costs
-managers may create one, so each budget the platform team keeps is rendered in the landing-zone root, applied by
-whoever keeps the landing zone (one someone else keeps is named in a comment; without a billing account it is a
-`# NOTE`): google_billing_budget, its amount (specified_amount: currency and units, nanos for cents) per calendar
+managers may create one, so each budget the platform team keeps is rendered in the landing-zone root, applied by whoever
+keeps the landing zone (one someone else keeps is named in a comment; without a billing account it is a blocker,
+budget_notes): google_billing_budget, its amount (specified_amount: currency and units, nanos for cents) per calendar
 period (MONTH, QUARTER, YEAR), filtered to the environment's project (by number: data.google_project) and, when the tag
 policy has an environment tag, to the resources labelled with it; a threshold rule per threshold (ciamActualThreshold
 CURRENT_SPEND, ciamForecastThreshold FORECASTED_SPEND; 1.0 is 100%); and its updates to the channel its ciamAlertRole
-names: a Cloud Monitoring notification channel (monitoring_notification_channels) or a Pub/Sub topic (pubsub_topic),
-by the channel's ciamProviderRef; otherwise the billing account's administrators get Google's default emails (a
-comment). Calling the Budget API with user credentials needs a quota project: the landing zone's provider bills its
-calls to the environment's project (billing_project, user_project_override).
+names: a Cloud Monitoring notification channel (monitoring_notification_channels) or a Pub/Sub topic (pubsub_topic), by
+the channel's ciamProviderRef; otherwise the billing account's administrators get Google's default emails (a comment).
+Calling the Budget API with user credentials needs a quota project: the landing zone's provider bills its calls to the
+environment's project (billing_project, user_project_override).
 
 Read back from Terraform state (and from gcloud billing budgets list: cli_budgets.py): google_billing_budget ->
 budgets (kind budget): amount and currency, period, threshold rules, the notification channel or topic its updates
@@ -19,6 +19,7 @@ from decimal import Decimal
 
 from opsdir.core.directory import get, one, rdn_value
 from opsdir.core.inventory import of_types, resource
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.estate.budgets import budget_channel, budgets, currency, thresholds
 from opsdir.domains.estate.tags import tag_rules
 from opsdir_format_terraform.hcl import Block, blocks_of, comment, from_entry, ref, tf_block, tf_name
@@ -65,8 +66,7 @@ def _amount(b):
 def _budget(m, b):
     cn = rdn_value(b)
     if not billing_account(m):
-        return (comment(f"NOTE: budget {cn}: not rendered: a Google Cloud budget lives on the billing account and the "
-                        "cloud names none (ciamBillingAccountRef)"),)
+        return (comment(note_comment(unrendered_note(m, b))),)
     updates, notes = _updates(m, b)
     period = PERIODS[one(b, "ciamBudgetPeriod") or "monthly"]
     return (*notes, tf_block("resource", [BUDGET, tf_name(cn)], [
@@ -88,10 +88,19 @@ def render_budgets(m):
     return (*lookup, *out)
 
 
+def unrendered_note(m, b):
+    """The render note of a budget when environment m's cloud names no billing account (a blocker: a Google Cloud
+    budget lives there)."""
+    return note("Budgets", "blocker", f"budget {rdn_value(b)}", "not rendered: a Google Cloud budget lives on the "
+                "billing account and the cloud names none (ciamBillingAccountRef)",
+                (f"Record the billing account on {rdn_value(m.cloud)} (ciamBillingAccountRef), {RECORD}",), b.dn,
+                m.label)
+
+
 def budget_notes(m):
-    """The platform root's notes on environment m's budgets nothing can render: every budget, when its cloud names no
-    billing account."""
-    return () if billing_account(m) else tuple(x for b in budgets(m) for x in _budget(m, b))
+    """The render notes of environment m's budgets nothing can render: every budget, when its cloud names no billing
+    account (the platform root writes their comments: render_files)."""
+    return () if billing_account(m) else tuple(unrendered_note(m, b) for b in budgets(m))
 
 
 def budget_provider_settings(m):

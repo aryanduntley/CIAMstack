@@ -938,7 +938,7 @@ resource "aws_wafv2_web_acl_association" "svc_login" {
 }
 
 resource "aws_shield_protection" "svc_login" {
-  # needs the account's Shield Advanced subscription
+  # NOTE: Shield Advanced: its protections need the account's subscription
   name         = "svc_login"
   resource_arn = aws_lb.svc_login.arn
 }
@@ -1234,7 +1234,7 @@ resource "aws_wafv2_web_acl_association" "svc_sso" {
 }
 
 resource "aws_shield_protection" "svc_sso" {
-  # needs the account's Shield Advanced subscription
+  # NOTE: Shield Advanced: its protections need the account's subscription
   name         = "svc_sso"
   resource_arn = aws_lb.svc_sso.arn
 }

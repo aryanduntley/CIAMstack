@@ -11,7 +11,8 @@ import json
 
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import of_class, one_role
-from opsdir.domains.infrastructure.firewall import rule_priorities, rule_purpose
+from opsdir.core.notes import note, note_comment
+from opsdir.domains.infrastructure.firewall import priority_note, priority_notes, rule_priorities, rule_purpose
 from opsdir.domains.compute.hosts import run_roles
 from opsdir.domains.network.stack import allowlist, firewall_model, network_policy, owned, private_ranges
 from opsdir_adapter_gcp.identities import project_of
@@ -117,6 +118,23 @@ def _hierarchical(m, fw):
     return p if p is not None and one(p, "ciamPolicyScope") == "hierarchical" else None
 
 
+def tag_user_note(m):
+    """The render note (an action) of the policy model's tag bindings: binding the tag values to the instances needs
+    roles/resourcemanager.tagUser for the deployer, an access request."""
+    return note("Network", "action", "secure tags", "binding the tag values to the instances needs "
+                "roles/resourcemanager.tagUser on them for the deployer",
+                ("Before applying, have the deployer granted roles/resourcemanager.tagUser on the tag values and the "
+                 "instances (an access request to whoever keeps the project)",), None, m.label)
+
+
+def policy_notes(m):
+    """The render notes of environment m's network firewall policy: its rules' given the next free priority (not one a
+    hierarchical policy holds: read, never rendered), then its tag bindings' (tag_user_note)."""
+    rules = of_class(m, "ciamFirewallRule")
+    return (*priority_notes(m, rules, rule_priorities(rules, *PRIORITIES), lambda fw: _hierarchical(m, fw) is not None),
+            tag_user_note(m))
+
+
 def ingress_rules(m):
     """The record's inbound rules as the policy's rules (priorities pinned like the VPC rules'), targeting the role's
     tag value; a comment for a rule a hierarchical policy holds."""
@@ -130,9 +148,7 @@ def ingress_rules(m):
             out.append(comment(f"{rdn_value(fw)} belongs to the hierarchical policy '{rdn_value(held)}' (read, not "
                                "rendered)"))
             continue
-        out += [comment(f"NOTE: {rdn_value(fw)} has no pinned ciamRulePriority; assigned {prio}. Pin it in the "
-                        "directory.")] \
-            if not pinned else []
+        out += [comment(note_comment(priority_note(m, fw, prio)))] if not pinned else []
         out.append(_rule(m, tf_name(rdn_value(fw)), prio, "INGRESS", "allow", (
             ("src_ip_ranges", values(fw, "ciamSourceCidr")),
             _layer4(one(fw, "ciamProtocol", "tcp"), values(fw, "ciamPort"))),
@@ -187,8 +203,7 @@ def policy_firewall(m):
                         "keeps it)"),) if order else ()),
              *((comment(f"The network's project is {path['projects']}: the policy, its rules and the tag key live "
                         "there, so the deployer needs rights in it"),) if "projects" in path else ()),
-             comment("Binding the tag values to the instances needs roles/resourcemanager.tagUser on them for the "
-                     "deployer (an access request)"))
+             comment(note_comment(tag_user_note(m))))
     kept = p is not None and not owned(p)
     return (*notes,
             *(() if kept else (

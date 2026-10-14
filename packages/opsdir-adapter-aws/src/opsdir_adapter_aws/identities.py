@@ -7,7 +7,8 @@ import re
 
 from opsdir.core.directory import one
 from opsdir.core.environment import one_role
-from opsdir.domains.access.workloads import principal_label
+from opsdir.core.notes import note_comment
+from opsdir.domains.access.workloads import pod_notes, principal_label
 from opsdir_format_terraform.hcl import Block, comment, jsonencoded, ref, tf_block, tf_name
 from .access import resources
 
@@ -41,7 +42,8 @@ def statements(m, w):
 
 
 def notes(w):
-    return tuple(comment(f"NOTE: {note}") for note in w.notes)
+    """The comments of a workload identity's render notes (core access.workloads: its grant notes)."""
+    return tuple(comment(note_comment(n)) for n in w.notes)
 
 
 def eks_cluster_name(cluster):
@@ -98,9 +100,7 @@ def pod_trust(w):
     bind)."""
     n = tf_name(w.identity_role)
     clusters = {p.cluster.dn: p.cluster for p in w.pods if p.cluster is not None}.values()
-    unbound = tuple(comment(f"NOTE: principal {principal_label(w)}: service account {p.namespace}/{p.service_account} "
-                            "runs in a cluster this environment doesn't bind, so nothing trusts it")
-                    for p in w.pods if p.cluster is None)
+    unbound = tuple(comment(note_comment(x)) for x in pod_notes(w))
     if not clusters:
         return None, unbound
     ec2 = (("statement", Block((("actions", ["sts:AssumeRole"]), ("principals", Block((

@@ -8,7 +8,7 @@ variable "organization_id" {
   default     = "123456789012"
 }
 
-# compliance: Security Command Center (Premium or Enterprise) activated with Security Health Analytics (activation has no Terraform resource and enabling its services only a google-beta one): a request to the organization's administrators (not rendered)
+# NOTE: compliance: Security Command Center (Premium or Enterprise) activated with Security Health Analytics (activation has no Terraform resource and enabling its services only a google-beta one): a request to the organization's administrators (not rendered)
 
 resource "google_cloud_security_compliance_framework_deployment" "compliance_nist_800_53_r5" {
   # nist-800-53-r5: Compliance Manager's NIST SP 800-53 R5, every control (DETECTIVE where it can be, else AUDIT); one deployment per framework (Google's pages say both one and several may be deployed on one resource)
@@ -98,7 +98,7 @@ resource "google_cloud_security_compliance_framework_deployment" "compliance_cis
 }
 
 resource "google_scc_v2_project_notification_config" "compliance_findings" {
-  # Security Command Center's service agent must be able to publish to the topic
+  # NOTE: compliance's findings to security-findings: Security Command Center's service agent must be able to publish to the topic
   config_id    = "compliance-findings"
   project      = var.project_id
   location     = "global"

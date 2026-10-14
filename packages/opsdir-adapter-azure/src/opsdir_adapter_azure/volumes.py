@@ -24,8 +24,10 @@ without a Volume tag is named.
 from collections import Counter
 
 from opsdir.core.directory import one, rdn_value
-from opsdir.core.environment import UNBOUND, of_class, one_role
+from opsdir.core.environment import UNBOUND, inherited_from, of_class, one_role
+from opsdir.domains.compute.hosts import compute_groups
 from opsdir.core.inventory import of_types, resource, tagged_role
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.data.volumes import (POLICY, boot_volume, data_volumes, disk_tags, is_encrypted, tagged_disks,
                                          volume_key_role, volume_policy)
 from opsdir.domains.network.stack import kept_by, owned
@@ -122,17 +124,32 @@ def _server_volume(m, s, lun, v):
                 ("caching", "None")]))
 
 
+def scale_set_disk_note(m, g, v):
+    """The render note of a compute group's data volume (a blocker), or None: one recording no size (not rendered:
+    a scale set's data disk needs one), else one a plan protects that Azure Backup's disk backup can't (it protects
+    managed disks one by one, not a scale set's)."""
+    if _int(v, "ciamVolumeSizeGb") is None:
+        return note("Volumes", "blocker", f"Volume '{rdn_value(v)}' of group {rdn_value(g)}", "records no size "
+                    "(ciamVolumeSizeGb), which a scale set's data disk needs: not rendered",
+                    (f"Record the volume's size (ciamVolumeSizeGb), {RECORD}",), v.dn)
+    policy = volume_policy(m, v)
+    if policy is None:
+        return None
+    return note("Volumes", "blocker", f"{rdn_value(v)} of group {rdn_value(g)}", "Azure Backup's disk backup protects "
+                f"managed disks one by one, not a scale set's: plan {one(policy, 'ciamBindingRole')} doesn't back it "
+                "up",
+                ("Back the group's instances up another way (snapshots taken by their own automation, or "
+                 "application-level backups), or run the role on servers, by hand",), v.dn)
+
+
 def _data_disk(m, g, lun, v):
     """(comments, the scale set's data_disk Block for volume v at a LUN, or None when it records no size)."""
-    kind, policy = TYPES.get(one(v, "ciamVolumeClass"), "Premium_LRS"), volume_policy(m, v)
+    kind, found = TYPES.get(one(v, "ciamVolumeClass"), "Premium_LRS"), scale_set_disk_note(m, g, v)
     size = _int(v, "ciamVolumeSizeGb")
     if size is None:
-        return (comment(f"Volume '{rdn_value(v)}' of group {rdn_value(g)} records no size (ciamVolumeSizeGb), which "
-                        "a scale set's data disk needs: not rendered"),), None
+        return (comment(note_comment(found)),), None
     encryption, notes = _encryption_set(m, v)
-    unprotected = (comment(f"{rdn_value(v)} of group {rdn_value(g)}: Azure Backup's disk backup protects managed disks "
-                           "one by one, not a scale set's: plan "
-                           f"{one(policy, 'ciamBindingRole')} doesn't back it up"),) if policy is not None else ()
+    unprotected = (comment(note_comment(found)),) if found is not None else ()
     return (*notes, *unprotected,
             *((comment(f"{rdn_value(g)}'s instances mount {rdn_value(v)} at {one(v, 'ciamMountPath')} (their own "
                        "configuration, not Terraform)"),) if one(v, "ciamMountPath") else ())), \
@@ -142,6 +159,14 @@ def _data_disk(m, g, lun, v):
                        ("disk_mbps_read_write", _int(v, "ciamThroughputMb") if kind in PROVISIONED
                         else None)),
                *encryption))
+
+
+def volume_notes(m):
+    """The render notes of environment m's compute groups' data volumes (scale_set_disks writes their comments)."""
+    return (*(n for g in compute_groups(m) if not inherited_from(m, g)
+              for v in data_volumes(m, one(g, "ciamTargetRole")) if owned(v)
+              for n in (scale_set_disk_note(m, g, v),) if n is not None),
+            *(policy_note(p) for p in of_class(m, POLICY) if owned(p)))
 
 
 def scale_set_disks(m, g, des):
@@ -160,15 +185,23 @@ def scale_set_disks(m, g, des):
             disk_tags(boot_volume(m, role), tuple((str(lun), v) for lun, v, _, b in disks if b is not None)))
 
 
+def policy_note(p):
+    """The render note of a snapshot policy the platform keeps (a blocker): Azure snapshots managed disks on a
+    schedule only with Azure Backup's disk backup, which a backup plan renders, so the policy isn't rendered."""
+    return note("Volumes", "blocker", f"Snapshot policy '{rdn_value(p)}' (role {one(p, 'ciamBindingRole')})",
+                "Azure snapshots managed disks on a schedule with Azure Backup's disk backup, in a Backup vault: "
+                "record a backup plan (ciamBackupPlan) with this role and a vault, which renders as one",
+                (f"Record a backup plan (ciamBackupPlan) protecting role {one(p, 'ciamBindingRole')} into a vault, "
+                 f"{RECORD}",), p.dn)
+
+
 def snapshot_policy_notes(m):
     """Comments for environment m's snapshot policies: Azure snapshots managed disks on a schedule only with Azure
-    Backup's disk backup, which a backup plan renders (opsdir_adapter_azure.backups); someone else's named."""
-    return tuple(comment(f"Snapshot policy '{rdn_value(p)}' (role {one(p, 'ciamBindingRole')}): "
-                         + (f"kept by {kept_by(m, p)}: not rendered here" if not owned(p) else
-                            "Azure snapshots managed disks on a schedule with Azure Backup's disk backup, in a Backup "
-                            "vault: record a backup plan (ciamBackupPlan) with this role and a vault, which renders as "
-                            "one"))
-                 for p in of_class(m, POLICY))
+    Backup's disk backup, which a backup plan renders (opsdir_adapter_azure.backups): policy_note's comment;
+    someone else's named."""
+    return tuple(comment(note_comment(policy_note(p))) if owned(p) else
+                 comment(f"Snapshot policy '{rdn_value(p)}' (role {one(p, 'ciamBindingRole')}): kept by "
+                         f"{kept_by(m, p)}: not rendered here") for p in of_class(m, POLICY))
 
 
 # ------------------------------------------------------------------ read back

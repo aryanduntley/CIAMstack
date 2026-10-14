@@ -67,7 +67,7 @@ def test_an_adopted_scale_set_is_imported_and_its_autoscale_setting_said():
     out = _render(KEY, adopted)
     assert 'name = "legacy-app"' in out and _flat(f'import {{ to = azurerm_linux_virtual_machine_scale_set.vmss_app '
                                                   f'id = "{ref}" }}') in out
-    assert "# vmss-app exists: an autoscale setting it already has must be imported by hand" in out
+    assert "# NOTE: vmss-app: exists: an autoscale setting it already has must be imported by hand" in out
 
 
 def _state(*resources):

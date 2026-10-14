@@ -125,8 +125,9 @@ def test_the_workload_identities_an_environment_renders():
     assert (w.principals, w.identity_role, w.server_roles, w.name) == (("app",), "identity-app", ("web",), "id-alpha")
     assert [(x, b.dn.split(",")[0], row.verb) for x, b, row in w.grants] == [
         ("read-secret app-password", "cn=secret-app", "read-secret")]
-    assert w.notes == ("principal app: read-secret unbound-secret: role `unbound-secret` has no binding in this "
-                       "environment",)
+    assert [(n.subject, n.text, n.severity) for n in w.notes] == [
+        ("principal app", "read-secret unbound-secret: role `unbound-secret` has no binding in this environment",
+         "note")]
     assert workload_identities(env_model(d, "beta/prod"), MODEL) == ()          # no server of role web there
     assert identity_of((w,), "web") == w and identity_of((w,), "db") is None
 
@@ -152,7 +153,7 @@ def test_principals_sharing_an_identity_role_are_one_identity_with_their_permits
     assert (w.principals, w.server_roles, w.name, w.conditions) == (("app", "app-admin"), ("web", "admin"),
                                                                     "id-alpha", ("jit",))
     assert [x for x, _, _ in w.grants] == ["read-secret app-password", "write-secret app-password"]   # once each
-    assert [n.split(":")[0] for n in w.notes] == ["principal app", "principal app-admin"]
+    assert [n.subject for n in w.notes] == ["principal app", "principal app-admin"]
     assert identity_of((w,), "web") == identity_of((w,), "admin") == w
 
 

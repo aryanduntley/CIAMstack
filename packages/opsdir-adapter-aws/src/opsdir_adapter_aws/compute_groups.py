@@ -13,6 +13,7 @@ from opsdir.core.directory import one, rdn_value
 from opsdir.core.environment import inherited_from, recorded
 from opsdir.domains.access.workloads import identity_of
 from opsdir.domains.compute.hosts import compute_groups, group_subnets
+from opsdir.core.notes import note, note_comment
 from opsdir.domains.network.plumbing import adopted
 from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
 from .volumes import template_disks
@@ -60,8 +61,7 @@ def _autoscaling_group(m, g, n, target_groups):
     subnets = group_subnets(m, g)
     arns = target_groups.get(one(g, "ciamTargetRole"), ())
     tags = (("Role", one(g, "ciamTargetRole")), ("BindingRole", one(g, "ciamBindingRole")), ("ManagedBy", "opsdir"))
-    return (*((comment(f"{rdn_value(g)} exists: applying gives it launch template {group_name(m, g)}, which its "
-                       "instances run when they are next replaced"),) if adopted(g) else ()),
+    return (*((comment(note_comment(replaced_note(m, g))),) if adopted(g) else ()),
             tf_block("resource", ["aws_autoscaling_group", n], [
                 ("name", group_name(m, g)),
                 ("min_size", _count(g, "ciamMinSize", "min-size")), ("max_size", _count(g, "ciamMaxSize", "max-size")),
@@ -82,6 +82,20 @@ def _group(m, g, kms, identities, target_groups):
         return (comment(f"Compute group {rdn_value(g)} is {base}'s (this environment inherits it): rendered there"),)
     n = tf_name(rdn_value(g))
     return (*_launch_template(m, g, n, kms, identities), *_autoscaling_group(m, g, n, target_groups))
+
+
+def replaced_note(m, g):
+    """The render note of an existing (adopted) compute group (an action): applying gives it a new launch template,
+    which its instances run only once they are replaced."""
+    return note("Compute", "action", rdn_value(g), f"exists: applying gives it launch template {group_name(m, g)}, "
+                "which its instances run when they are next replaced",
+                (f"After applying, start an instance refresh on autoscaling group {group_name(m, g)} so its instances "
+                 "run the new template",), g.dn)
+
+
+def group_notes(m):
+    """The render notes of environment m's compute groups (render_groups writes their comments)."""
+    return tuple(replaced_note(m, g) for g in compute_groups(m) if adopted(g) and not inherited_from(m, g))
 
 
 def render_groups(m, kms, identities, target_groups):

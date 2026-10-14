@@ -81,8 +81,9 @@ def test_the_provider_notes_that_google_cloud_has_no_fips_endpoints_to_switch_to
                       (("add", "objectClass", ("ciamCloudEndpoints",)), ("replace", "ciamFipsEndpoints", ("TRUE",))))
     _, d, alpha, beta = estate(rules=(), extra=(fips,))
     assert as_text(provider_block(alpha, ("project", "p"))) == (
-        'provider "google" {\n  # FIPS endpoints: the google provider has no FIPS endpoint switch; FIPS 140 is met by '
-        'Google Cloud\'s own validated modules, or enforced for a folder with Assured Workloads\n  project = "p"\n}')
+        'provider "google" {\n  # NOTE: FIPS endpoints: the google provider has no FIPS endpoint switch; FIPS 140 is '
+        'met by Google Cloud\'s own validated modules, or enforced for a folder with Assured Workloads\n'
+        '  project = "p"\n}')
     assert "FIPS" not in as_text(provider_block(beta, ("project", "p")))
 
 

@@ -53,7 +53,8 @@ def test_in_azure_government_the_risk_log_export_says_its_availability_there_is_
     gov = alpha._replace(cloud=make_entry(alpha.cloud.dn, alpha.cloud.classes,
                                           {**alpha.cloud.attrs, "ciamRegion": ("usgovvirginia",)}))
     noted = " ".join("\n\n".join(as_text(render_identity_protection(gov, get(alpha.d, SERVICE)))).split())
-    assert ("# Azure Government: Microsoft's Azure Government documentation (2026-10) doesn't state that exporting "
+    assert ("# NOTE: Azure Government: Microsoft's Azure Government documentation (2026-10) doesn't state that "
+            "exporting "
             "Microsoft Entra logs by a diagnostic setting (microsoft.aadiam) is available there") in noted
     assert "Azure Government" not in out
 
@@ -97,7 +98,7 @@ def test_risk_remediation_is_a_note_until_azuread_can_express_it():
 def test_what_keeps_policies_from_being_rendered_is_a_comment():
     m, out = _render(ciamRiskPolicy="sign-in medium+: mfa")
     assert "azuread_conditional_access_policy" not in out and not uses_azuread(m)
-    assert "# defender: risk policies not rendered: defender: risk policies cover no one" in out
+    assert "# NOTE: defender: risk policies not rendered: defender: risk policies cover no one" in out
     _, everyone = _render(ciamRiskPolicy="user high+: block", ciamPolicyCovers="all-users")
     assert "exclude the break-glass accounts" in everyone and "azuread_conditional_access_policy" in everyone
 

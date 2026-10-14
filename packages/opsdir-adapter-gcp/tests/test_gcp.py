@@ -109,7 +109,7 @@ def test_the_landing_zones_network_is_read_from_its_host_project():
 def test_firewall_rules_target_a_tag_with_pinned_priorities():
     main = _render()["terraform/main.tf"]
     assert 'priority    = 900' in main and 'target_tags   = ["ciam-prod-ds"]' in main
-    assert ("# NOTE: fw-admin has no pinned ciamRulePriority; assigned 1000. Pin it in the directory." in main)
+    assert ("# NOTE: fw-admin: has no pinned ciamRulePriority; assigned 1000. Pin it in the directory." in main)
     assert 'source_ranges = ["10.40.0.0/16", "10.41.0.0/16"]' in main and 'ports    = ["4444", "8443"]' in main
 
 
@@ -157,3 +157,12 @@ def test_secrets_are_named_never_read():
     assert 'data "google_secret_manager_secret" "ds_root_password"' in main
     assert 'data "google_secret_manager_regional_secret" "ds_tls_keystore"' in main
     assert "secret_version" not in main
+
+
+def test_every_render_note_is_written_as_its_comment():
+    from opsdir.core.notes import note_comment
+    m = env_model(build_directory(REGISTRY, tuple(parse(RECORDS))), "gcp/prod")
+    lines = {x.strip() for text in ADAPTER.render_env(m, None).values() for x in text.splitlines()}
+    notes = ADAPTER.notes(m, None)
+    assert notes and [n for n in notes if f"# {note_comment(n)}" not in lines] == []
+    assert {n.subject: n.severity for n in notes}["fw-admin"] == "note"      # the planner's priority check acts

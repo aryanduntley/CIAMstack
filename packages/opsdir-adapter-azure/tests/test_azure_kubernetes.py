@@ -68,7 +68,12 @@ def test_a_role_run_only_on_kubernetes_gets_notes_not_a_load_balancer_or_rules()
     _, m, _ = model(alpha=alpha, tree=tree)
     svc, fw = (get(m.d, f"cn={cn},ou=bindings,{ALPHA}") for cn in ("svc-login", "fw-login"))
     out = "\n".join((*as_text(_service(m, svc)), *as_text(_security_rule(m, fw, 100, True))))
-    assert "# NOTE: service name `svc-login` (login.example.test) reaches role `am`, which runs only on " \
+    assert "# NOTE: service name `svc-login` (login.example.test): reaches role `am`, which runs only on " \
            "Kubernetes" in out
-    assert "# NOTE: firewall rule `fw-login` reaches role `am`, which runs only on Kubernetes" in out
+    assert "# NOTE: firewall rule `fw-login`: reaches role `am`, which runs only on Kubernetes" in out
     assert "resource" not in out
+    from opsdir.core.notes import note_comment
+    from opsdir.domains.edge.kubernetes import kubernetes_notes
+    assert sorted(f"# {note_comment(n)}" for n in kubernetes_notes(m)) == sorted(
+        x for x in out.splitlines() if x.startswith("# NOTE"))
+    assert {n.severity for n in kubernetes_notes(m)} == {"note"}

@@ -2,9 +2,34 @@
   "environment": "env=stage,cloud=source,ou=environments,dc=ciam-ops",
   "counts": {
     "blocker": 0,
-    "action": 0,
+    "action": 1,
     "note": 0,
     "to_review": 0
   },
-  "notes": []
+  "notes": [
+    {
+      "area": "Edge",
+      "severity": "action",
+      "subject": "Shield Advanced",
+      "text": "its protections need the account's subscription",
+      "how": [
+        "Before applying, make sure the account subscribes to AWS Shield Advanced (a paid subscription with a one-year commitment): the protections fail without it"
+      ],
+      "entry": null,
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 941
+        },
+        {
+          "path": "terraform/main.tf",
+          "line": 1237
+        }
+      ]
+    }
+  ]
 }

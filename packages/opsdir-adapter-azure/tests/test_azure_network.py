@@ -109,3 +109,17 @@ def test_sites_on_other_ports_are_network_rules_by_fqdn():
     assert "# FQDNs in network rules need the firewall policy's DNS proxy" in out
     assert 'protocols         = ["TCP"]' in out and 'destination_ports = ["587"]' in out
     assert 'destination_fqdns = ["smtp.example"]' in out
+
+
+def test_a_private_endpoint_s_zone_is_azure_government_s_there():
+    from types import SimpleNamespace
+    from opsdir.core.directory import make_entry
+    from opsdir_adapter_azure.network import private_dns_zone
+
+    def cloud(region):
+        return SimpleNamespace(cloud=make_entry("cloud=c", ("top", "ciamCloud"), {"ciamRegion": [region]}))
+    gov = cloud("usgovvirginia")
+    assert [private_dns_zone(gov, k) for k in ("secrets", "object-storage", "messaging", "registry")] == [
+        "privatelink.vaultcore.usgovcloudapi.net", "privatelink.blob.core.usgovcloudapi.net",
+        "privatelink.servicebus.usgovcloudapi.net", "privatelink.azurecr.us"]
+    assert private_dns_zone(cloud("eastus2"), "registry") == "privatelink.azurecr.io"

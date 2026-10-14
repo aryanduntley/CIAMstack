@@ -74,7 +74,7 @@ def test_a_vault_and_a_disk_backup_plan():
 def test_in_azure_government_a_vault_says_its_availability_there_is_unstated():
     m = _m(KEY, VAULT, DATA, PLAN)
     gov = m._replace(cloud=make_entry(m.cloud.dn, m.cloud.classes, {**m.cloud.attrs, "ciamRegion": ("usgovvirginia",)}))
-    note = ("# Azure Government: Microsoft's Azure Government documentation (2026-10) doesn't state that Data "
+    note = ("# NOTE: Azure Government: Microsoft's Azure Government documentation (2026-10) doesn't state that Data "
             "Protection backup vaults (Azure Backup's disk backup) are available there: confirm with the account "
             "team before relying on it")
     assert _flat(note) in _flat("\n\n".join(as_text(render_backups(gov))))

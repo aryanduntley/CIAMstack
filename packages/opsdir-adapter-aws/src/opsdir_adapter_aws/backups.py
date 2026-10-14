@@ -25,6 +25,7 @@ import re
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import UNBOUND, of_class, secret
 from opsdir.core.inventory import of_types, resource, tagged_role
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.governance.keepers import is_rendered
 from opsdir.domains.data.backups import VAULT, plan_vault
 from opsdir.domains.data.protection import PLAN, schedule_of
@@ -104,8 +105,7 @@ def _plan(m, p):
     n, s = tf_name(rdn_value(p)), schedule_of(p)
     cron, v = backup_cron(s.every, s.at), plan_vault(m, p)
     if cron is None:
-        return (comment(f"Backup plan '{rdn_value(p)}': AWS Backup schedules by cron; every {s.every} hours isn't a "
-                        "whole number of days: not rendered"),)
+        return (comment(note_comment(schedule_note(p))),)
     target = (ref(f"aws_backup_vault.{tf_name(rdn_value(v))}.name") if v is not None and is_rendered(m, v) else
               one(v, "ciamProviderRef").rsplit(":", 1)[1] if v is not None and one(v, "ciamProviderRef") else None)
     if target is None:
@@ -132,6 +132,21 @@ def _plan(m, p):
                   for role in values(p, "ciamProtectsRole"))]),
             *((tf_import(f"aws_backup_plan.{n}", one(p, "ciamProviderRef").rsplit(":", 1)[1]),)
               if adopted(p) else ()))
+
+
+def schedule_note(p):
+    """The render note of a backup plan AWS Backup's cron can't schedule (a blocker: not rendered), or None."""
+    s = schedule_of(p)
+    if backup_cron(s.every, s.at) is not None:
+        return None
+    return note("Backups", "blocker", f"Backup plan '{rdn_value(p)}'", f"AWS Backup schedules by cron; every "
+                f"{s.every} hours isn't a whole number of days: not rendered",
+                (f"Record an interval of whole days, or one that divides a day (ciamBackupEvery), {RECORD}",), p.dn)
+
+
+def backup_notes(m):
+    """The render notes of environment m's backup plans (render_backups writes their comments)."""
+    return tuple(n for p in of_class(m, PLAN) for n in (schedule_note(p),) if n is not None)
 
 
 def render_backups(m):

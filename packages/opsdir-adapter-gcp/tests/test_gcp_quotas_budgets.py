@@ -90,7 +90,10 @@ def test_approved_increases_are_quota_preferences_where_google_documents_the_id(
     assert 'quota_id = "CPUS-per-project-region"' in out and 'region = "us-east1"' in out
     assert "preferred_value = 32" in out and 'deletion_policy = "ABANDON"' in out
     assert 'quota_id = "NETWORKS-per-project"' in out and "preferred_value = 3" in out
-    assert "# Quota request (public-ips): raise IN_USE_ADDRESSES to 4 for the project in us-east1" in out
+    assert "# NOTE: quota request (public-ips): raise IN_USE_ADDRESSES to 4 for the project in us-east1: Cloud " \
+           "Quotas documents no quota id for it here, so not rendered" in out
+    from opsdir_adapter_gcp.quotas import quota_notes
+    assert [(n.subject, n.severity) for n in quota_notes(alpha)] == [("quota request (public-ips)", "action")]
 
 
 def test_a_budget_on_the_billing_account_in_the_landing_zone():
@@ -111,9 +114,11 @@ def test_a_budget_on_the_billing_account_in_the_landing_zone():
 
 def test_without_a_billing_account_or_a_channel():
     _, alpha = _alpha(budget(), CHANNEL)
-    assert as_text(budget_notes(alpha)) == (
-        "# NOTE: budget monthly: not rendered: a Google Cloud budget lives on the billing account and the cloud names "
-        "none (ciamBillingAccountRef)",)
+    from opsdir.core.notes import note_comment
+    (missing,) = budget_notes(alpha)
+    assert note_comment(missing) == (
+        "NOTE: budget monthly: not rendered: a Google Cloud budget lives on the billing account and the cloud names "
+        "none (ciamBillingAccountRef)") and missing.severity == "blocker"
     assert budget_provider_settings(alpha) == () and render_landing(alpha) == {}
     _, alpha = _alpha(budget(ciamAlertRole="nowhere"), billing="0X0X0X-0X0X0X-0X0X0X")
     out = flat(as_text(render_budgets(alpha)))

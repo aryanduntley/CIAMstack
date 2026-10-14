@@ -15,7 +15,9 @@ from (Terraform resource type, attributes) pairs like every AWS source. Pure.
     account assignments)                       the grants of its policies; role from the permission set's tag Role
   aws_organizations_policy (service and     -> guardrail (service-control, resource-control): its denies, its allows
     resource control policies)                 as a ceiling unless they allow everything, what it prevents by the
-                                               statement ids the renderer gives; role from its tag Role
+                                               statement ids the renderer gives; role from its tag Role; an S3 policy
+                                               blocking public access (<name>-s3) is its guardrail's public-storage
+                                               (one of its own when no control policy has that name)
   data aws_ssoadmin_instances               -> access path workforce-sso (role access-workforce-sso)
   aws_ec2_instance_connect_endpoint         -> access path session (role access-session)
 A statement is read as each of its actions (NotAction: '!a|b', every action but those) on each of its resources
@@ -28,7 +30,7 @@ from urllib.parse import unquote
 
 from opsdir.core.inventory import of_types, resource, tagged_role
 from opsdir.domains.access.grants import excluding, grant_text
-from .guardrails import denials_of
+from .guardrails import S3_POLICY, S3_SUFFIX, blocks_public_access, denials_of
 from .tags import state_tags as _tags
 
 CONTROL_KINDS = {"SERVICE_CONTROL_POLICY": "service-control", "RESOURCE_CONTROL_POLICY": "resource-control"}
@@ -190,16 +192,29 @@ def _permission_sets(found, policies):
 
 
 def _guardrails(found):
-    """Service and resource control policies: their denies, their allows as a ceiling, what they prevent."""
+    """Service and resource control policies: their denies, their allows as a ceiling, what they prevent; an S3 policy
+    blocking public access adds public-storage to the guardrail whose control policy it is named after (<name>-s3),
+    else is a guardrail of its own."""
+    policies = tuple(p for p in of_types(found, "aws_organizations_policy") if p.get("arn") or p.get("id"))
+    s3 = {p.get("name", "").removesuffix(S3_SUFFIX): p for p in policies
+          if p.get("type") == S3_POLICY and blocks_public_access(p.get("content"))}
+    controls = tuple(p for p in policies if p.get("type") in CONTROL_KINDS)
+
     def one_policy(p):
         grants, denials = _read((p.get("content"),))
+        prevents = denials_of(statements(p.get("content")))
         return resource("guardrail", p.get("arn") or p.get("id"), {
             "ciamGuardrailKind": CONTROL_KINDS.get(p.get("type"), "other"),
-            "ciamDenies": denials_of(statements(p.get("content"))), "ciamDenial": sorted(denials),
-            "ciamBoundary": () if "* on *" in grants else sorted(grants)},
+            "ciamDenies": (*prevents, *(("public-storage",) if p.get("name") in s3 else ())),
+            "ciamDenial": sorted(denials), "ciamBoundary": () if "* on *" in grants else sorted(grants)},
             name=p.get("name"), role=tagged_role(_tags(p)), tags=_tags(p))
-    return tuple(one_policy(p) for p in of_types(found, "aws_organizations_policy")
-                 if p.get("type") in CONTROL_KINDS and (p.get("arn") or p.get("id")))
+
+    def s3_only(name, p):
+        return resource("guardrail", p.get("arn") or p.get("id"), {
+            "ciamGuardrailKind": "service-control", "ciamDenies": ("public-storage",)},
+            name=name, role=tagged_role(_tags(p)), tags=_tags(p))
+    named = {p.get("name") for p in controls}
+    return (*(one_policy(p) for p in controls), *(s3_only(n, p) for n, p in s3.items() if n not in named))
 
 
 def _access_paths(found):

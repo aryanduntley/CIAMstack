@@ -42,11 +42,13 @@ def test_in_govcloud_cloudfront_runs_from_the_standard_account_and_the_name_is_a
     svc = service(ciamDnsZoneRef="Z0GOVZONE")
     m = environment(svc, cloud=GOV)
     out = "\n".join(as_text(fronted(m, svc, spec(cdn=True, certificate=CERT, ddos="application-advanced"), "sso")))
-    assert "# CloudFront isn't offered in AWS GovCloud (US)" in out and "no ITAR-controlled data in it" in out
+    assert "# NOTE: CloudFront: not offered in AWS GovCloud (US)" in out and "no ITAR-controlled data in it" in out
+    from opsdir_adapter_aws.cdn import govcloud_note
+    assert govcloud_note(m).severity == "action"
     dist = out[out.index('resource "aws_cloudfront_distribution" "sso"'):]
     assert dist.split("\n")[1].strip().startswith("provider") and "aws.us_east_1" in dist.split("\n")[1]
     assert out.count("provider = aws.us_east_1") >= 3                # managed policies, web ACL (and Shield below)
-    assert "needs the standard account's Shield Advanced subscription" in out
+    assert "# NOTE: Shield Advanced: its protections need the standard account's subscription" in out
     assert 'type    = "CNAME"' in out and "records = [aws_cloudfront_distribution.sso.domain_name]" in out
     assert "alias {" not in out
 

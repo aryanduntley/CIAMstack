@@ -20,6 +20,7 @@ from ...core.directory import children, is_a, one, rdn_value, values
 from ...core.environment import bound_nowhere, environment_of, one_role, servers_with_role
 from ...core.findings import findings, merge_findings, responsible
 from ...core.naming import env_label
+from ...core.notes import note
 from .hosts import baseline_for, compute_rows, runs_role
 from .naming import WORKLOAD_SECRET, WORKLOADS
 
@@ -144,11 +145,13 @@ def only_on_kubernetes(m, role):
     return role in kubernetes_roles(m) and not runs_role(m, role)
 
 
-def kubernetes_note(m, what, role):
-    """The note (comment text, no '# ') a cloud renderer writes instead of `what` for a role environment m runs only on
-    Kubernetes."""
-    return (f"NOTE: {what} reaches role `{role}`, which runs only on Kubernetes in {env_label(m.env.dn)}: the "
-            "cluster's ingress and network policies serve it there; not rendered")
+def kubernetes_note(m, what, role, entry=None):
+    """The render note (a plain note, flow 43) a cloud renderer writes, as its comment, instead of `what` (a firewall
+    rule, a service name; entry: its DN) for a role environment m runs only on Kubernetes: the cluster's ingress and
+    network policies serve it there."""
+    return note("Network", "note", what, f"reaches role `{role}`, which runs only on Kubernetes in "
+                f"{env_label(m.env.dn)}: the cluster's ingress and network policies serve it there; not rendered", (),
+                entry, m.label)
 
 
 def placed_on_kubernetes(m, b):

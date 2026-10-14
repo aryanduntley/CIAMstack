@@ -86,7 +86,8 @@ def test_a_framework_and_the_baseline_render_as_deployments_of_every_control():
     assert f'name              = "{BASE}/cloudControls/restrict-bucket-region"' in out
     assert 'values = ["us"]' in out                                       # the framework's parameter value
     assert 'variable "organization_id"' in out and 'default     = "123"' in out
-    assert "# posture: fedramp-high: Compliance Manager offers no framework for it (held by an Assured Workloads" in out
+    assert ("# NOTE: posture: fedramp-high: Compliance Manager offers no framework for it (held by an Assured "
+            "Workloads") in out
 
 
 def test_deployments_stay_a_request_naming_why():
@@ -94,7 +95,7 @@ def test_deployments_stay_a_request_naming_why():
         return [line for line in _text(out).splitlines() if "nist-800-53-r5 assessed" in line]
     nist = svc(ciamComplianceStandard="nist-800-53-r5")
     assert why(_render(nist, org=False)) == [
-        "# posture: nist-800-53-r5 assessed by a Compliance Manager framework deployment: the cloud names no "
+        "# NOTE: posture: nist-800-53-r5 assessed by a Compliance Manager framework deployment: the cloud names no "
         "organization (ciamOrganizationRef): a request to the organization's administrators (not rendered)"]
     assert "the framework catalog holds no framework for it, or not its controls (opsdir import gcp/frameworks --run)" \
         in why(_render(nist, tree=()))[0]

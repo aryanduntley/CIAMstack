@@ -111,7 +111,7 @@ def test_resources_with_no_native_form_stay_in_a_terraform_root_reading_the_temp
     assert [address(b) for b in split.side[9:]] == ["var.aws_s3_bucket_logs_id", "var.aws_s3_bucket_logs_bucket"]
     assert split.unresolved == ()
     assert no_native_note(split, "AWS CloudFormation") == (
-        "# NOTE: AWS CloudFormation has no form for these resources; this Terraform root manages them, applied after "
+        "# AWS CloudFormation has no form for these resources; this Terraform root manages them, applied after "
         "the template, its variables taking the template's outputs:\n"
         "#   aws_macie2_classification_export_configuration.e\n#   aws_inspector2_enabler.i\n")
 

@@ -200,3 +200,20 @@ def test_the_cli_reads_instance_connect_endpoints_as_state_does():
     access = {r.ref: r for r in read if r.kind == "access"}
     assert access == {r.ref: r for r in state_resources(state)[0] if r.kind == "access"} and list(access) == [arn]
     assert "aws_ec2_instance_connect_endpoint (1): outside the listed VPCs (vpc-1); not read" in notices
+
+
+def test_an_s3_policy_blocking_public_access_is_its_guardrail_s_public_storage():
+    from opsdir_adapter_aws.guardrails import PUBLIC_STORAGE
+    scp = _doc({"Sid": "DenyRoot", "Effect": "Deny", "NotAction": "s3:GetBucketPolicy", "Resource": "*"})
+    s3 = json.dumps(PUBLIC_STORAGE)
+    resources, _ = iam_resources(_pairs(
+        ("aws_organizations_policy", {"id": "p-1", "name": "ciam-prod-baseline", "type": "SERVICE_CONTROL_POLICY",
+                                      "content": scp}),
+        ("aws_organizations_policy", {"id": "p-2", "name": "ciam-prod-baseline-s3", "type": "S3_POLICY",
+                                      "content": s3}),
+        ("aws_organizations_policy", {"id": "p-3", "name": "ciam-prod-alone-s3", "type": "S3_POLICY",
+                                      "content": s3})))
+    assert _one(resources, "guardrail", "p-1").attrs["ciamDenies"] == ("root-use", "public-storage")
+    alone = _one(resources, "guardrail", "p-3")
+    assert alone.attrs["ciamDenies"] == ("public-storage",) and alone.name == "ciam-prod-alone"
+    assert [r.ref for r in resources if r.kind == "guardrail"] == ["p-1", "p-3"]       # p-2 is p-1's

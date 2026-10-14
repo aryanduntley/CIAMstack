@@ -12,6 +12,7 @@ from collections import namedtuple
 from ...core.directory import get, one, rdn_value, subtree, values
 from ...core.environment import UNBOUND, environment_of, of_class
 from ...core.naming import branch, env_label
+from ...core.notes import note
 from .dns import answer, zone_of
 
 DEFAULT_TTL = 300
@@ -100,17 +101,19 @@ def forwarders(m, direction="outbound", hosted=None):
 
 
 def hosted_notes(m, machines):
-    """A note (comment text, no '# ') per forwarder of environment m on its own DNS servers (machines: what the
+    """The render note (an action, flow 43) per forwarder of environment m on its own DNS servers (machines: what the
     platform calls them): what those servers must do, the network's DNS settings pointing at them; neither is rendered
-    here."""
-    def note(f):
+    here, so whoever keeps those servers sets them up (the cloud renderers write their comments)."""
+    def of(f):
         doms, hosts = ", ".join(values(f, "ciamForwardDomain")), ", ".join(values(f, "ciamResolverHost"))
         does = (f"forward {doms} to {', '.join(values(f, 'ciamForwardTarget'))} and everything else to the "
                 "platform's resolver" if (one(f, "ciamForwardDirection") or "outbound") == "outbound"
                 else f"answer other networks' queries for {doms}")
-        return (f"Forwarder `{rdn_value(f)}` runs on DNS servers {hosts} ({machines}), not the managed resolver: "
-                f"they {does}, and the network's DNS servers point at them; not managed here")
-    return tuple(note(f) for direction in ("outbound", "inbound") for f in forwarders(m, direction, hosted=True))
+        return note("Network", "action", f"forwarder `{rdn_value(f)}`", f"runs on DNS servers {hosts} ({machines}), "
+                    f"not the managed resolver: they {does}, and the network's DNS servers point at them; not managed "
+                    "here", (f"Configure DNS servers {hosts} to {does}, by hand",
+                             "Point the network's DNS settings at them"), f.dn, m.label)
+    return tuple(of(f) for direction in ("outbound", "inbound") for f in forwarders(m, direction, hosted=True))
 
 
 def _relative(fqdn, zone):

@@ -17,6 +17,7 @@ from collections import namedtuple
 from ...core.directory import get, one, rdn_value, values
 from ...core.environment import of_class, one_role
 from ...core.findings import responsible
+from ...core.notes import RECORD, note
 from ..compute.hosts import runs_role
 from ..compute.workloads import namespace_of, runs_on_kubernetes, service_account_of, workloads
 from .grants import rows_for
@@ -24,7 +25,8 @@ from .principals import permits, principals
 
 # principals: the names of the principals acting as it (one, but every workload principal sharing an identity role);
 # server_roles: the roles whose servers run as it (theirs, once each; () for a principal with none); grants: (permit,
-# binding, row) per permit, once each, sorted; notes: 'principal <name>: <why>' for each permit that can't be granted;
+# binding, row) per permit, once each, sorted; notes: a RenderNote (subject 'principal <name>') per permit that can't
+# be granted;
 # kind: the principals' kind; trust: (issuer, subject) of a deployer's OIDC trust; group: an operator's group (the
 # identity binding's provider ref); conditions: the principals' (jit: granted eligible, not active); pods: the
 # Kubernetes service accounts that assume it (Pod, one per workload run on Kubernetes here with its identity role);
@@ -48,13 +50,18 @@ def identity_name(m, role, default):
 
 
 def _grant(m, model, permit):
-    """((permit, binding, row), None) when the cloud can grant a permit in m, else (None, why not)."""
+    """((permit, binding, row), None) when the cloud can grant a permit in m, else (None, (why not, severity, how)):
+    a role not bound here a plain note (the planner's binding checks raise it), a permit the cloud has no mapping for
+    an action (grant it by hand)."""
     verb, _, role = permit.partition(" ")
     b = one_role(m, role)
     rows = rows_for(m.d, model, b, verb) if b is not None else ()
     if b is None:
-        return None, f"{permit}: role `{role}` has no binding in this environment"
-    return ((permit, b, rows[0]), None) if rows else (None, f"{permit}: this cloud has no mapping for it")
+        return None, (f"{permit}: role `{role}` has no binding in this environment", "note",
+                      (f"Bind role `{role}` in this environment, {RECORD}",))
+    return ((permit, b, rows[0]), None) if rows else (None, (f"{permit}: this cloud has no mapping for it", "action", (
+        f"Grant `{permit}` to the principal's identity by hand (a custom role or policy)",
+        f"Or remove the permit from the principal's permission set, {RECORD}")))
 
 
 def oidc_trust(binding):
@@ -68,13 +75,25 @@ def _identity(m, model, p, default, named=True, **extra):
     name, role, target = rdn_value(p), one(p, "ciamIdentityRole"), one(p, "ciamTargetRole")
     return WorkloadIdentity((name,), role, (target,) if target else (),
                             identity_name(m, role, default) if named else default,
-                            tuple(g for g, _ in done if g), tuple(f"principal {name}: {n}" for _, n in done if n),
+                            tuple(g for g, _ in done if g),
+                            tuple(note("Access", severity, f"principal {name}", why, how, p.dn, m.label)
+                                  for _, n in done if n for why, severity, how in (n,)),
                             one(p, "ciamPrincipalKind"), conditions=tuple(values(p, "ciamCondition")), **extra)
 
 
 def principal_label(w):
     """The principals a workload identity acts for, as words (their names joined by 'and')."""
     return " and ".join(w.principals)
+
+
+def pod_notes(w):
+    """The render notes (blockers) of a workload identity's Kubernetes service accounts that run in a cluster its
+    environment doesn't bind: nothing trusts them (each cloud's renderer writes their comments)."""
+    return tuple(note("Access", "blocker", f"principal {principal_label(w)}", f"service account "
+                      f"{p.namespace}/{p.service_account} runs in a cluster this environment doesn't bind, so nothing "
+                      "trusts it", (f"Bind the cluster the service account runs in (its workload's ciamClusterRole), "
+                                    f"{RECORD}",))
+                 for p in w.pods if p.cluster is None)
 
 
 def _merged(ws):
@@ -131,6 +150,14 @@ def landing_identities(m, model):
                       for p in principals(m.d) if one(p, "ciamPrincipalKind") in ("operator", "break-glass")
                       and bound(p) is not None and one(bound(p), "ciamIdentityKind") in ("group", "permission-set"))
     return deployers, operators
+
+
+def identity_notes(m, model):
+    """The render notes of environment m's identities as a cloud with access model renders them, each once: the
+    workload identities' and the landing zone's (deployers, operators) grant notes, and the pods' (pod_notes)."""
+    deployers, operators = landing_identities(m, model)
+    every = (*workload_identities(m, model), *deployers, *operators)
+    return tuple(dict.fromkeys(n for w in every for n in (*w.notes, *pod_notes(w))))
 
 
 def landing_zone_owner(m):

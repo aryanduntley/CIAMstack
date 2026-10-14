@@ -3,8 +3,8 @@
   "counts": {
     "blocker": 1,
     "action": 3,
-    "note": 3,
-    "to_review": 6
+    "note": 9,
+    "to_review": 0
   },
   "notes": [
     {
@@ -92,6 +92,26 @@
       ]
     },
     {
+      "area": "Access",
+      "severity": "note",
+      "subject": "principal pingds",
+      "text": "write-storage backup-target: role `backup-target` has no binding in this environment",
+      "how": [
+        "Bind role `backup-target` in this environment, under an approved change, and re-render"
+      ],
+      "entry": "cn=pingds,ou=principals,dc=ciam-ops",
+      "scope": "target/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 179
+        }
+      ]
+    },
+    {
       "area": "Monitoring",
       "severity": "note",
       "subject": "alert rule login-failures",
@@ -150,13 +170,13 @@
       ]
     },
     {
-      "area": null,
-      "severity": null,
-      "subject": "",
-      "text": "firewall rule `fw-apps-public` reaches role `ig`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
+      "area": "Network",
+      "severity": "note",
+      "subject": "firewall rule `fw-apps-public`",
+      "text": "reaches role `ig`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
       "how": [],
-      "entry": null,
-      "scope": null,
+      "entry": "cn=fw-apps-public,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+      "scope": "target/prod",
       "owners": [
         "ciam-platform"
       ],
@@ -168,13 +188,13 @@
       ]
     },
     {
-      "area": null,
-      "severity": null,
-      "subject": "",
-      "text": "firewall rule `fw-login-public` reaches role `am`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
+      "area": "Network",
+      "severity": "note",
+      "subject": "firewall rule `fw-login-public`",
+      "text": "reaches role `am`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
       "how": [],
-      "entry": null,
-      "scope": null,
+      "entry": "cn=fw-login-public,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+      "scope": "target/prod",
       "owners": [
         "ciam-platform"
       ],
@@ -186,31 +206,13 @@
       ]
     },
     {
-      "area": null,
-      "severity": null,
-      "subject": "",
-      "text": "firewall rule `fw-pf-cluster` reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
+      "area": "Network",
+      "severity": "note",
+      "subject": "firewall rule `fw-pf-cluster-admin`",
+      "text": "reaches role `pf-admin`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
       "how": [],
-      "entry": null,
-      "scope": null,
-      "owners": [
-        "ciam-platform"
-      ],
-      "places": [
-        {
-          "path": "terraform/main.tf",
-          "line": 123
-        }
-      ]
-    },
-    {
-      "area": null,
-      "severity": null,
-      "subject": "",
-      "text": "firewall rule `fw-pf-cluster-admin` reaches role `pf-admin`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
-      "how": [],
-      "entry": null,
-      "scope": null,
+      "entry": "cn=fw-pf-cluster-admin,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+      "scope": "target/prod",
       "owners": [
         "ciam-platform"
       ],
@@ -222,13 +224,31 @@
       ]
     },
     {
-      "area": null,
-      "severity": null,
-      "subject": "",
-      "text": "firewall rule `fw-sso-public` reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
+      "area": "Network",
+      "severity": "note",
+      "subject": "firewall rule `fw-pf-cluster`",
+      "text": "reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
       "how": [],
-      "entry": null,
-      "scope": null,
+      "entry": "cn=fw-pf-cluster,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+      "scope": "target/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 123
+        }
+      ]
+    },
+    {
+      "area": "Network",
+      "severity": "note",
+      "subject": "firewall rule `fw-sso-public`",
+      "text": "reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
+      "how": [],
+      "entry": "cn=fw-sso-public,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+      "scope": "target/prod",
       "owners": [
         "ciam-platform"
       ],
@@ -236,24 +256,6 @@
         {
           "path": "terraform/main.tf",
           "line": 157
-        }
-      ]
-    },
-    {
-      "area": null,
-      "severity": null,
-      "subject": "",
-      "text": "principal pingds: write-storage backup-target: role `backup-target` has no binding in this environment",
-      "how": [],
-      "entry": null,
-      "scope": null,
-      "owners": [
-        "ciam-platform"
-      ],
-      "places": [
-        {
-          "path": "terraform/main.tf",
-          "line": 179
         }
       ]
     }

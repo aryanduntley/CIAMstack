@@ -5,9 +5,16 @@
 -->
 # Render notes: standby/prod
 
-**4 blockers, 2 actions, 0 notes, 0 to review**
+**5 blockers, 9 actions, 0 notes, 0 to review**
 
 ## Blockers
+
+### protection policy `sign-on-protection` (Edge)
+
+- **What:** bot-control needs reCAPTCHA keys (bot management): not rendered
+- **Where:** terraform/main.tf:1187, terraform/main.tf:1595
+- **Who:** ciam-platform
+- **How:** Protect against it another way on Google Cloud, by hand, or drop the category from the policy (ciamWafCategory), under an approved change, and re-render
 
 ### alert rule login-failures (Monitoring)
 
@@ -50,6 +57,27 @@
 
 ## Actions
 
+### mig-pf-engine (Compute)
+
+- **What:** exists: applying gives it a new instance template, which its instances run when they are next replaced
+- **Where:** terraform/main.tf:836
+- **Who:** ciam-platform
+- **How:** After applying, start a rolling update of the managed instance group so its instances run the new template
+
+### mig-pf-engine (Compute)
+
+- **What:** exists: an autoscaler it already has must be imported by hand (its ID isn't recorded), or applying adds a second one
+- **Where:** terraform/main.tf:861
+- **Who:** ciam-platform
+- **How:** Before applying, import the group's autoscaler into the rendered google_compute_region_autoscaler (terraform import, its ID)
+
+### ciam-standby-pf-grants (Databases)
+
+- **What:** the Cloud SQL service agent (service-<project number>@gcp-sa-cloud-sql.iam.gserviceaccount.com) needs roles/cloudkms.cryptoKeyEncrypterDecrypter on its key
+- **Where:** terraform/main.tf:2130
+- **Who:** ciam-platform
+- **How:** Grant the Cloud SQL service agent roles/cloudkms.cryptoKeyEncrypterDecrypter on the key, by its keeper, before applying
+
 ### Assured Workloads (FEDRAMP_MODERATE) (Logs)
 
 - **What:** Cloud Logging, Compute Engine and GKE are supported products; the Ops Agent isn't listed on its own, and restrictions on log sinks and GKE workload logging under it are to be confirmed
@@ -63,3 +91,31 @@
 - **Where:** terraform/main.tf:2354; standby/prod
 - **Who:** ciam-platform
 - **How:** Before configuration management places /etc/google-cloud-ops-agent/config.yaml, merge the receivers and pipelines of the servers' own file into it, by hand
+
+### secure tags (Network)
+
+- **What:** binding the tag values to the instances needs roles/resourcemanager.tagUser on them for the deployer
+- **Where:** terraform/main.tf:44; standby/prod
+- **Who:** ciam-platform
+- **How:** Before applying, have the deployer granted roles/resourcemanager.tagUser on the tag values and the instances (an access request to whoever keeps the project)
+
+### scc (Security)
+
+- **What:** Security Command Center (Premium or Enterprise) activated with Event Threat Detection, Container Threat Detection, VM Threat Detection (activation has no Terraform resource and enabling its services only a google-beta one): a request to the organization's administrators (not rendered)
+- **Where:** terraform/main.tf:2408; the organization
+- **Who:** ciam-platform
+- **How:** Ask the organization's administrators for it: Security Command Center (Premium or Enterprise) activated with Event Threat Detection, Container Threat Detection, VM Threat Detection (activation has no Terraform resource and enabling its services only a google-beta one)
+
+### scc's findings to security-findings (Security)
+
+- **What:** Security Command Center's service agent must be able to publish to the topic
+- **Where:** terraform/main.tf:2411; standby/prod
+- **Who:** ciam-platform
+- **How:** Grant Security Command Center's notification service agent roles/pubsub.publisher on projects/example-aero-ciam-standby/topics/ciam-security (its owner)
+
+### scc's incidents to security-incidents (Security)
+
+- **What:** Security Command Center's service agent must be able to publish to the topic
+- **Where:** terraform/main.tf:2423; standby/prod
+- **Who:** ciam-platform
+- **How:** Grant Security Command Center's notification service agent roles/pubsub.publisher on projects/example-aero-ciam-standby/topics/ciam-security-incidents (its owner)

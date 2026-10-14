@@ -5,4 +5,13 @@
 -->
 # Render notes: source/stage
 
-**nothing to handle**
+**0 blockers, 1 action, 0 notes, 0 to review**
+
+## Actions
+
+### Shield Advanced (Edge)
+
+- **What:** its protections need the account's subscription
+- **Where:** terraform/main.tf:941, terraform/main.tf:1237
+- **Who:** ciam-platform
+- **How:** Before applying, make sure the account subscribes to AWS Shield Advanced (a paid subscription with a one-year commitment): the protections fail without it

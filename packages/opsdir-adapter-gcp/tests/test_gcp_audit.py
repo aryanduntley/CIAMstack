@@ -74,8 +74,10 @@ def test_an_organization_trail_into_a_locked_bucket_or_a_log_bucket():
            "Pub/Sub, and siem is none of those" in out
     from opsdir.core.notes import note_comment
     from opsdir_adapter_gcp.audit import audit_notes
-    (siem_,) = audit_notes(alpha)
+    writer, siem_ = sorted(audit_notes(alpha), key=lambda n: n.severity != "action")
     assert f"# {note_comment(siem_)}" in out and (siem_.area, siem_.severity) == ("Audit", "blocker")
+    assert f"# {note_comment(writer)}" in out and writer.severity == "action"
+    assert "the sink's writer identity needs roles/logging.bucketWriter on it" in writer.text
 
 
 def test_the_activity_a_sink_exports_comes_from_its_filter_and_its_parent_s_audit_configs():

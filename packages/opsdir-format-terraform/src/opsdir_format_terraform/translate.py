@@ -437,14 +437,15 @@ def partition(items, place, default, sensitive=lambda r: False, label=_applied_b
 
 
 def no_native_note(split, language, reasons=None):
-    """The NOTE heading a side root (comment lines): the resources it keeps in Terraform, each by address, because
-    the language (its title) has no form for them (or, reasons: {address: why}, for the reason given); that it is
-    applied after the template, and reads the template's outputs when it does."""
+    """The heading of a side root (comment lines): the resources it keeps in Terraform, each by address, because the
+    language (its title) has no form for them (or, reasons: {address: why}, for the reason given); that it is applied
+    after the template, and reads the template's outputs when it does. A heading, not a render note: it describes the
+    root, written only for the targets chosen."""
     reasons = reasons or {}
     kept = [address(b) for b in split.side if isinstance(b, TfBlock) and (b.kind == "resource" or _checks(b))]
     reads = ", its variables taking the template's outputs" if split.outputs else ""
-    head = (f"# NOTE: these resources stay Terraform beside the {language} template; this root manages them, applied "
+    head = (f"# These resources stay Terraform beside the {language} template; this root manages them, applied "
             f"after the template{reads}:\n" if reasons else
-            f"# NOTE: {language} has no form for these resources; this Terraform root manages them, applied "
+            f"# {language} has no form for these resources; this Terraform root manages them, applied "
             f"after the template{reads}:\n")
     return "".join((head, *(f"#   {a}{': ' + reasons[a] if a in reasons else ''}\n" for a in kept)))

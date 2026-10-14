@@ -313,8 +313,6 @@ def _org_scanning(m, s, n, mgmt, adm, admin):
 def _org_posture(m, s, n, mgmt, adm, admin):
     arns = [_HUB + path for path in (*(STANDARDS.get(k) for k in values(s, "ciamComplianceStandard")),
                                      *(BASELINES.get(k) for k in values(s, "ciamSecurityBaseline"))) if path]
-    missing = [k for k in (*values(s, "ciamComplianceStandard"), *values(s, "ciamSecurityBaseline"))
-               if k not in STANDARDS and k not in BASELINES]
     return (tf_block("resource", [HUB_ADMIN, n], [mgmt, ("admin_account_id", admin)]),
             tf_block("resource", [HUB, f"{n}_admin"], [
                 adm, ("enable_default_standards", False), ("auto_enable_controls", True),
@@ -335,9 +333,7 @@ def _org_posture(m, s, n, mgmt, adm, admin):
             tf_block("resource", [HUB_ASSOCIATION, n], [
                 adm, ("target_id", ref(f"data.aws_organizations_organization.{SECURITY_ADMIN}.roots[0].id")),
                 ("policy_id", ref(f"{HUB_POLICY}.{n}.id"))]),
-            *((comment(f"{rdn_value(s)}: Security Hub has no standard for {', '.join(missing)}: assess it another way "
-                       "(an AWS Audit Manager framework, a Config conformance pack), not rendered"),)
-              if missing else ()))
+            *((comment(note_comment(standards_note(m, s))),) if standards_note(m, s) else ()))
 
 
 def _org_recording(m, s, n, mgmt, adm, admin):
@@ -467,15 +463,12 @@ def _hub(m, s):
     n = tf_name(rdn_value(s))
     wanted = [*((k, STANDARDS.get(k)) for k in values(s, "ciamComplianceStandard")),
               *((k, BASELINES.get(k)) for k in values(s, "ciamSecurityBaseline"))]
-    missing = [k for k, path in wanted if path is None]
     return (tf_block("resource", [HUB, n], [("enable_default_standards", False), ("auto_enable_controls", True),
                                             ("control_finding_generator", "SECURITY_CONTROL")]),
             *(tf_block("resource", [SUBSCRIPTION, f"{n}_{tf_name(k)}"], [
                 ("standards_arn", _HUB + path), ("depends_on", [ref(f"{HUB}.{n}")])])
               for k, path in wanted if path is not None),
-            *((comment(f"{rdn_value(s)}: Security Hub has no standard for {', '.join(missing)}: assess it another way "
-                       "(an AWS Audit Manager framework, a Config conformance pack), not rendered"),)
-              if missing else ()))
+            *((comment(note_comment(standards_note(m, s))),) if standards_note(m, s) else ()))
 
 
 def _target(m, dest):
@@ -491,6 +484,46 @@ def _route_note(m, s, dest, role, what, store_why):
                  f"CloudWatch log group's ARN), {RECORD}",) if store else
                 (f"Record the ARN of {rdn_value(dest)}'s SNS topic or CloudWatch log group (ciamProviderRef), "
                  f"{RECORD}",), s.dn, m.label)
+
+
+def standards_note(m, s):
+    """The render note of a posture service's frameworks Security Hub has no standard for (an action: assess them
+    another way), or None."""
+    missing = [*(k for k in values(s, "ciamComplianceStandard") if k not in STANDARDS),
+               *(k for k in values(s, "ciamSecurityBaseline") if k not in BASELINES)]
+    if not missing:
+        return None
+    return note(AREA, "action", rdn_value(s), f"Security Hub has no standard for {', '.join(missing)}: assess it "
+                "another way (an AWS Audit Manager framework, a Config conformance pack), not rendered",
+                (f"Assess {', '.join(missing)} with an AWS Audit Manager framework or a Config conformance pack, by "
+                 "hand",), s.dn, m.label)
+
+
+def delivery_note(m, s, role, what, target):
+    """The render note (an action) of a rendered findings or incident route (what) to target, an SNS topic or a
+    CloudWatch log group whose resource policy someone else keeps: it must let EventBridge deliver to it."""
+    topic = ":sns:" in target
+    return note(AREA, "action", f"{rdn_value(s)}'s {what} to {role}", "its resource policy must let "
+                "events.amazonaws.com deliver to it",
+                (f"Allow events.amazonaws.com sns:Publish in topic {target}'s access policy (aws:SourceArn the rule's "
+                 "ARN)",) if topic else
+                (f"Add a CloudWatch Logs resource policy letting events.amazonaws.com and delivery.logs.amazonaws.com "
+                 f"create log streams and put events in {target}",), s.dn, m.label)
+
+
+def findings_delivery_notes(m, s, kind):
+    """The delivery_note of service s's findings route when this render makes it (findings_routing; Macie's too)."""
+    dest = findings_destination(m, s)
+    return (delivery_note(m, s, one(s, "ciamFindingsRole"), "findings", _target(m, dest)),) \
+        if dest is not None and kind in SOURCES and _target(m, dest) else ()
+
+
+def delivery_notes(m, s, kind):
+    """The delivery_note of each route of service s this render makes: its findings' and its incidents'."""
+    route = _route(m, s)
+    incidents = (delivery_note(m, s, route.role, "incidents", _target(m, route.binding)),) \
+        if route is not None and kind in SOURCES and route.binding is not None and _target(m, route.binding) else ()
+    return (*findings_delivery_notes(m, s, kind), *incidents)
 
 
 def findings_note(m, s, kind):
@@ -517,7 +550,7 @@ def findings_routing(m, s, kind):
                 ("name", f"{cn}-findings"), ("description", f"{cn}'s findings to {one(s, 'ciamFindingsRole')}"),
                 ("event_pattern", jsonencoded({"source": [source], "detail-type": [detail]}))]),
             tf_block("resource", [TARGET, n], [
-                ("#", "its resource policy must let events.amazonaws.com deliver to it"),
+                ("#", note_comment(delivery_note(m, s, one(s, "ciamFindingsRole"), "findings", target))),
                 ("rule", ref(f"{RULE}.{n}.name")), ("arn", target)]))
 
 
@@ -577,7 +610,7 @@ def _incident_routing(m, s, kind):
                 ("event_pattern", jsonencoded({"source": [source], "detail-type": [detail],
                                                "detail": severity_filter(source, route.severity)}))]),
             tf_block("resource", [TARGET, n], [
-                ("#", "its resource policy must let events.amazonaws.com deliver to it"),
+                ("#", note_comment(delivery_note(m, s, route.role, "incidents", target))),
                 ("rule", ref(f"{RULE}.{n}.name")), ("arn", target)]))
 
 
@@ -611,7 +644,8 @@ def security_notes(m):
         kind, org = one(s, "ciamSecurityKind"), organization_wide(s)
         own = kind == "config-recording" or not org
         return (recorder_note(m, s) if kind == "config-recording" else None,
-                findings_note(m, s, kind), incident_note(m, s, kind),
+                standards_note(m, s) if kind == "posture" else None,
+                findings_note(m, s, kind), incident_note(m, s, kind), *delivery_notes(m, s, kind),
                 regions_note(m, s) if own and one(s, "ciamAllRegions") == "TRUE" else None,
                 organization_note(m, s) if org else None)
     return tuple(n for s in security_services(m) for n in of(s) if n is not None)

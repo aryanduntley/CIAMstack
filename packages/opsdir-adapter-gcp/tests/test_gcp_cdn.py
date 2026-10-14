@@ -32,7 +32,8 @@ def test_a_global_load_balancer_with_cloud_cdn_and_global_cloud_armor():
 def test_a_passthrough_service_behind_the_cdn_keeps_tls_to_its_servers_and_a_private_one_cant():
     out = _alb(spec(cdn=True, mode="passthrough", layer7=False))
     assert 'protocol                        = "HTTPS"' in out
-    assert _alb(spec(cdn=True), "10.70.1.10").startswith("# `sso.example.test`: Cloud CDN serves external")
+    assert _alb(spec(cdn=True), "10.70.1.10") == "# NOTE: service name `sso` (sso.example.test): Cloud CDN serves " \
+        "external load balancers only and its frontend address is private: not rendered"
 
 
 def test_the_record_points_at_the_global_forwarding_rule():

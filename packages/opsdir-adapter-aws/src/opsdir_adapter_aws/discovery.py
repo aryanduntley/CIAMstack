@@ -48,7 +48,7 @@ from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_bloc
 from opsdir_format_terraform.state import blocks
 from .account import account_id
 from .account import govcloud, partition
-from .security import findings_note, findings_routes, findings_routing
+from .security import findings_delivery_notes, findings_note, findings_routes, findings_routing
 from .storage import bucket_of, key_arn
 
 ACCOUNT, IDENTIFIER, JOB = "aws_macie2_account", "aws_macie2_custom_data_identifier", "aws_macie2_classification_job"
@@ -308,7 +308,8 @@ def discovery_notes(m):
         return ()
     if govcloud(m):
         return (govcloud_note(m, kept),)
-    found = (*(n for s in kept for n in (job_note(m, s), findings_note(m, s, "data-discovery"))), export_note(m, kept))
+    found = (*(n for s in kept for n in (job_note(m, s), findings_note(m, s, "data-discovery"),
+                                         *findings_delivery_notes(m, s, "data-discovery"))), export_note(m, kept))
     return tuple(n for n in found if n is not None)
 
 

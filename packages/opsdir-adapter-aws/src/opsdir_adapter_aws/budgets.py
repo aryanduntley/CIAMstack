@@ -22,6 +22,7 @@ from decimal import Decimal, InvalidOperation
 
 from opsdir.core.directory import get, one, rdn_value
 from opsdir.core.inventory import of_types, resource, tagged_role
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.estate.budgets import budget_channel, budgets, currency, thresholds
 from opsdir.domains.estate.tags import tag_rules
 from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_name
@@ -41,22 +42,55 @@ def _arn_account(arn):
     return (parts[1], parts[4]) if len(parts) > 5 else (None, None)
 
 
-def _subscriber(m, b):
-    """(SNS topic ARN the budget's alerts go to, or None; comments when they can't)."""
+def _topic(m, b):
+    """(SNS topic ARN the budget's alerts go to, or None; why they can't, or None)."""
     channel = budget_channel(m, b)
     if channel is None:
-        return None, ()
+        return None, None
     arn = one(channel, "ciamProviderRef") or ""
     partition, account = _arn_account(arn)
     owner, wanted = (standard_account(m), "aws") if govcloud(m) else (account_id(m), partition)
     if ":sns:" not in arn:
-        why = f"{rdn_value(channel)} names no SNS topic ARN (ciamProviderRef)"
-    elif partition != wanted or (owner and account != owner):
-        why = (f"AWS Budgets publishes only to a topic in the budget's account ({owner or 'its account'}) and "
-               f"{arn} is elsewhere")
-    else:
-        return arn, ()
-    return None, (comment(f"NOTE: budget {rdn_value(b)}'s alerts to {one(b, 'ciamAlertRole')}: not rendered: {why}"),)
+        return None, f"{rdn_value(channel)} names no SNS topic ARN (ciamProviderRef)"
+    if partition != wanted or (owner and account != owner):
+        return None, (f"AWS Budgets publishes only to a topic in the budget's account ({owner or 'its account'}) and "
+                      f"{arn} is elsewhere")
+    return arn, None
+
+
+def subscriber_note(m, b):
+    """The render note of a budget whose alerts AWS Budgets can't send where its ciamAlertRole says (a blocker: no
+    alert), or None."""
+    why = _topic(m, b)[1]
+    if why is None:
+        return None
+    return note("Budgets", "blocker", f"budget {rdn_value(b)}'s alerts to {one(b, 'ciamAlertRole')}",
+                f"not rendered: {why}",
+                (f"Bind {one(b, 'ciamAlertRole')} to an alert channel whose ciamProviderRef is an SNS topic in the "
+                 f"budget's account, {RECORD}",), b.dn, m.label)
+
+
+def unrendered_note(m, b):
+    """The render note of a budget in GovCloud whose cloud names no associated standard account (a blocker: GovCloud's
+    billing is managed there), or None."""
+    if not govcloud(m) or standard_account(m):
+        return None
+    return note("Budgets", "blocker", f"budget {rdn_value(b)}", "not rendered: GovCloud's billing is managed in its "
+                "associated standard account and the cloud names none (ciamBillingAccountRef)",
+                (f"Record the associated standard account on {rdn_value(m.cloud)} (ciamBillingAccountRef), {RECORD}",),
+                b.dn, m.label)
+
+
+def budget_notes(m):
+    """The render notes of environment m's budgets (render_budgets writes their comments)."""
+    return tuple(n for b in budgets(m) for n in ((unrendered_note(m, b),) if unrendered_note(m, b) else
+                                                 (subscriber_note(m, b),)) if n is not None)
+
+
+def _subscriber(m, b):
+    """(SNS topic ARN the budget's alerts go to, or None; its note's comment when they can't, subscriber_note)."""
+    topic, missing = _topic(m, b)[0], subscriber_note(m, b)
+    return topic, ((comment(note_comment(missing)),) if missing is not None else ())
 
 
 def _filter(m):
@@ -71,9 +105,9 @@ def _filter(m):
 
 def _budget(m, b):
     cn = rdn_value(b)
-    if govcloud(m) and not standard_account(m):
-        return (comment(f"NOTE: budget {cn}: not rendered: GovCloud's billing is managed in its associated standard "
-                        "account and the cloud names none (ciamBillingAccountRef)"),)
+    missing = unrendered_note(m, b)
+    if missing is not None:
+        return (comment(note_comment(missing)),)
     topic, notes = _subscriber(m, b)
     return (*notes, tf_block("resource", [BUDGET, tf_name(cn)], [
         *((("provider", ref(f"aws.{BILLING}")),

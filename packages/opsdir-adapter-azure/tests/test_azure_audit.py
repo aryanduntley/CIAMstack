@@ -42,7 +42,8 @@ def test_an_account_trail_the_platform_keeps_is_the_subscription_s_diagnostic_se
     out = as_text(render_trails(alpha))
     assert out[0] == 'data "azurerm_subscription" "current" {\n}'
     assert out[1] == ('''resource "azurerm_monitor_diagnostic_setting" "activity_log" {
-  # data-write events: each resource's own diagnostic settings log them (not rendered)
+  # NOTE: audit trail activity-log: data-write events: each resource's own diagnostic settings log '''
+                      '''them (not rendered)
   # integrity: Azure keeps no digest of the Activity Log; keep it in a container with a locked immutability '''
                       '''policy (ciamStorageImmutability compliance)
   name               = "ciam-activity"

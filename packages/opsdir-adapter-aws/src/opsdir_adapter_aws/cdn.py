@@ -13,6 +13,7 @@ gets a CNAME (a GovCloud zone can't alias CloudFront). Without a recorded standa
 missing and neither the distribution nor the name's record is rendered. Pure.
 """
 from opsdir.core.directory import one, values
+from opsdir.core.notes import note, note_comment
 from opsdir.domains.edge.resolve import inspected
 from opsdir_format_terraform.hcl import Block, comment, ref, tf_block
 from .account import govcloud, standard_account
@@ -21,11 +22,21 @@ from .edge import US_EAST_1, shield, web_acl
 
 ALL_METHODS = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
 MINIMUM_PROTOCOL = {"1.2": "TLSv1.2_2021", "1.3": "TLSv1.2_2021"}       # CloudFront's minimum viewer protocols
-GOVCLOUD_NOTE = ("CloudFront isn't offered in AWS GovCloud (US): this distribution, its web ACL and Shield protection "
-                 "are in the associated standard account (standard AWS credentials). CloudFront is outside the "
+GOVCLOUD_NOTE = ("not offered in AWS GovCloud (US): this distribution, its web ACL and Shield protection are in the "
+                 "associated standard account (standard AWS credentials). CloudFront is outside the "
                  "GovCloud (US) boundary: no ITAR-controlled data in it (its configuration, logs or cache); AWS's "
                  "services-in-scope pages (2026-10) list CloudFront for FedRAMP Moderate (US East/West) and DoD IL2 "
                  "only: confirm it suits the mission")
+
+
+def govcloud_note(m):
+    """The render note of environment m's CloudFront distributions in GovCloud: outside its boundary, in the
+    associated standard account (an action: keep ITAR-controlled data out, confirm it suits the mission); each
+    distribution writes its comment."""
+    return note("Edge", "action", "CloudFront", GOVCLOUD_NOTE,
+                ("Keep ITAR-controlled data out of the distributions (their configuration, logs and cache)",
+                 "Confirm with the authorizing official that CloudFront's authorizations (FedRAMP Moderate, DoD IL2) "
+                 "suit the mission, or front the service names without a CDN"), None, m.label)
 
 
 def _viewer_certificate(m, spec):
@@ -58,7 +69,7 @@ def distribution(m, svc, spec, n):
     origin is aws_lb.<n>."""
     port = int(values(svc, "ciamPort")[0])
     waf, provider = inspected(spec), _provider(m)
-    return (*((comment(GOVCLOUD_NOTE),) if govcloud(m) else ()),
+    return (*((comment(note_comment(govcloud_note(m))),) if govcloud(m) else ()),
             tf_block("data", ["aws_cloudfront_cache_policy", f"{n}_caching_disabled"],
                      [*provider, ("name", "Managed-CachingDisabled")]),
             tf_block("data", ["aws_cloudfront_origin_request_policy", f"{n}_all_viewer"],

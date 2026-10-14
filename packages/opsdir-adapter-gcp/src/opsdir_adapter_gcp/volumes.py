@@ -36,8 +36,10 @@ the environment's instances without a volume label is named.
 from collections import Counter
 
 from opsdir.core.directory import is_kind, one, rdn_value, values
-from opsdir.core.environment import UNBOUND, of_class, recorded, secret
+from opsdir.core.environment import UNBOUND, inherited_from, of_class, recorded, secret
+from opsdir.domains.compute.hosts import compute_groups
 from opsdir.core.inventory import of_types, resource
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.data.volumes import (POLICY, boot_volume, data_volumes, is_encrypted, snapshot_every,
                                          volume_key_role, volume_policy)
 from opsdir.domains.network.plumbing import adopted
@@ -133,8 +135,7 @@ def _server_volume(m, s, v):
     policy_role = one(policy, "ciamBindingRole") if policy is not None else None
     key, notes = _key(m, v)
     return (*notes,
-            *((comment(f"{rdn_value(v)}: {kind} needs a machine series that takes Hyperdisk"),)
-              if kind.startswith("hyperdisk") else ()),
+            *((comment(note_comment(hyperdisk_note(v))),) if kind.startswith("hyperdisk") else ()),
             *((comment(f"{rdn_value(s)} mounts {rdn_value(v)} at {one(v, 'ciamMountPath')} (its own configuration, "
                        "not Terraform)"),) if one(v, "ciamMountPath") else ()),
             tf_block("resource", ["google_compute_disk", dn], [
@@ -161,8 +162,7 @@ def _template_disk(m, v, boot, image, kms):
     kind, policy = TYPES.get(one(v, "ciamVolumeClass"), "pd-balanced"), volume_policy(m, v)
     kind = ("pd-ssd" if kind not in ("pd-standard", "pd-ssd") else kind) if boot else kind
     key, notes = _key(m, v)
-    hyperdisk = (comment(f"{rdn_value(v)}: {kind} needs a machine series that takes Hyperdisk"),) \
-        if kind.startswith("hyperdisk") else ()
+    hyperdisk = (comment(note_comment(hyperdisk_note(v))),) if kind.startswith("hyperdisk") else ()
     return (*notes, *hyperdisk), Block((
         ("boot", boot), ("auto_delete", True), *((("source_image", image),) if boot else ()),
         *((("device_name", label(rdn_value(v))),) if not boot else ()), ("disk_type", kind),
@@ -224,16 +224,52 @@ def _schedule(p):
     return Block((("hourly_schedule", Block((("hours_in_cycle", every), ("start_time", start)))),)), notes
 
 
+def hyperdisk_note(v):
+    """The render note of a provisioned (Hyperdisk) volume (an action: its servers need a machine series that takes
+    Hyperdisk)."""
+    kind = TYPES.get(one(v, "ciamVolumeClass"), "pd-balanced")
+    return note("Volumes", "action", rdn_value(v), f"{kind} needs a machine series that takes Hyperdisk",
+                ("Check that the servers' machine type (ciamInstanceSize) is of a series that takes Hyperdisk (C3, N4, "
+                 "and the like), or record another volume class",), v.dn)
+
+
+def policy_note(p):
+    """The render note of a snapshot policy Google Cloud can't keep as recorded (a blocker), or None: an interval
+    past a day (not rendered), or copies to more than one location (the rest not rendered)."""
+    every, regions, subject = snapshot_every(p), values(p, "ciamCopyRegion"), f"Snapshot policy '{rdn_value(p)}'"
+    if every > 24:
+        return note("Volumes", "blocker", subject, f"Google Cloud schedules snapshots every 1 to 23 hours or daily, "
+                    f"not every {every} hours: not rendered", (f"Record an interval of a day or less, {RECORD}",),
+                    p.dn)
+    if len(regions) > 1:
+        return note("Volumes", "blocker", subject, f"snapshots are stored in one location, {regions[0]}; "
+                    f"{', '.join(regions[1:])} not rendered: a disk follows one schedule, so copies to more regions "
+                    "are a backup plan's (Backup and DR, its vault there)",
+                    (f"Record a backup plan per region with a vault there for {', '.join(regions[1:])}, {RECORD}",),
+                    p.dn)
+    return None
+
+
+def volume_notes(m):
+    """The render notes of environment m's volumes and snapshot policies (their renders write their comments):
+    Hyperdisk volumes of its servers and of the compute groups it renders, policies Google Cloud can't keep."""
+    def hyper(v):
+        return TYPES.get(one(v, "ciamVolumeClass"), "pd-balanced").startswith("hyperdisk")
+    servers = (v for s in m.servers for v in data_volumes(m, one(s, "ciamServerRole")))
+    groups = (v for g in compute_groups(m) if not inherited_from(m, g)
+              for v in data_volumes(m, one(g, "ciamTargetRole")) if owned(v))
+    return tuple(dict.fromkeys((*(hyperdisk_note(v) for v in (*servers, *groups) if hyper(v)),
+                                *(n for p in of_class(m, POLICY) for n in (policy_note(p),) if n is not None))))
+
+
 def _policy(m, p):
     n, every, regions = tf_name(rdn_value(p)), snapshot_every(p), values(p, "ciamCopyRegion")
+    found = policy_note(p)
     if every > 24:
-        return (comment(f"Snapshot policy '{rdn_value(p)}': Google Cloud schedules snapshots every 1 to 23 hours or "
-                        f"daily, not every {every} hours: not rendered"),)
+        return (comment(note_comment(found)),)
     schedule, notes = _schedule(p)
     return (*notes,
-            *((comment(f"Snapshot policy '{rdn_value(p)}': snapshots are stored in one location, {regions[0]}; "
-                       f"{', '.join(regions[1:])} not rendered: a disk follows one schedule, so copies to more regions "
-                       "are a backup plan's (Backup and DR, its vault there)"),) if len(regions) > 1 else ()),
+            *((comment(note_comment(found)),) if len(regions) > 1 else ()),
             tf_block("resource", ["google_compute_resource_policy", n], [
                 ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(p)}"), ("region", REGION),
                 ("description", f"CIAM snapshots {one(p, 'ciamBindingRole')} ({m.label})"),

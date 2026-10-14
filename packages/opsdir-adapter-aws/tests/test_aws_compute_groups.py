@@ -74,8 +74,8 @@ def test_an_adopted_group_is_imported_by_name_and_its_disks_without_one_policy_u
     assert _flat('import { to = aws_autoscaling_group.asg_app id = "legacy-app" }') in out
     assert 'name = "legacy-app"' in out and f"{UNBOUND}asg-app-image" in out
     assert "vpc_zone_identifier = \"UNBOUND:asg-app-subnets\"" in out
-    assert "# asg-app's disks don't all name one snapshot policy (snapshots-daily, snapshots-weekly); a launch " \
-           "template tags them alike, so none is tagged SnapshotPolicy" in out
+    assert ("# NOTE: asg-app: its disks don't all name one snapshot policy (snapshots-daily, snapshots-weekly); a "
+            "launch template tags them alike, so none is tagged SnapshotPolicy") in out
     assert 'tags = { Group = "asg-app" ManagedBy = "opsdir" }' in out
 
 

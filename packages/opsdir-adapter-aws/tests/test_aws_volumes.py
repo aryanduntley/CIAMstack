@@ -90,8 +90,8 @@ def test_an_interval_lifecycle_manager_cannot_take_and_others_policies_render_fo
     theirs = entry(BETA, "snapshots-team", "ciamSnapshotPolicy", ciamBindingRole="snapshots-team",
                    ciamRetentionDays="30", ciamManagedBy="cn=storage-team,ou=owners,dc=ciam-ops")
     out = "\n".join(as_text(render_snapshot_policies(_m(odd, theirs))))
-    assert "# Snapshot policy 'snapshots-odd': Lifecycle Manager snapshots every 1, 2, 3, 4, 6, 8, 12 or 24 hours, " \
-           "not 48: not rendered" in out
+    assert ("# NOTE: Snapshot policy 'snapshots-odd': Lifecycle Manager snapshots every 1, 2, 3, 4, 6, 8, 12 or 24 "
+            "hours, not 48: not rendered") in out
     assert 'resource "aws_dlm_lifecycle_policy" "snapshots_team"' in out      # placed by its keeper (render_files)
 
 

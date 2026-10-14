@@ -41,7 +41,7 @@ data "google_compute_subnetwork" "subnet_pf" {
 
 # The network's project is example-aero-net: the policy, its rules and the tag key live there, so the deployer needs rights in it
 
-# Binding the tag values to the instances needs roles/resourcemanager.tagUser on them for the deployer (an access request)
+# NOTE: secure tags: binding the tag values to the instances needs roles/resourcemanager.tagUser on them for the deployer
 
 resource "google_compute_network_firewall_policy" "network_policy" {
   name        = "ciam-prod-fw-policy"
@@ -833,7 +833,7 @@ resource "google_compute_instance_template" "mig_pf_engine" {
   }
 }
 
-# mig-pf-engine exists: applying gives it a new instance template, which its instances run when they are next replaced
+# NOTE: mig-pf-engine: exists: applying gives it a new instance template, which its instances run when they are next replaced
 
 resource "google_compute_region_instance_group_manager" "mig_pf_engine" {
   name               = "ciam-pf-engine"
@@ -858,7 +858,7 @@ import {
   id = "projects/example-aero-ciam-standby/regions/us-central1/instanceGroupManagers/ciam-pf-engine"
 }
 
-# mig-pf-engine exists: an autoscaler it already has must be imported by hand (its ID isn't recorded), or applying adds a second one
+# NOTE: mig-pf-engine: exists: an autoscaler it already has must be imported by hand (its ID isn't recorded), or applying adds a second one
 
 resource "google_compute_region_autoscaler" "mig_pf_engine" {
   name   = "ciam-pf-engine-autoscaler"
@@ -1184,7 +1184,7 @@ resource "google_compute_network_firewall_policy_rule" "svc_login_health_checks"
   }
 }
 
-# not rendered: bot-control needs reCAPTCHA keys (bot management)
+# NOTE: protection policy `sign-on-protection`: bot-control needs reCAPTCHA keys (bot management): not rendered
 
 resource "google_compute_region_security_policy" "svc_login" {
   name   = "ciam-prod-svc_login"
@@ -1592,7 +1592,7 @@ resource "google_compute_network_firewall_policy_rule" "svc_sso_health_checks" {
   }
 }
 
-# not rendered: bot-control needs reCAPTCHA keys (bot management)
+# NOTE: protection policy `sign-on-protection`: bot-control needs reCAPTCHA keys (bot management): not rendered
 
 resource "google_compute_region_security_policy" "svc_sso" {
   name   = "ciam-prod-svc_sso"
@@ -2127,7 +2127,7 @@ resource "google_compute_network_firewall_policy_rule" "egress_firewall_deny" {
 
 # ciam-standby-pf-grants admits 10.70.2.0/24: Cloud SQL's private IP is in Google's service producer network, which this network's firewall rules don't reach; the private services access peering carries the traffic
 
-# ciam-standby-pf-grants: the Cloud SQL service agent (service-<project number>@gcp-sa-cloud-sql.iam.gserviceaccount.com) needs roles/cloudkms.cryptoKeyEncrypterDecrypter on its key
+# NOTE: ciam-standby-pf-grants: the Cloud SQL service agent (service-<project number>@gcp-sa-cloud-sql.iam.gserviceaccount.com) needs roles/cloudkms.cryptoKeyEncrypterDecrypter on its key
 
 # ciam-standby-pf-grants: its administrator password is read when applied and written write-only: no Terraform state holds it
 
@@ -2405,10 +2405,10 @@ resource "google_cloud_asset_project_feed" "assets" {
   }
 }
 
-# scc: Security Command Center (Premium or Enterprise) activated with Event Threat Detection, Container Threat Detection, VM Threat Detection (activation has no Terraform resource and enabling its services only a google-beta one): a request to the organization's administrators (not rendered)
+# NOTE: scc: Security Command Center (Premium or Enterprise) activated with Event Threat Detection, Container Threat Detection, VM Threat Detection (activation has no Terraform resource and enabling its services only a google-beta one): a request to the organization's administrators (not rendered)
 
 resource "google_scc_v2_project_notification_config" "scc_findings" {
-  # Security Command Center's service agent must be able to publish to the topic
+  # NOTE: scc's findings to security-findings: Security Command Center's service agent must be able to publish to the topic
   config_id    = "scc-findings"
   project      = var.project_id
   location     = "global"
@@ -2420,7 +2420,7 @@ resource "google_scc_v2_project_notification_config" "scc_findings" {
 }
 
 resource "google_scc_v2_project_notification_config" "scc_incidents" {
-  # Security Command Center's service agent must be able to publish to the topic
+  # NOTE: scc's incidents to security-incidents: Security Command Center's service agent must be able to publish to the topic
   config_id    = "scc-incidents"
   project      = var.project_id
   location     = "global"

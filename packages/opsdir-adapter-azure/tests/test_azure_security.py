@@ -79,8 +79,8 @@ def test_posture_assigns_each_framework_s_built_in_initiative():
     assert 'display_name = "NIST SP 800-171 Rev. 2"' in out and 'display_name = "CMMC 2.0 Level 2"' in out
     assert "policy_definition_id = data.azurerm_policy_set_definition.nist_800_171_r2.id" in out
     assert "# cspm: Defender for Cloud assigns the Microsoft cloud security benchmark itself" in out
-    assert "# cspm: Azure has no built-in initiative here for dod-il5, hitrust (not rendered)" in out
-    assert "# cspm: aws-foundational: another cloud's baseline, not Azure's (not rendered)" in out
+    assert "# NOTE: cspm: Azure has no built-in initiative here for dod-il5, hitrust (not rendered)" in out
+    assert "# NOTE: cspm: aws-foundational: another cloud's baseline, not Azure's (not rendered)" in out
     gov = _render(svc("cspm", "posture", ciamComplianceStandard=("cmmc-l2", "dod-il5")), gov=True)
     assert 'display_name = "DoD Impact Level 5"' in gov and "list CMMC Level 3, not CMMC 2.0 Level 2" in gov
 

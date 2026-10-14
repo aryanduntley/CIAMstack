@@ -1,12 +1,36 @@
 {
   "environment": "env=prod,cloud=standby,ou=environments,dc=ciam-ops",
   "counts": {
-    "blocker": 4,
-    "action": 2,
+    "blocker": 5,
+    "action": 9,
     "note": 0,
     "to_review": 0
   },
   "notes": [
+    {
+      "area": "Edge",
+      "severity": "blocker",
+      "subject": "protection policy `sign-on-protection`",
+      "text": "bot-control needs reCAPTCHA keys (bot management): not rendered",
+      "how": [
+        "Protect against it another way on Google Cloud, by hand, or drop the category from the policy (ciamWafCategory), under an approved change, and re-render"
+      ],
+      "entry": "cn=sign-on-protection,ou=edge-policies,dc=ciam-ops",
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 1187
+        },
+        {
+          "path": "terraform/main.tf",
+          "line": 1595
+        }
+      ]
+    },
     {
       "area": "Monitoring",
       "severity": "blocker",
@@ -95,6 +119,66 @@
       ]
     },
     {
+      "area": "Compute",
+      "severity": "action",
+      "subject": "mig-pf-engine",
+      "text": "exists: applying gives it a new instance template, which its instances run when they are next replaced",
+      "how": [
+        "After applying, start a rolling update of the managed instance group so its instances run the new template"
+      ],
+      "entry": "cn=mig-pf-engine,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 836
+        }
+      ]
+    },
+    {
+      "area": "Compute",
+      "severity": "action",
+      "subject": "mig-pf-engine",
+      "text": "exists: an autoscaler it already has must be imported by hand (its ID isn't recorded), or applying adds a second one",
+      "how": [
+        "Before applying, import the group's autoscaler into the rendered google_compute_region_autoscaler (terraform import, its ID)"
+      ],
+      "entry": "cn=mig-pf-engine,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 861
+        }
+      ]
+    },
+    {
+      "area": "Databases",
+      "severity": "action",
+      "subject": "ciam-standby-pf-grants",
+      "text": "the Cloud SQL service agent (service-<project number>@gcp-sa-cloud-sql.iam.gserviceaccount.com) needs roles/cloudkms.cryptoKeyEncrypterDecrypter on its key",
+      "how": [
+        "Grant the Cloud SQL service agent roles/cloudkms.cryptoKeyEncrypterDecrypter on the key, by its keeper, before applying"
+      ],
+      "entry": "cn=ciam-standby-pf-grants,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 2130
+        }
+      ]
+    },
+    {
       "area": "Logs",
       "severity": "action",
       "subject": "Assured Workloads (FEDRAMP_MODERATE)",
@@ -131,6 +215,86 @@
         {
           "path": "terraform/main.tf",
           "line": 2354
+        }
+      ]
+    },
+    {
+      "area": "Network",
+      "severity": "action",
+      "subject": "secure tags",
+      "text": "binding the tag values to the instances needs roles/resourcemanager.tagUser on them for the deployer",
+      "how": [
+        "Before applying, have the deployer granted roles/resourcemanager.tagUser on the tag values and the instances (an access request to whoever keeps the project)"
+      ],
+      "entry": null,
+      "scope": "standby/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 44
+        }
+      ]
+    },
+    {
+      "area": "Security",
+      "severity": "action",
+      "subject": "scc",
+      "text": "Security Command Center (Premium or Enterprise) activated with Event Threat Detection, Container Threat Detection, VM Threat Detection (activation has no Terraform resource and enabling its services only a google-beta one): a request to the organization's administrators (not rendered)",
+      "how": [
+        "Ask the organization's administrators for it: Security Command Center (Premium or Enterprise) activated with Event Threat Detection, Container Threat Detection, VM Threat Detection (activation has no Terraform resource and enabling its services only a google-beta one)"
+      ],
+      "entry": "cn=scc,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+      "scope": "the organization",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 2408
+        }
+      ]
+    },
+    {
+      "area": "Security",
+      "severity": "action",
+      "subject": "scc's findings to security-findings",
+      "text": "Security Command Center's service agent must be able to publish to the topic",
+      "how": [
+        "Grant Security Command Center's notification service agent roles/pubsub.publisher on projects/example-aero-ciam-standby/topics/ciam-security (its owner)"
+      ],
+      "entry": "cn=scc,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+      "scope": "standby/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 2411
+        }
+      ]
+    },
+    {
+      "area": "Security",
+      "severity": "action",
+      "subject": "scc's incidents to security-incidents",
+      "text": "Security Command Center's service agent must be able to publish to the topic",
+      "how": [
+        "Grant Security Command Center's notification service agent roles/pubsub.publisher on projects/example-aero-ciam-standby/topics/ciam-security-incidents (its owner)"
+      ],
+      "entry": "cn=scc,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+      "scope": "standby/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 2423
         }
       ]
     }

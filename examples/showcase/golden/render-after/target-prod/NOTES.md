@@ -5,7 +5,7 @@
 -->
 # Render notes: target/prod
 
-**1 blocker, 3 actions, 3 notes, 5 to review**
+**1 blocker, 5 actions, 8 notes, 0 to review**
 
 ## Blockers
 
@@ -38,12 +38,28 @@
 - **Who:** ciam-platform
 - **How:** Give operators a custom role with only Microsoft.App/jobs/read, jobs/start/action, jobs/stop/action, jobs/stop/execution/action, jobs/executions/read, jobs/execution/read and Microsoft.App/managedEnvironments/read (not the Microsoft.App/jobs/*/action wildcard), assigned only to those trusted with the jobs' identities
 
+### forwarder `fwd-corp-ad` (Network)
+
+- **What:** runs on DNS servers 10.100.0.4, 10.100.0.5 (virtual machines), not the managed resolver: they forward corp.example-aero.internal to 10.40.0.53, 10.40.0.54 and everything else to the platform's resolver, and the network's DNS servers point at them; not managed here
+- **Where:** terraform/main.tf:1533; target/prod
+- **Who:** ciam-platform
+- **How:**
+  1. Configure DNS servers 10.100.0.4, 10.100.0.5 to forward corp.example-aero.internal to 10.40.0.53, 10.40.0.54 and everything else to the platform's resolver, by hand
+  2. Point the network's DNS settings at them
+
 ### subnet snet-checks (Network)
 
 - **What:** must be delegated to Microsoft.App/environments and hold nothing else before the checks' Container Apps environment is applied
 - **Where:** terraform/main.tf:2242; virtual network of target/prod
 - **Who:** ciam-platform
 - **How:** Have the network's keeper delegate subnet snet-checks to Microsoft.App/environments (and move anything else out of it), then apply
+
+### quota request (vcpus) (Quotas)
+
+- **What:** raise it to 96 for subscription 00000000-0000-0000-0000-000000000000 in eastus2: azurerm has no resource for it
+- **Where:** terraform/main.tf:2833; subscription 00000000-0000-0000-0000-000000000000
+- **Who:** ciam-platform
+- **How:** Request it through the Quota API (`az quota update`, Microsoft.Quota) or a support request; Microsoft's pages don't say whether the Quota API serves Azure Government
 
 ## Notes
 
@@ -67,12 +83,32 @@
 - **Who:** ciam-platform
 - **How:** After the first runs, confirm their results appear in Application Insights (availabilityResults); if not, report it with the job's log
 
-## To review
+### firewall rule `fw-apps-public` (Network)
 
-| Where | Note | Owner |
-|---|---|---|
-| terraform/main.tf:73 | firewall rule `fw-apps-public` reaches role `ig`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered | ciam-platform |
-| terraform/main.tf:120 | firewall rule `fw-login-public` reaches role `am`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered | ciam-platform |
-| terraform/main.tf:137 | firewall rule `fw-pf-cluster` reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered | ciam-platform |
-| terraform/main.tf:139 | firewall rule `fw-pf-cluster-admin` reaches role `pf-admin`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered | ciam-platform |
-| terraform/main.tf:171 | firewall rule `fw-sso-public` reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered | ciam-platform |
+- **What:** reaches role `ig`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+- **Where:** terraform/main.tf:73; target/prod
+- **Who:** ciam-platform
+
+### firewall rule `fw-login-public` (Network)
+
+- **What:** reaches role `am`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+- **Where:** terraform/main.tf:120; target/prod
+- **Who:** ciam-platform
+
+### firewall rule `fw-pf-cluster-admin` (Network)
+
+- **What:** reaches role `pf-admin`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+- **Where:** terraform/main.tf:139; target/prod
+- **Who:** ciam-platform
+
+### firewall rule `fw-pf-cluster` (Network)
+
+- **What:** reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+- **Where:** terraform/main.tf:137; target/prod
+- **Who:** ciam-platform
+
+### firewall rule `fw-sso-public` (Network)
+
+- **What:** reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+- **Where:** terraform/main.tf:171; target/prod
+- **Who:** ciam-platform

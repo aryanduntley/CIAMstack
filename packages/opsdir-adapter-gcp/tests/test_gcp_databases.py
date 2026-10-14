@@ -70,7 +70,7 @@ def test_mysql_binary_log_sql_server_root_password_and_what_cloud_sql_doesnt_run
     assert 'database_version         = "SQLSERVER_2019_ENTERPRISE"' in out
     assert "root_password_wo         = ephemeral.google_secret_manager_secret_version.db_sql_admin.secret_data" in out
     assert out.count('resource "google_sql_user"') == 1                    # SQL Server's is its root password
-    assert "# Database 'db-ora' runs oracle, which Cloud SQL doesn't: not rendered" in out
+    assert "# NOTE: Database 'db-ora': runs oracle, which Cloud SQL doesn't: not rendered" in out
     assert 'resource "google_sql_database_instance" "db_dba"' in out          # placed by its keeper (render_files)
 
 

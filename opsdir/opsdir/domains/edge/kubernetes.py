@@ -9,7 +9,7 @@ it is an action: what fronts the cluster's ingress runs, unrecorded.
 from ...core.directory import one, rdn_of, rdn_value
 from ...core.environment import of_class
 from ...core.findings import findings, responsible
-from ..compute.workloads import only_on_kubernetes
+from ..compute.workloads import kubernetes_note, only_on_kubernetes
 from .gateways import role_gateway
 from .policies import policy_for
 
@@ -22,6 +22,17 @@ def unrendered_edges(m):
                   policy_for(m.d, "ciamProtectionPolicy", one(svc, "ciamBindingRole")))
                  for svc in of_class(m, "ciamServiceName") if only_on_kubernetes(m, one(svc, "ciamTargetRole"))
                  and role_gateway(m, one(svc, "ciamTargetRole")) is None)
+
+
+def kubernetes_notes(m, firewall=True):
+    """The kubernetes_note a cloud renderer writes for each of environment m's firewall rules (unless firewall is
+    False: rules it renders another way) and service names without a cluster gateway whose role m runs only on
+    Kubernetes (the latter the planner's check raises, below)."""
+    rules = tuple(fw for fw in of_class(m, "ciamFirewallRule") if only_on_kubernetes(m, one(fw, "ciamTargetRole")))
+    return (*(kubernetes_note(m, f"firewall rule `{rdn_value(fw)}`", one(fw, "ciamTargetRole"), fw.dn)
+              for fw in (rules if firewall else ())),
+            *(kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})",
+                              one(svc, "ciamTargetRole"), svc.dn) for svc, _, _ in unrendered_edges(m)))
 
 
 def _lost(svc, t, p):

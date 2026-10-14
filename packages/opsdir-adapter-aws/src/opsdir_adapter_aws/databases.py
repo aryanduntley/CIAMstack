@@ -29,6 +29,7 @@ ciamCopyRegion). Named fields only: the master password (password, master_passwo
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import UNBOUND, bound, of_class
 from opsdir.core.inventory import of_types, resource, tagged_role
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.data.databases import database_port, major_version
 from opsdir.domains.network.plumbing import adopted
 from opsdir.domains.network.stack import subnets
@@ -123,12 +124,52 @@ def _int(b, attr):
     return int(one(b, attr)) if one(b, attr) else None
 
 
+def tls_note(b):
+    """The render note of an Oracle database that requires TLS (an action: RDS requires it through an option group's
+    SSL option, made by hand), or None."""
+    if one(b, "ciamDbEngine") != "oracle" or one(b, "ciamDbTlsRequired") != "TRUE":
+        return None
+    return note("Databases", "action", rdn_value(b), "Oracle requires TLS through an option group (SSL), not rendered",
+                ("Make an RDS option group with the SSL option for the instance's engine and version, and associate it "
+                 "with the instance, by hand",), b.dn)
+
+
+def copy_note(b):
+    """The render note of a database's copy regions RDS won't copy its automated backups to (a blocker: those copies
+    won't exist): every one for Aurora, the ones after the first for an instance; or None."""
+    cn, regions = rdn_value(b), values(b, "ciamCopyRegion")
+    if _aurora(b) and regions:
+        return note("Databases", "blocker", cn, "Aurora copies backups to another region with a global database or an "
+                    f"AWS Backup copy, not automated backups replication: ciamCopyRegion {', '.join(regions)} not "
+                    "rendered", (f"Copy the cluster's backups with an AWS Backup plan copying to {', '.join(regions)} "
+                                 f"(a backup plan protecting it), or remove ciamCopyRegion, {RECORD}",), b.dn)
+    if len(regions) > 1:
+        return note("Databases", "blocker", cn, f"RDS replicates automated backups to one region: "
+                    f"{', '.join(regions[1:])} not rendered",
+                    (f"Keep one copy region on the database, and copy to {', '.join(regions[1:])} with an AWS Backup "
+                     f"plan, {RECORD}",), b.dn)
+    return None
+
+
+def port_note(b):
+    """The render note of a database whose clients' ingress isn't rendered for want of a port (a blocker), or None."""
+    if not values(b, "ciamSourceCidr") or database_port(b) is not None:
+        return None
+    return note("Databases", "blocker", rdn_value(b), "no ciamPort and no default port for its engine: ingress not "
+                "rendered", (f"Record the database's port (ciamPort), {RECORD}",), b.dn)
+
+
+def database_notes(m):
+    """The render notes of environment m's managed databases (render_databases writes their comments)."""
+    return tuple(n for b in of_class(m, "ciamDatabase") for n in (tls_note(b), copy_note(b), port_note(b))
+                 if n is not None)
+
+
 def _notes(b, engine, version):
     cn, retention = rdn_value(b), one(b, "ciamRetentionDays")
     return (*((comment(f"{cn}: point-in-time restore can't be turned off while RDS keeps backups"),)
               if one(b, "ciamDbPointInTime") == "FALSE" and retention not in (None, "0") else ()),
-            *((comment(f"{cn}: Oracle requires TLS through an option group (SSL), not rendered"),)
-              if engine == "oracle" and one(b, "ciamDbTlsRequired") == "TRUE" else ()),
+            *((comment(note_comment(tls_note(b))),) if tls_note(b) else ()),
             *((comment(f"{cn}: no ciamDbEngineVersion: RDS picks its default version"),) if not version else ()))
 
 
@@ -163,11 +204,9 @@ def _copy(m, b, n):
     if not regions:
         return ()
     if _aurora(b):
-        return (comment(f"{cn}: Aurora copies backups to another region with a global database or an AWS Backup copy, "
-                        f"not automated backups replication: ciamCopyRegion {', '.join(regions)} not rendered"),)
+        return (comment(note_comment(copy_note(b))),)
     region, key, var = regions[0], _replica_key(m, b, regions[0]), f"{n}_copy_kms_key_arn"
-    return (*((comment(f"{cn}: RDS replicates automated backups to one region: {', '.join(regions[1:])} not rendered"),)
-              if len(regions) > 1 else ()),
+    return (*((comment(note_comment(copy_note(b))),) if len(regions) > 1 else ()),
             *((tf_block("variable", [var], [("type", ref("string")), ("description", (
                 f"The KMS key in {region} that encrypts the copies of database {cn}'s automated backups"))]),)
               if key is None else ()),
@@ -182,7 +221,7 @@ def _ingress(m, b):
     """The security group's ingress rules: the database's port from each range the record admits."""
     role, cidrs, port = one(b, "ciamBindingRole"), values(b, "ciamSourceCidr"), database_port(b)
     if cidrs and port is None:
-        return (comment(f"{rdn_value(b)}: no ciamPort and no default port for its engine: ingress not rendered"),)
+        return (comment(note_comment(port_note(b))),)
     return tuple(tf_block("resource", ["aws_vpc_security_group_ingress_rule", tf_name(f"{role}_{i}")], [
         ("security_group_id", ref(f"aws_security_group.{tf_name(role)}.id")), ("cidr_ipv4", cidr),
         ("from_port", port), ("to_port", port), ("ip_protocol", "tcp"),

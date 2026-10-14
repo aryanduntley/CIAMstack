@@ -12,17 +12,18 @@ from opsdir.domains.compute.workloads import kubernetes_note, only_on_kubernetes
 from opsdir.core.manifest import header
 from opsdir.core.notes import note_comment
 from opsdir_format_terraform.format import FORMAT as HCL
-from opsdir.domains.infrastructure.firewall import rule_priorities, rule_purpose
-from opsdir.domains.access.workloads import identity_of, workload_identities
+from opsdir.domains.infrastructure.firewall import priority_note, priority_notes, rule_priorities, rule_purpose
+from opsdir.domains.access.workloads import identity_notes, identity_of, workload_identities
 from opsdir.domains.edge.exposure import exposure_unknown, is_internal, service_exposure
 from opsdir.domains.edge.gateways import role_gateway
+from opsdir.domains.edge.kubernetes import kubernetes_notes
 from opsdir.domains.edge.records import forwarders
 from opsdir.domains.governance.keepers import keeper
-from opsdir.domains.edge.resolve import inspected, service_edge
+from opsdir.domains.edge.resolve import inspected, inspection_note, inspection_notes, service_edge
 from opsdir_format_terraform.hcl import (Block, TfFile, blocks_of, comment, ref, tf_block,
                                         tf_name, unbound_comments, written)
 from .access import ACCESS
-from .databases import render_databases
+from .databases import database_notes, render_databases
 from .storage import render_object_stores
 from .audit import audit_notes, render_trails
 from .container_logs import container_log_notes, render_container_logs
@@ -30,18 +31,19 @@ from .log_collection import agent_hosts, log_collection_notes, render_log_collec
 from .observability import alert_notes, render_alerts, render_workspaces, workspace_notes
 from .canaries import render_tests, test_notes
 from .check_jobs import job_notes, render_jobs
-from .budgets import budget_inputs, render_budgets
-from .quotas import quota_request_notes
+from .budgets import budget_inputs, budget_notes, render_budgets
+from .quotas import quota_notes, render_quota_requests
 from .suppressions import azapi_provider, render_suppressions, suppression_notes, uses_azapi
 from .discovery import discovery_notes, discovery_plans, render_discovery
 from .purview import purview_inputs, render_purview, renders as purview_renders
 from .security import render_security, security_notes
-from .backups import render_backups
-from .volumes import boot_tag, os_disk, server_volumes, snapshot_policy_notes
-from .dns import FORWARDING_RULESET, forwarding_rules, public_ip_name, records, service_record, unrecorded_answer
+from .backups import backup_notes, render_backups
+from .volumes import boot_tag, os_disk, server_volumes, snapshot_policy_notes, volume_notes
+from .dns import (FORWARDING_RULESET, forwarder_notes, forwarding_rules, public_ip_name, records, service_record,
+                  unrecorded_answer)
 from .edge import EDGE_SUBNET, ddos_note, gateway_service, servers_backend
-from .compute_groups import render_groups
-from .frontdoor import endpoint, front_door
+from .compute_groups import group_notes, render_groups
+from .frontdoor import endpoint, front_door, frontdoor_notes
 from .identities import LOC, RG, aks_data, identity, scope_data, vm_identity
 from .ingress import gateway_front
 from .guardrails import guardrail_notes
@@ -50,7 +52,7 @@ from opsdir_format_terraform.placing import MAIN, PROVIDERS, carried_files
 from opsdir.domains.governance.keepers import scope_folder
 from .network import render_network
 from .plumbing import network_data
-from .account import azuread_provider, provider_block, required_providers, subscription_variable, tagged
+from .account import azuread_provider, fips_note, provider_block, required_providers, subscription_variable, tagged
 from .arm_types import arm_files
 from .identity_protection import uses_azuread
 
@@ -59,10 +61,10 @@ PRIORITIES = (100, 10, 4096)        # NSG rule priorities: first slot, step, las
 
 def _security_rule(m, fw, prio, pinned):
     if only_on_kubernetes(m, one(fw, "ciamTargetRole")):
-        return (comment(kubernetes_note(m, f"firewall rule `{rdn_value(fw)}`", one(fw, "ciamTargetRole"))),)
+        return (comment(note_comment(kubernetes_note(m, f"firewall rule `{rdn_value(fw)}`", one(fw, "ciamTargetRole"),
+                                                     fw.dn))),)
     why = rule_purpose(m, fw)
-    note = () if pinned else (
-        comment(f"NOTE: {rdn_value(fw)} has no pinned ciamRulePriority; assigned {prio}. Pin it in the directory."),)
+    note = () if pinned else (comment(note_comment(priority_note(m, fw, prio))),)
     return (*note, tf_block("resource", ["azurerm_network_security_rule", tf_name(rdn_value(fw))], [
         ("name", rdn_value(fw)), ("description", why), ("priority", prio), ("direction", "Inbound"),
         ("access", "Allow"), ("protocol", one(fw, "ciamProtocol", "tcp").capitalize()),
@@ -72,6 +74,14 @@ def _security_rule(m, fw, prio, pinned):
         ("destination_address_prefix", "*"), ("resource_group_name", RG),
         ("network_security_group_name",
          ref(f"azurerm_network_security_group.{tf_name(one(fw, 'ciamTargetRole'))}.name"))]))
+
+
+def firewall_notes(m):
+    """The render notes of environment m's network security rules given the next free priority (each rule it
+    renders: not one for a role run only on Kubernetes)."""
+    rules = of_class(m, "ciamFirewallRule")
+    return priority_notes(m, rules, rule_priorities(rules, *PRIORITIES),
+                          lambda fw: only_on_kubernetes(m, one(fw, "ciamTargetRole")))
 
 
 def _security_groups(m):
@@ -167,7 +177,8 @@ def _service(m, svc, endpoints=()):
     role = one(svc, "ciamTargetRole")
     gw = role_gateway(m, role) if only_on_kubernetes(m, role) else None
     if only_on_kubernetes(m, role) and gw is None:
-        return (comment(kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})", role)),)
+        return (comment(note_comment(kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})",
+                                                     role, svc.dn))),)
     if service_exposure(svc) is None:
         return (comment(exposure_unknown(svc)),)
     if gw is not None:
@@ -185,7 +196,7 @@ def _service(m, svc, endpoints=()):
         return (*gateway_service(m, svc, spec, servers_backend(targets)), *fronted, *record)
     data, fe = _frontend(m, svc, n, ip, internal, (*(subnet_of(m, t) for t in targets),
                                                     *(s for g in own_groups(m, role) for s in group_subnets(m, g))))
-    blind = (comment("the protection policy's request inspection needs TLS terminated at the edge; not rendered"),) \
+    blind = (comment(note_comment(inspection_note(m, svc, spec))),) \
         if spec is not None and inspected(spec) and not cdn else ()
     return (*data, *blind, *(ddos_note(spec) if spec is not None else ()),
             tf_block("resource", ["azurerm_lb", n], [
@@ -271,7 +282,7 @@ def render_files(m, services):
            *render_alerts(m),
            *render_tests(m, endpoints), *jobs,
            *render_security(m, discovery_plans(m)), *render_discovery(m), *render_purview(m),
-           *render_suppressions(m), *render_budgets(m), *quota_request_notes(m),
+           *render_suppressions(m), *render_budgets(m), *render_quota_requests(m),
            *_key_vault_secrets(m), *scope_data(m, identities))
     out = tuple(x for i, x in enumerate(out) if not (x in blocks_of(out[:i], "data")))     # a data source once
     notes = "\n".join(_interconnect_note(m, ic) for ic in of_class(m, "ciamInterconnect"))
@@ -327,10 +338,14 @@ def render_notes(m, services):
     """Adapter notes (core.notes, flow 43): what environment m's Azure render leaves out or to a person, as data: the
     synthetic checks it doesn't render (availability tests, check jobs), the check jobs' subnet delegation and what to
     expect of their first runs; then the security services', audit trails', data discovery's, suppressions',
-    guardrails', alert rules', workspaces' and log shipping's (servers, containers) notes; each written as its
+    guardrails', alert rules', workspaces', identities' (core access.workloads), Kubernetes-only roles' (core
+    edge.kubernetes) and unpinned rule priorities' notes, and log shipping's (servers, containers); each written as its
     comment."""
     endpoints = services.endpoints if services else ()
     return (*test_notes(m, endpoints), *job_notes(m, endpoints), *security_notes(m, discovery_plans(m)),
             *audit_notes(m), *discovery_notes(m), *suppression_notes(m), *guardrail_notes(m), *alert_notes(m),
-            *workspace_notes(m),
+            *workspace_notes(m), *identity_notes(m, ACCESS), *kubernetes_notes(m), *firewall_notes(m),
+            *budget_notes(m), *((fips_note(m),) if fips_note(m) else ()), *forwarder_notes(m), *backup_notes(m),
+            *database_notes(m), *volume_notes(m), *group_notes(m), *inspection_notes(m, endpoints),
+            *frontdoor_notes(m, endpoints), *quota_notes(m),
             *((*log_collection_notes(m, services), *container_log_notes(m, services)) if services else ()))

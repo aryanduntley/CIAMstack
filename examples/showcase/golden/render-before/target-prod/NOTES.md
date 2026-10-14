@@ -5,7 +5,7 @@
 -->
 # Render notes: target/prod
 
-**1 blocker, 3 actions, 3 notes, 6 to review**
+**1 blocker, 3 actions, 9 notes, 0 to review**
 
 ## Blockers
 
@@ -47,6 +47,13 @@
 
 ## Notes
 
+### principal pingds (Access)
+
+- **What:** write-storage backup-target: role `backup-target` has no binding in this environment
+- **Where:** terraform/main.tf:179; target/prod
+- **Who:** ciam-platform
+- **How:** Bind role `backup-target` in this environment, under an approved change, and re-render
+
 ### alert rule login-failures (Monitoring)
 
 - **What:** no product rendering target/prod declares signal `login-failures` for role `pf-engine`: not rendered
@@ -67,13 +74,32 @@
 - **Who:** ciam-platform
 - **How:** After the first runs, confirm their results appear in Application Insights (availabilityResults); if not, report it with the job's log
 
-## To review
+### firewall rule `fw-apps-public` (Network)
 
-| Where | Note | Owner |
-|---|---|---|
-| terraform/main.tf:74 | firewall rule `fw-apps-public` reaches role `ig`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered | ciam-platform |
-| terraform/main.tf:121 | firewall rule `fw-login-public` reaches role `am`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered | ciam-platform |
-| terraform/main.tf:123 | firewall rule `fw-pf-cluster` reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered | ciam-platform |
-| terraform/main.tf:125 | firewall rule `fw-pf-cluster-admin` reaches role `pf-admin`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered | ciam-platform |
-| terraform/main.tf:157 | firewall rule `fw-sso-public` reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered | ciam-platform |
-| terraform/main.tf:179 | principal pingds: write-storage backup-target: role `backup-target` has no binding in this environment | ciam-platform |
+- **What:** reaches role `ig`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+- **Where:** terraform/main.tf:74; target/prod
+- **Who:** ciam-platform
+
+### firewall rule `fw-login-public` (Network)
+
+- **What:** reaches role `am`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+- **Where:** terraform/main.tf:121; target/prod
+- **Who:** ciam-platform
+
+### firewall rule `fw-pf-cluster-admin` (Network)
+
+- **What:** reaches role `pf-admin`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+- **Where:** terraform/main.tf:125; target/prod
+- **Who:** ciam-platform
+
+### firewall rule `fw-pf-cluster` (Network)
+
+- **What:** reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+- **Where:** terraform/main.tf:123; target/prod
+- **Who:** ciam-platform
+
+### firewall rule `fw-sso-public` (Network)
+
+- **What:** reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+- **Where:** terraform/main.tf:157; target/prod
+- **Who:** ciam-platform

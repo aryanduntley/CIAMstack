@@ -9,10 +9,13 @@ are written as globs ('*' for one or more path segments) and given to clouds as 
 import re
 from collections import namedtuple
 
-from ...core.directory import one, values
+from ...core.directory import one, rdn_value, values
 from ...core.environment import of_class
+from ...core.notes import note
 from ...core.versions import holds
-from ..compute.workloads import recorded_versions
+from ..compute.workloads import only_on_kubernetes, recorded_versions
+from .exposure import service_exposure
+from .gateways import role_gateway
 from .naming import ENDPOINT_KINDS, LAYER7
 from .policies import endpoint_paths, policy_for
 
@@ -138,6 +141,34 @@ def inspected(spec):
     """Whether a spec asks for anything only a layer 7 hop can do (a firewall, rate limits, address or country
     rules)."""
     return bool(spec.waf_mode or spec.categories or spec.rate_limits or spec.ip_rules or spec.geo_rules)
+
+
+def rendered_edges(m, endpoints):
+    """((service name, edge spec or None, cluster gateway or None), ...): environment m's service names a cloud
+    renderer fronts (not one whose role m runs only on Kubernetes without a cluster gateway, nor one whose exposure
+    isn't recorded), each with the spec it renders: the front's before a cluster gateway (front_edge), else its own
+    (service_edge, None without policies)."""
+    found = ((svc, role_gateway(m, one(svc, "ciamTargetRole"))
+              if only_on_kubernetes(m, one(svc, "ciamTargetRole")) else None)
+             for svc in of_class(m, "ciamServiceName") if service_exposure(svc) is not None)
+    return tuple((svc, front_edge(m, svc, endpoints) if gw is not None else service_edge(m, svc, endpoints), gw)
+                 for svc, gw in found if gw is not None or not only_on_kubernetes(m, one(svc, "ciamTargetRole")))
+
+
+def inspection_note(m, svc, spec):
+    """The render note (a plain note, flow 43: the planner's policy check raises it, an action) a cloud renderer
+    writes, as its comment, on the passthrough load balancer of a service name whose protection policy asks for
+    request inspection, which needs TLS terminated at the edge."""
+    return note("Edge", "note", f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})",
+                f"protection policy `{rdn_value(spec.protection)}` asks for request inspection, which needs TLS "
+                "terminated at the edge: not rendered", (), spec.protection.dn, m.label)
+
+
+def inspection_notes(m, endpoints):
+    """The inspection_note of each of environment m's service names a cloud renderer fronts with a passthrough load
+    balancer (no cluster gateway, layer 4, no CDN) whose protection policy asks for request inspection."""
+    return tuple(inspection_note(m, svc, spec) for svc, spec, gw in rendered_edges(m, endpoints)
+                 if gw is None and spec is not None and not spec.layer7 and not spec.cdn and inspected(spec))
 
 
 # A cloud's TLS policies: ((min version, profile, policy name, exact), ...), the policy its renderer uses for each pair

@@ -83,7 +83,7 @@ def test_the_provider_notes_that_azure_has_no_fips_endpoints_to_switch_to():
                        ("replace", "ciamCloudEnvironment", ("usgovernment",))))
     _, d, alpha, beta = estate(extra=(fips,))
     assert as_text(provider_block(alpha)).startswith(
-        'provider "azurerm" {\n  # FIPS endpoints: Azure has no separate FIPS endpoints')
+        'provider "azurerm" {\n  # NOTE: FIPS endpoints: Azure has no separate FIPS endpoints')
     assert '  environment                     = "usgovernment"\n' in as_text(provider_block(alpha))
     assert "FIPS" not in as_text(provider_block(beta)) and "environment" not in as_text(provider_block(beta))
 

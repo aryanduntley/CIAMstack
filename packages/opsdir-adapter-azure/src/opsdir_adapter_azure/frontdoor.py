@@ -14,7 +14,8 @@ landing zone's network security group.
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.domains.edge.dns import zone_unknown
 from opsdir.domains.edge.exposure import is_internal
-from opsdir.domains.edge.resolve import inspected, path_regex
+from opsdir.core.notes import RECORD, note, note_comment
+from opsdir.domains.edge.resolve import inspected, path_regex, rendered_edges
 from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from .dns import record_name, service_zone
 from .edge import WAF_RULE_SETS, rate
@@ -56,15 +57,48 @@ def _managed_rules(spec):
                  for t, v in sets)
 
 
+def _vault(spec):
+    """(vault, certificate name) of the Key Vault certificate the custom domain presents, or None (Front Door's
+    managed certificate)."""
+    ref_uri = spec.certificate or ""
+    return tuple(ref_uri.split("://", 1)[1].split("/", 1)) if ref_uri.startswith("azkv-cert://") else None
+
+
+def vault_note(m, vault):
+    """The render note (an action) of a Key Vault a Front Door custom domain reads its certificate from: Front Door's
+    service principal needs Key Vault Secrets User on it, the landing zone's grant (not rendered)."""
+    return note("Edge", "action", f"Key Vault {vault}", "Front Door's service principal needs Key Vault Secrets User "
+                "on it to read the custom domain's certificate (the landing zone's grant)",
+                (f"Before applying, grant Front Door's service principal (Microsoft.AzureFrontDoor-Cdn) Key Vault "
+                 f"Secrets User on vault {vault}, by the landing zone's keeper",), None, m.label)
+
+
+def private_origin_note(m, svc):
+    """The render note (a blocker) of a service name with a private address whose protection policy puts a CDN in
+    front: that needs Front Door Premium's Private Link origin, not rendered, so no Front Door fronts it."""
+    return note("Edge", "blocker", f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})", "a CDN in front of a "
+                "private address needs Front Door Premium's Private Link origin: not rendered, so no CDN fronts it",
+                (f"Front it without a CDN (its protection policy's ciamCdn), or give it a public address, {RECORD}",),
+                svc.dn, m.label)
+
+
+def frontdoor_notes(m, endpoints):
+    """The render notes of environment m's Front Doors (front_door writes their comments), each once: a CDN before a
+    private address (private_origin_note), the vaults custom domains read their certificates from (vault_note)."""
+    fronted = tuple((svc, spec) for svc, spec, _ in rendered_edges(m, endpoints) if spec is not None and spec.cdn)
+    return tuple(dict.fromkeys((
+        *(private_origin_note(m, svc) for svc, _ in fronted if is_internal(svc)),
+        *(vault_note(m, _vault(spec)[0]) for svc, spec in fronted if not is_internal(svc) and _vault(spec)))))
+
+
 def _domain_tls(m, n, spec):
     """(resources, tls body): the custom domain's certificate from Key Vault, else Front Door's managed one."""
-    ref_uri = spec.certificate or ""
-    if not ref_uri.startswith("azkv-cert://"):
+    if _vault(spec) is None:
         return (), (("certificate_type", "ManagedCertificate"), ("minimum_version", "TLS12"))
-    vault, name = ref_uri.split("://", 1)[1].split("/", 1)
+    vault, name = _vault(spec)
     return ((tf_block("data", ["azurerm_key_vault", f"{n}_cdn_tls"], [("name", vault), ("resource_group_name", RG)]),
              tf_block("resource", ["azurerm_cdn_frontdoor_secret", n], [
-                 ("#", "Front Door's service principal needs Key Vault Secrets User on the vault (the landing zone)"),
+                 ("#", note_comment(vault_note(m, vault))),
                  ("name", f"{n}-tls"), ("cdn_frontdoor_profile_id", ref(f"azurerm_cdn_frontdoor_profile.{n}.id")),
                  ("secret", Block((("customer_certificate", Block((("key_vault_certificate_id", ref(
                      f'"${{data.azurerm_key_vault.{n}_cdn_tls.vault_uri}}certificates/{name}"')),))),)))])),
@@ -86,8 +120,7 @@ def front_door(m, svc, spec, n):
     policies, and the DNS CNAME to the endpoint."""
     name, zone = one(svc, "ciamFqdn"), service_zone(m, svc)
     if is_internal(svc):
-        return (comment(f"`{name}`: a CDN in front of a private address needs Front Door Premium's Private Link "
-                        "origin; not rendered"),)
+        return (comment(note_comment(private_origin_note(m, svc))),)
     waf = inspected(spec)
     sku = "Premium_AzureFrontDoor" if waf else "Standard_AzureFrontDoor"
     h, port = spec.health, int(values(svc, "ciamPort")[0])

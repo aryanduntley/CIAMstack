@@ -35,8 +35,9 @@ from opsdir.core.inventory import of_types, resource
 from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.observability.audit import PROTECTED, audit_trails, store_protection, trail_destination
 from opsdir_format_terraform.hcl import Block, comment, from_entry, mentions, ref, tf_block, tf_name
-from .account import ORGANIZATION, organization_variable
+from .account import ORGANIZATION, organization_variable, project_id
 from .names import resource_id
+from .observability import bucket_parts
 from .storage import bucket_of, kept_buckets
 
 FILTER = 'logName:"cloudaudit.googleapis.com"'
@@ -53,9 +54,20 @@ def _name(trail):
     return pref.rsplit("/sinks/", 1)[-1] if "/sinks/" in pref else rdn_value(trail)
 
 
+def writer_note(m, dest):
+    """The render note (an action) of a log bucket in another project an audit trail's sink exports to: the sink's
+    writer identity needs roles/logging.bucketWriter there, granted by hand once the sink exists."""
+    project = (bucket_parts(dest) or ("another project",))[0]
+    return note("Audit", "action", f"log bucket {rdn_value(dest)}", f"it is in {project}: the sink's writer identity "
+                "needs roles/logging.bucketWriter on it",
+                (f"After the sink is applied, grant its writer identity (the sink's writer_identity output) "
+                 f"roles/logging.bucketWriter on bucket {rdn_value(dest)} in {project}, by hand",), dest.dn,
+                f"project {project}")
+
+
 def _destination(m, n, sink, dest):
-    """(destination, grants, notes) of the destination of sink (its Terraform address), or None when a sink can't
-    export to it."""
+    """(destination, grants, render notes) of the destination of sink (its Terraform address), or None when a sink
+    can't export to it: a log bucket in another project writes its writer_note."""
     if is_kind(m.d, dest, "ciamObjectStore") and bucket_of(one(dest, "ciamStorageRef")):
         bucket = bucket_of(one(dest, "ciamStorageRef"))
         name = ref(f"google_storage_bucket.{tf_name(rdn_value(dest))}.name") \
@@ -65,9 +77,9 @@ def _destination(m, n, sink, dest):
             ("member", ref(f"{sink}.writer_identity"))]),), ())
     pref = one(dest, "ciamProviderRef") or ""
     if is_kind(m.d, dest, "ciamLogDestination") and "/buckets/" in pref:
-        return (f"logging.googleapis.com/{pref}", (), (
-            comment(f"{rdn_value(dest)}: a log bucket in another project needs roles/logging.bucketWriter for the "
-                    "sink's writer identity"),))
+        parts = bucket_parts(dest)
+        return (f"logging.googleapis.com/{pref}", (),
+                (writer_note(m, dest),) if parts is None or parts[0] != project_id(m) else ())
     return None
 
 
@@ -101,8 +113,15 @@ def unrendered_note(m, t):
 
 
 def audit_notes(m):
-    """The render notes of environment m's audit trails (render_trails writes their comments)."""
-    return tuple(n for t in audit_trails(m) for n in (unrendered_note(m, t),) if n is not None)
+    """The render notes of environment m's audit trails (render_trails writes their comments): the trails it doesn't
+    render (unrendered_note), then the grants their sinks' destinations need by hand (writer_note)."""
+    def notes(t):
+        missing = unrendered_note(m, t)
+        if missing is not None:
+            return (missing,)
+        n = tf_name(rdn_value(t))
+        return _destination(m, n, f"{_sink(t)}.{n}", trail_destination(m, t))[2]
+    return tuple(dict.fromkeys(n for t in audit_trails(m) for n in notes(t)))
 
 
 def _trail(m, t):
@@ -116,7 +135,7 @@ def _trail(m, t):
     found = _destination(m, n, f"{sink}.{n}", dest)
     destination, grants, notes = found
     unlocked = one(t, "ciamIntegrityValidation") == "TRUE" and store_protection(m, t) < PROTECTED
-    return (*notes, tf_block("resource", [sink, n], [
+    return (*(comment(note_comment(x)) for x in notes), tf_block("resource", [sink, n], [
         *((("#", "integrity: Google keeps no digest of audit logs; keep them in a bucket whose retention policy is "
                  "locked (ciamStorageImmutability compliance)"),) if unlocked else ()),
         ("name", _name(t)),

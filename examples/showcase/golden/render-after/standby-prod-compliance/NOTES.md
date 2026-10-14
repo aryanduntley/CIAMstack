@@ -5,4 +5,20 @@
 -->
 # Render notes: standby/prod
 
-**nothing to handle**
+**0 blockers, 2 actions, 0 notes, 0 to review**
+
+## Actions
+
+### compliance (Security)
+
+- **What:** Security Command Center (Premium or Enterprise) activated with Security Health Analytics (activation has no Terraform resource and enabling its services only a google-beta one): a request to the organization's administrators (not rendered)
+- **Where:** terraform/slice/main.tf:11; the organization
+- **Who:** ciam-platform
+- **How:** Ask the organization's administrators for it: Security Command Center (Premium or Enterprise) activated with Security Health Analytics (activation has no Terraform resource and enabling its services only a google-beta one)
+
+### compliance's findings to security-findings (Security)
+
+- **What:** Security Command Center's service agent must be able to publish to the topic
+- **Where:** terraform/slice/main.tf:101; standby/prod
+- **Who:** ciam-platform
+- **How:** Grant Security Command Center's notification service agent roles/pubsub.publisher on projects/example-aero-ciam-standby/topics/ciam-security (its owner)

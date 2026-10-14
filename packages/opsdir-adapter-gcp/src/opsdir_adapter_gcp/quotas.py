@@ -28,6 +28,7 @@ from opsdir.core.directory import one, rdn_value
 from opsdir.core.sources import json_document
 from opsdir.domains.estate.quotas import (QuotaRow, limits_fetched, need_key, needed, quota_import, quota_needs,
                                           quota_regions)
+from opsdir.core.notes import note, note_comment
 from opsdir_format_terraform.hcl import Block, comment, tf_block, tf_name
 from .inventory import PROVIDER
 
@@ -94,12 +95,29 @@ def quota_id(kind_or_id):
     return KIND_QUOTAS.get(kind_or_id, kind_or_id)
 
 
+def quota_note(m, n, key):
+    """The render note (an action) of an increase the operator decided to request (need n, its key) that Cloud Quotas
+    documents no quota id for here, so someone files it; None when it is rendered."""
+    value = int(one(n, "ciamQuotaRequested") or needed(m, key))
+    qid, region = quota_id(key), one(m.cloud, "ciamRegion")
+    if qid in PREFERENCES:
+        return None
+    return note("Quotas", "action", f"quota request ({key})", f"raise {qid} to {value} for the project in {region}: "
+                "Cloud Quotas documents no quota id for it here, so not rendered",
+                ("Request it on the console's Quotas page or through a support case",), n.dn, m.label)
+
+
+def quota_notes(m):
+    """The quota_note of each increase the operator decided to request for environment m that isn't rendered."""
+    return tuple(x for n in quota_needs(m) if one(n, "ciamQuotaDecision") == "request"
+                 for x in (quota_note(m, n, need_key(n)),) if x is not None)
+
+
 def _request(m, n, key):
     value = int(one(n, "ciamQuotaRequested") or needed(m, key))
     qid, region = quota_id(key), one(m.cloud, "ciamRegion")
     if qid not in PREFERENCES:
-        return (comment(f"Quota request ({key}): raise {qid} to {value} for the project in {region} (Cloud Quotas: no "
-                        "quota id documented for it here, so not rendered)"),)
+        return (comment(note_comment(quota_note(m, n, key))),)
     quota, regional = PREFERENCES[qid]
     return (tf_block("resource", [PREFERENCE, tf_name(f"{rdn_value(n)}_{key}")], [
         ("#", f"{key}: requested by decision (ciamQuotaDecision); the quota is the project's"),

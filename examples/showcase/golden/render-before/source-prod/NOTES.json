@@ -2,7 +2,7 @@
   "environment": "env=prod,cloud=source,ou=environments,dc=ciam-ops",
   "counts": {
     "blocker": 1,
-    "action": 1,
+    "action": 8,
     "note": 0,
     "to_review": 0
   },
@@ -45,6 +45,150 @@
         {
           "path": "terraform/main.tf",
           "line": 2029
+        }
+      ]
+    },
+    {
+      "area": "Compute",
+      "severity": "action",
+      "subject": "asg-pf-engine",
+      "text": "exists: applying gives it launch template ciam-prod-pf-engine, which its instances run when they are next replaced",
+      "how": [
+        "After applying, start an instance refresh on autoscaling group ciam-prod-pf-engine so its instances run the new template"
+      ],
+      "entry": "cn=asg-pf-engine,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops",
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 733
+        }
+      ]
+    },
+    {
+      "area": "Edge",
+      "severity": "action",
+      "subject": "Shield Advanced",
+      "text": "its protections need the account's subscription",
+      "how": [
+        "Before applying, make sure the account subscribes to AWS Shield Advanced (a paid subscription with a one-year commitment): the protections fail without it"
+      ],
+      "entry": null,
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 1356
+        },
+        {
+          "path": "terraform/main.tf",
+          "line": 1658
+        }
+      ]
+    },
+    {
+      "area": "Security",
+      "severity": "action",
+      "subject": "guardduty's findings to security-findings",
+      "text": "its resource policy must let events.amazonaws.com deliver to it",
+      "how": [
+        "Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security's access policy (aws:SourceArn the rule's ARN)"
+      ],
+      "entry": "cn=guardduty,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops",
+      "scope": "source/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 2331
+        }
+      ]
+    },
+    {
+      "area": "Security",
+      "severity": "action",
+      "subject": "guardduty's incidents to security-incidents",
+      "text": "its resource policy must let events.amazonaws.com deliver to it",
+      "how": [
+        "Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security-incidents's access policy (aws:SourceArn the rule's ARN)"
+      ],
+      "entry": "cn=guardduty,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops",
+      "scope": "source/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 2360
+        }
+      ]
+    },
+    {
+      "area": "Security",
+      "severity": "action",
+      "subject": "inspector's findings to security-findings",
+      "text": "its resource policy must let events.amazonaws.com deliver to it",
+      "how": [
+        "Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security's access policy (aws:SourceArn the rule's ARN)"
+      ],
+      "entry": "cn=inspector,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops",
+      "scope": "source/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 2386
+        }
+      ]
+    },
+    {
+      "area": "Security",
+      "severity": "action",
+      "subject": "macie-backups's findings to security-findings",
+      "text": "its resource policy must let events.amazonaws.com deliver to it",
+      "how": [
+        "Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security's access policy (aws:SourceArn the rule's ARN)"
+      ],
+      "entry": "cn=macie-backups,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops",
+      "scope": "source/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 2528
+        }
+      ]
+    },
+    {
+      "area": "Security",
+      "severity": "action",
+      "subject": "security-hub's findings to security-findings",
+      "text": "its resource policy must let events.amazonaws.com deliver to it",
+      "how": [
+        "Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security's access policy (aws:SourceArn the rule's ARN)"
+      ],
+      "entry": "cn=security-hub,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops",
+      "scope": "source/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 2426
         }
       ]
     }

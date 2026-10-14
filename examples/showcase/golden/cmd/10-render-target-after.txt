@@ -1,4 +1,4 @@
 rendered 113 files for env=prod,cloud=target,ou=environments,dc=ciam-ops (azure) → <OUT>/render-after/target-prod
-notes: 1 blocker, 3 actions, 3 notes, 5 to review (see <OUT>/render-after/target-prod/NOTES.md)
+notes: 1 blocker, 5 actions, 8 notes, 0 to review (see <OUT>/render-after/target-prod/NOTES.md)
   BLOCKER alert rule login-failures: not rendered: its alarm is a log query alert and the record holds no query [ciam-platform]
 exit 0

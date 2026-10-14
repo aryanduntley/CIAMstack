@@ -71,7 +71,7 @@ resource "azurerm_network_security_rule" "fw_admin" {
   network_security_group_name = azurerm_network_security_group.ds.name
 }
 
-# NOTE: firewall rule `fw-apps-public` reaches role `ig`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+# NOTE: firewall rule `fw-apps-public`: reaches role `ig`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
 
 resource "azurerm_network_security_rule" "fw_checks_ds" {
   name                        = "fw-checks-ds"
@@ -118,11 +118,11 @@ resource "azurerm_network_security_rule" "fw_idm_sync" {
   network_security_group_name = azurerm_network_security_group.ds.name
 }
 
-# NOTE: firewall rule `fw-login-public` reaches role `am`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+# NOTE: firewall rule `fw-login-public`: reaches role `am`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
 
-# NOTE: firewall rule `fw-pf-cluster` reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+# NOTE: firewall rule `fw-pf-cluster`: reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
 
-# NOTE: firewall rule `fw-pf-cluster-admin` reaches role `pf-admin`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+# NOTE: firewall rule `fw-pf-cluster-admin`: reaches role `pf-admin`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
 
 resource "azurerm_network_security_rule" "fw_pf_ds_svc" {
   name                        = "fw-pf-ds-svc"
@@ -154,7 +154,7 @@ resource "azurerm_network_security_rule" "fw_replication" {
   network_security_group_name = azurerm_network_security_group.ds.name
 }
 
-# NOTE: firewall rule `fw-sso-public` reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+# NOTE: firewall rule `fw-sso-public`: reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
 
 resource "azurerm_network_security_rule" "fw_supplier_portal" {
   name                        = "fw-supplier-portal"

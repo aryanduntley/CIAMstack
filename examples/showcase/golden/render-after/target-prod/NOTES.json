@@ -2,9 +2,9 @@
   "environment": "env=prod,cloud=target,ou=environments,dc=ciam-ops",
   "counts": {
     "blocker": 1,
-    "action": 3,
-    "note": 3,
-    "to_review": 5
+    "action": 5,
+    "note": 8,
+    "to_review": 0
   },
   "notes": [
     {
@@ -74,6 +74,27 @@
     {
       "area": "Network",
       "severity": "action",
+      "subject": "forwarder `fwd-corp-ad`",
+      "text": "runs on DNS servers 10.100.0.4, 10.100.0.5 (virtual machines), not the managed resolver: they forward corp.example-aero.internal to 10.40.0.53, 10.40.0.54 and everything else to the platform's resolver, and the network's DNS servers point at them; not managed here",
+      "how": [
+        "Configure DNS servers 10.100.0.4, 10.100.0.5 to forward corp.example-aero.internal to 10.40.0.53, 10.40.0.54 and everything else to the platform's resolver, by hand",
+        "Point the network's DNS settings at them"
+      ],
+      "entry": "cn=fwd-corp-ad,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+      "scope": "target/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 1533
+        }
+      ]
+    },
+    {
+      "area": "Network",
+      "severity": "action",
       "subject": "subnet snet-checks",
       "text": "must be delegated to Microsoft.App/environments and hold nothing else before the checks' Container Apps environment is applied",
       "how": [
@@ -88,6 +109,26 @@
         {
           "path": "terraform/main.tf",
           "line": 2242
+        }
+      ]
+    },
+    {
+      "area": "Quotas",
+      "severity": "action",
+      "subject": "quota request (vcpus)",
+      "text": "raise it to 96 for subscription 00000000-0000-0000-0000-000000000000 in eastus2: azurerm has no resource for it",
+      "how": [
+        "Request it through the Quota API (`az quota update`, Microsoft.Quota) or a support request; Microsoft's pages don't say whether the Quota API serves Azure Government"
+      ],
+      "entry": "cn=quota-vcpus,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+      "scope": "subscription 00000000-0000-0000-0000-000000000000",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 2833
         }
       ]
     },
@@ -150,13 +191,13 @@
       ]
     },
     {
-      "area": null,
-      "severity": null,
-      "subject": "",
-      "text": "firewall rule `fw-apps-public` reaches role `ig`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
+      "area": "Network",
+      "severity": "note",
+      "subject": "firewall rule `fw-apps-public`",
+      "text": "reaches role `ig`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
       "how": [],
-      "entry": null,
-      "scope": null,
+      "entry": "cn=fw-apps-public,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+      "scope": "target/prod",
       "owners": [
         "ciam-platform"
       ],
@@ -168,13 +209,13 @@
       ]
     },
     {
-      "area": null,
-      "severity": null,
-      "subject": "",
-      "text": "firewall rule `fw-login-public` reaches role `am`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
+      "area": "Network",
+      "severity": "note",
+      "subject": "firewall rule `fw-login-public`",
+      "text": "reaches role `am`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
       "how": [],
-      "entry": null,
-      "scope": null,
+      "entry": "cn=fw-login-public,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+      "scope": "target/prod",
       "owners": [
         "ciam-platform"
       ],
@@ -186,31 +227,13 @@
       ]
     },
     {
-      "area": null,
-      "severity": null,
-      "subject": "",
-      "text": "firewall rule `fw-pf-cluster` reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
+      "area": "Network",
+      "severity": "note",
+      "subject": "firewall rule `fw-pf-cluster-admin`",
+      "text": "reaches role `pf-admin`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
       "how": [],
-      "entry": null,
-      "scope": null,
-      "owners": [
-        "ciam-platform"
-      ],
-      "places": [
-        {
-          "path": "terraform/main.tf",
-          "line": 137
-        }
-      ]
-    },
-    {
-      "area": null,
-      "severity": null,
-      "subject": "",
-      "text": "firewall rule `fw-pf-cluster-admin` reaches role `pf-admin`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
-      "how": [],
-      "entry": null,
-      "scope": null,
+      "entry": "cn=fw-pf-cluster-admin,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+      "scope": "target/prod",
       "owners": [
         "ciam-platform"
       ],
@@ -222,13 +245,31 @@
       ]
     },
     {
-      "area": null,
-      "severity": null,
-      "subject": "",
-      "text": "firewall rule `fw-sso-public` reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
+      "area": "Network",
+      "severity": "note",
+      "subject": "firewall rule `fw-pf-cluster`",
+      "text": "reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
       "how": [],
-      "entry": null,
-      "scope": null,
+      "entry": "cn=fw-pf-cluster,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+      "scope": "target/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 137
+        }
+      ]
+    },
+    {
+      "area": "Network",
+      "severity": "note",
+      "subject": "firewall rule `fw-sso-public`",
+      "text": "reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered",
+      "how": [],
+      "entry": "cn=fw-sso-public,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+      "scope": "target/prod",
       "owners": [
         "ciam-platform"
       ],

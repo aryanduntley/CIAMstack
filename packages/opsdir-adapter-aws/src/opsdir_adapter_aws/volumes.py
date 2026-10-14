@@ -30,11 +30,13 @@ from collections import Counter
 import re
 
 from opsdir.core.directory import one, rdn_value, values
-from opsdir.core.environment import UNBOUND, of_class, secret
+from opsdir.core.environment import UNBOUND, inherited_from, of_class, secret
 from opsdir.core.inventory import of_types, resource, tagged_role
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.data.volumes import (POLICY, boot_volume, data_volumes, disk_tags, is_encrypted, snapshot_every,
                                          tagged_disks, volume_key_role, volume_policy)
 from opsdir.domains.network.plumbing import adopted
+from opsdir.domains.compute.hosts import compute_groups
 from opsdir.domains.network.stack import kept_by, owned
 from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_import, tf_name
 from opsdir_format_terraform.state import blocks, first_block
@@ -97,6 +99,24 @@ def root_block_device(m, s, kms):
                                         ("tags", _tags(v)))))
 
 
+def device_note(v, of):
+    """The render note of a data volume left without a device name to attach it at (a blocker: it isn't attached);
+    of: whose (a server, or 'group <name>')."""
+    return note("Volumes", "blocker", f"Volume '{rdn_value(v)}' of {of}", "no device name left to attach it at",
+                (f"Record at most {len(DEVICES)} data volumes for the role (/dev/sdf to /dev/sd{DEVICES[-1]}), "
+                 f"{RECORD}",), v.dn)
+
+
+def mixed_policies_note(g, policies):
+    """The render note of a compute group whose disks name different snapshot policies (an action: a launch template
+    tags every disk alike, so none is tagged SnapshotPolicy)."""
+    return note("Volumes", "action", rdn_value(g), f"its disks don't all name one snapshot policy "
+                f"({', '.join(sorted(r or 'none' for r in policies))}); a launch template tags them alike, so none is "
+                "tagged SnapshotPolicy: snapshot them with a backup plan on the group's tag Role",
+                (f"Record a backup plan protecting the group's tag Role, or give its disks one snapshot policy, "
+                 f"{RECORD}",), g.dn)
+
+
 def server_volumes(m, s):
     """HCL for server s's data volumes: each an EBS volume in its zone and its attachment, stamped with the volume's
     entry (hcl.from_entry): one someone else keeps goes to their root with its attachment (reading the instance)."""
@@ -108,7 +128,7 @@ def _server_volume(m, s, i, v):
     n, vn, policy = tf_name(rdn_value(s)), tf_name(f"{rdn_value(s)}_{rdn_value(v)}"), volume_policy(m, v)
     policy_role = one(policy, "ciamBindingRole") if policy is not None else None
     if i >= len(DEVICES):
-        return (comment(f"Volume '{rdn_value(v)}' of {rdn_value(s)}: no device name left to attach it at"),)
+        return (comment(note_comment(device_note(v, rdn_value(s)))),)
     encryption, notes = _key(m, v)
     return (*notes,
             *((comment(f"{rdn_value(s)} mounts {rdn_value(v)} at {one(v, 'ciamMountPath')} (its own configuration, "
@@ -153,14 +173,10 @@ def template_disks(m, g, root_device, kms):
     policy = next(iter(policies)) if len(policies) == 1 else None
     notes = (*(("#", f"Volume '{rdn_value(v)}' of group {rdn_value(g)} is kept by {kept_by(m, v)}: not rendered "
                      "here") for v in kept),
-             *(("#", f"Volume '{rdn_value(v)}' of group {rdn_value(g)}: no device name left to attach it at")
-               for v in unplaced),
+             *(("#", note_comment(device_note(v, f"group {rdn_value(g)}"))) for v in unplaced),
              *(("#", f"{rdn_value(g)}'s instances mount {rdn_value(v)} at {one(v, 'ciamMountPath')} (their own "
                      "configuration, not Terraform)") for v, _ in placed if one(v, "ciamMountPath")),
-             *((("#", f"{rdn_value(g)}'s disks don't all name one snapshot policy "
-                      f"({', '.join(sorted(r or 'none' for r in policies))}); a launch template tags them alike, so "
-                      "none is tagged SnapshotPolicy: snapshot them with a backup plan on the group's tag Role"),)
-               if len(policies) > 1 else ()))
+             *((("#", note_comment(mixed_policies_note(g, policies))),) if len(policies) > 1 else ()))
     mappings = (_template_disk(m, root_device, boot, kms),
                 *(_template_disk(m, device, v, kms) for v, device in placed))
     return ((*notes, *mappings), disk_tags(boot, tuple((d.removeprefix("/dev/"), v) for v, d in placed)),
@@ -186,15 +202,50 @@ def _days(p):
     return Block((("interval", int(one(p, "ciamRetentionDays"))), ("interval_unit", "DAYS")))
 
 
+def policy_note(p):
+    """The render note of a snapshot policy Lifecycle Manager can't keep as recorded (a blocker), or None: an interval
+    it doesn't offer (not rendered), or more than three copy regions (the rest not rendered)."""
+    every, regions = snapshot_every(p), values(p, "ciamCopyRegion")
+    subject = f"Snapshot policy '{rdn_value(p)}'"
+    if every not in DLM_HOURS:
+        return note("Volumes", "blocker", subject, f"Lifecycle Manager snapshots every 1, 2, 3, 4, 6, 8, 12 or 24 "
+                    f"hours, not {every}: not rendered",
+                    (f"Record an interval Lifecycle Manager takes (ciamSnapshotEvery), {RECORD}",), p.dn)
+    if len(regions) > 3:
+        return note("Volumes", "blocker", subject, f"Lifecycle Manager copies to at most three regions; "
+                    f"{', '.join(regions[3:])} not rendered",
+                    (f"Record at most three copy regions, and copy to the others with an AWS Backup plan, {RECORD}",),
+                    p.dn)
+    return None
+
+
+def volume_notes(m):
+    """The render notes of environment m's volumes and snapshot policies (their renders write their comments): data
+    volumes without a device name (servers', the compute groups' it renders), a group's mixed snapshot policies,
+    policies Lifecycle Manager can't keep."""
+    def group(g):
+        role = one(g, "ciamTargetRole")
+        boot, data = boot_volume(m, role), data_volumes(m, role)
+        owns = [v for v in data if owned(v)]
+        policies = {one(p, "ciamBindingRole") if p is not None else None
+                    for p in (volume_policy(m, v) for v in (*((boot,) if boot is not None else ()),
+                                                             *owns[:len(DEVICES)]))}
+        return (*(device_note(v, f"group {rdn_value(g)}") for v in owns[len(DEVICES):]),
+                *((mixed_policies_note(g, policies),) if len(policies) > 1 else ()))
+    return (*(device_note(v, rdn_value(s)) for s in m.servers
+              for v in data_volumes(m, one(s, "ciamServerRole"))[len(DEVICES):]),
+            *(n for g in compute_groups(m) if not inherited_from(m, g) for n in group(g)),
+            *(n for p in of_class(m, POLICY) for n in (policy_note(p),) if n is not None))
+
+
 def _policy(m, p):
     n, role, every = tf_name(rdn_value(p)), one(p, "ciamBindingRole"), snapshot_every(p)
+    found = policy_note(p)
     if every not in DLM_HOURS:
-        return (comment(f"Snapshot policy '{rdn_value(p)}': Lifecycle Manager snapshots every 1, 2, 3, 4, 6, 8, 12 or "
-                        f"24 hours, not {every}: not rendered"),)
+        return (comment(note_comment(found)),)
     regions = values(p, "ciamCopyRegion")
     copies = [(r, *_copy_key(m, p, r)) for r in regions[:3]]
-    return (*((comment(f"Snapshot policy '{rdn_value(p)}': Lifecycle Manager copies to at most three regions; "
-                       f"{', '.join(regions[3:])} not rendered"),) if len(regions) > 3 else ()),
+    return (*((comment(note_comment(found)),) if len(regions) > 3 else ()),
             *(var for _, _, var in copies if var),
             tf_block("resource", ["aws_dlm_lifecycle_policy", n], [
                 ("description", _DLM_TEXT.sub(" ", f"CIAM snapshots {role} {m.label}")),

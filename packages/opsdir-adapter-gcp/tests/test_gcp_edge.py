@@ -8,7 +8,7 @@ import re
 from opsdir.domains.edge.resolve import Health, tls_level, tls_policy
 from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.edge import TLS_POLICIES, application_lb, armor, network_ddos, rate, servers_backend
-from edge_fixtures import environment, service, spec, subnet
+from edge_fixtures import PROTECTION, environment, service, spec, subnet
 
 EDGE = subnet("subnet-edge", "subnet-edge", "10.70.250.0/23")
 
@@ -47,9 +47,10 @@ def test_without_a_proxy_only_subnet_or_certificate_it_says_what_is_unbound():
 
 
 def test_cloud_armor_rules():
-    out = "\n".join(as_text(armor(environment(), "sso",
-                                  spec(categories=("core-rules", "bot-control"), waf_mode="detect"))))
-    assert out.startswith("# not rendered: bot-control needs reCAPTCHA keys")
+    out = "\n".join(as_text(armor(environment(), "sso", spec(categories=("core-rules", "bot-control"),
+                                                             waf_mode="detect", protection=PROTECTION))))
+    assert out.startswith("# NOTE: protection policy `sso-protection`: bot-control needs reCAPTCHA keys (bot "
+                          "management): not rendered")
     assert 'src_ip_ranges = ["203.0.113.0/24"]' in out and "origin.region_code == 'KP'" in out
     assert "request.path.matches('^/as/token\\\\.oauth2$')" in out and "interval_sec = 300" in out
     assert out.count("evaluatePreconfiguredWaf(") == 9 and out.count("exclusion {") == 9    # one per rule set
@@ -71,3 +72,19 @@ def test_a_product_health_port_is_checked_and_admitted():
     assert "port         = 8085" in check
     rule = out[out.index('"sso_health_checks"'):].split("\n}")[0]
     assert '"8085"' in rule
+
+
+def test_the_edge_notes_are_the_comments_its_service_names_write():
+    from opsdir.core.environment import of_class
+    from opsdir.core.notes import note_comment
+    from opsdir_adapter_gcp.dns import failover_notes
+    from opsdir_adapter_gcp.terraform import _service, edge_notes
+    from edge_fixtures import note_lines, noted_edges
+    _, m = noted_edges()
+    out = "\n".join(x for svc in of_class(m, "ciamServiceName") for x in as_text(_service(m, svc, ())))
+    notes = (*edge_notes(m, ()), *failover_notes(m, ()))
+    assert set(note_lines(out)) == {note_comment(n) for n in notes}
+    assert [(n.severity, n.subject) for n in notes] == [
+        ("note", "service name `svc-l4` (l4.example.test)"),
+        ("blocker", "service name `svc-cdn-in` (cdn-in.example.test)"),
+        ("blocker", "protection policy `p-cdn`"), ("action", "service name `svc-login` (login.example.test)")]

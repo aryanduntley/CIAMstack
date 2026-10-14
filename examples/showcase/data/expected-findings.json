@@ -1235,13 +1235,6 @@
       "cleared_by": null
     },
     {
-      "id": "A133",
-      "area": "Render",
-      "match": "target/prod's render holds",
-      "planted": "the target's render holds NOTE comments no renderer classifies yet (render notes to review)",
-      "cleared_by": null
-    },
-    {
       "id": "A134",
       "area": "Monitoring",
       "match": "target/prod: check image: build it from images/ciam-check/",
@@ -1254,6 +1247,22 @@
       "match": "target/prod: check jobs: whoever may start one can override its image",
       "planted": "starting a check job can run other code with its identity and secrets: keep that right to trusted identities (a render note)",
       "cleared_by": null
+    },
+    {
+      "id": "A136",
+      "area": "Network",
+      "match": "target/prod: forwarder `fwd-corp-ad`: runs on DNS servers 10.100.0.4, 10.100.0.5",
+      "planted": "the target's corporate-AD forwarder runs on the organization's own DNS servers: whoever keeps them sets the forwarding up by hand (a render note)",
+      "cleared_by": null,
+      "raised_by": "CHG-2033"
+    },
+    {
+      "id": "A137",
+      "area": "Quotas",
+      "match": "target/prod: quota request (vcpus): raise it to 96",
+      "planted": "the target's vCPU increase is decided as a request, which azurerm can't file: someone files it through the Quota API or a support request (a render note)",
+      "cleared_by": null,
+      "raised_by": "CHG-2028"
     }
   ]
 }

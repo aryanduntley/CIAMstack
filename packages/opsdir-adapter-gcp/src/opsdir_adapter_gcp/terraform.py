@@ -20,19 +20,22 @@ from opsdir.domains.compute.hosts import group_subnets, own_groups
 from opsdir.domains.compute.workloads import cluster_subnets, kubernetes_note, only_on_kubernetes
 from opsdir.core.manifest import header
 from opsdir.core.notes import note_comment
-from opsdir.domains.infrastructure.firewall import rule_priorities, rule_purpose
+from opsdir.domains.infrastructure.firewall import priority_note, priority_notes, rule_priorities, rule_purpose
 from opsdir.domains.access.evaluations import evaluation_files
-from opsdir.domains.access.workloads import identity_of, workload_identities
+from opsdir.domains.access.workloads import identity_notes, identity_of, workload_identities
 from opsdir.domains.edge.exposure import exposure_unknown, is_internal, service_exposure
 from opsdir.domains.edge.gateways import role_gateway
-from opsdir.domains.edge.resolve import inspected, service_edge
+from opsdir.domains.edge.kubernetes import kubernetes_notes
+from opsdir.domains.edge.resolve import (inspected, inspection_note, inspection_notes, rendered_edges,
+                                        service_edge)
 from opsdir.domains.network.stack import firewall_model
 from opsdir_adapter_gcp.access import ACCESS
-from opsdir_adapter_gcp.databases import render_databases
+from opsdir_adapter_gcp.databases import database_notes, render_databases
 from opsdir_adapter_gcp.storage import kept_buckets, render_object_stores
-from opsdir_adapter_gcp.dns import forwarding_zones, records, service_record
-from opsdir_adapter_gcp.edge import application_lb, network_ddos, servers_backend
-from opsdir_adapter_gcp.firewall_policy import health_check_rule, policy_firewall
+from opsdir_adapter_gcp.dns import failover_notes, forwarder_notes, forwarding_zones, records, service_record
+from opsdir_adapter_gcp.edge import (alb_rendered, application_lb, category_notes, network_ddos, private_cdn_note,
+                                     servers_backend)
+from opsdir_adapter_gcp.firewall_policy import health_check_rule, policy_firewall, policy_notes
 from opsdir_adapter_gcp.health_checks import probe_ranges
 from opsdir_adapter_gcp.identities import identity, project_of
 from opsdir_adapter_gcp.ingress import gateway_front, gateway_negs
@@ -43,7 +46,7 @@ from opsdir_adapter_gcp.names import name_parts
 from opsdir_adapter_gcp.names import NETWORK, PRIORITIES, REGION, label, network_tag
 from opsdir_adapter_gcp.network import render_network
 from opsdir_adapter_gcp.plumbing import network_data
-from opsdir_adapter_gcp.backups import render_backups
+from opsdir_adapter_gcp.backups import backup_notes, render_backups
 from opsdir_adapter_gcp.audit import audit_notes, render_trails
 from opsdir_adapter_gcp.log_sinks import log_sink_notes, render_log_sinks
 from opsdir_adapter_gcp.observability import alert_notes, render_buckets, render_policies
@@ -54,22 +57,22 @@ from opsdir_adapter_gcp.boundary import workload_notes
 from opsdir_adapter_gcp.guardrails import guardrail_notes
 from opsdir_adapter_gcp.security import render_security, security_notes
 from opsdir_adapter_gcp.suppressions import render_suppressions
-from opsdir_adapter_gcp.quotas import render_quota_requests
+from opsdir_adapter_gcp.quotas import quota_notes, render_quota_requests
 from opsdir_adapter_gcp.budgets import budget_notes
-from opsdir_adapter_gcp.volumes import boot_disk, render_snapshot_policies, server_volumes
-from opsdir_adapter_gcp.compute_groups import render_groups
+from opsdir_adapter_gcp.volumes import boot_disk, render_snapshot_policies, server_volumes, volume_notes
+from opsdir_adapter_gcp.compute_groups import group_notes, render_groups
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name, unbound_comments, written
-from .account import project_variable, provider_block, required_providers
+from .account import fips_note, project_variable, provider_block, required_providers
 
 _tag, _label = network_tag, label
 
 
 def _firewall_rule(m, fw, prio, pinned):
     if only_on_kubernetes(m, one(fw, "ciamTargetRole")):
-        return (comment(kubernetes_note(m, f"firewall rule `{rdn_value(fw)}`", one(fw, "ciamTargetRole"))),)
-    note = () if pinned else (
-        comment(f"NOTE: {rdn_value(fw)} has no pinned ciamRulePriority; assigned {prio}. Pin it in the directory."),)
+        return (comment(note_comment(kubernetes_note(m, f"firewall rule `{rdn_value(fw)}`", one(fw, "ciamTargetRole"),
+                                                     fw.dn))),)
+    note = () if pinned else (comment(note_comment(priority_note(m, fw, prio))),)
     return (*note, tf_block("resource", ["google_compute_firewall", tf_name(rdn_value(fw))], [
         ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(fw)}"),
         ("description", f"{rule_purpose(m, fw)} ({rdn_value(fw)})"),
@@ -77,6 +80,17 @@ def _firewall_rule(m, fw, prio, pinned):
         ("allow", Block((("protocol", one(fw, "ciamProtocol", "tcp")), ("ports", values(fw, "ciamPort"))))),
         ("source_ranges", values(fw, "ciamSourceCidr")),
         ("target_tags", [_tag(m, one(fw, "ciamTargetRole"))])]))
+
+
+def firewall_notes(m):
+    """The render notes of environment m's firewall rules given the next free priority: the network firewall policy's
+    (firewall_policy.policy_notes) when that is the network's model, else each VPC rule it renders (not one for a role
+    run only on Kubernetes)."""
+    if firewall_model(m) == "policy":
+        return policy_notes(m)
+    rules = of_class(m, "ciamFirewallRule")
+    return priority_notes(m, rules, rule_priorities(rules, *PRIORITIES),
+                          lambda fw: only_on_kubernetes(m, one(fw, "ciamTargetRole")))
 
 
 def _firewall(m):
@@ -170,7 +184,8 @@ def _service(m, svc, endpoints=()):
     target = one(svc, "ciamTargetRole")
     gw = role_gateway(m, target) if only_on_kubernetes(m, target) else None
     if only_on_kubernetes(m, target) and gw is None:
-        return (comment(kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})", target)),)
+        return (comment(note_comment(kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})",
+                                                     target, svc.dn))),)
     if service_exposure(svc) is None:
         return (comment(exposure_unknown(svc)),)
     internal = is_internal(svc)
@@ -206,7 +221,7 @@ def _service(m, svc, endpoints=()):
                                          (data, address), placement[1:], admit), *record)
     (check, kind), tuning = _l4_tuning(spec) if spec is not None else ((None, ()), ())
     health = kind[0] if kind else ("tcp_health_check", ())
-    blind = (comment("the protection policy's request inspection needs TLS terminated at the edge; not rendered"),) \
+    blind = (comment(note_comment(inspection_note(m, svc, spec))),) \
         if spec is not None and inspected(spec) else ()
     capacity = () if internal else (("capacity_scaler", 1.0),)
     forwarded = ((("ports", ports),) if len(ports) <= 5 else
@@ -291,7 +306,7 @@ def render_files(m, services):
            *render_policies(m),
            *render_checks(m, endpoints), *monitors, *render_security(m),
            *discovery, *render_suppressions(m),
-           *render_quota_requests(m), *budget_notes(m),
+           *render_quota_requests(m), *(comment(note_comment(n)) for n in budget_notes(m)),
            *_references(m))
     providers = (
         required_providers(archive=bool(sources)),
@@ -314,12 +329,29 @@ def render(m, services):
     return written(render_files(m, services))
 
 
+def edge_notes(m, endpoints):
+    """The render notes of environment m's service names' edges, each once: passthrough load balancers asked to
+    inspect requests (core edge.resolve inspection_notes), CDNs before private addresses (edge.private_cdn_note), and
+    the firewall categories Cloud Armor can't render (edge.category_notes) in the policies of the Application Load
+    Balancers it renders (before a cluster gateway, layer 7 or with Cloud CDN; edge.alb_rendered)."""
+    albs = tuple((svc, spec) for svc, spec, gw in rendered_edges(m, endpoints)
+                 if spec is not None and (gw is not None or spec.layer7 or spec.cdn))
+    return tuple(dict.fromkeys((
+        *inspection_notes(m, endpoints), *(private_cdn_note(m, svc) for svc, spec in albs
+                                           if spec.cdn and is_internal(svc)),
+        *(n for svc, spec in albs if inspected(spec) and alb_rendered(m, svc, spec) for n in category_notes(spec)))))
+
+
 def render_notes(m, services):
     """Adapter notes (core.notes, flow 43): what environment m's Google Cloud render leaves out or to a person, as
     data, each written as its comment: the synthetic checks it doesn't render (uptime checks, synthetic monitors), then
     the security services', audit trails', data discovery's, guardrails', Assured Workloads workload's, alert rules'
-    and log shipping's (sinks, the Ops Agent, containers) notes."""
+    identities' (core access.workloads), Kubernetes-only roles' (core edge.kubernetes) and unpinned rule priorities'
+    notes, and log shipping's (sinks, the Ops Agent, containers)."""
     endpoints = services.endpoints if services else ()
     return (*uptime_notes(m, endpoints), *monitor_notes(m, endpoints), *security_notes(m), *audit_notes(m),
             *discovery_notes(m), *guardrail_notes(m), *workload_notes(m), *alert_notes(m),
-            *(log_sink_notes(m, services) if services else ()))
+            *identity_notes(m, ACCESS), *kubernetes_notes(m, firewall=firewall_model(m) != "policy"),
+            *firewall_notes(m), *budget_notes(m), *((fips_note(m),) if fips_note(m) else ()), *forwarder_notes(m),
+            *database_notes(m), *backup_notes(m), *volume_notes(m), *group_notes(m), *edge_notes(m, endpoints),
+            *failover_notes(m, endpoints), *quota_notes(m), *(log_sink_notes(m, services) if services else ()))

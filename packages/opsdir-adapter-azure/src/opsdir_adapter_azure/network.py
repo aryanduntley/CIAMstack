@@ -13,15 +13,26 @@ from opsdir.domains.network.stack import (allowlist, egress_firewalls, elsewhere
                                           reached, subnets)
 from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from .identities import LOC, RG
-from .account import tagged
+from .account import government, tagged
 
 # the private link subresource (group id) a private endpoint to each kind of service connects to, and the private DNS
-# zone that answers it
+# zone that answers it (Azure's public cloud)
 SUBRESOURCES = {"secrets": ("vault", "privatelink.vaultcore.azure.net"),
                 "keys": ("vault", "privatelink.vaultcore.azure.net"),
                 "object-storage": ("blob", "privatelink.blob.core.windows.net"),
                 "messaging": ("namespace", "privatelink.servicebus.windows.net"),
                 "registry": ("registry", "privatelink.azurecr.io")}
+# the zone in Azure Government: Microsoft's private endpoint DNS zone values, Government section (research 2909;
+# Container Registry's data endpoints answer in {region}.privatelink.azurecr.us too)
+GOV_ZONES = {"secrets": "privatelink.vaultcore.usgovcloudapi.net", "keys": "privatelink.vaultcore.usgovcloudapi.net",
+             "object-storage": "privatelink.blob.core.usgovcloudapi.net",
+             "messaging": "privatelink.servicebus.usgovcloudapi.net", "registry": "privatelink.azurecr.us"}
+
+
+def private_dns_zone(m, what):
+    """The private DNS zone that answers a private endpoint to a kind of service in environment m's cloud (Azure
+    Government's in usgovernment)."""
+    return GOV_ZONES[what] if government(m) else SUBRESOURCES[what][1]
 
 
 def binding_tags(b):
@@ -53,7 +64,7 @@ def _endpoint(m, p, name, target, group, sub):
     dns = (() if one(p, "ciamPrivateDns") != "TRUE" else
            (("private_dns_zone_group", Block((("name", "default"), ("private_dns_zone_ids", [zone])))),) if zone else
            (("#", "UNBOUND: private DNS asked, but no private DNS zone ref (zone "
-                  f"{one(p, 'ciamDnsZone') or SUBRESOURCES[one(p, 'ciamPrivateService')][1]})"),))
+                  f"{one(p, 'ciamDnsZone') or private_dns_zone(m, one(p, 'ciamPrivateService'))})"),))
     ip = one(p, "ciamFrontendIp")
     return tf_block("resource", ["azurerm_private_endpoint", name], [
         ("name", f"pe-ciam-{rdn_value(m.env)}-{rdn_value(p)}"), ("location", LOC), ("resource_group_name", RG),

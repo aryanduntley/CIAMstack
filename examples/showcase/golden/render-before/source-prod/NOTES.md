@@ -5,7 +5,7 @@
 -->
 # Render notes: source/prod
 
-**1 blocker, 1 action, 0 notes, 0 to review**
+**1 blocker, 8 actions, 0 notes, 0 to review**
 
 ## Blockers
 
@@ -26,3 +26,52 @@
 - **How:**
   1. Add these statements to bucket example-aero-ciam-prod-cloudtrail's policy: [{"Sid":"AWSCloudTrailAclCheck","Effect":"Allow","Principal":{"Service":"cloudtrail.amazonaws.com"},"Action":"s3:GetBucketAcl","Resource":"arn:aws:s3:::example-aero-ciam-prod-cloudtrail","Condition":{"StringEquals":{"aws:SourceArn":"arn:aws:cloudtrail:us-east-1:111122223333:trail/ciam-prod"}}},{"Sid":"AWSCloudTrailWrite","Effect":"Allow","Principal":{"Service":"cloudtrail.amazonaws.com"},"Action":"s3:PutObject","Resource":"arn:aws:s3:::example-aero-ciam-prod-cloudtrail/AWSLogs/111122223333/*","Condition":{"StringEquals":{"aws:SourceArn":"arn:aws:cloudtrail:us-east-1:111122223333:trail/ciam-prod","s3:x-amz-acl":"bucket-owner-full-control"}}}]
   2. Then apply the trail: CloudTrail checks the bucket's policy when the trail is created
+
+### asg-pf-engine (Compute)
+
+- **What:** exists: applying gives it launch template ciam-prod-pf-engine, which its instances run when they are next replaced
+- **Where:** terraform/main.tf:733
+- **Who:** ciam-platform
+- **How:** After applying, start an instance refresh on autoscaling group ciam-prod-pf-engine so its instances run the new template
+
+### Shield Advanced (Edge)
+
+- **What:** its protections need the account's subscription
+- **Where:** terraform/main.tf:1356, terraform/main.tf:1658
+- **Who:** ciam-platform
+- **How:** Before applying, make sure the account subscribes to AWS Shield Advanced (a paid subscription with a one-year commitment): the protections fail without it
+
+### guardduty's findings to security-findings (Security)
+
+- **What:** its resource policy must let events.amazonaws.com deliver to it
+- **Where:** terraform/main.tf:2331; source/prod
+- **Who:** ciam-platform
+- **How:** Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security's access policy (aws:SourceArn the rule's ARN)
+
+### guardduty's incidents to security-incidents (Security)
+
+- **What:** its resource policy must let events.amazonaws.com deliver to it
+- **Where:** terraform/main.tf:2360; source/prod
+- **Who:** ciam-platform
+- **How:** Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security-incidents's access policy (aws:SourceArn the rule's ARN)
+
+### inspector's findings to security-findings (Security)
+
+- **What:** its resource policy must let events.amazonaws.com deliver to it
+- **Where:** terraform/main.tf:2386; source/prod
+- **Who:** ciam-platform
+- **How:** Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security's access policy (aws:SourceArn the rule's ARN)
+
+### macie-backups's findings to security-findings (Security)
+
+- **What:** its resource policy must let events.amazonaws.com deliver to it
+- **Where:** terraform/main.tf:2528; source/prod
+- **Who:** ciam-platform
+- **How:** Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security's access policy (aws:SourceArn the rule's ARN)
+
+### security-hub's findings to security-findings (Security)
+
+- **What:** its resource policy must let events.amazonaws.com deliver to it
+- **Where:** terraform/main.tf:2426; source/prod
+- **Who:** ciam-platform
+- **How:** Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security's access policy (aws:SourceArn the rule's ARN)

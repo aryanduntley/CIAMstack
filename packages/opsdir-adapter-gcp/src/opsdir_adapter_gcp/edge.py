@@ -16,6 +16,7 @@ from collections import namedtuple
 
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import by_role
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.edge.exposure import is_internal
 from opsdir.domains.edge.resolve import inspected, path_regex, tls_policy
 from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
@@ -79,6 +80,16 @@ def _exclusions(spec, category, rule_set):
                 (_EXCLUDED[x.part], Block((("operator", "EQUALS"), ("value", x.name))))))) for x in excluded))))
 
 
+def category_notes(spec):
+    """The render notes (blockers) of a protection policy's firewall categories Cloud Armor has no rule for here
+    (_NOT_RENDERED: what each needs): what the policy declares isn't enforced on Google Cloud."""
+    return tuple(note("Edge", "blocker", f"protection policy `{rdn_value(spec.protection)}`",
+                      f"{c} {_NOT_RENDERED[c]}: not rendered",
+                      (f"Protect against it another way on Google Cloud, by hand, or drop the category from the policy "
+                       f"(ciamWafCategory), {RECORD}",), spec.protection.dn)
+                 for c in spec.categories if not WAF_RULES.get(c))
+
+
 def armor(m, n, spec, world=False):
     """The Cloud Armor policy a protection policy asks for (the backend service names it) and its rules: regional, or
     global (world) for a global load balancer, where application-advanced DDoS protection turns on Adaptive
@@ -102,8 +113,7 @@ def armor(m, n, spec, world=False):
         for rule_set in WAF_RULES.get(c, ()):
             rules.append(("deny(403)", _expr(f"evaluatePreconfiguredWaf('{rule_set}')"),
                           _exclusions(spec, c, rule_set)))
-    missing = [f"{c} {_NOT_RENDERED[c]}" for c in spec.categories if not WAF_RULES.get(c)]
-    return (*(comment(f"not rendered: {x}") for x in missing),
+    return (*(comment(note_comment(x)) for x in category_notes(spec)),
             tf_block("resource", [_kind(world, "security_policy"), n], [
                 ("name", f"ciam-{rdn_value(m.env)}-{n}"), *_where(world), ("type", "CLOUD_ARMOR"),
                 *((("adaptive_protection_config", Block((("layer_7_ddos_defense_config",
@@ -193,6 +203,21 @@ def _global_address(svc, n, ip):
             ref(f"data.google_compute_global_address.{n}.address"))
 
 
+def private_cdn_note(m, svc):
+    """The render note (a blocker) of a service name with a private address whose protection policy puts a CDN in
+    front: Cloud CDN serves external load balancers only, so neither its load balancer nor the CDN is rendered."""
+    return note("Edge", "blocker", f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})", "Cloud CDN serves "
+                "external load balancers only and its frontend address is private: not rendered",
+                (f"Front it without a CDN (its protection policy's ciamCdn), or give it a public address, {RECORD}",),
+                svc.dn, m.label)
+
+
+def alb_rendered(m, svc, spec):
+    """Whether application_lb renders a service name's load balancer (and its Cloud Armor policy): not with a CDN
+    before a private address (private_cdn_note), nor a regional one without a proxy-only subnet (UNBOUND)."""
+    return not (spec.cdn and is_internal(svc)) and (spec.cdn or bool(by_role(m, EDGE_SUBNET)))
+
+
 def application_lb(m, svc, spec, backend, frontend, placement, admit=None):
     """An Application Load Balancer for a service name whose TLS terminates at the edge, and the Cloud Armor policy its
     protection policy asks for: regional, beside the proxy-only subnet; global when a CDN fronts it (Cloud CDN is the
@@ -205,8 +230,7 @@ def application_lb(m, svc, spec, backend, frontend, placement, admit=None):
     internal = is_internal(svc)
     world = spec.cdn
     if world and internal:
-        return (comment(f"`{one(svc, 'ciamFqdn')}`: Cloud CDN serves external load balancers only; its frontend "
-                        "address is private"),)
+        return (comment(note_comment(private_cdn_note(m, svc))),)
     scheme = "INTERNAL_MANAGED" if internal else "EXTERNAL_MANAGED"
     edge = by_role(m, EDGE_SUBNET)
     if not edge and not world:

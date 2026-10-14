@@ -12,6 +12,7 @@ from ...core.changeset import set_values
 from ...core.directory import follow, one, rdn_value, within
 from ...core.environment import of_class
 from ...core.findings import Fix, Requirement, findings, responsible
+from ...core.notes import RECORD, note
 
 
 def rule_priorities(rules, first, step, last):
@@ -27,6 +28,21 @@ def rule_priorities(rules, first, step, last):
         return {**assigned, fw.dn: (prio, False)}, used | {prio}
 
     return reduce(assign, rules, ({}, pinned))[0]
+
+
+def priority_note(m, fw, prio):
+    """The render note of a firewall rule a renderer gave the next free priority (prio): a plain note, since the
+    planner's priority check raises it as an action and offers the fix pinning it."""
+    return note("Network", "note", rdn_value(fw), f"has no pinned ciamRulePriority; assigned {prio}. Pin it in the "
+                "directory.",
+                (f"Pin ciamRulePriority {prio} on {rdn_value(fw)} after a fresh import of the environment's rules (the "
+                 f"planner's fix offers it), {RECORD}",), fw.dn, m.label)
+
+
+def priority_notes(m, rules, prios, skip=lambda fw: False):
+    """The priority_note of each of environment m's rules its renderer gave a priority (prios: rule_priorities) that
+    isn't pinned and that it renders (skip: those it doesn't)."""
+    return tuple(priority_note(m, fw, prios[fw.dn][0]) for fw in rules if not prios[fw.dn][1] and not skip(fw))
 
 
 def rule_purpose(m, fw):

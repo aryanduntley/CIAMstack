@@ -8,7 +8,8 @@ import re
 
 from opsdir.core.directory import is_a, one, rdn_of, rdn_value
 from opsdir.core.environment import environment_of, of_class
-from opsdir.domains.access.workloads import principal_label
+from opsdir.core.notes import note_comment
+from opsdir.domains.access.workloads import pod_notes, principal_label
 from opsdir.domains.data.storage import kept_store
 from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from .account import tagged
@@ -49,7 +50,8 @@ def scope(b):
 
 
 def notes(w):
-    return tuple(comment(f"NOTE: {note}") for note in w.notes)
+    """The comments of a workload identity's render notes (core access.workloads: its grant notes)."""
+    return tuple(comment(note_comment(n)) for n in w.notes)
 
 
 def assignments(w, principal_id):
@@ -101,9 +103,7 @@ def federated_credentials(w):
     workload identity: its cluster's OIDC issuer, subject system:serviceaccount:<namespace>:<name>); notes for
     service accounts whose cluster the environment doesn't bind."""
     n = tf_name(w.identity_role)
-    return (*(comment(f"NOTE: principal {principal_label(w)}: service account {p.namespace}/{p.service_account} "
-                      "runs in a cluster this environment doesn't bind, so nothing trusts it")
-              for p in w.pods if p.cluster is None),
+    return (*(comment(note_comment(x)) for x in pod_notes(w)),
             *(federated_credential(f"{n}_{tf_name(p.namespace)}_{tf_name(p.service_account)}",
                                    f"{w.name}-{p.namespace}-{p.service_account}", n,
                                    ref(f"data.azurerm_kubernetes_cluster.{_aks(p.cluster)}.oidc_issuer_url"),

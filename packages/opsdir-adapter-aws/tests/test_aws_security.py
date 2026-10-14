@@ -73,7 +73,7 @@ def test_security_hub_subscribes_to_the_standards_it_has_and_names_the_rest():
             "nist-800-53/v/5.0.0") in out
     assert "aws-foundational-security-best-practices/v/1.0.0" in out
     assert "standards/nist-800-171/v/2.0.0" in out and "describe-standards" not in out
-    assert "# hub: Security Hub has no standard for cmmc-l2: assess it another way" in out
+    assert "# NOTE: hub: Security Hub has no standard for cmmc-l2: assess it another way" in out
 
 
 def test_a_service_someone_else_keeps_renders_too_for_its_keeper():
@@ -402,8 +402,8 @@ def test_an_organization_wide_service_in_every_region_is_registered_and_configur
 def _noted(notes, items):
     """Whether each note's comment is in the rendered items and every NOTE comment there is a note's (flow 43)."""
     from opsdir.core.notes import note_comment
-    return sorted(f"# {note_comment(n)}" for n in notes) == sorted(
-        x for x in as_text(items) if isinstance(x, str) and x.startswith("# NOTE:"))
+    lines = [x.strip() for t in as_text(items) if isinstance(t, str) for x in t.splitlines()]
+    return {f"# {note_comment(n)}" for n in notes} == {x for x in lines if x.startswith("# NOTE:")}
 
 
 def test_what_a_service_s_render_leaves_out_is_a_render_note_written_as_its_comment():
@@ -428,3 +428,15 @@ def test_what_a_service_s_render_leaves_out_is_a_render_note_written_as_its_comm
     (org,) = security_notes(m)
     assert _noted((org,), render_security(m)) and (org.severity, org.scope) == ("blocker", "the organization")
     assert org.how == ("Record ciamSecurityAdminRef on alpha, under an approved change, and re-render",)
+
+
+def test_a_route_this_render_makes_is_an_action_for_its_target_s_policy():
+    from opsdir_adapter_aws.security import security_notes
+    _, alpha, _ = model(alpha=(BUCKET, TOPIC, svc("guardduty", "threat-detection", ciamFindingsRole="security-alerts"),
+                               svc("hub", "posture", ciamComplianceStandard="cmmc-l2")), tree=OWNERS)
+    notes = {n.subject: n for n in security_notes(alpha)}
+    assert _noted(notes.values(), render_security(alpha))
+    delivery = notes["guardduty's findings to security-alerts"]
+    assert delivery.severity == "action" and delivery.how[0].startswith(f"Allow events.amazonaws.com sns:Publish in "
+                                                                       f"topic {TOPIC_ARN}'s access policy")
+    assert notes["hub"].severity == "action"

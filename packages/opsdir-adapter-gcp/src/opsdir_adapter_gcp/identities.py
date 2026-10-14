@@ -7,7 +7,8 @@ landing.py) use them. Pure.
 import re
 
 from opsdir.core.directory import one
-from opsdir.domains.access.workloads import principal_label
+from opsdir.core.notes import note_comment
+from opsdir.domains.access.workloads import pod_notes, principal_label
 from opsdir_adapter_gcp.names import name_parts
 from opsdir_format_terraform.hcl import comment, ref, tf_block, tf_name
 from .account import project_id
@@ -25,7 +26,8 @@ def account(w):
 
 
 def notes(w):
-    return tuple(comment(f"NOTE: {note}") for note in w.notes)
+    """The comments of a workload identity's render notes (core access.workloads: its grant notes)."""
+    return tuple(comment(note_comment(n)) for n in w.notes)
 
 
 def sa_member(n):
@@ -75,9 +77,7 @@ def pod_members(m, w):
     the cluster's (its provider ref's, else the environment's); notes for those whose cluster isn't bound."""
     n = tf_name(w.identity_role)
     pool = lambda p: f"{cluster_parts(p.cluster)[0] or project_id(m) or ref('var.project_id')}.svc.id.goog"
-    return (*(comment(f"NOTE: principal {principal_label(w)}: service account {p.namespace}/{p.service_account} "
-                      "runs in a cluster this environment doesn't bind, so nothing trusts it")
-              for p in w.pods if p.cluster is None),
+    return (*(comment(note_comment(x)) for x in pod_notes(w)),
             *(tf_block("resource", ["google_service_account_iam_member",
                                     f"{n}_{tf_name(p.namespace)}_{tf_name(p.service_account)}"], [
                    ("service_account_id", ref(f"google_service_account.{n}.name")),

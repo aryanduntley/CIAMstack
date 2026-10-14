@@ -44,7 +44,7 @@ def test_a_group_is_an_instance_template_with_its_roles_disks_and_a_regional_man
                  'disk { boot = false auto_delete = true device_name = "vol-app-data" disk_type = "hyperdisk-balanced" '
                  "disk_size_gb = 200 provisioned_iops = 6000 provisioned_throughput = 250 resource_policies = "
                  "[google_compute_resource_policy.snapshots_daily.id]",
-                 "# vol-app-data: hyperdisk-balanced needs a machine series that takes Hyperdisk",
+                 "# NOTE: vol-app-data: hyperdisk-balanced needs a machine series that takes Hyperdisk",
                  "network_interface { subnetwork = data.google_compute_subnetwork.subnet_web.self_link }",
                  'labels = { role = "app" bindingrole = "compute-app" managed_by = "opsdir" }',
                  'resource "google_compute_region_instance_group_manager" "mig_app" { name = "ciam-prod-mig-app" '
@@ -66,7 +66,7 @@ def test_an_adopted_group_is_imported_and_its_autoscaler_said():
     out = _render(KEY_ENTRY, adopted)
     assert 'name = "legacy-app"' in out and "target_size = 1" in out
     assert _flat(f'import {{ to = google_compute_region_instance_group_manager.mig_app id = "{ref}" }}') in out
-    assert "# mig-app exists: an autoscaler it already has must be imported by hand" in out
+    assert "# NOTE: mig-app: exists: an autoscaler it already has must be imported by hand" in out
 
 
 def _state(*resources):

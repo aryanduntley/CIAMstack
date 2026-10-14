@@ -18,6 +18,7 @@ from decimal import Decimal, InvalidOperation
 
 from opsdir.core.directory import get, one, rdn_value
 from opsdir.core.inventory import of_types, resource
+from opsdir.core.notes import note, note_comment
 from opsdir.domains.estate.budgets import budget_channel, budgets, currency, thresholds
 from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_name
 
@@ -29,8 +30,6 @@ PERIOD_OF = {"Monthly": "monthly", "BillingMonth": "monthly", "Quarterly": "quar
              "Annually": "annually", "BillingAnnual": "annually"}
 NOTIFIED = (("ciamActualThreshold", "Actual"), ("ciamForecastThreshold", "Forecasted"))
 MAX_NOTIFICATIONS = 5
-GOV_NOTE = (comment("Azure Government: Cost Management budgets serve Enterprise Agreement and pay-as-you-go "
-                    "subscriptions, not CSP ones"))
 
 
 def _action_group(m, b):
@@ -56,11 +55,28 @@ def _notifications(m, b):
                                          contact))) for p, kind in wanted[:MAX_NOTIFICATIONS]), notes
 
 
+def gov_note(m):
+    """The render note of environment m's budgets in Azure Government, where Cost Management budgets serve Enterprise
+    Agreement and pay-as-you-go subscriptions, not CSP ones (an action: confirm the subscription's offer), or None."""
+    if one(m.cloud, "ciamCloudEnvironment") != "usgovernment" or not budgets(m):
+        return None
+    return note("Budgets", "action", "Azure Government", "Cost Management budgets serve Enterprise Agreement and "
+                "pay-as-you-go subscriptions, not CSP ones",
+                ("Check the subscription's offer: under a CSP agreement, set the budgets with the CSP partner "
+                 "instead",),
+                None, m.label)
+
+
+def budget_notes(m):
+    """The render notes of environment m's budgets (render_budgets writes their comments)."""
+    return tuple(n for n in (gov_note(m),) if n is not None)
+
+
 def _budget(m, b):
     cn = rdn_value(b)
     notifications, notes = _notifications(m, b)
-    gov = one(m.cloud, "ciamCloudEnvironment") == "usgovernment"
-    return (*notes, *((GOV_NOTE,) if gov else ()),
+    gov = gov_note(m)
+    return (*notes, *((comment(note_comment(gov)),) if gov else ()),
             *((comment(f"budget {cn}: Azure counts it in the billing account's currency, not {currency(b)}"),)
               if one(b, "ciamCurrency") and currency(b) != "USD" else ()),
             tf_block("resource", [BUDGET, tf_name(cn)], [

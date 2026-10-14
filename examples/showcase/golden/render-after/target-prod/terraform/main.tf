@@ -70,7 +70,7 @@ resource "azurerm_network_security_rule" "fw_admin" {
   network_security_group_name = azurerm_network_security_group.ds.name
 }
 
-# NOTE: firewall rule `fw-apps-public` reaches role `ig`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+# NOTE: firewall rule `fw-apps-public`: reaches role `ig`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
 
 resource "azurerm_network_security_rule" "fw_checks_ds" {
   name                        = "fw-checks-ds"
@@ -117,7 +117,7 @@ resource "azurerm_network_security_rule" "fw_idm_sync" {
   network_security_group_name = azurerm_network_security_group.ds.name
 }
 
-# NOTE: firewall rule `fw-login-public` reaches role `am`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+# NOTE: firewall rule `fw-login-public`: reaches role `am`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
 
 resource "azurerm_network_security_rule" "fw_mro_batch" {
   name                        = "fw-mro-batch"
@@ -134,9 +134,9 @@ resource "azurerm_network_security_rule" "fw_mro_batch" {
   network_security_group_name = azurerm_network_security_group.ds.name
 }
 
-# NOTE: firewall rule `fw-pf-cluster` reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+# NOTE: firewall rule `fw-pf-cluster`: reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
 
-# NOTE: firewall rule `fw-pf-cluster-admin` reaches role `pf-admin`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+# NOTE: firewall rule `fw-pf-cluster-admin`: reaches role `pf-admin`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
 
 resource "azurerm_network_security_rule" "fw_pf_ds_svc" {
   name                        = "fw-pf-ds-svc"
@@ -168,7 +168,7 @@ resource "azurerm_network_security_rule" "fw_replication" {
   network_security_group_name = azurerm_network_security_group.ds.name
 }
 
-# NOTE: firewall rule `fw-sso-public` reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+# NOTE: firewall rule `fw-sso-public`: reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
 
 resource "azurerm_network_security_rule" "fw_supplier_portal" {
   name                        = "fw-supplier-portal"
@@ -1530,7 +1530,7 @@ resource "azurerm_storage_container" "backup" {
   }
 }
 
-# Forwarder `fwd-corp-ad` runs on DNS servers 10.100.0.4, 10.100.0.5 (virtual machines), not the managed resolver: they forward corp.example-aero.internal to 10.40.0.53, 10.40.0.54 and everything else to the platform's resolver, and the network's DNS servers point at them; not managed here
+# NOTE: forwarder `fwd-corp-ad`: runs on DNS servers 10.100.0.4, 10.100.0.5 (virtual machines), not the managed resolver: they forward corp.example-aero.internal to 10.40.0.53, 10.40.0.54 and everything else to the platform's resolver, and the network's DNS servers point at them; not managed here
 
 data "azurerm_subscription" "current" {
 }
@@ -2830,7 +2830,7 @@ resource "azurerm_consumption_budget_resource_group" "monthly_spend" {
   }
 }
 
-# Quota request (vcpus): raise it to 96 for subscription 00000000-0000-0000-0000-000000000000 in eastus2 through the Quota API (`az quota update`, Microsoft.Quota) or a support request: azurerm has no resource for it; Microsoft's pages don't say whether the Quota API serves Azure Government
+# NOTE: quota request (vcpus): raise it to 96 for subscription 00000000-0000-0000-0000-000000000000 in eastus2: azurerm has no resource for it
 
 data "azurerm_key_vault_secrets" "kv_ciam_prod" {
   # names only: no secret value enters Terraform state

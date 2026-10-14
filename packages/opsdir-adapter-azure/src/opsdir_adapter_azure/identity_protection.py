@@ -41,7 +41,7 @@ from opsdir.domains.estate.risk_policies import (policy_advice, policy_mode, pol
 from opsdir.domains.estate.security import findings_destination, security_services
 from opsdir_format_terraform.hcl import Block, comment, tf_block, tf_name
 from opsdir_format_terraform.state import first_block
-from .account import government_unstated
+from .account import government_unstated, unstated_note
 from .observability import workspace_id
 
 CA_POLICY, RISK_EXPORT = "azuread_conditional_access_policy", "azurerm_monitor_aad_diagnostic_setting"
@@ -93,12 +93,30 @@ def _unexpressed(m, s):
     return tuple(p for p in risk_policies(s) if p.grant not in GRANTS) if renders(m, s) else ()
 
 
+EXPORT_WHAT = "exporting Microsoft Entra logs by a diagnostic setting (microsoft.aadiam)"
+
+
+def policy_notes(m, s):
+    """The render notes of a service's risk policies: what keeps them from being rendered (blockers: the record's to
+    change), and advice on complete ones (actions: a policy could lock everyone out)."""
+    cn, complete = rdn_value(s), renders(m, s)
+    policies = tuple(p for p in risk_policies(s) if p.grant in GRANTS) if complete else ()
+    return (*(note("Security", "blocker", cn, f"risk policies not rendered: {p}",
+                   (f"Correct the service's risk policy fields (ciamRiskPolicy, ciamPolicyCovers, ciamPolicyExcludes) "
+                    f"as it says, {RECORD}",), s.dn, m.label) for p in policy_problems(m, s)),
+            *(note("Security", "action", cn, a, (f"Exclude the break-glass accounts (ciamPolicyExcludes), {RECORD}",),
+                   s.dn, m.label) for a in (policy_advice(m, s) if policies else ())))
+
+
 def identity_notes(m, s):
     """The render notes of a kept service's identity protection (render_identity_protection writes their comments):
-    the risk-log export's and each risk policy it can't express; () for one not watching identity."""
+    the risk-log export's (in Azure Government, also its unstated availability), the risk policies' (policy_notes)
+    and each risk policy it can't express; () for one not watching identity."""
     if not watches_identity(s):
         return ()
-    return tuple(n for n in (export_note(m, s), *(remediation_note(m, s, p) for p in _unexpressed(m, s)))
+    exported = workspace_id(m, findings_destination(m, s))
+    return tuple(n for n in (export_note(m, s), unstated_note(m, EXPORT_WHAT) if exported else None,
+                             *policy_notes(m, s), *(remediation_note(m, s, p) for p in _unexpressed(m, s)))
                  if n is not None)
 
 
@@ -108,7 +126,7 @@ def risk_export(m, s):
     cn, workspace = rdn_value(s), workspace_id(m, findings_destination(m, s))
     if not workspace:
         return (comment(note_comment(export_note(m, s))),)
-    return (*government_unstated(m, "exporting Microsoft Entra logs by a diagnostic setting (microsoft.aadiam)"),
+    return (*government_unstated(m, EXPORT_WHAT),
             tf_block("resource", [RISK_EXPORT, tf_name(f"{cn}_identity_risk")], [
         ("name", f"{cn}-identity-risk"), ("log_analytics_workspace_id", workspace),
         *(("enabled_log", Block((("category", c),))) for c in RISK_CATEGORIES)]),)
@@ -166,8 +184,7 @@ def render_identity_protection(m, s):
             comment(f"{cn}: identity: Microsoft Entra ID Protection (Defender for Cloud has no plan for identity); its "
                     "risk signals and policies need Entra ID P2"),
             *risk_export(m, s),
-            *(comment(f"{cn}: risk policies not rendered: {p}") for p in policy_problems(m, s)),
-            *(comment(f"{cn}: {a}") for a in (policy_advice(m, s) if policies else ())),
+            *(comment(note_comment(n)) for n in policy_notes(m, s)),
             *(comment(note_comment(remediation_note(m, s, p))) for p in unexpressed),
             *policies)
 

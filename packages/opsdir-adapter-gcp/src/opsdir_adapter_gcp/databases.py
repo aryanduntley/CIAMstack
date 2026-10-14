@@ -27,6 +27,7 @@ normalized to it (sql_instance). The root password (root_password) is never read
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import UNBOUND, bound, of_class
 from opsdir.core.inventory import of_types, resource
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.data.naming import DEFAULT_PORTS
 from opsdir.domains.data.databases import major_version
 from opsdir.domains.network.plumbing import adopted
@@ -86,6 +87,68 @@ def _uri(m, role, what):
         if uri.startswith(UNBOUND) else (uri, None)
 
 
+def password_note(m, b):
+    """The render note of a database whose credential is a regional Secret Manager secret, which has no ephemeral
+    read (an action: set the administrator password by hand), or None."""
+    uri = _uri(m, one(b, "ciamDbCredentialRole"), "credential")[0]
+    if uri is None or "locations" not in name_parts(uri.split("://", 1)[1]):
+        return None
+    return note("Databases", "action", uri, "a regional secret has no ephemeral read; set the password by hand",
+                (f"Set database {rdn_value(b)}'s administrator password from {uri} by hand (gcloud sql users "
+                 "set-password), or record a global secret",), b.dn)
+
+
+def key_note(m, b):
+    """The render note of a database encrypted with a customer key (an action: the Cloud SQL service agent needs the
+    key's encrypter/decrypter role), or None."""
+    if _uri(m, one(b, "ciamEncryptedByRole"), "key")[0] is None:
+        return None
+    return note("Databases", "action", rdn_value(b), "the Cloud SQL service agent (service-<project number>@gcp-sa-"
+                "cloud-sql.iam.gserviceaccount.com) needs roles/cloudkms.cryptoKeyEncrypterDecrypter on its key",
+                ("Grant the Cloud SQL service agent roles/cloudkms.cryptoKeyEncrypterDecrypter on the key, by its "
+                 "keeper, before applying",), b.dn)
+
+
+def copies_note(b):
+    """The render note of a database recording more than one copy region (a blocker: Cloud SQL keeps backups in one
+    location, the others aren't rendered), or None."""
+    copies = values(b, "ciamCopyRegion")
+    if len(copies) <= 1:
+        return None
+    return note("Databases", "blocker", rdn_value(b), f"Cloud SQL keeps backups in one location: "
+                f"{', '.join(copies[1:])} not rendered",
+                (f"Record one copy region, and copy to {', '.join(copies[1:])} another way (exports, a Backup and DR "
+                 f"plan), {RECORD}",), b.dn)
+
+
+def engine_note(b):
+    """The render note of a database running an engine Cloud SQL doesn't (a blocker: not rendered), or None."""
+    engine = one(b, "ciamDbEngine")
+    if engine in PORTS:
+        return None
+    return note("Databases", "blocker", f"Database '{rdn_value(b)}'", f"runs {engine}, which Cloud SQL doesn't: not "
+                "rendered", (f"Record an engine Cloud SQL runs (PostgreSQL, MySQL, SQL Server), {RECORD}",), b.dn)
+
+
+def version_note(b):
+    """The render note of a database with no engine version Cloud SQL runs (a blocker: database_version is required),
+    or None."""
+    engine = one(b, "ciamDbEngine")
+    if engine not in PORTS or database_version(engine, one(b, "ciamDbEngineVersion"), one(b, "ciamDbEdition")):
+        return None
+    return note("Databases", "blocker", rdn_value(b), "no ciamDbEngineVersion Cloud SQL runs: set database_version",
+                (f"Record an engine version Cloud SQL runs (ciamDbEngineVersion), {RECORD}",), b.dn)
+
+
+def database_notes(m):
+    """The render notes of environment m's managed databases (render_databases writes their comments)."""
+    def of(b):
+        if engine_note(b):
+            return (engine_note(b),)
+        return (version_note(b), copies_note(b), key_note(m, b), password_note(m, b))
+    return tuple(n for b in of_class(m, "ciamDatabase") for n in of(b) if n is not None)
+
+
 def _password(m, b, n, engine):
     """(blocks before the instance, instance body, blocks after it): the administrator password, written write-only
     from an ephemeral read of the credential role's Secret Manager secret."""
@@ -94,7 +157,7 @@ def _password(m, b, n, engine):
         return (), (note or ("#", "no ciamDbCredentialRole: no administrator password is set"),), ()
     path = name_parts(uri.split("://", 1)[1])
     if "locations" in path:
-        return (), (("#", f"{uri}: a regional secret has no ephemeral read; set the password by hand"),), ()
+        return (), (("#", note_comment(password_note(m, b))),), ()
     secret = f"ephemeral.google_secret_manager_secret_version.{n}_admin.secret_data"
     read = (comment(f"{rdn_value(b)}: its administrator password is read when applied and written write-only: no "
                     "Terraform state holds it"),
@@ -114,9 +177,7 @@ def _key(m, b):
     uri, note = _uri(m, one(b, "ciamEncryptedByRole"), "key")
     if uri is None:
         return (), (note,) if note else ()
-    return ((comment(f"{rdn_value(b)}: the Cloud SQL service agent (service-<project number>@gcp-sa-cloud-sql.iam."
-                     "gserviceaccount.com) needs roles/cloudkms.cryptoKeyEncrypterDecrypter on its key"),),
-            (("encryption_key_name", uri.split("://", 1)[1]),))
+    return ((comment(note_comment(key_note(m, b))),), (("encryption_key_name", uri.split("://", 1)[1]),))
 
 
 def _backups(b, engine):
@@ -126,8 +187,7 @@ def _backups(b, engine):
         return ()
     log = "binary_log_enabled" if engine == "mysql" else "point_in_time_recovery_enabled"
     return (("backup_configuration", Block((
-        *((("#", f"Cloud SQL keeps backups in one location: {', '.join(copies[1:])} not rendered"),)
-          if len(copies) > 1 else ()),
+        *((("#", note_comment(copies_note(b))),) if len(copies) > 1 else ()),
         ("enabled", kept or pitr == "TRUE" or bool(copies)),
         *_given((log, {"TRUE": True, "FALSE": False}.get(pitr)), ("location", copies[0] if copies else None)),
         *((("backup_retention_settings", Block((("retained_backups", int(retention)),))),) if kept else ())))),)
@@ -137,7 +197,7 @@ def _database(m, b):
     n, cn, engine = tf_name(rdn_value(b)), rdn_value(b), one(b, "ciamDbEngine")
     version = database_version(engine, one(b, "ciamDbEngineVersion"), one(b, "ciamDbEdition"))
     if engine not in PORTS:
-        return (comment(f"Database '{cn}' runs {engine}, which Cloud SQL doesn't: not rendered"),)
+        return (comment(note_comment(engine_note(b))),)
     before, secret_body, after = _password(m, b, n, engine)
     key_notes, key_body = _key(m, b)
     protected = one(b, "ciamDbDeletionProtection") == "TRUE"
@@ -158,7 +218,7 @@ def _database(m, b):
         ("name", cn), *_given(("database_version", version)), ("region", REGION), *key_body, *secret_body,
         ("deletion_protection", protected), ("settings", settings)])
     cidrs = values(b, "ciamSourceCidr")
-    return (*((comment(f"{cn}: no ciamDbEngineVersion Cloud SQL runs: set database_version"),) if not version else ()),
+    return (*((comment(note_comment(version_note(b))),) if not version else ()),
             *((comment(f"{cn} admits {', '.join(cidrs)}: Cloud SQL's private IP is in Google's service producer "
                        "network, which this network's firewall rules don't reach; the private services access peering "
                        "carries the traffic"),) if cidrs else ()),

@@ -31,6 +31,7 @@ rules). The administrator password (administrator_password) is never read.
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import of_class
 from opsdir.core.inventory import of_types, resource, tagged_role
+from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.data.naming import DEFAULT_PORTS
 from opsdir.domains.data.databases import database_port, major_version
 from opsdir.domains.network.plumbing import adopted
@@ -117,29 +118,62 @@ def _security_group(m, b, nets):
                 ("network_security_group_id", ref(f"azurerm_network_security_group.{nsg}.id"))]),) if nets else ()))
 
 
-def _geo(m, b):
-    """(notes, server arguments) of geo-redundant backups: on when the record copies the backups to another region."""
+def geo_notes(m, b):
+    """The render notes (actions) of a database's geo-redundant backups: Azure copies them to the region's pair, so
+    a copy region that isn't it (or a pair not known here) is the record's to correct or check; an existing server
+    gets geo-redundant backup only by being restored into a new one."""
     cn, regions = rdn_value(b), values(b, "ciamCopyRegion")
     if not regions:
-        return (), ()
+        return ()
     region = one(m.cloud, "ciamRegion")
     pair = paired_region(region)
-    where = (comment(f"{cn}: Azure copies geo-redundant backups to {region}'s pair, {pair}, not "
-                     f"{', '.join(regions)}: record {pair} as its ciamCopyRegion")
+    where = (note("Databases", "action", cn, f"Azure copies geo-redundant backups to {region}'s pair, {pair}, not "
+                  f"{', '.join(regions)}: record {pair} as its ciamCopyRegion",
+                  (f"Record {pair} as the database's ciamCopyRegion, {RECORD}",), b.dn)
              if pair and tuple(regions) != (pair,) else
-             comment(f"{cn}: Azure copies geo-redundant backups to {region}'s paired region, which isn't known here: "
-                     "check it is the recorded ciamCopyRegion") if not pair else None)
-    fixed = (comment(f"{cn}: geo-redundant backup is chosen when a server is created: an existing server without it is "
-                     "restored into a new server that has it") if adopted(b) else None)
-    return tuple(x for x in (where, fixed) if x), (("geo_redundant_backup_enabled", True),)
+             note("Databases", "action", cn, f"Azure copies geo-redundant backups to {region}'s paired region, which "
+                  "isn't known here: check it is the recorded ciamCopyRegion",
+                  (f"Check {region}'s paired region in Microsoft's region pairs and record it as ciamCopyRegion",),
+                  b.dn) if not pair else None)
+    fixed = (note("Databases", "action", cn, "geo-redundant backup is chosen when a server is created: an existing "
+                  "server without it is restored into a new server that has it",
+                  ("Restore the existing server into a new one with geo-redundant backup, then move its clients to "
+                   "it",),
+                  b.dn) if adopted(b) else None)
+    return tuple(x for x in (where, fixed) if x)
+
+
+def engine_note(b):
+    """The render note of a database running an engine Azure Database Flexible Server doesn't (a blocker: not
+    rendered), or None."""
+    engine = one(b, "ciamDbEngine")
+    if SERVERS.get(engine) is not None:
+        return None
+    return note("Databases", "blocker", f"Database '{rdn_value(b)}'", f"runs {engine}, which Azure Database Flexible "
+                "Server doesn't (SQL Server is Azure SQL, a different offering): not rendered",
+                (f"Record an engine Flexible Server runs (PostgreSQL, MySQL), or keep the database outside opsdir's "
+                 f"render, {RECORD}",), b.dn)
+
+
+def database_notes(m):
+    """The render notes of environment m's managed databases (render_databases writes their comments)."""
+    return tuple(n for b in of_class(m, "ciamDatabase")
+                 for n in ((engine_note(b),) if engine_note(b) else geo_notes(m, b)))
+
+
+def _geo(m, b):
+    """(notes, server arguments) of geo-redundant backups: on when the record copies the backups to another region
+    (geo_notes' comments)."""
+    if not values(b, "ciamCopyRegion"):
+        return (), ()
+    return tuple(comment(note_comment(x)) for x in geo_notes(m, b)), (("geo_redundant_backup_enabled", True),)
 
 
 def _database(m, b):
     n, cn, engine = tf_name(rdn_value(b)), rdn_value(b), one(b, "ciamDbEngine")
     kind = SERVERS.get(engine)
     if kind is None:
-        return (comment(f"Database '{cn}' runs {engine}, which Azure Database Flexible Server doesn't (SQL Server is "
-                        "Azure SQL, a different offering): not rendered"),)
+        return (comment(note_comment(engine_note(b))),)
     nets, storage = subnets(m, b), one(b, "ciamDbStorageGb")
     key_blocks, key_body = _key(m, b, n)
     pw_blocks, pw_body = _password(m, b, n)

@@ -730,7 +730,7 @@ resource "aws_launch_template" "asg_pf_engine" {
   }
 }
 
-# asg-pf-engine exists: applying gives it launch template ciam-prod-pf-engine, which its instances run when they are next replaced
+# NOTE: asg-pf-engine: exists: applying gives it launch template ciam-prod-pf-engine, which its instances run when they are next replaced
 
 resource "aws_autoscaling_group" "asg_pf_engine" {
   name                = "ciam-prod-pf-engine"
@@ -1353,7 +1353,7 @@ resource "aws_wafv2_web_acl_association" "svc_login" {
 }
 
 resource "aws_shield_protection" "svc_login" {
-  # needs the account's Shield Advanced subscription
+  # NOTE: Shield Advanced: its protections need the account's subscription
   name         = "svc_login"
   resource_arn = aws_lb.svc_login.arn
 }
@@ -1655,7 +1655,7 @@ resource "aws_wafv2_web_acl_association" "svc_sso" {
 }
 
 resource "aws_shield_protection" "svc_sso" {
-  # needs the account's Shield Advanced subscription
+  # NOTE: Shield Advanced: its protections need the account's subscription
   name         = "svc_sso"
   resource_arn = aws_lb.svc_sso.arn
 }
@@ -2328,7 +2328,7 @@ resource "aws_cloudwatch_event_rule" "guardduty_findings" {
 }
 
 resource "aws_cloudwatch_event_target" "guardduty_findings" {
-  # its resource policy must let events.amazonaws.com deliver to it
+  # NOTE: guardduty's findings to security-findings: its resource policy must let events.amazonaws.com deliver to it
   rule = aws_cloudwatch_event_rule.guardduty_findings.name
   arn  = "arn:aws:sns:us-east-1:111122223333:ciam-prod-security"
 }
@@ -2357,7 +2357,7 @@ resource "aws_cloudwatch_event_rule" "guardduty_incidents" {
 }
 
 resource "aws_cloudwatch_event_target" "guardduty_incidents" {
-  # its resource policy must let events.amazonaws.com deliver to it
+  # NOTE: guardduty's incidents to security-incidents: its resource policy must let events.amazonaws.com deliver to it
   rule = aws_cloudwatch_event_rule.guardduty_incidents.name
   arn  = "arn:aws:sns:us-east-1:111122223333:ciam-prod-security-incidents"
 }
@@ -2383,7 +2383,7 @@ resource "aws_cloudwatch_event_rule" "inspector_findings" {
 }
 
 resource "aws_cloudwatch_event_target" "inspector_findings" {
-  # its resource policy must let events.amazonaws.com deliver to it
+  # NOTE: inspector's findings to security-findings: its resource policy must let events.amazonaws.com deliver to it
   rule = aws_cloudwatch_event_rule.inspector_findings.name
   arn  = "arn:aws:sns:us-east-1:111122223333:ciam-prod-security"
 }
@@ -2423,7 +2423,7 @@ resource "aws_cloudwatch_event_rule" "security_hub_findings" {
 }
 
 resource "aws_cloudwatch_event_target" "security_hub_findings" {
-  # its resource policy must let events.amazonaws.com deliver to it
+  # NOTE: security-hub's findings to security-findings: its resource policy must let events.amazonaws.com deliver to it
   rule = aws_cloudwatch_event_rule.security_hub_findings.name
   arn  = "arn:aws:sns:us-east-1:111122223333:ciam-prod-security"
 }
@@ -2525,7 +2525,7 @@ resource "aws_cloudwatch_event_rule" "macie_backups_findings" {
 }
 
 resource "aws_cloudwatch_event_target" "macie_backups_findings" {
-  # its resource policy must let events.amazonaws.com deliver to it
+  # NOTE: macie-backups's findings to security-findings: its resource policy must let events.amazonaws.com deliver to it
   rule = aws_cloudwatch_event_rule.macie_backups_findings.name
   arn  = "arn:aws:sns:us-east-1:111122223333:ciam-prod-security"
 }

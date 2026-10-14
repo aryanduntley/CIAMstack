@@ -32,13 +32,14 @@ def _render(*services):
 def test_threat_detection_is_a_request_and_its_findings_stream_to_the_topic():
     out = _render(svc("scc", "threat-detection", ciamFindingsRole="security-findings", ciamAuditScope="organization",
                       ciamSecurityCoverage=("control-plane", "containers", "compute", "key-vaults")))
-    assert ("# scc: Security Command Center (Premium or Enterprise) activated with Event Threat Detection, Container "
+    assert ("# NOTE: scc: Security Command Center (Premium or Enterprise) activated with Event Threat "
+            "Detection, Container "
             "Threat Detection, VM Threat Detection (activation has no Terraform resource and enabling its services "
             "only a google-beta one): a request to the organization's administrators (not rendered)") in out
     assert "# scc: no Security Command Center service watches key vaults on their own" in out
     assert 'resource "google_scc_v2_project_notification_config" "scc_findings"' in out
     assert f'pubsub_topic = "{TOPIC}"' in out and 'filter = "finding_class=\\"THREAT\\" AND state=\\"ACTIVE\\""' in out
-    assert "# scc: organization-wide (Security Command Center and its notification at the organization)" in out
+    assert "# NOTE: scc: organization-wide (Security Command Center and its notification at the organization)" in out
     assert "# NOTE: scc's findings to app-logs: not rendered: app-logs names no Pub/Sub topic" in _render(
         svc("scc", "threat-detection", ciamFindingsRole="app-logs"))
 
@@ -50,7 +51,7 @@ def test_scanning_apis_are_enabled_once_across_services():
     assert out.count('"osconfig.googleapis.com"') == 1
     assert out.count('resource "google_compute_project_metadata_item"') == 1                 # scan-b: no compute
     assert 'key     = "enable-osconfig"' in out and 'value   = "TRUE"' in out
-    assert "# scan-b: Web Security Scanner (Security Command Center) for applications: a request" in out
+    assert "# NOTE: scan-b: Web Security Scanner (Security Command Center) for applications: a request" in out
 
 
 def test_configuration_changes_are_exported_by_an_asset_feed():
@@ -64,12 +65,14 @@ def test_configuration_changes_are_exported_by_an_asset_feed():
 def test_posture_frameworks_google_lacks_are_named_and_other_clouds_baselines_too():
     out = _render(svc("sha", "posture", ciamComplianceStandard=("nist-800-171-r2", "fedramp-high"),
                       ciamSecurityBaseline=("gcp-default", "aws-foundational")))
-    assert "# sha: nist-800-171-r2: Compliance Manager offers no framework for it (not rendered)" in out
-    assert ("# sha: fedramp-high: Compliance Manager offers no framework for it (held by an Assured Workloads folder, "
+    assert "# NOTE: sha: nist-800-171-r2: Compliance Manager offers no framework for it (not rendered)" in out
+    assert ("# NOTE: sha: fedramp-high: Compliance Manager offers no framework for it (held by an Assured "
+            "Workloads folder, "
             "from the cloud authorization's level)") in out
-    assert ("# sha: gcp-default assessed by a Compliance Manager framework deployment: the cloud names no organization "
+    assert ("# NOTE: sha: gcp-default assessed by a Compliance Manager framework deployment: the cloud names no "
+            "organization "
             "(ciamOrganizationRef): a request") in out                          # deployments: test_gcp_compliance
-    assert "# sha: aws-foundational: another cloud's baseline, not Google Cloud's (not rendered)" in out
+    assert "# NOTE: sha: aws-foundational: another cloud's baseline, not Google Cloud's (not rendered)" in out
     assert _render(svc("org-scc", "threat-detection", ciamManagedBy=PARTY)) == _render(
         svc("org-scc", "threat-detection"))                # the same blocks, placed by its keeper (render_files)
 
@@ -193,7 +196,8 @@ def test_what_a_service_s_render_leaves_out_is_a_render_note_written_as_its_comm
     assert _noted(notes.values(), render_security(alpha))
     assert {k: n.severity for k, n in notes.items()} == {
         "scc's findings to app-logs": "blocker", "assets's configuration changes to app-logs": "blocker",
-        "assets's incidents to security-incidents": "action", "shared's incidents to app-logs": "blocker"}
+        "assets's incidents to security-incidents": "action", "shared's incidents to app-logs": "blocker",
+        "scc": "action", "shared": "action"}      # the activation requests to the organization's administrators
     assert notes["scc's findings to app-logs"].how == (
         "Record app-logs's Pub/Sub topic (ciamProviderRef projects/<p>/topics/<t>), under an approved change, and "
         "re-render",)

@@ -14,6 +14,7 @@ from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import inherited_from, recorded
 from opsdir.domains.access.workloads import identity_of
 from opsdir.domains.compute.hosts import compute_groups, group_subnets
+from opsdir.core.notes import note, note_comment
 from opsdir.domains.network.plumbing import adopted
 from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_import, tf_name
 from .account import tagged
@@ -68,11 +69,25 @@ def _scale_set(m, g, n, des, identities, pools):
           if adopted(g) else ()))
 
 
+def autoscale_note(g):
+    """The render note of an existing (adopted) compute group's autoscale setting (an action: import the one it has
+    by hand, its ID isn't recorded, or applying adds a second one)."""
+    return note("Compute", "action", rdn_value(g), "exists: an autoscale setting it already has must be imported by "
+                "hand (its ID isn't recorded), or applying adds a second one",
+                ("Before applying, import the scale set's autoscale setting into the rendered "
+                 "azurerm_monitor_autoscale_setting (terraform import, its resource ID)",), g.dn)
+
+
+def group_notes(m):
+    """The render notes of environment m's compute groups (render_groups writes their comments)."""
+    return tuple(autoscale_note(g) for g in compute_groups(m) if adopted(g) and not inherited_from(m, g)
+                 and one(g, "ciamMinSize") and one(g, "ciamMaxSize"))
+
+
 def _autoscale(m, g, n):
     if not (one(g, "ciamMinSize") and one(g, "ciamMaxSize")):
         return ()
-    return (*((comment(f"{rdn_value(g)} exists: an autoscale setting it already has must be imported by hand (its ID "
-                       "isn't recorded), or applying adds a second one"),) if adopted(g) else ()),
+    return (*((comment(note_comment(autoscale_note(g))),) if adopted(g) else ()),
             tf_block("resource", ["azurerm_monitor_autoscale_setting", n], [
                 ("name", f"autoscale-{scale_set_name(m, g)}"), ("resource_group_name", RG), ("location", LOC),
                 ("target_resource_id", ref(f"azurerm_linux_virtual_machine_scale_set.{n}.id")),

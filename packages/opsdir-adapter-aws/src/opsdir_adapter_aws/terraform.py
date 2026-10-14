@@ -13,11 +13,13 @@ from opsdir.core.notes import note_comment
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir.domains.infrastructure.firewall import rule_purpose
 from opsdir.domains.access.evaluations import evaluation_files
-from opsdir.domains.access.workloads import identity_of, workload_identities
+from opsdir.domains.access.workloads import identity_notes, identity_of, workload_identities
 from opsdir.domains.edge.exposure import exposure_unknown, is_internal, service_exposure
 from opsdir.domains.edge.gateways import role_gateway
+from opsdir.domains.edge.kubernetes import kubernetes_notes
 from opsdir.domains.edge.records import forwarders
-from opsdir.domains.edge.resolve import inspected, service_edge
+from opsdir.domains.edge.resolve import (inspected, inspection_note, inspection_notes, rendered_edges,
+                                        service_edge)
 from opsdir_format_terraform.hcl import Block, TfFile, comment, ref, tf_block, tf_name, unbound_comments, written
 from opsdir_format_terraform.placing import MAIN, PROVIDERS, carried_files
 from opsdir.domains.governance.keepers import scope_folder
@@ -29,23 +31,24 @@ from .canaries import canary_notes, render_canaries
 from .discovery import discovery_notes, render_discovery
 from .security import every_region, region_alias, render_security, security_notes
 from .suppressions import render_suppressions
-from .compute_groups import render_groups
-from .budgets import BILLING, BILLING_REGION, needs_billing_provider, render_budgets
+from .compute_groups import group_notes, render_groups
+from .budgets import BILLING, BILLING_REGION, budget_notes, needs_billing_provider, render_budgets
 from .quotas import render_quota_requests
-from .cdn import fronted
+from .cdn import fronted, govcloud_note
 from .cfn_types import cloudformation_files
-from .dns import RESOLVER_ENDPOINT, records, resolver_rules, service_record
-from .edge import US_EAST_1, alb_service, health_check, probe_ingress, servers_backend, shield, stickiness
+from .dns import RESOLVER_ENDPOINT, forwarder_notes, records, resolver_rules, service_record
+from .edge import (US_EAST_1, alb_service, health_check, probe_ingress, servers_backend, shield, shield_note,
+                   stickiness, takeover_note)
 from .fluent_bit import fluent_bit_clusters, fluent_bit_notes, render_fluent_bit
 from .identities import EC2_TRUST, eks_cluster_data, identity_clusters, notes, pod_trust, role
 from .ingress import gateway_front
 from .guardrails import guardrail_notes
 from .landing import STACK, landing_parts, placed_roots
 from .network import render_network
-from .backups import render_backups
+from .backups import backup_notes, render_backups
 from .account import govcloud, organization_providers, provider_block, required_providers, standard_account
-from .volumes import render_snapshot_policies, root_block_device, server_volumes
-from .databases import copy_alias, copy_regions, render_databases
+from .volumes import render_snapshot_policies, root_block_device, server_volumes, volume_notes
+from .databases import copy_alias, copy_regions, database_notes, render_databases
 from .storage import kept_buckets, render_object_stores
 from .plumbing import network_data
 
@@ -71,7 +74,8 @@ def _security_groups(m):
 
 def _ingress_rules(m, fw):
     if only_on_kubernetes(m, one(fw, "ciamTargetRole")):
-        return (comment(kubernetes_note(m, f"firewall rule `{rdn_value(fw)}`", one(fw, "ciamTargetRole"))),)
+        return (comment(note_comment(kubernetes_note(m, f"firewall rule `{rdn_value(fw)}`", one(fw, "ciamTargetRole"),
+                                                     fw.dn))),)
     why = rule_purpose(m, fw)
     return tuple(tf_block("resource", ["aws_vpc_security_group_ingress_rule", tf_name(f"{rdn_value(fw)}_{i}_{port}")], [
         ("security_group_id", ref(f"aws_security_group.{tf_name(one(fw, 'ciamTargetRole'))}.id")),
@@ -141,7 +145,8 @@ def _service(m, svc, endpoints=()):
     target = one(svc, "ciamTargetRole")
     gw = role_gateway(m, target) if only_on_kubernetes(m, target) else None
     if only_on_kubernetes(m, target) and gw is None:
-        return (comment(kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})", target)),)
+        return (comment(note_comment(kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})",
+                                                     target, svc.dn))),)
     if service_exposure(svc) is None:
         return (comment(exposure_unknown(svc)),)
     if gw is not None:
@@ -158,7 +163,7 @@ def _service(m, svc, endpoints=()):
         balancer = alb_service(m, svc, spec, servers_backend(svc, targets), tuple(sub for _, sub in subnets))
     else:
         mappings = tuple(_subnet_mapping(svc, ip, internal, i, sub) for i, (_, sub) in enumerate(subnets))
-        blind = (("#", "the protection policy's request inspection needs TLS terminated at the edge; not rendered"),) \
+        blind = (("#", note_comment(inspection_note(m, svc, spec))),) \
             if spec is not None and inspected(spec) and not spec.cdn else ()
         balancer = (tf_block("resource", ["aws_lb", n], [
                         *blind, ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("internal", internal),
@@ -271,10 +276,30 @@ def render(m, services, targets=DEFAULT_TARGETS):
                     **(terraform if TERRAFORM in targets else {}), **native})
 
 
+def edge_notes(m, endpoints):
+    """The render notes of environment m's service names' edges, each once: passthrough load balancers asked to
+    inspect requests (core edge.resolve inspection_notes), web ACLs' account takeover protection (edge.takeover_note:
+    on an ALB the policy doesn't put behind a CDN, or a CloudFront distribution) and Shield Advanced protection's
+    subscription (edge.shield_note: the standard account's for CloudFront in GovCloud); nothing for CloudFront in
+    GovCloud without a recorded standard account (neither is rendered)."""
+    edges = tuple((spec, gw) for _, spec, gw in rendered_edges(m, endpoints) if spec is not None and not (
+        spec.cdn and govcloud(m) and not standard_account(m)))
+    acls = tuple(spec for spec, gw in edges if inspected(spec) and (gw is not None or spec.layer7 or spec.cdn))
+    return tuple(dict.fromkeys((
+        *inspection_notes(m, endpoints), *(n for n in (takeover_note(spec) for spec in acls) if n is not None),
+        *(shield_note("the standard account's" if spec.cdn and govcloud(m) else "the account's")
+          for spec, _ in edges if spec.ddos != "standard"))))
+
+
 def render_notes(m, services):
     """Adapter notes (core.notes, flow 43): what environment m's AWS render leaves out or to a person, as data, each
     written as its comment: the canaries it doesn't render, then its security services', audit trails', data
-    discovery's, guardrails', alert rules', log destinations' and log shipping's (servers, Fluent Bit) notes."""
+    discovery's, guardrails', alert rules', log destinations', identities' (core access.workloads) and Kubernetes-only
+    roles' (core edge.kubernetes) notes, and log shipping's (servers, Fluent Bit)."""
     return (*canary_notes(m, services.endpoints if services else ()), *security_notes(m), *audit_notes(m),
             *discovery_notes(m), *guardrail_notes(m), *alert_notes(m), *log_group_notes(m),
+            *identity_notes(m, ACCESS), *kubernetes_notes(m), *budget_notes(m), *forwarder_notes(m),
+            *database_notes(m), *backup_notes(m), *volume_notes(m), *group_notes(m),
+            *edge_notes(m, services.endpoints if services else ()),
+            *((govcloud_note(m),) if govcloud(m) and _fronted(m, services.endpoints if services else ()) else ()),
             *((*log_notes(m, services), *fluent_bit_notes(m, services)) if services else ()))

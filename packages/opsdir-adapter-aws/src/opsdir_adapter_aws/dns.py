@@ -5,6 +5,7 @@ forwarders as Resolver rules on the VPC. Nothing is rendered into a zone someone
 planner drafts the request). Pure.
 """
 from opsdir.core.directory import one, rdn_value, values
+from opsdir.core.notes import note_comment
 from opsdir.domains.edge.records import address, forwarders, hosted_notes, records_in, routing, run_by, ttl
 from opsdir.domains.edge.dns import zone_of, zone_unknown
 from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
@@ -12,6 +13,15 @@ from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 ALIAS_TTL = "60"     # the TTL Route 53 answers an alias to a load balancer with (the record can't set its own)
 
 RESOLVER_ENDPOINT = "resolver_endpoint_id"      # the landing zone's outbound Resolver endpoint, an input
+
+
+MACHINES = "EC2 instances"  # what the platform calls the DNS servers forwarders run on
+
+
+def forwarder_notes(m):
+    """The render notes (actions) of environment m's forwarders on its own DNS servers (core edge.records
+    hosted_notes; the records render writes their comments)."""
+    return hosted_notes(m, MACHINES)
 
 
 def _policy(policy, weight, label):
@@ -113,4 +123,4 @@ def resolver_rules(m):
     inbound = tuple(comment(f"Inbound forwarder `{rdn_value(f)}` ({', '.join(values(f, 'ciamForwardDomain'))}): the "
                             "landing zone's inbound Resolver endpoint; not managed here")
                     for f in forwarders(m, "inbound", hosted=False))
-    return (*out, *inbound, *map(comment, hosted_notes(m, "EC2 instances")))
+    return (*out, *inbound, *(comment(note_comment(n)) for n in forwarder_notes(m)))

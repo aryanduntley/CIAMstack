@@ -105,7 +105,7 @@ PROFILE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}$")
 ORGANIZATION = re.compile(r"\bo-[a-z0-9]{10,32}\b")
 TARGET = re.compile(r"^(\d{12}|ou-[0-9a-z]{4,32}-[a-z0-9]{8,32}|r-[0-9a-z]{4,32})$")
 POLICY = re.compile(r"^p-[0-9A-Za-z_]{1,128}$")
-POLICY_TYPES = ("SERVICE_CONTROL_POLICY", "RESOURCE_CONTROL_POLICY")
+POLICY_TYPES = ("SERVICE_CONTROL_POLICY", "RESOURCE_CONTROL_POLICY", "S3_POLICY")
 BUCKET_SETTINGS = (("bucket-versioning", "get-bucket-versioning", ()),
                    ("bucket-object-lock", "get-object-lock-configuration", ("ObjectLockConfigurationNotFoundError",)),
                    ("bucket-encryption", "get-bucket-encryption", ("ServerSideEncryptionConfigurationNotFoundError",)),

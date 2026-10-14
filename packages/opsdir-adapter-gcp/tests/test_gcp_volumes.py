@@ -56,8 +56,8 @@ def test_a_data_volume_is_an_attached_disk_and_both_follow_their_schedule():
                  'type = "hyperdisk-balanced"', "size = 200", "provisioned_iops = 6000", "provisioned_throughput = 250",
                  f'disk_encryption_key {{ kms_key_self_link = "{KEY}" }}', 'snapshot_policy = "snapshots-daily"',
                  'resource "google_compute_attached_disk" "ds_1_vol_ds_data"', 'device_name = "vol-ds-data"',
-                 "instance = google_compute_instance.ds_1.id", "# vol-ds-data: hyperdisk-balanced needs a machine "
-                 "series that takes Hyperdisk",
+                 "instance = google_compute_instance.ds_1.id",
+                 "# NOTE: vol-ds-data: hyperdisk-balanced needs a machine series that takes Hyperdisk",
                  'resource "google_compute_disk_resource_policy_attachment" "ds_1_boot"',
                  "disk = google_compute_instance.ds_1.name",
                  'resource "google_compute_disk_resource_policy_attachment" "ds_1_vol_ds_data"',

@@ -15,6 +15,7 @@ from functools import partial
 from itertools import chain
 
 from opsdir.core.directory import one, rdn_value, values
+from opsdir.core.notes import note, note_comment
 from opsdir.domains.edge.exposure import is_internal
 from opsdir.domains.edge.resolve import inspected, path_regex, tls_policy
 from opsdir_format_terraform.hcl import Block, ref, tf_block, tf_name
@@ -80,21 +81,45 @@ def _rate_rule(n, spec, r, priority):
                            _visibility(f"{n}-rate-{r.kind}"))))
 
 
+def _literal(spec, kind):
+    """The first path of an endpoint kind the products declare that has no wildcard, or None."""
+    return next((p for p in spec.endpoints.get(kind, ()) if "*" not in p), None)
+
+
+def takeover_note(spec):
+    """The render note (an action) of a web ACL's account takeover protection: the sign-in form's request_inspection
+    isn't recorded, so the rule group can't check the credentials sign-ins send; None without the category or a
+    literal sign-in path (then the group isn't configured: UNBOUND)."""
+    if "account-takeover" not in spec.categories or _literal(spec, "login") is None:
+        return None
+    return note("Edge", "action", f"protection policy `{rdn_value(spec.protection)}`", "account takeover protection "
+                "can't check the credentials sign-ins send: the sign-in form's request_inspection (payload type, "
+                "username and password fields) isn't recorded",
+                ("Before applying, add request_inspection to the web ACL's AWSManagedRulesATPRuleSet configuration "
+                 "(the sign-in form's payload type and its username and password field names); the record doesn't "
+                 "carry them, so add it again after each render",), spec.protection.dn)
+
+
+def shield_note(whose):
+    """The render note (an action) of Shield Advanced protection: it needs whose (the account's, the standard
+    account's) subscription, which isn't rendered."""
+    return note("Edge", "action", "Shield Advanced", f"its protections need {whose} subscription",
+                (f"Before applying, make sure {whose[:-2]} subscribes to AWS Shield Advanced (a paid subscription "
+                 "with a one-year commitment): the protections fail without it",))
+
+
 def _managed_config(spec, category):
     """The managed_rule_group_configs a group needs, from the endpoints the products declare."""
-    literal = (lambda kind: next((p for p in spec.endpoints.get(kind, ()) if "*" not in p), None))
     if category == "bot-control":
         return (("managed_rule_group_configs", Block((("aws_managed_rules_bot_control_rule_set",
                                                        Block((("inspection_level", "COMMON"),))),))),)
     if category == "account-takeover":
-        login = literal("login")
-        atp = Block((("login_path", login),
-                     ("#", "add request_inspection (payload type, username and password fields) from the sign-in "
-                           "form")))
-        return (("managed_rule_group_configs", Block((("aws_managed_rules_atp_rule_set", atp),))),) if login else \
+        login = _literal(spec, "login")
+        return (("managed_rule_group_configs", Block((("aws_managed_rules_atp_rule_set", Block((
+            ("login_path", login), ("#", note_comment(takeover_note(spec)))))),))),) if login else \
             (("#", "UNBOUND: account takeover protection needs a literal sign-in path (a policy's ciamEndpointPath)"),)
     if category == "account-creation-fraud":
-        page = literal("registration")
+        page = _literal(spec, "registration")
         return (("managed_rule_group_configs", Block((("aws_managed_rules_acfp_rule_set", Block((
             ("creation_path", page), ("registration_page_path", page)))),))),) if page else \
             (("#", "UNBOUND: account creation fraud prevention needs a literal registration path"),)
@@ -175,7 +200,7 @@ def shield(n, spec, target_arn, attached=None, provider=(), whose="the account's
     if spec.ddos == "standard":
         return ()
     return (tf_block("resource", ["aws_shield_protection", n], [
-                *provider, ("#", f"needs {whose} Shield Advanced subscription"),
+                *provider, ("#", note_comment(shield_note(whose))),
                 ("name", n), ("resource_arn", ref(target_arn))]),
             *((tf_block("resource", ["aws_shield_application_layer_automatic_response", n], [
                 *provider, ("resource_arn", ref(target_arn)),

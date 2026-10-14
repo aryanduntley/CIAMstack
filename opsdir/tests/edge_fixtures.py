@@ -20,6 +20,9 @@ BASE = EdgeSpec(
     exclusions=(Exclusion("core-rules", "saml-post", "body", "SAMLResponse", ("/idp/SSO.saml2",)),),
     ddos="standard", cdn=False, endpoints={"login": ("/as/authorization.oauth2",)}, certificate=None, traffic=None,
     protection=None)
+# a protection policy for the specs whose render notes name theirs
+PROTECTION = make_entry("cn=sso-protection,ou=edge-policies,dc=ciam-ops", ("top", "ciamProtectionPolicy"),
+                        {"ciamServiceRole": ["pf-sso-service"]})
 
 
 def spec(**changes):
@@ -120,3 +123,41 @@ def dns_estate():
 def binding(m, cn):
     """Environment m's binding named cn."""
     return next(b for b in m.bindings if b.dn.startswith(f"cn={cn},"))
+
+
+# ------------------------------------------------------------------ edges with render notes: alpha of the DNS estate
+def _edge_policy(cn, oc, **attrs):
+    lines = "".join(f"{k}: {v}\n" for k, vs in attrs.items() for v in (vs if isinstance(vs, tuple) else (vs,)))
+    return f"dn: cn={cn},ou=edge-policies,dc=ciam-ops\nobjectClass: top\nobjectClass: {oc}\ncn: {cn}\n{lines}"
+
+
+EDGE_NOTE_RECORDS = (
+    "dn: ou=edge-policies,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: edge-policies\n",
+    _edge_policy("l7", "ciamTrafficPolicy", ciamServiceRole=("svc-alb", "svc-cdn", "svc-cdn-in"),
+                 ciamTlsMode="terminate"),
+    _edge_policy("p-cdn", "ciamProtectionPolicy", ciamServiceRole=("svc-cdn", "svc-cdn-in"), ciamCdn="TRUE",
+                 ciamWafCategory=("core-rules", "bot-control"), ciamDdosTier="application-advanced"),
+    _edge_policy("p-full", "ciamProtectionPolicy", ciamServiceRole="svc-alb", ciamWafMode="block",
+                 ciamWafCategory=("core-rules", "account-takeover", "bot-control"), ciamDdosTier="network-advanced",
+                 ciamEndpointPath="login /as/authorization.oauth2"),
+    _edge_policy("p-l4", "ciamProtectionPolicy", ciamServiceRole="svc-l4", ciamRateLimit="login 10/60s per ip"),
+    _svc(ALPHA, "svc-l4", "l4.example.test", "198.51.100.31", ciamDnsZoneRef="Z1ALPHA"),
+    _svc(ALPHA, "svc-alb", "alb.example.test", "198.51.100.32", ciamDnsZoneRef="Z1ALPHA"),
+    _svc(ALPHA, "svc-cdn", "cdn.example.test", "198.51.100.33", ciamDnsZoneRef="Z1ALPHA"),
+    _svc(ALPHA, "svc-cdn-in", "cdn-in.example.test", "10.1.2.40", ciamDnsZoneRef="Z1ALPHA"),
+)
+
+
+def noted_edges():
+    """(directory, alpha model) of the DNS estate with three service names whose edges carry render notes: a
+    passthrough one asked to inspect requests (svc-l4), one terminating TLS whose policy asks for account takeover and
+    bot protection and network DDoS protection (svc-alb), one a CDN fronts with bot protection and application DDoS
+    protection (svc-cdn, and svc-cdn-in at a private address); alpha's failover name (svc-login) besides."""
+    d = build_directory(REGISTRY, tuple(parse(mini_estate.LDIF + "\n" + "\n".join((*DNS_RECORDS,
+                                                                                  *EDGE_NOTE_RECORDS)))))
+    return d, env_model(d, "alpha/prod")
+
+
+def note_lines(text):
+    """The NOTE comments of rendered text, without the comment marker, sorted."""
+    return sorted(line.strip()[2:] for line in text.splitlines() if line.strip().startswith("# NOTE: "))

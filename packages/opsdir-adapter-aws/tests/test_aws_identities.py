@@ -47,8 +47,9 @@ def test_a_secret_under_a_customer_key_also_gets_that_key_through_secrets_manage
 
 
 def test_what_cant_be_granted_is_a_note_and_no_empty_policy_is_written():
-    out = _rendered((), ("principal pf-engine: use-key disk-encryption: role `disk-encryption` has no binding in this "
-                         "environment",))
+    from opsdir.core.notes import note
+    out = _rendered((), (note("Access", "note", "principal pf-engine", "use-key disk-encryption: role "
+                              "`disk-encryption` has no binding in this environment"),))
     assert "# NOTE: principal pf-engine: use-key disk-encryption: role `disk-encryption` has no binding" in out
     assert "aws_iam_role_policy" not in out and "aws_iam_instance_profile" in out
 

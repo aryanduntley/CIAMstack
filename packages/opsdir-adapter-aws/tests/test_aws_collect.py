@@ -348,7 +348,8 @@ def test_the_organizations_policies_on_the_account_and_above_it_through_the_name
     assert not [a for a in ran if "--profile" not in a and a[1] == "organizations"]   # never under the env's login
     assert sorted(" ".join(a[3:5]) for a in profiled if a[2] == "list-parents") == [f"--child-id {ACCOUNT}",
                                                                                    f"--child-id {OU}"]
-    assert sum(a[2] == "list-policies-for-target" for a in profiled) == 6                # 3 targets x 2 types
+    from opsdir_adapter_aws.collect import POLICY_TYPES
+    assert sum(a[2] == "list-policies-for-target" for a in profiled) == 3 * len(POLICY_TYPES)   # 3 targets
     assert sorted(p for p in c.files if "/org/" in p) == [
         "main/prod/org/p-FullAWSAccess.json", "main/prod/org/p-fence0001.json", "main/prod/org/p-rcpdata01.json"]
     assert sum(a[2] == "describe-policy" for a in profiled) == 3                         # inherited once each

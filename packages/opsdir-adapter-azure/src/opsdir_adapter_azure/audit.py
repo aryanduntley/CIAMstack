@@ -117,16 +117,28 @@ def unrendered_note(m, t):
                  f"Log Analytics workspace, {RECORD}",), t.dn, m.label)
 
 
+def data_events_note(m, t):
+    """The render note of a rendered trail's data events (an action): each resource's own diagnostic settings log
+    them, not the Activity Log's export; None when the trail records none."""
+    data = [e for e in values(t, "ciamAuditEvents") if e != "control-plane"]
+    if not data:
+        return None
+    return note("Audit", "action", f"audit trail {rdn_value(t)}", f"{', '.join(data)} events: each resource's own "
+                "diagnostic settings log them (not rendered)",
+                ("Turn on each data resource's own diagnostic settings (its data-plane log categories) to the trail's "
+                 "destination, by its owner",), t.dn, m.label)
+
+
 def audit_notes(m):
     """The render notes of environment m's audit trails (render_trails writes their comments): a trail it doesn't
     render, else its object store's container."""
     def of(t):
         found = unrendered_note(m, t)
         if found is not None:
-            return found
+            return (found,)
         dest = trail_destination(m, t)
-        return container_note(m, dest) if is_kind(m.d, dest, "ciamObjectStore") else None
-    return tuple(n for t in audit_trails(m) for n in (of(t),) if n is not None)
+        return (container_note(m, dest) if is_kind(m.d, dest, "ciamObjectStore") else None, data_events_note(m, t))
+    return tuple(n for t in audit_trails(m) for n in of(t) if n is not None)
 
 
 def _trail(m, t):
@@ -140,8 +152,7 @@ def _trail(m, t):
     data = [e for e in values(t, "ciamAuditEvents") if e != "control-plane"]
     unlocked = one(t, "ciamIntegrityValidation") == "TRUE" and store_protection(m, t) < PROTECTED
     return (*notes, *variables, tf_block("resource", [SETTING, n], [
-        *((("#", f"{', '.join(data)} events: each resource's own diagnostic settings log them (not rendered)"),)
-          if data else ()),
+        *((("#", note_comment(data_events_note(m, t))),) if data else ()),
         *((("#", "integrity: Azure keeps no digest of the Activity Log; keep it in a container with a locked "
                  "immutability policy (ciamStorageImmutability compliance)"),) if unlocked else ()),
         ("name", _name(t)), ("target_resource_id", ref(f"{SUBSCRIPTION}.id")), target,

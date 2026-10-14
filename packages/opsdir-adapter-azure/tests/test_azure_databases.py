@@ -102,7 +102,7 @@ def test_mysql_storage_tls_off_and_what_flexible_server_doesnt_run():
            'server_name = azurerm_mysql_flexible_server.db_sess.name value = "off"' in flat      # MySQL's: by name
     assert "server_id" not in out and "public_network_access_enabled" not in out
     assert "azurerm_management_lock" not in out and "import {" not in out and "delegated_subnet_id" not in out
-    assert "# Database 'db-sql' runs sqlserver, which Azure Database Flexible Server doesn't" in out
+    assert "# NOTE: Database 'db-sql': runs sqlserver, which Azure Database Flexible Server doesn't" in out
     assert 'resource "azurerm_postgresql_flexible_server" "db_dba"' in out    # placed by its keeper (render_files)
 
 
@@ -218,10 +218,10 @@ def test_a_copy_region_is_geo_redundant_backup_to_the_region_s_pair():
     _, alpha, _ = model(alpha=(KEY, SECRET, db))
     out = "\n\n".join(as_text(render_databases(_in_region(alpha, "eastus2"))))
     assert "geo_redundant_backup_enabled = true" in out and "not centralus" not in out
-    assert "# db-grants: geo-redundant backup is chosen when a server is created" in out
+    assert "# NOTE: db-grants: geo-redundant backup is chosen when a server is created" in out
     other = "\n\n".join(as_text(render_databases(_in_region(model(alpha=(KEY, SECRET, entry(
         ALPHA, "db-grants", "ciamDatabase", **DB, ciamCopyRegion="westus3")))[1], "eastus2"))))
-    assert "# db-grants: Azure copies geo-redundant backups to eastus2's pair, centralus, not westus3: record " \
+    assert "# NOTE: db-grants: Azure copies geo-redundant backups to eastus2's pair, centralus, not westus3: record " \
            "centralus as its ciamCopyRegion" in other
     unknown = _render(KEY, SECRET, entry(ALPHA, "db-grants", "ciamDatabase", **DB, ciamCopyRegion="region-2"))
     assert "paired region, which isn't known here" in unknown and "geo_redundant_backup_enabled = true" in unknown

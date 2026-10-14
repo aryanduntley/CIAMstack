@@ -56,7 +56,7 @@ from opsdir.domains.estate.security import findings_destination, security_servic
 from opsdir.domains.governance.keepers import organization_line, organization_wide
 from opsdir_format_terraform.hcl import Block, TfBlock, comment, from_entry, mentions, ref, tf_block, tf_name
 from .account import ORGANIZATION, organization_variable
-from .compliance import BASELINE, deployment, deployment_keys
+from .compliance import BASELINE, deployment, deployment_keys, deployment_note, request_note
 
 NOTIFICATION = "google_scc_v2_project_notification_config"
 NOTIFICATIONS = (("google_scc_v2_project_notification_config", "account"), ("google_scc_project_notification_config",
@@ -109,7 +109,7 @@ def _notification(m, s, kind):
     if topic is None:
         return _no_topic(m, s, "findings")
     return (tf_block("resource", [NOTIFICATION, tf_name(f"{cn}_findings")], [
-        ("#", "Security Command Center's service agent must be able to publish to the topic"),
+        ("#", note_comment(publish_note(m, s, "findings", one(s, "ciamFindingsRole"), topic))),
         ("config_id", f"{cn}-findings"), ("project", PROJECT), ("location", "global"),
         ("description", f"{cn}'s findings to {one(s, 'ciamFindingsRole')}"), ("pubsub_topic", topic),
         ("streaming_config", Block((("filter", f'finding_class="{CLASSES[kind]}" AND state="ACTIVE"'),)))]),)
@@ -149,9 +149,15 @@ def security_notes(m):
     """The render notes of environment m's security services (render_security writes their comments): each one's
     findings (or, recording configuration, its changes') and incident routes'."""
     def of(s):
-        kind = one(s, "ciamSecurityKind")
+        kind, route = one(s, "ciamSecurityKind"), _route(m, s)
         what = "configuration changes" if kind == "config-recording" else "findings" if kind in CLASSES else None
-        return (topic_note(m, s, what) if what else None, incident_note(m, s, kind))
+        published = (*((publish_note(m, s, "findings", one(s, "ciamFindingsRole"), _topic(m, s)),)
+                       if kind in CLASSES and _topic(m, s) else ()),
+                     *((publish_note(m, s, "incidents", route.role, one(route.binding, "ciamProviderRef")),)
+                       if route is not None and route.binding is not None and incident_note(m, s, kind) is None
+                       else ()))
+        return (*request_notes(m, s), topic_note(m, s, what) if what else None, incident_note(m, s, kind),
+                *published)
     return tuple(n for s in security_services(m) for n in of(s) if n is not None)
 
 
@@ -166,14 +172,23 @@ def _incident_notification(m, s, kind):
         return (comment(note_comment(found)),)
     topic = one(route.binding, "ciamProviderRef")
     return (tf_block("resource", [NOTIFICATION, tf_name(f"{cn}_incidents")], [
-        ("#", "Security Command Center's service agent must be able to publish to the topic"),
+        ("#", note_comment(publish_note(m, s, "incidents", route.role, topic))),
         ("config_id", f"{cn}-incidents"), ("project", PROJECT), ("location", "global"),
         ("description", f"{cn}'s {route.severity} and worse findings to {route.role} (incident process)"),
         ("pubsub_topic", topic), ("streaming_config", Block((("filter", severity_filter(kind, route.severity)),)))]),)
 
 
-def _request(cn, what):
-    return comment(f"{cn}: {what}: a request to the organization's administrators (not rendered)")
+def _request(m, s, what):
+    return comment(note_comment(request_note(m, s, what)))
+
+
+def publish_note(m, s, what, role, topic):
+    """The render note (an action) of a rendered notification config sending a service's findings or incidents (what)
+    to topic: Security Command Center's service agent must be able to publish to it."""
+    return note("Security", "action", f"{rdn_value(s)}'s {what} to {role}", "Security Command Center's service agent "
+                "must be able to publish to the topic",
+                (f"Grant Security Command Center's notification service agent roles/pubsub.publisher on {topic} (its "
+                 "owner)",), s.dn, m.label)
 
 
 # Security Command Center's activation has no Terraform resource, and enabling its services has only google-beta's
@@ -181,11 +196,21 @@ def _request(cn, what):
 BETA_ONLY = "activation has no Terraform resource and enabling its services only a google-beta one"
 
 
+def _activation(s):
+    """What a threat-detection service asks the organization's administrators to activate."""
+    areas = values(s, "ciamSecurityCoverage")
+    services = [name for name, watched in DETECTORS if set(watched) & set(areas)] or ["Event Threat Detection"]
+    return f"Security Command Center (Premium or Enterprise) activated with {', '.join(services)} ({BETA_ONLY})"
+
+
+POSTURE = f"Security Command Center (Premium or Enterprise) activated with Security Health Analytics ({BETA_ONLY})"
+SCANNER = "Web Security Scanner (Security Command Center) for applications"
+WIDE = "organization-wide (Security Command Center and its notification at the organization)"
+
+
 def _detection(m, s):
     cn, areas = rdn_value(s), values(s, "ciamSecurityCoverage")
-    services = [name for name, watched in DETECTORS if set(watched) & set(areas)] or ["Event Threat Detection"]
-    return (_request(cn, f"Security Command Center (Premium or Enterprise) activated with {', '.join(services)} "
-                         f"({BETA_ONLY})"),
+    return (_request(m, s, _activation(s)),
             *((comment(f"{cn}: no Security Command Center service watches key vaults on their own (Event Threat "
                        "Detection sees Cloud KMS use in the audit logs)"),) if "key-vaults" in areas else ()))
 
@@ -196,8 +221,7 @@ def _scanning(m, s):
                   ("#", "VM Manager reports the instances' vulnerabilities once they run the OS Config agent"),
                   ("project", PROJECT), ("key", "enable-osconfig"), ("value", "TRUE")]),)
               if "compute" in areas else ()),
-            *((_request(cn, "Web Security Scanner (Security Command Center) for applications"),)
-              if "applications" in areas else ()))
+            *((_request(m, s, SCANNER),) if "applications" in areas else ()))
 
 
 def _recording(m, s):
@@ -211,18 +235,39 @@ def _recording(m, s):
 
 
 def _posture(m, s):
-    cn = rdn_value(s)
     baselines = values(s, "ciamSecurityBaseline")
     others = [b for b in baselines if b != BASELINE]
-    deployed = tuple(x for k in (*values(s, "ciamComplianceStandard"), *((BASELINE,) if BASELINE in baselines else ()))
-                     for x in deployment(m, s, k, lambda what: _request(cn, what)))
-    return (_request(cn, f"Security Command Center (Premium or Enterprise) activated with Security Health Analytics "
-                         f"({BETA_ONLY})"),
+    deployed = tuple(x for k in _posture_keys(s) for x in deployment(m, s, k))
+    return (_request(m, s, POSTURE),
             *deployed,
             *((comment(organization_line(m, s)),)
               if organization_wide(s) and any(isinstance(x, TfBlock) for x in deployed) else ()),
-            *((comment(f"{cn}: {', '.join(others)}: another cloud's baseline, not Google Cloud's (not rendered)"),)
-              if others else ()))
+            *((comment(note_comment(baseline_note(m, s))),) if others else ()))
+
+
+def _posture_keys(s):
+    baselines = values(s, "ciamSecurityBaseline")
+    return (*values(s, "ciamComplianceStandard"), *((BASELINE,) if BASELINE in baselines else ()))
+
+
+def baseline_note(m, s):
+    """The render note (a plain note) of a posture service's baselines that are other clouds', not Google Cloud's, or
+    None."""
+    others = [b for b in values(s, "ciamSecurityBaseline") if b != BASELINE]
+    return note("Security", "note", rdn_value(s), f"{', '.join(others)}: another cloud's baseline, not Google "
+                "Cloud's (not rendered)", (), s.dn, m.label) if others else None
+
+
+def request_notes(m, s):
+    """The render notes of service s that only the organization's administrators can turn on (each a request_note,
+    in the order _service writes them), the posture frameworks' deployment notes and its other clouds' baselines."""
+    kind = one(s, "ciamSecurityKind")
+    areas = values(s, "ciamSecurityCoverage") or ("compute",)
+    own = ((request_note(m, s, _activation(s)),) if kind == "threat-detection" else
+           (request_note(m, s, SCANNER),) if kind == "vulnerability-scanning" and "applications" in areas else
+           (request_note(m, s, POSTURE), *(deployment_note(m, s, k) for k in _posture_keys(s)), baseline_note(m, s))
+           if kind == "posture" else ())
+    return (*own, *((request_note(m, s, WIDE),) if one(s, "ciamAuditScope") == "organization" else ()))
 
 
 _RENDER = {"threat-detection": _detection, "vulnerability-scanning": _scanning, "config-recording": _recording,
@@ -230,10 +275,9 @@ _RENDER = {"threat-detection": _detection, "vulnerability-scanning": _scanning, 
 
 
 def _service(m, s):
-    cn, kind = rdn_value(s), one(s, "ciamSecurityKind")
+    kind = one(s, "ciamSecurityKind")
     return (*_RENDER[kind](m, s), *_notification(m, s, kind), *_incident_notification(m, s, kind),
-            *((_request(cn, "organization-wide (Security Command Center and its notification at the organization)"),)
-              if one(s, "ciamAuditScope") == "organization" else ()))
+            *((_request(m, s, WIDE),) if one(s, "ciamAuditScope") == "organization" else ()))
 
 
 def _apis(m):

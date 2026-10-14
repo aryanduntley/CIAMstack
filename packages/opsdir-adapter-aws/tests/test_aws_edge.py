@@ -8,7 +8,7 @@ from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.edge import (TLS_POLICIES, alb_service, health_check, probe_ingress, rate, servers_backend,
                                      shield, stickiness, web_acl)
 from opsdir_format_terraform.hcl import Block
-from edge_fixtures import environment, firewall, server, service, spec, subnet
+from edge_fixtures import PROTECTION, environment, firewall, server, service, spec, subnet
 
 CERT = "arn:aws:acm:us-east-1:111122223333:certificate/abcd"
 
@@ -65,8 +65,14 @@ def test_detect_mode_counts_and_account_takeover_needs_a_literal_sign_in_path():
                             "aws_lb.sso.arn")))
     assert "count {" in out and "block {" not in out
     assert "# UNBOUND: account takeover protection needs a literal sign-in path" in out
-    out = "\n".join(as_text(web_acl(environment(), "sso", spec(categories=("account-takeover",)), "aws_lb.sso.arn")))
+    out = "\n".join(as_text(web_acl(environment(), "sso", spec(categories=("account-takeover",),
+                                                             protection=PROTECTION), "aws_lb.sso.arn")))
     assert 'login_path = "/as/authorization.oauth2"' in out
+    assert "# NOTE: protection policy `sso-protection`: account takeover protection can't check the credentials " \
+           "sign-ins send" in out
+    from opsdir_adapter_aws.edge import takeover_note
+    assert takeover_note(spec(categories=("account-takeover",), protection=PROTECTION)).severity == "action"
+    assert takeover_note(spec(categories=("account-takeover",), endpoints={"login": ("/a/*/b",)})) is None
 
 
 def test_rate_limits_take_an_aws_window_and_header_keys():
@@ -103,3 +109,17 @@ def test_a_product_health_port_is_probed_and_admitted():
     nlb = "\n".join(as_text(probe_ingress(None, "sso", "pf-engine", probed, ("443",))))
     assert "cidr_ipv4         = data.aws_vpc.main.cidr_block" in nlb and "from_port         = 8085" in nlb
     assert probe_ingress(None, "sso", "pf-engine", spec(), ("443",)) == ()
+
+
+def test_the_edge_notes_are_the_comments_its_service_names_write():
+    from opsdir.core.environment import of_class
+    from opsdir.core.notes import note_comment
+    from opsdir_adapter_aws.terraform import _service, edge_notes
+    from edge_fixtures import note_lines, noted_edges
+    _, m = noted_edges()
+    out = "\n".join(x for svc in of_class(m, "ciamServiceName") for x in as_text(_service(m, svc, ())))
+    notes = edge_notes(m, ())
+    assert set(note_lines(out)) == {note_comment(n) for n in notes}
+    assert [(n.severity, n.subject) for n in notes] == [
+        ("note", "service name `svc-l4` (l4.example.test)"), ("action", "protection policy `p-full`"),
+        ("action", "Shield Advanced")]

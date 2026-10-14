@@ -57,7 +57,8 @@ def test_a_vault_a_plan_and_an_association_per_disk():
     for text in ('resource "google_backup_dr_backup_vault" "vault_main" { location = "us-east1" backup_vault_id = '
                  '"ciam-prod-vault-main" backup_minimum_enforced_retention_duration = "604800s" labels = { name = '
                  '"vault-main" role = "vault-main" managed_by = "opsdir" } }',
-                 "# Backup plan 'backup-daily': copies go to its vault's location, us-east1; us-west1 not rendered",
+                 "# NOTE: Backup plan 'backup-daily': copies go to its vault's location, us-east1; us-west1 not "
+                 "rendered",
                  "# Backup plan 'backup-daily' protects pf-grants-db, which isn't a volume: not rendered here",
                  'resource "google_backup_dr_backup_plan" "backup_daily" { location = var.region backup_plan_id = '
                  '"backup-daily" resource_type = "compute.googleapis.com/Disk" backup_vault = '

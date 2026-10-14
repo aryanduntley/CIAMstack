@@ -229,7 +229,7 @@ def test_a_copy_region_replicates_automated_backups_through_that_region_s_provid
     _, alpha, _ = model(alpha=(mrk, db))
     assert copy_regions(alpha) == ("us-west-2",)
     out = _render(mrk, db)
-    assert "# db-grants: RDS replicates automated backups to one region: eu-west-1 not rendered" in out
+    assert "# NOTE: db-grants: RDS replicates automated backups to one region: eu-west-1 not rendered" in out
     assert '''resource "aws_db_instance_automated_backups_replication" "db_grants" {
   provider               = aws.copy_us_west_2
   source_db_instance_arn = aws_db_instance.db_grants.arn

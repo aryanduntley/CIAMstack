@@ -418,14 +418,18 @@ EXPECTED = MappingProxyType({
         ("A132", "Network", "target/prod: subnet snet-checks: must be delegated to Microsoft.App/environments",
          "the target's check jobs need their subnet delegated to Container Apps by the network's keeper (a render "
          "note)", None),
-        ("A133", "Render", "target/prod's render holds", "the target's render holds NOTE comments no renderer "
-         "classifies yet (render notes to review)", None),
         ("A134", "Monitoring", "target/prod: check image: build it from images/ciam-check/",
          "the target's check jobs run an image the organization builds, signs and verifies (a render note for the "
          "pipeline's owner)", None),
         ("A135", "Monitoring", "target/prod: check jobs: whoever may start one can override its image",
          "starting a check job can run other code with its identity and secrets: keep that right to trusted "
          "identities (a render note)", None),
+        ("A136", "Network", "target/prod: forwarder `fwd-corp-ad`: runs on DNS servers 10.100.0.4, 10.100.0.5",
+         "the target's corporate-AD forwarder runs on the organization's own DNS servers: whoever keeps them sets the "
+         "forwarding up by hand (a render note)", None, "CHG-2033"),
+        ("A137", "Quotas", "target/prod: quota request (vcpus): raise it to 96",
+         "the target's vCPU increase is decided as a request, which azurerm can't file: someone files it through the "
+         "Quota API or a support request (a render note)", None, "CHG-2028"),
     ],
 })
 

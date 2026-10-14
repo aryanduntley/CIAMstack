@@ -6,6 +6,7 @@ forwarders as rules of the landing zone's DNS forwarding ruleset. Nothing is ren
 Pure.
 """
 from opsdir.core.directory import one, rdn_value, values
+from opsdir.core.notes import note_comment
 from opsdir.core.environment import UNBOUND
 from opsdir.domains.edge.dns import zone_of, zone_unknown
 from opsdir.domains.edge.exposure import is_internal
@@ -16,6 +17,15 @@ from .account import tagged
 
 FORWARDING_RULESET = "dns_forwarding_ruleset_id"   # the landing zone's DNS forwarding ruleset, an input
 PRIVATE_TYPES = ("A", "AAAA", "CNAME", "MX", "SRV", "TXT")
+
+
+MACHINES = "virtual machines"  # what the platform calls the DNS servers forwarders run on
+
+
+def forwarder_notes(m):
+    """The render notes (actions) of environment m's forwarders on its own DNS servers (core edge.records
+    hosted_notes; the records render writes their comments)."""
+    return hosted_notes(m, MACHINES)
 
 
 def record_name(fqdn, zone):
@@ -174,4 +184,4 @@ def forwarding_rules(m):
             *(comment(f"Inbound forwarder `{rdn_value(f)}` ({', '.join(values(f, 'ciamForwardDomain'))}): the landing "
                       "zone's DNS Private Resolver inbound endpoint; not managed here")
               for f in forwarders(m, "inbound", hosted=False)),
-            *map(comment, hosted_notes(m, "virtual machines")))
+            *(comment(note_comment(n)) for n in forwarder_notes(m)))

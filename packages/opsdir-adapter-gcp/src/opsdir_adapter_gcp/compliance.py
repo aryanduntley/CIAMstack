@@ -25,6 +25,7 @@ import re
 
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.inventory import of_types
+from opsdir.core.notes import note, note_comment
 from opsdir.domains.estate.frameworks import control_parameters, framework_controls, provider_framework
 from opsdir.domains.estate.naming import ENFORCEMENT_MODES
 from opsdir.domains.governance.keepers import organization_origin, organization_wide
@@ -120,20 +121,42 @@ def _why_not(m, key, fw, controls):
     return f"its controls require values with no default: {', '.join(unset)}" if unset else None
 
 
-def deployment(m, s, key, request):
-    """Items for posture service s's framework (or baseline) key: its framework deployment (organization-wide: stamped
-    with s's organization origin), else request(reason), or a comment when Google offers no such framework."""
-    cn = rdn_value(s)
-    if key not in NAMES and key != BASELINE:
-        return (comment(f"{cn}: {key}: Compliance Manager offers no framework for it"
-                        + (" (held by an Assured Workloads folder, from the cloud authorization's level)"
-                           if key.startswith(ASSURED) else " (not rendered)")),)
+def request_note(m, s, what):
+    """The render note of something only the organization's administrators can turn on for service s (no Terraform
+    resource, or one the build doesn't use): an action, a request to them."""
+    return note("Security", "action", rdn_value(s), f"{what}: a request to the organization's administrators (not "
+                "rendered)", (f"Ask the organization's administrators for it: {what}",), s.dn, "the organization")
+
+
+def _framework(m, key):
     org = organization_id(m)
     fw = provider_framework(m.d, m.provider, org, key) if org else None
-    controls = framework_controls(m.d, fw) if fw is not None else []
-    why = _why_not(m, key, fw, controls)
-    if why is not None:
-        return (request(f"{key} assessed by a Compliance Manager framework deployment: {why}"),)
+    return fw, framework_controls(m.d, fw) if fw is not None else []
+
+
+def deployment_note(m, s, key):
+    """The render note of posture service s's framework (or baseline) key when no framework deployment is rendered,
+    or None: Google offers no framework for it (a plain note when an Assured Workloads folder holds it, else an
+    action: assess it another way), or the deployment can't be rendered (request_note, its reason)."""
+    cn = rdn_value(s)
+    if key not in NAMES and key != BASELINE:
+        if key.startswith(ASSURED):
+            return note("Security", "note", cn, f"{key}: Compliance Manager offers no framework for it (held by an "
+                        "Assured Workloads folder, from the cloud authorization's level)", (), s.dn, m.label)
+        return note("Security", "action", cn, f"{key}: Compliance Manager offers no framework for it (not rendered)",
+                    (f"Assess {key} another way (a custom Compliance Manager framework, or the organization's own "
+                     "controls), by hand",), s.dn, m.label)
+    why = _why_not(m, key, *_framework(m, key))
+    return request_note(m, s, f"{key} assessed by a Compliance Manager framework deployment: {why}") if why else None
+
+
+def deployment(m, s, key):
+    """Items for posture service s's framework (or baseline) key: its framework deployment (organization-wide: stamped
+    with s's organization origin), else its note's comment (deployment_note)."""
+    found = deployment_note(m, s, key)
+    if found is not None:
+        return (comment(note_comment(found)),)
+    fw, controls = _framework(m, key)
     block = _block(m, s, key, fw, controls)
     return from_entry(organization_origin(s.dn), (block,)) if organization_wide(s) else (block,)
 
